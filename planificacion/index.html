@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Planificación — InnovaServi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --navy:#1a1f6e; --navy-2:#12163f; --deep:#0c0f2e; --orange:#ff6b00; --orange-2:#c24e00;
+    --blue:#1f28b0; --ink:#1b1f4d; --body:#4a5270; --muted:#8b93a7; --line:#e6e8f2; --alt:#f5f6fb; --white:#fff;
+    /* categorías */
+    --c-limp:#17a2b8; --c-obra:#ff6b00; --c-gen:#22a06b; --c-mant:#7b61ff; --c-otro:#8b93a7;
+    --font:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:var(--font);background:var(--alt);color:var(--body);-webkit-font-smoothing:antialiased;}
+  a{color:inherit;text-decoration:none;}
+
+  /* Header */
+  .pl-header{background:linear-gradient(135deg,#e05e00 0%,#ff6b00 55%,#ff8a2b 130%);color:#fff;padding:20px 24px;position:relative;overflow:hidden;}
+  .pl-header::after{content:"";position:absolute;top:-40%;right:-5%;width:360px;height:360px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.16) 0%,transparent 62%);}
+  .pl-header-in{max-width:1760px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:16px;position:relative;z-index:1;flex-wrap:wrap;}
+  .pl-brand{display:flex;align-items:center;gap:12px;}
+  .pl-brand img{height:42px;width:auto;filter:brightness(0) invert(1);}
+  .pl-brand .t{font-weight:800;font-size:1.15rem;letter-spacing:.3px;}
+  .pl-brand .s{font-size:.72rem;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.85);font-weight:600;}
+  .pl-user{display:flex;align-items:center;gap:10px;font-size:.85rem;color:#dfe3ff;}
+  .pl-user .av{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-weight:700;}
+
+  /* Toolbar */
+  .pl-wrap{max-width:1760px;margin:0 auto;padding:20px 22px 60px;}
+  .pl-bar{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:18px;}
+  .pl-nav{display:flex;align-items:center;gap:10px;}
+  .pl-nav button{border:1px solid var(--line);background:#fff;width:38px;height:38px;border-radius:10px;font-size:18px;cursor:pointer;color:var(--ink);transition:.2s;}
+  .pl-nav button:hover{border-color:var(--orange);color:var(--orange);}
+  .pl-title{font-size:1.5rem;font-weight:800;color:var(--ink);text-transform:capitalize;min-width:230px;text-align:center;}
+  .pl-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .pl-seg{display:flex;background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden;}
+  .pl-seg button{border:none;background:transparent;padding:9px 16px;font:700 13px var(--font);color:var(--body);cursor:pointer;}
+  .pl-seg button.on{background:var(--orange);color:#fff;}
+  .pl-today{border:1px solid var(--line);background:#fff;padding:9px 16px;border-radius:10px;font:700 13px var(--font);color:var(--ink);cursor:pointer;}
+  .pl-today:hover{border-color:var(--orange);color:var(--orange);}
+  .pl-add{background:var(--orange);color:#fff;border:none;padding:10px 18px;border-radius:10px;font:700 13px var(--font);cursor:pointer;box-shadow:0 10px 24px -10px rgba(255,107,0,.6);}
+  .pl-add:hover{background:var(--orange-2);}
+
+  /* Leyenda categorías */
+  .pl-legend{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;}
+  .pl-legend span{display:inline-flex;align-items:center;gap:7px;font-size:.8rem;font-weight:600;color:var(--body);}
+  .pl-legend .dot{width:12px;height:12px;border-radius:3px;}
+
+  /* Grid calendario */
+  .cal{background:#fff;border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 18px 50px -30px rgba(26,31,110,.35);}
+  .cal-dow{display:grid;grid-template-columns:repeat(7,1fr);background:var(--orange);color:#fff;}
+  .cal-dow div{padding:12px 10px;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;text-align:center;}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);}
+  .cell{min-height:128px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:8px;position:relative;transition:background .2s;overflow:hidden;}
+  .cell:nth-child(7n){border-right:none;}
+  .cell.out{background:var(--alt);}
+  .cell.today{background:rgba(255,107,0,.05);}
+  .cell:hover{background:var(--alt);}
+  .cell .dnum{font-size:.85rem;font-weight:700;color:var(--ink);display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;margin-bottom:4px;}
+  .cell.out .dnum{color:var(--muted);}
+  .cell.today .dnum{background:var(--orange);color:#fff;}
+  .ev{display:block;width:100%;text-align:left;border:none;border-left:3px solid var(--c-otro);background:var(--alt);color:var(--ink);font:600 10.5px/1.25 var(--font);padding:2px 5px;border-radius:4px;margin-bottom:2px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:.15s;}
+  .ev:hover{transform:translateX(2px);filter:brightness(.96);}
+  .ev-more{font:700 11px var(--font);color:var(--orange-2);cursor:pointer;padding:2px 4px;}
+
+  /* Vista semana: filas más altas */
+  .cal.week .cell{min-height:420px;}
+  .cal.week .cal-grid{grid-template-columns:repeat(7,1fr);}
+
+  /* Modal detalle */
+  .pl-modal{display:none;position:fixed;inset:0;z-index:60;background:rgba(12,15,46,.55);align-items:center;justify-content:center;padding:20px;}
+  .pl-modal.show{display:flex;}
+  .pl-modal-box{background:#fff;border-radius:16px;width:100%;max-width:440px;overflow:hidden;box-shadow:0 30px 80px -20px rgba(0,0,0,.5);}
+  .pl-modal-head{padding:16px 20px;color:#fff;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;}
+  .pl-modal-head h3{font-size:1.1rem;font-weight:800;line-height:1.3;}
+  .pl-modal-head button{background:rgba(255,255,255,.2);border:none;color:#fff;width:30px;height:30px;border-radius:8px;font-size:18px;cursor:pointer;flex-shrink:0;}
+  .pl-modal-body{padding:18px 20px;}
+  .pl-modal-body .row{display:flex;gap:10px;align-items:center;margin-bottom:12px;color:var(--body);font-size:.92rem;}
+  .pl-modal-body .row b{color:var(--ink);}
+  .pl-modal-body .cat-chip{display:inline-block;padding:4px 12px;border-radius:999px;font-size:.78rem;font-weight:700;color:#fff;}
+  .pl-desc{background:var(--alt);border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:.88rem;line-height:1.6;color:var(--body);white-space:pre-line;margin-top:6px;}
+
+  /* Vista Próximos (agenda) */
+  .cal-grid.agenda{display:block;padding:12px;}
+  .ag-day{border:1px solid var(--line);border-radius:12px;padding:14px 18px;margin-bottom:12px;background:#fff;}
+  .ag-day h4{color:var(--ink);font-size:.98rem;margin-bottom:10px;text-transform:capitalize;font-weight:800;}
+  .ag-ev{display:flex;gap:12px;align-items:stretch;padding:10px 0;border-top:1px dashed var(--line);}
+  .ag-ev:first-of-type{border-top:none;padding-top:0;}
+  .ag-ev .bar{width:4px;border-radius:3px;flex-shrink:0;}
+  .ag-ev .info{flex:1;min-width:0;}
+  .ag-ev .info .tt{color:var(--ink);font-weight:700;font-size:.95rem;}
+  .ag-meta{font-size:.8rem;color:var(--muted);font-weight:600;margin-top:2px;}
+  .ag-desc{font-size:.85rem;color:var(--body);margin-top:5px;white-space:pre-line;line-height:1.55;}
+
+  .pl-foot{text-align:center;color:var(--muted);font-size:.8rem;margin-top:22px;}
+  .pl-foot a{color:var(--orange-2);font-weight:600;}
+
+  /* Login / formulario / edición */
+  .pl-auth{background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.45);color:#fff;padding:8px 16px;border-radius:999px;font:700 13px var(--font);cursor:pointer;}
+  .pl-auth:hover{background:#fff;color:var(--orange-2);}
+  #auth-label{color:rgba(255,255,255,.92);font-size:.82rem;margin-right:6px;}
+  .fgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
+  .fgrid label{display:flex;flex-direction:column;gap:5px;font:600 12px var(--font);color:var(--ink);}
+  .fgrid label.full{grid-column:1/-1;}
+  .fgrid input,.fgrid textarea{font:500 14px var(--font);padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:var(--alt);color:var(--ink);width:100%;box-sizing:border-box;}
+  .fgrid input:focus,.fgrid textarea:focus{outline:none;border-color:var(--orange);box-shadow:0 0 0 3px rgba(255,107,0,.15);background:#fff;}
+  .fgrid textarea{resize:vertical;}
+  .fbtns{display:flex;justify-content:flex-end;gap:10px;align-items:center;}
+  .pl-del-btn{background:#fff;border:1px solid #f0c0c0;color:#dc2626;padding:10px 18px;border-radius:10px;font:700 13px var(--font);cursor:pointer;}
+  .pl-del-btn:hover{background:#dc2626;color:#fff;border-color:#dc2626;}
+
+  @media (max-width:760px){
+    .pl-title{font-size:1.2rem;min-width:150px;}
+    .cell{min-height:92px;padding:5px;}
+    .cell .dnum{width:22px;height:22px;font-size:.78rem;}
+    .ev{font-size:10px;padding:3px 5px;}
+    .cal-dow div{font-size:.6rem;padding:9px 4px;letter-spacing:.5px;}
+    .pl-legend{gap:10px;}
+  }
+</style>
+</head>
+<body>
+
+  <header class="pl-header">
+    <div class="pl-header-in">
+      <div class="pl-brand">
+        <img src="../assets/images/InnovaLOGO.svg" alt="InnovaServi" onerror="this.style.display='none'"/>
+        <div><div class="t">Planificación</div><div class="s">Innova Servi</div></div>
+      </div>
+      <div class="pl-user"><span id="auth-label"></span><button id="authbtn" class="pl-auth">Iniciar sesión</button></div>
+    </div>
+  </header>
+
+  <div class="pl-wrap">
+    <div class="pl-bar">
+      <div class="pl-nav">
+        <button id="prev" aria-label="Anterior">‹</button>
+        <div class="pl-title" id="title">—</div>
+        <button id="next" aria-label="Siguiente">›</button>
+      </div>
+      <div class="pl-actions">
+        <button class="pl-today" id="today">Hoy</button>
+        <div class="pl-seg"><button data-v="mes" class="on">Mes</button><button data-v="semana">Semana</button><button data-v="proximos">Próximos</button></div>
+        <button class="pl-add" id="add">＋ Nuevo trabajo</button>
+      </div>
+    </div>
+
+    <div class="pl-legend" id="pl-legend"></div>
+
+    <div class="cal" id="cal">
+      <div class="cal-dow"><div>Lun</div><div>Mar</div><div>Mié</div><div>Jue</div><div>Vie</div><div>Sáb</div><div>Dom</div></div>
+      <div class="cal-grid" id="grid"></div>
+    </div>
+
+    <p class="pl-foot">Formato de demostración · datos de ejemplo. Los trabajos reales se importan desde el calendario actual. — <a href="../">Volver a InnovaServi</a></p>
+  </div>
+
+  <div class="pl-modal" id="modal">
+    <div class="pl-modal-box">
+      <div class="pl-modal-head" id="modal-head"><h3 id="modal-title"></h3><button id="modal-close" aria-label="Cerrar">×</button></div>
+      <div class="pl-modal-body" id="modal-body"></div>
+    </div>
+  </div>
+
+  <!-- Modal login -->
+  <div class="pl-modal" id="login-modal">
+    <div class="pl-modal-box" style="max-width:380px">
+      <div class="pl-modal-head" style="background:linear-gradient(135deg,#1a1f6e,#0c0f2e)"><h3>Ingresar</h3><button id="login-close" aria-label="Cerrar">×</button></div>
+      <div class="pl-modal-body">
+        <div class="fgrid">
+          <label class="full">Correo<input type="email" id="l-email" autocomplete="username"></label>
+          <label class="full">Contraseña<input type="password" id="l-pass" autocomplete="current-password"></label>
+        </div>
+        <button id="l-btn" class="pl-add" style="width:100%;margin-top:6px">Entrar</button>
+        <div id="l-msg" style="color:#dc2626;font-size:.85rem;margin-top:8px"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal nuevo/editar trabajo -->
+  <div class="pl-modal" id="form-modal">
+    <div class="pl-modal-box">
+      <div class="pl-modal-head" style="background:linear-gradient(135deg,#ff6b00,#c24e00)"><h3 id="form-title">Nuevo trabajo</h3><button id="form-close" aria-label="Cerrar">×</button></div>
+      <div class="pl-modal-body">
+        <div class="fgrid">
+          <label>Fecha<input type="date" id="f-fecha"></label>
+          <label>Hora<input type="text" id="f-hora" placeholder="09:00 - 13:00 o All day"></label>
+          <label class="full">Título<input type="text" id="f-titulo" placeholder="Ej: Limpieza estanque"></label>
+          <label class="full">Ubicación / Cliente<input type="text" id="f-ubic" placeholder="Ej: CERMAQ"></label>
+          <label class="full">Descripción<textarea id="f-desc" rows="4" placeholder="Detalle, materiales, tareas…"></textarea></label>
+        </div>
+        <div class="fbtns"><button class="pl-del-btn" id="f-del" style="display:none">Eliminar</button><button class="pl-add" id="f-save">Guardar</button></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(function(){
+  // Color por CLIENTE (ubicación): colores de marca conocidos + color estable por nombre para el resto
+  var CLIENTE_COL={
+    'CERMAQ':'#00a7c4','KOMATSU':'#153fa6','CUMMINS':'#c8102e','MOWI':'#3a3a3a','VENTISQUEROS':'#0b3a5c',
+    'SKRETTING':'#e2231a','SEAGARDEN':'#0e7c5a','GREENSPOT':'#2fa84f','SAL LOBOS':'#8a1a2b','LOBOS':'#8a1a2b',
+    'PRIMAR':'#1f5aa8','VERISURE':'#e2231a','AUSTRALIS':'#173a5e','QUEMCHI':'#0f766e','REXIN':'#b8620a'
+  };
+  function hashCol(s){ var h=0; s=(s||'').toUpperCase(); for(var i=0;i<s.length;i++){ h=(h*31+s.charCodeAt(i))>>>0; } return 'hsl('+(h%360)+',52%,42%)'; }
+  function clienteColor(u){ u=(u||'').trim().toUpperCase(); if(!u) return '#8b93a7'; for(var k in CLIENTE_COL){ if(u.indexOf(k)>=0) return CLIENTE_COL[k]; } return hashCol(u); }
+  function renderLegend(){ var seen={}, list=[]; EVENTS.forEach(function(e){ var u=(e.ubic||'').trim(); if(u && !seen[u.toUpperCase()]){ seen[u.toUpperCase()]=1; list.push(u); } }); list.sort(); var el=document.getElementById('pl-legend'); if(!el)return; el.innerHTML=list.map(function(u){ return '<span><i class="dot" style="background:'+clienteColor(u)+'"></i>'+esc(u)+'</span>'; }).join(''); }
+  // ---- Datos reales desde Supabase (tabla eventos) ----
+  var SB_URL='https://oabtbzrfgwadnooexdwd.supabase.co';
+  var SB_KEY='sb_publishable_Uz01bxGvGArhB-h4KOvbqA_WtQg1zer';
+  var sb=null; try{ if(window.supabase) sb=window.supabase.createClient(SB_URL,SB_KEY); }catch(e){}
+  var authed=false, userEmail='';
+  var EVENTS=[];
+  function cargarEventos(cb){
+    if(!sb){ if(cb)cb(); return; }
+    var all=[], chunk=1000;
+    function finish(){ EVENTS=all.map(function(e){ return { id:e.id, fecha:e.fecha, hora:e.hora||'', titulo:e.titulo||'', ubic:e.ubicacion||'', color:clienteColor(e.ubicacion), desc:e.descripcion||'' }; }); renderLegend(); if(cb)cb(); }
+    function fetchFrom(off){
+      sb.from('eventos').select('*').order('fecha',{ascending:true}).range(off, off+chunk-1).then(function(r){
+        if(r.error){ console.warn('Supabase:',r.error.message); finish(); return; }
+        var d=(r&&r.data)||[]; all=all.concat(d);
+        if(d.length===chunk){ fetchFrom(off+chunk); } else { finish(); }
+      }, function(err){ console.warn('Supabase err',err); finish(); });
+    }
+    fetchFrom(0);
+  }
+
+  var MES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  var ref=new Date(2026,7,1); // agosto 2026 (mes con datos de ejemplo)
+  var vista='mes';
+  function iso(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+  function todayISO(){ return iso(new Date()); }
+  function evsDe(f){ return EVENTS.filter(function(e){return e.fecha===f;}); }
+
+  function render(){
+    var grid=document.getElementById('grid'); grid.classList.remove('agenda');
+    var cal=document.getElementById('cal'); cal.classList.toggle('week',vista==='semana');
+    document.querySelector('.cal-dow').style.display=(vista==='proximos')?'none':'';
+    if(vista==='proximos'){ renderProximos(); return; }
+    var y=ref.getFullYear(), m=ref.getMonth();
+    document.getElementById('title').textContent=MES[m]+' '+y;
+    var cells=[];
+    if(vista==='mes'){
+      var first=new Date(y,m,1); var startDow=(first.getDay()+6)%7; var dim=new Date(y,m+1,0).getDate(); var prevDim=new Date(y,m,0).getDate();
+      for(var i=0;i<startDow;i++){ var dd=prevDim-startDow+1+i; cells.push({d:new Date(y,m-1,dd),out:true}); }
+      for(var d=1;d<=dim;d++){ cells.push({d:new Date(y,m,d),out:false}); }
+      while(cells.length%7!==0){ var nd=cells.length-(startDow+dim)+1; cells.push({d:new Date(y,m+1,nd),out:true}); }
+    } else {
+      // semana que contiene ref
+      var base=new Date(ref); var dow=(base.getDay()+6)%7; base.setDate(base.getDate()-dow);
+      for(var w=0;w<7;w++){ var c=new Date(base); c.setDate(base.getDate()+w); cells.push({d:c,out:(c.getMonth()!==m)}); }
+      document.getElementById('title').textContent='Semana · '+cells[0].d.getDate()+' '+MES[cells[0].d.getMonth()].slice(0,3)+' – '+cells[6].d.getDate()+' '+MES[cells[6].d.getMonth()].slice(0,3);
+    }
+    var tISO=todayISO();
+    grid.innerHTML=cells.map(function(c){
+      var f=iso(c.d); var evs=evsDe(f); var max=(vista==='semana')?60:10;
+      var evHtml=evs.slice(0,max).map(function(e){ return '<button class="ev" data-id="'+e.id+'" style="border-left-color:'+e.color+'" title="'+enc(e.titulo)+(e.ubic?(' · '+e.ubic):'')+'">'+esc(e.titulo)+'</button>'; }).join('');
+      if(evs.length>max) evHtml+='<div class="ev-more" data-f="'+f+'">+'+(evs.length-max)+' más</div>';
+      return '<div class="cell'+(c.out?' out':'')+(f===tISO?' today':'')+'"><span class="dnum">'+c.d.getDate()+'</span>'+evHtml+'</div>';
+    }).join('');
+    grid.querySelectorAll('.ev').forEach(function(b){ b.addEventListener('click',function(){ abrir(b.dataset.id); }); });
+    grid.querySelectorAll('.ev-more').forEach(function(b){ b.addEventListener('click',function(){ abrirDia(b.dataset.f); }); });
+  }
+  var DIAS=['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+  function renderProximos(){
+    var grid=document.getElementById('grid'); grid.classList.add('agenda');
+    document.getElementById('title').textContent='Próximos eventos';
+    var start=todayISO();
+    var up=EVENTS.filter(function(e){return e.fecha>=start;}).sort(function(a,b){return a.fecha<b.fecha?-1:(a.fecha>b.fecha?1:0);});
+    if(!up.length){ grid.innerHTML='<div style="padding:34px;text-align:center;color:var(--muted)">No hay eventos próximos.</div>'; return; }
+    var byDay={}; up.forEach(function(e){ (byDay[e.fecha]=byDay[e.fecha]||[]).push(e); });
+    grid.innerHTML=Object.keys(byDay).sort().map(function(f){ var d=new Date(f+'T00:00:00');
+      return '<div class="ag-day"><h4>'+DIAS[d.getDay()]+' '+d.getDate()+' de '+MES[d.getMonth()]+' '+d.getFullYear()+'</h4>'+
+        byDay[f].map(function(e){
+          return '<div class="ag-ev"><div class="bar" style="background:'+e.color+'"></div><div class="info">'+
+            '<div class="tt">'+esc(e.titulo)+'</div>'+
+            '<div class="ag-meta">'+(e.ubic?('📍 '+esc(e.ubic)):'')+(e.hora?(' · '+esc(e.hora)):'')+'</div>'+
+            (e.desc?'<div class="ag-desc">'+esc(e.desc)+'</div>':'')+
+          '</div></div>';
+        }).join('')+'</div>';
+    }).join('');
+  }
+  function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function enc(s){ return (s||'').replace(/"/g,'&quot;'); }
+
+  var modal=document.getElementById('modal');
+  function abrir(id){
+    var e=EVENTS.filter(function(x){return String(x.id)===String(id);})[0]; if(!e)return;
+    var d=new Date(e.fecha+'T00:00:00');
+    document.getElementById('modal-head').style.background='linear-gradient(135deg,'+e.color+',#0c0f2e)';
+    document.getElementById('modal-title').textContent=e.titulo;
+    document.getElementById('modal-body').innerHTML=
+      '<div class="row">📅 <b>'+d.getDate()+' de '+MES[d.getMonth()]+' '+d.getFullYear()+'</b>'+(e.hora?' · '+esc(e.hora):'')+'</div>'+
+      (e.ubic?'<div class="row">📍 Cliente: <span class="cat-chip" style="background:'+e.color+'">'+esc(e.ubic)+'</span></div>':'')+
+      (e.desc?'<div class="pl-desc">'+esc(e.desc)+'</div>':'')+
+      (authed?'<div class="fbtns" style="margin-top:14px"><button class="pl-del-btn" id="det-del">Eliminar</button><button class="pl-add" id="det-edit">✎ Editar</button></div>':'');
+    modal.classList.add('show');
+    if(authed){
+      var de=document.getElementById('det-edit'); if(de) de.addEventListener('click',function(){ modal.classList.remove('show'); abrirForm(e); });
+      var dd=document.getElementById('det-del'); if(dd) dd.addEventListener('click',function(){ if(confirm('¿Eliminar «'+e.titulo+'»?')) eliminarEvento(e.id); });
+    }
+  }
+  function abrirDia(f){
+    var evs=evsDe(f); if(!evs.length)return; var d=new Date(f+'T00:00:00');
+    document.getElementById('modal-head').style.background='linear-gradient(135deg,var(--navy),#0c0f2e)';
+    document.getElementById('modal-title').textContent=d.getDate()+' de '+MES[d.getMonth()];
+    document.getElementById('modal-body').innerHTML=evs.map(function(e){ return '<div class="row" style="cursor:pointer" data-goid="'+e.id+'"><span class="cat-chip" style="background:'+e.color+'">&nbsp;</span> '+esc(e.titulo)+(e.ubic?(' · '+esc(e.ubic)):'')+'</div>'; }).join('');
+    modal.querySelectorAll('[data-goid]').forEach(function(r){ r.addEventListener('click',function(){ abrir(r.dataset.goid); }); });
+    modal.classList.add('show');
+  }
+  document.getElementById('modal-close').addEventListener('click',function(){ modal.classList.remove('show'); });
+  modal.addEventListener('click',function(ev){ if(ev.target===modal) modal.classList.remove('show'); });
+
+  document.getElementById('prev').addEventListener('click',function(){ if(vista==='mes') ref.setMonth(ref.getMonth()-1); else ref.setDate(ref.getDate()-7); render(); });
+  document.getElementById('next').addEventListener('click',function(){ if(vista==='mes') ref.setMonth(ref.getMonth()+1); else ref.setDate(ref.getDate()+7); render(); });
+  document.getElementById('today').addEventListener('click',function(){ ref=new Date(); render(); });
+  document.querySelectorAll('.pl-seg button').forEach(function(b){ b.addEventListener('click',function(){ vista=b.dataset.v; document.querySelectorAll('.pl-seg button').forEach(function(x){x.classList.toggle('on',x===b);}); render(); }); });
+  // ---- Sesión (Supabase Auth) ----
+  var loginModal=document.getElementById('login-modal'), formModal=document.getElementById('form-modal');
+  function updateAuthUI(){
+    document.getElementById('auth-label').textContent = authed ? userEmail : '';
+    document.getElementById('authbtn').textContent = authed ? 'Salir' : 'Iniciar sesión';
+  }
+  function setAuth(session){ authed=!!session; userEmail=(session&&session.user&&session.user.email)||''; updateAuthUI(); }
+  if(sb && sb.auth){
+    sb.auth.getSession().then(function(r){ setAuth(r&&r.data&&r.data.session); });
+    sb.auth.onAuthStateChange(function(_e,session){ setAuth(session); });
+  }
+  document.getElementById('authbtn').addEventListener('click',function(){
+    if(authed){ if(sb) sb.auth.signOut(); authed=false; userEmail=''; updateAuthUI(); }
+    else { document.getElementById('l-msg').textContent=''; loginModal.classList.add('show'); document.getElementById('l-email').focus(); }
+  });
+  document.getElementById('login-close').addEventListener('click',function(){ loginModal.classList.remove('show'); });
+  loginModal.addEventListener('click',function(ev){ if(ev.target===loginModal) loginModal.classList.remove('show'); });
+  document.getElementById('l-btn').addEventListener('click',function(){
+    if(!sb){ return; }
+    var em=document.getElementById('l-email').value.trim(), pw=document.getElementById('l-pass').value;
+    var msg=document.getElementById('l-msg'); msg.textContent='Entrando…';
+    sb.auth.signInWithPassword({email:em,password:pw}).then(function(r){
+      if(r.error){ msg.textContent='Correo o contraseña incorrectos.'; return; }
+      msg.textContent=''; document.getElementById('l-pass').value=''; loginModal.classList.remove('show');
+    });
+  });
+
+  // ---- Nuevo / Editar / Eliminar ----
+  var editId=null;
+  function abrirForm(e){
+    editId=e?e.id:null;
+    document.getElementById('form-title').textContent=e?'Editar trabajo':'Nuevo trabajo';
+    document.getElementById('f-fecha').value=e?e.fecha:todayISO();
+    document.getElementById('f-hora').value=e?(e.hora||''):'';
+    document.getElementById('f-titulo').value=e?e.titulo:'';
+    document.getElementById('f-ubic').value=e?(e.ubic||''):'';
+    document.getElementById('f-desc').value=e?(e.desc||''):'';
+    document.getElementById('f-del').style.display=e?'':'none';
+    formModal.classList.add('show'); document.getElementById('f-titulo').focus();
+  }
+  document.getElementById('form-close').addEventListener('click',function(){ formModal.classList.remove('show'); });
+  formModal.addEventListener('click',function(ev){ if(ev.target===formModal) formModal.classList.remove('show'); });
+  document.getElementById('f-save').addEventListener('click',function(){
+    if(!sb) return;
+    var row={ fecha:document.getElementById('f-fecha').value, hora:document.getElementById('f-hora').value.trim(),
+      titulo:document.getElementById('f-titulo').value.trim(), ubicacion:document.getElementById('f-ubic').value.trim(),
+      categoria:'Trabajo', descripcion:document.getElementById('f-desc').value };
+    if(!row.fecha||!row.titulo){ alert('Fecha y título son obligatorios.'); return; }
+    var q = editId ? sb.from('eventos').update(row).eq('id',editId) : sb.from('eventos').insert(row);
+    q.then(function(r){ if(r.error){ alert('No se pudo guardar: '+r.error.message); return; } formModal.classList.remove('show'); cargarEventos(render); });
+  });
+  document.getElementById('f-del').addEventListener('click',function(){ if(editId && confirm('¿Eliminar este trabajo?')) eliminarEvento(editId); });
+  function eliminarEvento(id){ if(!sb) return; sb.from('eventos').delete().eq('id',id).then(function(r){ if(r.error){ alert('No se pudo eliminar.'); return; } formModal.classList.remove('show'); modal.classList.remove('show'); cargarEventos(render); }); }
+
+  document.getElementById('add').addEventListener('click',function(){
+    if(!authed){ document.getElementById('l-msg').textContent=''; loginModal.classList.add('show'); document.getElementById('l-email').focus(); return; }
+    abrirForm(null);
+  });
+
+  render();
+  cargarEventos(render);
+})();
+</script>
+</body>
+</html>
