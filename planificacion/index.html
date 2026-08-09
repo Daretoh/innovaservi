@@ -105,6 +105,16 @@
   .pl-auth{background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.45);color:#fff;padding:8px 16px;border-radius:999px;font:700 13px var(--font);cursor:pointer;}
   .pl-auth:hover{background:#fff;color:var(--orange-2);}
   #auth-label{color:rgba(255,255,255,.92);font-size:.82rem;margin-right:6px;}
+  /* Candado: calendario oculto sin login */
+  #pl-gate{display:none;min-height:100vh;align-items:center;justify-content:center;padding:24px 20px;}
+  .pl-gate-card{width:100%;max-width:380px;text-align:center;background:#fff;border:1px solid var(--line);border-radius:18px;padding:40px 32px 34px;box-shadow:0 24px 60px -24px rgba(26,31,110,.4);color:var(--ink);}
+  .pl-gate-card .gate-logo{width:140px;max-width:66%;height:auto;margin:0 auto 6px;display:block;}
+  .pl-gate-card .gate-sub{color:var(--muted);font-size:.82rem;letter-spacing:.08em;text-transform:uppercase;margin-bottom:22px;}
+  .pl-gate-card .fgrid{grid-template-columns:1fr;text-align:left;margin-bottom:14px;}
+  .pl-gate-card .pl-add{width:100%;}
+  body.locked .pl-header{display:none;}
+  body.locked .pl-wrap{display:none;}
+  body.locked #pl-gate{display:flex;}
   .fgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
   .fgrid label{display:flex;flex-direction:column;gap:5px;font:600 12px var(--font);color:var(--ink);}
   .fgrid label.full{grid-column:1/-1;}
@@ -125,7 +135,7 @@
   }
 </style>
 </head>
-<body>
+<body class="locked">
 
   <header class="pl-header">
     <div class="pl-header-in">
@@ -136,6 +146,20 @@
       <div class="pl-user"><span id="auth-label"></span><button id="authbtn" class="pl-auth">Iniciar sesión</button></div>
     </div>
   </header>
+
+  <!-- Acceso: login directo con el logo (sistema interno) -->
+  <div id="pl-gate">
+    <div class="pl-gate-card">
+      <img class="gate-logo" src="../assets/images/InnovaLOGO.svg" alt="Innova Servi" onerror="this.style.display='none'">
+      <p class="gate-sub">Acceso al sistema</p>
+      <div class="fgrid">
+        <label class="full">Correo<input type="email" id="l-email" autocomplete="username"></label>
+        <label class="full">Contraseña<input type="password" id="l-pass" autocomplete="current-password"></label>
+      </div>
+      <button id="l-btn" class="pl-add">Entrar</button>
+      <div id="l-msg" style="color:#dc2626;font-size:.85rem;margin-top:10px"></div>
+    </div>
+  </div>
 
   <div class="pl-wrap">
     <div class="pl-bar">
@@ -168,21 +192,6 @@
     </div>
   </div>
 
-  <!-- Modal login -->
-  <div class="pl-modal" id="login-modal">
-    <div class="pl-modal-box" style="max-width:380px">
-      <div class="pl-modal-head" style="background:linear-gradient(135deg,#1a1f6e,#0c0f2e)"><h3>Ingresar</h3><button id="login-close" aria-label="Cerrar">×</button></div>
-      <div class="pl-modal-body">
-        <div class="fgrid">
-          <label class="full">Correo<input type="email" id="l-email" autocomplete="username"></label>
-          <label class="full">Contraseña<input type="password" id="l-pass" autocomplete="current-password"></label>
-        </div>
-        <button id="l-btn" class="pl-add" style="width:100%;margin-top:6px">Entrar</button>
-        <div id="l-msg" style="color:#dc2626;font-size:.85rem;margin-top:8px"></div>
-      </div>
-    </div>
-  </div>
-
   <!-- Modal nuevo/editar trabajo -->
   <div class="pl-modal" id="form-modal">
     <div class="pl-modal-box">
@@ -210,7 +219,7 @@
   };
   function hashCol(s){ var h=0; s=(s||'').toUpperCase(); for(var i=0;i<s.length;i++){ h=(h*31+s.charCodeAt(i))>>>0; } return 'hsl('+(h%360)+',52%,42%)'; }
   function clienteColor(u){ u=(u||'').trim().toUpperCase(); if(!u) return '#8b93a7'; for(var k in CLIENTE_COL){ if(u.indexOf(k)>=0) return CLIENTE_COL[k]; } return hashCol(u); }
-  function renderLegend(){ var seen={}, list=[]; EVENTS.forEach(function(e){ var u=(e.ubic||'').trim(); if(u && !seen[u.toUpperCase()]){ seen[u.toUpperCase()]=1; list.push(u); } }); list.sort(); var el=document.getElementById('pl-legend'); if(!el)return; el.innerHTML=list.map(function(u){ return '<span><i class="dot" style="background:'+clienteColor(u)+'"></i>'+esc(u)+'</span>'; }).join(''); }
+  function renderLegend(evs){ evs=evs||EVENTS; var seen={}, list=[]; evs.forEach(function(e){ var u=(e.ubic||'').trim(); if(u && !seen[u.toUpperCase()]){ seen[u.toUpperCase()]=1; list.push(u); } }); list.sort(); var el=document.getElementById('pl-legend'); if(!el)return; el.innerHTML=list.map(function(u){ return '<span><i class="dot" style="background:'+clienteColor(u)+'"></i>'+esc(u)+'</span>'; }).join(''); }
   // ---- Datos reales desde Supabase (tabla eventos) ----
   var SB_URL='https://oabtbzrfgwadnooexdwd.supabase.co';
   var SB_KEY='sb_publishable_Uz01bxGvGArhB-h4KOvbqA_WtQg1zer';
@@ -220,7 +229,7 @@
   function cargarEventos(cb){
     if(!sb){ if(cb)cb(); return; }
     var all=[], chunk=1000;
-    function finish(){ EVENTS=all.map(function(e){ return { id:e.id, fecha:e.fecha, hora:e.hora||'', titulo:e.titulo||'', ubic:e.ubicacion||'', color:clienteColor(e.ubicacion), desc:e.descripcion||'' }; }); renderLegend(); if(cb)cb(); }
+    function finish(){ EVENTS=all.map(function(e){ return { id:e.id, fecha:e.fecha, hora:e.hora||'', titulo:e.titulo||'', ubic:e.ubicacion||'', color:clienteColor(e.ubicacion), desc:e.descripcion||'' }; }); if(cb)cb(); }
     function fetchFrom(off){
       sb.from('eventos').select('*').order('fecha',{ascending:true}).range(off, off+chunk-1).then(function(r){
         if(r.error){ console.warn('Supabase:',r.error.message); finish(); return; }
@@ -257,6 +266,9 @@
       for(var w=0;w<7;w++){ var c=new Date(base); c.setDate(base.getDate()+w); cells.push({d:c,out:(c.getMonth()!==m)}); }
       document.getElementById('title').textContent='Semana · '+cells[0].d.getDate()+' '+MES[cells[0].d.getMonth()].slice(0,3)+' – '+cells[6].d.getDate()+' '+MES[cells[6].d.getMonth()].slice(0,3);
     }
+    // Leyenda: solo los clientes que aparecen en el período visible
+    var vFrom=iso(cells[0].d), vTo=iso(cells[cells.length-1].d);
+    renderLegend(EVENTS.filter(function(e){ return e.fecha>=vFrom && e.fecha<=vTo; }));
     var tISO=todayISO();
     grid.innerHTML=cells.map(function(c){
       var f=iso(c.d); var evs=evsDe(f); var max=(vista==='semana')?60:10;
@@ -273,6 +285,7 @@
     document.getElementById('title').textContent='Próximos eventos';
     var start=todayISO();
     var up=EVENTS.filter(function(e){return e.fecha>=start;}).sort(function(a,b){return a.fecha<b.fecha?-1:(a.fecha>b.fecha?1:0);});
+    renderLegend(up);
     if(!up.length){ grid.innerHTML='<div style="padding:34px;text-align:center;color:var(--muted)">No hay eventos próximos.</div>'; return; }
     var byDay={}; up.forEach(function(e){ (byDay[e.fecha]=byDay[e.fecha]||[]).push(e); });
     grid.innerHTML=Object.keys(byDay).sort().map(function(f){ var d=new Date(f+'T00:00:00');
@@ -322,31 +335,40 @@
   document.getElementById('today').addEventListener('click',function(){ ref=new Date(); render(); });
   document.querySelectorAll('.pl-seg button').forEach(function(b){ b.addEventListener('click',function(){ vista=b.dataset.v; document.querySelectorAll('.pl-seg button').forEach(function(x){x.classList.toggle('on',x===b);}); render(); }); });
   // ---- Sesión (Supabase Auth) ----
-  var loginModal=document.getElementById('login-modal'), formModal=document.getElementById('form-modal');
+  var formModal=document.getElementById('form-modal');
   function updateAuthUI(){
     document.getElementById('auth-label').textContent = authed ? userEmail : '';
     document.getElementById('authbtn').textContent = authed ? 'Salir' : 'Iniciar sesión';
   }
-  function setAuth(session){ authed=!!session; userEmail=(session&&session.user&&session.user.email)||''; updateAuthUI(); }
+  var loaded=false;
+  function applyLock(){
+    if(authed){
+      document.body.classList.remove('locked');
+      if(!loaded){ loaded=true; render(); cargarEventos(render); }
+    } else {
+      document.body.classList.add('locked');
+    }
+  }
+  function setAuth(session){ authed=!!session; userEmail=(session&&session.user&&session.user.email)||''; updateAuthUI(); applyLock(); }
   if(sb && sb.auth){
     sb.auth.getSession().then(function(r){ setAuth(r&&r.data&&r.data.session); });
     sb.auth.onAuthStateChange(function(_e,session){ setAuth(session); });
   }
   document.getElementById('authbtn').addEventListener('click',function(){
-    if(authed){ if(sb) sb.auth.signOut(); authed=false; userEmail=''; updateAuthUI(); }
-    else { document.getElementById('l-msg').textContent=''; loginModal.classList.add('show'); document.getElementById('l-email').focus(); }
+    if(authed){ if(sb) sb.auth.signOut(); authed=false; userEmail=''; updateAuthUI(); applyLock(); }
+    else { document.getElementById('l-email').focus(); }
   });
-  document.getElementById('login-close').addEventListener('click',function(){ loginModal.classList.remove('show'); });
-  loginModal.addEventListener('click',function(ev){ if(ev.target===loginModal) loginModal.classList.remove('show'); });
-  document.getElementById('l-btn').addEventListener('click',function(){
+  function hacerLogin(){
     if(!sb){ return; }
     var em=document.getElementById('l-email').value.trim(), pw=document.getElementById('l-pass').value;
     var msg=document.getElementById('l-msg'); msg.textContent='Entrando…';
     sb.auth.signInWithPassword({email:em,password:pw}).then(function(r){
       if(r.error){ msg.textContent='Correo o contraseña incorrectos.'; return; }
-      msg.textContent=''; document.getElementById('l-pass').value=''; loginModal.classList.remove('show');
+      msg.textContent=''; document.getElementById('l-pass').value='';
     });
-  });
+  }
+  document.getElementById('l-btn').addEventListener('click',hacerLogin);
+  document.getElementById('l-pass').addEventListener('keydown',function(ev){ if(ev.key==='Enter') hacerLogin(); });
 
   // ---- Nuevo / Editar / Eliminar ----
   var editId=null;
@@ -376,12 +398,11 @@
   function eliminarEvento(id){ if(!sb) return; sb.from('eventos').delete().eq('id',id).then(function(r){ if(r.error){ alert('No se pudo eliminar.'); return; } formModal.classList.remove('show'); modal.classList.remove('show'); cargarEventos(render); }); }
 
   document.getElementById('add').addEventListener('click',function(){
-    if(!authed){ document.getElementById('l-msg').textContent=''; loginModal.classList.add('show'); document.getElementById('l-email').focus(); return; }
+    if(!authed){ return; }
     abrirForm(null);
   });
 
-  render();
-  cargarEventos(render);
+  // La carga real ocurre en applyLock() tras confirmar sesión (calendario privado).
 })();
 </script>
 </body>
