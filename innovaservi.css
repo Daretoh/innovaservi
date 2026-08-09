@@ -387,3 +387,14 @@
   .innovaservi-page .serv-area-content { padding: 28px; }
   .innovaservi-page .iv-cert-strip { font-size:.7rem; white-space:normal; text-align:center; width:90%; }
 }
+
+/* ---- Acceso discreto a Planificación (herramienta del equipo) ---- */
+.innovaservi-page .nav-plan { display:inline-flex; align-items:center; gap:8px; opacity:.82; }
+.innovaservi-page .nav-plan:hover { opacity:1; color: var(--iv-teal); }
+.innovaservi-page .nav-plan::after { display:none; }
+.innovaservi-page .nav-plan svg { display:block; }
+.innovaservi-page .nav-plan-txt { display:none; }        /* desktop: solo el ícono */
+@media (max-width: 900px) {
+  .innovaservi-page .nav-plan { color:#fff !important; opacity:1; }
+  .innovaservi-page .nav-plan-txt { display:inline; font-size:1.1rem; }  /* móvil: ícono + texto */
+}
