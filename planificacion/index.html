@@ -199,7 +199,7 @@
       <div class="pl-modal-body">
         <div class="fgrid">
           <label>Fecha<input type="date" id="f-fecha"></label>
-          <label>Hora<input type="text" id="f-hora" placeholder="09:00 - 13:00 o All day"></label>
+          <label>Hora<input type="text" id="f-hora" placeholder="09:00 - 13:00 o Todo el día"></label>
           <label class="full">Título<input type="text" id="f-titulo" placeholder="Ej: Limpieza estanque"></label>
           <label class="full">Ubicación / Cliente<input type="text" id="f-ubic" placeholder="Ej: CERMAQ"></label>
           <label class="full">Descripción<textarea id="f-desc" rows="4" placeholder="Detalle, materiales, tareas…"></textarea></label>
@@ -229,7 +229,7 @@
   function cargarEventos(cb){
     if(!sb){ if(cb)cb(); return; }
     var all=[], chunk=1000;
-    function finish(){ EVENTS=all.map(function(e){ return { id:e.id, fecha:e.fecha, hora:e.hora||'', titulo:e.titulo||'', ubic:e.ubicacion||'', color:clienteColor(e.ubicacion), desc:e.descripcion||'' }; }); if(cb)cb(); }
+    function finish(){ EVENTS=all.map(function(e){ return { id:e.id, fecha:e.fecha, hora:(/^all\s*day$/i.test(e.hora||'')?'Todo el día':(e.hora||'')), titulo:e.titulo||'', ubic:e.ubicacion||'', color:clienteColor(e.ubicacion), desc:e.descripcion||'' }; }); if(cb)cb(); }
     function fetchFrom(off){
       sb.from('eventos').select('*').order('fecha',{ascending:true}).range(off, off+chunk-1).then(function(r){
         if(r.error){ console.warn('Supabase:',r.error.message); finish(); return; }
@@ -332,7 +332,7 @@
 
   document.getElementById('prev').addEventListener('click',function(){ if(vista==='mes') ref.setMonth(ref.getMonth()-1); else ref.setDate(ref.getDate()-7); render(); });
   document.getElementById('next').addEventListener('click',function(){ if(vista==='mes') ref.setMonth(ref.getMonth()+1); else ref.setDate(ref.getDate()+7); render(); });
-  document.getElementById('today').addEventListener('click',function(){ ref=new Date(); render(); });
+  document.getElementById('today').addEventListener('click',function(){ ref=new Date(); if(vista==='proximos'){ vista='mes'; document.querySelectorAll('.pl-seg button').forEach(function(x){x.classList.toggle('on',x.dataset.v==='mes');}); } render(); });
   document.querySelectorAll('.pl-seg button').forEach(function(b){ b.addEventListener('click',function(){ vista=b.dataset.v; document.querySelectorAll('.pl-seg button').forEach(function(x){x.classList.toggle('on',x===b);}); render(); }); });
   // ---- Sesión (Supabase Auth) ----
   var formModal=document.getElementById('form-modal');
