@@ -376,9 +376,12 @@
   .innovaservi-page .nav-link { color:#fff !important; font-size:1.1rem; }
   .innovaservi-page .nav-cta { color:#fff !important; }
   .innovaservi-page .iv-mv { flex-direction: column; min-height: 0; }
-  .innovaservi-page .iv-mv-col { min-height: 56vh; }
+  .innovaservi-page .iv-mv-col { min-height: 60vh; }
   .innovaservi-page .iv-mv-col + .iv-mv-col { border-left: 0; border-top: 1px solid rgba(255,255,255,.12); }
   .innovaservi-page .iv-mv-img { background-attachment: scroll; } /* iOS no soporta fixed */
+  /* Móvil: sombreado limpio (foto clara arriba, oscuro solo abajo para el texto) */
+  .innovaservi-page .iv-mv-shade { background: linear-gradient(180deg,
+    rgba(8,11,32,.28) 0%, rgba(8,11,32,.10) 40%, rgba(8,11,32,.58) 72%, rgba(8,11,32,.92) 100%); }
   .innovaservi-page .iv-marquee-track { gap: 48px; animation-duration: 28s; }
   .innovaservi-page .iv-marquee-track img { height: 34px; }
 }
