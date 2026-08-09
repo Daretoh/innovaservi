@@ -100,7 +100,7 @@
 .innovaservi-page .iv-hero-content { position:relative; z-index:2; padding: 80px 24px; }
 .innovaservi-page .iv-hero-logo {
   width: clamp(210px, 34vw, 360px); max-width: 86vw; height:auto; margin:0 auto;
-  filter: brightness(0) invert(1) drop-shadow(0 10px 30px rgba(0,0,0,.5));
+  filter: drop-shadow(0 10px 30px rgba(0,0,0,.5)); /* logo ya es blanco (InnovaLOGO-blanco.svg): sin brightness/invert = sin flash negro en iOS */
   opacity:0; transform: scale(.94); animation: ivHeroLogo 1.2s .15s cubic-bezier(.2,.7,.2,1) forwards;
 }
 /* Bloque inferior: texto pequeño + indicador de scroll */
@@ -388,13 +388,11 @@
   .innovaservi-page .iv-cert-strip { font-size:.7rem; white-space:normal; text-align:center; width:90%; }
 }
 
-/* ---- Acceso discreto a Planificación (herramienta del equipo) ---- */
-.innovaservi-page .nav-plan { display:inline-flex; align-items:center; gap:8px; opacity:.82; }
+/* ---- Acceso del equipo (ícono de persona, discreto) ---- */
+.innovaservi-page .nav-plan { display:inline-flex; align-items:center; justify-content:center; opacity:.8; }
 .innovaservi-page .nav-plan:hover { opacity:1; color: var(--iv-teal); }
 .innovaservi-page .nav-plan::after { display:none; }
 .innovaservi-page .nav-plan svg { display:block; }
-.innovaservi-page .nav-plan-txt { display:none; }        /* desktop: solo el ícono */
 @media (max-width: 900px) {
   .innovaservi-page .nav-plan { color:#fff !important; opacity:1; }
-  .innovaservi-page .nav-plan-txt { display:inline; font-size:1.1rem; }  /* móvil: ícono + texto */
 }
