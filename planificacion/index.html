@@ -25,7 +25,7 @@
   .pl-header::after{content:"";position:absolute;top:-40%;right:-5%;width:360px;height:360px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.16) 0%,transparent 62%);}
   .pl-header-in{max-width:1760px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:16px;position:relative;z-index:1;flex-wrap:wrap;}
   .pl-brand{display:flex;align-items:center;gap:12px;}
-  .pl-brand img{height:42px;width:auto;filter:brightness(0) invert(1);}
+  .pl-brand img{height:34px;width:auto;background:#fff;border-radius:8px;padding:4px 7px;box-shadow:0 2px 8px rgba(0,0,0,.12);}
   .pl-brand .t{font-weight:800;font-size:1.15rem;letter-spacing:.3px;}
   .pl-brand .s{font-size:.72rem;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.85);font-weight:600;}
   .pl-user{display:flex;align-items:center;gap:10px;font-size:.85rem;color:#dfe3ff;}
@@ -95,17 +95,23 @@
   .pl-modal-body .cat-chip{display:inline-block;padding:4px 12px;border-radius:999px;font-size:.78rem;font-weight:700;color:#fff;}
   .pl-desc{background:var(--alt);border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:.88rem;line-height:1.6;color:var(--body);white-space:pre-line;margin-top:6px;}
 
-  /* Vista Próximos (agenda) */
-  .cal-grid.agenda{display:block;padding:12px;}
-  .ag-day{border:1px solid var(--line);border-radius:12px;padding:14px 18px;margin-bottom:12px;background:#fff;}
-  .ag-day h4{color:var(--ink);font-size:.98rem;margin-bottom:10px;text-transform:capitalize;font-weight:800;}
-  .ag-ev{display:flex;gap:12px;align-items:stretch;padding:10px 0;border-top:1px dashed var(--line);}
-  .ag-ev:first-of-type{border-top:none;padding-top:0;}
-  .ag-ev .bar{width:4px;border-radius:3px;flex-shrink:0;}
-  .ag-ev .info{flex:1;min-width:0;}
-  .ag-ev .info .tt{color:var(--ink);font-weight:700;font-size:.95rem;}
-  .ag-meta{font-size:.8rem;color:var(--muted);font-weight:600;margin-top:2px;}
-  .ag-desc{font-size:.85rem;color:var(--body);margin-top:5px;white-space:pre-line;line-height:1.55;}
+  /* Vista Próximos / Búsqueda (agenda) */
+  .cal-grid.agenda{display:block;padding:14px 12px;max-width:920px;margin:0 auto;}
+  .ag-day{margin-bottom:22px;}
+  .ag-dhead{font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700;margin:0 0 10px;padding-bottom:7px;border-bottom:2px solid var(--line);}
+  .ag-dhead b{color:var(--ink);font-size:1.08rem;text-transform:none;letter-spacing:0;font-weight:800;}
+  .ag-day.hoy .ag-dhead{border-bottom-color:var(--orange);}
+  .ag-hoy-badge{background:var(--orange);color:#fff;font-size:.62rem;padding:2px 8px;border-radius:999px;letter-spacing:.05em;margin-right:4px;}
+  .ag-ucard{background:#fff;border:1px solid var(--line);border-left:4px solid var(--muted);border-radius:11px;padding:11px 15px;margin-bottom:9px;box-shadow:0 1px 3px rgba(0,0,0,.05);}
+  .ag-ucard-head{font:800 .82rem/1.2 var(--font);text-transform:uppercase;letter-spacing:.02em;color:var(--ink);display:flex;align-items:center;gap:8px;margin-bottom:7px;}
+  .ag-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+  .ag-cnt{background:var(--alt);color:var(--body);font-size:.7rem;font-weight:700;padding:1px 8px;border-radius:999px;}
+  .ag-item{padding:6px 0 6px 18px;cursor:pointer;border-top:1px dashed var(--line);}
+  .ag-item:first-child{border-top:none;}
+  .ag-item:hover .ag-item-tt{color:var(--orange);}
+  .ag-item-tt{font-weight:600;font-size:.94rem;color:var(--ink);}
+  .ag-hora{color:var(--muted);font-weight:700;font-size:.8rem;margin-left:4px;}
+  .ag-item-desc{font-size:.83rem;color:var(--muted);margin-top:2px;white-space:pre-line;line-height:1.5;}
 
   .pl-foot{text-align:center;color:var(--muted);font-size:.8rem;margin-top:22px;}
   .pl-foot a{color:var(--orange-2);font-weight:600;}
@@ -212,7 +218,8 @@
           <label>Fecha fin <span style="color:#8b93a7;font-weight:400">(si dura varios días)</span><input type="date" id="f-fin"></label>
           <label class="full">Hora<input type="text" id="f-hora" placeholder="09:00 - 13:00 o Todo el día"></label>
           <label class="full">Título<input type="text" id="f-titulo" placeholder="Ej: Limpieza estanque"></label>
-          <label class="full">Ubicación / Cliente<input type="text" id="f-ubic" placeholder="Ej: CERMAQ"></label>
+          <label class="full">Ubicación / Cliente<input type="text" id="f-ubic" list="f-ubic-list" placeholder="Ej: CERMAQ (elige o escribe)"></label>
+          <datalist id="f-ubic-list"></datalist>
           <label class="full">Descripción<textarea id="f-desc" rows="4" placeholder="Detalle, materiales, tareas…"></textarea></label>
         </div>
         <div class="fbtns"><button class="pl-del-btn" id="f-del" style="display:none">Eliminar</button><button class="pl-add" id="f-save">Guardar</button></div>
@@ -304,39 +311,29 @@
     grid.querySelectorAll('.ev-more').forEach(function(b){ b.addEventListener('click',function(){ abrirDia(b.dataset.f); }); });
   }
   var DIAS=['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
-  function renderProximos(){
-    var grid=document.getElementById('grid'); grid.classList.add('agenda');
-    document.getElementById('title').textContent='Próximos eventos';
-    var start=todayISO();
-    var up=EVENTS.filter(function(e){return e.fecha>=start;}).sort(function(a,b){return a.fecha<b.fecha?-1:(a.fecha>b.fecha?1:0);});
-    renderLegend(up);
-    if(!up.length){ grid.innerHTML='<div style="padding:34px;text-align:center;color:var(--muted)">No hay eventos próximos.</div>'; return; }
-    var byDay={}; up.forEach(function(e){ (byDay[e.fecha]=byDay[e.fecha]||[]).push(e); });
-    grid.innerHTML=Object.keys(byDay).sort().map(function(f){ var d=new Date(f+'T00:00:00');
-      return '<div class="ag-day"><h4>'+DIAS[d.getDay()]+' '+d.getDate()+' de '+MES[d.getMonth()]+' '+d.getFullYear()+'</h4>'+
-        byDay[f].map(function(e){
-          return '<div class="ag-ev"><div class="bar" style="background:'+e.color+'"></div><div class="info">'+
-            '<div class="tt">'+esc(e.titulo)+'</div>'+
-            '<div class="ag-meta">'+(e.ubic?('📍 '+esc(e.ubic)):'')+(e.hora?(' · '+esc(e.hora)):'')+'</div>'+
-            (e.desc?'<div class="ag-desc">'+esc(e.desc)+'</div>':'')+
-          '</div></div>';
-        }).join('')+'</div>';
-    }).join('');
-  }
-  function renderBusqueda(){
+  function renderAgenda(list, ordenDesc){
     var grid=document.getElementById('grid'); grid.classList.add('agenda');
     document.querySelector('.cal-dow').style.display='none'; document.getElementById('cal').classList.remove('week');
-    var res=EVENTS.filter(function(e){ return (e.titulo+' '+e.ubic+' '+e.desc).toLowerCase().indexOf(buscar)>=0; }).sort(function(a,b){return a.fecha<b.fecha?1:(a.fecha>b.fecha?-1:0);});
-    document.getElementById('title').textContent='Búsqueda · '+res.length+' resultado'+(res.length===1?'':'s');
-    renderLegend(res);
-    if(!res.length){ grid.innerHTML='<div style="padding:34px;text-align:center;color:var(--muted)">Sin resultados para «'+esc(buscar)+'».</div>'; return; }
-    var byDay={}; res.forEach(function(e){ (byDay[e.fecha]=byDay[e.fecha]||[]).push(e); });
-    grid.innerHTML=Object.keys(byDay).sort().reverse().map(function(f){ var d=new Date(f+'T00:00:00');
-      return '<div class="ag-day"><h4>'+DIAS[d.getDay()]+' '+d.getDate()+' de '+MES[d.getMonth()]+' '+d.getFullYear()+'</h4>'+
-        byDay[f].map(function(e){ return '<div class="ag-ev" data-goid="'+e.id+'" style="cursor:pointer"><div class="bar" style="background:'+e.color+'"></div><div class="info"><div class="tt">'+esc(e.titulo)+'</div><div class="ag-meta">'+(e.ubic?('📍 '+esc(e.ubic)):'')+(e.hora?(' · '+esc(e.hora)):'')+'</div></div></div>'; }).join('')+'</div>';
+    renderLegend(list);
+    if(!list.length){ grid.innerHTML='<div style="padding:40px;text-align:center;color:var(--muted)">Sin eventos.</div>'; return; }
+    var byDay={}; list.forEach(function(e){ (byDay[e.fecha]=byDay[e.fecha]||[]).push(e); });
+    var keys=Object.keys(byDay).sort(); if(ordenDesc) keys.reverse();
+    var tISO=todayISO();
+    grid.innerHTML=keys.map(function(f){ var d=new Date(f+'T00:00:00'), hoy=(f===tISO);
+      var evs=byDay[f], groups={}, order=[];
+      evs.forEach(function(e){ var kk=(e.ubic||'').trim().toUpperCase()||('#'+e.id); if(!groups[kk]){groups[kk]=[];order.push(kk);} groups[kk].push(e); });
+      var cards=order.map(function(kk){ var g=groups[kk], e0=g[0], ubic=(e0.ubic||'').trim();
+        var head=ubic?(esc(ubic)+(g.length>1?' <span class="ag-cnt">'+g.length+'</span>':'')):esc(e0.titulo);
+        var items=g.map(function(e){ var md=(e.fin&&e.fin>e.fecha)?' <span class="evg-md">⟶</span>':'';
+          return '<div class="ag-item" data-goid="'+e.id+'"><div class="ag-item-tt">'+esc(e.titulo)+md+(e.hora?' <span class="ag-hora">'+esc(e.hora)+'</span>':'')+'</div>'+(e.desc?'<div class="ag-item-desc">'+esc(e.desc)+'</div>':'')+'</div>'; }).join('');
+        return '<div class="ag-ucard" style="border-left-color:'+e0.color+'"><div class="ag-ucard-head"><span class="ag-dot" style="background:'+e0.color+'"></span>'+head+'</div>'+items+'</div>';
+      }).join('');
+      return '<div class="ag-day'+(hoy?' hoy':'')+'"><div class="ag-dhead">'+(hoy?'<span class="ag-hoy-badge">HOY</span> ':'')+'<b>'+DIAS[d.getDay()]+' '+d.getDate()+'</b> de '+MES[d.getMonth()]+' '+d.getFullYear()+'</div>'+cards+'</div>';
     }).join('');
     grid.querySelectorAll('[data-goid]').forEach(function(r){ r.addEventListener('click',function(){ abrir(r.dataset.goid); }); });
   }
+  function renderProximos(){ document.getElementById('title').textContent='Próximos eventos'; var start=todayISO(); renderAgenda(EVENTS.filter(function(e){return e.fecha>=start;}).sort(function(a,b){return a.fecha<b.fecha?-1:(a.fecha>b.fecha?1:0);}), false); }
+  function renderBusqueda(){ var res=EVENTS.filter(function(e){ return (e.titulo+' '+e.ubic+' '+e.desc).toLowerCase().indexOf(buscar)>=0; }).sort(function(a,b){return a.fecha<b.fecha?1:(a.fecha>b.fecha?-1:0);}); document.getElementById('title').textContent='Búsqueda · '+res.length+' resultado'+(res.length===1?'':'s'); renderAgenda(res, true); }
   function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
   function enc(s){ return (s||'').replace(/"/g,'&quot;'); }
 
@@ -411,8 +408,10 @@
 
   // ---- Nuevo / Editar / Eliminar ----
   var editId=null;
+  function poblarUbicaciones(){ var cnt={}; EVENTS.forEach(function(x){ var u=(x.ubic||'').trim(); if(u) cnt[u]=(cnt[u]||0)+1; }); var list=Object.keys(cnt).sort(function(a,b){ return cnt[b]-cnt[a] || (a<b?-1:1); }); var dl=document.getElementById('f-ubic-list'); if(dl) dl.innerHTML=list.map(function(u){ return '<option value="'+enc(u)+'">'+cnt[u]+' trabajos</option>'; }).join(''); }
   function abrirForm(e){
     editId=e?e.id:null;
+    poblarUbicaciones();
     document.getElementById('form-title').textContent=e?'Editar trabajo':'Nuevo trabajo';
     document.getElementById('f-fecha').value=e?e.fecha:todayISO();
     document.getElementById('f-fin').value=e?(e.fin||''):'';
