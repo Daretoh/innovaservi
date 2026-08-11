@@ -75,6 +75,7 @@
   .evg-head:hover{color:var(--orange);}
   .evg-item{display:block;font:500 10px/1.35 var(--font);color:var(--body);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .evg-item:hover{color:var(--orange);}
+  .evg-md{color:var(--orange);font-weight:800;margin-left:3px;}
   .ev-more{font:700 11px var(--font);color:var(--orange-2);cursor:pointer;padding:2px 4px;}
 
   /* Vista semana: filas más altas */
@@ -207,8 +208,9 @@
       <div class="pl-modal-head" style="background:linear-gradient(135deg,#ff6b00,#c24e00)"><h3 id="form-title">Nuevo trabajo</h3><button id="form-close" aria-label="Cerrar">×</button></div>
       <div class="pl-modal-body">
         <div class="fgrid">
-          <label>Fecha<input type="date" id="f-fecha"></label>
-          <label>Hora<input type="text" id="f-hora" placeholder="09:00 - 13:00 o Todo el día"></label>
+          <label>Fecha inicio<input type="date" id="f-fecha"></label>
+          <label>Fecha fin <span style="color:#8b93a7;font-weight:400">(si dura varios días)</span><input type="date" id="f-fin"></label>
+          <label class="full">Hora<input type="text" id="f-hora" placeholder="09:00 - 13:00 o Todo el día"></label>
           <label class="full">Título<input type="text" id="f-titulo" placeholder="Ej: Limpieza estanque"></label>
           <label class="full">Ubicación / Cliente<input type="text" id="f-ubic" placeholder="Ej: CERMAQ"></label>
           <label class="full">Descripción<textarea id="f-desc" rows="4" placeholder="Detalle, materiales, tareas…"></textarea></label>
@@ -238,7 +240,7 @@
   function cargarEventos(cb){
     if(!sb){ if(cb)cb(); return; }
     var all=[], chunk=1000;
-    function finish(){ EVENTS=all.map(function(e){ return { id:e.id, fecha:e.fecha, hora:(/^all\s*day$/i.test(e.hora||'')?'Todo el día':(e.hora||'')), titulo:e.titulo||'', ubic:e.ubicacion||'', color:clienteColor(e.ubicacion), desc:e.descripcion||'' }; }); if(cb)cb(); }
+    function finish(){ EVENTS=all.map(function(e){ return { id:e.id, fecha:e.fecha, fin:e.fecha_fin||'', hora:(/^all\s*day$/i.test(e.hora||'')?'Todo el día':(e.hora||'')), titulo:e.titulo||'', ubic:e.ubicacion||'', color:clienteColor(e.ubicacion), desc:e.descripcion||'' }; }); if(cb)cb(); }
     function fetchFrom(off){
       sb.from('eventos').select('*').order('fecha',{ascending:true}).range(off, off+chunk-1).then(function(r){
         if(r.error){ console.warn('Supabase:',r.error.message); finish(); return; }
@@ -254,7 +256,8 @@
   var vista='mes', buscar='';
   function iso(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
   function todayISO(){ return iso(new Date()); }
-  function evsDe(f){ return EVENTS.filter(function(e){return e.fecha===f;}); }
+  function evFin(e){ return (e.fin && e.fin>=e.fecha)?e.fin:e.fecha; }
+  function evsDe(f){ return EVENTS.filter(function(e){ return e.fecha<=f && f<=evFin(e); }); }
 
   function render(){
     if(buscar){ renderBusqueda(); return; }
@@ -288,8 +291,9 @@
       var max=(vista==='semana')?60:6;
       var evHtml=order.slice(0,max).map(function(k){
         var g=groups[k], e0=g[0], ubic=(e0.ubic||'').trim();
-        var head=ubic?(esc(ubic)+(g.length>1?' · '+g.length:'')):esc(e0.titulo);
-        var items=ubic?g.map(function(e){ return '<span class="evg-item" data-id="'+e.id+'" title="'+enc(e.titulo)+'">'+esc(e.titulo)+'</span>'; }).join(''):'';
+        function md(e){ return (e.fin&&e.fin>e.fecha)?'<span class="evg-md" title="Trabajo de varios días">⟶</span>':''; }
+        var head=ubic?(esc(ubic)+(g.length>1?' · '+g.length:'')):(esc(e0.titulo)+md(e0));
+        var items=ubic?g.map(function(e){ return '<span class="evg-item" data-id="'+e.id+'" title="'+enc(e.titulo)+'">'+esc(e.titulo)+md(e)+'</span>'; }).join(''):'';
         return '<div class="ev-group" style="border-left-color:'+e0.color+'" data-f="'+f+'"><span class="evg-head'+(ubic?'':' plain')+'"'+(ubic?'':' data-id="'+e0.id+'"')+'>'+head+'</span>'+items+'</div>';
       }).join('');
       if(order.length>max) evHtml+='<div class="ev-more" data-f="'+f+'">+'+(order.length-max)+' más</div>';
@@ -343,7 +347,7 @@
     document.getElementById('modal-head').style.background='linear-gradient(135deg,'+e.color+',#0c0f2e)';
     document.getElementById('modal-title').textContent=e.titulo;
     document.getElementById('modal-body').innerHTML=
-      '<div class="row">📅 <b>'+d.getDate()+' de '+MES[d.getMonth()]+' '+d.getFullYear()+'</b>'+(e.hora?' · '+esc(e.hora):'')+'</div>'+
+      '<div class="row">📅 <b>'+(function(){ if(e.fin&&e.fin>e.fecha){ var d2=new Date(e.fin+'T00:00:00'); var n=Math.round((new Date(e.fin)-new Date(e.fecha))/86400000)+1; return 'Del '+d.getDate()+' '+MES[d.getMonth()].slice(0,3)+' al '+d2.getDate()+' '+MES[d2.getMonth()].slice(0,3)+' '+d2.getFullYear()+' · '+n+' días'; } return d.getDate()+' de '+MES[d.getMonth()]+' '+d.getFullYear(); })()+'</b>'+(e.hora?' · '+esc(e.hora):'')+'</div>'+
       (e.ubic?'<div class="row">📍 Cliente: <span class="cat-chip" style="background:'+e.color+'">'+esc(e.ubic)+'</span></div>':'')+
       (e.desc?'<div class="pl-desc">'+esc(e.desc)+'</div>':'')+
       (authed?'<div class="fbtns" style="margin-top:14px"><button class="pl-del-btn" id="det-del">Eliminar</button><button class="pl-add" id="det-edit">✎ Editar</button></div>':'');
@@ -411,6 +415,7 @@
     editId=e?e.id:null;
     document.getElementById('form-title').textContent=e?'Editar trabajo':'Nuevo trabajo';
     document.getElementById('f-fecha').value=e?e.fecha:todayISO();
+    document.getElementById('f-fin').value=e?(e.fin||''):'';
     document.getElementById('f-hora').value=e?(e.hora||''):'';
     document.getElementById('f-titulo').value=e?e.titulo:'';
     document.getElementById('f-ubic').value=e?(e.ubic||''):'';
@@ -422,7 +427,8 @@
   formModal.addEventListener('click',function(ev){ if(ev.target===formModal) formModal.classList.remove('show'); });
   document.getElementById('f-save').addEventListener('click',function(){
     if(!sb) return;
-    var row={ fecha:document.getElementById('f-fecha').value, hora:document.getElementById('f-hora').value.trim(),
+    var _fi=document.getElementById('f-fecha').value, _ff=document.getElementById('f-fin').value;
+    var row={ fecha:_fi, fecha_fin:(_ff && _ff>=_fi)?_ff:null, hora:document.getElementById('f-hora').value.trim(),
       titulo:document.getElementById('f-titulo').value.trim(), ubicacion:document.getElementById('f-ubic').value.trim(),
       categoria:'Trabajo', descripcion:document.getElementById('f-desc').value };
     if(!row.fecha||!row.titulo){ alert('Fecha y título son obligatorios.'); return; }
