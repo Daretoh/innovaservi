@@ -221,6 +221,12 @@
           <label class="full">Ubicación / Cliente<input type="text" id="f-ubic" list="f-ubic-list" placeholder="Ej: CERMAQ (elige o escribe)"></label>
           <datalist id="f-ubic-list"></datalist>
           <label class="full">Descripción<textarea id="f-desc" rows="4" placeholder="Detalle, materiales, tareas…"></textarea></label>
+          <label class="full" id="f-rep-row">Repetir <span style="color:#8b93a7;font-weight:400">(solo al crear)</span>
+            <div style="display:flex;gap:8px;margin-top:4px">
+              <select id="f-repetir" style="flex:1"><option value="no">No repetir</option><option value="semana">Cada semana</option><option value="quincena">Cada 2 semanas</option><option value="mes">Cada mes</option></select>
+              <input type="number" id="f-veces" min="2" max="52" value="4" style="width:96px;display:none" title="Cuántas veces en total" placeholder="veces">
+            </div>
+          </label>
         </div>
         <div class="fbtns"><button class="pl-del-btn" id="f-del" style="display:none">Eliminar</button><button class="pl-add" id="f-save">Guardar</button></div>
       </div>
@@ -247,7 +253,7 @@
   function cargarEventos(cb){
     if(!sb){ if(cb)cb(); return; }
     var all=[], chunk=1000;
-    function finish(){ EVENTS=all.map(function(e){ return { id:e.id, fecha:e.fecha, fin:e.fecha_fin||'', hora:(/^all\s*day$/i.test(e.hora||'')?'Todo el día':(e.hora||'')), titulo:e.titulo||'', ubic:e.ubicacion||'', color:clienteColor(e.ubicacion), desc:e.descripcion||'' }; }); if(cb)cb(); }
+    function finish(){ EVENTS=all.map(function(e){ return { id:e.id, fecha:e.fecha, fin:e.fecha_fin||'', serie:e.serie_id||'', hora:(/^all\s*day$/i.test(e.hora||'')?'Todo el día':(e.hora||'')), titulo:e.titulo||'', ubic:e.ubicacion||'', color:clienteColor(e.ubicacion), desc:e.descripcion||'' }; }); if(cb)cb(); }
     function fetchFrom(off){
       sb.from('eventos').select('*').order('fecha',{ascending:true}).range(off, off+chunk-1).then(function(r){
         if(r.error){ console.warn('Supabase:',r.error.message); finish(); return; }
@@ -420,6 +426,8 @@
     document.getElementById('f-ubic').value=e?(e.ubic||''):'';
     document.getElementById('f-desc').value=e?(e.desc||''):'';
     document.getElementById('f-del').style.display=e?'':'none';
+    document.getElementById('f-rep-row').style.display=e?'none':'';
+    document.getElementById('f-repetir').value='no'; document.getElementById('f-veces').style.display='none';
     formModal.classList.add('show'); document.getElementById('f-titulo').focus();
   }
   document.getElementById('form-close').addEventListener('click',function(){ formModal.classList.remove('show'); });
@@ -431,11 +439,27 @@
       titulo:document.getElementById('f-titulo').value.trim(), ubicacion:document.getElementById('f-ubic').value.trim(),
       categoria:'Trabajo', descripcion:document.getElementById('f-desc').value };
     if(!row.fecha||!row.titulo){ alert('Fecha y título son obligatorios.'); return; }
+    var repetir=document.getElementById('f-repetir').value, veces=Math.min(parseInt(document.getElementById('f-veces').value,10)||0, 52);
+    if(!editId && repetir!=='no' && veces>1){
+      var serie='s'+Date.now(), rows=[], base=new Date(_fi+'T00:00:00');
+      var dur=row.fecha_fin?Math.round((new Date(row.fecha_fin+'T00:00:00')-base)/86400000):0;
+      for(var i=0;i<veces;i++){ var fd=new Date(base);
+        if(repetir==='semana') fd.setDate(fd.getDate()+7*i); else if(repetir==='quincena') fd.setDate(fd.getDate()+14*i); else if(repetir==='mes') fd.setMonth(fd.getMonth()+i);
+        var fe=new Date(fd); if(dur) fe.setDate(fe.getDate()+dur);
+        rows.push({ fecha:iso(fd), fecha_fin:dur?iso(fe):null, hora:row.hora, titulo:row.titulo, ubicacion:row.ubicacion, categoria:'Trabajo', descripcion:row.descripcion, serie_id:serie });
+      }
+      sb.from('eventos').insert(rows).then(function(r){ if(r.error){ alert('No se pudo guardar la serie: '+r.error.message); return; } formModal.classList.remove('show'); cargarEventos(render); });
+      return;
+    }
     var q = editId ? sb.from('eventos').update(row).eq('id',editId) : sb.from('eventos').insert(row);
     q.then(function(r){ if(r.error){ alert('No se pudo guardar: '+r.error.message); return; } formModal.classList.remove('show'); cargarEventos(render); });
   });
-  document.getElementById('f-del').addEventListener('click',function(){ if(editId && confirm('¿Eliminar este trabajo?')) eliminarEvento(editId); });
+  document.getElementById('f-repetir').addEventListener('change',function(){ document.getElementById('f-veces').style.display=(this.value==='no')?'none':''; });
+  document.getElementById('f-del').addEventListener('click',function(){ if(!editId) return; var ev=EVENTS.filter(function(x){return String(x.id)===String(editId);})[0];
+    if(ev && ev.serie){ var q=confirm('Este trabajo es parte de una serie repetida.\n\nAceptar = eliminar TODA la serie.\nCancelar = eliminar solo este.'); if(q){ eliminarSerie(ev.serie); return; } }
+    if(confirm('¿Eliminar este trabajo?')) eliminarEvento(editId); });
   function eliminarEvento(id){ if(!sb) return; sb.from('eventos').delete().eq('id',id).then(function(r){ if(r.error){ alert('No se pudo eliminar.'); return; } formModal.classList.remove('show'); modal.classList.remove('show'); cargarEventos(render); }); }
+  function eliminarSerie(serie){ if(!sb) return; sb.from('eventos').delete().eq('serie_id',serie).then(function(r){ if(r.error){ alert('No se pudo eliminar la serie.'); return; } formModal.classList.remove('show'); modal.classList.remove('show'); cargarEventos(render); }); }
 
   document.getElementById('add').addEventListener('click',function(){
     if(!authed){ return; }
