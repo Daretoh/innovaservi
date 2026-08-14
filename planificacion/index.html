@@ -224,7 +224,7 @@
           <label class="full">Descripción<textarea id="f-desc" rows="4" placeholder="Detalle, materiales, tareas…"></textarea></label>
           <label class="full" id="f-rep-row">Repetir <span style="color:#8b93a7;font-weight:400">(solo al crear)</span>
             <div style="display:flex;gap:8px;margin-top:4px">
-              <select id="f-repetir" style="flex:1"><option value="no">No repetir</option><option value="semana">Cada semana</option><option value="quincena">Cada 2 semanas</option><option value="mes">Cada mes</option></select>
+              <select id="f-repetir" style="flex:1"><option value="no">No repetir</option><option value="dia">Cada día</option><option value="semana">Cada semana</option><option value="quincena">Cada 2 semanas</option><option value="mes">Cada mes</option></select>
               <input type="number" id="f-veces" min="2" max="52" value="4" style="width:96px;display:none" title="Cuántas veces en total" placeholder="veces">
             </div>
           </label>
@@ -317,7 +317,7 @@
     grid.querySelectorAll('.evg-head').forEach(function(b){ b.addEventListener('click',function(ev){ ev.stopPropagation(); if(b.dataset.id) abrir(b.dataset.id); else abrirDiaUbic(b.dataset.f, b.dataset.ubic); }); });
     grid.querySelectorAll('.ev-more').forEach(function(b){ b.addEventListener('click',function(ev){ ev.stopPropagation(); abrirDia(b.dataset.f); }); });
     grid.querySelectorAll('.dnum').forEach(function(b){ b.addEventListener('click',function(ev){ ev.stopPropagation(); var f=b.dataset.f; if(evsDe(f).length) abrirDia(f); else nuevoEn(f); }); });
-    grid.querySelectorAll('.cell').forEach(function(cell){ cell.addEventListener('click',function(ev){ if(ev.target.closest('.ev-group')||ev.target.closest('.ev-more')||ev.target.closest('.dnum')) return; nuevoEn(cell.dataset.f); }); });
+    grid.querySelectorAll('.cell').forEach(function(cell){ cell.addEventListener('click',function(ev){ if(ev.target.closest('.ev-group')||ev.target.closest('.ev-more')||ev.target.closest('.dnum')) return; var f=cell.dataset.f; if(evsDe(f).length) abrirDia(f); else nuevoEn(f); }); });
   }
   var DIAS=['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
   function renderAgenda(list, ordenDesc){
@@ -335,7 +335,7 @@
         var head=ubic?(esc(ubic)+(g.length>1?' <span class="ag-cnt">'+g.length+'</span>':'')):esc(e0.titulo);
         var items=g.map(function(e){ var md=(e.fin&&e.fin>e.fecha)?' <span class="evg-md">⟶</span>':'';
           return '<div class="ag-item" data-goid="'+e.id+'"><div class="ag-item-tt">'+esc(e.titulo)+md+(e.hora?' <span class="ag-hora">'+esc(e.hora)+'</span>':'')+'</div>'+(e.desc?'<div class="ag-item-desc">'+esc(e.desc)+'</div>':'')+'</div>'; }).join('');
-        return '<div class="ag-ucard" style="border-left-color:'+e0.color+'"><div class="ag-ucard-head"><span class="ag-dot" style="background:'+e0.color+'"></span>'+head+'</div>'+items+'</div>';
+        return '<div class="ag-ucard" style="border-left-color:'+e0.color+';background:linear-gradient(100deg, color-mix(in srgb, '+e0.color+' 15%, #fff), #fff 60%)"><div class="ag-ucard-head" style="color:'+e0.color+'"><span class="ag-dot" style="background:'+e0.color+'"></span>'+head+'</div>'+items+'</div>';
       }).join('');
       return '<div class="ag-day'+(hoy?' hoy':'')+'"><div class="ag-dhead">'+(hoy?'<span class="ag-hoy-badge">HOY</span> ':'')+'<b>'+DIAS[d.getDay()]+' '+d.getDate()+'</b> de '+MES[d.getMonth()]+' '+d.getFullYear()+'</div>'+cards+'</div>';
     }).join('');
@@ -460,7 +460,7 @@
       var serie='s'+Date.now(), rows=[], base=new Date(_fi+'T00:00:00');
       var dur=row.fecha_fin?Math.round((new Date(row.fecha_fin+'T00:00:00')-base)/86400000):0;
       for(var i=0;i<veces;i++){ var fd=new Date(base);
-        if(repetir==='semana') fd.setDate(fd.getDate()+7*i); else if(repetir==='quincena') fd.setDate(fd.getDate()+14*i); else if(repetir==='mes') fd.setMonth(fd.getMonth()+i);
+        if(repetir==='dia') fd.setDate(fd.getDate()+i); else if(repetir==='semana') fd.setDate(fd.getDate()+7*i); else if(repetir==='quincena') fd.setDate(fd.getDate()+14*i); else if(repetir==='mes') fd.setMonth(fd.getMonth()+i);
         var fe=new Date(fd); if(dur) fe.setDate(fe.getDate()+dur);
         rows.push({ fecha:iso(fd), fecha_fin:dur?iso(fe):null, hora:row.hora, titulo:row.titulo, ubicacion:row.ubicacion, categoria:'Trabajo', descripcion:row.descripcion, serie_id:serie });
       }
