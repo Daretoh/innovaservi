@@ -7,7 +7,7 @@
 -- 1) REPORTES (fotos/videos + datos del trabajo) ------------
 create table if not exists public.reportes (
   id          bigserial primary key,
-  evento_id   bigint references public.eventos(id) on delete set null,
+  evento_id   uuid references public.eventos(id) on delete set null,
   empresa     text,
   lugar       text,
   fecha       date not null default current_date,
@@ -22,7 +22,7 @@ create index if not exists reportes_evento_idx on public.reportes (evento_id);
 -- 2) HORAS (registro por trabajador, entrada/salida) --------
 create table if not exists public.horas (
   id          bigserial primary key,
-  evento_id   bigint references public.eventos(id) on delete set null,
+  evento_id   uuid references public.eventos(id) on delete set null,
   trabajador  text not null,
   empresa     text,
   lugar       text,
