@@ -138,6 +138,7 @@
   .job .a{font:700 14px var(--font);color:var(--ink);}
   .job .b{font-size:.8rem;color:var(--muted);margin-top:1px;}
   .job.manual{color:var(--orange-2);font-weight:700;}
+  .job.hoy{background:rgba(255,107,0,.06);border-radius:9px;}
 
   /* Toast + overlay */
   #toast{position:fixed;left:50%;bottom:calc(84px + var(--safe-b));transform:translateX(-50%);background:var(--deep);color:#fff;
@@ -319,13 +320,15 @@
     $('r-fecha').value=todayISO(); $('h-fecha').value=todayISO();
     cargarEventos();
   }
+  function isoMas(dias){ var d=new Date(); d.setDate(d.getDate()+dias); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
   function cargarEventos(){
     if(!sb)return;
-    // trabajos recientes y próximos (para asociar reportes/horas)
-    var desde=new Date(); desde.setDate(desde.getDate()-45); var d=desde.getFullYear()+'-'+String(desde.getMonth()+1).padStart(2,'0')+'-'+String(desde.getDate()).padStart(2,'0');
-    sb.from('eventos').select('id,fecha,titulo,ubicacion,descripcion').gte('fecha',d).order('fecha',{ascending:false}).limit(400)
+    // ventana alrededor de hoy (para asociar reportes/horas), luego se ordena por cercanía
+    sb.from('eventos').select('id,fecha,titulo,ubicacion,descripcion').gte('fecha',isoMas(-30)).lte('fecha',isoMas(180)).order('fecha',{ascending:true}).limit(600)
       .then(function(r){ EVENTOS=(r&&r.data)||[]; });
   }
+  function diffDias(f){ if(!f)return 99999; var d=new Date(f+'T00:00:00'), t=new Date(todayISO()+'T00:00:00'); return Math.round((d-t)/86400000); }
+  function etiquetaDia(f){ var n=diffDias(f); if(n===0)return 'HOY'; if(n===1)return 'Mañana'; if(n===-1)return 'Ayer'; return fechaCorta(f); }
 
   // ====== Navegación (tabs) ======
   document.querySelectorAll('.tabbar button').forEach(function(b){ b.addEventListener('click',function(){
@@ -343,9 +346,16 @@
   document.querySelectorAll('.job-pick').forEach(function(p){ p.addEventListener('click',function(){ abrirSheet(p.dataset.for); }); });
   $('job-search').addEventListener('input',function(){ pintarJobs(this.value.trim().toLowerCase()); });
   function pintarJobs(q){
-    var list=$('job-list'); var items='<div class="job manual" data-manual="1">✎ Sin trabajo (llenar manual)</div>';
-    var evs=EVENTOS.filter(function(e){ if(!q)return true; return ((e.titulo||'')+' '+(e.ubicacion||'')).toLowerCase().indexOf(q)>=0; }).slice(0,120);
-    items+=evs.map(function(e){ return '<div class="job" data-id="'+e.id+'"><div class="a">'+esc(e.ubicacion||e.titulo||'Trabajo')+'</div><div class="b">'+esc(e.titulo||'')+' · '+fechaCorta(e.fecha)+'</div></div>'; }).join('');
+    var list=$('job-list');
+    var evs=EVENTOS.filter(function(e){ if(!q)return true; return ((e.titulo||'')+' '+(e.ubicacion||'')).toLowerCase().indexOf(q)>=0; });
+    // ordenar por fecha más cercana a hoy (hoy primero; empate → futuro antes que pasado)
+    evs.sort(function(a,b){ var da=diffDias(a.fecha), db=diffDias(b.fecha), aa=Math.abs(da), ab=Math.abs(db);
+      if(aa!==ab) return aa-ab; if((da<0)!==(db<0)) return da<0?1:-1; return 0; });
+    evs=evs.slice(0,120);
+    var items='<div class="job manual" data-manual="1">✎ Sin trabajo (llenar manual)</div>';
+    items+=evs.map(function(e){ var n=diffDias(e.fecha), hoy=(n===0);
+      var badge=hoy?'<span style="background:var(--orange);color:#fff;font-size:.62rem;font-weight:800;padding:1px 7px;border-radius:999px;margin-right:6px;letter-spacing:.04em">HOY</span>':'';
+      return '<div class="job'+(hoy?' hoy':'')+'" data-id="'+e.id+'"><div class="a">'+badge+esc(e.ubicacion||e.titulo||'Trabajo')+'</div><div class="b">'+esc(e.titulo||'')+' · '+etiquetaDia(e.fecha)+'</div></div>'; }).join('');
     list.innerHTML=items;
     list.querySelectorAll('.job').forEach(function(j){ j.addEventListener('click',function(){
       if(j.dataset.manual){ elegirJob(sheetFor,null); } else { var e=EVENTOS.filter(function(x){return String(x.id)===String(j.dataset.id);})[0]; elegirJob(sheetFor,e); }
