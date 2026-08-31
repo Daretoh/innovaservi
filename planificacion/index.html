@@ -400,11 +400,29 @@
     document.getElementById('auth-label').textContent = authed ? userEmail : '';
     document.getElementById('authbtn').textContent = authed ? 'Salir' : 'Iniciar sesión';
   }
+  // Solo estos correos (supervisores/admin) pueden abrir Planificación.
+  // Vacío = sin restricción (todos los logueados entran, como antes).
+  var ADMIN_EMAILS=[
+    // 'correo1@innovaservi.cl', 'correo2@innovaservi.cl', 'correo3@innovaservi.cl'
+  ];
+  function isAdmin(e){ if(!ADMIN_EMAILS.length) return true; return ADMIN_EMAILS.indexOf((e||'').trim().toLowerCase())>=0; }
+  function mostrarSoloSupervisores(){
+    var g=document.querySelector('.pl-gate-card'); if(!g) return;
+    g.innerHTML='<img class="gate-logo" src="../assets/images/InnovaServi-completo.png" alt="Innova Servi" onerror="this.style.display=\'none\'">'+
+      '<p class="gate-sub" style="margin-bottom:14px">Acceso restringido</p>'+
+      '<p style="color:#4a5270;font-size:.92rem;line-height:1.6;margin-bottom:20px">Esta sección (Planificación) es solo para supervisores.<br>Usa la <b>app de reportes</b> para subir fotos, videos y horas.</p>'+
+      '<a href="../app/" class="pl-add" style="display:block;text-decoration:none;margin-bottom:10px">Abrir app de reportes</a>'+
+      '<button id="na-out" class="pl-today" style="width:100%">Cerrar sesión</button>';
+    var b=document.getElementById('na-out'); if(b) b.addEventListener('click',function(){ if(sb) sb.auth.signOut().then(function(){ location.reload(); }); else location.reload(); });
+  }
   var loaded=false;
   function applyLock(){
-    if(authed){
+    if(authed && isAdmin(userEmail)){
       document.body.classList.remove('locked');
       if(!loaded){ loaded=true; render(); cargarEventos(render); }
+    } else if(authed){
+      document.body.classList.add('locked');   // logueado pero NO es supervisor
+      mostrarSoloSupervisores();
     } else {
       document.body.classList.add('locked');
     }
