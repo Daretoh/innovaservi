@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1" />
+<meta name="theme-color" content="#ff6b00" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="InnovaServi" />
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+<title>InnovaServi · Reportes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --orange:#ff6b00; --orange-2:#c24e00; --navy:#1a1f6e; --deep:#0c0f2e;
+    --ink:#1b1f4d; --body:#4a5270; --muted:#8b93a7; --line:#e6e8f2; --alt:#f5f6fb; --white:#fff;
+    --ok:#22a06b; --bad:#dc2626;
+    --font:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    --safe-b:env(safe-area-inset-bottom,0px); --safe-t:env(safe-area-inset-top,0px);
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{font-family:var(--font);background:var(--alt);color:var(--body);-webkit-font-smoothing:antialiased;overscroll-behavior-y:none;}
+  input,textarea,select,button{font-family:inherit;}
+  .hide{display:none !important;}
+
+  /* ---------- Login ---------- */
+  #gate{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:26px 22px;
+    background:linear-gradient(160deg,#12163f 0%,#1a1f6e 60%,#ff6b00 220%);}
+  .gate-card{width:100%;max-width:360px;background:#fff;border-radius:22px;padding:34px 26px 28px;text-align:center;
+    box-shadow:0 30px 70px -24px rgba(0,0,0,.5);}
+  .gate-logo{width:120px;height:120px;margin:0 auto 6px;display:block;object-fit:contain;}
+  .gate-card h1{font-size:1.15rem;color:var(--ink);font-weight:800;margin-bottom:2px;}
+  .gate-card .sub{font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:22px;}
+  .fld{text-align:left;margin-bottom:13px;}
+  .fld label{display:block;font:600 12px var(--font);color:var(--ink);margin-bottom:5px;}
+  .fld input,.fld textarea,.fld select{width:100%;font:500 16px var(--font);padding:12px 13px;border:1px solid var(--line);
+    border-radius:12px;background:var(--alt);color:var(--ink);}
+  .fld input:focus,.fld textarea:focus,.fld select:focus{outline:none;border-color:var(--orange);background:#fff;box-shadow:0 0 0 3px rgba(255,107,0,.15);}
+  .fld textarea{resize:vertical;min-height:84px;}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;background:var(--orange);color:#fff;border:none;
+    padding:14px 18px;border-radius:13px;font:800 15px var(--font);cursor:pointer;box-shadow:0 12px 26px -12px rgba(255,107,0,.7);}
+  .btn:active{transform:translateY(1px);}
+  .btn[disabled]{opacity:.55;box-shadow:none;}
+  .btn.ghost{background:#fff;color:var(--ink);border:1px solid var(--line);box-shadow:none;}
+  .btn.small{width:auto;padding:9px 14px;font-size:13px;border-radius:11px;}
+  .msg{font-size:.83rem;margin-top:10px;min-height:1em;}
+  .msg.err{color:var(--bad);} .msg.ok{color:var(--ok);}
+
+  /* ---------- App shell ---------- */
+  #app{display:flex;flex-direction:column;min-height:100vh;}
+  .topbar{position:sticky;top:0;z-index:20;background:linear-gradient(135deg,#e05e00,#ff6b00 70%);color:#fff;
+    padding:calc(12px + var(--safe-t)) 16px 12px;display:flex;align-items:center;justify-content:space-between;gap:10px;
+    box-shadow:0 6px 18px -10px rgba(0,0,0,.4);}
+  .topbar .tt{display:flex;align-items:center;gap:9px;}
+  .topbar .tt img{width:30px;height:30px;background:#fff;border-radius:8px;padding:3px;object-fit:contain;}
+  .topbar .tt b{font-weight:800;font-size:1.02rem;letter-spacing:.2px;}
+  .topbar .who{font-size:.7rem;opacity:.9;}
+  .topbar .out{background:rgba(255,255,255,.18);border:none;color:#fff;font:700 12px var(--font);padding:7px 12px;border-radius:999px;cursor:pointer;}
+
+  main{flex:1;padding:16px 14px calc(96px + var(--safe-b));max-width:640px;width:100%;margin:0 auto;}
+  .view{display:none;} .view.on{display:block;animation:fade .18s ease;}
+  @keyframes fade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+
+  .h-row{display:flex;align-items:center;justify-content:space-between;margin:2px 2px 14px;}
+  .h-row h2{font-size:1.28rem;color:var(--ink);font-weight:800;}
+  .h-row .cnt{font-size:.76rem;color:var(--muted);font-weight:600;}
+
+  .card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:15px 15px 16px;margin-bottom:13px;
+    box-shadow:0 10px 30px -24px rgba(26,31,110,.5);}
+  .card .fld:last-child{margin-bottom:0;}
+
+  /* Selector de trabajo */
+  .job-pick{border:1px dashed var(--line);border-radius:13px;padding:12px 13px;background:var(--alt);cursor:pointer;
+    display:flex;align-items:center;gap:11px;}
+  .job-pick .ico{width:34px;height:34px;border-radius:9px;background:rgba(255,107,0,.13);color:var(--orange);
+    display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+  .job-pick .t{flex:1;min-width:0;}
+  .job-pick .t .a{font:700 13.5px var(--font);color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .job-pick .t .b{font-size:.78rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .job-pick .chev{color:var(--muted);font-size:20px;}
+  .job-clear{color:var(--bad);font-size:.8rem;font-weight:700;background:none;border:none;cursor:pointer;padding:6px 2px 0;}
+
+  /* Media picker */
+  .media-add{display:flex;gap:10px;}
+  .media-btn{flex:1;border:1px solid var(--line);background:var(--alt);border-radius:13px;padding:16px 8px;cursor:pointer;
+    display:flex;flex-direction:column;align-items:center;gap:6px;color:var(--ink);font:700 12.5px var(--font);}
+  .media-btn .em{font-size:24px;}
+  .media-btn:active{border-color:var(--orange);}
+  .thumbs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px;}
+  .thumb{position:relative;aspect-ratio:1;border-radius:11px;overflow:hidden;background:#000;border:1px solid var(--line);}
+  .thumb img,.thumb video{width:100%;height:100%;object-fit:cover;display:block;}
+  .thumb .vbadge{position:absolute;left:5px;bottom:5px;background:rgba(0,0,0,.6);color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:6px;}
+  .thumb .rm{position:absolute;top:4px;right:4px;width:23px;height:23px;border-radius:50%;background:rgba(0,0,0,.62);color:#fff;
+    border:none;font-size:14px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:11px;}
+
+  /* Lista historial */
+  .item{background:#fff;border:1px solid var(--line);border-left:4px solid var(--orange);border-radius:13px;padding:12px 14px;margin-bottom:10px;}
+  .item .top{display:flex;justify-content:space-between;gap:10px;align-items:baseline;}
+  .item .emp{font:800 14px var(--font);color:var(--ink);}
+  .item .dt{font-size:.74rem;color:var(--muted);white-space:nowrap;}
+  .item .lug{font-size:.83rem;color:var(--body);margin-top:1px;}
+  .item .no{font-size:.83rem;color:var(--muted);margin-top:5px;white-space:pre-line;}
+  .item .mini{display:flex;gap:5px;margin-top:9px;flex-wrap:wrap;}
+  .item .mini img,.item .mini .vv{width:46px;height:46px;border-radius:8px;object-fit:cover;background:#000;border:1px solid var(--line);}
+  .item .vv{display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;}
+  .item .pill{display:inline-block;font-size:.72rem;font-weight:700;color:var(--orange-2);background:rgba(255,107,0,.1);padding:2px 9px;border-radius:999px;}
+  .empty{text-align:center;color:var(--muted);padding:46px 20px;font-size:.9rem;}
+  .empty .big{font-size:40px;margin-bottom:8px;}
+
+  /* Bottom nav */
+  .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:30;background:#fff;border-top:1px solid var(--line);
+    display:grid;grid-template-columns:repeat(3,1fr);padding-bottom:var(--safe-b);
+    box-shadow:0 -8px 24px -18px rgba(0,0,0,.4);}
+  .tabbar button{background:none;border:none;padding:9px 4px 7px;display:flex;flex-direction:column;align-items:center;gap:3px;
+    color:var(--muted);font:700 10.5px var(--font);cursor:pointer;}
+  .tabbar button .em{font-size:20px;line-height:1;}
+  .tabbar button.on{color:var(--orange);}
+
+  /* Sheet (selector trabajo) */
+  .sheet{position:fixed;inset:0;z-index:60;display:none;}
+  .sheet.show{display:block;}
+  .sheet .bg{position:absolute;inset:0;background:rgba(12,15,46,.5);}
+  .sheet .panel{position:absolute;left:0;right:0;bottom:0;max-height:82vh;background:#fff;border-radius:20px 20px 0 0;
+    padding:14px 16px calc(18px + var(--safe-b));display:flex;flex-direction:column;animation:up .22s ease;}
+  @keyframes up{from{transform:translateY(100%);}to{transform:none;}}
+  .sheet .grab{width:40px;height:4px;border-radius:99px;background:var(--line);margin:2px auto 12px;}
+  .sheet h3{font-size:1.05rem;color:var(--ink);font-weight:800;margin-bottom:10px;}
+  .sheet input.search{width:100%;font:500 15px var(--font);padding:11px 13px;border:1px solid var(--line);border-radius:12px;background:var(--alt);margin-bottom:10px;}
+  .sheet .list{overflow-y:auto;-webkit-overflow-scrolling:touch;}
+  .job{padding:12px 6px;border-bottom:1px solid var(--line);cursor:pointer;}
+  .job .a{font:700 14px var(--font);color:var(--ink);}
+  .job .b{font-size:.8rem;color:var(--muted);margin-top:1px;}
+  .job.manual{color:var(--orange-2);font-weight:700;}
+
+  /* Toast + overlay */
+  #toast{position:fixed;left:50%;bottom:calc(84px + var(--safe-b));transform:translateX(-50%);background:var(--deep);color:#fff;
+    padding:11px 18px;border-radius:12px;font:600 13.5px var(--font);z-index:90;opacity:0;pointer-events:none;transition:.25s;max-width:90vw;text-align:center;}
+  #toast.show{opacity:1;}
+  #busy{position:fixed;inset:0;z-index:80;background:rgba(255,255,255,.82);display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;}
+  #busy.show{display:flex;}
+  .spin{width:44px;height:44px;border:4px solid var(--line);border-top-color:var(--orange);border-radius:50%;animation:sp .8s linear infinite;}
+  @keyframes sp{to{transform:rotate(360deg);}}
+  #busy .bt{font:700 14px var(--font);color:var(--ink);}
+  .bar{width:200px;max-width:70vw;height:7px;background:var(--line);border-radius:99px;overflow:hidden;}
+  .bar i{display:block;height:100%;width:0;background:var(--orange);transition:width .2s;}
+  .note{font-size:.78rem;color:var(--muted);margin:2px 2px 12px;line-height:1.5;}
+  .warnbar{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;font-size:.78rem;padding:9px 12px;border-radius:11px;margin-bottom:12px;line-height:1.45;}
+</style>
+</head>
+<body>
+
+<!-- ============ LOGIN ============ -->
+<div id="gate">
+  <div class="gate-card">
+    <img class="gate-logo" src="../assets/images/InnovaLOGO.png" alt="InnovaServi" onerror="this.style.display='none'">
+    <h1>InnovaServi</h1>
+    <div class="sub">Reportes de trabajo</div>
+    <div class="fld"><label>Correo</label><input type="email" id="l-email" autocomplete="username" inputmode="email"></div>
+    <div class="fld"><label>Contraseña</label><input type="password" id="l-pass" autocomplete="current-password"></div>
+    <button class="btn" id="l-btn">Entrar</button>
+    <div class="msg err" id="l-msg"></div>
+  </div>
+</div>
+
+<!-- ============ APP ============ -->
+<div id="app" class="hide">
+  <div class="topbar">
+    <div class="tt"><img src="../assets/images/InnovaLOGO.png" alt="" onerror="this.style.display='none'"><div><b>Reportes</b><div class="who" id="who"></div></div></div>
+    <button class="out" id="out">Salir</button>
+  </div>
+
+  <main>
+    <!-- ---- NUEVO REPORTE ---- -->
+    <section class="view on" id="v-reporte">
+      <div class="h-row"><h2>Nuevo reporte</h2></div>
+      <div id="r-warn" class="warnbar hide"></div>
+      <div class="card">
+        <div class="fld">
+          <label>Trabajo del calendario <span style="color:var(--muted);font-weight:400">(opcional)</span></label>
+          <div class="job-pick" data-for="r"><div class="ico">📋</div><div class="t"><div class="a" id="r-job-a">Elegir trabajo…</div><div class="b" id="r-job-b">o llénalo manual abajo</div></div><div class="chev">›</div></div>
+          <button class="job-clear hide" id="r-job-clear">✕ Quitar trabajo</button>
+        </div>
+        <div class="grid2">
+          <div class="fld"><label>Empresa / Cliente</label><input type="text" id="r-empresa" placeholder="Ej: CERMAQ"></div>
+          <div class="fld"><label>Fecha</label><input type="date" id="r-fecha"></div>
+        </div>
+        <div class="fld"><label>Lugar</label><input type="text" id="r-lugar" placeholder="Ej: Planta / módulo / dirección"></div>
+        <div class="fld"><label>Notas / observaciones</label><textarea id="r-notas" placeholder="Detalle del trabajo, materiales, pendientes…"></textarea></div>
+      </div>
+
+      <div class="card">
+        <label style="display:block;font:700 13px var(--font);color:var(--ink);margin-bottom:10px;">Fotos y videos</label>
+        <div class="media-add">
+          <label class="media-btn"><span class="em">📷</span>Tomar foto<input type="file" id="r-cam" accept="image/*" capture="environment" multiple hidden></label>
+          <label class="media-btn"><span class="em">🎥</span>Grabar video<input type="file" id="r-vid" accept="video/*" capture="environment" hidden></label>
+          <label class="media-btn"><span class="em">🖼️</span>Galería<input type="file" id="r-gal" accept="image/*,video/*" multiple hidden></label>
+        </div>
+        <div class="thumbs" id="r-thumbs"></div>
+      </div>
+
+      <button class="btn" id="r-save">Guardar reporte</button>
+      <p class="note">Las fotos se guardan ordenadas por empresa y fecha, con nombre tipo <b>EMPRESA_FECHA_1.jpg</b>.</p>
+    </section>
+
+    <!-- ---- HORAS ---- -->
+    <section class="view" id="v-horas">
+      <div class="h-row"><h2>Registrar horas</h2></div>
+      <div class="card">
+        <div class="fld">
+          <label>Trabajo del calendario <span style="color:var(--muted);font-weight:400">(opcional)</span></label>
+          <div class="job-pick" data-for="h"><div class="ico">📋</div><div class="t"><div class="a" id="h-job-a">Elegir trabajo…</div><div class="b" id="h-job-b">o llénalo manual abajo</div></div><div class="chev">›</div></div>
+          <button class="job-clear hide" id="h-job-clear">✕ Quitar trabajo</button>
+        </div>
+        <div class="fld"><label>Trabajador</label><input type="text" id="h-trab" placeholder="Nombre del trabajador"></div>
+        <div class="grid2">
+          <div class="fld"><label>Empresa / Cliente</label><input type="text" id="h-empresa" placeholder="Ej: CERMAQ"></div>
+          <div class="fld"><label>Fecha</label><input type="date" id="h-fecha"></div>
+        </div>
+        <div class="grid2">
+          <div class="fld"><label>Hora entrada</label><input type="time" id="h-in"></div>
+          <div class="fld"><label>Hora salida</label><input type="time" id="h-out"></div>
+        </div>
+        <div class="fld"><label>Lugar</label><input type="text" id="h-lugar" placeholder="Ej: Planta / módulo"></div>
+        <div class="fld"><label>Notas / observaciones</label><textarea id="h-notas" placeholder="Observaciones del turno…"></textarea></div>
+        <div id="h-total" class="note hide"></div>
+      </div>
+      <button class="btn" id="h-save">Guardar horas</button>
+    </section>
+
+    <!-- ---- HISTORIAL ---- -->
+    <section class="view" id="v-hist">
+      <div class="h-row"><h2 id="hist-title">Historial</h2><span class="cnt" id="hist-cnt"></span></div>
+      <div class="pl-seg2" style="display:flex;gap:8px;margin-bottom:14px;">
+        <button class="btn ghost small hseg on" data-h="reportes" style="flex:1">Reportes</button>
+        <button class="btn ghost small hseg" data-h="horas" style="flex:1">Horas</button>
+      </div>
+      <div id="hist-list"></div>
+    </section>
+  </main>
+
+  <nav class="tabbar">
+    <button data-v="v-reporte" class="on"><span class="em">📷</span>Reporte</button>
+    <button data-v="v-horas"><span class="em">⏱️</span>Horas</button>
+    <button data-v="v-hist"><span class="em">🗂️</span>Historial</button>
+  </nav>
+</div>
+
+<!-- Sheet selector de trabajo -->
+<div class="sheet" id="jobsheet">
+  <div class="bg"></div>
+  <div class="panel">
+    <div class="grab"></div>
+    <h3>Elegir trabajo</h3>
+    <input type="search" class="search" id="job-search" placeholder="Buscar empresa o trabajo…">
+    <div class="list" id="job-list"></div>
+  </div>
+</div>
+
+<div id="busy"><div class="spin"></div><div class="bt" id="busy-t">Guardando…</div><div class="bar hide" id="busy-bar"><i></i></div></div>
+<div id="toast"></div>
+
+<script>
+(function(){
+  // ====== CONFIG ======
+  var SB_URL='https://oabtbzrfgwadnooexdwd.supabase.co';
+  var SB_KEY='sb_publishable_Uz01bxGvGArhB-h4KOvbqA_WtQg1zer';
+  var R2_UPLOAD='';   // <-- pegar URL del Worker (ej. https://innovaservi-r2.xxx.workers.dev)
+  var R2_PUBLIC='';   // <-- pegar URL pública del bucket (ej. https://pub-xxxx.r2.dev)
+
+  var sb=null; try{ if(window.supabase) sb=window.supabase.createClient(SB_URL,SB_KEY); }catch(e){}
+  var authed=false, userEmail='';
+  var EVENTOS=[];               // trabajos del calendario
+  var R_MEDIA=[];               // archivos en cola del reporte actual [{file,url,tipo}]
+  var R_JOB=null, H_JOB=null;   // trabajo elegido en cada sección
+
+  // ====== Helpers ======
+  var $=function(id){ return document.getElementById(id); };
+  function todayISO(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+  function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  var MES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  function fechaCorta(f){ if(!f)return''; var d=new Date(f+'T00:00:00'); return d.getDate()+' '+MES[d.getMonth()]+' '+d.getFullYear(); }
+  function toast(t){ var el=$('toast'); el.textContent=t; el.classList.add('show'); clearTimeout(el._t); el._t=setTimeout(function(){ el.classList.remove('show'); },2600); }
+  function busy(on,txt){ $('busy-t').textContent=txt||'Guardando…'; $('busy').classList.toggle('show',!!on); }
+  function slug(s){ return (s||'').toString().trim().toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^A-Z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,28)||'SIN'; }
+  function tipoArch(f){ var t=(f.type||''); return t.indexOf('video')===0?'video':(t.indexOf('image')===0?'image':'doc'); }
+
+  // ====== Login ======
+  function setAuth(session){
+    authed=!!session; userEmail=(session&&session.user&&session.user.email)||'';
+    if(authed){ $('gate').classList.add('hide'); $('app').classList.remove('hide'); $('who').textContent=userEmail;
+      if(!setAuth._loaded){ setAuth._loaded=true; init(); } }
+    else { $('gate').classList.remove('hide'); $('app').classList.add('hide'); }
+  }
+  if(sb&&sb.auth){ sb.auth.getSession().then(function(r){ setAuth(r&&r.data&&r.data.session); });
+    sb.auth.onAuthStateChange(function(_e,s){ setAuth(s); }); }
+  function login(){ if(!sb)return; var em=$('l-email').value.trim(), pw=$('l-pass').value, m=$('l-msg');
+    m.className='msg'; m.textContent='Entrando…';
+    sb.auth.signInWithPassword({email:em,password:pw}).then(function(r){
+      if(r.error){ m.className='msg err'; m.textContent='Correo o contraseña incorrectos.'; return; }
+      m.textContent=''; $('l-pass').value=''; });
+  }
+  $('l-btn').addEventListener('click',login);
+  $('l-pass').addEventListener('keydown',function(e){ if(e.key==='Enter') login(); });
+  $('out').addEventListener('click',function(){ if(sb)sb.auth.signOut(); });
+
+  // ====== Init tras login ======
+  function init(){
+    $('r-fecha').value=todayISO(); $('h-fecha').value=todayISO();
+    if(!R2_UPLOAD || !R2_PUBLIC){ var w=$('r-warn'); w.classList.remove('hide');
+      w.innerHTML='📎 La subida de archivos aún no está activa (falta conectar R2). Puedes guardar reportes y horas; las fotos/videos se activan al pegar las 2 URLs.'; }
+    cargarEventos();
+  }
+  function cargarEventos(){
+    if(!sb)return;
+    // trabajos recientes y próximos (para asociar reportes/horas)
+    var desde=new Date(); desde.setDate(desde.getDate()-45); var d=desde.getFullYear()+'-'+String(desde.getMonth()+1).padStart(2,'0')+'-'+String(desde.getDate()).padStart(2,'0');
+    sb.from('eventos').select('id,fecha,titulo,ubicacion,descripcion').gte('fecha',d).order('fecha',{ascending:false}).limit(400)
+      .then(function(r){ EVENTOS=(r&&r.data)||[]; });
+  }
+
+  // ====== Navegación (tabs) ======
+  document.querySelectorAll('.tabbar button').forEach(function(b){ b.addEventListener('click',function(){
+    document.querySelectorAll('.tabbar button').forEach(function(x){ x.classList.toggle('on',x===b); });
+    document.querySelectorAll('.view').forEach(function(v){ v.classList.toggle('on',v.id===b.dataset.v); });
+    if(b.dataset.v==='v-hist') cargarHistorial();
+    window.scrollTo(0,0);
+  }); });
+
+  // ====== Selector de trabajo (sheet) ======
+  var sheet=$('jobsheet'), sheetFor='r';
+  function abrirSheet(f){ sheetFor=f; $('job-search').value=''; pintarJobs(''); sheet.classList.add('show'); }
+  function cerrarSheet(){ sheet.classList.remove('show'); }
+  sheet.querySelector('.bg').addEventListener('click',cerrarSheet);
+  document.querySelectorAll('.job-pick').forEach(function(p){ p.addEventListener('click',function(){ abrirSheet(p.dataset.for); }); });
+  $('job-search').addEventListener('input',function(){ pintarJobs(this.value.trim().toLowerCase()); });
+  function pintarJobs(q){
+    var list=$('job-list'); var items='<div class="job manual" data-manual="1">✎ Sin trabajo (llenar manual)</div>';
+    var evs=EVENTOS.filter(function(e){ if(!q)return true; return ((e.titulo||'')+' '+(e.ubicacion||'')).toLowerCase().indexOf(q)>=0; }).slice(0,120);
+    items+=evs.map(function(e){ return '<div class="job" data-id="'+e.id+'"><div class="a">'+esc(e.ubicacion||e.titulo||'Trabajo')+'</div><div class="b">'+esc(e.titulo||'')+' · '+fechaCorta(e.fecha)+'</div></div>'; }).join('');
+    list.innerHTML=items;
+    list.querySelectorAll('.job').forEach(function(j){ j.addEventListener('click',function(){
+      if(j.dataset.manual){ elegirJob(sheetFor,null); } else { var e=EVENTOS.filter(function(x){return String(x.id)===String(j.dataset.id);})[0]; elegirJob(sheetFor,e); }
+      cerrarSheet();
+    }); });
+  }
+  function elegirJob(f,e){
+    if(f==='r'){ R_JOB=e; pintaJobPick('r',e); if(e){ $('r-empresa').value=e.ubicacion||''; $('r-fecha').value=e.fecha||todayISO(); if(!$('r-lugar').value) $('r-lugar').value=e.titulo||''; } }
+    else { H_JOB=e; pintaJobPick('h',e); if(e){ $('h-empresa').value=e.ubicacion||''; $('h-fecha').value=e.fecha||todayISO(); if(!$('h-lugar').value) $('h-lugar').value=e.titulo||''; } }
+  }
+  function pintaJobPick(f,e){
+    $(f+'-job-a').textContent=e?(e.ubicacion||e.titulo||'Trabajo'):'Elegir trabajo…';
+    $(f+'-job-b').textContent=e?((e.titulo?e.titulo+' · ':'')+fechaCorta(e.fecha)):'o llénalo manual abajo';
+    $(f+'-job-clear').classList.toggle('hide',!e);
+  }
+  $('r-job-clear').addEventListener('click',function(){ elegirJob('r',null); });
+  $('h-job-clear').addEventListener('click',function(){ elegirJob('h',null); });
+
+  // ====== Media (fotos/videos) ======
+  function addFiles(files){
+    Array.prototype.forEach.call(files,function(f){
+      if(!f||!f.type) return; var url=URL.createObjectURL(f);
+      R_MEDIA.push({file:f,url:url,tipo:tipoArch(f)});
+    });
+    pintarThumbs();
+  }
+  function pintarThumbs(){
+    var el=$('r-thumbs');
+    el.innerHTML=R_MEDIA.map(function(m,i){
+      var inner=m.tipo==='video'
+        ? '<video src="'+m.url+'" muted playsinline></video><span class="vbadge">▶ video</span>'
+        : '<img src="'+m.url+'" alt="">';
+      return '<div class="thumb">'+inner+'<button class="rm" data-i="'+i+'">✕</button></div>';
+    }).join('');
+    el.querySelectorAll('.rm').forEach(function(b){ b.addEventListener('click',function(){
+      var i=+b.dataset.i; try{ URL.revokeObjectURL(R_MEDIA[i].url); }catch(_){}; R_MEDIA.splice(i,1); pintarThumbs(); }); });
+  }
+  ['r-cam','r-vid','r-gal'].forEach(function(id){ $(id).addEventListener('change',function(){ if(this.files&&this.files.length) addFiles(this.files); this.value=''; }); });
+
+  // ====== Subir un archivo a R2 (via Worker) ======
+  function subirR2(file,carpeta,nombre){
+    if(!R2_UPLOAD||!R2_PUBLIC) return Promise.resolve(null);
+    return sb.auth.getSession().then(function(res){
+      var tok=res&&res.data&&res.data.session&&res.data.session.access_token; if(!tok) return null;
+      var safe=(nombre||file.name||'archivo').replace(/[^a-zA-Z0-9._-]/g,'_');
+      return fetch(R2_UPLOAD,{ method:'POST', headers:{ 'Authorization':'Bearer '+tok, 'content-type':(file.type||'application/octet-stream'), 'x-folder':(carpeta||'reportes'), 'x-filename':safe }, body:file })
+        .then(function(r){ return r.text().then(function(t){ var d; try{ d=JSON.parse(t); }catch(_){ d={error:'HTTP '+r.status}; } return d; }); })
+        .then(function(d){ if(d&&d.ok&&d.key){ var u=R2_PUBLIC.replace(/\/+$/,'')+'/'+d.key; return {url:u,tipo:tipoArch(file),nombre:(nombre||file.name)}; } toast('⚠ '+((d&&d.error)||'no se pudo subir')); return null; });
+    });
+  }
+
+  // ====== Guardar REPORTE ======
+  $('r-save').addEventListener('click',function(){
+    if(!sb) return;
+    var empresa=$('r-empresa').value.trim(), lugar=$('r-lugar').value.trim(), fecha=$('r-fecha').value||todayISO(), notas=$('r-notas').value.trim();
+    if(!empresa && !R_JOB){ toast('Pon la empresa/cliente o elige un trabajo.'); return; }
+    var total=R_MEDIA.length, subidas=[], puedeSubir=!!(R2_UPLOAD&&R2_PUBLIC);
+    if(total && !puedeSubir){ if(!confirm('Las fotos/videos aún no se pueden subir (falta conectar R2). ¿Guardar el reporte solo con los datos por ahora?')) return; }
+    var pref=slug(empresa)+'_'+fecha;
+    busy(true,'Guardando reporte…');
+    if(total && puedeSubir){ $('busy-bar').classList.remove('hide'); $('busy-bar').querySelector('i').style.width='0'; }
+    var carpeta='reportes/'+slug(empresa)+'/'+fecha;
+    var i=0;
+    function siguiente(){
+      if(i>=total || !puedeSubir){ return guardarFila(); }
+      var m=R_MEDIA[i]; var ext=(m.file.name.split('.').pop()||(m.tipo==='video'?'mp4':'jpg')).toLowerCase();
+      var nombre=pref+'_'+(i+1)+'.'+ext;
+      busy(true,'Subiendo '+(i+1)+' de '+total+'…');
+      subirR2(m.file,carpeta,nombre).then(function(res){ if(res) subidas.push(res); i++;
+        var b=$('busy-bar').querySelector('i'); if(b) b.style.width=Math.round(i/total*100)+'%'; siguiente(); });
+    }
+    function guardarFila(){
+      var row={ evento_id:(R_JOB?R_JOB.id:null), empresa:empresa||(R_JOB&&R_JOB.ubicacion)||'', lugar:lugar, fecha:fecha, notas:notas, autor:userEmail, media:subidas };
+      sb.from('reportes').insert(row).then(function(r){ busy(false); $('busy-bar').classList.add('hide');
+        if(r.error){ toast('No se pudo guardar: '+r.error.message); return; }
+        toast('✓ Reporte guardado'+(subidas.length?(' · '+subidas.length+' archivo(s)'):''));
+        limpiarReporte();
+      });
+    }
+    siguiente();
+  });
+  function limpiarReporte(){
+    R_MEDIA.forEach(function(m){ try{ URL.revokeObjectURL(m.url); }catch(_){}}); R_MEDIA=[]; pintarThumbs();
+    $('r-empresa').value=''; $('r-lugar').value=''; $('r-notas').value=''; $('r-fecha').value=todayISO();
+    elegirJob('r',null);
+  }
+
+  // ====== Horas ======
+  function calcTotal(){
+    var a=$('h-in').value, b=$('h-out').value, el=$('h-total');
+    if(a&&b){ var pa=a.split(':'), pb=b.split(':'); var min=(pb[0]*60+ +pb[1])-(pa[0]*60+ +pa[1]); if(min<0) min+=1440;
+      el.classList.remove('hide'); el.innerHTML='⏱️ Total del turno: <b>'+Math.floor(min/60)+'h '+(min%60)+'m</b>'; }
+    else el.classList.add('hide');
+  }
+  $('h-in').addEventListener('change',calcTotal); $('h-out').addEventListener('change',calcTotal);
+  $('h-save').addEventListener('click',function(){
+    if(!sb) return;
+    var trab=$('h-trab').value.trim();
+    if(!trab){ toast('Pon el nombre del trabajador.'); return; }
+    var row={ evento_id:(H_JOB?H_JOB.id:null), trabajador:trab, empresa:$('h-empresa').value.trim()||(H_JOB&&H_JOB.ubicacion)||'',
+      lugar:$('h-lugar').value.trim(), fecha:$('h-fecha').value||todayISO(), entrada:$('h-in').value, salida:$('h-out').value,
+      notas:$('h-notas').value.trim(), autor:userEmail };
+    busy(true,'Guardando horas…');
+    sb.from('horas').insert(row).then(function(r){ busy(false);
+      if(r.error){ toast('No se pudo guardar: '+r.error.message); return; }
+      toast('✓ Horas registradas'); $('h-trab').value=''; $('h-in').value=''; $('h-out').value=''; $('h-notas').value=''; $('h-total').classList.add('hide'); elegirJob('h',null);
+    });
+  });
+
+  // ====== Historial ======
+  var histTab='reportes';
+  document.querySelectorAll('.hseg').forEach(function(b){ b.addEventListener('click',function(){
+    document.querySelectorAll('.hseg').forEach(function(x){ x.classList.toggle('on',x===b); });
+    histTab=b.dataset.h; cargarHistorial(); }); });
+  function cargarHistorial(){
+    if(!sb) return; var list=$('hist-list'); list.innerHTML='<div class="empty">Cargando…</div>';
+    if(histTab==='reportes'){
+      sb.from('reportes').select('*').order('created_at',{ascending:false}).limit(60).then(function(r){ pintarHistReportes((r&&r.data)||[]); });
+    } else {
+      sb.from('horas').select('*').order('created_at',{ascending:false}).limit(80).then(function(r){ pintarHistHoras((r&&r.data)||[]); });
+    }
+  }
+  function pintarHistReportes(rows){
+    $('hist-cnt').textContent=rows.length+' reporte'+(rows.length===1?'':'s');
+    if(!rows.length){ $('hist-list').innerHTML='<div class="empty"><div class="big">🗂️</div>Aún no hay reportes.</div>'; return; }
+    $('hist-list').innerHTML=rows.map(function(e){
+      var media=(e.media||[]); var minis=media.slice(0,6).map(function(m){ return m.tipo==='video'?'<div class="vv">▶</div>':'<img src="'+esc(m.url)+'" loading="lazy">'; }).join('');
+      return '<div class="item"><div class="top"><span class="emp">'+esc(e.empresa||'—')+'</span><span class="dt">'+fechaCorta(e.fecha)+'</span></div>'+
+        (e.lugar?'<div class="lug">📍 '+esc(e.lugar)+'</div>':'')+
+        (media.length?'<div style="margin-top:6px"><span class="pill">'+media.length+' archivo'+(media.length===1?'':'s')+'</span></div>':'')+
+        (e.notas?'<div class="no">'+esc(e.notas)+'</div>':'')+
+        (minis?'<div class="mini">'+minis+'</div>':'')+'</div>';
+    }).join('');
+  }
+  function pintarHistHoras(rows){
+    $('hist-cnt').textContent=rows.length+' registro'+(rows.length===1?'':'s');
+    if(!rows.length){ $('hist-list').innerHTML='<div class="empty"><div class="big">⏱️</div>Aún no hay horas registradas.</div>'; return; }
+    $('hist-list').innerHTML=rows.map(function(e){
+      var rango=(e.entrada||'—')+' → '+(e.salida||'—');
+      return '<div class="item" style="border-left-color:var(--navy)"><div class="top"><span class="emp">'+esc(e.trabajador||'—')+'</span><span class="dt">'+fechaCorta(e.fecha)+'</span></div>'+
+        '<div class="lug">🏢 '+esc(e.empresa||'—')+(e.lugar?' · '+esc(e.lugar):'')+'</div>'+
+        '<div style="margin-top:6px"><span class="pill">🕐 '+rango+'</span></div>'+
+        (e.notas?'<div class="no">'+esc(e.notas)+'</div>':'')+'</div>';
+    }).join('');
+  }
+
+  // ====== Service worker (instalable) ======
+  if('serviceWorker' in navigator){ window.addEventListener('load',function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); }); }
+})();
+</script>
+</body>
+</html>
