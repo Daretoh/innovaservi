@@ -271,8 +271,12 @@
   // ====== CONFIG ======
   var SB_URL='https://oabtbzrfgwadnooexdwd.supabase.co';
   var SB_KEY='sb_publishable_Uz01bxGvGArhB-h4KOvbqA_WtQg1zer';
-  var R2_UPLOAD='';   // <-- pegar URL del Worker (ej. https://innovaservi-r2.xxx.workers.dev)
-  var R2_PUBLIC='';   // <-- pegar URL pública del bucket (ej. https://pub-xxxx.r2.dev)
+  var STORAGE_BUCKET='reportes';  // bucket de Supabase Storage (por defecto, gratis)
+  // Opcional: si algún día usas Cloudflare R2 para videos grandes, pega estas 2 URLs
+  // y la app subirá a R2 en vez de Supabase Storage.
+  var R2_UPLOAD='';   // URL del Worker (ej. https://innovaservi-r2.xxx.workers.dev)
+  var R2_PUBLIC='';   // URL pública del bucket (ej. https://pub-xxxx.r2.dev)
+  var USA_R2=!!(R2_UPLOAD && R2_PUBLIC);
 
   var sb=null; try{ if(window.supabase) sb=window.supabase.createClient(SB_URL,SB_KEY); }catch(e){}
   var authed=false, userEmail='';
@@ -313,8 +317,6 @@
   // ====== Init tras login ======
   function init(){
     $('r-fecha').value=todayISO(); $('h-fecha').value=todayISO();
-    if(!R2_UPLOAD || !R2_PUBLIC){ var w=$('r-warn'); w.classList.remove('hide');
-      w.innerHTML='📎 La subida de archivos aún no está activa (falta conectar R2). Puedes guardar reportes y horas; las fotos/videos se activan al pegar las 2 URLs.'; }
     cargarEventos();
   }
   function cargarEventos(){
@@ -383,9 +385,28 @@
   }
   ['r-cam','r-vid','r-gal'].forEach(function(id){ $(id).addEventListener('change',function(){ if(this.files&&this.files.length) addFiles(this.files); this.value=''; }); });
 
-  // ====== Subir un archivo a R2 (via Worker) ======
+  // ====== Subir un archivo (Supabase Storage por defecto; R2 si está configurado) ======
+  function subirArchivo(file,carpeta,nombre){
+    return USA_R2 ? subirR2(file,carpeta,nombre) : subirStorage(file,carpeta,nombre);
+  }
+  function subirStorage(file,carpeta,nombre){
+    var safe=(nombre||file.name||'archivo').replace(/[^a-zA-Z0-9._-]/g,'_');
+    var key=(carpeta||'reportes').replace(/^\/+|\/+$/g,'')+'/'+Date.now()+'_'+safe;
+    return sb.storage.from(STORAGE_BUCKET).upload(key,file,{ contentType:(file.type||'application/octet-stream'), upsert:false })
+      .then(function(r){
+        if(r.error){
+          var m=(r.error.message||'')+'';
+          if(/exceeded|too large|maximum/i.test(m)) toast('⚠ Archivo muy pesado ('+Math.round(file.size/1048576)+' MB). Prueba uno más liviano.');
+          else if(/bucket|not found/i.test(m)) toast('⚠ Falta crear el bucket "reportes" (correr el SQL).');
+          else toast('⚠ No se pudo subir: '+m);
+          return null;
+        }
+        var pub=sb.storage.from(STORAGE_BUCKET).getPublicUrl(key);
+        var url=pub&&pub.data&&pub.data.publicUrl;
+        return url?{url:url,tipo:tipoArch(file),nombre:(nombre||file.name)}:null;
+      }, function(){ toast('⚠ No se pudo subir el archivo.'); return null; });
+  }
   function subirR2(file,carpeta,nombre){
-    if(!R2_UPLOAD||!R2_PUBLIC) return Promise.resolve(null);
     return sb.auth.getSession().then(function(res){
       var tok=res&&res.data&&res.data.session&&res.data.session.access_token; if(!tok) return null;
       var safe=(nombre||file.name||'archivo').replace(/[^a-zA-Z0-9._-]/g,'_');
@@ -400,19 +421,18 @@
     if(!sb) return;
     var empresa=$('r-empresa').value.trim(), lugar=$('r-lugar').value.trim(), fecha=$('r-fecha').value||todayISO(), notas=$('r-notas').value.trim();
     if(!empresa && !R_JOB){ toast('Pon la empresa/cliente o elige un trabajo.'); return; }
-    var total=R_MEDIA.length, subidas=[], puedeSubir=!!(R2_UPLOAD&&R2_PUBLIC);
-    if(total && !puedeSubir){ if(!confirm('Las fotos/videos aún no se pueden subir (falta conectar R2). ¿Guardar el reporte solo con los datos por ahora?')) return; }
-    var pref=slug(empresa)+'_'+fecha;
+    var total=R_MEDIA.length, subidas=[];
+    var pref=slug(empresa || (R_JOB&&R_JOB.ubicacion) || 'SIN')+'_'+fecha;
     busy(true,'Guardando reporte…');
-    if(total && puedeSubir){ $('busy-bar').classList.remove('hide'); $('busy-bar').querySelector('i').style.width='0'; }
-    var carpeta='reportes/'+slug(empresa)+'/'+fecha;
+    if(total){ $('busy-bar').classList.remove('hide'); $('busy-bar').querySelector('i').style.width='0'; }
+    var carpeta=slug(empresa || (R_JOB&&R_JOB.ubicacion) || 'SIN')+'/'+fecha;
     var i=0;
     function siguiente(){
-      if(i>=total || !puedeSubir){ return guardarFila(); }
+      if(i>=total){ return guardarFila(); }
       var m=R_MEDIA[i]; var ext=(m.file.name.split('.').pop()||(m.tipo==='video'?'mp4':'jpg')).toLowerCase();
       var nombre=pref+'_'+(i+1)+'.'+ext;
       busy(true,'Subiendo '+(i+1)+' de '+total+'…');
-      subirR2(m.file,carpeta,nombre).then(function(res){ if(res) subidas.push(res); i++;
+      subirArchivo(m.file,carpeta,nombre).then(function(res){ if(res) subidas.push(res); i++;
         var b=$('busy-bar').querySelector('i'); if(b) b.style.width=Math.round(i/total*100)+'%'; siguiente(); });
     }
     function guardarFila(){

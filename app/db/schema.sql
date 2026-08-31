@@ -47,3 +47,26 @@ create policy reportes_auth_all on public.reportes
 drop policy if exists horas_auth_all on public.horas;
 create policy horas_auth_all on public.horas
   for all to authenticated using (true) with check (true);
+
+-- 4) STORAGE: bucket público "reportes" para fotos/videos ----
+insert into storage.buckets (id, name, public)
+values ('reportes', 'reportes', true)
+on conflict (id) do update set public = true;
+
+-- Lectura pública (para ver las fotos por URL)
+drop policy if exists reportes_files_read on storage.objects;
+create policy reportes_files_read on storage.objects
+  for select using (bucket_id = 'reportes');
+
+-- Solo usuarios con sesión pueden subir / actualizar / borrar
+drop policy if exists reportes_files_write on storage.objects;
+create policy reportes_files_write on storage.objects
+  for insert to authenticated with check (bucket_id = 'reportes');
+
+drop policy if exists reportes_files_update on storage.objects;
+create policy reportes_files_update on storage.objects
+  for update to authenticated using (bucket_id = 'reportes') with check (bucket_id = 'reportes');
+
+drop policy if exists reportes_files_delete on storage.objects;
+create policy reportes_files_delete on storage.objects
+  for delete to authenticated using (bucket_id = 'reportes');
