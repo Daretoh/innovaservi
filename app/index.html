@@ -325,7 +325,14 @@
     if(!sb)return;
     // ventana alrededor de hoy (para asociar reportes/horas), luego se ordena por cercanía
     sb.from('eventos').select('id,fecha,titulo,ubicacion,descripcion').gte('fecha',isoMas(-30)).lte('fecha',isoMas(180)).order('fecha',{ascending:true}).limit(600)
-      .then(function(r){ EVENTOS=(r&&r.data)||[]; });
+      .then(function(r){ EVENTOS=(r&&r.data)||[]; autoSeleccionarHoy(); });
+  }
+  // Si hoy hay UN solo trabajo, dejarlo ya seleccionado (Reporte y Horas).
+  function autoSeleccionarHoy(){
+    var hoy=EVENTOS.filter(function(e){ return diffDias(e.fecha)===0; });
+    if(hoy.length!==1) return;
+    if(!R_JOB && !$('r-empresa').value.trim()) elegirJob('r', hoy[0]);
+    if(!H_JOB && !$('h-empresa').value.trim()) elegirJob('h', hoy[0]);
   }
   function diffDias(f){ if(!f)return 99999; var d=new Date(f+'T00:00:00'), t=new Date(todayISO()+'T00:00:00'); return Math.round((d-t)/86400000); }
   function etiquetaDia(f){ var n=diffDias(f); if(n===0)return 'HOY'; if(n===1)return 'Mañana'; if(n===-1)return 'Ayer'; return fechaCorta(f); }
@@ -459,6 +466,8 @@
     R_MEDIA.forEach(function(m){ try{ URL.revokeObjectURL(m.url); }catch(_){}}); R_MEDIA=[]; pintarThumbs();
     $('r-empresa').value=''; $('r-lugar').value=''; $('r-notas').value=''; $('r-fecha').value=todayISO();
     elegirJob('r',null);
+    var hoy=EVENTOS.filter(function(e){ return diffDias(e.fecha)===0; });
+    if(hoy.length===1) elegirJob('r', hoy[0]);
   }
 
   // ====== Horas ======
