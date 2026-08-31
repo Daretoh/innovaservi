@@ -403,7 +403,9 @@
   // Solo estos correos (supervisores/admin) pueden abrir Planificación.
   // Vacío = sin restricción (todos los logueados entran, como antes).
   var ADMIN_EMAILS=[
-    // 'correo1@innovaservi.cl', 'correo2@innovaservi.cl', 'correo3@innovaservi.cl'
+    'enzo.castro@innovaservi.com',
+    'jorge.castro@innovaservi.com',
+    'cristopher.ruiz@innovaservi.com'
   ];
   function isAdmin(e){ if(!ADMIN_EMAILS.length) return true; return ADMIN_EMAILS.indexOf((e||'').trim().toLowerCase())>=0; }
   function mostrarSoloSupervisores(){
