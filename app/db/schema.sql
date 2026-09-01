@@ -48,6 +48,25 @@ drop policy if exists horas_auth_all on public.horas;
 create policy horas_auth_all on public.horas
   for all to authenticated using (true) with check (true);
 
+-- 2b) REGISTROS (unificado: 1 por trabajo; horas de varios + fotos) --
+create table if not exists public.registros (
+  id          bigserial primary key,
+  evento_id   uuid references public.eventos(id) on delete set null,
+  empresa     text,
+  lugar       text,
+  fecha       date not null default current_date,
+  notas       text,
+  horas       jsonb not null default '[]'::jsonb,   -- [{trabajador,entrada,salida}]
+  media       jsonb not null default '[]'::jsonb,   -- [{url,tipo,nombre,cat,fecha}]
+  autor       text,
+  created_at  timestamptz not null default now()
+);
+create index if not exists registros_fecha_idx on public.registros (fecha desc);
+create index if not exists registros_evento_idx on public.registros (evento_id);
+alter table public.registros enable row level security;
+drop policy if exists registros_auth_all on public.registros;
+create policy registros_auth_all on public.registros for all to authenticated using (true) with check (true);
+
 -- 4) STORAGE: bucket público "reportes" para fotos/videos ----
 insert into storage.buckets (id, name, public)
 values ('reportes', 'reportes', true)

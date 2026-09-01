@@ -1,5 +1,5 @@
 /* InnovaServi Reportes — Service Worker (PWA) */
-var CACHE = 'iserv-reportes-v1';
+var CACHE = 'iserv-registros-v2';
 var SHELL = [
   './', './index.html', './manifest.webmanifest',
   './icons/icon-192.png', './icons/icon-512.png',

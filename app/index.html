@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="InnovaServi" />
 <link rel="manifest" href="manifest.webmanifest" />
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
-<title>InnovaServi · Reportes</title>
+<title>InnovaServi · Registros</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
@@ -101,6 +101,15 @@
   .catadd:active{border-color:var(--orange);}
   .thumbs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px;}
   .thumbs:empty{margin-top:0;}
+  /* Horas por trabajador */
+  .hrow{border:1px solid var(--line);border-radius:12px;padding:10px 11px;margin-bottom:9px;background:var(--alt);}
+  .hrow .h-trab{width:100%;font:600 15px var(--font);padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink);margin-bottom:8px;}
+  .hrow-times{display:flex;align-items:center;gap:7px;}
+  .hrow-times input[type=time]{flex:1;min-width:0;font:600 15px var(--font);padding:9px 8px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink);}
+  .hrow-times .arw{color:var(--muted);font-weight:800;}
+  .hrow-rm{width:34px;height:38px;flex-shrink:0;border:1px solid #f0c0c0;background:#fff;color:#dc2626;border-radius:9px;font-size:15px;cursor:pointer;}
+  .hrow-total{font-size:.76rem;color:var(--orange-2);font-weight:700;margin-top:7px;min-height:1px;}
+  .hrow input:focus{outline:none;border-color:var(--orange);box-shadow:0 0 0 3px rgba(255,107,0,.13);}
   .thumb{position:relative;aspect-ratio:1;border-radius:11px;overflow:hidden;background:#000;border:1px solid var(--line);}
   .thumb img,.thumb video{width:100%;height:100%;object-fit:cover;display:block;}
   .thumb .vbadge{position:absolute;left:5px;bottom:5px;background:rgba(0,0,0,.6);color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:6px;}
@@ -172,7 +181,7 @@
   <div class="gate-card">
     <img class="gate-logo" src="../assets/images/InnovaLOGO.png" alt="InnovaServi" onerror="this.style.display='none'">
     <h1>InnovaServi</h1>
-    <div class="sub">Reportes de trabajo</div>
+    <div class="sub">Registros de trabajo</div>
     <div class="fld"><label>Correo</label><input type="email" id="l-email" autocomplete="username" inputmode="email"></div>
     <div class="fld"><label>Contraseña</label><input type="password" id="l-pass" autocomplete="current-password"></div>
     <button class="btn" id="l-btn">Entrar</button>
@@ -183,18 +192,17 @@
 <!-- ============ APP ============ -->
 <div id="app" class="hide">
   <div class="topbar">
-    <div class="tt"><img src="../assets/images/InnovaLOGO.png" alt="" onerror="this.style.display='none'"><div><b>Reportes</b><div class="who" id="who"></div></div></div>
+    <div class="tt"><img src="../assets/images/InnovaLOGO.png" alt="" onerror="this.style.display='none'"><div><b>Registros</b><div class="who" id="who"></div></div></div>
     <button class="out" id="out">Salir</button>
   </div>
 
   <main>
-    <!-- ---- NUEVO REPORTE ---- -->
+    <!-- ---- REGISTRO (trabajo + horas + fotos) ---- -->
     <section class="view on" id="v-reporte">
-      <div class="h-row"><h2 id="r-title">Nuevo reporte</h2><button id="r-cancel" class="btn ghost small hide" style="width:auto">✕ Cancelar</button></div>
-      <div id="r-warn" class="warnbar hide"></div>
+      <div class="h-row"><h2 id="r-title">Nuevo registro</h2><button id="r-cancel" class="btn ghost small hide" style="width:auto">✕ Cancelar</button></div>
       <div class="card">
         <div class="fld">
-          <label>Trabajo del calendario <span style="color:var(--muted);font-weight:400">(opcional)</span></label>
+          <label>Trabajo del calendario</label>
           <div class="job-pick" data-for="r"><div class="ico">📋</div><div class="t"><div class="a" id="r-job-a">Elegir trabajo…</div><div class="b" id="r-job-b">o llénalo manual abajo</div></div><div class="chev">›</div></div>
           <button class="job-clear hide" id="r-job-clear">✕ Quitar trabajo</button>
         </div>
@@ -207,8 +215,15 @@
       </div>
 
       <div class="card">
-        <label style="display:block;font:700 13px var(--font);color:var(--ink);margin-bottom:4px;">Fotos y videos</label>
-        <p class="note" style="margin:0 0 12px">Etiqueta cada foto/video como <b>Antes</b>, <b>Proceso</b> o <b>Después</b>. Puedes seguir agregando otro día reabriendo el reporte desde el Historial.</p>
+        <label style="display:block;font:700 13px var(--font);color:var(--ink);margin-bottom:2px;">⏱️ Horas por trabajador</label>
+        <p class="note" style="margin:0 0 10px">Agrega una línea por cada trabajador con su entrada y salida.</p>
+        <div id="horas-rows"></div>
+        <button class="catadd" id="add-trab" type="button">＋ Agregar trabajador</button>
+      </div>
+
+      <div class="card">
+        <label style="display:block;font:700 13px var(--font);color:var(--ink);margin-bottom:4px;">📷 Fotos y videos</label>
+        <p class="note" style="margin:0 0 12px">Etiqueta cada foto/video como <b>Antes</b>, <b>Proceso</b> o <b>Después</b>. Puedes seguir agregando otro día reabriendo el registro.</p>
         <div class="catgroup">
           <div class="cathead"><span class="cattag antes">Antes</span><span class="catcount" id="cnt-antes"></span></div>
           <div class="thumbs" id="th-antes"></div>
@@ -226,50 +241,21 @@
         </div>
       </div>
 
-      <button class="btn" id="r-save">Guardar reporte</button>
+      <button class="btn" id="r-save">Guardar registro</button>
+      <button class="pl-del-btn hide" id="r-del" style="width:100%;margin-top:10px;background:#fff;border:1px solid #f0c0c0;color:#dc2626;padding:13px;border-radius:13px;font:800 14px var(--font);cursor:pointer">🗑 Eliminar registro</button>
       <p class="note">Los archivos se guardan ordenados por empresa y fecha (ej. <b>CERMAQ_2026-08-31_1.jpg</b>).</p>
     </section>
 
-    <!-- ---- HORAS ---- -->
-    <section class="view" id="v-horas">
-      <div class="h-row"><h2>Registrar horas</h2></div>
-      <div class="card">
-        <div class="fld">
-          <label>Trabajo del calendario <span style="color:var(--muted);font-weight:400">(opcional)</span></label>
-          <div class="job-pick" data-for="h"><div class="ico">📋</div><div class="t"><div class="a" id="h-job-a">Elegir trabajo…</div><div class="b" id="h-job-b">o llénalo manual abajo</div></div><div class="chev">›</div></div>
-          <button class="job-clear hide" id="h-job-clear">✕ Quitar trabajo</button>
-        </div>
-        <div class="fld"><label>Trabajador</label><input type="text" id="h-trab" placeholder="Nombre del trabajador"></div>
-        <div class="grid2">
-          <div class="fld"><label>Empresa / Cliente</label><input type="text" id="h-empresa" placeholder="Ej: CERMAQ"></div>
-          <div class="fld"><label>Fecha</label><input type="date" id="h-fecha"></div>
-        </div>
-        <div class="grid2">
-          <div class="fld"><label>Hora entrada</label><input type="time" id="h-in"></div>
-          <div class="fld"><label>Hora salida</label><input type="time" id="h-out"></div>
-        </div>
-        <div class="fld"><label>Lugar</label><input type="text" id="h-lugar" placeholder="Ej: Planta / módulo"></div>
-        <div class="fld"><label>Notas / observaciones</label><textarea id="h-notas" placeholder="Observaciones del turno…"></textarea></div>
-        <div id="h-total" class="note hide"></div>
-      </div>
-      <button class="btn" id="h-save">Guardar horas</button>
-    </section>
-
-    <!-- ---- HISTORIAL ---- -->
+    <!-- ---- REGISTROS (lista) ---- -->
     <section class="view" id="v-hist">
-      <div class="h-row"><h2 id="hist-title">Historial</h2><span class="cnt" id="hist-cnt"></span></div>
-      <div class="pl-seg2" style="display:flex;gap:8px;margin-bottom:14px;">
-        <button class="btn ghost small hseg on" data-h="reportes" style="flex:1">Reportes</button>
-        <button class="btn ghost small hseg" data-h="horas" style="flex:1">Horas</button>
-      </div>
+      <div class="h-row"><h2 id="hist-title">Registros</h2><span class="cnt" id="hist-cnt"></span></div>
       <div id="hist-list"></div>
     </section>
   </main>
 
   <nav class="tabbar">
-    <button data-v="v-reporte" class="on"><span class="em">📷</span>Reporte</button>
-    <button data-v="v-horas"><span class="em">⏱️</span>Horas</button>
-    <button data-v="v-hist"><span class="em">🗂️</span>Historial</button>
+    <button data-v="v-reporte" class="on"><span class="em">➕</span>Registro</button>
+    <button data-v="v-hist"><span class="em">🗂️</span>Registros</button>
   </nav>
 </div>
 
@@ -302,10 +288,11 @@
   var sb=null; try{ if(window.supabase) sb=window.supabase.createClient(SB_URL,SB_KEY); }catch(e){}
   var authed=false, userEmail='';
   var EVENTOS=[];               // trabajos del calendario
-  var R_MEDIA=[];               // archivos del reporte actual [{file?,url,tipo,cat,fecha,nombre,existing?}]
-  var R_JOB=null, H_JOB=null;   // trabajo elegido en cada sección
-  var EDIT_ID=null;             // id del reporte que se está editando (null = nuevo)
-  var HIST_REP=[];              // filas de reportes cargadas en el historial
+  var R_MEDIA=[];               // archivos del registro actual [{file?,url,tipo,cat,fecha,nombre,existing?}]
+  var R_JOB=null;               // trabajo del calendario elegido
+  var HORAS=[];                 // horas por trabajador [{trabajador,entrada,salida}]
+  var EDIT_ID=null;             // id del registro que se está editando (null = nuevo)
+  var REGISTROS=[];             // registros cargados (lista + dedup por trabajo)
 
   // ====== Helpers ======
   var $=function(id){ return document.getElementById(id); };
@@ -316,6 +303,9 @@
   function fechaMini(f){ if(!f)return''; var d=new Date(f+'T00:00:00'); return d.getDate()+'/'+(d.getMonth()+1); }
   var CAT_LBL={antes:'Antes',proceso:'Proceso',despues:'Después'};
   function catOk(c){ return (c==='antes'||c==='despues')?c:'proceso'; }
+  function enc(s){ return (s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+  function totalMin(a,b){ if(!a||!b)return null; var pa=a.split(':'),pb=b.split(':'); var m=(pb[0]*60+ +pb[1])-(pa[0]*60+ +pa[1]); if(m<0)m+=1440; return m; }
+  function totalTxt(a,b){ var m=totalMin(a,b); return m==null?'':('Total: '+Math.floor(m/60)+'h '+(m%60)+'m'); }
   function toast(t){ var el=$('toast'); el.textContent=t; el.classList.add('show'); clearTimeout(el._t); el._t=setTimeout(function(){ el.classList.remove('show'); },2600); }
   function busy(on,txt){ $('busy-t').textContent=txt||'Guardando…'; $('busy').classList.toggle('show',!!on); }
   function slug(s){ return (s||'').toString().trim().toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^A-Z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,28)||'SIN'; }
@@ -342,9 +332,12 @@
 
   // ====== Init tras login ======
   function init(){
-    $('r-fecha').value=todayISO(); $('h-fecha').value=todayISO();
+    $('r-fecha').value=todayISO();
+    if(!HORAS.length){ HORAS=[{trabajador:'',entrada:'',salida:''}]; renderHoras(); }
     cargarEventos();
+    cargarRegistros();
   }
+  function registroDe(eventoId){ if(!eventoId) return null; return REGISTROS.filter(function(x){ return String(x.evento_id)===String(eventoId); })[0]||null; }
   function isoMas(dias){ var d=new Date(); d.setDate(d.getDate()+dias); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
   function cargarEventos(){
     if(!sb)return;
@@ -359,28 +352,31 @@
   function diffRango(e){ var di=diffDias(e.fecha), df=diffDias(evFin(e)); if(di<=0 && df>=0) return 0; return (Math.abs(di)<=Math.abs(df))?di:df; }
   function etiquetaDia(f){ var n=diffDias(f); if(n===0)return 'HOY'; if(n===1)return 'Mañana'; if(n===-1)return 'Ayer'; return fechaCorta(f); }
   function etiquetaTrabajo(e){ if(activoHoy(e)) return esMulti(e)?('HOY · hasta '+fechaCorta(evFin(e))):'HOY'; var l=etiquetaDia(e.fecha); if(esMulti(e)) l+=' → '+fechaCorta(evFin(e)); return l; }
-  // Si hoy hay UN solo trabajo activo (incluye los que duran varios días), dejarlo ya seleccionado.
+  // Si hoy hay UN solo trabajo activo y aún no tiene registro, dejarlo pre-seleccionado.
   function autoSeleccionarHoy(){
+    if(EDIT_ID) return;
     var hoy=EVENTOS.filter(activoHoy);
     if(hoy.length!==1) return;
-    if(!R_JOB && !$('r-empresa').value.trim()) elegirJob('r', hoy[0]);
-    if(!H_JOB && !$('h-empresa').value.trim()) elegirJob('h', hoy[0]);
+    if(R_JOB || $('r-empresa').value.trim()) return;
+    if(registroDe(hoy[0].id)) return;   // ya existe registro de ese trabajo → no duplicar
+    elegirJob(hoy[0]);
   }
 
   // ====== Navegación (tabs) ======
   document.querySelectorAll('.tabbar button').forEach(function(b){ b.addEventListener('click',function(){
     document.querySelectorAll('.tabbar button').forEach(function(x){ x.classList.toggle('on',x===b); });
     document.querySelectorAll('.view').forEach(function(v){ v.classList.toggle('on',v.id===b.dataset.v); });
-    if(b.dataset.v==='v-hist') cargarHistorial();
+    if(b.dataset.v==='v-hist') cargarRegistros(pintarRegistros);
     window.scrollTo(0,0);
   }); });
+  function irA(id){ document.querySelector('.tabbar button[data-v="'+id+'"]').click(); }
 
   // ====== Selector de trabajo (sheet) ======
-  var sheet=$('jobsheet'), sheetFor='r';
-  function abrirSheet(f){ sheetFor=f; $('job-search').value=''; pintarJobs(''); sheet.classList.add('show'); }
+  var sheet=$('jobsheet');
+  function abrirSheet(){ $('job-search').value=''; pintarJobs(''); sheet.classList.add('show'); }
   function cerrarSheet(){ sheet.classList.remove('show'); }
   sheet.querySelector('.bg').addEventListener('click',cerrarSheet);
-  document.querySelectorAll('.job-pick').forEach(function(p){ p.addEventListener('click',function(){ abrirSheet(p.dataset.for); }); });
+  document.querySelectorAll('.job-pick').forEach(function(p){ p.addEventListener('click',abrirSheet); });
   $('job-search').addEventListener('input',function(){ pintarJobs(this.value.trim().toLowerCase()); });
   function pintarJobs(q){
     var list=$('job-list');
@@ -395,22 +391,25 @@
       return '<div class="job'+(hoy?' hoy':'')+'" data-id="'+e.id+'"><div class="a">'+badge+esc(e.ubicacion||e.titulo||'Trabajo')+'</div><div class="b">'+esc(e.titulo||'')+' · '+etiquetaTrabajo(e)+'</div></div>'; }).join('');
     list.innerHTML=items;
     list.querySelectorAll('.job').forEach(function(j){ j.addEventListener('click',function(){
-      if(j.dataset.manual){ elegirJob(sheetFor,null); } else { var e=EVENTOS.filter(function(x){return String(x.id)===String(j.dataset.id);})[0]; elegirJob(sheetFor,e); }
       cerrarSheet();
+      if(j.dataset.manual){ elegirJob(null); return; }
+      var e=EVENTOS.filter(function(x){return String(x.id)===String(j.dataset.id);})[0]; if(!e) return;
+      var reg=registroDe(e.id);
+      if(reg && (!EDIT_ID || String(EDIT_ID)!==String(reg.id))){ toast('Ya hay un registro de este trabajo · lo abrí para agregar'); abrirEdicion(reg); return; }
+      elegirJob(e);
     }); });
   }
-  function elegirJob(f,e){
-    // Nota: la FECHA del reporte/horas queda como el día real (hoy), aunque el trabajo dure varios días.
-    if(f==='r'){ R_JOB=e; pintaJobPick('r',e); if(e){ $('r-empresa').value=e.ubicacion||''; if(!$('r-lugar').value) $('r-lugar').value=e.titulo||''; } }
-    else { H_JOB=e; pintaJobPick('h',e); if(e){ $('h-empresa').value=e.ubicacion||''; if(!$('h-lugar').value) $('h-lugar').value=e.titulo||''; } }
+  function elegirJob(e){
+    // Nota: la FECHA del registro queda como el día real (hoy), aunque el trabajo dure varios días.
+    R_JOB=e; pintaJobPick(e);
+    if(e){ $('r-empresa').value=e.ubicacion||''; if(!$('r-lugar').value) $('r-lugar').value=e.titulo||''; }
   }
-  function pintaJobPick(f,e){
-    $(f+'-job-a').textContent=e?(e.ubicacion||e.titulo||'Trabajo'):'Elegir trabajo…';
-    $(f+'-job-b').textContent=e?((e.titulo?e.titulo+' · ':'')+fechaCorta(e.fecha)):'o llénalo manual abajo';
-    $(f+'-job-clear').classList.toggle('hide',!e);
+  function pintaJobPick(e){
+    $('r-job-a').textContent=e?(e.ubicacion||e.titulo||'Trabajo'):'Elegir trabajo…';
+    $('r-job-b').textContent=e?((e.titulo?e.titulo+' · ':'')+fechaCorta(e.fecha)):'o llénalo manual abajo';
+    $('r-job-clear').classList.toggle('hide',!e);
   }
-  $('r-job-clear').addEventListener('click',function(){ elegirJob('r',null); });
-  $('h-job-clear').addEventListener('click',function(){ elegirJob('h',null); });
+  $('r-job-clear').addEventListener('click',function(){ elegirJob(null); });
 
   // ====== Media (fotos/videos) con categoría Antes/Proceso/Después ======
   function addFiles(files,cat){
@@ -471,20 +470,23 @@
     });
   }
 
-  // ====== Guardar / Actualizar REPORTE ======
+  // ====== Guardar / Actualizar REGISTRO ======
   $('r-save').addEventListener('click',function(){
     if(!sb) return;
     var empresa=$('r-empresa').value.trim(), lugar=$('r-lugar').value.trim(), fecha=$('r-fecha').value||todayISO(), notas=$('r-notas').value.trim();
-    if(!empresa && !R_JOB){ toast('Pon la empresa/cliente o elige un trabajo.'); return; }
+    if(!empresa && !R_JOB){ toast('Elige un trabajo o pon la empresa/cliente.'); return; }
     var emp=empresa || (R_JOB&&R_JOB.ubicacion) || '';
+    syncHoras();
+    var horas=HORAS.filter(function(h){ return (h.trabajador||'').trim()||h.entrada||h.salida; })
+      .map(function(h){ return { trabajador:(h.trabajador||'').trim(), entrada:h.entrada||'', salida:h.salida||'' }; });
     var nuevos=R_MEDIA.filter(function(m){ return m.file; }).length, done=0, n=0;
     var carpeta=slug(emp||'SIN')+'/'+fecha;
-    busy(true, EDIT_ID?'Guardando cambios…':'Guardando reporte…');
+    busy(true, EDIT_ID?'Guardando cambios…':'Guardando registro…');
     if(nuevos){ $('busy-bar').classList.remove('hide'); $('busy-bar').querySelector('i').style.width='0'; }
     function subeUno(idx){
       if(idx>=R_MEDIA.length){ return finalizar(); }
       var m=R_MEDIA[idx];
-      if(!m.file){ return subeUno(idx+1); }   // ya subido / existente
+      if(!m.file){ return subeUno(idx+1); }
       n++;
       var ext=(m.file.name.split('.').pop()||(m.tipo==='video'?'mp4':'jpg')).toLowerCase();
       var nombre=slug(emp||'SIN')+'_'+(m.fecha||fecha)+'_'+n+'.'+ext;
@@ -499,104 +501,104 @@
     function finalizar(){
       var media=R_MEDIA.filter(function(m){ return m.url && !m.file && !m._fail; })
         .map(function(m){ return { url:m.url, tipo:m.tipo, nombre:m.nombre||'', cat:catOk(m.cat), fecha:m.fecha||fecha }; });
-      var row={ evento_id:(R_JOB?R_JOB.id:null), empresa:emp, lugar:lugar, fecha:fecha, notas:notas, autor:userEmail, media:media };
-      var q = EDIT_ID ? sb.from('reportes').update(row).eq('id',EDIT_ID) : sb.from('reportes').insert(row);
+      var row={ evento_id:(R_JOB?R_JOB.id:null), empresa:emp, lugar:lugar, fecha:fecha, notas:notas, horas:horas, media:media, autor:userEmail };
+      var q = EDIT_ID ? sb.from('registros').update(row).eq('id',EDIT_ID) : sb.from('registros').insert(row);
       q.then(function(r){ busy(false); $('busy-bar').classList.add('hide');
         if(r.error){ toast('No se pudo guardar: '+r.error.message); return; }
-        var wasEdit=!!EDIT_ID;
-        toast(wasEdit?'✓ Reporte actualizado':('✓ Reporte guardado'+(media.length?(' · '+media.length+' archivo(s)'):'')));
-        resetReporte();
-        if(wasEdit) document.querySelector('.tabbar button[data-v="v-hist"]').click();
+        toast(EDIT_ID?'✓ Registro actualizado':'✓ Registro guardado');
+        resetForm(); cargarRegistros(pintarRegistros); irA('v-hist');
       });
     }
     subeUno(0);
   });
-  function resetReporte(){
+  function resetForm(){
     R_MEDIA.forEach(function(m){ if(m.file){ try{ URL.revokeObjectURL(m.url); }catch(_){}} }); R_MEDIA=[];
     EDIT_ID=null;
-    $('r-title').textContent='Nuevo reporte'; $('r-save').textContent='Guardar reporte'; $('r-cancel').classList.add('hide');
+    $('r-title').textContent='Nuevo registro'; $('r-save').textContent='Guardar registro';
+    $('r-cancel').classList.add('hide'); $('r-del').classList.add('hide');
     $('r-empresa').value=''; $('r-lugar').value=''; $('r-notas').value=''; $('r-fecha').value=todayISO();
-    elegirJob('r',null); pintarThumbs();
-    var hoy=EVENTOS.filter(activoHoy); if(hoy.length===1) elegirJob('r', hoy[0]);
+    HORAS=[{trabajador:'',entrada:'',salida:''}]; renderHoras();
+    elegirJob(null); pintarThumbs();
+    autoSeleccionarHoy();
   }
-  // Abrir un reporte del historial para editar / agregar
-  function abrirEdicion(rep){
-    if(!rep) return;
+  function abrirEdicion(reg){
+    if(!reg) return;
     R_MEDIA.forEach(function(m){ if(m.file){ try{ URL.revokeObjectURL(m.url); }catch(_){}} }); R_MEDIA=[];
-    EDIT_ID=rep.id;
-    R_JOB = rep.evento_id ? (EVENTOS.filter(function(e){ return String(e.id)===String(rep.evento_id); })[0] || {id:rep.evento_id, ubicacion:rep.empresa||'', titulo:rep.lugar||'', fecha:rep.fecha, _sint:true}) : null;
-    pintaJobPick('r', R_JOB);
-    $('r-empresa').value=rep.empresa||''; $('r-lugar').value=rep.lugar||''; $('r-fecha').value=rep.fecha||todayISO(); $('r-notas').value=rep.notas||'';
-    (rep.media||[]).forEach(function(m){ R_MEDIA.push({ url:m.url, tipo:m.tipo||'image', cat:catOk(m.cat), fecha:m.fecha||rep.fecha, nombre:m.nombre||'', existing:true }); });
+    EDIT_ID=reg.id;
+    R_JOB = reg.evento_id ? (EVENTOS.filter(function(e){ return String(e.id)===String(reg.evento_id); })[0] || {id:reg.evento_id, ubicacion:reg.empresa||'', titulo:reg.lugar||'', fecha:reg.fecha, _sint:true}) : null;
+    pintaJobPick(R_JOB);
+    $('r-empresa').value=reg.empresa||''; $('r-lugar').value=reg.lugar||''; $('r-fecha').value=reg.fecha||todayISO(); $('r-notas').value=reg.notas||'';
+    HORAS = (reg.horas&&reg.horas.length) ? reg.horas.map(function(h){ return { trabajador:h.trabajador||'', entrada:h.entrada||'', salida:h.salida||'' }; }) : [{trabajador:'',entrada:'',salida:''}];
+    renderHoras();
+    (reg.media||[]).forEach(function(m){ R_MEDIA.push({ url:m.url, tipo:m.tipo||'image', cat:catOk(m.cat), fecha:m.fecha||reg.fecha, nombre:m.nombre||'', existing:true }); });
     pintarThumbs();
-    $('r-title').textContent='Editar reporte'; $('r-save').textContent='Guardar cambios'; $('r-cancel').classList.remove('hide');
-    document.querySelector('.tabbar button[data-v="v-reporte"]').click(); window.scrollTo(0,0);
+    $('r-title').textContent='Editar registro'; $('r-save').textContent='Guardar cambios';
+    $('r-cancel').classList.remove('hide'); $('r-del').classList.remove('hide');
+    irA('v-reporte'); window.scrollTo(0,0);
   }
-  $('r-cancel').addEventListener('click',function(){ resetReporte(); document.querySelector('.tabbar button[data-v="v-hist"]').click(); });
-
-  // ====== Horas ======
-  function calcTotal(){
-    var a=$('h-in').value, b=$('h-out').value, el=$('h-total');
-    if(a&&b){ var pa=a.split(':'), pb=b.split(':'); var min=(pb[0]*60+ +pb[1])-(pa[0]*60+ +pa[1]); if(min<0) min+=1440;
-      el.classList.remove('hide'); el.innerHTML='⏱️ Total del turno: <b>'+Math.floor(min/60)+'h '+(min%60)+'m</b>'; }
-    else el.classList.add('hide');
-  }
-  $('h-in').addEventListener('change',calcTotal); $('h-out').addEventListener('change',calcTotal);
-  $('h-save').addEventListener('click',function(){
-    if(!sb) return;
-    var trab=$('h-trab').value.trim();
-    if(!trab){ toast('Pon el nombre del trabajador.'); return; }
-    var row={ evento_id:(H_JOB?H_JOB.id:null), trabajador:trab, empresa:$('h-empresa').value.trim()||(H_JOB&&H_JOB.ubicacion)||'',
-      lugar:$('h-lugar').value.trim(), fecha:$('h-fecha').value||todayISO(), entrada:$('h-in').value, salida:$('h-out').value,
-      notas:$('h-notas').value.trim(), autor:userEmail };
-    busy(true,'Guardando horas…');
-    sb.from('horas').insert(row).then(function(r){ busy(false);
-      if(r.error){ toast('No se pudo guardar: '+r.error.message); return; }
-      toast('✓ Horas registradas'); $('h-trab').value=''; $('h-in').value=''; $('h-out').value=''; $('h-notas').value=''; $('h-total').classList.add('hide'); elegirJob('h',null);
+  $('r-cancel').addEventListener('click',function(){ resetForm(); irA('v-hist'); });
+  $('r-del').addEventListener('click',function(){
+    if(!EDIT_ID) return;
+    if(!confirm('¿Eliminar este registro? (los archivos ya subidos no se borran del bucket)')) return;
+    busy(true,'Eliminando…');
+    sb.from('registros').delete().eq('id',EDIT_ID).then(function(r){ busy(false);
+      if(r.error){ toast('No se pudo eliminar: '+r.error.message); return; }
+      toast('✓ Registro eliminado'); resetForm(); cargarRegistros(pintarRegistros); irA('v-hist');
     });
   });
 
-  // ====== Historial ======
-  var histTab='reportes';
-  document.querySelectorAll('.hseg').forEach(function(b){ b.addEventListener('click',function(){
-    document.querySelectorAll('.hseg').forEach(function(x){ x.classList.toggle('on',x===b); });
-    histTab=b.dataset.h; cargarHistorial(); }); });
-  function cargarHistorial(){
-    if(!sb) return; var list=$('hist-list'); list.innerHTML='<div class="empty">Cargando…</div>';
-    if(histTab==='reportes'){
-      sb.from('reportes').select('*').order('created_at',{ascending:false}).limit(60).then(function(r){ HIST_REP=(r&&r.data)||[]; pintarHistReportes(HIST_REP); });
-    } else {
-      sb.from('horas').select('*').order('created_at',{ascending:false}).limit(80).then(function(r){ pintarHistHoras((r&&r.data)||[]); });
-    }
+  // ====== Horas por trabajador (filas) ======
+  function renderHoras(){
+    var c=$('horas-rows');
+    c.innerHTML=HORAS.map(function(h,i){
+      return '<div class="hrow" data-i="'+i+'">'+
+        '<input class="h-trab" placeholder="Nombre del trabajador" value="'+enc(h.trabajador||'')+'">'+
+        '<div class="hrow-times"><input type="time" class="h-in" value="'+(h.entrada||'')+'"><span class="arw">→</span><input type="time" class="h-out" value="'+(h.salida||'')+'">'+(HORAS.length>1?'<button class="hrow-rm" data-i="'+i+'" type="button">✕</button>':'')+'</div>'+
+        '<div class="hrow-total">'+totalTxt(h.entrada,h.salida)+'</div>'+
+      '</div>';
+    }).join('');
+    c.querySelectorAll('.hrow-rm').forEach(function(b){ b.addEventListener('click',function(){ removeTrab(+b.dataset.i); }); });
+    c.querySelectorAll('.hrow').forEach(function(row){
+      var upd=function(){ row.querySelector('.hrow-total').textContent=totalTxt(row.querySelector('.h-in').value,row.querySelector('.h-out').value); };
+      row.querySelector('.h-in').addEventListener('change',upd);
+      row.querySelector('.h-out').addEventListener('change',upd);
+    });
   }
-  function pintarHistReportes(rows){
-    $('hist-cnt').textContent=rows.length+' reporte'+(rows.length===1?'':'s');
-    if(!rows.length){ $('hist-list').innerHTML='<div class="empty"><div class="big">🗂️</div>Aún no hay reportes.<br><span style="font-size:.82rem">Crea uno en la pestaña Reporte.</span></div>'; return; }
+  function syncHoras(){ $('horas-rows').querySelectorAll('.hrow').forEach(function(row,i){ if(HORAS[i]){ HORAS[i].trabajador=row.querySelector('.h-trab').value; HORAS[i].entrada=row.querySelector('.h-in').value; HORAS[i].salida=row.querySelector('.h-out').value; } }); }
+  function addTrab(){ syncHoras(); HORAS.push({trabajador:'',entrada:'',salida:''}); renderHoras(); }
+  function removeTrab(i){ syncHoras(); HORAS.splice(i,1); if(!HORAS.length) HORAS=[{trabajador:'',entrada:'',salida:''}]; renderHoras(); }
+  $('add-trab').addEventListener('click',addTrab);
+
+  // ====== Lista de registros ======
+  function cargarRegistros(cb){
+    if(!sb){ if(cb)cb(); return; }
+    sb.from('registros').select('*').order('created_at',{ascending:false}).limit(120).then(function(r){ REGISTROS=(r&&r.data)||[]; if(cb)cb(); });
+  }
+  function resumenHoras(horas){
+    horas=horas||[]; if(!horas.length) return '';
+    var tot=0, hay=false; horas.forEach(function(h){ var m=totalMin(h.entrada,h.salida); if(m!=null){ tot+=m; hay=true; } });
+    var s=horas.length+' trabajador'+(horas.length>1?'es':'');
+    if(hay) s+=' · '+Math.floor(tot/60)+'h '+(tot%60)+'m';
+    return s;
+  }
+  function pintarRegistros(){
+    var rows=REGISTROS;
+    $('hist-cnt').textContent=rows.length+' registro'+(rows.length===1?'':'s');
+    if(!rows.length){ $('hist-list').innerHTML='<div class="empty"><div class="big">🗂️</div>Aún no hay registros.<br><span style="font-size:.82rem">Crea uno en la pestaña Registro.</span></div>'; return; }
     $('hist-list').innerHTML=rows.map(function(e,idx){
-      var media=(e.media||[]);
-      var cc={antes:0,proceso:0,despues:0}; media.forEach(function(m){ cc[catOk(m.cat)]++; });
-      var chips=['antes','proceso','despues'].filter(function(k){ return cc[k]; }).map(function(k){
-        return '<span class="cattag '+k+'" style="font-size:9px;padding:2px 8px">'+CAT_LBL[k]+' '+cc[k]+'</span>'; }).join(' ');
+      var media=(e.media||[]); var cc={antes:0,proceso:0,despues:0}; media.forEach(function(m){ cc[catOk(m.cat)]++; });
+      var chips=['antes','proceso','despues'].filter(function(k){ return cc[k]; }).map(function(k){ return '<span class="cattag '+k+'" style="font-size:9px;padding:2px 8px">'+CAT_LBL[k]+' '+cc[k]+'</span>'; }).join(' ');
       var minis=media.slice(0,6).map(function(m){ return m.tipo==='video'?'<div class="vv">▶</div>':'<img src="'+esc(m.url)+'" loading="lazy">'; }).join('');
+      var rh=resumenHoras(e.horas);
       return '<div class="item" data-idx="'+idx+'" style="cursor:pointer"><div class="top"><span class="emp">'+esc(e.empresa||'—')+'</span><span class="dt">'+fechaCorta(e.fecha)+' ›</span></div>'+
         (e.lugar?'<div class="lug">📍 '+esc(e.lugar)+'</div>':'')+
-        (chips?'<div style="margin-top:7px;display:flex;gap:5px;flex-wrap:wrap">'+chips+'</div>':(media.length?'<div style="margin-top:6px"><span class="pill">'+media.length+' archivo'+(media.length===1?'':'s')+'</span></div>':''))+
+        (rh?'<div style="margin-top:6px"><span class="pill">🕐 '+esc(rh)+'</span></div>':'')+
+        (chips?'<div style="margin-top:7px;display:flex;gap:5px;flex-wrap:wrap">'+chips+'</div>':'')+
         (e.notas?'<div class="no">'+esc(e.notas)+'</div>':'')+
         (minis?'<div class="mini">'+minis+'</div>':'')+
-        '<div style="margin-top:8px;font-size:.78rem;color:var(--orange-2);font-weight:700">✎ Tocar para editar o agregar</div></div>';
+        '<div style="margin-top:8px;font-size:.78rem;color:var(--orange-2);font-weight:700">✎ Tocar para abrir</div></div>';
     }).join('');
-    $('hist-list').querySelectorAll('.item[data-idx]').forEach(function(el){ el.addEventListener('click',function(){ abrirEdicion(HIST_REP[+el.dataset.idx]); }); });
-  }
-  function pintarHistHoras(rows){
-    $('hist-cnt').textContent=rows.length+' registro'+(rows.length===1?'':'s');
-    if(!rows.length){ $('hist-list').innerHTML='<div class="empty"><div class="big">⏱️</div>Aún no hay horas registradas.</div>'; return; }
-    $('hist-list').innerHTML=rows.map(function(e){
-      var rango=(e.entrada||'—')+' → '+(e.salida||'—');
-      return '<div class="item" style="border-left-color:var(--navy)"><div class="top"><span class="emp">'+esc(e.trabajador||'—')+'</span><span class="dt">'+fechaCorta(e.fecha)+'</span></div>'+
-        '<div class="lug">🏢 '+esc(e.empresa||'—')+(e.lugar?' · '+esc(e.lugar):'')+'</div>'+
-        '<div style="margin-top:6px"><span class="pill">🕐 '+rango+'</span></div>'+
-        (e.notas?'<div class="no">'+esc(e.notas)+'</div>':'')+'</div>';
-    }).join('');
+    $('hist-list').querySelectorAll('.item[data-idx]').forEach(function(el){ el.addEventListener('click',function(){ abrirEdicion(REGISTROS[+el.dataset.idx]); }); });
   }
 
   // ====== Service worker (instalable) ======
