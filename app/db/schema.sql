@@ -64,8 +64,19 @@ create table if not exists public.registros (
 create index if not exists registros_fecha_idx on public.registros (fecha desc);
 create index if not exists registros_evento_idx on public.registros (evento_id);
 alter table public.registros enable row level security;
+-- ver / crear / actualizar: cualquier usuario con sesión (operarios adjuntan fotos = update)
 drop policy if exists registros_auth_all on public.registros;
-create policy registros_auth_all on public.registros for all to authenticated using (true) with check (true);
+drop policy if exists registros_sel on public.registros;
+drop policy if exists registros_ins on public.registros;
+drop policy if exists registros_upd on public.registros;
+drop policy if exists registros_del on public.registros;
+create policy registros_sel on public.registros for select to authenticated using (true);
+create policy registros_ins on public.registros for insert to authenticated with check (true);
+create policy registros_upd on public.registros for update to authenticated using (true) with check (true);
+-- ELIMINAR: solo los 3 supervisores (a nivel de base de datos)
+create policy registros_del on public.registros for delete to authenticated
+  using ( lower(auth.jwt() ->> 'email') in (
+    'enzo.castro@innovaservi.com','jorge.castro@innovaservi.com','cristopher.ruiz@innovaservi.com') );
 
 -- 4) STORAGE: bucket público "reportes" para fotos/videos ----
 insert into storage.buckets (id, name, public)

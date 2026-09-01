@@ -171,6 +171,47 @@
   .bar{width:200px;max-width:70vw;height:7px;background:var(--line);border-radius:99px;overflow:hidden;}
   .bar i{display:block;height:100%;width:0;background:var(--orange);transition:width .2s;}
   .note{font-size:.78rem;color:var(--muted);margin:2px 2px 12px;line-height:1.5;}
+
+  /* ---- Reporte (vista imprimible) ---- */
+  #report-view{position:fixed;inset:0;z-index:70;background:#e9ebf2;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+  #report-view.hide{display:none;}
+  .report-actions{position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:10px;
+    background:var(--deep);color:#fff;padding:calc(10px + var(--safe-t)) 14px 10px;}
+  .rep-hint{font-size:.72rem;color:#c9cee8;flex:1;text-align:center;}
+  #report-doc{background:#fff;max-width:820px;margin:16px auto;padding:34px 34px 26px;box-shadow:0 10px 40px -18px rgba(0,0,0,.4);color:#222;}
+  .rep-head{display:flex;align-items:center;gap:16px;border-bottom:3px solid var(--orange);padding-bottom:14px;margin-bottom:16px;}
+  .rep-head img{height:66px;width:auto;}
+  .rep-head .rh-t{margin-left:auto;text-align:right;}
+  .rep-head .rh-t .big{font:800 20px var(--font);color:var(--ink);letter-spacing:.02em;}
+  .rep-head .rh-t .sm{font-size:.78rem;color:var(--muted);}
+  .rep-meta{display:grid;grid-template-columns:1fr 1fr;gap:6px 20px;font-size:.9rem;margin-bottom:16px;}
+  .rep-meta div{padding:5px 0;border-bottom:1px solid var(--line);}
+  .rep-meta b{color:var(--ink);}
+  .rep-sec-t{font:800 13px var(--font);text-transform:uppercase;letter-spacing:.05em;color:#fff;background:var(--orange);
+    display:inline-block;padding:4px 12px;border-radius:6px;margin:18px 0 10px;}
+  table.rep-h{width:100%;border-collapse:collapse;font-size:.86rem;margin-bottom:6px;}
+  table.rep-h th,table.rep-h td{border:1px solid var(--line);padding:7px 9px;text-align:left;}
+  table.rep-h th{background:var(--alt);color:var(--ink);font-weight:700;}
+  .rep-notas{font-size:.9rem;line-height:1.6;white-space:pre-line;background:var(--alt);border:1px solid var(--line);border-radius:8px;padding:12px 14px;}
+  .rep-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
+  .rphoto{position:relative;border:2px solid var(--line);border-radius:8px;overflow:hidden;background:#f0f0f0;cursor:pointer;}
+  .rphoto img{width:100%;height:190px;object-fit:cover;display:block;}
+  .rphoto .rp-x{position:absolute;top:6px;right:6px;width:26px;height:26px;border-radius:50%;background:var(--orange);color:#fff;display:none;align-items:center;justify-content:center;font-weight:800;font-size:14px;}
+  .rphoto.excluded{opacity:.32;filter:grayscale(1);border-style:dashed;}
+  .rphoto.excluded .rp-x{display:flex;background:#98a;}
+  .rphoto .rp-tick{position:absolute;top:6px;right:6px;width:26px;height:26px;border-radius:50%;background:var(--ok);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;}
+  .rphoto.excluded .rp-tick{display:none;}
+  .rep-foot{margin-top:22px;border-top:1px solid var(--line);padding-top:12px;font-size:.76rem;color:var(--muted);text-align:center;}
+  @media print{
+    body > *:not(#report-view){display:none !important;}
+    #report-view{position:static;background:#fff;overflow:visible;}
+    .report-actions{display:none !important;}
+    #report-doc{box-shadow:none;margin:0;max-width:none;padding:0;}
+    .rphoto{cursor:default;} .rphoto .rp-tick,.rphoto .rp-x{display:none !important;}
+    .rphoto.excluded,.rgroup.excluded{display:none !important;}
+    .rep-grid{gap:8px;} .rphoto img{height:230px;}
+    .rgroup{break-inside:avoid;}
+  }
   .warnbar{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;font-size:.78rem;padding:9px 12px;border-radius:11px;margin-bottom:12px;line-height:1.45;}
 </style>
 </head>
@@ -214,7 +255,7 @@
         <div class="fld"><label>Notas / observaciones</label><textarea id="r-notas" placeholder="Detalle del trabajo, materiales, pendientes…"></textarea></div>
       </div>
 
-      <div class="card">
+      <div class="card" id="horas-card">
         <label style="display:block;font:700 13px var(--font);color:var(--ink);margin-bottom:2px;">⏱️ Horas por trabajador</label>
         <p class="note" style="margin:0 0 10px">Agrega una línea por cada trabajador con su entrada y salida.</p>
         <div id="horas-rows"></div>
@@ -242,6 +283,7 @@
       </div>
 
       <button class="btn" id="r-save">Guardar registro</button>
+      <button class="btn ghost hide" id="r-report" style="margin-top:10px">📄 Generar reporte</button>
       <button class="pl-del-btn hide" id="r-del" style="width:100%;margin-top:10px;background:#fff;border:1px solid #f0c0c0;color:#dc2626;padding:13px;border-radius:13px;font:800 14px var(--font);cursor:pointer">🗑 Eliminar registro</button>
       <p class="note">Los archivos se guardan ordenados por empresa y fecha (ej. <b>CERMAQ_2026-08-31_1.jpg</b>).</p>
     </section>
@@ -270,6 +312,16 @@
   </div>
 </div>
 
+<!-- Reporte al cliente (pantalla completa, imprimible a PDF) -->
+<div id="report-view" class="hide">
+  <div class="report-actions">
+    <button id="rep-close" class="btn ghost small" style="width:auto">✕ Cerrar</button>
+    <span class="rep-hint">Toca una foto para incluir / quitar del reporte</span>
+    <button id="rep-print" class="btn small" style="width:auto">🖨️ Imprimir / Guardar PDF</button>
+  </div>
+  <div id="report-doc"></div>
+</div>
+
 <div id="busy"><div class="spin"></div><div class="bt" id="busy-t">Guardando…</div><div class="bar hide" id="busy-bar"><i></i></div></div>
 <div id="toast"></div>
 
@@ -286,7 +338,9 @@
   var USA_R2=!!(R2_UPLOAD && R2_PUBLIC);
 
   var sb=null; try{ if(window.supabase) sb=window.supabase.createClient(SB_URL,SB_KEY); }catch(e){}
-  var authed=false, userEmail='';
+  // Solo estos 3 (supervisores) generan reporte, editan datos/horas y eliminan. El resto solo adjunta fotos.
+  var ADMIN_EMAILS=['enzo.castro@innovaservi.com','jorge.castro@innovaservi.com','cristopher.ruiz@innovaservi.com'];
+  var authed=false, userEmail='', isAdmin=false;
   var EVENTOS=[];               // trabajos del calendario
   var R_MEDIA=[];               // archivos del registro actual [{file?,url,tipo,cat,fecha,nombre,existing?}]
   var R_JOB=null;               // trabajo del calendario elegido
@@ -314,9 +368,32 @@
   // ====== Login ======
   function setAuth(session){
     authed=!!session; userEmail=(session&&session.user&&session.user.email)||'';
-    if(authed){ $('gate').classList.add('hide'); $('app').classList.remove('hide'); $('who').textContent=userEmail;
+    isAdmin=ADMIN_EMAILS.indexOf((userEmail||'').trim().toLowerCase())>=0;
+    if(authed){ $('gate').classList.add('hide'); $('app').classList.remove('hide'); $('who').textContent=userEmail+(isAdmin?'':' · operario');
+      aplicarRol();
       if(!setAuth._loaded){ setAuth._loaded=true; init(); } }
     else { $('gate').classList.remove('hide'); $('app').classList.add('hide'); }
+  }
+  function aplicarRol(){
+    var op=!isAdmin;
+    $('horas-card').classList.toggle('hide', op);         // horas: solo admin
+    ['r-empresa','r-lugar','r-fecha','r-notas'].forEach(function(id){ $(id).disabled=op; });
+  }
+  // Ajusta títulos y botones según rol y si es edición
+  function aplicarModo(){
+    var editing=!!EDIT_ID;
+    if(isAdmin){
+      $('r-title').textContent=editing?'Editar registro':'Nuevo registro';
+      $('r-save').textContent=editing?'Guardar cambios':'Guardar registro';
+      $('r-del').classList.toggle('hide',!editing);
+      $('r-report').classList.toggle('hide',!editing);
+    } else {
+      $('r-title').textContent=editing?'Agregar fotos':'Registro de fotos';
+      $('r-save').textContent='Guardar fotos';
+      $('r-del').classList.add('hide');
+      $('r-report').classList.add('hide');
+    }
+    $('r-cancel').classList.toggle('hide',!editing);
   }
   if(sb&&sb.auth){ sb.auth.getSession().then(function(r){ setAuth(r&&r.data&&r.data.session); });
     sb.auth.onAuthStateChange(function(_e,s){ setAuth(s); }); }
@@ -334,6 +411,7 @@
   function init(){
     $('r-fecha').value=todayISO();
     if(!HORAS.length){ HORAS=[{trabajador:'',entrada:'',salida:''}]; renderHoras(); }
+    aplicarModo();
     cargarEventos();
     cargarRegistros();
   }
@@ -514,11 +592,9 @@
   function resetForm(){
     R_MEDIA.forEach(function(m){ if(m.file){ try{ URL.revokeObjectURL(m.url); }catch(_){}} }); R_MEDIA=[];
     EDIT_ID=null;
-    $('r-title').textContent='Nuevo registro'; $('r-save').textContent='Guardar registro';
-    $('r-cancel').classList.add('hide'); $('r-del').classList.add('hide');
     $('r-empresa').value=''; $('r-lugar').value=''; $('r-notas').value=''; $('r-fecha').value=todayISO();
     HORAS=[{trabajador:'',entrada:'',salida:''}]; renderHoras();
-    elegirJob(null); pintarThumbs();
+    elegirJob(null); pintarThumbs(); aplicarModo();
     autoSeleccionarHoy();
   }
   function abrirEdicion(reg){
@@ -531,9 +607,7 @@
     HORAS = (reg.horas&&reg.horas.length) ? reg.horas.map(function(h){ return { trabajador:h.trabajador||'', entrada:h.entrada||'', salida:h.salida||'' }; }) : [{trabajador:'',entrada:'',salida:''}];
     renderHoras();
     (reg.media||[]).forEach(function(m){ R_MEDIA.push({ url:m.url, tipo:m.tipo||'image', cat:catOk(m.cat), fecha:m.fecha||reg.fecha, nombre:m.nombre||'', existing:true }); });
-    pintarThumbs();
-    $('r-title').textContent='Editar registro'; $('r-save').textContent='Guardar cambios';
-    $('r-cancel').classList.remove('hide'); $('r-del').classList.remove('hide');
+    pintarThumbs(); aplicarModo();
     irA('v-reporte'); window.scrollTo(0,0);
   }
   $('r-cancel').addEventListener('click',function(){ resetForm(); irA('v-hist'); });
@@ -545,6 +619,47 @@
       if(r.error){ toast('No se pudo eliminar: '+r.error.message); return; }
       toast('✓ Registro eliminado'); resetForm(); cargarRegistros(pintarRegistros); irA('v-hist');
     });
+  });
+
+  // ====== Generar reporte (solo admin) con selección de fotos ======
+  function generarReporte(){
+    if(!isAdmin) return;
+    syncHoras();
+    var empresa=$('r-empresa').value.trim()||(R_JOB&&R_JOB.ubicacion)||'—';
+    var lugar=$('r-lugar').value.trim(), fecha=$('r-fecha').value||todayISO(), notas=$('r-notas').value.trim();
+    if(R_MEDIA.some(function(m){ return m.file; })) toast('Ojo: hay fotos sin guardar; guarda para incluirlas.');
+    var media=R_MEDIA.filter(function(m){ return m.url && !m.file && m.tipo!=='video'; });
+    var horas=HORAS.filter(function(h){ return (h.trabajador||'').trim()||h.entrada||h.salida; });
+    var meta='<div class="rep-meta">'+
+      '<div><b>Cliente:</b> '+esc(empresa)+'</div>'+
+      '<div><b>Fecha:</b> '+esc(fechaCorta(fecha))+'</div>'+
+      '<div><b>Lugar:</b> '+esc(lugar||'—')+'</div>'+
+      '<div><b>Emitido:</b> '+esc(fechaCorta(todayISO()))+'</div>'+
+    '</div>';
+    var horasHtml=horas.length?('<div class="rep-sec-t">Personal y horas</div><table class="rep-h"><thead><tr><th>Trabajador</th><th>Entrada</th><th>Salida</th><th>Total</th></tr></thead><tbody>'+
+      horas.map(function(h){ return '<tr><td>'+esc(h.trabajador||'—')+'</td><td>'+esc(h.entrada||'—')+'</td><td>'+esc(h.salida||'—')+'</td><td>'+esc((totalTxt(h.entrada,h.salida)||'').replace('Total: ','')||'—')+'</td></tr>'; }).join('')+'</tbody></table>'):'';
+    var notasHtml=notas?('<div class="rep-sec-t">Observaciones</div><div class="rep-notas">'+esc(notas)+'</div>'):'';
+    var secciones=['antes','proceso','despues'].map(function(cat){
+      var items=media.filter(function(m){ return catOk(m.cat)===cat; });
+      if(!items.length) return '';
+      var grid=items.map(function(m){ return '<div class="rphoto" data-url="'+enc(m.url)+'"><img src="'+esc(m.url)+'" alt=""><span class="rp-tick">✓</span><span class="rp-x">✕</span></div>'; }).join('');
+      return '<div class="rgroup"><div class="rep-sec-t">'+CAT_LBL[cat]+'</div><div class="rep-grid">'+grid+'</div></div>';
+    }).join('');
+    if(!media.length) secciones='<div class="rep-notas" style="text-align:center">Este registro aún no tiene fotos guardadas para incluir.</div>';
+    $('report-doc').innerHTML=
+      '<div class="rep-head"><img src="../assets/images/InnovaServi-completo.png" alt="InnovaServi" onerror="this.style.display=\'none\'"><div class="rh-t"><div class="big">REPORTE DE TRABAJO</div><div class="sm">Innova Servi · Innovación y Servicios SpA</div></div></div>'+
+      meta+horasHtml+notasHtml+secciones+
+      '<div class="rep-foot">Innova Servi · Innovación y Servicios SpA · Documento generado el '+esc(fechaCorta(todayISO()))+'</div>';
+    $('report-doc').querySelectorAll('.rphoto').forEach(function(p){ p.addEventListener('click',function(){ p.classList.toggle('excluded'); }); });
+    $('report-view').classList.remove('hide'); window.scrollTo(0,0);
+  }
+  $('r-report').addEventListener('click',generarReporte);
+  $('rep-close').addEventListener('click',function(){ $('report-view').classList.add('hide'); });
+  $('rep-print').addEventListener('click',function(){
+    var added=[];
+    $('report-doc').querySelectorAll('.rgroup').forEach(function(g){ if(!g.querySelectorAll('.rphoto:not(.excluded)').length){ g.classList.add('excluded'); added.push(g); } });
+    window.print();
+    setTimeout(function(){ added.forEach(function(g){ g.classList.remove('excluded'); }); },600);
   });
 
   // ====== Horas por trabajador (filas) ======
