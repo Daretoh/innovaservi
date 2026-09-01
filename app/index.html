@@ -277,6 +277,13 @@
   .docitem a{flex:1;min-width:0;font:600 13px var(--font);color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .docitem .dl{font-size:.7rem;color:var(--muted);}
   .docitem .rm{border:1px solid #f0c0c0;background:#fff;color:#dc2626;border-radius:8px;width:30px;height:30px;cursor:pointer;flex-shrink:0;}
+  #imp{position:fixed;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;padding:20px;}
+  #imp.hide{display:none;}
+  #imp .imp-bg{position:absolute;inset:0;background:rgba(12,15,46,.55);}
+  .imp-card{position:relative;background:#fff;border-radius:16px;padding:20px;width:100%;max-width:460px;box-shadow:0 30px 80px -20px rgba(0,0,0,.5);}
+  .imp-card h3{font-size:1.1rem;color:var(--ink);font-weight:800;margin-bottom:6px;}
+  .imp-card textarea{width:100%;font:500 14px var(--font);padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:var(--alt);color:var(--ink);resize:vertical;}
+  .imp-card textarea:focus{outline:none;border-color:var(--orange);background:#fff;}
 </style>
 </head>
 <body>
@@ -361,7 +368,7 @@
 
     <!-- ---- TRABAJADORES (solo admin) ---- -->
     <section class="view" id="v-trab">
-      <div class="h-row"><h2>Trabajadores</h2><button id="trab-nuevo" class="btn small" style="width:auto">＋ Nuevo</button></div>
+      <div class="h-row"><h2>Trabajadores</h2><div style="display:flex;gap:8px"><button id="trab-import" class="btn ghost small" style="width:auto">⬆ Importar</button><button id="trab-nuevo" class="btn small" style="width:auto">＋ Nuevo</button></div></div>
       <div id="trab-list"></div>
     </section>
   </main>
@@ -425,6 +432,17 @@
       <label class="catadd">＋ Agregar documento<input type="file" id="fi-doc-input" accept="application/pdf,image/*" multiple hidden></label>
     </div>
     <button class="pl-del-btn hide" id="fi-del" style="width:100%;background:#fff;border:1px solid #f0c0c0;color:#dc2626;padding:13px;border-radius:13px;font:800 14px var(--font);cursor:pointer">🗑 Eliminar trabajador</button>
+  </div>
+</div>
+
+<!-- Importar trabajadores (pegar lista) -->
+<div id="imp" class="hide">
+  <div class="imp-bg"></div>
+  <div class="imp-card">
+    <h3>Importar trabajadores</h3>
+    <p class="note" style="margin:0 0 10px">Un trabajador por línea. Opcional agregar cargo y RUT: <b>Nombre, Cargo, RUT</b></p>
+    <textarea id="imp-txt" rows="9" placeholder="Juan Pérez, Operario, 12.345.678-9&#10;Ana Soto"></textarea>
+    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:12px"><button id="imp-cancel" class="btn ghost small" style="width:auto">Cancelar</button><button id="imp-ok" class="btn small" style="width:auto">Importar</button></div>
   </div>
 </div>
 
@@ -924,6 +942,26 @@
     busy(true,'Eliminando…');
     sb.from('trabajadores').delete().eq('id',FICHA_ID).then(function(r){ busy(false); if(r.error){ toast('No se pudo eliminar: '+r.error.message); return; }
       toast('✓ Eliminado'); cerrarFicha(); cargarTrab(function(){ actualizarDatalist(); pintarTrab(); }); });
+  });
+  // Importar en lote (pegar lista)
+  $('trab-import').addEventListener('click',function(){ $('imp-txt').value=''; $('imp').classList.remove('hide'); });
+  $('imp').querySelector('.imp-bg').addEventListener('click',function(){ $('imp').classList.add('hide'); });
+  $('imp-cancel').addEventListener('click',function(){ $('imp').classList.add('hide'); });
+  $('imp-ok').addEventListener('click',function(){
+    if(!sb) return;
+    var lines=$('imp-txt').value.split(/\r?\n/).map(function(s){ return s.trim(); }).filter(Boolean);
+    if(!lines.length){ toast('Pega al menos un nombre.'); return; }
+    var vistos={}; TRAB.forEach(function(t){ vistos[(t.nombre||'').trim().toLowerCase()]=1; });
+    var rows=[];
+    lines.forEach(function(l){ var p=l.split(',').map(function(s){ return s.trim(); }); var nombre=p[0]; if(!nombre) return;
+      var k=nombre.toLowerCase(); if(vistos[k]) return; vistos[k]=1;
+      rows.push({ nombre:nombre, cargo:p[1]||'', rut:p[2]||'', estado:'activo', autor:userEmail }); });
+    if(!rows.length){ toast('Nada nuevo por importar (ya existían).'); return; }
+    busy(true,'Importando '+rows.length+'…');
+    sb.from('trabajadores').insert(rows).then(function(r){ busy(false);
+      if(r.error){ toast('No se pudo importar: '+r.error.message); return; }
+      $('imp').classList.add('hide'); toast('✓ '+rows.length+' trabajador(es) importado(s)');
+      cargarTrab(function(){ actualizarDatalist(); pintarTrab(); }); });
   });
 
   // ====== Service worker (instalable) ======
