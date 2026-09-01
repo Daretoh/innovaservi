@@ -255,6 +255,28 @@
     .rgroup,.rep-two,.rep-work,.rep-obs{break-inside:avoid;}
   }
   .warnbar{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;font-size:.78rem;padding:9px 12px;border-radius:11px;margin-bottom:12px;line-height:1.45;}
+
+  /* ---- Trabajadores / Ficha ---- */
+  .trab{background:#fff;border:1px solid var(--line);border-left:4px solid var(--navy);border-radius:13px;padding:12px 14px;margin-bottom:10px;cursor:pointer;display:flex;align-items:center;gap:12px;}
+  .trab .av{width:42px;height:42px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;flex-shrink:0;}
+  .trab.off{border-left-color:var(--muted);opacity:.72;}
+  .trab.off .av{background:var(--muted);}
+  .trab .tt{flex:1;min-width:0;}
+  .trab .nm{font:800 15px var(--font);color:var(--ink);}
+  .trab .cg{font-size:.82rem;color:var(--body);}
+  .trab .meta{font-size:.72rem;color:var(--muted);margin-top:1px;}
+  .trab .badge{font-size:.66rem;font-weight:800;padding:2px 8px;border-radius:999px;background:rgba(34,160,107,.14);color:var(--ok);}
+  .trab.off .badge{background:var(--alt);color:var(--muted);}
+  #ficha{position:fixed;inset:0;z-index:75;background:var(--alt);overflow-y:auto;-webkit-overflow-scrolling:touch;}
+  #ficha.hide{display:none;}
+  .ficha-bar{position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:10px;background:linear-gradient(135deg,#12163f,#1a1f6e);color:#fff;padding:calc(10px + var(--safe-t)) 14px 10px;}
+  .ficha-bar b{font-size:1rem;}
+  .ficha-body{max-width:640px;margin:0 auto;padding:14px 14px calc(30px + var(--safe-b));}
+  .docitem{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:10px;padding:9px 11px;margin-bottom:8px;background:var(--alt);}
+  .docitem .ic{width:30px;height:30px;border-radius:7px;background:rgba(255,107,0,.14);color:var(--orange);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;}
+  .docitem a{flex:1;min-width:0;font:600 13px var(--font);color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .docitem .dl{font-size:.7rem;color:var(--muted);}
+  .docitem .rm{border:1px solid #f0c0c0;background:#fff;color:#dc2626;border-radius:8px;width:30px;height:30px;cursor:pointer;flex-shrink:0;}
 </style>
 </head>
 <body>
@@ -301,6 +323,7 @@
         <label style="display:block;font:700 13px var(--font);color:var(--ink);margin-bottom:2px;">⏱️ Horas por trabajador</label>
         <p class="note" style="margin:0 0 10px">Agrega una línea por cada trabajador con su entrada y salida.</p>
         <div id="horas-rows"></div>
+        <datalist id="trab-datalist"></datalist>
         <button class="catadd" id="add-trab" type="button">＋ Agregar trabajador</button>
       </div>
 
@@ -335,11 +358,18 @@
       <div class="h-row"><h2 id="hist-title">Registros</h2><span class="cnt" id="hist-cnt"></span></div>
       <div id="hist-list"></div>
     </section>
+
+    <!-- ---- TRABAJADORES (solo admin) ---- -->
+    <section class="view" id="v-trab">
+      <div class="h-row"><h2>Trabajadores</h2><button id="trab-nuevo" class="btn small" style="width:auto">＋ Nuevo</button></div>
+      <div id="trab-list"></div>
+    </section>
   </main>
 
   <nav class="tabbar">
     <button data-v="v-reporte" class="on"><span class="em">➕</span>Registro</button>
     <button data-v="v-hist"><span class="em">🗂️</span>Registros</button>
+    <button data-v="v-trab" id="tab-trab" class="hide"><span class="em">👷</span>Personas</button>
   </nav>
 </div>
 
@@ -362,6 +392,40 @@
     <button id="rep-print" class="btn small" style="width:auto">🖨️ Imprimir / Guardar PDF</button>
   </div>
   <div id="report-doc"></div>
+</div>
+
+<!-- Ficha de trabajador (solo admin) -->
+<div id="ficha" class="hide">
+  <div class="ficha-bar">
+    <button id="fi-close" class="btn ghost small" style="width:auto">✕ Cerrar</button>
+    <b id="fi-title">Ficha</b>
+    <button id="fi-save" class="btn small" style="width:auto">Guardar</button>
+  </div>
+  <div class="ficha-body">
+    <div class="card">
+      <div class="fld"><label>Nombre</label><input id="fi-nombre" type="text" placeholder="Nombre completo"></div>
+      <div class="grid2">
+        <div class="fld"><label>RUT</label><input id="fi-rut" type="text" placeholder="12.345.678-9"></div>
+        <div class="fld"><label>Cargo</label><input id="fi-cargo" type="text" placeholder="Ej: Operario"></div>
+      </div>
+      <div class="grid2">
+        <div class="fld"><label>Estado</label><select id="fi-estado"><option value="activo">Activo</option><option value="inactivo">Inactivo</option></select></div>
+        <div class="fld"><label>Fecha ingreso</label><input id="fi-ingreso" type="date"></div>
+      </div>
+      <div class="grid2">
+        <div class="fld"><label>Teléfono</label><input id="fi-tel" type="tel" placeholder="+56 9 ..."></div>
+        <div class="fld"><label>Correo</label><input id="fi-email" type="email" placeholder="correo@..."></div>
+      </div>
+      <div class="fld"><label>Notas</label><textarea id="fi-notas" placeholder="Observaciones, talla EPP, contacto emergencia…"></textarea></div>
+    </div>
+    <div class="card">
+      <label style="display:block;font:700 13px var(--font);color:var(--ink);margin-bottom:2px;">📎 Documentos</label>
+      <p class="note" style="margin:0 0 10px">Contrato, cédula, ficha de ingreso, EPP, exámenes, capacitaciones… (PDF o imagen).</p>
+      <div id="fi-docs"></div>
+      <label class="catadd">＋ Agregar documento<input type="file" id="fi-doc-input" accept="application/pdf,image/*" multiple hidden></label>
+    </div>
+    <button class="pl-del-btn hide" id="fi-del" style="width:100%;background:#fff;border:1px solid #f0c0c0;color:#dc2626;padding:13px;border-radius:13px;font:800 14px var(--font);cursor:pointer">🗑 Eliminar trabajador</button>
+  </div>
 </div>
 
 <div id="busy"><div class="spin"></div><div class="bt" id="busy-t">Guardando…</div><div class="bar hide" id="busy-bar"><i></i></div></div>
@@ -389,6 +453,8 @@
   var HORAS=[];                 // horas por trabajador [{trabajador,entrada,salida}]
   var EDIT_ID=null;             // id del registro que se está editando (null = nuevo)
   var REGISTROS=[];             // registros cargados (lista + dedup por trabajo)
+  var TRAB=[];                  // trabajadores (RRHH)
+  var FICHA_ID=null, FICHA_DOCS=[]; // ficha en edición + sus documentos
 
   // ====== Helpers ======
   var $=function(id){ return document.getElementById(id); };
@@ -419,6 +485,7 @@
   function aplicarRol(){
     var op=!isAdmin;
     $('horas-card').classList.toggle('hide', op);         // horas: solo admin
+    $('tab-trab').classList.toggle('hide', op);           // Personas: solo admin
     ['r-empresa','r-lugar','r-fecha','r-notas'].forEach(function(id){ $(id).disabled=op; });
   }
   // Ajusta títulos y botones según rol y si es edición
@@ -456,6 +523,7 @@
     aplicarModo();
     cargarEventos();
     cargarRegistros();
+    if(isAdmin) cargarTrab(actualizarDatalist);
   }
   function registroDe(eventoId){ if(!eventoId) return null; return REGISTROS.filter(function(x){ return String(x.evento_id)===String(eventoId); })[0]||null; }
   function isoMas(dias){ var d=new Date(); d.setDate(d.getDate()+dias); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
@@ -487,6 +555,7 @@
     document.querySelectorAll('.tabbar button').forEach(function(x){ x.classList.toggle('on',x===b); });
     document.querySelectorAll('.view').forEach(function(v){ v.classList.toggle('on',v.id===b.dataset.v); });
     if(b.dataset.v==='v-hist') cargarRegistros(pintarRegistros);
+    if(b.dataset.v==='v-trab') cargarTrab(pintarTrab);
     window.scrollTo(0,0);
   }); });
   function irA(id){ document.querySelector('.tabbar button[data-v="'+id+'"]').click(); }
@@ -739,7 +808,7 @@
     var c=$('horas-rows');
     c.innerHTML=HORAS.map(function(h,i){
       return '<div class="hrow" data-i="'+i+'">'+
-        '<input class="h-trab" placeholder="Nombre del trabajador" value="'+enc(h.trabajador||'')+'">'+
+        '<input class="h-trab" list="trab-datalist" placeholder="Nombre del trabajador" value="'+enc(h.trabajador||'')+'">'+
         '<div class="hrow-times"><input type="time" class="h-in" value="'+(h.entrada||'')+'"><span class="arw">→</span><input type="time" class="h-out" value="'+(h.salida||'')+'">'+(HORAS.length>1?'<button class="hrow-rm" data-i="'+i+'" type="button">✕</button>':'')+'</div>'+
         '<div class="hrow-total">'+totalTxt(h.entrada,h.salida)+'</div>'+
       '</div>';
@@ -787,6 +856,75 @@
     }).join('');
     $('hist-list').querySelectorAll('.item[data-idx]').forEach(function(el){ el.addEventListener('click',function(){ abrirEdicion(REGISTROS[+el.dataset.idx]); }); });
   }
+
+  // ====== Trabajadores (RRHH) — solo admin ======
+  function cargarTrab(cb){
+    if(!sb){ if(cb)cb(); return; }
+    sb.from('trabajadores').select('*').order('nombre',{ascending:true}).limit(400).then(function(r){ TRAB=(r&&r.data)||[]; if(cb)cb(); });
+  }
+  function actualizarDatalist(){ var dl=$('trab-datalist'); if(dl) dl.innerHTML=TRAB.filter(function(t){return t.estado!=='inactivo';}).map(function(t){ return '<option value="'+enc(t.nombre)+'">'+(t.cargo?esc(t.cargo):'')+'</option>'; }).join(''); }
+  function inic(n){ n=(n||'').trim().split(/\s+/); return ((n[0]||'')[0]||'')+((n[1]||'')[0]||''); }
+  function pintarTrab(){
+    var list=$('trab-list');
+    if(!TRAB.length){ list.innerHTML='<div class="empty"><div class="big">👷</div>Aún no hay trabajadores.<br><span style="font-size:.82rem">Toca “＋ Nuevo”.</span></div>'; return; }
+    list.innerHTML=TRAB.map(function(t,idx){ var off=(t.estado==='inactivo');
+      var nd=(t.docs||[]).length;
+      return '<div class="trab'+(off?' off':'')+'" data-idx="'+idx+'"><div class="av">'+esc(inic(t.nombre).toUpperCase()||'·')+'</div>'+
+        '<div class="tt"><div class="nm">'+esc(t.nombre||'—')+'</div>'+(t.cargo?'<div class="cg">'+esc(t.cargo)+'</div>':'')+
+        '<div class="meta">'+(t.rut?esc(t.rut)+' · ':'')+nd+' doc'+(nd===1?'':'s')+'</div></div>'+
+        '<span class="badge">'+(off?'Inactivo':'Activo')+'</span></div>'; }).join('');
+    list.querySelectorAll('.trab[data-idx]').forEach(function(el){ el.addEventListener('click',function(){ abrirFicha(TRAB[+el.dataset.idx]); }); });
+  }
+  var ficha=$('ficha');
+  function abrirFicha(t){
+    FICHA_ID=t?t.id:null;
+    $('fi-nombre').value=t?(t.nombre||''):''; $('fi-rut').value=t?(t.rut||''):''; $('fi-cargo').value=t?(t.cargo||''):'';
+    $('fi-estado').value=(t&&t.estado)||'activo'; $('fi-ingreso').value=t?(t.fecha_ingreso||''):'';
+    $('fi-tel').value=t?(t.telefono||''):''; $('fi-email').value=t?(t.email||''):''; $('fi-notas').value=t?(t.notas||''):'';
+    FICHA_DOCS=t?((t.docs||[]).slice()):[]; renderDocs();
+    $('fi-title').textContent=t?('Ficha · '+(t.nombre||'')):'Nuevo trabajador';
+    $('fi-del').classList.toggle('hide', !t);
+    ficha.classList.remove('hide'); ficha.scrollTop=0;
+  }
+  function cerrarFicha(){ ficha.classList.add('hide'); }
+  $('fi-close').addEventListener('click',cerrarFicha);
+  $('trab-nuevo').addEventListener('click',function(){ abrirFicha(null); });
+  function renderDocs(){
+    var c=$('fi-docs');
+    c.innerHTML=FICHA_DOCS.map(function(d,i){ var img=(d.tipo==='image');
+      return '<div class="docitem"><div class="ic">'+(img?'🖼️':'📄')+'</div>'+
+        '<a href="'+esc(d.url)+'" target="_blank" rel="noopener">'+esc(d.nombre||'documento')+'<div class="dl">'+esc(fechaCorta(d.fecha||''))+' · abrir</div></a>'+
+        '<button class="rm" data-i="'+i+'" type="button">✕</button></div>'; }).join('')||'<p class="note" style="margin:0">Sin documentos aún.</p>';
+    c.querySelectorAll('.rm').forEach(function(b){ b.addEventListener('click',function(){ FICHA_DOCS.splice(+b.dataset.i,1); renderDocs(); }); });
+  }
+  $('fi-doc-input').addEventListener('change',function(){
+    var files=this.files; this.value=''; if(!files||!files.length) return;
+    var nom=$('fi-nombre').value.trim(); if(!nom){ toast('Pon el nombre del trabajador primero.'); return; }
+    var carpeta='trabajadores/'+slug(nom); var arr=Array.prototype.slice.call(files), i=0;
+    busy(true,'Subiendo documento…');
+    (function next(){
+      if(i>=arr.length){ busy(false); renderDocs(); toast('✓ Documento(s) agregado(s)'); return; }
+      var f=arr[i]; i++;
+      var nombre=slug(nom)+'_'+(f.name||'doc').replace(/[^a-zA-Z0-9._-]/g,'_');
+      subirArchivo(f,carpeta,nombre).then(function(res){ if(res){ FICHA_DOCS.push({url:res.url,nombre:f.name||res.nombre,tipo:tipoArch(f),fecha:todayISO()}); } next(); });
+    })();
+  });
+  $('fi-save').addEventListener('click',function(){
+    if(!sb) return; var nom=$('fi-nombre').value.trim(); if(!nom){ toast('El nombre es obligatorio.'); return; }
+    var row={ nombre:nom, rut:$('fi-rut').value.trim(), cargo:$('fi-cargo').value.trim(), estado:$('fi-estado').value,
+      telefono:$('fi-tel').value.trim(), email:$('fi-email').value.trim(), fecha_ingreso:$('fi-ingreso').value||null,
+      notas:$('fi-notas').value.trim(), docs:FICHA_DOCS, autor:userEmail };
+    busy(true,'Guardando…');
+    var q=FICHA_ID? sb.from('trabajadores').update(row).eq('id',FICHA_ID) : sb.from('trabajadores').insert(row);
+    q.then(function(r){ busy(false); if(r.error){ toast('No se pudo guardar: '+r.error.message); return; }
+      toast('✓ Trabajador guardado'); cerrarFicha(); cargarTrab(function(){ actualizarDatalist(); pintarTrab(); }); });
+  });
+  $('fi-del').addEventListener('click',function(){
+    if(!FICHA_ID) return; if(!confirm('¿Eliminar este trabajador? (sus documentos no se borran del bucket)')) return;
+    busy(true,'Eliminando…');
+    sb.from('trabajadores').delete().eq('id',FICHA_ID).then(function(r){ busy(false); if(r.error){ toast('No se pudo eliminar: '+r.error.message); return; }
+      toast('✓ Eliminado'); cerrarFicha(); cargarTrab(function(){ actualizarDatalist(); pintarTrab(); }); });
+  });
 
   // ====== Service worker (instalable) ======
   if('serviceWorker' in navigator){ window.addEventListener('load',function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); }); }

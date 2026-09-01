@@ -78,6 +78,34 @@ create policy registros_del on public.registros for delete to authenticated
   using ( lower(auth.jwt() ->> 'email') in (
     'enzo.castro@innovaservi.com','jorge.castro@innovaservi.com','cristopher.ruiz@innovaservi.com') );
 
+-- 2c) TRABAJADORES (ficha RRHH + documentos) -----------------
+create table if not exists public.trabajadores (
+  id          bigserial primary key,
+  nombre      text not null,
+  rut         text,
+  cargo       text,
+  estado      text not null default 'activo',   -- activo | inactivo
+  telefono    text,
+  email       text,
+  fecha_ingreso date,
+  notas       text,
+  docs        jsonb not null default '[]'::jsonb, -- [{url,nombre,tipo,fecha}]
+  autor       text,
+  created_at  timestamptz not null default now()
+);
+create index if not exists trabajadores_nombre_idx on public.trabajadores (nombre);
+alter table public.trabajadores enable row level security;
+drop policy if exists trab_sel on public.trabajadores;
+drop policy if exists trab_ins on public.trabajadores;
+drop policy if exists trab_upd on public.trabajadores;
+drop policy if exists trab_del on public.trabajadores;
+create policy trab_sel on public.trabajadores for select to authenticated using (true);
+create policy trab_ins on public.trabajadores for insert to authenticated with check (true);
+create policy trab_upd on public.trabajadores for update to authenticated using (true) with check (true);
+create policy trab_del on public.trabajadores for delete to authenticated
+  using ( lower(auth.jwt() ->> 'email') in (
+    'enzo.castro@innovaservi.com','jorge.castro@innovaservi.com','cristopher.ruiz@innovaservi.com') );
+
 -- 4) STORAGE: bucket público "reportes" para fotos/videos ----
 insert into storage.buckets (id, name, public)
 values ('reportes', 'reportes', true)
