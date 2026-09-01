@@ -202,15 +202,57 @@
   .rphoto .rp-tick{position:absolute;top:6px;right:6px;width:26px;height:26px;border-radius:50%;background:var(--ok);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;}
   .rphoto.excluded .rp-tick{display:none;}
   .rep-foot{margin-top:22px;border-top:1px solid var(--line);padding-top:12px;font-size:.76rem;color:var(--muted);text-align:center;}
+  /* páginas del informe */
+  #report-doc{padding:0;background:transparent;box-shadow:none;max-width:900px;}
+  .rep-page{background:#fff;max-width:820px;margin:16px auto;padding:34px 36px 30px;box-shadow:0 10px 40px -18px rgba(0,0,0,.4);position:relative;}
+  .rep-hdr{display:flex;align-items:center;gap:9px;border-bottom:2px solid var(--orange);padding-bottom:9px;margin-bottom:18px;}
+  .rep-hdr img{height:26px;} .rep-hdr span{font:700 12px var(--font);color:var(--ink);} .rep-hdr .muted{color:var(--muted);font-weight:500;}
+  .rep-h2{font:800 17px var(--font);color:var(--ink);margin:6px 0 12px;padding-bottom:6px;border-bottom:2px solid var(--orange);}
+  .rep-two{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px;}
+  .rep-box{border:1px solid var(--line);border-radius:10px;padding:14px 15px;font-size:.82rem;line-height:1.7;}
+  .rep-box .bt{font:800 11px var(--font);letter-spacing:.06em;margin-bottom:8px;}
+  .rep-box.orange{border-top:3px solid var(--orange);} .rep-box.orange .bt{color:var(--orange);}
+  .rep-box.navy{border-top:3px solid var(--navy);} .rep-box.navy .bt{color:var(--navy);}
+  .rep-box .mini{color:var(--muted);font-size:.74rem;line-height:1.4;display:block;margin-top:6px;}
+  .rep-detail{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px;}
+  .rep-detail .lbl{font:700 10px var(--font);letter-spacing:.05em;color:var(--muted);display:block;margin-bottom:3px;}
+  .rep-detail .val{font:700 14px var(--font);color:var(--ink);}
+  .rep-work{border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:.88rem;}
+  .rep-work b{display:block;color:var(--ink);margin-bottom:6px;}
+  .rep-work ul{margin:0 0 0 18px;} .rep-work li{margin:2px 0;}
+  .rep-obs{display:flex;align-items:center;gap:11px;background:var(--alt);border:1px solid var(--line);border-radius:10px;padding:14px 16px;font-size:.9rem;}
+  .rep-obs .chk{width:34px;height:34px;border-radius:50%;background:var(--ok);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;flex-shrink:0;}
+  [contenteditable]{outline:none;border-bottom:1px dashed #c7ccdd;min-width:40px;display:inline-block;padding:0 2px;}
+  [contenteditable]:empty:before{content:attr(data-ph);color:#b9bfd0;}
+  .rep-work [contenteditable]{display:block;border:none;}
+  .rep-fecha{font:700 12px var(--font);color:var(--muted);margin:10px 0 4px;}
+  /* portada / contraportada con franjas de marca */
+  .rep-cover,.rep-back{background:#efece6;min-height:1000px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:60px 90px;overflow:hidden;}
+  .rep-cover:before,.rep-cover:after,.rep-back:before,.rep-back:after{content:"";position:absolute;top:0;bottom:0;width:56px;background:
+    linear-gradient(90deg,#14110e 0 42%,#f2a71b 42% 52%,#ed4620 52% 62%,#1f28b0 62% 70%,#14110e 70% 100%);}
+  .rep-cover:before,.rep-back:before{left:0;} .rep-cover:after,.rep-back:after{right:0;transform:scaleX(-1);}
+  .rep-cover .web{position:absolute;top:44px;left:0;right:0;text-align:center;font:700 12px var(--font);letter-spacing:.12em;color:#14110e;}
+  .rep-cover .clogo,.rep-back .blogo{width:230px;max-width:60%;}
+  .rep-cover .ctitle{font:800 26px var(--font);color:#14110e;letter-spacing:.04em;margin-top:6px;}
+  .rep-cover .csub{font:600 12px var(--font);letter-spacing:.14em;color:#6a675f;margin-top:8px;text-transform:uppercase;}
+  .rep-cover .ctag{position:absolute;bottom:60px;left:0;right:0;font:600 13px var(--font);font-style:italic;color:#14110e;}
+  .rep-back .brow{display:flex;flex-direction:column;align-items:center;gap:3px;margin-bottom:20px;font:600 13px var(--font);color:#333;}
+  .rep-back .bico{font-size:18px;color:var(--navy);margin-bottom:2px;}
   @media print{
+    @page{margin:12mm;}
+    *{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}
     body > *:not(#report-view){display:none !important;}
     #report-view{position:static;background:#fff;overflow:visible;}
     .report-actions{display:none !important;}
     #report-doc{box-shadow:none;margin:0;max-width:none;padding:0;}
+    .rep-page{box-shadow:none;margin:0;max-width:none;page-break-after:always;padding:0;}
+    .rep-page:last-child{page-break-after:auto;}
+    .rep-cover,.rep-back{min-height:96vh;padding:60px;}
+    [contenteditable]{border:none !important;}
     .rphoto{cursor:default;} .rphoto .rp-tick,.rphoto .rp-x{display:none !important;}
     .rphoto.excluded,.rgroup.excluded{display:none !important;}
-    .rep-grid{gap:8px;} .rphoto img{height:230px;}
-    .rgroup{break-inside:avoid;}
+    .rep-grid{gap:8px;} .rphoto img{height:225px;}
+    .rgroup,.rep-two,.rep-work,.rep-obs{break-inside:avoid;}
   }
   .warnbar{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;font-size:.78rem;padding:9px 12px;border-radius:11px;margin-bottom:12px;line-height:1.45;}
 </style>
@@ -621,7 +663,9 @@
     });
   });
 
-  // ====== Generar reporte (solo admin) con selección de fotos ======
+  // ====== Generar INFORME de trabajo (solo admin) con selección de fotos ======
+  var REP_LBL={antes:'Estado inicial',proceso:'Proceso',despues:'Resultado'};
+  function fFaena(f){ if(!f)return'—'; var d=new Date(f+'T00:00:00'); return String(d.getDate()).padStart(2,'0')+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+d.getFullYear(); }
   function generarReporte(){
     if(!isAdmin) return;
     syncHoras();
@@ -629,27 +673,55 @@
     var lugar=$('r-lugar').value.trim(), fecha=$('r-fecha').value||todayISO(), notas=$('r-notas').value.trim();
     if(R_MEDIA.some(function(m){ return m.file; })) toast('Ojo: hay fotos sin guardar; guarda para incluirlas.');
     var media=R_MEDIA.filter(function(m){ return m.url && !m.file && m.tipo!=='video'; });
-    var horas=HORAS.filter(function(h){ return (h.trabajador||'').trim()||h.entrada||h.salida; });
-    var meta='<div class="rep-meta">'+
-      '<div><b>Cliente:</b> '+esc(empresa)+'</div>'+
-      '<div><b>Fecha:</b> '+esc(fechaCorta(fecha))+'</div>'+
-      '<div><b>Lugar:</b> '+esc(lugar||'—')+'</div>'+
-      '<div><b>Emitido:</b> '+esc(fechaCorta(todayISO()))+'</div>'+
+    var hdr='<div class="rep-hdr"><img src="../assets/images/InnovaLOGO.png" onerror="this.style.display=\'none\'"><span>INNOVA SERVI <span class="muted">— Informe de Trabajo</span></span></div>';
+    // Portada
+    var cover='<div class="rep-page rep-cover"><div class="web">www.innovaservi.com</div>'+
+      '<img class="clogo" src="../assets/images/InnovaServi-completo.png" onerror="this.style.display=\'none\'">'+
+      '<div class="ctitle">INFORME DE TRABAJO</div>'+
+      '<div class="csub">'+esc(empresa)+(lugar?' · '+esc(lugar):'')+'</div>'+
+      '<div class="ctag">"Flexibilidad e Integración en Servicios Generales"</div></div>';
+    // Datos del servicio + detalle
+    var lineas=(notas||'').split(/\r?\n/).map(function(s){ return s.replace(/^[-•\s]+/,'').trim(); }).filter(Boolean);
+    var bullets=lineas.length?lineas.map(function(l){ return '<li>'+esc(l)+'</li>'; }).join(''):'<li></li>';
+    var datos='<div class="rep-page">'+hdr+
+      '<div class="rep-h2">Datos del servicio</div><div class="rep-two">'+
+        '<div class="rep-box orange"><div class="bt">EMPRESA CONTRATISTA</div>'+
+          'Empresa: <b>INNOVA SERVI SpA</b><br>RUT: <b>77.647.955-1</b><br>'+
+          'Responsable faena: <b><span contenteditable data-ph="Nombre">'+esc(userEmail.split("@")[0].replace(/\./g," "))+'</span></b><br>'+
+          'Certificador desinfección SERNAPESCA: <b>N° registro 891</b><br>'+
+          'Resolución extensa Innova Servi N°: <b>DN-00150/2023</b>'+
+          '<span class="mini">Empresa aplicadora de desinfectantes y sanitizantes — Resolución N° 2310429700</span></div>'+
+        '<div class="rep-box navy"><div class="bt">EMPRESA MANDANTE</div>'+
+          'Empresa: <b><span contenteditable data-ph="Cliente">'+esc(empresa)+'</span></b><br>'+
+          'RUT: <b><span contenteditable data-ph="RUT">'+'</span></b><br>'+
+          'Dirección: <b><span contenteditable data-ph="Dirección">'+esc(lugar)+'</span></b></div>'+
+      '</div>'+
+      '<div class="rep-h2">Detalle del trabajo realizado</div>'+
+      '<div class="rep-detail">'+
+        '<div><span class="lbl">SOLICITADO POR</span><div class="val"><span contenteditable data-ph="Nombre"></span></div></div>'+
+        '<div><span class="lbl">FECHA FAENA</span><div class="val">'+esc(fFaena(fecha))+'</div></div>'+
+        '<div><span class="lbl">LUGAR</span><div class="val">'+esc(lugar||'—')+'</div></div>'+
+      '</div>'+
+      '<div class="rep-work"><b>Trabajo realizado</b><ul contenteditable>'+bullets+'</ul></div>'+
+      '<div class="rep-obs"><span class="chk">✓</span><div><b>Observaciones:</b> <span contenteditable data-ph="Sin observaciones"></span></div></div>'+
     '</div>';
-    var horasHtml=horas.length?('<div class="rep-sec-t">Personal y horas</div><table class="rep-h"><thead><tr><th>Trabajador</th><th>Entrada</th><th>Salida</th><th>Total</th></tr></thead><tbody>'+
-      horas.map(function(h){ return '<tr><td>'+esc(h.trabajador||'—')+'</td><td>'+esc(h.entrada||'—')+'</td><td>'+esc(h.salida||'—')+'</td><td>'+esc((totalTxt(h.entrada,h.salida)||'').replace('Total: ','')||'—')+'</td></tr>'; }).join('')+'</tbody></table>'):'';
-    var notasHtml=notas?('<div class="rep-sec-t">Observaciones</div><div class="rep-notas">'+esc(notas)+'</div>'):'';
-    var secciones=['antes','proceso','despues'].map(function(cat){
+    // Registro fotográfico (una página por sección con fotos)
+    function fotoPage(cat){
       var items=media.filter(function(m){ return catOk(m.cat)===cat; });
       if(!items.length) return '';
-      var grid=items.map(function(m){ return '<div class="rphoto" data-url="'+enc(m.url)+'"><img src="'+esc(m.url)+'" alt=""><span class="rp-tick">✓</span><span class="rp-x">✕</span></div>'; }).join('');
-      return '<div class="rgroup"><div class="rep-sec-t">'+CAT_LBL[cat]+'</div><div class="rep-grid">'+grid+'</div></div>';
-    }).join('');
-    if(!media.length) secciones='<div class="rep-notas" style="text-align:center">Este registro aún no tiene fotos guardadas para incluir.</div>';
-    $('report-doc').innerHTML=
-      '<div class="rep-head"><img src="../assets/images/InnovaServi-completo.png" alt="InnovaServi" onerror="this.style.display=\'none\'"><div class="rh-t"><div class="big">REPORTE DE TRABAJO</div><div class="sm">Innova Servi · Innovación y Servicios SpA</div></div></div>'+
-      meta+horasHtml+notasHtml+secciones+
-      '<div class="rep-foot">Innova Servi · Innovación y Servicios SpA · Documento generado el '+esc(fechaCorta(todayISO()))+'</div>';
+      var g=items.map(function(m){ return '<div class="rphoto"><img src="'+esc(m.url)+'" alt=""><span class="rp-tick">✓</span><span class="rp-x">✕</span></div>'; }).join('');
+      return '<div class="rep-page rgroup">'+hdr+'<div class="rep-h2">Registro fotográfico</div><div class="rep-sec-t">'+REP_LBL[cat]+'</div><div class="rep-grid">'+g+'</div></div>';
+    }
+    var fotos=fotoPage('antes')+fotoPage('proceso')+fotoPage('despues');
+    if(!media.length) fotos='<div class="rep-page">'+hdr+'<div class="rep-notas" style="text-align:center">Este registro aún no tiene fotos guardadas para incluir.</div></div>';
+    // Contraportada
+    var back='<div class="rep-page rep-back">'+
+      '<div class="brow"><span class="bico">✆</span>+56 9 5863 5547<br>+56 9 27358442</div>'+
+      '<div class="brow"><span class="bico">✉</span>cristopher.ruiz@innovaservi.com<br>jorge.castro@innovaservi.com</div>'+
+      '<div class="brow"><span class="bico">🌐</span>www.innovaservi.cl</div>'+
+      '<div class="brow"><span class="bico">📍</span>Los Lirios 35, Mirasol, Puerto Montt</div>'+
+      '<img class="blogo" src="../assets/images/InnovaServi-completo.png" onerror="this.style.display=\'none\'" style="margin-top:24px;width:230px;max-width:60%"></div>';
+    $('report-doc').innerHTML=cover+datos+fotos+back;
     $('report-doc').querySelectorAll('.rphoto').forEach(function(p){ p.addEventListener('click',function(){ p.classList.toggle('excluded'); }); });
     $('report-view').classList.remove('hide'); window.scrollTo(0,0);
   }
