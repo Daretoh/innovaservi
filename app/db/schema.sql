@@ -58,9 +58,12 @@ create table if not exists public.registros (
   notas       text,
   horas       jsonb not null default '[]'::jsonb,   -- [{trabajador,entrada,salida}]
   media       jsonb not null default '[]'::jsonb,   -- [{url,tipo,nombre,cat,fecha}]
+  asignacion  jsonb not null default '[]'::jsonb,   -- [{nombre, epp:[...]}]  cuadrilla + EPP de salida
   autor       text,
   created_at  timestamptz not null default now()
 );
+-- si la tabla ya existía sin la columna:
+alter table public.registros add column if not exists asignacion jsonb not null default '[]'::jsonb;
 create index if not exists registros_fecha_idx on public.registros (fecha desc);
 create index if not exists registros_evento_idx on public.registros (evento_id);
 alter table public.registros enable row level security;
@@ -88,11 +91,24 @@ create table if not exists public.trabajadores (
   telefono    text,
   email       text,
   fecha_ingreso date,
+  talla_botas text,
+  talla_ropa  text,
+  afp         text,
+  salud       text,          -- Fonasa / Isapre
+  direccion   text,
+  emergencia  text,          -- contacto de emergencia
   notas       text,
   docs        jsonb not null default '[]'::jsonb, -- [{url,nombre,tipo,fecha}]
   autor       text,
   created_at  timestamptz not null default now()
 );
+-- si la tabla ya existía, agrega las columnas nuevas:
+alter table public.trabajadores add column if not exists talla_botas text;
+alter table public.trabajadores add column if not exists talla_ropa text;
+alter table public.trabajadores add column if not exists afp text;
+alter table public.trabajadores add column if not exists salud text;
+alter table public.trabajadores add column if not exists direccion text;
+alter table public.trabajadores add column if not exists emergencia text;
 create index if not exists trabajadores_nombre_idx on public.trabajadores (nombre);
 alter table public.trabajadores enable row level security;
 drop policy if exists trab_sel on public.trabajadores;
