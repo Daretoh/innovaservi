@@ -344,13 +344,6 @@
         <button class="catadd" id="add-trab" type="button">＋ Agregar trabajador</button>
       </div>
 
-      <div class="card" id="asig-card">
-        <label style="display:block;font:700 13px var(--font);color:var(--ink);margin-bottom:2px;">🦺 Cuadrilla y EPP de salida</label>
-        <p class="note" style="margin:0 0 10px">Quién va a la faena y qué EPP prepara antes de salir. Toca cada EPP para marcarlo.</p>
-        <div id="asig-rows"></div>
-        <button class="catadd" id="add-asig" type="button">＋ Agregar a la cuadrilla</button>
-      </div>
-
       <div class="card">
         <label style="display:block;font:700 13px var(--font);color:var(--ink);margin-bottom:4px;">📷 Fotos y videos</label>
         <p class="note" style="margin:0 0 12px">Etiqueta cada foto/video como <b>Antes</b>, <b>Proceso</b> o <b>Después</b>. Puedes seguir agregando otro día reabriendo el registro.</p>
@@ -397,11 +390,34 @@
       </div>
       <div id="trab-list"></div>
     </section>
+
+    <!-- ---- CUADRILLA / EPP (solo admin) ---- -->
+    <section class="view" id="v-cuadrilla">
+      <div class="h-row"><h2>Cuadrilla y EPP</h2></div>
+      <div class="card">
+        <div class="fld">
+          <label>Trabajo del calendario</label>
+          <div class="job-pick" data-for="c"><div class="ico">📋</div><div class="t"><div class="a" id="c-job-a">Elegir trabajo…</div><div class="b" id="c-job-b">elige a qué trabajo va la cuadrilla</div></div><div class="chev">›</div></div>
+          <button class="job-clear hide" id="c-job-clear">✕ Quitar trabajo</button>
+        </div>
+      </div>
+
+      <div class="card" id="asig-card">
+        <label style="display:block;font:700 13px var(--font);color:var(--ink);margin-bottom:2px;">🦺 Cuadrilla y EPP de salida</label>
+        <p class="note" style="margin:0 0 10px">Quién va a la faena y qué EPP prepara antes de salir. Toca cada EPP para marcarlo.</p>
+        <div id="asig-rows"></div>
+        <button class="catadd" id="add-asig" type="button">＋ Agregar a la cuadrilla</button>
+      </div>
+
+      <button class="btn" id="c-save">Guardar cuadrilla</button>
+      <p class="note">Se guarda en el trabajo elegido y aparece en su registro y en el reporte.</p>
+    </section>
   </main>
 
   <nav class="tabbar">
     <button data-v="v-reporte" class="on"><span class="em">➕</span>Registro</button>
     <button data-v="v-hist"><span class="em">🗂️</span>Registros</button>
+    <button data-v="v-cuadrilla" id="tab-cuad" class="hide"><span class="em">🦺</span>Cuadrilla</button>
     <button data-v="v-trab" id="tab-trab" class="hide"><span class="em">👷</span>Personas</button>
   </nav>
 </div>
@@ -542,6 +558,7 @@
     var op=!isAdmin;
     $('horas-card').classList.toggle('hide', op);         // horas: solo admin
     $('asig-card').classList.toggle('hide', op);          // cuadrilla/EPP: solo admin
+    $('tab-cuad').classList.toggle('hide', op);           // Cuadrilla: solo admin
     $('tab-trab').classList.toggle('hide', op);           // Personas: solo admin
     ['r-empresa','r-lugar','r-fecha','r-notas'].forEach(function(id){ $(id).disabled=op; });
   }
@@ -614,16 +631,17 @@
     document.querySelectorAll('.view').forEach(function(v){ v.classList.toggle('on',v.id===b.dataset.v); });
     if(b.dataset.v==='v-hist') cargarRegistros(pintarRegistros);
     if(b.dataset.v==='v-trab') cargarTrab(pintarTrab);
+    if(b.dataset.v==='v-cuadrilla'){ cargarTrab(actualizarDatalist); cargarRegistros(function(){ if(C_JOB) elegirJobCuadrilla(C_JOB); }); }
     window.scrollTo(0,0);
   }); });
   function irA(id){ document.querySelector('.tabbar button[data-v="'+id+'"]').click(); }
 
   // ====== Selector de trabajo (sheet) ======
-  var sheet=$('jobsheet');
-  function abrirSheet(){ $('job-search').value=''; pintarJobs(''); sheet.classList.add('show'); }
+  var sheet=$('jobsheet'), sheetCtx='r';
+  function abrirSheet(ctx){ sheetCtx=ctx||'r'; $('job-search').value=''; pintarJobs(''); sheet.classList.add('show'); }
   function cerrarSheet(){ sheet.classList.remove('show'); }
   sheet.querySelector('.bg').addEventListener('click',cerrarSheet);
-  document.querySelectorAll('.job-pick').forEach(function(p){ p.addEventListener('click',abrirSheet); });
+  document.querySelectorAll('.job-pick').forEach(function(p){ p.addEventListener('click',function(){ abrirSheet(p.dataset.for||'r'); }); });
   $('job-search').addEventListener('input',function(){ pintarJobs(this.value.trim().toLowerCase()); });
   function pintarJobs(q){
     var list=$('job-list');
@@ -639,8 +657,10 @@
     list.innerHTML=items;
     list.querySelectorAll('.job').forEach(function(j){ j.addEventListener('click',function(){
       cerrarSheet();
-      if(j.dataset.manual){ elegirJob(null); return; }
-      var e=EVENTOS.filter(function(x){return String(x.id)===String(j.dataset.id);})[0]; if(!e) return;
+      var e=j.dataset.manual?null:EVENTOS.filter(function(x){return String(x.id)===String(j.dataset.id);})[0];
+      if(!j.dataset.manual && !e) return;
+      if(sheetCtx==='c'){ elegirJobCuadrilla(e); return; }
+      if(!e){ elegirJob(null); return; }
       var reg=registroDe(e.id);
       if(reg && (!EDIT_ID || String(EDIT_ID)!==String(reg.id))){ toast('Ya hay un registro de este trabajo · lo abrí para agregar'); abrirEdicion(reg); return; }
       elegirJob(e);
@@ -657,6 +677,36 @@
     $('r-job-clear').classList.toggle('hide',!e);
   }
   $('r-job-clear').addEventListener('click',function(){ elegirJob(null); });
+
+  // ====== Cuadrilla / EPP (pestaña propia, ligada a un trabajo) ======
+  var C_JOB=null;   // trabajo elegido para la cuadrilla
+  function elegirJobCuadrilla(e){
+    C_JOB=e;
+    $('c-job-a').textContent=e?(e.ubicacion||e.titulo||'Trabajo'):'Elegir trabajo…';
+    $('c-job-b').textContent=e?((e.titulo?e.titulo+' · ':'')+fechaCorta(e.fecha)):'elige a qué trabajo va la cuadrilla';
+    $('c-job-clear').classList.toggle('hide',!e);
+    var reg=e?registroDe(e.id):null;
+    ASIG=(reg&&reg.asignacion&&reg.asignacion.length)?reg.asignacion.map(function(a){ return { nombre:a.nombre||'', epp:(a.epp||[]).slice() }; }):[];
+    renderAsig();
+    if(reg&&reg.asignacion&&reg.asignacion.length) toast('Cargué la cuadrilla guardada de este trabajo');
+  }
+  $('c-job-clear').addEventListener('click',function(){ elegirJobCuadrilla(null); });
+  $('c-save').addEventListener('click',function(){
+    if(!sb) return;
+    if(!C_JOB){ toast('Elige un trabajo del calendario para la cuadrilla.'); return; }
+    syncAsig();
+    var asignacion=ASIG.filter(function(a){ return (a.nombre||'').trim(); })
+      .map(function(a){ return { nombre:(a.nombre||'').trim(), epp:a.epp||[] }; });
+    busy(true,'Guardando cuadrilla…');
+    var reg=registroDe(C_JOB.id);
+    var q = reg ? sb.from('registros').update({asignacion:asignacion}).eq('id',reg.id)
+                : sb.from('registros').insert({ evento_id:C_JOB.id, empresa:(C_JOB.ubicacion||''), lugar:(C_JOB.titulo||''), fecha:(C_JOB.fecha||todayISO()), asignacion:asignacion, autor:userEmail });
+    q.then(function(r){ busy(false);
+      if(r.error){ toast('No se pudo guardar: '+r.error.message); return; }
+      toast('✓ Cuadrilla guardada');
+      cargarRegistros(function(){ if(C_JOB) elegirJobCuadrilla(C_JOB); });
+    });
+  });
 
   // ====== Media (fotos/videos) con categoría Antes/Proceso/Después ======
   function addFiles(files,cat){
@@ -726,9 +776,6 @@
     syncHoras();
     var horas=HORAS.filter(function(h){ return (h.trabajador||'').trim()||h.entrada||h.salida; })
       .map(function(h){ return { trabajador:(h.trabajador||'').trim(), entrada:h.entrada||'', salida:h.salida||'' }; });
-    syncAsig();
-    var asignacion=ASIG.filter(function(a){ return (a.nombre||'').trim(); })
-      .map(function(a){ return { nombre:(a.nombre||'').trim(), epp:a.epp||[] }; });
     var nuevos=R_MEDIA.filter(function(m){ return m.file; }).length, done=0, n=0;
     var carpeta=slug(emp||'SIN')+'/'+fecha;
     busy(true, EDIT_ID?'Guardando cambios…':'Guardando registro…');
@@ -751,8 +798,11 @@
     function finalizar(){
       var media=R_MEDIA.filter(function(m){ return m.url && !m.file && !m._fail; })
         .map(function(m){ return { url:m.url, tipo:m.tipo, nombre:m.nombre||'', cat:catOk(m.cat), fecha:m.fecha||fecha }; });
-      var row={ evento_id:(R_JOB?R_JOB.id:null), empresa:emp, lugar:lugar, fecha:fecha, notas:notas, horas:horas, asignacion:asignacion, media:media, autor:userEmail };
-      var q = EDIT_ID ? sb.from('registros').update(row).eq('id',EDIT_ID) : sb.from('registros').insert(row);
+      // La cuadrilla/EPP se maneja en su propia pestaña; aquí NO se toca asignacion al actualizar.
+      var row={ evento_id:(R_JOB?R_JOB.id:null), empresa:emp, lugar:lugar, fecha:fecha, notas:notas, horas:horas, media:media, autor:userEmail };
+      var q;
+      if(EDIT_ID){ q=sb.from('registros').update(row).eq('id',EDIT_ID); }
+      else { row.asignacion=[]; q=sb.from('registros').insert(row); }
       q.then(function(r){ busy(false); $('busy-bar').classList.add('hide');
         if(r.error){ toast('No se pudo guardar: '+r.error.message); return; }
         toast(EDIT_ID?'✓ Registro actualizado':'✓ Registro guardado');
@@ -766,7 +816,6 @@
     EDIT_ID=null;
     $('r-empresa').value=''; $('r-lugar').value=''; $('r-notas').value=''; $('r-fecha').value=todayISO();
     HORAS=[{trabajador:'',entrada:'',salida:''}]; renderHoras();
-    ASIG=[]; renderAsig();
     elegirJob(null); pintarThumbs(); aplicarModo();
     autoSeleccionarHoy();
   }
@@ -779,8 +828,6 @@
     $('r-empresa').value=reg.empresa||''; $('r-lugar').value=reg.lugar||''; $('r-fecha').value=reg.fecha||todayISO(); $('r-notas').value=reg.notas||'';
     HORAS = (reg.horas&&reg.horas.length) ? reg.horas.map(function(h){ return { trabajador:h.trabajador||'', entrada:h.entrada||'', salida:h.salida||'' }; }) : [{trabajador:'',entrada:'',salida:''}];
     renderHoras();
-    ASIG = (reg.asignacion&&reg.asignacion.length) ? reg.asignacion.map(function(a){ return { nombre:a.nombre||'', epp:(a.epp||[]).slice() }; }) : [];
-    renderAsig();
     (reg.media||[]).forEach(function(m){ R_MEDIA.push({ url:m.url, tipo:m.tipo||'image', cat:catOk(m.cat), fecha:m.fecha||reg.fecha, nombre:m.nombre||'', existing:true }); });
     pintarThumbs(); aplicarModo();
     irA('v-reporte'); window.scrollTo(0,0);
@@ -943,7 +990,10 @@
     if(!sb){ if(cb)cb(); return; }
     sb.from('trabajadores').select('*').order('nombre',{ascending:true}).limit(400).then(function(r){ TRAB=(r&&r.data)||[]; if(cb)cb(); });
   }
-  function actualizarDatalist(){ var dl=$('trab-datalist'); if(dl) dl.innerHTML=TRAB.filter(function(t){return t.estado!=='inactivo';}).map(function(t){ return '<option value="'+enc(t.nombre)+'">'+(t.cargo?esc(t.cargo):'')+'</option>'; }).join(''); }
+  function actualizarDatalist(){ var dl=$('trab-datalist'); if(!dl) return;
+    dl.innerHTML=TRAB.filter(function(t){ return t.estado!=='inactivo' && (t.nombre||'').trim(); })
+      .sort(function(a,b){ return (a.nombre||'').localeCompare(b.nombre||''); })
+      .map(function(t){ return '<option value="'+enc(t.nombre)+'"></option>'; }).join(''); }
   function inic(n){ n=(n||'').trim().split(/\s+/); return ((n[0]||'')[0]||'')+((n[1]||'')[0]||''); }
   var trabQ='', trabFilter='todos', trabSort='nombre', TRAB_VISTA=[];
   function pintarTrab(){
