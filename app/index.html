@@ -428,20 +428,21 @@
       <div class="h-row"><h2>Matriz de trabajos</h2><button id="m-nueva" class="btn small" style="width:auto">＋ Nueva faena</button></div>
       <div class="card">
         <div class="grid2">
-          <div class="fld"><label>Cliente</label><input id="m-cliente" list="m-cli-list" type="text" value="CERMAQ"><datalist id="m-cli-list"></datalist></div>
+          <div class="fld"><label>Cliente</label><select id="m-cliente"></select></div>
           <div class="fld"><label>Faena</label><select id="m-faena"></select></div>
         </div>
-        <p class="note" style="margin:2px 0 0">Define qué EPP, herramientas y maquinaria ocupa cada tipo de trabajo. Se usa en Preparación.</p>
+        <p class="note" style="margin:2px 0 0">Los clientes salen de Planificación. Elige un cliente y su faena para editarla, o crea una nueva.</p>
       </div>
       <div class="card" id="m-editor">
-        <div class="fld"><label>Nombre de la faena</label><input id="m-nombre" type="text" placeholder="Ej: Apoyo frigorífico"></div>
-        <label style="display:block;font:700 13px var(--font);color:var(--ink);margin:6px 0 2px">Ítems</label>
+        <div class="grid2">
+          <div class="fld"><label>Cliente de esta faena</label><select id="m-ecliente"></select></div>
+          <div class="fld"><label>Nombre de la faena</label><input id="m-nombre" type="text" placeholder="Ej: Apoyo frigorífico"></div>
+        </div>
+        <label style="display:block;font:700 13px var(--font);color:var(--ink);margin:6px 0 2px">Ítems (EPP / herramienta / maquinaria)</label>
         <div id="m-items"></div>
         <button class="catadd" id="m-add-item" type="button">＋ Agregar ítem</button>
-        <div style="display:flex;gap:8px;margin-top:14px">
-          <button class="btn" id="m-save" style="flex:1">Guardar faena</button>
-          <button class="btn ghost" id="m-del" style="width:auto">🗑</button>
-        </div>
+        <button class="btn" id="m-save" style="width:100%;margin-top:14px">💾 Guardar faena</button>
+        <button id="m-del" style="width:100%;margin-top:8px;display:none;background:#fff;border:1px solid #f0c0c0;color:#dc2626;padding:13px;border-radius:13px;font:800 14px var(--font);cursor:pointer">🗑 Eliminar faena</button>
       </div>
     </section>
   </main>
@@ -682,12 +683,16 @@
   $('job-search').addEventListener('input',function(){ pintarJobs(this.value.trim().toLowerCase()); });
   function pintarJobs(q){
     var list=$('job-list');
-    var evs=EVENTOS.filter(function(e){ if(!q)return true; return ((e.titulo||'')+' '+(e.ubicacion||'')).toLowerCase().indexOf(q)>=0; });
+    var hoy=todayISO();
+    var evs=EVENTOS.filter(function(e){
+      if(sheetCtx==='c' && evFin(e)<hoy) return false;   // Preparación: solo hoy en adelante (no se prepara para el pasado)
+      if(!q)return true; return ((e.titulo||'')+' '+(e.ubicacion||'')).toLowerCase().indexOf(q)>=0;
+    });
     // ordenar por fecha más cercana a hoy (hoy primero; empate → futuro antes que pasado)
     evs.sort(function(a,b){ var da=diffRango(a), db=diffRango(b), aa=Math.abs(da), ab=Math.abs(db);
       if(aa!==ab) return aa-ab; if((da<0)!==(db<0)) return da<0?1:-1; return 0; });
     evs=evs.slice(0,120);
-    var items='<div class="job manual" data-manual="1">✎ Sin trabajo (llenar manual)</div>';
+    var items=(sheetCtx==='c')?'':'<div class="job manual" data-manual="1">✎ Sin trabajo (llenar manual)</div>';
     items+=evs.map(function(e){ var hoy=activoHoy(e);
       var badge=hoy?'<span style="background:var(--orange);color:#fff;font-size:.62rem;font-weight:800;padding:1px 7px;border-radius:999px;margin-right:6px;letter-spacing:.04em">HOY</span>':'';
       return '<div class="job'+(hoy?' hoy':'')+'" data-id="'+e.id+'"><div class="a">'+badge+esc(e.ubicacion||e.titulo||'Trabajo')+'</div><div class="b">'+esc(e.titulo||'')+' · '+etiquetaTrabajo(e)+'</div></div>'; }).join('');
@@ -816,25 +821,37 @@
   var M_ID=null;    // id de plantilla en edición (null=nueva)
   var M_ITEMS=[];   // items en edición [{tipo,item,cantidad}]
   var TIPOS=[['epp','EPP'],['herramienta','Herramienta'],['maquinaria','Maquinaria']];
-  function clientesMatriz(){ var s={}; PLANT.forEach(function(p){ var c=(p.cliente||'').trim(); if(c)s[normCli(c)]=1; }); var arr=Object.keys(s); if(arr.indexOf('CERMAQ')<0)arr.push('CERMAQ'); return arr.sort(); }
+  // Lista de clientes: los de Planificación (eventos) + los que ya tienen plantilla + base conocida
+  function clientesLista(){
+    var s={};
+    (EVENTOS||[]).forEach(function(e){ var u=(e.ubicacion||'').trim(); if(u) s[u.toUpperCase()]=1; });
+    PLANT.forEach(function(p){ var c=(p.cliente||'').trim(); if(c) s[c.toUpperCase()]=1; });
+    ['CERMAQ','KOMATSU','CUMMINS','MOWI','VENTISQUEROS'].forEach(function(c){ s[c]=1; });
+    return Object.keys(s).sort();
+  }
+  function opcionesCli(sel, val, conNuevo){
+    if(!sel) return;
+    sel.innerHTML=clientesLista().map(function(c){ return '<option value="'+enc(c)+'"'+(normCli(val)===c?' selected':'')+'>'+esc(c)+'</option>'; }).join('')+(conNuevo?'<option value="__new">➕ Otro cliente…</option>':'');
+  }
   function renderMatriz(){
-    var dl=$('m-cli-list'); if(dl) dl.innerHTML=clientesMatriz().map(function(c){ return '<option value="'+enc(c)+'">'; }).join('');
+    opcionesCli($('m-cliente'), $('m-cliente').value||'CERMAQ', false);
     renderFaenasMatriz();
   }
   function renderFaenasMatriz(){
     var cli=$('m-cliente').value.trim();
     var arr=PLANT.filter(function(p){ return normCli(p.cliente)===normCli(cli); }).sort(function(a,b){ return (a.faena||'').localeCompare(b.faena||''); });
     var sel=$('m-faena');
-    sel.innerHTML='<option value="">— nueva / elige —</option>'+arr.map(function(p){ return '<option value="'+p.id+'">'+esc(p.faena)+'</option>'; }).join('');
+    sel.innerHTML='<option value="">— nueva faena —</option>'+arr.map(function(p){ return '<option value="'+p.id+'">'+esc(p.faena)+'</option>'; }).join('');
     if(arr.length){ sel.value=String(arr[0].id); cargarFaenaMatriz(arr[0].id); } else { nuevaFaenaMatriz(); }
   }
   function cargarFaenaMatriz(id){
     var p=PLANT.filter(function(x){ return String(x.id)===String(id); })[0];
     if(!p){ nuevaFaenaMatriz(); return; }
-    M_ID=p.id; $('m-nombre').value=p.faena||''; M_ITEMS=(p.items||[]).map(function(it){ return {tipo:it.tipo||'herramienta',item:it.item||'',cantidad:it.cantidad||''}; });
+    M_ID=p.id; opcionesCli($('m-ecliente'), p.cliente, true); $('m-nombre').value=p.faena||'';
+    M_ITEMS=(p.items||[]).map(function(it){ return {tipo:it.tipo||'herramienta',item:it.item||'',cantidad:it.cantidad||''}; });
     if(!M_ITEMS.length)M_ITEMS=[{tipo:'herramienta',item:'',cantidad:''}]; renderMItems(); $('m-del').style.display='';
   }
-  function nuevaFaenaMatriz(){ M_ID=null; $('m-nombre').value=''; M_ITEMS=[{tipo:'herramienta',item:'',cantidad:''}]; renderMItems(); $('m-del').style.display='none'; if($('m-faena')) $('m-faena').value=''; }
+  function nuevaFaenaMatriz(){ M_ID=null; opcionesCli($('m-ecliente'), $('m-cliente').value, true); $('m-nombre').value=''; M_ITEMS=[{tipo:'herramienta',item:'',cantidad:''}]; renderMItems(); $('m-del').style.display='none'; if($('m-faena')) $('m-faena').value=''; }
   function renderMItems(){
     var c=$('m-items');
     c.innerHTML=M_ITEMS.map(function(it,i){
@@ -850,12 +867,19 @@
   function syncMItems(){ $('m-items').querySelectorAll('.mrow').forEach(function(row,i){ if(M_ITEMS[i]){ M_ITEMS[i].tipo=row.querySelector('.mi-tipo').value; M_ITEMS[i].item=row.querySelector('.mi-item').value; M_ITEMS[i].cantidad=row.querySelector('.mi-cant').value; } }); }
   $('m-cliente').addEventListener('change',renderFaenasMatriz);
   $('m-faena').addEventListener('change',function(){ if(this.value) cargarFaenaMatriz(this.value); else nuevaFaenaMatriz(); });
+  $('m-ecliente').addEventListener('change',function(){
+    if(this.value!=='__new') return;
+    var n=(prompt('Nombre del nuevo cliente:')||'').trim().toUpperCase();
+    if(n){ var o=document.createElement('option'); o.value=n; o.textContent=n; this.insertBefore(o, this.querySelector('option[value="__new"]')); this.value=n; }
+    else { this.value=($('m-cliente').value||'CERMAQ').toUpperCase(); }
+  });
   $('m-nueva').addEventListener('click',nuevaFaenaMatriz);
   $('m-add-item').addEventListener('click',function(){ syncMItems(); M_ITEMS.push({tipo:'herramienta',item:'',cantidad:''}); renderMItems(); });
   $('m-save').addEventListener('click',function(){
     if(!sb) return;
-    var cli=$('m-cliente').value.trim().toUpperCase(); var faena=$('m-nombre').value.trim();
-    if(!cli||!faena){ toast('Pon cliente y nombre de faena.'); return; }
+    var cli=$('m-ecliente').value.trim().toUpperCase(); if(!cli||cli==='__NEW') cli=$('m-cliente').value.trim().toUpperCase();
+    var faena=$('m-nombre').value.trim();
+    if(!cli||!faena){ toast('Elige cliente y pon el nombre de la faena.'); return; }
     syncMItems();
     var items=M_ITEMS.filter(function(it){ return (it.item||'').trim(); }).map(function(it){ return {tipo:it.tipo||'herramienta',item:it.item.trim(),cantidad:(it.cantidad||'').trim()}; });
     busy(true,'Guardando faena…');
@@ -863,7 +887,7 @@
     var q = M_ID ? sb.from('plantillas').update(row).eq('id',M_ID) : sb.from('plantillas').insert(row);
     q.then(function(r){ busy(false);
       if(r.error){ toast('No se pudo guardar: '+r.error.message); return; }
-      toast('✓ Faena guardada'); cargarPlantillas(function(){ $('m-cliente').value=cli; renderMatriz(); });
+      toast('✓ Faena guardada'); cargarPlantillas(function(){ opcionesCli($('m-cliente'),cli,false); $('m-cliente').value=cli; renderFaenasMatriz(); });
     });
   });
   $('m-del').addEventListener('click',function(){
