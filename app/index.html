@@ -301,8 +301,8 @@
   .trab .meta{font-size:.72rem;color:var(--muted);margin-top:1px;}
   .trab .badge{font-size:.66rem;font-weight:800;padding:2px 8px;border-radius:999px;background:rgba(34,160,107,.14);color:var(--ok);}
   .trab.off .badge{background:var(--alt);color:var(--muted);}
-  #ficha{position:fixed;inset:0;z-index:75;background:var(--alt);overflow-y:auto;-webkit-overflow-scrolling:touch;}
-  #ficha.hide{display:none;}
+  #ficha,#veh-ficha{position:fixed;inset:0;z-index:75;background:var(--alt);overflow-y:auto;-webkit-overflow-scrolling:touch;}
+  #ficha.hide,#veh-ficha.hide{display:none;}
   .ficha-bar{position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:10px;background:linear-gradient(135deg,#12163f,#1a1f6e);color:#fff;padding:calc(10px + var(--safe-t)) 14px 10px;}
   .ficha-bar b{font-size:1rem;}
   .ficha-body{max-width:640px;margin:0 auto;padding:14px 14px calc(30px + var(--safe-b));}
@@ -319,12 +319,12 @@
   .veh .vpat{font:800 11px var(--font);color:#fff;background:var(--navy);padding:2px 9px;border-radius:6px;letter-spacing:.03em;}
   .veh .vmeta{font-size:.8rem;color:var(--body);margin-top:2px;}
   .veh .vbadges{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
-  .veh .vchip{font-size:.68rem;font-weight:800;padding:3px 9px;border-radius:999px;background:var(--alt);color:var(--muted);}
-  .veh .vchip.ok{background:rgba(34,160,107,.14);color:var(--ok);}
-  .veh .vchip.taller{background:rgba(245,158,11,.15);color:#b45309;}
-  .veh .vchip.off{background:var(--alt);color:var(--muted);}
-  .veh .vchip.warn{background:rgba(245,158,11,.16);color:#b45309;}
-  .veh .vchip.vencido{background:rgba(220,38,38,.13);color:#dc2626;}
+  .vchip{display:inline-block;font-size:.68rem;font-weight:800;padding:3px 9px;border-radius:999px;background:var(--alt);color:var(--muted);}
+  .vchip.ok{background:rgba(34,160,107,.14);color:var(--ok);}
+  .vchip.taller{background:rgba(245,158,11,.15);color:#b45309;}
+  .vchip.off{background:var(--alt);color:var(--muted);}
+  .vchip.warn{background:rgba(245,158,11,.16);color:#b45309;}
+  .vchip.vencido{background:rgba(220,38,38,.13);color:#dc2626;}
   .veh .vgasto{font-size:.72rem;color:var(--orange-2);font-weight:700;margin-top:6px;}
   .gasto{border:1px solid var(--line);border-radius:11px;padding:10px 11px;margin-bottom:8px;background:var(--alt);}
   .gasto .gtop{display:flex;align-items:center;justify-content:space-between;gap:8px;}
@@ -334,6 +334,10 @@
   .gasto .gvenc{font-size:.72rem;font-weight:700;margin-top:3px;}
   .gasto .gvenc.warn{color:#b45309;} .gasto .gvenc.vencido{color:#dc2626;}
   .gasto .grm{float:right;border:none;background:none;color:#dc2626;font-size:15px;cursor:pointer;padding:2px 4px;}
+  .gasto .gdocs{margin-top:6px;}
+  .gasto .gdocs a{display:inline-block;font:700 11px var(--font);color:var(--orange-2);text-decoration:none;margin-right:10px;}
+  .gcatgrp{margin-bottom:16px;}
+  .gcatgrp-h{display:flex;align-items:center;gap:7px;flex-wrap:wrap;font:800 12.5px var(--font);color:var(--navy);margin:2px 0 8px;padding-bottom:5px;border-bottom:1px solid var(--line);}
   .gform{border:1px dashed #c7ccdd;border-radius:12px;padding:11px;margin-bottom:10px;background:#fff;}
   .gform .fld{margin-bottom:8px;}
   #imp{position:fixed;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;padding:20px;}
@@ -618,25 +622,25 @@
       <label class="catadd">＋ Agregar documento<input type="file" id="vf-doc-input" accept="application/pdf,image/*" multiple hidden></label>
     </div>
     <div class="card" id="vf-gastos-card">
-      <label style="display:block;font:700 13px var(--font);color:var(--ink);margin-bottom:2px;">💰 Gastos y pagos</label>
-      <p class="note" style="margin:0 0 10px" id="vf-gastos-note">Mantenciones, permiso de circulación, SOAP, revisión técnica, seguro, arriendos…</p>
+      <label style="display:block;font:700 13px var(--font);color:var(--ink);margin-bottom:2px;">📑 Documentos y pagos</label>
+      <p class="note" style="margin:0 0 10px" id="vf-gastos-note">Por tipo: permiso de circulación, SOAP, revisión técnica, seguro, mantenciones… con fecha, vencimiento, costo y comprobante.</p>
       <div id="vf-gastos-total" style="font:800 13px var(--font);color:var(--orange-2);margin-bottom:10px"></div>
       <div id="vf-gastos-list"></div>
-      <button class="catadd" id="vf-gasto-nuevo" type="button">＋ Agregar gasto</button>
+      <button class="catadd" id="vf-gasto-nuevo" type="button">＋ Agregar pago / documento</button>
       <div class="gform hide" id="vf-gform">
         <div class="grid2">
           <div class="fld"><label>Categoría</label><select id="gf-cat">
-            <option value="mantenimiento">Mantenimiento</option>
             <option value="permiso_circulacion">Permiso de circulación</option>
-            <option value="soap">SOAP</option>
             <option value="revision_tecnica">Revisión técnica</option>
+            <option value="soap">SOAP</option>
             <option value="seguro">Seguro</option>
+            <option value="mantenimiento">Mantenimiento</option>
             <option value="arriendo">Arriendo</option>
             <option value="combustible">Combustible</option>
             <option value="multa">Multa</option>
             <option value="otro">Otro</option>
           </select></div>
-          <div class="fld"><label>Fecha</label><input id="gf-fecha" type="date"></div>
+          <div class="fld"><label>Fecha (cuándo se hizo)</label><input id="gf-fecha" type="date"></div>
         </div>
         <div class="fld"><label>Descripción</label><input id="gf-desc" type="text" placeholder="Ej: 1° cuota permiso de circulación"></div>
         <div class="grid2">
@@ -645,11 +649,16 @@
         </div>
         <div class="grid2">
           <div class="fld"><label>Kilometraje</label><input id="gf-km" type="text" placeholder="Ej: 45.200"></div>
-          <div class="fld"><label>Vencimiento (opcional)</label><input id="gf-venc" type="date"></div>
+          <div class="fld"><label>Vence el (opcional)</label><input id="gf-venc" type="date"></div>
         </div>
-        <div style="display:flex;gap:8px;justify-content:flex-end">
+        <div class="fld">
+          <label>Comprobante (foto o PDF)</label>
+          <div id="gf-doc-list"></div>
+          <label class="catadd">＋ Adjuntar comprobante<input type="file" id="gf-doc-input" accept="application/pdf,image/*" multiple hidden></label>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px">
           <button id="gf-cancel" class="btn ghost small" style="width:auto">Cancelar</button>
-          <button id="gf-ok" class="btn small" style="width:auto">Agregar</button>
+          <button id="gf-ok" class="btn small" style="width:auto">Guardar</button>
         </div>
       </div>
     </div>
@@ -700,7 +709,10 @@
   var VEH=[];                   // vehículos/maquinaria
   var VEH_ID=null, VEH_DOCS=[]; // ficha de vehículo en edición + sus documentos
   var VEH_GASTOS=[];            // gastos del vehículo abierto
-  var GASTO_CAT_LBL={mantenimiento:'Mantenimiento',permiso_circulacion:'Permiso circulación',soap:'SOAP',revision_tecnica:'Revisión técnica',seguro:'Seguro',arriendo:'Arriendo',combustible:'Combustible',multa:'Multa',otro:'Otro'};
+  var GF_DOC=[];                // comprobante(s) del gasto que se está agregando
+  var GASTO_CAT_LBL={permiso_circulacion:'Permiso circulación',revision_tecnica:'Revisión técnica',soap:'SOAP',seguro:'Seguro',mantenimiento:'Mantenimiento',arriendo:'Arriendo',combustible:'Combustible',multa:'Multa',otro:'Otro'};
+  var GASTO_CAT_ICO={permiso_circulacion:'🪪',revision_tecnica:'🔧',soap:'🚑',seguro:'🛡️',mantenimiento:'🛠️',arriendo:'📦',combustible:'⛽',multa:'🚫',otro:'📄'};
+  var GASTO_CAT_ORDER=['permiso_circulacion','revision_tecnica','soap','seguro','mantenimiento','arriendo','combustible','multa','otro'];
 
   // ====== Helpers ======
   var $=function(id){ return document.getElementById(id); };
@@ -1607,41 +1619,76 @@
   function renderGastos(){
     var c=$('vf-gastos-list'); var tot=0; VEH_GASTOS.forEach(function(g){ tot+=(+g.monto||0); });
     $('vf-gastos-total').textContent=VEH_GASTOS.length?('Total registrado: '+fmtMoney(tot)):'';
-    if(!VEH_GASTOS.length){ c.innerHTML='<p class="note" style="margin:0 0 10px">Sin gastos registrados aún.</p>'; return; }
-    c.innerHTML=VEH_GASTOS.map(function(g,i){
-      var d=diasHasta(g.vencimiento), vencHtml='';
-      if(g.vencimiento){
-        vencHtml = d<0 ? ('<div class="gvenc vencido">⛔ Venció el '+esc(fechaCorta(g.vencimiento))+'</div>')
-                        : ('<div class="gvenc'+(d<=30?' warn':'')+'">📅 Vence el '+esc(fechaCorta(g.vencimiento))+(d<=30?(' · en '+d+'d'):'')+'</div>');
-      }
-      return '<div class="gasto"><button class="grm" data-i="'+i+'" type="button">✕</button>'+
-        '<div class="gtop"><span class="gcat">'+esc(GASTO_CAT_LBL[g.categoria]||g.categoria||'Otro')+'</span><span class="gmonto">'+fmtMoney(g.monto)+'</span></div>'+
-        '<div class="gmeta">'+esc(fechaCorta(g.fecha))+(g.proveedor?' · '+esc(g.proveedor):'')+(g.descripcion?'<br>'+esc(g.descripcion):'')+(g.kilometraje?' · '+esc(g.kilometraje)+' km':'')+'</div>'+
-        vencHtml+
-      '</div>';
+    if(!VEH_GASTOS.length){ c.innerHTML='<p class="note" style="margin:0 0 10px">Sin pagos ni documentos registrados aún.</p>'; return; }
+    // agrupar por categoría (permiso, revisión técnica, SOAP…), cada una con su propio historial
+    var byCat={};
+    VEH_GASTOS.forEach(function(g,i){ var k=g.categoria||'otro'; if(!byCat[k])byCat[k]=[]; byCat[k].push(i); });
+    var cats=GASTO_CAT_ORDER.filter(function(k){ return byCat[k]; });
+    Object.keys(byCat).forEach(function(k){ if(cats.indexOf(k)<0) cats.push(k); });
+    c.innerHTML=cats.map(function(cat){
+      var idxs=byCat[cat], vd=null, vdate=null;
+      idxs.forEach(function(i){ var g=VEH_GASTOS[i]; if(g.vencimiento){ var d=diasHasta(g.vencimiento); if(d!=null && (vd===null||Math.abs(d)<Math.abs(vd))){ vd=d; vdate=g.vencimiento; } } });
+      var badge='';
+      if(vd!=null) badge = vd<0 ? '<span class="vchip vencido">⛔ Vencido</span>' : (vd<=30 ? '<span class="vchip warn">⏰ vence en '+vd+'d</span>' : '<span class="vchip ok">📅 vence '+esc(fechaCorta(vdate))+'</span>');
+      var rows=idxs.map(function(i){ var g=VEH_GASTOS[i];
+        var d=diasHasta(g.vencimiento), vencHtml='';
+        if(g.vencimiento){
+          vencHtml = d<0 ? ('<div class="gvenc vencido">⛔ Venció el '+esc(fechaCorta(g.vencimiento))+'</div>')
+                          : ('<div class="gvenc'+(d<=30?' warn':'')+'">📅 Vence el '+esc(fechaCorta(g.vencimiento))+(d<=30?(' · en '+d+'d'):'')+'</div>');
+        }
+        var docs=g.comprobante||[];
+        var docHtml=docs.length?('<div class="gdocs">'+docs.map(function(d2){ return '<a href="'+esc(d2.url)+'" target="_blank" rel="noopener">📎 '+esc(d2.nombre||'comprobante')+'</a>'; }).join('')+'</div>'):'';
+        return '<div class="gasto"><button class="grm" data-i="'+i+'" type="button">✕</button>'+
+          '<div class="gtop"><span class="gmonto">'+fmtMoney(g.monto)+'</span></div>'+
+          '<div class="gmeta">'+esc(fechaCorta(g.fecha))+(g.proveedor?' · '+esc(g.proveedor):'')+(g.descripcion?'<br>'+esc(g.descripcion):'')+(g.kilometraje?' · '+esc(g.kilometraje)+' km':'')+'</div>'+
+          vencHtml+docHtml+
+        '</div>';
+      }).join('');
+      return '<div class="gcatgrp"><div class="gcatgrp-h">'+(GASTO_CAT_ICO[cat]||'📄')+' '+esc(GASTO_CAT_LBL[cat]||cat)+' '+badge+'</div>'+rows+'</div>';
     }).join('');
     c.querySelectorAll('.grm').forEach(function(b){ b.addEventListener('click',function(){ eliminarGasto(+b.dataset.i); }); });
   }
   function eliminarGasto(i){
-    var g=VEH_GASTOS[i]; if(!g||!sb) return; if(!confirm('¿Eliminar este gasto?')) return;
+    var g=VEH_GASTOS[i]; if(!g||!sb) return; if(!confirm('¿Eliminar este registro?')) return;
     busy(true,'Eliminando…');
     sb.from('vehiculo_gastos').delete().eq('id',g.id).then(function(r){ busy(false); if(r.error){ toast('No se pudo eliminar: '+r.error.message); return; }
       cargarGastos(VEH_ID, renderGastos);
     });
   }
+  function renderGfDocs(){
+    var c=$('gf-doc-list');
+    c.innerHTML=GF_DOC.map(function(d,i){ var img=(d.tipo==='image');
+      return '<div class="docitem"><div class="ic">'+(img?'🖼️':'📄')+'</div>'+
+        '<a href="'+esc(d.url)+'" target="_blank" rel="noopener">'+esc(d.nombre||'comprobante')+'</a>'+
+        '<button class="rm" data-i="'+i+'" type="button">✕</button></div>'; }).join('');
+    c.querySelectorAll('.rm').forEach(function(b){ b.addEventListener('click',function(){ GF_DOC.splice(+b.dataset.i,1); renderGfDocs(); }); });
+  }
+  $('gf-doc-input').addEventListener('change',function(){
+    var files=this.files; this.value=''; if(!files||!files.length) return;
+    var nom=$('vf-nombre').value.trim()||$('vf-patente').value.trim()||'vehiculo';
+    var carpeta='vehiculos/'+slug(nom)+'/gastos'; var arr=Array.prototype.slice.call(files), i=0;
+    busy(true,'Subiendo comprobante…');
+    (function next(){
+      if(i>=arr.length){ busy(false); renderGfDocs(); return; }
+      var f=arr[i]; i++;
+      var nombre=slug(nom)+'_'+(f.name||'doc').replace(/[^a-zA-Z0-9._-]/g,'_');
+      subirArchivo(f,carpeta,nombre).then(function(res){ if(res){ GF_DOC.push({url:res.url,nombre:f.name||res.nombre,tipo:tipoArch(f),fecha:todayISO()}); } next(); });
+    })();
+  });
   $('vf-gasto-nuevo').addEventListener('click',function(){
     if(!VEH_ID){ toast('Guarda el vehículo primero.'); return; }
-    $('gf-cat').value='mantenimiento'; $('gf-fecha').value=todayISO(); $('gf-desc').value=''; $('gf-prov').value=''; $('gf-monto').value=''; $('gf-km').value=''; $('gf-venc').value='';
+    $('gf-cat').value='permiso_circulacion'; $('gf-fecha').value=todayISO(); $('gf-desc').value=''; $('gf-prov').value=''; $('gf-monto').value=''; $('gf-km').value=''; $('gf-venc').value='';
+    GF_DOC=[]; renderGfDocs();
     $('vf-gform').classList.remove('hide');
   });
   $('gf-cancel').addEventListener('click',function(){ $('vf-gform').classList.add('hide'); });
   $('gf-ok').addEventListener('click',function(){
     if(!sb||!VEH_ID) return;
     var row={ vehiculo_id:VEH_ID, categoria:$('gf-cat').value, fecha:$('gf-fecha').value||todayISO(), descripcion:$('gf-desc').value.trim(),
-      proveedor:$('gf-prov').value.trim(), monto:+($('gf-monto').value||0), kilometraje:$('gf-km').value.trim(), vencimiento:$('gf-venc').value||null, autor:userEmail };
-    busy(true,'Guardando gasto…');
+      proveedor:$('gf-prov').value.trim(), monto:+($('gf-monto').value||0), kilometraje:$('gf-km').value.trim(), vencimiento:$('gf-venc').value||null, comprobante:GF_DOC, autor:userEmail };
+    busy(true,'Guardando…');
     sb.from('vehiculo_gastos').insert(row).then(function(r){ busy(false); if(r.error){ toast('No se pudo guardar: '+r.error.message); return; }
-      toast('✓ Gasto agregado'); $('vf-gform').classList.add('hide'); cargarGastos(VEH_ID, renderGastos);
+      toast('✓ Guardado'); $('vf-gform').classList.add('hide'); cargarGastos(VEH_ID, renderGastos);
     });
   });
 
