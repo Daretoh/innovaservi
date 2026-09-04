@@ -8,7 +8,9 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="apple-mobile-web-app-title" content="InnovaServi" />
 <link rel="manifest" href="manifest.webmanifest" />
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png?v=6" />
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=6" />
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=6" />
 <title>InnovaServi · Registros</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -157,12 +159,15 @@
 
   /* Bottom nav */
   .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:30;background:#fff;border-top:1px solid var(--line);
-    display:grid;grid-template-columns:repeat(3,1fr);padding-bottom:var(--safe-b);
+    display:flex;padding-bottom:var(--safe-b);
     box-shadow:0 -8px 24px -18px rgba(0,0,0,.4);}
-  .tabbar button{background:none;border:none;padding:9px 4px 7px;display:flex;flex-direction:column;align-items:center;gap:3px;
-    color:var(--muted);font:700 10.5px var(--font);cursor:pointer;}
-  .tabbar button .em{font-size:20px;line-height:1;}
+  .tabbar button{flex:1;position:relative;background:none;border:none;padding:10px 2px 7px;display:flex;flex-direction:column;align-items:center;gap:3px;
+    color:var(--muted);font:700 10px var(--font);cursor:pointer;transition:color .2s;}
+  .tabbar button .em{font-size:20px;line-height:1;transition:transform .25s cubic-bezier(.34,1.56,.64,1);}
   .tabbar button.on{color:var(--orange);}
+  .tabbar button.on .em{transform:translateY(-3px) scale(1.22);}
+  .tabbar button.on::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:24px;height:3px;border-radius:0 0 4px 4px;background:var(--orange);animation:tabpop .28s ease;}
+  @keyframes tabpop{from{width:0;opacity:.3;} to{width:24px;opacity:1;}}
 
   /* Sheet (selector trabajo) */
   .sheet{position:fixed;inset:0;z-index:60;display:none;}
@@ -368,14 +373,17 @@
         <div class="catgroup">
           <div class="cathead"><span class="cattag antes">Antes</span><span class="catcount" id="cnt-antes"></span></div>
           <div class="thumbs" id="th-antes" data-cat="antes"></div>
+          <label class="catadd">📷 Tomar / agregar aquí<input type="file" accept="image/*,video/*" multiple hidden data-cat="antes"></label>
         </div>
         <div class="catgroup">
           <div class="cathead"><span class="cattag proceso">Proceso</span><span class="catcount" id="cnt-proceso"></span></div>
           <div class="thumbs" id="th-proceso" data-cat="proceso"></div>
+          <label class="catadd">📷 Tomar / agregar aquí<input type="file" accept="image/*,video/*" multiple hidden data-cat="proceso"></label>
         </div>
         <div class="catgroup">
           <div class="cathead"><span class="cattag despues">Después</span><span class="catcount" id="cnt-despues"></span></div>
           <div class="thumbs" id="th-despues" data-cat="despues"></div>
+          <label class="catadd">📷 Tomar / agregar aquí<input type="file" accept="image/*,video/*" multiple hidden data-cat="despues"></label>
         </div>
       </div>
 
@@ -917,11 +925,12 @@
   });
 
   // ====== Media (fotos/videos): subir TODO -> "Sin clasificar" -> ordenar (admin) ======
-  function addFiles(files){
+  function addFiles(files,cat){
+    cat=catStore(cat||'sin');
     Array.prototype.forEach.call(files,function(f){
       if(!f||!f.type||!/^(image|video)\//.test(f.type)) return;
       var url=URL.createObjectURL(f);
-      R_MEDIA.push({file:f,url:url,tipo:tipoArch(f),cat:'sin',fecha:todayISO()});
+      R_MEDIA.push({file:f,url:url,tipo:tipoArch(f),cat:cat,fecha:todayISO()});
     });
     pintarThumbs();
   }
@@ -982,6 +991,8 @@
     ['dragleave','drop'].forEach(function(ev){ dz.addEventListener(ev,function(e){ e.preventDefault(); dz.classList.remove('drag'); }); });
     dz.addEventListener('drop',function(e){ if(e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files.length) addFiles(e.dataTransfer.files); });
   })();
+  // Botón por categoría: tomar/agregar foto directo a Antes/Proceso/Después
+  document.querySelectorAll('.catgroup .catadd input[type=file]').forEach(function(inp){ inp.addEventListener('change',function(){ if(this.files&&this.files.length) addFiles(this.files, this.dataset.cat); this.value=''; }); });
   // Arrastrar una miniatura a su categoría (admin, escritorio)
   ['th-sin','th-antes','th-proceso','th-despues'].forEach(function(id){
     var box=$(id); if(!box) return;
