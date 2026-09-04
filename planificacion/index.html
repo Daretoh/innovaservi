@@ -269,7 +269,7 @@
   }
 
   var MES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
-  var ref=new Date(2026,7,1); // agosto 2026 (mes con datos de ejemplo)
+  var ref=new Date(); // mes actual
   var vista='mes', buscar='';
   function iso(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
   function todayISO(){ return iso(new Date()); }
