@@ -116,16 +116,17 @@
   .sel-bar button{border:none;border-radius:9px;padding:7px 10px;font:800 12px var(--font);cursor:pointer;background:#fff;color:var(--navy);}
   .sel-bar button.del{background:#dc2626;color:#fff;} .sel-bar button.clr{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.5);}
   /* Horas por trabajador */
-  .hrow{border:1px solid var(--line);border-radius:12px;padding:10px 11px;margin-bottom:9px;background:var(--alt);}
-  .hrow .h-trab{width:100%;font:600 15px var(--font);padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink);margin-bottom:8px;}
-  .hrow-times{display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
-  .hrow-times input[type=time]{flex:1;min-width:78px;font:600 15px var(--font);padding:9px 8px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink);}
-  .hrow-times .arw{color:var(--muted);font-weight:800;}
-  .hrow .h-fecha{flex:0 0 100%;font:600 13px var(--font);padding:8px 9px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink);margin-bottom:2px;}
-  .hgroup{margin-bottom:14px;}
-  .hgroup-h{font:800 12.5px var(--font);color:var(--navy);margin:2px 0 8px;padding-bottom:5px;border-bottom:1px solid var(--line);}
-  .hrow-rm{width:34px;height:38px;flex-shrink:0;border:1px solid #f0c0c0;background:#fff;color:#dc2626;border-radius:9px;font-size:15px;cursor:pointer;}
-  .hrow-total{font-size:.76rem;color:var(--orange-2);font-weight:700;margin-top:7px;min-height:1px;}
+  .hrow{position:relative;border:1px solid var(--line);border-radius:11px;padding:7px 9px;margin-bottom:6px;background:var(--alt);}
+  .hrow .h-trab{width:100%;font:700 14px var(--font);padding:6px 9px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);margin-bottom:6px;}
+  .hrow-times{display:flex;align-items:center;gap:6px;flex-wrap:nowrap;}
+  .hrow-times input[type=time]{flex:1;min-width:0;font:600 14px var(--font);padding:6px 6px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);}
+  .hrow-times .arw{color:var(--muted);font-weight:800;flex:0 0 auto;}
+  .hrow-total{flex:0 0 auto;font-size:.72rem;color:var(--orange-2);font-weight:800;white-space:nowrap;}
+  .hrow-cal,.hrow-rm{flex:0 0 auto;width:30px;height:32px;border:1px solid var(--line);background:#fff;border-radius:8px;font-size:14px;cursor:pointer;line-height:1;}
+  .hrow-rm{border-color:#f0c0c0;color:#dc2626;}
+  .hrow .h-fecha{position:absolute;right:40px;bottom:8px;width:20px;height:20px;opacity:0;pointer-events:none;}
+  .hgroup{margin-bottom:12px;}
+  .hgroup-h{font:800 12.5px var(--font);color:var(--navy);margin:2px 0 7px;padding-bottom:5px;border-bottom:1px solid var(--line);}
   .hrow input:focus{outline:none;border-color:var(--orange);box-shadow:0 0 0 3px rgba(255,107,0,.13);}
   /* Cuadrilla + EPP */
   .arow{border:1px solid var(--line);border-radius:12px;padding:10px 11px;margin-bottom:9px;background:var(--alt);}
@@ -605,6 +606,7 @@
   function enc(s){ return (s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
   function totalMin(a,b){ if(!a||!b)return null; var pa=a.split(':'),pb=b.split(':'); var m=(pb[0]*60+ +pb[1])-(pa[0]*60+ +pa[1]); if(m<0)m+=1440; return m; }
   function totalTxt(a,b){ var m=totalMin(a,b); return m==null?'':('Total: '+Math.floor(m/60)+'h '+(m%60)+'m'); }
+  function totalMini(a,b){ var m=totalMin(a,b); return m==null?'':(Math.floor(m/60)+'h'+(m%60?(' '+(m%60)+'m'):'')); }
   function toast(t){ var el=$('toast'); el.textContent=t; el.classList.add('show'); clearTimeout(el._t); el._t=setTimeout(function(){ el.classList.remove('show'); },2600); }
   function busy(on,txt){ $('busy-t').textContent=txt||'Guardando…'; $('busy').classList.toggle('show',!!on); }
   function slug(s){ return (s||'').toString().trim().toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^A-Z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,28)||'SIN'; }
@@ -1201,20 +1203,25 @@
       var rows=idxs.map(function(i){ var h=HORAS[i];
         return '<div class="hrow" data-i="'+i+'">'+
           '<input class="h-trab" list="trab-datalist" placeholder="Nombre del trabajador" value="'+enc(h.trabajador||'')+'">'+
-          '<div class="hrow-times"><input type="date" class="h-fecha" value="'+(h.fecha||todayISO())+'">'+
-          '<input type="time" class="h-in" value="'+(h.entrada||'')+'"><span class="arw">→</span><input type="time" class="h-out" value="'+(h.salida||'')+'">'+
-          '<button class="hrow-rm" data-i="'+i+'" type="button">✕</button></div>'+
-          '<div class="hrow-total">'+totalTxt(h.entrada,h.salida)+'</div>'+
+          '<div class="hrow-times">'+
+            '<input type="time" class="h-in" value="'+(h.entrada||'')+'"><span class="arw">→</span><input type="time" class="h-out" value="'+(h.salida||'')+'">'+
+            '<span class="hrow-total">'+totalMini(h.entrada,h.salida)+'</span>'+
+            '<button class="hrow-cal" type="button" title="Cambiar fecha">📅</button>'+
+            '<button class="hrow-rm" data-i="'+i+'" type="button">✕</button>'+
+            '<input type="date" class="h-fecha" value="'+(h.fecha||todayISO())+'">'+
+          '</div>'+
         '</div>';
       }).join('');
       return '<div class="hgroup"><div class="hgroup-h">📅 '+fechaCorta(f)+' <span style="color:var(--muted);font-weight:600">('+idxs.length+(idxs.length>1?' trabajadores':' trabajador')+totTxt+')</span></div>'+rows+'</div>';
     }).join('');
     c.querySelectorAll('.hrow-rm').forEach(function(b){ b.addEventListener('click',function(){ removeTrab(+b.dataset.i); }); });
     c.querySelectorAll('.hrow').forEach(function(row){
-      var upd=function(){ row.querySelector('.hrow-total').textContent=totalTxt(row.querySelector('.h-in').value,row.querySelector('.h-out').value); };
+      var fe=row.querySelector('.h-fecha');
+      var upd=function(){ row.querySelector('.hrow-total').textContent=totalMini(row.querySelector('.h-in').value,row.querySelector('.h-out').value); };
       row.querySelector('.h-in').addEventListener('change',upd);
       row.querySelector('.h-out').addEventListener('change',upd);
-      row.querySelector('.h-fecha').addEventListener('change',function(){ syncHoras(); renderHoras(); }); // reagrupar por fecha
+      row.querySelector('.hrow-cal').addEventListener('click',function(){ try{ fe.showPicker(); }catch(e){ fe.focus(); fe.click(); } });
+      fe.addEventListener('change',function(){ syncHoras(); renderHoras(); }); // reagrupar por fecha
     });
   }
   function syncHoras(){ $('horas-rows').querySelectorAll('.hrow').forEach(function(row){ var i=+row.dataset.i; if(HORAS[i]){ HORAS[i].trabajador=row.querySelector('.h-trab').value; HORAS[i].entrada=row.querySelector('.h-in').value; HORAS[i].salida=row.querySelector('.h-out').value; var fe=row.querySelector('.h-fecha'); if(fe) HORAS[i].fecha=fe.value||todayISO(); } }); }
