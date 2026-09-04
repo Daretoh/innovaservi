@@ -118,9 +118,12 @@
   /* Horas por trabajador */
   .hrow{border:1px solid var(--line);border-radius:12px;padding:10px 11px;margin-bottom:9px;background:var(--alt);}
   .hrow .h-trab{width:100%;font:600 15px var(--font);padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink);margin-bottom:8px;}
-  .hrow-times{display:flex;align-items:center;gap:7px;}
-  .hrow-times input[type=time]{flex:1;min-width:0;font:600 15px var(--font);padding:9px 8px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink);}
+  .hrow-times{display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
+  .hrow-times input[type=time]{flex:1;min-width:78px;font:600 15px var(--font);padding:9px 8px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink);}
   .hrow-times .arw{color:var(--muted);font-weight:800;}
+  .hrow .h-fecha{flex:0 0 100%;font:600 13px var(--font);padding:8px 9px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink);margin-bottom:2px;}
+  .hgroup{margin-bottom:14px;}
+  .hgroup-h{font:800 12.5px var(--font);color:var(--navy);margin:2px 0 8px;padding-bottom:5px;border-bottom:1px solid var(--line);}
   .hrow-rm{width:34px;height:38px;flex-shrink:0;border:1px solid #f0c0c0;background:#fff;color:#dc2626;border-radius:9px;font-size:15px;cursor:pointer;}
   .hrow-total{font-size:.76rem;color:var(--orange-2);font-weight:700;margin-top:7px;min-height:1px;}
   .hrow input:focus{outline:none;border-color:var(--orange);box-shadow:0 0 0 3px rgba(255,107,0,.13);}
@@ -1044,7 +1047,7 @@
     var emp=empresa || (R_JOB&&R_JOB.ubicacion) || '';
     syncHoras();
     var horas=HORAS.filter(function(h){ return (h.trabajador||'').trim()||h.entrada||h.salida; })
-      .map(function(h){ return { trabajador:(h.trabajador||'').trim(), entrada:h.entrada||'', salida:h.salida||'' }; });
+      .map(function(h){ return { trabajador:(h.trabajador||'').trim(), entrada:h.entrada||'', salida:h.salida||'', fecha:h.fecha||fecha }; });
     var nuevos=R_MEDIA.filter(function(m){ return m.file; }).length, done=0, n=0;
     var carpeta=slug(emp||'SIN')+'/'+fecha;
     busy(true, EDIT_ID?'Guardando cambios…':'Guardando registro…');
@@ -1095,7 +1098,7 @@
     R_JOB = reg.evento_id ? (EVENTOS.filter(function(e){ return String(e.id)===String(reg.evento_id); })[0] || {id:reg.evento_id, ubicacion:reg.empresa||'', titulo:reg.lugar||'', fecha:reg.fecha, _sint:true}) : null;
     pintaJobPick(R_JOB);
     $('r-empresa').value=reg.empresa||''; $('r-lugar').value=reg.lugar||''; $('r-fecha').value=reg.fecha||todayISO(); $('r-notas').value=reg.notas||'';
-    HORAS = (reg.horas&&reg.horas.length) ? reg.horas.map(function(h){ return { trabajador:h.trabajador||'', entrada:h.entrada||'', salida:h.salida||'' }; }) : [{trabajador:'',entrada:'',salida:''}];
+    HORAS = (reg.horas&&reg.horas.length) ? reg.horas.map(function(h){ return { trabajador:h.trabajador||'', entrada:h.entrada||'', salida:h.salida||'', fecha:h.fecha||reg.fecha||todayISO() }; }) : [{trabajador:'',entrada:'',salida:'',fecha:reg.fecha||todayISO()}];
     renderHoras();
     (reg.media||[]).forEach(function(m){ R_MEDIA.push({ url:m.url, tipo:m.tipo||'image', cat:catStore(m.cat), fecha:m.fecha||reg.fecha, nombre:m.nombre||'', existing:true }); });
     pintarThumbs(); aplicarModo();
@@ -1186,23 +1189,37 @@
   // ====== Horas por trabajador (filas) ======
   function renderHoras(){
     var c=$('horas-rows');
-    c.innerHTML=HORAS.map(function(h,i){
-      return '<div class="hrow" data-i="'+i+'">'+
-        '<input class="h-trab" list="trab-datalist" placeholder="Nombre del trabajador" value="'+enc(h.trabajador||'')+'">'+
-        '<div class="hrow-times"><input type="time" class="h-in" value="'+(h.entrada||'')+'"><span class="arw">→</span><input type="time" class="h-out" value="'+(h.salida||'')+'">'+(HORAS.length>1?'<button class="hrow-rm" data-i="'+i+'" type="button">✕</button>':'')+'</div>'+
-        '<div class="hrow-total">'+totalTxt(h.entrada,h.salida)+'</div>'+
-      '</div>';
+    HORAS.forEach(function(h){ if(!h.fecha) h.fecha=todayISO(); });
+    // agrupar por fecha conservando el índice real de cada línea
+    var byDate={}, order=[];
+    HORAS.forEach(function(h,i){ var f=h.fecha||todayISO(); if(!byDate[f]){ byDate[f]=[]; order.push(f); } byDate[f].push(i); });
+    order.sort();
+    c.innerHTML=order.map(function(f){
+      var idxs=byDate[f], tot=0, hay=false;
+      idxs.forEach(function(i){ var m=totalMin(HORAS[i].entrada,HORAS[i].salida); if(m!=null){ tot+=m; hay=true; } });
+      var totTxt=hay?(' · '+Math.floor(tot/60)+'h '+(tot%60)+'m'):'';
+      var rows=idxs.map(function(i){ var h=HORAS[i];
+        return '<div class="hrow" data-i="'+i+'">'+
+          '<input class="h-trab" list="trab-datalist" placeholder="Nombre del trabajador" value="'+enc(h.trabajador||'')+'">'+
+          '<div class="hrow-times"><input type="date" class="h-fecha" value="'+(h.fecha||todayISO())+'">'+
+          '<input type="time" class="h-in" value="'+(h.entrada||'')+'"><span class="arw">→</span><input type="time" class="h-out" value="'+(h.salida||'')+'">'+
+          '<button class="hrow-rm" data-i="'+i+'" type="button">✕</button></div>'+
+          '<div class="hrow-total">'+totalTxt(h.entrada,h.salida)+'</div>'+
+        '</div>';
+      }).join('');
+      return '<div class="hgroup"><div class="hgroup-h">📅 '+fechaCorta(f)+' <span style="color:var(--muted);font-weight:600">('+idxs.length+(idxs.length>1?' trabajadores':' trabajador')+totTxt+')</span></div>'+rows+'</div>';
     }).join('');
     c.querySelectorAll('.hrow-rm').forEach(function(b){ b.addEventListener('click',function(){ removeTrab(+b.dataset.i); }); });
     c.querySelectorAll('.hrow').forEach(function(row){
       var upd=function(){ row.querySelector('.hrow-total').textContent=totalTxt(row.querySelector('.h-in').value,row.querySelector('.h-out').value); };
       row.querySelector('.h-in').addEventListener('change',upd);
       row.querySelector('.h-out').addEventListener('change',upd);
+      row.querySelector('.h-fecha').addEventListener('change',function(){ syncHoras(); renderHoras(); }); // reagrupar por fecha
     });
   }
-  function syncHoras(){ $('horas-rows').querySelectorAll('.hrow').forEach(function(row,i){ if(HORAS[i]){ HORAS[i].trabajador=row.querySelector('.h-trab').value; HORAS[i].entrada=row.querySelector('.h-in').value; HORAS[i].salida=row.querySelector('.h-out').value; } }); }
-  function addTrab(){ syncHoras(); HORAS.push({trabajador:'',entrada:'',salida:''}); renderHoras(); }
-  function removeTrab(i){ syncHoras(); HORAS.splice(i,1); if(!HORAS.length) HORAS=[{trabajador:'',entrada:'',salida:''}]; renderHoras(); }
+  function syncHoras(){ $('horas-rows').querySelectorAll('.hrow').forEach(function(row){ var i=+row.dataset.i; if(HORAS[i]){ HORAS[i].trabajador=row.querySelector('.h-trab').value; HORAS[i].entrada=row.querySelector('.h-in').value; HORAS[i].salida=row.querySelector('.h-out').value; var fe=row.querySelector('.h-fecha'); if(fe) HORAS[i].fecha=fe.value||todayISO(); } }); }
+  function addTrab(){ syncHoras(); var f=(HORAS.length?HORAS[HORAS.length-1].fecha:'')||todayISO(); HORAS.push({trabajador:'',entrada:'',salida:'',fecha:f}); renderHoras(); }
+  function removeTrab(i){ syncHoras(); HORAS.splice(i,1); if(!HORAS.length) HORAS=[{trabajador:'',entrada:'',salida:'',fecha:todayISO()}]; renderHoras(); }
   $('add-trab').addEventListener('click',addTrab);
 
   // ====== Cuadrilla y EPP de salida ======
@@ -1231,8 +1248,11 @@
   }
   function resumenHoras(horas){
     horas=horas||[]; if(!horas.length) return '';
-    var tot=0, hay=false; horas.forEach(function(h){ var m=totalMin(h.entrada,h.salida); if(m!=null){ tot+=m; hay=true; } });
-    var s=horas.length+' trabajador'+(horas.length>1?'es':'');
+    var tot=0, hay=false, tset={}, fset={};
+    horas.forEach(function(h){ var m=totalMin(h.entrada,h.salida); if(m!=null){ tot+=m; hay=true; } var nm=(h.trabajador||'').trim().toLowerCase(); if(nm)tset[nm]=1; if(h.fecha)fset[h.fecha]=1; });
+    var nt=Object.keys(tset).length||horas.length, nd=Object.keys(fset).length;
+    var s=nt+' trabajador'+(nt>1?'es':'');
+    if(nd>1) s+=' · '+nd+' días';
     if(hay) s+=' · '+Math.floor(tot/60)+'h '+(tot%60)+'m';
     return s;
   }
