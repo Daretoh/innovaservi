@@ -311,6 +311,31 @@
   .docitem a{flex:1;min-width:0;font:600 13px var(--font);color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .docitem .dl{font-size:.7rem;color:var(--muted);}
   .docitem .rm{border:1px solid #f0c0c0;background:#fff;color:#dc2626;border-radius:8px;width:30px;height:30px;cursor:pointer;flex-shrink:0;}
+  /* ---- Vehículos / Maquinaria ---- */
+  .veh{background:#fff;border:1px solid var(--line);border-left:4px solid var(--navy);border-radius:13px;padding:12px 14px;margin-bottom:10px;cursor:pointer;}
+  .veh.off{border-left-color:var(--muted);opacity:.72;} .veh.taller{border-left-color:#f59e0b;}
+  .veh .vtop{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+  .veh .vnm{font:800 15px var(--font);color:var(--ink);}
+  .veh .vpat{font:800 11px var(--font);color:#fff;background:var(--navy);padding:2px 9px;border-radius:6px;letter-spacing:.03em;}
+  .veh .vmeta{font-size:.8rem;color:var(--body);margin-top:2px;}
+  .veh .vbadges{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
+  .veh .vchip{font-size:.68rem;font-weight:800;padding:3px 9px;border-radius:999px;background:var(--alt);color:var(--muted);}
+  .veh .vchip.ok{background:rgba(34,160,107,.14);color:var(--ok);}
+  .veh .vchip.taller{background:rgba(245,158,11,.15);color:#b45309;}
+  .veh .vchip.off{background:var(--alt);color:var(--muted);}
+  .veh .vchip.warn{background:rgba(245,158,11,.16);color:#b45309;}
+  .veh .vchip.vencido{background:rgba(220,38,38,.13);color:#dc2626;}
+  .veh .vgasto{font-size:.72rem;color:var(--orange-2);font-weight:700;margin-top:6px;}
+  .gasto{border:1px solid var(--line);border-radius:11px;padding:10px 11px;margin-bottom:8px;background:var(--alt);}
+  .gasto .gtop{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+  .gasto .gcat{font-size:.68rem;font-weight:800;padding:2px 9px;border-radius:999px;background:rgba(26,31,110,.1);color:var(--navy);}
+  .gasto .gmonto{font:800 14px var(--font);color:var(--ink);}
+  .gasto .gmeta{font-size:.76rem;color:var(--body);margin-top:4px;}
+  .gasto .gvenc{font-size:.72rem;font-weight:700;margin-top:3px;}
+  .gasto .gvenc.warn{color:#b45309;} .gasto .gvenc.vencido{color:#dc2626;}
+  .gasto .grm{float:right;border:none;background:none;color:#dc2626;font-size:15px;cursor:pointer;padding:2px 4px;}
+  .gform{border:1px dashed #c7ccdd;border-radius:12px;padding:11px;margin-bottom:10px;background:#fff;}
+  .gform .fld{margin-bottom:8px;}
   #imp{position:fixed;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;padding:20px;}
   #imp.hide{display:none;}
   #imp .imp-bg{position:absolute;inset:0;background:rgba(12,15,46,.55);}
@@ -424,6 +449,12 @@
       <div id="trab-list"></div>
     </section>
 
+    <!-- ---- VEHÍCULOS / MAQUINARIA (solo admin) ---- -->
+    <section class="view" id="v-veh">
+      <div class="h-row"><h2>Vehículos <span class="cnt" id="veh-cnt"></span></h2><button id="veh-nuevo" class="btn small" style="width:auto">＋ Nuevo</button></div>
+      <div id="veh-list"></div>
+    </section>
+
     <!-- ---- PREPARACIÓN (visible a todos; admin edita, resto solo marca) ---- -->
     <section class="view" id="v-cuadrilla">
       <div class="h-row"><h2>Preparación</h2></div>
@@ -486,6 +517,7 @@
     <button data-v="v-cuadrilla" id="tab-cuad"><span class="em">✅</span>Preparación</button>
     <button data-v="v-matriz" id="tab-matriz" class="hide"><span class="em">🧰</span>Matriz</button>
     <button data-v="v-trab" id="tab-trab" class="hide"><span class="em">👷</span>Personas</button>
+    <button data-v="v-veh" id="tab-veh" class="hide"><span class="em">🚚</span>Vehículos</button>
   </nav>
 </div>
 
@@ -554,6 +586,77 @@
   </div>
 </div>
 
+<!-- Ficha de vehículo/maquinaria (solo admin) -->
+<div id="veh-ficha" class="hide">
+  <div class="ficha-bar">
+    <button id="vf-close" class="btn ghost small" style="width:auto">✕ Cerrar</button>
+    <b id="vf-title">Vehículo</b>
+    <button id="vf-save" class="btn small" style="width:auto">Guardar</button>
+  </div>
+  <div class="ficha-body">
+    <div class="card">
+      <div class="fld"><label>Nombre / apodo</label><input id="vf-nombre" type="text" placeholder="Ej: Camioneta Jorge, Mazda BT50…"></div>
+      <div class="grid2">
+        <div class="fld"><label>Marca</label><input id="vf-marca" type="text" placeholder="Ej: Mazda"></div>
+        <div class="fld"><label>Modelo</label><input id="vf-modelo" type="text" placeholder="Ej: BT50"></div>
+      </div>
+      <div class="grid2">
+        <div class="fld"><label>Año</label><input id="vf-anio" type="number" placeholder="2025" min="1980" max="2100"></div>
+        <div class="fld"><label>Patente</label><input id="vf-patente" type="text" placeholder="TT.GV.30" style="text-transform:uppercase"></div>
+      </div>
+      <div class="grid2">
+        <div class="fld"><label>Motor</label><input id="vf-motor" type="text" placeholder="Ej: 3,0"></div>
+        <div class="fld"><label>Tipo</label><select id="vf-tipo"><option value="vehiculo">Vehículo</option><option value="maquinaria">Maquinaria</option><option value="equipo">Equipo</option></select></div>
+      </div>
+      <div class="fld"><label>Estado</label><select id="vf-estado"><option value="activo">Activo</option><option value="taller">En taller</option><option value="inactivo">Inactivo</option></select></div>
+      <div class="fld"><label>Notas</label><textarea id="vf-notas" placeholder="Observaciones, kilometraje aprox, responsable habitual, etc."></textarea></div>
+    </div>
+    <div class="card">
+      <label style="display:block;font:700 13px var(--font);color:var(--ink);margin-bottom:2px;">📎 Documentos</label>
+      <p class="note" style="margin:0 0 10px">Padrón, permiso de circulación, revisión técnica, seguro, etc.</p>
+      <div id="vf-docs"></div>
+      <label class="catadd">＋ Agregar documento<input type="file" id="vf-doc-input" accept="application/pdf,image/*" multiple hidden></label>
+    </div>
+    <div class="card" id="vf-gastos-card">
+      <label style="display:block;font:700 13px var(--font);color:var(--ink);margin-bottom:2px;">💰 Gastos y pagos</label>
+      <p class="note" style="margin:0 0 10px" id="vf-gastos-note">Mantenciones, permiso de circulación, SOAP, revisión técnica, seguro, arriendos…</p>
+      <div id="vf-gastos-total" style="font:800 13px var(--font);color:var(--orange-2);margin-bottom:10px"></div>
+      <div id="vf-gastos-list"></div>
+      <button class="catadd" id="vf-gasto-nuevo" type="button">＋ Agregar gasto</button>
+      <div class="gform hide" id="vf-gform">
+        <div class="grid2">
+          <div class="fld"><label>Categoría</label><select id="gf-cat">
+            <option value="mantenimiento">Mantenimiento</option>
+            <option value="permiso_circulacion">Permiso de circulación</option>
+            <option value="soap">SOAP</option>
+            <option value="revision_tecnica">Revisión técnica</option>
+            <option value="seguro">Seguro</option>
+            <option value="arriendo">Arriendo</option>
+            <option value="combustible">Combustible</option>
+            <option value="multa">Multa</option>
+            <option value="otro">Otro</option>
+          </select></div>
+          <div class="fld"><label>Fecha</label><input id="gf-fecha" type="date"></div>
+        </div>
+        <div class="fld"><label>Descripción</label><input id="gf-desc" type="text" placeholder="Ej: 1° cuota permiso de circulación"></div>
+        <div class="grid2">
+          <div class="fld"><label>Proveedor / lugar</label><input id="gf-prov" type="text" placeholder="Ej: Municipalidad, HDI Seguros…"></div>
+          <div class="fld"><label>Monto ($)</label><input id="gf-monto" type="number" placeholder="0" min="0"></div>
+        </div>
+        <div class="grid2">
+          <div class="fld"><label>Kilometraje</label><input id="gf-km" type="text" placeholder="Ej: 45.200"></div>
+          <div class="fld"><label>Vencimiento (opcional)</label><input id="gf-venc" type="date"></div>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <button id="gf-cancel" class="btn ghost small" style="width:auto">Cancelar</button>
+          <button id="gf-ok" class="btn small" style="width:auto">Agregar</button>
+        </div>
+      </div>
+    </div>
+    <button class="pl-del-btn hide" id="vf-del" style="width:100%;background:#fff;border:1px solid #f0c0c0;color:#dc2626;padding:13px;border-radius:13px;font:800 14px var(--font);cursor:pointer">🗑 Eliminar vehículo</button>
+  </div>
+</div>
+
 <!-- Importar trabajadores (pegar lista) -->
 <div id="imp" class="hide">
   <div class="imp-bg"></div>
@@ -594,6 +697,10 @@
   var REGISTROS=[];             // registros cargados (lista + dedup por trabajo)
   var TRAB=[];                  // trabajadores (RRHH)
   var FICHA_ID=null, FICHA_DOCS=[]; // ficha en edición + sus documentos
+  var VEH=[];                   // vehículos/maquinaria
+  var VEH_ID=null, VEH_DOCS=[]; // ficha de vehículo en edición + sus documentos
+  var VEH_GASTOS=[];            // gastos del vehículo abierto
+  var GASTO_CAT_LBL={mantenimiento:'Mantenimiento',permiso_circulacion:'Permiso circulación',soap:'SOAP',revision_tecnica:'Revisión técnica',seguro:'Seguro',arriendo:'Arriendo',combustible:'Combustible',multa:'Multa',otro:'Otro'};
 
   // ====== Helpers ======
   var $=function(id){ return document.getElementById(id); };
@@ -610,6 +717,8 @@
   function totalMin(a,b){ if(!a||!b)return null; var pa=a.split(':'),pb=b.split(':'); var m=(pb[0]*60+ +pb[1])-(pa[0]*60+ +pa[1]); if(m<0)m+=1440; return m; }
   function totalTxt(a,b){ var m=totalMin(a,b); return m==null?'':('Total: '+Math.floor(m/60)+'h '+(m%60)+'m'); }
   function totalMini(a,b){ var m=totalMin(a,b); return m==null?'':(Math.floor(m/60)+'h'+(m%60?(' '+(m%60)+'m'):'')); }
+  function fmtMoney(n){ n=+n||0; return '$'+Math.round(n).toLocaleString('es-CL'); }
+  function diasHasta(f){ if(!f) return null; var d=new Date(f+'T00:00:00'), t=new Date(todayISO()+'T00:00:00'); return Math.round((d-t)/86400000); }
   function toast(t){ var el=$('toast'); el.textContent=t; el.classList.add('show'); clearTimeout(el._t); el._t=setTimeout(function(){ el.classList.remove('show'); },2600); }
   function busy(on,txt){ $('busy-t').textContent=txt||'Guardando…'; $('busy').classList.toggle('show',!!on); }
   function slug(s){ return (s||'').toString().trim().toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^A-Z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,28)||'SIN'; }
@@ -629,6 +738,7 @@
     $('horas-card').classList.toggle('hide', op);         // horas: solo admin
     $('tab-matriz').classList.toggle('hide', op);         // Matriz: solo admin
     $('tab-trab').classList.toggle('hide', op);           // Personas: solo admin
+    $('tab-veh').classList.toggle('hide', op);            // Vehículos: solo admin
     if($('btn-plan')) $('btn-plan').classList.toggle('hide', op); // Planificación: solo admin (Enzo/Jorge/Cristopher)
     ['r-empresa','r-lugar','r-fecha','r-notas'].forEach(function(id){ $(id).disabled=op; });
     // Preparación es visible a todos; pero faena y cuadrilla solo las edita admin (el resto solo marca el checklist)
@@ -707,6 +817,7 @@
     if(b.dataset.v==='v-trab') cargarTrab(pintarTrab);
     if(b.dataset.v==='v-cuadrilla'){ cargarTrab(actualizarDatalist); cargarPlantillas(function(){ cargarRegistros(function(){ if(C_JOB) elegirJobCuadrilla(C_JOB); else renderFaenaSelect(); }); }); }
     if(b.dataset.v==='v-matriz'){ cargarPlantillas(renderMatriz); }
+    if(b.dataset.v==='v-veh'){ cargarVeh(pintarVehList); }
     window.scrollTo(0,0);
   }); });
   function irA(id){ document.querySelector('.tabbar button[data-v="'+id+'"]').click(); }
@@ -1383,6 +1494,157 @@
     sb.from('trabajadores').delete().eq('id',FICHA_ID).then(function(r){ busy(false); if(r.error){ toast('No se pudo eliminar: '+r.error.message); return; }
       toast('✓ Eliminado'); cerrarFicha(); cargarTrab(function(){ actualizarDatalist(); pintarTrab(); }); });
   });
+
+  // ====== Vehículos / Maquinaria (solo admin: costos, documentos, vencimientos) ======
+  var VEH_G_SUM={};   // resumen por vehículo para la lista: {total, vencDias, vencCat}
+  function cargarVeh(cb){
+    if(!sb){ if(cb)cb(); return; }
+    Promise.all([
+      sb.from('vehiculos').select('*').order('nombre',{ascending:true}).limit(300),
+      sb.from('vehiculo_gastos').select('vehiculo_id,categoria,monto,vencimiento').limit(3000)
+    ]).then(function(rs){
+      VEH=(rs[0]&&rs[0].data)||[];
+      var gs=(rs[1]&&rs[1].data)||[];
+      VEH_G_SUM={};
+      gs.forEach(function(g){
+        var k=g.vehiculo_id; if(!VEH_G_SUM[k]) VEH_G_SUM[k]={total:0,vencDias:null,vencCat:null};
+        VEH_G_SUM[k].total+=(+g.monto||0);
+        if(g.vencimiento){ var d=diasHasta(g.vencimiento);
+          if(d!=null && (VEH_G_SUM[k].vencDias===null || Math.abs(d)<Math.abs(VEH_G_SUM[k].vencDias))){ VEH_G_SUM[k].vencDias=d; VEH_G_SUM[k].vencCat=g.categoria; }
+        }
+      });
+      if(cb)cb();
+    });
+  }
+  function pintarVehList(){
+    var list=$('veh-list');
+    $('veh-cnt').textContent=VEH.length+(VEH.length===1?' vehículo':' vehículos');
+    if(!VEH.length){ list.innerHTML='<div class="empty"><div class="big">🚚</div>Aún no hay vehículos ni maquinaria.<br><span style="font-size:.82rem">Toca “＋ Nuevo” para agregar el primero.</span></div>'; return; }
+    list.innerHTML=VEH.map(function(v,idx){
+      var sum=VEH_G_SUM[v.id]||{total:0,vencDias:null,vencCat:null};
+      var estCls=v.estado==='inactivo'?'off':(v.estado==='taller'?'taller':'');
+      var estChip=v.estado==='taller'?'<span class="vchip taller">🔧 En taller</span>':(v.estado==='inactivo'?'<span class="vchip off">Inactivo</span>':'<span class="vchip ok">Activo</span>');
+      var vencHtml='';
+      if(sum.vencDias!=null){
+        if(sum.vencDias<0) vencHtml='<span class="vchip vencido">⛔ '+esc(GASTO_CAT_LBL[sum.vencCat]||'Doc')+' vencido</span>';
+        else if(sum.vencDias<=30) vencHtml='<span class="vchip warn">⏰ '+esc(GASTO_CAT_LBL[sum.vencCat]||'Doc')+' en '+sum.vencDias+'d</span>';
+      }
+      var meta=[v.marca,v.modelo,v.anio].filter(Boolean).join(' ');
+      return '<div class="veh '+estCls+'" data-idx="'+idx+'"><div class="vtop"><span class="vnm">'+esc(v.nombre||meta||'Vehículo')+'</span>'+(v.patente?'<span class="vpat">'+esc(v.patente)+'</span>':'')+'</div>'+
+        (meta?'<div class="vmeta">'+esc(meta)+'</div>':'')+
+        '<div class="vbadges">'+estChip+vencHtml+'</div>'+
+        (sum.total?'<div class="vgasto">💰 '+fmtMoney(sum.total)+' gastado</div>':'')+
+      '</div>';
+    }).join('');
+    list.querySelectorAll('.veh[data-idx]').forEach(function(el){ el.addEventListener('click',function(){ abrirVehFicha(VEH[+el.dataset.idx]); }); });
+  }
+  var vehFicha=$('veh-ficha');
+  function abrirVehFicha(v){
+    VEH_ID=v?v.id:null;
+    $('vf-nombre').value=v?(v.nombre||''):''; $('vf-marca').value=v?(v.marca||''):''; $('vf-modelo').value=v?(v.modelo||''):'';
+    $('vf-anio').value=v?(v.anio||''):''; $('vf-patente').value=v?(v.patente||''):''; $('vf-motor').value=v?(v.motor||''):'';
+    $('vf-tipo').value=(v&&v.tipo)||'vehiculo'; $('vf-estado').value=(v&&v.estado)||'activo';
+    $('vf-notas').value=v?(v.notas||''):'';
+    VEH_DOCS=v?((v.docs||[]).slice()):[]; renderVehDocs();
+    $('vf-title').textContent=v?('Ficha · '+(v.nombre||v.patente||'')):'Nuevo vehículo';
+    $('vf-del').classList.toggle('hide', !v);
+    $('vf-gform').classList.add('hide');
+    if(v){ $('vf-gasto-nuevo').style.display=''; $('vf-gastos-note').textContent='Mantenciones, permiso de circulación, SOAP, revisión técnica, seguro, arriendos…'; cargarGastos(v.id, renderGastos); }
+    else { VEH_GASTOS=[]; renderGastos(); $('vf-gasto-nuevo').style.display='none'; $('vf-gastos-note').textContent='Guarda el vehículo primero para poder agregar gastos.'; }
+    vehFicha.classList.remove('hide'); vehFicha.scrollTop=0;
+  }
+  function cerrarVehFicha(){ vehFicha.classList.add('hide'); }
+  $('vf-close').addEventListener('click',cerrarVehFicha);
+  $('veh-nuevo').addEventListener('click',function(){ abrirVehFicha(null); });
+  function renderVehDocs(){
+    var c=$('vf-docs');
+    c.innerHTML=VEH_DOCS.map(function(d,i){ var img=(d.tipo==='image');
+      return '<div class="docitem"><div class="ic">'+(img?'🖼️':'📄')+'</div>'+
+        '<a href="'+esc(d.url)+'" target="_blank" rel="noopener">'+esc(d.nombre||'documento')+'<div class="dl">'+esc(fechaCorta(d.fecha||''))+' · abrir</div></a>'+
+        '<button class="rm" data-i="'+i+'" type="button">✕</button></div>'; }).join('')||'<p class="note" style="margin:0">Sin documentos aún.</p>';
+    c.querySelectorAll('.rm').forEach(function(b){ b.addEventListener('click',function(){ VEH_DOCS.splice(+b.dataset.i,1); renderVehDocs(); }); });
+  }
+  $('vf-doc-input').addEventListener('change',function(){
+    var files=this.files; this.value=''; if(!files||!files.length) return;
+    var nom=$('vf-nombre').value.trim()||$('vf-patente').value.trim(); if(!nom){ toast('Pon el nombre o patente primero.'); return; }
+    var carpeta='vehiculos/'+slug(nom); var arr=Array.prototype.slice.call(files), i=0;
+    busy(true,'Subiendo documento…');
+    (function next(){
+      if(i>=arr.length){ busy(false); renderVehDocs(); toast('✓ Documento(s) agregado(s)'); return; }
+      var f=arr[i]; i++;
+      var nombre=slug(nom)+'_'+(f.name||'doc').replace(/[^a-zA-Z0-9._-]/g,'_');
+      subirArchivo(f,carpeta,nombre).then(function(res){ if(res){ VEH_DOCS.push({url:res.url,nombre:f.name||res.nombre,tipo:tipoArch(f),fecha:todayISO()}); } next(); });
+    })();
+  });
+  $('vf-save').addEventListener('click',function(){
+    if(!sb) return;
+    var nom=$('vf-nombre').value.trim(), marca=$('vf-marca').value.trim(), modelo=$('vf-modelo').value.trim(), pat=$('vf-patente').value.trim().toUpperCase();
+    if(!nom && !marca && !modelo && !pat){ toast('Pon al menos nombre, marca/modelo o patente.'); return; }
+    var nombreFinal=nom || [marca,modelo].filter(Boolean).join(' ') || pat || 'Vehículo';
+    var row={ nombre:nombreFinal, marca:marca, modelo:modelo, anio:$('vf-anio').value?+$('vf-anio').value:null,
+      patente:pat, motor:$('vf-motor').value.trim(), tipo:$('vf-tipo').value, estado:$('vf-estado').value,
+      notas:$('vf-notas').value.trim(), docs:VEH_DOCS, autor:userEmail };
+    busy(true,'Guardando…');
+    var q=VEH_ID ? sb.from('vehiculos').update(row).eq('id',VEH_ID) : sb.from('vehiculos').insert(row).select().single();
+    q.then(function(r){ busy(false); if(r.error){ toast('No se pudo guardar: '+r.error.message); return; }
+      toast('✓ Vehículo guardado');
+      if(!VEH_ID && r.data){ VEH_ID=r.data.id; $('vf-title').textContent='Ficha · '+nombreFinal; $('vf-del').classList.remove('hide');
+        $('vf-gasto-nuevo').style.display=''; $('vf-gastos-note').textContent='Mantenciones, permiso de circulación, SOAP, revisión técnica, seguro, arriendos…'; }
+      cargarVeh(pintarVehList);
+    });
+  });
+  $('vf-del').addEventListener('click',function(){
+    if(!VEH_ID) return; if(!confirm('¿Eliminar este vehículo? También se borran sus gastos registrados (los documentos no se borran del bucket).')) return;
+    busy(true,'Eliminando…');
+    sb.from('vehiculos').delete().eq('id',VEH_ID).then(function(r){ busy(false); if(r.error){ toast('No se pudo eliminar: '+r.error.message); return; }
+      toast('✓ Eliminado'); cerrarVehFicha(); cargarVeh(pintarVehList); });
+  });
+  // -- Gastos y pagos del vehículo abierto --
+  function cargarGastos(vehId,cb){
+    if(!sb){ if(cb)cb(); return; }
+    sb.from('vehiculo_gastos').select('*').eq('vehiculo_id',vehId).order('fecha',{ascending:false}).limit(300).then(function(r){ VEH_GASTOS=(r&&r.data)||[]; if(cb)cb(); });
+  }
+  function renderGastos(){
+    var c=$('vf-gastos-list'); var tot=0; VEH_GASTOS.forEach(function(g){ tot+=(+g.monto||0); });
+    $('vf-gastos-total').textContent=VEH_GASTOS.length?('Total registrado: '+fmtMoney(tot)):'';
+    if(!VEH_GASTOS.length){ c.innerHTML='<p class="note" style="margin:0 0 10px">Sin gastos registrados aún.</p>'; return; }
+    c.innerHTML=VEH_GASTOS.map(function(g,i){
+      var d=diasHasta(g.vencimiento), vencHtml='';
+      if(g.vencimiento){
+        vencHtml = d<0 ? ('<div class="gvenc vencido">⛔ Venció el '+esc(fechaCorta(g.vencimiento))+'</div>')
+                        : ('<div class="gvenc'+(d<=30?' warn':'')+'">📅 Vence el '+esc(fechaCorta(g.vencimiento))+(d<=30?(' · en '+d+'d'):'')+'</div>');
+      }
+      return '<div class="gasto"><button class="grm" data-i="'+i+'" type="button">✕</button>'+
+        '<div class="gtop"><span class="gcat">'+esc(GASTO_CAT_LBL[g.categoria]||g.categoria||'Otro')+'</span><span class="gmonto">'+fmtMoney(g.monto)+'</span></div>'+
+        '<div class="gmeta">'+esc(fechaCorta(g.fecha))+(g.proveedor?' · '+esc(g.proveedor):'')+(g.descripcion?'<br>'+esc(g.descripcion):'')+(g.kilometraje?' · '+esc(g.kilometraje)+' km':'')+'</div>'+
+        vencHtml+
+      '</div>';
+    }).join('');
+    c.querySelectorAll('.grm').forEach(function(b){ b.addEventListener('click',function(){ eliminarGasto(+b.dataset.i); }); });
+  }
+  function eliminarGasto(i){
+    var g=VEH_GASTOS[i]; if(!g||!sb) return; if(!confirm('¿Eliminar este gasto?')) return;
+    busy(true,'Eliminando…');
+    sb.from('vehiculo_gastos').delete().eq('id',g.id).then(function(r){ busy(false); if(r.error){ toast('No se pudo eliminar: '+r.error.message); return; }
+      cargarGastos(VEH_ID, renderGastos);
+    });
+  }
+  $('vf-gasto-nuevo').addEventListener('click',function(){
+    if(!VEH_ID){ toast('Guarda el vehículo primero.'); return; }
+    $('gf-cat').value='mantenimiento'; $('gf-fecha').value=todayISO(); $('gf-desc').value=''; $('gf-prov').value=''; $('gf-monto').value=''; $('gf-km').value=''; $('gf-venc').value='';
+    $('vf-gform').classList.remove('hide');
+  });
+  $('gf-cancel').addEventListener('click',function(){ $('vf-gform').classList.add('hide'); });
+  $('gf-ok').addEventListener('click',function(){
+    if(!sb||!VEH_ID) return;
+    var row={ vehiculo_id:VEH_ID, categoria:$('gf-cat').value, fecha:$('gf-fecha').value||todayISO(), descripcion:$('gf-desc').value.trim(),
+      proveedor:$('gf-prov').value.trim(), monto:+($('gf-monto').value||0), kilometraje:$('gf-km').value.trim(), vencimiento:$('gf-venc').value||null, autor:userEmail };
+    busy(true,'Guardando gasto…');
+    sb.from('vehiculo_gastos').insert(row).then(function(r){ busy(false); if(r.error){ toast('No se pudo guardar: '+r.error.message); return; }
+      toast('✓ Gasto agregado'); $('vf-gform').classList.add('hide'); cargarGastos(VEH_ID, renderGastos);
+    });
+  });
+
   // Importar en lote (pegar lista)
   $('trab-import').addEventListener('click',function(){ $('imp-txt').value=''; $('imp').classList.remove('hide'); });
   $('imp').querySelector('.imp-bg').addEventListener('click',function(){ $('imp').classList.add('hide'); });
