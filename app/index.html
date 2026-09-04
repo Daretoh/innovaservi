@@ -16,6 +16,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
   :root{
     --orange:#ff6b00; --orange-2:#c24e00; --navy:#1a1f6e; --deep:#0c0f2e;
@@ -340,6 +341,14 @@
   .gcatgrp-h{display:flex;align-items:center;gap:7px;flex-wrap:wrap;font:800 12.5px var(--font);color:var(--navy);margin:2px 0 8px;padding-bottom:5px;border-bottom:1px solid var(--line);}
   .gform{border:1px dashed #c7ccdd;border-radius:12px;padding:11px;margin-bottom:10px;background:#fff;}
   .gform .fld{margin-bottom:8px;}
+  /* Escáner de documentos (varias fotos -> 1 PDF) */
+  .scanbar{border:1px dashed var(--orange);border-radius:12px;padding:10px;margin:8px 0;background:#fff4ec;}
+  .scanthumbs{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;}
+  .scanthumb{position:relative;flex:0 0 auto;width:56px;height:72px;border-radius:8px;overflow:hidden;border:1px solid var(--line);background:#000;}
+  .scanthumb img{width:100%;height:100%;object-fit:cover;display:block;}
+  .scanthumb .rm{position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;background:rgba(0,0,0,.6);color:#fff;border:none;font-size:10px;line-height:1;cursor:pointer;}
+  .scanactions{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px;}
+  .scanactions button{flex:1;min-width:100px;}
   #imp{position:fixed;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;padding:20px;}
   #imp.hide{display:none;}
   #imp .imp-bg{position:absolute;inset:0;background:rgba(12,15,46,.55);}
@@ -585,6 +594,7 @@
       <p class="note" style="margin:0 0 10px">Contrato, cédula, ficha de ingreso, EPP, exámenes, capacitaciones… (PDF o imagen).</p>
       <div id="fi-docs"></div>
       <label class="catadd">＋ Agregar documento<input type="file" id="fi-doc-input" accept="application/pdf,image/*" multiple hidden></label>
+      <div id="fi-scan-zone" class="hide"></div>
     </div>
     <button class="pl-del-btn hide" id="fi-del" style="width:100%;background:#fff;border:1px solid #f0c0c0;color:#dc2626;padding:13px;border-radius:13px;font:800 14px var(--font);cursor:pointer">🗑 Eliminar trabajador</button>
   </div>
@@ -619,6 +629,7 @@
       <p class="note" style="margin:0 0 10px">Padrón, permiso de circulación, revisión técnica, seguro, etc.</p>
       <div id="vf-docs"></div>
       <label class="catadd">＋ Agregar documento<input type="file" id="vf-doc-input" accept="application/pdf,image/*" multiple hidden></label>
+      <div id="vf-scan-zone" class="hide"></div>
     </div>
     <div class="card" id="vf-gastos-card">
       <label style="display:block;font:700 13px var(--font);color:var(--ink);margin-bottom:2px;">📑 Documentos y pagos</label>
@@ -654,6 +665,7 @@
           <label>Comprobante (foto o PDF)</label>
           <div id="gf-doc-list"></div>
           <label class="catadd">＋ Adjuntar comprobante<input type="file" id="gf-doc-input" accept="application/pdf,image/*" multiple hidden></label>
+          <div id="gf-scan-zone" class="hide"></div>
         </div>
         <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px">
           <button id="gf-cancel" class="btn ghost small" style="width:auto">Cancelar</button>
@@ -1460,12 +1472,12 @@
     $('fi-afp').value=t?(t.afp||''):''; $('fi-salud').value=t?(t.salud||''):'';
     $('fi-dir').value=t?(t.direccion||''):''; $('fi-emerg').value=t?(t.emergencia||''):'';
     $('fi-notas').value=t?(t.notas||''):'';
-    FICHA_DOCS=t?((t.docs||[]).slice()):[]; renderDocs();
+    FICHA_DOCS=t?((t.docs||[]).slice()):[]; renderDocs(); fiScanner.reset();
     $('fi-title').textContent=t?('Ficha · '+(t.nombre||'')):'Nuevo trabajador';
     $('fi-del').classList.toggle('hide', !t);
     ficha.classList.remove('hide'); ficha.scrollTop=0;
   }
-  function cerrarFicha(){ ficha.classList.add('hide'); }
+  function cerrarFicha(){ ficha.classList.add('hide'); fiScanner.reset(); }
   $('fi-close').addEventListener('click',cerrarFicha);
   $('trab-nuevo').addEventListener('click',function(){ abrirFicha(null); });
   function renderDocs(){
@@ -1476,18 +1488,71 @@
         '<button class="rm" data-i="'+i+'" type="button">✕</button></div>'; }).join('')||'<p class="note" style="margin:0">Sin documentos aún.</p>';
     c.querySelectorAll('.rm').forEach(function(b){ b.addEventListener('click',function(){ FICHA_DOCS.splice(+b.dataset.i,1); renderDocs(); }); });
   }
-  $('fi-doc-input').addEventListener('change',function(){
-    var files=this.files; this.value=''; if(!files||!files.length) return;
-    var nom=$('fi-nombre').value.trim(); if(!nom){ toast('Pon el nombre del trabajador primero.'); return; }
-    var carpeta='trabajadores/'+slug(nom); var arr=Array.prototype.slice.call(files), i=0;
-    busy(true,'Subiendo documento…');
-    (function next(){
-      if(i>=arr.length){ busy(false); renderDocs(); toast('✓ Documento(s) agregado(s)'); return; }
-      var f=arr[i]; i++;
-      var nombre=slug(nom)+'_'+(f.name||'doc').replace(/[^a-zA-Z0-9._-]/g,'_');
-      subirArchivo(f,carpeta,nombre).then(function(res){ if(res){ FICHA_DOCS.push({url:res.url,nombre:f.name||res.nombre,tipo:tipoArch(f),fecha:todayISO()}); } next(); });
-    })();
-  });
+  // ====== Escáner de documentos: varias fotos (ej. cédula ambos lados) -> 1 PDF; o PDF directo tal cual ======
+  function crearEscaner(cfg){
+    // cfg: {input, zona, folder(), nombreBase(), onDoc(doc), check()?}
+    var pages=[];
+    function render(){
+      var z=$(cfg.zona);
+      if(!pages.length){ z.classList.add('hide'); z.innerHTML=''; return; }
+      z.classList.remove('hide');
+      z.innerHTML='<div class="scanbar"><div class="scanthumbs">'+pages.map(function(p,i){ return '<div class="scanthumb"><img src="'+p.url+'"><button class="rm" data-i="'+i+'" type="button">✕</button></div>'; }).join('')+'</div>'+
+        '<div class="scanactions"><button class="btn ghost small" type="button" id="'+cfg.zona+'-add">＋ Otra página</button>'+
+        '<button class="btn small" type="button" id="'+cfg.zona+'-ok">✓ Adjuntar PDF ('+pages.length+' pág.)</button>'+
+        '<button class="btn ghost small" type="button" id="'+cfg.zona+'-x">Cancelar</button></div></div>';
+      z.querySelectorAll('.rm').forEach(function(b){ b.addEventListener('click',function(){ var i=+b.dataset.i; try{URL.revokeObjectURL(pages[i].url);}catch(e){} pages.splice(i,1); render(); }); });
+      $(cfg.zona+'-add').addEventListener('click',function(){ $(cfg.input).click(); });
+      $(cfg.zona+'-ok').addEventListener('click',finalizarPdf);
+      $(cfg.zona+'-x').addEventListener('click',cancelar);
+    }
+    function cancelar(){ pages.forEach(function(p){ try{URL.revokeObjectURL(p.url);}catch(e){} }); pages=[]; render(); }
+    function finalizarPdf(){
+      if(!pages.length || !window.jspdf) return;
+      busy(true,'Generando PDF…');
+      Promise.all(pages.map(function(p){ return new Promise(function(res){ var img=new Image(); img.onload=function(){res(img);}; img.src=p.url; }); }))
+      .then(function(imgs){
+        var doc=new window.jspdf.jsPDF({unit:'pt'});
+        imgs.forEach(function(img,i){
+          if(i>0) doc.addPage();
+          var pw=doc.internal.pageSize.getWidth(), ph=doc.internal.pageSize.getHeight();
+          var r=Math.min(pw/img.width, ph/img.height), w=img.width*r, h=img.height*r;
+          doc.addImage(img,'JPEG',(pw-w)/2,(ph-h)/2,w,h);
+        });
+        var base=(cfg.nombreBase&&cfg.nombreBase())||'documento';
+        var nombreArch=base+'_'+Date.now()+'.pdf';
+        var pdfFile=new File([doc.output('blob')],nombreArch,{type:'application/pdf'});
+        subirArchivo(pdfFile,cfg.folder(),nombreArch).then(function(r2){
+          busy(false);
+          if(r2){ var n=imgs.length; cancelar(); cfg.onDoc({url:r2.url,nombre:pdfFile.name,tipo:'doc',fecha:todayISO()}); toast('✓ PDF adjuntado ('+n+' pág.)'); }
+          // si falla, subirArchivo ya avisó del error; dejamos las páginas para reintentar sin volver a fotografiar
+        });
+      });
+    }
+    $(cfg.input).addEventListener('change',function(){
+      var files=this.files; this.value=''; if(!files||!files.length) return;
+      if(cfg.check && !cfg.check()) return;
+      var arr=Array.prototype.slice.call(files);
+      var pdfs=arr.filter(function(f){ return f.type==='application/pdf'; });
+      var imgs=arr.filter(function(f){ return f.type.indexOf('image/')===0; });
+      if(pdfs.length){
+        busy(true,'Subiendo…');
+        var i=0, carpeta=cfg.folder(), base=(cfg.nombreBase&&cfg.nombreBase())||'documento';
+        (function next(){
+          if(i>=pdfs.length){ busy(false); return; }
+          var f=pdfs[i]; i++;
+          var nombre=base+'_'+Date.now()+'_'+i+'.pdf';
+          subirArchivo(f,carpeta,nombre).then(function(r2){ if(r2){ cfg.onDoc({url:r2.url,nombre:f.name||nombre,tipo:'doc',fecha:todayISO()}); } next(); });
+        })();
+      }
+      if(imgs.length){ imgs.forEach(function(f){ pages.push({file:f,url:URL.createObjectURL(f)}); }); render(); }
+    });
+    return { reset:cancelar };
+  }
+  var fiScanner=crearEscaner({ input:'fi-doc-input', zona:'fi-scan-zone',
+    check:function(){ if(!$('fi-nombre').value.trim()){ toast('Pon el nombre del trabajador primero.'); return false; } return true; },
+    folder:function(){ return 'trabajadores/'+slug($('fi-nombre').value.trim()||'trabajador'); },
+    nombreBase:function(){ return slug($('fi-nombre').value.trim()||'doc'); },
+    onDoc:function(d){ FICHA_DOCS.push(d); renderDocs(); } });
   $('fi-save').addEventListener('click',function(){
     if(!sb) return; var nom=$('fi-nombre').value.trim(); if(!nom){ toast('El nombre es obligatorio.'); return; }
     var row={ nombre:nom, rut:$('fi-rut').value.trim(), cargo:$('fi-cargo').value.trim(), estado:$('fi-estado').value,
@@ -1564,15 +1629,15 @@
     $('vf-anio').value=v?(v.anio||''):''; $('vf-patente').value=v?(v.patente||''):''; $('vf-motor').value=v?(v.motor||''):'';
     $('vf-tipo').value=(v&&v.tipo)||'vehiculo'; $('vf-estado').value=(v&&v.estado)||'activo';
     $('vf-notas').value=v?(v.notas||''):'';
-    VEH_DOCS=v?((v.docs||[]).slice()):[]; renderVehDocs();
+    VEH_DOCS=v?((v.docs||[]).slice()):[]; renderVehDocs(); vfScanner.reset();
     $('vf-title').textContent=v?('Ficha · '+(v.nombre||v.patente||'')):'Nuevo vehículo';
     $('vf-del').classList.toggle('hide', !v);
-    $('vf-gform').classList.add('hide');
+    $('vf-gform').classList.add('hide'); gfScanner.reset();
     if(v){ $('vf-gasto-nuevo').style.display=''; $('vf-gastos-note').textContent='Mantenciones, permiso de circulación, SOAP, revisión técnica, seguro, arriendos…'; cargarGastos(v.id, renderGastos); }
     else { VEH_GASTOS=[]; renderGastos(); $('vf-gasto-nuevo').style.display='none'; $('vf-gastos-note').textContent='Guarda el vehículo primero para poder agregar gastos.'; }
     vehFicha.classList.remove('hide'); vehFicha.scrollTop=0;
   }
-  function cerrarVehFicha(){ vehFicha.classList.add('hide'); }
+  function cerrarVehFicha(){ vehFicha.classList.add('hide'); vfScanner.reset(); gfScanner.reset(); }
   $('vf-close').addEventListener('click',cerrarVehFicha);
   $('veh-nuevo').addEventListener('click',function(){ abrirVehFicha(null); });
   function renderVehDocs(){
@@ -1583,19 +1648,11 @@
         '<button class="rm" data-i="'+i+'" type="button">✕</button></div>'; }).join('')||'<p class="note" style="margin:0">Sin documentos aún.</p>';
     c.querySelectorAll('.rm').forEach(function(b){ b.addEventListener('click',function(){ VEH_DOCS.splice(+b.dataset.i,1); renderVehDocs(); }); });
   }
-  $('vf-doc-input').addEventListener('change',function(){
-    var files=this.files; this.value=''; if(!files||!files.length) return;
-    if(!$('vf-marca').value.trim() && !$('vf-modelo').value.trim() && !$('vf-patente').value.trim()){ toast('Pon marca/modelo o patente primero.'); return; }
-    var nom=nombreVeh();
-    var carpeta='vehiculos/'+slug(nom); var arr=Array.prototype.slice.call(files), i=0;
-    busy(true,'Subiendo documento…');
-    (function next(){
-      if(i>=arr.length){ busy(false); renderVehDocs(); toast('✓ Documento(s) agregado(s)'); return; }
-      var f=arr[i]; i++;
-      var nombre=slug(nom)+'_'+(f.name||'doc').replace(/[^a-zA-Z0-9._-]/g,'_');
-      subirArchivo(f,carpeta,nombre).then(function(res){ if(res){ VEH_DOCS.push({url:res.url,nombre:f.name||res.nombre,tipo:tipoArch(f),fecha:todayISO()}); } next(); });
-    })();
-  });
+  var vfScanner=crearEscaner({ input:'vf-doc-input', zona:'vf-scan-zone',
+    check:function(){ if(!$('vf-marca').value.trim() && !$('vf-modelo').value.trim() && !$('vf-patente').value.trim()){ toast('Pon marca/modelo o patente primero.'); return false; } return true; },
+    folder:function(){ return 'vehiculos/'+slug(nombreVeh()); },
+    nombreBase:function(){ return slug(nombreVeh()); },
+    onDoc:function(d){ VEH_DOCS.push(d); renderVehDocs(); } });
   $('vf-save').addEventListener('click',function(){
     if(!sb) return;
     var marca=$('vf-marca').value.trim(), modelo=$('vf-modelo').value.trim(), pat=$('vf-patente').value.trim().toUpperCase();
@@ -1671,32 +1728,24 @@
         '<button class="rm" data-i="'+i+'" type="button">✕</button></div>'; }).join('');
     c.querySelectorAll('.rm').forEach(function(b){ b.addEventListener('click',function(){ GF_DOC.splice(+b.dataset.i,1); renderGfDocs(); }); });
   }
-  $('gf-doc-input').addEventListener('change',function(){
-    var files=this.files; this.value=''; if(!files||!files.length) return;
-    var nom=nombreVeh();
-    var carpeta='vehiculos/'+slug(nom)+'/gastos'; var arr=Array.prototype.slice.call(files), i=0;
-    busy(true,'Subiendo comprobante…');
-    (function next(){
-      if(i>=arr.length){ busy(false); renderGfDocs(); return; }
-      var f=arr[i]; i++;
-      var nombre=slug(nom)+'_'+(f.name||'doc').replace(/[^a-zA-Z0-9._-]/g,'_');
-      subirArchivo(f,carpeta,nombre).then(function(res){ if(res){ GF_DOC.push({url:res.url,nombre:f.name||res.nombre,tipo:tipoArch(f),fecha:todayISO()}); } next(); });
-    })();
-  });
+  var gfScanner=crearEscaner({ input:'gf-doc-input', zona:'gf-scan-zone',
+    folder:function(){ return 'vehiculos/'+slug(nombreVeh())+'/gastos'; },
+    nombreBase:function(){ return slug(nombreVeh())+'_comprobante'; },
+    onDoc:function(d){ GF_DOC.push(d); renderGfDocs(); } });
   $('vf-gasto-nuevo').addEventListener('click',function(){
     if(!VEH_ID){ toast('Guarda el vehículo primero.'); return; }
     $('gf-cat').value='permiso_circulacion'; $('gf-fecha').value=todayISO(); $('gf-desc').value=''; $('gf-prov').value=''; $('gf-monto').value=''; $('gf-km').value=''; $('gf-venc').value='';
-    GF_DOC=[]; renderGfDocs();
+    GF_DOC=[]; renderGfDocs(); gfScanner.reset();
     $('vf-gform').classList.remove('hide');
   });
-  $('gf-cancel').addEventListener('click',function(){ $('vf-gform').classList.add('hide'); });
+  $('gf-cancel').addEventListener('click',function(){ $('vf-gform').classList.add('hide'); gfScanner.reset(); });
   $('gf-ok').addEventListener('click',function(){
     if(!sb||!VEH_ID) return;
     var row={ vehiculo_id:VEH_ID, categoria:$('gf-cat').value, fecha:$('gf-fecha').value||todayISO(), descripcion:$('gf-desc').value.trim(),
       proveedor:$('gf-prov').value.trim(), monto:+($('gf-monto').value||0), kilometraje:$('gf-km').value.trim(), vencimiento:$('gf-venc').value||null, comprobante:GF_DOC, autor:userEmail };
     busy(true,'Guardando…');
     sb.from('vehiculo_gastos').insert(row).then(function(r){ busy(false); if(r.error){ toast('No se pudo guardar: '+r.error.message); return; }
-      toast('✓ Guardado'); $('vf-gform').classList.add('hide'); cargarGastos(VEH_ID, renderGastos);
+      toast('✓ Guardado'); $('vf-gform').classList.add('hide'); gfScanner.reset(); cargarGastos(VEH_ID, renderGastos);
     });
   });
 
