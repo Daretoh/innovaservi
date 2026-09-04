@@ -1,7 +1,7 @@
 {
-  "name": "InnovaServi · Registros",
-  "short_name": "Registros",
-  "description": "Registros de trabajo (horas y fotos antes/proceso/después) de InnovaServi.",
+  "name": "InnovaGestión",
+  "short_name": "InnovaGestión",
+  "description": "Gestión de terreno de InnovaServi: registros, horas, fotos, preparación y personal.",
   "start_url": "./?app=1",
   "scope": "./",
   "display": "standalone",
