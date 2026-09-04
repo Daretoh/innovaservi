@@ -126,7 +126,10 @@
   .hrow-rm{border-color:#f0c0c0;color:#dc2626;}
   .hrow .h-fecha{position:absolute;right:40px;bottom:8px;width:20px;height:20px;opacity:0;pointer-events:none;}
   .hgroup{margin-bottom:12px;}
-  .hgroup-h{font:800 12.5px var(--font);color:var(--navy);margin:2px 0 7px;padding-bottom:5px;border-bottom:1px solid var(--line);}
+  .hgroup-h{font:800 12.5px var(--font);color:var(--navy);margin:2px 0 7px;padding-bottom:5px;border-bottom:1px solid var(--line);cursor:pointer;user-select:none;display:flex;align-items:center;gap:6px;}
+  .hg-chev{display:inline-block;transition:transform .2s;font-size:10px;color:var(--muted);flex:0 0 auto;}
+  .hgroup.collapsed .hg-chev{transform:rotate(-90deg);}
+  .hgroup.collapsed .hgroup-body{display:none;}
   .hrow input:focus{outline:none;border-color:var(--orange);box-shadow:0 0 0 3px rgba(255,107,0,.13);}
   /* Cuadrilla + EPP */
   .arow{border:1px solid var(--line);border-radius:12px;padding:10px 11px;margin-bottom:9px;background:var(--alt);}
@@ -1189,6 +1192,7 @@
   });
 
   // ====== Horas por trabajador (filas) ======
+  var HORAS_COLLAPSED={};   // fecha -> true si el día está colapsado (acordeón)
   function renderHoras(){
     var c=$('horas-rows');
     HORAS.forEach(function(h){ if(!h.fecha) h.fecha=todayISO(); });
@@ -1212,8 +1216,9 @@
           '</div>'+
         '</div>';
       }).join('');
-      return '<div class="hgroup"><div class="hgroup-h">📅 '+fechaCorta(f)+' <span style="color:var(--muted);font-weight:600">('+idxs.length+(idxs.length>1?' trabajadores':' trabajador')+totTxt+')</span></div>'+rows+'</div>';
+      return '<div class="hgroup'+(HORAS_COLLAPSED[f]?' collapsed':'')+'"><div class="hgroup-h" data-f="'+f+'"><span class="hg-chev">▾</span>📅 '+fechaCorta(f)+' <span style="color:var(--muted);font-weight:600">('+idxs.length+(idxs.length>1?' trabajadores':' trabajador')+totTxt+')</span></div><div class="hgroup-body">'+rows+'</div></div>';
     }).join('');
+    c.querySelectorAll('.hgroup-h').forEach(function(h){ h.addEventListener('click',function(){ var g=h.parentNode; HORAS_COLLAPSED[h.dataset.f]=g.classList.toggle('collapsed'); }); });
     c.querySelectorAll('.hrow-rm').forEach(function(b){ b.addEventListener('click',function(){ removeTrab(+b.dataset.i); }); });
     c.querySelectorAll('.hrow').forEach(function(row){
       var fe=row.querySelector('.h-fecha');
