@@ -599,7 +599,6 @@
   </div>
   <div class="ficha-body">
     <div class="card">
-      <div class="fld"><label>Nombre / apodo</label><input id="vf-nombre" type="text" placeholder="Ej: Camioneta Jorge, Mazda BT50…"></div>
       <div class="grid2">
         <div class="fld"><label>Marca</label><input id="vf-marca" type="text" placeholder="Ej: Mazda"></div>
         <div class="fld"><label>Modelo</label><input id="vf-modelo" type="text" placeholder="Ej: BT50"></div>
@@ -730,6 +729,7 @@
   function totalTxt(a,b){ var m=totalMin(a,b); return m==null?'':('Total: '+Math.floor(m/60)+'h '+(m%60)+'m'); }
   function totalMini(a,b){ var m=totalMin(a,b); return m==null?'':(Math.floor(m/60)+'h'+(m%60?(' '+(m%60)+'m'):'')); }
   function fmtMoney(n){ n=+n||0; return '$'+Math.round(n).toLocaleString('es-CL'); }
+  function nombreVeh(){ var marca=$('vf-marca').value.trim(), modelo=$('vf-modelo').value.trim(), pat=$('vf-patente').value.trim(); return [marca,modelo].filter(Boolean).join(' ')||pat||'Vehículo'; }
   function diasHasta(f){ if(!f) return null; var d=new Date(f+'T00:00:00'), t=new Date(todayISO()+'T00:00:00'); return Math.round((d-t)/86400000); }
   function toast(t){ var el=$('toast'); el.textContent=t; el.classList.add('show'); clearTimeout(el._t); el._t=setTimeout(function(){ el.classList.remove('show'); },2600); }
   function busy(on,txt){ $('busy-t').textContent=txt||'Guardando…'; $('busy').classList.toggle('show',!!on); }
@@ -1560,7 +1560,7 @@
   var vehFicha=$('veh-ficha');
   function abrirVehFicha(v){
     VEH_ID=v?v.id:null;
-    $('vf-nombre').value=v?(v.nombre||''):''; $('vf-marca').value=v?(v.marca||''):''; $('vf-modelo').value=v?(v.modelo||''):'';
+    $('vf-marca').value=v?(v.marca||''):''; $('vf-modelo').value=v?(v.modelo||''):'';
     $('vf-anio').value=v?(v.anio||''):''; $('vf-patente').value=v?(v.patente||''):''; $('vf-motor').value=v?(v.motor||''):'';
     $('vf-tipo').value=(v&&v.tipo)||'vehiculo'; $('vf-estado').value=(v&&v.estado)||'activo';
     $('vf-notas').value=v?(v.notas||''):'';
@@ -1585,7 +1585,8 @@
   }
   $('vf-doc-input').addEventListener('change',function(){
     var files=this.files; this.value=''; if(!files||!files.length) return;
-    var nom=$('vf-nombre').value.trim()||$('vf-patente').value.trim(); if(!nom){ toast('Pon el nombre o patente primero.'); return; }
+    if(!$('vf-marca').value.trim() && !$('vf-modelo').value.trim() && !$('vf-patente').value.trim()){ toast('Pon marca/modelo o patente primero.'); return; }
+    var nom=nombreVeh();
     var carpeta='vehiculos/'+slug(nom); var arr=Array.prototype.slice.call(files), i=0;
     busy(true,'Subiendo documento…');
     (function next(){
@@ -1597,9 +1598,9 @@
   });
   $('vf-save').addEventListener('click',function(){
     if(!sb) return;
-    var nom=$('vf-nombre').value.trim(), marca=$('vf-marca').value.trim(), modelo=$('vf-modelo').value.trim(), pat=$('vf-patente').value.trim().toUpperCase();
-    if(!nom && !marca && !modelo && !pat){ toast('Pon al menos nombre, marca/modelo o patente.'); return; }
-    var nombreFinal=nom || [marca,modelo].filter(Boolean).join(' ') || pat || 'Vehículo';
+    var marca=$('vf-marca').value.trim(), modelo=$('vf-modelo').value.trim(), pat=$('vf-patente').value.trim().toUpperCase();
+    if(!marca && !modelo && !pat){ toast('Pon al menos marca/modelo o patente.'); return; }
+    var nombreFinal=[marca,modelo].filter(Boolean).join(' ') || pat || 'Vehículo';
     var row={ nombre:nombreFinal, marca:marca, modelo:modelo, anio:$('vf-anio').value?+$('vf-anio').value:null,
       patente:pat, motor:$('vf-motor').value.trim(), tipo:$('vf-tipo').value, estado:$('vf-estado').value,
       notas:$('vf-notas').value.trim(), docs:VEH_DOCS, autor:userEmail };
@@ -1672,7 +1673,7 @@
   }
   $('gf-doc-input').addEventListener('change',function(){
     var files=this.files; this.value=''; if(!files||!files.length) return;
-    var nom=$('vf-nombre').value.trim()||$('vf-patente').value.trim()||'vehiculo';
+    var nom=nombreVeh();
     var carpeta='vehiculos/'+slug(nom)+'/gastos'; var arr=Array.prototype.slice.call(files), i=0;
     busy(true,'Subiendo comprobante…');
     (function next(){
