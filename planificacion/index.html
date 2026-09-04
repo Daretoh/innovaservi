@@ -401,9 +401,10 @@
     document.getElementById('auth-label').textContent = authed ? userEmail : '';
     document.getElementById('authbtn').textContent = authed ? 'Salir' : 'Iniciar sesión';
   }
-  // Solo Cristopher puede abrir Planificación. El resto va a InnovaGestión.
-  // Vacío = sin restricción (todos los logueados entran, como antes).
+  // Supervisores que pueden abrir Planificación. El resto (operarios) va a InnovaGestión.
   var ADMIN_EMAILS=[
+    'enzo.castro@innovaservi.com',
+    'jorge.castro@innovaservi.com',
     'cristopher.ruiz@innovaservi.com'
   ];
   function isAdmin(e){ if(!ADMIN_EMAILS.length) return true; return ADMIN_EMAILS.indexOf((e||'').trim().toLowerCase())>=0; }

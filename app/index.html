@@ -332,7 +332,10 @@
 <div id="app" class="hide">
   <div class="topbar">
     <div class="tt"><img src="../assets/images/InnovaLOGO.png" alt="" onerror="this.style.display='none'"><div><b>InnovaGestión</b><div class="who" id="who"></div></div></div>
-    <button class="out" id="out">Salir</button>
+    <div style="display:flex;gap:8px;align-items:center">
+      <a href="../planificacion/" id="btn-plan" class="out hide" style="text-decoration:none">🗓️ Planificación</a>
+      <button class="out" id="out">Salir</button>
+    </div>
   </div>
 
   <main>
@@ -618,6 +621,7 @@
     $('horas-card').classList.toggle('hide', op);         // horas: solo admin
     $('tab-matriz').classList.toggle('hide', op);         // Matriz: solo admin
     $('tab-trab').classList.toggle('hide', op);           // Personas: solo admin
+    if($('btn-plan')) $('btn-plan').classList.toggle('hide', op); // Planificación: solo admin (Enzo/Jorge/Cristopher)
     ['r-empresa','r-lugar','r-fecha','r-notas'].forEach(function(id){ $(id).disabled=op; });
     // Preparación es visible a todos; pero faena y cuadrilla solo las edita admin (el resto solo marca el checklist)
     if($('c-faena')) $('c-faena').disabled=op;
