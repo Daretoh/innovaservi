@@ -101,6 +101,18 @@
   .catadd:active{border-color:var(--orange);}
   .thumbs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px;}
   .thumbs:empty{margin-top:0;}
+  .cattag.sin{background:#6b7280;}
+  .dropzone{border:2px dashed #c7ccdd;background:var(--alt);border-radius:14px;padding:22px 14px;text-align:center;color:var(--muted);cursor:pointer;font:600 13.5px var(--font);transition:.15s;}
+  .dropzone:active,.dropzone.drag{border-color:var(--orange);background:#fff4ec;color:var(--orange-2);}
+  .dropzone .dz-ico{font-size:26px;margin-bottom:4px;}
+  .thumbs.drop-ok{outline:2px dashed var(--orange);outline-offset:3px;border-radius:11px;}
+  .thumb.sel{outline:3px solid var(--orange);outline-offset:-3px;}
+  .thumb .selck{position:absolute;top:4px;left:4px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,.5);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;}
+  .thumb.sel .selck{background:var(--orange);}
+  .sel-bar{position:sticky;bottom:64px;z-index:20;display:flex;flex-wrap:wrap;gap:6px;align-items:center;background:var(--navy);color:#fff;border-radius:13px;padding:9px 11px;margin:10px 0;box-shadow:0 6px 20px rgba(0,0,0,.22);}
+  .sel-bar b{font-size:.82rem;margin-right:2px;}
+  .sel-bar button{border:none;border-radius:9px;padding:7px 10px;font:800 12px var(--font);cursor:pointer;background:#fff;color:var(--navy);}
+  .sel-bar button.del{background:#dc2626;color:#fff;} .sel-bar button.clr{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.5);}
   /* Horas por trabajador */
   .hrow{border:1px solid var(--line);border-radius:12px;padding:10px 11px;margin-bottom:9px;background:var(--alt);}
   .hrow .h-trab{width:100%;font:600 15px var(--font);padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink);margin-bottom:8px;}
@@ -346,21 +358,24 @@
 
       <div class="card">
         <label style="display:block;font:700 13px var(--font);color:var(--ink);margin-bottom:4px;">📷 Fotos y videos</label>
-        <p class="note" style="margin:0 0 12px">Etiqueta cada foto/video como <b>Antes</b>, <b>Proceso</b> o <b>Después</b>. Puedes seguir agregando otro día reabriendo el registro.</p>
+        <p class="note" style="margin:0 0 12px">Sube todo de una (arrastra o toca). Después un supervisor las ordena en <b>Antes</b> / <b>Proceso</b> / <b>Después</b>.</p>
+        <div id="dropzone" class="dropzone"><div class="dz-ico">⬆️</div><div>Arrastra fotos/videos aquí o <b>toca para elegir</b></div><input type="file" id="file-all" accept="image/*,video/*" multiple hidden></div>
+        <div id="sel-bar" class="sel-bar" hidden></div>
+        <div class="catgroup" id="grp-sin">
+          <div class="cathead"><span class="cattag sin">Sin clasificar</span><span class="catcount" id="cnt-sin"></span></div>
+          <div class="thumbs" id="th-sin" data-cat="sin"></div>
+        </div>
         <div class="catgroup">
           <div class="cathead"><span class="cattag antes">Antes</span><span class="catcount" id="cnt-antes"></span></div>
-          <div class="thumbs" id="th-antes"></div>
-          <label class="catadd">＋ Agregar<input type="file" accept="image/*,video/*" multiple hidden data-cat="antes"></label>
+          <div class="thumbs" id="th-antes" data-cat="antes"></div>
         </div>
         <div class="catgroup">
           <div class="cathead"><span class="cattag proceso">Proceso</span><span class="catcount" id="cnt-proceso"></span></div>
-          <div class="thumbs" id="th-proceso"></div>
-          <label class="catadd">＋ Agregar<input type="file" accept="image/*,video/*" multiple hidden data-cat="proceso"></label>
+          <div class="thumbs" id="th-proceso" data-cat="proceso"></div>
         </div>
         <div class="catgroup">
           <div class="cathead"><span class="cattag despues">Después</span><span class="catcount" id="cnt-despues"></span></div>
-          <div class="thumbs" id="th-despues"></div>
-          <label class="catadd">＋ Agregar<input type="file" accept="image/*,video/*" multiple hidden data-cat="despues"></label>
+          <div class="thumbs" id="th-despues" data-cat="despues"></div>
         </div>
       </div>
 
@@ -569,8 +584,10 @@
   var MES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
   function fechaCorta(f){ if(!f)return''; var d=new Date(f+'T00:00:00'); return d.getDate()+' '+MES[d.getMonth()]+' '+d.getFullYear(); }
   function fechaMini(f){ if(!f)return''; var d=new Date(f+'T00:00:00'); return d.getDate()+'/'+(d.getMonth()+1); }
-  var CAT_LBL={antes:'Antes',proceso:'Proceso',despues:'Después'};
+  var CAT_LBL={sin:'Sin clasificar',antes:'Antes',proceso:'Proceso',despues:'Después'};
   function catOk(c){ return (c==='antes'||c==='despues')?c:'proceso'; }
+  // categoría de almacenamiento: conserva 'sin' (sin clasificar) además de las 3
+  function catStore(c){ return (c==='antes'||c==='proceso'||c==='despues'||c==='sin')?c:'sin'; }
   function enc(s){ return (s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
   function totalMin(a,b){ if(!a||!b)return null; var pa=a.split(':'),pb=b.split(':'); var m=(pb[0]*60+ +pb[1])-(pa[0]*60+ +pa[1]); if(m<0)m+=1440; return m; }
   function totalTxt(a,b){ var m=totalMin(a,b); return m==null?'':('Total: '+Math.floor(m/60)+'h '+(m%60)+'m'); }
@@ -899,33 +916,79 @@
     });
   });
 
-  // ====== Media (fotos/videos) con categoría Antes/Proceso/Después ======
-  function addFiles(files,cat){
-    cat=catOk(cat);
+  // ====== Media (fotos/videos): subir TODO -> "Sin clasificar" -> ordenar (admin) ======
+  function addFiles(files){
     Array.prototype.forEach.call(files,function(f){
-      if(!f||!f.type) return; var url=URL.createObjectURL(f);
-      R_MEDIA.push({file:f,url:url,tipo:tipoArch(f),cat:cat,fecha:todayISO()});
+      if(!f||!f.type||!/^(image|video)\//.test(f.type)) return;
+      var url=URL.createObjectURL(f);
+      R_MEDIA.push({file:f,url:url,tipo:tipoArch(f),cat:'sin',fecha:todayISO()});
     });
     pintarThumbs();
   }
+  function thumbInner(m){
+    var media=m.tipo==='video'?'<video src="'+m.url+'" muted playsinline></video><span class="vbadge">▶</span>':'<img src="'+m.url+'" alt="" loading="lazy">';
+    return media+(m.fecha?'<span class="dbadge">'+fechaMini(m.fecha)+'</span>':'');
+  }
   function pintarThumbs(){
-    var cont={antes:$('th-antes'),proceso:$('th-proceso'),despues:$('th-despues')};
-    var cnt={antes:0,proceso:0,despues:0};
-    cont.antes.innerHTML=cont.proceso.innerHTML=cont.despues.innerHTML='';
+    var buckets={sin:$('th-sin'),antes:$('th-antes'),proceso:$('th-proceso'),despues:$('th-despues')};
+    var cnt={sin:0,antes:0,proceso:0,despues:0};
+    for(var k in buckets){ if(buckets[k]) buckets[k].innerHTML=''; }
     R_MEDIA.forEach(function(m,i){
-      var c=catOk(m.cat); cnt[c]++;
-      var inner=m.tipo==='video'?'<video src="'+m.url+'" muted playsinline></video><span class="vbadge">▶</span>':'<img src="'+m.url+'" alt="" loading="lazy">';
-      var dd=m.fecha?'<span class="dbadge">'+fechaMini(m.fecha)+'</span>':'';
-      var div=document.createElement('div'); div.className='thumb'; div.innerHTML=inner+dd+'<button class="rm" data-i="'+i+'">✕</button>';
-      cont[c].appendChild(div);
+      var c=catStore(m.cat); cnt[c]++; if(!buckets[c]) return;
+      var canDel=isAdmin||!!m.file;
+      var div=document.createElement('div'); div.className='thumb'+(m._sel?' sel':''); div.dataset.i=i;
+      div.innerHTML=thumbInner(m)+(isAdmin?'<span class="selck">'+(m._sel?'✓':'')+'</span>':'')+(canDel?'<button class="rm" data-i="'+i+'">✕</button>':'');
+      if(isAdmin) div.setAttribute('draggable','true');
+      buckets[c].appendChild(div);
     });
+    $('cnt-sin').textContent=cnt.sin?(cnt.sin+' sin ordenar'):'';
     $('cnt-antes').textContent=cnt.antes?(cnt.antes+' archivo'+(cnt.antes>1?'s':'')):'';
     $('cnt-proceso').textContent=cnt.proceso?(cnt.proceso+' archivo'+(cnt.proceso>1?'s':'')):'';
     $('cnt-despues').textContent=cnt.despues?(cnt.despues+' archivo'+(cnt.despues>1?'s':'')):'';
-    document.querySelectorAll('#th-antes .rm,#th-proceso .rm,#th-despues .rm').forEach(function(b){ b.addEventListener('click',function(){
-      var i=+b.dataset.i; var m=R_MEDIA[i]; if(m&&m.file){ try{ URL.revokeObjectURL(m.url); }catch(_){}} R_MEDIA.splice(i,1); pintarThumbs(); }); });
+    var gs=$('grp-sin'); if(gs) gs.style.display=(cnt.sin||isAdmin)?'':'none';
+    bindThumbs(); renderSelBar();
   }
-  document.querySelectorAll('.catadd input[type=file]').forEach(function(inp){ inp.addEventListener('change',function(){ if(this.files&&this.files.length) addFiles(this.files,this.dataset.cat); this.value=''; }); });
+  function bindThumbs(){
+    document.querySelectorAll('#th-sin .thumb,#th-antes .thumb,#th-proceso .thumb,#th-despues .thumb').forEach(function(div){
+      var i=+div.dataset.i;
+      var rm=div.querySelector('.rm');
+      if(rm) rm.addEventListener('click',function(ev){ ev.stopPropagation(); var m=R_MEDIA[i]; if(m&&m.file){ try{ URL.revokeObjectURL(m.url); }catch(_){}} R_MEDIA.splice(i,1); pintarThumbs(); });
+      if(isAdmin){
+        div.addEventListener('click',function(){ if(R_MEDIA[i]){ R_MEDIA[i]._sel=!R_MEDIA[i]._sel; pintarThumbs(); } });
+        div.addEventListener('dragstart',function(ev){ ev.dataTransfer.setData('text/plain',String(i)); ev.dataTransfer.effectAllowed='move'; });
+      }
+    });
+  }
+  function selCount(){ return R_MEDIA.filter(function(m){ return m._sel; }).length; }
+  function renderSelBar(){
+    var bar=$('sel-bar'); if(!bar) return;
+    var n=selCount();
+    if(!isAdmin || !n){ bar.hidden=true; bar.innerHTML=''; return; }
+    bar.hidden=false;
+    bar.innerHTML='<b>'+n+' selec.</b><button data-mv="antes">→ Antes</button><button data-mv="proceso">→ Proceso</button><button data-mv="despues">→ Después</button><button class="del" data-del="1">🗑</button><button class="clr" data-clr="1">✕</button>';
+    bar.querySelectorAll('[data-mv]').forEach(function(b){ b.addEventListener('click',function(){ moverSel(b.dataset.mv); }); });
+    bar.querySelector('[data-del]').addEventListener('click',eliminarSel);
+    bar.querySelector('[data-clr]').addEventListener('click',function(){ R_MEDIA.forEach(function(m){ m._sel=false; }); pintarThumbs(); });
+  }
+  function moverSel(cat){ R_MEDIA.forEach(function(m){ if(m._sel){ m.cat=cat; m._sel=false; } }); pintarThumbs(); }
+  function eliminarSel(){ if(!confirm('¿Eliminar las fotos seleccionadas?')) return; R_MEDIA=R_MEDIA.filter(function(m){ if(m._sel){ if(m.file){ try{ URL.revokeObjectURL(m.url); }catch(_){}} return false; } return true; }); pintarThumbs(); }
+
+  // Zona para subir todo (cualquier rol)
+  (function(){
+    var dz=$('dropzone'), inp=$('file-all'); if(!dz||!inp) return;
+    dz.addEventListener('click',function(){ inp.click(); });
+    inp.addEventListener('change',function(){ if(this.files&&this.files.length) addFiles(this.files); this.value=''; });
+    ['dragenter','dragover'].forEach(function(ev){ dz.addEventListener(ev,function(e){ e.preventDefault(); dz.classList.add('drag'); }); });
+    ['dragleave','drop'].forEach(function(ev){ dz.addEventListener(ev,function(e){ e.preventDefault(); dz.classList.remove('drag'); }); });
+    dz.addEventListener('drop',function(e){ if(e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files.length) addFiles(e.dataTransfer.files); });
+  })();
+  // Arrastrar una miniatura a su categoría (admin, escritorio)
+  ['th-sin','th-antes','th-proceso','th-despues'].forEach(function(id){
+    var box=$(id); if(!box) return;
+    box.addEventListener('dragover',function(e){ if(!isAdmin)return; e.preventDefault(); box.classList.add('drop-ok'); });
+    box.addEventListener('dragleave',function(){ box.classList.remove('drop-ok'); });
+    box.addEventListener('drop',function(e){ box.classList.remove('drop-ok'); if(!isAdmin)return; e.preventDefault(); var i=+e.dataTransfer.getData('text/plain'); if(R_MEDIA[i]){ R_MEDIA[i].cat=box.dataset.cat; R_MEDIA[i]._sel=false; pintarThumbs(); } });
+  });
 
   // ====== Subir un archivo (Supabase Storage por defecto; R2 si está configurado) ======
   function subirArchivo(file,carpeta,nombre){
@@ -988,7 +1051,7 @@
     }
     function finalizar(){
       var media=R_MEDIA.filter(function(m){ return m.url && !m.file && !m._fail; })
-        .map(function(m){ return { url:m.url, tipo:m.tipo, nombre:m.nombre||'', cat:catOk(m.cat), fecha:m.fecha||fecha }; });
+        .map(function(m){ return { url:m.url, tipo:m.tipo, nombre:m.nombre||'', cat:catStore(m.cat), fecha:m.fecha||fecha }; });
       // La cuadrilla/EPP se maneja en su propia pestaña; aquí NO se toca asignacion al actualizar.
       var row={ evento_id:(R_JOB?R_JOB.id:null), empresa:emp, lugar:lugar, fecha:fecha, notas:notas, horas:horas, media:media, autor:userEmail };
       var q;
@@ -1019,7 +1082,7 @@
     $('r-empresa').value=reg.empresa||''; $('r-lugar').value=reg.lugar||''; $('r-fecha').value=reg.fecha||todayISO(); $('r-notas').value=reg.notas||'';
     HORAS = (reg.horas&&reg.horas.length) ? reg.horas.map(function(h){ return { trabajador:h.trabajador||'', entrada:h.entrada||'', salida:h.salida||'' }; }) : [{trabajador:'',entrada:'',salida:''}];
     renderHoras();
-    (reg.media||[]).forEach(function(m){ R_MEDIA.push({ url:m.url, tipo:m.tipo||'image', cat:catOk(m.cat), fecha:m.fecha||reg.fecha, nombre:m.nombre||'', existing:true }); });
+    (reg.media||[]).forEach(function(m){ R_MEDIA.push({ url:m.url, tipo:m.tipo||'image', cat:catStore(m.cat), fecha:m.fecha||reg.fecha, nombre:m.nombre||'', existing:true }); });
     pintarThumbs(); aplicarModo();
     irA('v-reporte'); window.scrollTo(0,0);
   }
@@ -1078,7 +1141,7 @@
     '</div>';
     // Registro fotográfico (una página por sección con fotos)
     function fotoPage(cat){
-      var items=media.filter(function(m){ return catOk(m.cat)===cat; });
+      var items=media.filter(function(m){ return catStore(m.cat)===cat; });
       if(!items.length) return '';
       var g=items.map(function(m){ return '<div class="rphoto"><img src="'+esc(m.url)+'" alt=""><span class="rp-tick">✓</span><span class="rp-x">✕</span></div>'; }).join('');
       return '<div class="rep-page rgroup">'+hdr+'<div class="rep-h2">Registro fotográfico</div><div class="rep-sec-t">'+REP_LBL[cat]+'</div><div class="rep-grid">'+g+'</div></div>';
@@ -1163,8 +1226,8 @@
     $('hist-cnt').textContent=rows.length+' registro'+(rows.length===1?'':'s');
     if(!rows.length){ $('hist-list').innerHTML='<div class="empty"><div class="big">🗂️</div>Aún no hay registros.<br><span style="font-size:.82rem">Crea uno en la pestaña Registro.</span></div>'; return; }
     $('hist-list').innerHTML=rows.map(function(e,idx){
-      var media=(e.media||[]); var cc={antes:0,proceso:0,despues:0}; media.forEach(function(m){ cc[catOk(m.cat)]++; });
-      var chips=['antes','proceso','despues'].filter(function(k){ return cc[k]; }).map(function(k){ return '<span class="cattag '+k+'" style="font-size:9px;padding:2px 8px">'+CAT_LBL[k]+' '+cc[k]+'</span>'; }).join(' ');
+      var media=(e.media||[]); var cc={sin:0,antes:0,proceso:0,despues:0}; media.forEach(function(m){ cc[catStore(m.cat)]++; });
+      var chips=['antes','proceso','despues','sin'].filter(function(k){ return cc[k]; }).map(function(k){ return '<span class="cattag '+k+'" style="font-size:9px;padding:2px 8px">'+(k==='sin'?'Sin ordenar':CAT_LBL[k])+' '+cc[k]+'</span>'; }).join(' ');
       var minis=media.slice(0,6).map(function(m){ return m.tipo==='video'?'<div class="vv">▶</div>':'<img src="'+esc(m.url)+'" loading="lazy">'; }).join('');
       var rh=resumenHoras(e.horas); var na=(e.asignacion||[]).length;
       var pills=(rh?'<span class="pill">🕐 '+esc(rh)+'</span>':'')+(na?' <span class="pill">🦺 '+na+' en cuadrilla</span>':'');
