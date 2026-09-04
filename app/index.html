@@ -125,7 +125,8 @@
   .hrow-total{flex:0 0 auto;font-size:.72rem;color:var(--orange-2);font-weight:800;white-space:nowrap;}
   .hrow-cal,.hrow-rm{flex:0 0 auto;width:30px;height:32px;border:1px solid var(--line);background:#fff;border-radius:8px;font-size:14px;cursor:pointer;line-height:1;}
   .hrow-rm{border-color:#f0c0c0;color:#dc2626;}
-  .hrow .h-fecha{position:absolute;right:40px;bottom:8px;width:20px;height:20px;opacity:0;pointer-events:none;}
+  .hrow-cal{position:relative;display:inline-flex;align-items:center;justify-content:center;}
+  .hrow-cal .h-fecha{position:absolute;inset:0;width:100%;height:100%;opacity:0;border:0;padding:0;margin:0;}
   .hgroup{margin-bottom:12px;}
   .hgroup-h{font:800 12.5px var(--font);color:var(--navy);margin:2px 0 7px;padding-bottom:5px;border-bottom:1px solid var(--line);cursor:pointer;user-select:none;display:flex;align-items:center;gap:6px;}
   .hg-chev{display:inline-block;transition:transform .2s;font-size:10px;color:var(--muted);flex:0 0 auto;}
@@ -348,7 +349,7 @@
   .scanthumb img{width:100%;height:100%;object-fit:cover;display:block;}
   .scanthumb .rm{position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;background:rgba(0,0,0,.6);color:#fff;border:none;font-size:10px;line-height:1;cursor:pointer;}
   .scanactions{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px;}
-  .scanactions button{flex:1;min-width:100px;}
+  .scanactions button,.scanactions label{flex:1;min-width:100px;}
   #imp{position:fixed;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;padding:20px;}
   #imp.hide{display:none;}
   #imp .imp-bg{position:absolute;inset:0;background:rgba(12,15,46,.55);}
@@ -1345,9 +1346,8 @@
           '<div class="hrow-times">'+
             '<input type="time" class="h-in" value="'+(h.entrada||'')+'"><span class="arw">→</span><input type="time" class="h-out" value="'+(h.salida||'')+'">'+
             '<span class="hrow-total">'+totalMini(h.entrada,h.salida)+'</span>'+
-            '<button class="hrow-cal" type="button" title="Cambiar fecha">📅</button>'+
+            '<label class="hrow-cal" title="Cambiar fecha">📅<input type="date" class="h-fecha" value="'+(h.fecha||todayISO())+'"></label>'+
             '<button class="hrow-rm" data-i="'+i+'" type="button">✕</button>'+
-            '<input type="date" class="h-fecha" value="'+(h.fecha||todayISO())+'">'+
           '</div>'+
         '</div>';
       }).join('');
@@ -1360,7 +1360,6 @@
       var upd=function(){ row.querySelector('.hrow-total').textContent=totalMini(row.querySelector('.h-in').value,row.querySelector('.h-out').value); };
       row.querySelector('.h-in').addEventListener('change',upd);
       row.querySelector('.h-out').addEventListener('change',upd);
-      row.querySelector('.hrow-cal').addEventListener('click',function(){ try{ fe.showPicker(); }catch(e){ fe.focus(); fe.click(); } });
       fe.addEventListener('change',function(){ syncHoras(); renderHoras(); }); // reagrupar por fecha
     });
   }
@@ -1497,20 +1496,31 @@
       if(!pages.length){ z.classList.add('hide'); z.innerHTML=''; return; }
       z.classList.remove('hide');
       z.innerHTML='<div class="scanbar"><div class="scanthumbs">'+pages.map(function(p,i){ return '<div class="scanthumb"><img src="'+p.url+'"><button class="rm" data-i="'+i+'" type="button">✕</button></div>'; }).join('')+'</div>'+
-        '<div class="scanactions"><button class="btn ghost small" type="button" id="'+cfg.zona+'-add">＋ Otra página</button>'+
+        '<div class="scanactions">'+
+        // label que ENVUELVE su propio input (patrón fiable en móvil; no usar .click() por JS)
+        '<label class="btn ghost small">＋ Otra página<input type="file" accept="application/pdf,image/*" multiple hidden id="'+cfg.zona+'-more"></label>'+
         '<button class="btn small" type="button" id="'+cfg.zona+'-ok">✓ Adjuntar PDF ('+pages.length+' pág.)</button>'+
         '<button class="btn ghost small" type="button" id="'+cfg.zona+'-x">Cancelar</button></div></div>';
       z.querySelectorAll('.rm').forEach(function(b){ b.addEventListener('click',function(){ var i=+b.dataset.i; try{URL.revokeObjectURL(pages[i].url);}catch(e){} pages.splice(i,1); render(); }); });
-      $(cfg.zona+'-add').addEventListener('click',function(){ $(cfg.input).click(); });
+      $(cfg.zona+'-more').addEventListener('change',function(){ var fs=Array.prototype.slice.call(this.files||[]); this.value=''; procesarArchivos(fs); });
       $(cfg.zona+'-ok').addEventListener('click',finalizarPdf);
       $(cfg.zona+'-x').addEventListener('click',cancelar);
     }
     function cancelar(){ pages.forEach(function(p){ try{URL.revokeObjectURL(p.url);}catch(e){} }); pages=[]; render(); }
     function finalizarPdf(){
-      if(!pages.length || !window.jspdf) return;
+      if(!pages.length) return;
+      if(!window.jspdf){ toast('⚠ No se pudo cargar el generador de PDF. Revisa tu conexión y recarga.'); return; }
       busy(true,'Generando PDF…');
-      Promise.all(pages.map(function(p){ return new Promise(function(res){ var img=new Image(); img.onload=function(){res(img);}; img.src=p.url; }); }))
-      .then(function(imgs){
+      Promise.all(pages.map(function(p){ return new Promise(function(res){
+        var img=new Image();
+        img.onload=function(){ res(img); };
+        img.onerror=function(){ res(null); };   // foto ilegible: no dejamos el proceso colgado
+        img.src=p.url;
+      }); }))
+      .then(function(todas){
+        var imgs=todas.filter(Boolean);
+        if(!imgs.length){ busy(false); toast('⚠ No se pudieron leer las fotos. Intenta con otra.'); return; }
+        if(imgs.length<todas.length) toast('⚠ Se omitieron '+(todas.length-imgs.length)+' foto(s) ilegible(s).');
         var doc=new window.jspdf.jsPDF({unit:'pt'});
         imgs.forEach(function(img,i){
           if(i>0) doc.addPage();
@@ -1528,12 +1538,18 @@
         });
       });
     }
-    $(cfg.input).addEventListener('change',function(){
-      var files=this.files; this.value=''; if(!files||!files.length) return;
+    // Algunos gestores de archivos del celular no mandan el tipo MIME correcto
+    // (llega vacío o genérico), así que si falla el tipo miramos la extensión.
+    function esPdf(f){ return f.type==='application/pdf' || /\.pdf$/i.test(f.name||''); }
+    function esImagen(f){ return (f.type&&f.type.indexOf('image/')===0) || /\.(jpe?g|png|gif|webp|heic|heif|bmp)$/i.test(f.name||''); }
+    function procesarArchivos(files){
+      if(!files||!files.length) return;
       if(cfg.check && !cfg.check()) return;
       var arr=Array.prototype.slice.call(files);
-      var pdfs=arr.filter(function(f){ return f.type==='application/pdf'; });
-      var imgs=arr.filter(function(f){ return f.type.indexOf('image/')===0; });
+      var pdfs=arr.filter(esPdf);
+      var imgs=arr.filter(function(f){ return !esPdf(f) && esImagen(f); });
+      var otros=arr.filter(function(f){ return !esPdf(f) && !esImagen(f); });
+      if(otros.length) toast('⚠ '+otros.length+' archivo(s) no reconocido(s). Usa foto o PDF.');
       if(pdfs.length){
         busy(true,'Subiendo…');
         var i=0, carpeta=cfg.folder(), base=(cfg.nombreBase&&cfg.nombreBase())||'documento';
@@ -1545,7 +1561,8 @@
         })();
       }
       if(imgs.length){ imgs.forEach(function(f){ pages.push({file:f,url:URL.createObjectURL(f)}); }); render(); }
-    });
+    }
+    $(cfg.input).addEventListener('change',function(){ var fs=Array.prototype.slice.call(this.files||[]); this.value=''; procesarArchivos(fs); });
     return { reset:cancelar };
   }
   var fiScanner=crearEscaner({ input:'fi-doc-input', zona:'fi-scan-zone',
