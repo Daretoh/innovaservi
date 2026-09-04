@@ -1518,13 +1518,21 @@
       VEH=(rs[0]&&rs[0].data)||[];
       var gs=(rs[1]&&rs[1].data)||[];
       VEH_G_SUM={};
+      // por vehículo+categoría nos quedamos con el vencimiento más cercano a hoy
+      // (así cada categoría avisa por su historial, no solo el vehículo en general)
+      var porCat={};
       gs.forEach(function(g){
-        var k=g.vehiculo_id; if(!VEH_G_SUM[k]) VEH_G_SUM[k]={total:0,vencDias:null,vencCat:null};
+        var k=g.vehiculo_id; if(!VEH_G_SUM[k]) VEH_G_SUM[k]={total:0,urgentes:[]};
         VEH_G_SUM[k].total+=(+g.monto||0);
-        if(g.vencimiento){ var d=diasHasta(g.vencimiento);
-          if(d!=null && (VEH_G_SUM[k].vencDias===null || Math.abs(d)<Math.abs(VEH_G_SUM[k].vencDias))){ VEH_G_SUM[k].vencDias=d; VEH_G_SUM[k].vencCat=g.categoria; }
+        if(g.vencimiento){ var d=diasHasta(g.vencimiento); if(d==null) return;
+          var ck=k+'|'+g.categoria;
+          if(!porCat[ck] || Math.abs(d)<Math.abs(porCat[ck].dias)) porCat[ck]={dias:d,cat:g.categoria,veh:k};
         }
       });
+      Object.keys(porCat).forEach(function(ck){ var e=porCat[ck];
+        if(e.dias<=30){ if(!VEH_G_SUM[e.veh]) VEH_G_SUM[e.veh]={total:0,urgentes:[]}; VEH_G_SUM[e.veh].urgentes.push({cat:e.cat,dias:e.dias}); }
+      });
+      Object.keys(VEH_G_SUM).forEach(function(k){ VEH_G_SUM[k].urgentes.sort(function(a,b){ return a.dias-b.dias; }); });
       if(cb)cb();
     });
   }
@@ -1533,18 +1541,17 @@
     $('veh-cnt').textContent=VEH.length+(VEH.length===1?' vehículo':' vehículos');
     if(!VEH.length){ list.innerHTML='<div class="empty"><div class="big">🚚</div>Aún no hay vehículos ni maquinaria.<br><span style="font-size:.82rem">Toca “＋ Nuevo” para agregar el primero.</span></div>'; return; }
     list.innerHTML=VEH.map(function(v,idx){
-      var sum=VEH_G_SUM[v.id]||{total:0,vencDias:null,vencCat:null};
+      var sum=VEH_G_SUM[v.id]||{total:0,urgentes:[]};
       var estCls=v.estado==='inactivo'?'off':(v.estado==='taller'?'taller':'');
       var estChip=v.estado==='taller'?'<span class="vchip taller">🔧 En taller</span>':(v.estado==='inactivo'?'<span class="vchip off">Inactivo</span>':'<span class="vchip ok">Activo</span>');
-      var vencHtml='';
-      if(sum.vencDias!=null){
-        if(sum.vencDias<0) vencHtml='<span class="vchip vencido">⛔ '+esc(GASTO_CAT_LBL[sum.vencCat]||'Doc')+' vencido</span>';
-        else if(sum.vencDias<=30) vencHtml='<span class="vchip warn">⏰ '+esc(GASTO_CAT_LBL[sum.vencCat]||'Doc')+' en '+sum.vencDias+'d</span>';
-      }
+      // una etiqueta por CADA categoría vencida o próxima a vencer (no solo la más urgente)
+      var urgHtml=(sum.urgentes||[]).map(function(u){ var lbl=esc(GASTO_CAT_LBL[u.cat]||u.cat);
+        return u.dias<0 ? ('<span class="vchip vencido">⛔ '+lbl+' vencido</span>') : ('<span class="vchip warn">⏰ '+lbl+' en '+u.dias+'d</span>');
+      }).join('');
       var meta=[v.marca,v.modelo,v.anio].filter(Boolean).join(' ');
       return '<div class="veh '+estCls+'" data-idx="'+idx+'"><div class="vtop"><span class="vnm">'+esc(v.nombre||meta||'Vehículo')+'</span>'+(v.patente?'<span class="vpat">'+esc(v.patente)+'</span>':'')+'</div>'+
         (meta?'<div class="vmeta">'+esc(meta)+'</div>':'')+
-        '<div class="vbadges">'+estChip+vencHtml+'</div>'+
+        '<div class="vbadges">'+estChip+urgHtml+'</div>'+
         (sum.total?'<div class="vgasto">💰 '+fmtMoney(sum.total)+' gastado</div>':'')+
       '</div>';
     }).join('');
