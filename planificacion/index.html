@@ -401,11 +401,9 @@
     document.getElementById('auth-label').textContent = authed ? userEmail : '';
     document.getElementById('authbtn').textContent = authed ? 'Salir' : 'Iniciar sesión';
   }
-  // Solo estos correos (supervisores/admin) pueden abrir Planificación.
+  // Solo Cristopher puede abrir Planificación. El resto va a InnovaGestión.
   // Vacío = sin restricción (todos los logueados entran, como antes).
   var ADMIN_EMAILS=[
-    'enzo.castro@innovaservi.com',
-    'jorge.castro@innovaservi.com',
     'cristopher.ruiz@innovaservi.com'
   ];
   function isAdmin(e){ if(!ADMIN_EMAILS.length) return true; return ADMIN_EMAILS.indexOf((e||'').trim().toLowerCase())>=0; }
@@ -424,8 +422,9 @@
       document.body.classList.remove('locked');
       if(!loaded){ loaded=true; render(); cargarEventos(render); }
     } else if(authed){
-      document.body.classList.add('locked');   // logueado pero NO es supervisor
-      mostrarSoloSupervisores();
+      document.body.classList.add('locked');   // logueado pero NO es Cristopher -> InnovaGestión
+      location.replace('../app/');
+      return;
     } else {
       document.body.classList.add('locked');
     }
