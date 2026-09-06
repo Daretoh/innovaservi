@@ -78,6 +78,9 @@
   .evg-item:hover{color:var(--orange);}
   .evg-md{color:var(--orange);font-weight:800;margin-left:3px;}
   .ev-more{font:700 11px var(--font);color:var(--orange-2);cursor:pointer;padding:2px 4px;}
+  .ev-dots{display:none;gap:5px;flex-wrap:wrap;margin-top:3px;align-content:flex-start;}
+  .ev-dots i{width:9px;height:9px;border-radius:50%;display:inline-block;}
+  .ev-dots .more{font:800 9px var(--font);color:var(--muted);line-height:9px;}
 
   /* Vista semana: filas más altas */
   .cal.week .cell{min-height:420px;}
@@ -143,8 +146,11 @@
 
   @media (max-width:760px){
     .pl-title{font-size:1.2rem;min-width:150px;}
-    .cell{min-height:92px;padding:5px;}
-    .cell .dnum{width:22px;height:22px;font-size:.78rem;}
+    .cell{min-height:62px;padding:6px 5px;}
+    .cal.week .cell{min-height:88px;}
+    .ev-group,.ev-more{display:none;}
+    .ev-dots{display:flex;}
+    .cell .dnum{width:22px;height:22px;font-size:.78rem;margin-bottom:2px;}
     .ev{font-size:10px;padding:3px 5px;}
     .cal-dow div{font-size:.6rem;padding:9px 4px;letter-spacing:.5px;}
     .pl-legend{gap:10px;}
@@ -314,7 +320,9 @@
         return '<div class="ev-group" style="border-left-color:'+col+'"><span class="evg-head'+(ubic?'':' plain')+'" style="color:'+col+'"'+(ubic?(' data-ubic="'+enc(ubic)+'" data-f="'+f+'"'):(' data-id="'+e0.id+'"'))+'>'+head+'</span>'+items+'</div>';
       }).join('');
       if(order.length>max) evHtml+='<div class="ev-more" data-f="'+f+'">+'+(order.length-max)+' más</div>';
-      return '<div class="cell'+(c.out?' out':'')+(f===tISO?' today':'')+'" data-f="'+f+'"><span class="dnum'+(evs.length?' has':'')+'" data-f="'+f+'">'+c.d.getDate()+'</span>'+evHtml+'</div>';
+      // Puntos por trabajo (se muestran solo en teléfono; tocar el día abre su lista)
+      var dotsHtml = order.length ? ('<div class="ev-dots">'+order.slice(0,6).map(function(k){ return '<i style="background:'+groups[k][0].color+'"></i>'; }).join('')+(order.length>6?'<span class="more">+'+(order.length-6)+'</span>':'')+'</div>') : '';
+      return '<div class="cell'+(c.out?' out':'')+(f===tISO?' today':'')+'" data-f="'+f+'"><span class="dnum'+(evs.length?' has':'')+'" data-f="'+f+'">'+c.d.getDate()+'</span>'+evHtml+dotsHtml+'</div>';
     }).join('');
     grid.querySelectorAll('.evg-item').forEach(function(b){ b.addEventListener('click',function(ev){ ev.stopPropagation(); abrir(b.dataset.id); }); });
     grid.querySelectorAll('.evg-head').forEach(function(b){ b.addEventListener('click',function(ev){ ev.stopPropagation(); if(b.dataset.id) abrir(b.dataset.id); else abrirDiaUbic(b.dataset.f, b.dataset.ubic); }); });
