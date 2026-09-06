@@ -174,6 +174,7 @@
     color:var(--muted);font:700 10px var(--font);cursor:pointer;transition:color .2s;}
   .tabbar button .em{font-size:20px;line-height:1;transition:transform .25s cubic-bezier(.34,1.56,.64,1);}
   .tabbar button.on{color:var(--orange);}
+  .tfil.on,.hfil.on{background:var(--orange);color:#fff;border-color:var(--orange);}
   .tabbar button.on .em{transform:translateY(-3px) scale(1.22);}
   .tabbar button.on::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:24px;height:3px;border-radius:0 0 4px 4px;background:var(--orange);animation:tabpop .28s ease;}
   @keyframes tabpop{from{width:0;opacity:.3;} to{width:24px;opacity:1;}}
@@ -388,6 +389,14 @@
     <!-- ---- REGISTRO (trabajo + horas + fotos) ---- -->
     <section class="view on" id="v-reporte">
       <div class="h-row"><h2 id="r-title">Nuevo registro</h2><button id="r-cancel" class="btn ghost small hide" style="width:auto">✕ Cancelar</button></div>
+      <div id="draft-banner" class="hide" style="background:#fff4ec;border:1px solid var(--orange);border-radius:12px;padding:10px 12px;margin-bottom:12px;">
+        <div style="font:700 13px var(--font);color:var(--orange-2);margin-bottom:2px">📝 Tienes un registro sin terminar</div>
+        <div id="draft-info" class="note" style="margin:0 0 8px"></div>
+        <div style="display:flex;gap:8px">
+          <button id="draft-restore" class="btn small" style="flex:1">Retomar</button>
+          <button id="draft-discard" class="btn ghost small" style="width:auto">Descartar</button>
+        </div>
+      </div>
       <div class="card">
         <div class="fld">
           <label>Trabajo del calendario</label>
@@ -445,6 +454,11 @@
     <!-- ---- REGISTROS (lista) ---- -->
     <section class="view" id="v-hist">
       <div class="h-row"><h2 id="hist-title">Registros</h2><span class="cnt" id="hist-cnt"></span></div>
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <button class="btn ghost small hfil on" data-hf="hoy" style="flex:1">Hoy</button>
+        <button class="btn ghost small hfil" data-hf="semana" style="flex:1">Semana</button>
+        <button class="btn ghost small hfil" data-hf="todos" style="flex:1">Todos</button>
+      </div>
       <div id="hist-list"></div>
     </section>
 
@@ -808,6 +822,7 @@
     cargarEventos();
     cargarRegistros();
     if(isAdmin) cargarTrab(actualizarDatalist);
+    ofrecerBorrador();
   }
   function registroDe(eventoId){ if(!eventoId) return null; return REGISTROS.filter(function(x){ return String(x.evento_id)===String(eventoId); })[0]||null; }
   function isoMas(dias){ var d=new Date(); d.setDate(d.getDate()+dias); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
@@ -1219,11 +1234,48 @@
       q.then(function(r){ busy(false); $('busy-bar').classList.add('hide');
         if(r.error){ toast('No se pudo guardar: '+r.error.message); return; }
         toast(EDIT_ID?'✓ Registro actualizado':'✓ Registro guardado');
-        resetForm(); cargarRegistros(pintarRegistros); irA('v-hist');
+        borrarBorrador(); resetForm(); cargarRegistros(pintarRegistros); irA('v-hist');
       });
     }
     subeUno(0);
   });
+  // ====== Auto-guardado (borrador) de registro NUEVO, por si se cierra sin guardar ======
+  var DRAFT_KEY='innova_reg_draft_v1', draftTimer=null;
+  function draftContenido(d){ return !!(d && ((d.empresa||'').trim() || (d.lugar||'').trim() || (d.notas||'').trim() || d.r_job || (d.horas||[]).some(function(h){ return (h.trabajador||'').trim()||h.entrada||h.salida; }))); }
+  function guardarBorrador(){
+    if(EDIT_ID) return;   // solo registros nuevos; los editados ya están en la base
+    try{ syncHoras(); }catch(e){}
+    var d={ r_job:R_JOB?{id:R_JOB.id,ubicacion:R_JOB.ubicacion,titulo:R_JOB.titulo,fecha:R_JOB.fecha,_sint:R_JOB._sint}:null,
+      empresa:$('r-empresa').value, lugar:$('r-lugar').value, fecha:$('r-fecha').value, notas:$('r-notas').value, horas:HORAS, ts:Date.now() };
+    try{ if(draftContenido(d)) localStorage.setItem(DRAFT_KEY, JSON.stringify(d)); }catch(e){}
+  }
+  function borrarBorrador(){ try{ localStorage.removeItem(DRAFT_KEY); }catch(e){} var b=$('draft-banner'); if(b) b.classList.add('hide'); }
+  function borradorDebounced(){ if(EDIT_ID) return; clearTimeout(draftTimer); draftTimer=setTimeout(guardarBorrador, 700); }
+  function ofrecerBorrador(){
+    if(EDIT_ID) return;
+    var raw; try{ raw=localStorage.getItem(DRAFT_KEY); }catch(e){}
+    if(!raw){ $('draft-banner').classList.add('hide'); return; }
+    var d; try{ d=JSON.parse(raw); }catch(e){ borrarBorrador(); return; }
+    if(!draftContenido(d)){ borrarBorrador(); return; }
+    var cuantos=(d.horas||[]).filter(function(h){ return (h.trabajador||'').trim(); }).length;
+    $('draft-info').textContent=(d.empresa||(d.r_job&&d.r_job.ubicacion)||'Sin empresa')+' · '+fechaCorta(d.fecha||'')+(cuantos?(' · '+cuantos+' trabajador'+(cuantos>1?'es':'')):'');
+    $('draft-banner')._data=d; $('draft-banner').classList.remove('hide');
+  }
+  $('draft-discard').addEventListener('click',borrarBorrador);
+  $('draft-restore').addEventListener('click',function(){
+    var d=$('draft-banner')._data; if(!d) return;
+    R_JOB=d.r_job||null; pintaJobPick(R_JOB);
+    $('r-empresa').value=d.empresa||''; $('r-lugar').value=d.lugar||''; $('r-fecha').value=d.fecha||todayISO(); $('r-notas').value=d.notas||'';
+    HORAS=(d.horas&&d.horas.length)?d.horas.map(function(h){ return {trabajador:h.trabajador||'',entrada:h.entrada||'',salida:h.salida||'',fecha:h.fecha||d.fecha||todayISO()}; }):[{trabajador:'',entrada:'',salida:'',fecha:todayISO()}];
+    renderHoras();
+    $('draft-banner').classList.add('hide');
+    toast('Borrador retomado (si tenías fotos, vuelve a agregarlas)');
+  });
+  ['r-empresa','r-lugar','r-fecha','r-notas'].forEach(function(id){ $(id).addEventListener('input',borradorDebounced); });
+  $('horas-rows').addEventListener('input',borradorDebounced);
+  window.addEventListener('beforeunload',guardarBorrador);
+  document.addEventListener('visibilitychange',function(){ if(document.hidden) guardarBorrador(); });
+
   function resetForm(){
     R_MEDIA.forEach(function(m){ if(m.file){ try{ URL.revokeObjectURL(m.url); }catch(_){}} }); R_MEDIA=[];
     EDIT_ID=null;
@@ -1245,7 +1297,7 @@
     pintarThumbs(); aplicarModo();
     irA('v-reporte'); window.scrollTo(0,0);
   }
-  $('r-cancel').addEventListener('click',function(){ resetForm(); irA('v-hist'); });
+  $('r-cancel').addEventListener('click',function(){ borrarBorrador(); resetForm(); irA('v-hist'); });
   $('r-del').addEventListener('click',function(){
     if(!EDIT_ID) return;
     if(!confirm('¿Eliminar este registro? (los archivos ya subidos no se borran del bucket)')) return;
@@ -1402,10 +1454,20 @@
     if(hay) s+=' · '+Math.floor(tot/60)+'h '+(tot%60)+'m';
     return s;
   }
+  var HIST_FILTRO='hoy', HIST_VISTA=[];
   function pintarRegistros(){
-    var rows=REGISTROS;
-    $('hist-cnt').textContent=rows.length+' registro'+(rows.length===1?'':'s');
-    if(!rows.length){ $('hist-list').innerHTML='<div class="empty"><div class="big">🗂️</div>Aún no hay registros.<br><span style="font-size:.82rem">Crea uno en la pestaña Registro.</span></div>'; return; }
+    var hoy=todayISO();
+    var desde=isoMas(-6); // últimos 7 días para "semana"
+    var rows=REGISTROS.filter(function(e){
+      var f=e.fecha||'';
+      if(HIST_FILTRO==='hoy') return f===hoy;
+      if(HIST_FILTRO==='semana') return f>=desde && f<=hoy;
+      return true;
+    });
+    HIST_VISTA=rows;
+    var lbl=HIST_FILTRO==='hoy'?'de hoy':(HIST_FILTRO==='semana'?'de la semana':'');
+    $('hist-cnt').textContent=rows.length+' registro'+(rows.length===1?'':'s')+(lbl?' '+lbl:'');
+    if(!rows.length){ $('hist-list').innerHTML='<div class="empty"><div class="big">🗂️</div>'+(HIST_FILTRO==='hoy'?'No hay registros de hoy.':(HIST_FILTRO==='semana'?'No hay registros de la semana.':'Aún no hay registros.'))+'<br><span style="font-size:.82rem">'+(HIST_FILTRO==='todos'?'Crea uno en la pestaña Registro.':'Cambia el filtro o crea uno nuevo.')+'</span></div>'; return; }
     $('hist-list').innerHTML=rows.map(function(e,idx){
       var media=(e.media||[]); var cc={sin:0,antes:0,proceso:0,despues:0}; media.forEach(function(m){ cc[catStore(m.cat)]++; });
       var chips=['antes','proceso','despues','sin'].filter(function(k){ return cc[k]; }).map(function(k){ return '<span class="cattag '+k+'" style="font-size:9px;padding:2px 8px">'+(k==='sin'?'Sin ordenar':CAT_LBL[k])+' '+cc[k]+'</span>'; }).join(' ');
@@ -1420,8 +1482,9 @@
         (minis?'<div class="mini">'+minis+'</div>':'')+
         '<div style="margin-top:8px;font-size:.78rem;color:var(--orange-2);font-weight:700">✎ Tocar para abrir</div></div>';
     }).join('');
-    $('hist-list').querySelectorAll('.item[data-idx]').forEach(function(el){ el.addEventListener('click',function(){ abrirEdicion(REGISTROS[+el.dataset.idx]); }); });
+    $('hist-list').querySelectorAll('.item[data-idx]').forEach(function(el){ el.addEventListener('click',function(){ abrirEdicion(HIST_VISTA[+el.dataset.idx]); }); });
   }
+  document.querySelectorAll('.hfil').forEach(function(b){ b.addEventListener('click',function(){ document.querySelectorAll('.hfil').forEach(function(x){ x.classList.toggle('on',x===b); }); HIST_FILTRO=b.dataset.hf; pintarRegistros(); }); });
 
   // ====== Trabajadores (RRHH) — solo admin ======
   function cargarTrab(cb){
