@@ -145,7 +145,20 @@
   .pl-del-btn:hover{background:#dc2626;color:#fff;border-color:#dc2626;}
 
   @media (max-width:760px){
-    .pl-title{font-size:1.2rem;min-width:150px;}
+    .pl-wrap{padding:14px 12px 40px;}
+    /* Barra superior: cada control ocupa todo el ancho (justificado), menos alto */
+    .pl-bar{gap:8px;margin-bottom:12px;}
+    .pl-nav{flex:1 1 100%;justify-content:space-between;gap:8px;}
+    .pl-title{font-size:1.15rem;min-width:0;flex:1;text-align:center;}
+    .pl-actions{flex:1 1 100%;width:100%;gap:8px;}
+    .pl-seg{order:1;flex:1 1 100%;}
+    .pl-seg button{flex:1;text-align:center;padding:10px 4px;}
+    .pl-buscar{order:2;flex:1 1 auto;width:auto;max-width:none;}
+    #today{order:2;}
+    #add{order:3;flex:1 1 100%;justify-content:center;text-align:center;}
+    /* Clientes: una sola fila que se desliza en vez de apilarse */
+    .pl-legend{flex-wrap:nowrap;overflow-x:auto;gap:14px;margin-bottom:10px;padding-bottom:2px;-webkit-overflow-scrolling:touch;}
+    .pl-legend span{white-space:nowrap;font-size:.72rem;}
     .cell{min-height:62px;padding:6px 5px;}
     .cal.week .cell{min-height:88px;}
     .ev-group,.ev-more{display:none;}
@@ -153,7 +166,6 @@
     .cell .dnum{width:22px;height:22px;font-size:.78rem;margin-bottom:2px;}
     .ev{font-size:10px;padding:3px 5px;}
     .cal-dow div{font-size:.6rem;padding:9px 4px;letter-spacing:.5px;}
-    .pl-legend{gap:10px;}
   }
 </style>
 </head>
