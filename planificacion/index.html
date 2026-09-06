@@ -165,7 +165,7 @@
         <img src="../assets/images/InnovaLOGO.png" alt="InnovaServi" onerror="this.style.display='none'"/>
         <div><div class="t">Planificación</div><div class="s">Innova Servi</div></div>
       </div>
-      <div class="pl-user"><span id="auth-label"></span><button id="authbtn" class="pl-auth">Iniciar sesión</button></div>
+      <div class="pl-user"><span id="auth-label"></span><a href="../app/" class="pl-auth" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px">🛠️ Operaciones</a><button id="authbtn" class="pl-auth">Iniciar sesión</button></div>
     </div>
   </header>
 
@@ -194,7 +194,6 @@
         <input type="search" id="pl-buscar" class="pl-buscar" placeholder="Buscar trabajo o cliente…">
         <button class="pl-today" id="today">Hoy</button>
         <div class="pl-seg"><button data-v="mes" class="on">Mes</button><button data-v="semana">Semana</button><button data-v="proximos">Próximos</button></div>
-        <a href="../app/" class="pl-today" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px">🛠️ Operaciones</a>
         <button class="pl-add" id="add">＋ Nuevo trabajo</button>
       </div>
     </div>
@@ -206,7 +205,6 @@
       <div class="cal-grid" id="grid"></div>
     </div>
 
-    <p class="pl-foot">Formato de demostración · datos de ejemplo. Los trabajos reales se importan desde el calendario actual. — <a href="../">Volver a InnovaServi</a></p>
   </div>
 
   <div class="pl-modal" id="modal">
@@ -352,7 +350,21 @@
     }).join('');
     grid.querySelectorAll('[data-goid]').forEach(function(r){ r.addEventListener('click',function(){ abrir(r.dataset.goid); }); });
   }
-  function renderProximos(){ document.getElementById('title').textContent='Próximos eventos'; var start=todayISO(); renderAgenda(EVENTS.filter(function(e){return e.fecha>=start;}).sort(function(a,b){return a.fecha<b.fecha?-1:(a.fecha>b.fecha?1:0);}), false); }
+  function renderProximos(){
+    document.getElementById('title').textContent='Próximos eventos';
+    var start=todayISO(), out=[];
+    EVENTS.forEach(function(e){
+      var fin=evFin(e); if(fin<start) return;                 // ya terminó
+      var ini=(e.fecha>start)?e.fecha:start;                  // desde hoy o desde su inicio
+      var d=new Date(ini+'T12:00:00'), cur=ini, guard=0;     // T12 evita el salto del horario de verano
+      while(cur<=fin && guard<400){                           // una entrada por cada día del trabajo
+        var c={}; for(var k in e){ c[k]=e[k]; } c.fecha=cur;
+        out.push(c); d.setDate(d.getDate()+1); cur=iso(d); guard++;
+      }
+    });
+    out.sort(function(a,b){ return a.fecha<b.fecha?-1:(a.fecha>b.fecha?1:0); });
+    renderAgenda(out, false);
+  }
   function renderBusqueda(){ var res=EVENTS.filter(function(e){ return (e.titulo+' '+e.ubic+' '+e.desc).toLowerCase().indexOf(buscar)>=0; }).sort(function(a,b){return a.fecha<b.fecha?1:(a.fecha>b.fecha?-1:0);}); document.getElementById('title').textContent='Búsqueda · '+res.length+' resultado'+(res.length===1?'':'s'); renderAgenda(res, true); }
   function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
   function enc(s){ return (s||'').replace(/"/g,'&quot;'); }
