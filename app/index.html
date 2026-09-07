@@ -304,8 +304,13 @@
   .trab .meta{font-size:.72rem;color:var(--muted);margin-top:1px;}
   .trab .badge{font-size:.66rem;font-weight:800;padding:2px 8px;border-radius:999px;background:rgba(34,160,107,.14);color:var(--ok);}
   .trab.off .badge{background:var(--alt);color:var(--muted);}
-  #ficha,#veh-ficha,#remu-detalle{position:fixed;inset:0;z-index:75;background:var(--alt);overflow-y:auto;-webkit-overflow-scrolling:touch;}
-  #ficha.hide,#veh-ficha.hide,#remu-detalle.hide{display:none;}
+  #ficha,#veh-ficha,#remu-detalle,#acc-ficha{position:fixed;inset:0;z-index:75;background:var(--alt);overflow-y:auto;-webkit-overflow-scrolling:touch;}
+  #ficha.hide,#veh-ficha.hide,#remu-detalle.hide,#acc-ficha.hide{display:none;}
+  .af-sec{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line);}
+  .af-sec b{flex:1;font-weight:600;font-size:.9rem;}
+  .af-sec select{flex:0 0 116px;}
+  .acc-row{background:#fff;border:1px solid var(--line);border-radius:12px;padding:11px 13px;margin-bottom:9px;cursor:pointer;display:flex;align-items:center;gap:10px;}
+  .acc-row .rolchip{font:800 10.5px var(--font);text-transform:uppercase;letter-spacing:.03em;padding:3px 10px;border-radius:999px;background:rgba(26,31,110,.1);color:var(--navy);flex-shrink:0;}
   .ficha-bar{position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:10px;background:linear-gradient(135deg,#12163f,#1a1f6e);color:#fff;padding:calc(10px + var(--safe-t)) 14px 10px;}
   .ficha-bar b{font-size:1rem;}
   .ficha-body{max-width:640px;margin:0 auto;padding:14px 14px calc(30px + var(--safe-b));}
@@ -604,6 +609,13 @@
         <div id="remu-cfg-list"></div>
       </div>
     </section>
+
+    <!-- ---- ACCESOS / PERMISOS (solo Enzo) ---- -->
+    <section class="view" id="v-acc">
+      <div class="h-row"><h2>Accesos</h2><button id="acc-nuevo" class="btn small" style="width:auto">＋ Persona</button></div>
+      <p class="note" style="margin:0 0 12px">Toca una persona para editar sus permisos. El <b>rol</b> setea todo; luego ajustas por apartado.</p>
+      <div id="acc-list"></div>
+    </section>
   </main>
 
   <nav class="tabbar">
@@ -614,6 +626,7 @@
     <button data-v="v-trab" id="tab-trab" class="hide"><span class="em">👷</span>Personas</button>
     <button data-v="v-veh" id="tab-veh" class="hide"><span class="em">🚚</span>Vehículos</button>
     <button data-v="v-remu" id="tab-remu" class="hide"><span class="em">💵</span>Pagos</button>
+    <button data-v="v-acc" id="tab-acc" class="hide"><span class="em">🔐</span>Accesos</button>
   </nav>
 </div>
 
@@ -760,6 +773,30 @@
   </div>
 </div>
 
+<!-- Editar permisos de una persona (solo Enzo) -->
+<div id="acc-ficha" class="hide">
+  <div class="ficha-bar">
+    <button id="af-close" class="btn ghost small" style="width:auto">✕ Cerrar</button>
+    <b id="af-title">Permisos</b>
+    <button id="af-save" class="btn small" style="width:auto">Guardar</button>
+  </div>
+  <div class="ficha-body">
+    <div class="card">
+      <div class="fld"><label>Correo</label><input id="af-email" type="email" placeholder="correo@innovaservi.com"></div>
+      <div class="grid2">
+        <div class="fld"><label>Nombre (opcional)</label><input id="af-nombre" type="text"></div>
+        <div class="fld"><label>Rol</label><select id="af-rol"><option value="admin">Admin</option><option value="supervisor">Supervisor</option><option value="operario">Operario</option><option value="chofer">Chofer</option></select></div>
+      </div>
+    </div>
+    <div class="card">
+      <label style="display:block;font:700 13px var(--font);color:var(--ink);margin-bottom:2px">Permisos por apartado</label>
+      <p class="note" style="margin:0 0 8px">Oculto = no lo ve · Ver = solo mira · Editar = crea/edita · Total = edita y elimina.</p>
+      <div id="af-secciones"></div>
+    </div>
+    <button id="af-del" class="pl-del-btn hide" style="width:100%;background:#fff;border:1px solid #f0c0c0;color:#dc2626;padding:13px;border-radius:13px;font:800 14px var(--font);cursor:pointer">🗑 Quitar persona</button>
+  </div>
+</div>
+
 <!-- Detalle de pago de un trabajador (semana) -->
 <div id="remu-detalle" class="hide">
   <div class="ficha-bar">
@@ -856,6 +893,7 @@
     $('tab-matriz').classList.toggle('hide', op);         // Matriz: solo admin
     $('tab-trab').classList.toggle('hide', op);           // Personas: solo admin
     if($('tab-remu')) $('tab-remu').classList.toggle('hide', op); // Pagos: solo admin
+    if($('tab-acc')) $('tab-acc').classList.toggle('hide', (userEmail||'').trim().toLowerCase()!=='enzo.castro@innovaservi.com'); // Accesos: solo Enzo
     $('tab-veh').classList.remove('hide');                // Vehículos: visible para todos (chofer registra vueltas)
     if($('veh-admin')) $('veh-admin').classList.toggle('hide', op);   // flota completa: solo admin
     if($('veh-chofer')) $('veh-chofer').classList.toggle('hide', !op); // registrar vuelta/peaje: choferes (no admin)
@@ -940,6 +978,7 @@
     if(b.dataset.v==='v-matriz'){ cargarPlantillas(renderMatriz); }
     if(b.dataset.v==='v-veh'){ if(isAdmin){ cargarVeh(pintarVehList); } else { cargarChoferForm(); } }
     if(b.dataset.v==='v-remu'){ cargarRemu(); }
+    if(b.dataset.v==='v-acc'){ cargarPermisos(); }
     window.scrollTo(0,0);
   }); });
   function irA(id){ document.querySelector('.tabbar button[data-v="'+id+'"]').click(); }
@@ -2091,6 +2130,66 @@
   }
   function cerrarDetalleRemu(){ $('remu-detalle').classList.add('hide'); }
   $('rd-close').addEventListener('click',cerrarDetalleRemu);
+
+  // ====== ACCESOS / PERMISOS (solo Enzo) ======
+  var SECCIONES=[['reporte','Registro'],['hist','Registros'],['cuadrilla','Preparación'],['matriz','Matriz'],['trab','Personas'],['veh','Vehículos'],['remu','Pagos'],['planificacion','Planificación']];
+  var NIVELES=[['oculto','Oculto'],['ver','Ver'],['editar','Editar'],['total','Total']];
+  var ROL_DEFAULTS={
+    admin:      {reporte:'total',hist:'total',cuadrilla:'total',matriz:'total',trab:'total',veh:'total',remu:'total',planificacion:'total'},
+    supervisor: {reporte:'total',hist:'total',cuadrilla:'total',matriz:'editar',trab:'editar',veh:'total',remu:'ver',planificacion:'editar'},
+    operario:   {reporte:'editar',hist:'ver',cuadrilla:'ver',matriz:'oculto',trab:'oculto',veh:'editar',remu:'oculto',planificacion:'oculto'},
+    chofer:     {reporte:'ver',hist:'oculto',cuadrilla:'oculto',matriz:'oculto',trab:'oculto',veh:'editar',remu:'oculto',planificacion:'oculto'}
+  };
+  var PERMISOS=[], ACC_EMAIL=null;
+  function cargarPermisos(){ if(!sb) return; sb.from('permisos').select('*').order('rol',{ascending:true}).then(function(r){ PERMISOS=(r&&r.data)||[]; pintarAcc(); }); }
+  function rolLbl(x){ return ({admin:'Admin',supervisor:'Supervisor',operario:'Operario',chofer:'Chofer'})[x]||x; }
+  function pintarAcc(){
+    var c=$('acc-list');
+    if(!PERMISOS.length){ c.innerHTML='<div class="empty"><div class="big">🔐</div>Aún no hay personas.<br><span style="font-size:.82rem">Corre permisos.sql o toca “＋ Persona”.</span></div>'; return; }
+    c.innerHTML=PERMISOS.map(function(p,i){ return '<div class="acc-row" data-i="'+i+'"><div style="flex:1"><b>'+esc(p.nombre||p.email)+'</b><div class="note" style="margin:0;font-size:.74rem">'+esc(p.email)+'</div></div><span class="rolchip">'+esc(rolLbl(p.rol))+'</span></div>'; }).join('');
+    c.querySelectorAll('.acc-row').forEach(function(el){ el.addEventListener('click',function(){ abrirAccFicha(PERMISOS[+el.dataset.i]); }); });
+  }
+  function renderAfSecciones(secc){
+    $('af-secciones').innerHTML=SECCIONES.map(function(s){ var lvl=(secc&&secc[s[0]])||'oculto';
+      return '<div class="af-sec"><b>'+esc(s[1])+'</b><select data-sec="'+s[0]+'">'+NIVELES.map(function(n){ return '<option value="'+n[0]+'"'+(n[0]===lvl?' selected':'')+'>'+n[1]+'</option>'; }).join('')+'</select></div>';
+    }).join('');
+  }
+  function abrirAccFicha(p){
+    ACC_EMAIL=p?p.email:null;
+    $('af-email').value=p?(p.email||''):''; $('af-email').disabled=!!p;
+    $('af-nombre').value=p?(p.nombre||''):'';
+    var rol=(p&&p.rol)||'operario'; $('af-rol').value=rol;
+    var secc=(p&&p.secciones&&Object.keys(p.secciones).length)?p.secciones:ROL_DEFAULTS[rol];
+    renderAfSecciones(secc);
+    $('af-title').textContent=p?('Permisos · '+(p.nombre||p.email)):'Nueva persona';
+    $('af-del').classList.toggle('hide', !p);
+    $('acc-ficha').classList.remove('hide'); $('acc-ficha').scrollTop=0;
+  }
+  $('af-rol').addEventListener('change',function(){ renderAfSecciones(ROL_DEFAULTS[this.value]||{}); });
+  $('af-close').addEventListener('click',function(){ $('acc-ficha').classList.add('hide'); });
+  $('acc-nuevo').addEventListener('click',function(){ abrirAccFicha(null); });
+  $('af-save').addEventListener('click',function(){
+    if(!sb) return;
+    var email=$('af-email').value.trim().toLowerCase(); if(!email){ toast('Pon el correo.'); return; }
+    var secc={}; $('af-secciones').querySelectorAll('select').forEach(function(s){ secc[s.dataset.sec]=s.value; });
+    var orden=SECCIONES.map(function(s){ return s[0]; }).filter(function(k){ return secc[k]!=='oculto'; });
+    var row={ email:email, rol:$('af-rol').value, nombre:$('af-nombre').value.trim(), secciones:secc, orden:orden, updated_at:new Date().toISOString() };
+    busy(true,'Guardando…');
+    sb.from('permisos').upsert(row,{onConflict:'email'}).then(function(r){ busy(false);
+      if(r.error){ toast('No se pudo guardar: '+r.error.message); return; }
+      toast('✓ Permisos guardados'); $('acc-ficha').classList.add('hide'); cargarPermisos();
+    });
+  });
+  $('af-del').addEventListener('click',function(){
+    if(!ACC_EMAIL||!sb) return;
+    if(ACC_EMAIL==='enzo.castro@innovaservi.com'){ toast('No puedes quitarte a ti mismo.'); return; }
+    if(!confirm('¿Quitar a esta persona de los accesos?')) return;
+    busy(true,'Quitando…');
+    sb.from('permisos').delete().eq('email',ACC_EMAIL).then(function(r){ busy(false);
+      if(r.error){ toast('No se pudo: '+r.error.message); return; }
+      toast('✓ Quitada'); $('acc-ficha').classList.add('hide'); cargarPermisos();
+    });
+  });
   $('vf-gasto-nuevo').addEventListener('click',function(){
     if(!VEH_ID){ toast('Guarda el vehículo primero.'); return; }
     $('gf-cat').value='permiso_circulacion'; $('gf-fecha').value=todayISO(); $('gf-desc').value=''; $('gf-prov').value=''; $('gf-monto').value=''; $('gf-km').value=''; $('gf-venc').value='';
