@@ -63,7 +63,8 @@
   .topbar .tt img{width:30px;height:30px;background:#fff;border-radius:8px;padding:3px;object-fit:contain;}
   .topbar .tt b{font-weight:800;font-size:1.02rem;letter-spacing:.2px;}
   .topbar .who{font-size:.7rem;opacity:.9;}
-  .topbar .out{background:rgba(255,255,255,.18);border:none;color:#fff;font:700 12px var(--font);padding:7px 12px;border-radius:999px;cursor:pointer;}
+  .topbar .out{background:rgba(255,255,255,.18);border:none;color:#fff;font:700 12px var(--font);padding:7px 12px;border-radius:999px;cursor:pointer;white-space:nowrap;}
+  @media(max-width:600px){ .topbar .out{padding:7px 10px;} .topbar .out .hlbl{display:none;} }
 
   main{flex:1;padding:16px 14px calc(96px + var(--safe-b));max-width:640px;width:100%;margin:0 auto;}
   .view{display:none;} .view.on{display:block;animation:fade .18s ease;}
@@ -399,8 +400,10 @@
 <div id="app" class="hide">
   <div class="topbar">
     <div class="tt"><img src="../assets/images/InnovaLOGO.png" alt="" onerror="this.style.display='none'"><div><b>InnovaGestión</b><div class="who" id="who"></div></div></div>
-    <div style="display:flex;gap:8px;align-items:center">
-      <a href="../planificacion/" id="btn-plan" class="out hide" style="text-decoration:none">🗓️ Planificación</a>
+    <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
+      <button id="btn-pagos" class="out hide">💵<span class="hlbl"> Pagos</span></button>
+      <a href="../planificacion/" id="btn-plan" class="out hide" style="text-decoration:none">🗓️<span class="hlbl"> Planificación</span></a>
+      <button id="btn-acc-h" class="out hide" title="Accesos" aria-label="Accesos" style="padding-left:11px;padding-right:11px">🔐</button>
       <button class="out" id="out">Salir</button>
     </div>
   </div>
@@ -625,8 +628,6 @@
     <button data-v="v-matriz" id="tab-matriz" class="hide"><span class="em">🧰</span>Matriz</button>
     <button data-v="v-trab" id="tab-trab" class="hide"><span class="em">👷</span>Personas</button>
     <button data-v="v-veh" id="tab-veh" class="hide"><span class="em">🚚</span>Vehículos</button>
-    <button data-v="v-remu" id="tab-remu" class="hide"><span class="em">💵</span>Pagos</button>
-    <button data-v="v-acc" id="tab-acc" class="hide"><span class="em">🔐</span>Accesos</button>
   </nav>
 </div>
 
@@ -892,8 +893,8 @@
     $('horas-card').classList.toggle('hide', op);         // horas: solo admin
     $('tab-matriz').classList.toggle('hide', op);         // Matriz: solo admin
     $('tab-trab').classList.toggle('hide', op);           // Personas: solo admin
-    if($('tab-remu')) $('tab-remu').classList.toggle('hide', op); // Pagos: solo admin
-    if($('tab-acc')) $('tab-acc').classList.toggle('hide', (userEmail||'').trim().toLowerCase()!=='enzo.castro@innovaservi.com'); // Accesos: solo Enzo
+    if($('btn-pagos')) $('btn-pagos').classList.toggle('hide', op); // Pagos: solo admin (en el header)
+    if($('btn-acc-h')) $('btn-acc-h').classList.toggle('hide', (userEmail||'').trim().toLowerCase()!=='enzo.castro@innovaservi.com'); // Accesos: solo Enzo (en el header)
     $('tab-veh').classList.remove('hide');                // Vehículos: visible para todos (chofer registra vueltas)
     if($('veh-admin')) $('veh-admin').classList.toggle('hide', op);   // flota completa: solo admin
     if($('veh-chofer')) $('veh-chofer').classList.toggle('hide', !op); // registrar vuelta/peaje: choferes (no admin)
@@ -969,19 +970,22 @@
   }
 
   // ====== Navegación (tabs) ======
-  document.querySelectorAll('.tabbar button').forEach(function(b){ b.addEventListener('click',function(){
-    document.querySelectorAll('.tabbar button').forEach(function(x){ x.classList.toggle('on',x===b); });
-    document.querySelectorAll('.view').forEach(function(v){ v.classList.toggle('on',v.id===b.dataset.v); });
-    if(b.dataset.v==='v-hist') cargarRegistros(pintarRegistros);
-    if(b.dataset.v==='v-trab') cargarTrab(pintarTrab);
-    if(b.dataset.v==='v-cuadrilla'){ cargarTrab(actualizarDatalist); cargarPlantillas(function(){ cargarRegistros(function(){ if(C_JOB) elegirJobCuadrilla(C_JOB); else renderFaenaSelect(); }); }); }
-    if(b.dataset.v==='v-matriz'){ cargarPlantillas(renderMatriz); }
-    if(b.dataset.v==='v-veh'){ if(isAdmin){ cargarVeh(pintarVehList); } else { cargarChoferForm(); } }
-    if(b.dataset.v==='v-remu'){ cargarRemu(); }
-    if(b.dataset.v==='v-acc'){ cargarPermisos(); }
+  function abrirVista(v){
+    document.querySelectorAll('.tabbar button').forEach(function(x){ x.classList.toggle('on',x.dataset.v===v); });
+    document.querySelectorAll('.view').forEach(function(x){ x.classList.toggle('on',x.id===v); });
+    if(v==='v-hist') cargarRegistros(pintarRegistros);
+    if(v==='v-trab') cargarTrab(pintarTrab);
+    if(v==='v-cuadrilla'){ cargarTrab(actualizarDatalist); cargarPlantillas(function(){ cargarRegistros(function(){ if(C_JOB) elegirJobCuadrilla(C_JOB); else renderFaenaSelect(); }); }); }
+    if(v==='v-matriz'){ cargarPlantillas(renderMatriz); }
+    if(v==='v-veh'){ if(isAdmin){ cargarVeh(pintarVehList); } else { cargarChoferForm(); } }
+    if(v==='v-remu'){ cargarRemu(); }
+    if(v==='v-acc'){ cargarPermisos(); }
     window.scrollTo(0,0);
-  }); });
-  function irA(id){ document.querySelector('.tabbar button[data-v="'+id+'"]').click(); }
+  }
+  document.querySelectorAll('.tabbar button').forEach(function(b){ b.addEventListener('click',function(){ abrirVista(b.dataset.v); }); });
+  if($('btn-pagos')) $('btn-pagos').addEventListener('click',function(){ abrirVista('v-remu'); });
+  if($('btn-acc-h')) $('btn-acc-h').addEventListener('click',function(){ abrirVista('v-acc'); });
+  function irA(id){ abrirVista(id); }
 
   // ====== Selector de trabajo (sheet) ======
   var sheet=$('jobsheet'), sheetCtx='r';
