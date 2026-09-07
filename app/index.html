@@ -304,8 +304,8 @@
   .trab .meta{font-size:.72rem;color:var(--muted);margin-top:1px;}
   .trab .badge{font-size:.66rem;font-weight:800;padding:2px 8px;border-radius:999px;background:rgba(34,160,107,.14);color:var(--ok);}
   .trab.off .badge{background:var(--alt);color:var(--muted);}
-  #ficha,#veh-ficha{position:fixed;inset:0;z-index:75;background:var(--alt);overflow-y:auto;-webkit-overflow-scrolling:touch;}
-  #ficha.hide,#veh-ficha.hide{display:none;}
+  #ficha,#veh-ficha,#remu-detalle{position:fixed;inset:0;z-index:75;background:var(--alt);overflow-y:auto;-webkit-overflow-scrolling:touch;}
+  #ficha.hide,#veh-ficha.hide,#remu-detalle.hide{display:none;}
   .ficha-bar{position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:10px;background:linear-gradient(135deg,#12163f,#1a1f6e);color:#fff;padding:calc(10px + var(--safe-t)) 14px 10px;}
   .ficha-bar b{font-size:1rem;}
   .ficha-body{max-width:640px;margin:0 auto;padding:14px 14px calc(30px + var(--safe-b));}
@@ -344,6 +344,18 @@
   .cf-step{width:56px;height:56px;border-radius:50%;border:1px solid var(--line);background:#fff;color:var(--ink);font-size:26px;font-weight:700;cursor:pointer;line-height:1;}
   .cf-step.on{background:var(--orange);color:#fff;border-color:transparent;}
   .cf-sent.on{background:var(--orange);color:#fff;border-color:var(--orange);}
+  /* Remuneraciones */
+  .rrow{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:9px;cursor:pointer;}
+  .rrow .rtop{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
+  .rrow .rtotal{font:800 16px var(--font);color:var(--ink);white-space:nowrap;}
+  .rchips{margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;}
+  .rchip{font:700 11px var(--font);background:var(--alt);color:var(--muted);padding:2px 9px;border-radius:999px;}
+  .rchip.accent{background:rgba(26,31,110,.1);color:var(--navy);} .rchip.warn{background:rgba(245,158,11,.16);color:#854f0b;}
+  .rchip.ok{background:rgba(31,157,99,.14);color:#0f6e56;} .rchip.bad{background:rgba(220,38,38,.12);color:#dc2626;}
+  .rd-dia{display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);}
+  .rd-dia:last-child{border-bottom:none;}
+  .rd-lin{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid var(--line);font-size:.86rem;}
+  .rd-lin.rd-tot{border-bottom:none;border-top:2px solid var(--line);margin-top:2px;font-weight:800;font-size:1rem;}
   .gform{border:1px dashed #c7ccdd;border-radius:12px;padding:11px;margin-bottom:10px;background:#fff;}
   .gform .fld{margin-bottom:8px;}
   /* Escáner de documentos (varias fotos -> 1 PDF) */
@@ -574,6 +586,24 @@
         <button id="m-del" style="width:100%;margin-top:8px;display:none;background:#fff;border:1px solid #f0c0c0;color:#dc2626;padding:13px;border-radius:13px;font:800 14px var(--font);cursor:pointer">🗑 Eliminar faena</button>
       </div>
     </section>
+
+    <!-- ---- REMUNERACIONES / PAGOS (solo admin) ---- -->
+    <section class="view" id="v-remu">
+      <div class="h-row"><h2>Pagos <span class="cnt" id="remu-cnt"></span></h2><button id="remu-cfg-btn" class="btn ghost small" style="width:auto">⚙️ Config</button></div>
+      <div class="card" style="display:flex;align-items:center;gap:8px;padding:9px 10px;margin-bottom:12px">
+        <button id="remu-prev" class="btn ghost small" style="width:auto">‹</button>
+        <div style="flex:1;text-align:center"><div class="note" style="margin:0;font-size:.72rem">Semana</div><b id="remu-rango" style="font-size:.95rem"></b></div>
+        <button id="remu-next" class="btn ghost small" style="width:auto">›</button>
+      </div>
+      <div id="remu-total" style="background:rgba(255,107,0,.1);border-radius:12px;padding:12px 14px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center"><span style="font:600 13px var(--font);color:var(--orange-2)">Total a pagar</span><b id="remu-total-val" style="font:800 20px var(--font);color:var(--orange-2)">$0</b></div>
+      <div id="remu-list"></div>
+      <!-- Config de pago (inline, oculto) -->
+      <div id="remu-config" class="hide">
+        <div class="h-row" style="margin-top:8px"><h2 style="font-size:1.1rem">Config de pago</h2><button id="remu-cfg-save" class="btn small" style="width:auto">Guardar</button></div>
+        <p class="note" style="margin:0 0 10px">Por hora: se pagan todas las horas. Contrato: solo las horas <b>fuera de la jornada</b> (el sueldo del contrato se paga aparte).</p>
+        <div id="remu-cfg-list"></div>
+      </div>
+    </section>
   </main>
 
   <nav class="tabbar">
@@ -583,6 +613,7 @@
     <button data-v="v-matriz" id="tab-matriz" class="hide"><span class="em">🧰</span>Matriz</button>
     <button data-v="v-trab" id="tab-trab" class="hide"><span class="em">👷</span>Personas</button>
     <button data-v="v-veh" id="tab-veh" class="hide"><span class="em">🚚</span>Vehículos</button>
+    <button data-v="v-remu" id="tab-remu" class="hide"><span class="em">💵</span>Pagos</button>
   </nav>
 </div>
 
@@ -729,6 +760,16 @@
   </div>
 </div>
 
+<!-- Detalle de pago de un trabajador (semana) -->
+<div id="remu-detalle" class="hide">
+  <div class="ficha-bar">
+    <button id="rd-close" class="btn ghost small" style="width:auto">✕ Cerrar</button>
+    <b id="rd-title">Detalle</b>
+    <span style="width:56px"></span>
+  </div>
+  <div class="ficha-body"><div id="rd-body"></div></div>
+</div>
+
 <!-- Importar trabajadores (pegar lista) -->
 <div id="imp" class="hide">
   <div class="imp-bg"></div>
@@ -814,6 +855,7 @@
     $('horas-card').classList.toggle('hide', op);         // horas: solo admin
     $('tab-matriz').classList.toggle('hide', op);         // Matriz: solo admin
     $('tab-trab').classList.toggle('hide', op);           // Personas: solo admin
+    if($('tab-remu')) $('tab-remu').classList.toggle('hide', op); // Pagos: solo admin
     $('tab-veh').classList.remove('hide');                // Vehículos: visible para todos (chofer registra vueltas)
     if($('veh-admin')) $('veh-admin').classList.toggle('hide', op);   // flota completa: solo admin
     if($('veh-chofer')) $('veh-chofer').classList.toggle('hide', !op); // registrar vuelta/peaje: choferes (no admin)
@@ -897,6 +939,7 @@
     if(b.dataset.v==='v-cuadrilla'){ cargarTrab(actualizarDatalist); cargarPlantillas(function(){ cargarRegistros(function(){ if(C_JOB) elegirJobCuadrilla(C_JOB); else renderFaenaSelect(); }); }); }
     if(b.dataset.v==='v-matriz'){ cargarPlantillas(renderMatriz); }
     if(b.dataset.v==='v-veh'){ if(isAdmin){ cargarVeh(pintarVehList); } else { cargarChoferForm(); } }
+    if(b.dataset.v==='v-remu'){ cargarRemu(); }
     window.scrollTo(0,0);
   }); });
   function irA(id){ document.querySelector('.tabbar button[data-v="'+id+'"]').click(); }
@@ -1907,6 +1950,147 @@
       toast('✓ Registrado ¡gracias!'); cargarChoferForm();
     });
   });
+
+  // ====== REMUNERACIONES / PAGOS (solo admin) ======
+  var REMU_LUNES=null, REMU_DATA=null;
+  function isoD(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+  function lunesDe(f){ var d=new Date(f+'T12:00:00'); var dow=(d.getDay()+6)%7; d.setDate(d.getDate()-dow); return isoD(d); }
+  function sumarDias(f,n){ var d=new Date(f+'T12:00:00'); d.setDate(d.getDate()+n); return isoD(d); }
+  function hm(min){ if(min==null) return '0h'; return Math.floor(min/60)+'h'+(min%60?(' '+(min%60)+'m'):''); }
+  function norm(s){ return (s||'').trim().toLowerCase(); }
+
+  function cargarRemu(){
+    if(!REMU_LUNES) REMU_LUNES=lunesDe(todayISO());
+    var lun=REMU_LUNES, fin=sumarDias(lun,6);
+    $('remu-rango').textContent=fechaCorta(lun)+' – '+fechaCorta(fin);
+    if(!sb) return;
+    Promise.all([
+      sb.from('trabajadores').select('*').order('nombre',{ascending:true}).limit(400),
+      sb.from('registros').select('empresa,lugar,fecha,horas').gte('fecha',sumarDias(lun,-21)).lte('fecha',sumarDias(fin,1)).limit(500),
+      sb.from('vehiculo_gastos').select('categoria,fecha,monto,cantidad,chofer').in('categoria',['vuelta','peaje']).gte('fecha',lun).lte('fecha',fin).limit(500),
+      sb.from('remuneracion_items').select('*').eq('semana',lun).limit(500),
+      sb.from('config').select('*').eq('clave','valor_vuelta').limit(1)
+    ]).then(function(rs){
+      REMU_DATA={ lun:lun, fin:fin,
+        trab:(rs[0]&&rs[0].data)||[], regs:(rs[1]&&rs[1].data)||[], vg:(rs[2]&&rs[2].data)||[],
+        items:(rs[3]&&rs[3].data)||[], valorVuelta:(+(((rs[4]&&rs[4].data)||[])[0]||{}).valor||0)||0 };
+      computarRemu();
+    });
+  }
+  function computarRemu(){
+    var D=REMU_DATA; if(!D) return; var lun=D.lun, fin=D.fin;
+    var horasT={};
+    D.regs.forEach(function(r){ (r.horas||[]).forEach(function(h){ var f=h.fecha; if(!f||f<lun||f>fin) return;
+      var nm=norm(h.trabajador); if(!nm) return; var mn=totalMin(h.entrada,h.salida); mn=(mn==null?0:mn);
+      if(!horasT[nm]) horasT[nm]={porDia:{},detalle:[],totalMin:0};
+      horasT[nm].porDia[f]=(horasT[nm].porDia[f]||0)+mn;
+      horasT[nm].detalle.push({fecha:f,empresa:r.empresa,lugar:r.lugar,entrada:h.entrada,salida:h.salida,min:mn});
+      horasT[nm].totalMin+=mn;
+    }); });
+    var vueltasT={}, peajesT={};
+    D.vg.forEach(function(g){ var nm=norm(g.chofer); if(!nm) return;
+      if(g.categoria==='vuelta') vueltasT[nm]=(vueltasT[nm]||0)+(+g.cantidad||0);
+      if(g.categoria==='peaje') peajesT[nm]=(peajesT[nm]||0)+(+g.monto||0); });
+    var bonoT={}, descT={};
+    D.items.forEach(function(it){ if(it.tipo==='bono') bonoT[it.trabajador_id]=(bonoT[it.trabajador_id]||0)+(+it.monto||0); if(it.tipo==='descuento') descT[it.trabajador_id]=(descT[it.trabajador_id]||0)+(+it.monto||0); });
+    var filas=[], total=0;
+    D.trab.forEach(function(t){ if(t.estado==='inactivo') return;
+      var nm=norm(t.nombre), H=horasT[nm];
+      var tv=vueltasT[nm]||0, tp=peajesT[nm]||0, bo=bonoT[t.id]||0, de=descT[t.id]||0;
+      var totMin=H?H.totalMin:0, dias=H?Object.keys(H.porDia).length:0;
+      var tipo=t.tipo_pago||'hora', vh=+t.valor_hora||0, jor=+t.jornada_horas||0, baseMin;
+      if(tipo==='contrato'){ baseMin=0; if(H){ for(var f in H.porDia){ var ex=H.porDia[f]-jor*60; if(ex>0) baseMin+=ex; } } }
+      else baseMin=totMin;
+      var base=Math.round(baseMin/60*vh), vueltasMonto=tv*D.valorVuelta, totalTrab=base+vueltasMonto+tp+bo-de;
+      if(totMin===0 && tv===0 && tp===0 && bo===0 && de===0) return;
+      filas.push({t:t,tipo:tipo,dias:dias,totMin:totMin,base:base,baseMin:baseMin,vh:vh,jor:jor,vueltas:tv,vueltasMonto:vueltasMonto,peajes:tp,bono:bo,desc:de,total:totalTrab,H:H});
+      total+=totalTrab;
+    });
+    filas.sort(function(a,b){ return (a.t.nombre||'').localeCompare(b.t.nombre||''); });
+    REMU_DATA.filas=filas;
+    $('remu-total-val').textContent=fmtMoney(total);
+    $('remu-cnt').textContent=filas.length+(filas.length===1?' trabajador':' trabajadores');
+    var cont=$('remu-list');
+    if(!filas.length){ cont.innerHTML='<div class="empty"><div class="big">💵</div>Sin horas ni pagos esta semana.<br><span style="font-size:.82rem">Cambia de semana o revisa la config de pago.</span></div>'; return; }
+    cont.innerHTML=filas.map(function(x,i){
+      var chips='<span class="rchip">Base '+fmtMoney(x.base)+'</span>';
+      if(x.vueltas) chips+='<span class="rchip accent">'+x.vueltas+' vueltas '+fmtMoney(x.vueltasMonto)+'</span>';
+      if(x.peajes) chips+='<span class="rchip warn">Peajes '+fmtMoney(x.peajes)+'</span>';
+      if(x.bono) chips+='<span class="rchip ok">+ Bono '+fmtMoney(x.bono)+'</span>';
+      if(x.desc) chips+='<span class="rchip bad">− '+fmtMoney(x.desc)+'</span>';
+      return '<div class="rrow" data-i="'+i+'"><div class="rtop"><div><b>'+esc(x.t.nombre||'')+'</b><div class="note" style="margin:0;font-size:.74rem">'+esc(x.t.cargo||'')+' · '+x.dias+' días · '+hm(x.totMin)+(x.tipo==='contrato'?' · contrato':'')+'</div></div><b class="rtotal">'+fmtMoney(x.total)+'</b></div><div class="rchips">'+chips+'</div></div>';
+    }).join('');
+    cont.querySelectorAll('.rrow').forEach(function(el){ el.addEventListener('click',function(){ abrirDetalleRemu(REMU_DATA.filas[+el.dataset.i]); }); });
+  }
+  $('remu-prev').addEventListener('click',function(){ REMU_LUNES=sumarDias(REMU_LUNES||lunesDe(todayISO()),-7); cargarRemu(); });
+  $('remu-next').addEventListener('click',function(){ REMU_LUNES=sumarDias(REMU_LUNES||lunesDe(todayISO()),7); cargarRemu(); });
+
+  // Config de pago (inline)
+  $('remu-cfg-btn').addEventListener('click',function(){
+    var cfg=$('remu-config'), abriendo=cfg.classList.contains('hide');
+    cfg.classList.toggle('hide', !abriendo);
+    $('remu-list').classList.toggle('hide', abriendo);
+    $('remu-total').classList.toggle('hide', abriendo);
+    if(abriendo) renderCfgPago();
+  });
+  function renderCfgPago(){
+    var trab=(REMU_DATA&&REMU_DATA.trab)||[];
+    $('remu-cfg-list').innerHTML=trab.filter(function(t){ return t.estado!=='inactivo'; }).map(function(t){
+      var tipo=t.tipo_pago||'hora';
+      return '<div class="card cfg-row" data-id="'+t.id+'" style="padding:10px 12px;margin-bottom:8px"><b>'+esc(t.nombre||'')+'</b>'+
+        '<div class="grid2" style="margin-top:6px">'+
+          '<div class="fld" style="margin:0"><label>Tipo</label><select class="cfg-tipo"><option value="hora"'+(tipo==='hora'?' selected':'')+'>Por hora</option><option value="contrato"'+(tipo==='contrato'?' selected':'')+'>Contrato</option></select></div>'+
+          '<div class="fld" style="margin:0"><label>Valor hora ($)</label><input class="cfg-vh" type="number" min="0" value="'+(t.valor_hora||'')+'"></div>'+
+        '</div>'+
+        '<div class="fld cfg-jor-wrap" style="margin:6px 0 0'+(tipo==='contrato'?'':';display:none')+'"><label>Jornada normal (horas/día)</label><input class="cfg-jor" type="number" min="0" step="0.5" value="'+(t.jornada_horas||'')+'"></div></div>';
+    }).join('')||'<p class="note">No hay trabajadores. Cárgalos en Personas.</p>';
+    $('remu-cfg-list').querySelectorAll('.cfg-tipo').forEach(function(s){ s.addEventListener('change',function(){ s.closest('.cfg-row').querySelector('.cfg-jor-wrap').style.display=(s.value==='contrato')?'':'none'; }); });
+  }
+  $('remu-cfg-save').addEventListener('click',function(){
+    if(!sb) return; var rows=[];
+    $('remu-cfg-list').querySelectorAll('.cfg-row').forEach(function(r){
+      rows.push({ id:+r.dataset.id, tipo_pago:r.querySelector('.cfg-tipo').value,
+        valor_hora:(+r.querySelector('.cfg-vh').value||null), jornada_horas:(+r.querySelector('.cfg-jor').value||null) }); });
+    busy(true,'Guardando config…'); var i=0, err=null;
+    (function next(){
+      if(i>=rows.length){ busy(false); if(err) toast('Algunas fallaron: '+err); else toast('✓ Config guardada'); $('remu-cfg-btn').click(); cargarRemu(); return; }
+      var x=rows[i]; i++;
+      sb.from('trabajadores').update({tipo_pago:x.tipo_pago,valor_hora:x.valor_hora,jornada_horas:x.jornada_horas}).eq('id',x.id).then(function(r){ if(r.error)err=r.error.message; next(); });
+    })();
+  });
+
+  // Detalle de un trabajador (semana)
+  function abrirDetalleRemu(x){
+    if(!x) return;
+    $('rd-title').textContent=x.t.nombre||'Detalle';
+    var dias=((x.H&&x.H.detalle)||[]).slice().sort(function(a,b){ return a.fecha<b.fecha?-1:1; });
+    var diasHtml=dias.length?dias.map(function(d){
+      return '<div class="rd-dia"><div style="flex:1"><b>'+fechaCorta(d.fecha)+'</b><div class="note" style="margin:0;font-size:.74rem">'+esc(d.empresa||'—')+(d.lugar?' · '+esc(d.lugar):'')+'</div></div><div style="text-align:right;flex-shrink:0"><div style="font-size:.82rem">'+esc(d.entrada||'--:--')+' → '+esc(d.salida||'--:--')+'</div><b style="color:var(--orange-2);font-size:.8rem">'+hm(d.min)+'</b></div></div>';
+    }).join(''):'<p class="note" style="margin:0">Sin días registrados esta semana.</p>';
+    var desg='<div class="rd-lin"><span>'+(x.tipo==='contrato'?'Horas extra':'Horas')+' ('+hm(x.baseMin)+(x.vh?(' × '+fmtMoney(x.vh)):'')+')</span><b>'+fmtMoney(x.base)+'</b></div>';
+    if(x.vueltas) desg+='<div class="rd-lin"><span>'+x.vueltas+' vueltas × '+fmtMoney(REMU_DATA.valorVuelta)+'</span><b>'+fmtMoney(x.vueltasMonto)+'</b></div>';
+    if(x.peajes) desg+='<div class="rd-lin"><span>Peajes (reembolso)</span><b>'+fmtMoney(x.peajes)+'</b></div>';
+    if(x.bono) desg+='<div class="rd-lin"><span>Bonos / extras</span><b style="color:#0f6e56">'+fmtMoney(x.bono)+'</b></div>';
+    if(x.desc) desg+='<div class="rd-lin"><span>Descuentos</span><b style="color:#dc2626">− '+fmtMoney(x.desc)+'</b></div>';
+    desg+='<div class="rd-lin rd-tot"><span>Total semana</span><b>'+fmtMoney(x.total)+'</b></div>';
+    $('rd-body').innerHTML=
+      '<div class="card"><label style="display:block;font:700 13px var(--font);color:var(--ink);margin-bottom:6px">📅 Días trabajados</label>'+diasHtml+'</div>'+
+      '<div class="card"><label style="display:block;font:700 13px var(--font);color:var(--ink);margin-bottom:6px">💰 Desglose</label>'+desg+'</div>'+
+      '<div class="card"><label style="display:block;font:700 13px var(--font);color:var(--ink);margin-bottom:6px">＋ Bono / descuento</label>'+
+        '<div class="grid2"><div class="fld" style="margin:0"><label>Tipo</label><select id="rd-tipo"><option value="bono">Bono / extra</option><option value="descuento">Descuento</option></select></div><div class="fld" style="margin:0"><label>Monto ($)</label><input id="rd-monto" type="number" min="0" placeholder="0"></div></div>'+
+        '<div class="fld"><label>Concepto</label><input id="rd-concepto" type="text" placeholder="Ej: Anticipo, bono producción…"></div>'+
+        '<button id="rd-add" class="btn small" style="width:auto">Agregar</button></div>';
+    $('rd-add').addEventListener('click',function(){
+      if(!sb) return; var monto=+($('rd-monto').value||0); if(!monto){ toast('Pon el monto.'); return; }
+      busy(true,'Guardando…');
+      sb.from('remuneracion_items').insert({ trabajador_id:x.t.id, semana:REMU_DATA.lun, tipo:$('rd-tipo').value, concepto:$('rd-concepto').value.trim(), monto:monto, autor:userEmail }).then(function(r){ busy(false);
+        if(r.error){ toast('No se pudo guardar: '+r.error.message); return; }
+        toast('✓ Agregado'); cerrarDetalleRemu(); cargarRemu(); });
+    });
+    $('remu-detalle').classList.remove('hide'); $('remu-detalle').scrollTop=0;
+  }
+  function cerrarDetalleRemu(){ $('remu-detalle').classList.add('hide'); }
+  $('rd-close').addEventListener('click',cerrarDetalleRemu);
   $('vf-gasto-nuevo').addEventListener('click',function(){
     if(!VEH_ID){ toast('Guarda el vehículo primero.'); return; }
     $('gf-cat').value='permiso_circulacion'; $('gf-fecha').value=todayISO(); $('gf-desc').value=''; $('gf-prov').value=''; $('gf-monto').value=''; $('gf-km').value=''; $('gf-venc').value='';
