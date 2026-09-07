@@ -341,6 +341,9 @@
   .gasto .gdocs a{display:inline-block;font:700 11px var(--font);color:var(--orange-2);text-decoration:none;margin-right:10px;}
   .gcatgrp{margin-bottom:16px;}
   .gcatgrp-h{display:flex;align-items:center;gap:7px;flex-wrap:wrap;font:800 12.5px var(--font);color:var(--navy);margin:2px 0 8px;padding-bottom:5px;border-bottom:1px solid var(--line);}
+  .cf-step{width:56px;height:56px;border-radius:50%;border:1px solid var(--line);background:#fff;color:var(--ink);font-size:26px;font-weight:700;cursor:pointer;line-height:1;}
+  .cf-step.on{background:var(--orange);color:#fff;border-color:transparent;}
+  .cf-sent.on{background:var(--orange);color:#fff;border-color:var(--orange);}
   .gform{border:1px dashed #c7ccdd;border-radius:12px;padding:11px;margin-bottom:10px;background:#fff;}
   .gform .fld{margin-bottom:8px;}
   /* Escáner de documentos (varias fotos -> 1 PDF) */
@@ -479,8 +482,42 @@
 
     <!-- ---- VEHÍCULOS / MAQUINARIA (solo admin) ---- -->
     <section class="view" id="v-veh">
-      <div class="h-row"><h2>Vehículos <span class="cnt" id="veh-cnt"></span></h2><button id="veh-nuevo" class="btn small" style="width:auto">＋ Nuevo</button></div>
-      <div id="veh-list"></div>
+      <!-- Vista admin: flota completa -->
+      <div id="veh-admin">
+        <div class="h-row"><h2>Vehículos <span class="cnt" id="veh-cnt"></span></h2><button id="veh-nuevo" class="btn small" style="width:auto">＋ Nuevo</button></div>
+        <div id="veh-list"></div>
+      </div>
+      <!-- Vista chofer: registrar vuelta / peaje (simple) -->
+      <div id="veh-chofer" class="hide">
+        <div class="h-row"><h2>Registrar vuelta / peaje</h2></div>
+        <div class="card">
+          <div class="fld"><label>Vehículo</label><select id="cf-veh" style="font:600 15px var(--font)"></select></div>
+          <div class="fld"><label>¿Quién maneja?</label><select id="cf-chofer" style="font:600 15px var(--font)"></select></div>
+          <div class="fld">
+            <label>¿Cuántas vueltas?</label>
+            <div style="display:flex;align-items:center;justify-content:center;gap:22px;margin:6px 0 12px">
+              <button id="cf-menos" type="button" class="cf-step">−</button>
+              <span id="cf-num" style="font:800 40px var(--font);min-width:56px;text-align:center;color:var(--ink)">1</span>
+              <button id="cf-mas" type="button" class="cf-step on">+</button>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button type="button" class="btn ghost small cf-sent on" data-s="ida_vuelta" style="flex:1">Ida y vuelta</button>
+              <button type="button" class="btn ghost small cf-sent" data-s="ida" style="flex:1">Solo ida</button>
+            </div>
+          </div>
+          <div class="fld">
+            <label>Peaje <span style="color:var(--muted);font-weight:400">(si hubo)</span></label>
+            <div style="display:flex;align-items:center;border:1px solid var(--line);border-radius:11px;padding:0 12px;background:#fff">
+              <span style="font-size:17px;color:var(--muted)">$</span>
+              <input id="cf-peaje" type="text" inputmode="numeric" placeholder="0" style="border:none;background:transparent;font:600 17px var(--font);padding:12px 8px;width:100%;color:var(--ink);outline:none">
+            </div>
+            <div id="cf-doc-list" style="margin-top:8px"></div>
+            <label class="catadd" style="margin-top:8px">📷 Adjuntar voucher (foto o PDF)<input type="file" id="cf-doc-input" accept="application/pdf,image/*" multiple hidden></label>
+            <div id="cf-scan-zone" class="hide"></div>
+          </div>
+          <button id="cf-save" class="btn" style="margin-top:6px">Guardar</button>
+        </div>
+      </div>
     </section>
 
     <!-- ---- PREPARACIÓN (visible a todos; admin edita, resto solo marca) ---- -->
@@ -736,9 +773,9 @@
   var VEH_ID=null, VEH_DOCS=[]; // ficha de vehículo en edición + sus documentos
   var VEH_GASTOS=[];            // gastos del vehículo abierto
   var GF_DOC=[];                // comprobante(s) del gasto que se está agregando
-  var GASTO_CAT_LBL={permiso_circulacion:'Permiso circulación',revision_tecnica:'Revisión técnica',soap:'SOAP',seguro:'Seguro',mantenimiento:'Mantenimiento',arriendo:'Arriendo',combustible:'Combustible',multa:'Multa',otro:'Otro'};
-  var GASTO_CAT_ICO={permiso_circulacion:'🪪',revision_tecnica:'🔧',soap:'🚑',seguro:'🛡️',mantenimiento:'🛠️',arriendo:'📦',combustible:'⛽',multa:'🚫',otro:'📄'};
-  var GASTO_CAT_ORDER=['permiso_circulacion','revision_tecnica','soap','seguro','mantenimiento','arriendo','combustible','multa','otro'];
+  var GASTO_CAT_LBL={permiso_circulacion:'Permiso circulación',revision_tecnica:'Revisión técnica',soap:'SOAP',seguro:'Seguro',mantenimiento:'Mantenimiento',arriendo:'Arriendo',combustible:'Combustible',multa:'Multa',peaje:'Peaje',vuelta:'Vueltas chofer',otro:'Otro'};
+  var GASTO_CAT_ICO={permiso_circulacion:'🪪',revision_tecnica:'🔧',soap:'🚑',seguro:'🛡️',mantenimiento:'🛠️',arriendo:'📦',combustible:'⛽',multa:'🚫',peaje:'🛣️',vuelta:'🚗',otro:'📄'};
+  var GASTO_CAT_ORDER=['permiso_circulacion','revision_tecnica','soap','seguro','mantenimiento','arriendo','combustible','multa','peaje','vuelta','otro'];
 
   // ====== Helpers ======
   var $=function(id){ return document.getElementById(id); };
@@ -777,7 +814,9 @@
     $('horas-card').classList.toggle('hide', op);         // horas: solo admin
     $('tab-matriz').classList.toggle('hide', op);         // Matriz: solo admin
     $('tab-trab').classList.toggle('hide', op);           // Personas: solo admin
-    $('tab-veh').classList.toggle('hide', op);            // Vehículos: solo admin
+    $('tab-veh').classList.remove('hide');                // Vehículos: visible para todos (chofer registra vueltas)
+    if($('veh-admin')) $('veh-admin').classList.toggle('hide', op);   // flota completa: solo admin
+    if($('veh-chofer')) $('veh-chofer').classList.toggle('hide', !op); // registrar vuelta/peaje: choferes (no admin)
     if($('btn-plan')) $('btn-plan').classList.toggle('hide', op); // Planificación: solo admin (Enzo/Jorge/Cristopher)
     ['r-empresa','r-lugar','r-fecha','r-notas'].forEach(function(id){ $(id).disabled=op; });
     // Preparación es visible a todos; pero faena y cuadrilla solo las edita admin (el resto solo marca el checklist)
@@ -857,7 +896,7 @@
     if(b.dataset.v==='v-trab') cargarTrab(pintarTrab);
     if(b.dataset.v==='v-cuadrilla'){ cargarTrab(actualizarDatalist); cargarPlantillas(function(){ cargarRegistros(function(){ if(C_JOB) elegirJobCuadrilla(C_JOB); else renderFaenaSelect(); }); }); }
     if(b.dataset.v==='v-matriz'){ cargarPlantillas(renderMatriz); }
-    if(b.dataset.v==='v-veh'){ cargarVeh(pintarVehList); }
+    if(b.dataset.v==='v-veh'){ if(isAdmin){ cargarVeh(pintarVehList); } else { cargarChoferForm(); } }
     window.scrollTo(0,0);
   }); });
   function irA(id){ document.querySelector('.tabbar button[data-v="'+id+'"]').click(); }
@@ -1812,6 +1851,62 @@
     folder:function(){ return 'vehiculos/'+slug(nombreVeh())+'/gastos'; },
     nombreBase:function(){ return slug(nombreVeh())+'_comprobante'; },
     onDoc:function(d){ GF_DOC.push(d); renderGfDocs(); } });
+
+  // ====== Pantalla del CHOFER (registrar vuelta / peaje) — visible para no-admin ======
+  var CF_VUELTAS=1, CF_SENT='ida_vuelta', CF_DOC=[];
+  function renderCfDocs(){
+    var c=$('cf-doc-list'); if(!c) return;
+    c.innerHTML=CF_DOC.map(function(d,i){ var img=(d.tipo==='image');
+      return '<div class="docitem"><div class="ic">'+(img?'🖼️':'📄')+'</div><a href="'+esc(d.url)+'" target="_blank" rel="noopener">'+esc(d.nombre||'voucher')+'</a><button class="rm" data-i="'+i+'" type="button">✕</button></div>'; }).join('');
+    c.querySelectorAll('.rm').forEach(function(b){ b.addEventListener('click',function(){ CF_DOC.splice(+b.dataset.i,1); renderCfDocs(); }); });
+  }
+  var cfScanner=crearEscaner({ input:'cf-doc-input', zona:'cf-scan-zone',
+    folder:function(){ return 'vehiculos/peajes'; },
+    nombreBase:function(){ return 'peaje_'+slug($('cf-chofer').value||userEmail); },
+    onDoc:function(d){ CF_DOC.push(d); renderCfDocs(); } });
+  function setNum(n){ CF_VUELTAS=Math.max(0,n); $('cf-num').textContent=CF_VUELTAS; }
+  function cargarChoferForm(){
+    setNum(1); CF_SENT='ida_vuelta'; CF_DOC=[]; renderCfDocs(); cfScanner.reset();
+    $('cf-peaje').value='';
+    document.querySelectorAll('.cf-sent').forEach(function(x){ x.classList.toggle('on', x.dataset.s==='ida_vuelta'); });
+    // vehículos
+    if(!sb){ return; }
+    sb.from('vehiculos').select('id,nombre,patente,estado').order('nombre',{ascending:true}).then(function(r){
+      var vs=(r&&r.data||[]).filter(function(v){ return v.estado!=='inactivo'; });
+      $('cf-veh').innerHTML=vs.length?vs.map(function(v){ return '<option value="'+v.id+'">'+esc((v.nombre||'')+(v.patente?(' · '+v.patente):''))+'</option>'; }).join(''):'<option value="">(sin vehículos)</option>';
+    });
+    // choferes (trabajadores activos); preselecciona por correo si coincide
+    sb.from('trabajadores').select('id,nombre,email,estado').order('nombre',{ascending:true}).then(function(r){
+      var ts=(r&&r.data||[]).filter(function(t){ return t.estado!=='inactivo' && (t.nombre||'').trim(); });
+      $('cf-chofer').innerHTML=ts.map(function(t){ return '<option value="'+enc(t.nombre)+'">'+esc(t.nombre)+'</option>'; }).join('');
+      var mio=ts.filter(function(t){ return (t.email||'').trim().toLowerCase()===(userEmail||'').toLowerCase(); })[0];
+      if(mio) $('cf-chofer').value=mio.nombre;
+    });
+  }
+  $('cf-menos').addEventListener('click',function(){ setNum(CF_VUELTAS-1); });
+  $('cf-mas').addEventListener('click',function(){ setNum(CF_VUELTAS+1); });
+  document.querySelectorAll('.cf-sent').forEach(function(b){ b.addEventListener('click',function(){ CF_SENT=b.dataset.s; document.querySelectorAll('.cf-sent').forEach(function(x){ x.classList.toggle('on',x===b); }); }); });
+  $('cf-save').addEventListener('click',function(){
+    if(!sb) return;
+    var vehId=$('cf-veh').value, chofer=$('cf-chofer').value.trim();
+    if(!vehId){ toast('Elige un vehículo.'); return; }
+    if(!chofer){ toast('Elige quién maneja.'); return; }
+    var peaje=(+($('cf-peaje').value||'').replace(/[^0-9]/g,''))||0;
+    if(CF_VUELTAS<=0 && !peaje && !CF_DOC.length){ toast('Agrega vueltas o un peaje.'); return; }
+    var rows=[];
+    if(CF_VUELTAS>0){
+      rows.push({ vehiculo_id:vehId, categoria:'vuelta', fecha:todayISO(), cantidad:CF_VUELTAS, sentido:CF_SENT,
+        descripcion:CF_VUELTAS+' vuelta'+(CF_VUELTAS>1?'s':'')+(CF_SENT==='ida'?' (solo ida)':' (ida y vuelta)'), chofer:chofer, monto:0, autor:userEmail });
+    }
+    if(peaje>0 || CF_DOC.length){
+      rows.push({ vehiculo_id:vehId, categoria:'peaje', fecha:todayISO(), monto:peaje, descripcion:'Peaje', chofer:chofer, comprobante:CF_DOC, autor:userEmail });
+    }
+    busy(true,'Guardando…');
+    sb.from('vehiculo_gastos').insert(rows).then(function(r){ busy(false);
+      if(r.error){ toast('No se pudo guardar: '+r.error.message); return; }
+      toast('✓ Registrado ¡gracias!'); cargarChoferForm();
+    });
+  });
   $('vf-gasto-nuevo').addEventListener('click',function(){
     if(!VEH_ID){ toast('Guarda el vehículo primero.'); return; }
     $('gf-cat').value='permiso_circulacion'; $('gf-fecha').value=todayISO(); $('gf-desc').value=''; $('gf-prov').value=''; $('gf-monto').value=''; $('gf-km').value=''; $('gf-venc').value='';
