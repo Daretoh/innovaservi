@@ -362,6 +362,19 @@
   .rd-dia:last-child{border-bottom:none;}
   .rd-lin{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid var(--line);font-size:.86rem;}
   .rd-lin.rd-tot{border-bottom:none;border-top:2px solid var(--line);margin-top:2px;font-weight:800;font-size:1rem;}
+  /* Tabla tipo Excel de Pagos */
+  .remu-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:12px;background:#fff;}
+  .remu-tbl{border-collapse:collapse;width:100%;font:600 12.5px var(--font);white-space:nowrap;}
+  .remu-tbl th{background:var(--alt);color:var(--muted);font:800 10px var(--font);text-transform:uppercase;letter-spacing:.03em;padding:9px 11px;text-align:right;border-bottom:1px solid var(--line);}
+  .remu-tbl th:first-child{text-align:left;position:sticky;left:0;background:var(--alt);z-index:2;}
+  .remu-tbl td{padding:9px 11px;border-bottom:1px solid var(--line);text-align:right;color:var(--ink);}
+  .remu-tbl tbody tr{cursor:pointer;} .remu-tbl tbody tr:active{background:#fff4ec;}
+  .remu-tbl tbody tr:last-child td{border-bottom:none;}
+  .remu-tbl .rt-nm{text-align:left;font-weight:800;position:sticky;left:0;background:#fff;min-width:120px;}
+  .remu-tbl tbody tr:active .rt-nm{background:#fff4ec;}
+  .remu-tbl .rt-sub{font:500 10px var(--font);color:var(--muted);}
+  .remu-tbl .rt-tot{font-weight:800;color:var(--orange-2);}
+  .remu-tbl .rt-ok{color:#0f6e56;} .remu-tbl .rt-bad{color:#dc2626;} .remu-tbl .rt-z{color:#c7ccdd;}
   .gform{border:1px dashed #c7ccdd;border-radius:12px;padding:11px;margin-bottom:10px;background:#fff;}
   .gform .fld{margin-bottom:8px;}
   /* Escáner de documentos (varias fotos -> 1 PDF) */
@@ -2012,11 +2025,12 @@
       sb.from('registros').select('empresa,lugar,fecha,horas').gte('fecha',sumarDias(lun,-21)).lte('fecha',sumarDias(fin,1)).limit(500),
       sb.from('vehiculo_gastos').select('categoria,fecha,monto,cantidad,chofer').in('categoria',['vuelta','peaje']).gte('fecha',lun).lte('fecha',fin).limit(500),
       sb.from('remuneracion_items').select('*').eq('semana',lun).limit(500),
-      sb.from('config').select('*').eq('clave','valor_vuelta').limit(1)
+      sb.from('config').select('*').in('clave',['valor_vuelta','valor_hora'])
     ]).then(function(rs){
+      var cfgMap={}; ((rs[4]&&rs[4].data)||[]).forEach(function(c){ cfgMap[c.clave]=+c.valor||0; });
       REMU_DATA={ lun:lun, fin:fin,
         trab:(rs[0]&&rs[0].data)||[], regs:(rs[1]&&rs[1].data)||[], vg:(rs[2]&&rs[2].data)||[],
-        items:(rs[3]&&rs[3].data)||[], valorVuelta:(+(((rs[4]&&rs[4].data)||[])[0]||{}).valor||0)||0 };
+        items:(rs[3]&&rs[3].data)||[], valorVuelta:cfgMap.valor_vuelta||0, valorHora:cfgMap.valor_hora||0 };
       computarRemu();
     });
   }
@@ -2041,7 +2055,7 @@
       var nm=norm(t.nombre), H=horasT[nm];
       var tv=vueltasT[nm]||0, tp=peajesT[nm]||0, bo=bonoT[t.id]||0, de=descT[t.id]||0;
       var totMin=H?H.totalMin:0, dias=H?Object.keys(H.porDia).length:0;
-      var tipo=t.tipo_pago||'hora', vh=+t.valor_hora||0, jor=+t.jornada_horas||0, baseMin;
+      var tipo=t.tipo_pago||'hora', vh=(+t.valor_hora||0)||D.valorHora, jor=+t.jornada_horas||0, baseMin;
       if(tipo==='contrato'){ baseMin=0; if(H){ for(var f in H.porDia){ var ex=H.porDia[f]-jor*60; if(ex>0) baseMin+=ex; } } }
       else baseMin=totMin;
       var base=Math.round(baseMin/60*vh), vueltasMonto=tv*D.valorVuelta, totalTrab=base+vueltasMonto+tp+bo-de;
@@ -2055,15 +2069,19 @@
     $('remu-cnt').textContent=filas.length+(filas.length===1?' trabajador':' trabajadores');
     var cont=$('remu-list');
     if(!filas.length){ cont.innerHTML='<div class="empty"><div class="big">💵</div>Sin horas ni pagos esta semana.<br><span style="font-size:.82rem">Cambia de semana o revisa la config de pago.</span></div>'; return; }
-    cont.innerHTML=filas.map(function(x,i){
-      var chips='<span class="rchip">Base '+fmtMoney(x.base)+'</span>';
-      if(x.vueltas) chips+='<span class="rchip accent">'+x.vueltas+' vueltas '+fmtMoney(x.vueltasMonto)+'</span>';
-      if(x.peajes) chips+='<span class="rchip warn">Peajes '+fmtMoney(x.peajes)+'</span>';
-      if(x.bono) chips+='<span class="rchip ok">+ Bono '+fmtMoney(x.bono)+'</span>';
-      if(x.desc) chips+='<span class="rchip bad">− '+fmtMoney(x.desc)+'</span>';
-      return '<div class="rrow" data-i="'+i+'"><div class="rtop"><div><b>'+esc(x.t.nombre||'')+'</b><div class="note" style="margin:0;font-size:.74rem">'+esc(x.t.cargo||'')+' · '+x.dias+' días · '+hm(x.totMin)+(x.tipo==='contrato'?' · contrato':'')+'</div></div><b class="rtotal">'+fmtMoney(x.total)+'</b></div><div class="rchips">'+chips+'</div></div>';
+    var m=function(v,neg){ return v?((neg?'−':'')+fmtMoney(v)):'<span class="rt-z">—</span>'; };
+    var body=filas.map(function(x,i){
+      return '<tr data-i="'+i+'">'+
+        '<td class="rt-nm">'+esc(x.t.nombre||'')+'<div class="rt-sub">'+esc(x.t.cargo||'')+(x.tipo==='contrato'?' · contrato':'')+'</div></td>'+
+        '<td>'+x.dias+'</td><td>'+hm(x.totMin)+'</td>'+
+        '<td>'+m(x.base)+'</td><td>'+m(x.vueltasMonto)+'</td><td>'+m(x.peajes)+'</td>'+
+        '<td class="rt-ok">'+m(x.bono)+'</td><td class="rt-bad">'+m(x.desc,true)+'</td>'+
+        '<td class="rt-tot">'+fmtMoney(x.total)+'</td></tr>';
     }).join('');
-    cont.querySelectorAll('.rrow').forEach(function(el){ el.addEventListener('click',function(){ abrirDetalleRemu(REMU_DATA.filas[+el.dataset.i]); }); });
+    cont.innerHTML='<div class="remu-scroll"><table class="remu-tbl"><thead><tr>'+
+      '<th>Trabajador</th><th>Días</th><th>Horas</th><th>Base</th><th>Vueltas</th><th>Peajes</th><th>Bono</th><th>Desc.</th><th>Total</th></tr></thead>'+
+      '<tbody>'+body+'</tbody></table></div>';
+    cont.querySelectorAll('tbody tr[data-i]').forEach(function(el){ el.addEventListener('click',function(){ abrirDetalleRemu(REMU_DATA.filas[+el.dataset.i]); }); });
   }
   $('remu-prev').addEventListener('click',function(){ REMU_LUNES=sumarDias(REMU_LUNES||lunesDe(todayISO()),-7); cargarRemu(); });
   $('remu-next').addEventListener('click',function(){ REMU_LUNES=sumarDias(REMU_LUNES||lunesDe(todayISO()),7); cargarRemu(); });
@@ -2077,16 +2095,22 @@
     if(abriendo) renderCfgPago();
   });
   function renderCfgPago(){
-    var trab=(REMU_DATA&&REMU_DATA.trab)||[];
-    $('remu-cfg-list').innerHTML=trab.filter(function(t){ return t.estado!=='inactivo'; }).map(function(t){
+    var D=REMU_DATA||{}, trab=D.trab||[], vhG=D.valorHora||0;
+    var glob='<div class="card" style="padding:11px 13px;margin-bottom:12px;border:1px solid var(--orange)">'+
+      '<div class="grid2">'+
+        '<div class="fld" style="margin:0"><label>💲 Valor hora (todos)</label><input id="cfg-vh-global" type="number" min="0" value="'+(vhG||'')+'"></div>'+
+        '<div class="fld" style="margin:0"><label>🚗 Valor por vuelta</label><input id="cfg-vv-global" type="number" min="0" value="'+(D.valorVuelta||'')+'"></div>'+
+      '</div><p class="note" style="margin:6px 0 0">El valor hora aplica a <b>todos</b>. Abajo puedes ponerle otro valor a alguien puntual (opcional).</p></div>';
+    var lista=trab.filter(function(t){ return t.estado!=='inactivo'; }).map(function(t){
       var tipo=t.tipo_pago||'hora';
       return '<div class="card cfg-row" data-id="'+t.id+'" style="padding:10px 12px;margin-bottom:8px"><b>'+esc(t.nombre||'')+'</b>'+
         '<div class="grid2" style="margin-top:6px">'+
           '<div class="fld" style="margin:0"><label>Tipo</label><select class="cfg-tipo"><option value="hora"'+(tipo==='hora'?' selected':'')+'>Por hora</option><option value="contrato"'+(tipo==='contrato'?' selected':'')+'>Contrato</option></select></div>'+
-          '<div class="fld" style="margin:0"><label>Valor hora ($)</label><input class="cfg-vh" type="number" min="0" value="'+(t.valor_hora||'')+'"></div>'+
+          '<div class="fld" style="margin:0"><label>Valor hora propio</label><input class="cfg-vh" type="number" min="0" value="'+(t.valor_hora||'')+'" placeholder="'+(vhG?('todos: '+vhG):'usa el general')+'"></div>'+
         '</div>'+
         '<div class="fld cfg-jor-wrap" style="margin:6px 0 0'+(tipo==='contrato'?'':';display:none')+'"><label>Jornada normal (horas/día)</label><input class="cfg-jor" type="number" min="0" step="0.5" value="'+(t.jornada_horas||'')+'"></div></div>';
     }).join('')||'<p class="note">No hay trabajadores. Cárgalos en Personas.</p>';
+    $('remu-cfg-list').innerHTML=glob+lista;
     $('remu-cfg-list').querySelectorAll('.cfg-tipo').forEach(function(s){ s.addEventListener('change',function(){ s.closest('.cfg-row').querySelector('.cfg-jor-wrap').style.display=(s.value==='contrato')?'':'none'; }); });
   }
   $('remu-cfg-save').addEventListener('click',function(){
@@ -2094,12 +2118,19 @@
     $('remu-cfg-list').querySelectorAll('.cfg-row').forEach(function(r){
       rows.push({ id:+r.dataset.id, tipo_pago:r.querySelector('.cfg-tipo').value,
         valor_hora:(+r.querySelector('.cfg-vh').value||null), jornada_horas:(+r.querySelector('.cfg-jor').value||null) }); });
-    busy(true,'Guardando config…'); var i=0, err=null;
-    (function next(){
-      if(i>=rows.length){ busy(false); if(err) toast('Algunas fallaron: '+err); else toast('✓ Config guardada'); $('remu-cfg-btn').click(); cargarRemu(); return; }
-      var x=rows[i]; i++;
-      sb.from('trabajadores').update({tipo_pago:x.tipo_pago,valor_hora:x.valor_hora,jornada_horas:x.jornada_horas}).eq('id',x.id).then(function(r){ if(r.error)err=r.error.message; next(); });
-    })();
+    var vhG=($('cfg-vh-global')&&$('cfg-vh-global').value||'').trim(), vvG=($('cfg-vv-global')&&$('cfg-vv-global').value||'').trim();
+    busy(true,'Guardando config…'); var err=null;
+    // 1) valores globales en config
+    sb.from('config').upsert([{clave:'valor_hora',valor:(vhG||'0')},{clave:'valor_vuelta',valor:(vvG||'0')}],{onConflict:'clave'}).then(function(rc){
+      if(rc.error) err=rc.error.message;
+      // 2) config por trabajador (override + tipo + jornada)
+      var i=0;
+      (function next(){
+        if(i>=rows.length){ busy(false); if(err) toast('Algo falló: '+err); else toast('✓ Config guardada'); $('remu-cfg-btn').click(); cargarRemu(); return; }
+        var x=rows[i]; i++;
+        sb.from('trabajadores').update({tipo_pago:x.tipo_pago,valor_hora:x.valor_hora,jornada_horas:x.jornada_horas}).eq('id',x.id).then(function(r){ if(r.error)err=r.error.message; next(); });
+      })();
+    });
   });
 
   // Detalle de un trabajador (semana)
