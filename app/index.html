@@ -175,7 +175,7 @@
     color:var(--muted);font:700 10px var(--font);cursor:pointer;transition:color .2s;}
   .tabbar button .em{font-size:20px;line-height:1;transition:transform .25s cubic-bezier(.34,1.56,.64,1);}
   .tabbar button.on{color:var(--orange);}
-  .tfil.on,.hfil.on{background:var(--orange);color:#fff;border-color:var(--orange);}
+  .tfil.on,.hfil.on,.hzfil.on{background:var(--orange);color:#fff;border-color:var(--orange);}
   .tabbar button.on .em{transform:translateY(-3px) scale(1.22);}
   .tabbar button.on::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:24px;height:3px;border-radius:0 0 4px 4px;background:var(--orange);animation:tabpop .28s ease;}
   @keyframes tabpop{from{width:0;opacity:.3;} to{width:24px;opacity:1;}}
@@ -447,13 +447,6 @@
         <div class="fld" style="display:none"><label>Notas / observaciones</label><textarea id="r-notas" placeholder="Detalle del trabajo, materiales, pendientes…"></textarea></div>
       </div>
 
-      <div class="card" id="horas-card">
-        <label style="display:block;font:700 13px var(--font);color:var(--ink);margin-bottom:2px;">⏱️ Horas por trabajador</label>
-        <p class="note" style="margin:0 0 10px">Agrega una línea por cada trabajador con su entrada y salida.</p>
-        <div id="horas-rows"></div>
-        <datalist id="trab-datalist"></datalist>
-        <button class="catadd" id="add-trab" type="button">＋ Agregar trabajador</button>
-      </div>
 
       <div class="card">
         <label style="display:block;font:700 13px var(--font);color:var(--ink);margin-bottom:4px;">📷 Fotos y videos</label>
@@ -496,6 +489,20 @@
         <button class="btn ghost small hfil" data-hf="todos" style="flex:1">Todos</button>
       </div>
       <div id="hist-list"></div>
+    </section>
+
+    <!-- ---- HORAS por día (apartado propio, solo admin) ---- -->
+    <section class="view" id="v-horas">
+      <div class="h-row"><h2>Horas <span class="cnt" id="hz-cnt"></span></h2><button id="hz-save" class="btn small" style="width:auto">💾 Guardar</button></div>
+      <p class="note" style="margin:0 0 10px">Horas por trabajador, agrupadas por día. Un turno nocturno (22:00→06:00) cuenta en el día que marcas.</p>
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <button class="btn ghost small hzfil on" data-hf="hoy" style="flex:1">Hoy</button>
+        <button class="btn ghost small hzfil" data-hf="semana" style="flex:1">Semana</button>
+        <button class="btn ghost small hzfil" data-hf="todos" style="flex:1">Todos</button>
+      </div>
+      <div id="hz-list"></div>
+      <button class="catadd" id="hz-add" type="button" style="margin-top:4px">＋ Agregar hora</button>
+      <datalist id="trab-datalist"></datalist>
     </section>
 
     <!-- ---- TRABAJADORES (solo admin) ---- -->
@@ -635,8 +642,9 @@
   </main>
 
   <nav class="tabbar">
-    <button data-v="v-reporte" class="on"><span class="em">➕</span>Registro</button>
-    <button data-v="v-hist"><span class="em">🗂️</span>Registros</button>
+    <button data-v="v-reporte" class="on"><span class="em">📄</span>Reporte</button>
+    <button data-v="v-hist"><span class="em">🗂️</span>Reportes</button>
+    <button data-v="v-horas" id="tab-horas" class="hide"><span class="em">⏱️</span>Horas</button>
     <button data-v="v-cuadrilla" id="tab-cuad"><span class="em">✅</span>Preparación</button>
     <button data-v="v-matriz" id="tab-matriz" class="hide"><span class="em">🧰</span>Matriz</button>
     <button data-v="v-trab" id="tab-trab" class="hide"><span class="em">👷</span>Personas</button>
@@ -903,7 +911,7 @@
   }
   function aplicarRol(){
     var op=!isAdmin;
-    $('horas-card').classList.toggle('hide', op);         // horas: solo admin
+    if($('tab-horas')) $('tab-horas').classList.toggle('hide', op);  // Horas: solo admin
     $('tab-matriz').classList.toggle('hide', op);         // Matriz: solo admin
     $('tab-trab').classList.toggle('hide', op);           // Personas: solo admin
     if($('btn-pagos')) $('btn-pagos').classList.toggle('hide', op); // Pagos: solo admin (en el header)
@@ -987,6 +995,7 @@
     document.querySelectorAll('.tabbar button').forEach(function(x){ x.classList.toggle('on',x.dataset.v===v); });
     document.querySelectorAll('.view').forEach(function(x){ x.classList.toggle('on',x.id===v); });
     if(v==='v-hist') cargarRegistros(pintarRegistros);
+    if(v==='v-horas') cargarHoras();
     if(v==='v-trab') cargarTrab(pintarTrab);
     if(v==='v-cuadrilla'){ cargarTrab(actualizarDatalist); cargarPlantillas(function(){ cargarRegistros(function(){ if(C_JOB) elegirJobCuadrilla(C_JOB); else renderFaenaSelect(); }); }); }
     if(v==='v-matriz'){ cargarPlantillas(renderMatriz); }
@@ -1339,9 +1348,7 @@
     var empresa=$('r-empresa').value.trim(), lugar=$('r-lugar').value.trim(), fecha=$('r-fecha').value||todayISO(), notas=$('r-notas').value.trim();
     if(!empresa && !R_JOB){ toast('Elige un trabajo o pon la empresa/cliente.'); return; }
     var emp=empresa || (R_JOB&&R_JOB.ubicacion) || '';
-    syncHoras();
-    var horas=HORAS.filter(function(h){ return (h.trabajador||'').trim()||h.entrada||h.salida; })
-      .map(function(h){ return { trabajador:(h.trabajador||'').trim(), entrada:h.entrada||'', salida:h.salida||'', fecha:h.fecha||fecha }; });
+    // Las horas se manejan en su propio apartado; el reporte ya no las lleva.
     var nuevos=R_MEDIA.filter(function(m){ return m.file; }).length, done=0, n=0;
     var carpeta=slug(emp||'SIN')+'/'+fecha;
     busy(true, EDIT_ID?'Guardando cambios…':'Guardando registro…');
@@ -1365,7 +1372,7 @@
       var media=R_MEDIA.filter(function(m){ return m.url && !m.file && !m._fail; })
         .map(function(m){ return { url:m.url, tipo:m.tipo, nombre:m.nombre||'', cat:catStore(m.cat), fecha:m.fecha||fecha }; });
       // La cuadrilla/EPP se maneja en su propia pestaña; aquí NO se toca asignacion al actualizar.
-      var row={ evento_id:(R_JOB?R_JOB.id:null), empresa:emp, lugar:lugar, fecha:fecha, notas:notas, horas:horas, media:media, autor:userEmail };
+      var row={ evento_id:(R_JOB?R_JOB.id:null), empresa:emp, lugar:lugar, fecha:fecha, notas:notas, media:media, autor:userEmail };
       var q;
       if(EDIT_ID){ q=sb.from('registros').update(row).eq('id',EDIT_ID); }
       else { row.asignacion=[]; q=sb.from('registros').insert(row); }
@@ -1382,9 +1389,8 @@
   function draftContenido(d){ return !!(d && ((d.empresa||'').trim() || (d.lugar||'').trim() || (d.notas||'').trim() || d.r_job || (d.horas||[]).some(function(h){ return (h.trabajador||'').trim()||h.entrada||h.salida; }))); }
   function guardarBorrador(){
     if(EDIT_ID) return;   // solo registros nuevos; los editados ya están en la base
-    try{ syncHoras(); }catch(e){}
     var d={ r_job:R_JOB?{id:R_JOB.id,ubicacion:R_JOB.ubicacion,titulo:R_JOB.titulo,fecha:R_JOB.fecha,_sint:R_JOB._sint}:null,
-      empresa:$('r-empresa').value, lugar:$('r-lugar').value, fecha:$('r-fecha').value, notas:$('r-notas').value, horas:HORAS, ts:Date.now() };
+      empresa:$('r-empresa').value, lugar:$('r-lugar').value, fecha:$('r-fecha').value, notas:$('r-notas').value, ts:Date.now() };
     try{ if(draftContenido(d)) localStorage.setItem(DRAFT_KEY, JSON.stringify(d)); }catch(e){}
   }
   function borrarBorrador(){ try{ localStorage.removeItem(DRAFT_KEY); }catch(e){} var b=$('draft-banner'); if(b) b.classList.add('hide'); }
@@ -1410,7 +1416,6 @@
     toast('Borrador retomado (si tenías fotos, vuelve a agregarlas)');
   });
   ['r-empresa','r-lugar','r-fecha','r-notas'].forEach(function(id){ $(id).addEventListener('input',borradorDebounced); });
-  $('horas-rows').addEventListener('input',borradorDebounced);
   window.addEventListener('beforeunload',guardarBorrador);
   document.addEventListener('visibilitychange',function(){ if(document.hidden) guardarBorrador(); });
 
@@ -1520,7 +1525,7 @@
   // ====== Horas por trabajador (filas) ======
   var HORAS_COLLAPSED={};   // fecha -> true si el día está colapsado (acordeón)
   function renderHoras(){
-    var c=$('horas-rows');
+    var c=$('horas-rows'); if(!c) return;   // el reporte ya no tiene horas (movidas a su apartado)
     HORAS.forEach(function(h){ if(!h.fecha) h.fecha=todayISO(); });
     // agrupar por fecha conservando el índice real de cada línea
     var byDate={}, order=[];
@@ -1553,10 +1558,74 @@
       fe.addEventListener('change',function(){ syncHoras(); renderHoras(); }); // reagrupar por fecha
     });
   }
-  function syncHoras(){ $('horas-rows').querySelectorAll('.hrow').forEach(function(row){ var i=+row.dataset.i; if(HORAS[i]){ HORAS[i].trabajador=row.querySelector('.h-trab').value; HORAS[i].entrada=row.querySelector('.h-in').value; HORAS[i].salida=row.querySelector('.h-out').value; var fe=row.querySelector('.h-fecha'); if(fe) HORAS[i].fecha=fe.value||todayISO(); } }); }
+  function syncHoras(){ var c=$('horas-rows'); if(!c) return; c.querySelectorAll('.hrow').forEach(function(row){ var i=+row.dataset.i; if(HORAS[i]){ HORAS[i].trabajador=row.querySelector('.h-trab').value; HORAS[i].entrada=row.querySelector('.h-in').value; HORAS[i].salida=row.querySelector('.h-out').value; var fe=row.querySelector('.h-fecha'); if(fe) HORAS[i].fecha=fe.value||todayISO(); } }); }
   function addTrab(){ syncHoras(); var f=(HORAS.length?HORAS[HORAS.length-1].fecha:'')||todayISO(); HORAS.push({trabajador:'',entrada:'',salida:'',fecha:f}); renderHoras(); }
   function removeTrab(i){ syncHoras(); HORAS.splice(i,1); if(!HORAS.length) HORAS=[{trabajador:'',entrada:'',salida:'',fecha:todayISO()}]; renderHoras(); }
-  $('add-trab').addEventListener('click',addTrab);
+  if($('add-trab')) $('add-trab').addEventListener('click',addTrab);
+
+  // ====== HORAS por día (apartado propio, tabla 'horas') ======
+  var HZ=[], HZ_DEL=[], HZ_FILTRO='hoy', HZ_COL={};
+  function nrm(s){ return (s||'').trim().toLowerCase(); }
+  function cargarHoras(){
+    if(isAdmin) cargarTrab(actualizarDatalist);
+    if(!sb) return;
+    var hoy=todayISO(), q=sb.from('horas').select('*');
+    if(HZ_FILTRO==='hoy') q=q.eq('fecha',hoy);
+    else if(HZ_FILTRO==='semana') q=q.gte('fecha',isoMas(-6)).lte('fecha',hoy);
+    q.order('fecha',{ascending:false}).limit(800).then(function(r){
+      HZ=((r&&r.data)||[]).map(function(h){ return {id:h.id, fecha:h.fecha, trabajador:h.trabajador||'', entrada:h.entrada||'', salida:h.salida||''}; });
+      HZ_DEL=[]; renderHz();
+    });
+  }
+  function renderHz(){
+    var c=$('hz-list'); if(!c) return;
+    HZ.forEach(function(h){ if(!h.fecha) h.fecha=todayISO(); });
+    var byDate={}, order=[];
+    HZ.forEach(function(h,i){ var f=h.fecha; if(!byDate[f]){ byDate[f]=[]; order.push(f); } byDate[f].push(i); });
+    order.sort(function(a,b){ return a<b?1:-1; });
+    c.innerHTML=order.map(function(f){
+      var idxs=byDate[f], tot=0, hay=false, nombres={};
+      idxs.forEach(function(i){ var m=totalMin(HZ[i].entrada,HZ[i].salida); if(m!=null){ tot+=m; hay=true; } if((HZ[i].trabajador||'').trim()) nombres[nrm(HZ[i].trabajador)]=1; });
+      var nT=Object.keys(nombres).length, totTxt=hay?(' · '+Math.floor(tot/60)+'h '+(tot%60)+'m'):'';
+      var rows=idxs.map(function(i){ var h=HZ[i];
+        return '<div class="hrow" data-i="'+i+'">'+
+          '<input class="h-trab" list="trab-datalist" placeholder="Nombre del trabajador" value="'+enc(h.trabajador||'')+'">'+
+          '<div class="hrow-times"><input type="time" class="h-in" value="'+(h.entrada||'')+'"><span class="arw">→</span><input type="time" class="h-out" value="'+(h.salida||'')+'">'+
+          '<span class="hrow-total">'+totalMini(h.entrada,h.salida)+'</span>'+
+          '<label class="hrow-cal" title="Cambiar fecha">📅<input type="date" class="h-fecha" value="'+(h.fecha||todayISO())+'"></label>'+
+          '<button class="hrow-rm" data-i="'+i+'" type="button">✕</button></div></div>';
+      }).join('');
+      return '<div class="hgroup'+(HZ_COL[f]?' collapsed':'')+'"><div class="hgroup-h" data-f="'+f+'"><span class="hg-chev">▾</span>📅 '+fechaCorta(f)+' <span style="color:var(--muted);font-weight:600">('+nT+(nT===1?' trabajador':' trabajadores')+totTxt+')</span></div><div class="hgroup-body">'+rows+'</div></div>';
+    }).join('')||'<div class="empty"><div class="big">⏱️</div>Sin horas '+(HZ_FILTRO==='hoy'?'de hoy':(HZ_FILTRO==='semana'?'de la semana':''))+'.<br><span style="font-size:.82rem">Toca “＋ Agregar hora”.</span></div>';
+    $('hz-cnt').textContent=HZ.length+(HZ.length===1?' línea':' líneas');
+    c.querySelectorAll('.hgroup-h').forEach(function(h){ h.addEventListener('click',function(){ HZ_COL[h.dataset.f]=h.parentNode.classList.toggle('collapsed'); }); });
+    c.querySelectorAll('.hrow-rm').forEach(function(b){ b.addEventListener('click',function(){ removeHz(+b.dataset.i); }); });
+    c.querySelectorAll('.hrow').forEach(function(row){ var fe=row.querySelector('.h-fecha');
+      var upd=function(){ row.querySelector('.hrow-total').textContent=totalMini(row.querySelector('.h-in').value,row.querySelector('.h-out').value); };
+      row.querySelector('.h-in').addEventListener('change',upd);
+      row.querySelector('.h-out').addEventListener('change',upd);
+      fe.addEventListener('change',function(){ syncHz(); renderHz(); });
+    });
+  }
+  function syncHz(){ var c=$('hz-list'); if(!c) return; c.querySelectorAll('.hrow').forEach(function(row){ var i=+row.dataset.i; if(HZ[i]){ HZ[i].trabajador=row.querySelector('.h-trab').value; HZ[i].entrada=row.querySelector('.h-in').value; HZ[i].salida=row.querySelector('.h-out').value; var fe=row.querySelector('.h-fecha'); if(fe) HZ[i].fecha=fe.value||todayISO(); } }); }
+  function addHz(){ syncHz(); var f=(HZ.length?HZ[0].fecha:'')||todayISO(); HZ.unshift({fecha:f,trabajador:'',entrada:'',salida:''}); renderHz(); }
+  function removeHz(i){ syncHz(); var h=HZ[i]; if(h&&h.id) HZ_DEL.push(h.id); HZ.splice(i,1); renderHz(); }
+  function guardarHz(){
+    if(!sb) return; syncHz();
+    var ins=[], upds=[];
+    HZ.forEach(function(h){ if(!(h.trabajador||'').trim()) return;
+      var row={ fecha:h.fecha||todayISO(), trabajador:h.trabajador.trim(), entrada:h.entrada||null, salida:h.salida||null, autor:userEmail };
+      if(h.id) upds.push({id:h.id,row:row}); else ins.push(row); });
+    busy(true,'Guardando horas…'); var err=null;
+    function fin(){ busy(false); if(err) toast('Algo falló: '+err); else toast('✓ Horas guardadas'); cargarHoras(); }
+    function upd(){ var i=0; (function nx(){ if(i>=upds.length){ fin(); return; } var u=upds[i]; i++; sb.from('horas').update(u.row).eq('id',u.id).then(function(r){ if(r.error)err=r.error.message; nx(); }); })(); }
+    function insrt(){ if(!ins.length){ upd(); return; } sb.from('horas').insert(ins).then(function(r){ if(r.error)err=r.error.message; upd(); }); }
+    if(HZ_DEL.length) sb.from('horas').delete().in('id',HZ_DEL).then(function(r){ if(r.error)err=r.error.message; insrt(); });
+    else insrt();
+  }
+  $('hz-add').addEventListener('click',addHz);
+  $('hz-save').addEventListener('click',guardarHz);
+  document.querySelectorAll('.hzfil').forEach(function(b){ b.addEventListener('click',function(){ document.querySelectorAll('.hzfil').forEach(function(x){ x.classList.toggle('on',x===b); }); HZ_FILTRO=b.dataset.hf; cargarHoras(); }); });
 
   // ====== Cuadrilla y EPP de salida ======
   function renderAsig(){
@@ -2022,7 +2091,7 @@
     if(!sb) return;
     Promise.all([
       sb.from('trabajadores').select('*').order('nombre',{ascending:true}).limit(400),
-      sb.from('registros').select('empresa,lugar,fecha,horas').gte('fecha',sumarDias(lun,-21)).lte('fecha',sumarDias(fin,1)).limit(500),
+      sb.from('horas').select('*').gte('fecha',lun).lte('fecha',fin).limit(2000),
       sb.from('vehiculo_gastos').select('categoria,fecha,monto,cantidad,chofer').in('categoria',['vuelta','peaje']).gte('fecha',lun).lte('fecha',fin).limit(500),
       sb.from('remuneracion_items').select('*').eq('semana',lun).limit(500),
       sb.from('config').select('*').in('clave',['valor_vuelta','valor_hora'])
@@ -2037,13 +2106,13 @@
   function computarRemu(){
     var D=REMU_DATA; if(!D) return; var lun=D.lun, fin=D.fin;
     var horasT={};
-    D.regs.forEach(function(r){ (r.horas||[]).forEach(function(h){ var f=h.fecha; if(!f||f<lun||f>fin) return;
+    D.regs.forEach(function(h){ var f=h.fecha; if(!f||f<lun||f>fin) return;
       var nm=norm(h.trabajador); if(!nm) return; var mn=totalMin(h.entrada,h.salida); mn=(mn==null?0:mn);
       if(!horasT[nm]) horasT[nm]={porDia:{},detalle:[],totalMin:0};
       horasT[nm].porDia[f]=(horasT[nm].porDia[f]||0)+mn;
-      horasT[nm].detalle.push({fecha:f,empresa:r.empresa,lugar:r.lugar,entrada:h.entrada,salida:h.salida,min:mn});
+      horasT[nm].detalle.push({fecha:f,empresa:h.empresa,lugar:h.lugar,entrada:h.entrada,salida:h.salida,min:mn});
       horasT[nm].totalMin+=mn;
-    }); });
+    });
     var vueltasT={}, peajesT={};
     D.vg.forEach(function(g){ var nm=norm(g.chofer); if(!nm) return;
       if(g.categoria==='vuelta') vueltasT[nm]=(vueltasT[nm]||0)+(+g.cantidad||0);
