@@ -88,6 +88,12 @@
   .job-pick .t .b{font-size:.78rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .job-pick .chev{color:var(--muted);font-size:20px;}
   .job-clear{color:var(--bad);font-size:.8rem;font-weight:700;background:none;border:none;cursor:pointer;padding:6px 2px 0;}
+  .jobchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+  .jobchips.hide{display:none;}
+  .jobchip{display:inline-flex;align-items:center;gap:6px;background:rgba(255,107,0,.10);border:1px solid rgba(255,107,0,.35);border-radius:999px;padding:4px 6px 4px 11px;font:600 12px var(--font);color:var(--ink);}
+  .jobchip .jc-d{color:var(--muted);font-weight:600;font-size:.72rem;}
+  .jobchip .jc-x{border:none;background:rgba(0,0,0,.06);color:var(--muted);width:18px;height:18px;border-radius:50%;cursor:pointer;font-size:11px;line-height:1;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .jobchip .jc-x:hover{background:var(--bad);color:#fff;}
 
   /* Media picker */
   .media-add{display:flex;gap:10px;}
@@ -439,7 +445,8 @@
         <div class="fld">
           <label>Trabajo del calendario</label>
           <div class="job-pick" data-for="r"><div class="ico">📋</div><div class="t"><div class="a" id="r-job-a">Elegir trabajo…</div><div class="b" id="r-job-b">o llénalo manual abajo</div></div><div class="chev">›</div></div>
-          <button class="job-clear hide" id="r-job-clear">✕ Quitar trabajo</button>
+          <div id="r-job-chips" class="jobchips hide"></div>
+          <button class="job-clear hide" id="r-job-clear">✕ Quitar faenas</button>
         </div>
         <div class="grid2">
           <div class="fld"><label>Empresa / Cliente</label><input type="text" id="r-empresa" placeholder="Ej: CERMAQ"></div>
@@ -863,7 +870,8 @@
   var authed=false, userEmail='', isAdmin=false;
   var EVENTOS=[];               // trabajos del calendario
   var R_MEDIA=[];               // archivos del registro actual [{file?,url,tipo,cat,fecha,nombre,existing?}]
-  var R_JOB=null;               // trabajo del calendario elegido
+  var R_JOB=null;               // faena principal (primera de R_JOBS)
+  var R_JOBS=[];                // faenas del calendario incluidas en el reporte (puede ser más de una)
   var HORAS=[];                 // horas por trabajador [{trabajador,entrada,salida}]
   var ASIG=[];                  // cuadrilla + EPP de salida [{nombre,epp:[]}]
   var EPP_ITEMS=['Casco','Guantes','Botas','Lentes','Buzo agua','P. auditivo','Mascarilla','Chaleco','Arnés'];
@@ -1045,15 +1053,39 @@
       elegirJob(e);
     }); });
   }
+  // Un reporte puede juntar VARIAS faenas del calendario (mismo cliente, distintos trabajos).
+  // R_JOBS es la lista; R_JOB queda como la faena "principal" (la primera) para guardar/borrador/edición.
+  function jobKey(e){ return e?String(e.id):''; }
+  // elegirJob(e): agrega la faena e al reporte (o limpia TODO si e es null).
   function elegirJob(e){
     // Nota: la FECHA del registro queda como el día real (hoy), aunque el trabajo dure varios días.
-    R_JOB=e; pintaJobPick(e);
-    if(e){ $('r-empresa').value=e.ubicacion||''; if(!$('r-lugar').value) $('r-lugar').value=e.titulo||''; }
+    if(!e){ R_JOBS=[]; sincronizarJobs(); return; }
+    if(!R_JOBS.some(function(x){ return jobKey(x)===jobKey(e); })) R_JOBS.push(e);
+    sincronizarJobs();
+  }
+  function quitarJob(id){ R_JOBS=R_JOBS.filter(function(x){ return jobKey(x)!==String(id); }); sincronizarJobs(); }
+  // Refleja R_JOBS en R_JOB, en Empresa/Lugar y en los chips. Al cambiar de faena la Empresa se
+  // reescribe con el cliente actual, así no quedan datos pegados de la faena anterior.
+  function sincronizarJobs(){
+    R_JOB=R_JOBS[0]||null;
+    if(R_JOB){
+      $('r-empresa').value=R_JOB.ubicacion||'';
+      if(R_JOBS.length===1 && !$('r-lugar').value.trim()) $('r-lugar').value=R_JOB.titulo||'';
+    }
+    pintaJobPick(R_JOB); renderJobChips();
   }
   function pintaJobPick(e){
-    $('r-job-a').textContent=e?(e.ubicacion||e.titulo||'Trabajo'):'Elegir trabajo…';
-    $('r-job-b').textContent=e?((e.titulo?e.titulo+' · ':'')+fechaCorta(e.fecha)):'o llénalo manual abajo';
-    $('r-job-clear').classList.toggle('hide',!e);
+    var n=R_JOBS.length, multi=n>1;
+    $('r-job-a').textContent=n?(multi?(n+' faenas incluidas'):(e.ubicacion||e.titulo||'Trabajo')):'Elegir trabajo…';
+    $('r-job-b').textContent=n?'toca para agregar otra faena':'o llénalo manual abajo';
+    $('r-job-clear').classList.toggle('hide',!n);
+  }
+  function renderJobChips(){
+    var c=$('r-job-chips'); if(!c) return;
+    if(!R_JOBS.length){ c.innerHTML=''; c.classList.add('hide'); return; }
+    c.classList.remove('hide');
+    c.innerHTML=R_JOBS.map(function(e){ return '<span class="jobchip"><b>'+esc(e.titulo||e.ubicacion||'Faena')+'</b>'+(e.fecha?'<span class="jc-d">'+esc(fechaCorta(e.fecha))+'</span>':'')+'<button type="button" class="jc-x" data-id="'+esc(String(e.id))+'">✕</button></span>'; }).join('');
+    c.querySelectorAll('.jc-x').forEach(function(b){ b.addEventListener('click',function(ev){ ev.stopPropagation(); quitarJob(b.dataset.id); }); });
   }
   $('r-job-clear').addEventListener('click',function(){ elegirJob(null); });
 
@@ -1392,6 +1424,7 @@
   function guardarBorrador(){
     if(EDIT_ID) return;   // solo registros nuevos; los editados ya están en la base
     var d={ r_job:R_JOB?{id:R_JOB.id,ubicacion:R_JOB.ubicacion,titulo:R_JOB.titulo,fecha:R_JOB.fecha,_sint:R_JOB._sint}:null,
+      r_jobs:R_JOBS.map(function(e){ return {id:e.id,ubicacion:e.ubicacion,titulo:e.titulo,fecha:e.fecha,_sint:e._sint}; }),
       empresa:$('r-empresa').value, lugar:$('r-lugar').value, fecha:$('r-fecha').value, notas:$('r-notas').value, ts:Date.now() };
     try{ if(draftContenido(d)) localStorage.setItem(DRAFT_KEY, JSON.stringify(d)); }catch(e){}
   }
@@ -1410,7 +1443,7 @@
   $('draft-discard').addEventListener('click',borrarBorrador);
   $('draft-restore').addEventListener('click',function(){
     var d=$('draft-banner')._data; if(!d) return;
-    R_JOB=d.r_job||null; pintaJobPick(R_JOB);
+    R_JOBS=(d.r_jobs&&d.r_jobs.length)?d.r_jobs.slice():(d.r_job?[d.r_job]:[]); R_JOB=R_JOBS[0]||null; pintaJobPick(R_JOB); renderJobChips();
     $('r-empresa').value=d.empresa||''; $('r-lugar').value=d.lugar||''; $('r-fecha').value=d.fecha||todayISO(); $('r-notas').value=d.notas||'';
     HORAS=(d.horas&&d.horas.length)?d.horas.map(function(h){ return {trabajador:h.trabajador||'',entrada:h.entrada||'',salida:h.salida||'',fecha:h.fecha||d.fecha||todayISO()}; }):[{trabajador:'',entrada:'',salida:'',fecha:todayISO()}];
     renderHoras();
@@ -1434,7 +1467,7 @@
     R_MEDIA.forEach(function(m){ if(m.file){ try{ URL.revokeObjectURL(m.url); }catch(_){}} }); R_MEDIA=[];
     EDIT_ID=reg.id;
     R_JOB = reg.evento_id ? (EVENTOS.filter(function(e){ return String(e.id)===String(reg.evento_id); })[0] || {id:reg.evento_id, ubicacion:reg.empresa||'', titulo:reg.lugar||'', fecha:reg.fecha, _sint:true}) : null;
-    pintaJobPick(R_JOB);
+    R_JOBS = R_JOB ? [R_JOB] : []; pintaJobPick(R_JOB); renderJobChips();
     $('r-empresa').value=reg.empresa||''; $('r-lugar').value=reg.lugar||''; $('r-fecha').value=reg.fecha||todayISO(); $('r-notas').value=reg.notas||'';
     HORAS = (reg.horas&&reg.horas.length) ? reg.horas.map(function(h){ return { trabajador:h.trabajador||'', entrada:h.entrada||'', salida:h.salida||'', fecha:h.fecha||reg.fecha||todayISO() }; }) : [{trabajador:'',entrada:'',salida:'',fecha:reg.fecha||todayISO()}];
     renderHoras();
@@ -1470,8 +1503,10 @@
       '<div class="ctitle">INFORME DE TRABAJO</div>'+
       '<div class="csub">'+esc(empresa)+(lugar?' · '+esc(lugar):'')+'</div>'+
       '<div class="ctag">"Flexibilidad e Integración en Servicios Generales"</div></div>';
-    // Datos del servicio + detalle
-    var lineas=(notas||'').split(/\r?\n/).map(function(s){ return s.replace(/^[-•\s]+/,'').trim(); }).filter(Boolean);
+    // Datos del servicio + detalle. "Trabajo realizado" arranca con las faenas incluidas (una línea c/u) + las notas.
+    var faenaLineas=R_JOBS.map(function(e){ return (e.titulo||e.ubicacion||'').trim(); }).filter(Boolean);
+    var lineas=faenaLineas.concat((notas||'').split(/\r?\n/).map(function(s){ return s.replace(/^[-•\s]+/,'').trim(); }).filter(Boolean));
+    var vis={}; lineas=lineas.filter(function(l){ var k=l.toLowerCase(); if(vis[k]) return false; vis[k]=1; return true; });
     var bullets=lineas.length?lineas.map(function(l){ return '<li>'+esc(l)+'</li>'; }).join(''):'<li></li>';
     var datos='<div class="rep-page">'+hdr+
       '<div class="rep-h2">Datos del servicio</div><div class="rep-two">'+
