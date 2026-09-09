@@ -276,16 +276,18 @@
   .rep-cover .ctag{position:absolute;bottom:60px;left:0;right:0;font:600 13px var(--font);font-style:italic;color:#14110e;}
   .rep-back .brow{display:flex;flex-direction:column;align-items:center;gap:3px;margin-bottom:20px;font:600 13px var(--font);color:#333;}
   .rep-back .bico{font-size:18px;color:var(--navy);margin-bottom:2px;}
+  .rep-foot{display:none;position:absolute;left:15mm;right:15mm;bottom:8mm;justify-content:space-between;align-items:center;font:600 8.5px var(--font);color:#9a968e;border-top:1px solid #e6e3dc;padding-top:4px;}
   @media print{
-    @page{margin:12mm;}
+    @page{margin:0;size:A4;}
     *{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}
     body > *:not(#report-view){display:none !important;}
     #report-view{position:static;background:#fff;overflow:visible;}
     .report-actions{display:none !important;}
     #report-doc{box-shadow:none;margin:0;max-width:none;padding:0;}
-    .rep-page{box-shadow:none;margin:0;max-width:none;page-break-after:always;padding:0;}
+    .rep-page{box-shadow:none;margin:0;max-width:none;page-break-after:always;padding:15mm 15mm 18mm;box-sizing:border-box;position:relative;}
     .rep-page:last-child{page-break-after:auto;}
-    .rep-cover,.rep-back{min-height:96vh;padding:60px;}
+    .rep-cover,.rep-back{height:296mm;min-height:0;padding:60px;box-sizing:border-box;overflow:hidden;}
+    .rep-foot{display:flex;}
     [contenteditable]{border:none !important;}
     .rphoto{cursor:default;} .rphoto .rp-tick,.rphoto .rp-x{display:none !important;}
     .rphoto.excluded,.rgroup.excluded{display:none !important;}
@@ -1510,6 +1512,14 @@
       '<div class="brow"><span class="bico">📍</span>Los Lirios 35, Mirasol, Puerto Montt</div>'+
       '<img class="blogo" src="../assets/images/InnovaServi-completo.png" onerror="this.style.display=\'none\'" style="margin-top:24px;width:230px;max-width:60%"></div>';
     $('report-doc').innerHTML=cover+datos+fotos+back;
+    // Pie propio (InnovaGestión · url · fecha · página) en las páginas de contenido (no portada/contraportada)
+    (function(){ var pgs=$('report-doc').querySelectorAll('.rep-page'), N=pgs.length;
+      pgs.forEach(function(p,i){ if(p.classList.contains('rep-cover')||p.classList.contains('rep-back')) return;
+        var f=document.createElement('div'); f.className='rep-foot';
+        f.innerHTML='<span>InnovaGestión · innovaservi.cl</span><span>'+esc(fFaena(fecha))+' · Pág. '+(i+1)+' de '+N+'</span>';
+        p.appendChild(f);
+      });
+    })();
     $('report-doc').querySelectorAll('.rphoto').forEach(function(p){ p.addEventListener('click',function(){ p.classList.toggle('excluded'); }); });
     $('report-view').classList.remove('hide'); window.scrollTo(0,0);
   }
