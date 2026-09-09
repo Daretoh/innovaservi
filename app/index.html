@@ -450,7 +450,7 @@
         </div>
         <div class="grid2">
           <div class="fld"><label>Empresa / Cliente</label><input type="text" id="r-empresa" placeholder="Ej: CERMAQ"></div>
-          <div class="fld"><label>Fecha</label><input type="date" id="r-fecha"></div>
+          <div class="fld"><label>Fecha</label><input type="date" id="r-fecha"><div class="note hide" id="r-fechas-note" style="margin:4px 0 0"></div></div>
         </div>
         <div class="fld"><label>Lugar</label><input type="text" id="r-lugar" placeholder="Ej: Planta / módulo / dirección"></div>
         <div class="fld" style="display:none"><label>Notas / observaciones</label><textarea id="r-notas" placeholder="Detalle del trabajo, materiales, pendientes…"></textarea></div>
@@ -1031,6 +1031,7 @@
     var hoy=todayISO();
     var evs=EVENTOS.filter(function(e){
       if(sheetCtx==='c' && evFin(e)<hoy) return false;   // Preparación: solo hoy en adelante (no se prepara para el pasado)
+      if(sheetCtx==='r' && R_JOBS.some(function(x){ return jobKey(x)===jobKey(e); })) return false;  // ya está en este reporte → no repetir
       if(!q)return true; return ((e.titulo||'')+' '+(e.ubicacion||'')).toLowerCase().indexOf(q)>=0;
     });
     // ordenar por fecha más cercana a hoy (hoy primero; empate → futuro antes que pasado)
@@ -1040,7 +1041,9 @@
     var items=(sheetCtx==='c')?'':'<div class="job manual" data-manual="1">✎ Sin trabajo (llenar manual)</div>';
     items+=evs.map(function(e){ var hoy=activoHoy(e);
       var badge=hoy?'<span style="background:var(--orange);color:#fff;font-size:.62rem;font-weight:800;padding:1px 7px;border-radius:999px;margin-right:6px;letter-spacing:.04em">HOY</span>':'';
-      return '<div class="job'+(hoy?' hoy':'')+'" data-id="'+e.id+'"><div class="a">'+badge+esc(e.ubicacion||e.titulo||'Trabajo')+'</div><div class="b">'+esc(e.titulo||'')+' · '+etiquetaTrabajo(e)+'</div></div>'; }).join('');
+      var reg=(sheetCtx==='r')&&registroDe(e.id);
+      var regb=reg?'<span style="background:#e6f4ec;color:#1f8a52;font-size:.62rem;font-weight:800;padding:1px 7px;border-radius:999px;margin-right:6px;letter-spacing:.03em">✓ REGISTRADA</span>':'';
+      return '<div class="job'+(hoy?' hoy':'')+'" data-id="'+e.id+'"><div class="a">'+badge+regb+esc(e.ubicacion||e.titulo||'Trabajo')+'</div><div class="b">'+esc(e.titulo||'')+' · '+etiquetaTrabajo(e)+'</div></div>'; }).join('');
     list.innerHTML=items;
     list.querySelectorAll('.job').forEach(function(j){ j.addEventListener('click',function(){
       cerrarSheet();
@@ -1049,7 +1052,9 @@
       if(sheetCtx==='c'){ elegirJobCuadrilla(e); return; }
       if(!e){ elegirJob(null); return; }
       var reg=registroDe(e.id);
-      if(reg && (!EDIT_ID || String(EDIT_ID)!==String(reg.id))){ toast('Ya hay un registro de este trabajo · lo abrí para agregar'); abrirEdicion(reg); return; }
+      // Solo si estás empezando de cero (una sola faena, sin editar) abrimos el registro existente.
+      // Si ya estás juntando varias faenas, la sumamos sin más para no perder la selección.
+      if(reg && !R_JOBS.length && !EDIT_ID){ toast('Ya hay un registro de este trabajo · lo abrí para agregar'); abrirEdicion(reg); return; }
       elegirJob(e);
     }); });
   }
@@ -1064,6 +1069,8 @@
     sincronizarJobs();
   }
   function quitarJob(id){ R_JOBS=R_JOBS.filter(function(x){ return jobKey(x)!==String(id); }); sincronizarJobs(); }
+  // Fechas distintas de las faenas incluidas, formateadas DD-MM-YYYY y ordenadas.
+  function fechasFaenas(){ var ds={}; R_JOBS.forEach(function(e){ if(e.fecha) ds[e.fecha]=1; }); return Object.keys(ds).sort().map(function(f){ return fFaena(f); }); }
   // Refleja R_JOBS en R_JOB, en Empresa/Lugar y en los chips. Al cambiar de faena la Empresa se
   // reescribe con el cliente actual, así no quedan datos pegados de la faena anterior.
   function sincronizarJobs(){
@@ -1073,6 +1080,11 @@
       if(R_JOBS.length===1 && !$('r-lugar').value.trim()) $('r-lugar').value=R_JOB.titulo||'';
     }
     pintaJobPick(R_JOB); renderJobChips();
+    var note=$('r-fechas-note');
+    if(note){ var fs=fechasFaenas();
+      if(fs.length>1){ note.textContent='📅 '+fs.length+' fechas: '+fs.join('  ·  '); note.classList.remove('hide'); }
+      else { note.textContent=''; note.classList.add('hide'); }
+    }
   }
   function pintaJobPick(e){
     var n=R_JOBS.length, multi=n>1;
@@ -1508,6 +1520,8 @@
     var lineas=faenaLineas.concat((notas||'').split(/\r?\n/).map(function(s){ return s.replace(/^[-•\s]+/,'').trim(); }).filter(Boolean));
     var vis={}; lineas=lineas.filter(function(l){ var k=l.toLowerCase(); if(vis[k]) return false; vis[k]=1; return true; });
     var bullets=lineas.length?lineas.map(function(l){ return '<li>'+esc(l)+'</li>'; }).join(''):'<li></li>';
+    // Fecha del informe: si las faenas tienen varias fechas, se muestran todas; si no, la del campo Fecha.
+    var _ff=fechasFaenas(); var fechaTxt=(_ff.length>1)?_ff.join('  ·  '):esc(fFaena(fecha));
     var datos='<div class="rep-page">'+hdr+
       '<div class="rep-h2">Datos del servicio</div><div class="rep-two">'+
         '<div class="rep-box orange"><div class="bt">EMPRESA CONTRATISTA</div>'+
@@ -1524,7 +1538,7 @@
       '<div class="rep-h2">Detalle del trabajo realizado</div>'+
       '<div class="rep-detail">'+
         '<div><span class="lbl">SOLICITADO POR</span><div class="val"><span contenteditable data-ph="Nombre"></span></div></div>'+
-        '<div><span class="lbl">FECHA FAENA</span><div class="val">'+esc(fFaena(fecha))+'</div></div>'+
+        '<div><span class="lbl">FECHA FAENA</span><div class="val">'+fechaTxt+'</div></div>'+
         '<div><span class="lbl">LUGAR</span><div class="val">'+esc(lugar||'—')+'</div></div>'+
       '</div>'+
       '<div class="rep-work"><b>Trabajo realizado</b><ul contenteditable>'+bullets+'</ul></div>'+
