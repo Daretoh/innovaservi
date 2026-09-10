@@ -1084,15 +1084,52 @@
   function elegirJob(e){
     // Nota: la FECHA del registro queda como el día real (hoy), aunque el trabajo dure varios días.
     if(!e){ R_JOBS=[]; sincronizarJobs(); return; }
-    if(!R_JOBS.some(function(x){ return jobKey(x)===jobKey(e); })) R_JOBS.push(e);
-    sincronizarJobs();
+    if(!R_JOBS.some(function(x){ return jobKey(x)===jobKey(e); })){
+      R_JOBS.push(e); sincronizarJobs();
+      cargarFotosFaena(e, function(){ renderFotoFaenas(); });   // trae las fotos que ya viven en esta faena
+    } else { sincronizarJobs(); }
   }
   function quitarJob(id){
-    // Las fotos de esa faena NO se pierden: pasan a "Sin faena" (siguen en el reporte).
-    var nF=R_MEDIA.filter(function(m){ return (m.faena||'')===String(id); }).length;
-    if(nF && !confirm('Esta faena tiene '+nF+' foto'+(nF>1?'s':'')+'. Al quitarla, las fotos NO se borran: quedan como “Sin faena” dentro de este reporte. ¿Quitar la faena?')) return;
-    R_MEDIA.forEach(function(m){ if((m.faena||'')===String(id)) m.faena=''; });
-    R_JOBS=R_JOBS.filter(function(x){ return jobKey(x)!==String(id); }); sincronizarJobs();
+    var fid=String(id);
+    // Las fotos GUARDADAS de la faena viven en la faena (faena_media): al quitarla salen del reporte
+    // pero NO se borran (vuelven si la agregas de nuevo). Las SIN guardar pasan a "Sin faena" para no perderlas.
+    var guardadas=R_MEDIA.filter(function(m){ return (m.faena||'')===fid && !m.file; }).length;
+    var sinGuardar=R_MEDIA.filter(function(m){ return (m.faena||'')===fid && m.file; }).length;
+    var tot=guardadas+sinGuardar;
+    if(tot && !confirm('Quitar esta faena del consolidado.\n\nSus '+guardadas+' foto(s) guardadas quedan PEGADAS a la faena (no se borran, vuelven si la agregas de nuevo).'+(sinGuardar?('\n'+sinGuardar+' sin guardar quedarán como “Sin faena”.'):'')+'\n\n¿Quitar la faena?')) return;
+    R_MEDIA=R_MEDIA.filter(function(m){ return !((m.faena||'')===fid && !m.file); });  // saca las guardadas (siguen en faena_media)
+    R_MEDIA.forEach(function(m){ if((m.faena||'')===fid) m.faena=''; });                // las no guardadas → Sin faena
+    R_JOBS=R_JOBS.filter(function(x){ return jobKey(x)!==fid; }); sincronizarJobs();
+  }
+  // Trae a R_MEDIA las fotos que ya están asociadas a una faena (sin duplicar por URL). Tolerante a fallos.
+  function cargarFotosFaena(e, cb){
+    if(!sb||!e){ cb&&cb(); return; }
+    try{
+      sb.from('faena_media').select('*').eq('faena_id',String(e.id)).order('orden',{ascending:true}).then(function(r){
+        if(r&&!r.error){ (r.data||[]).forEach(function(d){
+          if(R_MEDIA.some(function(m){ return m.url===d.url; })) return;
+          R_MEDIA.push({ url:d.url, tipo:d.tipo||'image', cat:catStore(d.cat), fecha:d.fecha, nombre:d.nombre||'', faena:String(e.id), existing:true });
+        }); }
+        cb&&cb();
+      }, function(){ cb&&cb(); });
+    }catch(_){ cb&&cb(); }
+  }
+  // Guarda/reemplaza en faena_media las fotos de cada faena del reporte (best-effort, no bloquea).
+  function syncFaenaMedia(cb){
+    if(!sb||!R_JOBS.length){ cb&&cb(); return; }
+    var pend=R_JOBS.length;
+    function fin(){ if(--pend<=0) cb&&cb(); }
+    R_JOBS.forEach(function(e){
+      var fid=String(e.id);
+      var rows=R_MEDIA.filter(function(m){ return (m.faena||'')===fid && m.url && !m.file && !m._fail && m.tipo!=='video'; })
+        .map(function(m,ix){ return { faena_id:fid, url:m.url, tipo:m.tipo||'image', nombre:m.nombre||'', cat:catStore(m.cat), fecha:m.fecha||null, orden:ix, autor:userEmail }; });
+      try{
+        sb.from('faena_media').delete().eq('faena_id',fid).then(function(){
+          if(!rows.length){ fin(); return; }
+          sb.from('faena_media').insert(rows).then(function(){ fin(); }, function(){ fin(); });
+        }, function(){ fin(); });
+      }catch(_){ fin(); }
+    });
   }
   // Memoria de direcciones por cliente (local): así "Lugar/Dirección" se autocompleta la próxima vez.
   var ADDR_KEY='innova_dir_cliente_v1';
@@ -1562,12 +1599,14 @@
         if(r.error){
           // Si la columna "faenas" aún no existe en la base, reintenta guardando sin ella (no bloquear al usuario).
           if(/faenas/.test(r.error.message||'')){ delete row.faenas; var q2=EDIT_ID?sb.from('registros').update(row).eq('id',EDIT_ID):sb.from('registros').insert(row);
-            q2.then(function(r2){ if(r2.error){ toast('No se pudo guardar: '+r2.error.message); return; } trasGuardar(null); });
+            q2.then(function(r2){ if(r2.error){ toast('No se pudo guardar: '+r2.error.message); return; } syncFaenaMedia(function(){ trasGuardar(null); }); });
             return;
           }
           toast('No se pudo guardar: '+r.error.message); return;
         }
-        trasGuardar(r.data&&r.data.id);
+        var nid=r.data&&r.data.id;
+        busy(true,'Asociando fotos a las faenas…');
+        syncFaenaMedia(function(){ busy(false); trasGuardar(nid); });   // deja las fotos pegadas a cada faena
       });
     }
     function trasGuardar(newId){
@@ -1640,6 +1679,8 @@
     renderHoras();
     (reg.media||[]).forEach(function(m){ R_MEDIA.push({ url:m.url, tipo:m.tipo||'image', cat:catStore(m.cat), fecha:m.fecha||reg.fecha, nombre:m.nombre||'', faena:(m.faena||''), existing:true }); });
     renderFotoFaenas(); aplicarModo();
+    // Además de lo guardado en el reporte, trae las fotos que viven en cada faena (por si se agregaron en otro).
+    R_JOBS.forEach(function(e){ cargarFotosFaena(e, function(){ renderFotoFaenas(); }); });
     irA('v-reporte'); window.scrollTo(0,0);
   }
   $('r-cancel').addEventListener('click',function(){ borrarBorrador(); resetForm(); irA('v-hist'); });
