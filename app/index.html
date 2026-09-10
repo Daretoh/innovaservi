@@ -873,8 +873,8 @@
   var STORAGE_BUCKET='reportes';  // bucket de Supabase Storage (por defecto, gratis)
   // Opcional: si algún día usas Cloudflare R2 para videos grandes, pega estas 2 URLs
   // y la app subirá a R2 en vez de Supabase Storage.
-  var R2_UPLOAD='';   // URL del Worker (ej. https://innovaservi-r2.xxx.workers.dev)
-  var R2_PUBLIC='';   // URL pública del bucket (ej. https://pub-xxxx.r2.dev)
+  var R2_UPLOAD='https://polished-dawn-d751.innovaservi.workers.dev';   // Worker de Cloudflare (subida a R2)
+  var R2_PUBLIC='https://pub-841243c1ea954c1aa10902e45b702d94.r2.dev';  // URL pública del bucket R2
   var USA_R2=!!(R2_UPLOAD && R2_PUBLIC);
 
   var sb=null; try{ if(window.supabase) sb=window.supabase.createClient(SB_URL,SB_KEY); }catch(e){}
@@ -1546,7 +1546,12 @@
 
   // ====== Subir un archivo (Supabase Storage por defecto; R2 si está configurado) ======
   function subirArchivo(file,carpeta,nombre){
-    return USA_R2 ? subirR2(file,carpeta,nombre) : subirStorage(file,carpeta,nombre);
+    if(!USA_R2) return subirStorage(file,carpeta,nombre);
+    // Sube a R2; si el Worker falla o no responde, cae a Supabase Storage (nunca se rompe la subida).
+    return subirR2(file,carpeta,nombre).then(
+      function(res){ return res || subirStorage(file,carpeta,nombre); },
+      function(){ return subirStorage(file,carpeta,nombre); }
+    );
   }
   function subirStorage(file,carpeta,nombre){
     var safe=(nombre||file.name||'archivo').replace(/[^a-zA-Z0-9._-]/g,'_');
@@ -1571,7 +1576,8 @@
       var safe=(nombre||file.name||'archivo').replace(/[^a-zA-Z0-9._-]/g,'_');
       return fetch(R2_UPLOAD,{ method:'POST', headers:{ 'Authorization':'Bearer '+tok, 'content-type':(file.type||'application/octet-stream'), 'x-folder':(carpeta||'reportes'), 'x-filename':safe }, body:file })
         .then(function(r){ return r.text().then(function(t){ var d; try{ d=JSON.parse(t); }catch(_){ d={error:'HTTP '+r.status}; } return d; }); })
-        .then(function(d){ if(d&&d.ok&&d.key){ var u=R2_PUBLIC.replace(/\/+$/,'')+'/'+d.key; return {url:u,tipo:tipoArch(file),nombre:(nombre||file.name)}; } toast('⚠ '+((d&&d.error)||'no se pudo subir')); return null; });
+        .then(function(d){ if(d&&d.ok&&d.key){ var u=R2_PUBLIC.replace(/\/+$/,'')+'/'+d.key; return {url:u,tipo:tipoArch(file),nombre:(nombre||file.name)}; } return null; })
+        .catch(function(){ return null; });   // si el Worker no responde, devuelve null y subirArchivo cae a Supabase
     });
   }
 
