@@ -690,7 +690,8 @@
   <div class="report-actions">
     <button id="rep-close" class="btn ghost small" style="width:auto">✕ Cerrar</button>
     <span class="rep-hint">Toca una foto para incluir / quitar del reporte</span>
-    <button id="rep-print" class="btn small" style="width:auto">🖨️ Imprimir / Guardar PDF</button>
+    <button id="rep-confirm" class="btn small" style="width:auto">✓ Confirmar y descargar</button>
+    <button id="rep-download" class="btn small hide" style="width:auto">⬇️ Descargar PDF</button>
   </div>
   <div id="report-doc"></div>
 </div>
@@ -1695,6 +1696,7 @@
     $('r-empresa').value=''; $('r-lugar').value=''; $('r-notas').value=''; $('r-fecha').value=todayISO();
     HORAS=[{trabajador:'',entrada:'',salida:''}]; renderHoras();
     elegirJob(null); pintarThumbs(); aplicarModo();
+    REG_LOCKED=false; REG_PDF=''; reflejarBloqueo();
     autoSeleccionarHoy();
   }
   function abrirEdicion(reg){
@@ -1713,6 +1715,7 @@
     renderHoras();
     (reg.media||[]).forEach(function(m){ R_MEDIA.push({ url:m.url, tipo:m.tipo||'image', cat:catStore(m.cat), fecha:m.fecha||reg.fecha, nombre:m.nombre||'', faena:(m.faena||''), existing:true }); });
     renderFotoFaenas(); aplicarModo();
+    REG_LOCKED=!!reg.confirmado; REG_PDF=reg.pdf_url||''; reflejarBloqueo();
     // Además de lo guardado en el reporte, trae las fotos que viven en cada faena (por si se agregaron en otro).
     R_JOBS.forEach(function(e){ cargarFotosFaena(e, function(){ renderFotoFaenas(); }); });
     irA('v-reporte'); window.scrollTo(0,0);
@@ -1811,17 +1814,88 @@
     })();
     $('report-doc').querySelectorAll('.rphoto').forEach(function(p){ p.addEventListener('click',function(){ p.classList.toggle('excluded'); }); });
     // Si editas la ficha del cliente en el informe (razón/RUT/dirección/solicitante), queda recordada para ese cliente.
-    $('report-doc').querySelectorAll('[data-cf]').forEach(function(el){ el.addEventListener('blur',function(){ var p={}; p[el.getAttribute('data-cf')]=(el.textContent||'').trim(); guardarFichaCliente(empresa,p); }); });
+    $('report-doc').querySelectorAll('[data-cf]').forEach(function(el){ el.addEventListener('blur',function(){ if(REG_LOCKED) return; var p={}; p[el.getAttribute('data-cf')]=(el.textContent||'').trim(); guardarFichaCliente(empresa,p); }); });
+    // Informe ya definitivo → no editable, y botón para descargar el PDF guardado.
+    if(REG_LOCKED){
+      $('report-doc').querySelectorAll('[contenteditable]').forEach(function(el){ el.setAttribute('contenteditable','false'); });
+      $('rep-confirm').classList.add('hide'); $('rep-download').classList.remove('hide');
+    } else { $('rep-confirm').classList.remove('hide'); $('rep-download').classList.add('hide'); }
     $('report-view').classList.remove('hide'); window.scrollTo(0,0);
   }
   $('r-report').addEventListener('click',generarReporte);
   $('rep-close').addEventListener('click',function(){ $('report-view').classList.add('hide'); });
-  $('rep-print').addEventListener('click',function(){
-    var added=[];
-    $('report-doc').querySelectorAll('.rgroup').forEach(function(g){ if(!g.querySelectorAll('.rphoto:not(.excluded)').length){ g.classList.add('excluded'); added.push(g); } });
-    window.print();
-    setTimeout(function(){ added.forEach(function(g){ g.classList.remove('excluded'); }); },600);
+
+  // ====== Confirmar informe → PDF → descargar → guardar en el registro (definitivo) ======
+  var REG_LOCKED=false, REG_PDF='';
+  function cargarH2C(){ if(window.html2canvas) return Promise.resolve(); return new Promise(function(res,rej){ var s=document.createElement('script'); s.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js'; s.onload=function(){res();}; s.onerror=function(){rej();}; document.head.appendChild(s); }); }
+  function nombrePdf(){ return 'Informe_'+slug($('r-empresa').value.trim()||'informe')+'_'+($('r-fecha').value||todayISO())+'.pdf'; }
+  function descargarBlob(blob,nombre){ var a=document.createElement('a'), u=URL.createObjectURL(blob); a.href=u; a.download=nombre; document.body.appendChild(a); a.click(); setTimeout(function(){ try{ document.body.removeChild(a); }catch(_){}; URL.revokeObjectURL(u); },1500); }
+  // Arma el PDF capturando cada página del informe (A4). Ignora fotos/grupos quitados.
+  function generarPdfBlob(){
+    return cargarH2C().then(function(){
+      if(!window.jspdf) throw new Error('jspdf');
+      var doc=new window.jspdf.jsPDF({unit:'mm',format:'a4',compress:true}), A4W=210, A4H=297;
+      var restore=[];
+      $('report-doc').querySelectorAll('.rphoto.excluded').forEach(function(el){ restore.push([el,el.style.display]); el.style.display='none'; });
+      $('report-doc').querySelectorAll('.rgroup').forEach(function(g){ if(!g.querySelectorAll('.rphoto:not(.excluded)').length){ restore.push([g,g.style.display]); g.style.display='none'; } });
+      var pages=Array.prototype.slice.call($('report-doc').querySelectorAll('.rep-page'));
+      var idx=0, first=true;
+      function paso(){
+        if(idx>=pages.length){ restore.forEach(function(h){ h[0].style.display=h[1]; }); return doc; }
+        var page=pages[idx++];
+        if(page.style.display==='none') return paso();
+        return window.html2canvas(page,{scale:2,useCORS:true,backgroundColor:'#ffffff',logging:false}).then(function(cv){
+          var img=cv.toDataURL('image/jpeg',0.92), iw=A4W, ih=cv.height*A4W/cv.width;
+          if(!first) doc.addPage(); first=false;
+          if(ih<=A4H){ doc.addImage(img,'JPEG',0,0,iw,ih); }
+          else { var s=A4H/ih; doc.addImage(img,'JPEG',(A4W-iw*s)/2,0,iw*s,A4H); }
+          return paso();
+        });
+      }
+      return Promise.resolve().then(paso);
+    });
+  }
+  $('rep-confirm').addEventListener('click',function(){
+    if(!EDIT_ID){ toast('Guarda el registro antes de confirmar su informe.'); return; }
+    if(!confirm('¿Confirmar el informe?\n\nSe generará el PDF, se descargará y quedará GUARDADO en el registro como DEFINITIVO (ya no editable).\nLas horas se siguen editando desde el apartado Horas.')) return;
+    busy(true,'Generando PDF…');
+    generarPdfBlob().then(function(doc){
+      var blob=doc.output('blob');
+      descargarBlob(blob, nombrePdf());
+      busy(true,'Guardando informe en el registro…');
+      var fecha=$('r-fecha').value||todayISO(), carpeta=slug($('r-empresa').value.trim()||'SIN')+'/'+fecha+'/pdf';
+      var pdfFile; try{ pdfFile=new File([blob], nombrePdf(), {type:'application/pdf'}); }catch(_){ pdfFile=blob; }
+      subirArchivo(pdfFile, carpeta, nombrePdf()).then(function(res){
+        if(!res){ busy(false); toast('El PDF se descargó, pero no se pudo subir al registro. Intenta otra vez.'); return; }
+        sb.from('registros').update({ pdf_url:res.url, confirmado:true, confirmado_at:new Date().toISOString() }).eq('id',EDIT_ID).then(function(r){
+          busy(false);
+          if(r.error){ toast(/pdf_url|confirmado/.test(r.error.message||'')?'Falta correr registros-pdf.sql en Supabase.':('No se marcó como definitivo: '+r.error.message)); return; }
+          toast('✓ Informe confirmado y guardado');
+          REG_LOCKED=true; REG_PDF=res.url; reflejarBloqueo();
+          $('rep-confirm').classList.add('hide'); $('rep-download').classList.remove('hide');
+          $('report-doc').querySelectorAll('[contenteditable]').forEach(function(el){ el.setAttribute('contenteditable','false'); });
+          cargarRegistros();
+        }, function(){ busy(false); toast('No se pudo marcar como definitivo.'); });
+      });
+    }).catch(function(){ busy(false); toast('No se pudo generar el PDF. Revisa tu conexión e intenta de nuevo.'); });
   });
+  $('rep-download').addEventListener('click',function(){
+    if(REG_PDF){ window.open(REG_PDF,'_blank','noopener'); return; }
+    busy(true,'Generando PDF…');
+    generarPdfBlob().then(function(doc){ busy(false); descargarBlob(doc.output('blob'), nombrePdf()); }).catch(function(){ busy(false); toast('No se pudo generar el PDF.'); });
+  });
+  // Refleja el bloqueo del registro definitivo (no editable). Las horas se editan en su apartado.
+  function reflejarBloqueo(){
+    ['r-empresa','r-lugar','r-fecha','r-notas'].forEach(function(id){ if($(id)) $(id).disabled=REG_LOCKED; });
+    var dz=$('dropzone'); if(dz) dz.style.pointerEvents=REG_LOCKED?'none':'';
+    if($('r-save')) $('r-save').disabled=REG_LOCKED;
+    var host=$('v-reporte'), b=$('reg-lock-banner');
+    if(REG_LOCKED){
+      if(!b){ b=document.createElement('div'); b.id='reg-lock-banner'; b.style.cssText='background:#eef2ff;border:1px solid var(--navy);color:var(--navy);border-radius:12px;padding:10px 12px;margin-bottom:12px;font:600 13px var(--font)'; var anchor=host.querySelector('.card'); host.insertBefore(b, anchor); }
+      b.innerHTML='🔒 Informe definitivo'+(REG_PDF?' · <a href="'+esc(REG_PDF)+'" target="_blank" rel="noopener" style="color:var(--orange-2);font-weight:800">Ver PDF</a>':'')+'. Para cambios, crea uno nuevo. Las horas se editan en el apartado <b>Horas</b>.';
+      b.classList.remove('hide');
+    } else if(b){ b.classList.add('hide'); }
+  }
 
   // ====== Horas por trabajador (filas) ======
   var HORAS_COLLAPSED={};   // fecha -> true si el día está colapsado (acordeón)
@@ -1988,7 +2062,7 @@
         (chips?'<div style="margin-top:7px;display:flex;gap:5px;flex-wrap:wrap">'+chips+'</div>':'')+
         (e.notas?'<div class="no">'+esc(e.notas)+'</div>':'')+
         (minis?'<div class="mini">'+minis+'</div>':'')+
-        '<div style="margin-top:8px;font-size:.78rem;color:var(--orange-2);font-weight:700">✎ Tocar para abrir</div></div>';
+        (e.confirmado?'<div style="margin-top:8px;font-size:.75rem;font-weight:800;color:#1f8a52">🔒 Informe definitivo'+(e.pdf_url?' · <a href="'+esc(e.pdf_url)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:var(--orange-2)">Ver PDF</a>':'')+'</div>':'<div style="margin-top:8px;font-size:.78rem;color:var(--orange-2);font-weight:700">✎ Tocar para abrir</div>')+'</div>';
     }).join('');
     $('hist-list').querySelectorAll('.item[data-idx]').forEach(function(el){ el.addEventListener('click',function(){ abrirEdicion(HIST_VISTA[+el.dataset.idx]); }); });
   }
