@@ -1103,14 +1103,30 @@
     R_JOBS=R_JOBS.filter(function(x){ return jobKey(x)!==fid; }); sincronizarJobs();
   }
   // Trae a R_MEDIA las fotos que ya están asociadas a una faena (sin duplicar por URL). Tolerante a fallos.
+  // Busca en DOS lados: (1) reportes ya guardados que incluyan esta faena (migración, no requiere re-guardar),
+  // y (2) la tabla faena_media (fuente a futuro).
   function cargarFotosFaena(e, cb){
-    if(!sb||!e){ cb&&cb(); return; }
+    if(!e){ cb&&cb(); return; }
+    var fid=String(e.id);
+    function addRow(url,tipo,cat,fecha,nombre){
+      if(!url || tipo==='video') return;
+      if(R_MEDIA.some(function(m){ return m.url===url; })) return;
+      R_MEDIA.push({ url:url, tipo:tipo||'image', cat:catStore(cat), fecha:fecha, nombre:nombre||'', faena:fid, existing:true });
+    }
+    // (1) Reportes guardados que incluyan esta faena. En un reporte de UNA sola faena, todas sus fotos son de ella.
     try{
-      sb.from('faena_media').select('*').eq('faena_id',String(e.id)).order('orden',{ascending:true}).then(function(r){
-        if(r&&!r.error){ (r.data||[]).forEach(function(d){
-          if(R_MEDIA.some(function(m){ return m.url===d.url; })) return;
-          R_MEDIA.push({ url:d.url, tipo:d.tipo||'image', cat:catStore(d.cat), fecha:d.fecha, nombre:d.nombre||'', faena:String(e.id), existing:true });
-        }); }
+      (REGISTROS||[]).forEach(function(reg){
+        var incluye = String(reg.evento_id)===fid || (reg.faenas||[]).some(function(f){ return String(f.id)===fid; });
+        if(!incluye) return;
+        var soloUna = !(reg.faenas && reg.faenas.length>1);
+        (reg.media||[]).forEach(function(m){ var mf=(m.faena||''); if(mf===fid || (soloUna && !mf)) addRow(m.url,m.tipo,m.cat,m.fecha,m.nombre); });
+      });
+    }catch(_){}
+    // (2) faena_media
+    if(!sb){ cb&&cb(); return; }
+    try{
+      sb.from('faena_media').select('*').eq('faena_id',fid).order('orden',{ascending:true}).then(function(r){
+        if(r&&!r.error){ (r.data||[]).forEach(function(d){ addRow(d.url,d.tipo,d.cat,d.fecha,d.nombre); }); }
         cb&&cb();
       }, function(){ cb&&cb(); });
     }catch(_){ cb&&cb(); }
@@ -1586,6 +1602,8 @@
       });
     }
     function finalizar(){
+      // Reporte de UNA sola faena: todas las fotos son de esa faena (aunque no las hayas etiquetado).
+      if(R_JOBS.length===1){ var only=String(R_JOBS[0].id); R_MEDIA.forEach(function(m){ if(!(m.faena||'')) m.faena=only; }); }
       var media=R_MEDIA.filter(function(m){ return m.url && !m.file && !m._fail; })
         .map(function(m){ return { url:m.url, tipo:m.tipo, nombre:m.nombre||'', cat:catStore(m.cat), fecha:m.fecha||fecha, faena:(m.faena||'') }; });
       // Faenas incluidas en este reporte (para no perder las que van más allá de la principal).
