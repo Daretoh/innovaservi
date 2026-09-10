@@ -94,6 +94,13 @@
   .jobchip .jc-d{color:var(--muted);font-weight:600;font-size:.72rem;}
   .jobchip .jc-x{border:none;background:rgba(0,0,0,.06);color:var(--muted);width:18px;height:18px;border-radius:50%;cursor:pointer;font-size:11px;line-height:1;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
   .jobchip .jc-x:hover{background:var(--bad);color:#fff;}
+  .foto-faenas{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 12px;padding:9px 10px;background:var(--alt);border:1px solid var(--line);border-radius:12px;}
+  .foto-faenas.hide{display:none;}
+  .foto-faenas .ff-lbl{font:700 11px var(--font);color:var(--muted);letter-spacing:.03em;text-transform:uppercase;margin-right:2px;}
+  .foto-faenas .ff{border:1px solid var(--line);background:#fff;color:var(--body);border-radius:999px;padding:6px 11px;font:700 12px var(--font);cursor:pointer;display:inline-flex;align-items:center;gap:6px;}
+  .foto-faenas .ff.on{background:var(--navy);border-color:var(--navy);color:#fff;}
+  .foto-faenas .ff .ffn{background:rgba(0,0,0,.12);color:inherit;border-radius:999px;font-size:.7rem;font-weight:800;padding:0 6px;min-width:16px;text-align:center;}
+  .foto-faenas .ff.on .ffn{background:rgba(255,255,255,.28);}
 
   /* Media picker */
   .media-add{display:flex;gap:10px;}
@@ -460,6 +467,7 @@
       <div class="card">
         <label style="display:block;font:700 13px var(--font);color:var(--ink);margin-bottom:4px;">📷 Fotos y videos</label>
         <p class="note" style="margin:0 0 12px">Sube todo de una (arrastra o toca). Después un supervisor las ordena en <b>Antes</b> / <b>Proceso</b> / <b>Después</b>.</p>
+        <div id="foto-faenas" class="foto-faenas hide"></div>
         <div id="dropzone" class="dropzone"><div class="dz-ico">⬆️</div><div>Arrastra fotos/videos aquí o <b>toca para elegir</b></div><input type="file" id="file-all" accept="image/*,video/*" multiple hidden></div>
         <div id="sel-bar" class="sel-bar" hidden></div>
         <div class="catgroup" id="grp-sin">
@@ -872,6 +880,7 @@
   var R_MEDIA=[];               // archivos del registro actual [{file?,url,tipo,cat,fecha,nombre,existing?}]
   var R_JOB=null;               // faena principal (primera de R_JOBS)
   var R_JOBS=[];                // faenas del calendario incluidas en el reporte (puede ser más de una)
+  var FOTO_FAENA='';            // faena activa para subir/ver fotos (id) o '' = General; solo aplica con 2+ faenas
   var HORAS=[];                 // horas por trabajador [{trabajador,entrada,salida}]
   var ASIG=[];                  // cuadrilla + EPP de salida [{nombre,epp:[]}]
   var EPP_ITEMS=['Casco','Guantes','Botas','Lentes','Buzo agua','P. auditivo','Mascarilla','Chaleco','Arnés'];
@@ -1068,7 +1077,11 @@
     if(!R_JOBS.some(function(x){ return jobKey(x)===jobKey(e); })) R_JOBS.push(e);
     sincronizarJobs();
   }
-  function quitarJob(id){ R_JOBS=R_JOBS.filter(function(x){ return jobKey(x)!==String(id); }); sincronizarJobs(); }
+  function quitarJob(id){
+    // Las fotos de esa faena no se pierden: pasan a "General" para que sigas viéndolas y subiendo.
+    R_MEDIA.forEach(function(m){ if((m.faena||'')===String(id)) m.faena=''; });
+    R_JOBS=R_JOBS.filter(function(x){ return jobKey(x)!==String(id); }); sincronizarJobs();
+  }
   // Fechas distintas de las faenas incluidas, formateadas DD-MM-YYYY y ordenadas.
   function fechasFaenas(){ var ds={}; R_JOBS.forEach(function(e){ if(e.fecha) ds[e.fecha]=1; }); return Object.keys(ds).sort().map(function(f){ return fFaena(f); }); }
   // Refleja R_JOBS en R_JOB, en Empresa/Lugar y en los chips. Al cambiar de faena la Empresa se
@@ -1085,6 +1098,24 @@
       if(fs.length>1){ note.textContent='📅 '+fs.length+' fechas: '+fs.join('  ·  '); note.classList.remove('hide'); }
       else { note.textContent=''; note.classList.add('hide'); }
     }
+    renderFotoFaenas();
+  }
+  // Barra "Fotos de:" — solo con 2+ faenas. Deja activa una faena; las fotos que subes se etiquetan a ella.
+  function renderFotoFaenas(){
+    var bar=$('foto-faenas'); if(!bar) return;
+    if(R_JOBS.length){ if(!R_JOBS.some(function(e){ return jobKey(e)===FOTO_FAENA; })) FOTO_FAENA=jobKey(R_JOBS[0]); }
+    else { FOTO_FAENA=''; }
+    if(R_JOBS.length<2){ bar.classList.add('hide'); bar.innerHTML=''; pintarThumbs(); return; }
+    var chips=R_JOBS.map(function(e){ var id=jobKey(e);
+      var nn=R_MEDIA.filter(function(m){ return (m.faena||'')===id; }).length;
+      return '<button type="button" class="ff'+(FOTO_FAENA===id?' on':'')+'" data-f="'+esc(id)+'">'+esc(e.titulo||e.ubicacion||'Faena')+(nn?' <span class="ffn">'+nn+'</span>':'')+'</button>';
+    });
+    var ng=R_MEDIA.filter(function(m){ return !(m.faena||''); }).length;
+    if(ng) chips.push('<button type="button" class="ff'+(FOTO_FAENA===''?' on':'')+'" data-f="">General <span class="ffn">'+ng+'</span></button>');
+    bar.innerHTML='<span class="ff-lbl">Fotos de:</span>'+chips.join('');
+    bar.classList.remove('hide');
+    bar.querySelectorAll('.ff').forEach(function(b){ b.addEventListener('click',function(){ FOTO_FAENA=b.dataset.f; renderFotoFaenas(); }); });
+    pintarThumbs();
   }
   function pintaJobPick(e){
     var n=R_JOBS.length, multi=n>1;
@@ -1286,9 +1317,9 @@
     Array.prototype.forEach.call(files,function(f){
       if(!f||!f.type||!/^(image|video)\//.test(f.type)) return;
       var url=URL.createObjectURL(f);
-      R_MEDIA.push({file:f,url:url,tipo:tipoArch(f),cat:cat,fecha:todayISO()});
+      R_MEDIA.push({file:f,url:url,tipo:tipoArch(f),cat:cat,fecha:todayISO(),faena:FOTO_FAENA});
     });
-    pintarThumbs();
+    renderFotoFaenas();
   }
   function thumbInner(m){
     var media=m.tipo==='video'?'<video src="'+m.url+'" muted playsinline></video><span class="vbadge">▶</span>':'<img src="'+m.url+'" alt="" loading="lazy">';
@@ -1297,8 +1328,10 @@
   function pintarThumbs(){
     var buckets={sin:$('th-sin'),antes:$('th-antes'),proceso:$('th-proceso'),despues:$('th-despues')};
     var cnt={sin:0,antes:0,proceso:0,despues:0};
+    var multi=R_JOBS.length>1;
     for(var k in buckets){ if(buckets[k]) buckets[k].innerHTML=''; }
     R_MEDIA.forEach(function(m,i){
+      if(multi && (m.faena||'')!==FOTO_FAENA) return;   // con varias faenas, solo se ve la faena activa
       var c=catStore(m.cat); cnt[c]++; if(!buckets[c]) return;
       var canDel=isAdmin||!!m.file;
       var div=document.createElement('div'); div.className='thumb'+(m._sel?' sel':''); div.dataset.i=i;
@@ -1416,17 +1449,33 @@
     }
     function finalizar(){
       var media=R_MEDIA.filter(function(m){ return m.url && !m.file && !m._fail; })
-        .map(function(m){ return { url:m.url, tipo:m.tipo, nombre:m.nombre||'', cat:catStore(m.cat), fecha:m.fecha||fecha }; });
+        .map(function(m){ return { url:m.url, tipo:m.tipo, nombre:m.nombre||'', cat:catStore(m.cat), fecha:m.fecha||fecha, faena:(m.faena||'') }; });
+      // Faenas incluidas en este reporte (para no perder las que van más allá de la principal).
+      var faenas=R_JOBS.map(function(e){ return { id:e.id, ubicacion:e.ubicacion||'', titulo:e.titulo||'', fecha:e.fecha||'' }; });
       // La cuadrilla/EPP se maneja en su propia pestaña; aquí NO se toca asignacion al actualizar.
-      var row={ evento_id:(R_JOB?R_JOB.id:null), empresa:emp, lugar:lugar, fecha:fecha, notas:notas, media:media, autor:userEmail };
+      var row={ evento_id:(R_JOB?R_JOB.id:null), empresa:emp, lugar:lugar, fecha:fecha, notas:notas, media:media, faenas:faenas, autor:userEmail };
       var q;
-      if(EDIT_ID){ q=sb.from('registros').update(row).eq('id',EDIT_ID); }
-      else { row.asignacion=[]; q=sb.from('registros').insert(row); }
+      if(EDIT_ID){ q=sb.from('registros').update(row).eq('id',EDIT_ID).select('id').maybeSingle(); }
+      else { row.asignacion=[]; q=sb.from('registros').insert(row).select('id').maybeSingle(); }
       q.then(function(r){ busy(false); $('busy-bar').classList.add('hide');
-        if(r.error){ toast('No se pudo guardar: '+r.error.message); return; }
-        toast(EDIT_ID?'✓ Registro actualizado':'✓ Registro guardado');
-        borrarBorrador(); resetForm(); cargarRegistros(pintarRegistros); irA('v-hist');
+        if(r.error){
+          // Si la columna "faenas" aún no existe en la base, reintenta guardando sin ella (no bloquear al usuario).
+          if(/faenas/.test(r.error.message||'')){ delete row.faenas; var q2=EDIT_ID?sb.from('registros').update(row).eq('id',EDIT_ID):sb.from('registros').insert(row);
+            q2.then(function(r2){ if(r2.error){ toast('No se pudo guardar: '+r2.error.message); return; } trasGuardar(null); });
+            return;
+          }
+          toast('No se pudo guardar: '+r.error.message); return;
+        }
+        trasGuardar(r.data&&r.data.id);
       });
+    }
+    function trasGuardar(newId){
+      toast(EDIT_ID?'✓ Registro actualizado':'✓ Registro guardado');
+      borrarBorrador();
+      if(newId && !EDIT_ID) EDIT_ID=newId;   // ya existe en la base: re-guardar actualiza, no duplica
+      cargarRegistros(pintarRegistros);
+      if(isAdmin){ generarReporte(); }       // admin: directo al informe con TODAS las faenas
+      else { resetForm(); irA('v-hist'); }
     }
     subeUno(0);
   });
@@ -1458,7 +1507,7 @@
     R_JOBS=(d.r_jobs&&d.r_jobs.length)?d.r_jobs.slice():(d.r_job?[d.r_job]:[]); R_JOB=R_JOBS[0]||null; pintaJobPick(R_JOB); renderJobChips();
     $('r-empresa').value=d.empresa||''; $('r-lugar').value=d.lugar||''; $('r-fecha').value=d.fecha||todayISO(); $('r-notas').value=d.notas||'';
     HORAS=(d.horas&&d.horas.length)?d.horas.map(function(h){ return {trabajador:h.trabajador||'',entrada:h.entrada||'',salida:h.salida||'',fecha:h.fecha||d.fecha||todayISO()}; }):[{trabajador:'',entrada:'',salida:'',fecha:todayISO()}];
-    renderHoras();
+    renderHoras(); renderFotoFaenas();
     $('draft-banner').classList.add('hide');
     toast('Borrador retomado (si tenías fotos, vuelve a agregarlas)');
   });
@@ -1479,12 +1528,17 @@
     R_MEDIA.forEach(function(m){ if(m.file){ try{ URL.revokeObjectURL(m.url); }catch(_){}} }); R_MEDIA=[];
     EDIT_ID=reg.id;
     R_JOB = reg.evento_id ? (EVENTOS.filter(function(e){ return String(e.id)===String(reg.evento_id); })[0] || {id:reg.evento_id, ubicacion:reg.empresa||'', titulo:reg.lugar||'', fecha:reg.fecha, _sint:true}) : null;
-    R_JOBS = R_JOB ? [R_JOB] : []; pintaJobPick(R_JOB); renderJobChips();
+    // Recupera TODAS las faenas guardadas (columna "faenas"); si no hay, cae a la principal.
+    if(reg.faenas && reg.faenas.length){
+      R_JOBS = reg.faenas.map(function(f){ return EVENTOS.filter(function(e){ return String(e.id)===String(f.id); })[0] || {id:f.id, ubicacion:f.ubicacion||'', titulo:f.titulo||'', fecha:f.fecha||'', _sint:true}; });
+      R_JOB = R_JOBS[0]||R_JOB;
+    } else { R_JOBS = R_JOB ? [R_JOB] : []; }
+    pintaJobPick(R_JOB); renderJobChips();
     $('r-empresa').value=reg.empresa||''; $('r-lugar').value=reg.lugar||''; $('r-fecha').value=reg.fecha||todayISO(); $('r-notas').value=reg.notas||'';
     HORAS = (reg.horas&&reg.horas.length) ? reg.horas.map(function(h){ return { trabajador:h.trabajador||'', entrada:h.entrada||'', salida:h.salida||'', fecha:h.fecha||reg.fecha||todayISO() }; }) : [{trabajador:'',entrada:'',salida:'',fecha:reg.fecha||todayISO()}];
     renderHoras();
-    (reg.media||[]).forEach(function(m){ R_MEDIA.push({ url:m.url, tipo:m.tipo||'image', cat:catStore(m.cat), fecha:m.fecha||reg.fecha, nombre:m.nombre||'', existing:true }); });
-    pintarThumbs(); aplicarModo();
+    (reg.media||[]).forEach(function(m){ R_MEDIA.push({ url:m.url, tipo:m.tipo||'image', cat:catStore(m.cat), fecha:m.fecha||reg.fecha, nombre:m.nombre||'', faena:(m.faena||''), existing:true }); });
+    renderFotoFaenas(); aplicarModo();
     irA('v-reporte'); window.scrollTo(0,0);
   }
   $('r-cancel').addEventListener('click',function(){ borrarBorrador(); resetForm(); irA('v-hist'); });
@@ -1544,14 +1598,23 @@
       '<div class="rep-work"><b>Trabajo realizado</b><ul contenteditable>'+bullets+'</ul></div>'+
       '<div class="rep-obs"><span class="chk">✓</span><div><b>Observaciones:</b> <span contenteditable data-ph="Sin observaciones"></span></div></div>'+
     '</div>';
-    // Registro fotográfico (una página por sección con fotos)
-    function fotoPage(cat){
-      var items=media.filter(function(m){ return catStore(m.cat)===cat; });
+    // Registro fotográfico (una página por sección con fotos). Con 2+ faenas, se agrupa por faena.
+    var multiF=R_JOBS.length>1;
+    function fotoPage(cat, fid, flabel){
+      var items=media.filter(function(m){ return catStore(m.cat)===cat && (!multiF || (m.faena||'')===(fid||'')); });
       if(!items.length) return '';
       var g=items.map(function(m){ return '<div class="rphoto"><img src="'+esc(m.url)+'" alt=""><span class="rp-tick">✓</span><span class="rp-x">✕</span></div>'; }).join('');
-      return '<div class="rep-page rgroup">'+hdr+'<div class="rep-h2">Registro fotográfico</div><div class="rep-sec-t">'+REP_LBL[cat]+'</div><div class="rep-grid">'+g+'</div></div>';
+      var titulo='Registro fotográfico'+(flabel?' — '+esc(flabel):'');
+      return '<div class="rep-page rgroup">'+hdr+'<div class="rep-h2">'+titulo+'</div><div class="rep-sec-t">'+REP_LBL[cat]+'</div><div class="rep-grid">'+g+'</div></div>';
     }
-    var fotos=fotoPage('antes')+fotoPage('proceso')+fotoPage('despues');
+    function fotosDe(fid, flabel){ return fotoPage('antes',fid,flabel)+fotoPage('proceso',fid,flabel)+fotoPage('despues',fid,flabel); }
+    var fotos='';
+    if(multiF){
+      R_JOBS.forEach(function(e){ fotos+=fotosDe(jobKey(e), (e.titulo||e.ubicacion||'Faena')); });
+      fotos+=fotosDe('', 'General');   // fotos sin faena asignada (si las hay)
+    } else {
+      fotos=fotosDe('', null);
+    }
     if(!media.length) fotos='<div class="rep-page">'+hdr+'<div class="rep-notas" style="text-align:center">Este registro aún no tiene fotos guardadas para incluir.</div></div>';
     // Contraportada
     var back='<div class="rep-page rep-back">'+
