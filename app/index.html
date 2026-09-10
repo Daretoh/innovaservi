@@ -1152,7 +1152,14 @@
   var ADDR_KEY='innova_dir_cliente_v1';
   function _addrMap(){ try{ return JSON.parse(localStorage.getItem(ADDR_KEY)||'{}')||{}; }catch(_){ return {}; } }
   function recordarDireccion(cli,dir){ if(!cli||!dir) return; try{ var m=_addrMap(); m[cli.trim().toUpperCase()]=dir.trim(); localStorage.setItem(ADDR_KEY,JSON.stringify(m)); }catch(_){} }
-  function direccionDe(cli){ if(!cli) return ''; try{ return _addrMap()[cli.trim().toUpperCase()]||''; }catch(_){ return ''; } }
+  function direccionDe(cli){ if(!cli) return ''; var f=fichaCliente(cli); if(f.direccion) return f.direccion; try{ return _addrMap()[cli.trim().toUpperCase()]||''; }catch(_){ return ''; } }
+  // Ficha de cliente (razón social, RUT, dirección, solicitante). Se guarda local y se autocompleta en el informe.
+  var CLI_KEY='innova_clientes_v1';
+  var CLI_SEED={ 'CUMMINS':{ razon:'Distribuidora Cummins Chile S.A', rut:'96.843.140-4', direccion:'Parque Husamontt, Puerto Montt', solicitante:'Karina Abarca' } };
+  function _cliKey(c){ return (c||'').trim().toUpperCase(); }
+  function _cliMap(){ try{ return JSON.parse(localStorage.getItem(CLI_KEY)||'{}')||{}; }catch(_){ return {}; } }
+  function fichaCliente(cli){ var k=_cliKey(cli); if(!k) return {}; var m=_cliMap(); return Object.assign({}, CLI_SEED[k]||{}, m[k]||{}); }
+  function guardarFichaCliente(cli,patch){ var k=_cliKey(cli); if(!k||!patch) return; try{ var m=_cliMap(); m[k]=Object.assign({}, CLI_SEED[k]||{}, m[k]||{}, patch); localStorage.setItem(CLI_KEY,JSON.stringify(m)); }catch(_){} }
   // Fechas distintas de las faenas incluidas, formateadas DD-MM-YYYY y ordenadas.
   function fechasFaenas(){ var ds={}; R_JOBS.forEach(function(e){ if(e.fecha) ds[e.fecha]=1; }); return Object.keys(ds).sort().map(function(f){ return fFaena(f); }); }
   // Refleja R_JOBS en R_JOB, en Empresa/Lugar y en los chips. Al cambiar de faena la Empresa se
@@ -1729,6 +1736,7 @@
     syncHoras();
     var empresa=$('r-empresa').value.trim()||(R_JOB&&R_JOB.ubicacion)||'—';
     var lugar=$('r-lugar').value.trim(), fecha=$('r-fecha').value||todayISO(), notas=$('r-notas').value.trim();
+    var fic=fichaCliente(empresa);   // razón social, RUT, dirección y solicitante recordados de este cliente
     if(R_MEDIA.some(function(m){ return m.file; })) toast('Ojo: hay fotos sin guardar; guarda para incluirlas.');
     var media=R_MEDIA.filter(function(m){ return m.url && !m.file && m.tipo!=='video'; });
     var hdr='<div class="rep-hdr"><img src="../assets/images/InnovaLOGO.png" onerror="this.style.display=\'none\'"><span>INNOVA SERVI <span class="muted">— Informe de Trabajo</span></span></div>';
@@ -1754,13 +1762,13 @@
           'Resolución extensa Innova Servi N°: <b>DN-00150/2023</b>'+
           '<span class="mini">Empresa aplicadora de desinfectantes y sanitizantes — Resolución N° 2310429700</span></div>'+
         '<div class="rep-box navy"><div class="bt">EMPRESA MANDANTE</div>'+
-          'Empresa: <b><span contenteditable data-ph="Cliente">'+esc(empresa)+'</span></b><br>'+
-          'RUT: <b><span contenteditable data-ph="RUT">'+'</span></b><br>'+
-          'Dirección: <b><span contenteditable data-ph="Dirección">'+esc(lugar)+'</span></b></div>'+
+          'Empresa: <b><span contenteditable data-cf="razon" data-ph="Cliente">'+esc(fic.razon||empresa)+'</span></b><br>'+
+          'RUT: <b><span contenteditable data-cf="rut" data-ph="RUT">'+esc(fic.rut||'')+'</span></b><br>'+
+          'Dirección: <b><span contenteditable data-cf="direccion" data-ph="Dirección">'+esc(lugar||fic.direccion||'')+'</span></b></div>'+
       '</div>'+
       '<div class="rep-h2">Detalle del trabajo realizado</div>'+
       '<div class="rep-detail">'+
-        '<div><span class="lbl">SOLICITADO POR</span><div class="val"><span contenteditable data-ph="Nombre"></span></div></div>'+
+        '<div><span class="lbl">SOLICITADO POR</span><div class="val"><span contenteditable data-cf="solicitante" data-ph="Nombre">'+esc(fic.solicitante||'')+'</span></div></div>'+
         '<div><span class="lbl">FECHA FAENA</span><div class="val">'+fechaTxt+'</div></div>'+
         '<div><span class="lbl">LUGAR</span><div class="val">'+esc(lugar||'—')+'</div></div>'+
       '</div>'+
@@ -1802,6 +1810,8 @@
       });
     })();
     $('report-doc').querySelectorAll('.rphoto').forEach(function(p){ p.addEventListener('click',function(){ p.classList.toggle('excluded'); }); });
+    // Si editas la ficha del cliente en el informe (razón/RUT/dirección/solicitante), queda recordada para ese cliente.
+    $('report-doc').querySelectorAll('[data-cf]').forEach(function(el){ el.addEventListener('blur',function(){ var p={}; p[el.getAttribute('data-cf')]=(el.textContent||'').trim(); guardarFichaCliente(empresa,p); }); });
     $('report-view').classList.remove('hide'); window.scrollTo(0,0);
   }
   $('r-report').addEventListener('click',generarReporte);
