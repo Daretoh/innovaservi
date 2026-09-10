@@ -101,6 +101,11 @@
   .foto-faenas .ff.on{background:var(--navy);border-color:var(--navy);color:#fff;}
   .foto-faenas .ff .ffn{background:rgba(0,0,0,.12);color:inherit;border-radius:999px;font-size:.7rem;font-weight:800;padding:0 6px;min-width:16px;text-align:center;}
   .foto-faenas .ff.on .ffn{background:rgba(255,255,255,.28);}
+  .fbadge{position:absolute;top:4px;left:4px;z-index:2;background:var(--navy);color:#fff;font:800 10px var(--font);padding:2px 6px;border-radius:7px;letter-spacing:.02em;box-shadow:0 1px 3px rgba(0,0,0,.3);}
+  .fbadge.gen{background:var(--orange);}
+  .thumb img.imgerr{visibility:hidden;}
+  .thumb:has(img.imgerr):after,.rphoto.imgerr:after{content:"⚠ no cargó";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#f3f0ea;color:#b45309;font:700 11px var(--font);text-align:center;border-radius:inherit;}
+  .sel-bar .sb-sep{width:1px;align-self:stretch;background:rgba(255,255,255,.35);margin:0 2px;}
 
   /* Media picker */
   .media-add{display:flex;gap:10px;}
@@ -1088,10 +1093,9 @@
   // reescribe con el cliente actual, así no quedan datos pegados de la faena anterior.
   function sincronizarJobs(){
     R_JOB=R_JOBS[0]||null;
-    if(R_JOB){
-      $('r-empresa').value=R_JOB.ubicacion||'';
-      if(R_JOBS.length===1 && !$('r-lugar').value.trim()) $('r-lugar').value=R_JOB.titulo||'';
-    }
+    // Empresa/Cliente = ubicación de la faena. El TÍTULO (ej: "pintura caseta") NO va a Lugar:
+    // Lugar es el sitio físico (ej: "Planta Chinquihue"); los títulos alimentan "Trabajo realizado".
+    if(R_JOB){ $('r-empresa').value=R_JOB.ubicacion||''; }
     pintaJobPick(R_JOB); renderJobChips();
     var note=$('r-fechas-note');
     if(note){ var fs=fechasFaenas();
@@ -1100,19 +1104,25 @@
     }
     renderFotoFaenas();
   }
-  // Barra "Fotos de:" — solo con 2+ faenas. Deja activa una faena; las fotos que subes se etiquetan a ella.
+  // Etiqueta corta de la faena de una foto (F1, F2…) o "Sin faena". Solo con 2+ faenas.
+  function faenaBadgeHtml(m){
+    if(R_JOBS.length<2) return '';
+    var fid=(m.faena||'');
+    for(var i=0;i<R_JOBS.length;i++){ if(jobKey(R_JOBS[i])===fid) return '<span class="fbadge" title="'+esc(R_JOBS[i].titulo||'')+'">F'+(i+1)+'</span>'; }
+    return '<span class="fbadge gen">Sin faena</span>';
+  }
+  // Barra "Subir fotos a:" — solo con 2+ faenas. Elige a qué faena van las fotos NUEVAS.
+  // (Las fotos ya no se ocultan: se ven todas, con su etiqueta F1/F2; se reasignan seleccionándolas.)
   function renderFotoFaenas(){
     var bar=$('foto-faenas'); if(!bar) return;
     if(R_JOBS.length){ if(!R_JOBS.some(function(e){ return jobKey(e)===FOTO_FAENA; })) FOTO_FAENA=jobKey(R_JOBS[0]); }
     else { FOTO_FAENA=''; }
     if(R_JOBS.length<2){ bar.classList.add('hide'); bar.innerHTML=''; pintarThumbs(); return; }
-    var chips=R_JOBS.map(function(e){ var id=jobKey(e);
+    var chips=R_JOBS.map(function(e,ix){ var id=jobKey(e);
       var nn=R_MEDIA.filter(function(m){ return (m.faena||'')===id; }).length;
-      return '<button type="button" class="ff'+(FOTO_FAENA===id?' on':'')+'" data-f="'+esc(id)+'">'+esc(e.titulo||e.ubicacion||'Faena')+(nn?' <span class="ffn">'+nn+'</span>':'')+'</button>';
+      return '<button type="button" class="ff'+(FOTO_FAENA===id?' on':'')+'" data-f="'+esc(id)+'">F'+(ix+1)+' · '+esc(e.titulo||e.ubicacion||'Faena')+(nn?' <span class="ffn">'+nn+'</span>':'')+'</button>';
     });
-    var ng=R_MEDIA.filter(function(m){ return !(m.faena||''); }).length;
-    if(ng) chips.push('<button type="button" class="ff'+(FOTO_FAENA===''?' on':'')+'" data-f="">General <span class="ffn">'+ng+'</span></button>');
-    bar.innerHTML='<span class="ff-lbl">Fotos de:</span>'+chips.join('');
+    bar.innerHTML='<span class="ff-lbl">Subir fotos a:</span>'+chips.join('');
     bar.classList.remove('hide');
     bar.querySelectorAll('.ff').forEach(function(b){ b.addEventListener('click',function(){ FOTO_FAENA=b.dataset.f; renderFotoFaenas(); }); });
     pintarThumbs();
@@ -1312,30 +1322,56 @@
   });
 
   // ====== Media (fotos/videos): subir TODO -> "Sin clasificar" -> ordenar (admin) ======
+  var _thumbTimer=null;
+  function repintarThumbsPronto(){ clearTimeout(_thumbTimer); _thumbTimer=setTimeout(pintarThumbs,60); }
+  // Reduce cada foto a un tamaño manejable ANTES de subir/mostrar: así cargan rápido y no se
+  // ponen negras por falta de memoria (celulares con fotos de 8-12 MP). Videos quedan igual.
+  function procesarImagen(file, cb){
+    try{
+      var u=URL.createObjectURL(file), img=new Image();
+      img.onload=function(){
+        try{
+          var W=img.naturalWidth||img.width, H=img.naturalHeight||img.height;
+          function lienzo(max){ var s=Math.min(1,max/Math.max(W,H)); var w=Math.max(1,Math.round(W*s)), h=Math.max(1,Math.round(H*s)); var c=document.createElement('canvas'); c.width=w; c.height=h; c.getContext('2d').drawImage(img,0,0,w,h); return c; }
+          var thumb=null; try{ thumb=lienzo(520).toDataURL('image/jpeg',0.72); }catch(_){}
+          lienzo(1600).toBlob(function(blob){ try{ URL.revokeObjectURL(u); }catch(_){}; cb(blob||file, thumb); }, 'image/jpeg', 0.82);
+        }catch(_){ try{ URL.revokeObjectURL(u); }catch(__){}; cb(file, null); }
+      };
+      img.onerror=function(){ try{ URL.revokeObjectURL(u); }catch(_){}; cb(file, null); };
+      img.decoding='async'; img.src=u;
+    }catch(_){ cb(file, null); }
+  }
   function addFiles(files,cat){
     cat=catStore(cat||'sin');
     Array.prototype.forEach.call(files,function(f){
       if(!f||!f.type||!/^(image|video)\//.test(f.type)) return;
-      var url=URL.createObjectURL(f);
-      R_MEDIA.push({file:f,url:url,tipo:tipoArch(f),cat:cat,fecha:todayISO(),faena:FOTO_FAENA});
+      if(/^video\//.test(f.type)){ R_MEDIA.push({file:f,url:URL.createObjectURL(f),tipo:'video',cat:cat,fecha:todayISO(),faena:FOTO_FAENA}); return; }
+      var m={file:f,url:URL.createObjectURL(f),tipo:'image',cat:cat,fecha:todayISO(),faena:FOTO_FAENA};
+      R_MEDIA.push(m);
+      procesarImagen(f,function(blob,thumb){
+        try{ URL.revokeObjectURL(m.url); }catch(_){}
+        try{ m.file=new File([blob],(f.name||'foto').replace(/\.[^.]+$/,'')+'.jpg',{type:'image/jpeg'}); }catch(_){ m.file=blob; }
+        m.thumb = thumb || URL.createObjectURL(m.file);
+        m.url = m.thumb;
+        repintarThumbsPronto();
+      });
     });
     renderFotoFaenas();
   }
   function thumbInner(m){
-    var media=m.tipo==='video'?'<video src="'+m.url+'" muted playsinline></video><span class="vbadge">▶</span>':'<img src="'+m.url+'" alt="" loading="lazy">';
+    var src=m.thumb||m.url;
+    var media=m.tipo==='video'?'<video src="'+m.url+'" muted playsinline></video><span class="vbadge">▶</span>':'<img src="'+src+'" alt="" loading="lazy" decoding="async" onerror="this.classList.add(\'imgerr\')">';
     return media+(m.fecha?'<span class="dbadge">'+fechaMini(m.fecha)+'</span>':'');
   }
   function pintarThumbs(){
     var buckets={sin:$('th-sin'),antes:$('th-antes'),proceso:$('th-proceso'),despues:$('th-despues')};
     var cnt={sin:0,antes:0,proceso:0,despues:0};
-    var multi=R_JOBS.length>1;
     for(var k in buckets){ if(buckets[k]) buckets[k].innerHTML=''; }
     R_MEDIA.forEach(function(m,i){
-      if(multi && (m.faena||'')!==FOTO_FAENA) return;   // con varias faenas, solo se ve la faena activa
       var c=catStore(m.cat); cnt[c]++; if(!buckets[c]) return;
       var canDel=isAdmin||!!m.file;
       var div=document.createElement('div'); div.className='thumb'+(m._sel?' sel':''); div.dataset.i=i;
-      div.innerHTML=thumbInner(m)+(isAdmin?'<span class="selck">'+(m._sel?'✓':'')+'</span>':'')+(canDel?'<button class="rm" data-i="'+i+'">✕</button>':'');
+      div.innerHTML=thumbInner(m)+faenaBadgeHtml(m)+(isAdmin?'<span class="selck">'+(m._sel?'✓':'')+'</span>':'')+(canDel?'<button class="rm" data-i="'+i+'">✕</button>':'');
       if(isAdmin) div.setAttribute('draggable','true');
       buckets[c].appendChild(div);
     });
@@ -1363,12 +1399,17 @@
     var n=selCount();
     if(!isAdmin || !n){ bar.hidden=true; bar.innerHTML=''; return; }
     bar.hidden=false;
-    bar.innerHTML='<b>'+n+' selec.</b><button data-mv="antes">→ Antes</button><button data-mv="proceso">→ Proceso</button><button data-mv="despues">→ Después</button><button class="del" data-del="1">🗑</button><button class="clr" data-clr="1">✕</button>';
+    // Con 2+ faenas, botones para asignar las fotos seleccionadas a una faena (F1/F2…) o dejarlas Sin faena.
+    var faenaBtns='';
+    if(R_JOBS.length>1){ faenaBtns='<span class="sb-sep"></span>'+R_JOBS.map(function(e,ix){ return '<button data-mf="'+esc(jobKey(e))+'">→ F'+(ix+1)+'</button>'; }).join('')+'<button data-mf="">→ Sin faena</button>'; }
+    bar.innerHTML='<b>'+n+' selec.</b><button data-mv="antes">→ Antes</button><button data-mv="proceso">→ Proceso</button><button data-mv="despues">→ Después</button>'+faenaBtns+'<button class="del" data-del="1">🗑</button><button class="clr" data-clr="1">✕</button>';
     bar.querySelectorAll('[data-mv]').forEach(function(b){ b.addEventListener('click',function(){ moverSel(b.dataset.mv); }); });
+    bar.querySelectorAll('[data-mf]').forEach(function(b){ b.addEventListener('click',function(){ moverFaena(b.dataset.mf); }); });
     bar.querySelector('[data-del]').addEventListener('click',eliminarSel);
     bar.querySelector('[data-clr]').addEventListener('click',function(){ R_MEDIA.forEach(function(m){ m._sel=false; }); pintarThumbs(); });
   }
   function moverSel(cat){ R_MEDIA.forEach(function(m){ if(m._sel){ m.cat=cat; m._sel=false; } }); pintarThumbs(); }
+  function moverFaena(fid){ R_MEDIA.forEach(function(m){ if(m._sel){ m.faena=fid; m._sel=false; } }); renderFotoFaenas(); }
   function eliminarSel(){ if(!confirm('¿Eliminar las fotos seleccionadas?')) return; R_MEDIA=R_MEDIA.filter(function(m){ if(m._sel){ if(m.file){ try{ URL.revokeObjectURL(m.url); }catch(_){}} return false; } return true; }); pintarThumbs(); }
 
   // Zona para subir todo (cualquier rol)
@@ -1603,7 +1644,7 @@
     function fotoPage(cat, fid, flabel){
       var items=media.filter(function(m){ return catStore(m.cat)===cat && (!multiF || (m.faena||'')===(fid||'')); });
       if(!items.length) return '';
-      var g=items.map(function(m){ return '<div class="rphoto"><img src="'+esc(m.url)+'" alt=""><span class="rp-tick">✓</span><span class="rp-x">✕</span></div>'; }).join('');
+      var g=items.map(function(m){ return '<div class="rphoto"><img src="'+esc(m.url)+'" alt="" loading="lazy" decoding="async" onerror="this.closest(\'.rphoto\').classList.add(\'imgerr\')"><span class="rp-tick">✓</span><span class="rp-x">✕</span></div>'; }).join('');
       var titulo='Registro fotográfico'+(flabel?' — '+esc(flabel):'');
       return '<div class="rep-page rgroup">'+hdr+'<div class="rep-h2">'+titulo+'</div><div class="rep-sec-t">'+REP_LBL[cat]+'</div><div class="rep-grid">'+g+'</div></div>';
     }
