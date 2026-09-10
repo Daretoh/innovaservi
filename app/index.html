@@ -434,7 +434,7 @@
   <div class="topbar">
     <div class="tt"><img src="../assets/images/InnovaLOGO.png" alt="" onerror="this.style.display='none'"><div><b>InnovaGestión</b><div class="who" id="who"></div></div></div>
     <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
-      <button id="btn-pagos" class="out hide">💵<span class="hlbl"> Pagos</span></button>
+      <button id="btn-pagos" class="out hide">💵<span class="hlbl"> Remuneraciones</span></button>
       <a href="../planificacion/" id="btn-plan" class="out hide" style="text-decoration:none">🗓️<span class="hlbl"> Planificación</span></a>
       <button id="btn-acc-h" class="out hide" title="Accesos" aria-label="Accesos" style="padding-left:11px;padding-right:11px">🔐</button>
       <button class="out" id="out">Salir</button>
@@ -639,7 +639,7 @@
 
     <!-- ---- REMUNERACIONES / PAGOS (solo admin) ---- -->
     <section class="view" id="v-remu">
-      <div class="h-row"><h2>Pagos <span class="cnt" id="remu-cnt"></span></h2><button id="remu-cfg-btn" class="btn ghost small" style="width:auto">⚙️ Config</button></div>
+      <div class="h-row"><h2>Remuneraciones <span class="cnt" id="remu-cnt"></span></h2><button id="remu-cfg-btn" class="btn ghost small" style="width:auto">⚙️ Config</button></div>
       <div class="card" style="display:flex;align-items:center;gap:8px;padding:9px 10px;margin-bottom:12px">
         <button id="remu-prev" class="btn ghost small" style="width:auto">‹</button>
         <div style="flex:1;text-align:center"><div class="note" style="margin:0;font-size:.72rem">Semana</div><b id="remu-rango" style="font-size:.95rem"></b></div>
@@ -2611,7 +2611,7 @@
   $('rd-close').addEventListener('click',cerrarDetalleRemu);
 
   // ====== ACCESOS / PERMISOS (solo Enzo) ======
-  var SECCIONES=[['reporte','Registro'],['hist','Registros'],['cuadrilla','Preparación'],['matriz','Matriz'],['trab','Personas'],['veh','Vehículos'],['remu','Pagos'],['planificacion','Planificación']];
+  var SECCIONES=[['reporte','Registro'],['hist','Registros'],['cuadrilla','Preparación'],['matriz','Matriz'],['trab','Personas'],['veh','Vehículos'],['remu','Remuneraciones'],['planificacion','Planificación']];
   var NIVELES=[['oculto','Oculto'],['ver','Ver'],['editar','Editar'],['total','Total']];
   var ROL_DEFAULTS={
     admin:      {reporte:'total',hist:'total',cuadrilla:'total',matriz:'total',trab:'total',veh:'total',remu:'total',planificacion:'total'},
