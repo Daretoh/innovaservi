@@ -1612,10 +1612,9 @@
     function trasGuardar(newId){
       toast(EDIT_ID?'✓ Registro actualizado':'✓ Registro guardado');
       borrarBorrador();
-      if(newId && !EDIT_ID) EDIT_ID=newId;   // ya existe en la base: re-guardar actualiza, no duplica
+      resetForm();
       cargarRegistros(pintarRegistros);
-      if(isAdmin){ generarReporte(); }       // admin: directo al informe con TODAS las faenas
-      else { resetForm(); irA('v-hist'); }
+      irA('v-hist');   // guardar te deja en "Reportes" (el listado). El informe se genera aparte, con su botón.
     }
     subeUno(0);
   });
