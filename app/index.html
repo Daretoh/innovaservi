@@ -464,7 +464,7 @@
           <div class="fld"><label>Empresa / Cliente</label><input type="text" id="r-empresa" placeholder="Ej: CERMAQ"></div>
           <div class="fld"><label>Fecha</label><input type="date" id="r-fecha"><div class="note hide" id="r-fechas-note" style="margin:4px 0 0"></div></div>
         </div>
-        <div class="fld"><label>Lugar</label><input type="text" id="r-lugar" placeholder="Ej: Planta / módulo / dirección"></div>
+        <div class="fld"><label>Lugar / Dirección</label><input type="text" id="r-lugar" placeholder="Ej: Parque Husamontt, Puerto Montt"></div>
         <div class="fld" style="display:none"><label>Notas / observaciones</label><textarea id="r-notas" placeholder="Detalle del trabajo, materiales, pendientes…"></textarea></div>
       </div>
 
@@ -989,7 +989,12 @@
     if(isAdmin) cargarTrab(actualizarDatalist);
     ofrecerBorrador();
   }
-  function registroDe(eventoId){ if(!eventoId) return null; return REGISTROS.filter(function(x){ return String(x.evento_id)===String(eventoId); })[0]||null; }
+  function registroDe(eventoId){ if(!eventoId) return null; var id=String(eventoId);
+    // Coincide por la faena principal (evento_id) O por cualquier faena dentro de un reporte consolidado.
+    return REGISTROS.filter(function(x){
+      if(String(x.evento_id)===id) return true;
+      return (x.faenas||[]).some(function(f){ return String(f.id)===id; });
+    })[0]||null; }
   function isoMas(dias){ var d=new Date(); d.setDate(d.getDate()+dias); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
   function cargarEventos(){
     if(!sb)return;
@@ -1083,10 +1088,17 @@
     sincronizarJobs();
   }
   function quitarJob(id){
-    // Las fotos de esa faena no se pierden: pasan a "General" para que sigas viéndolas y subiendo.
+    // Las fotos de esa faena NO se pierden: pasan a "Sin faena" (siguen en el reporte).
+    var nF=R_MEDIA.filter(function(m){ return (m.faena||'')===String(id); }).length;
+    if(nF && !confirm('Esta faena tiene '+nF+' foto'+(nF>1?'s':'')+'. Al quitarla, las fotos NO se borran: quedan como “Sin faena” dentro de este reporte. ¿Quitar la faena?')) return;
     R_MEDIA.forEach(function(m){ if((m.faena||'')===String(id)) m.faena=''; });
     R_JOBS=R_JOBS.filter(function(x){ return jobKey(x)!==String(id); }); sincronizarJobs();
   }
+  // Memoria de direcciones por cliente (local): así "Lugar/Dirección" se autocompleta la próxima vez.
+  var ADDR_KEY='innova_dir_cliente_v1';
+  function _addrMap(){ try{ return JSON.parse(localStorage.getItem(ADDR_KEY)||'{}')||{}; }catch(_){ return {}; } }
+  function recordarDireccion(cli,dir){ if(!cli||!dir) return; try{ var m=_addrMap(); m[cli.trim().toUpperCase()]=dir.trim(); localStorage.setItem(ADDR_KEY,JSON.stringify(m)); }catch(_){} }
+  function direccionDe(cli){ if(!cli) return ''; try{ return _addrMap()[cli.trim().toUpperCase()]||''; }catch(_){ return ''; } }
   // Fechas distintas de las faenas incluidas, formateadas DD-MM-YYYY y ordenadas.
   function fechasFaenas(){ var ds={}; R_JOBS.forEach(function(e){ if(e.fecha) ds[e.fecha]=1; }); return Object.keys(ds).sort().map(function(f){ return fFaena(f); }); }
   // Refleja R_JOBS en R_JOB, en Empresa/Lugar y en los chips. Al cambiar de faena la Empresa se
@@ -1095,7 +1107,10 @@
     R_JOB=R_JOBS[0]||null;
     // Empresa/Cliente = ubicación de la faena. El TÍTULO (ej: "pintura caseta") NO va a Lugar:
     // Lugar es el sitio físico (ej: "Planta Chinquihue"); los títulos alimentan "Trabajo realizado".
-    if(R_JOB){ $('r-empresa').value=R_JOB.ubicacion||''; }
+    if(R_JOB){ $('r-empresa').value=R_JOB.ubicacion||'';
+      // Autocompleta la dirección recordada de ese cliente si Lugar está vacío (no pisa lo que escribas).
+      if(!$('r-lugar').value.trim()){ var d=direccionDe(R_JOB.ubicacion); if(d) $('r-lugar').value=d; }
+    }
     pintaJobPick(R_JOB); renderJobChips();
     var note=$('r-fechas-note');
     if(note){ var fs=fechasFaenas();
@@ -1537,6 +1552,7 @@
         .map(function(m){ return { url:m.url, tipo:m.tipo, nombre:m.nombre||'', cat:catStore(m.cat), fecha:m.fecha||fecha, faena:(m.faena||'') }; });
       // Faenas incluidas en este reporte (para no perder las que van más allá de la principal).
       var faenas=R_JOBS.map(function(e){ return { id:e.id, ubicacion:e.ubicacion||'', titulo:e.titulo||'', fecha:e.fecha||'' }; });
+      recordarDireccion(emp, lugar);   // recuerda la dirección de este cliente para la próxima vez
       // La cuadrilla/EPP se maneja en su propia pestaña; aquí NO se toca asignacion al actualizar.
       var row={ evento_id:(R_JOB?R_JOB.id:null), empresa:emp, lugar:lugar, fecha:fecha, notas:notas, media:media, faenas:faenas, autor:userEmail };
       var q;
