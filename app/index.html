@@ -2989,7 +2989,7 @@
       if(g.categoria==='vuelta') vueltasT[nm]=(vueltasT[nm]||0)+(+g.cantidad||0);
       if(g.categoria==='peaje') peajesT[nm]=(peajesT[nm]||0)+(+g.monto||0); });
     var bonoT={}, descT={};
-    D.items.forEach(function(it){ if(it.tipo==='bono') bonoT[it.trabajador_id]=(bonoT[it.trabajador_id]||0)+(+it.monto||0); if(it.tipo==='descuento') descT[it.trabajador_id]=(descT[it.trabajador_id]||0)+(+it.monto||0); });
+    D.items.forEach(function(it){ if(it.tipo==='descuento') descT[it.trabajador_id]=(descT[it.trabajador_id]||0)+(+it.monto||0); else bonoT[it.trabajador_id]=(bonoT[it.trabajador_id]||0)+(+it.monto||0); });
     var filas=[], total=0, porDiaMonto={}, porDiaHoras={};
     var consumido={};
     D.trab.forEach(function(t){
@@ -3104,7 +3104,7 @@
     var desg='<div class="rd-lin"><span>'+(x.tipo==='contrato'?'Horas extra':'Horas')+' ('+hm(x.baseMin)+(x.vh?(' × '+fmtMoney(x.vh)):'')+')</span><b>'+fmtMoney(x.base)+'</b></div>';
     if(x.vueltas) desg+='<div class="rd-lin"><span>'+x.vueltas+' vueltas × '+fmtMoney(REMU_DATA.valorVuelta)+'</span><b>'+fmtMoney(x.vueltasMonto)+'</b></div>';
     if(x.peajes) desg+='<div class="rd-lin"><span>Peajes (reembolso)</span><b>'+fmtMoney(x.peajes)+'</b></div>';
-    if(x.bono) desg+='<div class="rd-lin"><span>Bonos / extras</span><b style="color:#0f6e56">'+fmtMoney(x.bono)+'</b></div>';
+    if(x.bono) desg+='<div class="rd-lin"><span>Montos y bonos</span><b style="color:#0f6e56">'+fmtMoney(x.bono)+'</b></div>';
     if(x.desc) desg+='<div class="rd-lin"><span>Descuentos</span><b style="color:#dc2626">− '+fmtMoney(x.desc)+'</b></div>';
     desg+='<div class="rd-lin rd-tot"><span>Total semana</span><b>'+fmtMoney(x.total)+'</b></div>';
     // Si es un nombre suelto (sin ficha): permitir unirlo a un trabajador o crearle ficha.
@@ -3118,14 +3118,28 @@
         '<div style="display:flex;gap:8px;flex-wrap:wrap"><button id="rd-unir" class="btn small" style="width:auto">🔗 Unir horas</button><button id="rd-crear" class="btn ghost small" style="width:auto">＋ Crear ficha con este nombre</button></div>'+
       '</div>';
     }
+    // Montos/bonos/descuentos de este trabajador en la semana (editables).
+    var montosCard='';
+    if(x.t.id){
+      var tipoLbl={bono:'Bono / extra', descuento:'Descuento', otro:'Monto adicional'};
+      var misItems=(REMU_DATA.items||[]).filter(function(it){ return String(it.trabajador_id)===String(x.t.id); });
+      var itemsHtml=misItems.length?misItems.map(function(it){ var neg=it.tipo==='descuento';
+        return '<div class="ri-item" data-id="'+it.id+'" style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)">'+
+          '<div style="flex:1"><b style="font-size:.85rem;color:'+(neg?'#dc2626':'#0f6e56')+'">'+(neg?'− ':'')+fmtMoney(+it.monto||0)+'</b> <span class="note" style="margin:0;font-size:.72rem">'+esc(tipoLbl[it.tipo]||it.tipo)+'</span><div class="note" style="margin:1px 0 0;font-size:.74rem">'+esc(it.concepto||'—')+'</div></div>'+
+          '<button class="ri-edit" type="button" title="Editar" style="width:30px;height:32px;border:1px solid var(--line);background:#fff;border-radius:8px;cursor:pointer">✎</button>'+
+          '<button class="ri-del" type="button" title="Quitar" style="width:30px;height:32px;border:1px solid #f0c0c0;background:#fff;color:#dc2626;border-radius:8px;cursor:pointer">✕</button></div>';
+      }).join(''):'<p class="note" style="margin:0 0 4px">Sin montos adicionales esta semana.</p>';
+      montosCard='<div class="card"><label style="display:block;font:700 13px var(--font);color:var(--ink);margin-bottom:6px">💵 Montos, bonos y descuentos</label>'+
+        itemsHtml+
+        '<div class="grid2" style="margin-top:8px"><div class="fld" style="margin:0"><label>Tipo</label><select id="rd-tipo"><option value="otro">Monto (adicional)</option><option value="bono">Bono / extra</option><option value="descuento">Descuento</option></select></div><div class="fld" style="margin:0"><label>Monto ($)</label><input id="rd-monto" type="number" min="0" placeholder="0"></div></div>'+
+        '<div class="fld"><label>Observación (por qué es este monto) *</label><input id="rd-concepto" type="text" placeholder="Ej: Anticipo, adelanto, bono producción, colación…"></div>'+
+        '<div style="display:flex;gap:8px"><button id="rd-add" class="btn small" style="width:auto">Agregar</button><button id="rd-cancel" class="btn ghost small hide" style="width:auto">Cancelar edición</button></div></div>';
+    }
     $('rd-body').innerHTML=
       unir+
       '<div class="card"><label style="display:block;font:700 13px var(--font);color:var(--ink);margin-bottom:6px">📅 Días trabajados</label>'+diasHtml+'</div>'+
       '<div class="card"><label style="display:block;font:700 13px var(--font);color:var(--ink);margin-bottom:6px">💰 Desglose</label>'+desg+'</div>'+
-      '<div class="card"><label style="display:block;font:700 13px var(--font);color:var(--ink);margin-bottom:6px">＋ Bono / descuento</label>'+
-        '<div class="grid2"><div class="fld" style="margin:0"><label>Tipo</label><select id="rd-tipo"><option value="bono">Bono / extra</option><option value="descuento">Descuento</option></select></div><div class="fld" style="margin:0"><label>Monto ($)</label><input id="rd-monto" type="number" min="0" placeholder="0"></div></div>'+
-        '<div class="fld"><label>Concepto</label><input id="rd-concepto" type="text" placeholder="Ej: Anticipo, bono producción…"></div>'+
-        '<button id="rd-add" class="btn small" style="width:auto">Agregar</button></div>';
+      montosCard;
     $('rd-body').querySelectorAll('.rd-dia.rd-link[data-reg]').forEach(function(el){ el.addEventListener('click',function(){ var reg=(REGISTROS||[]).filter(function(r){ return String(r.id)===el.dataset.reg; })[0]; if(reg){ cerrarDetalleRemu(); abrirEdicion(reg); } }); });
     if(!x.t.id){
       var oldName=(x.t.nombre||'').trim();
@@ -3148,15 +3162,19 @@
       });
       return;   // los orfanos no tienen formulario de bono/descuento
     }
-    $('rd-add').addEventListener('click',function(){
-      if(!sb) return;
-      if(!x.t.id){ toast('Primero agrega a '+(x.t.nombre||'esta persona')+' en Trabajadores (RRHH) para asignarle bonos o descuentos.'); return; }
+    var editItemId=null;
+    if($('rd-add')) $('rd-add').addEventListener('click',function(){
+      if(!sb||!x.t.id) return;
       var monto=+($('rd-monto').value||0); if(!monto){ toast('Pon el monto.'); return; }
+      var obs=$('rd-concepto').value.trim(); if(!obs){ toast('Escribe la observación (por qué es este monto).'); $('rd-concepto').focus(); return; }
+      var payload={ trabajador_id:x.t.id, semana:REMU_DATA.lun, tipo:$('rd-tipo').value, concepto:obs, monto:monto, autor:userEmail };
       busy(true,'Guardando…');
-      sb.from('remuneracion_items').insert({ trabajador_id:x.t.id, semana:REMU_DATA.lun, tipo:$('rd-tipo').value, concepto:$('rd-concepto').value.trim(), monto:monto, autor:userEmail }).then(function(r){ busy(false);
-        if(r.error){ toast('No se pudo guardar: '+r.error.message); return; }
-        toast('✓ Agregado'); cerrarDetalleRemu(); cargarRemu(); });
+      var q=editItemId? sb.from('remuneracion_items').update(payload).eq('id',editItemId) : sb.from('remuneracion_items').insert(payload);
+      q.then(function(r){ busy(false); if(r.error){ toast('No se pudo guardar: '+r.error.message); return; } toast('✓ Guardado'); cerrarDetalleRemu(); cargarRemu(); });
     });
+    if($('rd-cancel')) $('rd-cancel').addEventListener('click',function(){ editItemId=null; $('rd-tipo').value='otro'; $('rd-monto').value=''; $('rd-concepto').value=''; $('rd-add').textContent='Agregar'; $('rd-cancel').classList.add('hide'); });
+    $('rd-body').querySelectorAll('.ri-del').forEach(function(b){ b.addEventListener('click',function(){ var id=b.closest('.ri-item').dataset.id; if(!confirm('¿Quitar este monto?')) return; busy(true,'Quitando…'); sb.from('remuneracion_items').delete().eq('id',id).then(function(r){ busy(false); if(r.error){ toast('No se pudo quitar: '+r.error.message); return; } toast('✓ Quitado'); cerrarDetalleRemu(); cargarRemu(); }); }); });
+    $('rd-body').querySelectorAll('.ri-edit').forEach(function(b){ b.addEventListener('click',function(){ var id=b.closest('.ri-item').dataset.id; var it=(REMU_DATA.items||[]).filter(function(z){ return String(z.id)===String(id); })[0]; if(!it) return; editItemId=id; $('rd-tipo').value=it.tipo; $('rd-monto').value=it.monto; $('rd-concepto').value=it.concepto||''; $('rd-add').textContent='Guardar cambios'; $('rd-cancel').classList.remove('hide'); $('rd-monto').focus(); }); });
     $('remu-detalle').classList.remove('hide'); $('remu-detalle').scrollTop=0;
   }
   function cerrarDetalleRemu(){ $('remu-detalle').classList.add('hide'); }
