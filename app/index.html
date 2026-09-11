@@ -2047,7 +2047,7 @@
     else { $('rep-confirm').classList.remove('hide'); $('rep-download').classList.add('hide'); $('rep-reopen').classList.add('hide'); }
   }
   // Reabrir un informe ya definitivo para regenerarlo (p.ej. si el PDF quedó con fotos en blanco).
-  $('rep-reopen').addEventListener('click',function(){
+  function reabrirInforme(){
     if(!EDIT_ID){ toast('Abre el registro primero.'); return; }
     if(!confirm('¿Reabrir este informe?\n\nDejará de ser definitivo para que puedas revisarlo y volver a generarlo con "Confirmar y descargar".\nEl PDF anterior se reemplaza al confirmar de nuevo.')) return;
     busy(true,'Reabriendo…');
@@ -2057,10 +2057,11 @@
       REG_LOCKED=false;
       $('report-doc').querySelectorAll('[contenteditable]').forEach(function(el){ el.setAttribute('contenteditable','true'); });
       reflejarBloqueo(); reflejarBotonesInforme();
-      toast('🔓 Informe reabierto. Revísalo y toca "Confirmar y descargar".');
+      toast('🔓 Informe reabierto. Genera el reporte, revísalo y toca "Confirmar y descargar".');
       cargarRegistros();
     }, function(){ busy(false); toast('No se pudo reabrir el informe.'); });
-  });
+  }
+  $('rep-reopen').addEventListener('click',reabrirInforme);
   $('rep-confirm').addEventListener('click',function(){
     if(!EDIT_ID){ toast('Guarda el registro antes de confirmar su informe.'); return; }
     if(!confirm('¿Confirmar el informe?\n\nSe generará el PDF, se descargará y quedará GUARDADO en el registro como DEFINITIVO (ya no editable).\nLas horas se siguen editando desde el apartado Horas.')) return;
@@ -2097,7 +2098,9 @@
     var host=$('v-reporte'), b=$('reg-lock-banner');
     if(REG_LOCKED){
       if(!b){ b=document.createElement('div'); b.id='reg-lock-banner'; b.style.cssText='background:#eef2ff;border:1px solid var(--navy);color:var(--navy);border-radius:12px;padding:10px 12px;margin-bottom:12px;font:600 13px var(--font)'; var anchor=host.querySelector('.card'); host.insertBefore(b, anchor); }
-      b.innerHTML='🔒 Informe definitivo'+(REG_PDF?' · <a href="'+esc(REG_PDF)+'" target="_blank" rel="noopener" style="color:var(--orange-2);font-weight:800">Ver PDF</a>':'')+'. Para cambios, crea uno nuevo. Las horas se editan en el apartado <b>Horas</b>.';
+      b.innerHTML='🔒 Informe definitivo'+(REG_PDF?' · <a href="'+esc(REG_PDF)+'" target="_blank" rel="noopener" style="color:var(--orange-2);font-weight:800">Ver PDF</a>':'')+'. Las horas se editan en el apartado <b>Horas</b>.'+
+        '<div style="margin-top:8px"><button id="reg-reopen" class="btn ghost small" style="width:auto">🔓 Reabrir para regenerar el PDF</button></div>';
+      var rb=$('reg-reopen'); if(rb) rb.addEventListener('click',reabrirInforme);
       b.classList.remove('hide');
     } else if(b){ b.classList.add('hide'); }
   }
