@@ -792,6 +792,7 @@
     <button id="rep-close" class="btn ghost small" style="width:auto">✕ Cerrar</button>
     <span class="rep-hint">Toca una foto para incluir / quitar del reporte</span>
     <button id="rep-confirm" class="btn small" style="width:auto">✓ Confirmar y descargar</button>
+    <button id="rep-reopen" class="btn ghost small hide" style="width:auto">🔓 Reabrir para regenerar</button>
     <button id="rep-download" class="btn small hide" style="width:auto">⬇️ Descargar PDF</button>
   </div>
   <div id="report-doc"></div>
@@ -1988,8 +1989,8 @@
     // Informe ya definitivo → no editable, y botón para descargar el PDF guardado.
     if(REG_LOCKED){
       $('report-doc').querySelectorAll('[contenteditable]').forEach(function(el){ el.setAttribute('contenteditable','false'); });
-      $('rep-confirm').classList.add('hide'); $('rep-download').classList.remove('hide');
-    } else { $('rep-confirm').classList.remove('hide'); $('rep-download').classList.add('hide'); }
+    }
+    reflejarBotonesInforme();
     $('report-view').classList.remove('hide'); window.scrollTo(0,0);
   }
   $('r-report').addEventListener('click',generarReporte);
@@ -2040,6 +2041,26 @@
       return Promise.resolve().then(paso);
     });
   }
+  // Muestra los botones del informe según esté bloqueado (definitivo) o no.
+  function reflejarBotonesInforme(){
+    if(REG_LOCKED){ $('rep-confirm').classList.add('hide'); $('rep-download').classList.remove('hide'); $('rep-reopen').classList.remove('hide'); }
+    else { $('rep-confirm').classList.remove('hide'); $('rep-download').classList.add('hide'); $('rep-reopen').classList.add('hide'); }
+  }
+  // Reabrir un informe ya definitivo para regenerarlo (p.ej. si el PDF quedó con fotos en blanco).
+  $('rep-reopen').addEventListener('click',function(){
+    if(!EDIT_ID){ toast('Abre el registro primero.'); return; }
+    if(!confirm('¿Reabrir este informe?\n\nDejará de ser definitivo para que puedas revisarlo y volver a generarlo con "Confirmar y descargar".\nEl PDF anterior se reemplaza al confirmar de nuevo.')) return;
+    busy(true,'Reabriendo…');
+    sb.from('registros').update({ confirmado:false }).eq('id',EDIT_ID).then(function(r){
+      busy(false);
+      if(r.error){ toast('No se pudo reabrir: '+r.error.message); return; }
+      REG_LOCKED=false;
+      $('report-doc').querySelectorAll('[contenteditable]').forEach(function(el){ el.setAttribute('contenteditable','true'); });
+      reflejarBloqueo(); reflejarBotonesInforme();
+      toast('🔓 Informe reabierto. Revísalo y toca "Confirmar y descargar".');
+      cargarRegistros();
+    }, function(){ busy(false); toast('No se pudo reabrir el informe.'); });
+  });
   $('rep-confirm').addEventListener('click',function(){
     if(!EDIT_ID){ toast('Guarda el registro antes de confirmar su informe.'); return; }
     if(!confirm('¿Confirmar el informe?\n\nSe generará el PDF, se descargará y quedará GUARDADO en el registro como DEFINITIVO (ya no editable).\nLas horas se siguen editando desde el apartado Horas.')) return;
@@ -2056,8 +2077,7 @@
           busy(false);
           if(r.error){ toast(/pdf_url|confirmado/.test(r.error.message||'')?'Falta correr registros-pdf.sql en Supabase.':('No se marcó como definitivo: '+r.error.message)); return; }
           toast('✓ Informe confirmado y guardado');
-          REG_LOCKED=true; REG_PDF=res.url; reflejarBloqueo();
-          $('rep-confirm').classList.add('hide'); $('rep-download').classList.remove('hide');
+          REG_LOCKED=true; REG_PDF=res.url; reflejarBloqueo(); reflejarBotonesInforme();
           $('report-doc').querySelectorAll('[contenteditable]').forEach(function(el){ el.setAttribute('contenteditable','false'); });
           cargarRegistros();
         }, function(){ busy(false); toast('No se pudo marcar como definitivo.'); });
