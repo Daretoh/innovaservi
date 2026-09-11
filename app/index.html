@@ -446,6 +446,12 @@
   .rd-card .d b{display:block;font:800 15px var(--font);color:var(--ink);margin-top:1px;letter-spacing:0;}
   .rd-card .v{font:800 13px var(--font);color:var(--orange-2);margin-top:6px;white-space:nowrap;}
   .rd-card .h{font:600 9.5px var(--font);color:var(--faint,#8a8fac);margin-top:2px;}
+  #remu-aj{position:fixed;inset:0;z-index:80;background:rgba(20,17,14,.45);display:flex;align-items:center;justify-content:center;padding:16px;}
+  #remu-aj.hide{display:none;}
+  .raj-card{background:#fff;border-radius:14px;padding:18px;max-width:390px;width:100%;box-shadow:0 24px 60px -20px rgba(0,0,0,.5);}
+  .rt-real{color:var(--muted);} .rt-real.rt-aj{text-decoration:line-through;opacity:.7;}
+  .rt-cont.rt-editable{cursor:pointer;} .rt-cont .rt-pen{opacity:.45;font-size:.75rem;} .rt-cont.rt-editable:hover{background:var(--alt);}
+  .rt-obs{font:600 10px var(--font);color:var(--orange-2);margin-top:1px;max-width:150px;white-space:normal;line-height:1.2;}
   @media(min-width:900px){ main.wide .remu-dias{gap:10px;} main.wide .rd-card{padding:12px 12px;} main.wide .rd-card .v{font-size:15px;} }
   .remu-tbl{border-collapse:collapse;width:100%;font:600 12.5px var(--font);white-space:nowrap;}
   .remu-tbl th{background:var(--alt);color:var(--muted);font:800 10px var(--font);text-transform:uppercase;letter-spacing:.03em;padding:9px 11px;text-align:right;border-bottom:1px solid var(--line);}
@@ -974,6 +980,21 @@
     <span style="width:56px"></span>
   </div>
   <div class="ficha-body"><div id="rd-body"></div></div>
+</div>
+
+<!-- Ajuste del monto contable (por trabajador/semana) -->
+<div id="remu-aj" class="hide">
+  <div class="raj-card">
+    <b id="raj-title" style="display:block;font:800 15px var(--font);color:var(--ink);margin-bottom:4px">Ajuste de monto</b>
+    <div class="note" style="margin:0 0 10px">Monto real (por horas): <b id="raj-real">$0</b></div>
+    <div class="fld"><label>Monto contable ($) — lo que se paga</label><input id="raj-monto" type="number" min="0"></div>
+    <div class="fld"><label>Observación (por qué se ajusta) *</label><input id="raj-obs" type="text" placeholder="Ej: acuerdo, redondeo, adelanto ya pagado…"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:2px">
+      <button id="raj-save" class="btn small" style="width:auto">Guardar</button>
+      <button id="raj-clear" class="btn ghost small" style="width:auto">Usar el real</button>
+      <button id="raj-cancel" class="btn ghost small" style="width:auto">Cancelar</button>
+    </div>
+  </div>
 </div>
 
 <!-- Gestor de Cargos y tratos -->
@@ -2977,12 +2998,14 @@
       sb.from('horas').select('*').gte('fecha',lun).lte('fecha',fin).limit(2000),
       sb.from('vehiculo_gastos').select('categoria,fecha,monto,cantidad,chofer').in('categoria',['vuelta','peaje']).gte('fecha',lun).lte('fecha',fin).limit(500),
       sb.from('remuneracion_items').select('*').eq('semana',lun).limit(500),
-      sb.from('config').select('*').in('clave',['valor_vuelta','valor_hora'])
+      sb.from('config').select('*').in('clave',['valor_vuelta','valor_hora']),
+      sb.from('remu_ajuste').select('*').eq('semana',lun).limit(500)
     ]).then(function(rs){
       var cfgMap={}; ((rs[4]&&rs[4].data)||[]).forEach(function(c){ cfgMap[c.clave]=+c.valor||0; });
+      var ajM={}; ((rs[5]&&rs[5].data)||[]).forEach(function(a){ ajM[a.trabajador_id]={monto:(+a.monto||0), obs:a.obs||''}; });
       REMU_DATA={ lun:lun, fin:fin,
         trab:(rs[0]&&rs[0].data)||[], regs:(rs[1]&&rs[1].data)||[], vg:(rs[2]&&rs[2].data)||[],
-        items:(rs[3]&&rs[3].data)||[], valorVuelta:cfgMap.valor_vuelta||0, valorHora:cfgMap.valor_hora||0 };
+        items:(rs[3]&&rs[3].data)||[], ajustes:ajM, valorVuelta:cfgMap.valor_vuelta||0, valorHora:cfgMap.valor_hora||0 };
       computarRemu();
     });
   }
@@ -3018,8 +3041,9 @@
       if(H){ for(var fd in H.porDia){ var dm=H.porDia[fd], pmin=(tipo==='contrato')?Math.max(0,dm-jor*60):dm; porDiaMonto[fd]=(porDiaMonto[fd]||0)+Math.round(pmin/60*vh); porDiaHoras[fd]=(porDiaHoras[fd]||0)+dm; } }
       var base=Math.round(baseMin/60*vh), vueltasMonto=tv*D.valorVuelta, totalTrab=base+vueltasMonto+tp+bo-de;
       if(totMin===0 && tv===0 && tp===0 && bo===0 && de===0) return;
-      filas.push({t:t,tipo:tipo,dias:dias,totMin:totMin,base:base,baseMin:baseMin,vh:vh,jor:jor,vueltas:tv,vueltasMonto:vueltasMonto,peajes:tp,bono:bo,desc:de,total:totalTrab,H:H});
-      total+=totalTrab;
+      var aj=(D.ajustes&&t.id)?D.ajustes[t.id]:null, contable=aj?aj.monto:totalTrab;
+      filas.push({t:t,tipo:tipo,dias:dias,totMin:totMin,base:base,baseMin:baseMin,vh:vh,jor:jor,vueltas:tv,vueltasMonto:vueltasMonto,peajes:tp,bono:bo,desc:de,total:totalTrab,real:totalTrab,aj:aj,contable:contable,H:H});
+      total+=contable;
     });
     // Personas con horas que NO están en la ficha de Trabajadores (nombre nuevo o distinto):
     // igual se muestran, con el valor hora general, para que sus horas no se pierdan.
@@ -3030,7 +3054,7 @@
       if(totMin===0 && tv===0 && tp===0) return;
       for(var fd in H.porDia){ var dm=H.porDia[fd]; porDiaMonto[fd]=(porDiaMonto[fd]||0)+Math.round(dm/60*vh); porDiaHoras[fd]=(porDiaHoras[fd]||0)+dm; }
       var base=Math.round(totMin/60*vh), vueltasMonto=tv*D.valorVuelta, totalTrab=base+vueltasMonto+tp;
-      filas.push({t:{id:null,nombre:(H.nombre||nm),cargo:'Sin ficha en Trabajadores',estado:'activo'},tipo:'hora',dias:dias,totMin:totMin,base:base,baseMin:totMin,vh:vh,jor:0,vueltas:tv,vueltasMonto:vueltasMonto,peajes:tp,bono:0,desc:0,total:totalTrab,H:H});
+      filas.push({t:{id:null,nombre:(H.nombre||nm),cargo:'Sin ficha en Trabajadores',estado:'activo'},tipo:'hora',dias:dias,totMin:totMin,base:base,baseMin:totMin,vh:vh,jor:0,vueltas:tv,vueltasMonto:vueltasMonto,peajes:tp,bono:0,desc:0,total:totalTrab,real:totalTrab,aj:null,contable:totalTrab,H:H});
       total+=totalTrab;
     });
     filas.sort(function(a,b){ return (a.t.nombre||'').localeCompare(b.t.nombre||''); });
@@ -3052,12 +3076,22 @@
         '<td>'+x.dias+'</td><td>'+hm(x.totMin)+'</td>'+
         '<td>'+m(x.base)+'</td><td>'+m(x.vueltasMonto)+'</td><td>'+m(x.peajes)+'</td>'+
         '<td class="rt-ok">'+m(x.bono)+'</td><td class="rt-bad">'+m(x.desc,true)+'</td>'+
-        '<td class="rt-tot">'+fmtMoney(x.total)+'</td></tr>';
+        '<td class="rt-real'+(x.aj?' rt-aj':'')+'">'+fmtMoney(x.real)+'</td>'+
+        '<td class="rt-cont'+(x.t.id?' rt-editable':'')+'" title="'+(x.t.id?'Clic para ajustar el monto contable':'Sin ficha: no editable')+'">'+
+          '<b'+(x.aj?' style="color:var(--orange-2)"':'')+'>'+fmtMoney(x.contable)+'</b>'+(x.t.id?' <span class="rt-pen">✎</span>':'')+
+          (x.aj&&x.aj.obs?('<div class="rt-obs">'+esc(x.aj.obs)+'</div>'):'')+
+        '</td></tr>';
     }).join('');
     cont.innerHTML='<div class="remu-scroll"><table class="remu-tbl"><thead><tr>'+
-      '<th>Trabajador</th><th>Días</th><th>Horas</th><th>Base</th><th>Vueltas</th><th>Peajes</th><th>Bono</th><th>Desc.</th><th>Total</th></tr></thead>'+
+      '<th>Trabajador</th><th>Días</th><th>Horas</th><th>Base</th><th>Vueltas</th><th>Peajes</th><th>Bono</th><th>Desc.</th><th>Real</th><th>Contable</th></tr></thead>'+
       '<tbody>'+body+'</tbody></table></div>';
-    cont.querySelectorAll('tbody tr[data-i]').forEach(function(el){ el.addEventListener('click',function(){ abrirDetalleRemu(REMU_DATA.filas[+el.dataset.i]); }); });
+    cont.querySelectorAll('tbody tr[data-i]').forEach(function(el){
+      el.addEventListener('click',function(ev){
+        var i=+el.dataset.i, fila=REMU_DATA.filas[i];
+        if(ev.target.closest('.rt-cont') && fila.t.id){ ev.stopPropagation(); abrirAjuste(fila); return; }
+        abrirDetalleRemu(fila);
+      });
+    });
   }
   $('remu-prev').addEventListener('click',function(){ REMU_LUNES=sumarDias(REMU_LUNES||lunesDe(todayISO()),-7); cargarRemu(); });
   $('remu-next').addEventListener('click',function(){ REMU_LUNES=sumarDias(REMU_LUNES||lunesDe(todayISO()),7); cargarRemu(); });
@@ -3193,6 +3227,34 @@
   }
   function cerrarDetalleRemu(){ $('remu-detalle').classList.add('hide'); }
   $('rd-close').addEventListener('click',cerrarDetalleRemu);
+
+  // Ajuste del monto CONTABLE (lo que se paga) vs el REAL (por horas), con observación.
+  var AJ_CTX=null;
+  function abrirAjuste(fila){
+    if(!fila||!fila.t.id) return; AJ_CTX=fila;
+    $('raj-title').textContent=(titleCase(fila.t.nombre)||'')+' · Semana '+numSemana(REMU_DATA.lun);
+    $('raj-real').textContent=fmtMoney(fila.real);
+    $('raj-monto').value=(fila.aj?fila.aj.monto:fila.real);
+    $('raj-obs').value=(fila.aj?fila.aj.obs:'');
+    $('remu-aj').classList.remove('hide'); setTimeout(function(){ $('raj-monto').focus(); },30);
+  }
+  if($('raj-cancel')) $('raj-cancel').addEventListener('click',function(){ $('remu-aj').classList.add('hide'); });
+  if($('raj-save')) $('raj-save').addEventListener('click',function(){
+    if(!sb||!AJ_CTX) return; var monto=+($('raj-monto').value||0), obs=$('raj-obs').value.trim();
+    if(monto!==AJ_CTX.real && !obs){ toast('Escribe la observación del ajuste.'); $('raj-obs').focus(); return; }
+    busy(true,'Guardando ajuste…');
+    sb.from('remu_ajuste').upsert({ trabajador_id:AJ_CTX.t.id, semana:REMU_DATA.lun, monto:monto, obs:obs, autor:userEmail },{onConflict:'trabajador_id,semana'}).then(function(r){ busy(false);
+      if(r.error){ toast(/relation|does not exist|schema cache/.test(r.error.message||'')?'Falta correr remu-ajuste.sql en Supabase.':('No se pudo guardar: '+r.error.message)); return; }
+      toast('✓ Ajuste guardado'); $('remu-aj').classList.add('hide'); cargarRemu();
+    }, function(){ busy(false); toast('No se pudo guardar el ajuste.'); });
+  });
+  if($('raj-clear')) $('raj-clear').addEventListener('click',function(){
+    if(!sb||!AJ_CTX) return; busy(true,'Quitando ajuste…');
+    sb.from('remu_ajuste').delete().eq('trabajador_id',AJ_CTX.t.id).eq('semana',REMU_DATA.lun).then(function(r){ busy(false);
+      if(r.error){ toast('No se pudo quitar: '+r.error.message); return; }
+      toast('✓ Se usa el monto real'); $('remu-aj').classList.add('hide'); cargarRemu();
+    }, function(){ busy(false); toast('No se pudo quitar el ajuste.'); });
+  });
 
   // Detalle de un DÍA de la semana: trabajadores, horas por trabajador, horas totales y montos.
   function abrirDetalleDia(fday){
