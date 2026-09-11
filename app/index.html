@@ -554,20 +554,6 @@
     </section>
 
     <!-- ---- TRABAJADORES (solo admin) ---- -->
-    <section class="view" id="v-trab">
-      <div class="h-row"><h2>Trabajadores <span class="cnt" id="trab-cnt"></span></h2><div style="display:flex;gap:8px"><button id="trab-import" class="btn ghost small" style="width:auto">⬆ Importar</button><button id="trab-nuevo" class="btn small" style="width:auto">＋ Nuevo</button></div></div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
-        <input id="trab-search" type="search" placeholder="Buscar nombre, RUT o cargo…" style="flex:1;min-width:150px;font:500 15px var(--font);padding:10px 12px;border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--ink)">
-        <select id="trab-sort" style="font:600 13px var(--font);padding:10px 12px;border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--ink)"><option value="nombre">A–Z</option><option value="cargo">Por cargo</option><option value="reciente">Recientes</option></select>
-      </div>
-      <div style="display:flex;gap:8px;margin-bottom:14px">
-        <button class="btn ghost small tfil" data-f="todos" style="flex:1">Todos</button>
-        <button class="btn ghost small tfil on" data-f="activo" style="flex:1">Activos</button>
-        <button class="btn ghost small tfil" data-f="inactivo" style="flex:1">Inactivos</button>
-      </div>
-      <div id="trab-list"></div>
-    </section>
-
     <!-- ---- VEHÍCULOS / MAQUINARIA (solo admin) ---- -->
     <section class="view" id="v-veh">
       <!-- Vista admin: flota completa -->
@@ -681,20 +667,43 @@
       </div>
     </section>
 
-    <!-- ---- RRHH / DOCUMENTACIÓN (solo admin) ---- -->
+    <!-- ---- RRHH (Trabajadores + Documentación) (solo admin) ---- -->
     <section class="view" id="v-rrhh">
-      <div class="h-row"><h2>RRHH · Documentación <span class="cnt" id="rrhh-cnt"></span></h2></div>
-      <p class="note" style="margin:0 0 10px">Seguimiento de la documentación estándar por trabajador. Marca lo entregado, adjunta el archivo y su vencimiento.</p>
-      <div id="rrhh-alert"></div>
-      <div style="display:flex;gap:6px;margin-bottom:8px">
-        <button class="btn ghost small rrhh-fil on" data-f="activo" style="flex:1">Activos</button>
-        <button class="btn ghost small rrhh-fil" data-f="todos" style="flex:1">Todos</button>
-      </div>
+      <div class="h-row"><h2>Recursos Humanos</h2></div>
       <div style="display:flex;gap:6px;margin-bottom:12px">
-        <button class="btn ghost small rrhh-vis on" data-v="doc" style="flex:1">Por documento</button>
-        <button class="btn ghost small rrhh-vis" data-v="persona" style="flex:1">Por persona</button>
+        <button class="btn ghost small rrhh-seg on" data-seg="trab" style="flex:1">👷 Trabajadores</button>
+        <button class="btn ghost small rrhh-seg" data-seg="doc" style="flex:1">📋 Documentación</button>
       </div>
-      <div id="rrhh-list"></div>
+
+      <!-- Panel Trabajadores -->
+      <div id="rrhh-trab">
+        <div class="h-row" style="margin-top:0"><b style="font:800 15px var(--font);color:var(--ink)">Trabajadores <span class="cnt" id="trab-cnt"></span></b><div style="display:flex;gap:8px"><button id="trab-import" class="btn ghost small" style="width:auto">⬆ Importar</button><button id="trab-nuevo" class="btn small" style="width:auto">＋ Nuevo</button></div></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+          <input id="trab-search" type="search" placeholder="Buscar nombre, RUT o cargo…" style="flex:1;min-width:150px;font:500 15px var(--font);padding:10px 12px;border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--ink)">
+          <select id="trab-sort" style="font:600 13px var(--font);padding:10px 12px;border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--ink)"><option value="nombre">A–Z</option><option value="cargo">Por cargo</option><option value="reciente">Recientes</option></select>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:14px">
+          <button class="btn ghost small tfil" data-f="todos" style="flex:1">Todos</button>
+          <button class="btn ghost small tfil on" data-f="activo" style="flex:1">Activos</button>
+          <button class="btn ghost small tfil" data-f="inactivo" style="flex:1">Inactivos</button>
+        </div>
+        <div id="trab-list"></div>
+      </div>
+
+      <!-- Panel Documentación -->
+      <div id="rrhh-doc" class="hide">
+        <p class="note" style="margin:0 0 10px">Documentación estándar por trabajador <span class="cnt" id="rrhh-cnt"></span>. Marca lo entregado, adjunta el archivo y su vencimiento.</p>
+        <div id="rrhh-alert"></div>
+        <div style="display:flex;gap:6px;margin-bottom:8px">
+          <button class="btn ghost small rrhh-fil on" data-f="activo" style="flex:1">Activos</button>
+          <button class="btn ghost small rrhh-fil" data-f="todos" style="flex:1">Todos</button>
+        </div>
+        <div style="display:flex;gap:6px;margin-bottom:12px">
+          <button class="btn ghost small rrhh-vis on" data-v="doc" style="flex:1">Por documento</button>
+          <button class="btn ghost small rrhh-vis" data-v="persona" style="flex:1">Por persona</button>
+        </div>
+        <div id="rrhh-list"></div>
+      </div>
     </section>
 
     <!-- ---- ACCESOS / PERMISOS (solo Enzo) ---- -->
@@ -711,7 +720,6 @@
     <button data-v="v-horas" id="tab-horas" class="hide"><span class="em">⏱️</span>Horas</button>
     <button data-v="v-cuadrilla" id="tab-cuad"><span class="em">✅</span>Preparación</button>
     <button data-v="v-matriz" id="tab-matriz" class="hide"><span class="em">🧰</span>Matriz</button>
-    <button data-v="v-trab" id="tab-trab" class="hide"><span class="em">👷</span>Personas</button>
     <button data-v="v-veh" id="tab-veh" class="hide"><span class="em">🚚</span>Vehículos</button>
   </nav>
 </div>
@@ -995,7 +1003,7 @@
     var op=!isAdmin;
     if($('tab-horas')) $('tab-horas').classList.toggle('hide', op);  // Horas: solo admin
     $('tab-matriz').classList.toggle('hide', op);         // Matriz: solo admin
-    $('tab-trab').classList.toggle('hide', op);           // Personas: solo admin
+    // (Trabajadores ahora vive dentro de RRHH; el botón RRHH ya es admin-only)
     if($('btn-pagos')) $('btn-pagos').classList.toggle('hide', op); // Pagos: solo admin (en el header)
     if($('btn-rrhh')) $('btn-rrhh').classList.toggle('hide', op);   // RRHH: solo admin (en el header)
     if($('btn-acc-h')) $('btn-acc-h').classList.toggle('hide', (userEmail||'').trim().toLowerCase()!=='enzo.castro@innovaservi.com'); // Accesos: solo Enzo (en el header)
@@ -1085,7 +1093,6 @@
     var _main=document.querySelector('main'); if(_main) _main.classList.toggle('wide', v==='v-remu'||v==='v-horas'||v==='v-rrhh');  // vistas anchas en PC
     if(v==='v-hist') cargarRegistros(pintarRegistros);
     if(v==='v-horas') cargarHoras();
-    if(v==='v-trab') cargarTrab(pintarTrab);
     if(v==='v-cuadrilla'){ cargarTrab(actualizarDatalist); cargarPlantillas(function(){ cargarRegistros(function(){ if(C_JOB) elegirJobCuadrilla(C_JOB); else renderFaenaSelect(); }); }); }
     if(v==='v-matriz'){ cargarPlantillas(renderMatriz); }
     if(v==='v-veh'){ if(isAdmin){ cargarVeh(pintarVehList); } else { cargarChoferForm(); } }
@@ -2737,10 +2744,14 @@
       sb.from('rrhh_docs').select('*').limit(6000)
     ]).then(function(rs){
       RRHH_T=(rs[0]&&rs[0].data)||[];
+      TRAB=RRHH_T;   // misma lista alimenta el panel Trabajadores
       RRHH_D={}; ((rs[1]&&rs[1].data)||[]).forEach(function(d){ RRHH_D[d.trabajador_id+'|'+d.tipo]=d; });
       renderRrhh();
+      if(typeof actualizarDatalist==='function') actualizarDatalist();
+      if(typeof pintarTrab==='function') pintarTrab();
     });
   }
+  document.querySelectorAll('.rrhh-seg').forEach(function(b){ b.addEventListener('click',function(){ document.querySelectorAll('.rrhh-seg').forEach(function(x){ x.classList.toggle('on',x===b); }); var seg=b.dataset.seg; $('rrhh-trab').classList.toggle('hide',seg!=='trab'); $('rrhh-doc').classList.toggle('hide',seg!=='doc'); }); });
   function rrhhTrabs(){ return RRHH_T.filter(function(t){ return RRHH_FILTRO==='todos' || t.estado!=='inactivo'; }).sort(function(a,b){ return (a.nombre||'').localeCompare(b.nombre||''); }); }
   // Estado calculado de un documento: pend | ok | prox | venc
   function estadoDoc(tid,s){ var d=RRHH_D[tid+'|'+s]; if(!d||d.estado!=='entregado') return {k:'pend',txt:'Pendiente'};
