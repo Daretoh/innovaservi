@@ -2762,7 +2762,7 @@
     var horasT={};
     D.regs.forEach(function(h){ var f=h.fecha; if(!f||f<lun||f>fin) return;
       var nm=norm(h.trabajador); if(!nm) return; var mn=totalMin(h.entrada,h.salida); mn=(mn==null?0:mn);
-      if(!horasT[nm]) horasT[nm]={porDia:{},detalle:[],totalMin:0,vueltas:0};
+      if(!horasT[nm]) horasT[nm]={porDia:{},detalle:[],totalMin:0,vueltas:0,nombre:(h.trabajador||'').trim()};
       horasT[nm].porDia[f]=(horasT[nm].porDia[f]||0)+mn;
       horasT[nm].detalle.push({fecha:f,empresa:h.empresa,lugar:h.lugar,faena:(h.faena||''),entrada:h.entrada,salida:h.salida,min:mn,vueltas:(+h.vueltas||0)});
       horasT[nm].totalMin+=mn; horasT[nm].vueltas+=(+h.vueltas||0);
@@ -2774,9 +2774,11 @@
     var bonoT={}, descT={};
     D.items.forEach(function(it){ if(it.tipo==='bono') bonoT[it.trabajador_id]=(bonoT[it.trabajador_id]||0)+(+it.monto||0); if(it.tipo==='descuento') descT[it.trabajador_id]=(descT[it.trabajador_id]||0)+(+it.monto||0); });
     var filas=[], total=0, porDiaMonto={}, porDiaHoras={};
-    D.trab.forEach(function(t){ if(t.estado==='inactivo') return;
-      var nm=norm(t.nombre), H=horasT[nm];
+    var consumido={};
+    D.trab.forEach(function(t){
+      var nm=norm(t.nombre), H=horasT[nm]; consumido[nm]=1;
       var tv=(vueltasT[nm]||0)+((H&&H.vueltas)||0), tp=peajesT[nm]||0, bo=bonoT[t.id]||0, de=descT[t.id]||0;
+      if(t.estado==='inactivo' && !H && !tv && !tp && !bo && !de) return;   // inactivo sin actividad: se oculta; con horas igual se muestra
       var totMin=H?H.totalMin:0, dias=H?Object.keys(H.porDia).length:0;
       var tipo=t.tipo_pago||'hora', vh=(+t.valor_hora||0)||D.valorHora, jor=+t.jornada_horas||0, baseMin;
       if(tipo==='contrato'){ baseMin=0; if(H){ for(var f in H.porDia){ var ex=H.porDia[f]-jor*60; if(ex>0) baseMin+=ex; } } }
@@ -2786,6 +2788,18 @@
       var base=Math.round(baseMin/60*vh), vueltasMonto=tv*D.valorVuelta, totalTrab=base+vueltasMonto+tp+bo-de;
       if(totMin===0 && tv===0 && tp===0 && bo===0 && de===0) return;
       filas.push({t:t,tipo:tipo,dias:dias,totMin:totMin,base:base,baseMin:baseMin,vh:vh,jor:jor,vueltas:tv,vueltasMonto:vueltasMonto,peajes:tp,bono:bo,desc:de,total:totalTrab,H:H});
+      total+=totalTrab;
+    });
+    // Personas con horas que NO están en la ficha de Trabajadores (nombre nuevo o distinto):
+    // igual se muestran, con el valor hora general, para que sus horas no se pierdan.
+    Object.keys(horasT).forEach(function(nm){
+      if(consumido[nm]) return;
+      var H=horasT[nm], tv=(vueltasT[nm]||0)+(H.vueltas||0), tp=peajesT[nm]||0;
+      var vh=D.valorHora, totMin=H.totalMin, dias=Object.keys(H.porDia).length;
+      if(totMin===0 && tv===0 && tp===0) return;
+      for(var fd in H.porDia){ var dm=H.porDia[fd]; porDiaMonto[fd]=(porDiaMonto[fd]||0)+Math.round(dm/60*vh); porDiaHoras[fd]=(porDiaHoras[fd]||0)+dm; }
+      var base=Math.round(totMin/60*vh), vueltasMonto=tv*D.valorVuelta, totalTrab=base+vueltasMonto+tp;
+      filas.push({t:{id:null,nombre:(H.nombre||nm),cargo:'Sin ficha en Trabajadores',estado:'activo'},tipo:'hora',dias:dias,totMin:totMin,base:base,baseMin:totMin,vh:vh,jor:0,vueltas:tv,vueltasMonto:vueltasMonto,peajes:tp,bono:0,desc:0,total:totalTrab,H:H});
       total+=totalTrab;
     });
     filas.sort(function(a,b){ return (a.t.nombre||'').localeCompare(b.t.nombre||''); });
@@ -2892,7 +2906,9 @@
         '<button id="rd-add" class="btn small" style="width:auto">Agregar</button></div>';
     $('rd-body').querySelectorAll('.rd-dia.rd-link[data-reg]').forEach(function(el){ el.addEventListener('click',function(){ var reg=(REGISTROS||[]).filter(function(r){ return String(r.id)===el.dataset.reg; })[0]; if(reg){ cerrarDetalleRemu(); abrirEdicion(reg); } }); });
     $('rd-add').addEventListener('click',function(){
-      if(!sb) return; var monto=+($('rd-monto').value||0); if(!monto){ toast('Pon el monto.'); return; }
+      if(!sb) return;
+      if(!x.t.id){ toast('Primero agrega a '+(x.t.nombre||'esta persona')+' en Trabajadores (RRHH) para asignarle bonos o descuentos.'); return; }
+      var monto=+($('rd-monto').value||0); if(!monto){ toast('Pon el monto.'); return; }
       busy(true,'Guardando…');
       sb.from('remuneracion_items').insert({ trabajador_id:x.t.id, semana:REMU_DATA.lun, tipo:$('rd-tipo').value, concepto:$('rd-concepto').value.trim(), monto:monto, autor:userEmail }).then(function(r){ busy(false);
         if(r.error){ toast('No se pudo guardar: '+r.error.message); return; }
