@@ -148,6 +148,11 @@
   .hrow{position:relative;border:1px solid var(--line);border-radius:11px;padding:6px 8px;margin-bottom:6px;background:var(--alt);display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
   .hrow .h-trab{flex:1 1 140px;min-width:120px;font:700 13.5px var(--font);padding:6px 9px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);}
   .hrow .h-trab.h-bad{border-color:#dc2626;background:#fff5f5;color:#b91c1c;}
+  .hfae{margin-bottom:9px;border-radius:9px;}
+  .hfae-h{font:800 11px var(--font);text-transform:uppercase;letter-spacing:.03em;padding:5px 10px;border-radius:6px;margin-bottom:5px;}
+  .hfae-none{background:#eef0f4;color:var(--muted);}
+  .hz-add-day{margin-top:6px;width:auto;background:#fff;border:1px dashed var(--orange);color:var(--orange-2);font:700 12.5px var(--font);padding:7px 12px;border-radius:9px;cursor:pointer;}
+  .hz-add-day:hover{background:var(--alt);}
   .hrow input[type=time]{flex:0 1 96px;min-width:80px;font:600 13.5px var(--font);padding:6px 6px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);}
   .hrow-times .arw{color:var(--muted);font-weight:800;flex:0 0 auto;}
   .hrow-total{flex:0 0 auto;font-size:.72rem;color:var(--orange-2);font-weight:800;white-space:nowrap;}
@@ -2229,6 +2234,10 @@
   function titleCase(s){ return (s||'').toLowerCase().replace(/\s+/g,' ').trim().replace(/(^|[\s'’\-])(\p{L})/gu, function(m,p,c){ return p+c.toUpperCase(); }); }
   // ¿el nombre corresponde a un trabajador con ficha? (case/acentos-insensible)
   function esTrabajador(nombre){ if(!(TRAB||[]).length) return true; var n=normName(nombre); if(!n) return false; return TRAB.some(function(t){ return normName(t.nombre)===n; }); }
+  // Color estable por empresa (parte de la faena antes de " — ").
+  function empresaDeFaena(fa){ return ((fa||'').split(' — ')[0]||'').trim()||fa||''; }
+  function hashHue(s){ var h=0; s=(s||'').toLowerCase(); for(var i=0;i<s.length;i++){ h=(h*31+s.charCodeAt(i))%360; } return h; }
+  function colorEmpresa(name){ var hue=hashHue(name); return { bg:'hsl('+hue+',72%,94%)', border:'hsl('+hue+',58%,52%)', text:'hsl('+hue+',52%,30%)' }; }
   function renderHz(){
     var c=$('hz-list'); if(!c) return;
     HZ.forEach(function(h){ if(!h.fecha) h.fecha=todayISO(); });
@@ -2239,7 +2248,7 @@
       var idxs=byDate[f], tot=0, hay=false, nombres={};
       idxs.forEach(function(i){ var m=totalMin(HZ[i].entrada,HZ[i].salida); if(m!=null){ tot+=m; hay=true; } if((HZ[i].trabajador||'').trim()) nombres[nrm(HZ[i].trabajador)]=1; });
       var nT=Object.keys(nombres).length, totTxt=hay?(' · '+Math.floor(tot/60)+'h '+(tot%60)+'m'):'';
-      var rows=idxs.map(function(i){ var h=HZ[i];
+      function renderRow(i){ var h=HZ[i];
         return '<div class="hrow" data-i="'+i+'">'+
           '<input class="h-trab" list="trab-datalist" placeholder="Trabajador" value="'+enc(h.trabajador||'')+'">'+
           '<select class="h-fae" title="Faena (según Planificación)">'+opcionesFaena(h.fecha,h.faena||'')+'</select>'+
@@ -2248,13 +2257,25 @@
           '<span class="hrow-total">'+totalMini(h.entrada,h.salida)+'</span>'+
           '<label class="hrow-cal" title="Fecha">📅<input type="date" class="h-fecha" value="'+(h.fecha||todayISO())+'"></label>'+
           '<button class="hrow-rm" data-i="'+i+'" type="button">✕</button></div>';
+      }
+      // Separar las filas por faena/empresa, con subtítulo y color.
+      var byFae={}, forder=[]; idxs.forEach(function(i){ var fa=(HZ[i].faena||''); if(!(fa in byFae)){ byFae[fa]=[]; forder.push(fa); } byFae[fa].push(i); });
+      var anyFae=forder.some(function(x){ return !!x; });
+      forder.sort(function(a,b){ if(!a) return 1; if(!b) return -1; return a.localeCompare(b); });
+      var rows=forder.map(function(fa){
+        var rws=byFae[fa].map(renderRow).join('');
+        if(!fa){ return '<div class="hfae">'+(anyFae?'<div class="hfae-h hfae-none">Sin faena</div>':'')+rws+'</div>'; }
+        var col=colorEmpresa(empresaDeFaena(fa));
+        return '<div class="hfae" style="border-left:4px solid '+col.border+'"><div class="hfae-h" style="background:'+col.bg+';color:'+col.text+'">🏢 '+esc(fa)+'</div>'+rws+'</div>';
       }).join('');
+      var addBtn='<button class="hz-add-day" data-f="'+f+'" type="button">＋ Agregar hora ('+fechaCorta(f)+')</button>';
       var colapsado=(HZ_COL[f]!==false);   // colapsado por defecto; se abre al tocar
-      return '<div class="hgroup'+(colapsado?' collapsed':'')+'"><div class="hgroup-h" data-f="'+f+'"><span class="hg-chev">▾</span>📅 '+fechaCorta(f)+' <span style="color:var(--muted);font-weight:600">('+nT+(nT===1?' trabajador':' trabajadores')+totTxt+')</span></div><div class="hgroup-body">'+rows+'</div></div>';
+      return '<div class="hgroup'+(colapsado?' collapsed':'')+'"><div class="hgroup-h" data-f="'+f+'"><span class="hg-chev">▾</span>📅 '+fechaCorta(f)+' <span style="color:var(--muted);font-weight:600">('+nT+(nT===1?' trabajador':' trabajadores')+totTxt+')</span></div><div class="hgroup-body">'+rows+addBtn+'</div></div>';
     }).join('')||'<div class="empty"><div class="big">⏱️</div>Sin horas '+(HZ_FILTRO==='hoy'?'de hoy':(HZ_FILTRO==='semana'?'de la semana':''))+'.<br><span style="font-size:.82rem">Toca “＋ Agregar hora”.</span></div>';
     $('hz-cnt').textContent=HZ.length+(HZ.length===1?' línea':' líneas');
-    c.querySelectorAll('.hgroup-h').forEach(function(h){ h.addEventListener('click',function(){ HZ_COL[h.dataset.f]=!h.parentNode.classList.toggle('collapsed'); }); });
+    c.querySelectorAll('.hgroup-h').forEach(function(h){ h.addEventListener('click',function(){ HZ_COL[h.dataset.f]=h.parentNode.classList.toggle('collapsed'); }); });
     c.querySelectorAll('.hrow-rm').forEach(function(b){ b.addEventListener('click',function(){ removeHz(+b.dataset.i); }); });
+    c.querySelectorAll('.hz-add-day').forEach(function(b){ b.addEventListener('click',function(){ addHzDay(b.dataset.f); }); });
     c.querySelectorAll('.hrow').forEach(function(row){ var i=+row.dataset.i; var fe=row.querySelector('.h-fecha');
       var upd=function(){ row.querySelector('.hrow-total').textContent=totalMini(row.querySelector('.h-in').value,row.querySelector('.h-out').value); };
       function marcar(){ if(HZ[i]) HZ[i]._dirty=true; autoGuardarHz(); }
@@ -2263,13 +2284,15 @@
       valTrab();   // estado inicial (marca en rojo los que no tengan ficha)
       tr.addEventListener('input',function(){ valTrab(); marcar(); });
       tr.addEventListener('change',function(){ var v=(tr.value||'').trim(); if(v && !esTrabajador(v)){ toast('“'+v+'” no tiene ficha. Créalo en Trabajadores (RRHH) para poder cargarle horas.'); } });
-      var fa=row.querySelector('.h-fae'); if(fa) fa.addEventListener('change',marcar);
+      var fa=row.querySelector('.h-fae'); if(fa) fa.addEventListener('change',function(){ syncHz(); if(HZ[i]) HZ[i]._dirty=true; HZ_COL[HZ[i]?HZ[i].fecha:'']=false; renderHz(); autoGuardarHz(); });
       var vu=row.querySelector('.h-vu'); if(vu) vu.addEventListener('input',marcar);
       row.querySelector('.h-in').addEventListener('change',function(){ upd(); marcar(); });
       row.querySelector('.h-out').addEventListener('change',function(){ upd(); marcar(); });
-      fe.addEventListener('change',function(){ syncHz(); if(HZ[i]) HZ[i]._dirty=true; renderHz(); autoGuardarHz(); });
+      fe.addEventListener('change',function(){ syncHz(); if(HZ[i]) HZ[i]._dirty=true; if(fe.value) HZ_COL[fe.value]=false; renderHz(); autoGuardarHz(); });
     });
   }
+  // Agrega una línea de hora en la fecha del grupo (no en hoy) y deja el grupo abierto.
+  function addHzDay(f){ syncHz(); f=f||todayISO(); HZ.unshift({fecha:f,trabajador:'',entrada:'',salida:'',faena:''}); HZ_COL[f]=false; renderHz(); }
   // Autoguardado silencioso de Horas (sin recargar): guarda solo las líneas cambiadas.
   var _hzTimer=null;
   function autoGuardarHz(){ clearTimeout(_hzTimer); _hzTimer=setTimeout(guardarHzAuto, 900); }
