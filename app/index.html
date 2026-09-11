@@ -2926,26 +2926,33 @@
   // ====== Clientes (solo admin) ======
   var CLI_ID=null, CLI_DOCS=[], CLI_Q='';
   function cargarClientes(cb){ if(!sb){ if(cb)cb(); return; } sb.from('clientes').select('*').order('nombre',{ascending:true}).limit(500).then(function(r){ CLIENTES=(r&&r.data)||[]; if(cb)cb(); }, function(){ if(cb)cb(); }); }
-  // ¿El cliente tiene faenas en la planificación (últimos 30 días en adelante)? → "en agenda".
-  function clienteEnAgenda(nm){ var k=_cliKey(nm); if(!k) return false; var desde=isoMas(-30);
-    return (typeof EVENTOS!=='undefined'?EVENTOS:[]).some(function(e){ var u=_cliKey(e.ubicacion); if(!u) return false; return (u===k || u.indexOf(k)>=0 || k.indexOf(u)>=0) && evFin(e)>=desde; }); }
+  // La lista de clientes se ARMA desde Planificación (los nombres reales de los lugares) + la tabla
+  // de fichas (datos extra: RUT, razón, docs). Si cambias un nombre en Planificación, aquí cambia solo.
+  function clientesMerged(){
+    var by={};
+    (typeof EVENTOS!=='undefined'?EVENTOS:[]).forEach(function(e){ var nm=(e.ubicacion||'').trim(); if(!nm) return; var k=_cliKey(nm);
+      if(!by[k]) by[k]={ nombre:nm, ficha:null, faenaMax:'', faenaCount:0 };
+      by[k].faenaCount++; var f=evFin(e); if(f>by[k].faenaMax) by[k].faenaMax=f;
+    });
+    (CLIENTES||[]).forEach(function(x){ var k=_cliKey(x.nombre); if(!by[k]) by[k]={ nombre:x.nombre, faenaMax:'', faenaCount:0 }; by[k].ficha=x; });
+    return Object.keys(by).map(function(k){ var o=by[k]; if(o.ficha&&o.ficha.nombre) o.nombre=o.ficha.nombre; return o; });
+  }
   function pintarCli(){
     var c=$('cli-list'); if(!c) return; var q=CLI_Q.toLowerCase();
-    var arr=CLIENTES.filter(function(x){ if(!q) return true; return ((x.nombre||'')+' '+(x.razon||'')+' '+(x.rut||'')+' '+((x.sitios||[]).join(' '))).toLowerCase().indexOf(q)>=0; });
-    arr.forEach(function(x){ x._agenda=clienteEnAgenda(x.nombre); });
-    // Orden: en agenda primero, luego activos, luego alfabético.
-    arr.sort(function(a,b){ if(a._agenda!==b._agenda) return a._agenda?-1:1;
-      var ai=(a.estado==='inactivo')?1:0, bi=(b.estado==='inactivo')?1:0; if(ai!==bi) return ai-bi;
+    var lista=clientesMerged().filter(function(o){ var f=o.ficha||{}; if(!q) return true;
+      return ((o.nombre||'')+' '+(f.razon||'')+' '+(f.rut||'')+' '+((f.sitios||[]).join(' '))).toLowerCase().indexOf(q)>=0; });
+    // Orden: con faena más reciente/próxima primero, luego los sin faena por nombre.
+    lista.sort(function(a,b){ if((a.faenaMax||'')!==(b.faenaMax||'')) return (a.faenaMax||'')<(b.faenaMax||'')?1:-1;
       return (a.nombre||'').localeCompare(b.nombre||''); });
-    $('cli-cnt').textContent=arr.length+(arr.length===1?' cliente':' clientes');
-    if(!CLIENTES.length){ c.innerHTML='<div class="empty"><div class="big">🏢</div>Aún no hay clientes.<br><span style="font-size:.82rem">Toca “＋ Nuevo”.</span></div>'; return; }
-    if(!arr.length){ c.innerHTML='<div class="empty">Sin resultados.</div>'; return; }
-    c.innerHTML=arr.map(function(x,i){ var off=(x.estado==='inactivo'); var nd=(x.docs||[]).length, ns=(x.sitios||[]).length;
-      return '<div class="trab'+(off?' off':'')+'" data-i="'+i+'"><div class="av">'+esc((x.nombre||'·').charAt(0).toUpperCase())+'</div>'+
-        '<div class="tt"><div class="nm">'+esc(x.nombre||'—')+(x._agenda?' <span style="font:800 9px var(--font);background:rgba(255,107,0,.14);color:var(--orange-2);padding:1px 6px;border-radius:999px;vertical-align:middle">🗓️ en agenda</span>':'')+'</div>'+(x.razon?'<div class="cg">'+esc(x.razon)+'</div>':'')+
-        '<div class="meta">'+(x.rut?esc(x.rut)+' · ':'')+ns+' sitio'+(ns===1?'':'s')+' · '+nd+' doc'+(nd===1?'':'s')+'</div></div>'+
-        '<span class="badge">'+(off?'Inactivo':'Activo')+'</span></div>'; }).join('');
-    c.querySelectorAll('[data-i]').forEach(function(el){ el.addEventListener('click',function(){ abrirCliFicha(arr[+el.dataset.i]); }); });
+    $('cli-cnt').textContent=lista.length+(lista.length===1?' cliente':' clientes');
+    if(!lista.length){ c.innerHTML='<div class="empty"><div class="big">🏢</div>Aún no hay clientes.<br><span style="font-size:.82rem">Aparecen desde Planificación, o toca “＋ Nuevo”.</span></div>'; return; }
+    c.innerHTML=lista.map(function(o,i){ var f=o.ficha||{}; var off=(f.estado==='inactivo'); var nd=(f.docs||[]).length;
+      var faenaTxt=o.faenaCount?('📍 '+o.faenaCount+' faena'+(o.faenaCount>1?'s':'')+' · '+fechaCorta(o.faenaMax)):'';
+      return '<div class="trab'+(off?' off':'')+'" data-i="'+i+'"><div class="av">'+esc((o.nombre||'·').charAt(0).toUpperCase())+'</div>'+
+        '<div class="tt"><div class="nm">'+esc(o.nombre||'—')+'</div>'+(f.razon?'<div class="cg">'+esc(f.razon)+'</div>':'')+
+        '<div class="meta">'+(f.rut?esc(f.rut)+' · ':'')+(faenaTxt||(f.id?(nd+' doc'+(nd===1?'':'s')):'sin ficha'))+'</div></div>'+
+        '<span class="badge">'+(f.id?(off?'Inactivo':'Activo'):'Sin ficha')+'</span></div>'; }).join('');
+    c.querySelectorAll('[data-i]').forEach(function(el){ el.addEventListener('click',function(){ var o=lista[+el.dataset.i]; abrirCliFicha(o.ficha||{nombre:o.nombre}); }); });
   }
   function abrirCliFicha(x){
     CLI_ID=x?x.id:null;
@@ -2953,8 +2960,8 @@
     $('cf2-dir').value=x?(x.direccion||''):''; $('cf2-solic').value=x?(x.solicitante||''):''; $('cf2-contacto').value=x?(x.contacto||''):'';
     $('cf2-sitios').value=x?((x.sitios||[]).join('\n')):''; $('cf2-estado').value=(x&&x.estado)||'activo'; $('cf2-notas').value=x?(x.notas||''):'';
     CLI_DOCS=x?((x.docs||[]).slice()):[]; renderCliDocs(); cliScanner.reset();
-    $('cf2-title').textContent=x?('Cliente · '+(x.nombre||'')):'Nuevo cliente';
-    $('cf2-del').classList.toggle('hide',!x);
+    $('cf2-title').textContent=(x&&x.id)?('Cliente · '+(x.nombre||'')):'Nuevo cliente';
+    $('cf2-del').classList.toggle('hide',!(x&&x.id));
     renderCliReportes(x);
     $('cli-ficha').classList.remove('hide'); $('cli-ficha').scrollTop=0;
   }
