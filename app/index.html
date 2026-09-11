@@ -3076,22 +3076,12 @@
         '<td>'+x.dias+'</td><td>'+hm(x.totMin)+'</td>'+
         '<td>'+m(x.base)+'</td><td>'+m(x.vueltasMonto)+'</td><td>'+m(x.peajes)+'</td>'+
         '<td class="rt-ok">'+m(x.bono)+'</td><td class="rt-bad">'+m(x.desc,true)+'</td>'+
-        '<td class="rt-real'+(x.aj?' rt-aj':'')+'">'+fmtMoney(x.real)+'</td>'+
-        '<td class="rt-cont'+(x.t.id?' rt-editable':'')+'" title="'+(x.t.id?'Clic para ajustar el monto contable':'Sin ficha: no editable')+'">'+
-          '<b'+(x.aj?' style="color:var(--orange-2)"':'')+'>'+fmtMoney(x.contable)+'</b>'+(x.t.id?' <span class="rt-pen">✎</span>':'')+
-          (x.aj&&x.aj.obs?('<div class="rt-obs">'+esc(x.aj.obs)+'</div>'):'')+
-        '</td></tr>';
+        '<td class="rt-tot">'+(x.aj?'<span title="ajustado" style="color:var(--orange-2)">'+fmtMoney(x.contable)+'</span><div class="rt-obs" style="max-width:none">real '+fmtMoney(x.real)+'</div>':fmtMoney(x.contable))+'</td></tr>';
     }).join('');
     cont.innerHTML='<div class="remu-scroll"><table class="remu-tbl"><thead><tr>'+
-      '<th>Trabajador</th><th>Días</th><th>Horas</th><th>Base</th><th>Vueltas</th><th>Peajes</th><th>Bono</th><th>Desc.</th><th>Real</th><th>Contable</th></tr></thead>'+
+      '<th>Trabajador</th><th>Días</th><th>Horas</th><th>Base</th><th>Vueltas</th><th>Peajes</th><th>Bono</th><th>Desc.</th><th>Total</th></tr></thead>'+
       '<tbody>'+body+'</tbody></table></div>';
-    cont.querySelectorAll('tbody tr[data-i]').forEach(function(el){
-      el.addEventListener('click',function(ev){
-        var i=+el.dataset.i, fila=REMU_DATA.filas[i];
-        if(ev.target.closest('.rt-cont') && fila.t.id){ ev.stopPropagation(); abrirAjuste(fila); return; }
-        abrirDetalleRemu(fila);
-      });
-    });
+    cont.querySelectorAll('tbody tr[data-i]').forEach(function(el){ el.addEventListener('click',function(){ abrirDetalleRemu(REMU_DATA.filas[+el.dataset.i]); }); });
   }
   $('remu-prev').addEventListener('click',function(){ REMU_LUNES=sumarDias(REMU_LUNES||lunesDe(todayISO()),-7); cargarRemu(); });
   $('remu-next').addEventListener('click',function(){ REMU_LUNES=sumarDias(REMU_LUNES||lunesDe(todayISO()),7); cargarRemu(); });
@@ -3183,11 +3173,22 @@
         '<div class="fld"><label>Observación (por qué es este monto) *</label><input id="rd-concepto" type="text" placeholder="Ej: Anticipo, adelanto, bono producción, colación…"></div>'+
         '<div style="display:flex;gap:8px"><button id="rd-add" class="btn small" style="width:auto">Agregar</button><button id="rd-cancel" class="btn ghost small hide" style="width:auto">Cancelar edición</button></div></div>';
     }
+    // Tarjeta Real vs Contable (ajuste del monto a pagar).
+    var ajusteCard='';
+    if(x.t.id){
+      ajusteCard='<div class="card"><label style="display:block;font:700 13px var(--font);color:var(--ink);margin-bottom:6px">🧾 Monto a pagar</label>'+
+        '<div class="rd-lin"><span>Real (por horas)</span><b'+(x.aj?' style="text-decoration:line-through;opacity:.65"':'')+'>'+fmtMoney(x.real)+'</b></div>'+
+        '<div class="rd-lin rd-tot"><span>Contable (lo que se paga)</span><b style="color:var(--orange-2)">'+fmtMoney(x.contable)+'</b></div>'+
+        (x.aj&&x.aj.obs?('<div class="note" style="margin:3px 0 0">📝 '+esc(x.aj.obs)+'</div>'):'')+
+        '<button id="rd-ajuste" class="btn ghost small" style="width:auto;margin-top:8px">✎ Ajustar monto contable</button></div>';
+    }
     $('rd-body').innerHTML=
       unir+
       '<div class="card"><label style="display:block;font:700 13px var(--font);color:var(--ink);margin-bottom:6px">📅 Días trabajados</label>'+diasHtml+'</div>'+
       '<div class="card"><label style="display:block;font:700 13px var(--font);color:var(--ink);margin-bottom:6px">💰 Desglose</label>'+desg+'</div>'+
+      ajusteCard+
       montosCard;
+    if($('rd-ajuste')) $('rd-ajuste').addEventListener('click',function(){ abrirAjuste(x); });
     $('rd-body').querySelectorAll('.rd-dia.rd-link[data-reg]').forEach(function(el){ el.addEventListener('click',function(){ var reg=(REGISTROS||[]).filter(function(r){ return String(r.id)===el.dataset.reg; })[0]; if(reg){ cerrarDetalleRemu(); abrirEdicion(reg); } }); });
     if(!x.t.id){
       var oldName=(x.t.nombre||'').trim();
@@ -3245,14 +3246,14 @@
     busy(true,'Guardando ajuste…');
     sb.from('remu_ajuste').upsert({ trabajador_id:AJ_CTX.t.id, semana:REMU_DATA.lun, monto:monto, obs:obs, autor:userEmail },{onConflict:'trabajador_id,semana'}).then(function(r){ busy(false);
       if(r.error){ toast(/relation|does not exist|schema cache/.test(r.error.message||'')?'Falta correr remu-ajuste.sql en Supabase.':('No se pudo guardar: '+r.error.message)); return; }
-      toast('✓ Ajuste guardado'); $('remu-aj').classList.add('hide'); cargarRemu();
+      toast('✓ Ajuste guardado'); $('remu-aj').classList.add('hide'); cerrarDetalleRemu(); cargarRemu();
     }, function(){ busy(false); toast('No se pudo guardar el ajuste.'); });
   });
   if($('raj-clear')) $('raj-clear').addEventListener('click',function(){
     if(!sb||!AJ_CTX) return; busy(true,'Quitando ajuste…');
     sb.from('remu_ajuste').delete().eq('trabajador_id',AJ_CTX.t.id).eq('semana',REMU_DATA.lun).then(function(r){ busy(false);
       if(r.error){ toast('No se pudo quitar: '+r.error.message); return; }
-      toast('✓ Se usa el monto real'); $('remu-aj').classList.add('hide'); cargarRemu();
+      toast('✓ Se usa el monto real'); $('remu-aj').classList.add('hide'); cerrarDetalleRemu(); cargarRemu();
     }, function(){ busy(false); toast('No se pudo quitar el ajuste.'); });
   });
 
@@ -3276,10 +3277,10 @@
     var chip='display:inline-block;background:#eef2ff;border:1px solid var(--navy);color:var(--navy);border-radius:20px;padding:3px 10px;font:700 11.5px var(--font);margin:0 5px 5px 0';
     var faChips=faenas.length?('<div style="margin-top:2px">'+faenas.map(function(f){ return '<span style="'+chip+'">📍 '+esc(f)+'</span>'; }).join('')+'</div>')
       :'<p class="note" style="margin:0">Sin faenas en Planificación para este día.</p>';
-    var trabHtml=rows.length?rows.map(function(r){
+    var trabHtml=rows.length?rows.map(function(r,ri){
       var horarios=r.ents.map(function(d){ return esc(d.entrada||'--:--')+'→'+esc(d.salida||'--:--'); }).join(', ');
       var faTxt=r.faenas.length?('<div class="note" style="margin:2px 0 0;font-size:.72rem">📍 '+esc(r.faenas.join(' · '))+'</div>'):'';
-      return '<div class="rd-dia"><div style="flex:1"><b>'+(r.x.t.id?'':'⚠️ ')+esc(titleCase(r.x.t.nombre)||'')+'</b>'+(r.x.t.id?'':'<span style="color:#b45309;font-weight:700;font-size:.7rem"> · sin ficha</span>')+'<div class="note" style="margin:0;font-size:.74rem">'+horarios+(r.vu?(' · 🔄 '+r.vu+' vueltas'):'')+'</div>'+faTxt+'</div><div style="text-align:right;flex-shrink:0"><div style="font-size:.82rem">'+hm(r.dayMin)+'</div><b style="color:var(--orange-2);font-size:.82rem">'+fmtMoney(r.pago)+'</b></div></div>';
+      return '<div class="rd-dia'+(r.x.t.id?' rd-link':'')+'" data-wi="'+ri+'"><div style="flex:1"><b>'+(r.x.t.id?'':'⚠️ ')+esc(titleCase(r.x.t.nombre)||'')+'</b>'+(r.x.t.id?'<span style="color:var(--orange-2);font-weight:700;font-size:.7rem"> · ver ›</span>':'<span style="color:#b45309;font-weight:700;font-size:.7rem"> · sin ficha</span>')+'<div class="note" style="margin:0;font-size:.74rem">'+horarios+(r.vu?(' · 🔄 '+r.vu+' vueltas'):'')+'</div>'+faTxt+'</div><div style="text-align:right;flex-shrink:0"><div style="font-size:.82rem">'+hm(r.dayMin)+'</div><b style="color:var(--orange-2);font-size:.82rem">'+fmtMoney(r.pago)+'</b></div></div>';
     }).join(''):'<p class="note" style="margin:0">Nadie registró horas este día.</p>';
     var lbl='display:block;font:700 13px var(--font);color:var(--ink);margin-bottom:6px';
     $('rd-body').innerHTML=
@@ -3288,6 +3289,7 @@
       '<div class="card"><div class="rd-lin rd-tot"><span>Total horas del día</span><b>'+hm(totMin)+'</b></div>'+
         '<div class="rd-lin rd-tot"><span>Total pago (horas)</span><b>'+fmtMoney(totMonto)+'</b></div>'+
         (totVu?('<div class="rd-lin"><span>Vueltas del día</span><b>'+totVu+'</b></div>'):'')+'</div>';
+    $('rd-body').querySelectorAll('.rd-dia.rd-link[data-wi]').forEach(function(el){ el.addEventListener('click',function(){ var r=rows[+el.dataset.wi]; if(r&&r.x) abrirDetalleRemu(r.x); }); });
     $('remu-detalle').classList.remove('hide'); $('remu-detalle').scrollTop=0;
   }
 
