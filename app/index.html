@@ -652,7 +652,7 @@
       <div class="h-row"><h2>Remuneraciones <span class="cnt" id="remu-cnt"></span></h2><button id="remu-cfg-btn" class="btn ghost small" style="width:auto">⚙️ Config</button></div>
       <div class="card" style="display:flex;align-items:center;gap:8px;padding:9px 10px;margin-bottom:12px">
         <button id="remu-prev" class="btn ghost small" style="width:auto">‹</button>
-        <div style="flex:1;text-align:center"><div class="note" style="margin:0;font-size:.72rem">Semana</div><b id="remu-rango" style="font-size:.95rem"></b></div>
+        <div style="flex:1;text-align:center"><div id="remu-semlbl" style="margin:0;font:800 13px var(--font);color:var(--navy)">Semana</div><b id="remu-rango" style="font-size:.88rem;font-weight:600;color:var(--body)"></b></div>
         <button id="remu-next" class="btn ghost small" style="width:auto">›</button>
       </div>
       <div id="remu-total" style="background:rgba(255,107,0,.1);border-radius:12px;padding:12px 14px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center"><span style="font:600 13px var(--font);color:var(--orange-2)">Total a pagar</span><b id="remu-total-val" style="font:800 20px var(--font);color:var(--orange-2)">$0</b></div>
@@ -2495,7 +2495,8 @@
   function cargarRemu(){
     if(!REMU_LUNES) REMU_LUNES=lunesDe(todayISO());
     var lun=REMU_LUNES, fin=sumarDias(lun,6);
-    $('remu-rango').textContent='Semana '+numSemana(lun)+' · '+fechaCorta(lun)+' – '+fechaCorta(fin);
+    $('remu-semlbl').textContent='Semana '+numSemana(lun);
+    $('remu-rango').textContent=fechaCorta(lun)+' – '+fechaCorta(fin);
     if(!sb) return;
     Promise.all([
       sb.from('trabajadores').select('*').order('nombre',{ascending:true}).limit(400),
