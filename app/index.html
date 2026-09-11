@@ -2234,10 +2234,13 @@
   function titleCase(s){ return (s||'').toLowerCase().replace(/\s+/g,' ').trim().replace(/(^|[\s'’\-])(\p{L})/gu, function(m,p,c){ return p+c.toUpperCase(); }); }
   // ¿el nombre corresponde a un trabajador con ficha? (case/acentos-insensible)
   function esTrabajador(nombre){ if(!(TRAB||[]).length) return true; var n=normName(nombre); if(!n) return false; return TRAB.some(function(t){ return normName(t.nombre)===n; }); }
-  // Color estable por empresa (parte de la faena antes de " — ").
+  // Empresa = parte de la faena antes de " — ". El COLOR va por empresa (cliente),
+  // no por faena: se usa la 1a palabra de la empresa, así "CERMAQ Chinquihue" y
+  // "CERMAQ Quemchi" comparten color (misma empresa CERMAQ).
   function empresaDeFaena(fa){ return ((fa||'').split(' — ')[0]||'').trim()||fa||''; }
+  function claveEmpresa(fa){ return normName(empresaDeFaena(fa)).split(' ')[0]||''; }
   function hashHue(s){ var h=0; s=(s||'').toLowerCase(); for(var i=0;i<s.length;i++){ h=(h*31+s.charCodeAt(i))%360; } return h; }
-  function colorEmpresa(name){ var hue=hashHue(name); return { bg:'hsl('+hue+',72%,94%)', border:'hsl('+hue+',58%,52%)', text:'hsl('+hue+',52%,30%)' }; }
+  function colorEmpresa(clave){ var hue=hashHue(clave); return { bg:'hsl('+hue+',72%,94%)', border:'hsl('+hue+',58%,52%)', text:'hsl('+hue+',52%,30%)' }; }
   function renderHz(){
     var c=$('hz-list'); if(!c) return;
     HZ.forEach(function(h){ if(!h.fecha) h.fecha=todayISO(); });
@@ -2265,7 +2268,7 @@
       var rows=forder.map(function(fa){
         var rws=byFae[fa].map(renderRow).join('');
         if(!fa){ return '<div class="hfae">'+(anyFae?'<div class="hfae-h hfae-none">Sin faena</div>':'')+rws+'</div>'; }
-        var col=colorEmpresa(empresaDeFaena(fa));
+        var col=colorEmpresa(claveEmpresa(fa));
         return '<div class="hfae" style="border-left:4px solid '+col.border+'"><div class="hfae-h" style="background:'+col.bg+';color:'+col.text+'">🏢 '+esc(fa)+'</div>'+rws+'</div>';
       }).join('');
       var addBtn='<button class="hz-add-day" data-f="'+f+'" type="button">＋ Agregar hora ('+fechaCorta(f)+')</button>';
