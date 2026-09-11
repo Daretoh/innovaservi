@@ -1,8 +1,12 @@
 // ============================================================
-//  InnovaServi — Puente de subida a Cloudflare R2
-//  Cloudflare Worker. Recibe el archivo, valida que la sesión de Supabase
-//  (InnovaServi) sea válida, y lo guarda en el bucket R2. Devuelve la "key".
-//  Los archivos se LEEN por la URL pública del bucket (pub-....r2.dev).
+//  InnovaServi — Puente R2 (Cloudflare Worker)
+//  - POST /            : sube un archivo a R2 (valida sesión de Supabase).
+//  - GET  /<key>       : sirve un objeto de R2 CON header CORS. Sirve para
+//                        que la app pueda descargar las fotos e incrustarlas
+//                        en el PDF del informe (html2canvas no captura
+//                        imágenes de otro dominio sin CORS, y r2.dev no lo da).
+//  Los archivos también se pueden leer por la URL pública del bucket
+//  (pub-....r2.dev), pero esa NO trae CORS; para el PDF usa esta ruta GET.
 //
 //  Configurar en Cloudflare (Settings del Worker):
 //    - Binding R2:  Variable name = BUCKET   ->  tu bucket de InnovaServi
@@ -13,7 +17,7 @@
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, content-type, x-filename, x-folder",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
 };
 
 function json(obj, status) {
@@ -23,6 +27,24 @@ function json(obj, status) {
 export default {
   async fetch(request, env) {
     if (request.method === "OPTIONS") return new Response("ok", { headers: CORS });
+
+    // ---- GET: servir un objeto de R2 con CORS (para incrustar en el PDF) ----
+    if (request.method === "GET") {
+      const key = decodeURIComponent(new URL(request.url).pathname.replace(/^\/+/, ""));
+      if (!key) return json({ ok: true, worker: "innovaservi-r2" }, 200);
+      try {
+        const obj = await env.BUCKET.get(key);
+        if (!obj) return json({ error: "No existe" }, 404);
+        const h = new Headers(CORS);
+        h.set("content-type", (obj.httpMetadata && obj.httpMetadata.contentType) || "application/octet-stream");
+        h.set("cache-control", "public, max-age=31536000, immutable");
+        if (obj.httpEtag) h.set("etag", obj.httpEtag);
+        return new Response(obj.body, { headers: h });
+      } catch (e) {
+        return json({ error: "No se pudo leer: " + (e && e.message || e) }, 500);
+      }
+    }
+
     if (request.method !== "POST") return json({ error: "Método no permitido" }, 405);
 
     // 1) validar sesión de Supabase (solo usuarios logueados pueden subir)

@@ -2003,11 +2003,17 @@
   function descargarBlob(blob,nombre){ var a=document.createElement('a'), u=URL.createObjectURL(blob); a.href=u; a.download=nombre; document.body.appendChild(a); a.click(); setTimeout(function(){ try{ document.body.removeChild(a); }catch(_){}; URL.revokeObjectURL(u); },1500); }
   // Convierte las imágenes remotas del contenedor a data-URL ANTES de capturar con html2canvas,
   // así no quedan en blanco por CORS. Best-effort: si una no se puede, la deja como está.
+  // Las fotos en R2 (pub-...r2.dev) NO traen CORS, así que se descargan por el
+  // Worker (ruta GET), que sí lo trae. El resto (Supabase) se baja directo.
+  function urlCors(u){
+    if(u && u.indexOf(R2_PUBLIC)===0){ return R2_UPLOAD.replace(/\/+$/,'')+'/'+u.slice(R2_PUBLIC.length).replace(/^\/+/,''); }
+    return u;
+  }
   function inlineImagenes(cont){
     var imgs=Array.prototype.slice.call(cont.querySelectorAll('img'));
     return Promise.all(imgs.map(function(img){
       var src=img.getAttribute('src')||''; if(!src || src.indexOf('data:')===0) return Promise.resolve();
-      return fetch(src,{mode:'cors'}).then(function(r){ if(!r.ok) throw 0; return r.blob(); })
+      return fetch(urlCors(src),{mode:'cors'}).then(function(r){ if(!r.ok) throw 0; return r.blob(); })
         .then(function(b){ return new Promise(function(res){ var fr=new FileReader();
           fr.onloadend=function(){ if(fr.result && String(fr.result).indexOf('data:image')===0){ img.onload=function(){res();}; img.onerror=function(){res();}; img.src=fr.result; setTimeout(res,2000); } else res(); };
           fr.onerror=function(){res();}; fr.readAsDataURL(b); }); })
