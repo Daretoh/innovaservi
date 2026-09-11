@@ -2000,10 +2000,25 @@
   function cargarH2C(){ if(window.html2canvas) return Promise.resolve(); return new Promise(function(res,rej){ var s=document.createElement('script'); s.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js'; s.onload=function(){res();}; s.onerror=function(){rej();}; document.head.appendChild(s); }); }
   function nombrePdf(){ return 'Informe_'+slug($('r-empresa').value.trim()||'informe')+'_'+($('r-fecha').value||todayISO())+'.pdf'; }
   function descargarBlob(blob,nombre){ var a=document.createElement('a'), u=URL.createObjectURL(blob); a.href=u; a.download=nombre; document.body.appendChild(a); a.click(); setTimeout(function(){ try{ document.body.removeChild(a); }catch(_){}; URL.revokeObjectURL(u); },1500); }
+  // Convierte las imágenes remotas del contenedor a data-URL ANTES de capturar con html2canvas,
+  // así no quedan en blanco por CORS. Best-effort: si una no se puede, la deja como está.
+  function inlineImagenes(cont){
+    var imgs=Array.prototype.slice.call(cont.querySelectorAll('img'));
+    return Promise.all(imgs.map(function(img){
+      var src=img.getAttribute('src')||''; if(!src || src.indexOf('data:')===0) return Promise.resolve();
+      return fetch(src,{mode:'cors'}).then(function(r){ if(!r.ok) throw 0; return r.blob(); })
+        .then(function(b){ return new Promise(function(res){ var fr=new FileReader();
+          fr.onloadend=function(){ if(fr.result && String(fr.result).indexOf('data:image')===0){ img.onload=function(){res();}; img.onerror=function(){res();}; img.src=fr.result; setTimeout(res,2000); } else res(); };
+          fr.onerror=function(){res();}; fr.readAsDataURL(b); }); })
+        .catch(function(){});
+    }));
+  }
   // Arma el PDF capturando cada página del informe (A4). Ignora fotos/grupos quitados.
   function generarPdfBlob(){
     return cargarH2C().then(function(){
       if(!window.jspdf) throw new Error('jspdf');
+      return inlineImagenes($('report-doc'));
+    }).then(function(){
       var doc=new window.jspdf.jsPDF({unit:'mm',format:'a4',compress:true}), A4W=210, A4H=297;
       var restore=[];
       $('report-doc').querySelectorAll('.rphoto.excluded').forEach(function(el){ restore.push([el,el.style.display]); el.style.display='none'; });
