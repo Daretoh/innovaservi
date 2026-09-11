@@ -356,8 +356,8 @@
   .trab .meta{font-size:.72rem;color:var(--muted);margin-top:1px;}
   .trab .badge{font-size:.66rem;font-weight:800;padding:2px 8px;border-radius:999px;background:rgba(34,160,107,.14);color:var(--ok);}
   .trab.off .badge{background:var(--alt);color:var(--muted);}
-  #ficha,#veh-ficha,#remu-detalle,#acc-ficha,#rrhh-edit,#cli-ficha,#cargos-mgr{position:fixed;inset:0;z-index:75;background:var(--alt);overflow-y:auto;-webkit-overflow-scrolling:touch;}
-  #ficha.hide,#veh-ficha.hide,#remu-detalle.hide,#acc-ficha.hide,#rrhh-edit.hide,#cli-ficha.hide,#cargos-mgr.hide{display:none;}
+  #ficha,#veh-ficha,#remu-detalle,#acc-ficha,#rrhh-edit,#cli-ficha,#cargos-mgr,#dups-mgr{position:fixed;inset:0;z-index:75;background:var(--alt);overflow-y:auto;-webkit-overflow-scrolling:touch;}
+  #ficha.hide,#veh-ficha.hide,#remu-detalle.hide,#acc-ficha.hide,#rrhh-edit.hide,#cli-ficha.hide,#cargos-mgr.hide,#dups-mgr.hide{display:none;}
   /* RRHH documentación */
   .rrhh-doc{background:#fff;border:1px solid var(--line);border-radius:12px;padding:11px 13px;margin-bottom:9px;}
   .rrhh-doc .rd-top{display:flex;align-items:center;gap:10px;cursor:pointer;}
@@ -713,7 +713,7 @@
 
       <!-- Panel Trabajadores -->
       <div id="rrhh-trab">
-        <div class="h-row" style="margin-top:0"><b style="font:800 15px var(--font);color:var(--ink)">Trabajadores <span class="cnt" id="trab-cnt"></span></b><div style="display:flex;gap:8px"><button id="cargos-btn" class="btn ghost small" style="width:auto">⚙️ Cargos y tratos</button><button id="trab-import" class="btn ghost small" style="width:auto">⬆ Importar</button><button id="trab-nuevo" class="btn small" style="width:auto">＋ Nuevo</button></div></div>
+        <div class="h-row" style="margin-top:0"><b style="font:800 15px var(--font);color:var(--ink)">Trabajadores <span class="cnt" id="trab-cnt"></span></b><div style="display:flex;gap:8px;flex-wrap:wrap"><button id="dups-btn" class="btn ghost small" style="width:auto">🔍 Duplicados</button><button id="cargos-btn" class="btn ghost small" style="width:auto">⚙️ Cargos y tratos</button><button id="trab-import" class="btn ghost small" style="width:auto">⬆ Importar</button><button id="trab-nuevo" class="btn small" style="width:auto">＋ Nuevo</button></div></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
           <input id="trab-search" type="search" placeholder="Buscar nombre, RUT o cargo…" style="flex:1;min-width:150px;font:500 15px var(--font);padding:10px 12px;border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--ink)">
           <select id="trab-sort" style="font:600 13px var(--font);padding:10px 12px;border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--ink)"><option value="nombre">A–Z</option><option value="cargo">Por cargo</option><option value="reciente">Recientes</option></select>
@@ -986,6 +986,19 @@
       <div class="h-row" style="margin-top:0"><b style="font:800 14px var(--font);color:var(--ink)">Cargos</b><button id="cg-add" class="btn ghost small" style="width:auto">＋ Agregar cargo</button></div>
       <div id="cg-list"></div>
     </div>
+  </div>
+</div>
+
+<!-- Detector de nombres duplicados / variantes -->
+<div id="dups-mgr" class="hide">
+  <div class="ficha-bar">
+    <button id="dups-close" class="btn ghost small" style="width:auto">✕ Cerrar</button>
+    <b>Posibles duplicados</b>
+    <span style="width:56px"></span>
+  </div>
+  <div class="ficha-body">
+    <p class="note" style="margin:0 0 10px">Agrupa nombres parecidos (mismo primer nombre) que aparecen en horas o en la ficha. Elige con cuál quedarte y <b>unifica</b>: se renombran todas las horas de las variantes para que no se pierdan.</p>
+    <div id="dups-list"></div>
   </div>
 </div>
 
@@ -2445,6 +2458,53 @@
     }, function(){ busy(false); toast('No se pudo guardar.'); });
   });
 
+  // ====== Detector de duplicados de nombres (juntar horas sueltas) ======
+  var DUPS=[], DUPS_CNT={}, DUPS_DISP={}, DUPS_FICHA={};
+  function normName(s){ s=(s||'').trim().toLowerCase(); return s.replace(/á|à|ä/g,'a').replace(/é|è|ë/g,'e').replace(/í|ì|ï/g,'i').replace(/ó|ò|ö/g,'o').replace(/ú|ù|ü/g,'u').replace(/ñ/g,'n').replace(/\s+/g,' '); }
+  function abrirDups(){
+    if(!sb) return; busy(true,'Buscando duplicados…');
+    sb.from('horas').select('trabajador').limit(6000).then(function(r){
+      busy(false);
+      var cnt={}, disp={};
+      ((r&&r.data)||[]).forEach(function(h){ var nm=(h.trabajador||'').trim(); if(!nm) return; var k=nm.toLowerCase(); if(!disp[k]) disp[k]=nm; cnt[k]=(cnt[k]||0)+1; });
+      var fichaSet={}; (TRAB||[]).forEach(function(t){ var nm=(t.nombre||'').trim(); if(!nm) return; var k=nm.toLowerCase(); if(!disp[k]) disp[k]=nm; if(cnt[k]==null) cnt[k]=0; fichaSet[k]=1; });
+      var groups={};
+      Object.keys(disp).forEach(function(k){ var n=normName(disp[k]); var tok=n.split(' ')[0]||n; (groups[tok]=groups[tok]||[]).push(k); });
+      DUPS=Object.keys(groups).map(function(tok){ return {tok:tok, keys:groups[tok]}; })
+        .filter(function(g){ return g.keys.length>1; })
+        .sort(function(a,b){ return b.keys.length-a.keys.length; });
+      DUPS_CNT=cnt; DUPS_DISP=disp; DUPS_FICHA=fichaSet;
+      renderDups(); $('dups-mgr').classList.remove('hide'); $('dups-mgr').scrollTop=0;
+    }, function(){ busy(false); toast('No se pudo leer las horas.'); });
+  }
+  function renderDups(){
+    var c=$('dups-list'); if(!c) return;
+    if(!DUPS.length){ c.innerHTML='<div class="empty"><div class="big">✅</div>No se detectaron nombres parecidos.<br><span style="font-size:.82rem">Todo se ve consistente.</span></div>'; return; }
+    c.innerHTML=DUPS.map(function(g,gi){
+      var variants=g.keys.slice().sort(function(a,b){ return (DUPS_CNT[b]||0)-(DUPS_CNT[a]||0); });
+      var def=variants.filter(function(k){ return DUPS_FICHA[k]; })[0]||variants[0];
+      var optSel=variants.map(function(k){ return '<option value="'+enc(DUPS_DISP[k])+'"'+(k===def?' selected':'')+'>'+esc(DUPS_DISP[k])+'</option>'; }).join('');
+      var lis=variants.map(function(k){ return '<div style="display:flex;justify-content:space-between;font-size:.82rem;padding:3px 0;border-bottom:1px dashed var(--line)"><span>'+(DUPS_FICHA[k]?'✅ ':'⚠️ ')+esc(DUPS_DISP[k])+'</span><span class="note" style="margin:0">'+(DUPS_CNT[k]||0)+' líneas</span></div>'; }).join('');
+      return '<div class="card dgrp" data-gi="'+gi+'"><b style="text-transform:capitalize">'+esc(g.tok)+' <span class="note" style="margin:0;font-weight:600">('+variants.length+' variantes)</span></b>'+lis+
+        '<div class="fld" style="margin:8px 0 6px"><label>Dejar todo como</label><select class="dg-canon">'+optSel+'</select></div>'+
+        '<button class="dg-merge btn small" style="width:auto">🔗 Unificar en este nombre</button></div>';
+    }).join('');
+    c.querySelectorAll('.dg-merge').forEach(function(b){ b.addEventListener('click',function(){ var grp=b.closest('.dgrp'); mergeDup(+grp.dataset.gi, grp.querySelector('.dg-canon').value); }); });
+  }
+  function mergeDup(gi, canon){
+    var g=DUPS[gi]; if(!g) return; canon=(canon||'').trim(); if(!canon) return;
+    var others=g.keys.map(function(k){ return DUPS_DISP[k]; }).filter(function(nm){ return nm.toLowerCase()!==canon.toLowerCase(); });
+    if(!others.length){ toast('No hay variantes que unir.'); return; }
+    if(!confirm('¿Unir '+others.length+' variante(s) en “'+canon+'”?\n\n'+others.join(', ')+'\n\nSe renombran esas horas para que queden juntas. No se pierde nada.')) return;
+    busy(true,'Unificando…'); var err=null, i=0;
+    (function nx(){ if(i>=others.length){ busy(false); if(err) toast('Algo falló: '+err); else toast('✓ Unificado en '+canon); if(typeof cargarRemu==='function') cargarRemu(); abrirDups(); return; }
+      var nm=others[i]; i++;
+      sb.from('horas').update({trabajador:canon}).ilike('trabajador',nm).then(function(r){ if(r.error)err=r.error.message; nx(); }, function(){ err='error de red'; nx(); });
+    })();
+  }
+  if($('dups-btn')) $('dups-btn').addEventListener('click',abrirDups);
+  if($('dups-close')) $('dups-close').addEventListener('click',function(){ $('dups-mgr').classList.add('hide'); });
+
   function abrirFicha(t){
     FICHA_ID=t?t.id:null;
     $('fi-nombre').value=t?(t.nombre||''):''; $('fi-rut').value=t?(t.rut||''):''; poblarSelectCargo($('fi-cargo'), t?(t.cargo||''):''); trHint();
@@ -2964,7 +3024,19 @@
     if(x.bono) desg+='<div class="rd-lin"><span>Bonos / extras</span><b style="color:#0f6e56">'+fmtMoney(x.bono)+'</b></div>';
     if(x.desc) desg+='<div class="rd-lin"><span>Descuentos</span><b style="color:#dc2626">− '+fmtMoney(x.desc)+'</b></div>';
     desg+='<div class="rd-lin rd-tot"><span>Total semana</span><b>'+fmtMoney(x.total)+'</b></div>';
+    // Si es un nombre suelto (sin ficha): permitir unirlo a un trabajador o crearle ficha.
+    var unir='';
+    if(!x.t.id){
+      var opts=(REMU_DATA.trab||[]).filter(function(t){ return t.estado!=='inactivo'; }).sort(function(a,b){ return (a.nombre||'').localeCompare(b.nombre||''); }).map(function(t){ return '<option value="'+enc(t.nombre)+'">'+esc(t.nombre)+(t.cargo?(' · '+esc(t.cargo)):'')+'</option>'; }).join('');
+      unir='<div class="card" style="border:1px solid #f0b429;background:#fffdf5">'+
+        '<label style="display:block;font:700 13px var(--font);color:#b45309;margin-bottom:4px">⚠️ Nombre sin ficha</label>'+
+        '<p class="note" style="margin:0 0 8px">Parece el mismo trabajador escrito distinto. Únelo a un trabajador para juntar sus horas (se renombran <b>todas</b> las horas de este nombre), o créale ficha.</p>'+
+        '<div class="fld" style="margin:0 0 8px"><label>Unir “'+esc(x.t.nombre||'')+'” con</label><select id="rd-unir-sel">'+(opts||'<option value="">(no hay trabajadores)</option>')+'</select></div>'+
+        '<div style="display:flex;gap:8px;flex-wrap:wrap"><button id="rd-unir" class="btn small" style="width:auto">🔗 Unir horas</button><button id="rd-crear" class="btn ghost small" style="width:auto">＋ Crear ficha con este nombre</button></div>'+
+      '</div>';
+    }
     $('rd-body').innerHTML=
+      unir+
       '<div class="card"><label style="display:block;font:700 13px var(--font);color:var(--ink);margin-bottom:6px">📅 Días trabajados</label>'+diasHtml+'</div>'+
       '<div class="card"><label style="display:block;font:700 13px var(--font);color:var(--ink);margin-bottom:6px">💰 Desglose</label>'+desg+'</div>'+
       '<div class="card"><label style="display:block;font:700 13px var(--font);color:var(--ink);margin-bottom:6px">＋ Bono / descuento</label>'+
@@ -2972,6 +3044,27 @@
         '<div class="fld"><label>Concepto</label><input id="rd-concepto" type="text" placeholder="Ej: Anticipo, bono producción…"></div>'+
         '<button id="rd-add" class="btn small" style="width:auto">Agregar</button></div>';
     $('rd-body').querySelectorAll('.rd-dia.rd-link[data-reg]').forEach(function(el){ el.addEventListener('click',function(){ var reg=(REGISTROS||[]).filter(function(r){ return String(r.id)===el.dataset.reg; })[0]; if(reg){ cerrarDetalleRemu(); abrirEdicion(reg); } }); });
+    if(!x.t.id){
+      var oldName=(x.t.nombre||'').trim();
+      var ub=$('rd-unir'); if(ub) ub.addEventListener('click',function(){
+        var target=($('rd-unir-sel').value||'').trim(); if(!target){ toast('Elige un trabajador.'); return; }
+        if(!confirm('¿Unir TODAS las horas de “'+oldName+'” con “'+target+'”?\n\nSe renombran esas horas para que queden juntas. No se pierde nada.')) return;
+        busy(true,'Uniendo horas…');
+        sb.from('horas').update({trabajador:target}).ilike('trabajador',oldName).then(function(r){ busy(false);
+          if(r.error){ toast('No se pudo unir: '+r.error.message); return; }
+          toast('✓ Horas unidas a '+target); cerrarDetalleRemu(); cargarRemu();
+        }, function(){ busy(false); toast('No se pudo unir.'); });
+      });
+      var cf=$('rd-crear'); if(cf) cf.addEventListener('click',function(){
+        if(!confirm('¿Crear ficha de trabajador para “'+oldName+'”?')) return;
+        busy(true,'Creando ficha…');
+        sb.from('trabajadores').insert({nombre:oldName,estado:'activo',autor:userEmail}).then(function(r){ busy(false);
+          if(r.error){ toast('No se pudo crear: '+r.error.message); return; }
+          toast('✓ Ficha creada'); cerrarDetalleRemu(); cargarTrab(function(){ actualizarDatalist(); if(typeof pintarTrab==='function') pintarTrab(); }); cargarRemu();
+        }, function(){ busy(false); toast('No se pudo crear.'); });
+      });
+      return;   // los orfanos no tienen formulario de bono/descuento
+    }
     $('rd-add').addEventListener('click',function(){
       if(!sb) return;
       if(!x.t.id){ toast('Primero agrega a '+(x.t.nombre||'esta persona')+' en Trabajadores (RRHH) para asignarle bonos o descuentos.'); return; }
