@@ -490,10 +490,10 @@
   document.getElementById('l-pass').addEventListener('keydown',function(ev){ if(ev.key==='Enter') hacerLogin(); });
 
   // ---- Nuevo / Editar / Eliminar ----
-  var editId=null;
+  var editId=null, editUbicPrev='';
   function poblarUbicaciones(){ var cnt={}; EVENTS.forEach(function(x){ var u=(x.ubic||'').trim(); if(u) cnt[u]=(cnt[u]||0)+1; }); var list=Object.keys(cnt).sort(function(a,b){ return cnt[b]-cnt[a] || (a<b?-1:1); }); var dl=document.getElementById('f-ubic-list'); if(dl) dl.innerHTML=list.map(function(u){ return '<option value="'+enc(u)+'">'+cnt[u]+' trabajos</option>'; }).join(''); }
   function abrirForm(e){
-    editId=e?e.id:null;
+    editId=e?e.id:null; editUbicPrev=e?(e.ubic||''):'';
     poblarUbicaciones();
     document.getElementById('form-title').textContent=e?'Editar trabajo':'Nuevo trabajo';
     document.getElementById('f-fecha').value=e?e.fecha:todayISO();
@@ -543,7 +543,18 @@
       return;
     }
     var q = editId ? sb.from('eventos').update(row).eq('id',editId) : sb.from('eventos').insert(row);
-    q.then(function(r){ if(r.error){ alert('No se pudo guardar: '+r.error.message); return; } formModal.classList.remove('show'); cargarEventos(render); });
+    q.then(function(r){ if(r.error){ alert('No se pudo guardar: '+r.error.message); return; }
+      // Si renombraste el cliente al editar, ofrece aplicarlo a TODOS sus trabajos.
+      var oldU=(editUbicPrev||'').trim(), newU=(row.ubicacion||'').trim();
+      if(editId && oldU && newU && oldU.toUpperCase()!==newU.toUpperCase()){
+        var otros=EVENTS.filter(function(e){ return String(e.id)!==String(editId) && (e.ubic||'').trim().toUpperCase()===oldU.toUpperCase(); }).length;
+        if(otros>0 && confirm('Cambiaste el cliente de "'+oldU+'" a "'+newU+'".\n\n¿Aplicar el nuevo nombre a los otros '+otros+' trabajo(s) de "'+oldU+'" también?')){
+          sb.from('eventos').update({ubicacion:newU}).ilike('ubicacion',oldU).then(function(r2){ if(r2.error){ alert('Se guardó este, pero no se pudieron actualizar los demás: '+r2.error.message); } formModal.classList.remove('show'); cargarEventos(render); });
+          return;
+        }
+      }
+      formModal.classList.remove('show'); cargarEventos(render);
+    });
   });
   // Calcula las fechas de una serie según tipo, separación (cada) y nº de veces
   function fechasSerie(baseISO, repetir, cada, veces){
