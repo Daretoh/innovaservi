@@ -491,7 +491,14 @@
 
   // ---- Nuevo / Editar / Eliminar ----
   var editId=null, editUbicPrev='';
-  function poblarUbicaciones(){ var cnt={}; EVENTS.forEach(function(x){ var u=(x.ubic||'').trim(); if(u) cnt[u]=(cnt[u]||0)+1; }); var list=Object.keys(cnt).sort(function(a,b){ return cnt[b]-cnt[a] || (a<b?-1:1); }); var dl=document.getElementById('f-ubic-list'); if(dl) dl.innerHTML=list.map(function(u){ return '<option value="'+enc(u)+'">'+cnt[u]+' trabajos</option>'; }).join(''); }
+  var CLIENTES_PL=[];
+  function poblarUbicaciones(){
+    var cnt={}; EVENTS.forEach(function(x){ var u=(x.ubic||'').trim(); if(u) cnt[u]=(cnt[u]||0)+1; });
+    CLIENTES_PL.forEach(function(nm){ if(nm && cnt[nm]===undefined) cnt[nm]=0; });   // clientes del apartado, aunque no tengan trabajos aún
+    var list=Object.keys(cnt).sort(function(a,b){ return cnt[b]-cnt[a] || (a<b?-1:1); });
+    var dl=document.getElementById('f-ubic-list'); if(dl) dl.innerHTML=list.map(function(u){ return '<option value="'+enc(u)+'">'+(cnt[u]?(cnt[u]+' trabajos'):'cliente')+'</option>'; }).join('');
+    if(!CLIENTES_PL.length && sb){ sb.from('clientes').select('nombre').limit(500).then(function(r){ if(r&&r.data&&r.data.length){ CLIENTES_PL=r.data.map(function(c){ return (c.nombre||'').trim(); }).filter(Boolean); poblarUbicaciones(); } }, function(){}); }
+  }
   function abrirForm(e){
     editId=e?e.id:null; editUbicPrev=e?(e.ubic||''):'';
     poblarUbicaciones();
