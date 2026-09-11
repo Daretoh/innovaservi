@@ -356,8 +356,8 @@
   .trab .meta{font-size:.72rem;color:var(--muted);margin-top:1px;}
   .trab .badge{font-size:.66rem;font-weight:800;padding:2px 8px;border-radius:999px;background:rgba(34,160,107,.14);color:var(--ok);}
   .trab.off .badge{background:var(--alt);color:var(--muted);}
-  #ficha,#veh-ficha,#remu-detalle,#acc-ficha,#rrhh-edit,#cli-ficha{position:fixed;inset:0;z-index:75;background:var(--alt);overflow-y:auto;-webkit-overflow-scrolling:touch;}
-  #ficha.hide,#veh-ficha.hide,#remu-detalle.hide,#acc-ficha.hide,#rrhh-edit.hide,#cli-ficha.hide{display:none;}
+  #ficha,#veh-ficha,#remu-detalle,#acc-ficha,#rrhh-edit,#cli-ficha,#cargos-mgr{position:fixed;inset:0;z-index:75;background:var(--alt);overflow-y:auto;-webkit-overflow-scrolling:touch;}
+  #ficha.hide,#veh-ficha.hide,#remu-detalle.hide,#acc-ficha.hide,#rrhh-edit.hide,#cli-ficha.hide,#cargos-mgr.hide{display:none;}
   /* RRHH documentación */
   .rrhh-doc{background:#fff;border:1px solid var(--line);border-radius:12px;padding:11px 13px;margin-bottom:9px;}
   .rrhh-doc .rd-top{display:flex;align-items:center;gap:10px;cursor:pointer;}
@@ -684,7 +684,7 @@
 
     <!-- ---- REMUNERACIONES / PAGOS (solo admin) ---- -->
     <section class="view" id="v-remu">
-      <div class="h-row"><h2>Remuneraciones <span class="cnt" id="remu-cnt"></span></h2><button id="remu-cfg-btn" class="btn ghost small" style="width:auto">⚙️ Config</button></div>
+      <div class="h-row"><h2>Remuneraciones <span class="cnt" id="remu-cnt"></span></h2><button id="remu-cfg-btn" class="btn ghost small" style="width:auto">⚙️ Cargos y tratos</button></div>
       <div class="card" style="display:flex;align-items:center;gap:8px;padding:9px 10px;margin-bottom:12px">
         <button id="remu-prev" class="btn ghost small" style="width:auto">‹</button>
         <div style="flex:1;text-align:center"><div id="remu-semlbl" style="margin:0;font:800 13px var(--font);color:var(--navy)">Semana</div><b id="remu-rango" style="font-size:.88rem;font-weight:600;color:var(--body)"></b></div>
@@ -713,7 +713,7 @@
 
       <!-- Panel Trabajadores -->
       <div id="rrhh-trab">
-        <div class="h-row" style="margin-top:0"><b style="font:800 15px var(--font);color:var(--ink)">Trabajadores <span class="cnt" id="trab-cnt"></span></b><div style="display:flex;gap:8px"><button id="trab-import" class="btn ghost small" style="width:auto">⬆ Importar</button><button id="trab-nuevo" class="btn small" style="width:auto">＋ Nuevo</button></div></div>
+        <div class="h-row" style="margin-top:0"><b style="font:800 15px var(--font);color:var(--ink)">Trabajadores <span class="cnt" id="trab-cnt"></span></b><div style="display:flex;gap:8px"><button id="cargos-btn" class="btn ghost small" style="width:auto">⚙️ Cargos y tratos</button><button id="trab-import" class="btn ghost small" style="width:auto">⬆ Importar</button><button id="trab-nuevo" class="btn small" style="width:auto">＋ Nuevo</button></div></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
           <input id="trab-search" type="search" placeholder="Buscar nombre, RUT o cargo…" style="flex:1;min-width:150px;font:500 15px var(--font);padding:10px 12px;border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--ink)">
           <select id="trab-sort" style="font:600 13px var(--font);padding:10px 12px;border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--ink)"><option value="nombre">A–Z</option><option value="cargo">Por cargo</option><option value="reciente">Recientes</option></select>
@@ -821,7 +821,7 @@
       <div class="fld"><label>Nombre</label><input id="fi-nombre" type="text" placeholder="Nombre completo"></div>
       <div class="grid2">
         <div class="fld"><label>RUT</label><input id="fi-rut" type="text" placeholder="12.345.678-9"></div>
-        <div class="fld"><label>Cargo</label><input id="fi-cargo" type="text" placeholder="Ej: Operario"></div>
+        <div class="fld"><label>Cargo</label><select id="fi-cargo"></select><div id="fi-trato-h" class="note" style="margin:4px 0 0;font-size:.72rem"></div></div>
       </div>
       <div class="grid2">
         <div class="fld"><label>Estado</label><select id="fi-estado"><option value="activo">Activo</option><option value="inactivo">Inactivo</option></select></div>
@@ -968,6 +968,25 @@
     <span style="width:56px"></span>
   </div>
   <div class="ficha-body"><div id="rd-body"></div></div>
+</div>
+
+<!-- Gestor de Cargos y tratos -->
+<div id="cargos-mgr" class="hide">
+  <div class="ficha-bar">
+    <button id="cg-close" class="btn ghost small" style="width:auto">✕ Cerrar</button>
+    <b>Cargos y tratos</b>
+    <button id="cg-save" class="btn small" style="width:auto">Guardar</button>
+  </div>
+  <div class="ficha-body">
+    <div class="card" style="border:1px solid var(--orange)">
+      <p class="note" style="margin:0 0 8px">El <b>trato</b> es el pago por jornada de 8 horas. El valor hora sale solo: <b>trato ÷ 8</b>. Cada trabajador toma su pago del cargo que tenga en su ficha.</p>
+      <div class="fld" style="margin:0;max-width:220px"><label>🚗 Valor por vuelta</label><input id="cg-vvuelta" type="number" min="0" placeholder="0"></div>
+    </div>
+    <div class="card">
+      <div class="h-row" style="margin-top:0"><b style="font:800 14px var(--font);color:var(--ink)">Cargos</b><button id="cg-add" class="btn ghost small" style="width:auto">＋ Agregar cargo</button></div>
+      <div id="cg-list"></div>
+    </div>
+  </div>
 </div>
 
 <!-- Editar documento RRHH (trabajador × tipo) -->
@@ -1150,7 +1169,7 @@
     aplicarModo();
     cargarEventos();
     cargarRegistros();
-    if(isAdmin){ cargarTrab(actualizarDatalist); cargarClientes(); }
+    if(isAdmin){ cargarTrab(actualizarDatalist); cargarClientes(); cargarCargos(); }
     ofrecerBorrador();
   }
   function registroDe(eventoId){ if(!eventoId) return null; var id=String(eventoId);
@@ -2371,9 +2390,64 @@
   $('trab-sort').addEventListener('change',function(){ trabSort=this.value; pintarTrab(); });
   document.querySelectorAll('.tfil').forEach(function(b){ b.addEventListener('click',function(){ document.querySelectorAll('.tfil').forEach(function(x){ x.classList.toggle('on',x===b); }); trabFilter=b.dataset.f; pintarTrab(); }); });
   var ficha=$('ficha');
+  // ====== Cargos y tratos (catálogo). Valor hora = trato ÷ 8 ======
+  var CARGOS=[], CG_DEL=[];
+  function cargarCargos(cb){ if(!sb){ if(cb)cb(); return; } sb.from('cargos').select('*').order('orden',{ascending:true}).order('nombre',{ascending:true}).limit(200).then(function(r){ CARGOS=(r&&r.data)||[]; if(cb)cb(); }, function(){ if(cb)cb(); }); }
+  function cargoTrato(nombre){ var n=norm(nombre); if(!n) return 0; for(var i=0;i<CARGOS.length;i++){ if(norm(CARGOS[i].nombre)===n) return +CARGOS[i].trato||0; } return 0; }
+  function poblarSelectCargo(sel, current){
+    if(!sel) return; var opts='<option value="">— sin cargo —</option>', has=false;
+    CARGOS.forEach(function(c){ var s=(norm(c.nombre)===norm(current)&&!!current); if(s) has=true; opts+='<option value="'+enc(c.nombre)+'"'+(s?' selected':'')+'>'+esc(c.nombre)+(c.trato?(' · trato '+fmtMoney(c.trato)):'')+'</option>'; });
+    if(current && !has) opts+='<option value="'+enc(current)+'" selected>'+esc(current)+' (fuera de catálogo)</option>';
+    sel.innerHTML=opts;
+  }
+  function trHint(){ var h=$('fi-trato-h'); if(!h) return; var c=$('fi-cargo').value, tr=cargoTrato(c); h.textContent=tr?('Trato '+fmtMoney(tr)+' · valor hora '+fmtMoney(Math.round(tr/8))):(c?'Este cargo aún no tiene trato (edítalo en “Cargos y tratos”).':''); }
+  if($('fi-cargo')) $('fi-cargo').addEventListener('change',trHint);
+  // Gestor
+  function collectCargos(){ var rows=[]; $('cg-list').querySelectorAll('.cg-row').forEach(function(r){ rows.push({ id:(r.dataset.id?+r.dataset.id:null), nombre:r.querySelector('.cg-nom').value.trim(), trato:(+r.querySelector('.cg-trato').value||0) }); }); return rows; }
+  function renderCargos(){
+    var c=$('cg-list');
+    c.innerHTML=(CARGOS.length?CARGOS:[]).map(function(cg){
+      return '<div class="cg-row" data-id="'+(cg.id||'')+'" style="display:flex;gap:8px;align-items:center;margin-bottom:7px;flex-wrap:wrap">'+
+        '<input class="cg-nom" type="text" value="'+enc(cg.nombre||'')+'" placeholder="Cargo" style="flex:1 1 150px;min-width:120px;font:700 13.5px var(--font);padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink)">'+
+        '<div style="display:flex;align-items:center;gap:4px"><span class="note" style="margin:0;font-size:.72rem">Trato $</span><input class="cg-trato" type="number" min="0" value="'+(cg.trato||'')+'" placeholder="0" style="width:110px;font:700 13.5px var(--font);padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--orange-2)"></div>'+
+        '<span class="cg-vh note" style="margin:0;font-size:.72rem;white-space:nowrap">'+(cg.trato?('= '+fmtMoney(Math.round(cg.trato/8))+'/h'):'')+'</span>'+
+        '<button class="cg-rm" type="button" style="flex:0 0 auto;width:30px;height:34px;border:1px solid #f0c0c0;background:#fff;color:#dc2626;border-radius:8px;cursor:pointer">✕</button>'+
+      '</div>';
+    }).join('')||'<p class="note" style="margin:0">Sin cargos. Toca “＋ Agregar cargo”.</p>';
+    c.querySelectorAll('.cg-trato').forEach(function(inp){ inp.addEventListener('input',function(){ var vh=inp.closest('.cg-row').querySelector('.cg-vh'), t=+inp.value||0; vh.textContent=t?('= '+fmtMoney(Math.round(t/8))+'/h'):''; }); });
+    c.querySelectorAll('.cg-rm').forEach(function(b){ b.addEventListener('click',function(){ var row=b.closest('.cg-row'), id=row.dataset.id; if(id) CG_DEL.push(+id); row.remove(); }); });
+  }
+  function abrirCargos(){
+    CG_DEL=[];
+    function abrir(){ $('cargos-mgr').classList.remove('hide'); $('cargos-mgr').scrollTop=0; }
+    cargarCargos(function(){
+      renderCargos();
+      if(REMU_DATA && REMU_DATA.valorVuelta!=null){ $('cg-vvuelta').value=REMU_DATA.valorVuelta||''; abrir(); }
+      else if(sb){ sb.from('config').select('valor').eq('clave','valor_vuelta').maybeSingle().then(function(r){ $('cg-vvuelta').value=(r&&r.data&&+r.data.valor)||''; abrir(); }, abrir); }
+      else abrir();
+    });
+  }
+  if($('cargos-btn')) $('cargos-btn').addEventListener('click',abrirCargos);
+  if($('cg-close')) $('cg-close').addEventListener('click',function(){ $('cargos-mgr').classList.add('hide'); });
+  if($('cg-add')) $('cg-add').addEventListener('click',function(){ var cur=collectCargos(); cur.push({id:null,nombre:'',trato:0}); CARGOS=cur; renderCargos(); });
+  if($('cg-save')) $('cg-save').addEventListener('click',function(){
+    if(!sb) return; var rows=collectCargos().filter(function(r){ return r.nombre; });
+    busy(true,'Guardando cargos…'); var err=null, vv=($('cg-vvuelta').value||'').trim();
+    sb.from('config').upsert([{clave:'valor_vuelta',valor:(vv||'0')}],{onConflict:'clave'}).then(function(){
+      function dels(cb){ if(!CG_DEL.length){ cb(); return; } sb.from('cargos').delete().in('id',CG_DEL).then(function(r){ if(r.error)err=r.error.message; cb(); }); }
+      dels(function(){
+        var i=0; (function nx(){ if(i>=rows.length){ busy(false); if(err) toast('Algo falló: '+err); else toast('✓ Cargos guardados'); CG_DEL=[]; cargarCargos(function(){ if(typeof pintarTrab==='function') pintarTrab(); }); $('cargos-mgr').classList.add('hide'); return; }
+          var x=rows[i]; i++; var payload={nombre:x.nombre,trato:x.trato};
+          var p=x.id? sb.from('cargos').update(payload).eq('id',x.id) : sb.from('cargos').insert(payload);
+          p.then(function(r){ if(r.error)err=r.error.message; nx(); });
+        })();
+      });
+    }, function(){ busy(false); toast('No se pudo guardar.'); });
+  });
+
   function abrirFicha(t){
     FICHA_ID=t?t.id:null;
-    $('fi-nombre').value=t?(t.nombre||''):''; $('fi-rut').value=t?(t.rut||''):''; $('fi-cargo').value=t?(t.cargo||''):'';
+    $('fi-nombre').value=t?(t.nombre||''):''; $('fi-rut').value=t?(t.rut||''):''; poblarSelectCargo($('fi-cargo'), t?(t.cargo||''):''); trHint();
     $('fi-estado').value=(t&&t.estado)||'activo'; $('fi-ingreso').value=t?(t.fecha_ingreso||''):'';
     $('fi-tel').value=t?(t.telefono||''):''; $('fi-email').value=t?(t.email||''):'';
     $('fi-botas').value=t?(t.talla_botas||''):''; $('fi-ropa').value=t?(t.talla_ropa||''):'';
@@ -2780,7 +2854,7 @@
       var tv=(vueltasT[nm]||0)+((H&&H.vueltas)||0), tp=peajesT[nm]||0, bo=bonoT[t.id]||0, de=descT[t.id]||0;
       if(t.estado==='inactivo' && !H && !tv && !tp && !bo && !de) return;   // inactivo sin actividad: se oculta; con horas igual se muestra
       var totMin=H?H.totalMin:0, dias=H?Object.keys(H.porDia).length:0;
-      var tipo=t.tipo_pago||'hora', vh=(+t.valor_hora||0)||D.valorHora, jor=+t.jornada_horas||0, baseMin;
+      var tipo=t.tipo_pago||'hora', tr=cargoTrato(t.cargo), vh=tr?Math.round(tr/8):((+t.valor_hora||0)||D.valorHora||0), jor=+t.jornada_horas||0, baseMin;
       if(tipo==='contrato'){ baseMin=0; if(H){ for(var f in H.porDia){ var ex=H.porDia[f]-jor*60; if(ex>0) baseMin+=ex; } } }
       else baseMin=totMin;
       // Total de horas (pago) por día de la semana, sumando todos los trabajadores.
@@ -2831,15 +2905,8 @@
   $('remu-prev').addEventListener('click',function(){ REMU_LUNES=sumarDias(REMU_LUNES||lunesDe(todayISO()),-7); cargarRemu(); });
   $('remu-next').addEventListener('click',function(){ REMU_LUNES=sumarDias(REMU_LUNES||lunesDe(todayISO()),7); cargarRemu(); });
 
-  // Config de pago (inline)
-  $('remu-cfg-btn').addEventListener('click',function(){
-    var cfg=$('remu-config'), abriendo=cfg.classList.contains('hide');
-    cfg.classList.toggle('hide', !abriendo);
-    $('remu-list').classList.toggle('hide', abriendo);
-    if($('remu-dias')) $('remu-dias').classList.toggle('hide', abriendo);
-    $('remu-total').classList.toggle('hide', abriendo);
-    if(abriendo) renderCfgPago();
-  });
+  // El pago ahora es por CARGO (trato ÷ 8). El botón abre el gestor de Cargos y tratos.
+  $('remu-cfg-btn').addEventListener('click',abrirCargos);
   function renderCfgPago(){
     var D=REMU_DATA||{}, trab=D.trab||[], vhG=D.valorHora||0;
     var glob='<div class="card" style="padding:11px 13px;margin-bottom:12px;border:1px solid var(--orange)">'+
