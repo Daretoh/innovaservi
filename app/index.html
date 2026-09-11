@@ -2817,7 +2817,7 @@
     var m=function(v,neg){ return v?((neg?'−':'')+fmtMoney(v)):'<span class="rt-z">—</span>'; };
     var body=filas.map(function(x,i){
       return '<tr data-i="'+i+'">'+
-        '<td class="rt-nm">'+esc(x.t.nombre||'')+'<div class="rt-sub">'+esc(x.t.cargo||'')+(x.tipo==='contrato'?' · contrato':'')+'</div></td>'+
+        '<td class="rt-nm">'+(x.t.id?'':'<span title="No está registrado como trabajador">⚠️ </span>')+esc(x.t.nombre||'')+'<div class="rt-sub"'+(x.t.id?'':' style="color:#b45309;font-weight:700"')+'>'+esc(x.t.cargo||'')+(x.tipo==='contrato'?' · contrato':'')+'</div></td>'+
         '<td>'+x.dias+'</td><td>'+hm(x.totMin)+'</td>'+
         '<td>'+m(x.base)+'</td><td>'+m(x.vueltasMonto)+'</td><td>'+m(x.peajes)+'</td>'+
         '<td class="rt-ok">'+m(x.bono)+'</td><td class="rt-bad">'+m(x.desc,true)+'</td>'+
@@ -2882,7 +2882,7 @@
   // Detalle de un trabajador (semana)
   function abrirDetalleRemu(x){
     if(!x) return;
-    $('rd-title').textContent=(x.t.nombre||'Detalle')+' · Semana '+numSemana(REMU_DATA.lun);
+    $('rd-title').textContent=(x.t.id?'':'⚠️ ')+(x.t.nombre||'Detalle')+' · Semana '+numSemana(REMU_DATA.lun);
     var dias=((x.H&&x.H.detalle)||[]).slice().sort(function(a,b){ return a.fecha<b.fecha?-1:1; });
     var diasHtml=dias.length?dias.map(function(d){
       var pagoMin=(x.tipo==='contrato')?Math.max(0,d.min-(x.jor*60)):d.min;
@@ -2942,7 +2942,7 @@
     var trabHtml=rows.length?rows.map(function(r){
       var horarios=r.ents.map(function(d){ return esc(d.entrada||'--:--')+'→'+esc(d.salida||'--:--'); }).join(', ');
       var faTxt=r.faenas.length?('<div class="note" style="margin:2px 0 0;font-size:.72rem">📍 '+esc(r.faenas.join(' · '))+'</div>'):'';
-      return '<div class="rd-dia"><div style="flex:1"><b>'+esc(r.x.t.nombre||'')+'</b><div class="note" style="margin:0;font-size:.74rem">'+horarios+(r.vu?(' · 🔄 '+r.vu+' vueltas'):'')+'</div>'+faTxt+'</div><div style="text-align:right;flex-shrink:0"><div style="font-size:.82rem">'+hm(r.dayMin)+'</div><b style="color:var(--orange-2);font-size:.82rem">'+fmtMoney(r.pago)+'</b></div></div>';
+      return '<div class="rd-dia"><div style="flex:1"><b>'+(r.x.t.id?'':'⚠️ ')+esc(r.x.t.nombre||'')+'</b>'+(r.x.t.id?'':'<span style="color:#b45309;font-weight:700;font-size:.7rem"> · sin ficha</span>')+'<div class="note" style="margin:0;font-size:.74rem">'+horarios+(r.vu?(' · 🔄 '+r.vu+' vueltas'):'')+'</div>'+faTxt+'</div><div style="text-align:right;flex-shrink:0"><div style="font-size:.82rem">'+hm(r.dayMin)+'</div><b style="color:var(--orange-2);font-size:.82rem">'+fmtMoney(r.pago)+'</b></div></div>';
     }).join(''):'<p class="note" style="margin:0">Nadie registró horas este día.</p>';
     var lbl='display:block;font:700 13px var(--font);color:var(--ink);margin-bottom:6px';
     $('rd-body').innerHTML=
