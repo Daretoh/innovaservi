@@ -333,8 +333,23 @@
   .trab .meta{font-size:.72rem;color:var(--muted);margin-top:1px;}
   .trab .badge{font-size:.66rem;font-weight:800;padding:2px 8px;border-radius:999px;background:rgba(34,160,107,.14);color:var(--ok);}
   .trab.off .badge{background:var(--alt);color:var(--muted);}
-  #ficha,#veh-ficha,#remu-detalle,#acc-ficha{position:fixed;inset:0;z-index:75;background:var(--alt);overflow-y:auto;-webkit-overflow-scrolling:touch;}
-  #ficha.hide,#veh-ficha.hide,#remu-detalle.hide,#acc-ficha.hide{display:none;}
+  #ficha,#veh-ficha,#remu-detalle,#acc-ficha,#rrhh-edit{position:fixed;inset:0;z-index:75;background:var(--alt);overflow-y:auto;-webkit-overflow-scrolling:touch;}
+  #ficha.hide,#veh-ficha.hide,#remu-detalle.hide,#acc-ficha.hide,#rrhh-edit.hide{display:none;}
+  /* RRHH documentación */
+  .rrhh-doc{background:#fff;border:1px solid var(--line);border-radius:12px;padding:11px 13px;margin-bottom:9px;}
+  .rrhh-doc .rd-top{display:flex;align-items:center;gap:10px;cursor:pointer;}
+  .rrhh-doc .rd-nm{flex:1;font:800 13.5px var(--font);color:var(--ink);}
+  .rrhh-bar{height:7px;border-radius:99px;background:var(--line);overflow:hidden;margin-top:8px;}
+  .rrhh-bar i{display:block;height:100%;background:var(--ok);border-radius:99px;}
+  .rrhh-pers{display:flex;align-items:center;gap:9px;padding:7px 2px;border-bottom:1px solid var(--line);cursor:pointer;}
+  .rrhh-pers:last-child{border-bottom:none;}
+  .rrhh-pers .rp-nm{flex:1;font-weight:600;font-size:.9rem;}
+  .dchip{font:800 10px var(--font);padding:2px 8px;border-radius:999px;white-space:nowrap;}
+  .dchip.ok{background:rgba(34,160,107,.14);color:var(--ok);}
+  .dchip.pend{background:var(--alt);color:var(--muted);}
+  .dchip.venc{background:#fde8e8;color:#dc2626;}
+  .dchip.prox{background:#fff4e5;color:#b45309;}
+  .rrhh-chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;}
   .af-sec{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line);}
   .af-sec b{flex:1;font-weight:600;font-size:.9rem;}
   .af-sec select{flex:0 0 116px;}
@@ -444,6 +459,7 @@
   <div class="topbar">
     <div class="tt"><img src="../assets/images/InnovaLOGO.png" alt="" onerror="this.style.display='none'"><div><b>InnovaGestión</b><div class="who" id="who"></div></div></div>
     <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
+      <button id="btn-rrhh" class="out hide">📋<span class="hlbl"> RRHH</span></button>
       <button id="btn-pagos" class="out hide">💵<span class="hlbl"> Remuneraciones</span></button>
       <a href="../planificacion/" id="btn-plan" class="out hide" style="text-decoration:none">🗓️<span class="hlbl"> Planificación</span></a>
       <button id="btn-acc-h" class="out hide" title="Accesos" aria-label="Accesos" style="padding-left:11px;padding-right:11px">🔐</button>
@@ -665,6 +681,22 @@
       </div>
     </section>
 
+    <!-- ---- RRHH / DOCUMENTACIÓN (solo admin) ---- -->
+    <section class="view" id="v-rrhh">
+      <div class="h-row"><h2>RRHH · Documentación <span class="cnt" id="rrhh-cnt"></span></h2></div>
+      <p class="note" style="margin:0 0 10px">Seguimiento de la documentación estándar por trabajador. Marca lo entregado, adjunta el archivo y su vencimiento.</p>
+      <div id="rrhh-alert"></div>
+      <div style="display:flex;gap:6px;margin-bottom:8px">
+        <button class="btn ghost small rrhh-fil on" data-f="activo" style="flex:1">Activos</button>
+        <button class="btn ghost small rrhh-fil" data-f="todos" style="flex:1">Todos</button>
+      </div>
+      <div style="display:flex;gap:6px;margin-bottom:12px">
+        <button class="btn ghost small rrhh-vis on" data-v="doc" style="flex:1">Por documento</button>
+        <button class="btn ghost small rrhh-vis" data-v="persona" style="flex:1">Por persona</button>
+      </div>
+      <div id="rrhh-list"></div>
+    </section>
+
     <!-- ---- ACCESOS / PERMISOS (solo Enzo) ---- -->
     <section class="view" id="v-acc">
       <div class="h-row"><h2>Accesos</h2><button id="acc-nuevo" class="btn small" style="width:auto">＋ Persona</button></div>
@@ -741,8 +773,13 @@
       <div class="fld"><label>Notas</label><textarea id="fi-notas" placeholder="Observaciones, EPP asignado, etc."></textarea></div>
     </div>
     <div class="card">
+      <label style="display:block;font:700 13px var(--font);color:var(--ink);margin-bottom:2px;">📋 Documentación estándar (RRHH)</label>
+      <p class="note" style="margin:0 0 8px">Toca un ítem para marcarlo entregado, adjuntar el archivo y su vencimiento.</p>
+      <div id="fi-rrhh"></div>
+    </div>
+    <div class="card">
       <label style="display:block;font:700 13px var(--font);color:var(--ink);margin-bottom:2px;">📎 Documentos</label>
-      <p class="note" style="margin:0 0 10px">Contrato, cédula, ficha de ingreso, EPP, exámenes, capacitaciones… (PDF o imagen).</p>
+      <p class="note" style="margin:0 0 10px">Otros documentos sueltos (PDF o imagen).</p>
       <div id="fi-docs"></div>
       <label class="catadd">＋ Agregar documento<input type="file" id="fi-doc-input" accept="application/pdf,image/*" multiple hidden></label>
       <div id="fi-scan-zone" class="hide"></div>
@@ -862,6 +899,16 @@
   <div class="ficha-body"><div id="rd-body"></div></div>
 </div>
 
+<!-- Editar documento RRHH (trabajador × tipo) -->
+<div id="rrhh-edit" class="hide">
+  <div class="ficha-bar">
+    <button id="re-close" class="btn ghost small" style="width:auto">✕ Cerrar</button>
+    <b id="re-title">Documento</b>
+    <span style="width:56px"></span>
+  </div>
+  <div class="ficha-body"><div id="re-body"></div></div>
+</div>
+
 <!-- Importar trabajadores (pegar lista) -->
 <div id="imp" class="hide">
   <div class="imp-bg"></div>
@@ -950,6 +997,7 @@
     $('tab-matriz').classList.toggle('hide', op);         // Matriz: solo admin
     $('tab-trab').classList.toggle('hide', op);           // Personas: solo admin
     if($('btn-pagos')) $('btn-pagos').classList.toggle('hide', op); // Pagos: solo admin (en el header)
+    if($('btn-rrhh')) $('btn-rrhh').classList.toggle('hide', op);   // RRHH: solo admin (en el header)
     if($('btn-acc-h')) $('btn-acc-h').classList.toggle('hide', (userEmail||'').trim().toLowerCase()!=='enzo.castro@innovaservi.com'); // Accesos: solo Enzo (en el header)
     $('tab-veh').classList.remove('hide');                // Vehículos: visible para todos (chofer registra vueltas)
     if($('veh-admin')) $('veh-admin').classList.toggle('hide', op);   // flota completa: solo admin
@@ -1034,7 +1082,7 @@
   function abrirVista(v){
     document.querySelectorAll('.tabbar button').forEach(function(x){ x.classList.toggle('on',x.dataset.v===v); });
     document.querySelectorAll('.view').forEach(function(x){ x.classList.toggle('on',x.id===v); });
-    var _main=document.querySelector('main'); if(_main) _main.classList.toggle('wide', v==='v-remu'||v==='v-horas');  // vistas anchas en PC
+    var _main=document.querySelector('main'); if(_main) _main.classList.toggle('wide', v==='v-remu'||v==='v-horas'||v==='v-rrhh');  // vistas anchas en PC
     if(v==='v-hist') cargarRegistros(pintarRegistros);
     if(v==='v-horas') cargarHoras();
     if(v==='v-trab') cargarTrab(pintarTrab);
@@ -1042,11 +1090,13 @@
     if(v==='v-matriz'){ cargarPlantillas(renderMatriz); }
     if(v==='v-veh'){ if(isAdmin){ cargarVeh(pintarVehList); } else { cargarChoferForm(); } }
     if(v==='v-remu'){ cargarRemu(); }
+    if(v==='v-rrhh'){ cargarRrhh(); }
     if(v==='v-acc'){ cargarPermisos(); }
     window.scrollTo(0,0);
   }
   document.querySelectorAll('.tabbar button').forEach(function(b){ b.addEventListener('click',function(){ abrirVista(b.dataset.v); }); });
   if($('btn-pagos')) $('btn-pagos').addEventListener('click',function(){ abrirVista('v-remu'); });
+  if($('btn-rrhh')) $('btn-rrhh').addEventListener('click',function(){ abrirVista('v-rrhh'); });
   if($('btn-acc-h')) $('btn-acc-h').addEventListener('click',function(){ abrirVista('v-acc'); });
   function irA(id){ abrirVista(id); }
 
@@ -2148,6 +2198,7 @@
     $('fi-dir').value=t?(t.direccion||''):''; $('fi-emerg').value=t?(t.emergencia||''):'';
     $('fi-notas').value=t?(t.notas||''):'';
     FICHA_DOCS=t?((t.docs||[]).slice()):[]; renderDocs(); fiScanner.reset();
+    renderFichaRrhh(t);
     $('fi-title').textContent=t?('Ficha · '+(t.nombre||'')):'Nuevo trabajador';
     $('fi-del').classList.toggle('hide', !t);
     ficha.classList.remove('hide'); ficha.scrollTop=0;
@@ -2162,6 +2213,17 @@
         '<a href="'+esc(d.url)+'" target="_blank" rel="noopener">'+esc(d.nombre||'documento')+'<div class="dl">'+esc(fechaCorta(d.fecha||''))+' · abrir</div></a>'+
         '<button class="rm" data-i="'+i+'" type="button">✕</button></div>'; }).join('')||'<p class="note" style="margin:0">Sin documentos aún.</p>';
     c.querySelectorAll('.rm').forEach(function(b){ b.addEventListener('click',function(){ FICHA_DOCS.splice(+b.dataset.i,1); renderDocs(); }); });
+  }
+  // Checklist de documentación estándar (RRHH) dentro de la ficha del trabajador.
+  function renderFichaRrhh(t){
+    var c=$('fi-rrhh'); if(!c) return;
+    if(!t||!t.id){ c.innerHTML='<p class="note" style="margin:0">Guarda el trabajador para llevar su documentación.</p>'; return; }
+    function pinta(){
+      c.innerHTML='<div class="rrhh-chips">'+RRHH_TIPOS.map(function(tp){ var e=estadoDoc(t.id,tp.slug); var ic=(e.k==='ok'?'✔':(e.k==='venc'?'⛔':(e.k==='prox'?'⏰':'○'))); return '<span class="dchip '+DCLS[e.k]+'" data-t="'+t.id+'" data-s="'+tp.slug+'" style="cursor:pointer">'+esc(tp.corto)+' '+ic+'</span>'; }).join('')+'</div>';
+      c.querySelectorAll('.dchip[data-t]').forEach(function(el){ el.addEventListener('click',function(){ abrirDocRrhh(+el.dataset.t, el.dataset.s); }); });
+    }
+    pinta();
+    if(sb) sb.from('rrhh_docs').select('*').eq('trabajador_id',t.id).then(function(r){ if(r&&!r.error){ (r.data||[]).forEach(function(d){ RRHH_D[d.trabajador_id+'|'+d.tipo]=d; }); pinta(); } });
   }
   // ====== Escáner de documentos: varias fotos (ej. cédula ambos lados) -> 1 PDF; o PDF directo tal cual ======
   function crearEscaner(cfg){
@@ -2648,6 +2710,110 @@
   }
   function cerrarDetalleRemu(){ $('remu-detalle').classList.add('hide'); }
   $('rd-close').addEventListener('click',cerrarDetalleRemu);
+
+  // ====== RRHH · Documentación (solo admin) ======
+  var RRHH_TIPOS=[
+    {slug:'cedula',nombre:'Cédula de identidad',corto:'Cédula',vence:false},
+    {slug:'contrato',nombre:'Contrato',corto:'Contrato',vence:false},
+    {slug:'datos',nombre:'Ficha datos del trabajador',corto:'Datos',vence:false},
+    {slug:'riohs',nombre:'Recepción RIOHS',corto:'RIOHS',vence:false},
+    {slug:'epp',nombre:'Registro entrega EPP',corto:'EPP',vence:false},
+    {slug:'odi',nombre:'ODI (Obligación de informar)',corto:'ODI',vence:false},
+    {slug:'salud',nombre:'Declaración de salud',corto:'Salud',vence:false},
+    {slug:'induccion',nombre:'Inducción laboral',corto:'Inducción',vence:false},
+    {slug:'accidentes',nombre:'Procedimiento en caso de accidentes',corto:'Accidentes',vence:false},
+    {slug:'pts',nombre:'PTS acorde a sus funciones',corto:'PTS',vence:false},
+    {slug:'examen_altura',nombre:'Examen de altura',corto:'Ex. altura',vence:true},
+    {slug:'ley_karin',nombre:'Difusión Ley Karin',corto:'Ley Karin',vence:false},
+    {slug:'capacitacion',nombre:'Capacitaciones',corto:'Capacit.',vence:false}
+  ];
+  function rrhhTipo(s){ for(var i=0;i<RRHH_TIPOS.length;i++) if(RRHH_TIPOS[i].slug===s) return RRHH_TIPOS[i]; return {slug:s,nombre:s,corto:s,vence:false}; }
+  var RRHH_T=[], RRHH_D={}, RRHH_FILTRO='activo', RRHH_VISTA='doc';
+  function diffDiasV(v){ if(!v) return null; return Math.floor((new Date(v+'T12:00:00')-new Date())/86400000); }
+  function cargarRrhh(){
+    if(!sb) return;
+    Promise.all([
+      sb.from('trabajadores').select('*').order('nombre',{ascending:true}).limit(400),
+      sb.from('rrhh_docs').select('*').limit(6000)
+    ]).then(function(rs){
+      RRHH_T=(rs[0]&&rs[0].data)||[];
+      RRHH_D={}; ((rs[1]&&rs[1].data)||[]).forEach(function(d){ RRHH_D[d.trabajador_id+'|'+d.tipo]=d; });
+      renderRrhh();
+    });
+  }
+  function rrhhTrabs(){ return RRHH_T.filter(function(t){ return RRHH_FILTRO==='todos' || t.estado!=='inactivo'; }).sort(function(a,b){ return (a.nombre||'').localeCompare(b.nombre||''); }); }
+  // Estado calculado de un documento: pend | ok | prox | venc
+  function estadoDoc(tid,s){ var d=RRHH_D[tid+'|'+s]; if(!d||d.estado!=='entregado') return {k:'pend',txt:'Pendiente'};
+    var tp=rrhhTipo(s);
+    if(tp.vence && d.vencimiento){ var n=diffDiasV(d.vencimiento); if(n<0) return {k:'venc',txt:'Vencido',doc:d}; if(n<=30) return {k:'prox',txt:'Vence '+n+'d',doc:d}; }
+    return {k:'ok',txt:'Entregado',doc:d};
+  }
+  var DCLS={pend:'pend',ok:'ok',venc:'venc',prox:'prox'};
+  function renderRrhh(){
+    var trabs=rrhhTrabs(), N=trabs.length;
+    $('rrhh-cnt').textContent=N+(N===1?' persona':' personas');
+    var venc=0,prox=0,pend=0;
+    trabs.forEach(function(t){ RRHH_TIPOS.forEach(function(tp){ var e=estadoDoc(t.id,tp.slug); if(e.k==='pend')pend++; else if(e.k==='venc')venc++; else if(e.k==='prox')prox++; }); });
+    $('rrhh-alert').innerHTML=(venc||prox||pend)?('<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">'+(venc?'<span class="dchip venc">⛔ '+venc+' vencidos</span>':'')+(prox?'<span class="dchip prox">⏰ '+prox+' por vencer</span>':'')+'<span class="dchip pend">⏳ '+pend+' pendientes</span></div>'):'';
+    var cont=$('rrhh-list');
+    if(!N){ cont.innerHTML='<div class="empty"><div class="big">📋</div>No hay trabajadores.</div>'; return; }
+    if(RRHH_VISTA==='doc') renderRrhhDoc(trabs,cont); else renderRrhhPersona(trabs,cont);
+  }
+  function renderRrhhDoc(trabs,cont){
+    cont.innerHTML=RRHH_TIPOS.map(function(tp,ti){
+      var ok=0,vc=0; trabs.forEach(function(t){ var e=estadoDoc(t.id,tp.slug); if(e.k==='ok'||e.k==='prox')ok++; if(e.k==='venc')vc++; });
+      var pct=trabs.length?Math.round(ok/trabs.length*100):0;
+      var rows=trabs.map(function(t){ var e=estadoDoc(t.id,tp.slug);
+        var ver=(e.doc&&e.doc.url)?' <a href="'+esc(e.doc.url)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:var(--orange-2);font-weight:700;font-size:.8rem">ver</a>':'';
+        return '<div class="rrhh-pers" data-t="'+t.id+'" data-s="'+tp.slug+'"><span class="rp-nm">'+esc(t.nombre||'—')+'</span><span class="dchip '+DCLS[e.k]+'">'+e.txt+'</span>'+ver+'</div>';
+      }).join('');
+      return '<div class="rrhh-doc"><div class="rd-top" data-exp="rd'+ti+'"><span class="rd-nm">'+esc(tp.nombre)+(tp.vence?' <span class="note" style="font-weight:600;font-size:.7rem">(vence)</span>':'')+'</span><span class="dchip '+(pct===100?'ok':'pend')+'">'+ok+'/'+trabs.length+'</span>'+(vc?' <span class="dchip venc">'+vc+'⛔</span>':'')+'</div><div class="rrhh-bar"><i style="width:'+pct+'%"></i></div><div class="hide" id="rd'+ti+'" style="margin-top:8px">'+rows+'</div></div>';
+    }).join('');
+    cont.querySelectorAll('.rd-top').forEach(function(el){ el.addEventListener('click',function(){ var b=$(el.dataset.exp); if(b) b.classList.toggle('hide'); }); });
+    cont.querySelectorAll('.rrhh-pers').forEach(function(el){ el.addEventListener('click',function(){ abrirDocRrhh(+el.dataset.t, el.dataset.s); }); });
+  }
+  function renderRrhhPersona(trabs,cont){
+    cont.innerHTML=trabs.map(function(t){
+      var ok=0; var chips=RRHH_TIPOS.map(function(tp){ var e=estadoDoc(t.id,tp.slug); if(e.k==='ok'||e.k==='prox')ok++; var ic=(e.k==='ok'?'✔':(e.k==='venc'?'⛔':(e.k==='prox'?'⏰':'○'))); return '<span class="dchip '+DCLS[e.k]+'" data-t="'+t.id+'" data-s="'+tp.slug+'" style="cursor:pointer">'+esc(tp.corto)+' '+ic+'</span>'; }).join('');
+      var pct=Math.round(ok/RRHH_TIPOS.length*100);
+      return '<div class="rrhh-doc"><div class="rd-top"><span class="rd-nm">'+esc(t.nombre||'—')+(t.estado==='inactivo'?' <span class="note" style="font-weight:600;font-size:.7rem">(inactivo)</span>':'')+'</span><span class="dchip '+(pct===100?'ok':'pend')+'">'+ok+'/'+RRHH_TIPOS.length+'</span></div><div class="rrhh-bar"><i style="width:'+pct+'%"></i></div><div class="rrhh-chips">'+chips+'</div></div>';
+    }).join('');
+    cont.querySelectorAll('.dchip[data-t]').forEach(function(el){ el.addEventListener('click',function(){ abrirDocRrhh(+el.dataset.t, el.dataset.s); }); });
+  }
+  // Editar/registrar un documento de un trabajador (ts = slug del tipo; NO usar 'slug' para no tapar la función slug())
+  function abrirDocRrhh(tid, ts){
+    var t=RRHH_T.filter(function(x){return x.id===tid;})[0] || (typeof TRAB!=='undefined'?TRAB.filter(function(x){return x.id===tid;})[0]:null); if(!t) return;
+    var tp=rrhhTipo(ts), d=RRHH_D[tid+'|'+ts]||{};
+    $('re-title').textContent=(t.nombre||'')+' · '+tp.nombre;
+    $('re-body').innerHTML=
+      '<div class="card">'+
+        '<div class="fld"><label>Estado</label><select id="re-estado"><option value="pendiente"'+((d.estado||'pendiente')==='pendiente'?' selected':'')+'>Pendiente</option><option value="entregado"'+(d.estado==='entregado'?' selected':'')+'>Entregado</option></select></div>'+
+        '<div class="grid2"><div class="fld" style="margin:0"><label>Fecha</label><input type="date" id="re-fecha" value="'+(d.fecha||'')+'"></div>'+
+          (tp.vence?('<div class="fld" style="margin:0"><label>Vence</label><input type="date" id="re-venc" value="'+(d.vencimiento||'')+'"></div>'):'<div></div>')+'</div>'+
+        '<div class="fld"><label>Archivo</label><div>'+(d.url?('<a href="'+esc(d.url)+'" target="_blank" rel="noopener" style="color:var(--orange-2);font-weight:700">📎 Ver archivo actual</a><br>'):'')+'<label class="catadd" style="display:inline-block;margin-top:4px">⬆ Subir archivo<input type="file" id="re-file" accept="image/*,application/pdf" hidden></label> <span id="re-fname" class="note"></span></div></div>'+
+        '<div class="fld"><label>Nota</label><input type="text" id="re-nota" value="'+enc(d.nota||'')+'" placeholder="Opcional"></div>'+
+        '<button id="re-save" class="btn" style="width:100%;margin-top:8px">💾 Guardar</button>'+
+      '</div>';
+    var pend={file:null};
+    $('re-file').addEventListener('change',function(){ pend.file=this.files&&this.files[0]; $('re-fname').textContent=pend.file?('· '+pend.file.name):''; });
+    $('re-save').addEventListener('click',function(){
+      var row={ trabajador_id:tid, tipo:ts, estado:$('re-estado').value, fecha:($('re-fecha').value||null), vencimiento:(tp.vence?($('re-venc').value||null):null), nota:($('re-nota').value.trim()||null), autor:userEmail };
+      function guardar(){
+        sb.from('rrhh_docs').upsert(row,{onConflict:'trabajador_id,tipo'}).then(function(r){ busy(false);
+          if(r.error){ toast(/rrhh_docs/.test(r.error.message||'')?'Falta correr rrhh-docs.sql en Supabase.':('No se pudo guardar: '+r.error.message)); return; }
+          toast('✓ Guardado'); $('rrhh-edit').classList.add('hide'); RRHH_D[tid+'|'+ts]=row; renderRrhh();
+          if(typeof FICHA_ID!=='undefined' && FICHA_ID===tid) renderFichaRrhh(t);
+        }, function(){ busy(false); toast('No se pudo guardar.'); });
+      }
+      if(pend.file){ busy(true,'Subiendo archivo…'); var ext=((pend.file.name||'').split('.').pop()||'pdf').toLowerCase();
+        subirArchivo(pend.file, 'rrhh/'+slug(t.nombre||'trab'), ts+'_'+slug(t.nombre||'trab')+'.'+ext).then(function(res){ if(res) row.url=res.url; busy(true,'Guardando…'); guardar(); });
+      } else { busy(true,'Guardando…'); guardar(); }
+    });
+    $('rrhh-edit').classList.remove('hide'); $('rrhh-edit').scrollTop=0;
+  }
+  $('re-close').addEventListener('click',function(){ $('rrhh-edit').classList.add('hide'); });
+  document.querySelectorAll('.rrhh-fil').forEach(function(b){ b.addEventListener('click',function(){ document.querySelectorAll('.rrhh-fil').forEach(function(x){ x.classList.toggle('on',x===b); }); RRHH_FILTRO=b.dataset.f; renderRrhh(); }); });
+  document.querySelectorAll('.rrhh-vis').forEach(function(b){ b.addEventListener('click',function(){ document.querySelectorAll('.rrhh-vis').forEach(function(x){ x.classList.toggle('on',x===b); }); RRHH_VISTA=b.dataset.v; renderRrhh(); }); });
 
   // ====== ACCESOS / PERMISOS (solo Enzo) ======
   var SECCIONES=[['reporte','Registro'],['hist','Registros'],['cuadrilla','Preparación'],['matriz','Matriz'],['trab','Personas'],['veh','Vehículos'],['remu','Remuneraciones'],['planificacion','Planificación']];
