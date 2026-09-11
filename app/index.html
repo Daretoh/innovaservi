@@ -2497,7 +2497,7 @@
   });
 
   // ====== Detector de duplicados de nombres (juntar horas sueltas) ======
-  var DUPS=[], DUPS_ORPH=[], DUPS_CNT={}, DUPS_DISP={}, DUPS_FICHA={};
+  var DUPS=[], DUPS_ORPH=[], DUPS_FDUP=[], DUPS_CNT={}, DUPS_DISP={}, DUPS_FICHA={};
   function normName(s){ s=(s||'').trim().toLowerCase(); return s.replace(/á|à|ä/g,'a').replace(/é|è|ë/g,'e').replace(/í|ì|ï/g,'i').replace(/ó|ò|ö/g,'o').replace(/ú|ù|ü/g,'u').replace(/ñ/g,'n').replace(/\s+/g,' '); }
   function abrirDups(){
     if(!sb) return; busy(true,'Buscando duplicados…');
@@ -2515,6 +2515,9 @@
       // Nombres con horas, sin ficha y que no están ya en un grupo de duplicados.
       DUPS_ORPH=Object.keys(disp).filter(function(k){ return (cnt[k]||0)>0 && !fichaSet[k] && !inGroup[k]; })
         .sort(function(a,b){ return (cnt[b]||0)-(cnt[a]||0); });
+      // Fichas repetidas: mismo nombre normalizado en 2+ registros de trabajadores.
+      var fdup={}; (TRAB||[]).forEach(function(t){ var k=normName(t.nombre); if(!k) return; (fdup[k]=fdup[k]||[]).push(t); });
+      DUPS_FDUP=Object.keys(fdup).filter(function(k){ return fdup[k].length>1; }).map(function(k){ return fdup[k]; });
       DUPS_CNT=cnt; DUPS_DISP=disp; DUPS_FICHA=fichaSet;
       renderDups(); $('dups-mgr').classList.remove('hide'); $('dups-mgr').scrollTop=0;
     }, function(){ busy(false); toast('No se pudo leer las horas.'); });
@@ -2523,6 +2526,14 @@
   function renderDups(){
     var c=$('dups-list'); if(!c) return;
     var html='';
+    // Sección 0: fichas repetidas (mismo nombre, 2+ registros). Duplican el pago.
+    if(DUPS_FDUP.length){
+      html+='<h3 style="font:800 14px var(--font);color:#dc2626;margin:0 0 8px">🗂️ Fichas repetidas (borra las de más)</h3>';
+      html+=DUPS_FDUP.map(function(list){
+        var rows=list.map(function(t){ return '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:5px 0;border-bottom:1px dashed var(--line)"><span style="font-size:.85rem">'+esc(titleCase(t.nombre))+(t.cargo?(' <span class="note" style="margin:0;font-size:.72rem">· '+esc(t.cargo)+'</span>'):'')+'</span><button class="fd-del btn ghost small" data-id="'+t.id+'" style="width:auto;color:#dc2626;border-color:#f0c0c0">✕ Borrar</button></div>'; }).join('');
+        return '<div class="card"><b>'+esc(titleCase(list[0].nombre))+' <span class="note" style="margin:0;font-weight:600">('+list.length+' fichas)</span></b><p class="note" style="margin:4px 0 6px">Deja solo una. Borrar una ficha NO borra sus horas.</p>'+rows+'</div>';
+      }).join('');
+    }
     // Sección 1: grupos con variantes parecidas.
     if(DUPS.length){
       html+='<h3 style="font:800 14px var(--font);color:var(--ink);margin:0 0 8px">🔁 Nombres parecidos</h3>';
@@ -2549,6 +2560,7 @@
     }
     c.innerHTML=html||'<div class="empty"><div class="big">✅</div>No hay nombres por revisar.<br><span style="font-size:.82rem">Todo tiene ficha y se ve consistente.</span></div>';
     c.querySelectorAll('.dg-merge').forEach(function(b){ b.addEventListener('click',function(){ var grp=b.closest('.dgrp'); mergeDup(+grp.dataset.gi, grp.querySelector('.dg-canon').value); }); });
+    c.querySelectorAll('.fd-del').forEach(function(b){ b.addEventListener('click',function(){ var id=b.dataset.id; if(!confirm('¿Borrar esta ficha repetida? (sus horas NO se borran)')) return; busy(true,'Borrando…'); sb.from('trabajadores').delete().eq('id',id).then(function(r){ busy(false); if(r.error){ toast('No se pudo borrar: '+r.error.message); return; } toast('✓ Ficha borrada'); cargarTrab(function(){ actualizarDatalist(); if(typeof pintarTrab==='function') pintarTrab(); abrirDups(); }); if(typeof cargarRemu==='function') cargarRemu(); }); }); });
     c.querySelectorAll('.oorph').forEach(function(card){
       var nm=card.dataset.nm;
       card.querySelector('.oo-unir').addEventListener('click',function(){ var box=card.querySelector('.oo-box'); box.style.display=(box.style.display==='none')?'block':'none'; });
@@ -2993,7 +3005,9 @@
     var filas=[], total=0, porDiaMonto={}, porDiaHoras={};
     var consumido={};
     D.trab.forEach(function(t){
-      var nm=norm(t.nombre), H=horasT[nm]; consumido[nm]=1;
+      var nm=norm(t.nombre);
+      if(consumido[nm]) return;   // ficha repetida (mismo nombre): no contar sus horas dos veces
+      var H=horasT[nm]; consumido[nm]=1;
       var tv=(vueltasT[nm]||0)+((H&&H.vueltas)||0), tp=peajesT[nm]||0, bo=bonoT[t.id]||0, de=descT[t.id]||0;
       if(t.estado==='inactivo' && !H && !tv && !tp && !bo && !de) return;   // inactivo sin actividad: se oculta; con horas igual se muestra
       var totMin=H?H.totalMin:0, dias=H?Object.keys(H.porDia).length:0;
