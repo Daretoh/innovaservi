@@ -158,6 +158,7 @@
   .hgroup-h{font:800 13px var(--font);color:var(--navy);margin:0;padding:11px 13px;border-bottom:2px solid var(--orange);background:linear-gradient(180deg,var(--alt),#fff);cursor:pointer;user-select:none;display:flex;align-items:center;gap:7px;}
   .hgroup.collapsed .hgroup-h{border-bottom:none;}
   .hgroup-body{padding:9px 9px 4px;}
+  .hrow .h-fae{flex:1 1 150px;min-width:120px;font:600 12.5px var(--font);padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);}
   .hrow-vu{flex:0 0 auto;display:inline-flex;align-items:center;gap:2px;font-size:13px;background:#fff;border:1px solid var(--line);border-radius:8px;padding:0 6px;height:34px;}
   .hrow-vu input{width:32px;border:none;background:none;font:800 13px var(--font);color:var(--orange-2);text-align:center;padding:0;-moz-appearance:textfield;}
   .hrow-vu input::-webkit-outer-spin-button,.hrow-vu input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
@@ -2178,9 +2179,18 @@
     if(HZ_FILTRO==='hoy') q=q.eq('fecha',hoy);
     else if(HZ_FILTRO==='semana') q=q.gte('fecha',isoMas(-6)).lte('fecha',hoy);
     q.order('fecha',{ascending:false}).limit(800).then(function(r){
-      HZ=((r&&r.data)||[]).map(function(h){ return {id:h.id, fecha:h.fecha, trabajador:h.trabajador||'', entrada:h.entrada||'', salida:h.salida||'', vueltas:(+h.vueltas||0)}; });
+      HZ=((r&&r.data)||[]).map(function(h){ return {id:h.id, fecha:h.fecha, trabajador:h.trabajador||'', entrada:h.entrada||'', salida:h.salida||'', vueltas:(+h.vueltas||0), faena:(h.faena||'')}; });
       HZ_DEL=[]; renderHz();
     });
+  }
+  // Faenas de un día según Planificación (EVENTOS): etiqueta = "UBICACIÓN — título".
+  function faLabel(e){ var u=(e.ubicacion||'').trim(), t=(e.titulo||'').trim(); return (u&&t)?(u+' — '+t):(u||t||'Faena'); }
+  function faenasDia(fecha){ if(!fecha) return []; return (typeof EVENTOS!=='undefined'?EVENTOS:[]).filter(function(e){ var ini=e.fecha, fin=e.fecha_fin||e.fecha; return ini && ini<=fecha && fecha<=fin; }).map(faLabel); }
+  function opcionesFaena(fecha, sel){
+    var list=faenasDia(fecha), seen={}, opts='<option value="">— sin faena —</option>';
+    list.forEach(function(f){ if(seen[f]) return; seen[f]=1; opts+='<option value="'+enc(f)+'"'+(f===sel?' selected':'')+'>'+esc(f)+'</option>'; });
+    if(sel && !seen[sel]) opts+='<option value="'+enc(sel)+'" selected>'+esc(sel)+' (otra fecha)</option>';
+    return opts;
   }
   function renderHz(){
     var c=$('hz-list'); if(!c) return;
@@ -2195,6 +2205,7 @@
       var rows=idxs.map(function(i){ var h=HZ[i];
         return '<div class="hrow" data-i="'+i+'">'+
           '<input class="h-trab" list="trab-datalist" placeholder="Trabajador" value="'+enc(h.trabajador||'')+'">'+
+          '<select class="h-fae" title="Faena (según Planificación)">'+opcionesFaena(h.fecha,h.faena||'')+'</select>'+
           '<label class="hrow-vu" title="Vueltas (van a Remuneraciones)">🔄<input type="number" class="h-vu" min="0" value="'+(h.vueltas||0)+'"></label>'+
           '<input type="time" class="h-in" value="'+(h.entrada||'')+'"><span class="arw">→</span><input type="time" class="h-out" value="'+(h.salida||'')+'">'+
           '<span class="hrow-total">'+totalMini(h.entrada,h.salida)+'</span>'+
@@ -2211,6 +2222,7 @@
       var upd=function(){ row.querySelector('.hrow-total').textContent=totalMini(row.querySelector('.h-in').value,row.querySelector('.h-out').value); };
       function marcar(){ if(HZ[i]) HZ[i]._dirty=true; autoGuardarHz(); }
       row.querySelector('.h-trab').addEventListener('input',marcar);
+      var fa=row.querySelector('.h-fae'); if(fa) fa.addEventListener('change',marcar);
       var vu=row.querySelector('.h-vu'); if(vu) vu.addEventListener('input',marcar);
       row.querySelector('.h-in').addEventListener('change',function(){ upd(); marcar(); });
       row.querySelector('.h-out').addEventListener('change',function(){ upd(); marcar(); });
@@ -2226,21 +2238,21 @@
     HZ.forEach(function(h){
       if(!h._dirty) return;
       if(!(h.trabajador||'').trim()) return;   // no guarda líneas sin nombre
-      var row={ fecha:h.fecha||todayISO(), trabajador:h.trabajador.trim(), entrada:h.entrada||null, salida:h.salida||null, vueltas:(+h.vueltas||0), autor:userEmail };
+      var row={ fecha:h.fecha||todayISO(), trabajador:h.trabajador.trim(), entrada:h.entrada||null, salida:h.salida||null, vueltas:(+h.vueltas||0), faena:(h.faena||null), autor:userEmail };
       h._dirty=false;
       if(h.id){ sb.from('horas').update(row).eq('id',h.id).then(function(){},function(){}); }
       else if(!h._saving){ h._saving=true; sb.from('horas').insert(row).select('id').maybeSingle().then(function(r){ h._saving=false; if(r&&r.data&&r.data.id) h.id=r.data.id; }, function(){ h._saving=false; }); }
     });
     var ind=$('hz-saved'); if(ind){ ind.textContent='✓ guardado'; ind.style.opacity='1'; clearTimeout(ind._t); ind._t=setTimeout(function(){ ind.style.opacity='0'; },1600); }
   }
-  function syncHz(){ var c=$('hz-list'); if(!c) return; c.querySelectorAll('.hrow').forEach(function(row){ var i=+row.dataset.i; if(HZ[i]){ HZ[i].trabajador=row.querySelector('.h-trab').value; HZ[i].entrada=row.querySelector('.h-in').value; HZ[i].salida=row.querySelector('.h-out').value; var vu=row.querySelector('.h-vu'); if(vu) HZ[i].vueltas=(+vu.value||0); var fe=row.querySelector('.h-fecha'); if(fe) HZ[i].fecha=fe.value||todayISO(); } }); }
+  function syncHz(){ var c=$('hz-list'); if(!c) return; c.querySelectorAll('.hrow').forEach(function(row){ var i=+row.dataset.i; if(HZ[i]){ HZ[i].trabajador=row.querySelector('.h-trab').value; HZ[i].entrada=row.querySelector('.h-in').value; HZ[i].salida=row.querySelector('.h-out').value; var fa=row.querySelector('.h-fae'); if(fa) HZ[i].faena=fa.value; var vu=row.querySelector('.h-vu'); if(vu) HZ[i].vueltas=(+vu.value||0); var fe=row.querySelector('.h-fecha'); if(fe) HZ[i].fecha=fe.value||todayISO(); } }); }
   function addHz(){ syncHz(); var f=(HZ.length?HZ[0].fecha:'')||todayISO(); HZ.unshift({fecha:f,trabajador:'',entrada:'',salida:''}); renderHz(); }
   function removeHz(i){ syncHz(); var h=HZ[i]; if(h&&h.id) HZ_DEL.push(h.id); HZ.splice(i,1); renderHz(); autoGuardarHz(); }
   function guardarHz(){
     if(!sb) return; syncHz();
     var ins=[], upds=[];
     HZ.forEach(function(h){ if(!(h.trabajador||'').trim()) return;
-      var row={ fecha:h.fecha||todayISO(), trabajador:h.trabajador.trim(), entrada:h.entrada||null, salida:h.salida||null, vueltas:(+h.vueltas||0), autor:userEmail };
+      var row={ fecha:h.fecha||todayISO(), trabajador:h.trabajador.trim(), entrada:h.entrada||null, salida:h.salida||null, vueltas:(+h.vueltas||0), faena:(h.faena||null), autor:userEmail };
       if(h.id) upds.push({id:h.id,row:row}); else ins.push(row); });
     busy(true,'Guardando horas…'); var err=null;
     function fin(){ busy(false); if(err) toast('Algo falló: '+err); else toast('✓ Horas guardadas'); cargarHoras(); }
@@ -2752,7 +2764,7 @@
       var nm=norm(h.trabajador); if(!nm) return; var mn=totalMin(h.entrada,h.salida); mn=(mn==null?0:mn);
       if(!horasT[nm]) horasT[nm]={porDia:{},detalle:[],totalMin:0,vueltas:0};
       horasT[nm].porDia[f]=(horasT[nm].porDia[f]||0)+mn;
-      horasT[nm].detalle.push({fecha:f,empresa:h.empresa,lugar:h.lugar,entrada:h.entrada,salida:h.salida,min:mn,vueltas:(+h.vueltas||0)});
+      horasT[nm].detalle.push({fecha:f,empresa:h.empresa,lugar:h.lugar,faena:(h.faena||''),entrada:h.entrada,salida:h.salida,min:mn,vueltas:(+h.vueltas||0)});
       horasT[nm].totalMin+=mn; horasT[nm].vueltas+=(+h.vueltas||0);
     });
     var vueltasT={}, peajesT={};
@@ -2783,8 +2795,9 @@
     // Cards de total por día de la semana (horas trabajadas · pago).
     var DIAS3=['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'], hoyISO=todayISO(), cardsHtml='';
     for(var di=0; di<7; di++){ var fday=sumarDias(lun,di), mo=porDiaMonto[fday]||0, hr=porDiaHoras[fday]||0, dd=new Date(fday+'T12:00:00');
-      cardsHtml+='<div class="rd-card'+(fday===hoyISO?' hoy':'')+(mo?'':' cero')+'"><div class="d">'+DIAS3[di]+' <b>'+dd.getDate()+'</b></div><div class="v">'+(mo?fmtMoney(mo):'—')+'</div>'+(hr?'<div class="h">'+hm(hr)+'</div>':'')+'</div>'; }
+      cardsHtml+='<div class="rd-card'+(fday===hoyISO?' hoy':'')+(mo?'':' cero')+'" data-f="'+fday+'" style="cursor:pointer"><div class="d">'+DIAS3[di]+' <b>'+dd.getDate()+'</b></div><div class="v">'+(mo?fmtMoney(mo):'—')+'</div>'+(hr?'<div class="h">'+hm(hr)+'</div>':'')+'</div>'; }
     $('remu-dias').innerHTML=cardsHtml;
+    $('remu-dias').querySelectorAll('.rd-card[data-f]').forEach(function(el){ el.addEventListener('click',function(){ abrirDetalleDia(el.dataset.f); }); });
     var cont=$('remu-list');
     if(!filas.length){ cont.innerHTML='<div class="empty"><div class="big">💵</div>Sin horas ni pagos esta semana.<br><span style="font-size:.82rem">Cambia de semana o revisa la config de pago.</span></div>'; return; }
     var m=function(v,neg){ return v?((neg?'−':'')+fmtMoney(v)):'<span class="rt-z">—</span>'; };
@@ -2862,7 +2875,7 @@
       var pagoDia=Math.round(pagoMin/60*x.vh);
       // ¿hay un registro/reporte de ese día y empresa? → enlace para abrirlo
       var reg=(typeof REGISTROS!=='undefined'?REGISTROS:[]).filter(function(r){ return r.fecha===d.fecha && norm(r.empresa)===norm(d.empresa); })[0];
-      return '<div class="rd-dia'+(reg?' rd-link':'')+'"'+(reg?(' data-reg="'+reg.id+'"'):'')+'><div style="flex:1"><b>'+fechaCorta(d.fecha)+'</b><div class="note" style="margin:0;font-size:.74rem">'+esc(d.empresa||'—')+(d.lugar?' · '+esc(d.lugar):'')+(reg?' <span style="color:var(--orange-2);font-weight:700">· ver ›</span>':'')+'</div></div><div style="text-align:right;flex-shrink:0"><div style="font-size:.82rem">'+esc(d.entrada||'--:--')+' → '+esc(d.salida||'--:--')+' · '+hm(d.min)+'</div><b style="color:var(--orange-2);font-size:.82rem">'+fmtMoney(pagoDia)+'</b></div></div>';
+      return '<div class="rd-dia'+(reg?' rd-link':'')+'"'+(reg?(' data-reg="'+reg.id+'"'):'')+'><div style="flex:1"><b>'+fechaCorta(d.fecha)+'</b><div class="note" style="margin:0;font-size:.74rem">'+esc(d.faena||d.empresa||'—')+(d.lugar?' · '+esc(d.lugar):'')+(reg?' <span style="color:var(--orange-2);font-weight:700">· ver ›</span>':'')+'</div></div><div style="text-align:right;flex-shrink:0"><div style="font-size:.82rem">'+esc(d.entrada||'--:--')+' → '+esc(d.salida||'--:--')+' · '+hm(d.min)+'</div><b style="color:var(--orange-2);font-size:.82rem">'+fmtMoney(pagoDia)+'</b></div></div>';
     }).join(''):'<p class="note" style="margin:0">Sin días registrados esta semana.</p>';
     var desg='<div class="rd-lin"><span>'+(x.tipo==='contrato'?'Horas extra':'Horas')+' ('+hm(x.baseMin)+(x.vh?(' × '+fmtMoney(x.vh)):'')+')</span><b>'+fmtMoney(x.base)+'</b></div>';
     if(x.vueltas) desg+='<div class="rd-lin"><span>'+x.vueltas+' vueltas × '+fmtMoney(REMU_DATA.valorVuelta)+'</span><b>'+fmtMoney(x.vueltasMonto)+'</b></div>';
@@ -2889,6 +2902,41 @@
   }
   function cerrarDetalleRemu(){ $('remu-detalle').classList.add('hide'); }
   $('rd-close').addEventListener('click',cerrarDetalleRemu);
+
+  // Detalle de un DÍA de la semana: trabajadores, horas por trabajador, horas totales y montos.
+  function abrirDetalleDia(fday){
+    var D=REMU_DATA; if(!D||!fday) return;
+    var dd=new Date(fday+'T12:00:00'), DIASL=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+    $('rd-title').textContent=DIASL[dd.getDay()]+' '+dd.getDate()+' · Semana '+numSemana(D.lun);
+    var faenas=faenasDia(fday);
+    var rows=[], totMin=0, totMonto=0, totVu=0;
+    (D.filas||[]).forEach(function(x){
+      var ents=((x.H&&x.H.detalle)||[]).filter(function(d){ return d.fecha===fday; });
+      if(!ents.length) return;
+      var dayMin=0, vu=0, faW={};
+      ents.forEach(function(d){ dayMin+=d.min; vu+=(d.vueltas||0); if(d.faena) faW[d.faena]=1; });
+      var pagoMin=(x.tipo==='contrato')?Math.max(0,dayMin-(x.jor*60)):dayMin;
+      var pago=Math.round(pagoMin/60*x.vh);
+      totMin+=dayMin; totMonto+=pago; totVu+=vu;
+      rows.push({x:x, ents:ents, dayMin:dayMin, pago:pago, vu:vu, faenas:Object.keys(faW)});
+    });
+    var chip='display:inline-block;background:#eef2ff;border:1px solid var(--navy);color:var(--navy);border-radius:20px;padding:3px 10px;font:700 11.5px var(--font);margin:0 5px 5px 0';
+    var faChips=faenas.length?('<div style="margin-top:2px">'+faenas.map(function(f){ return '<span style="'+chip+'">📍 '+esc(f)+'</span>'; }).join('')+'</div>')
+      :'<p class="note" style="margin:0">Sin faenas en Planificación para este día.</p>';
+    var trabHtml=rows.length?rows.map(function(r){
+      var horarios=r.ents.map(function(d){ return esc(d.entrada||'--:--')+'→'+esc(d.salida||'--:--'); }).join(', ');
+      var faTxt=r.faenas.length?('<div class="note" style="margin:2px 0 0;font-size:.72rem">📍 '+esc(r.faenas.join(' · '))+'</div>'):'';
+      return '<div class="rd-dia"><div style="flex:1"><b>'+esc(r.x.t.nombre||'')+'</b><div class="note" style="margin:0;font-size:.74rem">'+horarios+(r.vu?(' · 🔄 '+r.vu+' vueltas'):'')+'</div>'+faTxt+'</div><div style="text-align:right;flex-shrink:0"><div style="font-size:.82rem">'+hm(r.dayMin)+'</div><b style="color:var(--orange-2);font-size:.82rem">'+fmtMoney(r.pago)+'</b></div></div>';
+    }).join(''):'<p class="note" style="margin:0">Nadie registró horas este día.</p>';
+    var lbl='display:block;font:700 13px var(--font);color:var(--ink);margin-bottom:6px';
+    $('rd-body').innerHTML=
+      '<div class="card"><label style="'+lbl+'">🦺 Faenas del día (Planificación)</label>'+faChips+'</div>'+
+      '<div class="card"><label style="'+lbl+'">👷 Trabajadores ('+rows.length+')</label>'+trabHtml+'</div>'+
+      '<div class="card"><div class="rd-lin rd-tot"><span>Total horas del día</span><b>'+hm(totMin)+'</b></div>'+
+        '<div class="rd-lin rd-tot"><span>Total pago (horas)</span><b>'+fmtMoney(totMonto)+'</b></div>'+
+        (totVu?('<div class="rd-lin"><span>Vueltas del día</span><b>'+totVu+'</b></div>'):'')+'</div>';
+    $('remu-detalle').classList.remove('hide'); $('remu-detalle').scrollTop=0;
+  }
 
   // ====== RRHH · Documentación (solo admin) ======
   var RRHH_TIPOS=[
