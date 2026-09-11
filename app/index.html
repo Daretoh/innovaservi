@@ -426,6 +426,15 @@
   .rd-lin.rd-tot{border-bottom:none;border-top:2px solid var(--line);margin-top:2px;font-weight:800;font-size:1rem;}
   /* Tabla tipo Excel de Pagos */
   .remu-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:12px;background:#fff;}
+  .remu-dias{display:flex;gap:8px;margin-bottom:14px;overflow-x:auto;padding-bottom:2px;-webkit-overflow-scrolling:touch;}
+  .rd-card{flex:1 0 92px;min-width:92px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:9px 10px;text-align:center;box-shadow:0 6px 18px -14px rgba(26,31,110,.4);}
+  .rd-card.hoy{border-color:var(--orange);}
+  .rd-card.cero{opacity:.55;}
+  .rd-card .d{font:800 10px var(--font);text-transform:uppercase;letter-spacing:.04em;color:var(--muted);}
+  .rd-card .d b{display:block;font:800 15px var(--font);color:var(--ink);margin-top:1px;letter-spacing:0;}
+  .rd-card .v{font:800 13px var(--font);color:var(--orange-2);margin-top:6px;white-space:nowrap;}
+  .rd-card .h{font:600 9.5px var(--font);color:var(--faint,#8a8fac);margin-top:2px;}
+  @media(min-width:900px){ main.wide .remu-dias{gap:10px;} main.wide .rd-card{padding:12px 12px;} main.wide .rd-card .v{font-size:15px;} }
   .remu-tbl{border-collapse:collapse;width:100%;font:600 12.5px var(--font);white-space:nowrap;}
   .remu-tbl th{background:var(--alt);color:var(--muted);font:800 10px var(--font);text-transform:uppercase;letter-spacing:.03em;padding:9px 11px;text-align:right;border-bottom:1px solid var(--line);}
   .remu-tbl th:first-child{text-align:left;position:sticky;left:0;background:var(--alt);z-index:2;}
@@ -676,6 +685,7 @@
         <button id="remu-next" class="btn ghost small" style="width:auto">›</button>
       </div>
       <div id="remu-total" style="background:rgba(255,107,0,.1);border-radius:12px;padding:12px 14px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center"><span style="font:600 13px var(--font);color:var(--orange-2)">Total a pagar</span><b id="remu-total-val" style="font:800 20px var(--font);color:var(--orange-2)">$0</b></div>
+      <div id="remu-dias" class="remu-dias"></div>
       <div id="remu-list"></div>
       <!-- Config de pago (inline, oculto) -->
       <div id="remu-config" class="hide">
@@ -2684,7 +2694,7 @@
       if(g.categoria==='peaje') peajesT[nm]=(peajesT[nm]||0)+(+g.monto||0); });
     var bonoT={}, descT={};
     D.items.forEach(function(it){ if(it.tipo==='bono') bonoT[it.trabajador_id]=(bonoT[it.trabajador_id]||0)+(+it.monto||0); if(it.tipo==='descuento') descT[it.trabajador_id]=(descT[it.trabajador_id]||0)+(+it.monto||0); });
-    var filas=[], total=0;
+    var filas=[], total=0, porDiaMonto={}, porDiaHoras={};
     D.trab.forEach(function(t){ if(t.estado==='inactivo') return;
       var nm=norm(t.nombre), H=horasT[nm];
       var tv=vueltasT[nm]||0, tp=peajesT[nm]||0, bo=bonoT[t.id]||0, de=descT[t.id]||0;
@@ -2692,6 +2702,8 @@
       var tipo=t.tipo_pago||'hora', vh=(+t.valor_hora||0)||D.valorHora, jor=+t.jornada_horas||0, baseMin;
       if(tipo==='contrato'){ baseMin=0; if(H){ for(var f in H.porDia){ var ex=H.porDia[f]-jor*60; if(ex>0) baseMin+=ex; } } }
       else baseMin=totMin;
+      // Total de horas (pago) por día de la semana, sumando todos los trabajadores.
+      if(H){ for(var fd in H.porDia){ var dm=H.porDia[fd], pmin=(tipo==='contrato')?Math.max(0,dm-jor*60):dm; porDiaMonto[fd]=(porDiaMonto[fd]||0)+Math.round(pmin/60*vh); porDiaHoras[fd]=(porDiaHoras[fd]||0)+dm; } }
       var base=Math.round(baseMin/60*vh), vueltasMonto=tv*D.valorVuelta, totalTrab=base+vueltasMonto+tp+bo-de;
       if(totMin===0 && tv===0 && tp===0 && bo===0 && de===0) return;
       filas.push({t:t,tipo:tipo,dias:dias,totMin:totMin,base:base,baseMin:baseMin,vh:vh,jor:jor,vueltas:tv,vueltasMonto:vueltasMonto,peajes:tp,bono:bo,desc:de,total:totalTrab,H:H});
@@ -2701,6 +2713,11 @@
     REMU_DATA.filas=filas;
     $('remu-total-val').textContent=fmtMoney(total);
     $('remu-cnt').textContent=filas.length+(filas.length===1?' trabajador':' trabajadores');
+    // Cards de total por día de la semana (horas trabajadas · pago).
+    var DIAS3=['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'], hoyISO=todayISO(), cardsHtml='';
+    for(var di=0; di<7; di++){ var fday=sumarDias(lun,di), mo=porDiaMonto[fday]||0, hr=porDiaHoras[fday]||0, dd=new Date(fday+'T12:00:00');
+      cardsHtml+='<div class="rd-card'+(fday===hoyISO?' hoy':'')+(mo?'':' cero')+'"><div class="d">'+DIAS3[di]+' <b>'+dd.getDate()+'</b></div><div class="v">'+(mo?fmtMoney(mo):'—')+'</div>'+(hr?'<div class="h">'+hm(hr)+'</div>':'')+'</div>'; }
+    $('remu-dias').innerHTML=cardsHtml;
     var cont=$('remu-list');
     if(!filas.length){ cont.innerHTML='<div class="empty"><div class="big">💵</div>Sin horas ni pagos esta semana.<br><span style="font-size:.82rem">Cambia de semana o revisa la config de pago.</span></div>'; return; }
     var m=function(v,neg){ return v?((neg?'−':'')+fmtMoney(v)):'<span class="rt-z">—</span>'; };
@@ -2725,6 +2742,7 @@
     var cfg=$('remu-config'), abriendo=cfg.classList.contains('hide');
     cfg.classList.toggle('hide', !abriendo);
     $('remu-list').classList.toggle('hide', abriendo);
+    if($('remu-dias')) $('remu-dias').classList.toggle('hide', abriendo);
     $('remu-total').classList.toggle('hide', abriendo);
     if(abriendo) renderCfgPago();
   });
