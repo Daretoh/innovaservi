@@ -333,8 +333,8 @@
   .trab .meta{font-size:.72rem;color:var(--muted);margin-top:1px;}
   .trab .badge{font-size:.66rem;font-weight:800;padding:2px 8px;border-radius:999px;background:rgba(34,160,107,.14);color:var(--ok);}
   .trab.off .badge{background:var(--alt);color:var(--muted);}
-  #ficha,#veh-ficha,#remu-detalle,#acc-ficha,#rrhh-edit{position:fixed;inset:0;z-index:75;background:var(--alt);overflow-y:auto;-webkit-overflow-scrolling:touch;}
-  #ficha.hide,#veh-ficha.hide,#remu-detalle.hide,#acc-ficha.hide,#rrhh-edit.hide{display:none;}
+  #ficha,#veh-ficha,#remu-detalle,#acc-ficha,#rrhh-edit,#cli-ficha{position:fixed;inset:0;z-index:75;background:var(--alt);overflow-y:auto;-webkit-overflow-scrolling:touch;}
+  #ficha.hide,#veh-ficha.hide,#remu-detalle.hide,#acc-ficha.hide,#rrhh-edit.hide,#cli-ficha.hide{display:none;}
   /* RRHH documentación */
   .rrhh-doc{background:#fff;border:1px solid var(--line);border-radius:12px;padding:11px 13px;margin-bottom:9px;}
   .rrhh-doc .rd-top{display:flex;align-items:center;gap:10px;cursor:pointer;}
@@ -459,6 +459,7 @@
   <div class="topbar">
     <div class="tt"><img src="../assets/images/InnovaLOGO.png" alt="" onerror="this.style.display='none'"><div><b>InnovaGestión</b><div class="who" id="who"></div></div></div>
     <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
+      <button id="btn-cli" class="out hide">🏢<span class="hlbl"> Clientes</span></button>
       <button id="btn-rrhh" class="out hide">📋<span class="hlbl"> RRHH</span></button>
       <button id="btn-pagos" class="out hide">💵<span class="hlbl"> Remuneraciones</span></button>
       <a href="../planificacion/" id="btn-plan" class="out hide" style="text-decoration:none">🗓️<span class="hlbl"> Planificación</span></a>
@@ -715,6 +716,15 @@
       </div>
     </section>
 
+    <!-- ---- CLIENTES (solo admin) ---- -->
+    <section class="view" id="v-clientes">
+      <div class="h-row"><h2>Clientes <span class="cnt" id="cli-cnt"></span></h2><button id="cli-nuevo" class="btn small" style="width:auto">＋ Nuevo</button></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+        <input id="cli-search" type="search" placeholder="Buscar cliente, RUT o sitio…" style="flex:1;min-width:150px;font:500 15px var(--font);padding:10px 12px;border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--ink)">
+      </div>
+      <div id="cli-list"></div>
+    </section>
+
     <!-- ---- ACCESOS / PERMISOS (solo Enzo) ---- -->
     <section class="view" id="v-acc">
       <div class="h-row"><h2>Accesos</h2><button id="acc-nuevo" class="btn small" style="width:auto">＋ Persona</button></div>
@@ -926,6 +936,39 @@
   <div class="ficha-body"><div id="re-body"></div></div>
 </div>
 
+<!-- Ficha de cliente -->
+<div id="cli-ficha" class="hide">
+  <div class="ficha-bar">
+    <button id="cf2-close" class="btn ghost small" style="width:auto">✕ Cerrar</button>
+    <b id="cf2-title">Cliente</b>
+    <span style="width:56px"></span>
+  </div>
+  <div class="ficha-body">
+    <div class="card">
+      <div class="fld"><label>Nombre (como aparece en la app)</label><input id="cf2-nombre" type="text" placeholder="Ej: CUMMINS"></div>
+      <div class="grid2"><div class="fld" style="margin:0"><label>Razón social</label><input id="cf2-razon" type="text" placeholder="Distribuidora Cummins Chile S.A"></div><div class="fld" style="margin:0"><label>RUT</label><input id="cf2-rut" type="text" placeholder="96.843.140-4"></div></div>
+      <div class="fld"><label>Dirección</label><input id="cf2-dir" type="text" placeholder="Parque Husamontt, Puerto Montt"></div>
+      <div class="grid2"><div class="fld" style="margin:0"><label>Solicitante</label><input id="cf2-solic" type="text" placeholder="Karina Abarca"></div><div class="fld" style="margin:0"><label>Contacto (tel / correo)</label><input id="cf2-contacto" type="text" placeholder="+56 9 …"></div></div>
+      <div class="fld"><label>Sitios / faenas (uno por línea)</label><textarea id="cf2-sitios" rows="3" placeholder="Chinquihue&#10;Quemchi&#10;SHS"></textarea></div>
+      <div class="grid2"><div class="fld" style="margin:0"><label>Estado</label><select id="cf2-estado"><option value="activo">Activo</option><option value="inactivo">Inactivo</option></select></div><div></div></div>
+      <div class="fld"><label>Notas</label><textarea id="cf2-notas" rows="2" placeholder="Documentación que exige, particularidades…"></textarea></div>
+    </div>
+    <div class="card">
+      <label style="display:block;font:700 13px var(--font);color:var(--ink);margin-bottom:2px;">📎 Documentación del cliente</label>
+      <p class="note" style="margin:0 0 10px">Matriz IPER, programa preventivo, actas, AST, contratos marco… (PDF o imagen).</p>
+      <div id="cf2-docs"></div>
+      <label class="catadd">＋ Agregar documento<input type="file" id="cf2-doc-input" accept="application/pdf,image/*" multiple hidden></label>
+      <div id="cf2-scan-zone" class="hide"></div>
+    </div>
+    <div class="card">
+      <label style="display:block;font:700 13px var(--font);color:var(--ink);margin-bottom:6px;">📄 Reportes de este cliente</label>
+      <div id="cf2-reportes"><p class="note" style="margin:0">—</p></div>
+    </div>
+    <button class="pl-del-btn hide" id="cf2-del" style="width:100%;background:#fff;border:1px solid #f0c0c0;color:#dc2626;padding:13px;border-radius:13px;font:800 14px var(--font);cursor:pointer">🗑 Eliminar cliente</button>
+    <button id="cf2-save" class="btn" style="width:100%;margin-top:10px">💾 Guardar cliente</button>
+  </div>
+</div>
+
 <!-- Importar trabajadores (pegar lista) -->
 <div id="imp" class="hide">
   <div class="imp-bg"></div>
@@ -1015,6 +1058,7 @@
     // (Trabajadores ahora vive dentro de RRHH; el botón RRHH ya es admin-only)
     if($('btn-pagos')) $('btn-pagos').classList.toggle('hide', op); // Pagos: solo admin (en el header)
     if($('btn-rrhh')) $('btn-rrhh').classList.toggle('hide', op);   // RRHH: solo admin (en el header)
+    if($('btn-cli')) $('btn-cli').classList.toggle('hide', op);     // Clientes: solo admin (en el header)
     if($('btn-acc-h')) $('btn-acc-h').classList.toggle('hide', (userEmail||'').trim().toLowerCase()!=='enzo.castro@innovaservi.com'); // Accesos: solo Enzo (en el header)
     $('tab-veh').classList.remove('hide');                // Vehículos: visible para todos (chofer registra vueltas)
     if($('veh-admin')) $('veh-admin').classList.toggle('hide', op);   // flota completa: solo admin
@@ -1062,7 +1106,7 @@
     aplicarModo();
     cargarEventos();
     cargarRegistros();
-    if(isAdmin) cargarTrab(actualizarDatalist);
+    if(isAdmin){ cargarTrab(actualizarDatalist); cargarClientes(); }
     ofrecerBorrador();
   }
   function registroDe(eventoId){ if(!eventoId) return null; var id=String(eventoId);
@@ -1107,12 +1151,14 @@
     if(v==='v-veh'){ if(isAdmin){ cargarVeh(pintarVehList); } else { cargarChoferForm(); } }
     if(v==='v-remu'){ cargarRemu(); }
     if(v==='v-rrhh'){ cargarRrhh(); }
+    if(v==='v-clientes'){ cargarClientes(pintarCli); }
     if(v==='v-acc'){ cargarPermisos(); }
     window.scrollTo(0,0);
   }
   document.querySelectorAll('.tabbar button').forEach(function(b){ b.addEventListener('click',function(){ abrirVista(b.dataset.v); }); });
   if($('btn-pagos')) $('btn-pagos').addEventListener('click',function(){ abrirVista('v-remu'); });
   if($('btn-rrhh')) $('btn-rrhh').addEventListener('click',function(){ abrirVista('v-rrhh'); });
+  if($('btn-cli')) $('btn-cli').addEventListener('click',function(){ abrirVista('v-clientes'); });
   if($('btn-acc-h')) $('btn-acc-h').addEventListener('click',function(){ abrirVista('v-acc'); });
   function irA(id){ abrirVista(id); }
 
@@ -1234,9 +1280,14 @@
   // Ficha de cliente (razón social, RUT, dirección, solicitante). Se guarda local y se autocompleta en el informe.
   var CLI_KEY='innova_clientes_v1';
   var CLI_SEED={ 'CUMMINS':{ razon:'Distribuidora Cummins Chile S.A', rut:'96.843.140-4', direccion:'Parque Husamontt, Puerto Montt', solicitante:'Karina Abarca' } };
+  var CLIENTES=[];   // tabla de clientes (fuente principal de la ficha; se carga al inicio)
   function _cliKey(c){ return (c||'').trim().toUpperCase(); }
   function _cliMap(){ try{ return JSON.parse(localStorage.getItem(CLI_KEY)||'{}')||{}; }catch(_){ return {}; } }
-  function fichaCliente(cli){ var k=_cliKey(cli); if(!k) return {}; var m=_cliMap(); return Object.assign({}, CLI_SEED[k]||{}, m[k]||{}); }
+  function fichaCliente(cli){ var k=_cliKey(cli); if(!k) return {};
+    var c=(CLIENTES||[]).filter(function(x){ return _cliKey(x.nombre)===k || _cliKey(x.razon)===k; })[0];
+    if(c) return { razon:c.razon||'', rut:c.rut||'', direccion:c.direccion||'', solicitante:c.solicitante||'' };
+    var m=_cliMap(); return Object.assign({}, CLI_SEED[k]||{}, m[k]||{});
+  }
   function guardarFichaCliente(cli,patch){ var k=_cliKey(cli); if(!k||!patch) return; try{ var m=_cliMap(); m[k]=Object.assign({}, CLI_SEED[k]||{}, m[k]||{}, patch); localStorage.setItem(CLI_KEY,JSON.stringify(m)); }catch(_){} }
   // Fechas distintas de las faenas incluidas, formateadas DD-MM-YYYY y ordenadas.
   function fechasFaenas(){ var ds={}; R_JOBS.forEach(function(e){ if(e.fecha) ds[e.fecha]=1; }); return Object.keys(ds).sort().map(function(f){ return fFaena(f); }); }
@@ -2826,6 +2877,69 @@
     $('rrhh-edit').classList.remove('hide'); $('rrhh-edit').scrollTop=0;
   }
   $('fin-nuevo').addEventListener('click',function(){ abrirFin(null); });
+
+  // ====== Clientes (solo admin) ======
+  var CLI_ID=null, CLI_DOCS=[], CLI_Q='';
+  function cargarClientes(cb){ if(!sb){ if(cb)cb(); return; } sb.from('clientes').select('*').order('nombre',{ascending:true}).limit(500).then(function(r){ CLIENTES=(r&&r.data)||[]; if(cb)cb(); }, function(){ if(cb)cb(); }); }
+  function pintarCli(){
+    var c=$('cli-list'); if(!c) return; var q=CLI_Q.toLowerCase();
+    var arr=CLIENTES.filter(function(x){ if(!q) return true; return ((x.nombre||'')+' '+(x.razon||'')+' '+(x.rut||'')+' '+((x.sitios||[]).join(' '))).toLowerCase().indexOf(q)>=0; });
+    $('cli-cnt').textContent=arr.length+(arr.length===1?' cliente':' clientes');
+    if(!CLIENTES.length){ c.innerHTML='<div class="empty"><div class="big">🏢</div>Aún no hay clientes.<br><span style="font-size:.82rem">Toca “＋ Nuevo”.</span></div>'; return; }
+    if(!arr.length){ c.innerHTML='<div class="empty">Sin resultados.</div>'; return; }
+    c.innerHTML=arr.map(function(x,i){ var off=(x.estado==='inactivo'); var nd=(x.docs||[]).length, ns=(x.sitios||[]).length;
+      return '<div class="trab'+(off?' off':'')+'" data-i="'+i+'"><div class="av">'+esc((x.nombre||'·').charAt(0).toUpperCase())+'</div>'+
+        '<div class="tt"><div class="nm">'+esc(x.nombre||'—')+'</div>'+(x.razon?'<div class="cg">'+esc(x.razon)+'</div>':'')+
+        '<div class="meta">'+(x.rut?esc(x.rut)+' · ':'')+ns+' sitio'+(ns===1?'':'s')+' · '+nd+' doc'+(nd===1?'':'s')+'</div></div>'+
+        '<span class="badge">'+(off?'Inactivo':'Activo')+'</span></div>'; }).join('');
+    c.querySelectorAll('[data-i]').forEach(function(el){ el.addEventListener('click',function(){ abrirCliFicha(arr[+el.dataset.i]); }); });
+  }
+  function abrirCliFicha(x){
+    CLI_ID=x?x.id:null;
+    $('cf2-nombre').value=x?(x.nombre||''):''; $('cf2-razon').value=x?(x.razon||''):''; $('cf2-rut').value=x?(x.rut||''):'';
+    $('cf2-dir').value=x?(x.direccion||''):''; $('cf2-solic').value=x?(x.solicitante||''):''; $('cf2-contacto').value=x?(x.contacto||''):'';
+    $('cf2-sitios').value=x?((x.sitios||[]).join('\n')):''; $('cf2-estado').value=(x&&x.estado)||'activo'; $('cf2-notas').value=x?(x.notas||''):'';
+    CLI_DOCS=x?((x.docs||[]).slice()):[]; renderCliDocs(); cliScanner.reset();
+    $('cf2-title').textContent=x?('Cliente · '+(x.nombre||'')):'Nuevo cliente';
+    $('cf2-del').classList.toggle('hide',!x);
+    renderCliReportes(x);
+    $('cli-ficha').classList.remove('hide'); $('cli-ficha').scrollTop=0;
+  }
+  function renderCliDocs(){
+    var c=$('cf2-docs');
+    c.innerHTML=CLI_DOCS.map(function(d,i){ var img=(d.tipo==='image');
+      return '<div class="docitem"><div class="ic">'+(img?'🖼️':'📄')+'</div><a href="'+esc(d.url)+'" target="_blank" rel="noopener">'+esc(d.nombre||'documento')+'<div class="dl">'+esc(fechaCorta(d.fecha||''))+' · abrir</div></a><button class="rm" data-i="'+i+'" type="button">✕</button></div>'; }).join('')||'<p class="note" style="margin:0">Sin documentos aún.</p>';
+    c.querySelectorAll('.rm').forEach(function(b){ b.addEventListener('click',function(){ CLI_DOCS.splice(+b.dataset.i,1); renderCliDocs(); }); });
+  }
+  function renderCliReportes(x){
+    var c=$('cf2-reportes'); var nm=_cliKey(x&&x.nombre);
+    if(!x||!nm){ c.innerHTML='<p class="note" style="margin:0">Guarda el cliente para ver sus reportes.</p>'; return; }
+    var regs=(REGISTROS||[]).filter(function(r){ return _cliKey(r.empresa)===nm; }).slice(0,20);
+    if(!regs.length){ c.innerHTML='<p class="note" style="margin:0">Sin reportes de este cliente.</p>'; return; }
+    c.innerHTML=regs.map(function(r){ return '<div class="rd-dia rd-link" data-reg="'+r.id+'"><div style="flex:1"><b>'+esc(fechaCorta(r.fecha))+'</b><div class="note" style="margin:0;font-size:.74rem">'+esc(r.lugar||'')+(r.confirmado?' · 🔒 definitivo':'')+'</div></div><span style="color:var(--orange-2);font-weight:700;font-size:.8rem">ver ›</span></div>'; }).join('');
+    c.querySelectorAll('[data-reg]').forEach(function(el){ el.addEventListener('click',function(){ var r=(REGISTROS||[]).filter(function(z){ return String(z.id)===el.dataset.reg; })[0]; if(r){ $('cli-ficha').classList.add('hide'); abrirEdicion(r); } }); });
+  }
+  var cliScanner=crearEscaner({ input:'cf2-doc-input', zona:'cf2-scan-zone',
+    check:function(){ if(!$('cf2-nombre').value.trim()){ toast('Pon el nombre del cliente primero.'); return false; } return true; },
+    folder:function(){ return 'clientes/'+slug($('cf2-nombre').value.trim()||'cliente'); },
+    nombreBase:function(){ return slug($('cf2-nombre').value.trim()||'doc'); },
+    onDoc:function(d){ CLI_DOCS.push(d); renderCliDocs(); } });
+  $('cf2-close').addEventListener('click',function(){ $('cli-ficha').classList.add('hide'); cliScanner.reset(); });
+  $('cli-nuevo').addEventListener('click',function(){ abrirCliFicha(null); });
+  $('cli-search').addEventListener('input',function(){ CLI_Q=this.value.trim(); pintarCli(); });
+  $('cf2-save').addEventListener('click',function(){
+    if(!sb) return; var nom=$('cf2-nombre').value.trim(); if(!nom){ toast('El nombre es obligatorio.'); return; }
+    var sitios=($('cf2-sitios').value||'').split(/\r?\n/).map(function(s){ return s.trim(); }).filter(Boolean);
+    var row={ nombre:nom, razon:$('cf2-razon').value.trim(), rut:$('cf2-rut').value.trim(), direccion:$('cf2-dir').value.trim(), solicitante:$('cf2-solic').value.trim(), contacto:$('cf2-contacto').value.trim(), sitios:sitios, docs:CLI_DOCS, notas:$('cf2-notas').value.trim(), estado:$('cf2-estado').value, autor:userEmail };
+    busy(true,'Guardando…');
+    var q=CLI_ID? sb.from('clientes').update(row).eq('id',CLI_ID) : sb.from('clientes').insert(row);
+    q.then(function(r){ busy(false); if(r.error){ toast(/clientes/.test(r.error.message||'')?'Falta correr clientes.sql en Supabase.':('No se pudo guardar: '+r.error.message)); return; }
+      toast('✓ Cliente guardado'); $('cli-ficha').classList.add('hide'); cargarClientes(pintarCli); });
+  });
+  $('cf2-del').addEventListener('click',function(){
+    if(!CLI_ID) return; if(!confirm('¿Eliminar este cliente? (sus documentos no se borran del bucket)')) return;
+    busy(true,'Eliminando…'); sb.from('clientes').delete().eq('id',CLI_ID).then(function(r){ busy(false); if(r.error){ toast('No se pudo eliminar: '+r.error.message); return; } toast('✓ Eliminado'); $('cli-ficha').classList.add('hide'); cargarClientes(pintarCli); });
+  });
   function rrhhTrabs(){ return RRHH_T.filter(function(t){ return RRHH_FILTRO==='todos' || t.estado!=='inactivo'; }).sort(function(a,b){ return (a.nombre||'').localeCompare(b.nombre||''); }); }
   // Estado calculado de un documento: pend | ok | prox | venc
   function estadoDoc(tid,s){ var d=RRHH_D[tid+'|'+s]; if(!d||d.estado!=='entregado') return {k:'pend',txt:'Pendiente'};
