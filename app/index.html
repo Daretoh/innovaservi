@@ -2926,15 +2926,23 @@
   // ====== Clientes (solo admin) ======
   var CLI_ID=null, CLI_DOCS=[], CLI_Q='';
   function cargarClientes(cb){ if(!sb){ if(cb)cb(); return; } sb.from('clientes').select('*').order('nombre',{ascending:true}).limit(500).then(function(r){ CLIENTES=(r&&r.data)||[]; if(cb)cb(); }, function(){ if(cb)cb(); }); }
+  // ¿El cliente tiene faenas en la planificación (últimos 30 días en adelante)? → "en agenda".
+  function clienteEnAgenda(nm){ var k=_cliKey(nm); if(!k) return false; var desde=isoMas(-30);
+    return (typeof EVENTOS!=='undefined'?EVENTOS:[]).some(function(e){ var u=_cliKey(e.ubicacion); if(!u) return false; return (u===k || u.indexOf(k)>=0 || k.indexOf(u)>=0) && evFin(e)>=desde; }); }
   function pintarCli(){
     var c=$('cli-list'); if(!c) return; var q=CLI_Q.toLowerCase();
     var arr=CLIENTES.filter(function(x){ if(!q) return true; return ((x.nombre||'')+' '+(x.razon||'')+' '+(x.rut||'')+' '+((x.sitios||[]).join(' '))).toLowerCase().indexOf(q)>=0; });
+    arr.forEach(function(x){ x._agenda=clienteEnAgenda(x.nombre); });
+    // Orden: en agenda primero, luego activos, luego alfabético.
+    arr.sort(function(a,b){ if(a._agenda!==b._agenda) return a._agenda?-1:1;
+      var ai=(a.estado==='inactivo')?1:0, bi=(b.estado==='inactivo')?1:0; if(ai!==bi) return ai-bi;
+      return (a.nombre||'').localeCompare(b.nombre||''); });
     $('cli-cnt').textContent=arr.length+(arr.length===1?' cliente':' clientes');
     if(!CLIENTES.length){ c.innerHTML='<div class="empty"><div class="big">🏢</div>Aún no hay clientes.<br><span style="font-size:.82rem">Toca “＋ Nuevo”.</span></div>'; return; }
     if(!arr.length){ c.innerHTML='<div class="empty">Sin resultados.</div>'; return; }
     c.innerHTML=arr.map(function(x,i){ var off=(x.estado==='inactivo'); var nd=(x.docs||[]).length, ns=(x.sitios||[]).length;
       return '<div class="trab'+(off?' off':'')+'" data-i="'+i+'"><div class="av">'+esc((x.nombre||'·').charAt(0).toUpperCase())+'</div>'+
-        '<div class="tt"><div class="nm">'+esc(x.nombre||'—')+'</div>'+(x.razon?'<div class="cg">'+esc(x.razon)+'</div>':'')+
+        '<div class="tt"><div class="nm">'+esc(x.nombre||'—')+(x._agenda?' <span style="font:800 9px var(--font);background:rgba(255,107,0,.14);color:var(--orange-2);padding:1px 6px;border-radius:999px;vertical-align:middle">🗓️ en agenda</span>':'')+'</div>'+(x.razon?'<div class="cg">'+esc(x.razon)+'</div>':'')+
         '<div class="meta">'+(x.rut?esc(x.rut)+' · ':'')+ns+' sitio'+(ns===1?'':'s')+' · '+nd+' doc'+(nd===1?'':'s')+'</div></div>'+
         '<span class="badge">'+(off?'Inactivo':'Activo')+'</span></div>'; }).join('');
     c.querySelectorAll('[data-i]').forEach(function(el){ el.addEventListener('click',function(){ abrirCliFicha(arr[+el.dataset.i]); }); });
