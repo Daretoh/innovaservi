@@ -67,6 +67,15 @@
   @media(max-width:600px){ .topbar .out{padding:7px 10px;} .topbar .out .hlbl{display:none;} }
 
   main{flex:1;padding:16px 14px calc(96px + var(--safe-b));max-width:640px;width:100%;margin:0 auto;}
+  /* Vistas anchas (Remuneraciones / Horas) en pantallas grandes: aprovechan todo el espacio */
+  @media(min-width:900px){
+    main.wide{max-width:min(1400px,96vw);}
+    main.wide .remu-tbl{font-size:14px;}
+    main.wide .remu-tbl th{font-size:11px;padding:12px 16px;}
+    main.wide .remu-tbl td{padding:12px 16px;}
+    main.wide .remu-tbl .rt-nm{min-width:180px;}
+    main.wide .hgroup-h{font-size:15px;}
+  }
   .view{display:none;} .view.on{display:block;animation:fade .18s ease;}
   @keyframes fade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
 
@@ -535,8 +544,8 @@
         <select id="trab-sort" style="font:600 13px var(--font);padding:10px 12px;border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--ink)"><option value="nombre">A–Z</option><option value="cargo">Por cargo</option><option value="reciente">Recientes</option></select>
       </div>
       <div style="display:flex;gap:8px;margin-bottom:14px">
-        <button class="btn ghost small tfil on" data-f="todos" style="flex:1">Todos</button>
-        <button class="btn ghost small tfil" data-f="activo" style="flex:1">Activos</button>
+        <button class="btn ghost small tfil" data-f="todos" style="flex:1">Todos</button>
+        <button class="btn ghost small tfil on" data-f="activo" style="flex:1">Activos</button>
         <button class="btn ghost small tfil" data-f="inactivo" style="flex:1">Inactivos</button>
       </div>
       <div id="trab-list"></div>
@@ -1024,6 +1033,7 @@
   function abrirVista(v){
     document.querySelectorAll('.tabbar button').forEach(function(x){ x.classList.toggle('on',x.dataset.v===v); });
     document.querySelectorAll('.view').forEach(function(x){ x.classList.toggle('on',x.id===v); });
+    var _main=document.querySelector('main'); if(_main) _main.classList.toggle('wide', v==='v-remu'||v==='v-horas');  // vistas anchas en PC
     if(v==='v-hist') cargarRegistros(pintarRegistros);
     if(v==='v-horas') cargarHoras();
     if(v==='v-trab') cargarTrab(pintarTrab);
@@ -2078,7 +2088,7 @@
       .sort(function(a,b){ return (a.nombre||'').localeCompare(b.nombre||''); })
       .map(function(t){ return '<option value="'+enc(t.nombre)+'"></option>'; }).join(''); }
   function inic(n){ n=(n||'').trim().split(/\s+/); return ((n[0]||'')[0]||'')+((n[1]||'')[0]||''); }
-  var trabQ='', trabFilter='todos', trabSort='nombre', TRAB_VISTA=[];
+  var trabQ='', trabFilter='activo', trabSort='nombre', TRAB_VISTA=[];
   function pintarTrab(){
     var list=$('trab-list'); var q=trabQ.toLowerCase();
     var arr=TRAB.filter(function(t){
@@ -2088,6 +2098,7 @@
       return true;
     });
     arr.sort(function(a,b){
+      var ai=(a.estado==='inactivo')?1:0, bi=(b.estado==='inactivo')?1:0; if(ai!==bi) return ai-bi;  // activos primero
       if(trabSort==='reciente') return (b.id||0)-(a.id||0);
       if(trabSort==='cargo'){ var c=(a.cargo||'').localeCompare(b.cargo||''); if(c) return c; }
       return (a.nombre||'').localeCompare(b.nombre||'');
