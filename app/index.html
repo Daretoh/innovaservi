@@ -147,6 +147,7 @@
   /* Horas por trabajador */
   .hrow{position:relative;border:1px solid var(--line);border-radius:11px;padding:6px 8px;margin-bottom:6px;background:var(--alt);display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
   .hrow .h-trab{flex:1 1 140px;min-width:120px;font:700 13.5px var(--font);padding:6px 9px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);}
+  .hrow .h-trab.h-bad{border-color:#dc2626;background:#fff5f5;color:#b91c1c;}
   .hrow input[type=time]{flex:0 1 96px;min-width:80px;font:600 13.5px var(--font);padding:6px 6px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);}
   .hrow-times .arw{color:var(--muted);font-weight:800;flex:0 0 auto;}
   .hrow-total{flex:0 0 auto;font-size:.72rem;color:var(--orange-2);font-weight:800;white-space:nowrap;}
@@ -2224,6 +2225,8 @@
     if(sel && !seen[sel]) opts+='<option value="'+enc(sel)+'" selected>'+esc(sel)+' (otra fecha)</option>';
     return opts;
   }
+  // ¿el nombre corresponde a un trabajador con ficha? (case/acentos-insensible)
+  function esTrabajador(nombre){ if(!(TRAB||[]).length) return true; var n=normName(nombre); if(!n) return false; return TRAB.some(function(t){ return normName(t.nombre)===n; }); }
   function renderHz(){
     var c=$('hz-list'); if(!c) return;
     HZ.forEach(function(h){ if(!h.fecha) h.fecha=todayISO(); });
@@ -2253,7 +2256,11 @@
     c.querySelectorAll('.hrow').forEach(function(row){ var i=+row.dataset.i; var fe=row.querySelector('.h-fecha');
       var upd=function(){ row.querySelector('.hrow-total').textContent=totalMini(row.querySelector('.h-in').value,row.querySelector('.h-out').value); };
       function marcar(){ if(HZ[i]) HZ[i]._dirty=true; autoGuardarHz(); }
-      row.querySelector('.h-trab').addEventListener('input',marcar);
+      var tr=row.querySelector('.h-trab');
+      function valTrab(){ var v=(tr.value||'').trim(); tr.classList.toggle('h-bad', !!v && !esTrabajador(v)); }
+      valTrab();   // estado inicial (marca en rojo los que no tengan ficha)
+      tr.addEventListener('input',function(){ valTrab(); marcar(); });
+      tr.addEventListener('change',function(){ var v=(tr.value||'').trim(); if(v && !esTrabajador(v)){ toast('“'+v+'” no tiene ficha. Créalo en Trabajadores (RRHH) para poder cargarle horas.'); } });
       var fa=row.querySelector('.h-fae'); if(fa) fa.addEventListener('change',marcar);
       var vu=row.querySelector('.h-vu'); if(vu) vu.addEventListener('input',marcar);
       row.querySelector('.h-in').addEventListener('change',function(){ upd(); marcar(); });
@@ -2270,6 +2277,7 @@
     HZ.forEach(function(h){
       if(!h._dirty) return;
       if(!(h.trabajador||'').trim()) return;   // no guarda líneas sin nombre
+      if(!esTrabajador(h.trabajador)) return;  // solo trabajadores con ficha
       var row={ fecha:h.fecha||todayISO(), trabajador:h.trabajador.trim(), entrada:h.entrada||null, salida:h.salida||null, vueltas:(+h.vueltas||0), faena:(h.faena||null), autor:userEmail };
       h._dirty=false;
       if(h.id){ sb.from('horas').update(row).eq('id',h.id).then(function(){},function(){}); }
@@ -2282,10 +2290,12 @@
   function removeHz(i){ syncHz(); var h=HZ[i]; if(h&&h.id) HZ_DEL.push(h.id); HZ.splice(i,1); renderHz(); autoGuardarHz(); }
   function guardarHz(){
     if(!sb) return; syncHz();
-    var ins=[], upds=[];
+    var ins=[], upds=[], sinFicha=[];
     HZ.forEach(function(h){ if(!(h.trabajador||'').trim()) return;
+      if(!esTrabajador(h.trabajador)){ if(sinFicha.indexOf(h.trabajador.trim())<0) sinFicha.push(h.trabajador.trim()); return; }
       var row={ fecha:h.fecha||todayISO(), trabajador:h.trabajador.trim(), entrada:h.entrada||null, salida:h.salida||null, vueltas:(+h.vueltas||0), faena:(h.faena||null), autor:userEmail };
       if(h.id) upds.push({id:h.id,row:row}); else ins.push(row); });
+    if(sinFicha.length){ toast('Sin ficha (no se guardan): '+sinFicha.join(', ')+'. Créalos en Trabajadores.'); }
     busy(true,'Guardando horas…'); var err=null;
     function fin(){ busy(false); if(err) toast('Algo falló: '+err); else toast('✓ Horas guardadas'); cargarHoras(); }
     function upd(){ var i=0; (function nx(){ if(i>=upds.length){ fin(); return; } var u=upds[i]; i++; sb.from('horas').update(u.row).eq('id',u.id).then(function(r){ if(r.error)err=r.error.message; nx(); }); })(); }
