@@ -2459,7 +2459,7 @@
   });
 
   // ====== Detector de duplicados de nombres (juntar horas sueltas) ======
-  var DUPS=[], DUPS_CNT={}, DUPS_DISP={}, DUPS_FICHA={};
+  var DUPS=[], DUPS_ORPH=[], DUPS_CNT={}, DUPS_DISP={}, DUPS_FICHA={};
   function normName(s){ s=(s||'').trim().toLowerCase(); return s.replace(/á|à|ä/g,'a').replace(/é|è|ë/g,'e').replace(/í|ì|ï/g,'i').replace(/ó|ò|ö/g,'o').replace(/ú|ù|ü/g,'u').replace(/ñ/g,'n').replace(/\s+/g,' '); }
   function abrirDups(){
     if(!sb) return; busy(true,'Buscando duplicados…');
@@ -2473,23 +2473,68 @@
       DUPS=Object.keys(groups).map(function(tok){ return {tok:tok, keys:groups[tok]}; })
         .filter(function(g){ return g.keys.length>1; })
         .sort(function(a,b){ return b.keys.length-a.keys.length; });
+      var inGroup={}; DUPS.forEach(function(g){ g.keys.forEach(function(k){ inGroup[k]=1; }); });
+      // Nombres con horas, sin ficha y que no están ya en un grupo de duplicados.
+      DUPS_ORPH=Object.keys(disp).filter(function(k){ return (cnt[k]||0)>0 && !fichaSet[k] && !inGroup[k]; })
+        .sort(function(a,b){ return (cnt[b]||0)-(cnt[a]||0); });
       DUPS_CNT=cnt; DUPS_DISP=disp; DUPS_FICHA=fichaSet;
       renderDups(); $('dups-mgr').classList.remove('hide'); $('dups-mgr').scrollTop=0;
     }, function(){ busy(false); toast('No se pudo leer las horas.'); });
   }
+  function trabOptions(){ return (TRAB||[]).slice().sort(function(a,b){ return (a.nombre||'').localeCompare(b.nombre||''); }).map(function(t){ return '<option value="'+enc(t.nombre)+'">'+esc(t.nombre)+(t.cargo?(' · '+esc(t.cargo)):'')+'</option>'; }).join(''); }
   function renderDups(){
     var c=$('dups-list'); if(!c) return;
-    if(!DUPS.length){ c.innerHTML='<div class="empty"><div class="big">✅</div>No se detectaron nombres parecidos.<br><span style="font-size:.82rem">Todo se ve consistente.</span></div>'; return; }
-    c.innerHTML=DUPS.map(function(g,gi){
-      var variants=g.keys.slice().sort(function(a,b){ return (DUPS_CNT[b]||0)-(DUPS_CNT[a]||0); });
-      var def=variants.filter(function(k){ return DUPS_FICHA[k]; })[0]||variants[0];
-      var optSel=variants.map(function(k){ return '<option value="'+enc(DUPS_DISP[k])+'"'+(k===def?' selected':'')+'>'+esc(DUPS_DISP[k])+'</option>'; }).join('');
-      var lis=variants.map(function(k){ return '<div style="display:flex;justify-content:space-between;font-size:.82rem;padding:3px 0;border-bottom:1px dashed var(--line)"><span>'+(DUPS_FICHA[k]?'✅ ':'⚠️ ')+esc(DUPS_DISP[k])+'</span><span class="note" style="margin:0">'+(DUPS_CNT[k]||0)+' líneas</span></div>'; }).join('');
-      return '<div class="card dgrp" data-gi="'+gi+'"><b style="text-transform:capitalize">'+esc(g.tok)+' <span class="note" style="margin:0;font-weight:600">('+variants.length+' variantes)</span></b>'+lis+
-        '<div class="fld" style="margin:8px 0 6px"><label>Dejar todo como</label><select class="dg-canon">'+optSel+'</select></div>'+
-        '<button class="dg-merge btn small" style="width:auto">🔗 Unificar en este nombre</button></div>';
-    }).join('');
+    var html='';
+    // Sección 1: grupos con variantes parecidas.
+    if(DUPS.length){
+      html+='<h3 style="font:800 14px var(--font);color:var(--ink);margin:0 0 8px">🔁 Nombres parecidos</h3>';
+      html+=DUPS.map(function(g,gi){
+        var variants=g.keys.slice().sort(function(a,b){ return (DUPS_CNT[b]||0)-(DUPS_CNT[a]||0); });
+        var def=variants.filter(function(k){ return DUPS_FICHA[k]; })[0]||variants[0];
+        var optSel=variants.map(function(k){ return '<option value="'+enc(DUPS_DISP[k])+'"'+(k===def?' selected':'')+'>'+esc(DUPS_DISP[k])+'</option>'; }).join('');
+        var lis=variants.map(function(k){ return '<div style="display:flex;justify-content:space-between;font-size:.82rem;padding:3px 0;border-bottom:1px dashed var(--line)"><span>'+(DUPS_FICHA[k]?'✅ ':'⚠️ ')+esc(DUPS_DISP[k])+'</span><span class="note" style="margin:0">'+(DUPS_CNT[k]||0)+' líneas</span></div>'; }).join('');
+        return '<div class="card dgrp" data-gi="'+gi+'"><b style="text-transform:capitalize">'+esc(g.tok)+' <span class="note" style="margin:0;font-weight:600">('+variants.length+' variantes)</span></b>'+lis+
+          '<div class="fld" style="margin:8px 0 6px"><label>Dejar todo como</label><select class="dg-canon">'+optSel+'</select></div>'+
+          '<button class="dg-merge btn small" style="width:auto">🔗 Unificar en este nombre</button></div>';
+      }).join('');
+    }
+    // Sección 2: nombres con horas pero sin ficha (sueltos, ej. Jorge Alabarce).
+    if(DUPS_ORPH.length){
+      var opts=trabOptions();
+      html+='<h3 style="font:800 14px var(--font);color:#b45309;margin:16px 0 8px">⚠️ Con horas pero sin ficha</h3>';
+      html+=DUPS_ORPH.map(function(k){
+        return '<div class="card oorph" data-nm="'+enc(DUPS_DISP[k])+'"><div style="display:flex;justify-content:space-between;align-items:center"><b>'+esc(DUPS_DISP[k])+'</b><span class="note" style="margin:0">'+(DUPS_CNT[k]||0)+' líneas</span></div>'+
+          '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><button class="oo-crear btn small" style="width:auto">＋ Crear ficha</button><button class="oo-unir btn ghost small" style="width:auto">🔗 Unir con existente…</button></div>'+
+          '<div class="oo-box" style="display:none;margin-top:8px"><div class="fld" style="margin:0 0 6px"><label>Unir con</label><select class="oo-sel">'+(opts||'<option value="">(no hay trabajadores)</option>')+'</select></div><button class="oo-go btn small" style="width:auto">Unir horas</button></div>'+
+        '</div>';
+      }).join('');
+    }
+    c.innerHTML=html||'<div class="empty"><div class="big">✅</div>No hay nombres por revisar.<br><span style="font-size:.82rem">Todo tiene ficha y se ve consistente.</span></div>';
     c.querySelectorAll('.dg-merge').forEach(function(b){ b.addEventListener('click',function(){ var grp=b.closest('.dgrp'); mergeDup(+grp.dataset.gi, grp.querySelector('.dg-canon').value); }); });
+    c.querySelectorAll('.oorph').forEach(function(card){
+      var nm=card.dataset.nm;
+      card.querySelector('.oo-unir').addEventListener('click',function(){ var box=card.querySelector('.oo-box'); box.style.display=(box.style.display==='none')?'block':'none'; });
+      card.querySelector('.oo-crear').addEventListener('click',function(){ crearFichaNombre(nm); });
+      card.querySelector('.oo-go').addEventListener('click',function(){ unirNombre(nm, card.querySelector('.oo-sel').value); });
+    });
+  }
+  function crearFichaNombre(nm){
+    nm=(nm||'').trim(); if(!nm||!sb) return;
+    if(!confirm('¿Crear ficha de trabajador para “'+nm+'”?')) return;
+    busy(true,'Creando ficha…');
+    sb.from('trabajadores').insert({nombre:nm,estado:'activo',autor:userEmail}).then(function(r){ busy(false);
+      if(r.error){ toast('No se pudo crear: '+r.error.message); return; }
+      toast('✓ Ficha creada'); cargarTrab(function(){ actualizarDatalist(); if(typeof pintarTrab==='function') pintarTrab(); abrirDups(); }); if(typeof cargarRemu==='function') cargarRemu();
+    }, function(){ busy(false); toast('No se pudo crear.'); });
+  }
+  function unirNombre(nm, target){
+    nm=(nm||'').trim(); target=(target||'').trim(); if(!nm||!target||!sb){ toast('Elige un trabajador.'); return; }
+    if(!confirm('¿Unir las horas de “'+nm+'” con “'+target+'”?\n\nSe renombran esas horas. No se pierde nada.')) return;
+    busy(true,'Uniendo…');
+    sb.from('horas').update({trabajador:target}).ilike('trabajador',nm).then(function(r){ busy(false);
+      if(r.error){ toast('No se pudo unir: '+r.error.message); return; }
+      toast('✓ Unido a '+target); if(typeof cargarRemu==='function') cargarRemu(); abrirDups();
+    }, function(){ busy(false); toast('No se pudo unir.'); });
   }
   function mergeDup(gi, canon){
     var g=DUPS[gi]; if(!g) return; canon=(canon||'').trim(); if(!canon) return;
