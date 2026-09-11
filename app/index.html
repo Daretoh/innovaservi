@@ -281,7 +281,7 @@
   .rep-notas{font-size:.9rem;line-height:1.6;white-space:pre-line;background:var(--alt);border:1px solid var(--line);border-radius:8px;padding:12px 14px;}
   .rep-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
   .rphoto{position:relative;border:2px solid var(--line);border-radius:8px;overflow:hidden;background:#f0f0f0;cursor:pointer;}
-  .rphoto img{width:100%;height:190px;object-fit:cover;display:block;}
+  .rphoto img{width:100%;height:150px;object-fit:cover;display:block;}
   .rphoto .rp-x{position:absolute;top:6px;right:6px;width:26px;height:26px;border-radius:50%;background:var(--orange);color:#fff;display:none;align-items:center;justify-content:center;font-weight:800;font-size:14px;}
   .rphoto.excluded{opacity:.32;filter:grayscale(1);border-style:dashed;}
   .rphoto.excluded .rp-x{display:flex;background:#98a;}
@@ -1951,12 +1951,22 @@
     '</div>';
     // Registro fotográfico (una página por sección con fotos). Con 2+ faenas, se agrupa por faena.
     var multiF=R_JOBS.length>1;
+    // Máximo 12 fotos por página (2 columnas × 6 filas). Si una etapa tiene más,
+    // se reparte en varias páginas, repitiendo título (faena) + etapa + "N-Total".
+    // Nunca se mezclan dos faenas ni dos etapas en la misma hoja.
+    var FOTOS_X_PAG=12;
     function fotoPage(cat, fid, flabel){
       var items=media.filter(function(m){ return catStore(m.cat)===cat && (!multiF || (m.faena||'')===(fid||'')); });
       if(!items.length) return '';
-      var g=items.map(function(m){ return '<div class="rphoto"><img src="'+esc(m.url)+'" alt="" loading="lazy" decoding="async" onerror="this.closest(\'.rphoto\').classList.add(\'imgerr\')"><span class="rp-tick">✓</span><span class="rp-x">✕</span></div>'; }).join('');
       var titulo='Registro fotográfico'+(flabel?' — '+esc(flabel):'');
-      return '<div class="rep-page rgroup">'+hdr+'<div class="rep-h2">'+titulo+'</div><div class="rep-sec-t">'+REP_LBL[cat]+'</div><div class="rep-grid">'+g+'</div></div>';
+      var total=Math.ceil(items.length/FOTOS_X_PAG), out='';
+      for(var p=0;p<total;p++){
+        var chunk=items.slice(p*FOTOS_X_PAG,(p+1)*FOTOS_X_PAG);
+        var g=chunk.map(function(m){ return '<div class="rphoto"><img src="'+esc(m.url)+'" alt="" loading="lazy" decoding="async" onerror="this.closest(\'.rphoto\').classList.add(\'imgerr\')"><span class="rp-tick">✓</span><span class="rp-x">✕</span></div>'; }).join('');
+        var etiqueta=REP_LBL[cat]+(total>1?(' '+(p+1)+'-'+total):'');
+        out+='<div class="rep-page rgroup">'+hdr+'<div class="rep-h2">'+titulo+'</div><div class="rep-sec-t">'+etiqueta+'</div><div class="rep-grid">'+g+'</div></div>';
+      }
+      return out;
     }
     function fotosDe(fid, flabel){ return fotoPage('antes',fid,flabel)+fotoPage('proceso',fid,flabel)+fotoPage('despues',fid,flabel); }
     var fotos='';
