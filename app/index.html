@@ -2040,10 +2040,16 @@
       var restore=[];
       $('report-doc').querySelectorAll('.rphoto.excluded').forEach(function(el){ restore.push([el,el.style.display]); el.style.display='none'; });
       $('report-doc').querySelectorAll('.rgroup').forEach(function(g){ if(!g.querySelectorAll('.rphoto:not(.excluded)').length){ restore.push([g,g.style.display]); g.style.display='none'; } });
+      // Portada y contraportada: forzar alto = A4 exacto (ancho×297/210) para que llenen la hoja (sin banda blanca).
+      var restoreH=[];
+      $('report-doc').querySelectorAll('.rep-cover,.rep-back').forEach(function(el){
+        restoreH.push([el, el.style.height, el.style.minHeight, el.style.boxSizing]);
+        el.style.boxSizing='border-box'; el.style.minHeight='0'; el.style.height=(el.offsetWidth*297/210)+'px';
+      });
       var pages=Array.prototype.slice.call($('report-doc').querySelectorAll('.rep-page'));
       var idx=0, first=true;
       function paso(){
-        if(idx>=pages.length){ restore.forEach(function(h){ h[0].style.display=h[1]; }); return doc; }
+        if(idx>=pages.length){ restore.forEach(function(h){ h[0].style.display=h[1]; }); restoreH.forEach(function(h){ h[0].style.height=h[1]; h[0].style.minHeight=h[2]; h[0].style.boxSizing=h[3]; }); return doc; }
         var page=pages[idx++];
         if(page.style.display==='none') return paso();
         return window.html2canvas(page,{scale:2,useCORS:true,backgroundColor:'#ffffff',logging:false}).then(function(cv){
