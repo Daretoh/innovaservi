@@ -154,8 +154,13 @@
   .hrow-rm{border-color:#f0c0c0;color:#dc2626;}
   .hrow-cal{position:relative;display:inline-flex;align-items:center;justify-content:center;}
   .hrow-cal .h-fecha{position:absolute;inset:0;width:100%;height:100%;opacity:0;border:0;padding:0;margin:0;}
-  .hgroup{margin-bottom:12px;}
-  .hgroup-h{font:800 12.5px var(--font);color:var(--navy);margin:2px 0 7px;padding-bottom:5px;border-bottom:1px solid var(--line);cursor:pointer;user-select:none;display:flex;align-items:center;gap:6px;}
+  .hgroup{margin-bottom:18px;border:1px solid var(--line);border-radius:13px;background:#fff;box-shadow:0 6px 18px -14px rgba(26,31,110,.35);overflow:hidden;}
+  .hgroup-h{font:800 13px var(--font);color:var(--navy);margin:0;padding:11px 13px;border-bottom:2px solid var(--orange);background:linear-gradient(180deg,var(--alt),#fff);cursor:pointer;user-select:none;display:flex;align-items:center;gap:7px;}
+  .hgroup.collapsed .hgroup-h{border-bottom:none;}
+  .hgroup-body{padding:9px 9px 4px;}
+  .hrow-vu{flex:0 0 auto;display:inline-flex;align-items:center;gap:2px;font-size:13px;background:#fff;border:1px solid var(--line);border-radius:8px;padding:0 6px;height:34px;}
+  .hrow-vu input{width:32px;border:none;background:none;font:800 13px var(--font);color:var(--orange-2);text-align:center;padding:0;-moz-appearance:textfield;}
+  .hrow-vu input::-webkit-outer-spin-button,.hrow-vu input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
   .hg-chev{display:inline-block;transition:transform .2s;font-size:10px;color:var(--muted);flex:0 0 auto;}
   .hgroup.collapsed .hg-chev{transform:rotate(-90deg);}
   .hgroup.collapsed .hgroup-body{display:none;}
@@ -2113,7 +2118,7 @@
     if(HZ_FILTRO==='hoy') q=q.eq('fecha',hoy);
     else if(HZ_FILTRO==='semana') q=q.gte('fecha',isoMas(-6)).lte('fecha',hoy);
     q.order('fecha',{ascending:false}).limit(800).then(function(r){
-      HZ=((r&&r.data)||[]).map(function(h){ return {id:h.id, fecha:h.fecha, trabajador:h.trabajador||'', entrada:h.entrada||'', salida:h.salida||''}; });
+      HZ=((r&&r.data)||[]).map(function(h){ return {id:h.id, fecha:h.fecha, trabajador:h.trabajador||'', entrada:h.entrada||'', salida:h.salida||'', vueltas:(+h.vueltas||0)}; });
       HZ_DEL=[]; renderHz();
     });
   }
@@ -2130,6 +2135,7 @@
       var rows=idxs.map(function(i){ var h=HZ[i];
         return '<div class="hrow" data-i="'+i+'">'+
           '<input class="h-trab" list="trab-datalist" placeholder="Trabajador" value="'+enc(h.trabajador||'')+'">'+
+          '<label class="hrow-vu" title="Vueltas (van a Remuneraciones)">🔄<input type="number" class="h-vu" min="0" value="'+(h.vueltas||0)+'"></label>'+
           '<input type="time" class="h-in" value="'+(h.entrada||'')+'"><span class="arw">→</span><input type="time" class="h-out" value="'+(h.salida||'')+'">'+
           '<span class="hrow-total">'+totalMini(h.entrada,h.salida)+'</span>'+
           '<label class="hrow-cal" title="Fecha">📅<input type="date" class="h-fecha" value="'+(h.fecha||todayISO())+'"></label>'+
@@ -2145,6 +2151,7 @@
       var upd=function(){ row.querySelector('.hrow-total').textContent=totalMini(row.querySelector('.h-in').value,row.querySelector('.h-out').value); };
       function marcar(){ if(HZ[i]) HZ[i]._dirty=true; autoGuardarHz(); }
       row.querySelector('.h-trab').addEventListener('input',marcar);
+      var vu=row.querySelector('.h-vu'); if(vu) vu.addEventListener('input',marcar);
       row.querySelector('.h-in').addEventListener('change',function(){ upd(); marcar(); });
       row.querySelector('.h-out').addEventListener('change',function(){ upd(); marcar(); });
       fe.addEventListener('change',function(){ syncHz(); if(HZ[i]) HZ[i]._dirty=true; renderHz(); autoGuardarHz(); });
@@ -2159,21 +2166,21 @@
     HZ.forEach(function(h){
       if(!h._dirty) return;
       if(!(h.trabajador||'').trim()) return;   // no guarda líneas sin nombre
-      var row={ fecha:h.fecha||todayISO(), trabajador:h.trabajador.trim(), entrada:h.entrada||null, salida:h.salida||null, autor:userEmail };
+      var row={ fecha:h.fecha||todayISO(), trabajador:h.trabajador.trim(), entrada:h.entrada||null, salida:h.salida||null, vueltas:(+h.vueltas||0), autor:userEmail };
       h._dirty=false;
       if(h.id){ sb.from('horas').update(row).eq('id',h.id).then(function(){},function(){}); }
       else if(!h._saving){ h._saving=true; sb.from('horas').insert(row).select('id').maybeSingle().then(function(r){ h._saving=false; if(r&&r.data&&r.data.id) h.id=r.data.id; }, function(){ h._saving=false; }); }
     });
     var ind=$('hz-saved'); if(ind){ ind.textContent='✓ guardado'; ind.style.opacity='1'; clearTimeout(ind._t); ind._t=setTimeout(function(){ ind.style.opacity='0'; },1600); }
   }
-  function syncHz(){ var c=$('hz-list'); if(!c) return; c.querySelectorAll('.hrow').forEach(function(row){ var i=+row.dataset.i; if(HZ[i]){ HZ[i].trabajador=row.querySelector('.h-trab').value; HZ[i].entrada=row.querySelector('.h-in').value; HZ[i].salida=row.querySelector('.h-out').value; var fe=row.querySelector('.h-fecha'); if(fe) HZ[i].fecha=fe.value||todayISO(); } }); }
+  function syncHz(){ var c=$('hz-list'); if(!c) return; c.querySelectorAll('.hrow').forEach(function(row){ var i=+row.dataset.i; if(HZ[i]){ HZ[i].trabajador=row.querySelector('.h-trab').value; HZ[i].entrada=row.querySelector('.h-in').value; HZ[i].salida=row.querySelector('.h-out').value; var vu=row.querySelector('.h-vu'); if(vu) HZ[i].vueltas=(+vu.value||0); var fe=row.querySelector('.h-fecha'); if(fe) HZ[i].fecha=fe.value||todayISO(); } }); }
   function addHz(){ syncHz(); var f=(HZ.length?HZ[0].fecha:'')||todayISO(); HZ.unshift({fecha:f,trabajador:'',entrada:'',salida:''}); renderHz(); }
   function removeHz(i){ syncHz(); var h=HZ[i]; if(h&&h.id) HZ_DEL.push(h.id); HZ.splice(i,1); renderHz(); autoGuardarHz(); }
   function guardarHz(){
     if(!sb) return; syncHz();
     var ins=[], upds=[];
     HZ.forEach(function(h){ if(!(h.trabajador||'').trim()) return;
-      var row={ fecha:h.fecha||todayISO(), trabajador:h.trabajador.trim(), entrada:h.entrada||null, salida:h.salida||null, autor:userEmail };
+      var row={ fecha:h.fecha||todayISO(), trabajador:h.trabajador.trim(), entrada:h.entrada||null, salida:h.salida||null, vueltas:(+h.vueltas||0), autor:userEmail };
       if(h.id) upds.push({id:h.id,row:row}); else ins.push(row); });
     busy(true,'Guardando horas…'); var err=null;
     function fin(){ busy(false); if(err) toast('Algo falló: '+err); else toast('✓ Horas guardadas'); cargarHoras(); }
@@ -2683,10 +2690,10 @@
     var horasT={};
     D.regs.forEach(function(h){ var f=h.fecha; if(!f||f<lun||f>fin) return;
       var nm=norm(h.trabajador); if(!nm) return; var mn=totalMin(h.entrada,h.salida); mn=(mn==null?0:mn);
-      if(!horasT[nm]) horasT[nm]={porDia:{},detalle:[],totalMin:0};
+      if(!horasT[nm]) horasT[nm]={porDia:{},detalle:[],totalMin:0,vueltas:0};
       horasT[nm].porDia[f]=(horasT[nm].porDia[f]||0)+mn;
-      horasT[nm].detalle.push({fecha:f,empresa:h.empresa,lugar:h.lugar,entrada:h.entrada,salida:h.salida,min:mn});
-      horasT[nm].totalMin+=mn;
+      horasT[nm].detalle.push({fecha:f,empresa:h.empresa,lugar:h.lugar,entrada:h.entrada,salida:h.salida,min:mn,vueltas:(+h.vueltas||0)});
+      horasT[nm].totalMin+=mn; horasT[nm].vueltas+=(+h.vueltas||0);
     });
     var vueltasT={}, peajesT={};
     D.vg.forEach(function(g){ var nm=norm(g.chofer); if(!nm) return;
@@ -2697,7 +2704,7 @@
     var filas=[], total=0, porDiaMonto={}, porDiaHoras={};
     D.trab.forEach(function(t){ if(t.estado==='inactivo') return;
       var nm=norm(t.nombre), H=horasT[nm];
-      var tv=vueltasT[nm]||0, tp=peajesT[nm]||0, bo=bonoT[t.id]||0, de=descT[t.id]||0;
+      var tv=(vueltasT[nm]||0)+((H&&H.vueltas)||0), tp=peajesT[nm]||0, bo=bonoT[t.id]||0, de=descT[t.id]||0;
       var totMin=H?H.totalMin:0, dias=H?Object.keys(H.porDia).length:0;
       var tipo=t.tipo_pago||'hora', vh=(+t.valor_hora||0)||D.valorHora, jor=+t.jornada_horas||0, baseMin;
       if(tipo==='contrato'){ baseMin=0; if(H){ for(var f in H.porDia){ var ex=H.porDia[f]-jor*60; if(ex>0) baseMin+=ex; } } }
