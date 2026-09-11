@@ -2733,25 +2733,23 @@
     {slug:'contrato',nombre:'Contrato',corto:'Contrato',vence:false},
     {slug:'datos',nombre:'Ficha datos del trabajador',corto:'Datos',vence:false},
     {slug:'riohs',nombre:'Recepción RIOHS',corto:'RIOHS',vence:false},
-    {slug:'epp',nombre:'Registro entrega EPP',corto:'EPP',vence:false},
+    {slug:'epp',nombre:'Registro entrega EPP',corto:'Entrega EPP',vence:false},
     {slug:'odi',nombre:'ODI (Obligación de informar)',corto:'ODI',vence:false},
     {slug:'salud',nombre:'Declaración de salud',corto:'Salud',vence:false},
     {slug:'induccion',nombre:'Inducción laboral',corto:'Inducción',vence:false},
     {slug:'accidentes',nombre:'Procedimiento en caso de accidentes',corto:'Accidentes',vence:false},
-    {slug:'pts',nombre:'PTS acorde a sus funciones',corto:'PTS',vence:false},
-    {slug:'examen_altura',nombre:'Examen de altura',corto:'Ex. altura',vence:true},
-    {slug:'ley_karin',nombre:'Difusión Ley Karin',corto:'Ley Karin',vence:false}
+    {slug:'pts_extintores',nombre:'PTS uso de extintores',corto:'PTS extintores',vence:false},
+    {slug:'pts_quimicos',nombre:'PTS manejo de químicos',corto:'PTS químicos',vence:false},
+    {slug:'pts_altura',nombre:'PTS trabajo en altura',corto:'PTS altura',vence:false},
+    {slug:'pts_confinados',nombre:'PTS espacios confinados',corto:'PTS confinados',vence:false},
+    {slug:'examen_altura',nombre:'Examen de altura',corto:'Ex. altura',vence:true}
   ];
-  // Capacitaciones (mismo mecanismo que documentación; varias con vencimiento).
+  // Capacitaciones (registros de capacitación; algunas se renuevan). Distinto de los documentos firmados de ingreso.
   var CAP_TIPOS=[
-    {slug:'cap_epp',nombre:'Uso y cuidado de EPP',corto:'EPP',vence:false},
+    {slug:'cap_epp',nombre:'Capacitación uso de EPP',corto:'Uso EPP',vence:false},
     {slug:'cap_primeros',nombre:'Primeros auxilios',corto:'1° auxilios',vence:true},
     {slug:'cap_funciones',nombre:'Acorde a sus funciones',corto:'Funciones',vence:false},
-    {slug:'cap_altura',nombre:'Trabajo en altura',corto:'Altura',vence:true},
-    {slug:'cap_quimicos',nombre:'Manejo de químicos',corto:'Químicos',vence:false},
-    {slug:'cap_extintores',nombre:'Uso de extintores',corto:'Extintores',vence:false},
-    {slug:'cap_confinados',nombre:'Espacios confinados',corto:'Confinados',vence:true},
-    {slug:'cap_karin',nombre:'Ley Karin',corto:'Ley Karin',vence:false}
+    {slug:'cap_karin',nombre:'Difusión Ley Karin',corto:'Ley Karin',vence:false}
   ];
   function rrhhTipo(s){ var L=RRHH_TIPOS.concat(CAP_TIPOS); for(var i=0;i<L.length;i++) if(L[i].slug===s) return L[i]; return {slug:s,nombre:s,corto:s,vence:false}; }
   var RRHH_T=[], RRHH_D={}, RRHH_FILTRO='activo', RRHH_VISTA='doc', RRHH_CAT=RRHH_TIPOS;
