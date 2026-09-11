@@ -324,13 +324,15 @@
   .rep-cover:before,.rep-cover:after,.rep-back:before,.rep-back:after{content:"";position:absolute;top:0;bottom:0;width:56px;background:
     linear-gradient(90deg,#14110e 0 42%,#f2a71b 42% 52%,#ed4620 52% 62%,#1f28b0 62% 70%,#14110e 70% 100%);}
   .rep-cover:before,.rep-back:before{left:0;} .rep-cover:after,.rep-back:after{right:0;transform:scaleX(-1);}
-  .rep-cover .web{position:absolute;top:44px;left:0;right:0;text-align:center;font:700 12px var(--font);letter-spacing:.12em;color:#14110e;}
-  .rep-cover .clogo,.rep-back .blogo{width:230px;max-width:60%;}
-  .rep-cover .ctitle{font:800 26px var(--font);color:#14110e;letter-spacing:.04em;margin-top:6px;}
-  .rep-cover .csub{font:600 12px var(--font);letter-spacing:.14em;color:#6a675f;margin-top:8px;text-transform:uppercase;}
-  .rep-cover .ctag{position:absolute;bottom:60px;left:0;right:0;font:600 13px var(--font);font-style:italic;color:#14110e;}
-  .rep-back .brow{display:flex;flex-direction:column;align-items:center;gap:3px;margin-bottom:20px;font:600 13px var(--font);color:#333;}
-  .rep-back .bico{font-size:18px;color:var(--navy);margin-bottom:2px;}
+  .rep-cover .web{position:absolute;top:44px;left:0;right:0;text-align:center;font:700 13px var(--font);letter-spacing:.12em;color:#14110e;}
+  .rep-cover .clogo{width:300px;max-width:66%;}
+  .rep-back .blogo{width:290px;max-width:64%;margin-top:30px;}
+  .rep-cover .ctitle{font:800 33px var(--font);color:#14110e;letter-spacing:.04em;margin-top:10px;}
+  .rep-cover .csub{font:600 14px var(--font);letter-spacing:.14em;color:#6a675f;margin-top:10px;text-transform:uppercase;}
+  .rep-cover .ctag{position:absolute;bottom:58px;left:0;right:0;font:600 15px var(--font);font-style:italic;color:#14110e;}
+  .rep-back .brow{display:flex;flex-direction:column;align-items:center;gap:3px;margin-bottom:24px;font:600 15px var(--font);color:#2a2a2a;}
+  .rep-back .bico{color:var(--navy);margin-bottom:6px;line-height:0;}
+  .rep-back .bico svg{width:26px;height:26px;display:block;}
   .rep-foot{display:none;position:absolute;left:15mm;right:15mm;bottom:8mm;justify-content:space-between;align-items:center;font:600 8.5px var(--font);color:#9a968e;border-top:1px solid #e6e3dc;padding-top:4px;}
   @media print{
     @page{margin:0;size:A4;}
@@ -2046,12 +2048,17 @@
     }
     if(!media.length) fotos='<div class="rep-page">'+hdr+'<div class="rep-notas" style="text-align:center">Este registro aún no tiene fotos guardadas para incluir.</div></div>';
     // Contraportada
+    var _sv='width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"';
+    var icTel='<svg viewBox="0 0 24 24" '+_sv+'><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>';
+    var icMail='<svg viewBox="0 0 24 24" '+_sv+'><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 6-10 7L2 6"/></svg>';
+    var icWeb='<svg viewBox="0 0 24 24" '+_sv+'><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>';
+    var icPin='<svg viewBox="0 0 24 24" '+_sv+'><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg>';
     var back='<div class="rep-page rep-back">'+
-      '<div class="brow"><span class="bico">✆</span>+56 9 5863 5547<br>+56 9 27358442</div>'+
-      '<div class="brow"><span class="bico">✉</span>cristopher.ruiz@innovaservi.com<br>jorge.castro@innovaservi.com</div>'+
-      '<div class="brow"><span class="bico">🌐</span>www.innovaservi.cl</div>'+
-      '<div class="brow"><span class="bico">📍</span>Los Lirios 35, Mirasol, Puerto Montt</div>'+
-      '<img class="blogo" src="../assets/images/InnovaServi-completo.png" onerror="this.style.display=\'none\'" style="margin-top:24px;width:230px;max-width:60%"></div>';
+      '<div class="brow"><span class="bico">'+icTel+'</span>+56 9 5863 5547<br>+56 9 27358442</div>'+
+      '<div class="brow"><span class="bico">'+icMail+'</span>cristopher.ruiz@innovaservi.com<br>jorge.castro@innovaservi.com</div>'+
+      '<div class="brow"><span class="bico">'+icWeb+'</span>www.innovaservi.cl</div>'+
+      '<div class="brow"><span class="bico">'+icPin+'</span>Los Lirios 35, Mirasol, Puerto Montt</div>'+
+      '<img class="blogo" src="../assets/images/InnovaServi-completo.png" onerror="this.style.display=\'none\'"></div>';
     $('report-doc').innerHTML=cover+datos+fotos+back;
     // Pie propio (InnovaGestión · url · fecha · página) en las páginas de contenido (no portada/contraportada)
     (function(){ var pgs=$('report-doc').querySelectorAll('.rep-page'), N=pgs.length;
@@ -2108,6 +2115,8 @@
       var restore=[];
       $('report-doc').querySelectorAll('.rphoto.excluded').forEach(function(el){ restore.push([el,el.style.display]); el.style.display='none'; });
       $('report-doc').querySelectorAll('.rgroup').forEach(function(g){ if(!g.querySelectorAll('.rphoto:not(.excluded)').length){ restore.push([g,g.style.display]); g.style.display='none'; } });
+      // Los ✓/✕ de selección de fotos son solo internos: no van en el PDF del cliente.
+      $('report-doc').querySelectorAll('.rp-tick,.rp-x').forEach(function(el){ restore.push([el,el.style.display]); el.style.display='none'; });
       // Portada y contraportada: forzar alto = A4 exacto (ancho×297/210) para que llenen la hoja (sin banda blanca).
       var restoreH=[];
       $('report-doc').querySelectorAll('.rep-cover,.rep-back').forEach(function(el){
