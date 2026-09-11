@@ -56,12 +56,11 @@
 
   /* Grid calendario */
   .cal{background:#fff;border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 18px 50px -30px rgba(26,31,110,.35);}
-  .cal-dow{display:grid;grid-template-columns:34px repeat(7,1fr);background:var(--orange);color:#fff;}
+  .cal-dow{display:grid;grid-template-columns:repeat(7,1fr);background:var(--orange);color:#fff;}
   .cal-dow div{padding:12px 10px;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;text-align:center;}
-  .cal-grid{display:grid;grid-template-columns:34px repeat(7,1fr);}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);}
   .cell{min-height:128px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:8px;position:relative;transition:background .2s;overflow:hidden;}
-  .cell:nth-child(8n){border-right:none;}
-  .wk{display:flex;align-items:center;justify-content:center;background:var(--alt);color:var(--muted);font:800 10px var(--font);border-right:1px solid var(--line);border-bottom:1px solid var(--line);}
+  .cell:nth-child(7n){border-right:none;}
   .cell.out{background:var(--alt);}
   .cell.today{background:rgba(255,107,0,.05);}
   .cell:hover{background:var(--alt);}
@@ -85,7 +84,7 @@
 
   /* Vista semana: filas más altas */
   .cal.week .cell{min-height:420px;}
-  .cal.week .cal-grid{grid-template-columns:34px repeat(7,1fr);}
+  .cal.week .cal-grid{grid-template-columns:repeat(7,1fr);}
 
   /* Modal detalle */
   .pl-modal{display:none;position:fixed;inset:0;z-index:60;background:rgba(12,15,46,.55);align-items:center;justify-content:center;padding:20px;}
@@ -214,7 +213,7 @@
     <div class="pl-legend" id="pl-legend"></div>
 
     <div class="cal" id="cal">
-      <div class="cal-dow"><div title="Nº de semana">Sem</div><div>Lun</div><div>Mar</div><div>Mié</div><div>Jue</div><div>Vie</div><div>Sáb</div><div>Dom</div></div>
+      <div class="cal-dow"><div>Lun</div><div>Mar</div><div>Mié</div><div>Jue</div><div>Vie</div><div>Sáb</div><div>Dom</div></div>
       <div class="cal-grid" id="grid"></div>
     </div>
 
@@ -301,7 +300,6 @@
     document.querySelector('.cal-dow').style.display=(vista==='proximos')?'none':'';
     if(vista==='proximos'){ renderProximos(); return; }
     var y=ref.getFullYear(), m=ref.getMonth();
-    document.getElementById('title').textContent=MES[m]+' '+y;
     var cells=[];
     if(vista==='mes'){
       var first=new Date(y,m,1); var startDow=(first.getDay()+6)%7; var dim=new Date(y,m+1,0).getDate(); var prevDim=new Date(y,m,0).getDate();
@@ -312,13 +310,16 @@
       // semana que contiene ref
       var base=new Date(ref); var dow=(base.getDay()+6)%7; base.setDate(base.getDate()-dow);
       for(var w=0;w<7;w++){ var c=new Date(base); c.setDate(base.getDate()+w); cells.push({d:c,out:(c.getMonth()!==m)}); }
-      document.getElementById('title').textContent='Semana · '+cells[0].d.getDate()+' '+MES[cells[0].d.getMonth()].slice(0,3)+' – '+cells[6].d.getDate()+' '+MES[cells[6].d.getMonth()].slice(0,3);
     }
+    // Nº de semana ISO en el TÍTULO (mes: rango de semanas; semana: la semana + fechas)
+    var _wA=numSemanaISO(cells[0].d), _wB=numSemanaISO(cells[cells.length-1].d);
+    if(vista==='mes'){ document.getElementById('title').textContent=MES[m]+' '+y+' · '+(_wA===_wB?('Sem '+_wA):('Sem '+_wA+'–'+_wB)); }
+    else { document.getElementById('title').textContent='Semana '+_wA+' · '+cells[0].d.getDate()+' '+MES[cells[0].d.getMonth()].slice(0,3)+' – '+cells[6].d.getDate()+' '+MES[cells[6].d.getMonth()].slice(0,3); }
     // Leyenda: solo los clientes que aparecen en el período visible
     var vFrom=iso(cells[0].d), vTo=iso(cells[cells.length-1].d);
     renderLegend(EVENTS.filter(function(e){ return e.fecha>=vFrom && e.fecha<=vTo; }));
     var tISO=todayISO();
-    var _cellHtml=cells.map(function(c){
+    grid.innerHTML=cells.map(function(c){
       var f=iso(c.d); var evs=evsDe(f);
       // agrupar por ubicación/cliente: los del mismo lugar van en una sola card
       var groups={}, order=[];
@@ -335,10 +336,7 @@
       // Puntos por trabajo (se muestran solo en teléfono; tocar el día abre su lista)
       var dotsHtml = order.length ? ('<div class="ev-dots">'+order.slice(0,6).map(function(k){ return '<i style="background:'+groups[k][0].color+'"></i>'; }).join('')+(order.length>6?'<span class="more">+'+(order.length-6)+'</span>':'')+'</div>') : '';
       return '<div class="cell'+(c.out?' out':'')+(f===tISO?' today':'')+'" data-f="'+f+'"><span class="dnum'+(evs.length?' has':'')+'" data-f="'+f+'">'+c.d.getDate()+'</span>'+evHtml+dotsHtml+'</div>';
-    });
-    // Nº de semana ISO al costado de cada fila (como Excel)
-    var _rows=[]; for(var _ri=0;_ri<_cellHtml.length;_ri+=7){ _rows.push('<div class="wk" title="Semana ISO">'+numSemanaISO(cells[_ri].d)+'</div>'+_cellHtml.slice(_ri,_ri+7).join('')); }
-    grid.innerHTML=_rows.join('');
+    }).join('');
     grid.querySelectorAll('.evg-item').forEach(function(b){ b.addEventListener('click',function(ev){ ev.stopPropagation(); abrir(b.dataset.id); }); });
     grid.querySelectorAll('.evg-head').forEach(function(b){ b.addEventListener('click',function(ev){ ev.stopPropagation(); if(b.dataset.id) abrir(b.dataset.id); else abrirDiaUbic(b.dataset.f, b.dataset.ubic); }); });
     grid.querySelectorAll('.ev-more').forEach(function(b){ b.addEventListener('click',function(ev){ ev.stopPropagation(); abrirDia(b.dataset.f); }); });

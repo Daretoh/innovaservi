@@ -145,10 +145,9 @@
   .sel-bar button{border:none;border-radius:9px;padding:7px 10px;font:800 12px var(--font);cursor:pointer;background:#fff;color:var(--navy);}
   .sel-bar button.del{background:#dc2626;color:#fff;} .sel-bar button.clr{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.5);}
   /* Horas por trabajador */
-  .hrow{position:relative;border:1px solid var(--line);border-radius:11px;padding:7px 9px;margin-bottom:6px;background:var(--alt);}
-  .hrow .h-trab{width:100%;font:700 14px var(--font);padding:6px 9px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);margin-bottom:6px;}
-  .hrow-times{display:flex;align-items:center;gap:6px;flex-wrap:nowrap;}
-  .hrow-times input[type=time]{flex:1;min-width:0;font:600 14px var(--font);padding:6px 6px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);}
+  .hrow{position:relative;border:1px solid var(--line);border-radius:11px;padding:6px 8px;margin-bottom:6px;background:var(--alt);display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+  .hrow .h-trab{flex:1 1 140px;min-width:120px;font:700 13.5px var(--font);padding:6px 9px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);}
+  .hrow input[type=time]{flex:0 1 96px;min-width:80px;font:600 13.5px var(--font);padding:6px 6px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);}
   .hrow-times .arw{color:var(--muted);font-weight:800;flex:0 0 auto;}
   .hrow-total{flex:0 0 auto;font-size:.72rem;color:var(--orange-2);font-weight:800;white-space:nowrap;}
   .hrow-cal,.hrow-rm{flex:0 0 auto;width:30px;height:32px;border:1px solid var(--line);background:#fff;border-radius:8px;font-size:14px;cursor:pointer;line-height:1;}
@@ -526,7 +525,7 @@
 
     <!-- ---- HORAS por día (apartado propio, solo admin) ---- -->
     <section class="view" id="v-horas">
-      <div class="h-row"><h2>Horas <span class="cnt" id="hz-cnt"></span></h2><button id="hz-save" class="btn small" style="width:auto">💾 Guardar</button></div>
+      <div class="h-row"><h2>Horas <span class="cnt" id="hz-cnt"></span></h2><span id="hz-saved" style="margin-left:auto;font:700 11px var(--font);color:#0f6e56;opacity:0;transition:opacity .3s"></span><button id="hz-save" class="btn ghost small" style="width:auto">💾 Guardar</button></div>
       <p class="note" style="margin:0 0 10px">Horas por trabajador, agrupadas por día. Un turno nocturno (22:00→06:00) cuenta en el día que marcas.</p>
       <div style="display:flex;gap:8px;margin-bottom:12px">
         <button class="btn ghost small hzfil on" data-hf="hoy" style="flex:1">Hoy</button>
@@ -1976,27 +1975,46 @@
       var nT=Object.keys(nombres).length, totTxt=hay?(' · '+Math.floor(tot/60)+'h '+(tot%60)+'m'):'';
       var rows=idxs.map(function(i){ var h=HZ[i];
         return '<div class="hrow" data-i="'+i+'">'+
-          '<input class="h-trab" list="trab-datalist" placeholder="Nombre del trabajador" value="'+enc(h.trabajador||'')+'">'+
-          '<div class="hrow-times"><input type="time" class="h-in" value="'+(h.entrada||'')+'"><span class="arw">→</span><input type="time" class="h-out" value="'+(h.salida||'')+'">'+
+          '<input class="h-trab" list="trab-datalist" placeholder="Trabajador" value="'+enc(h.trabajador||'')+'">'+
+          '<input type="time" class="h-in" value="'+(h.entrada||'')+'"><span class="arw">→</span><input type="time" class="h-out" value="'+(h.salida||'')+'">'+
           '<span class="hrow-total">'+totalMini(h.entrada,h.salida)+'</span>'+
-          '<label class="hrow-cal" title="Cambiar fecha">📅<input type="date" class="h-fecha" value="'+(h.fecha||todayISO())+'"></label>'+
-          '<button class="hrow-rm" data-i="'+i+'" type="button">✕</button></div></div>';
+          '<label class="hrow-cal" title="Fecha">📅<input type="date" class="h-fecha" value="'+(h.fecha||todayISO())+'"></label>'+
+          '<button class="hrow-rm" data-i="'+i+'" type="button">✕</button></div>';
       }).join('');
-      return '<div class="hgroup'+(HZ_COL[f]?' collapsed':'')+'"><div class="hgroup-h" data-f="'+f+'"><span class="hg-chev">▾</span>📅 '+fechaCorta(f)+' <span style="color:var(--muted);font-weight:600">('+nT+(nT===1?' trabajador':' trabajadores')+totTxt+')</span></div><div class="hgroup-body">'+rows+'</div></div>';
+      var colapsado=(HZ_COL[f]!==false);   // colapsado por defecto; se abre al tocar
+      return '<div class="hgroup'+(colapsado?' collapsed':'')+'"><div class="hgroup-h" data-f="'+f+'"><span class="hg-chev">▾</span>📅 '+fechaCorta(f)+' <span style="color:var(--muted);font-weight:600">('+nT+(nT===1?' trabajador':' trabajadores')+totTxt+')</span></div><div class="hgroup-body">'+rows+'</div></div>';
     }).join('')||'<div class="empty"><div class="big">⏱️</div>Sin horas '+(HZ_FILTRO==='hoy'?'de hoy':(HZ_FILTRO==='semana'?'de la semana':''))+'.<br><span style="font-size:.82rem">Toca “＋ Agregar hora”.</span></div>';
     $('hz-cnt').textContent=HZ.length+(HZ.length===1?' línea':' líneas');
-    c.querySelectorAll('.hgroup-h').forEach(function(h){ h.addEventListener('click',function(){ HZ_COL[h.dataset.f]=h.parentNode.classList.toggle('collapsed'); }); });
+    c.querySelectorAll('.hgroup-h').forEach(function(h){ h.addEventListener('click',function(){ HZ_COL[h.dataset.f]=!h.parentNode.classList.toggle('collapsed'); }); });
     c.querySelectorAll('.hrow-rm').forEach(function(b){ b.addEventListener('click',function(){ removeHz(+b.dataset.i); }); });
-    c.querySelectorAll('.hrow').forEach(function(row){ var fe=row.querySelector('.h-fecha');
+    c.querySelectorAll('.hrow').forEach(function(row){ var i=+row.dataset.i; var fe=row.querySelector('.h-fecha');
       var upd=function(){ row.querySelector('.hrow-total').textContent=totalMini(row.querySelector('.h-in').value,row.querySelector('.h-out').value); };
-      row.querySelector('.h-in').addEventListener('change',upd);
-      row.querySelector('.h-out').addEventListener('change',upd);
-      fe.addEventListener('change',function(){ syncHz(); renderHz(); });
+      function marcar(){ if(HZ[i]) HZ[i]._dirty=true; autoGuardarHz(); }
+      row.querySelector('.h-trab').addEventListener('input',marcar);
+      row.querySelector('.h-in').addEventListener('change',function(){ upd(); marcar(); });
+      row.querySelector('.h-out').addEventListener('change',function(){ upd(); marcar(); });
+      fe.addEventListener('change',function(){ syncHz(); if(HZ[i]) HZ[i]._dirty=true; renderHz(); autoGuardarHz(); });
     });
+  }
+  // Autoguardado silencioso de Horas (sin recargar): guarda solo las líneas cambiadas.
+  var _hzTimer=null;
+  function autoGuardarHz(){ clearTimeout(_hzTimer); _hzTimer=setTimeout(guardarHzAuto, 900); }
+  function guardarHzAuto(){
+    if(!sb) return; syncHz();
+    if(HZ_DEL.length){ var del=HZ_DEL.slice(); HZ_DEL=[]; sb.from('horas').delete().in('id',del).then(function(){},function(){}); }
+    HZ.forEach(function(h){
+      if(!h._dirty) return;
+      if(!(h.trabajador||'').trim()) return;   // no guarda líneas sin nombre
+      var row={ fecha:h.fecha||todayISO(), trabajador:h.trabajador.trim(), entrada:h.entrada||null, salida:h.salida||null, autor:userEmail };
+      h._dirty=false;
+      if(h.id){ sb.from('horas').update(row).eq('id',h.id).then(function(){},function(){}); }
+      else if(!h._saving){ h._saving=true; sb.from('horas').insert(row).select('id').maybeSingle().then(function(r){ h._saving=false; if(r&&r.data&&r.data.id) h.id=r.data.id; }, function(){ h._saving=false; }); }
+    });
+    var ind=$('hz-saved'); if(ind){ ind.textContent='✓ guardado'; ind.style.opacity='1'; clearTimeout(ind._t); ind._t=setTimeout(function(){ ind.style.opacity='0'; },1600); }
   }
   function syncHz(){ var c=$('hz-list'); if(!c) return; c.querySelectorAll('.hrow').forEach(function(row){ var i=+row.dataset.i; if(HZ[i]){ HZ[i].trabajador=row.querySelector('.h-trab').value; HZ[i].entrada=row.querySelector('.h-in').value; HZ[i].salida=row.querySelector('.h-out').value; var fe=row.querySelector('.h-fecha'); if(fe) HZ[i].fecha=fe.value||todayISO(); } }); }
   function addHz(){ syncHz(); var f=(HZ.length?HZ[0].fecha:'')||todayISO(); HZ.unshift({fecha:f,trabajador:'',entrada:'',salida:''}); renderHz(); }
-  function removeHz(i){ syncHz(); var h=HZ[i]; if(h&&h.id) HZ_DEL.push(h.id); HZ.splice(i,1); renderHz(); }
+  function removeHz(i){ syncHz(); var h=HZ[i]; if(h&&h.id) HZ_DEL.push(h.id); HZ.splice(i,1); renderHz(); autoGuardarHz(); }
   function guardarHz(){
     if(!sb) return; syncHz();
     var ins=[], upds=[];
