@@ -2225,6 +2225,8 @@
     if(sel && !seen[sel]) opts+='<option value="'+enc(sel)+'" selected>'+esc(sel)+' (otra fecha)</option>';
     return opts;
   }
+  // "juan pérez soto" -> "Juan Pérez Soto" (cada palabra con mayúscula inicial).
+  function titleCase(s){ return (s||'').toLowerCase().replace(/\s+/g,' ').trim().replace(/(^|[\s'’\-])(\p{L})/gu, function(m,p,c){ return p+c.toUpperCase(); }); }
   // ¿el nombre corresponde a un trabajador con ficha? (case/acentos-insensible)
   function esTrabajador(nombre){ if(!(TRAB||[]).length) return true; var n=normName(nombre); if(!n) return false; return TRAB.some(function(t){ return normName(t.nombre)===n; }); }
   function renderHz(){
@@ -2381,7 +2383,7 @@
   function actualizarDatalist(){ var dl=$('trab-datalist'); if(!dl) return;
     dl.innerHTML=TRAB.filter(function(t){ return t.estado!=='inactivo' && (t.nombre||'').trim(); })
       .sort(function(a,b){ return (a.nombre||'').localeCompare(b.nombre||''); })
-      .map(function(t){ return '<option value="'+enc(t.nombre)+'"></option>'; }).join(''); }
+      .map(function(t){ return '<option value="'+enc(titleCase(t.nombre))+'"></option>'; }).join(''); }
   function inic(n){ n=(n||'').trim().split(/\s+/); return ((n[0]||'')[0]||'')+((n[1]||'')[0]||''); }
   var trabQ='', trabFilter='activo', trabSort='nombre', TRAB_VISTA=[];
   function pintarTrab(){
@@ -2404,7 +2406,7 @@
     if(!arr.length){ list.innerHTML='<div class="empty">Sin resultados para ese filtro/búsqueda.</div>'; return; }
     list.innerHTML=arr.map(function(t,idx){ var off=(t.estado==='inactivo'); var nd=(t.docs||[]).length;
       return '<div class="trab'+(off?' off':'')+'" data-idx="'+idx+'"><div class="av">'+esc(inic(t.nombre).toUpperCase()||'·')+'</div>'+
-        '<div class="tt"><div class="nm">'+esc(t.nombre||'—')+'</div>'+(t.cargo?'<div class="cg">'+esc(t.cargo)+'</div>':'')+
+        '<div class="tt"><div class="nm">'+esc(titleCase(t.nombre)||'—')+'</div>'+(t.cargo?'<div class="cg">'+esc(t.cargo)+'</div>':'')+
         '<div class="meta">'+(t.rut?esc(t.rut)+' · ':'')+nd+' doc'+(nd===1?'':'s')+'</div></div>'+
         '<span class="badge">'+(off?'Inactivo':'Activo')+'</span></div>'; }).join('');
     list.querySelectorAll('.trab[data-idx]').forEach(function(el){ el.addEventListener('click',function(){ abrirFicha(TRAB_VISTA[+el.dataset.idx]); }); });
@@ -2491,7 +2493,7 @@
       renderDups(); $('dups-mgr').classList.remove('hide'); $('dups-mgr').scrollTop=0;
     }, function(){ busy(false); toast('No se pudo leer las horas.'); });
   }
-  function trabOptions(){ return (TRAB||[]).slice().sort(function(a,b){ return (a.nombre||'').localeCompare(b.nombre||''); }).map(function(t){ return '<option value="'+enc(t.nombre)+'">'+esc(t.nombre)+(t.cargo?(' · '+esc(t.cargo)):'')+'</option>'; }).join(''); }
+  function trabOptions(){ return (TRAB||[]).slice().sort(function(a,b){ return (a.nombre||'').localeCompare(b.nombre||''); }).map(function(t){ return '<option value="'+enc(t.nombre)+'">'+esc(titleCase(t.nombre))+(t.cargo?(' · '+esc(t.cargo)):'')+'</option>'; }).join(''); }
   function renderDups(){
     var c=$('dups-list'); if(!c) return;
     var html='';
@@ -2501,8 +2503,8 @@
       html+=DUPS.map(function(g,gi){
         var variants=g.keys.slice().sort(function(a,b){ return (DUPS_CNT[b]||0)-(DUPS_CNT[a]||0); });
         var def=variants.filter(function(k){ return DUPS_FICHA[k]; })[0]||variants[0];
-        var optSel=variants.map(function(k){ return '<option value="'+enc(DUPS_DISP[k])+'"'+(k===def?' selected':'')+'>'+esc(DUPS_DISP[k])+'</option>'; }).join('');
-        var lis=variants.map(function(k){ return '<div style="display:flex;justify-content:space-between;font-size:.82rem;padding:3px 0;border-bottom:1px dashed var(--line)"><span>'+(DUPS_FICHA[k]?'✅ ':'⚠️ ')+esc(DUPS_DISP[k])+'</span><span class="note" style="margin:0">'+(DUPS_CNT[k]||0)+' líneas</span></div>'; }).join('');
+        var optSel=variants.map(function(k){ return '<option value="'+enc(titleCase(DUPS_DISP[k]))+'"'+(k===def?' selected':'')+'>'+esc(titleCase(DUPS_DISP[k]))+'</option>'; }).join('');
+        var lis=variants.map(function(k){ return '<div style="display:flex;justify-content:space-between;font-size:.82rem;padding:3px 0;border-bottom:1px dashed var(--line)"><span>'+(DUPS_FICHA[k]?'✅ ':'⚠️ ')+esc(titleCase(DUPS_DISP[k]))+'</span><span class="note" style="margin:0">'+(DUPS_CNT[k]||0)+' líneas</span></div>'; }).join('');
         return '<div class="card dgrp" data-gi="'+gi+'"><b style="text-transform:capitalize">'+esc(g.tok)+' <span class="note" style="margin:0;font-weight:600">('+variants.length+' variantes)</span></b>'+lis+
           '<div class="fld" style="margin:8px 0 6px"><label>Dejar todo como</label><select class="dg-canon">'+optSel+'</select></div>'+
           '<button class="dg-merge btn small" style="width:auto">🔗 Unificar en este nombre</button></div>';
@@ -2513,7 +2515,7 @@
       var opts=trabOptions();
       html+='<h3 style="font:800 14px var(--font);color:#b45309;margin:16px 0 8px">⚠️ Con horas pero sin ficha</h3>';
       html+=DUPS_ORPH.map(function(k){
-        return '<div class="card oorph" data-nm="'+enc(DUPS_DISP[k])+'"><div style="display:flex;justify-content:space-between;align-items:center"><b>'+esc(DUPS_DISP[k])+'</b><span class="note" style="margin:0">'+(DUPS_CNT[k]||0)+' líneas</span></div>'+
+        return '<div class="card oorph" data-nm="'+enc(DUPS_DISP[k])+'"><div style="display:flex;justify-content:space-between;align-items:center"><b>'+esc(titleCase(DUPS_DISP[k]))+'</b><span class="note" style="margin:0">'+(DUPS_CNT[k]||0)+' líneas</span></div>'+
           '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><button class="oo-crear btn small" style="width:auto">＋ Crear ficha</button><button class="oo-unir btn ghost small" style="width:auto">🔗 Unir con existente…</button></div>'+
           '<div class="oo-box" style="display:none;margin-top:8px"><div class="fld" style="margin:0 0 6px"><label>Unir con</label><select class="oo-sel">'+(opts||'<option value="">(no hay trabajadores)</option>')+'</select></div><button class="oo-go btn small" style="width:auto">Unir horas</button></div>'+
         '</div>';
@@ -2532,7 +2534,7 @@
     nm=(nm||'').trim(); if(!nm||!sb) return;
     if(!confirm('¿Crear ficha de trabajador para “'+nm+'”?')) return;
     busy(true,'Creando ficha…');
-    sb.from('trabajadores').insert({nombre:nm,estado:'activo',autor:userEmail}).then(function(r){ busy(false);
+    sb.from('trabajadores').insert({nombre:titleCase(nm),estado:'activo',autor:userEmail}).then(function(r){ busy(false);
       if(r.error){ toast('No se pudo crear: '+r.error.message); return; }
       toast('✓ Ficha creada'); cargarTrab(function(){ actualizarDatalist(); if(typeof pintarTrab==='function') pintarTrab(); abrirDups(); }); if(typeof cargarRemu==='function') cargarRemu();
     }, function(){ busy(false); toast('No se pudo crear.'); });
@@ -2681,7 +2683,7 @@
     nombreBase:function(){ return slug($('fi-nombre').value.trim()||'doc'); },
     onDoc:function(d){ FICHA_DOCS.push(d); renderDocs(); } });
   $('fi-save').addEventListener('click',function(){
-    if(!sb) return; var nom=$('fi-nombre').value.trim(); if(!nom){ toast('El nombre es obligatorio.'); return; }
+    if(!sb) return; var nom=titleCase($('fi-nombre').value.trim()); if(!nom){ toast('El nombre es obligatorio.'); return; }
     var row={ nombre:nom, rut:$('fi-rut').value.trim(), cargo:$('fi-cargo').value.trim(), estado:$('fi-estado').value,
       telefono:$('fi-tel').value.trim(), email:$('fi-email').value.trim(), fecha_ingreso:$('fi-ingreso').value||null,
       talla_botas:$('fi-botas').value.trim(), talla_ropa:$('fi-ropa').value.trim(), afp:$('fi-afp').value.trim(),
@@ -3006,7 +3008,7 @@
     var m=function(v,neg){ return v?((neg?'−':'')+fmtMoney(v)):'<span class="rt-z">—</span>'; };
     var body=filas.map(function(x,i){
       return '<tr data-i="'+i+'">'+
-        '<td class="rt-nm">'+(x.t.id?'':'<span title="No está registrado como trabajador">⚠️ </span>')+esc(x.t.nombre||'')+'<div class="rt-sub"'+(x.t.id?'':' style="color:#b45309;font-weight:700"')+'>'+esc(x.t.cargo||'')+(x.tipo==='contrato'?' · contrato':'')+'</div></td>'+
+        '<td class="rt-nm">'+(x.t.id?'':'<span title="No está registrado como trabajador">⚠️ </span>')+esc(titleCase(x.t.nombre)||'')+'<div class="rt-sub"'+(x.t.id?'':' style="color:#b45309;font-weight:700"')+'>'+esc(x.t.cargo||'')+(x.tipo==='contrato'?' · contrato':'')+'</div></td>'+
         '<td>'+x.dias+'</td><td>'+hm(x.totMin)+'</td>'+
         '<td>'+m(x.base)+'</td><td>'+m(x.vueltasMonto)+'</td><td>'+m(x.peajes)+'</td>'+
         '<td class="rt-ok">'+m(x.bono)+'</td><td class="rt-bad">'+m(x.desc,true)+'</td>'+
@@ -3064,7 +3066,7 @@
   // Detalle de un trabajador (semana)
   function abrirDetalleRemu(x){
     if(!x) return;
-    $('rd-title').textContent=(x.t.id?'':'⚠️ ')+(x.t.nombre||'Detalle')+' · Semana '+numSemana(REMU_DATA.lun);
+    $('rd-title').textContent=(x.t.id?'':'⚠️ ')+(titleCase(x.t.nombre)||'Detalle')+' · Semana '+numSemana(REMU_DATA.lun);
     var dias=((x.H&&x.H.detalle)||[]).slice().sort(function(a,b){ return a.fecha<b.fecha?-1:1; });
     var diasHtml=dias.length?dias.map(function(d){
       var pagoMin=(x.tipo==='contrato')?Math.max(0,d.min-(x.jor*60)):d.min;
@@ -3082,7 +3084,7 @@
     // Si es un nombre suelto (sin ficha): permitir unirlo a un trabajador o crearle ficha.
     var unir='';
     if(!x.t.id){
-      var opts=(REMU_DATA.trab||[]).filter(function(t){ return t.estado!=='inactivo'; }).sort(function(a,b){ return (a.nombre||'').localeCompare(b.nombre||''); }).map(function(t){ return '<option value="'+enc(t.nombre)+'">'+esc(t.nombre)+(t.cargo?(' · '+esc(t.cargo)):'')+'</option>'; }).join('');
+      var opts=(REMU_DATA.trab||[]).filter(function(t){ return t.estado!=='inactivo'; }).sort(function(a,b){ return (a.nombre||'').localeCompare(b.nombre||''); }).map(function(t){ return '<option value="'+enc(t.nombre)+'">'+esc(titleCase(t.nombre))+(t.cargo?(' · '+esc(t.cargo)):'')+'</option>'; }).join('');
       unir='<div class="card" style="border:1px solid #f0b429;background:#fffdf5">'+
         '<label style="display:block;font:700 13px var(--font);color:#b45309;margin-bottom:4px">⚠️ Nombre sin ficha</label>'+
         '<p class="note" style="margin:0 0 8px">Parece el mismo trabajador escrito distinto. Únelo a un trabajador para juntar sus horas (se renombran <b>todas</b> las horas de este nombre), o créale ficha.</p>'+
@@ -3113,7 +3115,7 @@
       var cf=$('rd-crear'); if(cf) cf.addEventListener('click',function(){
         if(!confirm('¿Crear ficha de trabajador para “'+oldName+'”?')) return;
         busy(true,'Creando ficha…');
-        sb.from('trabajadores').insert({nombre:oldName,estado:'activo',autor:userEmail}).then(function(r){ busy(false);
+        sb.from('trabajadores').insert({nombre:titleCase(oldName),estado:'activo',autor:userEmail}).then(function(r){ busy(false);
           if(r.error){ toast('No se pudo crear: '+r.error.message); return; }
           toast('✓ Ficha creada'); cerrarDetalleRemu(); cargarTrab(function(){ actualizarDatalist(); if(typeof pintarTrab==='function') pintarTrab(); }); cargarRemu();
         }, function(){ busy(false); toast('No se pudo crear.'); });
@@ -3157,7 +3159,7 @@
     var trabHtml=rows.length?rows.map(function(r){
       var horarios=r.ents.map(function(d){ return esc(d.entrada||'--:--')+'→'+esc(d.salida||'--:--'); }).join(', ');
       var faTxt=r.faenas.length?('<div class="note" style="margin:2px 0 0;font-size:.72rem">📍 '+esc(r.faenas.join(' · '))+'</div>'):'';
-      return '<div class="rd-dia"><div style="flex:1"><b>'+(r.x.t.id?'':'⚠️ ')+esc(r.x.t.nombre||'')+'</b>'+(r.x.t.id?'':'<span style="color:#b45309;font-weight:700;font-size:.7rem"> · sin ficha</span>')+'<div class="note" style="margin:0;font-size:.74rem">'+horarios+(r.vu?(' · 🔄 '+r.vu+' vueltas'):'')+'</div>'+faTxt+'</div><div style="text-align:right;flex-shrink:0"><div style="font-size:.82rem">'+hm(r.dayMin)+'</div><b style="color:var(--orange-2);font-size:.82rem">'+fmtMoney(r.pago)+'</b></div></div>';
+      return '<div class="rd-dia"><div style="flex:1"><b>'+(r.x.t.id?'':'⚠️ ')+esc(titleCase(r.x.t.nombre)||'')+'</b>'+(r.x.t.id?'':'<span style="color:#b45309;font-weight:700;font-size:.7rem"> · sin ficha</span>')+'<div class="note" style="margin:0;font-size:.74rem">'+horarios+(r.vu?(' · 🔄 '+r.vu+' vueltas'):'')+'</div>'+faTxt+'</div><div style="text-align:right;flex-shrink:0"><div style="font-size:.82rem">'+hm(r.dayMin)+'</div><b style="color:var(--orange-2);font-size:.82rem">'+fmtMoney(r.pago)+'</b></div></div>';
     }).join(''):'<p class="note" style="margin:0">Nadie registró horas este día.</p>';
     var lbl='display:block;font:700 13px var(--font);color:var(--ink);margin-bottom:6px';
     $('rd-body').innerHTML=
@@ -3574,7 +3576,7 @@
     var rows=[];
     lines.forEach(function(l){ var p=l.split(',').map(function(s){ return s.trim(); }); var nombre=p[0]; if(!nombre) return;
       var k=nombre.toLowerCase(); if(vistos[k]) return; vistos[k]=1;
-      rows.push({ nombre:nombre, cargo:p[1]||'', rut:p[2]||'', estado:'activo', autor:userEmail }); });
+      rows.push({ nombre:titleCase(nombre), cargo:p[1]||'', rut:p[2]||'', estado:'activo', autor:userEmail }); });
     if(!rows.length){ toast('Nada nuevo por importar (ya existían).'); return; }
     busy(true,'Importando '+rows.length+'…');
     sb.from('trabajadores').insert(rows).then(function(r){ busy(false);
