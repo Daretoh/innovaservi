@@ -388,6 +388,8 @@
   .rchip.accent{background:rgba(26,31,110,.1);color:var(--navy);} .rchip.warn{background:rgba(245,158,11,.16);color:#854f0b;}
   .rchip.ok{background:rgba(31,157,99,.14);color:#0f6e56;} .rchip.bad{background:rgba(220,38,38,.12);color:#dc2626;}
   .rd-dia{display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);}
+  .rd-dia.rd-link{cursor:pointer;margin:0 -6px;padding-left:6px;padding-right:6px;border-radius:8px;}
+  .rd-dia.rd-link:hover{background:#fff4ec;}
   .rd-dia:last-child{border-bottom:none;}
   .rd-lin{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid var(--line);font-size:.86rem;}
   .rd-lin.rd-tot{border-bottom:none;border-top:2px solid var(--line);margin-top:2px;font-weight:800;font-size:1rem;}
@@ -673,7 +675,7 @@
   </main>
 
   <nav class="tabbar">
-    <button data-v="v-reporte" class="on"><span class="em">📄</span>Reporte</button>
+    <button data-v="v-reporte" class="on"><span class="em">📝</span>Registro</button>
     <button data-v="v-hist"><span class="em">🗂️</span>Reportes</button>
     <button data-v="v-horas" id="tab-horas" class="hide"><span class="em">⏱️</span>Horas</button>
     <button data-v="v-cuadrilla" id="tab-cuad"><span class="em">✅</span>Preparación</button>
@@ -2467,13 +2469,15 @@
   function isoD(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
   function lunesDe(f){ var d=new Date(f+'T12:00:00'); var dow=(d.getDay()+6)%7; d.setDate(d.getDate()-dow); return isoD(d); }
   function sumarDias(f,n){ var d=new Date(f+'T12:00:00'); d.setDate(d.getDate()+n); return isoD(d); }
+  // Número de semana ISO (como "Semana 36" de los Excel).
+  function numSemana(f){ var d=new Date(Date.UTC(+f.slice(0,4),+f.slice(5,7)-1,+f.slice(8,10))); var day=(d.getUTCDay()+6)%7; d.setUTCDate(d.getUTCDate()-day+3); var firstThu=d.getTime(); d.setUTCMonth(0,1); if(d.getUTCDay()!==4){ d.setUTCMonth(0,1+((4-d.getUTCDay())+7)%7); } return 1+Math.round((firstThu-d.getTime())/604800000); }
   function hm(min){ if(min==null) return '0h'; return Math.floor(min/60)+'h'+(min%60?(' '+(min%60)+'m'):''); }
   function norm(s){ return (s||'').trim().toLowerCase(); }
 
   function cargarRemu(){
     if(!REMU_LUNES) REMU_LUNES=lunesDe(todayISO());
     var lun=REMU_LUNES, fin=sumarDias(lun,6);
-    $('remu-rango').textContent=fechaCorta(lun)+' – '+fechaCorta(fin);
+    $('remu-rango').textContent='Semana '+numSemana(lun)+' · '+fechaCorta(lun)+' – '+fechaCorta(fin);
     if(!sb) return;
     Promise.all([
       sb.from('trabajadores').select('*').order('nombre',{ascending:true}).limit(400),
@@ -2591,10 +2595,14 @@
   // Detalle de un trabajador (semana)
   function abrirDetalleRemu(x){
     if(!x) return;
-    $('rd-title').textContent=x.t.nombre||'Detalle';
+    $('rd-title').textContent=(x.t.nombre||'Detalle')+' · Semana '+numSemana(REMU_DATA.lun);
     var dias=((x.H&&x.H.detalle)||[]).slice().sort(function(a,b){ return a.fecha<b.fecha?-1:1; });
     var diasHtml=dias.length?dias.map(function(d){
-      return '<div class="rd-dia"><div style="flex:1"><b>'+fechaCorta(d.fecha)+'</b><div class="note" style="margin:0;font-size:.74rem">'+esc(d.empresa||'—')+(d.lugar?' · '+esc(d.lugar):'')+'</div></div><div style="text-align:right;flex-shrink:0"><div style="font-size:.82rem">'+esc(d.entrada||'--:--')+' → '+esc(d.salida||'--:--')+'</div><b style="color:var(--orange-2);font-size:.8rem">'+hm(d.min)+'</b></div></div>';
+      var pagoMin=(x.tipo==='contrato')?Math.max(0,d.min-(x.jor*60)):d.min;
+      var pagoDia=Math.round(pagoMin/60*x.vh);
+      // ¿hay un registro/reporte de ese día y empresa? → enlace para abrirlo
+      var reg=(typeof REGISTROS!=='undefined'?REGISTROS:[]).filter(function(r){ return r.fecha===d.fecha && norm(r.empresa)===norm(d.empresa); })[0];
+      return '<div class="rd-dia'+(reg?' rd-link':'')+'"'+(reg?(' data-reg="'+reg.id+'"'):'')+'><div style="flex:1"><b>'+fechaCorta(d.fecha)+'</b><div class="note" style="margin:0;font-size:.74rem">'+esc(d.empresa||'—')+(d.lugar?' · '+esc(d.lugar):'')+(reg?' <span style="color:var(--orange-2);font-weight:700">· ver ›</span>':'')+'</div></div><div style="text-align:right;flex-shrink:0"><div style="font-size:.82rem">'+esc(d.entrada||'--:--')+' → '+esc(d.salida||'--:--')+' · '+hm(d.min)+'</div><b style="color:var(--orange-2);font-size:.82rem">'+fmtMoney(pagoDia)+'</b></div></div>';
     }).join(''):'<p class="note" style="margin:0">Sin días registrados esta semana.</p>';
     var desg='<div class="rd-lin"><span>'+(x.tipo==='contrato'?'Horas extra':'Horas')+' ('+hm(x.baseMin)+(x.vh?(' × '+fmtMoney(x.vh)):'')+')</span><b>'+fmtMoney(x.base)+'</b></div>';
     if(x.vueltas) desg+='<div class="rd-lin"><span>'+x.vueltas+' vueltas × '+fmtMoney(REMU_DATA.valorVuelta)+'</span><b>'+fmtMoney(x.vueltasMonto)+'</b></div>';
@@ -2609,6 +2617,7 @@
         '<div class="grid2"><div class="fld" style="margin:0"><label>Tipo</label><select id="rd-tipo"><option value="bono">Bono / extra</option><option value="descuento">Descuento</option></select></div><div class="fld" style="margin:0"><label>Monto ($)</label><input id="rd-monto" type="number" min="0" placeholder="0"></div></div>'+
         '<div class="fld"><label>Concepto</label><input id="rd-concepto" type="text" placeholder="Ej: Anticipo, bono producción…"></div>'+
         '<button id="rd-add" class="btn small" style="width:auto">Agregar</button></div>';
+    $('rd-body').querySelectorAll('.rd-dia.rd-link[data-reg]').forEach(function(el){ el.addEventListener('click',function(){ var reg=(REGISTROS||[]).filter(function(r){ return String(r.id)===el.dataset.reg; })[0]; if(reg){ cerrarDetalleRemu(); abrirEdicion(reg); } }); });
     $('rd-add').addEventListener('click',function(){
       if(!sb) return; var monto=+($('rd-monto').value||0); if(!monto){ toast('Pon el monto.'); return; }
       busy(true,'Guardando…');
