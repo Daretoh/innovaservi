@@ -156,6 +156,15 @@
   .hfae-none{background:#eef0f4;color:var(--muted);}
   .hz-add-day{margin-top:6px;width:auto;background:#fff;border:1px dashed var(--orange);color:var(--orange-2);font:700 12.5px var(--font);padding:7px 12px;border-radius:9px;cursor:pointer;}
   .hz-add-day:hover{background:var(--alt);}
+  .jday{margin-top:10px;padding:10px 11px;border:1px dashed var(--line);border-radius:11px;background:var(--alt);}
+  .jday-h{font:800 11.5px var(--font);color:var(--navy);text-transform:uppercase;letter-spacing:.03em;margin-bottom:8px;}
+  .jv-row{display:flex;gap:6px;align-items:center;margin-bottom:6px;flex-wrap:wrap;}
+  .jv-veh,.jv-cho{flex:1 1 150px;min-width:130px;font:600 12.5px var(--font);padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);}
+  .jv-rm{flex:0 0 auto;width:30px;height:34px;border:1px solid #f0c0c0;background:#fff;color:#dc2626;border-radius:8px;cursor:pointer;}
+  .jv-add{margin:2px 0 8px;width:auto;background:#fff;border:1px dashed var(--navy);color:var(--navy);font:700 12px var(--font);padding:6px 11px;border-radius:8px;cursor:pointer;}
+  .jprep-lbl{display:block;font:700 11px var(--font);color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:4px 0 4px;}
+  .jprep{width:100%;font:500 13px var(--font);padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink);resize:vertical;}
+  .jprep:focus,.jv-veh:focus,.jv-cho:focus{outline:none;border-color:var(--orange);box-shadow:0 0 0 3px rgba(255,107,0,.13);}
   .hrow input[type=time]{flex:0 1 96px;min-width:80px;font:600 13.5px var(--font);padding:6px 6px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);}
   .hrow-times .arw{color:var(--muted);font-weight:800;flex:0 0 auto;}
   .hrow-total{flex:0 0 auto;font-size:.72rem;color:var(--orange-2);font-weight:800;white-space:nowrap;}
@@ -2338,17 +2347,31 @@
   // ====== HORAS por día (apartado propio, tabla 'horas') ======
   var HZ=[], HZ_DEL=[], HZ_FILTRO='hoy', HZ_COL={};
   function nrm(s){ return (s||'').trim().toLowerCase(); }
+  var JORN={};   // fecha -> {vehiculos:[{veh,chofer}], preparacion:''}
   function cargarHoras(){
-    if(isAdmin) cargarTrab(actualizarDatalist);
+    if(isAdmin) cargarTrab(function(){ actualizarDatalist(); if($('hz-list')&&HZ.length) renderHz(); });
     if(!sb) return;
-    var hoy=todayISO(), q=sb.from('horas').select('*');
-    if(HZ_FILTRO==='hoy') q=q.eq('fecha',hoy);
-    else if(HZ_FILTRO==='semana') q=q.gte('fecha',isoMas(-6)).lte('fecha',hoy);
-    q.order('fecha',{ascending:false}).limit(800).then(function(r){
-      HZ=((r&&r.data)||[]).map(function(h){ return {id:h.id, fecha:h.fecha, trabajador:h.trabajador||'', entrada:h.entrada||'', salida:h.salida||'', vueltas:(+h.vueltas||0), faena:(h.faena||'')}; });
+    var hoy=todayISO(), lo=null, hi=null;
+    if(HZ_FILTRO==='hoy'){ lo=hoy; hi=hoy; } else if(HZ_FILTRO==='semana'){ lo=isoMas(-6); hi=hoy; }
+    var hq=sb.from('horas').select('*'); if(lo){ hq=hq.gte('fecha',lo).lte('fecha',hi); } hq=hq.order('fecha',{ascending:false}).limit(800);
+    var jq=sb.from('jornada').select('*'); if(lo){ jq=jq.gte('fecha',lo).lte('fecha',hi); } jq=jq.limit(800);
+    var vq=sb.from('vehiculos').select('id,nombre,marca,modelo,patente').order('nombre',{ascending:true}).limit(300);
+    Promise.all([hq,jq,vq]).then(function(rs){
+      HZ=((rs[0]&&rs[0].data)||[]).map(function(h){ return {id:h.id, fecha:h.fecha, trabajador:h.trabajador||'', entrada:h.entrada||'', salida:h.salida||'', vueltas:(+h.vueltas||0), faena:(h.faena||'')}; });
+      JORN={}; ((rs[1]&&rs[1].data)||[]).forEach(function(j){ JORN[j.fecha]={vehiculos:(j.vehiculos||[]), preparacion:(j.preparacion||'')}; });
+      if(rs[2]&&rs[2].data) VEH=rs[2].data;
       HZ_DEL=[]; renderHz();
     });
   }
+  function vehLabel(v){ var m=[(v.marca||''),(v.modelo||'')].filter(Boolean).join(' '); var nm=(v.nombre||'').trim()||m||'Vehículo'; return nm+(v.patente?(' · '+v.patente):''); }
+  function vehOpts(sel){ var o='<option value="">— vehículo —</option>', has=false; (VEH||[]).forEach(function(v){ var lb=vehLabel(v); var s=(lb===sel); if(s)has=true; o+='<option value="'+enc(lb)+'"'+(s?' selected':'')+'>'+esc(lb)+'</option>'; }); if(sel&&!has) o+='<option value="'+enc(sel)+'" selected>'+esc(sel)+'</option>'; return o; }
+  function choferOpts(sel){ var o='<option value="">— chofer —</option>', has=false; (TRAB||[]).filter(function(t){ return t.chofer && t.estado!=='inactivo'; }).forEach(function(t){ var nm=titleCase(t.nombre); var s=(normName(nm)===normName(sel)); if(s)has=true; o+='<option value="'+enc(nm)+'"'+(s?' selected':'')+'>'+esc(nm)+'</option>'; }); if(sel&&!has) o+='<option value="'+enc(sel)+'" selected>'+esc(sel)+'</option>'; return o; }
+  var _jornTimer=null;
+  function guardarJornada(f){ if(!sb||!f) return; clearTimeout(_jornTimer); _jornTimer=setTimeout(function(){
+    var jr=JORN[f]||{vehiculos:[],preparacion:''};
+    var vehs=(jr.vehiculos||[]).filter(function(x){ return (x.veh||'').trim()||(x.chofer||'').trim(); });
+    sb.from('jornada').upsert({ fecha:f, vehiculos:vehs, preparacion:(jr.preparacion||''), autor:userEmail, updated_at:new Date().toISOString() },{onConflict:'fecha'}).then(function(r){ if(r&&r.error&&/schema cache|does not exist|relation/.test(r.error.message||'')) toast('Falta correr jornada.sql en Supabase.'); },function(){});
+  }, 700); }
   // Faenas de un día según Planificación (EVENTOS): etiqueta = "UBICACIÓN — título".
   function faLabel(e){ var u=(e.ubicacion||'').trim(), si=(e.sitio||'').trim(), t=(e.titulo||'').trim(); var emp=u+(si?(' · '+si):''); return (emp&&t)?(emp+' — '+t):(emp||t||'Faena'); }
   function faenasDia(fecha){ if(!fecha) return []; return (typeof EVENTOS!=='undefined'?EVENTOS:[]).filter(function(e){ var ini=e.fecha, fin=e.fecha_fin||e.fecha; return ini && ini<=fecha && fecha<=fin; }).map(faLabel); }
@@ -2404,13 +2427,32 @@
         return '<div class="hfae" style="border-left:4px solid '+col.border+'"><div class="hfae-h" style="background:'+col.bg+';color:'+col.text+'">🏢 '+esc(fa)+'</div>'+rws+'</div>';
       }).join('');
       var addBtn='<button class="hz-add-day" data-f="'+f+'" type="button">＋ Agregar hora ('+fechaCorta(f)+')</button>';
+      // Vehículos + preparación del día (debajo de las horas)
+      var jr=JORN[f]||{vehiculos:[],preparacion:''};
+      var jvRows=(jr.vehiculos||[]).map(function(vx,vi){ return '<div class="jv-row" data-f="'+f+'" data-i="'+vi+'"><select class="jv-veh">'+vehOpts(vx.veh||'')+'</select><select class="jv-cho">'+choferOpts(vx.chofer||'')+'</select><button class="jv-rm" type="button" title="Quitar">✕</button></div>'; }).join('');
+      var jday='<div class="jday"><div class="jday-h">🚚 Vehículos y preparación del día</div>'+
+        '<div class="jv-list">'+jvRows+'</div>'+
+        '<button class="jv-add" data-f="'+f+'" type="button">＋ Agregar vehículo</button>'+
+        '<label class="jprep-lbl">Preparación del día</label>'+
+        '<textarea class="jprep" data-f="'+f+'" rows="2" placeholder="Ej: charla de 5 min, EPP entregado, revisión de equipos, materiales cargados…">'+esc(jr.preparacion||'')+'</textarea>'+
+      '</div>';
       var colapsado=(HZ_COL[f]!==false);   // colapsado por defecto; se abre al tocar
-      return '<div class="hgroup'+(colapsado?' collapsed':'')+'"><div class="hgroup-h" data-f="'+f+'"><span class="hg-chev">▾</span>📅 '+fechaCorta(f)+' <span style="color:var(--muted);font-weight:600">('+nT+(nT===1?' trabajador':' trabajadores')+totTxt+')</span></div><div class="hgroup-body">'+rows+addBtn+'</div></div>';
+      return '<div class="hgroup'+(colapsado?' collapsed':'')+'"><div class="hgroup-h" data-f="'+f+'"><span class="hg-chev">▾</span>📅 '+fechaCorta(f)+' <span style="color:var(--muted);font-weight:600">('+nT+(nT===1?' trabajador':' trabajadores')+totTxt+')</span></div><div class="hgroup-body">'+rows+addBtn+jday+'</div></div>';
     }).join('')||'<div class="empty"><div class="big">⏱️</div>Sin horas '+(HZ_FILTRO==='hoy'?'de hoy':(HZ_FILTRO==='semana'?'de la semana':''))+'.<br><span style="font-size:.82rem">Toca “＋ Agregar hora”.</span></div>';
     $('hz-cnt').textContent=HZ.length+(HZ.length===1?' línea':' líneas');
     c.querySelectorAll('.hgroup-h').forEach(function(h){ h.addEventListener('click',function(){ HZ_COL[h.dataset.f]=h.parentNode.classList.toggle('collapsed'); }); });
     c.querySelectorAll('.hrow-rm').forEach(function(b){ b.addEventListener('click',function(){ removeHz(+b.dataset.i); }); });
     c.querySelectorAll('.hz-add-day').forEach(function(b){ b.addEventListener('click',function(){ addHzDay(b.dataset.f); }); });
+    // Vehículos + preparación del día
+    function jget(f){ if(!JORN[f]) JORN[f]={vehiculos:[],preparacion:''}; return JORN[f]; }
+    c.querySelectorAll('.jv-add').forEach(function(b){ b.addEventListener('click',function(){ var f=b.dataset.f; jget(f).vehiculos.push({veh:'',chofer:''}); HZ_COL[f]=false; renderHz(); guardarJornada(f); }); });
+    c.querySelectorAll('.jv-rm').forEach(function(b){ b.addEventListener('click',function(){ var row=b.closest('.jv-row'), f=row.dataset.f, i=+row.dataset.i; var jr=jget(f); jr.vehiculos.splice(i,1); renderHz(); guardarJornada(f); }); });
+    c.querySelectorAll('.jv-row').forEach(function(row){ var f=row.dataset.f, i=+row.dataset.i;
+      var vs=row.querySelector('.jv-veh'), cs=row.querySelector('.jv-cho');
+      if(vs) vs.addEventListener('change',function(){ jget(f).vehiculos[i].veh=vs.value; guardarJornada(f); });
+      if(cs) cs.addEventListener('change',function(){ jget(f).vehiculos[i].chofer=cs.value; guardarJornada(f); });
+    });
+    c.querySelectorAll('.jprep').forEach(function(t){ var f=t.dataset.f; t.addEventListener('input',function(){ jget(f).preparacion=t.value; guardarJornada(f); }); });
     c.querySelectorAll('.hrow').forEach(function(row){ var i=+row.dataset.i; var fe=row.querySelector('.h-fecha');
       var upd=function(){ row.querySelector('.hrow-total').textContent=totalMini(row.querySelector('.h-in').value,row.querySelector('.h-out').value); };
       function marcar(){ if(HZ[i]) HZ[i]._dirty=true; autoGuardarHz(); }
