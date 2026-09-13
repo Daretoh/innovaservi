@@ -234,6 +234,7 @@
     .sbar{display:flex;flex-direction:column;position:fixed;left:0;top:0;bottom:0;width:226px;background:var(--navy);z-index:40;padding:16px 12px 14px;overflow-y:auto;}
     .tabbar{display:none;}
     #btn-cli,#btn-rrhh,#btn-pagos,#btn-plan,#btn-acc-h,#out{display:none !important;}
+    .rrhh-segbar{display:none !important;}   /* segmentos ya están en la barra lateral */
   }
 
   /* Sheet (selector trabajo) */
@@ -560,7 +561,10 @@
       <button class="sb-item sb-admin" data-v="v-matriz"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Matriz PTS</button>
 
       <div class="sbar-grp sb-admin">RRHH</div>
-      <button class="sb-item sb-admin" data-v="v-rrhh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>Personas y docs</button>
+      <button class="sb-item sb-admin" data-v="v-rrhh" data-seg="trab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>Trabajadores</button>
+      <button class="sb-item sb-admin" data-v="v-rrhh" data-seg="doc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>Documentación</button>
+      <button class="sb-item sb-admin" data-v="v-rrhh" data-seg="capacit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c0 1 2.5 3 6 3s6-2 6-3v-5"/></svg>Capacitaciones</button>
+      <button class="sb-item sb-admin" data-v="v-rrhh" data-seg="finiquito"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="m9 15 2 2 4-4"/></svg>Finiquitos</button>
 
       <div class="sbar-grp sb-admin">Remuneraciones</div>
       <button class="sb-item sb-admin" data-v="v-remu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg>Remuneraciones</button>
@@ -775,7 +779,7 @@
     <!-- ---- RRHH (Trabajadores + Documentación) (solo admin) ---- -->
     <section class="view" id="v-rrhh">
       <div class="h-row"><h2>Recursos Humanos</h2></div>
-      <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">
+      <div class="rrhh-segbar" style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">
         <button class="btn ghost small rrhh-seg on" data-seg="trab" style="flex:1;min-width:120px">👷 Trabajadores</button>
         <button class="btn ghost small rrhh-seg" data-seg="doc" style="flex:1;min-width:120px">📋 Documentación</button>
         <button class="btn ghost small rrhh-seg" data-seg="capacit" style="flex:1;min-width:120px">🎓 Capacitaciones</button>
@@ -1309,7 +1313,8 @@
   // ====== Navegación (tabs) ======
   function abrirVista(v){
     document.querySelectorAll('.tabbar button').forEach(function(x){ x.classList.toggle('on',x.dataset.v===v); });
-    document.querySelectorAll('.sbar .sb-item[data-v]').forEach(function(x){ x.classList.toggle('on',x.dataset.v===v); });
+    document.querySelectorAll('.sbar .sb-item[data-v]:not([data-seg])').forEach(function(x){ x.classList.toggle('on',x.dataset.v===v); });
+    if(v!=='v-rrhh') document.querySelectorAll('.sbar .sb-item[data-seg]').forEach(function(x){ x.classList.remove('on'); });
     document.querySelectorAll('.view').forEach(function(x){ x.classList.toggle('on',x.id===v); });
     var _main=document.querySelector('main'); if(_main) _main.classList.toggle('wide', v==='v-remu'||v==='v-horas'||v==='v-rrhh');  // vistas anchas en PC
     if(v==='v-hist') cargarRegistros(pintarRegistros);
@@ -1324,7 +1329,11 @@
     window.scrollTo(0,0);
   }
   document.querySelectorAll('.tabbar button').forEach(function(b){ b.addEventListener('click',function(){ abrirVista(b.dataset.v); }); });
-  document.querySelectorAll('.sbar .sb-item[data-v]').forEach(function(b){ b.addEventListener('click',function(){ abrirVista(b.dataset.v); }); });
+  document.querySelectorAll('.sbar .sb-item[data-v]').forEach(function(b){ b.addEventListener('click',function(){
+    abrirVista(b.dataset.v);
+    if(b.dataset.seg && typeof rrhhSeg==='function') rrhhSeg(b.dataset.seg);
+    if(b.dataset.seg){ document.querySelectorAll('.sbar .sb-item[data-seg]').forEach(function(x){ x.classList.remove('on'); }); b.classList.add('on'); }
+  }); });
   if($('sb-out')) $('sb-out').addEventListener('click',function(){ if($('out')) $('out').click(); });
   if($('btn-pagos')) $('btn-pagos').addEventListener('click',function(){ abrirVista('v-remu'); });
   if($('btn-rrhh')) $('btn-rrhh').addEventListener('click',function(){ abrirVista('v-rrhh'); });
