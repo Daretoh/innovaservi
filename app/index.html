@@ -528,7 +528,7 @@
   <main>
     <!-- ---- REGISTRO (trabajo + horas + fotos) ---- -->
     <section class="view on" id="v-reporte">
-      <div class="h-row"><h2 id="r-title">Nuevo registro</h2><button id="r-cancel" class="btn ghost small hide" style="width:auto">✕ Cancelar</button></div>
+      <div class="h-row"><h2 id="r-title">Multimedia</h2><button id="r-cancel" class="btn ghost small hide" style="width:auto">✕ Cancelar</button></div>
       <div id="draft-banner" class="hide" style="background:#fff4ec;border:1px solid var(--orange);border-radius:12px;padding:10px 12px;margin-bottom:12px;">
         <div style="font:700 13px var(--font);color:var(--orange-2);margin-bottom:2px">📝 Tienes un registro sin terminar</div>
         <div id="draft-info" class="note" style="margin:0 0 8px"></div>
@@ -599,7 +599,7 @@
 
     <!-- ---- HORAS por día (apartado propio, solo admin) ---- -->
     <section class="view" id="v-horas">
-      <div class="h-row"><h2>Horas <span class="cnt" id="hz-cnt"></span></h2><span id="hz-saved" style="margin-left:auto;font:700 11px var(--font);color:#0f6e56;opacity:0;transition:opacity .3s"></span><button id="hz-save" class="btn ghost small" style="width:auto">💾 Guardar</button></div>
+      <div class="h-row"><h2>Registro <span class="cnt" id="hz-cnt"></span></h2><span id="hz-saved" style="margin-left:auto;font:700 11px var(--font);color:#0f6e56;opacity:0;transition:opacity .3s"></span><button id="hz-save" class="btn ghost small" style="width:auto">💾 Guardar</button></div>
       <p class="note" style="margin:0 0 10px">Horas por trabajador, agrupadas por día. Un turno nocturno (22:00→06:00) cuenta en el día que marcas.</p>
       <div style="display:flex;gap:8px;margin-bottom:12px">
         <button class="btn ghost small hzfil on" data-hf="hoy" style="flex:1">Hoy</button>
@@ -792,9 +792,9 @@
   </main>
 
   <nav class="tabbar">
-    <button data-v="v-reporte" class="on"><span class="em">📝</span>Registro</button>
+    <button data-v="v-reporte" class="on"><span class="em">🖼️</span>Multimedia</button>
     <button data-v="v-hist"><span class="em">🗂️</span>Reportes</button>
-    <button data-v="v-horas" id="tab-horas" class="hide"><span class="em">⏱️</span>Horas</button>
+    <button data-v="v-horas" id="tab-horas" class="hide"><span class="em">📋</span>Registro</button>
     <button data-v="v-cuadrilla" id="tab-cuad"><span class="em">✅</span>Preparación</button>
     <button data-v="v-matriz" id="tab-matriz" class="hide"><span class="em">🧰</span>Matriz</button>
     <button data-v="v-veh" id="tab-veh" class="hide"><span class="em">🚚</span>Vehículos</button>
@@ -852,6 +852,7 @@
         <div class="fld"><label>Estado</label><select id="fi-estado"><option value="activo">Activo</option><option value="inactivo">Inactivo</option></select></div>
         <div class="fld"><label>Fecha ingreso</label><input id="fi-ingreso" type="date"></div>
       </div>
+      <div class="fld"><label style="display:flex;align-items:center;gap:9px;cursor:pointer;font-weight:600"><input id="fi-chofer" type="checkbox" style="width:18px;height:18px;accent-color:var(--orange)">🚚 Es chofer (puede registrar vueltas)</label></div>
       <div class="grid2">
         <div class="fld"><label>Teléfono</label><input id="fi-tel" type="tel" placeholder="+56 9 ..."></div>
         <div class="fld"><label>Correo</label><input id="fi-email" type="email" placeholder="correo@..."></div>
@@ -1190,7 +1191,7 @@
   function aplicarModo(){
     var editing=!!EDIT_ID;
     if(isAdmin){
-      $('r-title').textContent=editing?'Editar registro':'Nuevo registro';
+      $('r-title').textContent=editing?'Editar multimedia':'Multimedia';
       $('r-save').textContent=editing?'Guardar cambios':'Guardar registro';
       $('r-del').classList.toggle('hide',!editing);
       $('r-report').classList.toggle('hide',!editing);
@@ -2200,7 +2201,7 @@
     var host=$('v-reporte'), b=$('reg-lock-banner');
     if(REG_LOCKED){
       if(!b){ b=document.createElement('div'); b.id='reg-lock-banner'; b.style.cssText='background:#eef2ff;border:1px solid var(--navy);color:var(--navy);border-radius:12px;padding:10px 12px;margin-bottom:12px;font:600 13px var(--font)'; var anchor=host.querySelector('.card'); host.insertBefore(b, anchor); }
-      b.innerHTML='🔒 Informe definitivo'+(REG_PDF?' · <a href="'+esc(REG_PDF)+'" target="_blank" rel="noopener" style="color:var(--orange-2);font-weight:800">Ver PDF</a>':'')+'. Las horas se editan en el apartado <b>Horas</b>.'+
+      b.innerHTML='🔒 Informe definitivo'+(REG_PDF?' · <a href="'+esc(REG_PDF)+'" target="_blank" rel="noopener" style="color:var(--orange-2);font-weight:800">Ver PDF</a>':'')+'. Las horas se editan en el apartado <b>Registro</b>.'+
         '<div style="margin-top:8px"><button id="reg-reopen" class="btn ghost small" style="width:auto">🔓 Reabrir para regenerar el PDF</button></div>';
       var rb=$('reg-reopen'); if(rb) rb.addEventListener('click',reabrirInforme);
       b.classList.remove('hide');
@@ -2275,6 +2276,7 @@
   function titleCase(s){ return (s||'').toLowerCase().replace(/\s+/g,' ').trim().replace(/(^|[\s'’\-])(\p{L})/gu, function(m,p,c){ return p+c.toUpperCase(); }); }
   // ¿el nombre corresponde a un trabajador con ficha? (case/acentos-insensible)
   function esTrabajador(nombre){ if(!(TRAB||[]).length) return true; var n=normName(nombre); if(!n) return false; return TRAB.some(function(t){ return normName(t.nombre)===n; }); }
+  function esChofer(nombre){ var n=normName(nombre); if(!n||!(TRAB||[]).length) return false; return TRAB.some(function(t){ return normName(t.nombre)===n && t.chofer; }); }
   // Empresa = parte de la faena antes de " — ". El COLOR va por empresa (cliente),
   // no por faena: se usa la 1a palabra de la empresa, así "CERMAQ Chinquihue" y
   // "CERMAQ Quemchi" comparten color (misma empresa CERMAQ).
@@ -2296,7 +2298,7 @@
         return '<div class="hrow" data-i="'+i+'">'+
           '<input class="h-trab" list="trab-datalist" placeholder="Trabajador" value="'+enc(h.trabajador||'')+'">'+
           '<select class="h-fae" title="Faena (según Planificación)">'+opcionesFaena(h.fecha,h.faena||'')+'</select>'+
-          '<label class="hrow-vu" title="Vueltas (van a Remuneraciones)">🔄<input type="number" class="h-vu" min="0" value="'+(h.vueltas||0)+'"></label>'+
+          '<label class="hrow-vu'+(esChofer(h.trabajador)?'':' hide')+'" title="Vueltas (solo choferes)">🔄<input type="number" class="h-vu" min="0" value="'+(h.vueltas||0)+'"></label>'+
           '<input type="time" class="h-in" value="'+(h.entrada||'')+'"><span class="arw">→</span><input type="time" class="h-out" value="'+(h.salida||'')+'">'+
           '<span class="hrow-total">'+totalMini(h.entrada,h.salida)+'</span>'+
           '<label class="hrow-cal" title="Fecha">📅<input type="date" class="h-fecha" value="'+(h.fecha||todayISO())+'"></label>'+
@@ -2326,7 +2328,7 @@
       var tr=row.querySelector('.h-trab');
       function valTrab(){ var v=(tr.value||'').trim(); tr.classList.toggle('h-bad', !!v && !esTrabajador(v)); }
       valTrab();   // estado inicial (marca en rojo los que no tengan ficha)
-      tr.addEventListener('input',function(){ valTrab(); marcar(); });
+      tr.addEventListener('input',function(){ valTrab(); var vl=row.querySelector('.hrow-vu'); if(vl) vl.classList.toggle('hide', !esChofer(tr.value)); marcar(); });
       tr.addEventListener('change',function(){ var v=(tr.value||'').trim(); if(v && !esTrabajador(v)){ toast('“'+v+'” no tiene ficha. Créalo en Trabajadores (RRHH) para poder cargarle horas.'); } });
       var fa=row.querySelector('.h-fae'); if(fa) fa.addEventListener('change',function(){ syncHz(); if(HZ[i]) HZ[i]._dirty=true; HZ_COL[HZ[i]?HZ[i].fecha:'']=false; renderHz(); autoGuardarHz(); });
       var vu=row.querySelector('.h-vu'); if(vu) vu.addEventListener('input',marcar);
@@ -2659,7 +2661,7 @@
   function abrirFicha(t){
     FICHA_ID=t?t.id:null;
     $('fi-nombre').value=t?(t.nombre||''):''; $('fi-rut').value=t?(t.rut||''):''; poblarSelectCargo($('fi-cargo'), t?(t.cargo||''):''); trHint();
-    $('fi-estado').value=(t&&t.estado)||'activo'; $('fi-ingreso').value=t?(t.fecha_ingreso||''):'';
+    $('fi-estado').value=(t&&t.estado)||'activo'; $('fi-ingreso').value=t?(t.fecha_ingreso||''):''; if($('fi-chofer')) $('fi-chofer').checked=!!(t&&t.chofer);
     $('fi-tel').value=t?(t.telefono||''):''; $('fi-email').value=t?(t.email||''):'';
     $('fi-botas').value=t?(t.talla_botas||''):''; $('fi-ropa').value=t?(t.talla_ropa||''):'';
     $('fi-afp').value=t?(t.afp||''):''; $('fi-salud').value=t?(t.salud||''):'';
@@ -2778,7 +2780,7 @@
     onDoc:function(d){ FICHA_DOCS.push(d); renderDocs(); } });
   $('fi-save').addEventListener('click',function(){
     if(!sb) return; var nom=titleCase($('fi-nombre').value.trim()); if(!nom){ toast('El nombre es obligatorio.'); return; }
-    var row={ nombre:nom, rut:$('fi-rut').value.trim(), cargo:$('fi-cargo').value.trim(), estado:$('fi-estado').value,
+    var row={ nombre:nom, rut:$('fi-rut').value.trim(), cargo:$('fi-cargo').value.trim(), estado:$('fi-estado').value, chofer:!!($('fi-chofer')&&$('fi-chofer').checked),
       telefono:$('fi-tel').value.trim(), email:$('fi-email').value.trim(), fecha_ingreso:$('fi-ingreso').value||null,
       talla_botas:$('fi-botas').value.trim(), talla_ropa:$('fi-ropa').value.trim(), afp:$('fi-afp').value.trim(),
       salud:$('fi-salud').value.trim(), direccion:$('fi-dir').value.trim(), emergencia:$('fi-emerg').value.trim(),
