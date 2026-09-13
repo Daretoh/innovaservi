@@ -136,6 +136,8 @@
   .pl-gate-card .pl-add{width:100%;}
   body.locked .pl-header{display:none;}
   body.locked .pl-wrap{display:none;}
+  body.embed .pl-header{display:none;}
+  body.embed .pl-wrap{padding-top:14px;}
   body.locked #pl-gate{display:flex;}
   .fgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
   .fgrid label{display:flex;flex-direction:column;gap:5px;font:600 12px var(--font);color:var(--ink);}
@@ -173,6 +175,7 @@
 </style>
 </head>
 <body class="locked">
+  <script>if(/[?&]embed/.test(location.search)) document.body.classList.add('embed');</script>
 
   <header class="pl-header">
     <div class="pl-header-in">

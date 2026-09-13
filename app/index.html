@@ -77,6 +77,9 @@
     main.wide .hgroup-h{font-size:15px;}
   }
   .view{display:none;} .view.on{display:block;animation:fade .18s ease;}
+  main.planview{max-width:none;padding:0;}
+  #plan-frame{width:100%;height:calc(100vh - 118px);border:0;display:block;background:var(--alt);}
+  @media(min-width:900px){ #plan-frame{height:calc(100vh - 56px);} }
   @keyframes fade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
 
   .h-row{display:flex;align-items:center;justify-content:space-between;margin:2px 2px 14px;}
@@ -541,7 +544,7 @@
       <button id="btn-cli" class="out hide">🏢<span class="hlbl"> Clientes</span></button>
       <button id="btn-rrhh" class="out hide">📋<span class="hlbl"> RRHH</span></button>
       <button id="btn-pagos" class="out hide">💵<span class="hlbl"> Remuneraciones</span></button>
-      <a href="../planificacion/" id="btn-plan" class="out hide" style="text-decoration:none">🗓️<span class="hlbl"> Planificación</span></a>
+      <button id="btn-plan" class="out hide">🗓️<span class="hlbl"> Planificación</span></button>
       <button id="btn-acc-h" class="out hide" title="Accesos" aria-label="Accesos" style="padding-left:11px;padding-right:11px">🔐</button>
       <button class="out" id="out">Salir</button>
     </div>
@@ -557,7 +560,7 @@
       <button class="sb-item" data-v="v-cuadrilla"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Preparación</button>
       <button class="sb-item" data-v="v-veh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M1 3h15v13H1zM16 8h4l3 3v5h-7z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>Vehículos</button>
       <button class="sb-item sb-admin" data-v="v-clientes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-4h6v4M8 6h.01M16 6h.01M8 10h.01M16 10h.01M8 14h.01M16 14h.01"/></svg>Clientes</button>
-      <a class="sb-item sb-admin" href="../planificacion/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Planificación</a>
+      <button class="sb-item sb-admin" data-v="v-plan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Planificación</button>
       <button class="sb-item sb-admin" data-v="v-matriz"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Matriz PTS</button>
 
       <div class="sbar-grp sb-admin">RRHH</div>
@@ -838,6 +841,11 @@
       <div class="h-row"><h2>Accesos</h2><button id="acc-nuevo" class="btn small" style="width:auto">＋ Persona</button></div>
       <p class="note" style="margin:0 0 12px">Toca una persona para editar sus permisos. El <b>rol</b> setea todo; luego ajustas por apartado.</p>
       <div id="acc-list"></div>
+    </section>
+
+    <!-- ---- PLANIFICACIÓN (embebida) ---- -->
+    <section class="view" id="v-plan">
+      <iframe id="plan-frame" title="Planificación" loading="lazy"></iframe>
     </section>
   </main>
 
@@ -1316,7 +1324,7 @@
     document.querySelectorAll('.sbar .sb-item[data-v]:not([data-seg])').forEach(function(x){ x.classList.toggle('on',x.dataset.v===v); });
     if(v!=='v-rrhh') document.querySelectorAll('.sbar .sb-item[data-seg]').forEach(function(x){ x.classList.remove('on'); });
     document.querySelectorAll('.view').forEach(function(x){ x.classList.toggle('on',x.id===v); });
-    var _main=document.querySelector('main'); if(_main) _main.classList.toggle('wide', v==='v-remu'||v==='v-horas'||v==='v-rrhh');  // vistas anchas en PC
+    var _main=document.querySelector('main'); if(_main){ _main.classList.toggle('wide', v==='v-remu'||v==='v-horas'||v==='v-rrhh'); _main.classList.toggle('planview', v==='v-plan'); }  // vistas anchas / planificación full
     if(v==='v-hist') cargarRegistros(pintarRegistros);
     if(v==='v-horas') cargarHoras();
     if(v==='v-cuadrilla'){ cargarTrab(actualizarDatalist); cargarPlantillas(function(){ cargarRegistros(function(){ if(C_JOB) elegirJobCuadrilla(C_JOB); else renderFaenaSelect(); }); }); }
@@ -1326,6 +1334,7 @@
     if(v==='v-rrhh'){ cargarRrhh(); }
     if(v==='v-clientes'){ cargarClientes(pintarCli); }
     if(v==='v-acc'){ cargarPermisos(); }
+    if(v==='v-plan'){ var fr=$('plan-frame'); if(fr && !fr.getAttribute('src')) fr.setAttribute('src','../planificacion/?embed=1'); }
     window.scrollTo(0,0);
   }
   document.querySelectorAll('.tabbar button').forEach(function(b){ b.addEventListener('click',function(){ abrirVista(b.dataset.v); }); });
@@ -1339,6 +1348,7 @@
   if($('btn-rrhh')) $('btn-rrhh').addEventListener('click',function(){ abrirVista('v-rrhh'); });
   if($('btn-cli')) $('btn-cli').addEventListener('click',function(){ abrirVista('v-clientes'); });
   if($('btn-acc-h')) $('btn-acc-h').addEventListener('click',function(){ abrirVista('v-acc'); });
+  if($('btn-plan')) $('btn-plan').addEventListener('click',function(){ abrirVista('v-plan'); });
   function irA(id){ abrirVista(id); }
 
   // ====== Selector de trabajo (sheet) ======
