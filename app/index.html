@@ -354,7 +354,10 @@
   .warnbar{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;font-size:.78rem;padding:9px 12px;border-radius:11px;margin-bottom:12px;line-height:1.45;}
 
   /* ---- Trabajadores / Ficha ---- */
-  .trab{background:#fff;border:1px solid var(--line);border-left:4px solid var(--navy);border-radius:13px;padding:12px 14px;margin-bottom:10px;cursor:pointer;display:flex;align-items:center;gap:12px;}
+  .trab{position:relative;overflow:hidden;background:#fff;border:1px solid var(--line);border-left:4px solid var(--navy);border-radius:13px;padding:12px 14px 15px;margin-bottom:10px;cursor:pointer;display:flex;align-items:center;gap:12px;}
+  .trab .tbar{position:absolute;left:0;right:0;bottom:0;height:5px;background:var(--alt);}
+  .trab .tbar i{display:block;height:100%;transition:width .3s;}
+  .trab .pct{font-weight:800;}
   .trab .av{width:42px;height:42px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;flex-shrink:0;}
   .trab.off{border-left-color:var(--muted);opacity:.72;}
   .trab.off .av{background:var(--muted);}
@@ -2450,6 +2453,11 @@
       .map(function(t){ return '<option value="'+enc(titleCase(t.nombre))+'"></option>'; }).join(''); }
   function inic(n){ n=(n||'').trim().split(/\s+/); return ((n[0]||'')[0]||'')+((n[1]||'')[0]||''); }
   var trabQ='', trabFilter='activo', trabSort='nombre', TRAB_VISTA=[];
+  // % de documentación cumplida de un trabajador (docs entregadas y vigentes / total del catálogo).
+  function docPct(t){ if(!t||!t.id||typeof estadoDoc!=='function'||!(typeof RRHH_TIPOS!=='undefined'&&RRHH_TIPOS.length)) return null;
+    if(typeof RRHH_D==='undefined'||!Object.keys(RRHH_D).length) return null;   // aún no cargó la documentación
+    var ok=0; RRHH_TIPOS.forEach(function(tp){ var e=estadoDoc(t.id,tp.slug); if(e.k==='ok'||e.k==='prox') ok++; }); return Math.round(ok/RRHH_TIPOS.length*100); }
+  function pctColor(p){ if(p>=100) return 'var(--ok)'; if(p>=60) return '#e8a13a'; if(p>=30) return 'var(--orange)'; return '#dc2626'; }
   function pintarTrab(){
     var list=$('trab-list'); var q=trabQ.toLowerCase();
     var arr=TRAB.filter(function(t){
@@ -2468,11 +2476,12 @@
     $('trab-cnt').textContent=arr.length+(arr.length===1?' persona':' personas');
     if(!TRAB.length){ list.innerHTML='<div class="empty"><div class="big">👷</div>Aún no hay trabajadores.<br><span style="font-size:.82rem">Toca “＋ Nuevo” o “⬆ Importar”.</span></div>'; return; }
     if(!arr.length){ list.innerHTML='<div class="empty">Sin resultados para ese filtro/búsqueda.</div>'; return; }
-    list.innerHTML=arr.map(function(t,idx){ var off=(t.estado==='inactivo'); var nd=(t.docs||[]).length;
+    list.innerHTML=arr.map(function(t,idx){ var off=(t.estado==='inactivo'); var nd=(t.docs||[]).length; var p=docPct(t); var col=(p!=null?pctColor(p):'var(--line)');
       return '<div class="trab'+(off?' off':'')+'" data-idx="'+idx+'"><div class="av">'+esc(inic(t.nombre).toUpperCase()||'·')+'</div>'+
         '<div class="tt"><div class="nm">'+esc(titleCase(t.nombre)||'—')+'</div>'+(t.cargo?'<div class="cg">'+esc(t.cargo)+'</div>':'')+
-        '<div class="meta">'+(t.rut?esc(t.rut)+' · ':'')+nd+' doc'+(nd===1?'':'s')+'</div></div>'+
-        '<span class="badge">'+(off?'Inactivo':'Activo')+'</span></div>'; }).join('');
+        '<div class="meta">'+(t.rut?esc(t.rut)+' · ':'')+nd+' doc'+(nd===1?'':'s')+(p!=null?(' · <span class="pct" style="color:'+col+'">'+p+'% docs</span>'):'')+'</div></div>'+
+        '<span class="badge">'+(off?'Inactivo':'Activo')+'</span>'+
+        (p!=null?('<div class="tbar" title="Documentación: '+p+'% al día"><i style="width:'+p+'%;background:'+col+'"></i></div>'):'')+'</div>'; }).join('');
     list.querySelectorAll('.trab[data-idx]').forEach(function(el){ el.addEventListener('click',function(){ abrirFicha(TRAB_VISTA[+el.dataset.idx]); }); });
   }
   $('trab-search').addEventListener('input',function(){ trabQ=this.value.trim(); pintarTrab(); });
