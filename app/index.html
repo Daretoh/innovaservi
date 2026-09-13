@@ -217,6 +217,24 @@
   .tabbar button.on .em{transform:translateY(-3px) scale(1.22);}
   .tabbar button.on::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:24px;height:3px;border-radius:0 0 4px 4px;background:var(--orange);animation:tabpop .28s ease;}
   @keyframes tabpop{from{width:0;opacity:.3;} to{width:24px;opacity:1;}}
+  /* Barra lateral (solo escritorio) */
+  .sbar{display:none;}
+  .sbar-brand{display:flex;align-items:center;gap:9px;padding:4px 8px 10px;font:800 15px var(--font);color:#fff;}
+  .sbar-brand img{height:28px;background:#fff;border-radius:7px;padding:3px 5px;}
+  .sbar-nav{display:flex;flex-direction:column;gap:1px;}
+  .sbar-grp{font:800 10px var(--font);letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.45);padding:15px 10px 5px;}
+  .sb-item{display:flex;align-items:center;gap:11px;width:100%;text-align:left;background:none;border:none;color:rgba(255,255,255,.86);font:600 13.5px var(--font);padding:9px 11px;border-radius:9px;cursor:pointer;text-decoration:none;}
+  .sb-item svg{width:19px;height:19px;flex-shrink:0;opacity:.92;}
+  .sb-item:hover{background:rgba(255,255,255,.09);color:#fff;}
+  .sb-item.on{background:var(--orange);color:#fff;}
+  .sb-out{margin-top:auto;display:flex;align-items:center;gap:11px;background:rgba(255,255,255,.09);border:none;color:#fff;font:700 13px var(--font);padding:10px 11px;border-radius:9px;cursor:pointer;}
+  .sb-out svg{width:18px;height:18px;}
+  @media(min-width:900px){
+    body{padding-left:226px;}
+    .sbar{display:flex;flex-direction:column;position:fixed;left:0;top:0;bottom:0;width:226px;background:var(--navy);z-index:40;padding:16px 12px 14px;overflow-y:auto;}
+    .tabbar{display:none;}
+    #btn-cli,#btn-rrhh,#btn-pagos,#btn-plan,#btn-acc-h,#out{display:none !important;}
+  }
 
   /* Sheet (selector trabajo) */
   .sheet{position:fixed;inset:0;z-index:60;display:none;}
@@ -527,6 +545,31 @@
       <button class="out" id="out">Salir</button>
     </div>
   </div>
+
+  <aside class="sbar" id="sbar">
+    <div class="sbar-brand"><img src="../assets/images/InnovaLOGO.png" alt="" onerror="this.style.display='none'"><span>InnovaGestión</span></div>
+    <nav class="sbar-nav">
+      <div class="sbar-grp">Operaciones</div>
+      <button class="sb-item on" data-v="v-reporte"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>Multimedia</button>
+      <button class="sb-item" data-v="v-hist"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>Reportes</button>
+      <button class="sb-item sb-admin" data-v="v-horas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Registro</button>
+      <button class="sb-item" data-v="v-cuadrilla"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Preparación</button>
+      <button class="sb-item" data-v="v-veh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M1 3h15v13H1zM16 8h4l3 3v5h-7z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>Vehículos</button>
+      <button class="sb-item sb-admin" data-v="v-clientes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-4h6v4M8 6h.01M16 6h.01M8 10h.01M16 10h.01M8 14h.01M16 14h.01"/></svg>Clientes</button>
+      <a class="sb-item sb-admin" href="../planificacion/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Planificación</a>
+      <button class="sb-item sb-admin" data-v="v-matriz"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Matriz PTS</button>
+
+      <div class="sbar-grp sb-admin">RRHH</div>
+      <button class="sb-item sb-admin" data-v="v-rrhh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>Personas y docs</button>
+
+      <div class="sbar-grp sb-admin">Remuneraciones</div>
+      <button class="sb-item sb-admin" data-v="v-remu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg>Remuneraciones</button>
+
+      <div class="sbar-grp sb-enzo">Sistema</div>
+      <button class="sb-item sb-enzo" data-v="v-acc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Accesos</button>
+    </nav>
+    <button class="sb-out" id="sb-out"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>Salir</button>
+  </aside>
 
   <main>
     <!-- ---- REGISTRO (trabajo + horas + fotos) ---- -->
@@ -1182,6 +1225,8 @@
     if($('btn-rrhh')) $('btn-rrhh').classList.toggle('hide', op);   // RRHH: solo admin (en el header)
     if($('btn-cli')) $('btn-cli').classList.toggle('hide', op);     // Clientes: solo admin (en el header)
     if($('btn-acc-h')) $('btn-acc-h').classList.toggle('hide', (userEmail||'').trim().toLowerCase()!=='enzo.castro@innovaservi.com'); // Accesos: solo Enzo (en el header)
+    document.querySelectorAll('.sb-admin').forEach(function(x){ x.classList.toggle('hide', op); });   // sidebar: items admin
+    document.querySelectorAll('.sb-enzo').forEach(function(x){ x.classList.toggle('hide', (userEmail||'').trim().toLowerCase()!=='enzo.castro@innovaservi.com'); });
     $('tab-veh').classList.remove('hide');                // Vehículos: visible para todos (chofer registra vueltas)
     if($('veh-admin')) $('veh-admin').classList.toggle('hide', op);   // flota completa: solo admin
     if($('veh-chofer')) $('veh-chofer').classList.toggle('hide', !op); // registrar vuelta/peaje: choferes (no admin)
@@ -1264,6 +1309,7 @@
   // ====== Navegación (tabs) ======
   function abrirVista(v){
     document.querySelectorAll('.tabbar button').forEach(function(x){ x.classList.toggle('on',x.dataset.v===v); });
+    document.querySelectorAll('.sbar .sb-item[data-v]').forEach(function(x){ x.classList.toggle('on',x.dataset.v===v); });
     document.querySelectorAll('.view').forEach(function(x){ x.classList.toggle('on',x.id===v); });
     var _main=document.querySelector('main'); if(_main) _main.classList.toggle('wide', v==='v-remu'||v==='v-horas'||v==='v-rrhh');  // vistas anchas en PC
     if(v==='v-hist') cargarRegistros(pintarRegistros);
@@ -1278,6 +1324,8 @@
     window.scrollTo(0,0);
   }
   document.querySelectorAll('.tabbar button').forEach(function(b){ b.addEventListener('click',function(){ abrirVista(b.dataset.v); }); });
+  document.querySelectorAll('.sbar .sb-item[data-v]').forEach(function(b){ b.addEventListener('click',function(){ abrirVista(b.dataset.v); }); });
+  if($('sb-out')) $('sb-out').addEventListener('click',function(){ if($('out')) $('out').click(); });
   if($('btn-pagos')) $('btn-pagos').addEventListener('click',function(){ abrirVista('v-remu'); });
   if($('btn-rrhh')) $('btn-rrhh').addEventListener('click',function(){ abrirVista('v-rrhh'); });
   if($('btn-cli')) $('btn-cli').addEventListener('click',function(){ abrirVista('v-clientes'); });
