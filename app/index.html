@@ -247,8 +247,12 @@
   .sb-item svg{width:19px;height:19px;flex-shrink:0;opacity:.92;}
   .sb-item:hover{background:rgba(255,255,255,.09);color:#fff;}
   .sb-item.on{background:var(--orange);color:#fff;}
-  .sb-out{margin-top:auto;display:flex;align-items:center;gap:11px;background:rgba(255,255,255,.09);border:none;color:#fff;font:700 13px var(--font);padding:10px 11px;border-radius:9px;cursor:pointer;}
-  .sb-out svg{width:18px;height:18px;}
+  .sbar-foot{margin-top:auto;display:flex;flex-direction:column;gap:7px;padding-top:10px;}
+  .sbar-user{display:flex;align-items:center;gap:10px;padding:4px 6px;min-width:0;}
+  .sbar-av{flex:0 0 auto;width:30px;height:30px;border-radius:50%;background:var(--orange);color:#fff;display:flex;align-items:center;justify-content:center;font:800 12px var(--font);}
+  .sbar-who{color:rgba(255,255,255,.85);font:600 11.5px var(--font);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;}
+  .sb-out{display:flex;align-items:center;gap:11px;background:rgba(255,255,255,.09);border:none;color:#fff;font:700 13px var(--font);padding:10px 11px;border-radius:9px;cursor:pointer;}
+  .sb-out svg{width:18px;height:18px;flex:0 0 auto;}
   @media(min-width:900px){
     body{padding-left:66px;}
     .sbar{display:flex;flex-direction:column;position:fixed;left:0;top:0;bottom:0;width:66px;background:var(--navy);z-index:40;padding:16px 12px 14px;overflow-x:hidden;overflow-y:auto;transition:width .18s ease,box-shadow .18s ease;}
@@ -256,16 +260,17 @@
     /* colapsada: solo iconos; las etiquetas y grupos aparecen al hover */
     .sbar-nav{gap:2px;}
     .sb-item,.sb-out{white-space:nowrap;font-size:0;}
+    .sbar .sbar-who{font-size:0;}
     .sbar .sb-item svg,.sbar .sb-out svg{flex:0 0 auto;}   /* icono no depende de font-size */
     .sbar-brand span{opacity:0;transition:opacity .14s ease;}
     .sbar:hover .sb-item,.sbar:hover .sb-out{font-size:13.5px;}
+    .sbar:hover .sbar-who{font-size:11.5px;}
     .sbar:hover .sbar-brand span{opacity:1;}
     .sbar-grp{opacity:0;height:6px;padding:8px 10px 2px;transition:opacity .14s ease,height .14s ease;overflow:hidden;}
     .sbar:hover .sbar-grp{opacity:1;height:auto;padding:15px 10px 5px;}
     .tabbar{display:none;}
-    #btn-cli,#btn-rrhh,#btn-pagos,#btn-plan,#btn-acc-h,#out{display:none !important;}
     .rrhh-segbar{display:none !important;}   /* segmentos ya están en la barra lateral */
-    .topbar .tt img,.topbar .tt b{display:none !important;}   /* la marca ya está en la barra lateral (no duplicar) */
+    .topbar{display:none !important;}        /* marca, nav y usuario viven en la barra lateral */
   }
 
   /* Sheet (selector trabajo) */
@@ -603,7 +608,10 @@
       <div class="sbar-grp sb-enzo">Sistema</div>
       <button class="sb-item sb-enzo" data-v="v-acc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Accesos</button>
     </nav>
-    <button class="sb-out" id="sb-out"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>Salir</button>
+    <div class="sbar-foot">
+      <div class="sbar-user"><div class="sbar-av" id="sb-av"></div><span class="sbar-who" id="sb-who"></span></div>
+      <button class="sb-out" id="sb-out"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>Salir</button>
+    </div>
   </aside>
 
   <main>
@@ -1248,6 +1256,8 @@
     authed=!!session; userEmail=(session&&session.user&&session.user.email)||'';
     isAdmin=ADMIN_EMAILS.indexOf((userEmail||'').trim().toLowerCase())>=0;
     if(authed){ $('gate').classList.add('hide'); $('app').classList.remove('hide'); $('who').textContent=userEmail+(isAdmin?'':' · operario');
+      if($('sb-who')) $('sb-who').textContent=userEmail;
+      if($('sb-av')) $('sb-av').textContent=(userEmail||'·').trim().charAt(0).toUpperCase();
       aplicarRol();
       if(!setAuth._loaded){ setAuth._loaded=true; init(); } }
     else { $('gate').classList.remove('hide'); $('app').classList.add('hide'); }
