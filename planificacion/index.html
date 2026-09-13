@@ -79,6 +79,7 @@
   .evg-item{display:block;font:500 10px/1.35 var(--font);color:var(--body);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .evg-item:hover{color:var(--orange);}
   .evg-md{color:var(--orange);font-weight:800;margin-left:3px;}
+  .evg-sit{font-size:8.5px;font-weight:600;text-transform:none;letter-spacing:0;opacity:.75;}
   .ev-more{font:700 11px var(--font);color:var(--orange-2);cursor:pointer;padding:2px 4px;}
   .ev-dots{display:none;gap:5px;flex-wrap:wrap;margin-top:3px;align-content:flex-start;}
   .ev-dots i{width:9px;height:9px;border-radius:50%;display:inline-block;}
@@ -330,8 +331,10 @@
       var evHtml=order.slice(0,max).map(function(k){
         var g=groups[k], e0=g[0], ubic=(e0.ubic||'').trim(), col=e0.color;
         function md(e){ return (e.fin&&e.fin>e.fecha)?'<span class="evg-md" title="Trabajo de varios días">⟶</span>':''; }
-        var head=ubic?(esc(ubic)+(g.length>1?' · '+g.length:'')):(esc(e0.titulo)+md(e0));
-        var items=ubic?g.map(function(e){ return '<span class="evg-item" data-id="'+e.id+'" title="'+enc(e.titulo)+'">'+esc(e.titulo)+md(e)+'</span>'; }).join(''):'';
+        var sitset={}; g.forEach(function(e){ var s=(e.sitio||'').trim(); if(s) sitset[s]=1; }); var sk=Object.keys(sitset);
+        var sitHead=(sk.length===1)?(' <span class="evg-sit">· '+esc(sk[0])+'</span>'):'';
+        var head=ubic?(esc(ubic)+sitHead+(g.length>1?' <span class="evg-sit">· '+g.length+'</span>':'')):(esc(e0.titulo)+md(e0));
+        var items=ubic?g.map(function(e){ var si=(e.sitio||'').trim(); var st=(sk.length>1&&si)?(' <span class="evg-sit">· '+esc(si)+'</span>'):''; return '<span class="evg-item" data-id="'+e.id+'" title="'+enc(e.titulo)+'">'+esc(e.titulo)+st+md(e)+'</span>'; }).join(''):'';
         return '<div class="ev-group" style="border-left-color:'+col+'"><span class="evg-head'+(ubic?'':' plain')+'" style="color:'+col+'"'+(ubic?(' data-ubic="'+enc(ubic)+'" data-f="'+f+'"'):(' data-id="'+e0.id+'"'))+'>'+head+'</span>'+items+'</div>';
       }).join('');
       if(order.length>max) evHtml+='<div class="ev-more" data-f="'+f+'">+'+(order.length-max)+' más</div>';
@@ -361,9 +364,11 @@
       var evs=byDay[f], groups={}, order=[];
       evs.forEach(function(e){ var kk=(e.ubic||'').trim().toUpperCase()||('#'+e.id); if(!groups[kk]){groups[kk]=[];order.push(kk);} groups[kk].push(e); });
       var cards=order.map(function(kk){ var g=groups[kk], e0=g[0], ubic=(e0.ubic||'').trim();
-        var head=ubic?(esc(ubic)+(g.length>1?' <span class="ag-cnt">'+g.length+'</span>':'')):esc(e0.titulo);
-        var items=g.map(function(e){ var md=(e.fin&&e.fin>e.fecha)?' <span class="evg-md">⟶</span>':'';
-          return '<div class="ag-item" data-goid="'+e.id+'"><div class="ag-item-tt">'+esc(e.titulo)+md+(e.hora?' <span class="ag-hora">'+esc(e.hora)+'</span>':'')+'</div>'+(e.desc?'<div class="ag-item-desc">'+esc(e.desc)+'</div>':'')+'</div>'; }).join('');
+        var sset={}; g.forEach(function(e){ var s=(e.sitio||'').trim(); if(s) sset[s]=1; }); var sks=Object.keys(sset);
+        var sh=(sks.length===1)?(' <span class="evg-sit">· '+esc(sks[0])+'</span>'):'';
+        var head=ubic?(esc(ubic)+sh+(g.length>1?' <span class="ag-cnt">'+g.length+'</span>':'')):esc(e0.titulo);
+        var items=g.map(function(e){ var md=(e.fin&&e.fin>e.fecha)?' <span class="evg-md">⟶</span>':''; var si=(e.sitio||'').trim(); var st=(sks.length>1&&si)?(' <span class="evg-sit">· '+esc(si)+'</span>'):'';
+          return '<div class="ag-item" data-goid="'+e.id+'"><div class="ag-item-tt">'+esc(e.titulo)+st+md+(e.hora?' <span class="ag-hora">'+esc(e.hora)+'</span>':'')+'</div>'+(e.desc?'<div class="ag-item-desc">'+esc(e.desc)+'</div>':'')+'</div>'; }).join('');
         return '<div class="ag-ucard" style="border-left-color:'+e0.color+';background:linear-gradient(100deg, color-mix(in srgb, '+e0.color+' 15%, #fff), #fff 60%)"><div class="ag-ucard-head" style="color:'+e0.color+'"><span class="ag-dot" style="background:'+e0.color+'"></span>'+head+'</div>'+items+'</div>';
       }).join('');
       return '<div class="ag-day'+(hoy?' hoy':'')+'"><div class="ag-dhead">'+(hoy?'<span class="ag-hoy-badge">HOY</span> ':'')+'<b>'+DIAS[d.getDay()]+' '+d.getDate()+'</b> de '+MES[d.getMonth()]+' '+d.getFullYear()+'</div>'+cards+'</div>';
