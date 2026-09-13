@@ -477,6 +477,9 @@
   .remu-tbl .rt-sub{font:500 10px var(--font);color:var(--muted);}
   .remu-tbl .rt-tot{font-weight:800;color:var(--orange-2);}
   .remu-tbl .rt-ok{color:#0f6e56;} .remu-tbl .rt-bad{color:#dc2626;} .remu-tbl .rt-z{color:#c7ccdd;}
+  .remu-tbl tbody tr.rt-fijo td{background:#eaf1fb;}
+  .remu-tbl tbody tr.rt-fijo .rt-nm{background:#dfeaf9;border-left:3px solid var(--navy);}
+  .remu-tbl tbody tr.rt-fijo .rt-sub{color:var(--navy);font-weight:700;}
   .gform{border:1px dashed #c7ccdd;border-radius:12px;padding:11px;margin-bottom:10px;background:#fff;}
   .gform .fld{margin-bottom:8px;}
   /* Escáner de documentos (varias fotos -> 1 PDF) */
@@ -3103,7 +3106,7 @@
       filas.push({t:{id:null,nombre:(H.nombre||nm),cargo:'Sin ficha en Trabajadores',estado:'activo'},tipo:'hora',dias:dias,totMin:totMin,base:base,baseCont:base,baseMin:totMin,vh:vh,jor:0,vueltas:tv,vueltasMonto:vueltasMonto,peajes:tp,bono:0,desc:0,total:totalTrab,real:totalTrab,aj:null,contable:totalTrab,H:H});
       total+=totalTrab;
     });
-    filas.sort(function(a,b){ return (a.t.nombre||'').localeCompare(b.t.nombre||''); });
+    filas.sort(function(a,b){ var af=(a.tipo==='contrato')?1:0, bf=(b.tipo==='contrato')?1:0; if(af!==bf) return af-bf; return (a.t.nombre||'').localeCompare(b.t.nombre||''); });   // spot primero, fijos al final
     REMU_DATA.filas=filas;
     $('remu-total-val').textContent=fmtMoney(total);
     $('remu-cnt').textContent=filas.length+(filas.length===1?' trabajador':' trabajadores');
@@ -3117,7 +3120,7 @@
     if(!filas.length){ cont.innerHTML='<div class="empty"><div class="big">💵</div>Sin horas ni pagos esta semana.<br><span style="font-size:.82rem">Cambia de semana o revisa la config de pago.</span></div>'; return; }
     var m=function(v,neg){ return v?((neg?'−':'')+fmtMoney(v)):'<span class="rt-z">—</span>'; };
     var body=filas.map(function(x,i){
-      return '<tr data-i="'+i+'">'+
+      return '<tr data-i="'+i+'"'+(x.tipo==='contrato'?' class="rt-fijo"':'')+'>'+
         '<td class="rt-nm">'+(x.t.id?'':'<span title="No está registrado como trabajador">⚠️ </span>')+esc(titleCase(x.t.nombre)||'')+'<div class="rt-sub"'+(x.t.id?'':' style="color:#b45309;font-weight:700"')+'>'+esc(x.t.cargo||'')+(x.tipo==='contrato'?(' · fijo'+(x.jor?(' '+x.jor+'h/día'):'')):'')+'</div></td>'+
         '<td>'+x.dias+'</td><td>'+hm(x.totMin)+'</td>'+
         '<td>'+m(x.base)+'</td><td>'+m(x.vueltasMonto)+'</td><td>'+m(x.peajes)+'</td>'+
