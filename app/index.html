@@ -233,8 +233,18 @@
   .sb-out{margin-top:auto;display:flex;align-items:center;gap:11px;background:rgba(255,255,255,.09);border:none;color:#fff;font:700 13px var(--font);padding:10px 11px;border-radius:9px;cursor:pointer;}
   .sb-out svg{width:18px;height:18px;}
   @media(min-width:900px){
-    body{padding-left:226px;}
-    .sbar{display:flex;flex-direction:column;position:fixed;left:0;top:0;bottom:0;width:226px;background:var(--navy);z-index:40;padding:16px 12px 14px;overflow-y:auto;}
+    body{padding-left:66px;}
+    .sbar{display:flex;flex-direction:column;position:fixed;left:0;top:0;bottom:0;width:66px;background:var(--navy);z-index:40;padding:16px 12px 14px;overflow-x:hidden;overflow-y:auto;transition:width .18s ease,box-shadow .18s ease;}
+    .sbar:hover{width:230px;box-shadow:6px 0 28px -6px rgba(0,0,0,.45);overflow-y:auto;}
+    /* colapsada: solo iconos; las etiquetas y grupos aparecen al hover */
+    .sbar-nav{gap:2px;}
+    .sb-item,.sb-out{white-space:nowrap;font-size:0;}
+    .sbar .sb-item svg,.sbar .sb-out svg{flex:0 0 auto;}   /* icono no depende de font-size */
+    .sbar-brand span{opacity:0;transition:opacity .14s ease;}
+    .sbar:hover .sb-item,.sbar:hover .sb-out{font-size:13.5px;}
+    .sbar:hover .sbar-brand span{opacity:1;}
+    .sbar-grp{opacity:0;height:6px;padding:8px 10px 2px;transition:opacity .14s ease,height .14s ease;overflow:hidden;}
+    .sbar:hover .sbar-grp{opacity:1;height:auto;padding:15px 10px 5px;}
     .tabbar{display:none;}
     #btn-cli,#btn-rrhh,#btn-pagos,#btn-plan,#btn-acc-h,#out{display:none !important;}
     .rrhh-segbar{display:none !important;}   /* segmentos ya están en la barra lateral */
