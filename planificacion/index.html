@@ -238,8 +238,10 @@
           <label>Fecha fin <span style="color:#8b93a7;font-weight:400">(si dura varios días)</span><input type="date" id="f-fin"></label>
           <label class="full">Hora<input type="text" id="f-hora" placeholder="09:00 - 13:00 o Todo el día"></label>
           <label class="full">Título<input type="text" id="f-titulo" placeholder="Ej: Limpieza estanque"></label>
-          <label class="full">Ubicación / Cliente<input type="text" id="f-ubic" list="f-ubic-list" placeholder="Ej: CERMAQ (elige o escribe)"></label>
+          <label class="full">Empresa / Cliente<input type="text" id="f-ubic" list="f-ubic-list" placeholder="Ej: CERMAQ (elige o escribe)"></label>
           <datalist id="f-ubic-list"></datalist>
+          <label class="full">Ubicación / Sitio <span style="color:#8b93a7;font-weight:400">(opcional)</span><input type="text" id="f-sitio" list="f-sitio-list" placeholder="Ej: Chinquihue"></label>
+          <datalist id="f-sitio-list"></datalist>
           <label class="full">Descripción<textarea id="f-desc" rows="4" placeholder="Detalle, materiales, tareas…"></textarea></label>
           <label class="full" id="f-rep-row">Repetir
             <div style="display:flex;gap:8px;margin-top:4px;flex-wrap:wrap">
@@ -275,7 +277,7 @@
   function cargarEventos(cb){
     if(!sb){ if(cb)cb(); return; }
     var all=[], chunk=1000;
-    function finish(){ EVENTS=all.map(function(e){ return { id:e.id, fecha:e.fecha, fin:e.fecha_fin||'', serie:e.serie_id||'', hora:(/^all\s*day$/i.test(e.hora||'')?'Todo el día':(e.hora||'')), titulo:e.titulo||'', ubic:e.ubicacion||'', color:clienteColor(e.ubicacion), desc:e.descripcion||'' }; }); if(cb)cb(); }
+    function finish(){ EVENTS=all.map(function(e){ return { id:e.id, fecha:e.fecha, fin:e.fecha_fin||'', serie:e.serie_id||'', hora:(/^all\s*day$/i.test(e.hora||'')?'Todo el día':(e.hora||'')), titulo:e.titulo||'', ubic:e.ubicacion||'', sitio:e.sitio||'', color:clienteColor(e.ubicacion), desc:e.descripcion||'' }; }); if(cb)cb(); }
     function fetchFrom(off){
       sb.from('eventos').select('*').order('fecha',{ascending:true}).range(off, off+chunk-1).then(function(r){
         if(r.error){ console.warn('Supabase:',r.error.message); finish(); return; }
@@ -395,7 +397,7 @@
     document.getElementById('modal-title').textContent=e.titulo;
     document.getElementById('modal-body').innerHTML=
       '<div class="row">📅 <b>'+(function(){ if(e.fin&&e.fin>e.fecha){ var d2=new Date(e.fin+'T00:00:00'); var n=Math.round((new Date(e.fin)-new Date(e.fecha))/86400000)+1; return 'Del '+d.getDate()+' '+MES[d.getMonth()].slice(0,3)+' al '+d2.getDate()+' '+MES[d2.getMonth()].slice(0,3)+' '+d2.getFullYear()+' · '+n+' días'; } return d.getDate()+' de '+MES[d.getMonth()]+' '+d.getFullYear(); })()+'</b>'+(e.hora?' · '+esc(e.hora):'')+'</div>'+
-      (e.ubic?'<div class="row">📍 Cliente: <span class="cat-chip" style="background:'+e.color+'">'+esc(e.ubic)+'</span></div>':'')+
+      (e.ubic?'<div class="row">📍 Cliente: <span class="cat-chip" style="background:'+e.color+'">'+esc(e.ubic)+'</span>'+(e.sitio?' <span style="color:#5a5e70;font-weight:600">· '+esc(e.sitio)+'</span>':'')+'</div>':'')+
       (e.desc?'<div class="pl-desc">'+esc(e.desc)+'</div>':'')+
       (authed?'<div class="fbtns" style="margin-top:14px"><button class="pl-del-btn" id="det-del">Eliminar</button><button class="pl-add" id="det-edit">✎ Editar</button></div>':'');
     modal.classList.add('show');
@@ -408,7 +410,7 @@
     var evs=evsDe(f); if(!evs.length){ nuevoEn(f); return; } var d=new Date(f+'T00:00:00');
     document.getElementById('modal-head').style.background='linear-gradient(135deg,var(--navy),#0c0f2e)';
     document.getElementById('modal-title').textContent='Todo el '+d.getDate()+' de '+MES[d.getMonth()];
-    document.getElementById('modal-body').innerHTML=evs.map(function(e){ return '<div class="row" style="cursor:pointer" data-goid="'+e.id+'"><span class="cat-chip" style="background:'+e.color+'">&nbsp;</span> '+esc(e.titulo)+(e.ubic?(' · '+esc(e.ubic)):'')+'</div>'; }).join('')+(authed?'<div class="fbtns" style="margin-top:12px"><button class="pl-add" id="dia-add">＋ Agregar aquí</button></div>':'');
+    document.getElementById('modal-body').innerHTML=evs.map(function(e){ return '<div class="row" style="cursor:pointer" data-goid="'+e.id+'"><span class="cat-chip" style="background:'+e.color+'">&nbsp;</span> '+esc(e.titulo)+(e.ubic?(' · '+esc(e.ubic)):'')+(e.sitio?(' · '+esc(e.sitio)):'')+'</div>'; }).join('')+(authed?'<div class="fbtns" style="margin-top:12px"><button class="pl-add" id="dia-add">＋ Agregar aquí</button></div>':'');
     modal.querySelectorAll('[data-goid]').forEach(function(r){ r.addEventListener('click',function(){ abrir(r.dataset.goid); }); });
     var da=document.getElementById('dia-add'); if(da) da.addEventListener('click',function(){ nuevoEn(f); });
     modal.classList.add('show');
@@ -491,14 +493,23 @@
 
   // ---- Nuevo / Editar / Eliminar ----
   var editId=null, editUbicPrev='';
-  var CLIENTES_PL=[];
+  var CLIENTES_PL=[], CLI_SITIOS={};   // nombre -> [sitios]
   function poblarUbicaciones(){
     var cnt={}; EVENTS.forEach(function(x){ var u=(x.ubic||'').trim(); if(u) cnt[u]=(cnt[u]||0)+1; });
     CLIENTES_PL.forEach(function(nm){ if(nm && cnt[nm]===undefined) cnt[nm]=0; });   // clientes del apartado, aunque no tengan trabajos aún
     var list=Object.keys(cnt).sort(function(a,b){ return cnt[b]-cnt[a] || (a<b?-1:1); });
     var dl=document.getElementById('f-ubic-list'); if(dl) dl.innerHTML=list.map(function(u){ return '<option value="'+enc(u)+'">'+esc(u)+(cnt[u]?(' · '+cnt[u]+' trabajos'):' · cliente')+'</option>'; }).join('');
-    if(!CLIENTES_PL.length && sb){ sb.from('clientes').select('nombre').limit(500).then(function(r){ if(r&&r.data&&r.data.length){ CLIENTES_PL=r.data.map(function(c){ return (c.nombre||'').trim(); }).filter(Boolean); poblarUbicaciones(); } }, function(){}); }
+    if(!CLIENTES_PL.length && sb){ sb.from('clientes').select('nombre,sitios').limit(500).then(function(r){ if(r&&r.data&&r.data.length){ CLIENTES_PL=r.data.map(function(c){ var nm=(c.nombre||'').trim(); if(nm){ CLI_SITIOS[nm.toUpperCase()]=(c.sitios||[]).map(function(s){return String(s).trim();}).filter(Boolean); } return nm; }).filter(Boolean); poblarUbicaciones(); } }, function(){}); }
   }
+  // Sitios de la empresa elegida (del cliente) + los que ya se usaron en eventos de esa empresa.
+  function poblarSitios(empresa){
+    var dl=document.getElementById('f-sitio-list'); if(!dl) return;
+    empresa=(empresa||'').trim(); var key=empresa.toUpperCase(), set={};
+    (CLI_SITIOS[key]||[]).forEach(function(s){ if(s) set[s]=1; });
+    EVENTS.forEach(function(e){ if((e.ubic||'').trim().toUpperCase()===key && (e.sitio||'').trim()) set[(e.sitio||'').trim()]=1; });
+    dl.innerHTML=Object.keys(set).sort().map(function(s){ return '<option value="'+enc(s)+'"></option>'; }).join('');
+  }
+  var _fUbicEl=document.getElementById('f-ubic'); if(_fUbicEl) _fUbicEl.addEventListener('input',function(){ poblarSitios(this.value); });
   function abrirForm(e){
     editId=e?e.id:null; editUbicPrev=e?(e.ubic||''):'';
     poblarUbicaciones();
@@ -508,6 +519,8 @@
     document.getElementById('f-hora').value=e?(e.hora||''):'';
     document.getElementById('f-titulo').value=e?e.titulo:'';
     document.getElementById('f-ubic').value=e?(e.ubic||''):'';
+    poblarSitios(e?(e.ubic||''):'');
+    document.getElementById('f-sitio').value=e?(e.sitio||''):'';
     document.getElementById('f-desc').value=e?(e.desc||''):'';
     document.getElementById('f-del').style.display=e?'':'none';
     document.getElementById('f-rep-row').style.display='';
@@ -524,6 +537,7 @@
     var _fi=document.getElementById('f-fecha').value, _ff=document.getElementById('f-fin').value;
     var row={ fecha:_fi, fecha_fin:(_ff && _ff>=_fi)?_ff:null, hora:document.getElementById('f-hora').value.trim(),
       titulo:document.getElementById('f-titulo').value.trim(), ubicacion:document.getElementById('f-ubic').value.trim(),
+      sitio:document.getElementById('f-sitio').value.trim(),
       categoria:'Trabajo', descripcion:document.getElementById('f-desc').value };
     if(!row.fecha||!row.titulo){ alert('Fecha y título son obligatorios.'); return; }
     var repetir=document.getElementById('f-repetir').value;
@@ -534,7 +548,7 @@
       var dur=row.fecha_fin?Math.round((new Date(row.fecha_fin+'T00:00:00')-base)/86400000):0;
       fechasSerie(_fi, repetir, cada, veces).forEach(function(fd){
         var fe=new Date(fd); if(dur) fe.setDate(fe.getDate()+dur);
-        rows.push({ fecha:iso(fd), fecha_fin:dur?iso(fe):null, hora:row.hora, titulo:row.titulo, ubicacion:row.ubicacion, categoria:'Trabajo', descripcion:row.descripcion, serie_id:serie });
+        rows.push({ fecha:iso(fd), fecha_fin:dur?iso(fe):null, hora:row.hora, titulo:row.titulo, ubicacion:row.ubicacion, sitio:row.sitio, categoria:'Trabajo', descripcion:row.descripcion, serie_id:serie });
       });
       if(editId){
         // Al editar con repetición: este trabajo pasa a ser el 1º de la nueva serie y se agregan los demás

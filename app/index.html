@@ -1235,7 +1235,7 @@
   function cargarEventos(){
     if(!sb)return;
     // ventana alrededor de hoy (para asociar reportes/horas), luego se ordena por cercanía
-    sb.from('eventos').select('id,fecha,fecha_fin,titulo,ubicacion,descripcion').gte('fecha',isoMas(-90)).lte('fecha',isoMas(180)).order('fecha',{ascending:true}).limit(600)
+    sb.from('eventos').select('id,fecha,fecha_fin,titulo,ubicacion,sitio,descripcion').gte('fecha',isoMas(-90)).lte('fecha',isoMas(180)).order('fecha',{ascending:true}).limit(600)
       .then(function(r){ EVENTOS=(r&&r.data)||[]; autoSeleccionarHoy(); });
   }
   function diffDias(f){ if(!f)return 99999; var d=new Date(f+'T00:00:00'), t=new Date(todayISO()+'T00:00:00'); return Math.round((d-t)/86400000); }
@@ -2263,7 +2263,7 @@
     });
   }
   // Faenas de un día según Planificación (EVENTOS): etiqueta = "UBICACIÓN — título".
-  function faLabel(e){ var u=(e.ubicacion||'').trim(), t=(e.titulo||'').trim(); return (u&&t)?(u+' — '+t):(u||t||'Faena'); }
+  function faLabel(e){ var u=(e.ubicacion||'').trim(), si=(e.sitio||'').trim(), t=(e.titulo||'').trim(); var emp=u+(si?(' · '+si):''); return (emp&&t)?(emp+' — '+t):(emp||t||'Faena'); }
   function faenasDia(fecha){ if(!fecha) return []; return (typeof EVENTOS!=='undefined'?EVENTOS:[]).filter(function(e){ var ini=e.fecha, fin=e.fecha_fin||e.fecha; return ini && ini<=fecha && fecha<=fin; }).map(faLabel); }
   function opcionesFaena(fecha, sel){
     var list=faenasDia(fecha), seen={}, opts='<option value="">— sin faena —</option>';
