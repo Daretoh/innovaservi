@@ -2455,7 +2455,7 @@
   var trabQ='', trabFilter='activo', trabSort='nombre', TRAB_VISTA=[];
   // % de documentación cumplida de un trabajador (docs entregadas y vigentes / total del catálogo).
   function docPct(t){ if(!t||!t.id||typeof estadoDoc!=='function'||!(typeof RRHH_TIPOS!=='undefined'&&RRHH_TIPOS.length)) return null;
-    if(typeof RRHH_D==='undefined'||!Object.keys(RRHH_D).length) return null;   // aún no cargó la documentación
+    if(typeof RRHH_LOADED==='undefined'||!RRHH_LOADED) return null;   // aún no cargó la documentación
     var ok=0; RRHH_TIPOS.forEach(function(tp){ var e=estadoDoc(t.id,tp.slug); if(e.k==='ok'||e.k==='prox') ok++; }); return Math.round(ok/RRHH_TIPOS.length*100); }
   function pctColor(p){ if(p>=100) return 'var(--ok)'; if(p>=60) return '#e8a13a'; if(p>=30) return 'var(--orange)'; return '#dc2626'; }
   function pintarTrab(){
@@ -2487,6 +2487,15 @@
   $('trab-search').addEventListener('input',function(){ trabQ=this.value.trim(); pintarTrab(); });
   $('trab-sort').addEventListener('change',function(){ trabSort=this.value; pintarTrab(); });
   document.querySelectorAll('.tfil').forEach(function(b){ b.addEventListener('click',function(){ document.querySelectorAll('.tfil').forEach(function(x){ x.classList.toggle('on',x===b); }); trabFilter=b.dataset.f; pintarTrab(); }); });
+  // Botón "Atrás" del navegador: cierra el panel/overlay abierto en vez de salir de la app.
+  (function(){
+    var OVS=['remu-aj','report-view','docgen','ficha','veh-ficha','remu-detalle','cargos-mgr','dups-mgr','cli-ficha','acc-ficha','rrhh-edit'];
+    function vis(el){ return el && !el.classList.contains('hide'); }
+    function topOpen(){ for(var i=0;i<OVS.length;i++){ var el=$(OVS[i]); if(vis(el)) return el; } return null; }
+    if(window.MutationObserver) OVS.forEach(function(id){ var el=$(id); if(!el) return; var was=vis(el);
+      new MutationObserver(function(){ var now=vis(el); if(now&&!was){ try{ history.pushState({ov:id},''); }catch(_){} } was=now; }).observe(el,{attributes:true,attributeFilter:['class']}); });
+    window.addEventListener('popstate', function(){ var ov=topOpen(); if(ov){ ov.classList.add('hide'); } });
+  })();
   var ficha=$('ficha');
   // ====== Cargos y tratos (catálogo). Valor hora = trato ÷ 8 ======
   var CARGOS=[], CG_DEL=[];
@@ -3382,7 +3391,7 @@
     {slug:'cap_karin',nombre:'Difusión Ley Karin',corto:'Ley Karin',vence:false}
   ];
   function rrhhTipo(s){ var L=RRHH_TIPOS.concat(CAP_TIPOS); for(var i=0;i<L.length;i++) if(L[i].slug===s) return L[i]; return {slug:s,nombre:s,corto:s,vence:false}; }
-  var RRHH_T=[], RRHH_D={}, RRHH_FILTRO='activo', RRHH_VISTA='doc', RRHH_CAT=RRHH_TIPOS;
+  var RRHH_T=[], RRHH_D={}, RRHH_LOADED=false, RRHH_FILTRO='activo', RRHH_VISTA='doc', RRHH_CAT=RRHH_TIPOS;
   function diffDiasV(v){ if(!v) return null; return Math.floor((new Date(v+'T12:00:00')-new Date())/86400000); }
   function cargarRrhh(){
     if(!sb) return;
@@ -3393,6 +3402,7 @@
       RRHH_T=(rs[0]&&rs[0].data)||[];
       TRAB=RRHH_T;   // misma lista alimenta el panel Trabajadores
       RRHH_D={}; ((rs[1]&&rs[1].data)||[]).forEach(function(d){ RRHH_D[d.trabajador_id+'|'+d.tipo]=d; });
+      RRHH_LOADED=true;
       renderRrhh();
       if(typeof actualizarDatalist==='function') actualizarDatalist();
       if(typeof pintarTrab==='function') pintarTrab();
