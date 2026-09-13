@@ -2266,10 +2266,13 @@
   // Faenas de un día según Planificación (EVENTOS): etiqueta = "UBICACIÓN — título".
   function faLabel(e){ var u=(e.ubicacion||'').trim(), si=(e.sitio||'').trim(), t=(e.titulo||'').trim(); var emp=u+(si?(' · '+si):''); return (emp&&t)?(emp+' — '+t):(emp||t||'Faena'); }
   function faenasDia(fecha){ if(!fecha) return []; return (typeof EVENTOS!=='undefined'?EVENTOS:[]).filter(function(e){ var ini=e.fecha, fin=e.fecha_fin||e.fecha; return ini && ini<=fecha && fecha<=fin; }).map(faLabel); }
+  // Clave tolerante para comparar faenas: ignora separadores (·, —, -) y mayúsculas,
+  // así "CERMAQ CHINQUIHUE — X" (viejo) calza con "CERMAQ · Chinquihue — X" (nuevo).
+  function faKey(s){ return (s||'').toString().toLowerCase().replace(/[·—\-]+/g,' ').replace(/\s+/g,' ').trim(); }
   function opcionesFaena(fecha, sel){
-    var list=faenasDia(fecha), seen={}, opts='<option value="">— sin faena —</option>';
-    list.forEach(function(f){ if(seen[f]) return; seen[f]=1; opts+='<option value="'+enc(f)+'"'+(f===sel?' selected':'')+'>'+esc(f)+'</option>'; });
-    if(sel && !seen[sel]) opts+='<option value="'+enc(sel)+'" selected>'+esc(sel)+' (otra fecha)</option>';
+    var list=faenasDia(fecha), seen={}, opts='<option value="">— sin faena —</option>', selK=faKey(sel), matched=false;
+    list.forEach(function(f){ if(seen[f]) return; seen[f]=1; var isSel=(!!sel && faKey(f)===selK); if(isSel) matched=true; opts+='<option value="'+enc(f)+'"'+(isSel?' selected':'')+'>'+esc(f)+'</option>'; });
+    if(sel && !matched) opts+='<option value="'+enc(sel)+'" selected>'+esc(sel)+' (otra fecha)</option>';
     return opts;
   }
   // "juan pérez soto" -> "Juan Pérez Soto" (cada palabra con mayúscula inicial).
