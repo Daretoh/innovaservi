@@ -853,6 +853,8 @@
         <div class="fld"><label>Fecha ingreso</label><input id="fi-ingreso" type="date"></div>
       </div>
       <div class="fld"><label style="display:flex;align-items:center;gap:9px;cursor:pointer;font-weight:600"><input id="fi-chofer" type="checkbox" style="width:18px;height:18px;accent-color:var(--orange)">🚚 Es chofer (puede registrar vueltas)</label></div>
+      <div class="fld"><label style="display:flex;align-items:center;gap:9px;cursor:pointer;font-weight:600"><input id="fi-fijo" type="checkbox" style="width:18px;height:18px;accent-color:var(--orange)">📄 Contrato fijo (renta fija, no por trato)</label></div>
+      <div class="fld" id="fi-jornada-wrap" style="display:none"><label>Jornada normal (horas/día, incl. colación)</label><input id="fi-jornada" type="number" min="0" step="0.5" placeholder="Ej: 9"><div class="note" style="margin:4px 0 0;font-size:.72rem">Dentro de esta jornada no se cuenta trato; solo las horas por sobre ella cuentan como extra.</div></div>
       <div class="grid2">
         <div class="fld"><label>Teléfono</label><input id="fi-tel" type="tel" placeholder="+56 9 ..."></div>
         <div class="fld"><label>Correo</label><input id="fi-email" type="email" placeholder="correo@..."></div>
@@ -2514,6 +2516,7 @@
   }
   function trHint(){ var h=$('fi-trato-h'); if(!h) return; var c=$('fi-cargo').value, tr=cargoTrato(c); h.textContent=tr?('Trato '+fmtMoney(tr)+' · valor hora '+fmtMoney(Math.round(tr/8))):(c?'Este cargo aún no tiene trato (edítalo en “Cargos y tratos”).':''); }
   if($('fi-cargo')) $('fi-cargo').addEventListener('change',trHint);
+  if($('fi-fijo')) $('fi-fijo').addEventListener('change',function(){ $('fi-jornada-wrap').style.display=this.checked?'':'none'; });
   // Gestor
   function collectCargos(){ var rows=[]; $('cg-list').querySelectorAll('.cg-row').forEach(function(r){ rows.push({ id:(r.dataset.id?+r.dataset.id:null), nombre:r.querySelector('.cg-nom').value.trim(), trato:(+r.querySelector('.cg-trato').value||0) }); }); return rows; }
   function renderCargos(){
@@ -2665,6 +2668,7 @@
     FICHA_ID=t?t.id:null;
     $('fi-nombre').value=t?(t.nombre||''):''; $('fi-rut').value=t?(t.rut||''):''; poblarSelectCargo($('fi-cargo'), t?(t.cargo||''):''); trHint();
     $('fi-estado').value=(t&&t.estado)||'activo'; $('fi-ingreso').value=t?(t.fecha_ingreso||''):''; if($('fi-chofer')) $('fi-chofer').checked=!!(t&&t.chofer);
+    if($('fi-fijo')){ var esFijo=!!(t&&t.tipo_pago==='contrato'); $('fi-fijo').checked=esFijo; $('fi-jornada').value=(t&&t.jornada_horas)||''; $('fi-jornada-wrap').style.display=esFijo?'':'none'; }
     $('fi-tel').value=t?(t.telefono||''):''; $('fi-email').value=t?(t.email||''):'';
     $('fi-botas').value=t?(t.talla_botas||''):''; $('fi-ropa').value=t?(t.talla_ropa||''):'';
     $('fi-afp').value=t?(t.afp||''):''; $('fi-salud').value=t?(t.salud||''):'';
@@ -2783,7 +2787,8 @@
     onDoc:function(d){ FICHA_DOCS.push(d); renderDocs(); } });
   $('fi-save').addEventListener('click',function(){
     if(!sb) return; var nom=titleCase($('fi-nombre').value.trim()); if(!nom){ toast('El nombre es obligatorio.'); return; }
-    var row={ nombre:nom, rut:$('fi-rut').value.trim(), cargo:$('fi-cargo').value.trim(), estado:$('fi-estado').value, chofer:!!($('fi-chofer')&&$('fi-chofer').checked),
+    var _fijo=!!($('fi-fijo')&&$('fi-fijo').checked);
+    var row={ nombre:nom, rut:$('fi-rut').value.trim(), cargo:$('fi-cargo').value.trim(), estado:$('fi-estado').value, chofer:!!($('fi-chofer')&&$('fi-chofer').checked), tipo_pago:(_fijo?'contrato':'hora'), jornada_horas:(_fijo?(+$('fi-jornada').value||null):null),
       telefono:$('fi-tel').value.trim(), email:$('fi-email').value.trim(), fecha_ingreso:$('fi-ingreso').value||null,
       talla_botas:$('fi-botas').value.trim(), talla_ropa:$('fi-ropa').value.trim(), afp:$('fi-afp').value.trim(),
       salud:$('fi-salud').value.trim(), direccion:$('fi-dir').value.trim(), emergencia:$('fi-emerg').value.trim(),
@@ -3113,7 +3118,7 @@
     var m=function(v,neg){ return v?((neg?'−':'')+fmtMoney(v)):'<span class="rt-z">—</span>'; };
     var body=filas.map(function(x,i){
       return '<tr data-i="'+i+'">'+
-        '<td class="rt-nm">'+(x.t.id?'':'<span title="No está registrado como trabajador">⚠️ </span>')+esc(titleCase(x.t.nombre)||'')+'<div class="rt-sub"'+(x.t.id?'':' style="color:#b45309;font-weight:700"')+'>'+esc(x.t.cargo||'')+(x.tipo==='contrato'?' · contrato':'')+'</div></td>'+
+        '<td class="rt-nm">'+(x.t.id?'':'<span title="No está registrado como trabajador">⚠️ </span>')+esc(titleCase(x.t.nombre)||'')+'<div class="rt-sub"'+(x.t.id?'':' style="color:#b45309;font-weight:700"')+'>'+esc(x.t.cargo||'')+(x.tipo==='contrato'?(' · fijo'+(x.jor?(' '+x.jor+'h/día'):'')):'')+'</div></td>'+
         '<td>'+x.dias+'</td><td>'+hm(x.totMin)+'</td>'+
         '<td>'+m(x.base)+'</td><td>'+m(x.vueltasMonto)+'</td><td>'+m(x.peajes)+'</td>'+
         '<td class="rt-ok">'+m(x.bono)+'</td><td class="rt-bad">'+m(x.desc,true)+'</td>'+
@@ -3187,7 +3192,9 @@
         : '<div class="rd-dcol"><b style="color:var(--orange-2)">'+fmtMoney(dReal)+'</b></div>';
       return '<div class="rd-day2"><div style="flex:1;min-width:0"><b>'+fechaCorta(f)+'</b> <span class="note" style="margin:0;font-size:.72rem">'+horarios+' · '+hm(pd.min)+'</span>'+faTxt+'</div>'+right+'</div>';
     }).join(''):'<p class="note" style="margin:0">Sin días registrados esta semana.</p>';
-    var desg='<div class="rd-lin"><span>'+(x.tipo==='contrato'?'Horas extra':'Horas')+' ('+hm(x.baseMin)+(x.vh?(' × '+fmtMoney(x.vh)):'')+')</span><b>'+fmtMoney(x.base)+'</b></div>';
+    var desg='';
+    if(x.tipo==='contrato') desg+='<div class="rd-lin" style="border-bottom:none;padding-bottom:0"><span style="color:#0f6e56;font-weight:700">📄 Contrato fijo · renta fija</span></div><div class="note" style="margin:0 0 6px;font-size:.72rem">La jornada normal ('+(x.jor||0)+'h/día, incl. colación) no genera trato; solo las horas por sobre ella cuentan como extra.</div>';
+    desg+='<div class="rd-lin"><span>'+(x.tipo==='contrato'?'Horas extra':'Horas')+' ('+hm(x.baseMin)+(x.vh?(' × '+fmtMoney(x.vh)):'')+')</span><b>'+fmtMoney(x.base)+'</b></div>';
     if(x.vueltas) desg+='<div class="rd-lin"><span>'+x.vueltas+' vueltas × '+fmtMoney(REMU_DATA.valorVuelta)+'</span><b>'+fmtMoney(x.vueltasMonto)+'</b></div>';
     if(x.peajes) desg+='<div class="rd-lin"><span>Peajes (reembolso)</span><b>'+fmtMoney(x.peajes)+'</b></div>';
     if(x.bono) desg+='<div class="rd-lin"><span>Montos y bonos</span><b style="color:#0f6e56">'+fmtMoney(x.bono)+'</b></div>';
