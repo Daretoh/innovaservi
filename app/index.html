@@ -217,6 +217,14 @@
   .tabbar button .em{font-size:20px;line-height:1;transition:transform .25s cubic-bezier(.34,1.56,.64,1);}
   .tabbar button.on{color:var(--orange);}
   .tfil.on,.hfil.on,.hzfil.on{background:var(--orange);color:#fff;border-color:var(--orange);}
+  /* Controles segmentados (filtros claros) */
+  .segrow{display:flex;gap:18px;flex-wrap:wrap;align-items:center;margin-bottom:14px;}
+  .segwrap{display:flex;align-items:center;gap:9px;}
+  .seglbl{font:700 10.5px var(--font);text-transform:uppercase;letter-spacing:.06em;color:var(--muted);}
+  .seg{display:inline-flex;background:var(--alt);border:1px solid var(--line);border-radius:10px;padding:2px;gap:2px;}
+  .seg-b{background:none;border:none;padding:7px 15px;font:700 12.5px var(--font);color:var(--body);cursor:pointer;white-space:nowrap;border-radius:8px;transition:.15s;}
+  .seg-b:hover{color:var(--ink);}
+  .seg-b.on{background:var(--orange);color:#fff;box-shadow:0 4px 12px -6px rgba(255,107,0,.7);}
   .tabbar button.on .em{transform:translateY(-3px) scale(1.22);}
   .tabbar button.on::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:24px;height:3px;border-radius:0 0 4px 4px;background:var(--orange);animation:tabpop .28s ease;}
   @keyframes tabpop{from{width:0;opacity:.3;} to{width:24px;opacity:1;}}
@@ -818,13 +826,9 @@
       <div id="rrhh-doc" class="hide">
         <p class="note" style="margin:0 0 10px" id="rrhh-panel-note">Documentación estándar por trabajador <span class="cnt" id="rrhh-cnt"></span>.</p>
         <div id="rrhh-alert"></div>
-        <div style="display:flex;gap:6px;margin-bottom:8px">
-          <button class="btn ghost small rrhh-fil on" data-f="activo" style="flex:1">Activos</button>
-          <button class="btn ghost small rrhh-fil" data-f="todos" style="flex:1">Todos</button>
-        </div>
-        <div style="display:flex;gap:6px;margin-bottom:12px">
-          <button class="btn ghost small rrhh-vis on" data-v="doc" style="flex:1">Por documento</button>
-          <button class="btn ghost small rrhh-vis" data-v="persona" style="flex:1">Por persona</button>
+        <div class="segrow">
+          <div class="segwrap"><span class="seglbl">Mostrar</span><div class="seg"><button class="seg-b rrhh-fil on" data-f="activo">Solo activos</button><button class="seg-b rrhh-fil" data-f="todos">Todos</button></div></div>
+          <div class="segwrap"><span class="seglbl">Agrupar por</span><div class="seg"><button class="seg-b rrhh-vis on" data-v="doc">Documento</button><button class="seg-b rrhh-vis" data-v="persona">Persona</button></div></div>
         </div>
         <div id="rrhh-list"></div>
       </div>
