@@ -3188,16 +3188,23 @@
       var ajd=(REMU_DATA.ajDia&&x.t.id)?REMU_DATA.ajDia[x.t.id+'|'+f]:null, dCont=ajd?ajd.monto:dReal;
       var horarios=pd.ents.map(function(d){ return esc(d.entrada||'--:--')+'→'+esc(d.salida||'--:--'); }).join(', ');
       var faTxt=Object.keys(pd.fae).length?('<div class="note" style="margin:1px 0 0;font-size:.71rem">📍 '+esc(Object.keys(pd.fae).join(' · '))+'</div>'):'';
+      var fijoTxt='';
+      if(x.tipo==='contrato'){ var dFull=Math.round(pd.min/60*x.vh), dDesc=dFull-dReal; fijoTxt='<div class="note" style="margin:1px 0 0;font-size:.7rem;color:var(--navy)">Trato '+fmtMoney(dFull)+' · descuento −'+fmtMoney(dDesc)+' · extra '+fmtMoney(dReal)+'</div>'; }
       var right=x.t.id
         ? '<div class="rd-dcol"><div class="rd-real2'+((dCont!==dReal)?' rd-aj2':'')+'">real '+fmtMoney(dReal)+'</div>'+
             '<input class="rd-dcont" type="number" min="0" data-f="'+f+'" data-real="'+dReal+'" value="'+dCont+'" title="Monto contable de este día (editable)">'+
             '<input class="rd-dobs" type="text" data-f="'+f+'" value="'+enc(ajd?ajd.obs:'')+'" placeholder="motivo (si ajustas)"></div>'
         : '<div class="rd-dcol"><b style="color:var(--orange-2)">'+fmtMoney(dReal)+'</b></div>';
-      return '<div class="rd-day2"><div style="flex:1;min-width:0"><b>'+fechaCorta(f)+'</b> <span class="note" style="margin:0;font-size:.72rem">'+horarios+' · '+hm(pd.min)+'</span>'+faTxt+'</div>'+right+'</div>';
+      return '<div class="rd-day2"><div style="flex:1;min-width:0"><b>'+fechaCorta(f)+'</b> <span class="note" style="margin:0;font-size:.72rem">'+horarios+' · '+hm(pd.min)+'</span>'+faTxt+fijoTxt+'</div>'+right+'</div>';
     }).join(''):'<p class="note" style="margin:0">Sin días registrados esta semana.</p>';
     var desg='';
-    if(x.tipo==='contrato') desg+='<div class="rd-lin" style="border-bottom:none;padding-bottom:0"><span style="color:#0f6e56;font-weight:700">📄 Contrato fijo · renta fija</span></div><div class="note" style="margin:0 0 6px;font-size:.72rem">La jornada normal ('+(x.jor||0)+'h/día, incl. colación) no genera trato; solo las horas por sobre ella cuentan como extra.</div>';
-    desg+='<div class="rd-lin"><span>'+(x.tipo==='contrato'?'Horas extra':'Horas')+' ('+hm(x.baseMin)+(x.vh?(' × '+fmtMoney(x.vh)):'')+')</span><b>'+fmtMoney(x.base)+'</b></div>';
+    if(x.tipo==='contrato'){
+      var fullTot=Math.round((x.totMin||0)/60*x.vh), descTot=fullTot-x.base;
+      desg+='<div class="rd-lin" style="border-bottom:none;padding-bottom:0"><span style="color:#0f6e56;font-weight:700">📄 Contrato fijo · renta fija</span></div><div class="note" style="margin:0 0 6px;font-size:.72rem">La jornada normal ('+(x.jor||0)+'h/día, incl. colación) no genera trato; solo las horas por sobre ella cuentan como extra.</div>';
+      desg+='<div class="rd-lin"><span>Trato completo (si fuera spot · '+hm(x.totMin)+')</span><b style="color:var(--muted)">'+fmtMoney(fullTot)+'</b></div>';
+      desg+='<div class="rd-lin"><span>Descontado por jornada fija</span><b style="color:#dc2626">− '+fmtMoney(descTot)+'</b></div>';
+    }
+    desg+='<div class="rd-lin"><span>'+(x.tipo==='contrato'?'Horas extra pagadas':'Horas')+' ('+hm(x.baseMin)+(x.vh?(' × '+fmtMoney(x.vh)):'')+')</span><b>'+fmtMoney(x.base)+'</b></div>';
     if(x.vueltas) desg+='<div class="rd-lin"><span>'+x.vueltas+' vueltas × '+fmtMoney(REMU_DATA.valorVuelta)+'</span><b>'+fmtMoney(x.vueltasMonto)+'</b></div>';
     if(x.peajes) desg+='<div class="rd-lin"><span>Peajes (reembolso)</span><b>'+fmtMoney(x.peajes)+'</b></div>';
     if(x.bono) desg+='<div class="rd-lin"><span>Montos y bonos</span><b style="color:#0f6e56">'+fmtMoney(x.bono)+'</b></div>';
@@ -3347,12 +3354,14 @@
     var trabHtml=rows.length?rows.map(function(r,ri){
       var horarios=r.ents.map(function(d){ return esc(d.entrada||'--:--')+'→'+esc(d.salida||'--:--'); }).join(', ');
       var faTxt=r.faenas.length?('<div class="note" style="margin:1px 0 0;font-size:.71rem">📍 '+esc(r.faenas.join(' · '))+'</div>'):'';
+      var fijoTxt='';
+      if(r.x.tipo==='contrato'){ var dFull=Math.round(r.dayMin/60*r.x.vh), dDesc=dFull-r.real; fijoTxt='<div class="note" style="margin:1px 0 0;font-size:.7rem;color:var(--navy)">📄 fijo · trato '+fmtMoney(dFull)+' · descuento −'+fmtMoney(dDesc)+' · extra '+fmtMoney(r.real)+'</div>'; }
       var right=r.x.t.id
         ? '<div class="rd-dcol"><div class="rd-real2'+((r.cont!==r.real)?' rd-aj2':'')+'">real '+fmtMoney(r.real)+'</div>'+
             '<input class="rd-dcont2" type="number" min="0" data-tid="'+r.x.t.id+'" data-real="'+r.real+'" value="'+r.cont+'" title="Monto contable de este día (editable)">'+
             '<input class="rd-dobs2" type="text" data-tid="'+r.x.t.id+'" value="'+enc(r.ajd?r.ajd.obs:'')+'" placeholder="motivo (si ajustas)"></div>'
         : '<div class="rd-dcol"><b style="color:var(--orange-2)">'+fmtMoney(r.real)+'</b></div>';
-      return '<div class="rd-day2"><div class="'+(r.x.t.id?'rd-openw':'')+'" data-wi="'+ri+'" style="flex:1;min-width:0"><b>'+(r.x.t.id?'':'⚠️ ')+esc(titleCase(r.x.t.nombre)||'')+'</b>'+(r.x.t.id?'<span style="color:var(--orange-2);font-weight:700;font-size:.7rem"> · ver ›</span>':'<span style="color:#b45309;font-weight:700;font-size:.7rem"> · sin ficha</span>')+'<div class="note" style="margin:0;font-size:.74rem">'+horarios+' · '+hm(r.dayMin)+(r.vu?(' · 🔄 '+r.vu):'')+'</div>'+faTxt+'</div>'+right+'</div>';
+      return '<div class="rd-day2"><div class="'+(r.x.t.id?'rd-openw':'')+'" data-wi="'+ri+'" style="flex:1;min-width:0"><b>'+(r.x.t.id?'':'⚠️ ')+esc(titleCase(r.x.t.nombre)||'')+'</b>'+(r.x.t.id?'<span style="color:var(--orange-2);font-weight:700;font-size:.7rem"> · ver ›</span>':'<span style="color:#b45309;font-weight:700;font-size:.7rem"> · sin ficha</span>')+'<div class="note" style="margin:0;font-size:.74rem">'+horarios+' · '+hm(r.dayMin)+(r.vu?(' · 🔄 '+r.vu):'')+'</div>'+faTxt+fijoTxt+'</div>'+right+'</div>';
     }).join(''):'<p class="note" style="margin:0">Nadie registró horas este día.</p>';
     var lbl='display:block;font:700 13px var(--font);color:var(--ink);margin-bottom:6px';
     $('rd-body').innerHTML=
