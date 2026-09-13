@@ -3122,7 +3122,7 @@
     var body=filas.map(function(x,i){
       return '<tr data-i="'+i+'"'+(x.tipo==='contrato'?' class="rt-fijo"':'')+'>'+
         '<td class="rt-nm">'+(x.t.id?'':'<span title="No está registrado como trabajador">⚠️ </span>')+esc(titleCase(x.t.nombre)||'')+'<div class="rt-sub"'+(x.t.id?'':' style="color:#b45309;font-weight:700"')+'>'+esc(x.t.cargo||'')+(x.tipo==='contrato'?(' · fijo'+(x.jor?(' '+x.jor+'h/día'):'')):'')+'</div></td>'+
-        '<td>'+x.dias+'</td><td>'+hm(x.totMin)+'</td>'+
+        '<td>'+x.dias+'</td>'+(x.tipo==='contrato'?('<td>'+hm(x.totMin)+'<div class="rt-sub" style="color:var(--navy)">− '+hm(x.totMin-x.baseMin)+' = '+hm(x.baseMin)+' extra</div></td>'):('<td>'+hm(x.totMin)+'</td>'))+
         '<td>'+m(x.base)+'</td><td>'+m(x.vueltasMonto)+'</td><td>'+m(x.peajes)+'</td>'+
         '<td class="rt-ok">'+m(x.bono)+'</td><td class="rt-bad">'+m(x.desc,true)+'</td>'+
         '<td class="rt-tot">'+(x.aj?'<span title="ajustado" style="color:var(--orange-2)">'+fmtMoney(x.contable)+'</span><div class="rt-obs" style="max-width:none">real '+fmtMoney(x.real)+'</div>':fmtMoney(x.contable))+'</td></tr>';
@@ -3189,7 +3189,7 @@
       var horarios=pd.ents.map(function(d){ return esc(d.entrada||'--:--')+'→'+esc(d.salida||'--:--'); }).join(', ');
       var faTxt=Object.keys(pd.fae).length?('<div class="note" style="margin:1px 0 0;font-size:.71rem">📍 '+esc(Object.keys(pd.fae).join(' · '))+'</div>'):'';
       var fijoTxt='';
-      if(x.tipo==='contrato'){ var dFull=Math.round(pd.min/60*x.vh), dDesc=dFull-dReal; fijoTxt='<div class="note" style="margin:1px 0 0;font-size:.7rem;color:var(--navy)">Trato '+fmtMoney(dFull)+' · descuento −'+fmtMoney(dDesc)+' · extra '+fmtMoney(dReal)+'</div>'; }
+      if(x.tipo==='contrato'){ var dFull=Math.round(pd.min/60*x.vh), dDesc=dFull-dReal; fijoTxt='<div class="note" style="margin:1px 0 0;font-size:.7rem;color:var(--navy)">📄 fijo · '+hm(pd.min)+' − '+(x.jor||0)+'h = '+hm(pmin)+' extra · real '+fmtMoney(dReal)+' <span style="color:var(--muted)">(trato '+fmtMoney(dFull)+' · −'+fmtMoney(dDesc)+')</span></div>'; }
       var right=x.t.id
         ? '<div class="rd-dcol"><div class="rd-real2'+((dCont!==dReal)?' rd-aj2':'')+'">real '+fmtMoney(dReal)+'</div>'+
             '<input class="rd-dcont" type="number" min="0" data-f="'+f+'" data-real="'+dReal+'" value="'+dCont+'" title="Monto contable de este día (editable)">'+
@@ -3355,7 +3355,7 @@
       var horarios=r.ents.map(function(d){ return esc(d.entrada||'--:--')+'→'+esc(d.salida||'--:--'); }).join(', ');
       var faTxt=r.faenas.length?('<div class="note" style="margin:1px 0 0;font-size:.71rem">📍 '+esc(r.faenas.join(' · '))+'</div>'):'';
       var fijoTxt='';
-      if(r.x.tipo==='contrato'){ var dFull=Math.round(r.dayMin/60*r.x.vh), dDesc=dFull-r.real; fijoTxt='<div class="note" style="margin:1px 0 0;font-size:.7rem;color:var(--navy)">📄 fijo · trato '+fmtMoney(dFull)+' · descuento −'+fmtMoney(dDesc)+' · extra '+fmtMoney(r.real)+'</div>'; }
+      if(r.x.tipo==='contrato'){ var dFull=Math.round(r.dayMin/60*r.x.vh), dDesc=dFull-r.real, exMin=Math.max(0,r.dayMin-(r.x.jor*60)); fijoTxt='<div class="note" style="margin:1px 0 0;font-size:.7rem;color:var(--navy)">📄 fijo · '+hm(r.dayMin)+' − '+(r.x.jor||0)+'h = '+hm(exMin)+' extra · real '+fmtMoney(r.real)+' <span style="color:var(--muted)">(trato '+fmtMoney(dFull)+' · −'+fmtMoney(dDesc)+')</span></div>'; }
       var right=r.x.t.id
         ? '<div class="rd-dcol"><div class="rd-real2'+((r.cont!==r.real)?' rd-aj2':'')+'">real '+fmtMoney(r.real)+'</div>'+
             '<input class="rd-dcont2" type="number" min="0" data-tid="'+r.x.t.id+'" data-real="'+r.real+'" value="'+r.cont+'" title="Monto contable de este día (editable)">'+
