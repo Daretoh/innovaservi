@@ -436,6 +436,14 @@
   .pe-epp label{font:600 11.5px var(--font);border:1px solid var(--line);border-radius:20px;padding:4px 9px;cursor:pointer;display:inline-flex;align-items:center;gap:4px;background:var(--alt);}
   .pe-epp input{accent-color:var(--orange);}
   .pe-mrow label{display:flex;align-items:center;gap:8px;padding:6px 2px;font:600 13px var(--font);cursor:pointer;border-bottom:1px solid var(--line);}
+  .pe-mrow2{border-bottom:1px solid var(--line);padding:4px 0;}
+  .pe-mtop{display:flex;align-items:center;gap:6px;}
+  .pe-mtop label{display:flex;align-items:center;gap:8px;font:600 13px var(--font);cursor:pointer;}
+  .pe-mver{background:none;border:1px solid var(--line);border-radius:7px;color:var(--navy);font:700 10.5px var(--font);padding:3px 8px;cursor:pointer;white-space:nowrap;}
+  .pe-medit{width:30px;height:28px;border:1px solid var(--line);background:#fff;border-radius:7px;cursor:pointer;}
+  .pe-mdesg{display:flex;flex-wrap:wrap;gap:5px;padding:4px 0 8px 26px;}
+  .pe-chip{font:600 11px var(--font);background:var(--alt);border:1px solid var(--line);border-radius:20px;padding:3px 9px;color:var(--ink);}
+  .pe-chip i{color:var(--muted);font-style:normal;font-size:9px;text-transform:uppercase;}
   .pf-grid{display:grid;grid-template-columns:repeat(7,minmax(148px,1fr));gap:8px;overflow-x:auto;padding-bottom:6px;}
   .pf-col{background:var(--alt);border:1px solid var(--line);border-radius:11px;padding:7px 7px 9px;min-height:130px;}
   .pf-col.pf-today{border-color:var(--orange);box-shadow:inset 0 0 0 1px var(--orange);}
@@ -1507,9 +1515,15 @@
       var epp=EPP_ITEMS.map(function(it){ var on=(pp.epp||[]).indexOf(it)>=0; return '<label><input type="checkbox" class="pe-epp-c" data-i="'+i+'" data-epp="'+enc(it)+'"'+(on?' checked':'')+'>'+esc(it)+'</label>'; }).join('');
       return '<div class="pe-pers"><div class="pe-pers-top"><input class="pe-pn" data-i="'+i+'" list="trab-datalist" placeholder="Nombre" value="'+enc(pp.nombre||'')+'" style="flex:1;font:700 13px var(--font);padding:6px 9px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink)"><button class="pe-prm" data-i="'+i+'" type="button" style="width:30px;height:32px;border:1px solid #f0c0c0;background:#fff;color:#dc2626;border-radius:8px;cursor:pointer">✕</button></div><div class="pe-epp">'+epp+'</div></div>';
     }).join('')||'<p class="note" style="margin:0">Sin personas asignadas.</p>';
+    var TIPLBL={epp:'EPP',herramienta:'Herram.',maquinaria:'Maq.'};
     var pts=(typeof plantillasDeFaena==='function')?plantillasDeFaena((PE.e.ubicacion||''),(PE.e.sitio||'')):[], seen={}, mhtml='';
-    pts.forEach(function(pl){ var nm=((pl.faena||pl.nombre||'')+'').trim(); if(!nm||seen[nm])return; seen[nm]=1; var on=PE.matrices.indexOf(nm)>=0; var st=(pl.sitio||'').trim(); mhtml+='<div class="pe-mrow"><label><input type="checkbox" class="pe-mc" data-nm="'+enc(nm)+'"'+(on?' checked':'')+'>'+esc(nm)+(st?(' <span class="note" style="margin:0;font-size:.72rem">· '+esc(st)+'</span>'):'')+'</label></div>'; });
-    PE.matrices.forEach(function(nm){ if(!seen[nm]){ seen[nm]=1; mhtml+='<div class="pe-mrow"><label><input type="checkbox" class="pe-mc" data-nm="'+enc(nm)+'" checked>'+esc(nm)+'</label></div>'; } });
+    pts.forEach(function(pl){ var nm=((pl.faena||pl.nombre||'')+'').trim(); if(!nm||seen[nm])return; seen[nm]=1; var on=PE.matrices.indexOf(nm)>=0; var st=(pl.sitio||'').trim();
+      var its=(pl.items||[]); var desg=its.length?its.map(function(it){ return '<span class="pe-chip">'+esc(it.item||'')+(it.cantidad?(' ·'+esc(it.cantidad)):'')+' <i>'+(TIPLBL[it.tipo]||it.tipo||'')+'</i></span>'; }).join(''):'<span class="note" style="margin:0">Sin ítems.</span>';
+      mhtml+='<div class="pe-mrow2"><div class="pe-mtop"><label style="flex:1"><input type="checkbox" class="pe-mc" data-nm="'+enc(nm)+'"'+(on?' checked':'')+'> '+esc(nm)+(st?(' <span class="note" style="margin:0;font-size:.72rem">· '+esc(st)+'</span>'):'')+'</label>'+
+        '<button class="pe-mver" type="button" data-nm="'+enc(nm)+'">ver ('+its.length+')</button>'+
+        '<button class="pe-medit" type="button" data-plid="'+pl.id+'" title="Editar esta matriz">✎</button></div>'+
+        '<div class="pe-mdesg hide" data-nm="'+enc(nm)+'">'+desg+'</div></div>'; });
+    PE.matrices.forEach(function(nm){ if(!seen[nm]){ seen[nm]=1; mhtml+='<div class="pe-mrow2"><div class="pe-mtop"><label style="flex:1"><input type="checkbox" class="pe-mc" data-nm="'+enc(nm)+'" checked> '+esc(nm)+'</label></div></div>'; } });
     $('pe-matrices').innerHTML=mhtml||'<p class="note" style="margin:0">Sin matrices/PTS para este cliente (créalas en Matriz PTS).</p>';
     $('pe-maquinaria').innerHTML=PE.maquinaria.map(function(mq,i){ return '<div class="jv-row" data-i="'+i+'"><select class="pe-mv" data-i="'+i+'">'+vehOpts(mq.veh||'')+'</select><select class="pe-mc2" data-i="'+i+'">'+choferOpts(mq.chofer||'')+'</select><button class="pe-mrm" data-i="'+i+'" type="button" style="width:30px;height:34px;border:1px solid #f0c0c0;background:#fff;color:#dc2626;border-radius:8px;cursor:pointer">✕</button></div>'; }).join('')||'<p class="note" style="margin:0">Sin maquinaria.</p>';
     peWire();
@@ -1519,6 +1533,8 @@
     root.querySelectorAll('.pe-prm').forEach(function(b){ b.addEventListener('click',function(){ PE.personas.splice(+b.dataset.i,1); pePintar(); }); });
     root.querySelectorAll('.pe-epp-c').forEach(function(ch){ ch.addEventListener('change',function(){ var i=+ch.dataset.i, it=ch.dataset.epp, arr=PE.personas[i].epp, ix=arr.indexOf(it); if(ch.checked){ if(ix<0)arr.push(it); } else if(ix>=0)arr.splice(ix,1); }); });
     root.querySelectorAll('.pe-mc').forEach(function(ch){ ch.addEventListener('change',function(){ var nm=ch.dataset.nm, ix=PE.matrices.indexOf(nm); if(ch.checked){ if(ix<0)PE.matrices.push(nm); } else if(ix>=0)PE.matrices.splice(ix,1); }); });
+    root.querySelectorAll('.pe-mver').forEach(function(b){ b.addEventListener('click',function(){ var row=b.closest('.pe-mrow2'), d=row&&row.querySelector('.pe-mdesg'); if(d){ d.classList.toggle('hide'); b.textContent=(d.classList.contains('hide')?'ver':'ocultar')+b.textContent.replace(/^(ver|ocultar)/,''); } }); });
+    root.querySelectorAll('.pe-medit').forEach(function(b){ b.addEventListener('click',function(){ MATRIZ_PRECLI=(PE&&PE.e?(PE.e.ubicacion||''):'').toUpperCase(); MATRIZ_PREFAENA=b.dataset.plid; $('planif-edit').classList.add('hide'); abrirVista('v-matriz'); }); });
     root.querySelectorAll('.pe-mv').forEach(function(s){ s.addEventListener('change',function(){ PE.maquinaria[+s.dataset.i].veh=s.value; }); });
     root.querySelectorAll('.pe-mc2').forEach(function(s){ s.addEventListener('change',function(){ PE.maquinaria[+s.dataset.i].chofer=s.value; }); });
     root.querySelectorAll('.pe-mrm').forEach(function(b){ b.addEventListener('click',function(){ PE.maquinaria.splice(+b.dataset.i,1); pePintar(); }); });
@@ -1854,7 +1870,7 @@
     if(!sel) return;
     sel.innerHTML=clientesLista().map(function(c){ return '<option value="'+enc(c)+'"'+(normCli(val)===c?' selected':'')+'>'+esc(c)+'</option>'; }).join('')+(conNuevo?'<option value="__new">➕ Otro cliente…</option>':'');
   }
-  var MATRIZ_PRECLI=null;
+  var MATRIZ_PRECLI=null, MATRIZ_PREFAENA=null;
   function renderMatriz(){
     var pre=MATRIZ_PRECLI||$('m-cliente').value||'CERMAQ'; MATRIZ_PRECLI=null;
     opcionesCli($('m-cliente'), pre, false);
@@ -1865,7 +1881,8 @@
     var arr=PLANT.filter(function(p){ return normCli(p.cliente)===normCli(cli); }).sort(function(a,b){ return (a.faena||'').localeCompare(b.faena||''); });
     var sel=$('m-faena');
     sel.innerHTML='<option value="">— nueva faena —</option>'+arr.map(function(p){ return '<option value="'+p.id+'">'+esc(p.faena)+'</option>'; }).join('');
-    if(arr.length){ sel.value=String(arr[0].id); cargarFaenaMatriz(arr[0].id); } else { nuevaFaenaMatriz(); }
+    if(MATRIZ_PREFAENA && arr.some(function(a){ return String(a.id)===String(MATRIZ_PREFAENA); })){ sel.value=String(MATRIZ_PREFAENA); cargarFaenaMatriz(MATRIZ_PREFAENA); MATRIZ_PREFAENA=null; }
+    else if(arr.length){ sel.value=String(arr[0].id); cargarFaenaMatriz(arr[0].id); } else { nuevaFaenaMatriz(); }
   }
   function cargarFaenaMatriz(id){
     var p=PLANT.filter(function(x){ return String(x.id)===String(id); })[0];
