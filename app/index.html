@@ -436,6 +436,16 @@
   .pe-epp label{font:600 11.5px var(--font);border:1px solid var(--line);border-radius:20px;padding:4px 9px;cursor:pointer;display:inline-flex;align-items:center;gap:4px;background:var(--alt);}
   .pe-epp input{accent-color:var(--orange);}
   .pe-mrow label{display:flex;align-items:center;gap:8px;padding:6px 2px;font:600 13px var(--font);cursor:pointer;border-bottom:1px solid var(--line);}
+  .pf-grid{display:grid;grid-template-columns:repeat(7,minmax(148px,1fr));gap:8px;overflow-x:auto;padding-bottom:6px;}
+  .pf-col{background:var(--alt);border:1px solid var(--line);border-radius:11px;padding:7px 7px 9px;min-height:130px;}
+  .pf-col.pf-today{border-color:var(--orange);box-shadow:inset 0 0 0 1px var(--orange);}
+  .pf-head{font:800 10.5px var(--font);text-transform:uppercase;letter-spacing:.03em;color:var(--muted);text-align:center;padding:2px 0 8px;}
+  .pf-head b{color:var(--ink);font-size:14px;margin-left:2px;}
+  .pf-card{border-radius:8px;padding:7px 9px;margin-bottom:6px;cursor:pointer;box-shadow:0 5px 14px -10px rgba(0,0,0,.4);}
+  .pf-card:hover{filter:brightness(.97);}
+  .pf-emp{font:800 11px var(--font);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .pf-tit{font:600 11px var(--font);color:var(--ink);margin:1px 0 5px;line-height:1.2;}
+  .pf-empty{color:#b9bfd0;font-size:11px;text-align:center;padding:8px 0;}
   /* RRHH documentación */
   .rrhh-doc{background:#fff;border:1px solid var(--line);border-radius:12px;padding:11px 13px;margin-bottom:9px;}
   .rrhh-doc .rd-top{display:flex;align-items:center;gap:10px;cursor:pointer;}
@@ -792,8 +802,9 @@
       <div class="card" id="m-editor">
         <div class="grid2">
           <div class="fld"><label>Cliente de esta faena</label><select id="m-ecliente"></select></div>
-          <div class="fld"><label>Nombre de la faena</label><input id="m-nombre" type="text" placeholder="Ej: Apoyo frigorífico"></div>
+          <div class="fld"><label>Ubicación / sitio <span class="note" style="font-weight:400">(vacío = todas)</span></label><input id="m-esitio" type="text" list="m-esitio-list" placeholder="Ej: Chinquihue"><datalist id="m-esitio-list"></datalist></div>
         </div>
+        <div class="fld"><label>Nombre de la faena</label><input id="m-nombre" type="text" placeholder="Ej: Apoyo frigorífico"></div>
         <label style="display:block;font:700 13px var(--font);color:var(--ink);margin:6px 0 2px">Ítems (EPP / herramienta / maquinaria)</label>
         <div id="m-items"></div>
         <button class="catadd" id="m-add-item" type="button">＋ Agregar ítem</button>
@@ -1409,7 +1420,7 @@
     document.querySelectorAll('.sbar .sb-item[data-v]:not([data-seg])').forEach(function(x){ x.classList.toggle('on',x.dataset.v===v); });
     if(v!=='v-rrhh') document.querySelectorAll('.sbar .sb-item[data-seg]').forEach(function(x){ x.classList.remove('on'); });
     document.querySelectorAll('.view').forEach(function(x){ x.classList.toggle('on',x.id===v); });
-    var _main=document.querySelector('main'); if(_main){ _main.classList.toggle('wide', v==='v-remu'||v==='v-horas'||v==='v-rrhh'); _main.classList.toggle('planview', v==='v-plan'); }  // vistas anchas / planificación full
+    var _main=document.querySelector('main'); if(_main){ _main.classList.toggle('wide', v==='v-remu'||v==='v-horas'||v==='v-rrhh'||v==='v-planif'); _main.classList.toggle('planview', v==='v-plan'); }  // vistas anchas / calendario full
     if(v==='v-hist') cargarRegistros(pintarRegistros);
     if(v==='v-horas') cargarHoras();
     if(v==='v-cuadrilla'){ cargarTrab(actualizarDatalist); cargarPlantillas(function(){ cargarRegistros(function(){ if(C_JOB) elegirJobCuadrilla(C_JOB); else renderFaenaSelect(); }); }); }
@@ -1462,12 +1473,18 @@
     setWeekHdr('planif-semlbl','planif-rango',PLANIF_LUNES);
     PLANIF_FAENAS=(EVENTOS||[]).filter(function(e){ var ini=e.fecha, fin=e.fecha_fin||e.fecha; return ini && ini<=hi && fin>=lo; }).sort(function(a,b){ return a.fecha<b.fecha?-1:1; });
     if(!PLANIF_FAENAS.length){ c.innerHTML='<div class="empty"><div class="big">📋</div>No hay faenas esta semana en el calendario.<br><span style="font-size:.82rem">Cambia de semana o agéndalas en Calendario.</span></div>'; return; }
-    c.innerHTML=PLANIF_FAENAS.map(function(e,i){ var p=PLAN_MAP[e.id];
-      var est=!p?'<span class="pl-badge sin">Sin plan</span>':(p.estado==='enviada'?'<span class="pl-badge env">Enviada</span>':'<span class="pl-badge bor">Borrador</span>');
-      var np=p?((p.personas||[]).length):0;
-      return '<div class="planif-item" data-i="'+i+'"><div style="flex:1;min-width:0"><b>'+esc(faLabel(e))+'</b><div class="note" style="margin:2px 0 0;font-size:.75rem">'+esc(fechaCorta(e.fecha))+(np?(' · '+np+' personas'):'')+'</div></div>'+est+'</div>';
-    }).join('');
-    c.querySelectorAll('.planif-item').forEach(function(el){ el.addEventListener('click',function(){ abrirPlanif(PLANIF_FAENAS[+el.dataset.i]); }); });
+    // Grilla por día (Lun–Dom), cada faena coloreada por cliente.
+    var DIAS3=['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'], hoy=todayISO();
+    var cols=''; for(var di=0; di<7; di++){ var f=sumarDias(PLANIF_LUNES,di), dd=new Date(f+'T12:00:00');
+      var fs=PLANIF_FAENAS.filter(function(e){ var ini=e.fecha, fin=e.fecha_fin||e.fecha; return ini<=f && fin>=f; });
+      var cards=fs.map(function(e){ var idx=PLANIF_FAENAS.indexOf(e), p=PLAN_MAP[e.id], col=colorEmpresa(claveEmpresa(e.ubicacion||''));
+        var est=!p?'sin':(p.estado==='enviada'?'env':'bor'), estTxt=est==='sin'?'Sin plan':(est==='env'?'Enviada':'Borrador');
+        return '<div class="pf-card" data-i="'+idx+'" style="border-left:4px solid '+col.border+';background:'+col.bg+'"><div class="pf-emp" style="color:'+col.text+'">'+esc(e.ubicacion||'')+(e.sitio?(' · '+esc(e.sitio)):'')+'</div><div class="pf-tit">'+esc(e.titulo||'')+'</div><span class="pl-badge '+est+'" style="font-size:8.5px;padding:2px 6px">'+estTxt+'</span></div>';
+      }).join('')||'<div class="pf-empty">—</div>';
+      cols+='<div class="pf-col'+(f===hoy?' pf-today':'')+'"><div class="pf-head">'+DIAS3[di]+' <b>'+dd.getDate()+'</b></div>'+cards+'</div>';
+    }
+    c.innerHTML='<div class="pf-grid">'+cols+'</div>';
+    c.querySelectorAll('.pf-card').forEach(function(el){ el.addEventListener('click',function(){ abrirPlanif(PLANIF_FAENAS[+el.dataset.i]); }); });
   }
   function abrirPlanif(e){ if(!e) return; var p=PLAN_MAP[e.id]||{};
     PE={ e:e, id:p.id||null, estado:p.estado||'borrador',
@@ -1489,8 +1506,8 @@
       var epp=EPP_ITEMS.map(function(it){ var on=(pp.epp||[]).indexOf(it)>=0; return '<label><input type="checkbox" class="pe-epp-c" data-i="'+i+'" data-epp="'+enc(it)+'"'+(on?' checked':'')+'>'+esc(it)+'</label>'; }).join('');
       return '<div class="pe-pers"><div class="pe-pers-top"><input class="pe-pn" data-i="'+i+'" list="trab-datalist" placeholder="Nombre" value="'+enc(pp.nombre||'')+'" style="flex:1;font:700 13px var(--font);padding:6px 9px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink)"><button class="pe-prm" data-i="'+i+'" type="button" style="width:30px;height:32px;border:1px solid #f0c0c0;background:#fff;color:#dc2626;border-radius:8px;cursor:pointer">✕</button></div><div class="pe-epp">'+epp+'</div></div>';
     }).join('')||'<p class="note" style="margin:0">Sin personas asignadas.</p>';
-    var pts=(typeof plantillasDeCliente==='function')?plantillasDeCliente((PE.e.ubicacion||'')):[], seen={}, mhtml='';
-    pts.forEach(function(pl){ var nm=((pl.faena||pl.nombre||'')+'').trim(); if(!nm||seen[nm])return; seen[nm]=1; var on=PE.matrices.indexOf(nm)>=0; mhtml+='<div class="pe-mrow"><label><input type="checkbox" class="pe-mc" data-nm="'+enc(nm)+'"'+(on?' checked':'')+'>'+esc(nm)+'</label></div>'; });
+    var pts=(typeof plantillasDeFaena==='function')?plantillasDeFaena((PE.e.ubicacion||''),(PE.e.sitio||'')):[], seen={}, mhtml='';
+    pts.forEach(function(pl){ var nm=((pl.faena||pl.nombre||'')+'').trim(); if(!nm||seen[nm])return; seen[nm]=1; var on=PE.matrices.indexOf(nm)>=0; var st=(pl.sitio||'').trim(); mhtml+='<div class="pe-mrow"><label><input type="checkbox" class="pe-mc" data-nm="'+enc(nm)+'"'+(on?' checked':'')+'>'+esc(nm)+(st?(' <span class="note" style="margin:0;font-size:.72rem">· '+esc(st)+'</span>'):'')+'</label></div>'; });
     PE.matrices.forEach(function(nm){ if(!seen[nm]){ seen[nm]=1; mhtml+='<div class="pe-mrow"><label><input type="checkbox" class="pe-mc" data-nm="'+enc(nm)+'" checked>'+esc(nm)+'</label></div>'; } });
     $('pe-matrices').innerHTML=mhtml||'<p class="note" style="margin:0">Sin matrices/PTS para este cliente (créalas en Matriz PTS).</p>';
     $('pe-maquinaria').innerHTML=PE.maquinaria.map(function(mq,i){ return '<div class="jv-row" data-i="'+i+'"><select class="pe-mv" data-i="'+i+'">'+vehOpts(mq.veh||'')+'</select><select class="pe-mc2" data-i="'+i+'">'+choferOpts(mq.chofer||'')+'</select><button class="pe-mrm" data-i="'+i+'" type="button" style="width:30px;height:34px;border:1px solid #f0c0c0;background:#fff;color:#dc2626;border-radius:8px;cursor:pointer">✕</button></div>'; }).join('')||'<p class="note" style="margin:0">Sin maquinaria.</p>';
@@ -1728,6 +1745,13 @@
   function clienteDeJob(e){ return e ? (e.ubicacion||'').trim() : ''; }
   function normCli(s){ return (s||'').trim().toUpperCase(); }
   function plantillasDeCliente(cli){ var c=normCli(cli); if(!c) return []; return PLANT.filter(function(p){ var pc=normCli(p.cliente); return pc===c || c.indexOf(pc)>=0 || pc.indexOf(c)>=0; }); }
+  // Matrices que aplican a una faena (cliente + sitio). Matriz sin sitio = aplica a todas las ubicaciones.
+  function plantillasDeFaena(cli, sitio){ var s=(sitio||'').trim().toUpperCase(); return plantillasDeCliente(cli).filter(function(p){ var ps=(p.sitio||'').trim().toUpperCase(); return !ps || ps===s; }); }
+  function sitiosDeCli(cli){ var c=(cli||'').trim().toUpperCase(), set={};
+    (typeof CLIENTES!=='undefined'?CLIENTES:[]).forEach(function(x){ if((x.nombre||'').trim().toUpperCase()===c) (x.sitios||[]).forEach(function(s){ if(s) set[String(s).trim()]=1; }); });
+    (PLANT||[]).forEach(function(p){ if((p.cliente||'').trim().toUpperCase()===c && (p.sitio||'').trim()) set[(p.sitio||'').trim()]=1; });
+    return Object.keys(set).sort(); }
+  function poblarSitiosMatriz(cli){ var dl=$('m-esitio-list'); if(!dl) return; dl.innerHTML=sitiosDeCli(cli).map(function(s){ return '<option value="'+enc(s)+'"></option>'; }).join(''); }
 
   function renderFaenaSelect(){
     var sel=$('c-faena'); if(!sel) return;
@@ -1842,11 +1866,11 @@
   function cargarFaenaMatriz(id){
     var p=PLANT.filter(function(x){ return String(x.id)===String(id); })[0];
     if(!p){ nuevaFaenaMatriz(); return; }
-    M_ID=p.id; opcionesCli($('m-ecliente'), p.cliente, true); $('m-nombre').value=p.faena||'';
+    M_ID=p.id; opcionesCli($('m-ecliente'), p.cliente, true); poblarSitiosMatriz(p.cliente); if($('m-esitio')) $('m-esitio').value=p.sitio||''; $('m-nombre').value=p.faena||'';
     M_ITEMS=(p.items||[]).map(function(it){ return {tipo:it.tipo||'herramienta',item:it.item||'',cantidad:it.cantidad||''}; });
     if(!M_ITEMS.length)M_ITEMS=[{tipo:'herramienta',item:'',cantidad:''}]; renderMItems(); $('m-del').style.display='';
   }
-  function nuevaFaenaMatriz(){ M_ID=null; opcionesCli($('m-ecliente'), $('m-cliente').value, true); $('m-nombre').value=''; M_ITEMS=[{tipo:'herramienta',item:'',cantidad:''}]; renderMItems(); $('m-del').style.display='none'; if($('m-faena')) $('m-faena').value=''; }
+  function nuevaFaenaMatriz(){ M_ID=null; opcionesCli($('m-ecliente'), $('m-cliente').value, true); poblarSitiosMatriz($('m-cliente').value); if($('m-esitio')) $('m-esitio').value=''; $('m-nombre').value=''; M_ITEMS=[{tipo:'herramienta',item:'',cantidad:''}]; renderMItems(); $('m-del').style.display='none'; if($('m-faena')) $('m-faena').value=''; }
   function renderMItems(){
     var c=$('m-items');
     c.innerHTML=M_ITEMS.map(function(it,i){
@@ -1863,10 +1887,12 @@
   $('m-cliente').addEventListener('change',renderFaenasMatriz);
   $('m-faena').addEventListener('change',function(){ if(this.value) cargarFaenaMatriz(this.value); else nuevaFaenaMatriz(); });
   $('m-ecliente').addEventListener('change',function(){
-    if(this.value!=='__new') return;
-    var n=(prompt('Nombre del nuevo cliente:')||'').trim().toUpperCase();
-    if(n){ var o=document.createElement('option'); o.value=n; o.textContent=n; this.insertBefore(o, this.querySelector('option[value="__new"]')); this.value=n; }
-    else { this.value=($('m-cliente').value||'CERMAQ').toUpperCase(); }
+    if(this.value==='__new'){
+      var n=(prompt('Nombre del nuevo cliente:')||'').trim().toUpperCase();
+      if(n){ var o=document.createElement('option'); o.value=n; o.textContent=n; this.insertBefore(o, this.querySelector('option[value="__new"]')); this.value=n; }
+      else { this.value=($('m-cliente').value||'CERMAQ').toUpperCase(); }
+    }
+    poblarSitiosMatriz(this.value); if($('m-esitio')) $('m-esitio').value='';
   });
   $('m-nueva').addEventListener('click',nuevaFaenaMatriz);
   $('m-add-item').addEventListener('click',function(){ syncMItems(); M_ITEMS.push({tipo:'herramienta',item:'',cantidad:''}); renderMItems(); });
@@ -1878,7 +1904,7 @@
     syncMItems();
     var items=M_ITEMS.filter(function(it){ return (it.item||'').trim(); }).map(function(it){ return {tipo:it.tipo||'herramienta',item:it.item.trim(),cantidad:(it.cantidad||'').trim()}; });
     busy(true,'Guardando faena…');
-    var row={ cliente:cli, faena:faena, items:items, autor:userEmail };
+    var row={ cliente:cli, faena:faena, sitio:(($('m-esitio')&&$('m-esitio').value.trim())||null), items:items, autor:userEmail };
     var q = M_ID ? sb.from('plantillas').update(row).eq('id',M_ID) : sb.from('plantillas').insert(row);
     q.then(function(r){ busy(false);
       if(r.error){ toast('No se pudo guardar: '+r.error.message); return; }
