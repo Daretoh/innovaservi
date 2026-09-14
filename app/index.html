@@ -692,7 +692,7 @@
     <!-- ---- REGISTROS (lista) ---- -->
     <section class="view" id="v-hist">
       <div class="h-row"><h2 id="hist-title">Reportes</h2><span class="cnt" id="hist-cnt"></span></div>
-      <div class="wknav"><button id="hist-prev" class="btn ghost small" style="width:auto">‹</button><div style="flex:1;text-align:center"><div id="hist-semlbl" style="margin:0;font:800 13px var(--font);color:var(--navy)">Semana</div><b id="hist-rango" style="font-size:.88rem;font-weight:600;color:var(--body)"></b></div><button id="hist-next" class="btn ghost small" style="width:auto">›</button></div>
+      <div class="wknav"><button id="hist-prev" class="btn ghost small" style="width:auto">‹</button><div style="flex:1;text-align:center"><div id="hist-semlbl" style="margin:0;font:800 13px var(--font);color:var(--navy)">Semana</div><b id="hist-rango" style="font-size:.88rem;font-weight:600;color:var(--body)"></b></div><button id="hist-hoy" class="btn ghost small" style="width:auto">Hoy</button><button id="hist-next" class="btn ghost small" style="width:auto">›</button></div>
       <div id="hist-list"></div>
     </section>
 
@@ -700,7 +700,7 @@
     <section class="view" id="v-horas">
       <div class="h-row"><h2>Registro <span class="cnt" id="hz-cnt"></span></h2><span id="hz-saved" style="margin-left:auto;font:700 11px var(--font);color:#0f6e56;opacity:0;transition:opacity .3s"></span><button id="hz-save" class="btn ghost small" style="width:auto">💾 Guardar</button></div>
       <p class="note" style="margin:0 0 10px">Horas por trabajador, agrupadas por día. Un turno nocturno (22:00→06:00) cuenta en el día que marcas.</p>
-      <div class="wknav"><button id="hz-prev" class="btn ghost small" style="width:auto">‹</button><div style="flex:1;text-align:center"><div id="hz-semlbl" style="margin:0;font:800 13px var(--font);color:var(--navy)">Semana</div><b id="hz-rango" style="font-size:.88rem;font-weight:600;color:var(--body)"></b></div><button id="hz-next" class="btn ghost small" style="width:auto">›</button></div>
+      <div class="wknav"><button id="hz-prev" class="btn ghost small" style="width:auto">‹</button><div style="flex:1;text-align:center"><div id="hz-semlbl" style="margin:0;font:800 13px var(--font);color:var(--navy)">Semana</div><b id="hz-rango" style="font-size:.88rem;font-weight:600;color:var(--body)"></b></div><button id="hz-hoy" class="btn ghost small" style="width:auto">Hoy</button><button id="hz-next" class="btn ghost small" style="width:auto">›</button></div>
       <div id="hz-list"></div>
       <button class="catadd" id="hz-add" type="button" style="margin-top:4px">＋ Agregar hora</button>
       <datalist id="trab-datalist"></datalist>
@@ -808,6 +808,7 @@
       <div class="card" style="display:flex;align-items:center;gap:8px;padding:9px 10px;margin-bottom:12px">
         <button id="remu-prev" class="btn ghost small" style="width:auto">‹</button>
         <div style="flex:1;text-align:center"><div id="remu-semlbl" style="margin:0;font:800 13px var(--font);color:var(--navy)">Semana</div><b id="remu-rango" style="font-size:.88rem;font-weight:600;color:var(--body)"></b></div>
+        <button id="remu-hoy" class="btn ghost small" style="width:auto">Hoy</button>
         <button id="remu-next" class="btn ghost small" style="width:auto">›</button>
       </div>
       <div id="remu-total" style="background:rgba(255,107,0,.1);border-radius:12px;padding:12px 14px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center"><span style="font:600 13px var(--font);color:var(--orange-2)">Total a pagar</span><b id="remu-total-val" style="font:800 20px var(--font);color:var(--orange-2)">$0</b></div>
@@ -884,7 +885,7 @@
     <!-- ---- PLANIFICACIÓN de faena (jefatura arma → Preparación) ---- -->
     <section class="view" id="v-planif">
       <div class="h-row"><h2>Planificación de faenas</h2></div>
-      <div class="wknav"><button id="planif-prev" class="btn ghost small" style="width:auto">‹</button><div style="flex:1;text-align:center"><div id="planif-semlbl" style="margin:0;font:800 13px var(--font);color:var(--navy)">Semana</div><b id="planif-rango" style="font-size:.88rem;font-weight:600;color:var(--body)"></b></div><button id="planif-next" class="btn ghost small" style="width:auto">›</button></div>
+      <div class="wknav"><button id="planif-prev" class="btn ghost small" style="width:auto">‹</button><div style="flex:1;text-align:center"><div id="planif-semlbl" style="margin:0;font:800 13px var(--font);color:var(--navy)">Semana</div><b id="planif-rango" style="font-size:.88rem;font-weight:600;color:var(--body)"></b></div><button id="planif-hoy" class="btn ghost small" style="width:auto">Hoy</button><button id="planif-next" class="btn ghost small" style="width:auto">›</button></div>
       <p class="note" style="margin:0 0 12px">Elige una faena del calendario y asígnale personas, EPP, matrices, maquinaria. Luego <b>envíala a Preparación</b> para que la cuadrilla trabaje (sin poder modificarla).</p>
       <div id="planif-list"></div>
     </section>
@@ -1441,6 +1442,7 @@
   var PLAN_MAP={}, PLANIF_FAENAS=[], PLANIF_LUNES=null, PE=null;
   if($('planif-prev')) $('planif-prev').addEventListener('click',function(){ PLANIF_LUNES=sumarDias(PLANIF_LUNES||lunesDe(todayISO()),-7); renderPlanif(); });
   if($('planif-next')) $('planif-next').addEventListener('click',function(){ PLANIF_LUNES=sumarDias(PLANIF_LUNES||lunesDe(todayISO()),7); renderPlanif(); });
+  if($('planif-hoy')) $('planif-hoy').addEventListener('click',function(){ PLANIF_LUNES=lunesDe(todayISO()); renderPlanif(); });
   function cargarPlanif(){
     if(!sb) return; busy(true,'Cargando planificación…'); cargarTrab(actualizarDatalist);
     Promise.all([
@@ -2656,6 +2658,7 @@
   $('hz-save').addEventListener('click',guardarHz);
   if($('hz-prev')) $('hz-prev').addEventListener('click',function(){ HZ_LUNES=sumarDias(HZ_LUNES||lunesDe(todayISO()),-7); cargarHoras(); });
   if($('hz-next')) $('hz-next').addEventListener('click',function(){ HZ_LUNES=sumarDias(HZ_LUNES||lunesDe(todayISO()),7); cargarHoras(); });
+  if($('hz-hoy')) $('hz-hoy').addEventListener('click',function(){ HZ_LUNES=lunesDe(todayISO()); cargarHoras(); });
 
   // ====== Cuadrilla y EPP de salida ======
   function renderAsig(){
@@ -2718,6 +2721,7 @@
   }
   if($('hist-prev')) $('hist-prev').addEventListener('click',function(){ HIST_LUNES=sumarDias(HIST_LUNES||lunesDe(todayISO()),-7); pintarRegistros(); });
   if($('hist-next')) $('hist-next').addEventListener('click',function(){ HIST_LUNES=sumarDias(HIST_LUNES||lunesDe(todayISO()),7); pintarRegistros(); });
+  if($('hist-hoy')) $('hist-hoy').addEventListener('click',function(){ HIST_LUNES=lunesDe(todayISO()); pintarRegistros(); });
 
   // ====== Trabajadores (RRHH) — solo admin ======
   function cargarTrab(cb){
@@ -3402,6 +3406,7 @@
   }
   $('remu-prev').addEventListener('click',function(){ REMU_LUNES=sumarDias(REMU_LUNES||lunesDe(todayISO()),-7); cargarRemu(); });
   $('remu-next').addEventListener('click',function(){ REMU_LUNES=sumarDias(REMU_LUNES||lunesDe(todayISO()),7); cargarRemu(); });
+  if($('remu-hoy')) $('remu-hoy').addEventListener('click',function(){ REMU_LUNES=lunesDe(todayISO()); cargarRemu(); });
 
   // El pago ahora es por CARGO (trato ÷ 8). El botón abre el gestor de Cargos y tratos.
   $('remu-cfg-btn').addEventListener('click',abrirCargos);
