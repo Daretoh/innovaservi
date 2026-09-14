@@ -242,9 +242,8 @@
           <label>Fecha fin <span style="color:#8b93a7;font-weight:400">(si dura varios días)</span><input type="date" id="f-fin"></label>
           <label class="full">Hora<input type="text" id="f-hora" placeholder="09:00 - 13:00 o Todo el día"></label>
           <label class="full">Título<input type="text" id="f-titulo" placeholder="Ej: Limpieza estanque"></label>
-          <label class="full">Empresa / Cliente<input type="text" id="f-ubic" list="f-ubic-list" placeholder="Ej: CERMAQ (elige o escribe)"></label>
-          <datalist id="f-ubic-list"></datalist>
-          <label class="full">Ubicación / Sitio <span style="color:#8b93a7;font-weight:400">(opcional)</span><input type="text" id="f-sitio" list="f-sitio-list" placeholder="Ej: Chinquihue"></label>
+          <label class="full">Empresa / Cliente<select id="f-ubic"><option value="">— elige cliente —</option></select><span style="color:#8b93a7;font-weight:400;font-size:11.5px;display:block;margin-top:3px">Solo clientes registrados. ¿Falta uno? Agrégalo en Clientes.</span></label>
+          <label class="full">Ubicación / Sitio<input type="text" id="f-sitio" list="f-sitio-list" placeholder="Ej: Chinquihue"></label>
           <datalist id="f-sitio-list"></datalist>
           <label class="full">Descripción<textarea id="f-desc" rows="4" placeholder="Detalle, materiales, tareas…"></textarea></label>
           <label class="full" id="f-rep-row">Repetir
@@ -500,12 +499,15 @@
   // ---- Nuevo / Editar / Eliminar ----
   var editId=null, editUbicPrev='';
   var CLIENTES_PL=[], CLI_SITIOS={};   // nombre -> [sitios]
-  function poblarUbicaciones(){
-    var cnt={}; EVENTS.forEach(function(x){ var u=(x.ubic||'').trim(); if(u) cnt[u]=(cnt[u]||0)+1; });
-    CLIENTES_PL.forEach(function(nm){ if(nm && cnt[nm]===undefined) cnt[nm]=0; });   // clientes del apartado, aunque no tengan trabajos aún
-    var list=Object.keys(cnt).sort(function(a,b){ return cnt[b]-cnt[a] || (a<b?-1:1); });
-    var dl=document.getElementById('f-ubic-list'); if(dl) dl.innerHTML=list.map(function(u){ return '<option value="'+enc(u)+'">'+esc(u)+(cnt[u]?(' · '+cnt[u]+' trabajos'):' · cliente')+'</option>'; }).join('');
-    if(!CLIENTES_PL.length && sb){ sb.from('clientes').select('nombre,sitios').limit(500).then(function(r){ if(r&&r.data&&r.data.length){ CLIENTES_PL=r.data.map(function(c){ var nm=(c.nombre||'').trim(); if(nm){ CLI_SITIOS[nm.toUpperCase()]=(c.sitios||[]).map(function(s){return String(s).trim();}).filter(Boolean); } return nm; }).filter(Boolean); poblarUbicaciones(); } }, function(){}); }
+  function poblarUbicaciones(current){
+    var sel=document.getElementById('f-ubic'); if(!sel) return;
+    var cur=(current!==undefined?current:sel.value)||'';
+    var list=CLIENTES_PL.slice().sort(function(a,b){ return a.localeCompare(b); });
+    // si el evento en edición tiene un cliente que no está en la lista (dato viejo), lo incluimos para no perderlo
+    if(cur && list.indexOf(cur)<0 && !list.some(function(x){return x.toUpperCase()===cur.toUpperCase();})) list=[cur].concat(list);
+    sel.innerHTML='<option value="">— elige cliente —</option>'+list.map(function(u){ return '<option value="'+enc(u)+'"'+(u.toUpperCase()===cur.toUpperCase()?' selected':'')+'>'+esc(u)+'</option>'; }).join('');
+    if(cur) sel.value=cur;
+    if(!CLIENTES_PL.length && sb){ sb.from('clientes').select('nombre,sitios').limit(500).then(function(r){ if(r&&r.data&&r.data.length){ CLIENTES_PL=r.data.map(function(c){ var nm=(c.nombre||'').trim(); if(nm){ CLI_SITIOS[nm.toUpperCase()]=(c.sitios||[]).map(function(s){return String(s).trim();}).filter(Boolean); } return nm; }).filter(Boolean); poblarUbicaciones(cur); } }, function(){}); }
   }
   // Sitios de la empresa elegida (del cliente) + los que ya se usaron en eventos de esa empresa.
   function poblarSitios(empresa){
@@ -515,16 +517,15 @@
     EVENTS.forEach(function(e){ if((e.ubic||'').trim().toUpperCase()===key && (e.sitio||'').trim()) set[(e.sitio||'').trim()]=1; });
     dl.innerHTML=Object.keys(set).sort().map(function(s){ return '<option value="'+enc(s)+'"></option>'; }).join('');
   }
-  var _fUbicEl=document.getElementById('f-ubic'); if(_fUbicEl) _fUbicEl.addEventListener('input',function(){ poblarSitios(this.value); });
+  var _fUbicEl=document.getElementById('f-ubic'); if(_fUbicEl) _fUbicEl.addEventListener('change',function(){ poblarSitios(this.value); });
   function abrirForm(e){
     editId=e?e.id:null; editUbicPrev=e?(e.ubic||''):'';
-    poblarUbicaciones();
+    poblarUbicaciones(e?(e.ubic||''):'');
     document.getElementById('form-title').textContent=e?'Editar trabajo':'Nuevo trabajo';
     document.getElementById('f-fecha').value=e?e.fecha:todayISO();
     document.getElementById('f-fin').value=e?(e.fin||''):'';
     document.getElementById('f-hora').value=e?(e.hora||''):'';
     document.getElementById('f-titulo').value=e?e.titulo:'';
-    document.getElementById('f-ubic').value=e?(e.ubic||''):'';
     poblarSitios(e?(e.ubic||''):'');
     document.getElementById('f-sitio').value=e?(e.sitio||''):'';
     document.getElementById('f-desc').value=e?(e.desc||''):'';
@@ -546,6 +547,8 @@
       sitio:document.getElementById('f-sitio').value.trim(),
       categoria:'Trabajo', descripcion:document.getElementById('f-desc').value };
     if(!row.fecha||!row.titulo){ alert('Fecha y título son obligatorios.'); return; }
+    if(!row.ubicacion){ alert('Elige la empresa / cliente (de la lista).'); return; }
+    if(!row.sitio){ alert('Indica la ubicación / sitio.'); document.getElementById('f-sitio').focus(); return; }
     var repetir=document.getElementById('f-repetir').value;
     var cada=Math.max(1,parseInt(document.getElementById('f-cada').value,10)||1);
     var veces=Math.min(parseInt(document.getElementById('f-veces').value,10)||0, 52);
