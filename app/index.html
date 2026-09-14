@@ -226,6 +226,7 @@
   .tabbar button .em{font-size:20px;line-height:1;transition:transform .25s cubic-bezier(.34,1.56,.64,1);}
   .tabbar button.on{color:var(--orange);}
   .tfil.on,.hfil.on,.hzfil.on{background:var(--orange);color:#fff;border-color:var(--orange);}
+  .wknav{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:9px 10px;margin-bottom:12px;box-shadow:0 6px 18px -14px rgba(26,31,110,.4);}
   /* Controles segmentados (filtros claros) */
   .segrow{display:flex;gap:18px;flex-wrap:wrap;align-items:center;margin-bottom:14px;}
   .segwrap{display:flex;align-items:center;gap:9px;}
@@ -690,12 +691,8 @@
 
     <!-- ---- REGISTROS (lista) ---- -->
     <section class="view" id="v-hist">
-      <div class="h-row"><h2 id="hist-title">Registros</h2><span class="cnt" id="hist-cnt"></span></div>
-      <div style="display:flex;gap:8px;margin-bottom:12px">
-        <button class="btn ghost small hfil on" data-hf="hoy" style="flex:1">Hoy</button>
-        <button class="btn ghost small hfil" data-hf="semana" style="flex:1">Semana</button>
-        <button class="btn ghost small hfil" data-hf="todos" style="flex:1">Todos</button>
-      </div>
+      <div class="h-row"><h2 id="hist-title">Reportes</h2><span class="cnt" id="hist-cnt"></span></div>
+      <div class="wknav"><button id="hist-prev" class="btn ghost small" style="width:auto">‹</button><div style="flex:1;text-align:center"><div id="hist-semlbl" style="margin:0;font:800 13px var(--font);color:var(--navy)">Semana</div><b id="hist-rango" style="font-size:.88rem;font-weight:600;color:var(--body)"></b></div><button id="hist-next" class="btn ghost small" style="width:auto">›</button></div>
       <div id="hist-list"></div>
     </section>
 
@@ -703,11 +700,7 @@
     <section class="view" id="v-horas">
       <div class="h-row"><h2>Registro <span class="cnt" id="hz-cnt"></span></h2><span id="hz-saved" style="margin-left:auto;font:700 11px var(--font);color:#0f6e56;opacity:0;transition:opacity .3s"></span><button id="hz-save" class="btn ghost small" style="width:auto">💾 Guardar</button></div>
       <p class="note" style="margin:0 0 10px">Horas por trabajador, agrupadas por día. Un turno nocturno (22:00→06:00) cuenta en el día que marcas.</p>
-      <div style="display:flex;gap:8px;margin-bottom:12px">
-        <button class="btn ghost small hzfil on" data-hf="hoy" style="flex:1">Hoy</button>
-        <button class="btn ghost small hzfil" data-hf="semana" style="flex:1">Semana</button>
-        <button class="btn ghost small hzfil" data-hf="todos" style="flex:1">Todos</button>
-      </div>
+      <div class="wknav"><button id="hz-prev" class="btn ghost small" style="width:auto">‹</button><div style="flex:1;text-align:center"><div id="hz-semlbl" style="margin:0;font:800 13px var(--font);color:var(--navy)">Semana</div><b id="hz-rango" style="font-size:.88rem;font-weight:600;color:var(--body)"></b></div><button id="hz-next" class="btn ghost small" style="width:auto">›</button></div>
       <div id="hz-list"></div>
       <button class="catadd" id="hz-add" type="button" style="margin-top:4px">＋ Agregar hora</button>
       <datalist id="trab-datalist"></datalist>
@@ -891,6 +884,7 @@
     <!-- ---- PLANIFICACIÓN de faena (jefatura arma → Preparación) ---- -->
     <section class="view" id="v-planif">
       <div class="h-row"><h2>Planificación de faenas</h2></div>
+      <div class="wknav"><button id="planif-prev" class="btn ghost small" style="width:auto">‹</button><div style="flex:1;text-align:center"><div id="planif-semlbl" style="margin:0;font:800 13px var(--font);color:var(--navy)">Semana</div><b id="planif-rango" style="font-size:.88rem;font-weight:600;color:var(--body)"></b></div><button id="planif-next" class="btn ghost small" style="width:auto">›</button></div>
       <p class="note" style="margin:0 0 12px">Elige una faena del calendario y asígnale personas, EPP, matrices, maquinaria. Luego <b>envíala a Preparación</b> para que la cuadrilla trabaje (sin poder modificarla).</p>
       <div id="planif-list"></div>
     </section>
@@ -1444,7 +1438,9 @@
   function irA(id){ abrirVista(id); }
 
   // ====== Planificación de faenas (jefatura arma → Preparación) ======
-  var PLAN_MAP={}, PLANIF_FAENAS=[], PE=null;
+  var PLAN_MAP={}, PLANIF_FAENAS=[], PLANIF_LUNES=null, PE=null;
+  if($('planif-prev')) $('planif-prev').addEventListener('click',function(){ PLANIF_LUNES=sumarDias(PLANIF_LUNES||lunesDe(todayISO()),-7); renderPlanif(); });
+  if($('planif-next')) $('planif-next').addEventListener('click',function(){ PLANIF_LUNES=sumarDias(PLANIF_LUNES||lunesDe(todayISO()),7); renderPlanif(); });
   function cargarPlanif(){
     if(!sb) return; busy(true,'Cargando planificación…'); cargarTrab(actualizarDatalist);
     Promise.all([
@@ -1458,9 +1454,12 @@
     }, function(){ busy(false); toast('No se pudo cargar.'); });
   }
   function renderPlanif(){
-    var c=$('planif-list'); if(!c) return; var desde=isoMas(-3);
-    PLANIF_FAENAS=(EVENTOS||[]).filter(function(e){ var fin=e.fecha_fin||e.fecha; return fin>=desde; }).sort(function(a,b){ return a.fecha<b.fecha?-1:1; }).slice(0,80);
-    if(!PLANIF_FAENAS.length){ c.innerHTML='<div class="empty"><div class="big">📋</div>No hay faenas próximas en el calendario.<br><span style="font-size:.82rem">Agéndalas en Calendario.</span></div>'; return; }
+    var c=$('planif-list'); if(!c) return;
+    if(!PLANIF_LUNES) PLANIF_LUNES=lunesDe(todayISO());
+    var lo=PLANIF_LUNES, hi=sumarDias(PLANIF_LUNES,6);
+    setWeekHdr('planif-semlbl','planif-rango',PLANIF_LUNES);
+    PLANIF_FAENAS=(EVENTOS||[]).filter(function(e){ var ini=e.fecha, fin=e.fecha_fin||e.fecha; return ini && ini<=hi && fin>=lo; }).sort(function(a,b){ return a.fecha<b.fecha?-1:1; });
+    if(!PLANIF_FAENAS.length){ c.innerHTML='<div class="empty"><div class="big">📋</div>No hay faenas esta semana en el calendario.<br><span style="font-size:.82rem">Cambia de semana o agéndalas en Calendario.</span></div>'; return; }
     c.innerHTML=PLANIF_FAENAS.map(function(e,i){ var p=PLAN_MAP[e.id];
       var est=!p?'<span class="pl-badge sin">Sin plan</span>':(p.estado==='enviada'?'<span class="pl-badge env">Enviada</span>':'<span class="pl-badge bor">Borrador</span>');
       var np=p?((p.personas||[]).length):0;
@@ -2135,10 +2134,8 @@
       toast(EDIT_ID?'✓ Registro actualizado':'✓ Registro guardado');
       borrarBorrador();
       resetForm();
-      // Muestra "Todos" para que el registro recién guardado SIEMPRE aparezca (aunque su fecha no sea hoy).
-      HIST_FILTRO='todos';
-      document.querySelectorAll('.hfil').forEach(function(x){ x.classList.toggle('on', x.dataset.hf==='todos'); });
-      cargarRegistros(pintarRegistros);
+      // Salta a la semana del registro recién guardado para que aparezca.
+      cargarRegistros(function(){ if(REGISTROS&&REGISTROS[0]&&REGISTROS[0].fecha) HIST_LUNES=lunesDe(REGISTROS[0].fecha); pintarRegistros(); });
       irA('v-hist');   // guardar te deja en "Reportes" (el listado). El informe se genera aparte, con su botón.
     }
     subeUno(0);
@@ -2494,15 +2491,16 @@
   if($('add-trab')) $('add-trab').addEventListener('click',addTrab);
 
   // ====== HORAS por día (apartado propio, tabla 'horas') ======
-  var HZ=[], HZ_DEL=[], HZ_FILTRO='hoy', HZ_COL={};
+  var HZ=[], HZ_DEL=[], HZ_LUNES=null, HZ_COL={};
   function nrm(s){ return (s||'').trim().toLowerCase(); }
   var JORN={};   // fecha -> {vehiculos:[{veh,chofer}], preparacion:''}
   function cargarHoras(){
     if(isAdmin) cargarTrab(function(){ actualizarDatalist(); if($('hz-list')&&HZ.length) renderHz(); });
     if(!sb) return;
-    var hoy=todayISO(), lo=null, hi=null;
-    if(HZ_FILTRO==='hoy'){ lo=hoy; hi=hoy; } else if(HZ_FILTRO==='semana'){ lo=isoMas(-6); hi=hoy; }
-    var hq=sb.from('horas').select('*'); if(lo){ hq=hq.gte('fecha',lo).lte('fecha',hi); } hq=hq.order('fecha',{ascending:false}).limit(800);
+    if(!HZ_LUNES) HZ_LUNES=lunesDe(todayISO());
+    var lo=HZ_LUNES, hi=sumarDias(HZ_LUNES,6);
+    setWeekHdr('hz-semlbl','hz-rango',HZ_LUNES);
+    var hq=sb.from('horas').select('*').gte('fecha',lo).lte('fecha',hi).order('fecha',{ascending:false}).limit(800);
     var jq=sb.from('jornada').select('*'); if(lo){ jq=jq.gte('fecha',lo).lte('fecha',hi); } jq=jq.limit(800);
     var vq=sb.from('vehiculos').select('id,nombre,marca,modelo,patente').order('nombre',{ascending:true}).limit(300);
     Promise.all([hq,jq,vq]).then(function(rs){
@@ -2587,7 +2585,7 @@
       '</div>';
       var colapsado=(HZ_COL[f]!==false);   // colapsado por defecto; se abre al tocar
       return '<div class="hgroup'+(colapsado?' collapsed':'')+'"><div class="hgroup-h" data-f="'+f+'"><span class="hg-chev">▾</span>📅 '+fechaCorta(f)+' <span style="color:var(--muted);font-weight:600">('+nT+(nT===1?' trabajador':' trabajadores')+totTxt+')</span></div><div class="hgroup-body">'+rows+addBtn+jday+'</div></div>';
-    }).join('')||'<div class="empty"><div class="big">⏱️</div>Sin horas '+(HZ_FILTRO==='hoy'?'de hoy':(HZ_FILTRO==='semana'?'de la semana':''))+'.<br><span style="font-size:.82rem">Toca “＋ Agregar hora”.</span></div>';
+    }).join('')||'<div class="empty"><div class="big">⏱️</div>Sin horas esta semana.<br><span style="font-size:.82rem">Cambia de semana o toca “＋ Agregar hora”.</span></div>';
     $('hz-cnt').textContent=HZ.length+(HZ.length===1?' línea':' líneas');
     c.querySelectorAll('.hgroup-h').forEach(function(h){ h.addEventListener('click',function(){ HZ_COL[h.dataset.f]=h.parentNode.classList.toggle('collapsed'); }); });
     c.querySelectorAll('.hrow-rm').forEach(function(b){ b.addEventListener('click',function(){ removeHz(+b.dataset.i); }); });
@@ -2637,7 +2635,7 @@
     var ind=$('hz-saved'); if(ind){ ind.textContent='✓ guardado'; ind.style.opacity='1'; clearTimeout(ind._t); ind._t=setTimeout(function(){ ind.style.opacity='0'; },1600); }
   }
   function syncHz(){ var c=$('hz-list'); if(!c) return; c.querySelectorAll('.hrow').forEach(function(row){ var i=+row.dataset.i; if(HZ[i]){ HZ[i].trabajador=row.querySelector('.h-trab').value; HZ[i].entrada=row.querySelector('.h-in').value; HZ[i].salida=row.querySelector('.h-out').value; var fa=row.querySelector('.h-fae'); if(fa) HZ[i].faena=fa.value; var vu=row.querySelector('.h-vu'); if(vu) HZ[i].vueltas=(+vu.value||0); var fe=row.querySelector('.h-fecha'); if(fe) HZ[i].fecha=fe.value||todayISO(); } }); }
-  function addHz(){ syncHz(); var f=(HZ.length?HZ[0].fecha:'')||todayISO(); HZ.unshift({fecha:f,trabajador:'',entrada:'',salida:''}); renderHz(); }
+  function addHz(){ syncHz(); var hoy=todayISO(); var f=(HZ.length?HZ[0].fecha:'')|| ((HZ_LUNES && (hoy<HZ_LUNES||hoy>sumarDias(HZ_LUNES,6)))?HZ_LUNES:hoy); HZ.unshift({fecha:f,trabajador:'',entrada:'',salida:''}); renderHz(); }
   function removeHz(i){ syncHz(); var h=HZ[i]; if(h&&h.id) HZ_DEL.push(h.id); HZ.splice(i,1); renderHz(); autoGuardarHz(); }
   function guardarHz(){
     if(!sb) return; syncHz();
@@ -2656,7 +2654,8 @@
   }
   $('hz-add').addEventListener('click',addHz);
   $('hz-save').addEventListener('click',guardarHz);
-  document.querySelectorAll('.hzfil').forEach(function(b){ b.addEventListener('click',function(){ document.querySelectorAll('.hzfil').forEach(function(x){ x.classList.toggle('on',x===b); }); HZ_FILTRO=b.dataset.hf; cargarHoras(); }); });
+  if($('hz-prev')) $('hz-prev').addEventListener('click',function(){ HZ_LUNES=sumarDias(HZ_LUNES||lunesDe(todayISO()),-7); cargarHoras(); });
+  if($('hz-next')) $('hz-next').addEventListener('click',function(){ HZ_LUNES=sumarDias(HZ_LUNES||lunesDe(todayISO()),7); cargarHoras(); });
 
   // ====== Cuadrilla y EPP de salida ======
   function renderAsig(){
@@ -2692,20 +2691,15 @@
     if(hay) s+=' · '+Math.floor(tot/60)+'h '+(tot%60)+'m';
     return s;
   }
-  var HIST_FILTRO='hoy', HIST_VISTA=[];
+  var HIST_LUNES=null, HIST_VISTA=[];
   function pintarRegistros(){
-    var hoy=todayISO();
-    var desde=isoMas(-6); // últimos 7 días para "semana"
-    var rows=REGISTROS.filter(function(e){
-      var f=e.fecha||'';
-      if(HIST_FILTRO==='hoy') return f===hoy;
-      if(HIST_FILTRO==='semana') return f>=desde && f<=hoy;
-      return true;
-    });
+    if(!HIST_LUNES) HIST_LUNES=lunesDe(todayISO());
+    var lo=HIST_LUNES, hi=sumarDias(HIST_LUNES,6);
+    setWeekHdr('hist-semlbl','hist-rango',HIST_LUNES);
+    var rows=REGISTROS.filter(function(e){ var f=e.fecha||''; return f>=lo && f<=hi; });
     HIST_VISTA=rows;
-    var lbl=HIST_FILTRO==='hoy'?'de hoy':(HIST_FILTRO==='semana'?'de la semana':'');
-    $('hist-cnt').textContent=rows.length+' registro'+(rows.length===1?'':'s')+(lbl?' '+lbl:'');
-    if(!rows.length){ $('hist-list').innerHTML='<div class="empty"><div class="big">🗂️</div>'+(HIST_FILTRO==='hoy'?'No hay registros de hoy.':(HIST_FILTRO==='semana'?'No hay registros de la semana.':'Aún no hay registros.'))+'<br><span style="font-size:.82rem">'+(HIST_FILTRO==='todos'?'Crea uno en la pestaña Registro.':'Cambia el filtro o crea uno nuevo.')+'</span></div>'; return; }
+    $('hist-cnt').textContent=rows.length+' reporte'+(rows.length===1?'':'s');
+    if(!rows.length){ $('hist-list').innerHTML='<div class="empty"><div class="big">🗂️</div>No hay reportes esta semana.<br><span style="font-size:.82rem">Cambia de semana o crea uno en Multimedia.</span></div>'; return; }
     $('hist-list').innerHTML=rows.map(function(e,idx){
       var media=(e.media||[]); var cc={sin:0,antes:0,proceso:0,despues:0}; media.forEach(function(m){ cc[catStore(m.cat)]++; });
       var chips=['antes','proceso','despues','sin'].filter(function(k){ return cc[k]; }).map(function(k){ return '<span class="cattag '+k+'" style="font-size:9px;padding:2px 8px">'+(k==='sin'?'Sin ordenar':CAT_LBL[k])+' '+cc[k]+'</span>'; }).join(' ');
@@ -2722,7 +2716,8 @@
     }).join('');
     $('hist-list').querySelectorAll('.item[data-idx]').forEach(function(el){ el.addEventListener('click',function(){ abrirEdicion(HIST_VISTA[+el.dataset.idx]); }); });
   }
-  document.querySelectorAll('.hfil').forEach(function(b){ b.addEventListener('click',function(){ document.querySelectorAll('.hfil').forEach(function(x){ x.classList.toggle('on',x===b); }); HIST_FILTRO=b.dataset.hf; pintarRegistros(); }); });
+  if($('hist-prev')) $('hist-prev').addEventListener('click',function(){ HIST_LUNES=sumarDias(HIST_LUNES||lunesDe(todayISO()),-7); pintarRegistros(); });
+  if($('hist-next')) $('hist-next').addEventListener('click',function(){ HIST_LUNES=sumarDias(HIST_LUNES||lunesDe(todayISO()),7); pintarRegistros(); });
 
   // ====== Trabajadores (RRHH) — solo admin ======
   function cargarTrab(cb){
@@ -3304,6 +3299,7 @@
   function sumarDias(f,n){ var d=new Date(f+'T12:00:00'); d.setDate(d.getDate()+n); return isoD(d); }
   // Número de semana ISO (como "Semana 36" de los Excel).
   function numSemana(f){ var d=new Date(Date.UTC(+f.slice(0,4),+f.slice(5,7)-1,+f.slice(8,10))); var day=(d.getUTCDay()+6)%7; d.setUTCDate(d.getUTCDate()-day+3); var firstThu=d.getTime(); d.setUTCMonth(0,1); if(d.getUTCDay()!==4){ d.setUTCMonth(0,1+((4-d.getUTCDay())+7)%7); } return 1+Math.round((firstThu-d.getTime())/604800000); }
+  function setWeekHdr(lblId, rangoId, lun){ if($(lblId)) $(lblId).textContent='Semana '+numSemana(lun); if($(rangoId)) $(rangoId).textContent=fechaCorta(lun)+' – '+fechaCorta(sumarDias(lun,6)); }
   function hm(min){ if(min==null) return '0h'; return Math.floor(min/60)+'h'+(min%60?(' '+(min%60)+'m'):''); }
   function norm(s){ return (s||'').trim().toLowerCase(); }
 
