@@ -129,7 +129,7 @@
   .catgroup:first-of-type{border-top:none;padding-top:0;margin-top:0;}
   .cathead{display:flex;align-items:center;gap:8px;}
   .cattag{font:800 10.5px var(--font);text-transform:uppercase;letter-spacing:.04em;padding:3px 11px;border-radius:999px;color:#fff;}
-  .cattag.antes{background:#8b93a7;} .cattag.proceso{background:#f59e0b;} .cattag.despues{background:#22a06b;}
+  .cattag.antes{background:#8b93a7;} .cattag.proceso{background:#f59e0b;} .cattag.despues{background:#22a06b;} .cattag.doc{background:#6366f1;}
   .catcount{font-size:.75rem;color:var(--muted);font-weight:600;}
   .catadd{display:inline-flex;align-items:center;gap:6px;margin-top:10px;border:1px dashed var(--line);background:var(--alt);border-radius:11px;padding:9px 14px;font:700 12.5px var(--font);color:var(--ink);cursor:pointer;}
   .catadd:active{border-color:var(--orange);}
@@ -698,6 +698,11 @@
           <div class="cathead"><span class="cattag despues">Después</span><span class="catcount" id="cnt-despues"></span></div>
           <div class="thumbs" id="th-despues" data-cat="despues"></div>
           <label class="catadd">📷 Tomar / agregar aquí<input type="file" accept="image/*,video/*" multiple hidden data-cat="despues"></label>
+        </div>
+        <div class="catgroup">
+          <div class="cathead"><span class="cattag doc">Registro documental</span><span class="catcount" id="cnt-doc"></span></div>
+          <div class="thumbs" id="th-doc" data-cat="doc"></div>
+          <label class="catadd">📷 Tomar / agregar aquí<input type="file" accept="image/*,video/*" multiple hidden data-cat="doc"></label>
         </div>
       </div>
 
@@ -1305,10 +1310,10 @@
   var MES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
   function fechaCorta(f){ if(!f)return''; var d=new Date(f+'T00:00:00'); return d.getDate()+' '+MES[d.getMonth()]+' '+d.getFullYear(); }
   function fechaMini(f){ if(!f)return''; var d=new Date(f+'T00:00:00'); return d.getDate()+'/'+(d.getMonth()+1); }
-  var CAT_LBL={sin:'Sin clasificar',antes:'Antes',proceso:'Proceso',despues:'Después'};
-  function catOk(c){ return (c==='antes'||c==='despues')?c:'proceso'; }
-  // categoría de almacenamiento: conserva 'sin' (sin clasificar) además de las 3
-  function catStore(c){ return (c==='antes'||c==='proceso'||c==='despues'||c==='sin')?c:'sin'; }
+  var CAT_LBL={sin:'Sin clasificar',antes:'Antes',proceso:'Proceso',despues:'Después',doc:'Registro documental'};
+  function catOk(c){ return (c==='antes'||c==='despues'||c==='doc')?c:'proceso'; }
+  // categoría de almacenamiento: conserva 'sin' (sin clasificar) además de las etapas
+  function catStore(c){ return (c==='antes'||c==='proceso'||c==='despues'||c==='doc'||c==='sin')?c:'sin'; }
   function enc(s){ return (s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
   function totalMin(a,b){ if(!a||!b)return null; var pa=a.split(':'),pb=b.split(':'); var m=(pb[0]*60+ +pb[1])-(pa[0]*60+ +pa[1]); if(m<0)m+=1440; return m; }
   function totalTxt(a,b){ var m=totalMin(a,b); return m==null?'':('Total: '+Math.floor(m/60)+'h '+(m%60)+'m'); }
@@ -2020,8 +2025,8 @@
     return media+(m.fecha?'<span class="dbadge">'+fechaMini(m.fecha)+'</span>':'');
   }
   function pintarThumbs(){
-    var buckets={sin:$('th-sin'),antes:$('th-antes'),proceso:$('th-proceso'),despues:$('th-despues')};
-    var cnt={sin:0,antes:0,proceso:0,despues:0};
+    var buckets={sin:$('th-sin'),antes:$('th-antes'),proceso:$('th-proceso'),despues:$('th-despues'),doc:$('th-doc')};
+    var cnt={sin:0,antes:0,proceso:0,despues:0,doc:0};
     var multi=R_JOBS.length>1;   // con 2+ faenas, la pestaña activa filtra la vista (separadas por faena)
     for(var k in buckets){ if(buckets[k]) buckets[k].innerHTML=''; }
     R_MEDIA.forEach(function(m,i){
@@ -2037,11 +2042,12 @@
     $('cnt-antes').textContent=cnt.antes?(cnt.antes+' archivo'+(cnt.antes>1?'s':'')):'';
     $('cnt-proceso').textContent=cnt.proceso?(cnt.proceso+' archivo'+(cnt.proceso>1?'s':'')):'';
     $('cnt-despues').textContent=cnt.despues?(cnt.despues+' archivo'+(cnt.despues>1?'s':'')):'';
+    if($('cnt-doc')) $('cnt-doc').textContent=cnt.doc?(cnt.doc+' archivo'+(cnt.doc>1?'s':'')):'';
     var gs=$('grp-sin'); if(gs) gs.style.display=(cnt.sin||isAdmin)?'':'none';
     bindThumbs(); renderSelBar();
   }
   function bindThumbs(){
-    document.querySelectorAll('#th-sin .thumb,#th-antes .thumb,#th-proceso .thumb,#th-despues .thumb').forEach(function(div){
+    document.querySelectorAll('#th-sin .thumb,#th-antes .thumb,#th-proceso .thumb,#th-despues .thumb,#th-doc .thumb').forEach(function(div){
       var i=+div.dataset.i;
       var rm=div.querySelector('.rm');
       if(rm) rm.addEventListener('click',function(ev){ ev.stopPropagation(); var m=R_MEDIA[i]; if(m&&m.file){ try{ URL.revokeObjectURL(m.url); }catch(_){}} R_MEDIA.splice(i,1); pintarThumbs(); });
@@ -2060,7 +2066,7 @@
     // Con 2+ faenas, botones para asignar las fotos seleccionadas a una faena (F1/F2…) o dejarlas Sin faena.
     var faenaBtns='';
     if(R_JOBS.length>1){ faenaBtns='<span class="sb-sep"></span>'+R_JOBS.map(function(e,ix){ return '<button data-mf="'+esc(jobKey(e))+'">→ F'+(ix+1)+'</button>'; }).join('')+'<button data-mf="">→ Sin faena</button>'; }
-    bar.innerHTML='<b>'+n+' selec.</b><button data-mv="antes">→ Antes</button><button data-mv="proceso">→ Proceso</button><button data-mv="despues">→ Después</button>'+faenaBtns+'<button class="del" data-del="1">🗑</button><button class="clr" data-clr="1">✕</button>';
+    bar.innerHTML='<b>'+n+' selec.</b><button data-mv="antes">→ Antes</button><button data-mv="proceso">→ Proceso</button><button data-mv="despues">→ Después</button><button data-mv="doc">→ Documental</button>'+faenaBtns+'<button class="del" data-del="1">🗑</button><button class="clr" data-clr="1">✕</button>';
     bar.querySelectorAll('[data-mv]').forEach(function(b){ b.addEventListener('click',function(){ moverSel(b.dataset.mv); }); });
     bar.querySelectorAll('[data-mf]').forEach(function(b){ b.addEventListener('click',function(){ moverFaena(b.dataset.mf); }); });
     bar.querySelector('[data-del]').addEventListener('click',eliminarSel);
@@ -2082,7 +2088,7 @@
   // Botón por categoría: tomar/agregar foto directo a Antes/Proceso/Después
   document.querySelectorAll('.catgroup .catadd input[type=file]').forEach(function(inp){ inp.addEventListener('change',function(){ if(this.files&&this.files.length) addFiles(this.files, this.dataset.cat); this.value=''; }); });
   // Arrastrar una miniatura a su categoría (admin, escritorio)
-  ['th-sin','th-antes','th-proceso','th-despues'].forEach(function(id){
+  ['th-sin','th-antes','th-proceso','th-despues','th-doc'].forEach(function(id){
     var box=$(id); if(!box) return;
     box.addEventListener('dragover',function(e){ if(!isAdmin)return; e.preventDefault(); box.classList.add('drop-ok'); });
     box.addEventListener('dragleave',function(){ box.classList.remove('drop-ok'); });
@@ -2267,7 +2273,7 @@
   });
 
   // ====== Generar INFORME de trabajo (solo admin) con selección de fotos ======
-  var REP_LBL={antes:'Estado inicial',proceso:'Proceso',despues:'Resultado'};
+  var REP_LBL={antes:'Estado inicial',proceso:'Proceso',despues:'Resultado',doc:'Registro documental'};
   function fFaena(f){ if(!f)return'—'; var d=new Date(f+'T00:00:00'); return String(d.getDate()).padStart(2,'0')+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+d.getFullYear(); }
   function generarReporte(){
     if(!isAdmin) return;
@@ -2332,7 +2338,7 @@
       }
       return out;
     }
-    function fotosDe(fid, flabel){ return fotoPage('antes',fid,flabel)+fotoPage('proceso',fid,flabel)+fotoPage('despues',fid,flabel); }
+    function fotosDe(fid, flabel){ return fotoPage('antes',fid,flabel)+fotoPage('proceso',fid,flabel)+fotoPage('despues',fid,flabel)+fotoPage('doc',fid,flabel); }
     var fotos='';
     if(multiF){
       R_JOBS.forEach(function(e){ fotos+=fotosDe(jobKey(e), (e.titulo||e.ubicacion||'Faena')); });
@@ -2406,24 +2412,34 @@
       return inlineImagenes($('report-doc'));
     }).then(function(){
       var doc=new window.jspdf.jsPDF({unit:'mm',format:'a4',compress:true}), A4W=210, A4H=297;
+      // Ancho fijo de "escritorio" para el informe: en el teléfono el layout es angosto y
+      // se rompe el formato del PDF. Forzamos 794px (A4 a 96dpi) en todas las páginas para
+      // que se capture igual desde el celular que desde el PC.
+      var PGW=794;
       var restore=[];
       $('report-doc').querySelectorAll('.rphoto.excluded').forEach(function(el){ restore.push([el,el.style.display]); el.style.display='none'; });
       $('report-doc').querySelectorAll('.rgroup').forEach(function(g){ if(!g.querySelectorAll('.rphoto:not(.excluded)').length){ restore.push([g,g.style.display]); g.style.display='none'; } });
       // Los ✓/✕ de selección de fotos son solo internos: no van en el PDF del cliente.
       $('report-doc').querySelectorAll('.rp-tick,.rp-x').forEach(function(el){ restore.push([el,el.style.display]); el.style.display='none'; });
+      // Fijar el ancho de cada página al de escritorio (evita que el celular reflowee el informe).
+      var restoreW=[];
+      $('report-doc').querySelectorAll('.rep-page').forEach(function(el){
+        restoreW.push([el, el.style.width, el.style.maxWidth, el.style.boxSizing]);
+        el.style.boxSizing='border-box'; el.style.maxWidth='none'; el.style.width=PGW+'px';
+      });
       // Portada y contraportada: forzar alto = A4 exacto (ancho×297/210) para que llenen la hoja (sin banda blanca).
       var restoreH=[];
       $('report-doc').querySelectorAll('.rep-cover,.rep-back').forEach(function(el){
         restoreH.push([el, el.style.height, el.style.minHeight, el.style.boxSizing]);
-        el.style.boxSizing='border-box'; el.style.minHeight='0'; el.style.height=(el.offsetWidth*297/210)+'px';
+        el.style.boxSizing='border-box'; el.style.minHeight='0'; el.style.height=(PGW*297/210)+'px';
       });
       var pages=Array.prototype.slice.call($('report-doc').querySelectorAll('.rep-page'));
       var idx=0, first=true;
       function paso(){
-        if(idx>=pages.length){ restore.forEach(function(h){ h[0].style.display=h[1]; }); restoreH.forEach(function(h){ h[0].style.height=h[1]; h[0].style.minHeight=h[2]; h[0].style.boxSizing=h[3]; }); return doc; }
+        if(idx>=pages.length){ restore.forEach(function(h){ h[0].style.display=h[1]; }); restoreW.forEach(function(h){ h[0].style.width=h[1]; h[0].style.maxWidth=h[2]; h[0].style.boxSizing=h[3]; }); restoreH.forEach(function(h){ h[0].style.height=h[1]; h[0].style.minHeight=h[2]; h[0].style.boxSizing=h[3]; }); return doc; }
         var page=pages[idx++];
         if(page.style.display==='none') return paso();
-        return window.html2canvas(page,{scale:2,useCORS:true,backgroundColor:'#ffffff',logging:false}).then(function(cv){
+        return window.html2canvas(page,{scale:2,useCORS:true,backgroundColor:'#ffffff',logging:false,width:PGW,windowWidth:PGW}).then(function(cv){
           var img=cv.toDataURL('image/jpeg',0.92), iw=A4W, ih=cv.height*A4W/cv.width;
           if(!first) doc.addPage(); first=false;
           if(ih<=A4H){ doc.addImage(img,'JPEG',0,0,iw,ih); }
@@ -2755,8 +2771,8 @@
     $('hist-cnt').textContent=rows.length+' reporte'+(rows.length===1?'':'s');
     if(!rows.length){ $('hist-list').innerHTML='<div class="empty"><div class="big">🗂️</div>No hay reportes esta semana.<br><span style="font-size:.82rem">Cambia de semana o crea uno en Multimedia.</span></div>'; return; }
     $('hist-list').innerHTML=rows.map(function(e,idx){
-      var media=(e.media||[]); var cc={sin:0,antes:0,proceso:0,despues:0}; media.forEach(function(m){ cc[catStore(m.cat)]++; });
-      var chips=['antes','proceso','despues','sin'].filter(function(k){ return cc[k]; }).map(function(k){ return '<span class="cattag '+k+'" style="font-size:9px;padding:2px 8px">'+(k==='sin'?'Sin ordenar':CAT_LBL[k])+' '+cc[k]+'</span>'; }).join(' ');
+      var media=(e.media||[]); var cc={sin:0,antes:0,proceso:0,despues:0,doc:0}; media.forEach(function(m){ cc[catStore(m.cat)]++; });
+      var chips=['antes','proceso','despues','doc','sin'].filter(function(k){ return cc[k]; }).map(function(k){ return '<span class="cattag '+k+'" style="font-size:9px;padding:2px 8px">'+(k==='sin'?'Sin ordenar':CAT_LBL[k])+' '+cc[k]+'</span>'; }).join(' ');
       var minis=media.slice(0,6).map(function(m){ return m.tipo==='video'?'<div class="vv">▶</div>':'<img src="'+esc(m.url)+'" loading="lazy">'; }).join('');
       var rh=resumenHoras(e.horas); var na=(e.asignacion||[]).length;
       var pills=(rh?'<span class="pill">🕐 '+esc(rh)+'</span>':'')+(na?' <span class="pill">🦺 '+na+' en cuadrilla</span>':'');
