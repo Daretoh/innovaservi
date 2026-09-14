@@ -924,6 +924,7 @@
       <div class="card">
         <label class="pe-lbl">📋 Matrices / PTS</label>
         <div id="pe-matrices"><p class="note" style="margin:0">—</p></div>
+        <button id="pe-editmat" class="btn ghost small" style="width:auto;margin-top:8px">✎ Editar / crear matrices (Matriz PTS)</button>
       </div>
       <div class="card">
         <label class="pe-lbl">🚚 Maquinaria / vehículos</label>
@@ -1525,6 +1526,7 @@
   if($('pe-add-pers')) $('pe-add-pers').addEventListener('click',function(){ PE.personas.push({nombre:'',epp:[]}); pePintar(); });
   if($('pe-add-maq')) $('pe-add-maq').addEventListener('click',function(){ PE.maquinaria.push({veh:'',chofer:''}); pePintar(); });
   if($('pe-close')) $('pe-close').addEventListener('click',function(){ $('planif-edit').classList.add('hide'); });
+  if($('pe-editmat')) $('pe-editmat').addEventListener('click',function(){ if(typeof MATRIZ_PRECLI!=='undefined') MATRIZ_PRECLI=(PE&&PE.e?(PE.e.ubicacion||''):'').toUpperCase(); $('planif-edit').classList.add('hide'); abrirVista('v-matriz'); });
   if($('pe-notas')) $('pe-notas').addEventListener('input',function(){ if(PE) PE.notas=this.value; });
   function peGuardar(estado, cb){ if(!sb||!PE) return; var e=PE.e;
     var personas=PE.personas.filter(function(p){ return (p.nombre||'').trim(); }).map(function(p){ return {nombre:titleCase(p.nombre.trim()), epp:p.epp||[]}; });
@@ -1852,8 +1854,10 @@
     if(!sel) return;
     sel.innerHTML=clientesLista().map(function(c){ return '<option value="'+enc(c)+'"'+(normCli(val)===c?' selected':'')+'>'+esc(c)+'</option>'; }).join('')+(conNuevo?'<option value="__new">➕ Otro cliente…</option>':'');
   }
+  var MATRIZ_PRECLI=null;
   function renderMatriz(){
-    opcionesCli($('m-cliente'), $('m-cliente').value||'CERMAQ', false);
+    var pre=MATRIZ_PRECLI||$('m-cliente').value||'CERMAQ'; MATRIZ_PRECLI=null;
+    opcionesCli($('m-cliente'), pre, false);
     renderFaenasMatriz();
   }
   function renderFaenasMatriz(){
