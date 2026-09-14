@@ -422,8 +422,19 @@
   .trab .meta{font-size:.72rem;color:var(--muted);margin-top:1px;}
   .trab .badge{font-size:.66rem;font-weight:800;padding:2px 8px;border-radius:999px;background:rgba(34,160,107,.14);color:var(--ok);}
   .trab.off .badge{background:var(--alt);color:var(--muted);}
-  #ficha,#veh-ficha,#remu-detalle,#acc-ficha,#rrhh-edit,#cli-ficha,#cargos-mgr,#dups-mgr{position:fixed;inset:0;z-index:75;background:var(--alt);overflow-y:auto;-webkit-overflow-scrolling:touch;}
-  #ficha.hide,#veh-ficha.hide,#remu-detalle.hide,#acc-ficha.hide,#rrhh-edit.hide,#cli-ficha.hide,#cargos-mgr.hide,#dups-mgr.hide{display:none;}
+  #ficha,#veh-ficha,#remu-detalle,#acc-ficha,#rrhh-edit,#cli-ficha,#cargos-mgr,#dups-mgr,#planif-edit{position:fixed;inset:0;z-index:75;background:var(--alt);overflow-y:auto;-webkit-overflow-scrolling:touch;}
+  #ficha.hide,#veh-ficha.hide,#remu-detalle.hide,#acc-ficha.hide,#rrhh-edit.hide,#cli-ficha.hide,#cargos-mgr.hide,#dups-mgr.hide,#planif-edit.hide{display:none;}
+  .pe-lbl{display:block;font:800 12.5px var(--font);color:var(--ink);margin-bottom:8px;}
+  .planif-item{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--line);border-left:4px solid var(--navy);border-radius:12px;padding:12px 14px;margin-bottom:9px;cursor:pointer;}
+  .planif-item:hover{background:var(--alt);}
+  .pl-badge{font:800 10px var(--font);text-transform:uppercase;letter-spacing:.03em;padding:4px 9px;border-radius:20px;white-space:nowrap;}
+  .pl-badge.sin{background:var(--alt);color:var(--muted);} .pl-badge.bor{background:#fbf0dd;color:#b45309;} .pl-badge.env{background:#e7f4ec;color:#1f7a52;}
+  .pe-pers{border:1px solid var(--line);border-radius:10px;padding:9px 10px;margin-bottom:8px;background:#fff;}
+  .pe-pers-top{display:flex;gap:6px;align-items:center;margin-bottom:7px;}
+  .pe-epp{display:flex;flex-wrap:wrap;gap:5px;}
+  .pe-epp label{font:600 11.5px var(--font);border:1px solid var(--line);border-radius:20px;padding:4px 9px;cursor:pointer;display:inline-flex;align-items:center;gap:4px;background:var(--alt);}
+  .pe-epp input{accent-color:var(--orange);}
+  .pe-mrow label{display:flex;align-items:center;gap:8px;padding:6px 2px;font:600 13px var(--font);cursor:pointer;border-bottom:1px solid var(--line);}
   /* RRHH documentación */
   .rrhh-doc{background:#fff;border:1px solid var(--line);border-radius:12px;padding:11px 13px;margin-bottom:9px;}
   .rrhh-doc .rd-top{display:flex;align-items:center;gap:10px;cursor:pointer;}
@@ -577,7 +588,8 @@
       <button id="btn-cli" class="out hide">🏢<span class="hlbl"> Clientes</span></button>
       <button id="btn-rrhh" class="out hide">📋<span class="hlbl"> RRHH</span></button>
       <button id="btn-pagos" class="out hide">💵<span class="hlbl"> Remuneraciones</span></button>
-      <button id="btn-plan" class="out hide">🗓️<span class="hlbl"> Planificación</span></button>
+      <button id="btn-planif" class="out hide">📋<span class="hlbl"> Planificación</span></button>
+      <button id="btn-plan" class="out hide">🗓️<span class="hlbl"> Calendario</span></button>
       <button id="btn-acc-h" class="out hide" title="Accesos" aria-label="Accesos" style="padding-left:11px;padding-right:11px">🔐</button>
       <button class="out" id="out">Salir</button>
     </div>
@@ -593,7 +605,8 @@
       <button class="sb-item" data-v="v-cuadrilla"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Preparación</button>
       <button class="sb-item" data-v="v-veh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M1 3h15v13H1zM16 8h4l3 3v5h-7z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>Vehículos</button>
       <button class="sb-item sb-admin" data-v="v-clientes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-4h6v4M8 6h.01M16 6h.01M8 10h.01M16 10h.01M8 14h.01M16 14h.01"/></svg>Clientes</button>
-      <button class="sb-item sb-admin" data-v="v-plan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Planificación</button>
+      <button class="sb-item sb-admin" data-v="v-planif"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Planificación</button>
+      <button class="sb-item sb-admin" data-v="v-plan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Calendario</button>
       <button class="sb-item sb-admin" data-v="v-matriz"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Matriz PTS</button>
 
       <div class="sbar-grp sb-admin">RRHH</div>
@@ -875,11 +888,53 @@
       <div id="acc-list"></div>
     </section>
 
-    <!-- ---- PLANIFICACIÓN (embebida) ---- -->
+    <!-- ---- PLANIFICACIÓN de faena (jefatura arma → Preparación) ---- -->
+    <section class="view" id="v-planif">
+      <div class="h-row"><h2>Planificación de faenas</h2></div>
+      <p class="note" style="margin:0 0 12px">Elige una faena del calendario y asígnale personas, EPP, matrices, maquinaria. Luego <b>envíala a Preparación</b> para que la cuadrilla trabaje (sin poder modificarla).</p>
+      <div id="planif-list"></div>
+    </section>
+
+    <!-- ---- CALENDARIO (embebido) ---- -->
     <section class="view" id="v-plan">
-      <iframe id="plan-frame" title="Planificación" loading="lazy"></iframe>
+      <iframe id="plan-frame" title="Calendario" loading="lazy"></iframe>
     </section>
   </main>
+
+  <!-- Armado de planificación de una faena (jefatura) -->
+  <div id="planif-edit" class="hide">
+    <div class="ficha-bar">
+      <button id="pe-close" class="btn ghost small" style="width:auto">✕ Cerrar</button>
+      <b id="pe-title">Planificar faena</b>
+      <span id="pe-estado" style="font:700 11px var(--font)"></span>
+    </div>
+    <div class="ficha-body">
+      <div id="pe-sent-banner" class="hide" style="background:#eef6f0;border:1px solid var(--ok);color:#0f6e56;border-radius:12px;padding:10px 12px;margin-bottom:12px;font:700 13px var(--font)">✓ Enviada a Preparación. Está bloqueada; para cambios, reábrela.</div>
+      <div class="card">
+        <label class="pe-lbl">👷 Personas y EPP</label>
+        <div id="pe-personas"></div>
+        <button id="pe-add-pers" class="btn ghost small" style="width:auto;margin-top:6px">＋ Agregar persona</button>
+      </div>
+      <div class="card">
+        <label class="pe-lbl">📋 Matrices / PTS</label>
+        <div id="pe-matrices"><p class="note" style="margin:0">—</p></div>
+      </div>
+      <div class="card">
+        <label class="pe-lbl">🚚 Maquinaria / vehículos</label>
+        <div id="pe-maquinaria"></div>
+        <button id="pe-add-maq" class="btn ghost small" style="width:auto;margin-top:6px">＋ Agregar vehículo</button>
+      </div>
+      <div class="card">
+        <label class="pe-lbl">📝 Notas de jefatura</label>
+        <textarea id="pe-notas" rows="3" style="width:100%;font:500 13.5px var(--font);padding:9px 11px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);resize:vertical" placeholder="Instrucciones, materiales, particularidades…"></textarea>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
+        <button id="pe-save" class="btn ghost" style="width:auto">💾 Guardar borrador</button>
+        <button id="pe-send" class="btn" style="width:auto">📤 Enviar a Preparación</button>
+        <button id="pe-reopen" class="btn ghost small hide" style="width:auto">🔓 Reabrir para editar</button>
+      </div>
+    </div>
+  </div>
 
   <nav class="tabbar">
     <button data-v="v-reporte" class="on"><span class="em">🖼️</span>Multimedia</button>
@@ -1276,7 +1331,8 @@
     $('tab-veh').classList.remove('hide');                // Vehículos: visible para todos (chofer registra vueltas)
     if($('veh-admin')) $('veh-admin').classList.toggle('hide', op);   // flota completa: solo admin
     if($('veh-chofer')) $('veh-chofer').classList.toggle('hide', !op); // registrar vuelta/peaje: choferes (no admin)
-    if($('btn-plan')) $('btn-plan').classList.toggle('hide', op); // Planificación: solo admin (Enzo/Jorge/Cristopher)
+    if($('btn-plan')) $('btn-plan').classList.toggle('hide', op); // Calendario: solo admin
+    if($('btn-planif')) $('btn-planif').classList.toggle('hide', op); // Planificación: solo admin
     ['r-empresa','r-lugar','r-fecha','r-notas'].forEach(function(id){ $(id).disabled=op; });
     // Preparación es visible a todos; pero faena y cuadrilla solo las edita admin (el resto solo marca el checklist)
     if($('c-faena')) $('c-faena').disabled=op;
@@ -1369,6 +1425,7 @@
     if(v==='v-clientes'){ cargarClientes(pintarCli); }
     if(v==='v-acc'){ cargarPermisos(); }
     if(v==='v-plan'){ var fr=$('plan-frame'); if(fr && !fr.getAttribute('src')) fr.setAttribute('src','../planificacion/?embed=1'); }
+    if(v==='v-planif'){ cargarPlanif(); }
     window.scrollTo(0,0);
   }
   document.querySelectorAll('.tabbar button').forEach(function(b){ b.addEventListener('click',function(){ abrirVista(b.dataset.v); }); });
@@ -1383,7 +1440,88 @@
   if($('btn-cli')) $('btn-cli').addEventListener('click',function(){ abrirVista('v-clientes'); });
   if($('btn-acc-h')) $('btn-acc-h').addEventListener('click',function(){ abrirVista('v-acc'); });
   if($('btn-plan')) $('btn-plan').addEventListener('click',function(){ abrirVista('v-plan'); });
+  if($('btn-planif')) $('btn-planif').addEventListener('click',function(){ abrirVista('v-planif'); });
   function irA(id){ abrirVista(id); }
+
+  // ====== Planificación de faenas (jefatura arma → Preparación) ======
+  var PLAN_MAP={}, PLANIF_FAENAS=[], PE=null;
+  function cargarPlanif(){
+    if(!sb) return; busy(true,'Cargando planificación…'); cargarTrab(actualizarDatalist);
+    Promise.all([
+      sb.from('faena_plan').select('*').limit(1000),
+      sb.from('vehiculos').select('id,nombre,marca,modelo,patente').limit(300),
+      sb.from('plantillas').select('*').limit(500)
+    ]).then(function(rs){ busy(false);
+      PLAN_MAP={}; ((rs[0]&&rs[0].data)||[]).forEach(function(p){ PLAN_MAP[p.evento_id]=p; });
+      if(rs[1]&&rs[1].data) VEH=rs[1].data; if(rs[2]&&rs[2].data) PLANT=rs[2].data;
+      renderPlanif();
+    }, function(){ busy(false); toast('No se pudo cargar.'); });
+  }
+  function renderPlanif(){
+    var c=$('planif-list'); if(!c) return; var desde=isoMas(-3);
+    PLANIF_FAENAS=(EVENTOS||[]).filter(function(e){ var fin=e.fecha_fin||e.fecha; return fin>=desde; }).sort(function(a,b){ return a.fecha<b.fecha?-1:1; }).slice(0,80);
+    if(!PLANIF_FAENAS.length){ c.innerHTML='<div class="empty"><div class="big">📋</div>No hay faenas próximas en el calendario.<br><span style="font-size:.82rem">Agéndalas en Calendario.</span></div>'; return; }
+    c.innerHTML=PLANIF_FAENAS.map(function(e,i){ var p=PLAN_MAP[e.id];
+      var est=!p?'<span class="pl-badge sin">Sin plan</span>':(p.estado==='enviada'?'<span class="pl-badge env">Enviada</span>':'<span class="pl-badge bor">Borrador</span>');
+      var np=p?((p.personas||[]).length):0;
+      return '<div class="planif-item" data-i="'+i+'"><div style="flex:1;min-width:0"><b>'+esc(faLabel(e))+'</b><div class="note" style="margin:2px 0 0;font-size:.75rem">'+esc(fechaCorta(e.fecha))+(np?(' · '+np+' personas'):'')+'</div></div>'+est+'</div>';
+    }).join('');
+    c.querySelectorAll('.planif-item').forEach(function(el){ el.addEventListener('click',function(){ abrirPlanif(PLANIF_FAENAS[+el.dataset.i]); }); });
+  }
+  function abrirPlanif(e){ if(!e) return; var p=PLAN_MAP[e.id]||{};
+    PE={ e:e, id:p.id||null, estado:p.estado||'borrador',
+      personas:(p.personas||[]).map(function(x){ return {nombre:x.nombre||'', epp:(x.epp||[]).slice()}; }),
+      matrices:(p.matrices||[]).slice(), maquinaria:(p.maquinaria||[]).map(function(x){ return {veh:x.veh||'',chofer:x.chofer||''}; }), notas:p.notas||'' };
+    $('pe-title').textContent=faLabel(e); $('pe-notas').value=PE.notas; pePintar(); peLock(PE.estado==='enviada');
+    $('planif-edit').classList.remove('hide'); $('planif-edit').scrollTop=0;
+  }
+  function peLock(locked){
+    $('pe-sent-banner').classList.toggle('hide',!locked);
+    $('pe-estado').textContent=locked?'ENVIADA':'BORRADOR'; $('pe-estado').style.color=locked?'#1f7a52':'#b45309';
+    ['pe-add-pers','pe-add-maq','pe-save','pe-send'].forEach(function(id){ var el=$(id); if(el) el.classList.toggle('hide',locked); });
+    if($('pe-notas')) $('pe-notas').disabled=locked;
+    $('pe-reopen').classList.toggle('hide',!locked);
+    $('planif-edit').querySelectorAll('#pe-personas input,#pe-personas button,#pe-maquinaria select,#pe-maquinaria button,#pe-matrices input').forEach(function(el){ el.disabled=locked; });
+  }
+  function pePintar(){
+    $('pe-personas').innerHTML=PE.personas.map(function(pp,i){
+      var epp=EPP_ITEMS.map(function(it){ var on=(pp.epp||[]).indexOf(it)>=0; return '<label><input type="checkbox" class="pe-epp-c" data-i="'+i+'" data-epp="'+enc(it)+'"'+(on?' checked':'')+'>'+esc(it)+'</label>'; }).join('');
+      return '<div class="pe-pers"><div class="pe-pers-top"><input class="pe-pn" data-i="'+i+'" list="trab-datalist" placeholder="Nombre" value="'+enc(pp.nombre||'')+'" style="flex:1;font:700 13px var(--font);padding:6px 9px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink)"><button class="pe-prm" data-i="'+i+'" type="button" style="width:30px;height:32px;border:1px solid #f0c0c0;background:#fff;color:#dc2626;border-radius:8px;cursor:pointer">✕</button></div><div class="pe-epp">'+epp+'</div></div>';
+    }).join('')||'<p class="note" style="margin:0">Sin personas asignadas.</p>';
+    var pts=(typeof plantillasDeCliente==='function')?plantillasDeCliente((PE.e.ubicacion||'')):[], seen={}, mhtml='';
+    pts.forEach(function(pl){ var nm=((pl.faena||pl.nombre||'')+'').trim(); if(!nm||seen[nm])return; seen[nm]=1; var on=PE.matrices.indexOf(nm)>=0; mhtml+='<div class="pe-mrow"><label><input type="checkbox" class="pe-mc" data-nm="'+enc(nm)+'"'+(on?' checked':'')+'>'+esc(nm)+'</label></div>'; });
+    PE.matrices.forEach(function(nm){ if(!seen[nm]){ seen[nm]=1; mhtml+='<div class="pe-mrow"><label><input type="checkbox" class="pe-mc" data-nm="'+enc(nm)+'" checked>'+esc(nm)+'</label></div>'; } });
+    $('pe-matrices').innerHTML=mhtml||'<p class="note" style="margin:0">Sin matrices/PTS para este cliente (créalas en Matriz PTS).</p>';
+    $('pe-maquinaria').innerHTML=PE.maquinaria.map(function(mq,i){ return '<div class="jv-row" data-i="'+i+'"><select class="pe-mv" data-i="'+i+'">'+vehOpts(mq.veh||'')+'</select><select class="pe-mc2" data-i="'+i+'">'+choferOpts(mq.chofer||'')+'</select><button class="pe-mrm" data-i="'+i+'" type="button" style="width:30px;height:34px;border:1px solid #f0c0c0;background:#fff;color:#dc2626;border-radius:8px;cursor:pointer">✕</button></div>'; }).join('')||'<p class="note" style="margin:0">Sin maquinaria.</p>';
+    peWire();
+  }
+  function peWire(){ var root=$('planif-edit');
+    root.querySelectorAll('.pe-pn').forEach(function(inp){ inp.addEventListener('input',function(){ PE.personas[+inp.dataset.i].nombre=inp.value; }); });
+    root.querySelectorAll('.pe-prm').forEach(function(b){ b.addEventListener('click',function(){ PE.personas.splice(+b.dataset.i,1); pePintar(); }); });
+    root.querySelectorAll('.pe-epp-c').forEach(function(ch){ ch.addEventListener('change',function(){ var i=+ch.dataset.i, it=ch.dataset.epp, arr=PE.personas[i].epp, ix=arr.indexOf(it); if(ch.checked){ if(ix<0)arr.push(it); } else if(ix>=0)arr.splice(ix,1); }); });
+    root.querySelectorAll('.pe-mc').forEach(function(ch){ ch.addEventListener('change',function(){ var nm=ch.dataset.nm, ix=PE.matrices.indexOf(nm); if(ch.checked){ if(ix<0)PE.matrices.push(nm); } else if(ix>=0)PE.matrices.splice(ix,1); }); });
+    root.querySelectorAll('.pe-mv').forEach(function(s){ s.addEventListener('change',function(){ PE.maquinaria[+s.dataset.i].veh=s.value; }); });
+    root.querySelectorAll('.pe-mc2').forEach(function(s){ s.addEventListener('change',function(){ PE.maquinaria[+s.dataset.i].chofer=s.value; }); });
+    root.querySelectorAll('.pe-mrm').forEach(function(b){ b.addEventListener('click',function(){ PE.maquinaria.splice(+b.dataset.i,1); pePintar(); }); });
+  }
+  if($('pe-add-pers')) $('pe-add-pers').addEventListener('click',function(){ PE.personas.push({nombre:'',epp:[]}); pePintar(); });
+  if($('pe-add-maq')) $('pe-add-maq').addEventListener('click',function(){ PE.maquinaria.push({veh:'',chofer:''}); pePintar(); });
+  if($('pe-close')) $('pe-close').addEventListener('click',function(){ $('planif-edit').classList.add('hide'); });
+  if($('pe-notas')) $('pe-notas').addEventListener('input',function(){ if(PE) PE.notas=this.value; });
+  function peGuardar(estado, cb){ if(!sb||!PE) return; var e=PE.e;
+    var personas=PE.personas.filter(function(p){ return (p.nombre||'').trim(); }).map(function(p){ return {nombre:titleCase(p.nombre.trim()), epp:p.epp||[]}; });
+    var maq=PE.maquinaria.filter(function(m){ return (m.veh||'').trim()||(m.chofer||'').trim(); });
+    var row={ evento_id:e.id, fecha:e.fecha||null, empresa:(e.ubicacion||''), sitio:(e.sitio||''), titulo:(e.titulo||''), personas:personas, matrices:PE.matrices, maquinaria:maq, notas:PE.notas||'', estado:estado, autor:userEmail, updated_at:new Date().toISOString() };
+    if(estado==='enviada') row.enviada_at=new Date().toISOString();
+    busy(true, estado==='enviada'?'Enviando…':'Guardando…');
+    sb.from('faena_plan').upsert(row,{onConflict:'evento_id'}).then(function(r){ busy(false);
+      if(r.error){ toast(/relation|does not exist|schema cache/.test(r.error.message||'')?'Falta correr faena-plan.sql en Supabase.':('No se pudo guardar: '+r.error.message)); return; }
+      PE.estado=estado; toast(estado==='enviada'?'✓ Enviada a Preparación':'✓ Borrador guardado'); if(cb)cb();
+    }, function(){ busy(false); toast('No se pudo guardar.'); });
+  }
+  if($('pe-save')) $('pe-save').addEventListener('click',function(){ peGuardar('borrador', function(){ cargarPlanif(); }); });
+  if($('pe-send')) $('pe-send').addEventListener('click',function(){ if(!confirm('¿Enviar a Preparación? Quedará bloqueada para la cuadrilla (solo obs, checklist y foto).')) return; peGuardar('enviada', function(){ peLock(true); cargarPlanif(); }); });
+  if($('pe-reopen')) $('pe-reopen').addEventListener('click',function(){ if(!confirm('¿Reabrir para editar?')) return; peGuardar('borrador', function(){ peLock(false); cargarPlanif(); }); });
 
   // ====== Selector de trabajo (sheet) ======
   var sheet=$('jobsheet'), sheetCtx='r';
@@ -2633,7 +2771,7 @@
   document.querySelectorAll('.tfil').forEach(function(b){ b.addEventListener('click',function(){ document.querySelectorAll('.tfil').forEach(function(x){ x.classList.toggle('on',x===b); }); trabFilter=b.dataset.f; pintarTrab(); }); });
   // Botón "Atrás" del navegador: cierra el panel/overlay abierto en vez de salir de la app.
   (function(){
-    var OVS=['remu-aj','report-view','docgen','ficha','veh-ficha','remu-detalle','cargos-mgr','dups-mgr','cli-ficha','acc-ficha','rrhh-edit'];
+    var OVS=['remu-aj','report-view','docgen','ficha','veh-ficha','remu-detalle','cargos-mgr','dups-mgr','cli-ficha','acc-ficha','rrhh-edit','planif-edit'];
     function vis(el){ return el && !el.classList.contains('hide'); }
     function topOpen(){ for(var i=0;i<OVS.length;i++){ var el=$(OVS[i]); if(vis(el)) return el; } return null; }
     if(window.MutationObserver) OVS.forEach(function(id){ var el=$(id); if(!el) return; var was=vis(el);
