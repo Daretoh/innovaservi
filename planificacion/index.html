@@ -263,13 +263,11 @@
 <script>
 (function(){
   // Color por CLIENTE (ubicación): colores de marca conocidos + color estable por nombre para el resto
-  var CLIENTE_COL={
-    'CERMAQ':'#00a7c4','KOMATSU':'#153fa6','CUMMINS':'#c8102e','MOWI':'#3a3a3a','VENTISQUEROS':'#0b3a5c',
-    'SKRETTING':'#e2231a','SEAGARDEN':'#0e7c5a','GREENSPOT':'#2fa84f','SAL LOBOS':'#8a1a2b','LOBOS':'#8a1a2b',
-    'PRIMAR':'#1f5aa8','VERISURE':'#e2231a','AUSTRALIS':'#173a5e','QUEMCHI':'#0f766e','REXIN':'#b8620a'
-  };
-  function hashCol(s){ var h=0; s=(s||'').toUpperCase(); for(var i=0;i<s.length;i++){ h=(h*31+s.charCodeAt(i))>>>0; } return 'hsl('+(h%360)+',52%,42%)'; }
-  function clienteColor(u){ u=(u||'').trim().toUpperCase(); if(!u) return '#8b93a7'; for(var k in CLIENTE_COL){ if(u.indexOf(k)>=0) return CLIENTE_COL[k]; } return hashCol(u); }
+  var CLI_COL={};   // nombre(upper) -> color hex (definido en la ficha del cliente)
+  // Mismo cálculo que la app (app/index.html · cliHue/colorEmpresa) para que coincidan los colores.
+  function cliHue(s){ s=(s||'').trim().toLowerCase(); var h=0; for(var i=0;i<s.length;i++){ h=(h*31+s.charCodeAt(i))%360; } return h; }
+  function clienteColor(u){ u=(u||'').trim(); if(!u) return '#8b93a7'; var d=CLI_COL[u.toUpperCase()]; if(d) return d; return 'hsl('+cliHue(u)+',56%,50%)'; }
+  function cargarColoresClientes(cb){ if(!sb){ if(cb)cb(); return; } sb.from('clientes').select('nombre,color').limit(500).then(function(r){ ((r&&r.data)||[]).forEach(function(c){ var nm=(c.nombre||'').trim(); if(nm&&c.color) CLI_COL[nm.toUpperCase()]=c.color; }); if(cb)cb(); }, function(){ if(cb)cb(); }); }
   function renderLegend(evs){ evs=evs||EVENTS; var seen={}, list=[]; evs.forEach(function(e){ var u=(e.ubic||'').trim(); if(u && !seen[u.toUpperCase()]){ seen[u.toUpperCase()]=1; list.push(u); } }); list.sort(); var el=document.getElementById('pl-legend'); if(!el)return; el.innerHTML=list.map(function(u){ return '<span><i class="dot" style="background:'+clienteColor(u)+'"></i>'+esc(u)+'</span>'; }).join(''); }
   // ---- Datos reales desde Supabase (tabla eventos) ----
   var SB_URL='https://oabtbzrfgwadnooexdwd.supabase.co';
@@ -466,7 +464,7 @@
   function applyLock(){
     if(authed && isAdmin(userEmail)){
       document.body.classList.remove('locked');
-      if(!loaded){ loaded=true; render(); cargarEventos(render); }
+      if(!loaded){ loaded=true; render(); cargarColoresClientes(function(){ cargarEventos(render); }); }
     } else if(authed){
       document.body.classList.add('locked');   // logueado pero NO es Cristopher -> InnovaGestión
       location.replace('../app/');

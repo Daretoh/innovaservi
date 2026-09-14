@@ -1221,7 +1221,7 @@
       <div class="fld"><label>Dirección</label><input id="cf2-dir" type="text" placeholder="Parque Husamontt, Puerto Montt"></div>
       <div class="grid2"><div class="fld" style="margin:0"><label>Solicitante</label><input id="cf2-solic" type="text" placeholder="Karina Abarca"></div><div class="fld" style="margin:0"><label>Contacto (tel / correo)</label><input id="cf2-contacto" type="text" placeholder="+56 9 …"></div></div>
       <div class="fld"><label>Sitios / faenas (uno por línea)</label><textarea id="cf2-sitios" rows="3" placeholder="Chinquihue&#10;Quemchi&#10;SHS"></textarea></div>
-      <div class="grid2"><div class="fld" style="margin:0"><label>Estado</label><select id="cf2-estado"><option value="activo">Activo</option><option value="inactivo">Inactivo</option></select></div><div></div></div>
+      <div class="grid2"><div class="fld" style="margin:0"><label>Estado</label><select id="cf2-estado"><option value="activo">Activo</option><option value="inactivo">Inactivo</option></select></div><div class="fld" style="margin:0"><label>Color (calendario y planificación)</label><div style="display:flex;align-items:center;gap:8px"><input id="cf2-color" type="color" value="#1a1f6e" style="width:48px;height:38px;border:1px solid var(--line);border-radius:8px;background:#fff;cursor:pointer"><button id="cf2-color-auto" type="button" class="btn ghost small" style="width:auto">Automático</button></div></div></div>
       <div class="fld"><label>Notas</label><textarea id="cf2-notas" rows="2" placeholder="Documentación que exige, particularidades…"></textarea></div>
     </div>
     <div class="card">
@@ -2572,9 +2572,13 @@
   // no por faena: se usa la 1a palabra de la empresa, así "CERMAQ Chinquihue" y
   // "CERMAQ Quemchi" comparten color (misma empresa CERMAQ).
   function empresaDeFaena(fa){ return ((fa||'').split(' — ')[0]||'').trim()||fa||''; }
-  function claveEmpresa(fa){ return normName(empresaDeFaena(fa)).split(' ')[0]||''; }
-  function hashHue(s){ var h=0; s=(s||'').toLowerCase(); for(var i=0;i<s.length;i++){ h=(h*31+s.charCodeAt(i))%360; } return h; }
-  function colorEmpresa(clave){ var hue=hashHue(clave); return { bg:'hsl('+hue+',72%,94%)', border:'hsl('+hue+',58%,52%)', text:'hsl('+hue+',52%,30%)' }; }
+  function claveEmpresa(fa){ return (empresaDeFaena(fa).split(' · ')[0]||'').trim(); }   // nombre del cliente (sin sitio ni título)
+  function cliHue(s){ s=(s||'').trim().toLowerCase(); var h=0; for(var i=0;i<s.length;i++){ h=(h*31+s.charCodeAt(i))%360; } return h; }
+  function cliColorDef(nombre){ var c=(nombre||'').trim().toUpperCase(); var f=(typeof CLIENTES!=='undefined'?CLIENTES:[]).filter(function(x){ return (x.nombre||'').trim().toUpperCase()===c; })[0]; return (f&&f.color)?f.color:''; }
+  function mixBg(col){ if(/^#([0-9a-f]{6})$/i.test(col)){ var n=parseInt(col.slice(1),16); return 'rgba('+((n>>16)&255)+','+((n>>8)&255)+','+(n&255)+',0.13)'; } return 'color-mix(in srgb,'+col+' 14%,#fff)'; }
+  function colorEmpresa(nombre){ var hex=cliColorDef(nombre); if(hex){ return { bg:mixBg(hex), border:hex, text:hex }; } var hue=cliHue(nombre); return { bg:'hsl('+hue+',72%,94%)', border:'hsl('+hue+',56%,50%)', text:'hsl('+hue+',50%,32%)' }; }
+  function hslHex(h,s,l){ s/=100; l/=100; var a=s*Math.min(l,1-l); var f=function(n){ var k=(n+h/30)%12, c=l-a*Math.max(-1,Math.min(k-3,Math.min(9-k,1))); return Math.round(255*c).toString(16).padStart(2,'0'); }; return '#'+f(0)+f(8)+f(4); }
+  function autoHex(nombre){ return hslHex(cliHue(nombre),56,50); }
   function renderHz(){
     var c=$('hz-list'); if(!c) return;
     HZ.forEach(function(h){ if(!h.fecha) h.fecha=todayISO(); });
@@ -3830,6 +3834,7 @@
     $('cf2-nombre').value=x?(x.nombre||''):''; $('cf2-razon').value=x?(x.razon||''):''; $('cf2-rut').value=x?(x.rut||''):'';
     $('cf2-dir').value=x?(x.direccion||''):''; $('cf2-solic').value=x?(x.solicitante||''):''; $('cf2-contacto').value=x?(x.contacto||''):'';
     $('cf2-sitios').value=x?((x.sitios||[]).join('\n')):''; $('cf2-estado').value=(x&&x.estado)||'activo'; $('cf2-notas').value=x?(x.notas||''):'';
+    if($('cf2-color')){ var _cc=(x&&x.color)?x.color:autoHex(x?(x.nombre||''):''); $('cf2-color').value=_cc; $('cf2-color').dataset.set=(x&&x.color)?'1':''; }
     CLI_DOCS=x?((x.docs||[]).slice()):[]; renderCliDocs(); cliScanner.reset();
     $('cf2-title').textContent=(x&&x.id)?('Cliente · '+(x.nombre||'')):'Nuevo cliente';
     $('cf2-del').classList.toggle('hide',!(x&&x.id));
@@ -3856,12 +3861,14 @@
     nombreBase:function(){ return slug($('cf2-nombre').value.trim()||'doc'); },
     onDoc:function(d){ CLI_DOCS.push(d); renderCliDocs(); } });
   $('cf2-close').addEventListener('click',function(){ $('cli-ficha').classList.add('hide'); cliScanner.reset(); });
+  if($('cf2-color')) $('cf2-color').addEventListener('input',function(){ this.dataset.set='1'; });
+  if($('cf2-color-auto')) $('cf2-color-auto').addEventListener('click',function(){ var c=$('cf2-color'); c.dataset.set=''; c.value=autoHex($('cf2-nombre').value||''); toast('Color automático (se calcula del nombre)'); });
   $('cli-nuevo').addEventListener('click',function(){ abrirCliFicha(null); });
   $('cli-search').addEventListener('input',function(){ CLI_Q=this.value.trim(); pintarCli(); });
   $('cf2-save').addEventListener('click',function(){
     if(!sb) return; var nom=$('cf2-nombre').value.trim(); if(!nom){ toast('El nombre es obligatorio.'); return; }
     var sitios=($('cf2-sitios').value||'').split(/\r?\n/).map(function(s){ return s.trim(); }).filter(Boolean);
-    var row={ nombre:nom, razon:$('cf2-razon').value.trim(), rut:$('cf2-rut').value.trim(), direccion:$('cf2-dir').value.trim(), solicitante:$('cf2-solic').value.trim(), contacto:$('cf2-contacto').value.trim(), sitios:sitios, docs:CLI_DOCS, notas:$('cf2-notas').value.trim(), estado:$('cf2-estado').value, autor:userEmail };
+    var row={ nombre:nom, razon:$('cf2-razon').value.trim(), rut:$('cf2-rut').value.trim(), direccion:$('cf2-dir').value.trim(), solicitante:$('cf2-solic').value.trim(), contacto:$('cf2-contacto').value.trim(), sitios:sitios, docs:CLI_DOCS, notas:$('cf2-notas').value.trim(), estado:$('cf2-estado').value, color:(($('cf2-color')&&$('cf2-color').dataset.set==='1')?$('cf2-color').value:null), autor:userEmail };
     busy(true,'Guardando…');
     var q=CLI_ID? sb.from('clientes').update(row).eq('id',CLI_ID) : sb.from('clientes').insert(row);
     q.then(function(r){ busy(false); if(r.error){ toast(/clientes/.test(r.error.message||'')?'Falta correr clientes.sql en Supabase.':('No se pudo guardar: '+r.error.message)); return; }
