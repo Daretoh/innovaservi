@@ -2734,7 +2734,12 @@
     var ind=$('hz-saved'); if(ind){ ind.textContent='✓ guardado'; ind.style.opacity='1'; clearTimeout(ind._t); ind._t=setTimeout(function(){ ind.style.opacity='0'; },1600); }
   }
   function syncHz(){ var c=$('hz-list'); if(!c) return; c.querySelectorAll('.hrow').forEach(function(row){ var i=+row.dataset.i; if(HZ[i]){ HZ[i].trabajador=row.querySelector('.h-trab').value; HZ[i].entrada=row.querySelector('.h-in').value; HZ[i].salida=row.querySelector('.h-out').value; var fa=row.querySelector('.h-fae'); if(fa) HZ[i].faena=fa.value; var vu=row.querySelector('.h-vu'); if(vu) HZ[i].vueltas=(+vu.value||0); var fe=row.querySelector('.h-fecha'); if(fe) HZ[i].fecha=fe.value||todayISO(); } }); }
-  function addHz(){ syncHz(); var hoy=todayISO(); var f=(HZ.length?HZ[0].fecha:'')|| ((HZ_LUNES && (hoy<HZ_LUNES||hoy>sumarDias(HZ_LUNES,6)))?HZ_LUNES:hoy); HZ.unshift({fecha:f,trabajador:'',entrada:'',salida:''}); renderHz(); }
+  function addHz(){ syncHz(); var hoy=todayISO();
+    // Fecha dentro de la semana que se está viendo (hoy si aplica, si no el lunes de la semana), y deja el día abierto.
+    var f=(HZ_LUNES && (hoy<HZ_LUNES||hoy>sumarDias(HZ_LUNES,6)))?HZ_LUNES:hoy;
+    HZ.unshift({fecha:f,trabajador:'',entrada:'',salida:'',faena:''}); HZ_COL[f]=false; renderHz();
+    var box=$('hz-list'); if(box){ var nueva=box.querySelector('.hgroup:not(.collapsed) .hrow'); if(nueva){ try{ nueva.scrollIntoView({block:'center'}); var tr=nueva.querySelector('.h-trab'); if(tr) tr.focus(); }catch(_){} } }
+  }
   function removeHz(i){ syncHz(); var h=HZ[i]; if(h&&h.id) HZ_DEL.push(h.id); HZ.splice(i,1); renderHz(); autoGuardarHz(); }
   function guardarHz(){
     if(!sb) return; syncHz();
