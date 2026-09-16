@@ -320,8 +320,13 @@
   .note{font-size:.78rem;color:var(--muted);margin:2px 2px 12px;line-height:1.5;}
 
   /* ---- Reporte (vista imprimible) ---- */
-  #report-view,#docgen{position:fixed;inset:0;z-index:70;background:#e9ebf2;overflow-y:auto;-webkit-overflow-scrolling:touch;}
-  #report-view.hide,#docgen.hide{display:none;}
+  #report-view,#docgen,#dg-pick{position:fixed;inset:0;z-index:70;background:#e9ebf2;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+  #report-view.hide,#docgen.hide,#dg-pick.hide{display:none;}
+  .rd-gen{margin-left:8px;display:inline-flex;align-items:center;gap:2px;font:700 .72rem var(--font);color:var(--orange-2);background:none;border:1px solid var(--orange);border-radius:8px;padding:3px 8px;cursor:pointer;}
+  .rd-gen:hover{background:var(--orange);color:#fff;}
+  .dgp-row{display:flex;align-items:center;gap:9px;padding:8px 4px;border-bottom:1px solid var(--line);cursor:pointer;font-size:.9rem;}
+  .dgp-row input{width:18px;height:18px;flex:none;}
+  .dgp-row .nm{flex:1;}
   /* Documentos generados (formatos RRHH) */
   #dg-doc{background:#fff;max-width:820px;margin:16px auto;padding:38px 42px;box-shadow:0 10px 40px -18px rgba(0,0,0,.4);color:#222;font:400 13px var(--font);}
   .dg-h{display:flex;align-items:center;gap:14px;border-bottom:3px solid var(--orange);padding-bottom:12px;margin-bottom:16px;}
@@ -1007,11 +1012,21 @@
 <!-- Generador de documentos (PDF con membrete) -->
 <div id="docgen" class="hide">
   <div class="report-actions">
-    <button id="dg-close" class="btn ghost small" style="width:auto">✕ Cerrar</button>
+    <button id="dg-close" class="btn ghost small" style="width:auto">Cerrar</button>
     <span class="rep-hint" id="dg-hint">Revisa los datos y descarga</span>
-    <button id="dg-save" class="btn small" style="width:auto">⬇️ Descargar y guardar</button>
+    <button id="dg-save" class="btn small" style="width:auto">Descargar y guardar</button>
   </div>
   <div id="dg-doc"></div>
+</div>
+
+<!-- Selector de trabajadores para generar un documento en lote -->
+<div id="dg-pick" class="hide">
+  <div class="report-actions">
+    <button id="dgp-close" class="btn ghost small" style="width:auto">Cerrar</button>
+    <span class="rep-hint" id="dgp-hint">Elige trabajadores</span>
+    <button id="dgp-go" class="btn small" style="width:auto">Generar</button>
+  </div>
+  <div id="dgp-body" style="max-width:660px;margin:12px auto;padding:0 14px"></div>
 </div>
 
 <!-- Ficha de trabajador (solo admin) -->
@@ -2852,7 +2867,7 @@
   document.querySelectorAll('.tfil').forEach(function(b){ b.addEventListener('click',function(){ document.querySelectorAll('.tfil').forEach(function(x){ x.classList.toggle('on',x===b); }); trabFilter=b.dataset.f; pintarTrab(); }); });
   // Botón "Atrás" del navegador: cierra el panel/overlay abierto en vez de salir de la app.
   (function(){
-    var OVS=['remu-aj','report-view','docgen','ficha','veh-ficha','remu-detalle','cargos-mgr','dups-mgr','cli-ficha','acc-ficha','rrhh-edit','planif-edit'];
+    var OVS=['remu-aj','report-view','docgen','dg-pick','ficha','veh-ficha','remu-detalle','cargos-mgr','dups-mgr','cli-ficha','acc-ficha','rrhh-edit','planif-edit'];
     function vis(el){ return el && !el.classList.contains('hide'); }
     function topOpen(){ for(var i=0;i<OVS.length;i++){ var el=$(OVS[i]); if(vis(el)) return el; } return null; }
     if(window.MutationObserver) OVS.forEach(function(id){ var el=$(id); if(!el) return; var was=vis(el);
@@ -4013,17 +4028,48 @@
     epp:{ nombre:'Entrega de EPP', build:docEPP },
     odi:{ nombre:'ODI (riesgos)', build:docODI }
   };
-  var DG_CTX=null;
+  // Iconos SVG para botones (en vez de emojis).
+  function svgI(p,sz){ return '<svg viewBox="0 0 24 24" width="'+(sz||16)+'" height="'+(sz||16)+'" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:5px">'+p+'</svg>'; }
+  var ICO={
+    gen:'<polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>',
+    save:'<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>',
+    up:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>',
+    clip:'<path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>'
+  };
+  var DG_CTX=null, DG_QUEUE=[], DG_QI=0, DG_QTIPO=null, DGP_TIPO=null;
   function generarDoc(tid, tipo){
     var g=DOC_GEN[tipo]; if(!g) return;
     var pool=(typeof RRHH_T!=='undefined'?RRHH_T:[]).concat(typeof TRAB!=='undefined'?TRAB:[]);
     var t=pool.filter(function(x){return x.id===tid;})[0]; if(!t) return;
     DG_CTX={tid:tid, tipo:tipo, nombre:t.nombre};
     $('dg-doc').innerHTML=g.build(t);
-    $('dg-hint').textContent=g.nombre+' · '+(t.nombre||'');
+    $('dg-hint').textContent=g.nombre+' · '+(t.nombre||'')+(DG_QUEUE.length?(' ('+(DG_QI+1)+' de '+DG_QUEUE.length+')'):'');
     $('docgen').classList.remove('hide'); $('docgen').scrollTop=0;
   }
-  $('dg-close').addEventListener('click',function(){ $('docgen').classList.add('hide'); });
+  function generarDocNext(){ if(DG_QI>=DG_QUEUE.length){ DG_QUEUE=[]; DG_QTIPO=null; return; } generarDoc(DG_QUEUE[DG_QI], DG_QTIPO); }
+  function dgAdvance(){ if(!DG_QUEUE.length) return; DG_QI++; if(DG_QI<DG_QUEUE.length){ setTimeout(generarDocNext,350); } else { DG_QUEUE=[]; DG_QTIPO=null; toast('✓ Documentos generados'); } }
+  // Selector de trabajadores para generar en lote desde el tipo de documento.
+  function abrirPickDoc(tipo){
+    var g=DOC_GEN[tipo]; if(!g) return; DGP_TIPO=tipo;
+    var trabs=rrhhTrabs();
+    $('dgp-hint').textContent=g.nombre+' · elige trabajadores';
+    var rows=trabs.map(function(t){ var e=estadoDoc(t.id,tipo);
+      return '<label class="dgp-row"><input type="checkbox" data-id="'+t.id+'"'+(e.k==='pend'?' checked':'')+'><span class="nm">'+esc(t.nombre||'—')+'</span><span class="dchip '+DCLS[e.k]+'">'+e.txt+'</span></label>'; }).join('');
+    $('dgp-body').innerHTML='<div class="card"><p class="note" style="margin:0 0 8px">Se generará <b>'+esc(g.nombre)+'</b> para cada seleccionado. Podrás revisar y editar los datos antes de guardar cada uno.</p>'+
+      '<div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap"><button class="btn ghost small" id="dgp-pend" style="width:auto">Solo pendientes</button><button class="btn ghost small" id="dgp-todos" style="width:auto">Todos</button><button class="btn ghost small" id="dgp-none" style="width:auto">Ninguno</button></div>'+
+      '<div id="dgp-list">'+rows+'</div></div>';
+    $('dgp-pend').addEventListener('click',function(){ $('dgp-list').querySelectorAll('.dgp-row').forEach(function(row){ row.querySelector('input').checked=row.querySelector('.dchip').classList.contains('pend'); }); });
+    $('dgp-todos').addEventListener('click',function(){ $('dgp-list').querySelectorAll('input').forEach(function(c){ c.checked=true; }); });
+    $('dgp-none').addEventListener('click',function(){ $('dgp-list').querySelectorAll('input').forEach(function(c){ c.checked=false; }); });
+    $('dg-pick').classList.remove('hide'); $('dg-pick').scrollTop=0;
+  }
+  $('dgp-close').addEventListener('click',function(){ $('dg-pick').classList.add('hide'); });
+  $('dgp-go').addEventListener('click',function(){
+    var ids=[]; $('dgp-list').querySelectorAll('input[type=checkbox]:checked').forEach(function(c){ ids.push(+c.dataset.id); });
+    if(!ids.length){ toast('Marca al menos un trabajador.'); return; }
+    DG_QUEUE=ids; DG_QI=0; DG_QTIPO=DGP_TIPO; $('dg-pick').classList.add('hide'); generarDocNext();
+  });
+  $('dg-close').addEventListener('click',function(){ $('docgen').classList.add('hide'); DG_QUEUE=[]; DG_QTIPO=null; });
   $('dg-save').addEventListener('click',function(){
     if(!DG_CTX) return; busy(true,'Generando PDF…');
     pdfDesde($('dg-doc')).then(function(doc){
@@ -4034,11 +4080,12 @@
       subirArchivo(pdfFile,'rrhh/'+slug(DG_CTX.nombre||'trab'), nombre).then(function(res){
         var row={ trabajador_id:DG_CTX.tid, tipo:DG_CTX.tipo, estado:'entregado', fecha:todayISO(), url:(res?res.url:null), autor:userEmail };
         sb.from('rrhh_docs').upsert(row,{onConflict:'trabajador_id,tipo'}).then(function(r){ busy(false);
-          if(r&&r.error){ toast('PDF descargado, pero no se guardó en la ficha.'); $('docgen').classList.add('hide'); return; }
+          if(r&&r.error){ toast('PDF descargado, pero no se guardó en la ficha.'); $('docgen').classList.add('hide'); dgAdvance(); return; }
           RRHH_D[DG_CTX.tid+'|'+DG_CTX.tipo]=row; toast('✓ Documento generado y guardado');
           $('docgen').classList.add('hide'); if(typeof renderRrhh==='function') renderRrhh();
           if(typeof FICHA_ID!=='undefined' && FICHA_ID===DG_CTX.tid) renderFichaRrhh({id:DG_CTX.tid,nombre:DG_CTX.nombre});
-        }, function(){ busy(false); toast('PDF descargado.'); $('docgen').classList.add('hide'); });
+          dgAdvance();
+        }, function(){ busy(false); toast('PDF descargado.'); $('docgen').classList.add('hide'); dgAdvance(); });
       });
     }).catch(function(){ busy(false); toast('No se pudo generar el PDF.'); });
   });
@@ -4068,9 +4115,11 @@
         var ver=(e.doc&&e.doc.url)?' <a href="'+esc(e.doc.url)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:var(--orange-2);font-weight:700;font-size:.8rem">ver</a>':'';
         return '<div class="rrhh-pers" data-t="'+t.id+'" data-s="'+tp.slug+'"><span class="rp-nm">'+esc(t.nombre||'—')+'</span><span class="dchip '+DCLS[e.k]+'">'+e.txt+'</span>'+ver+'</div>';
       }).join('');
-      return '<div class="rrhh-doc"><div class="rd-top" data-exp="rd'+ti+'"><span class="rd-nm">'+esc(tp.nombre)+(tp.vence?' <span class="note" style="font-weight:600;font-size:.7rem">(vence)</span>':'')+'</span><span class="dchip '+(pct===100?'ok':'pend')+'">'+ok+'/'+trabs.length+'</span>'+(vc?' <span class="dchip venc">'+vc+'⛔</span>':'')+'</div><div class="rrhh-bar"><i style="width:'+pct+'%"></i></div><div class="hide" id="rd'+ti+'" style="margin-top:8px">'+rows+'</div></div>';
+      var genBtn=(typeof DOC_GEN!=='undefined'&&DOC_GEN[tp.slug])?'<button class="rd-gen" data-gen="'+tp.slug+'" title="Generar para varios">'+svgI(ICO.gen,15)+'Generar</button>':'';
+      return '<div class="rrhh-doc"><div class="rd-top" data-exp="rd'+ti+'"><span class="rd-nm">'+esc(tp.nombre)+(tp.vence?' <span class="note" style="font-weight:600;font-size:.7rem">(vence)</span>':'')+'</span><span class="dchip '+(pct===100?'ok':'pend')+'">'+ok+'/'+trabs.length+'</span>'+(vc?' <span class="dchip venc">'+vc+'</span>':'')+genBtn+'</div><div class="rrhh-bar"><i style="width:'+pct+'%"></i></div><div class="hide" id="rd'+ti+'" style="margin-top:8px">'+rows+'</div></div>';
     }).join('');
     cont.querySelectorAll('.rd-top').forEach(function(el){ el.addEventListener('click',function(){ var b=$(el.dataset.exp); if(b) b.classList.toggle('hide'); }); });
+    cont.querySelectorAll('.rd-gen').forEach(function(b){ b.addEventListener('click',function(ev){ ev.stopPropagation(); abrirPickDoc(b.dataset.gen); }); });
     cont.querySelectorAll('.rrhh-pers').forEach(function(el){ el.addEventListener('click',function(){ abrirDocRrhh(+el.dataset.t, el.dataset.s); }); });
   }
   function renderRrhhPersona(trabs,cont){
@@ -4091,10 +4140,10 @@
         '<div class="fld"><label>Estado</label><select id="re-estado"><option value="pendiente"'+((d.estado||'pendiente')==='pendiente'?' selected':'')+'>Pendiente</option><option value="entregado"'+(d.estado==='entregado'?' selected':'')+'>Entregado</option></select></div>'+
         '<div class="grid2"><div class="fld" style="margin:0"><label>Fecha</label><input type="date" id="re-fecha" value="'+(d.fecha||'')+'"></div>'+
           (tp.vence?('<div class="fld" style="margin:0"><label>Vence</label><input type="date" id="re-venc" value="'+(d.vencimiento||'')+'"></div>'):'<div></div>')+'</div>'+
-        '<div class="fld"><label>Archivo</label><div>'+(d.url?('<a href="'+esc(d.url)+'" target="_blank" rel="noopener" style="color:var(--orange-2);font-weight:700">📎 Ver archivo actual</a><br>'):'')+'<label class="catadd" style="display:inline-block;margin-top:4px">⬆ Subir archivo<input type="file" id="re-file" accept="image/*,application/pdf" hidden></label> <span id="re-fname" class="note"></span></div></div>'+
+        '<div class="fld"><label>Archivo</label><div>'+(d.url?('<a href="'+esc(d.url)+'" target="_blank" rel="noopener" style="color:var(--orange-2);font-weight:700">'+svgI(ICO.clip,14)+'Ver archivo actual</a><br>'):'')+'<label class="catadd" style="display:inline-block;margin-top:4px">'+svgI(ICO.up,15)+'Subir archivo<input type="file" id="re-file" accept="image/*,application/pdf" hidden></label> <span id="re-fname" class="note"></span></div></div>'+
         '<div class="fld"><label>Nota</label><input type="text" id="re-nota" value="'+enc(d.nota||'')+'" placeholder="Opcional"></div>'+
-        '<button id="re-save" class="btn" style="width:100%;margin-top:8px">💾 Guardar</button>'+
-        ((typeof DOC_GEN!=='undefined'&&DOC_GEN[ts])?'<button id="re-gen" type="button" class="btn ghost small" style="width:100%;margin-top:8px">🖨️ Generar formato desde la app</button>':'')+
+        '<button id="re-save" class="btn" style="width:100%;margin-top:8px">'+svgI(ICO.save)+'Guardar</button>'+
+        ((typeof DOC_GEN!=='undefined'&&DOC_GEN[ts])?'<button id="re-gen" type="button" class="btn ghost small" style="width:100%;margin-top:8px">'+svgI(ICO.gen)+'Generar documento</button>':'')+
       '</div>';
     if($('re-gen')) $('re-gen').addEventListener('click',function(){ $('rrhh-edit').classList.add('hide'); generarDoc(tid, ts); });
     var pend={file:null};
