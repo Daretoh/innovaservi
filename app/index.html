@@ -200,6 +200,21 @@
   .thumb .dbadge{position:absolute;right:4px;bottom:4px;background:rgba(0,0,0,.58);color:#fff;font-size:9px;font-weight:700;padding:1px 5px;border-radius:5px;}
   .thumb .rm{position:absolute;top:4px;right:4px;width:23px;height:23px;border-radius:50%;background:rgba(0,0,0,.62);color:#fff;
     border:none;font-size:14px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+  .thumb .edt{position:absolute;top:4px;left:4px;width:23px;height:23px;border-radius:50%;background:rgba(0,0,0,.62);color:#fff;
+    border:none;font-size:12px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+  .thumb .mvbar{position:absolute;left:50%;bottom:5px;transform:translateX(-50%);display:flex;gap:6px;z-index:2;}
+  .thumb .mvbar button{width:25px;height:22px;border-radius:6px;background:rgba(0,0,0,.62);color:#fff;border:none;font:700 16px var(--font);line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+  .thumb .mvbar button:active{background:var(--orange);}
+  /* Editor de imagen (Cropper.js) */
+  #img-editor{position:fixed;inset:0;z-index:90;background:rgba(10,12,20,.94);display:flex;flex-direction:column;}
+  #img-editor.hide{display:none;}
+  #img-editor .ie-stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:10px;overflow:hidden;}
+  #img-editor .ie-stage img{max-width:100%;max-height:100%;display:block;}
+  #img-editor .ie-bar{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;padding:12px 12px calc(12px + env(safe-area-inset-bottom));background:#0f1420;}
+  #img-editor .ie-bar button{font:600 13px var(--font);border:1px solid #2a3446;background:#1b2536;color:#e8eef7;border-radius:9px;padding:9px 12px;cursor:pointer;}
+  #img-editor .ie-bar button:hover{border-color:var(--orange);}
+  #img-editor .ie-bar .primary{background:var(--orange);border-color:var(--orange);color:#fff;}
+  #img-editor .ie-bar .sep{width:1px;background:#2a3446;align-self:stretch;margin:2px 0;}
 
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:11px;}
 
@@ -3945,7 +3960,59 @@
       '<p style="margin-top:16px">Fecha entrega EPP: <span contenteditable>'+fFaena(todayISO())+'</span></p>'+
       '<div class="dg-firmas"><div>Firma trabajador</div><div>Huella</div></div>';
   }
-  var DOC_GEN={ epp:{ nombre:'Entrega de EPP', build:docEPP } };
+  // Datos de la empresa (una sola fuente; si cambia la razón social, se edita aquí).
+  var EMP={ rz:'Innovación y Servicios SpA', rut:'77.647.955-1', dir:'Av. Nueva Providencia 1881, Providencia', rep:'Cristopher Andrés Ruiz Vidal', repRut:'17.240.763-3' };
+  function dgHead(titulo){ return '<div class="dg-h"><img src="../assets/images/InnovaServi-completo.png" onerror="this.style.display=\'none\'"><div class="t"><b>'+titulo+'</b><span>'+EMP.rz+' · RUT '+EMP.rut+'</span></div><div class="ver">VER: 01<br>FECHA: '+fFaena(todayISO())+'</div></div>'; }
+  function ce(v){ return '<span contenteditable>'+(v?esc(v):'')+'</span>'; }
+
+  // Plantilla: Contrato de trabajo por obra o faena (Operario de Servicios) — fiel al formato del Drive.
+  function docContrato(t){
+    var duties=['Aseo general de la planta: barrido seco y húmedo; aplicaciones de detergente; acción mecánica; enjuague y sanitizado de líneas de proceso, máquinas, mesones, canaletas, rejillas, piso, etc. Montar y desmontar cintas y estructuras; secado de estructuras y pisos.','Aseo general de exteriores: limpieza con hidrolavado, acción mecánica, barrido y recolección de desechos generados producto de la limpieza.','Limpieza de estanques de agua dulce, agua salada y estanques de flow ice.','Aseo en pasillos, andenes de carga, cámaras de frigorífico, baños, etc.','Limpieza de bodegas y armado de cajas, limpieza de pisos con máquina, retiro de polvo y secado de pisos.','Limpieza de tolvas de vísceras, plantas de riles, y cámaras de canalizado agua RIL.','Limpieza de fachadas en piso y altura, considerar apoyo de limpieza en altura siempre que cuente con el examen ocupacional y EPP correspondiente.','Limpieza y retiro de hielo y nieve de cámaras frigoríficas, trabajo bajo condiciones extremas de frío y en altura siempre que cuente con examen ocupacional y equipo necesario para dicha maniobra.','Servicios generales de exterior, obras menores y servicios de jardinería y podado de árboles.','Limpieza de barcos en general, bodegas, corteza externa y cubiertas, según amerite el trabajo.','Manejar químicos siempre y cuando haya recibido la capacitación pertinente. Para ello deberá ser capacitado y firmar planilla de registro.','Por ningún motivo limpiar con agua directa equipos electrónicos que posea la planta.'];
+    var li=duties.map(function(d){ return '<li>'+d+'</li>'; }).join('');
+    return dgHead('CONTRATO DE TRABAJO')+
+      '<p style="text-align:center;margin-top:-6px;color:#667;font-weight:700">Por obra o faena · '+esc(t.cargo||'Operario de Servicios')+'</p>'+
+      '<p>En Puerto Montt a '+ce('')+', entre <b>'+EMP.rz+'</b>, R.U.T: '+EMP.rut+', '+EMP.dir+', representado(a) legalmente por <b>'+EMP.rep+'</b>, RUT: '+EMP.repRut+', con domicilio en Los Lirios 35, Mirasol, comuna de Puerto Montt, en adelante el Empleador; y DON(A) '+ce(t.nombre)+', RUT: '+ce(t.rut)+', de Nacionalidad '+ce('CHILENA')+', estado civil '+ce('')+', nacido el '+ce('')+', domiciliado en '+ce('')+', en la comuna de '+ce('')+', en adelante el Trabajador. Se ha convenido el siguiente Contrato Individual de Trabajo:</p>'+
+      '<p><b>PRIMERO — Funciones.</b> El trabajador desempeñará la función de: <b>'+esc((t.cargo||'OPERARIO DE SERVICIOS')).toUpperCase()+'</b>. En virtud de lo anterior, deberá dar estricto cumplimiento a las obligaciones que se indican, cuya enumeración es a modo ejemplar:</p>'+
+      '<ul style="margin:0 0 12px 18px;line-height:1.5;font-size:12px">'+li+'</ul>'+
+      '<p><b>SEGUNDO — Lugar de trabajo.</b> El trabajador cumplirá sus labores en primera instancia en las diversas plantas de procesos de la Décima Región, y prestará servicios en las áreas de planta de procesos, frigorífico, pisciculturas y centros de cultivo con base en tierra; las partes acuerdan que podrá ser trasladado a otras secciones según la naturaleza del trabajo de la cláusula primera.</p>'+
+      '<p><b>TERCERO — Jornada.</b> 45 horas semanales distribuidas de lunes a viernes y/o de lunes a sábado, en turnos según necesidades de las Plantas de Proceso, rigiéndose en el artículo 5° del Reglamento Interno vigente. Horarios preferenciales: Lun–Sáb 08:00 a 16:00, 16:00 a 00:00 y 00:00 a 08:00 hrs, u otro similar, considerando 30 min de colación.</p>'+
+      '<p><b>CUARTO — Obligaciones.</b> El dependiente deberá cumplir fielmente las políticas, instrucciones, reglamentos y órdenes impartidas por su empleador o sus representantes (Supervisor). La inobservancia de estos deberes es considerada incumplimiento grave de las obligaciones del contrato, en los términos del N° 7 del artículo 160 del Código del Trabajo, sin perjuicio de las responsabilidades civiles y penales que correspondan.</p>'+
+      '<p><b>QUINTO — Remuneración.</b> Sueldo base diario: $ '+ce('25.000')+' por día trabajado, por las labores de la cláusula primera. Gratificación: 25% según ley (art. 50 del Código del Trabajo), con tope de 4,75 IMM, entendiéndose cumplida con este pago la obligación legal. Las remuneraciones se pagan por períodos vencidos, cada viernes de la semana siguiente, en efectivo o depósito en cuenta RUT/Vista del trabajador.</p>'+
+      '<p><b>SEXTO — Ingreso.</b> Se deja constancia que don(a) '+ce(t.nombre)+' ingresó a prestar servicios el '+ce(t.fecha_ingreso||'')+'.</p>'+
+      '<p><b>SÉPTIMO — Vigencia.</b> El contrato tiene una vigencia de carácter indefinido y el trabajador prestará servicios con intervenciones mínimas de 1 día al mes.</p>'+
+      '<p><b>OCTAVO — Domicilio.</b> Las partes fijan domicilio en Puerto Montt y se someten a la jurisdicción de sus Tribunales de Justicia.</p>'+
+      '<p><b>NOVENO — Ejemplares.</b> El presente contrato se suscribe en dos ejemplares, quedando uno en poder del trabajador.</p>'+
+      '<div class="dg-firmas"><div>Firma del Trabajador<br>RUT '+esc(t.rut||'____')+'</div><div>Firma del Empleador<br>'+EMP.rz+'</div></div>';
+  }
+
+  // Plantilla: ODI — Obligación de Informar los Riesgos (Derecho a Saber, D.S. 40).
+  function docODI(t){
+    var R=[['Contacto con productos químicos de limpieza','Quemaduras, irritación, intoxicación','Uso de guantes, antiparras y mascarilla; leer hoja de seguridad; ventilación'],['Superficies resbaladizas / caída mismo nivel','Golpes, esguinces, fracturas','Calzado antideslizante, señalización, orden y limpieza'],['Trabajo cerca del agua / centros de cultivo','Caída al agua, inmersión','Chaleco salvavidas, no trabajar solo, seguir protocolos del centro'],['Manejo manual de carga','Lesiones lumbares','Técnica de levante, apoyo mecánico, respetar pesos máximos'],['Trabajo en altura / limpieza en altura','Caída de distinto nivel','Arnés y línea de vida, permiso de trabajo, revisión de equipos'],['Ruido y frío / humedad','Daño auditivo, hipotermia','Protección auditiva, ropa térmica / impermeable']];
+    var rows=R.map(function(r){ return '<tr><td>'+r[0]+'</td><td>'+r[1]+'</td><td>'+r[2]+'</td></tr>'; }).join('');
+    return dgHead('OBLIGACIÓN DE INFORMAR LOS RIESGOS (ODI)')+
+      '<p style="text-align:center;margin-top:-6px;color:#667;font-weight:700">Derecho a Saber · D.S. N° 40, Art. 21</p>'+
+      '<p>Trabajador: '+ce(t.nombre)+' &nbsp; R.U.T: '+ce(t.rut)+' &nbsp; Cargo: '+ce(t.cargo||'Operario de Servicios')+' &nbsp; Fecha: '+ce(fFaena(todayISO()))+'</p>'+
+      '<p>Se informa al trabajador sobre los riesgos propios de sus labores, sus consecuencias y las medidas preventivas:</p>'+
+      '<table class="dg-tbl"><thead><tr><th style="width:26%">Riesgo</th><th style="width:34%">Consecuencia</th><th>Medida preventiva</th></tr></thead><tbody>'+rows+'</tbody></table>'+
+      '<p>Declaro haber sido informado(a) de los riesgos de mi cargo, sus consecuencias y las medidas preventivas, y me comprometo a cumplirlas.</p>'+
+      '<div class="dg-firmas"><div>Firma trabajador<br>RUT '+esc(t.rut||'____')+'</div><div>Informado por<br>Prevención / '+EMP.rz+'</div></div>';
+  }
+
+  // Plantilla: Ficha de datos del trabajador.
+  function docDatos(t){
+    var f=[['Nombre completo',t.nombre],['R.U.T',t.rut],['Cargo',t.cargo||'Operario de Servicios'],['Fecha de nacimiento',''],['Nacionalidad','Chilena'],['Estado civil',''],['Dirección',''],['Comuna',''],['Teléfono',''],['Correo',''],['AFP',''],['Salud (Fonasa / Isapre)',''],['N° de cargas',''],['Contacto de emergencia',''],['Teléfono de emergencia',''],['Banco',''],['Tipo y N° de cuenta',''],['Talla de ropa',''],['Talla de calzado',''],['Fecha de ingreso',t.fecha_ingreso||'']];
+    var rows=f.map(function(r){ return '<tr><td style="width:38%;font-weight:700;background:#f7f8fc">'+r[0]+'</td><td>'+ce(r[1])+'</td></tr>'; }).join('');
+    return dgHead('FICHA DE DATOS DEL TRABAJADOR')+
+      '<table class="dg-tbl">'+rows+'</table>'+
+      '<div class="dg-firmas"><div>Firma trabajador</div><div>Recibido por · '+EMP.rz+'</div></div>';
+  }
+
+  var DOC_GEN={
+    contrato:{ nombre:'Contrato de trabajo', build:docContrato },
+    datos:{ nombre:'Ficha de datos', build:docDatos },
+    epp:{ nombre:'Entrega de EPP', build:docEPP },
+    odi:{ nombre:'ODI (riesgos)', build:docODI }
+  };
   var DG_CTX=null;
   function generarDoc(tid, tipo){
     var g=DOC_GEN[tipo]; if(!g) return;
