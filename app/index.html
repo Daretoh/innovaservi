@@ -552,7 +552,12 @@
   .rd-fae{border-radius:7px;padding:4px 9px;}
   .rd-fae-nm{display:block;font:700 11.5px var(--font);line-height:1.3;}
   .rd-fae-h{font-size:.72rem;color:var(--muted);font-variant-numeric:tabular-nums;}
-  .fcards{margin-top:6px;display:flex;flex-direction:column;gap:4px;max-width:300px;}
+  .fwrap{margin-top:6px;}
+  .ftog{display:inline-flex;align-items:center;gap:4px;background:none;border:none;padding:0;cursor:pointer;color:var(--muted);font:700 10px var(--font);text-transform:uppercase;letter-spacing:.03em;}
+  .ftog svg{transition:transform .15s;}
+  .fwrap.collapsed .ftog svg{transform:rotate(-90deg);}
+  .fwrap.collapsed .fcards{display:none;}
+  .fcards{margin-top:4px;display:flex;flex-direction:column;gap:4px;max-width:300px;}
   .fcard{border-left:3px solid;border-radius:6px;padding:3px 9px;}
   .fcard .fc-n{display:block;font:700 10.5px var(--font);line-height:1.25;}
   .fcard .fc-s{font-size:9.5px;color:var(--muted);font-variant-numeric:tabular-nums;}
@@ -1447,6 +1452,13 @@
     cargarRegistros();
     if(isAdmin){ cargarTrab(actualizarDatalist); cargarClientes(); cargarCargos(); }
     ofrecerBorrador();
+    // Restaura la última pestaña usada (si sigue siendo visible/permitida para este usuario).
+    try{ var vv=localStorage.getItem('iserv-vista');
+      if(vv && vv!=='v-reporte' && $(vv)){
+        var navVis=Array.prototype.some.call(document.querySelectorAll('.tabbar button[data-v="'+vv+'"], .sbar .sb-item[data-v="'+vv+'"]'), function(n){ return !n.classList.contains('hide'); });
+        if(navVis) abrirVista(vv);
+      }
+    }catch(_){}
   }
   function registroDe(eventoId){ if(!eventoId) return null; var id=String(eventoId);
     // Coincide por la faena principal (evento_id) O por cualquier faena dentro de un reporte consolidado.
@@ -1480,6 +1492,7 @@
 
   // ====== Navegación (tabs) ======
   function abrirVista(v){
+    try{ localStorage.setItem('iserv-vista', v); }catch(_){}   // recuerda la pestaña para que al actualizar no vuelva al inicio
     document.querySelectorAll('.tabbar button').forEach(function(x){ x.classList.toggle('on',x.dataset.v===v); });
     document.querySelectorAll('.sbar .sb-item[data-v]:not([data-seg])').forEach(function(x){ x.classList.toggle('on',x.dataset.v===v); });
     if(v!=='v-rrhh') document.querySelectorAll('.sbar .sb-item[data-seg]').forEach(function(x){ x.classList.remove('on'); });
@@ -3425,7 +3438,7 @@
   });
 
   // ====== REMUNERACIONES / PAGOS (solo admin) ======
-  var REMU_LUNES=null, REMU_DATA=null;
+  var REMU_LUNES=null, REMU_DATA=null, REMU_FCOL={};
   function isoD(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
   function lunesDe(f){ var d=new Date(f+'T12:00:00'); var dow=(d.getDay()+6)%7; d.setDate(d.getDate()-dow); return isoD(d); }
   function sumarDias(f,n){ var d=new Date(f+'T12:00:00'); d.setDate(d.getDate()+n); return isoD(d); }
@@ -3538,7 +3551,7 @@
     if(!filas.length){ cont.innerHTML='<div class="empty"><div class="big">💵</div>Sin horas ni pagos esta semana.<br><span style="font-size:.82rem">Cambia de semana o revisa la config de pago.</span></div>'; return; }
     var m=function(v,neg){ return v?((neg?'−':'')+fmtMoney(v)):'<span class="rt-z">—</span>'; };
     // Faenas de cada trabajador como tarjetas del color de la empresa, con día y horas por faena.
-    function faenasMini(H){
+    function faenasMini(H, tid){
       if(!H||!H.detalle||!H.detalle.length) return '';
       var byFae={}, ford=[];
       H.detalle.forEach(function(d){ var fa=(d.faena||''); if(!(fa in byFae)){ byFae[fa]={dias:{},dord:[]}; ford.push(fa); } var g=byFae[fa]; if(!(d.fecha in g.dias)){ g.dias[d.fecha]=0; g.dord.push(d.fecha); } g.dias[d.fecha]+=(d.min||0); });
@@ -3548,11 +3561,13 @@
         var sub=g.dord.map(function(f){ var dd=new Date(f+'T12:00:00'); return diaNom(f)+' '+dd.getDate()+' · '+hm(g.dias[f]); }).join('  ·  ');
         return '<div class="fcard" style="border-color:'+col.border+';background:'+col.bg+'"><span class="fc-n" style="color:'+col.text+'">'+(fa?esc(fa):'Sin faena')+'</span><span class="fc-s">'+sub+'</span></div>';
       }).join('');
-      return '<div class="fcards">'+cards+'</div>';
+      var n=ford.length, collapsed=!!REMU_FCOL[tid];
+      var chev='<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';
+      return '<div class="fwrap'+(collapsed?' collapsed':'')+'"><button class="ftog" type="button" data-t="'+enc(String(tid))+'">'+chev+'<span>'+n+' faena'+(n>1?'s':'')+'</span></button><div class="fcards">'+cards+'</div></div>';
     }
     var body=filas.map(function(x,i){
       return '<tr data-i="'+i+'"'+(x.tipo==='contrato'?' class="rt-fijo"':'')+'>'+
-        '<td class="rt-nm">'+(x.t.id?'':'<span title="No está registrado como trabajador">⚠️ </span>')+esc(titleCase(x.t.nombre)||'')+'<div class="rt-sub"'+(x.t.id?'':' style="color:#b45309;font-weight:700"')+'>'+esc(x.t.cargo||'')+(x.tipo==='contrato'?(' · fijo'+(x.jor?(' '+x.jor+'h/día'):'')):'')+'</div>'+faenasMini(x.H)+'</td>'+
+        '<td class="rt-nm">'+(x.t.id?'':'<span title="No está registrado como trabajador">⚠️ </span>')+esc(titleCase(x.t.nombre)||'')+'<div class="rt-sub"'+(x.t.id?'':' style="color:#b45309;font-weight:700"')+'>'+esc(x.t.cargo||'')+(x.tipo==='contrato'?(' · fijo'+(x.jor?(' '+x.jor+'h/día'):'')):'')+'</div>'+faenasMini(x.H,(x.t.id||('n'+i)))+'</td>'+
         '<td>'+x.dias+'</td>'+(x.tipo==='contrato'?('<td>'+hm(x.totMin)+'<div class="rt-sub" style="color:var(--navy)">− '+hm(x.totMin-x.baseMin)+' = '+hm(x.baseMin)+' extra</div></td>'):('<td>'+hm(x.totMin)+'</td>'))+
         '<td>'+m(x.base)+'</td><td>'+m(x.vueltasMonto)+'</td><td>'+m(x.peajes)+'</td>'+
         '<td class="rt-ok">'+m(x.bono)+'</td><td class="rt-bad">'+m(x.desc,true)+'</td>'+
@@ -3562,6 +3577,7 @@
       '<th>Trabajador</th><th>Días</th><th>Horas</th><th>Base</th><th>Vueltas</th><th>Peajes</th><th>Extras</th><th>Desc.</th><th>Total</th></tr></thead>'+
       '<tbody>'+body+'</tbody></table></div>';
     cont.querySelectorAll('tbody tr[data-i]').forEach(function(el){ el.addEventListener('click',function(){ abrirDetalleRemu(REMU_DATA.filas[+el.dataset.i]); }); });
+    cont.querySelectorAll('.ftog').forEach(function(b){ b.addEventListener('click',function(ev){ ev.stopPropagation(); var t=b.dataset.t; REMU_FCOL[t]=!REMU_FCOL[t]; var w=b.closest('.fwrap'); if(w) w.classList.toggle('collapsed', !!REMU_FCOL[t]); }); });
   }
   $('remu-prev').addEventListener('click',function(){ REMU_LUNES=sumarDias(REMU_LUNES||lunesDe(todayISO()),-7); cargarRemu(); });
   $('remu-next').addEventListener('click',function(){ REMU_LUNES=sumarDias(REMU_LUNES||lunesDe(todayISO()),7); cargarRemu(); });
