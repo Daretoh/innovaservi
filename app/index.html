@@ -3542,7 +3542,7 @@
         '<td class="rt-tot">'+(x.aj?'<span title="ajustado" style="color:var(--orange-2)">'+fmtMoney(x.contable)+'</span><div class="rt-obs" style="max-width:none">real '+fmtMoney(x.real)+'</div>':fmtMoney(x.contable))+'</td></tr>';
     }).join('');
     cont.innerHTML='<div class="remu-scroll"><table class="remu-tbl"><thead><tr>'+
-      '<th>Trabajador</th><th>Días</th><th>Horas</th><th>Base</th><th>Vueltas</th><th>Peajes</th><th>Bono</th><th>Desc.</th><th>Total</th></tr></thead>'+
+      '<th>Trabajador</th><th>Días</th><th>Horas</th><th>Base</th><th>Vueltas</th><th>Peajes</th><th>Extras</th><th>Desc.</th><th>Total</th></tr></thead>'+
       '<tbody>'+body+'</tbody></table></div>';
     cont.querySelectorAll('tbody tr[data-i]').forEach(function(el){ el.addEventListener('click',function(){ abrirDetalleRemu(REMU_DATA.filas[+el.dataset.i]); }); });
   }
@@ -3634,7 +3634,7 @@
     desg+='<div class="rd-lin"><span>'+(x.tipo==='contrato'?'Horas extra pagadas':'Horas')+' ('+hm(x.baseMin)+(x.vh?(' × '+fmtMoney(x.vh)):'')+')</span><b>'+fmtMoney(x.base)+'</b></div>';
     if(x.vueltas) desg+='<div class="rd-lin"><span>'+x.vueltas+' vueltas × '+fmtMoney(REMU_DATA.valorVuelta)+'</span><b>'+fmtMoney(x.vueltasMonto)+'</b></div>';
     if(x.peajes) desg+='<div class="rd-lin"><span>Peajes (reembolso)</span><b>'+fmtMoney(x.peajes)+'</b></div>';
-    if(x.bono) desg+='<div class="rd-lin"><span>Montos y bonos</span><b style="color:#0f6e56">'+fmtMoney(x.bono)+'</b></div>';
+    if(x.bono) desg+='<div class="rd-lin"><span>Extras</span><b style="color:#0f6e56">'+fmtMoney(x.bono)+'</b></div>';
     if(x.desc) desg+='<div class="rd-lin"><span>Descuentos</span><b style="color:#dc2626">− '+fmtMoney(x.desc)+'</b></div>';
     desg+='<div class="rd-lin"><span>Total real (por horas)</span><b>'+fmtMoney(x.real)+'</b></div>';
     desg+='<div class="rd-lin rd-tot"><span>Total a pagar (contable)</span><b id="rd-cont-live" style="color:var(--orange-2)">'+fmtMoney(x.contable)+'</b></div>';
@@ -3652,7 +3652,7 @@
     // Montos/bonos/descuentos de este trabajador en la semana (editables).
     var montosCard='';
     if(x.t.id){
-      var tipoLbl={bono:'Bono / extra', descuento:'Descuento', otro:'Monto adicional'};
+      var tipoLbl={bono:'Extra', descuento:'Descuento', otro:'Monto adicional'};
       var misItems=(REMU_DATA.items||[]).filter(function(it){ return String(it.trabajador_id)===String(x.t.id); });
       var itemsHtml=misItems.length?misItems.map(function(it){ var neg=it.tipo==='descuento';
         return '<div class="ri-item" data-id="'+it.id+'" style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)">'+
@@ -3660,10 +3660,10 @@
           '<button class="ri-edit" type="button" title="Editar" style="width:30px;height:32px;border:1px solid var(--line);background:#fff;border-radius:8px;cursor:pointer">✎</button>'+
           '<button class="ri-del" type="button" title="Quitar" style="width:30px;height:32px;border:1px solid #f0c0c0;background:#fff;color:#dc2626;border-radius:8px;cursor:pointer">✕</button></div>';
       }).join(''):'<p class="note" style="margin:0 0 4px">Sin montos adicionales esta semana.</p>';
-      montosCard='<div class="card"><label style="display:block;font:700 13px var(--font);color:var(--ink);margin-bottom:6px">💵 Montos, bonos y descuentos</label>'+
+      montosCard='<div class="card"><label style="display:block;font:700 13px var(--font);color:var(--ink);margin-bottom:6px">Montos, extras y descuentos</label>'+
         itemsHtml+
-        '<div class="grid2" style="margin-top:8px"><div class="fld" style="margin:0"><label>Tipo</label><select id="rd-tipo"><option value="otro">Monto (adicional)</option><option value="bono">Bono / extra</option><option value="descuento">Descuento</option></select></div><div class="fld" style="margin:0"><label>Monto ($)</label><input id="rd-monto" type="number" min="0" placeholder="0"></div></div>'+
-        '<div class="fld"><label>Observación (por qué es este monto) *</label><input id="rd-concepto" type="text" placeholder="Ej: Anticipo, adelanto, bono producción, colación…"></div>'+
+        '<div class="grid2" style="margin-top:8px"><div class="fld" style="margin:0"><label>Tipo</label><select id="rd-tipo"><option value="otro">Monto (adicional)</option><option value="bono">Extra</option><option value="descuento">Descuento</option></select></div><div class="fld" style="margin:0"><label>Monto ($)</label><input id="rd-monto" type="number" min="0" placeholder="0"></div></div>'+
+        '<div class="fld"><label>Observación (por qué es este monto) *</label><input id="rd-concepto" type="text" placeholder="Ej: Anticipo, adelanto, extra de producción, colación…"></div>'+
         '<div style="display:flex;gap:8px"><button id="rd-add" class="btn small" style="width:auto">Agregar</button><button id="rd-cancel" class="btn ghost small hide" style="width:auto">Cancelar edición</button></div></div>';
     }
     $('rd-body').innerHTML=
@@ -3719,7 +3719,7 @@
       var tipo=$('rd-tipo').value;
       if(!editItemId){   // evita agregar dos veces lo mismo esta semana (doble clic o repetido)
         var dup=(REMU_DATA.items||[]).some(function(it){ return String(it.trabajador_id)===String(x.t.id) && it.tipo===tipo && (+it.monto||0)===monto && norm(it.concepto||'')===norm(obs); });
-        if(dup && !confirm('Ya hay un '+(tipo==='descuento'?'descuento':(tipo==='bono'?'bono':'monto'))+' igual esta semana ('+fmtMoney(monto)+' · '+obs+').\n\n¿Agregar otro de todas formas?')) return;
+        if(dup && !confirm('Ya hay un '+(tipo==='descuento'?'descuento':(tipo==='bono'?'extra':'monto'))+' igual esta semana ('+fmtMoney(monto)+' · '+obs+').\n\n¿Agregar otro de todas formas?')) return;
       }
       var payload={ trabajador_id:x.t.id, semana:REMU_DATA.lun, tipo:tipo, concepto:obs, monto:monto, autor:userEmail };
       btn.disabled=true; busy(true,'Guardando…');
