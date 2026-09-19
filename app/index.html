@@ -1340,6 +1340,15 @@
   var MES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
   function fechaCorta(f){ if(!f)return''; var d=new Date(f+'T00:00:00'); return d.getDate()+' '+MES[d.getMonth()]+' '+d.getFullYear(); }
   function fechaMini(f){ if(!f)return''; var d=new Date(f+'T00:00:00'); return d.getDate()+'/'+(d.getMonth()+1); }
+  var DIAS_COR=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  function diaNom(f){ if(!f)return''; return DIAS_COR[new Date(f+'T12:00:00').getDay()]||''; }
+  function fechaDia(f){ if(!f)return''; return diaNom(f)+' '+fechaCorta(f); }   // "Lun 14 sep 2026"
+  // Fines de semana y feriados: para contrato fijo, esas horas se pagan como TRATO (no jornada normal).
+  var FERIADOS_MMDD=['01-01','05-01','05-21','06-20','06-29','07-16','08-15','09-18','09-19','10-12','10-31','11-01','12-08','12-25'];
+  var FERIADOS_ISO=[];  // feriados movibles (ej. Viernes Santo): agrega fechas 'aaaa-mm-dd' aquí.
+  function esFinde(f){ var d=new Date(f+'T12:00:00').getDay(); return d===0||d===6; }
+  function esFeriado(f){ return FERIADOS_MMDD.indexOf((f||'').slice(5))>=0 || FERIADOS_ISO.indexOf(f)>=0; }
+  function esTratoDia(f){ return esFinde(f)||esFeriado(f); }
   var CAT_LBL={sin:'Sin clasificar',antes:'Antes',proceso:'Proceso',despues:'Después',doc:'Registro documental'};
   function catOk(c){ return (c==='antes'||c==='despues'||c==='doc')?c:'proceso'; }
   // categoría de almacenamiento: conserva 'sin' (sin clasificar) además de las etapas
@@ -2568,7 +2577,7 @@
           '</div>'+
         '</div>';
       }).join('');
-      return '<div class="hgroup'+(HORAS_COLLAPSED[f]?' collapsed':'')+'"><div class="hgroup-h" data-f="'+f+'"><span class="hg-chev">▾</span>📅 '+fechaCorta(f)+' <span style="color:var(--muted);font-weight:600">('+idxs.length+(idxs.length>1?' trabajadores':' trabajador')+totTxt+')</span></div><div class="hgroup-body">'+rows+'</div></div>';
+      return '<div class="hgroup'+(HORAS_COLLAPSED[f]?' collapsed':'')+'"><div class="hgroup-h" data-f="'+f+'"><span class="hg-chev">▾</span>📅 '+fechaDia(f)+' <span style="color:var(--muted);font-weight:600">('+idxs.length+(idxs.length>1?' trabajadores':' trabajador')+totTxt+')</span></div><div class="hgroup-body">'+rows+'</div></div>';
     }).join('');
     c.querySelectorAll('.hgroup-h').forEach(function(h){ h.addEventListener('click',function(){ var g=h.parentNode; HORAS_COLLAPSED[h.dataset.f]=g.classList.toggle('collapsed'); }); });
     c.querySelectorAll('.hrow-rm').forEach(function(b){ b.addEventListener('click',function(){ removeTrab(+b.dataset.i); }); });
@@ -2683,7 +2692,7 @@
         '<textarea class="jprep" data-f="'+f+'" rows="2" placeholder="Ej: charla de 5 min, EPP entregado, revisión de equipos, materiales cargados…">'+esc(jr.preparacion||'')+'</textarea>'+
       '</div>';
       var colapsado=(HZ_COL[f]!==false);   // colapsado por defecto; se abre al tocar
-      return '<div class="hgroup'+(colapsado?' collapsed':'')+'"><div class="hgroup-h" data-f="'+f+'"><span class="hg-chev">▾</span>📅 '+fechaCorta(f)+' <span style="color:var(--muted);font-weight:600">('+nT+(nT===1?' trabajador':' trabajadores')+totTxt+')</span></div><div class="hgroup-body">'+rows+addBtn+jday+'</div></div>';
+      return '<div class="hgroup'+(colapsado?' collapsed':'')+'"><div class="hgroup-h" data-f="'+f+'"><span class="hg-chev">▾</span>📅 '+fechaDia(f)+' <span style="color:var(--muted);font-weight:600">('+nT+(nT===1?' trabajador':' trabajadores')+totTxt+')</span></div><div class="hgroup-body">'+rows+addBtn+jday+'</div></div>';
     }).join('')||'<div class="empty"><div class="big">⏱️</div>Sin horas esta semana.<br><span style="font-size:.82rem">Cambia de semana o toca “＋ Agregar hora”.</span></div>';
     $('hz-cnt').textContent=HZ.length+(HZ.length===1?' línea':' líneas');
     c.querySelectorAll('.hgroup-h').forEach(function(h){ h.addEventListener('click',function(){ HZ_COL[h.dataset.f]=h.parentNode.classList.toggle('collapsed'); }); });
@@ -2811,7 +2820,7 @@
       var minis=media.slice(0,6).map(function(m){ return m.tipo==='video'?'<div class="vv">▶</div>':'<img src="'+esc(m.url)+'" loading="lazy">'; }).join('');
       var rh=resumenHoras(e.horas); var na=(e.asignacion||[]).length;
       var pills=(rh?'<span class="pill">🕐 '+esc(rh)+'</span>':'')+(na?' <span class="pill">🦺 '+na+' en cuadrilla</span>':'');
-      return '<div class="item" data-idx="'+idx+'" style="cursor:pointer"><div class="top"><span class="emp">'+esc(e.empresa||'—')+'</span><span class="dt">'+fechaCorta(e.fecha)+' ›</span></div>'+
+      return '<div class="item" data-idx="'+idx+'" style="cursor:pointer"><div class="top"><span class="emp">'+esc(e.empresa||'—')+'</span><span class="dt">'+fechaDia(e.fecha)+' ›</span></div>'+
         (e.lugar?'<div class="lug">📍 '+esc(e.lugar)+'</div>':'')+
         (pills?'<div style="margin-top:6px;display:flex;gap:5px;flex-wrap:wrap">'+pills+'</div>':'')+
         (chips?'<div style="margin-top:7px;display:flex;gap:5px;flex-wrap:wrap">'+chips+'</div>':'')+
@@ -3433,9 +3442,12 @@
   }
   function computarRemu(){
     var D=REMU_DATA; if(!D) return; var lun=D.lun, fin=D.fin;
-    var horasT={};
+    var horasT={}, vistoLinea={}, dupCount=0;
     D.regs.forEach(function(h){ var f=h.fecha; if(!f||f<lun||f>fin) return;
-      var nm=norm(h.trabajador); if(!nm) return; var mn=totalMin(h.entrada,h.salida); mn=(mn==null?0:mn);
+      var nm=norm(h.trabajador); if(!nm) return;
+      // Línea duplicada: misma persona, mismo día y mismo horario exacto → no contar dos veces.
+      if(h.entrada && h.salida){ var k=nm+'|'+f+'|'+h.entrada+'|'+h.salida; if(vistoLinea[k]){ dupCount++; return; } vistoLinea[k]=1; }
+      var mn=totalMin(h.entrada,h.salida); mn=(mn==null?0:mn);
       if(!horasT[nm]) horasT[nm]={porDia:{},detalle:[],totalMin:0,vueltas:0,nombre:(h.trabajador||'').trim()};
       horasT[nm].porDia[f]=(horasT[nm].porDia[f]||0)+mn;
       horasT[nm].detalle.push({fecha:f,empresa:h.empresa,lugar:h.lugar,faena:(h.faena||''),entrada:h.entrada,salida:h.salida,min:mn,vueltas:(+h.vueltas||0)});
@@ -3459,7 +3471,7 @@
       var tipo=t.tipo_pago||'hora', tr=cargoTrato(t.cargo), vh=tr?Math.round(tr/8):((+t.valor_hora||0)||D.valorHora||0), jor=+t.jornada_horas||0;
       // Pago por día: real (por horas) y contable (ajuste manual por día si existe).
       var base=0, baseMin=0, baseCont=0, hayAjDia=false;
-      if(H){ for(var fd in H.porDia){ var dm=H.porDia[fd], pmin=(tipo==='contrato')?Math.max(0,dm-jor*60):dm;
+      if(H){ for(var fd in H.porDia){ var dm=H.porDia[fd], pmin=(tipo==='contrato' && !esTratoDia(fd))?Math.max(0,dm-jor*60):dm;
         var dReal=Math.round(pmin/60*vh), ajd=(D.ajDia&&t.id)?D.ajDia[t.id+'|'+fd]:null, dCont=ajd?ajd.monto:dReal; if(ajd) hayAjDia=true;
         base+=dReal; baseMin+=pmin; baseCont+=dCont;
         porDiaMonto[fd]=(porDiaMonto[fd]||0)+dCont; porDiaHoras[fd]=(porDiaHoras[fd]||0)+dm; } }
@@ -3483,7 +3495,7 @@
     filas.sort(function(a,b){ var af=(a.tipo==='contrato')?1:0, bf=(b.tipo==='contrato')?1:0; if(af!==bf) return af-bf; return (a.t.nombre||'').localeCompare(b.t.nombre||''); });   // spot primero, fijos al final
     REMU_DATA.filas=filas;
     $('remu-total-val').textContent=fmtMoney(total);
-    $('remu-cnt').textContent=filas.length+(filas.length===1?' trabajador':' trabajadores');
+    $('remu-cnt').innerHTML=filas.length+(filas.length===1?' trabajador':' trabajadores')+(dupCount?(' · <span style="color:#b45309;font-weight:700">'+dupCount+' línea'+(dupCount>1?'s':'')+' duplicada'+(dupCount>1?'s':'')+' ignorada'+(dupCount>1?'s':'')+'</span>'):'');
     // Cards de total por día de la semana (horas trabajadas · pago).
     var DIAS3=['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'], hoyISO=todayISO(), cardsHtml='';
     for(var di=0; di<7; di++){ var fday=sumarDias(lun,di), mo=porDiaMonto[fday]||0, hr=porDiaHoras[fday]||0, dd=new Date(fday+'T12:00:00');
@@ -3559,18 +3571,21 @@
     var porDiaD={}; ((x.H&&x.H.detalle)||[]).forEach(function(d){ var f=d.fecha; if(!porDiaD[f]) porDiaD[f]={min:0,ents:[],fae:{}}; porDiaD[f].min+=d.min; porDiaD[f].ents.push(d); if(d.faena) porDiaD[f].fae[d.faena]=1; });
     var fechasD=Object.keys(porDiaD).sort();
     var diasHtml=fechasD.length?fechasD.map(function(f){
-      var pd=porDiaD[f], pmin=(x.tipo==='contrato')?Math.max(0,pd.min-(x.jor*60)):pd.min, dReal=Math.round(pmin/60*x.vh);
+      var pd=porDiaD[f], pmin=(x.tipo==='contrato' && !esTratoDia(f))?Math.max(0,pd.min-(x.jor*60)):pd.min, dReal=Math.round(pmin/60*x.vh);
       var ajd=(REMU_DATA.ajDia&&x.t.id)?REMU_DATA.ajDia[x.t.id+'|'+f]:null, dCont=ajd?ajd.monto:dReal;
       var horarios=pd.ents.map(function(d){ return esc(d.entrada||'--:--')+'→'+esc(d.salida||'--:--'); }).join(', ');
       var faTxt=Object.keys(pd.fae).length?('<div class="note" style="margin:1px 0 0;font-size:.71rem">📍 '+esc(Object.keys(pd.fae).join(' · '))+'</div>'):'';
       var fijoTxt='';
-      if(x.tipo==='contrato'){ var dFull=Math.round(pd.min/60*x.vh), dDesc=dFull-dReal; fijoTxt='<div class="note" style="margin:1px 0 0;font-size:.7rem;color:var(--navy)">📄 fijo · '+hm(pd.min)+' − '+(x.jor||0)+'h = '+hm(pmin)+' extra · real '+fmtMoney(dReal)+' <span style="color:var(--muted)">(trato '+fmtMoney(dFull)+' · −'+fmtMoney(dDesc)+')</span></div>'; }
+      if(x.tipo==='contrato'){ var dFull=Math.round(pd.min/60*x.vh), dDesc=dFull-dReal;
+        fijoTxt = esTratoDia(f)
+          ? '<div class="note" style="margin:1px 0 0;font-size:.7rem;color:var(--navy)">'+(esFinde(f)?'fin de semana':'feriado')+' · '+hm(pd.min)+' como trato · '+fmtMoney(dReal)+'</div>'
+          : '<div class="note" style="margin:1px 0 0;font-size:.7rem;color:var(--navy)">fijo · '+hm(pd.min)+' − '+(x.jor||0)+'h = '+hm(pmin)+' extra · real '+fmtMoney(dReal)+' <span style="color:var(--muted)">(trato '+fmtMoney(dFull)+' · −'+fmtMoney(dDesc)+')</span></div>'; }
       var right=x.t.id
         ? '<div class="rd-dcol"><div class="rd-real2'+((dCont!==dReal)?' rd-aj2':'')+'">real '+fmtMoney(dReal)+'</div>'+
             '<input class="rd-dcont" type="number" min="0" data-f="'+f+'" data-real="'+dReal+'" value="'+dCont+'" title="Monto contable de este día (editable)">'+
             '<input class="rd-dobs" type="text" data-f="'+f+'" value="'+enc(ajd?ajd.obs:'')+'" placeholder="motivo (si ajustas)"></div>'
         : '<div class="rd-dcol"><b style="color:var(--orange-2)">'+fmtMoney(dReal)+'</b></div>';
-      return '<div class="rd-day2"><div style="flex:1;min-width:0"><b>'+fechaCorta(f)+'</b> <span class="note" style="margin:0;font-size:.72rem">'+horarios+' · '+hm(pd.min)+'</span>'+faTxt+fijoTxt+'</div>'+right+'</div>';
+      return '<div class="rd-day2"><div style="flex:1;min-width:0"><b>'+fechaDia(f)+'</b> <span class="note" style="margin:0;font-size:.72rem">'+horarios+' · '+hm(pd.min)+'</span>'+faTxt+fijoTxt+'</div>'+right+'</div>';
     }).join(''):'<p class="note" style="margin:0">Sin días registrados esta semana.</p>';
     var desg='';
     if(x.tipo==='contrato'){
@@ -3717,7 +3732,7 @@
       if(!ents.length) return;
       var dayMin=0, vu=0, faW={};
       ents.forEach(function(d){ dayMin+=d.min; vu+=(d.vueltas||0); if(d.faena) faW[d.faena]=1; });
-      var pagoMin=(x.tipo==='contrato')?Math.max(0,dayMin-(x.jor*60)):dayMin;
+      var pagoMin=(x.tipo==='contrato' && !esTratoDia(fday))?Math.max(0,dayMin-(x.jor*60)):dayMin;
       var real=Math.round(pagoMin/60*x.vh);
       var ajd=(D.ajDia&&x.t.id)?D.ajDia[x.t.id+'|'+fday]:null, cont=ajd?ajd.monto:real;
       totMin+=dayMin; totMonto+=cont; totVu+=vu;
@@ -3730,7 +3745,10 @@
       var horarios=r.ents.map(function(d){ return esc(d.entrada||'--:--')+'→'+esc(d.salida||'--:--'); }).join(', ');
       var faTxt=r.faenas.length?('<div class="note" style="margin:1px 0 0;font-size:.71rem">📍 '+esc(r.faenas.join(' · '))+'</div>'):'';
       var fijoTxt='';
-      if(r.x.tipo==='contrato'){ var dFull=Math.round(r.dayMin/60*r.x.vh), dDesc=dFull-r.real, exMin=Math.max(0,r.dayMin-(r.x.jor*60)); fijoTxt='<div class="note" style="margin:1px 0 0;font-size:.7rem;color:var(--navy)">📄 fijo · '+hm(r.dayMin)+' − '+(r.x.jor||0)+'h = '+hm(exMin)+' extra · real '+fmtMoney(r.real)+' <span style="color:var(--muted)">(trato '+fmtMoney(dFull)+' · −'+fmtMoney(dDesc)+')</span></div>'; }
+      if(r.x.tipo==='contrato'){ var dFull=Math.round(r.dayMin/60*r.x.vh), dDesc=dFull-r.real, exMin=Math.max(0,r.dayMin-(r.x.jor*60));
+        fijoTxt = esTratoDia(fday)
+          ? '<div class="note" style="margin:1px 0 0;font-size:.7rem;color:var(--navy)">'+(esFinde(fday)?'fin de semana':'feriado')+' · '+hm(r.dayMin)+' como trato · '+fmtMoney(r.real)+'</div>'
+          : '<div class="note" style="margin:1px 0 0;font-size:.7rem;color:var(--navy)">fijo · '+hm(r.dayMin)+' − '+(r.x.jor||0)+'h = '+hm(exMin)+' extra · real '+fmtMoney(r.real)+' <span style="color:var(--muted)">(trato '+fmtMoney(dFull)+' · −'+fmtMoney(dDesc)+')</span></div>'; }
       var right=r.x.t.id
         ? '<div class="rd-dcol"><div class="rd-real2'+((r.cont!==r.real)?' rd-aj2':'')+'">real '+fmtMoney(r.real)+'</div>'+
             '<input class="rd-dcont2" type="number" min="0" data-tid="'+r.x.t.id+'" data-real="'+r.real+'" value="'+r.cont+'" title="Monto contable de este día (editable)">'+
