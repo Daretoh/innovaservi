@@ -149,6 +149,8 @@
   .sel-bar button.del{background:#dc2626;color:#fff;} .sel-bar button.clr{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.5);}
   /* Horas por trabajador */
   .hrow{position:relative;border:1px solid var(--line);border-radius:11px;padding:6px 8px;margin-bottom:6px;background:var(--alt);display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+  .hrow.hrow-dup{border-color:#dc2626;background:#fdecec;}
+  .hrow-warn{flex-basis:100%;color:#b91c1c;font:700 11px var(--font);margin-top:1px;}
   .hrow .h-trab{flex:1 1 140px;min-width:120px;font:700 13.5px var(--font);padding:6px 9px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);}
   .hrow .h-trab.h-bad{border-color:#dc2626;background:#fff5f5;color:#b91c1c;}
   .hfae{margin-bottom:9px;border-radius:9px;}
@@ -2658,19 +2660,25 @@
     var byDate={}, order=[];
     HZ.forEach(function(h,i){ var f=h.fecha; if(!byDate[f]){ byDate[f]=[]; order.push(f); } byDate[f].push(i); });
     order.sort(function(a,b){ return a<b?1:-1; });
+    // Detecta horas que se pisan (mismo trabajador, mismo día, horarios solapados) para avisar en rojo.
+    var solapSet={}; (function(){ var g={};
+      HZ.forEach(function(h,i){ var nm=nrm(h.trabajador||''), f=h.fecha; if(!nm||!f||!h.entrada||!h.salida) return; var mn=totalMin(h.entrada,h.salida); if(mn==null||mn<=0) return; var s=hhmm2min(h.entrada); (g[nm+'|'+f]||(g[nm+'|'+f]=[])).push({i:i,s:s,e:s+mn}); });
+      for(var k in g){ var arr=g[k]; for(var a=0;a<arr.length;a++){ for(var b=a+1;b<arr.length;b++){ if(arr[a].s<arr[b].e && arr[b].s<arr[a].e){ solapSet[arr[a].i]=1; solapSet[arr[b].i]=1; } } } }
+    })();
     c.innerHTML=order.map(function(f){
       var idxs=byDate[f], tot=0, hay=false, nombres={};
       idxs.forEach(function(i){ var m=totalMin(HZ[i].entrada,HZ[i].salida); if(m!=null){ tot+=m; hay=true; } if((HZ[i].trabajador||'').trim()) nombres[nrm(HZ[i].trabajador)]=1; });
       var nT=Object.keys(nombres).length, totTxt=hay?(' · '+Math.floor(tot/60)+'h '+(tot%60)+'m'):'';
       function renderRow(i){ var h=HZ[i];
-        return '<div class="hrow" data-i="'+i+'">'+
+        return '<div class="hrow'+(solapSet[i]?' hrow-dup':'')+'" data-i="'+i+'">'+
           '<input class="h-trab" list="trab-datalist" placeholder="Trabajador" value="'+enc(h.trabajador||'')+'">'+
           '<select class="h-fae" title="Faena (según Planificación)">'+opcionesFaena(h.fecha,h.faena||'')+'</select>'+
           '<label class="hrow-vu'+(esChofer(h.trabajador)?'':' hide')+'" title="Vueltas (solo choferes)">🔄<input type="number" class="h-vu" min="0" value="'+(h.vueltas||0)+'"></label>'+
           '<input type="time" class="h-in" value="'+(h.entrada||'')+'"><span class="arw">→</span><input type="time" class="h-out" value="'+(h.salida||'')+'">'+
           '<span class="hrow-total">'+totalMini(h.entrada,h.salida)+'</span>'+
           '<label class="hrow-cal" title="Fecha">📅<input type="date" class="h-fecha" value="'+(h.fecha||todayISO())+'"></label>'+
-          '<button class="hrow-rm" data-i="'+i+'" type="button">✕</button></div>';
+          '<button class="hrow-rm" data-i="'+i+'" type="button">✕</button>'+
+          (solapSet[i]?'<span class="hrow-warn">Esta hora se pisa con otra del mismo trabajador ese día — revísala.</span>':'')+'</div>';
       }
       // Separar las filas por faena/empresa, con subtítulo y color.
       var byFae={}, forder=[]; idxs.forEach(function(i){ var fa=(HZ[i].faena||''); if(!(fa in byFae)){ byFae[fa]=[]; forder.push(fa); } byFae[fa].push(i); });
@@ -2720,7 +2728,7 @@
       var fa=row.querySelector('.h-fae'); if(fa) fa.addEventListener('change',function(){ syncHz(); if(HZ[i]) HZ[i]._dirty=true; HZ_COL[HZ[i]?HZ[i].fecha:'']=false; renderHz(); autoGuardarHz(); });
       var vu=row.querySelector('.h-vu'); if(vu) vu.addEventListener('input',marcar);
       row.querySelector('.h-in').addEventListener('change',function(){ upd(); marcar(); });
-      row.querySelector('.h-out').addEventListener('change',function(){ upd(); marcar(); });
+      row.querySelector('.h-out').addEventListener('change',function(){ upd(); marcar(); syncHz(); renderHz(); });   // re-render para avisar si la hora se pisa con otra
       fe.addEventListener('change',function(){ syncHz(); if(HZ[i]) HZ[i]._dirty=true; if(fe.value) HZ_COL[fe.value]=false; renderHz(); autoGuardarHz(); });
     });
   }
@@ -3694,12 +3702,18 @@
     var editItemId=null;
     if($('rd-add')) $('rd-add').addEventListener('click',function(){
       if(!sb||!x.t.id) return;
+      var btn=this; if(btn.disabled) return;
       var monto=+($('rd-monto').value||0); if(!monto){ toast('Pon el monto.'); return; }
       var obs=$('rd-concepto').value.trim(); if(!obs){ toast('Escribe la observación (por qué es este monto).'); $('rd-concepto').focus(); return; }
-      var payload={ trabajador_id:x.t.id, semana:REMU_DATA.lun, tipo:$('rd-tipo').value, concepto:obs, monto:monto, autor:userEmail };
-      busy(true,'Guardando…');
+      var tipo=$('rd-tipo').value;
+      if(!editItemId){   // evita agregar dos veces lo mismo esta semana (doble clic o repetido)
+        var dup=(REMU_DATA.items||[]).some(function(it){ return String(it.trabajador_id)===String(x.t.id) && it.tipo===tipo && (+it.monto||0)===monto && norm(it.concepto||'')===norm(obs); });
+        if(dup && !confirm('Ya hay un '+(tipo==='descuento'?'descuento':(tipo==='bono'?'bono':'monto'))+' igual esta semana ('+fmtMoney(monto)+' · '+obs+').\n\n¿Agregar otro de todas formas?')) return;
+      }
+      var payload={ trabajador_id:x.t.id, semana:REMU_DATA.lun, tipo:tipo, concepto:obs, monto:monto, autor:userEmail };
+      btn.disabled=true; busy(true,'Guardando…');
       var q=editItemId? sb.from('remuneracion_items').update(payload).eq('id',editItemId) : sb.from('remuneracion_items').insert(payload);
-      q.then(function(r){ busy(false); if(r.error){ toast('No se pudo guardar: '+r.error.message); return; } toast('✓ Guardado'); cerrarDetalleRemu(); cargarRemu(); });
+      q.then(function(r){ busy(false); if(r.error){ btn.disabled=false; toast('No se pudo guardar: '+r.error.message); return; } toast('✓ Guardado'); cerrarDetalleRemu(); cargarRemu(); }, function(){ busy(false); btn.disabled=false; toast('No se pudo guardar.'); });
     });
     if($('rd-cancel')) $('rd-cancel').addEventListener('click',function(){ editItemId=null; $('rd-tipo').value='otro'; $('rd-monto').value=''; $('rd-concepto').value=''; $('rd-add').textContent='Agregar'; $('rd-cancel').classList.add('hide'); });
     $('rd-body').querySelectorAll('.ri-del').forEach(function(b){ b.addEventListener('click',function(){ var id=b.closest('.ri-item').dataset.id; if(!confirm('¿Quitar este monto?')) return; busy(true,'Quitando…'); sb.from('remuneracion_items').delete().eq('id',id).then(function(r){ busy(false); if(r.error){ toast('No se pudo quitar: '+r.error.message); return; } toast('✓ Quitado'); cerrarDetalleRemu(); cargarRemu(); }); }); });
