@@ -552,6 +552,10 @@
   .rd-fae{border-radius:7px;padding:4px 9px;}
   .rd-fae-nm{display:block;font:700 11.5px var(--font);line-height:1.3;}
   .rd-fae-h{font-size:.72rem;color:var(--muted);font-variant-numeric:tabular-nums;}
+  .fcards{margin-top:6px;display:flex;flex-direction:column;gap:4px;max-width:300px;}
+  .fcard{border-left:3px solid;border-radius:6px;padding:3px 9px;}
+  .fcard .fc-n{display:block;font:700 10.5px var(--font);line-height:1.25;}
+  .fcard .fc-s{font-size:9.5px;color:var(--muted);font-variant-numeric:tabular-nums;}
   .rd-dcol{flex-shrink:0;width:132px;text-align:right;display:flex;flex-direction:column;gap:3px;align-items:flex-end;}
   .rd-real2{font:600 10px var(--font);color:var(--muted);}
   .rd-real2.rd-aj2{text-decoration:line-through;color:#b45309;}
@@ -3533,9 +3537,22 @@
     var cont=$('remu-list');
     if(!filas.length){ cont.innerHTML='<div class="empty"><div class="big">💵</div>Sin horas ni pagos esta semana.<br><span style="font-size:.82rem">Cambia de semana o revisa la config de pago.</span></div>'; return; }
     var m=function(v,neg){ return v?((neg?'−':'')+fmtMoney(v)):'<span class="rt-z">—</span>'; };
+    // Faenas de cada trabajador como tarjetas del color de la empresa, con día y horas por faena.
+    function faenasMini(H){
+      if(!H||!H.detalle||!H.detalle.length) return '';
+      var byFae={}, ford=[];
+      H.detalle.forEach(function(d){ var fa=(d.faena||''); if(!(fa in byFae)){ byFae[fa]={dias:{},dord:[]}; ford.push(fa); } var g=byFae[fa]; if(!(d.fecha in g.dias)){ g.dias[d.fecha]=0; g.dord.push(d.fecha); } g.dias[d.fecha]+=(d.min||0); });
+      var cards=ford.map(function(fa){
+        var g=byFae[fa], col=fa?colorEmpresa(claveEmpresa(fa)):{bg:'#f3f4f6',border:'#cbd5e1',text:'#64748b'};
+        g.dord.sort();
+        var sub=g.dord.map(function(f){ var dd=new Date(f+'T12:00:00'); return diaNom(f)+' '+dd.getDate()+' · '+hm(g.dias[f]); }).join('  ·  ');
+        return '<div class="fcard" style="border-color:'+col.border+';background:'+col.bg+'"><span class="fc-n" style="color:'+col.text+'">'+(fa?esc(fa):'Sin faena')+'</span><span class="fc-s">'+sub+'</span></div>';
+      }).join('');
+      return '<div class="fcards">'+cards+'</div>';
+    }
     var body=filas.map(function(x,i){
       return '<tr data-i="'+i+'"'+(x.tipo==='contrato'?' class="rt-fijo"':'')+'>'+
-        '<td class="rt-nm">'+(x.t.id?'':'<span title="No está registrado como trabajador">⚠️ </span>')+esc(titleCase(x.t.nombre)||'')+'<div class="rt-sub"'+(x.t.id?'':' style="color:#b45309;font-weight:700"')+'>'+esc(x.t.cargo||'')+(x.tipo==='contrato'?(' · fijo'+(x.jor?(' '+x.jor+'h/día'):'')):'')+'</div></td>'+
+        '<td class="rt-nm">'+(x.t.id?'':'<span title="No está registrado como trabajador">⚠️ </span>')+esc(titleCase(x.t.nombre)||'')+'<div class="rt-sub"'+(x.t.id?'':' style="color:#b45309;font-weight:700"')+'>'+esc(x.t.cargo||'')+(x.tipo==='contrato'?(' · fijo'+(x.jor?(' '+x.jor+'h/día'):'')):'')+'</div>'+faenasMini(x.H)+'</td>'+
         '<td>'+x.dias+'</td>'+(x.tipo==='contrato'?('<td>'+hm(x.totMin)+'<div class="rt-sub" style="color:var(--navy)">− '+hm(x.totMin-x.baseMin)+' = '+hm(x.baseMin)+' extra</div></td>'):('<td>'+hm(x.totMin)+'</td>'))+
         '<td>'+m(x.base)+'</td><td>'+m(x.vueltasMonto)+'</td><td>'+m(x.peajes)+'</td>'+
         '<td class="rt-ok">'+m(x.bono)+'</td><td class="rt-bad">'+m(x.desc,true)+'</td>'+
