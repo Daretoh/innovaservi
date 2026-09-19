@@ -548,6 +548,10 @@
   .rd-dia:last-child{border-bottom:none;}
   .rd-day2{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--line);}
   .rd-day2:last-child{border-bottom:none;}
+  .rd-fae-list{margin:5px 0 3px;display:flex;flex-direction:column;gap:4px;}
+  .rd-fae{border-radius:7px;padding:4px 9px;}
+  .rd-fae-nm{display:block;font:700 11.5px var(--font);line-height:1.3;}
+  .rd-fae-h{font-size:.72rem;color:var(--muted);font-variant-numeric:tabular-nums;}
   .rd-dcol{flex-shrink:0;width:132px;text-align:right;display:flex;flex-direction:column;gap:3px;align-items:flex-end;}
   .rd-real2{font:600 10px var(--font);color:var(--muted);}
   .rd-real2.rd-aj2{text-decoration:line-through;color:#b45309;}
@@ -3599,8 +3603,15 @@
     var diasHtml=fechasD.length?fechasD.map(function(f){
       var pd=porDiaD[f], pmin=(x.tipo==='contrato' && !esTratoDia(f))?Math.max(0,pd.min-(x.jor*60)):pd.min, dReal=Math.round(pmin/60*x.vh);
       var ajd=(REMU_DATA.ajDia&&x.t.id)?REMU_DATA.ajDia[x.t.id+'|'+f]:null, dCont=ajd?ajd.monto:dReal;
-      var horarios=pd.ents.map(function(d){ return esc(d.entrada||'--:--')+'→'+esc(d.salida||'--:--'); }).join(', ');
-      var faTxt=Object.keys(pd.fae).length?('<div class="note" style="margin:1px 0 0;font-size:.71rem">📍 '+esc(Object.keys(pd.fae).join(' · '))+'</div>'):'';
+      // Desglose por faena: cada faena en su punto, con su horario y horas, en el color del cliente (sutil).
+      var byFae={}, forder=[]; pd.ents.forEach(function(d){ var fa=(d.faena||''); if(!(fa in byFae)){ byFae[fa]=[]; forder.push(fa); } byFae[fa].push(d); });
+      var faeList=forder.map(function(fa){
+        var ents=byFae[fa], hors=ents.map(function(d){ return esc(d.entrada||'--:--')+'→'+esc(d.salida||'--:--'); }).join(', ');
+        var fmin=ents.reduce(function(a,d){ return a+(d.min||0); },0);
+        var col=fa?colorEmpresa(claveEmpresa(fa)):{bg:'#f3f4f6',border:'#cbd5e1',text:'#64748b'};
+        return '<div class="rd-fae" style="border-left:3px solid '+col.border+';background:'+col.bg+'"><span class="rd-fae-nm" style="color:'+col.text+'">'+(fa?esc(fa):'Sin faena asignada')+'</span><span class="rd-fae-h">'+hors+' · '+hm(fmin)+'</span></div>';
+      }).join('');
+      var faTxt='<div class="rd-fae-list">'+faeList+'</div>';
       var fijoTxt='';
       if(x.tipo==='contrato'){ var dFull=Math.round(pd.min/60*x.vh), dDesc=dFull-dReal;
         fijoTxt = esTratoDia(f)
@@ -3611,7 +3622,7 @@
             '<input class="rd-dcont" type="number" min="0" data-f="'+f+'" data-real="'+dReal+'" value="'+dCont+'" title="Monto contable de este día (editable)">'+
             '<input class="rd-dobs" type="text" data-f="'+f+'" value="'+enc(ajd?ajd.obs:'')+'" placeholder="motivo (si ajustas)"></div>'
         : '<div class="rd-dcol"><b style="color:var(--orange-2)">'+fmtMoney(dReal)+'</b></div>';
-      return '<div class="rd-day2"><div style="flex:1;min-width:0"><b>'+fechaDia(f)+'</b> <span class="note" style="margin:0;font-size:.72rem">'+horarios+' · '+hm(pd.min)+'</span>'+faTxt+fijoTxt+'</div>'+right+'</div>';
+      return '<div class="rd-day2"><div style="flex:1;min-width:0"><b>'+fechaDia(f)+'</b> <span class="note" style="margin:0;font-size:.72rem">· '+hm(pd.min)+'</span>'+faTxt+fijoTxt+'</div>'+right+'</div>';
     }).join(''):'<p class="note" style="margin:0">Sin días registrados esta semana.</p>';
     var desg='';
     if(x.tipo==='contrato'){
