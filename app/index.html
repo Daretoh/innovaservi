@@ -543,6 +543,15 @@
   .ficha-bar{position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:10px;background:linear-gradient(135deg,#12163f,#1a1f6e);color:#fff;padding:calc(10px + var(--safe-t)) 14px 10px;}
   .ficha-bar b{font-size:1rem;}
   .ficha-body{max-width:640px;margin:0 auto;padding:14px 14px calc(30px + var(--safe-b));}
+  .fx-box{border:1px solid var(--orange);background:rgba(255,107,0,.06);border-radius:12px;margin-bottom:12px;overflow:hidden;}
+  .fx-head{width:100%;text-align:left;background:none;border:none;padding:11px 13px;font:700 13.5px var(--font);color:var(--orange-2);cursor:pointer;display:flex;align-items:center;gap:7px;}
+  .fx-head .fx-chev{margin-left:auto;color:var(--muted);}
+  .fx-list{padding:0 11px 11px;display:flex;flex-direction:column;gap:9px;}
+  .fx-item{background:#fff;border:1px solid var(--line);border-radius:11px;padding:10px 12px;}
+  .fx-top{display:flex;align-items:baseline;justify-content:space-between;gap:8px;flex-wrap:wrap;}
+  .fx-top b{font:800 14px var(--font);color:var(--ink);}
+  .fx-meta{margin:3px 0 0;font-size:.76rem;line-height:1.4;}
+  .fx-btns{display:flex;gap:8px;margin-top:9px;flex-wrap:wrap;}
   .docitem{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:10px;padding:9px 11px;margin-bottom:8px;background:var(--alt);}
   .docitem .ic{width:30px;height:30px;border-radius:7px;background:rgba(255,107,0,.14);color:var(--orange);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;}
   .docitem a{flex:1;min-width:0;font:600 13px var(--font);color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -949,6 +958,7 @@
       <!-- Panel Trabajadores -->
       <div id="rrhh-trab">
         <div class="h-row" style="margin-top:0"><b style="font:800 15px var(--font);color:var(--ink)">Trabajadores <span class="cnt" id="trab-cnt"></span></b><div style="display:flex;gap:8px;flex-wrap:wrap"><button id="dups-btn" class="btn ghost small" style="width:auto">🔍 Duplicados</button><button id="cargos-btn" class="btn ghost small" style="width:auto">⚙️ Cargos y tratos</button><button id="trab-import" class="btn ghost small" style="width:auto">⬆ Importar</button><button id="trab-nuevo" class="btn small" style="width:auto">＋ Nuevo</button></div></div>
+        <div id="fichas-inbox"></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
           <input id="trab-search" type="search" placeholder="Buscar nombre, RUT o cargo…" style="flex:1;min-width:150px;font:500 15px var(--font);padding:10px 12px;border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--ink)">
           <select id="trab-sort" style="font:600 13px var(--font);padding:10px 12px;border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--ink)"><option value="nombre">A–Z</option><option value="cargo">Por cargo</option><option value="reciente">Recientes</option></select>
@@ -3012,6 +3022,40 @@
     if(typeof RRHH_LOADED==='undefined'||!RRHH_LOADED) return null;   // aún no cargó la documentación
     var ok=0; RRHH_TIPOS.forEach(function(tp){ var e=estadoDoc(t.id,tp.slug); if(e.k==='ok'||e.k==='prox') ok++; }); return Math.round(ok/RRHH_TIPOS.length*100); }
   function pctColor(p){ if(p>=100) return 'var(--ok)'; if(p>=60) return '#e8a13a'; if(p>=30) return 'var(--orange)'; return '#dc2626'; }
+  // ====== Bandeja de fichas de ingreso recibidas (auto-registro público) ======
+  var FICHAS_IN=[];
+  function cargarFichasInbox(cb){ if(!sb){ if(cb)cb(); return; }
+    sb.from('fichas_ingreso').select('*').eq('estado','pendiente').order('created_at',{ascending:false}).limit(200).then(function(r){ FICHAS_IN=(r&&!r.error&&r.data)||[]; renderFichasInbox(); if(cb)cb(); }, function(){ if(cb)cb(); }); }
+  function renderFichasInbox(){
+    var c=$('fichas-inbox'); if(!c) return;
+    if(!FICHAS_IN.length){ c.innerHTML=''; return; }
+    var open=c.dataset.open==='1', n=FICHAS_IN.length;
+    var ico='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>';
+    var items=open?FICHAS_IN.map(function(f,i){
+      var l2=[f.cargo, f.email, f.direccion, f.comuna].filter(Boolean).map(esc).join(' · ');
+      var l3=[ (f.afp?('AFP '+f.afp):''), f.salud, (f.banco?(f.banco+' '+(f.tipo_cuenta||'')+' '+(f.num_cuenta||'')):''), ((f.talla_ropa||f.talla_botas)?('Tallas '+[f.talla_ropa,f.talla_botas].filter(Boolean).join(' / ')):''), (f.emergencia?('Emerg.: '+f.emergencia):'') ].filter(Boolean).map(esc).join(' · ');
+      return '<div class="fx-item"><div class="fx-top"><b>'+esc(titleCase(f.nombre||''))+'</b><span class="note" style="margin:0">'+esc(f.rut||'')+(f.telefono?(' · '+esc(f.telefono)):'')+'</span></div>'+
+        (l2?'<div class="note fx-meta">'+l2+'</div>':'')+(l3?'<div class="note fx-meta">'+l3+'</div>':'')+
+        '<div class="fx-btns"><button class="btn small fx-crear" data-i="'+i+'" style="width:auto">＋ Crear trabajador</button><button class="btn ghost small fx-desc" data-i="'+i+'" style="width:auto">Descartar</button></div></div>';
+    }).join(''):'';
+    c.innerHTML='<div class="fx-box"><button class="fx-head" type="button">'+ico+' <b>'+n+'</b> ficha'+(n>1?'s':'')+' recibida'+(n>1?'s':'')+' <span class="fx-chev">'+(open?'▾':'▸')+'</span></button>'+(open?('<div class="fx-list">'+items+'</div>'):'')+'</div>';
+    c.querySelector('.fx-head').addEventListener('click',function(){ c.dataset.open=open?'0':'1'; renderFichasInbox(); });
+    c.querySelectorAll('.fx-crear').forEach(function(b){ b.addEventListener('click',function(){ crearTrabDeFicha(FICHAS_IN[+b.dataset.i]); }); });
+    c.querySelectorAll('.fx-desc').forEach(function(b){ b.addEventListener('click',function(){ descartarFicha(FICHAS_IN[+b.dataset.i]); }); });
+  }
+  function crearTrabDeFicha(f){ if(!sb||!f) return;
+    if(!confirm('¿Crear el trabajador "'+titleCase(f.nombre||'')+'" con estos datos?')) return;
+    var row={ nombre:titleCase((f.nombre||'').trim()), rut:(f.rut||'').trim(), cargo:(f.cargo||'').trim(), estado:'activo',
+      telefono:(f.telefono||''), email:(f.email||''), direccion:(f.direccion||''), emergencia:(f.emergencia||''), afp:(f.afp||''), salud:(f.salud||''),
+      talla_ropa:(f.talla_ropa||''), talla_botas:(f.talla_botas||''), banco:(f.banco||null), tipo_cuenta:(f.tipo_cuenta||null), num_cuenta:(f.num_cuenta||null), autor:userEmail };
+    busy(true,'Creando trabajador…');
+    sb.from('trabajadores').insert(row).then(function(r){
+      if(r.error){ busy(false); toast('No se pudo crear: '+r.error.message); return; }
+      sb.from('fichas_ingreso').update({estado:'procesada'}).eq('id',f.id).then(function(){ busy(false); toast('✓ Trabajador creado desde la ficha'); cargarRrhh(); cargarFichasInbox(); }, function(){ busy(false); toast('Trabajador creado.'); cargarRrhh(); cargarFichasInbox(); });
+    }, function(){ busy(false); toast('No se pudo crear.'); });
+  }
+  function descartarFicha(f){ if(!sb||!f) return; if(!confirm('¿Descartar la ficha de "'+titleCase(f.nombre||'')+'"? (no se crea el trabajador)')) return;
+    busy(true,'Descartando…'); sb.from('fichas_ingreso').update({estado:'descartada'}).eq('id',f.id).then(function(){ busy(false); toast('Ficha descartada'); cargarFichasInbox(); }, function(){ busy(false); }); }
   function pintarTrab(){
     var list=$('trab-list'); var q=trabQ.toLowerCase();
     var arr=TRAB.filter(function(t){
@@ -4055,6 +4099,7 @@
       renderRrhh();
       if(typeof actualizarDatalist==='function') actualizarDatalist();
       if(typeof pintarTrab==='function') pintarTrab();
+      if(typeof cargarFichasInbox==='function') cargarFichasInbox();
     });
   }
   function rrhhSeg(seg){
