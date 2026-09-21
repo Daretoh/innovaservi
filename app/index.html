@@ -3561,9 +3561,9 @@
         var sub=g.dord.map(function(f){ var dd=new Date(f+'T12:00:00'); return diaNom(f)+' '+dd.getDate()+' · '+hm(g.dias[f]); }).join('  ·  ');
         return '<div class="fcard" style="border-color:'+col.border+';background:'+col.bg+'"><span class="fc-n" style="color:'+col.text+'">'+(fa?esc(fa):'Sin faena')+'</span><span class="fc-s">'+sub+'</span></div>';
       }).join('');
-      var n=ford.length, collapsed=!!REMU_FCOL[tid];
+      var n=ford.length, expanded=!!REMU_FCOL[tid];   // colapsado por defecto; el usuario lo despliega
       var chev='<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';
-      return '<div class="fwrap'+(collapsed?' collapsed':'')+'"><button class="ftog" type="button" data-t="'+enc(String(tid))+'">'+chev+'<span>'+n+' faena'+(n>1?'s':'')+'</span></button><div class="fcards">'+cards+'</div></div>';
+      return '<div class="fwrap'+(expanded?'':' collapsed')+'"><button class="ftog" type="button" data-t="'+enc(String(tid))+'">'+chev+'<span>ver '+n+' faena'+(n>1?'s':'')+'</span></button><div class="fcards">'+cards+'</div></div>';
     }
     var body=filas.map(function(x,i){
       return '<tr data-i="'+i+'"'+(x.tipo==='contrato'?' class="rt-fijo"':'')+'>'+
@@ -3577,7 +3577,7 @@
       '<th>Trabajador</th><th>Días</th><th>Horas</th><th>Base</th><th>Vueltas</th><th>Peajes</th><th>Extras</th><th>Desc.</th><th>Total</th></tr></thead>'+
       '<tbody>'+body+'</tbody></table></div>';
     cont.querySelectorAll('tbody tr[data-i]').forEach(function(el){ el.addEventListener('click',function(){ abrirDetalleRemu(REMU_DATA.filas[+el.dataset.i]); }); });
-    cont.querySelectorAll('.ftog').forEach(function(b){ b.addEventListener('click',function(ev){ ev.stopPropagation(); var t=b.dataset.t; REMU_FCOL[t]=!REMU_FCOL[t]; var w=b.closest('.fwrap'); if(w) w.classList.toggle('collapsed', !!REMU_FCOL[t]); }); });
+    cont.querySelectorAll('.ftog').forEach(function(b){ b.addEventListener('click',function(ev){ ev.stopPropagation(); var t=b.dataset.t; REMU_FCOL[t]=!REMU_FCOL[t]; var w=b.closest('.fwrap'); if(w) w.classList.toggle('collapsed', !REMU_FCOL[t]); }); });
   }
   $('remu-prev').addEventListener('click',function(){ REMU_LUNES=sumarDias(REMU_LUNES||lunesDe(todayISO()),-7); cargarRemu(); });
   $('remu-next').addEventListener('click',function(){ REMU_LUNES=sumarDias(REMU_LUNES||lunesDe(todayISO()),7); cargarRemu(); });
