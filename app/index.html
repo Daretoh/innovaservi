@@ -561,6 +561,12 @@
   .fcard{border-left:3px solid;border-radius:6px;padding:3px 9px;}
   .fcard .fc-n{display:block;font:700 10.5px var(--font);line-height:1.25;}
   .fcard .fc-s{font-size:9.5px;color:var(--muted);font-variant-numeric:tabular-nums;}
+  .fi-bank{border:1px solid var(--line);border-radius:11px;padding:9px 12px;margin-bottom:11px;background:var(--alt);}
+  .fi-bank>summary{cursor:pointer;font:700 13px var(--font);color:var(--ink);list-style:none;display:flex;align-items:center;gap:8px;}
+  .fi-bank>summary::-webkit-details-marker{display:none;}
+  .fi-bank>summary::before{content:"";border:solid var(--muted);border-width:0 2px 2px 0;padding:2.5px;transform:rotate(-45deg);transition:transform .15s;flex:none;}
+  .fi-bank[open]>summary::before{transform:rotate(45deg);}
+  .fi-bank>*:not(summary){margin-top:9px;}
   .rd-dcol{flex-shrink:0;width:132px;text-align:right;display:flex;flex-direction:column;gap:3px;align-items:flex-end;}
   .rd-real2{font:600 10px var(--font);color:var(--muted);}
   .rd-real2.rd-aj2{text-decoration:line-through;color:#b45309;}
@@ -1081,6 +1087,15 @@
       </div>
       <div class="fld"><label>Dirección</label><input id="fi-dir" type="text" placeholder="Calle, población, ciudad"></div>
       <div class="fld"><label>Contacto de emergencia</label><input id="fi-emerg" type="text" placeholder="Nombre y teléfono"></div>
+      <details class="fi-bank">
+        <summary>Datos bancarios</summary>
+        <div class="grid2">
+          <div class="fld"><label>Banco</label><input id="fi-banco" type="text" list="bancos-list" placeholder="Ej: Banco Falabella"></div>
+          <div class="fld"><label>Tipo de cuenta</label><select id="fi-tipocta"><option value="">—</option><option>Cuenta Corriente</option><option>Cuenta Vista</option><option>Cuenta RUT</option><option>Cuenta de Ahorro</option><option>Chequera Electrónica</option></select></div>
+        </div>
+        <div class="fld"><label>N° de cuenta</label><input id="fi-numcta" type="text" placeholder="Ej: 1-999-838631-9"></div>
+      </details>
+      <datalist id="bancos-list"><option>BancoEstado</option><option>Banco de Chile</option><option>Banco Santander</option><option>Banco BCI</option><option>Scotiabank</option><option>Banco Itaú</option><option>Banco Falabella</option><option>Banco Ripley</option><option>Banco BICE</option><option>Banco Security</option><option>Banco Consorcio</option><option>Banco Internacional</option><option>Coopeuch</option><option>Mercado Pago</option><option>Tenpo</option><option>Mach</option></datalist>
       <div class="fld"><label>Notas</label><textarea id="fi-notas" placeholder="Observaciones, EPP asignado, etc."></textarea></div>
     </div>
     <div class="card">
@@ -3102,6 +3117,8 @@
     $('fi-botas').value=t?(t.talla_botas||''):''; $('fi-ropa').value=t?(t.talla_ropa||''):'';
     $('fi-afp').value=t?(t.afp||''):''; $('fi-salud').value=t?(t.salud||''):'';
     $('fi-dir').value=t?(t.direccion||''):''; $('fi-emerg').value=t?(t.emergencia||''):'';
+    if($('fi-banco')) $('fi-banco').value=t?(t.banco||''):''; if($('fi-tipocta')) $('fi-tipocta').value=t?(t.tipo_cuenta||''):''; if($('fi-numcta')) $('fi-numcta').value=t?(t.num_cuenta||''):'';
+    var _bk=document.querySelector('.fi-bank'); if(_bk) _bk.open=!!(t&&(t.banco||t.num_cuenta));   // colapsado por defecto; se abre solo si ya hay datos
     $('fi-notas').value=t?(t.notas||''):'';
     FICHA_DOCS=t?((t.docs||[]).slice()):[]; renderDocs(); fiScanner.reset();
     renderFichaRrhh(t);
@@ -3221,6 +3238,7 @@
       telefono:$('fi-tel').value.trim(), email:$('fi-email').value.trim(), fecha_ingreso:$('fi-ingreso').value||null,
       talla_botas:$('fi-botas').value.trim(), talla_ropa:$('fi-ropa').value.trim(), afp:$('fi-afp').value.trim(),
       salud:$('fi-salud').value.trim(), direccion:$('fi-dir').value.trim(), emergencia:$('fi-emerg').value.trim(),
+      banco:($('fi-banco')?$('fi-banco').value.trim():'')||null, tipo_cuenta:($('fi-tipocta')?$('fi-tipocta').value:'')||null, num_cuenta:($('fi-numcta')?$('fi-numcta').value.trim():'')||null,
       notas:$('fi-notas').value.trim(), docs:FICHA_DOCS, autor:userEmail };
     busy(true,'Guardando…');
     var q=FICHA_ID? sb.from('trabajadores').update(row).eq('id',FICHA_ID) : sb.from('trabajadores').insert(row);
