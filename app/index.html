@@ -484,6 +484,7 @@
   .pb-emp{font-size:10.5px;color:var(--muted);}
   .pb-pc{font:700 11px var(--font);border-radius:999px;padding:2px 9px;white-space:nowrap;}
   .pb-pc.ok{background:#e2f3ec;color:#0f6e56;} .pb-pc.miss{background:#fbf0d9;color:#854f0b;}
+  .pb-editneed{border:none;cursor:pointer;}
   .pb-assg{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;min-height:26px;}
   .pb-wc{display:inline-flex;align-items:center;gap:5px;background:#fff;border:1px solid var(--line);border-radius:999px;padding:3px 7px 3px 10px;font:600 12px var(--font);}
   .pb-wc .x{cursor:pointer;color:var(--muted);}
@@ -1621,14 +1622,15 @@
   }
   function eventoDe(id){ return (EVENTOS||[]).filter(function(x){ return String(x.id)===String(id); })[0]; }
   function planDe(e){ var p=PLAN_MAP[e.id]; if(!p){ p={ evento_id:e.id, fecha:e.fecha, empresa:e.ubicacion||'', sitio:e.sitio||'', titulo:e.titulo||'', personas:[], matrices:[], maquinaria:[], notas:'', estado:'borrador', preparador:'' }; PLAN_MAP[e.id]=p; } if(!p.personas)p.personas=[]; if(!p.maquinaria)p.maquinaria=[]; return p; }
-  function personasNecesarias(e){ var pts=(typeof plantillasDeFaena==='function')?plantillasDeFaena(e.ubicacion||'', e.sitio||''):[]; var t=(e.titulo||'').trim().toLowerCase(); var m=pts.filter(function(p){ return (p.faena||'').trim().toLowerCase()===t && p.personas!=null; })[0] || pts.filter(function(p){ return p.personas!=null; })[0]; return (m&&m.personas!=null)?m.personas:0; }
+  function personasNecesarias(e){ var pl=PLAN_MAP[e.id]; if(pl && pl.personas_nec!=null) return pl.personas_nec;   // override por faena (editado en el tablero)
+    var pts=(typeof plantillasDeFaena==='function')?plantillasDeFaena(e.ubicacion||'', e.sitio||''):[]; var t=(e.titulo||'').trim().toLowerCase(); var m=pts.filter(function(p){ return (p.faena||'').trim().toLowerCase()===t && p.personas!=null; })[0] || pts.filter(function(p){ return p.personas!=null; })[0]; return (m&&m.personas!=null)?m.personas:0; }
   function planTrabs(){ var seen={}, out=[]; (TRAB||[]).forEach(function(t){ if(t.estado==='inactivo')return; var nm=titleCase(t.nombre||''); var k=normName(nm); if(!nm||seen[k])return; seen[k]=1; out.push({nombre:nm,cargo:t.cargo||'',chofer:!!t.chofer}); }); return out.sort(function(a,b){ return a.nombre.localeCompare(b.nombre); }); }
   function planPrepOpts(sel){ return '<option value="">— preparador —</option>'+planTrabs().map(function(w){ return '<option value="'+enc(w.nombre)+'"'+(normName(w.nombre)===normName(sel||'')?' selected':'')+'>'+esc(w.nombre)+'</option>'; }).join(''); }
   function planAddVehOpts(){ return '<option value="">＋ vehículo…</option>'+(VEH||[]).map(function(v){ var lb=vehLabel(v); return '<option value="'+enc(lb)+'">'+esc(lb)+'</option>'; }).join(''); }
   function planSave(e){ if(!sb||!e) return; var p=planDe(e); clearTimeout(_planT[e.id]); _planT[e.id]=setTimeout(function(){
       var row={ evento_id:e.id, fecha:e.fecha||null, empresa:(e.ubicacion||''), sitio:(e.sitio||''), titulo:(e.titulo||''),
         personas:(p.personas||[]).map(function(x){ return {nombre:x.nombre, epp:x.epp||[]}; }), matrices:p.matrices||[],
-        maquinaria:(p.maquinaria||[]).filter(function(m){ return (m.veh||'')||(m.chofer||''); }), notas:p.notas||'', estado:p.estado||'borrador', preparador:p.preparador||'', autor:userEmail, updated_at:new Date().toISOString() };
+        maquinaria:(p.maquinaria||[]).filter(function(m){ return (m.veh||'')||(m.chofer||''); }), notas:p.notas||'', estado:p.estado||'borrador', preparador:p.preparador||'', personas_nec:(p.personas_nec!=null?p.personas_nec:null), autor:userEmail, updated_at:new Date().toISOString() };
       sb.from('faena_plan').upsert(row,{onConflict:'evento_id'}).then(function(r){ if(r&&r.error) toast(/preparador|column|faena_plan/.test(r.error.message||'')?'Falta correr faena-plan-preparador.sql en Supabase.':('No se guardó: '+r.error.message)); }, function(){});
     }, 500); }
   function planAsignar(eid, nombre){ var e=eventoDe(eid); if(!e) return; var p=planDe(e); if(p.estado==='enviada'){ toast('Faena enviada; ábrela en Detalle para cambiarla.'); return; } nombre=titleCase((nombre||'').trim()); if(!nombre) return; if(p.personas.some(function(pp){ return normName(pp.nombre)===normName(nombre); })){ toast(nombre+' ya está en esta faena.'); return; } p.personas.push({nombre:nombre, epp:[]}); planSave(e); renderPlanif(); }
@@ -1639,7 +1641,7 @@
     var vehChips=p.maquinaria.map(function(mq,i){ return '<div class="pb-veh-row"><select class="pb-veh" data-e="'+e.id+'" data-i="'+i+'"'+(locked?' disabled':'')+'>'+vehOpts(mq.veh||'')+'</select><select class="pb-cho" data-e="'+e.id+'" data-i="'+i+'"'+(locked?' disabled':'')+'>'+choferOpts(mq.chofer||'')+'</select>'+(locked?'':'<button class="pb-veh-rm" data-e="'+e.id+'" data-i="'+i+'" type="button">✕</button>')+'</div>'; }).join('');
     return '<div class="pb-fae'+(e.id===PLANIF_SEL?' sel':'')+(locked?' locked':'')+'" data-e="'+e.id+'" style="border-left-color:'+col.border+';background:'+col.bg+'">'+
       '<div class="pb-fh"><div style="min-width:0"><div class="pb-fn" style="color:'+col.text+'">'+esc(e.titulo||'Faena')+'</div><div class="pb-emp">'+esc(e.ubicacion||'')+(e.sitio?(' · '+esc(e.sitio)):'')+'</div></div>'+
-        '<span class="pb-pc '+(ok?'ok':'miss')+'">'+asg+(need?('/'+need):'')+' pers.</span></div>'+
+        '<button type="button" class="pb-pc pb-editneed '+(ok?'ok':'miss')+'" data-e="'+e.id+'" title="Editar personas necesarias">'+asg+' / '+(need||'?')+' pers. ✎</button></div>'+
       '<div class="pb-assg" data-e="'+e.id+'">'+chips+'</div>'+
       '<div class="pb-veh-list">'+vehChips+'</div>'+
       (locked?'<div class="pb-lock">🔒 Enviada a Preparación</div>':'<div class="pb-fbtns"><select class="pb-addveh" data-e="'+e.id+'">'+planAddVehOpts()+'</select><label class="pb-prep">Prep. carga: <select class="pb-prepsel" data-e="'+e.id+'">'+planPrepOpts(p.preparador)+'</select></label></div>')+
@@ -1677,6 +1679,7 @@
       el.addEventListener('dragleave',function(){ el.classList.remove('drop'); });
       el.addEventListener('drop',function(ev){ ev.preventDefault(); el.classList.remove('drop'); var n=''; try{ n=ev.dataTransfer.getData('text/plain'); }catch(_){}; if(n) planAsignar(+el.dataset.e, n); });
     });
+    c.querySelectorAll('.pb-editneed').forEach(function(b){ b.addEventListener('click',function(ev){ ev.stopPropagation(); var e=eventoDe(b.dataset.e); if(!e)return; var p=planDe(e); var cur=personasNecesarias(e); var v=prompt('¿Cuántas personas necesita esta faena?', cur||''); if(v===null)return; v=(''+v).trim(); p.personas_nec=(v===''?null:Math.max(0,(+v||0))); planSave(e); renderPlanif(); }); });
     c.querySelectorAll('.pb-wc .x').forEach(function(x){ x.addEventListener('click',function(ev){ ev.stopPropagation(); var e=eventoDe(x.dataset.e); if(!e)return; var p=planDe(e); p.personas.splice(+x.dataset.i,1); planSave(e); renderPlanif(); }); });
     c.querySelectorAll('.pb-addveh').forEach(function(s){ s.addEventListener('change',function(){ if(!s.value)return; var e=eventoDe(s.dataset.e); var p=planDe(e); p.maquinaria.push({veh:s.value,chofer:''}); planSave(e); renderPlanif(); }); });
     c.querySelectorAll('.pb-veh').forEach(function(s){ s.addEventListener('change',function(){ var e=eventoDe(s.dataset.e),p=planDe(e); p.maquinaria[+s.dataset.i].veh=s.value; planSave(e); }); });
