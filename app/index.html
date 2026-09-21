@@ -1064,7 +1064,9 @@
       </div>
       <div class="fld"><label style="display:flex;align-items:center;gap:9px;cursor:pointer;font-weight:600"><input id="fi-chofer" type="checkbox" style="width:18px;height:18px;accent-color:var(--orange)">🚚 Es chofer (puede registrar vueltas)</label></div>
       <div class="fld"><label style="display:flex;align-items:center;gap:9px;cursor:pointer;font-weight:600"><input id="fi-fijo" type="checkbox" style="width:18px;height:18px;accent-color:var(--orange)">📄 Contrato fijo (renta fija, no por trato)</label></div>
-      <div class="fld" id="fi-jornada-wrap" style="display:none"><label>Jornada normal (horas/día, incl. colación)</label><input id="fi-jornada" type="number" min="0" step="0.5" placeholder="Ej: 9"><div class="note" style="margin:4px 0 0;font-size:.72rem">Dentro de esta jornada no se cuenta trato; solo las horas por sobre ella cuentan como extra.</div></div>
+      <div class="fld" id="fi-jornada-wrap" style="display:none"><label>Jornada normal (horas/día, incl. colación)</label><input id="fi-jornada" type="number" min="0" step="0.5" placeholder="Ej: 9"><div class="note" style="margin:4px 0 0;font-size:.72rem">Dentro de esta jornada no se cuenta trato; solo las horas por sobre ella cuentan como extra.</div>
+        <div class="grid2" style="margin-top:8px"><div class="fld" style="margin:0"><label>Turno desde <span class="note" style="font-weight:400">(opcional)</span></label><input id="fi-jini" type="time"></div><div class="fld" style="margin:0"><label>Turno hasta</label><input id="fi-jfin" type="time"></div></div>
+        <div class="note" style="margin:4px 0 0;font-size:.72rem">Si defines un turno (ej. 09:00–18:00), las horas <b>dentro</b> del turno no generan trato; las de <b>fuera</b> del turno, y los fines de semana/feriados, sí. (Usa esto en vez de las horas/día.)</div></div>
       <div class="grid2">
         <div class="fld"><label>Teléfono</label><input id="fi-tel" type="tel" placeholder="+56 9 ..."></div>
         <div class="fld"><label>Correo</label><input id="fi-email" type="email" placeholder="correo@..."></div>
@@ -1365,6 +1367,18 @@
   function esFeriado(f){ return FERIADOS_MMDD.indexOf((f||'').slice(5))>=0 || FERIADOS_ISO.indexOf(f)>=0; }
   function esTratoDia(f){ return esFinde(f)||esFeriado(f); }
   function hhmm2min(t){ var p=(t||'').split(':'); return (+p[0]||0)*60+(+(p[1]||0)); }
+  // Ventana de jornada (turno): las horas DENTRO del turno no generan trato; fuera del turno y findes/feriados sí.
+  function ventanaTrab(t){ if(!t||!t.jornada_ini||!t.jornada_fin) return null; var a=hhmm2min(t.jornada_ini), b=hhmm2min(t.jornada_fin); return (b>a)?{ini:a,fin:b}:null; }
+  function minEnVentana(ivs, ini, fin){ if(!ivs||!ivs.length) return 0; var t=0; ivs.forEach(function(iv){ var s=Math.max(iv[0],ini), e=Math.min(iv[1],fin); if(e>s) t+=(e-s); }); return t; }
+  // Minutos que cuentan como TRATO de un trabajador en un día.
+  function tratoMinDia(t, tipo, jor, H, fd){
+    var dm=(H&&H.porDia&&H.porDia[fd]!=null)?H.porDia[fd]:0;
+    if(tipo!=='contrato') return dm;               // spot/hora: todo cuenta
+    if(esTratoDia(fd)) return dm;                  // finde/feriado: todo trato
+    var vt=ventanaTrab(t);
+    if(vt) return Math.max(0, dm - minEnVentana((H&&H.ivDia&&H.ivDia[fd])||[], vt.ini, vt.fin));  // por turno horario
+    return Math.max(0, dm - (jor||0)*60);          // por horas/día
+  }
   var CAT_LBL={sin:'Sin clasificar',antes:'Antes',proceso:'Proceso',despues:'Después',doc:'Registro documental'};
   function catOk(c){ return (c==='antes'||c==='despues'||c==='doc')?c:'proceso'; }
   // categoría de almacenamiento: conserva 'sin' (sin clasificar) además de las etapas
@@ -3083,7 +3097,7 @@
     FICHA_ID=t?t.id:null;
     $('fi-nombre').value=t?(t.nombre||''):''; $('fi-rut').value=t?(t.rut||''):''; poblarSelectCargo($('fi-cargo'), t?(t.cargo||''):''); trHint();
     $('fi-estado').value=(t&&t.estado)||'activo'; $('fi-ingreso').value=t?(t.fecha_ingreso||''):''; if($('fi-chofer')) $('fi-chofer').checked=!!(t&&t.chofer);
-    if($('fi-fijo')){ var esFijo=!!(t&&t.tipo_pago==='contrato'); $('fi-fijo').checked=esFijo; $('fi-jornada').value=(t&&t.jornada_horas)||''; $('fi-jornada-wrap').style.display=esFijo?'':'none'; }
+    if($('fi-fijo')){ var esFijo=!!(t&&t.tipo_pago==='contrato'); $('fi-fijo').checked=esFijo; $('fi-jornada').value=(t&&t.jornada_horas)||''; if($('fi-jini')) $('fi-jini').value=(t&&t.jornada_ini)||''; if($('fi-jfin')) $('fi-jfin').value=(t&&t.jornada_fin)||''; $('fi-jornada-wrap').style.display=esFijo?'':'none'; }
     $('fi-tel').value=t?(t.telefono||''):''; $('fi-email').value=t?(t.email||''):'';
     $('fi-botas').value=t?(t.talla_botas||''):''; $('fi-ropa').value=t?(t.talla_ropa||''):'';
     $('fi-afp').value=t?(t.afp||''):''; $('fi-salud').value=t?(t.salud||''):'';
@@ -3203,7 +3217,7 @@
   $('fi-save').addEventListener('click',function(){
     if(!sb) return; var nom=titleCase($('fi-nombre').value.trim()); if(!nom){ toast('El nombre es obligatorio.'); return; }
     var _fijo=!!($('fi-fijo')&&$('fi-fijo').checked);
-    var row={ nombre:nom, rut:$('fi-rut').value.trim(), cargo:$('fi-cargo').value.trim(), estado:$('fi-estado').value, chofer:!!($('fi-chofer')&&$('fi-chofer').checked), tipo_pago:(_fijo?'contrato':'hora'), jornada_horas:(_fijo?(+$('fi-jornada').value||null):null),
+    var row={ nombre:nom, rut:$('fi-rut').value.trim(), cargo:$('fi-cargo').value.trim(), estado:$('fi-estado').value, chofer:!!($('fi-chofer')&&$('fi-chofer').checked), tipo_pago:(_fijo?'contrato':'hora'), jornada_horas:(_fijo?(+$('fi-jornada').value||null):null), jornada_ini:(_fijo&&$('fi-jini')?($('fi-jini').value||null):null), jornada_fin:(_fijo&&$('fi-jfin')?($('fi-jfin').value||null):null),
       telefono:$('fi-tel').value.trim(), email:$('fi-email').value.trim(), fecha_ingreso:$('fi-ingreso').value||null,
       talla_botas:$('fi-botas').value.trim(), talla_ropa:$('fi-ropa').value.trim(), afp:$('fi-afp').value.trim(),
       salud:$('fi-salud').value.trim(), direccion:$('fi-dir').value.trim(), emergencia:$('fi-emerg').value.trim(),
@@ -3487,14 +3501,14 @@
       for(var a in H._iv) dias[a]=1; for(var b in H._raw) dias[b]=1;
       Object.keys(dias).forEach(function(f){
         var ivs=(H._iv[f]||[]).slice().sort(function(p,q){ return p[0]-q[0]; });
-        var union=0, rawSum=0, curS=null, curE=null;
+        var union=0, rawSum=0, curS=null, curE=null, merged=[];
         ivs.forEach(function(iv){ rawSum+=(iv[1]-iv[0]);
           if(curE===null){ curS=iv[0]; curE=iv[1]; }
           else if(iv[0]<=curE){ if(iv[1]>curE) curE=iv[1]; }   // solapa → extiende
-          else { union+=(curE-curS); curS=iv[0]; curE=iv[1]; } });
-        if(curE!==null) union+=(curE-curS);
+          else { union+=(curE-curS); merged.push([curS,curE]); curS=iv[0]; curE=iv[1]; } });
+        if(curE!==null){ union+=(curE-curS); merged.push([curS,curE]); }
         if(rawSum>union) dupCount++;   // ese día hubo horas repetidas/solapadas
-        var extra=H._raw[f]||0; H.porDia[f]=union+extra; tot+=union+extra;
+        var extra=H._raw[f]||0; H.porDia[f]=union+extra; (H.ivDia||(H.ivDia={}))[f]=merged; tot+=union+extra;
       });
       H.totalMin=tot;
     });
@@ -3516,7 +3530,7 @@
       var tipo=t.tipo_pago||'hora', tr=cargoTrato(t.cargo), vh=tr?Math.round(tr/8):((+t.valor_hora||0)||D.valorHora||0), jor=+t.jornada_horas||0;
       // Pago por día: real (por horas) y contable (ajuste manual por día si existe).
       var base=0, baseMin=0, baseCont=0, hayAjDia=false;
-      if(H){ for(var fd in H.porDia){ var dm=H.porDia[fd], pmin=(tipo==='contrato' && !esTratoDia(fd))?Math.max(0,dm-jor*60):dm;
+      if(H){ for(var fd in H.porDia){ var dm=H.porDia[fd], pmin=tratoMinDia(t, tipo, jor, H, fd);
         var dReal=Math.round(pmin/60*vh), ajd=(D.ajDia&&t.id)?D.ajDia[t.id+'|'+fd]:null, dCont=ajd?ajd.monto:dReal; if(ajd) hayAjDia=true;
         base+=dReal; baseMin+=pmin; baseCont+=dCont;
         porDiaMonto[fd]=(porDiaMonto[fd]||0)+dCont; porDiaHoras[fd]=(porDiaHoras[fd]||0)+dm; } }
@@ -3634,7 +3648,7 @@
     Object.keys(porDiaD).forEach(function(f){ porDiaD[f].min=(x.H&&x.H.porDia&&x.H.porDia[f]!=null)?x.H.porDia[f]:porDiaD[f].ents.reduce(function(a,d){ return a+d.min; },0); });
     var fechasD=Object.keys(porDiaD).sort();
     var diasHtml=fechasD.length?fechasD.map(function(f){
-      var pd=porDiaD[f], pmin=(x.tipo==='contrato' && !esTratoDia(f))?Math.max(0,pd.min-(x.jor*60)):pd.min, dReal=Math.round(pmin/60*x.vh);
+      var pd=porDiaD[f], pmin=tratoMinDia(x.t, x.tipo, x.jor, x.H, f), dReal=Math.round(pmin/60*x.vh);
       var ajd=(REMU_DATA.ajDia&&x.t.id)?REMU_DATA.ajDia[x.t.id+'|'+f]:null, dCont=ajd?ajd.monto:dReal;
       // Desglose por faena: cada faena en su punto, con su horario y horas, en el color del cliente (sutil).
       var byFae={}, forder=[]; pd.ents.forEach(function(d){ var fa=(d.faena||''); if(!(fa in byFae)){ byFae[fa]=[]; forder.push(fa); } byFae[fa].push(d); });
@@ -3649,7 +3663,7 @@
       if(x.tipo==='contrato'){ var dFull=Math.round(pd.min/60*x.vh), dDesc=dFull-dReal;
         fijoTxt = esTratoDia(f)
           ? '<div class="note" style="margin:1px 0 0;font-size:.7rem;color:var(--navy)">'+(esFinde(f)?'fin de semana':'feriado')+' · '+hm(pd.min)+' como trato · '+fmtMoney(dReal)+'</div>'
-          : '<div class="note" style="margin:1px 0 0;font-size:.7rem;color:var(--navy)">fijo · '+hm(pd.min)+' − '+(x.jor||0)+'h = '+hm(pmin)+' extra · real '+fmtMoney(dReal)+' <span style="color:var(--muted)">(trato '+fmtMoney(dFull)+' · −'+fmtMoney(dDesc)+')</span></div>'; }
+          : '<div class="note" style="margin:1px 0 0;font-size:.7rem;color:var(--navy)">fijo · '+hm(pd.min)+' − '+hm(pd.min-pmin)+(ventanaTrab(x.t)?' en turno':' jornada')+' = '+hm(pmin)+' trato · real '+fmtMoney(dReal)+' <span style="color:var(--muted)">(si spot '+fmtMoney(dFull)+' · −'+fmtMoney(dDesc)+')</span></div>'; }
       var right=x.t.id
         ? '<div class="rd-dcol"><div class="rd-real2'+((dCont!==dReal)?' rd-aj2':'')+'">real '+fmtMoney(dReal)+'</div>'+
             '<input class="rd-dcont" type="number" min="0" data-f="'+f+'" data-real="'+dReal+'" value="'+dCont+'" title="Monto contable de este día (editable)">'+
@@ -3808,7 +3822,7 @@
       if(!ents.length) return;
       var dayMin=(x.H&&x.H.porDia&&x.H.porDia[fday]!=null)?x.H.porDia[fday]:ents.reduce(function(a,d){ return a+d.min; },0), vu=0, faW={};
       ents.forEach(function(d){ vu+=(d.vueltas||0); if(d.faena) faW[d.faena]=1; });
-      var pagoMin=(x.tipo==='contrato' && !esTratoDia(fday))?Math.max(0,dayMin-(x.jor*60)):dayMin;
+      var pagoMin=tratoMinDia(x.t, x.tipo, x.jor, x.H, fday);
       var real=Math.round(pagoMin/60*x.vh);
       var ajd=(D.ajDia&&x.t.id)?D.ajDia[x.t.id+'|'+fday]:null, cont=ajd?ajd.monto:real;
       totMin+=dayMin; totMonto+=cont; totVu+=vu;
@@ -3821,10 +3835,10 @@
       var horarios=r.ents.map(function(d){ return esc(d.entrada||'--:--')+'→'+esc(d.salida||'--:--'); }).join(', ');
       var faTxt=r.faenas.length?('<div class="note" style="margin:1px 0 0;font-size:.71rem">📍 '+esc(r.faenas.join(' · '))+'</div>'):'';
       var fijoTxt='';
-      if(r.x.tipo==='contrato'){ var dFull=Math.round(r.dayMin/60*r.x.vh), dDesc=dFull-r.real, exMin=Math.max(0,r.dayMin-(r.x.jor*60));
+      if(r.x.tipo==='contrato'){ var dFull=Math.round(r.dayMin/60*r.x.vh), dDesc=dFull-r.real, exMin=tratoMinDia(r.x.t,r.x.tipo,r.x.jor,r.x.H,fday);
         fijoTxt = esTratoDia(fday)
           ? '<div class="note" style="margin:1px 0 0;font-size:.7rem;color:var(--navy)">'+(esFinde(fday)?'fin de semana':'feriado')+' · '+hm(r.dayMin)+' como trato · '+fmtMoney(r.real)+'</div>'
-          : '<div class="note" style="margin:1px 0 0;font-size:.7rem;color:var(--navy)">fijo · '+hm(r.dayMin)+' − '+(r.x.jor||0)+'h = '+hm(exMin)+' extra · real '+fmtMoney(r.real)+' <span style="color:var(--muted)">(trato '+fmtMoney(dFull)+' · −'+fmtMoney(dDesc)+')</span></div>'; }
+          : '<div class="note" style="margin:1px 0 0;font-size:.7rem;color:var(--navy)">fijo · '+hm(r.dayMin)+' − '+hm(r.dayMin-exMin)+(ventanaTrab(r.x.t)?' en turno':' jornada')+' = '+hm(exMin)+' trato · real '+fmtMoney(r.real)+' <span style="color:var(--muted)">(si spot '+fmtMoney(dFull)+' · −'+fmtMoney(dDesc)+')</span></div>'; }
       var right=r.x.t.id
         ? '<div class="rd-dcol"><div class="rd-real2'+((r.cont!==r.real)?' rd-aj2':'')+'">real '+fmtMoney(r.real)+'</div>'+
             '<input class="rd-dcont2" type="number" min="0" data-tid="'+r.x.t.id+'" data-real="'+r.real+'" value="'+r.cont+'" title="Monto contable de este día (editable)">'+
