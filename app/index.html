@@ -860,7 +860,10 @@
           <div class="fld"><label>Cliente de esta faena</label><select id="m-ecliente"></select></div>
           <div class="fld"><label>Ubicación / sitio <span class="note" style="font-weight:400">(vacío = todas)</span></label><input id="m-esitio" type="text" list="m-esitio-list" placeholder="Ej: Chinquihue"><datalist id="m-esitio-list"></datalist></div>
         </div>
-        <div class="fld"><label>Nombre de la faena</label><input id="m-nombre" type="text" placeholder="Ej: Apoyo frigorífico"></div>
+        <div class="grid2">
+          <div class="fld"><label>Nombre de la faena</label><input id="m-nombre" type="text" placeholder="Ej: Apoyo frigorífico"></div>
+          <div class="fld"><label>Personas necesarias <span class="note" style="font-weight:400">(para la faena)</span></label><input id="m-personas" type="number" min="0" step="1" placeholder="Ej: 4"></div>
+        </div>
         <label style="display:block;font:700 13px var(--font);color:var(--ink);margin:6px 0 2px">Ítems (EPP / herramienta / maquinaria)</label>
         <div id="m-items"></div>
         <button class="catadd" id="m-add-item" type="button">＋ Agregar ítem</button>
@@ -1986,11 +1989,11 @@
   function cargarFaenaMatriz(id){
     var p=PLANT.filter(function(x){ return String(x.id)===String(id); })[0];
     if(!p){ nuevaFaenaMatriz(); return; }
-    M_ID=p.id; opcionesCli($('m-ecliente'), p.cliente, true); poblarSitiosMatriz(p.cliente); if($('m-esitio')) $('m-esitio').value=p.sitio||''; $('m-nombre').value=p.faena||'';
+    M_ID=p.id; opcionesCli($('m-ecliente'), p.cliente, true); poblarSitiosMatriz(p.cliente); if($('m-esitio')) $('m-esitio').value=p.sitio||''; $('m-nombre').value=p.faena||''; if($('m-personas')) $('m-personas').value=(p.personas!=null?p.personas:'');
     M_ITEMS=(p.items||[]).map(function(it){ return {tipo:it.tipo||'herramienta',item:it.item||'',cantidad:it.cantidad||''}; });
     if(!M_ITEMS.length)M_ITEMS=[{tipo:'herramienta',item:'',cantidad:''}]; renderMItems(); $('m-del').style.display='';
   }
-  function nuevaFaenaMatriz(){ M_ID=null; opcionesCli($('m-ecliente'), $('m-cliente').value, true); poblarSitiosMatriz($('m-cliente').value); if($('m-esitio')) $('m-esitio').value=''; $('m-nombre').value=''; M_ITEMS=[{tipo:'herramienta',item:'',cantidad:''}]; renderMItems(); $('m-del').style.display='none'; if($('m-faena')) $('m-faena').value=''; }
+  function nuevaFaenaMatriz(){ M_ID=null; opcionesCli($('m-ecliente'), $('m-cliente').value, true); poblarSitiosMatriz($('m-cliente').value); if($('m-esitio')) $('m-esitio').value=''; $('m-nombre').value=''; if($('m-personas')) $('m-personas').value=''; M_ITEMS=[{tipo:'herramienta',item:'',cantidad:''}]; renderMItems(); $('m-del').style.display='none'; if($('m-faena')) $('m-faena').value=''; }
   function renderMItems(){
     var c=$('m-items');
     c.innerHTML=M_ITEMS.map(function(it,i){
@@ -2024,7 +2027,7 @@
     syncMItems();
     var items=M_ITEMS.filter(function(it){ return (it.item||'').trim(); }).map(function(it){ return {tipo:it.tipo||'herramienta',item:it.item.trim(),cantidad:(it.cantidad||'').trim()}; });
     busy(true,'Guardando faena…');
-    var row={ cliente:cli, faena:faena, sitio:(($('m-esitio')&&$('m-esitio').value.trim())||null), items:items, autor:userEmail };
+    var row={ cliente:cli, faena:faena, sitio:(($('m-esitio')&&$('m-esitio').value.trim())||null), items:items, personas:($('m-personas')?(+$('m-personas').value||null):null), autor:userEmail };
     var q = M_ID ? sb.from('plantillas').update(row).eq('id',M_ID) : sb.from('plantillas').insert(row);
     q.then(function(r){ busy(false);
       if(r.error){ toast('No se pudo guardar: '+r.error.message); return; }
