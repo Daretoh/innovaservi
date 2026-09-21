@@ -502,6 +502,8 @@
   .docitem{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:10px;padding:9px 11px;margin-bottom:8px;background:var(--alt);}
   .docitem .ic{width:30px;height:30px;border-radius:7px;background:rgba(255,107,0,.14);color:var(--orange);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;}
   .docitem a{flex:1;min-width:0;font:600 13px var(--font);color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .docitem .doc-cls{flex:0 0 auto;max-width:130px;font:600 11.5px var(--font);color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:8px;padding:5px 6px;cursor:pointer;}
+  @media(max-width:520px){ .docitem{flex-wrap:wrap;} .docitem a{flex:1 1 100%;} .docitem .doc-cls{max-width:none;flex:1;} }
   .docitem .dl{font-size:.7rem;color:var(--muted);}
   .docitem .rm{border:1px solid #f0c0c0;background:#fff;color:#dc2626;border-radius:8px;width:30px;height:30px;cursor:pointer;flex-shrink:0;}
   /* ---- Vehículos / Maquinaria ---- */
@@ -3131,11 +3133,32 @@
   $('trab-nuevo').addEventListener('click',function(){ abrirFicha(null); });
   function renderDocs(){
     var c=$('fi-docs');
+    var opts=(typeof RRHH_TIPOS!=='undefined'?RRHH_TIPOS:[]).map(function(tp){ return '<option value="'+tp.slug+'">'+esc(tp.corto||tp.nombre)+'</option>'; }).join('');
     c.innerHTML=FICHA_DOCS.map(function(d,i){ var img=(d.tipo==='image');
-      return '<div class="docitem"><div class="ic">'+(img?'🖼️':'📄')+'</div>'+
+      var ic='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">'+(img?'<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/>':'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>')+'</svg>';
+      return '<div class="docitem"><div class="ic">'+ic+'</div>'+
         '<a href="'+esc(d.url)+'" target="_blank" rel="noopener">'+esc(d.nombre||'documento')+'<div class="dl">'+esc(fechaCorta(d.fecha||''))+' · abrir</div></a>'+
+        '<select class="doc-cls" data-i="'+i+'" title="Clasificar como documento estándar"><option value="">Clasificar…</option>'+opts+'</select>'+
         '<button class="rm" data-i="'+i+'" type="button">✕</button></div>'; }).join('')||'<p class="note" style="margin:0">Sin documentos aún.</p>';
     c.querySelectorAll('.rm').forEach(function(b){ b.addEventListener('click',function(){ FICHA_DOCS.splice(+b.dataset.i,1); renderDocs(); }); });
+    c.querySelectorAll('.doc-cls').forEach(function(s){ s.addEventListener('change',function(){ if(s.value) clasificarDocFicha(+s.dataset.i, s.value); }); });
+  }
+  // Clasifica un documento suelto como uno de la documentación estándar (RRHH): lo marca entregado con este archivo.
+  function clasificarDocFicha(i, tipo){
+    var d=FICHA_DOCS[i]; if(!d||!tipo||!FICHA_ID||!sb){ renderDocs(); return; }
+    var tp=rrhhTipo(tipo), ya=RRHH_D[FICHA_ID+'|'+tipo];
+    if(ya && ya.estado==='entregado' && !confirm('“'+tp.nombre+'” ya está marcado como entregado. ¿Reemplazar con este archivo?')){ renderDocs(); return; }
+    var row={ trabajador_id:FICHA_ID, tipo:tipo, estado:'entregado', fecha:(d.fecha||todayISO()), url:d.url, nota:(d.nombre||''), autor:userEmail };
+    busy(true,'Clasificando…');
+    sb.from('rrhh_docs').upsert(row,{onConflict:'trabajador_id,tipo'}).then(function(r){
+      if(r&&r.error){ busy(false); toast(/rrhh_docs/.test(r.error.message||'')?'Falta correr rrhh-docs.sql.':('No se pudo: '+r.error.message)); renderDocs(); return; }
+      RRHH_D[FICHA_ID+'|'+tipo]=row; FICHA_DOCS.splice(i,1);
+      sb.from('trabajadores').update({docs:FICHA_DOCS}).eq('id',FICHA_ID).then(function(){ busy(false);
+        toast('✓ Clasificado como '+tp.nombre); renderDocs();
+        renderFichaRrhh({id:FICHA_ID, nombre:($('fi-nombre')?$('fi-nombre').value:'')});
+        if(typeof renderRrhh==='function') renderRrhh();
+      }, function(){ busy(false); toast('Clasificado. Guarda la ficha para quitar el suelto.'); renderDocs(); });
+    }, function(){ busy(false); toast('No se pudo clasificar.'); renderDocs(); });
   }
   // Checklist de documentación estándar (RRHH) dentro de la ficha del trabajador.
   function renderFichaRrhh(t){
