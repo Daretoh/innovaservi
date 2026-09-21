@@ -499,7 +499,8 @@
   .pb-detalle{margin-top:9px;width:100%;background:#fff;border:1px solid var(--line);border-radius:9px;padding:7px;font:700 12px var(--font);color:var(--navy);cursor:pointer;}
   .pb-panel{position:sticky;top:8px;}
   .pb-psticky{background:var(--alt);border:1px solid var(--line);border-radius:12px;padding:11px 12px;}
-  .pb-psticky h3{margin:0 0 8px;font:800 13px var(--font);color:var(--navy);}
+  .pb-psticky h3{margin:0 0 6px;font:800 13px var(--font);color:var(--navy);}
+  .pb-selfae{font:600 11.5px var(--font);color:var(--muted);margin-bottom:8px;padding:5px 8px;background:#fff;border:1px dashed var(--line);border-radius:8px;}
   .pb-psticky input{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:9px;margin-bottom:9px;font:inherit;}
   .pb-wlist{display:flex;flex-direction:column;gap:5px;max-height:62vh;overflow:auto;}
   .pb-wrow{display:flex;align-items:center;justify-content:space-between;gap:8px;background:#fff;border:1px solid var(--line);border-radius:9px;padding:7px 10px;cursor:grab;font:600 12.5px var(--font);}
@@ -1652,10 +1653,14 @@
     el.innerHTML=planTrabs().filter(function(w){ return w.nombre.toLowerCase().indexOf(q)>=0; }).map(function(w){ var ya=asignados[normName(w.nombre)];
       return '<div class="pb-wrow'+(ya?' ya':'')+'" draggable="true" data-n="'+enc(w.nombre)+'"><span class="pb-wn">'+esc(w.nombre)+'<span class="pb-wr">'+esc(w.cargo||'Operario')+'</span></span>'+(w.chofer?'<span class="pb-wch">chofer</span>':(ya?'<span class="pb-wya">asignado</span>':''))+'</div>'; }).join('')||'<div class="note" style="margin:0">Sin trabajadores. Créalos en RRHH.</div>';
     el.querySelectorAll('.pb-wrow').forEach(function(r){
-      r.addEventListener('click',function(){ if(PLANIF_SEL!=null) planAsignar(PLANIF_SEL, r.dataset.n); else toast('Toca primero una faena.'); });
+      var sx=0,sy=0,st=0;
+      r.addEventListener('pointerdown',function(ev){ sx=ev.clientX; sy=ev.clientY; st=Date.now(); });
+      r.addEventListener('pointerup',function(ev){ var dx=Math.abs(ev.clientX-sx), dy=Math.abs(ev.clientY-sy);   // toque (no arrastre) → asigna; funciona en móvil y PC
+        if(dx<9 && dy<9 && (Date.now()-st)<700){ if(PLANIF_SEL!=null) planAsignar(PLANIF_SEL, r.dataset.n); else toast('Toca una faena primero.'); } });
       r.addEventListener('dragstart',function(ev){ try{ ev.dataTransfer.setData('text/plain', r.dataset.n); ev.dataTransfer.effectAllowed='copy'; }catch(_){}} );
     });
   }
+  function planSelName(){ var el=$('pb-selfae'); if(!el) return; var e=eventoDe(PLANIF_SEL); el.innerHTML=e?('Asignando a: <b style="color:var(--navy)">'+esc(e.titulo||'Faena')+'</b>'):'Toca una faena para seleccionarla ↑'; }
   function renderPlanif(){
     var c=$('planif-list'); if(!c) return;
     if(!PLANIF_LUNES) PLANIF_LUNES=lunesDe(todayISO());
@@ -1670,11 +1675,11 @@
     var fs=(EVENTOS||[]).filter(function(e){ var i=e.fecha, fn=e.fecha_fin||e.fecha; return i<=PLANIF_DIA&&fn>=PLANIF_DIA; }).sort(function(a,b){ return (a.ubicacion||'').localeCompare(b.ubicacion||''); });
     if((PLANIF_SEL==null || !fs.some(function(e){return e.id===PLANIF_SEL;})) && fs.length) PLANIF_SEL=fs[0].id;
     var faeCards=fs.length? fs.map(planFaeCard).join('') : '<div class="empty"><div class="big">📋</div>No hay faenas este día.<br><span style="font-size:.82rem">Agéndalas en Calendario.</span></div>';
-    c.innerHTML='<div class="pb-tabs">'+tabs+'</div><div class="pb-grid"><div class="pb-faes">'+faeCards+'</div><div class="pb-panel"><div class="pb-psticky"><h3>Trabajadores disponibles</h3><input type="search" id="pb-wq" placeholder="Buscar trabajador…"><div class="pb-wlist" id="pb-wlist"></div><div class="note" style="margin-top:8px;font-size:.7rem">Toca una faena y luego un trabajador para asignarlo; o arrástralo a la faena.</div></div></div></div>';
+    c.innerHTML='<div class="pb-tabs">'+tabs+'</div><div class="pb-grid"><div class="pb-faes">'+faeCards+'</div><div class="pb-panel"><div class="pb-psticky"><h3>Trabajadores disponibles</h3><div class="pb-selfae" id="pb-selfae"></div><input type="search" id="pb-wq" placeholder="Buscar trabajador…"><div class="pb-wlist" id="pb-wlist"></div><div class="note" style="margin-top:8px;font-size:.7rem">Toca una faena y luego un trabajador para asignarlo; o arrástralo a la faena.</div></div></div></div>';
     // wiring
     c.querySelectorAll('.pb-tab').forEach(function(b){ b.addEventListener('click',function(){ PLANIF_DIA=b.dataset.f; PLANIF_SEL=null; renderPlanif(); }); });
     c.querySelectorAll('.pb-fae').forEach(function(el){
-      el.addEventListener('click',function(ev){ if(ev.target.closest('button,select,.x')) return; PLANIF_SEL=+el.dataset.e; c.querySelectorAll('.pb-fae').forEach(function(x){ x.classList.toggle('sel', x===el); }); });
+      el.addEventListener('click',function(ev){ if(ev.target.closest('button,select,.x')) return; PLANIF_SEL=+el.dataset.e; c.querySelectorAll('.pb-fae').forEach(function(x){ x.classList.toggle('sel', x===el); }); planSelName(); });
       el.addEventListener('dragover',function(ev){ ev.preventDefault(); el.classList.add('drop'); });
       el.addEventListener('dragleave',function(){ el.classList.remove('drop'); });
       el.addEventListener('drop',function(ev){ ev.preventDefault(); el.classList.remove('drop'); var n=''; try{ n=ev.dataTransfer.getData('text/plain'); }catch(_){}; if(n) planAsignar(+el.dataset.e, n); });
@@ -1688,7 +1693,7 @@
     c.querySelectorAll('.pb-prepsel').forEach(function(s){ s.addEventListener('change',function(){ var e=eventoDe(s.dataset.e),p=planDe(e); p.preparador=s.value; planSave(e); }); });
     c.querySelectorAll('.pb-detalle').forEach(function(b){ b.addEventListener('click',function(ev){ ev.stopPropagation(); var e=eventoDe(b.dataset.e); if(e) abrirPlanif(e); }); });
     var wq=$('pb-wq'); if(wq){ wq.value=PLANIF_WQ||''; wq.addEventListener('input',function(){ PLANIF_WQ=this.value; renderPlanWorkers(); }); }
-    renderPlanWorkers();
+    renderPlanWorkers(); planSelName();
   }
   function abrirPlanif(e){ if(!e) return; var p=PLAN_MAP[e.id]||{};
     PE={ e:e, id:p.id||null, estado:p.estado||'borrador',
