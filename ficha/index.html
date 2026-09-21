@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Ficha de ingreso · InnovaServi</title>
+<meta name="theme-color" content="#e8791f" />
+<link rel="icon" type="image/png" href="../assets/images/favicon.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap" />
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{ --ground:#eef1f5; --card:#fff; --ink:#1a222d; --mut:#5f6f80; --line:#d9e0e8; --accent:#1a3fb0; --orange:#e8791f; --soft:#f4f7fa; }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--ground);font-family:"Inter",system-ui,sans-serif;color:var(--ink);}
+  .wrap{max-width:640px;margin:0 auto;padding:18px 16px calc(28px + env(safe-area-inset-bottom));}
+  .head{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:14px;}
+  .head img{height:44px;width:auto;object-fit:contain;}
+  .head .t b{font-family:"Archivo",sans-serif;font-weight:800;font-size:16px;display:block;letter-spacing:.01em;}
+  .head .t span{font-size:12px;color:var(--mut);}
+  .intro{font-size:13.5px;color:var(--mut);margin:0 2px 14px;line-height:1.5;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 15px;margin-bottom:12px;}
+  .card h2{font-family:"Archivo",sans-serif;font-weight:700;font-size:13px;color:var(--accent);text-transform:uppercase;letter-spacing:.03em;margin:0 0 10px;}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:11px 12px;}
+  .wide{grid-column:1/-1;}
+  label.f{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:600;color:var(--ink);}
+  label.f .req{color:var(--orange);}
+  input,select{font:inherit;font-size:14px;padding:10px 11px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);width:100%;}
+  input:focus,select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(26,63,176,.12);}
+  input.bad{border-color:#d33;background:#fdecec;}
+  .hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0;}
+  .send{width:100%;background:var(--orange);color:#fff;border:none;border-radius:12px;padding:15px;font-family:"Archivo",sans-serif;font-weight:700;font-size:15.5px;cursor:pointer;margin-top:4px;}
+  .send:disabled{opacity:.6;}
+  .msg{font-size:13px;margin-top:10px;text-align:center;}
+  .msg.err{color:#c0392b;font-weight:600;}
+  .ok-screen{display:none;text-align:center;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:34px 22px;}
+  .ok-screen .ic{width:64px;height:64px;border-radius:50%;background:#e2f3ec;color:#0f6e56;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:34px;}
+  .ok-screen h2{font-family:"Archivo",sans-serif;font-size:20px;margin:0 0 6px;}
+  .ok-screen p{color:var(--mut);font-size:14px;margin:0;}
+  .foot{text-align:center;color:var(--mut);font-size:11px;margin-top:14px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <img src="../assets/images/InnovaServi-completo.png" alt="InnovaServi" onerror="this.style.display='none'" />
+    <div class="t"><b>Ficha de ingreso</b><span>Innovación y Servicios SpA</span></div>
+  </div>
+
+  <form id="form">
+    <p class="intro">Completa tus datos para tu ingreso a InnovaServi. Toma un par de minutos. Los campos con <span style="color:var(--orange)">*</span> son obligatorios.</p>
+
+    <div class="card">
+      <h2>Datos personales</h2>
+      <div class="grid">
+        <label class="f wide">Nombre completo <span class="req">*</span><input name="nombre" required autocomplete="name"></label>
+        <label class="f">RUT <span class="req">*</span><input name="rut" required placeholder="12.345.678-9"></label>
+        <label class="f">Fecha de nacimiento<input name="nacimiento" type="date"></label>
+        <label class="f">Nacionalidad<input name="nacionalidad" placeholder="Chilena"></label>
+        <label class="f">Estado civil<input name="estado_civil" placeholder="Soltero / Casado…"></label>
+        <label class="f">Teléfono <span class="req">*</span><input name="telefono" required type="tel" inputmode="tel" placeholder="+56 9 ..." autocomplete="tel"></label>
+        <label class="f">Correo<input name="email" type="email" inputmode="email" placeholder="correo@ejemplo.com" autocomplete="email"></label>
+        <label class="f wide">Dirección<input name="direccion" placeholder="Calle, número, población" autocomplete="street-address"></label>
+        <label class="f">Comuna<input name="comuna" placeholder="Puerto Montt"></label>
+        <label class="f">Cargo al que ingresas<input name="cargo" placeholder="Ej: Operario de servicios"></label>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Previsión y emergencia</h2>
+      <div class="grid">
+        <label class="f">AFP<input name="afp" placeholder="Ej: Modelo"></label>
+        <label class="f">Salud<input name="salud" placeholder="Fonasa / Isapre"></label>
+        <label class="f">N° de cargas<input name="cargas" type="number" min="0" inputmode="numeric" placeholder="0"></label>
+        <label class="f wide">Contacto de emergencia (nombre y teléfono)<input name="emergencia" placeholder="Nombre · +56 9 ..."></label>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Datos bancarios (para el pago)</h2>
+      <div class="grid">
+        <label class="f">Banco<input name="banco" list="bancos" placeholder="Ej: Banco Falabella"></label>
+        <label class="f">Tipo de cuenta<select name="tipo_cuenta"><option value="">—</option><option>Cuenta Corriente</option><option>Cuenta Vista</option><option>Cuenta RUT</option><option>Cuenta de Ahorro</option><option>Chequera Electrónica</option></select></label>
+        <label class="f wide">N° de cuenta<input name="num_cuenta" placeholder="Ej: 1-999-838631-9"></label>
+      </div>
+      <datalist id="bancos"><option>BancoEstado</option><option>Banco de Chile</option><option>Banco Santander</option><option>Banco BCI</option><option>Scotiabank</option><option>Banco Itaú</option><option>Banco Falabella</option><option>Banco Ripley</option><option>Banco BICE</option><option>Banco Security</option><option>Coopeuch</option><option>Mercado Pago</option><option>Tenpo</option><option>Mach</option></datalist>
+    </div>
+
+    <div class="card">
+      <h2>Tallas (para el EPP)</h2>
+      <div class="grid">
+        <label class="f">Talla de ropa / overol<input name="talla_ropa" placeholder="Ej: L / XL"></label>
+        <label class="f">Talla de calzado<input name="talla_botas" placeholder="Ej: 42"></label>
+      </div>
+    </div>
+
+    <input class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+    <button class="send" id="send" type="submit">Enviar mis datos</button>
+    <div class="msg err" id="err" hidden></div>
+    <div class="foot">Tus datos se envían de forma segura a InnovaServi para tu ingreso.</div>
+  </form>
+
+  <div class="ok-screen" id="ok">
+    <div class="ic">✓</div>
+    <h2>¡Datos enviados!</h2>
+    <p>Gracias. Recibimos tu ficha de ingreso; el equipo de InnovaServi se pondrá en contacto contigo.</p>
+  </div>
+</div>
+
+<script>
+  var SB_URL='https://oabtbzrfgwadnooexdwd.supabase.co';
+  var SB_KEY='sb_publishable_Uz01bxGvGArhB-h4KOvbqA_WtQg1zer';
+  var sb=null; try{ if(window.supabase) sb=window.supabase.createClient(SB_URL,SB_KEY); }catch(e){}
+  var form=document.getElementById('form'), errEl=document.getElementById('err');
+  form.addEventListener('submit', async function(ev){
+    ev.preventDefault();
+    errEl.hidden=true;
+    if(form.website.value){ return; }   // honeypot anti-spam
+    var reqs=['nombre','rut','telefono'], ok=true;
+    reqs.forEach(function(n){ var el=form[n]; var bad=!el.value.trim(); el.classList.toggle('bad',bad); if(bad) ok=false; });
+    if(!ok){ errEl.textContent='Completa los campos obligatorios (*).'; errEl.hidden=false; return; }
+    if(!sb){ errEl.textContent='No se pudo conectar. Revisa tu internet e intenta de nuevo.'; errEl.hidden=false; return; }
+    var row={};
+    Array.prototype.forEach.call(form.elements, function(el){
+      if(!el.name || el.name==='website') return;
+      var v=(el.value||'').trim();
+      if(el.name==='cargas'){ row.cargas = v? (parseInt(v,10)||null) : null; return; }
+      if(el.name==='nacimiento'){ row.nacimiento = v || null; return; }
+      row[el.name] = v || null;
+    });
+    row.estado='pendiente';
+    var btn=document.getElementById('send'); btn.disabled=true; btn.textContent='Enviando…';
+    try{
+      var r=await sb.from('fichas_ingreso').insert(row);
+      if(r.error){ throw r.error; }
+      document.getElementById('form').style.display='none';
+      document.getElementById('ok').style.display='block';
+      window.scrollTo(0,0);
+    }catch(e){
+      btn.disabled=false; btn.textContent='Enviar mis datos';
+      errEl.textContent = (/relation|does not exist|schema/.test(e.message||'')) ? 'Falta preparar el sistema (corre fichas-ingreso.sql).' : ('No se pudo enviar: '+(e.message||'error')+'. Intenta de nuevo.');
+      errEl.hidden=false;
+    }
+  });
+</script>
+</body>
+</html>
