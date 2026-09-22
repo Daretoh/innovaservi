@@ -113,6 +113,10 @@
   var SB_KEY='sb_publishable_Uz01bxGvGArhB-h4KOvbqA_WtQg1zer';
   var sb=null; try{ if(window.supabase) sb=window.supabase.createClient(SB_URL,SB_KEY); }catch(e){}
   var form=document.getElementById('form'), errEl=document.getElementById('err');
+  // Link "por persona": prellena campos desde la URL (?nombre=...&cargo=...&telefono=...).
+  try{ var params=new URLSearchParams(location.search);
+    ['nombre','rut','cargo','telefono','email','comuna','direccion'].forEach(function(k){ var v=params.get(k); if(v && form[k]) form[k].value=v; });
+  }catch(_){}
   form.addEventListener('submit', async function(ev){
     ev.preventDefault();
     errEl.hidden=true;
