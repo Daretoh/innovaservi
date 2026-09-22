@@ -63,7 +63,7 @@
         <label class="f">Correo<input name="email" type="email" inputmode="email" placeholder="correo@ejemplo.com" autocomplete="email"></label>
         <label class="f wide">Dirección<input name="direccion" placeholder="Calle, número, población" autocomplete="street-address"></label>
         <label class="f">Comuna<input name="comuna" placeholder="Puerto Montt"></label>
-        <label class="f">Cargo al que ingresas<input name="cargo" placeholder="Ej: Operario de servicios"></label>
+        <label class="f">Cargo al que ingresas<select name="cargo" id="cargo"><option value="">Selecciona tu cargo…</option></select></label>
       </div>
     </div>
 
@@ -113,10 +113,31 @@
   var SB_KEY='sb_publishable_Uz01bxGvGArhB-h4KOvbqA_WtQg1zer';
   var sb=null; try{ if(window.supabase) sb=window.supabase.createClient(SB_URL,SB_KEY); }catch(e){}
   var form=document.getElementById('form'), errEl=document.getElementById('err');
-  // Link "por persona": prellena campos desde la URL (?nombre=...&cargo=...&telefono=...).
-  try{ var params=new URLSearchParams(location.search);
-    ['nombre','rut','cargo','telefono','email','comuna','direccion'].forEach(function(k){ var v=params.get(k); if(v && form[k]) form[k].value=v; });
-  }catch(_){}
+  var params=null; try{ params=new URLSearchParams(location.search); }catch(_){}
+
+  // Cargo con opción a agregar si viene por URL y no está en la lista.
+  function setCargo(val){
+    var sel=document.getElementById('cargo'); if(!sel||!val) return;
+    var found=false;
+    for(var i=0;i<sel.options.length;i++){ if(sel.options[i].value.toLowerCase()===String(val).toLowerCase()){ sel.selectedIndex=i; found=true; break; } }
+    if(!found){ var o=document.createElement('option'); o.value=val; o.textContent=val; sel.appendChild(o); sel.value=val; }
+  }
+  // Carga los cargos disponibles (solo nombres, sin montos) desde la vista pública.
+  function cargarCargos(){
+    if(!sb){ return; }
+    sb.from('cargos_publicos').select('nombre').then(function(r){
+      var sel=document.getElementById('cargo'); if(!sel) return;
+      var rows=(r&&r.data)||[];
+      rows.forEach(function(c){ if(!c.nombre) return; var o=document.createElement('option'); o.value=c.nombre; o.textContent=c.nombre; sel.appendChild(o); });
+      // "Otro" para casos que no estén en la lista.
+      var otro=document.createElement('option'); otro.value='Otro'; otro.textContent='Otro'; sel.appendChild(otro);
+      var pc=params&&params.get('cargo'); if(pc) setCargo(pc);
+    }, function(){});
+  }
+  cargarCargos();
+
+  // Link "por persona": prellena campos desde la URL (?nombre=...&telefono=...). Cargo se maneja aparte.
+  try{ ['nombre','rut','telefono','email','comuna','direccion'].forEach(function(k){ var v=params&&params.get(k); if(v && form[k]) form[k].value=v; }); }catch(_){}
   form.addEventListener('submit', async function(ev){
     ev.preventDefault();
     errEl.hidden=true;
