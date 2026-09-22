@@ -535,6 +535,50 @@
   .dchip.venc{background:#fde8e8;color:#dc2626;}
   .dchip.prox{background:#fff4e5;color:#b45309;}
   .rrhh-chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;}
+  /* Faenas que piden reporte (multimedia) */
+  .rep-bdg{display:inline-flex;align-items:center;font:800 10px var(--font);padding:2px 8px;border-radius:999px;white-space:nowrap;letter-spacing:.02em;margin-top:4px;vertical-align:middle;}
+  .rep-bdg svg{margin-right:4px !important;vertical-align:0 !important;}
+  .rep-bdg.fut{background:#e9ecfb;color:var(--navy);}
+  .rep-bdg.pend{background:#fde8e8;color:#dc2626;}
+  .rep-bdg.borrador{background:#fff4e5;color:#b45309;}
+  .rep-bdg.ok{background:rgba(34,160,107,.14);color:var(--ok);}
+  .m-pidechk{display:flex;align-items:center;gap:9px;background:var(--alt);border:1px solid var(--line);border-radius:11px;padding:10px 12px;margin:4px 0 12px;font-size:.86rem;color:var(--body);cursor:pointer;}
+  .m-pidechk input{width:18px;height:18px;flex:none;accent-color:var(--orange);}
+  .m-pidechk b{color:var(--ink);}
+  /* Alertas */
+  .al-sec{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:12px;}
+  .al-sec h3{display:flex;align-items:center;gap:8px;font:800 14px var(--font);color:var(--ink);margin:0 0 6px;}
+  .al-sec h3 .cnt{margin-left:auto;}
+  .al-row{display:flex;align-items:center;gap:9px;padding:8px 2px;border-top:1px solid var(--line);font-size:.88rem;}
+  .al-row .al-t{flex:1;min-width:0;} .al-row .al-t b{color:var(--ink);font-weight:700;} .al-row .al-t .note{margin:1px 0 0;font-size:.74rem;}
+  .al-row button{flex:none;width:auto;}
+  .al-ok{display:flex;align-items:center;gap:8px;color:var(--ok);font-weight:700;font-size:.86rem;padding:4px 0;}
+  .al-num{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;border-radius:99px;background:#dc2626;color:#fff;font:800 10px var(--font);margin-left:6px;}
+  .sb-item .al-num{margin-left:auto;}
+  @media(min-width:900px){ .sbar:not(:hover) .sb-item .al-num{position:absolute;margin:0;transform:translate(10px,-9px);font-size:9px;min-width:15px;height:15px;} .sb-item{position:relative;} }
+  .acc-row{display:flex;align-items:center;gap:10px;padding:10px 2px;border-bottom:1px solid var(--line);}
+  .acc-row:last-child{border-bottom:none;}
+  .acc-row .acc-t{flex:1;min-width:0;} .acc-row .acc-t b{color:var(--ink);} .acc-row .acc-t .note{margin:2px 0 0;font-size:.76rem;}
+  /* Formulario de investigación de accidentes (formato fiel al papel) */
+  #dg-doc.fa-mode{padding:0;background:transparent;box-shadow:none;}
+  #dg-doc.fa-mode [contenteditable]{font-weight:400;min-width:40px;}
+  #dg-doc.fa-mode div[contenteditable]{display:block;min-height:1.3em;margin-top:2px;}
+  #dg-doc.fa-mode.cap [contenteditable]{border-bottom-color:transparent;}
+  .fa-page{background:#fff;padding:40px 46px;box-shadow:0 10px 40px -18px rgba(0,0,0,.4);color:#222;}
+  .fa-page + .fa-page{margin-top:18px;}
+  .fa-hd{display:flex;border:1px solid #333;margin-bottom:26px;}
+  .fa-hd .lg{width:27%;border-right:1px solid #333;display:flex;align-items:center;justify-content:center;padding:8px;}
+  .fa-hd .lg img{max-width:100%;max-height:70px;}
+  .fa-hd .tt{flex:1;display:flex;align-items:center;justify-content:center;font:800 14px var(--font);text-align:center;padding:8px;}
+  .fa-title{text-align:center;font:800 16px var(--font);margin:0 0 16px;}
+  .fa-t{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:0;}
+  .fa-t td{border:1px solid #9aa0b0;padding:7px 8px;vertical-align:top;}
+  .fa-t td.lb{width:26%;}
+  .fa-sh td{background:#6b6f78;color:#fff;font-weight:800;letter-spacing:.02em;padding:6px 8px;}
+  .fa-t .big{height:70px;} .fa-t .xbig{height:120px;}
+  .fa-t td [contenteditable]{display:inline-block;min-width:40px;}
+  .fa-firma{position:relative;min-height:170px;text-align:center;padding-top:14px;}
+  .fa-firma img{max-height:150px;max-width:70%;}
   .af-sec{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line);}
   .af-sec b{flex:1;font-weight:600;font-size:.9rem;}
   .af-sec select{flex:0 0 116px;}
@@ -700,6 +744,7 @@
   <div class="topbar">
     <div class="tt"><img src="../assets/images/InnovaLOGO.png" alt="" onerror="this.style.display='none'"><div><b>InnovaGestión</b><div class="who" id="who"></div></div></div>
     <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
+      <button id="btn-alertas" class="out hide" title="Alertas" aria-label="Alertas" style="padding-left:10px;padding-right:10px;display:inline-flex;align-items:center"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><span class="al-num hide" id="top-al-num"></span></button>
       <button id="btn-cli" class="out hide">🏢<span class="hlbl"> Clientes</span></button>
       <button id="btn-rrhh" class="out hide">📋<span class="hlbl"> RRHH</span></button>
       <button id="btn-pagos" class="out hide">💵<span class="hlbl"> Remuneraciones</span></button>
@@ -713,6 +758,7 @@
   <aside class="sbar" id="sbar">
     <div class="sbar-brand"><img src="../assets/images/InnovaLOGO.png" alt="" onerror="this.style.display='none'"><span>InnovaGestión</span></div>
     <nav class="sbar-nav">
+      <button class="sb-item sb-admin" data-v="v-alertas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>Alertas<span class="al-num hide" id="sb-al-num"></span></button>
       <div class="sbar-grp">Operaciones</div>
       <button class="sb-item on" data-v="v-reporte"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>Multimedia</button>
       <button class="sb-item" data-v="v-hist"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>Reportes</button>
@@ -729,6 +775,7 @@
       <button class="sb-item sb-admin" data-v="v-rrhh" data-seg="doc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>Documentación</button>
       <button class="sb-item sb-admin" data-v="v-rrhh" data-seg="capacit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c0 1 2.5 3 6 3s6-2 6-3v-5"/></svg>Capacitaciones</button>
       <button class="sb-item sb-admin" data-v="v-rrhh" data-seg="finiquito"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="m9 15 2 2 4-4"/></svg>Finiquitos</button>
+      <button class="sb-item sb-admin" data-v="v-rrhh" data-seg="accid"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M12 8v4M12 16h.01"/></svg>Informe accidentes</button>
 
       <div class="sbar-grp sb-admin">Remuneraciones</div>
       <button class="sb-item sb-admin" data-v="v-remu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg>Remuneraciones</button>
@@ -917,6 +964,7 @@
           <div class="fld"><label>Nombre de la faena</label><input id="m-nombre" type="text" placeholder="Ej: Apoyo frigorífico"></div>
           <div class="fld"><label>Personas necesarias <span class="note" style="font-weight:400">(para la faena)</span></label><input id="m-personas" type="number" min="0" step="1" placeholder="Ej: 4"></div>
         </div>
+        <label class="m-pidechk"><input type="checkbox" id="m-pide"><span><b>El cliente pide reporte</b> (fotos / multimedia) de esta faena</span></label>
         <label style="display:block;font:700 13px var(--font);color:var(--ink);margin:6px 0 2px">Ítems (EPP / herramienta / maquinaria)</label>
         <div id="m-items"></div>
         <button class="catadd" id="m-add-item" type="button">＋ Agregar ítem</button>
@@ -953,6 +1001,7 @@
         <button class="btn ghost small rrhh-seg" data-seg="doc" style="flex:1;min-width:120px">📋 Documentación</button>
         <button class="btn ghost small rrhh-seg" data-seg="capacit" style="flex:1;min-width:120px">🎓 Capacitaciones</button>
         <button class="btn ghost small rrhh-seg" data-seg="finiquito" style="flex:1;min-width:120px">📄 Finiquitos</button>
+        <button class="btn ghost small rrhh-seg" data-seg="accid" style="flex:1;min-width:120px"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:4px"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Accidentes</button>
       </div>
 
       <!-- Panel Trabajadores -->
@@ -988,6 +1037,22 @@
         <p class="note" style="margin:0 0 10px">Registro de finiquitos: trabajador, fecha, motivo, monto y el documento.</p>
         <div id="fin-list"></div>
       </div>
+
+      <!-- Panel Informe mensual de accidentes (Zerty) -->
+      <div id="rrhh-accid" class="hide">
+        <div class="h-row" style="margin-top:0"><b style="font:800 15px var(--font);color:var(--ink)">Informe mensual de accidentes</b><button id="ia-firma" class="btn ghost small" style="width:auto">Firma y timbre</button></div>
+        <p class="note" style="margin:0 0 10px">Formulario de investigación de accidentes del trabajo que se sube cada mes a la plataforma del cliente (Zerty). Marca qué clientes lo piden; si no hubo accidentes se genera como <b>“no registra accidentes”</b>.</p>
+        <div class="wknav"><button id="ia-prev" class="btn ghost small" style="width:auto">‹</button><div style="flex:1;text-align:center"><div style="margin:0;font:800 13px var(--font);color:var(--navy)">Mes informado</div><b id="ia-mes" style="font-size:.95rem;font-weight:700;color:var(--body)"></b></div><button id="ia-next" class="btn ghost small" style="width:auto">›</button></div>
+        <div class="card" style="padding:6px 14px" id="ia-list"></div>
+        <button id="ia-otro" class="btn ghost small" style="width:100%">＋ Generar para otro cliente</button>
+      </div>
+    </section>
+
+    <!-- ---- ALERTAS (solo admin) ---- -->
+    <section class="view" id="v-alertas">
+      <div class="h-row"><h2>Alertas</h2><span class="cnt" id="al-cnt"></span></div>
+      <p class="note" style="margin:0 0 12px">Documentación vencida o por vencer, informes mensuales pendientes y faenas que piden reporte sin entregar.</p>
+      <div id="al-list"></div>
     </section>
 
     <!-- ---- CLIENTES (solo admin) ---- -->
@@ -1356,6 +1421,7 @@
       <div class="grid2"><div class="fld" style="margin:0"><label>Solicitante</label><input id="cf2-solic" type="text" placeholder="Karina Abarca"></div><div class="fld" style="margin:0"><label>Contacto (tel / correo)</label><input id="cf2-contacto" type="text" placeholder="+56 9 …"></div></div>
       <div class="fld"><label>Sitios / faenas (uno por línea)</label><textarea id="cf2-sitios" rows="3" placeholder="Chinquihue&#10;Quemchi&#10;SHS"></textarea></div>
       <div class="grid2"><div class="fld" style="margin:0"><label>Estado</label><select id="cf2-estado"><option value="activo">Activo</option><option value="inactivo">Inactivo</option></select></div><div class="fld" style="margin:0"><label>Color (calendario y planificación)</label><div style="display:flex;align-items:center;gap:8px"><input id="cf2-color" type="color" value="#1a1f6e" style="width:48px;height:38px;border:1px solid var(--line);border-radius:8px;background:#fff;cursor:pointer"><button id="cf2-color-auto" type="button" class="btn ghost small" style="width:auto">Automático</button></div></div></div>
+      <label class="m-pidechk"><input type="checkbox" id="cf2-pacc"><span><b>Pide informe mensual de accidentes</b> (se sube a Zerty / plataforma del cliente)</span></label>
       <div class="fld"><label>Notas</label><textarea id="cf2-notas" rows="2" placeholder="Documentación que exige, particularidades…"></textarea></div>
     </div>
     <div class="card">
@@ -1488,6 +1554,7 @@
     if($('btn-pagos')) $('btn-pagos').classList.toggle('hide', op); // Pagos: solo admin (en el header)
     if($('btn-rrhh')) $('btn-rrhh').classList.toggle('hide', op);   // RRHH: solo admin (en el header)
     if($('btn-cli')) $('btn-cli').classList.toggle('hide', op);     // Clientes: solo admin (en el header)
+    if($('btn-alertas')) $('btn-alertas').classList.toggle('hide', op); // Alertas: solo admin (en el header)
     if($('btn-acc-h')) $('btn-acc-h').classList.toggle('hide', (userEmail||'').trim().toLowerCase()!=='enzo.castro@innovaservi.com'); // Accesos: solo Enzo (en el header)
     document.querySelectorAll('.sb-admin').forEach(function(x){ x.classList.toggle('hide', op); });   // sidebar: items admin
     document.querySelectorAll('.sb-enzo').forEach(function(x){ x.classList.toggle('hide', (userEmail||'').trim().toLowerCase()!=='enzo.castro@innovaservi.com'); });
@@ -1538,7 +1605,8 @@
     aplicarModo();
     cargarEventos();
     cargarRegistros();
-    if(isAdmin){ cargarTrab(actualizarDatalist); cargarClientes(); cargarCargos(); }
+    cargarPlantillas();   // para saber qué faenas piden reporte (Matriz PTS)
+    if(isAdmin){ cargarTrab(actualizarDatalist); cargarClientes(); cargarCargos(); cargarAlertas(); }
     ofrecerBorrador();
     // Restaura la última pestaña usada (si sigue siendo visible/permitida para este usuario).
     try{ var vv=localStorage.getItem('iserv-vista');
@@ -1597,6 +1665,7 @@
     if(v==='v-acc'){ cargarPermisos(); }
     if(v==='v-plan'){ var fr=$('plan-frame'); if(fr && !fr.getAttribute('src')) fr.setAttribute('src','../planificacion/?embed=1'); }
     if(v==='v-planif'){ cargarPlanif(); }
+    if(v==='v-alertas'){ pintarAlertas(); cargarAlertas(); }
     window.scrollTo(0,0);
   }
   document.querySelectorAll('.tabbar button').forEach(function(b){ b.addEventListener('click',function(){ abrirVista(b.dataset.v); }); });
@@ -1635,6 +1704,16 @@
   function planDe(e){ var p=PLAN_MAP[e.id]; if(!p){ p={ evento_id:e.id, fecha:e.fecha, empresa:e.ubicacion||'', sitio:e.sitio||'', titulo:e.titulo||'', personas:[], matrices:[], maquinaria:[], notas:'', estado:'borrador', preparador:'' }; PLAN_MAP[e.id]=p; } if(!p.personas)p.personas=[]; if(!p.maquinaria)p.maquinaria=[]; return p; }
   function personasNecesarias(e){ var pl=PLAN_MAP[e.id]; if(pl && pl.personas_nec!=null) return pl.personas_nec;   // override por faena (editado en el tablero)
     var pts=(typeof plantillasDeFaena==='function')?plantillasDeFaena(e.ubicacion||'', e.sitio||''):[]; var t=(e.titulo||'').trim().toLowerCase(); var m=pts.filter(function(p){ return (p.faena||'').trim().toLowerCase()===t && p.personas!=null; })[0] || pts.filter(function(p){ return p.personas!=null; })[0]; return (m&&m.personas!=null)?m.personas:0; }
+  // ¿El cliente pide reporte (multimedia) de esta faena? Se marca en Matriz PTS (plantillas.pide_reporte).
+  // Coincide por nombre de faena; si no hay coincidencia exacta, vale si TODAS las faenas del cliente/sitio lo piden.
+  function pideReporte(e){ if(!e) return false; var pts=(typeof plantillasDeFaena==='function')?plantillasDeFaena(e.ubicacion||'', e.sitio||''):[]; if(!pts.length) return false;
+    var t=(e.titulo||'').trim().toLowerCase(), m=pts.filter(function(p){ return (p.faena||'').trim().toLowerCase()===t; })[0];
+    return m ? !!m.pide_reporte : pts.every(function(p){ return !!p.pide_reporte; }); }
+  // Estado del reporte de una faena: ok (informe definitivo) | borrador (registro sin confirmar) | pend (sin registro)
+  function estadoReporte(e){ var reg=registroDe(e.id); return reg ? (reg.confirmado?'ok':'borrador') : 'pend'; }
+  function repBadge(e){ if(!pideReporte(e)) return ''; var k=estadoReporte(e), futura=(e.fecha||'')>todayISO();
+    var txt=k==='ok'?'Reporte entregado':(k==='borrador'?'Reporte sin confirmar':(futura?'Pide reporte':'Reporte pendiente'));
+    return '<span class="rep-bdg '+(futura&&k==='pend'?'fut':k)+'">'+svgI(ICO.cam,12)+txt+'</span>'; }
   function planTrabs(){ var seen={}, out=[]; (TRAB||[]).forEach(function(t){ if(t.estado==='inactivo')return; var nm=titleCase(t.nombre||''); var k=normName(nm); if(!nm||seen[k])return; seen[k]=1; out.push({nombre:nm,cargo:t.cargo||'',chofer:!!t.chofer}); }); return out.sort(function(a,b){ return a.nombre.localeCompare(b.nombre); }); }
   function planPrepOpts(sel){ return '<option value="">— preparador —</option>'+planTrabs().map(function(w){ return '<option value="'+enc(w.nombre)+'"'+(normName(w.nombre)===normName(sel||'')?' selected':'')+'>'+esc(w.nombre)+'</option>'; }).join(''); }
   function planAddVehOpts(){ return '<option value="">＋ vehículo…</option>'+(VEH||[]).map(function(v){ var lb=vehLabel(v); return '<option value="'+enc(lb)+'">'+esc(lb)+'</option>'; }).join(''); }
@@ -1651,7 +1730,7 @@
     var chips=p.personas.length?p.personas.map(function(pp,i){ return '<span class="pb-wc">'+esc(pp.nombre)+(locked?'':'<span class="x" data-e="'+e.id+'" data-i="'+i+'">✕</span>')+'</span>'; }).join(''):'<span class="pb-drop-empty">Arrastra o toca trabajadores…</span>';
     var vehChips=p.maquinaria.map(function(mq,i){ return '<div class="pb-veh-row"><select class="pb-veh" data-e="'+e.id+'" data-i="'+i+'"'+(locked?' disabled':'')+'>'+vehOpts(mq.veh||'')+'</select><select class="pb-cho" data-e="'+e.id+'" data-i="'+i+'"'+(locked?' disabled':'')+'>'+choferOpts(mq.chofer||'')+'</select>'+(locked?'':'<button class="pb-veh-rm" data-e="'+e.id+'" data-i="'+i+'" type="button">✕</button>')+'</div>'; }).join('');
     return '<div class="pb-fae'+(e.id===PLANIF_SEL?' sel':'')+(locked?' locked':'')+'" data-e="'+e.id+'" style="border-left-color:'+col.border+';background:'+col.bg+'">'+
-      '<div class="pb-fh"><div style="min-width:0"><div class="pb-fn" style="color:'+col.text+'">'+esc(e.titulo||'Faena')+'</div><div class="pb-emp">'+esc(e.ubicacion||'')+(e.sitio?(' · '+esc(e.sitio)):'')+'</div></div>'+
+      '<div class="pb-fh"><div style="min-width:0"><div class="pb-fn" style="color:'+col.text+'">'+esc(e.titulo||'Faena')+'</div><div class="pb-emp">'+esc(e.ubicacion||'')+(e.sitio?(' · '+esc(e.sitio)):'')+'</div>'+repBadge(e)+'</div>'+
         '<button type="button" class="pb-pc pb-editneed '+(ok?'ok':'miss')+'" data-e="'+e.id+'" title="Editar personas necesarias">'+asg+' / '+(need||'?')+' pers. ✎</button></div>'+
       '<div class="pb-assg" data-e="'+e.id+'">'+chips+'</div>'+
       '<div class="pb-veh-list">'+vehChips+'</div>'+
@@ -1793,7 +1872,7 @@
       var badge=hoy?'<span style="background:var(--orange);color:#fff;font-size:.62rem;font-weight:800;padding:1px 7px;border-radius:999px;margin-right:6px;letter-spacing:.04em">HOY</span>':'';
       var reg=(sheetCtx==='r')&&registroDe(e.id);
       var regb=reg?'<span style="background:#e6f4ec;color:#1f8a52;font-size:.62rem;font-weight:800;padding:1px 7px;border-radius:999px;margin-right:6px;letter-spacing:.03em">✓ REGISTRADA</span>':'';
-      return '<div class="job'+(hoy?' hoy':'')+'" data-id="'+e.id+'"><div class="a">'+badge+regb+esc(e.ubicacion||e.titulo||'Trabajo')+'</div><div class="b">'+esc(e.titulo||'')+' · '+etiquetaTrabajo(e)+'</div></div>'; }).join('');
+      return '<div class="job'+(hoy?' hoy':'')+'" data-id="'+e.id+'"><div class="a">'+badge+regb+esc(e.ubicacion||e.titulo||'Trabajo')+(pideReporte(e)?' <span class="rep-bdg fut">'+svgI(ICO.cam,12)+'Pide reporte</span>':'')+'</div><div class="b">'+esc(e.titulo||'')+' · '+etiquetaTrabajo(e)+'</div></div>'; }).join('');
     list.innerHTML=items;
     list.querySelectorAll('.job').forEach(function(j){ j.addEventListener('click',function(){
       cerrarSheet();
@@ -2090,18 +2169,18 @@
     var cli=$('m-cliente').value.trim();
     var arr=PLANT.filter(function(p){ return normCli(p.cliente)===normCli(cli); }).sort(function(a,b){ return (a.faena||'').localeCompare(b.faena||''); });
     var sel=$('m-faena');
-    sel.innerHTML='<option value="">— nueva faena —</option>'+arr.map(function(p){ return '<option value="'+p.id+'">'+esc(p.faena)+'</option>'; }).join('');
+    sel.innerHTML='<option value="">— nueva faena —</option>'+arr.map(function(p){ return '<option value="'+p.id+'">'+esc(p.faena)+(p.pide_reporte?' · pide reporte':'')+'</option>'; }).join('');
     if(MATRIZ_PREFAENA && arr.some(function(a){ return String(a.id)===String(MATRIZ_PREFAENA); })){ sel.value=String(MATRIZ_PREFAENA); cargarFaenaMatriz(MATRIZ_PREFAENA); MATRIZ_PREFAENA=null; }
     else if(arr.length){ sel.value=String(arr[0].id); cargarFaenaMatriz(arr[0].id); } else { nuevaFaenaMatriz(); }
   }
   function cargarFaenaMatriz(id){
     var p=PLANT.filter(function(x){ return String(x.id)===String(id); })[0];
     if(!p){ nuevaFaenaMatriz(); return; }
-    M_ID=p.id; opcionesCli($('m-ecliente'), p.cliente, true); poblarSitiosMatriz(p.cliente); if($('m-esitio')) $('m-esitio').value=p.sitio||''; $('m-nombre').value=p.faena||''; if($('m-personas')) $('m-personas').value=(p.personas!=null?p.personas:'');
+    M_ID=p.id; opcionesCli($('m-ecliente'), p.cliente, true); poblarSitiosMatriz(p.cliente); if($('m-esitio')) $('m-esitio').value=p.sitio||''; $('m-nombre').value=p.faena||''; if($('m-personas')) $('m-personas').value=(p.personas!=null?p.personas:''); if($('m-pide')) $('m-pide').checked=!!p.pide_reporte;
     M_ITEMS=(p.items||[]).map(function(it){ return {tipo:it.tipo||'herramienta',item:it.item||'',cantidad:it.cantidad||''}; });
     if(!M_ITEMS.length)M_ITEMS=[{tipo:'herramienta',item:'',cantidad:''}]; renderMItems(); $('m-del').style.display='';
   }
-  function nuevaFaenaMatriz(){ M_ID=null; opcionesCli($('m-ecliente'), $('m-cliente').value, true); poblarSitiosMatriz($('m-cliente').value); if($('m-esitio')) $('m-esitio').value=''; $('m-nombre').value=''; if($('m-personas')) $('m-personas').value=''; M_ITEMS=[{tipo:'herramienta',item:'',cantidad:''}]; renderMItems(); $('m-del').style.display='none'; if($('m-faena')) $('m-faena').value=''; }
+  function nuevaFaenaMatriz(){ M_ID=null; opcionesCli($('m-ecliente'), $('m-cliente').value, true); poblarSitiosMatriz($('m-cliente').value); if($('m-esitio')) $('m-esitio').value=''; $('m-nombre').value=''; if($('m-personas')) $('m-personas').value=''; if($('m-pide')) $('m-pide').checked=false; M_ITEMS=[{tipo:'herramienta',item:'',cantidad:''}]; renderMItems(); $('m-del').style.display='none'; if($('m-faena')) $('m-faena').value=''; }
   function renderMItems(){
     var c=$('m-items');
     c.innerHTML=M_ITEMS.map(function(it,i){
@@ -2135,10 +2214,10 @@
     syncMItems();
     var items=M_ITEMS.filter(function(it){ return (it.item||'').trim(); }).map(function(it){ return {tipo:it.tipo||'herramienta',item:it.item.trim(),cantidad:(it.cantidad||'').trim()}; });
     busy(true,'Guardando faena…');
-    var row={ cliente:cli, faena:faena, sitio:(($('m-esitio')&&$('m-esitio').value.trim())||null), items:items, personas:($('m-personas')?(+$('m-personas').value||null):null), autor:userEmail };
+    var row={ cliente:cli, faena:faena, sitio:(($('m-esitio')&&$('m-esitio').value.trim())||null), items:items, personas:($('m-personas')?(+$('m-personas').value||null):null), pide_reporte:!!($('m-pide')&&$('m-pide').checked), autor:userEmail };
     var q = M_ID ? sb.from('plantillas').update(row).eq('id',M_ID) : sb.from('plantillas').insert(row);
     q.then(function(r){ busy(false);
-      if(r.error){ toast('No se pudo guardar: '+r.error.message); return; }
+      if(r.error){ toast(/pide_reporte/.test(r.error.message||'')?'Falta correr informes-accidentes-alertas.sql en Supabase.':('No se pudo guardar: '+r.error.message)); return; }
       toast('✓ Faena guardada'); cargarPlantillas(function(){ opcionesCli($('m-cliente'),cli,false); $('m-cliente').value=cli; renderFaenasMatriz(); });
     });
   });
@@ -4107,9 +4186,11 @@
     $('rrhh-trab').classList.toggle('hide', seg!=='trab');
     $('rrhh-doc').classList.toggle('hide', seg!=='doc' && seg!=='capacit');
     $('rrhh-fin').classList.toggle('hide', seg!=='finiquito');
+    $('rrhh-accid').classList.toggle('hide', seg!=='accid');
     if(seg==='doc'){ RRHH_CAT=RRHH_TIPOS; RRHH_VISTA='doc'; $('rrhh-panel-note').innerHTML='Documentación estándar por trabajador <span class="cnt" id="rrhh-cnt"></span>. Marca lo entregado, adjunta el archivo y su vencimiento.'; renderRrhh(); }
     else if(seg==='capacit'){ RRHH_CAT=CAP_TIPOS; RRHH_VISTA='doc'; $('rrhh-panel-note').innerHTML='Capacitaciones por trabajador <span class="cnt" id="rrhh-cnt"></span>. Marca la fecha, el vencimiento y adjunta el registro.'; renderRrhh(); }
     else if(seg==='finiquito'){ renderFin(); }
+    else if(seg==='accid'){ cargarAccid(); }
   }
   document.querySelectorAll('.rrhh-seg').forEach(function(b){ b.addEventListener('click',function(){ rrhhSeg(b.dataset.seg); }); });
 
@@ -4197,6 +4278,7 @@
     $('cf2-nombre').value=x?(x.nombre||''):''; $('cf2-razon').value=x?(x.razon||''):''; $('cf2-rut').value=x?(x.rut||''):'';
     $('cf2-dir').value=x?(x.direccion||''):''; $('cf2-solic').value=x?(x.solicitante||''):''; $('cf2-contacto').value=x?(x.contacto||''):'';
     $('cf2-sitios').value=x?((x.sitios||[]).join('\n')):''; $('cf2-estado').value=(x&&x.estado)||'activo'; $('cf2-notas').value=x?(x.notas||''):'';
+    if($('cf2-pacc')){ $('cf2-pacc').checked=!!(x&&x.pide_accidentes); $('cf2-pacc').dataset.col=(x&&('pide_accidentes' in x))?'1':''; }
     if($('cf2-color')){ var _cc=(x&&x.color)?x.color:autoHex(x?(x.nombre||''):''); $('cf2-color').value=_cc; $('cf2-color').dataset.set=(x&&x.color)?'1':''; }
     CLI_DOCS=x?((x.docs||[]).slice()):[]; renderCliDocs(); cliScanner.reset();
     $('cf2-title').textContent=(x&&x.id)?('Cliente · '+(x.nombre||'')):'Nuevo cliente';
@@ -4232,15 +4314,299 @@
     if(!sb) return; var nom=$('cf2-nombre').value.trim(); if(!nom){ toast('El nombre es obligatorio.'); return; }
     var sitios=($('cf2-sitios').value||'').split(/\r?\n/).map(function(s){ return s.trim(); }).filter(Boolean);
     var row={ nombre:nom, razon:$('cf2-razon').value.trim(), rut:$('cf2-rut').value.trim(), direccion:$('cf2-dir').value.trim(), solicitante:$('cf2-solic').value.trim(), contacto:$('cf2-contacto').value.trim(), sitios:sitios, docs:CLI_DOCS, notas:$('cf2-notas').value.trim(), estado:$('cf2-estado').value, color:(($('cf2-color')&&$('cf2-color').dataset.set==='1')?$('cf2-color').value:null), autor:userEmail };
+    // columna nueva: solo se envía si ya existe (la ficha la trae) o si se marcó (así no rompe antes de correr el SQL)
+    if($('cf2-pacc') && ($('cf2-pacc').dataset.col==='1' || $('cf2-pacc').checked)) row.pide_accidentes=$('cf2-pacc').checked;
     busy(true,'Guardando…');
     var q=CLI_ID? sb.from('clientes').update(row).eq('id',CLI_ID) : sb.from('clientes').insert(row);
-    q.then(function(r){ busy(false); if(r.error){ toast(/clientes/.test(r.error.message||'')?'Falta correr clientes.sql en Supabase.':('No se pudo guardar: '+r.error.message)); return; }
+    q.then(function(r){ busy(false); if(r.error){ toast(/pide_accidentes/.test(r.error.message||'')?'Falta correr informes-accidentes-alertas.sql en Supabase.':/clientes/.test(r.error.message||'')?'Falta correr clientes.sql en Supabase.':('No se pudo guardar: '+r.error.message)); return; }
       toast('✓ Cliente guardado'); $('cli-ficha').classList.add('hide'); cargarClientes(pintarCli); });
   });
   $('cf2-del').addEventListener('click',function(){
     if(!CLI_ID) return; if(!confirm('¿Eliminar este cliente? (sus documentos no se borran del bucket)')) return;
     busy(true,'Eliminando…'); sb.from('clientes').delete().eq('id',CLI_ID).then(function(r){ busy(false); if(r.error){ toast('No se pudo eliminar: '+r.error.message); return; } toast('✓ Eliminado'); $('cli-ficha').classList.add('hide'); cargarClientes(pintarCli); });
   });
+
+  // ====== Informe mensual de accidentes (se sube a Zerty / plataforma del cliente) ======
+  // Un informe por cliente y mes (tabla informes_accidentes). Si no hubo accidentes se genera como
+  // "no registra accidentes"; si hubo, se llena el mismo formulario. Firma+timbre en config (firma_timbre_url).
+  var MESES_L=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  var ACC_EMP={ dir:'Avenida Nueva Providencia 1881, Comuna de Providencia', tel:'956635547', rep:'Cristopher Vidal Ruiz', cargo:'Representante Legal' };
+  var IA_MES=null, IA_INF=[], IA_ERR=false, IA_FIRMA=null;
+  function mesPrevio(){ var d=new Date(); d.setDate(1); d.setMonth(d.getMonth()-1); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
+  function mesMas(p,n){ var a=p.split('-'), d=new Date(+a[0], +a[1]-1+n, 1); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
+  function mesTxt(p){ var a=(p||'').split('-'); return MESES_L[(+a[1]||1)-1]+' del '+a[0]; }
+  function mesLbl(p){ var a=(p||'').split('-'), m=MESES_L[(+a[1]||1)-1]; return m.charAt(0).toUpperCase()+m.slice(1)+' '+a[0]; }
+  function cliPideAcc(){ return (CLIENTES||[]).filter(function(c){ return c.pide_accidentes && c.estado!=='inactivo'; }); }
+  function fichaCli(n){ return (CLIENTES||[]).filter(function(x){ return _cliKey(x.nombre)===_cliKey(n); })[0]; }
+  function cargarFirma(cb){ if(IA_FIRMA!==null||!sb){ if(cb)cb(); return; }
+    sb.from('config').select('valor').eq('clave','firma_timbre_url').maybeSingle().then(function(r){ IA_FIRMA=(r&&r.data&&r.data.valor)||''; if(cb)cb(); }, function(){ IA_FIRMA=''; if(cb)cb(); }); }
+  function cargarAccid(){
+    if(!IA_MES) IA_MES=mesPrevio();
+    $('ia-mes').textContent=mesLbl(IA_MES);
+    if(!sb) return;
+    Promise.all([ new Promise(function(res){ cargarClientes(res); }),
+      sb.from('informes_accidentes').select('*').eq('periodo',IA_MES).limit(300) ]).then(function(rs){
+      var r=rs[1]; IA_ERR=!!(r&&r.error); IA_INF=(r&&r.data)||[]; pintarAccid(); });
+  }
+  function pintarAccid(){
+    var c=$('ia-list'); if(!c) return;
+    if(IA_ERR){ c.innerHTML='<p class="note" style="margin:10px 0">Falta correr <b>informes-accidentes-alertas.sql</b> en Supabase.</p>'; return; }
+    var by={};
+    cliPideAcc().forEach(function(x){ by[_cliKey(x.nombre)]={nombre:x.nombre, fijo:true, inf:null}; });
+    IA_INF.forEach(function(i){ var k=_cliKey(i.cliente); if(!by[k]) by[k]={nombre:i.cliente, fijo:false, inf:null}; by[k].inf=i; });
+    var L=Object.keys(by).map(function(k){ return by[k]; }).sort(function(a,b){ return a.nombre.localeCompare(b.nombre); });
+    if(!L.length){ c.innerHTML='<p class="note" style="margin:10px 0">Ningún cliente marcado. Usa “＋ Generar para otro cliente”, o marca en la ficha del cliente “Pide informe mensual de accidentes”.</p>'; return; }
+    c.innerHTML=L.map(function(o,i){ var inf=o.inf;
+      var est=inf?'<span class="dchip ok">Generado</span>':'<span class="dchip venc">Pendiente</span>';
+      var sub=inf?((inf.sin_accidentes?'Sin accidentes':'Con accidente')+' · '+esc(fechaCorta((inf.created_at||'').slice(0,10)))+(inf.url?' · <a href="'+esc(inf.url)+'" target="_blank" rel="noopener" style="color:var(--orange-2);font-weight:700">ver PDF</a>':'')):(o.fijo?'Lo pide todos los meses':'');
+      return '<div class="acc-row"><div class="acc-t"><b>'+esc(o.nombre)+'</b><div class="note">'+sub+'</div></div>'+est+
+        '<button class="btn '+(inf?'ghost ':'')+'small ia-gen" data-i="'+i+'" style="width:auto">'+svgI(ICO.gen,14)+(inf?'Rehacer':'Generar')+'</button></div>';
+    }).join('');
+    c.querySelectorAll('.ia-gen').forEach(function(b){ b.addEventListener('click',function(){ var o=L[+b.dataset.i]; abrirAccForm(o.nombre, IA_MES, o.inf); }); });
+  }
+  function servicioDefault(cli){ var f=fichaCli(cli); return cli?('Higiene Industrial, '+cli+(f&&f.direccion?('\n'+f.direccion):'')):''; }
+  // Paso 1: datos del informe (cliente, mes, servicio, ¿hubo accidentes?). cli vacío = elegir cliente.
+  function abrirAccForm(cli, periodo, inf){
+    var nuevo=!cli;
+    function pinta(serv){
+      if(!serv) serv=servicioDefault(cli);
+      var opts=nuevo?clientesMerged().map(function(o){ return o.nombre; }).sort(function(a,b){ return a.localeCompare(b); }).map(function(n){ return '<option value="'+enc(n)+'">'+esc(n)+'</option>'; }).join(''):'';
+      $('re-title').textContent='Informe de accidentes';
+      $('re-body').innerHTML='<div class="card">'+
+        (nuevo?'<div class="fld"><label>Cliente</label><select id="af-cli"><option value="">— elige —</option>'+opts+'</select></div>':'<div class="fld"><label>Cliente</label><input type="text" value="'+enc(cli)+'" disabled></div>')+
+        '<div class="fld"><label>Mes informado</label><input type="month" id="af-mes" value="'+periodo+'"></div>'+
+        '<div class="fld"><label>Servicio <span class="note" style="font-weight:400">(texto del formulario)</span></label><textarea id="af-serv" rows="2" placeholder="Higiene Industrial, Cermaq Chinquihue&#10;Camino Chinquihue km 12">'+esc(serv)+'</textarea></div>'+
+        '<div class="fld"><label>¿Hubo accidentes o enfermedades profesionales en el mes?</label><select id="af-acc"><option value="no">No — “no registra accidentes”</option><option value="si"'+(inf&&inf.sin_accidentes===false?' selected':'')+'>Sí — llenar el formulario</option></select></div>'+
+        (nuevo?'<label class="m-pidechk"><input type="checkbox" id="af-mark" checked><span>Este cliente lo pide <b>todos los meses</b></span></label>':'')+
+        '<button id="af-go" class="btn" style="width:100%;margin-top:6px">'+svgI(ICO.gen)+'Ver formulario</button></div>';
+      if(nuevo){ $('af-cli').addEventListener('change',function(){ if(!$('af-serv').dataset.touched) $('af-serv').value=servicioDefault(this.value); }); }
+      $('af-serv').addEventListener('input',function(){ this.dataset.touched='1'; });
+      $('af-go').addEventListener('click',function(){
+        var c=nuevo?$('af-cli').value:cli; if(!c){ toast('Elige el cliente.'); return; }
+        var ctx={ cliente:c, periodo:($('af-mes').value||periodo), servicio:$('af-serv').value.trim(), sin:$('af-acc').value==='no', marcar:!!(nuevo&&$('af-mark').checked) };
+        $('rrhh-edit').classList.add('hide');
+        cargarFirma(function(){ abrirAccDoc(ctx); });
+      });
+      $('rrhh-edit').classList.remove('hide'); $('rrhh-edit').scrollTop=0;
+    }
+    if(inf&&inf.servicio) pinta(inf.servicio);
+    else if(cli&&sb) sb.from('informes_accidentes').select('servicio').eq('cliente',cli).order('periodo',{ascending:false}).limit(1).then(function(r){ pinta((r&&r.data&&r.data[0]&&r.data[0].servicio)||''); }, function(){ pinta(''); });
+    else pinta('');
+  }
+  // Formulario de investigación de accidentes del trabajo (3 hojas, fiel al formato en papel).
+  function accFormHtml(ctx){
+    function E(v,b){ return '<div contenteditable'+(b?' style="font-weight:700"':'')+'>'+(v?esc(v).replace(/\n/g,'<br>'):'')+'</div>'; }
+    function I(v){ return '<span contenteditable>'+(v?esc(v):'')+'</span>'; }
+    function T(cells){ return '<table class="fa-t"><tr>'+cells+'</tr></table>'; }
+    function SH(t){ return '<table class="fa-t fa-sh"><tr><td>'+t+'</td></tr></table>'; }
+    function R2(lb,val){ return T('<td class="lb">'+lb+'</td><td>'+val+'</td>'); }
+    function BIG(lb,cls){ return T('<td class="'+(cls||'big')+'">'+(lb?lb+'<br>':'')+E('')+'</td>'); }
+    var hd='<div class="fa-hd"><div class="lg"><img src="../assets/images/InnovaServi-completo.png" alt="InnovaServi" onerror="this.style.display=\'none\'"></div><div class="tt">FORMULARIO DE INVESTIGACIÓN DE ACCIDENTES DEL TRABAJO</div></div>';
+    var sinTxt=ctx.sin?('Por el presente documento se informa que la empresa '+EMP.rz+', Rut '+EMP.rut+', no registra Accidentes del Trabajo y/o Enfermedades Profesionales, en el mes de '+mesTxt(ctx.periodo)+'.'):'';
+    var firma=IA_FIRMA?'<img src="'+esc(IA_FIRMA)+'" alt="">':'<div style="height:70px"></div>';
+    var p1='<div class="fa-page">'+hd+'<div class="fa-title">FORMULARIO DE INVESTIGACIÓN DE ACCIDENTES DEL TRABAJO</div>'+
+      SH('1.- ANTECEDENTES LABORALES')+
+      R2('Empresa:',E(EMP.rz))+R2('Rut:',E('Rut '+EMP.rut))+R2('Dirección:',E(ACC_EMP.dir))+R2('Teléfono:',E(ACC_EMP.tel))+R2('Representante legal:',E(ACC_EMP.rep))+R2('Servicio:',E(ctx.servicio))+
+      SH('2- ANTECEDENTES DEL ACCIDENTE')+
+      T('<td style="width:50%">Apellido Paterno: '+I('')+'</td><td>Apellido Materno: '+I('')+'</td>')+
+      T('<td>Nombres: '+I('')+'</td>')+
+      T('<td style="width:33%">Profesión/Oficio: '+I('')+'</td><td style="width:27%">Cargo: '+I('')+'</td><td style="width:14%">Edad: '+I('')+'</td><td>Sexo: F '+I('')+' M '+I('')+'</td>')+
+      T('<td style="width:33%">Años de antigüedad en el cargo: '+I('')+'</td><td style="width:36%">Fecha Accidente: '+I('')+'</td><td>Hora Accidente: '+I('')+'</td>')+
+      T('<td style="width:33%">Región: '+I('')+'</td><td style="width:36%">Local, sucursal o faena: '+I('')+'</td><td>Área: '+I('')+'</td>')+
+      T('<td>Ubicación exacta del accidente: '+I('')+'</td>')+
+      T('<td>Nombre y Cargo de Jefatura Directa: '+I('')+'</td>')+
+      SH('3- DESCRIPCIÓN DEL ACCIDENTE')+
+      T('<td class="big">Actividad que realizaba (tarea):'+E(sinTxt,true)+'</td>')+
+      BIG('Lugar específico:')+'</div>';
+    var acc=''; for(var i=0;i<3;i++) acc+='<tr><td>'+E('')+'</td><td>'+E('')+'</td><td>'+E('')+'</td></tr>';
+    var p2='<div class="fa-page">'+hd+
+      BIG('Evento:')+BIG('Consecuencia y parte del cuerpo lesionada:')+
+      SH('4- ANÁLISIS DE PELIGROS Y CAUSA DEL ACCIDENTE')+
+      T('<td style="width:42%">Acción Insegura</td><td style="width:8%;text-align:center">'+I('')+'</td><td style="width:42%">Condición Insegura</td><td style="text-align:center">'+I('')+'</td>')+
+      BIG('','xbig')+
+      T('<td>Causas</td>')+BIG('','xbig')+
+      SH('5 – ACCIONES PARA EVITAR REPETICIÓN DEL ACCIDENTE')+
+      '<table class="fa-t"><tr><td style="width:56%;text-align:center;font-weight:700">Acción de Mejora</td><td style="width:24%;text-align:center;font-weight:700">Responsable<br><span style="font-size:10px">(nombre completo)</span></td><td style="text-align:center;font-weight:700">Plazo máximo</td></tr>'+acc+'</table>'+
+      SH('6 – TESTIGOS')+
+      T('<td style="width:50%">Sr.: '+I('')+'</td><td>Cargo: '+I('')+'</td>')+
+      T('<td style="width:50%">Sr.: '+I('')+'</td><td>Cargo: '+I('')+'</td>')+'</div>';
+    var p3='<div class="fa-page">'+hd+
+      SH('7 – INFORME')+
+      T('<td style="width:50%">Elaborado por: '+I(ACC_EMP.rep)+'</td><td>Cargo: '+I(ACC_EMP.cargo)+'</td>')+
+      T('<td style="width:50%">Firma:</td><td>Fecha: '+I('')+'</td>')+
+      T('<td>Revisado/Aprobado por:</td>')+
+      T('<td style="width:50%">Nombre: '+I('')+'</td><td>Cargo: '+I('')+'</td>')+
+      T('<td style="width:50%">Firma:</td><td>Fecha: '+I('')+'</td>')+
+      SH('8– COMENTARIOS DEL COMITÉ PARITARIO HIGIENE Y SEGURIDAD')+BIG('')+
+      SH('9.- COMENTARIOS REPRESENTANTE EMPRESA')+
+      T('<td>'+E(sinTxt,true)+'<div class="fa-firma">'+firma+'<div style="font-weight:700">Atentamente,<br>'+esc(ACC_EMP.rep)+'</div><div style="font-weight:700;margin-top:4px">Representante legal '+esc(EMP.rz)+'</div></div></td>')+
+      SH('10 – ANEXOS (Fotografías, procedimientos, declaraciones, etc.)')+BIG('','xbig')+'</div>';
+    return p1+p2+p3;
+  }
+  function abrirAccDoc(ctx){
+    DG_CTX={ save:function(){ guardarAccDoc(ctx); } }; DG_QUEUE=[];
+    var d=$('dg-doc'); d.classList.add('fa-mode'); d.innerHTML=accFormHtml(ctx);
+    $('dg-hint').textContent='Informe de accidentes · '+ctx.cliente+' · '+mesLbl(ctx.periodo)+' (puedes editar cualquier campo)';
+    $('docgen').classList.remove('hide'); $('docgen').scrollTop=0;
+  }
+  // Captura cada hoja (.fa-page) como una página A4, con ancho fijo de escritorio (igual desde el celular).
+  function pdfPaginas(pages){
+    var PGW=794;
+    return cargarH2C().then(function(){ if(!window.jspdf) throw new Error('jspdf'); return Promise.all(pages.map(inlineImagenes)); }).then(function(){
+      var doc=new window.jspdf.jsPDF({unit:'mm',format:'a4',compress:true}), A4W=210, A4H=297, i=0;
+      function paso(){
+        if(i>=pages.length) return doc;
+        var pg=pages[i], ow=[pg.style.width,pg.style.maxWidth,pg.style.boxSizing,pg.style.boxShadow];
+        function rest(){ pg.style.width=ow[0]; pg.style.maxWidth=ow[1]; pg.style.boxSizing=ow[2]; pg.style.boxShadow=ow[3]; }
+        pg.style.boxSizing='border-box'; pg.style.maxWidth='none'; pg.style.width=PGW+'px'; pg.style.boxShadow='none';
+        return window.html2canvas(pg,{scale:2,useCORS:true,backgroundColor:'#ffffff',logging:false,width:PGW,windowWidth:PGW}).then(function(cv){
+          rest(); var ih=cv.height*A4W/cv.width, img=cv.toDataURL('image/jpeg',0.92);
+          if(i>0) doc.addPage();
+          if(ih<=A4H) doc.addImage(img,'JPEG',0,0,A4W,ih); else { var s=A4H/ih; doc.addImage(img,'JPEG',(A4W-A4W*s)/2,0,A4W*s,A4H); }
+          i++; return paso();
+        }, function(err){ rest(); throw err; });
+      }
+      return paso();
+    });
+  }
+  function guardarAccDoc(ctx){
+    var d=$('dg-doc'); busy(true,'Generando PDF…'); d.classList.add('cap');
+    pdfPaginas(Array.prototype.slice.call(d.querySelectorAll('.fa-page'))).then(function(doc){
+      d.classList.remove('cap');
+      var blob=doc.output('blob'), nombre='INFORME-ACCIDENTES_'+slug(ctx.cliente)+'_'+ctx.periodo+'.pdf';
+      descargarBlob(blob,nombre);
+      busy(true,'Guardando…');
+      var f; try{ f=new File([blob],nombre,{type:'application/pdf'}); }catch(_){ f=blob; }
+      subirArchivo(f,'prevencion/accidentes',nombre).then(function(res){
+        var row={ periodo:ctx.periodo, cliente:ctx.cliente, servicio:ctx.servicio||null, sin_accidentes:ctx.sin, url:(res?res.url:null), autor:userEmail, created_at:new Date().toISOString() };
+        sb.from('informes_accidentes').upsert(row,{onConflict:'periodo,cliente'}).then(function(r){
+          if(r&&r.error){ busy(false); toast(/informes_accidentes/.test(r.error.message||'')?'PDF descargado. Falta correr informes-accidentes-alertas.sql para guardarlo.':('PDF descargado, pero no se guardó: '+r.error.message)); return; }
+          function fin(){ busy(false); toast('✓ Informe generado y guardado'); $('docgen').classList.add('hide'); DG_CTX=null; IA_MES=ctx.periodo; if(!$('rrhh-accid').classList.contains('hide')) cargarAccid(); cargarAlertas(); }
+          if(ctx.marcar) marcarCliAcc(ctx.cliente, fin); else fin();
+        }, function(){ busy(false); toast('PDF descargado, pero no se guardó.'); });
+      });
+    }).catch(function(){ d.classList.remove('cap'); busy(false); toast('No se pudo generar el PDF.'); });
+  }
+  function marcarCliAcc(nombre, cb){
+    var f=fichaCli(nombre);
+    var q=f? sb.from('clientes').update({pide_accidentes:true}).eq('id',f.id) : sb.from('clientes').insert({nombre:nombre, estado:'activo', pide_accidentes:true, autor:userEmail});
+    q.then(function(){ cargarClientes(cb); }, function(){ if(cb)cb(); });
+  }
+  $('ia-prev').addEventListener('click',function(){ IA_MES=mesMas(IA_MES||mesPrevio(),-1); cargarAccid(); });
+  $('ia-next').addEventListener('click',function(){ IA_MES=mesMas(IA_MES||mesPrevio(),1); cargarAccid(); });
+  $('ia-otro').addEventListener('click',function(){ cargarClientes(function(){ abrirAccForm('', IA_MES||mesPrevio(), null); }); });
+  $('ia-firma').addEventListener('click',function abrirFirma(){ IA_FIRMA=null; cargarFirma(function(){
+    $('re-title').textContent='Firma y timbre';
+    $('re-body').innerHTML='<div class="card"><p class="note" style="margin:0 0 10px">Imagen con la firma y el timbre del representante legal (ideal PNG con fondo transparente o blanco). Se estampa en la sección 9 de cada informe mensual.</p>'+
+      '<div style="text-align:center;background:var(--alt);border-radius:12px;padding:12px;margin-bottom:10px">'+(IA_FIRMA?'<img src="'+esc(IA_FIRMA)+'" style="max-width:100%;max-height:180px">':'<span class="note">Sin imagen cargada</span>')+'</div>'+
+      '<label class="catadd" style="display:inline-block">'+svgI(ICO.up,15)+'Subir imagen<input type="file" id="af-firma-f" accept="image/*" hidden></label>'+
+      (IA_FIRMA?' <button id="af-firma-del" class="btn ghost small" style="width:auto">Quitar</button>':'')+'</div>';
+    $('af-firma-f').addEventListener('change',function(){ var f=this.files&&this.files[0]; if(!f) return; busy(true,'Subiendo…');
+      var ext=((f.name||'').split('.').pop()||'png').toLowerCase();
+      subirArchivo(f,'prevencion','firma-timbre.'+ext).then(function(res){ if(!res){ busy(false); return; }
+        sb.from('config').upsert([{clave:'firma_timbre_url',valor:res.url}],{onConflict:'clave'}).then(function(r){ busy(false);
+          if(r&&r.error){ toast('No se guardó: '+r.error.message); return; } toast('✓ Firma guardada'); abrirFirma(); }); }); });
+    if($('af-firma-del')) $('af-firma-del').addEventListener('click',function(){ sb.from('config').upsert([{clave:'firma_timbre_url',valor:''}],{onConflict:'clave'}).then(function(){ abrirFirma(); }); });
+    $('rrhh-edit').classList.remove('hide'); $('rrhh-edit').scrollTop=0;
+  }); });
+
+  // ====== Alertas (solo admin): documentación, vehículos, informe mensual, faenas que piden reporte ======
+  var AL=null;
+  function setAlNum(n){ ['sb-al-num','top-al-num'].forEach(function(id){ var el=$(id); if(!el) return; el.textContent=n>99?'99+':String(n); el.classList.toggle('hide',!n); }); }
+  function cargarAlertas(){
+    if(!sb||!isAdmin) return;
+    var hoy=todayISO(), prev=mesPrevio(), en14=isoMas(14), hace60=isoMas(-60);
+    Promise.all([
+      sb.from('trabajadores').select('id,nombre,estado').limit(800),
+      sb.from('rrhh_docs').select('trabajador_id,tipo,estado,vencimiento').limit(8000),
+      sb.from('vehiculos').select('id,nombre,marca,modelo,patente,estado').limit(300),
+      sb.from('vehiculo_gastos').select('vehiculo_id,categoria,vencimiento').not('vencimiento','is',null).limit(4000),
+      sb.from('clientes').select('*').limit(500),
+      sb.from('informes_accidentes').select('cliente').eq('periodo',prev).limit(500),
+      sb.from('faena_plan').select('evento_id,fecha,personas').gte('fecha',hoy).lte('fecha',en14).limit(500),
+      sb.from('registros').select('id,evento_id,faenas,confirmado').gte('fecha',isoMas(-75)).limit(1500),
+      sb.from('eventos').select('id,fecha,fecha_fin,titulo,ubicacion,sitio').gte('fecha',isoMas(-75)).lte('fecha',en14).limit(800),
+      sb.from('plantillas').select('*').limit(500)
+    ]).then(function(rs){
+      function D(i){ return (rs[i]&&!rs[i].error&&rs[i].data)||[]; }
+      var trabs=D(0).filter(function(t){ return t.estado!=='inactivo'; }), tById={}, tByName={}; trabs.forEach(function(t){ tById[t.id]=t; tByName[normName(t.nombre)]=t; });
+      if(D(9).length) PLANT=D(9);
+      // 1) Documentos vencidos / por vencer (≤30 días) de trabajadores activos
+      var docs=[], vencPorT={}, entregado={};
+      D(1).forEach(function(d){ var t=tById[d.trabajador_id]; if(!t||d.estado!=='entregado') return; entregado[d.trabajador_id+'|'+d.tipo]=1;
+        if(!d.vencimiento) return; var n=diasHasta(d.vencimiento); if(n==null||n>30) return;
+        docs.push({tid:t.id, nombre:t.nombre, tipo:d.tipo, n:n, venc:d.vencimiento}); if(n<0){ (vencPorT[t.id]=vencPorT[t.id]||[]).push(rrhhTipo(d.tipo).corto); } });
+      docs.sort(function(a,b){ return a.n-b.n; });
+      // 2) Asignados a faenas próximas (14 días) con documentos vencidos o pendientes
+      var evById={}; D(8).forEach(function(e){ evById[e.id]=e; });
+      var asig=[], vistos={};
+      D(6).forEach(function(p){ (p.personas||[]).forEach(function(pp){ var t=tByName[normName(pp.nombre)]; if(!t) return; var k=t.id+'|'+p.evento_id; if(vistos[k]) return; vistos[k]=1;
+        var venc=vencPorT[t.id]||[], pend=RRHH_TIPOS.filter(function(tp){ return !entregado[t.id+'|'+tp.slug]; }).length;
+        if(!venc.length && !pend) return; var e=evById[p.evento_id]||{};
+        asig.push({nombre:t.nombre, venc:venc, pend:pend, fecha:p.fecha||e.fecha, faena:(e.titulo||'Faena')+(e.ubicacion?(' · '+e.ubicacion):'')}); }); });
+      asig.sort(function(a,b){ return (b.venc.length-a.venc.length) || ((a.fecha||'')<(b.fecha||'')?-1:1); });
+      // 3) Vehículos: por vehículo+categoría manda el vencimiento MÁS RECIENTE (la última renovación)
+      var vById={}; D(2).forEach(function(v){ if(v.estado!=='inactivo') vById[v.id]=v; });
+      var ult={}; D(3).forEach(function(g){ if(!vById[g.vehiculo_id]) return; var k=g.vehiculo_id+'|'+g.categoria; if(!ult[k]||g.vencimiento>ult[k].vencimiento) ult[k]=g; });
+      var vehs=Object.keys(ult).map(function(k){ var g=ult[k]; return {veh:vehLabel(vById[g.vehiculo_id]), cat:(GASTO_CAT_LBL[g.categoria]||g.categoria), n:diasHasta(g.vencimiento), venc:g.vencimiento}; }).filter(function(x){ return x.n!=null&&x.n<=30; }).sort(function(a,b){ return a.n-b.n; });
+      // 4) Informe mensual de accidentes del mes anterior pendiente
+      var hechos={}; D(5).forEach(function(i){ hechos[_cliKey(i.cliente)]=1; });
+      var infs=rs[5]&&rs[5].error ? [] : D(4).filter(function(c){ return c.pide_accidentes && c.estado!=='inactivo' && !hechos[_cliKey(c.nombre)]; }).map(function(c){ return c.nombre; });
+      // 5) Faenas terminadas (últimos 60 días) que piden reporte y no tienen informe definitivo
+      var regs=D(7);
+      function regDe(id){ id=String(id); return regs.filter(function(x){ return String(x.evento_id)===id || (x.faenas||[]).some(function(f){ return String(f.id)===id; }); }); }
+      var reps=D(8).filter(function(e){ var f=evFin(e); return f<hoy && f>=hace60 && pideReporte(e); }).map(function(e){ var rr=regDe(e.id), ok=rr.some(function(x){ return x.confirmado; });
+        return ok?null:{e:e, reg:rr[0]||null}; }).filter(Boolean).sort(function(a,b){ return evFin(a.e)<evFin(b.e)?1:-1; });
+      var faltanDocs=trabs.filter(function(t){ return RRHH_TIPOS.some(function(tp){ return !entregado[t.id+'|'+tp.slug]; }); }).length;
+      AL={docs:docs, asig:asig, vehs:vehs, infs:infs, prev:prev, reps:reps, faltanDocs:faltanDocs, nTrabs:trabs.length, sinSql:!!(rs[5]&&rs[5].error)};
+      setAlNum(docs.length + asig.filter(function(a){ return a.venc.length; }).length + vehs.length + infs.length + reps.length);
+      pintarAlertas();
+    });
+  }
+  function pintarAlertas(){
+    var c=$('al-list'); if(!c||!AL) return;
+    function chipN(n){ return n<0?'<span class="dchip venc">Venció hace '+(-n)+'d</span>':(n===0?'<span class="dchip venc">Vence hoy</span>':'<span class="dchip prox">Vence en '+n+'d</span>'); }
+    function sec(t,ico,n,rows,okTxt){ return '<div class="al-sec"><h3>'+svgI(ico,17)+t+(n?'<span class="al-num">'+n+'</span>':'')+'</h3>'+(rows||'<div class="al-ok">'+svgI(ICO.ok,15)+okTxt+'</div>')+'</div>'; }
+    var IDOC='<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>', IPER='<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>', IVEH='<path d="M1 3h15v13H1zM16 8h4l3 3v5h-7z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>', IACC='<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>';
+    var h='';
+    h+=sec('Informe mensual de accidentes · '+mesLbl(AL.prev), IACC, AL.infs.length,
+      AL.sinSql?'<p class="note" style="margin:0">Falta correr <b>informes-accidentes-alertas.sql</b> en Supabase.</p>':
+      AL.infs.map(function(n,i){ return '<div class="al-row"><div class="al-t"><b>'+esc(n)+'</b><div class="note">Pendiente de generar y subir a Zerty</div></div><button class="btn small al-inf" data-i="'+i+'">'+svgI(ICO.gen,14)+'Generar</button></div>'; }).join(''),
+      'Todos los informes de '+mesLbl(AL.prev)+' están generados.');
+    h+=sec('Faenas que piden reporte sin entregar', ICO.cam, AL.reps.length,
+      AL.reps.map(function(r,i){ var e=r.e; return '<div class="al-row"><div class="al-t"><b>'+esc(e.titulo||'Faena')+'</b><div class="note">'+esc(e.ubicacion||'')+(e.sitio?' · '+esc(e.sitio):'')+' · '+esc(fechaCorta(evFin(e)))+' · '+(r.reg?'registro sin confirmar':'sin registro')+'</div></div><button class="btn small al-rep" data-i="'+i+'">'+(r.reg?'Abrir':'Crear')+'</button></div>'; }).join(''),
+      'Sin reportes pendientes en los últimos 60 días.');
+    h+=sec('Documentos vencidos o por vencer', IDOC, AL.docs.length,
+      AL.docs.map(function(d,i){ return '<div class="al-row"><div class="al-t"><b>'+esc(d.nombre)+'</b><div class="note">'+esc(rrhhTipo(d.tipo).nombre)+' · '+esc(fechaCorta(d.venc))+'</div></div>'+chipN(d.n)+'<button class="btn ghost small al-doc" data-i="'+i+'">Abrir</button></div>'; }).join(''),
+      'Nada vencido ni por vencer en 30 días.');
+    h+=sec('Asignados a faenas próximas con documentación incompleta', IPER, AL.asig.filter(function(a){ return a.venc.length; }).length,
+      AL.asig.map(function(a,i){ return '<div class="al-row"><div class="al-t"><b>'+esc(a.nombre)+'</b><div class="note">'+esc(fechaCorta(a.fecha))+' · '+esc(a.faena)+'</div></div>'+(a.venc.length?'<span class="dchip venc">Vencido: '+esc(a.venc.join(', '))+'</span>':'')+(a.pend?'<span class="dchip prox">'+a.pend+' pendiente'+(a.pend>1?'s':'')+'</span>':'')+'<button class="btn ghost small al-per" data-i="'+i+'">Ver</button></div>'; }).join(''),
+      'Todos los asignados de los próximos 14 días tienen su documentación al día.');
+    h+=sec('Vehículos: documentos vencidos o por vencer', IVEH, AL.vehs.length,
+      AL.vehs.map(function(v){ return '<div class="al-row al-veh" style="cursor:pointer"><div class="al-t"><b>'+esc(v.veh)+'</b><div class="note">'+esc(v.cat)+' · '+esc(fechaCorta(v.venc))+'</div></div>'+chipN(v.n)+'</div>'; }).join(''),
+      'Permisos, SOAP y revisiones al día.');
+    if(AL.faltanDocs) h+='<div class="al-sec" style="display:flex;align-items:center;gap:10px"><div style="flex:1"><b style="color:var(--ink)">Documentación incompleta</b><div class="note" style="margin:2px 0 0">'+AL.faltanDocs+' de '+AL.nTrabs+' trabajadores activos tienen documentos estándar pendientes.</div></div><button class="btn ghost small" id="al-verdocs" style="width:auto">Ver</button></div>';
+    c.innerHTML=h;
+    var tot=AL.docs.length+AL.vehs.length+AL.infs.length+AL.reps.length+AL.asig.filter(function(a){ return a.venc.length; }).length;
+    $('al-cnt').textContent=tot?(tot+' pendiente'+(tot>1?'s':'')):'Todo al día';
+    c.querySelectorAll('.al-inf').forEach(function(b){ b.addEventListener('click',function(){ cargarClientes(function(){ abrirAccForm(AL.infs[+b.dataset.i], AL.prev, null); }); }); });
+    c.querySelectorAll('.al-rep').forEach(function(b){ b.addEventListener('click',function(){ var r=AL.reps[+b.dataset.i]; if(!r) return;
+      if(r.reg){ busy(true,'Abriendo…'); sb.from('registros').select('*').eq('id',r.reg.id).maybeSingle().then(function(q){ busy(false); if(q&&q.data) abrirEdicion(q.data); }); }
+      else { if(EDIT_ID) resetForm(); elegirJob(r.e); abrirVista('v-reporte'); } }); });
+    c.querySelectorAll('.al-doc').forEach(function(b){ b.addEventListener('click',function(){ var d=AL.docs[+b.dataset.i]; if(!d) return;
+      // trae el documento real antes de abrir (así no se pisa con uno vacío)
+      busy(true,'Abriendo…'); sb.from('rrhh_docs').select('*').eq('trabajador_id',d.tid).then(function(q){ busy(false);
+        ((q&&q.data)||[]).forEach(function(x){ RRHH_D[x.trabajador_id+'|'+x.tipo]=x; });
+        if(!RRHH_T.some(function(t){ return t.id===d.tid; }) && !(TRAB||[]).some(function(t){ return t.id===d.tid; })) RRHH_T.push({id:d.tid, nombre:d.nombre});
+        abrirDocRrhh(d.tid, d.tipo); }); }); });
+    c.querySelectorAll('.al-per').forEach(function(b){ b.addEventListener('click',function(){ var a=AL.asig[+b.dataset.i]; if(!a) return; abrirVista('v-rrhh'); rrhhSeg('doc'); RRHH_VISTA='persona'; document.querySelectorAll('.rrhh-vis').forEach(function(x){ x.classList.toggle('on',x.dataset.v==='persona'); }); cargarRrhh(); }); });
+    c.querySelectorAll('.al-veh').forEach(function(el){ el.addEventListener('click',function(){ abrirVista('v-veh'); }); });
+    if($('al-verdocs')) $('al-verdocs').addEventListener('click',function(){ abrirVista('v-rrhh'); rrhhSeg('doc'); cargarRrhh(); });
+  }
+  // Al cerrar un documento/informe abierto desde Alertas, refrescar la lista.
+  (function(){ var ov=$('rrhh-edit'); if(!ov||!window.MutationObserver) return; var was=true;
+    new MutationObserver(function(){ var hid=ov.classList.contains('hide'); if(hid&&!was&&$('v-alertas').classList.contains('on')) cargarAlertas(); was=hid; }).observe(ov,{attributes:true,attributeFilter:['class']}); })();
+  if($('btn-alertas')) $('btn-alertas').addEventListener('click',function(){ abrirVista('v-alertas'); });
 
   // ====== Generador de documentos (formatos RRHH → PDF con membrete) ======
   // Captura un elemento a PDF A4 (parte en varias páginas si es alto). Reusa html2canvas + jsPDF.
@@ -4334,7 +4700,10 @@
     gen:'<polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>',
     save:'<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>',
     up:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>',
-    clip:'<path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>'
+    clip:'<path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>',
+    cam:'<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>',
+    warn:'<path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
+    ok:'<polyline points="20 6 9 17 4 12"/>'
   };
   var DG_CTX=null, DG_QUEUE=[], DG_QI=0, DG_QTIPO=null, DGP_TIPO=null;
   function generarDoc(tid, tipo){
@@ -4342,7 +4711,7 @@
     var pool=(typeof RRHH_T!=='undefined'?RRHH_T:[]).concat(typeof TRAB!=='undefined'?TRAB:[]);
     var t=pool.filter(function(x){return x.id===tid;})[0]; if(!t) return;
     DG_CTX={tid:tid, tipo:tipo, nombre:t.nombre};
-    $('dg-doc').innerHTML=g.build(t);
+    $('dg-doc').classList.remove('fa-mode'); $('dg-doc').innerHTML=g.build(t);
     $('dg-hint').textContent=g.nombre+' · '+(t.nombre||'')+(DG_QUEUE.length?(' ('+(DG_QI+1)+' de '+DG_QUEUE.length+')'):'');
     $('docgen').classList.remove('hide'); $('docgen').scrollTop=0;
   }
@@ -4371,7 +4740,9 @@
   });
   $('dg-close').addEventListener('click',function(){ $('docgen').classList.add('hide'); DG_QUEUE=[]; DG_QTIPO=null; });
   $('dg-save').addEventListener('click',function(){
-    if(!DG_CTX) return; busy(true,'Generando PDF…');
+    if(!DG_CTX) return;
+    if(DG_CTX.save){ DG_CTX.save(); return; }   // documentos que no son de un trabajador (ej. informe de accidentes)
+    busy(true,'Generando PDF…');
     pdfDesde($('dg-doc')).then(function(doc){
       var blob=doc.output('blob'), nombre=(DG_CTX.tipo.toUpperCase())+'_'+slug(DG_CTX.nombre||'doc')+'_'+todayISO()+'.pdf';
       descargarBlob(blob, nombre);
