@@ -577,8 +577,13 @@
   .fa-sh td{background:#6b6f78;color:#fff;font-weight:800;letter-spacing:.02em;padding:6px 8px;}
   .fa-t .big{height:70px;} .fa-t .xbig{height:120px;}
   .fa-t td [contenteditable]{display:inline-block;min-width:40px;}
-  .fa-firma{position:relative;min-height:170px;text-align:center;padding-top:14px;}
-  .fa-firma img{max-height:230px;max-width:85%;}
+  .fa-firma{position:relative;min-height:190px;text-align:center;padding-top:14px;}
+  .fa-firma .rs-sig{display:block;margin:0 auto -6px;max-height:140px;max-width:40%;}
+  .fa-firma .rs-tim{position:absolute;right:1%;top:4px;max-height:185px;max-width:30%;}
+  .dg-firmas.con-rep{margin-top:130px;}
+  .dg-rep{position:relative;}
+  .dg-rep .rs-sig{position:absolute;left:32%;bottom:100%;transform:translateX(-50%);max-height:95px;max-width:60%;margin-bottom:-12px;}
+  .dg-rep .rs-tim{position:absolute;right:-8px;bottom:100%;margin-bottom:-24px;max-height:125px;max-width:48%;}
   .af-sec{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line);}
   .af-sec b{flex:1;font-weight:600;font-size:.9rem;}
   .af-sec select{flex:0 0 116px;}
@@ -775,7 +780,6 @@
       <button class="sb-item sb-admin" data-v="v-rrhh" data-seg="doc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>Documentación</button>
       <button class="sb-item sb-admin" data-v="v-rrhh" data-seg="capacit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c0 1 2.5 3 6 3s6-2 6-3v-5"/></svg>Capacitaciones</button>
       <button class="sb-item sb-admin" data-v="v-rrhh" data-seg="finiquito"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="m9 15 2 2 4-4"/></svg>Finiquitos</button>
-      <button class="sb-item sb-admin" data-v="v-rrhh" data-seg="accid"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M12 8v4M12 16h.01"/></svg>Informe accidentes</button>
 
       <div class="sbar-grp sb-admin">Remuneraciones</div>
       <button class="sb-item sb-admin" data-v="v-remu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg>Remuneraciones</button>
@@ -1001,7 +1005,6 @@
         <button class="btn ghost small rrhh-seg" data-seg="doc" style="flex:1;min-width:120px">📋 Documentación</button>
         <button class="btn ghost small rrhh-seg" data-seg="capacit" style="flex:1;min-width:120px">🎓 Capacitaciones</button>
         <button class="btn ghost small rrhh-seg" data-seg="finiquito" style="flex:1;min-width:120px">📄 Finiquitos</button>
-        <button class="btn ghost small rrhh-seg" data-seg="accid" style="flex:1;min-width:120px"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:4px"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Accidentes</button>
       </div>
 
       <!-- Panel Trabajadores -->
@@ -1023,6 +1026,7 @@
       <!-- Panel Documentación / Capacitaciones (comparten UI) -->
       <div id="rrhh-doc" class="hide">
         <p class="note" style="margin:0 0 10px" id="rrhh-panel-note">Documentación estándar por trabajador <span class="cnt" id="rrhh-cnt"></span>.</p>
+        <div id="doc-empresa-slot"></div>
         <div id="rrhh-alert"></div>
         <div class="segrow">
           <div class="segwrap"><span class="seglbl">Mostrar</span><div class="seg"><button class="seg-b rrhh-fil on" data-f="activo">Solo activos</button><button class="seg-b rrhh-fil" data-f="todos">Todos</button></div></div>
@@ -1038,15 +1042,19 @@
         <div id="fin-list"></div>
       </div>
 
-      <!-- Panel Informe mensual de accidentes (Zerty) -->
-      <div id="rrhh-accid" class="hide">
-        <div class="h-row" style="margin-top:0"><b style="font:800 15px var(--font);color:var(--ink)">Informe mensual de accidentes</b><button id="ia-firma" class="btn ghost small" style="width:auto">Firma y timbre</button></div>
-        <p class="note" style="margin:0 0 10px">Formulario de investigación de accidentes del trabajo que se sube cada mes a la plataforma del cliente (Zerty). Marca qué clientes lo piden; si no hubo accidentes se genera como <b>“no registra accidentes”</b>.</p>
+      <!-- (el informe mensual de accidentes vive en Documentación → Documentos de la empresa) -->
+    </section>
+    <template id="tpl-doc-empresa">
+      <div id="doc-empresa" class="rrhh-doc" style="margin-bottom:14px">
+        <div class="h-row" style="margin:0 0 4px"><b style="font:800 15px var(--font);color:var(--ink)">Documentos de la empresa</b><button id="ia-firma" class="btn ghost small" style="width:auto">Firma y timbre</button></div>
+        <p class="note" style="margin:0 0 10px">La firma y el timbre de Cristopher Vidal (representante legal) se estampan en el informe de accidentes y en el contrato.</p>
+        <b style="display:block;font:800 13px var(--font);color:var(--ink);margin-bottom:2px">Informe mensual de accidentes (Zerty)</b>
+        <p class="note" style="margin:0 0 10px">Formulario de investigación de accidentes que se sube cada mes a la plataforma del cliente. Si no hubo accidentes se genera como <b>“no registra accidentes”</b>.</p>
         <div class="wknav"><button id="ia-prev" class="btn ghost small" style="width:auto">‹</button><div style="flex:1;text-align:center"><div style="margin:0;font:800 13px var(--font);color:var(--navy)">Mes informado</div><b id="ia-mes" style="font-size:.95rem;font-weight:700;color:var(--body)"></b></div><button id="ia-next" class="btn ghost small" style="width:auto">›</button></div>
         <div class="card" style="padding:6px 14px" id="ia-list"></div>
         <button id="ia-otro" class="btn ghost small" style="width:100%">＋ Generar para otro cliente</button>
       </div>
-    </section>
+    </template>
 
     <!-- ---- ALERTAS (solo admin) ---- -->
     <section class="view" id="v-alertas">
@@ -4186,11 +4194,11 @@
     $('rrhh-trab').classList.toggle('hide', seg!=='trab');
     $('rrhh-doc').classList.toggle('hide', seg!=='doc' && seg!=='capacit');
     $('rrhh-fin').classList.toggle('hide', seg!=='finiquito');
-    $('rrhh-accid').classList.toggle('hide', seg!=='accid');
+    if($('doc-empresa')) $('doc-empresa').classList.toggle('hide', seg!=='doc');
     if(seg==='doc'){ RRHH_CAT=RRHH_TIPOS; RRHH_VISTA='doc'; $('rrhh-panel-note').innerHTML='Documentación estándar por trabajador <span class="cnt" id="rrhh-cnt"></span>. Marca lo entregado, adjunta el archivo y su vencimiento.'; renderRrhh(); }
     else if(seg==='capacit'){ RRHH_CAT=CAP_TIPOS; RRHH_VISTA='doc'; $('rrhh-panel-note').innerHTML='Capacitaciones por trabajador <span class="cnt" id="rrhh-cnt"></span>. Marca la fecha, el vencimiento y adjunta el registro.'; renderRrhh(); }
     else if(seg==='finiquito'){ renderFin(); }
-    else if(seg==='accid'){ cargarAccid(); }
+    if(seg==='doc') cargarAccid();
   }
   document.querySelectorAll('.rrhh-seg').forEach(function(b){ b.addEventListener('click',function(){ rrhhSeg(b.dataset.seg); }); });
 
@@ -4331,7 +4339,25 @@
   // "no registra accidentes"; si hubo, se llena el mismo formulario. Firma+timbre en config (firma_timbre_url).
   var MESES_L=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
   var ACC_EMP={ dir:'Avenida Nueva Providencia 1881, Comuna de Providencia', tel:'956635547', rep:'Cristopher Vidal Ruiz', cargo:'Representante Legal' };
-  var IA_MES=null, IA_INF=[], IA_ERR=false, IA_FIRMA=null;
+  var IA_MES=null, IA_INF=[], IA_ERR=false, IA_FIRMA=null, FIRMA_SIG='', FIRMA_TIM='';
+  // Inserta el bloque "Documentos de la empresa" dentro de Documentación (queda oculto en Capacitaciones).
+  (function(){ var t=$('tpl-doc-empresa'), s=$('doc-empresa-slot'); if(t&&s){ s.appendChild(t.content.cloneNode(true)); } })();
+  // Separa la imagen subida en firma (tinta azul) y timbre (tinta negra), cada una recortada, como data-URL
+  // (así se pueden ubicar por separado y html2canvas no tiene problemas de CORS).
+  function separarFirma(url){
+    return fetch(urlCors(url),{mode:'cors'}).then(function(r){ if(!r.ok) throw 0; return r.blob(); }).then(function(b){ return new Promise(function(res,rej){ var im=new Image(), u=URL.createObjectURL(b); im.onload=function(){ res(im); }; im.onerror=rej; im.src=u; }); }).then(function(im){
+      var W=im.naturalWidth,H=im.naturalHeight,c=document.createElement('canvas'); c.width=W; c.height=H; var x=c.getContext('2d'); x.drawImage(im,0,0); var d=x.getImageData(0,0,W,H).data;
+      function parte(azul){ var o=x.createImageData(W,H), a=W, b=H, cc=-1, dd=-1;
+        for(var i=0;i<d.length;i+=4){ var r=d[i],g=d[i+1],bl=d[i+2],al=d[i+3], lum=0.3*r+0.59*g+0.11*bl, esAzul=bl>r+35&&bl>g+15;
+          if(al<40 || lum>200) continue; if(azul!==esAzul) continue;
+          o.data[i]=r;o.data[i+1]=g;o.data[i+2]=bl;o.data[i+3]=al; var p=i/4, px=p%W, py=(p-px)/W; if(px<a)a=px; if(px>cc)cc=px; if(py<b)b=py; if(py>dd)dd=py; }
+        if(cc<0) return ''; var c2=document.createElement('canvas'); c2.width=cc-a+1; c2.height=dd-b+1; c2.getContext('2d').putImageData(o,-a,-b); return c2.toDataURL('image/png'); }
+      FIRMA_SIG=parte(true); FIRMA_TIM=parte(false);
+      if(!FIRMA_SIG){ FIRMA_SIG=''; FIRMA_TIM=url; }   // imagen sin tinta azul: se usa completa como timbre
+    }).catch(function(){ FIRMA_SIG=''; FIRMA_TIM=url; });
+  }
+  // Bloque de firma del representante (firma centrada sobre "Atentamente" y timbre a la derecha).
+  function firmaRepHtml(){ return (FIRMA_SIG?'<img class="rs-sig" src="'+FIRMA_SIG+'" alt="">':'')+(FIRMA_TIM?'<img class="rs-tim" src="'+esc(FIRMA_TIM)+'" alt="">':''); }
   function mesPrevio(){ var d=new Date(); d.setDate(1); d.setMonth(d.getMonth()-1); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
   function mesMas(p,n){ var a=p.split('-'), d=new Date(+a[0], +a[1]-1+n, 1); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
   function mesTxt(p){ var a=(p||'').split('-'); return MESES_L[(+a[1]||1)-1]+' del '+a[0]; }
@@ -4339,7 +4365,8 @@
   function cliPideAcc(){ return (CLIENTES||[]).filter(function(c){ return c.pide_accidentes && c.estado!=='inactivo'; }); }
   function fichaCli(n){ return (CLIENTES||[]).filter(function(x){ return _cliKey(x.nombre)===_cliKey(n); })[0]; }
   function cargarFirma(cb){ if(IA_FIRMA!==null||!sb){ if(cb)cb(); return; }
-    sb.from('config').select('valor').eq('clave','firma_timbre_url').maybeSingle().then(function(r){ IA_FIRMA=(r&&r.data&&r.data.valor)||''; if(cb)cb(); }, function(){ IA_FIRMA=''; if(cb)cb(); }); }
+    sb.from('config').select('valor').eq('clave','firma_timbre_url').maybeSingle().then(function(r){ IA_FIRMA=(r&&r.data&&r.data.valor)||'';
+      if(!IA_FIRMA){ FIRMA_SIG=''; FIRMA_TIM=''; if(cb)cb(); return; } separarFirma(IA_FIRMA).then(function(){ if(cb)cb(); }); }, function(){ IA_FIRMA=''; if(cb)cb(); }); }
   function cargarAccid(){
     if(!IA_MES) IA_MES=mesPrevio();
     $('ia-mes').textContent=mesLbl(IA_MES);
@@ -4403,7 +4430,7 @@
     function BIG(lb,cls){ return T('<td class="'+(cls||'big')+'">'+(lb?lb+'<br>':'')+E('')+'</td>'); }
     var hd='<div class="fa-hd"><div class="lg"><img src="../assets/images/InnovaServi-completo.png" alt="InnovaServi" onerror="this.style.display=\'none\'"></div><div class="tt">FORMULARIO DE INVESTIGACIÓN DE ACCIDENTES DEL TRABAJO</div></div>';
     var sinTxt=ctx.sin?('Por el presente documento se informa que la empresa '+EMP.rz+', Rut '+EMP.rut+', no registra Accidentes del Trabajo y/o Enfermedades Profesionales, en el mes de '+mesTxt(ctx.periodo)+'.'):'';
-    var firma=IA_FIRMA?'<img src="'+esc(IA_FIRMA)+'" alt="">':'<div style="height:70px"></div>';
+    var firma=firmaRepHtml();
     var p1='<div class="fa-page">'+hd+'<div class="fa-title">FORMULARIO DE INVESTIGACIÓN DE ACCIDENTES DEL TRABAJO</div>'+
       SH('1.- ANTECEDENTES LABORALES')+
       R2('Empresa:',E(EMP.rz))+R2('Rut:',E('Rut '+EMP.rut))+R2('Dirección:',E(ACC_EMP.dir))+R2('Teléfono:',E(ACC_EMP.tel))+R2('Representante legal:',E(ACC_EMP.rep))+R2('Servicio:',E(ctx.servicio))+
@@ -4439,7 +4466,7 @@
       T('<td style="width:50%">Firma:</td><td>Fecha: '+I('')+'</td>')+
       SH('8– COMENTARIOS DEL COMITÉ PARITARIO HIGIENE Y SEGURIDAD')+BIG('')+
       SH('9.- COMENTARIOS REPRESENTANTE EMPRESA')+
-      T('<td>'+E(sinTxt,true)+'<div class="fa-firma">'+firma+'<div style="font-weight:700">Atentamente,<br>'+esc(ACC_EMP.rep)+'</div><div style="font-weight:700;margin-top:4px">Representante legal '+esc(EMP.rz)+'</div></div></td>')+
+      T('<td>'+E(sinTxt,true)+'<div class="fa-firma'+(FIRMA_SIG?' con-sig':'')+'">'+firma+'<div style="font-weight:700;position:relative">Atentamente,<br>'+esc(ACC_EMP.rep)+'</div><div style="font-weight:700;margin-top:4px">Representante legal '+esc(EMP.rz)+'</div></div></td>')+
       SH('10 – ANEXOS (Fotografías, procedimientos, declaraciones, etc.)')+BIG('','xbig')+'</div>';
     return p1+p2+p3;
   }
@@ -4481,7 +4508,7 @@
         var row={ periodo:ctx.periodo, cliente:ctx.cliente, servicio:ctx.servicio||null, sin_accidentes:ctx.sin, url:(res?res.url:null), autor:userEmail, created_at:new Date().toISOString() };
         sb.from('informes_accidentes').upsert(row,{onConflict:'periodo,cliente'}).then(function(r){
           if(r&&r.error){ busy(false); toast(/informes_accidentes/.test(r.error.message||'')?'PDF descargado. Falta correr informes-accidentes-alertas.sql para guardarlo.':('PDF descargado, pero no se guardó: '+r.error.message)); return; }
-          function fin(){ busy(false); toast('✓ Informe generado y guardado'); $('docgen').classList.add('hide'); DG_CTX=null; IA_MES=ctx.periodo; if(!$('rrhh-accid').classList.contains('hide')) cargarAccid(); cargarAlertas(); }
+          function fin(){ busy(false); toast('✓ Informe generado y guardado'); $('docgen').classList.add('hide'); DG_CTX=null; IA_MES=ctx.periodo; if($('doc-empresa')&&!$('doc-empresa').classList.contains('hide')) cargarAccid(); cargarAlertas(); }
           if(ctx.marcar) marcarCliAcc(ctx.cliente, fin); else fin();
         }, function(){ busy(false); toast('PDF descargado, pero no se guardó.'); });
       });
@@ -4497,8 +4524,12 @@
   $('ia-otro').addEventListener('click',function(){ cargarClientes(function(){ abrirAccForm('', IA_MES||mesPrevio(), null); }); });
   $('ia-firma').addEventListener('click',function abrirFirma(){ IA_FIRMA=null; cargarFirma(function(){
     $('re-title').textContent='Firma y timbre';
-    $('re-body').innerHTML='<div class="card"><p class="note" style="margin:0 0 10px">Imagen con la firma y el timbre del representante legal (ideal PNG con fondo transparente o blanco). Se estampa en la sección 9 de cada informe mensual.</p>'+
-      '<div style="text-align:center;background:var(--alt);border-radius:12px;padding:12px;margin-bottom:10px">'+(IA_FIRMA?'<img src="'+esc(IA_FIRMA)+'" style="max-width:100%;max-height:180px">':'<span class="note">Sin imagen cargada</span>')+'</div>'+
+    $('re-body').innerHTML='<div class="card"><p class="note" style="margin:0 0 10px">Firma y timbre de Cristopher Vidal, representante legal. Se estampan en el informe mensual de accidentes y en el contrato de trabajo.</p>'+
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">'+(IA_FIRMA?(
+        '<div style="flex:1;min-width:130px;text-align:center;background:var(--alt);border-radius:12px;padding:10px"><div class="note" style="margin:0 0 6px">Firma</div>'+(FIRMA_SIG?'<img src="'+FIRMA_SIG+'" style="max-width:100%;max-height:120px">':'<span class="note">No se detectó firma azul</span>')+'</div>'+
+        '<div style="flex:1;min-width:130px;text-align:center;background:var(--alt);border-radius:12px;padding:10px"><div class="note" style="margin:0 0 6px">Timbre</div>'+(FIRMA_TIM?'<img src="'+esc(FIRMA_TIM)+'" style="max-width:100%;max-height:120px">':'<span class="note">—</span>')+'</div>'
+      ):'<div style="flex:1;text-align:center;background:var(--alt);border-radius:12px;padding:12px"><span class="note">Sin imagen cargada</span></div>')+'</div>'+
+      '<p class="note" style="margin:0 0 10px">Sube una sola imagen con firma y timbre: la tinta <b>azul</b> se usa como firma y la <b>negra</b> como timbre.</p>'+
       '<label class="catadd" style="display:inline-block">'+svgI(ICO.up,15)+'Subir imagen<input type="file" id="af-firma-f" accept="image/*" hidden></label>'+
       (IA_FIRMA?' <button id="af-firma-del" class="btn ghost small" style="width:auto">Quitar</button>':'')+'</div>';
     $('af-firma-f').addEventListener('change',function(){ var f=this.files&&this.files[0]; if(!f) return; busy(true,'Subiendo…');
@@ -4611,7 +4642,7 @@
   // ====== Generador de documentos (formatos RRHH → PDF con membrete) ======
   // Captura un elemento a PDF A4 (parte en varias páginas si es alto). Reusa html2canvas + jsPDF.
   function pdfDesde(el){
-    return cargarH2C().then(function(){
+    return cargarH2C().then(function(){ return inlineImagenes(el); }).then(function(){
       if(!window.jspdf) throw new Error('jspdf');
       var doc=new window.jspdf.jsPDF({unit:'mm',format:'a4',compress:true}), A4W=210, A4H=297;
       return window.html2canvas(el,{scale:2,useCORS:true,backgroundColor:'#ffffff',logging:false}).then(function(cv){
@@ -4663,7 +4694,7 @@
       '<p><b>SÉPTIMO — Vigencia.</b> El contrato tiene una vigencia de carácter indefinido y el trabajador prestará servicios con intervenciones mínimas de 1 día al mes.</p>'+
       '<p><b>OCTAVO — Domicilio.</b> Las partes fijan domicilio en Puerto Montt y se someten a la jurisdicción de sus Tribunales de Justicia.</p>'+
       '<p><b>NOVENO — Ejemplares.</b> El presente contrato se suscribe en dos ejemplares, quedando uno en poder del trabajador.</p>'+
-      '<div class="dg-firmas"><div>Firma del Trabajador<br>RUT '+esc(t.rut||'____')+'</div><div>Firma del Empleador<br>'+EMP.rz+'</div></div>';
+      '<div class="dg-firmas'+((FIRMA_SIG||FIRMA_TIM)?' con-rep':'')+'"><div>Firma del Trabajador<br>RUT '+esc(t.rut||'____')+'</div><div class="dg-rep">'+firmaRepHtml()+'Firma del Empleador<br>'+EMP.rz+'</div></div>';
   }
 
   // Plantilla: ODI — Obligación de Informar los Riesgos (Derecho a Saber, D.S. 40).
@@ -4711,6 +4742,7 @@
     var pool=(typeof RRHH_T!=='undefined'?RRHH_T:[]).concat(typeof TRAB!=='undefined'?TRAB:[]);
     var t=pool.filter(function(x){return x.id===tid;})[0]; if(!t) return;
     DG_CTX={tid:tid, tipo:tipo, nombre:t.nombre};
+    if(IA_FIRMA===null){ cargarFirma(function(){ generarDoc(tid, tipo); }); return; }   // la firma del representante se usa en el contrato
     $('dg-doc').classList.remove('fa-mode'); $('dg-doc').innerHTML=g.build(t);
     $('dg-hint').textContent=g.nombre+' · '+(t.nombre||'')+(DG_QUEUE.length?(' ('+(DG_QI+1)+' de '+DG_QUEUE.length+')'):'');
     $('docgen').classList.remove('hide'); $('docgen').scrollTop=0;
