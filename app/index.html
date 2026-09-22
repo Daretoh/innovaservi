@@ -559,6 +559,42 @@
   .acc-row{display:flex;align-items:center;gap:10px;padding:10px 2px;border-bottom:1px solid var(--line);}
   .acc-row:last-child{border-bottom:none;}
   .acc-row .acc-t{flex:1;min-width:0;} .acc-row .acc-t b{color:var(--ink);} .acc-row .acc-t .note{margin:2px 0 0;font-size:.76rem;}
+  /* Zerty · Cermaq (árbol de documentos de la empresa) */
+  .doc-sub{display:inline-flex;margin-bottom:12px;}
+  #rrhh-doc.zt-on > *:not(#doc-empresa-slot):not(.doc-sub){display:none !important;}
+  #rrhh-doc:not(.zt-on) #doc-empresa-slot{display:none;}
+  .zt-box{--zt:#1aa6c4;--zt-bg:#e5f6fa;background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden;}
+  .zt-head{display:flex;align-items:center;gap:14px;padding:16px 18px;background:var(--zt-bg);border-bottom:3px solid var(--zt);}
+  .zt-logo{font:800 20px var(--font);letter-spacing:.14em;color:var(--zt);}
+  .zt-ht{flex:1;min-width:0;} .zt-ht b{display:block;font:800 15px var(--font);color:var(--ink);} .zt-ht span{font-size:.75rem;color:var(--muted);}
+  .zt-donut{--p:0;flex:none;width:62px;height:62px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--zt) calc(var(--p)*1%),#dfe3ec 0);}
+  .zt-donut span{width:46px;height:46px;border-radius:50%;background:#fff;display:grid;place-items:center;font:800 13px var(--font);color:var(--ink);}
+  .zt-bar{display:flex;align-items:center;gap:10px;padding:10px 18px;border-bottom:1px solid var(--line);}
+  .zt-cols{display:flex;justify-content:space-between;padding:8px 18px;font:700 10px var(--font);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line);}
+  .zt-row{display:flex;align-items:center;gap:8px;padding:11px 18px;border-bottom:1px solid var(--line);font-size:.9rem;}
+  .zt-row.lv1{padding-left:44px;} .zt-row.lv2{padding-left:72px;background:#fafbfd;flex-wrap:wrap;}
+  .zt-click{cursor:pointer;} .zt-click:hover{background:var(--alt);}
+  .zt-chev{width:14px;flex:none;color:var(--muted);display:inline-flex;transition:transform .15s;} .zt-chev svg{margin:0 !important;}
+  .zt-row.open>.zt-chev{transform:rotate(90deg);}
+  .zt-ic{color:var(--zt);display:inline-flex;} .zt-ic svg{margin:0 !important;} .zt-ic.doc{color:#666;}
+  .zt-nm{font:800 .82rem var(--font);color:var(--zt);text-transform:uppercase;letter-spacing:.02em;}
+  .zt-row.lv1 .zt-nm{text-transform:none;font-size:.92rem;}
+  .zt-cnt{font:800 11px var(--font);background:var(--zt-bg);color:var(--zt);padding:2px 9px;border-radius:99px;white-space:nowrap;}
+  .zt-st{margin-left:auto;display:inline-flex;align-items:center;gap:3px;font:700 11px var(--font);white-space:nowrap;} .zt-st svg{margin:0 !important;}
+  .zt-st.w{color:#e0735a;} .zt-st.k{color:var(--ok);}
+  .zt-mes{font-weight:700;color:var(--ink);min-width:118px;}
+  .zt-files{display:inline-flex;gap:4px;flex-wrap:wrap;align-items:center;}
+  .zt-file{display:inline-flex;align-items:center;font:600 12px var(--font);color:var(--orange-2);background:#fff;border:1px solid var(--line);border-radius:8px;padding:3px 8px;text-decoration:none;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .zt-file svg{margin-right:4px !important;}
+  .zt-del{border:none;background:none;color:#c55;cursor:pointer;font-size:12px;padding:0 4px;}
+  .zt-falta{font:700 12px var(--font);color:#e0735a;}
+  .zt-act{margin-left:auto;display:inline-flex;gap:6px;}
+  .zt-b{display:inline-flex;align-items:center;border:1px solid var(--line);background:#fff;border-radius:8px;padding:5px 10px;font:700 12px var(--font);color:var(--ink);cursor:pointer;text-decoration:none;white-space:nowrap;}
+  .zt-b svg{margin-right:4px !important;vertical-align:0 !important;}
+  .zt-b.pri{background:var(--zt);border-color:var(--zt);color:#fff;}
+  .zt-unico{gap:10px;} .zt-u{flex:1;min-width:0;display:flex;flex-direction:column;} .zt-unm{font-weight:600;color:var(--ink);text-transform:uppercase;font-size:.84rem;} .zt-u .note{margin:1px 0 0;font-size:.75rem;}
+  .zt-unico .zt-st{margin-left:0;}
+  @media(max-width:600px){ .zt-row.lv1{padding-left:30px;} .zt-row.lv2{padding-left:40px;} .zt-head{flex-wrap:wrap;} .zt-unico{flex-wrap:wrap;} }
   /* Formulario de investigación de accidentes (formato fiel al papel) */
   #dg-doc.fa-mode{padding:0;background:transparent;box-shadow:none;}
   #dg-doc.fa-mode [contenteditable]{font-weight:400;min-width:40px;}
@@ -778,6 +814,7 @@
       <div class="sbar-grp sb-admin">RRHH</div>
       <button class="sb-item sb-admin" data-v="v-rrhh" data-seg="trab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>Trabajadores</button>
       <button class="sb-item sb-admin" data-v="v-rrhh" data-seg="doc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>Documentación</button>
+      <button class="sb-item sb-admin" data-v="v-rrhh" data-seg="zerty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><path d="M9 14l2 2 4-4"/></svg>Zerty · Cermaq</button>
       <button class="sb-item sb-admin" data-v="v-rrhh" data-seg="capacit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c0 1 2.5 3 6 3s6-2 6-3v-5"/></svg>Capacitaciones</button>
       <button class="sb-item sb-admin" data-v="v-rrhh" data-seg="finiquito"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="m9 15 2 2 4-4"/></svg>Finiquitos</button>
 
@@ -1026,6 +1063,7 @@
       <!-- Panel Documentación / Capacitaciones (comparten UI) -->
       <div id="rrhh-doc" class="hide">
         <p class="note" style="margin:0 0 10px" id="rrhh-panel-note">Documentación estándar por trabajador <span class="cnt" id="rrhh-cnt"></span>.</p>
+        <div class="seg doc-sub" id="doc-sub"><button class="seg-b on" data-z="0">Trabajadores</button><button class="seg-b" data-z="1">Zerty · Cermaq</button></div>
         <div id="doc-empresa-slot"></div>
         <div id="rrhh-alert"></div>
         <div class="segrow">
@@ -1045,14 +1083,16 @@
       <!-- (el informe mensual de accidentes vive en Documentación → Documentos de la empresa) -->
     </section>
     <template id="tpl-doc-empresa">
-      <div id="doc-empresa" class="rrhh-doc" style="margin-bottom:14px">
-        <div class="h-row" style="margin:0 0 4px"><b style="font:800 15px var(--font);color:var(--ink)">Documentos de la empresa</b><button id="ia-firma" class="btn ghost small" style="width:auto">Firma y timbre</button></div>
-        <p class="note" style="margin:0 0 10px">La firma y el timbre de Cristopher Vidal (representante legal) se estampan en el informe de accidentes y en el contrato.</p>
-        <b style="display:block;font:800 13px var(--font);color:var(--ink);margin-bottom:2px">Informe mensual de accidentes (Zerty)</b>
-        <p class="note" style="margin:0 0 10px">Formulario de investigación de accidentes que se sube cada mes a la plataforma del cliente. Si no hubo accidentes se genera como <b>“no registra accidentes”</b>.</p>
-        <div class="wknav"><button id="ia-prev" class="btn ghost small" style="width:auto">‹</button><div style="flex:1;text-align:center"><div style="margin:0;font:800 13px var(--font);color:var(--navy)">Mes informado</div><b id="ia-mes" style="font-size:.95rem;font-weight:700;color:var(--body)"></b></div><button id="ia-next" class="btn ghost small" style="width:auto">›</button></div>
-        <div class="card" style="padding:6px 14px" id="ia-list"></div>
-        <button id="ia-otro" class="btn ghost small" style="width:100%">＋ Generar para otro cliente</button>
+      <div id="doc-empresa" class="zt-box">
+        <div class="zt-head">
+          <div class="zt-logo">CERMAQ</div>
+          <div class="zt-ht"><b>Zerty · Innovación y Servicios SpA</b><span>77.647.955-1 · servicios desde mayo 2023 · documentación mensual que pide Cermaq</span></div>
+          <div class="zt-donut" id="zt-pct" title="Documentos cargados"><span>0%</span></div>
+        </div>
+        <div class="zt-bar"><span class="note" style="margin:0;flex:1">Abre cada carpeta, sube el PDF del mes o genéralo. En rojo lo que falta.</span><button id="ia-firma" class="btn ghost small" style="width:auto">Firma y timbre</button></div>
+        <div class="zt-cols"><span>Nombre</span><span>Estado</span></div>
+        <div id="zt-tree"></div>
+        <input type="file" id="zt-file" accept="image/*,application/pdf" multiple hidden>
       </div>
     </template>
 
@@ -4190,15 +4230,17 @@
     });
   }
   function rrhhSeg(seg){
+    var zt=false; if(seg==='zerty'){ seg='doc'; zt=true; }
     document.querySelectorAll('.rrhh-seg').forEach(function(x){ x.classList.toggle('on',x.dataset.seg===seg); });
     $('rrhh-trab').classList.toggle('hide', seg!=='trab');
     $('rrhh-doc').classList.toggle('hide', seg!=='doc' && seg!=='capacit');
     $('rrhh-fin').classList.toggle('hide', seg!=='finiquito');
-    if($('doc-empresa')) $('doc-empresa').classList.toggle('hide', seg!=='doc');
+    if($('doc-sub')) $('doc-sub').classList.toggle('hide', seg!=='doc');
+    if(seg!=='doc') $('rrhh-doc').classList.remove('zt-on');
     if(seg==='doc'){ RRHH_CAT=RRHH_TIPOS; RRHH_VISTA='doc'; $('rrhh-panel-note').innerHTML='Documentación estándar por trabajador <span class="cnt" id="rrhh-cnt"></span>. Marca lo entregado, adjunta el archivo y su vencimiento.'; renderRrhh(); }
     else if(seg==='capacit'){ RRHH_CAT=CAP_TIPOS; RRHH_VISTA='doc'; $('rrhh-panel-note').innerHTML='Capacitaciones por trabajador <span class="cnt" id="rrhh-cnt"></span>. Marca la fecha, el vencimiento y adjunta el registro.'; renderRrhh(); }
     else if(seg==='finiquito'){ renderFin(); }
-    if(seg==='doc') cargarAccid();
+    if(seg==='doc') setZt(zt);
   }
   document.querySelectorAll('.rrhh-seg').forEach(function(b){ b.addEventListener('click',function(){ rrhhSeg(b.dataset.seg); }); });
 
@@ -4339,7 +4381,7 @@
   // "no registra accidentes"; si hubo, se llena el mismo formulario. Firma+timbre en config (firma_timbre_url).
   var MESES_L=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
   var ACC_EMP={ dir:'Avenida Nueva Providencia 1881, Comuna de Providencia', tel:'956635547', rep:'Cristopher Vidal Ruiz', cargo:'Representante Legal' };
-  var IA_MES=null, IA_INF=[], IA_ERR=false, IA_FIRMA=null, FIRMA_SIG='', FIRMA_TIM='';
+  var IA_FIRMA=null, FIRMA_SIG='', FIRMA_TIM='';
   // Inserta el bloque "Documentos de la empresa" dentro de Documentación (queda oculto en Capacitaciones).
   (function(){ var t=$('tpl-doc-empresa'), s=$('doc-empresa-slot'); if(t&&s){ s.appendChild(t.content.cloneNode(true)); } })();
   // Separa la imagen subida en firma (tinta azul) y timbre (tinta negra), cada una recortada, como data-URL
@@ -4367,30 +4409,99 @@
   function cargarFirma(cb){ if(IA_FIRMA!==null||!sb){ if(cb)cb(); return; }
     sb.from('config').select('valor').eq('clave','firma_timbre_url').maybeSingle().then(function(r){ IA_FIRMA=(r&&r.data&&r.data.valor)||'';
       if(!IA_FIRMA){ FIRMA_SIG=''; FIRMA_TIM=''; if(cb)cb(); return; } separarFirma(IA_FIRMA).then(function(){ if(cb)cb(); }); }, function(){ IA_FIRMA=''; if(cb)cb(); }); }
-  function cargarAccid(){
-    if(!IA_MES) IA_MES=mesPrevio();
-    $('ia-mes').textContent=mesLbl(IA_MES);
-    if(!sb) return;
+  // ====== Zerty · Cermaq: documentación de la empresa (árbol tipo → año → mes, estilo Zerty) ======
+  var ZT_INICIO='2023-05';   // inicio de servicios en Cermaq (Zerty): desde aquí se exigen los mensuales
+  var ZT_TIPOS=[
+    {slug:'f30', nombre:'Certificado de antecedentes laborales F30', f:'mensual'},
+    {slug:'f30_1', nombre:'Certificado cumplimiento obligaciones laborales F30-1', f:'mensual'},
+    {slug:'estadistica', nombre:'Estadística de accidentabilidad', f:'mensual'},
+    {slug:'libro_remu', nombre:'Libro de remuneraciones', f:'mensual'},
+    {slug:'nomina', nombre:'Nómina de trabajadores', f:'mensual'},
+    {slug:'investigacion', nombre:'Registro de investigación de accidente', f:'mensual', gen:true},
+    {slug:'previred', nombre:'Planillas pago Previred', f:'mensual'},
+    {slug:'examenes', nombre:'Recepción procedimiento exámenes ocupacionales empresas de servicios', f:'libre'},
+    {slug:'riohs_it', nombre:'Certificado recepción RIOHS Inspección del Trabajo', f:'unico'},
+    {slug:'riohs_ss', nombre:'Certificado recepción RIOHS Servicio de Salud', f:'unico'},
+    {slug:'constitucion', nombre:'Constitución legal de la empresa', f:'unico'},
+    {slug:'proc_accidente', nombre:'Procedimiento de aplicación en caso de accidente', f:'unico'}
+  ];
+  var ZT_DOCS=[], ZT_INF=[], ZT_ERR=false, ZT_OPEN={}, ZT_UP=null;
+  var ZI={ fold:'<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>', file:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>', chev:'<polyline points="9 18 15 12 9 6"/>' };
+  function ztCliente(){ var f=(CLIENTES||[]).filter(function(x){ return _cliKey(x.nombre).indexOf('CERMAQ')>=0; })[0]; return f?f.nombre:'CERMAQ'; }
+  function ztMeses(){ var out=[], p=ZT_INICIO, fin=mesPrevio(); while(p<=fin){ out.push(p); p=mesMas(p,1); } return out; }
+  function setZt(on){
+    var d=$('rrhh-doc'); if(!d) return; d.classList.toggle('zt-on',!!on);
+    var col=colorEmpresa('CERMAQ');
+    document.querySelectorAll('#doc-sub .seg-b').forEach(function(b){ var a=(b.dataset.z==='1')===!!on; b.classList.toggle('on',a); b.style.background=(a&&b.dataset.z==='1')?col.border:''; });
+    if(on) cargarZerty();
+  }
+  function cargarZerty(){ if(!sb) return;
     Promise.all([ new Promise(function(res){ cargarClientes(res); }),
-      sb.from('informes_accidentes').select('*').eq('periodo',IA_MES).limit(300) ]).then(function(rs){
-      var r=rs[1]; IA_ERR=!!(r&&r.error); IA_INF=(r&&r.data)||[]; pintarAccid(); });
+      sb.from('zerty_docs').select('*').order('created_at',{ascending:true}).limit(5000),
+      sb.from('informes_accidentes').select('*').limit(1000) ]).then(function(rs){
+      ZT_ERR=!!(rs[1]&&rs[1].error); ZT_DOCS=(rs[1]&&rs[1].data)||[];
+      ZT_INF=((rs[2]&&rs[2].data)||[]).filter(function(i){ return _cliKey(i.cliente).indexOf('CERMAQ')>=0; });
+      pintarZerty(); });
   }
-  function pintarAccid(){
-    var c=$('ia-list'); if(!c) return;
-    if(IA_ERR){ c.innerHTML='<p class="note" style="margin:10px 0">Falta correr <b>informes-accidentes-alertas.sql</b> en Supabase.</p>'; return; }
-    var by={};
-    cliPideAcc().forEach(function(x){ by[_cliKey(x.nombre)]={nombre:x.nombre, fijo:true, inf:null}; });
-    IA_INF.forEach(function(i){ var k=_cliKey(i.cliente); if(!by[k]) by[k]={nombre:i.cliente, fijo:false, inf:null}; by[k].inf=i; });
-    var L=Object.keys(by).map(function(k){ return by[k]; }).sort(function(a,b){ return a.nombre.localeCompare(b.nombre); });
-    if(!L.length){ c.innerHTML='<p class="note" style="margin:10px 0">Ningún cliente marcado. Usa “＋ Generar para otro cliente”, o marca en la ficha del cliente “Pide informe mensual de accidentes”.</p>'; return; }
-    c.innerHTML=L.map(function(o,i){ var inf=o.inf;
-      var est=inf?'<span class="dchip ok">Generado</span>':'<span class="dchip venc">Pendiente</span>';
-      var sub=inf?((inf.sin_accidentes?'Sin accidentes':'Con accidente')+' · '+esc(fechaCorta((inf.created_at||'').slice(0,10)))+(inf.url?' · <a href="'+esc(inf.url)+'" target="_blank" rel="noopener" style="color:var(--orange-2);font-weight:700">ver PDF</a>':'')):(o.fijo?'Lo pide todos los meses':'');
-      return '<div class="acc-row"><div class="acc-t"><b>'+esc(o.nombre)+'</b><div class="note">'+sub+'</div></div>'+est+
-        '<button class="btn '+(inf?'ghost ':'')+'small ia-gen" data-i="'+i+'" style="width:auto">'+svgI(ICO.gen,14)+(inf?'Rehacer':'Generar')+'</button></div>';
-    }).join('');
-    c.querySelectorAll('.ia-gen').forEach(function(b){ b.addEventListener('click',function(){ var o=L[+b.dataset.i]; abrirAccForm(o.nombre, IA_MES, o.inf); }); });
+  // Archivos de un tipo (y periodo). En la investigación también cuentan los informes generados en la app.
+  function ztFiles(slug, per){
+    var L=ZT_DOCS.filter(function(d){ return d.tipo===slug && (per===undefined || d.periodo===per); }).map(function(d){ return {id:d.id, url:d.url, nombre:d.nombre||'Archivo', periodo:d.periodo, fecha:(d.created_at||'').slice(0,10)}; });
+    if(slug==='investigacion') ZT_INF.forEach(function(i){ if(per===undefined||i.periodo===per) L.push({url:i.url, nombre:(i.sin_accidentes?'Sin accidentes':'Con accidente')+' (generado)', periodo:i.periodo, inf:i, fecha:(i.created_at||'').slice(0,10)}); });
+    return L;
   }
+  function pintarZerty(){
+    var c=$('zt-tree'), box=$('doc-empresa'); if(!c||!box) return;
+    var col=colorEmpresa('CERMAQ'); box.style.setProperty('--zt',col.border); box.style.setProperty('--zt-bg',col.bg);
+    function st(n){ return n?'<span class="zt-st w">'+svgI(ICO.warn,16)+(n===true?'':n+' falta'+(n>1?'n':''))+'</span>':'<span class="zt-st k">'+svgI(ICO.ok,16)+'</span>'; }
+    function fila(lv,key,icon,nm,cnt,estado,abre){ var op=!!ZT_OPEN[key];
+      return '<div class="zt-row lv'+lv+(abre?' zt-click':'')+(op?' open':'')+'"'+(abre?' data-k="'+enc(key)+'"':'')+'>'+(abre?'<span class="zt-chev">'+svgI(ZI.chev,14)+'</span>':'<span class="zt-chev"></span>')+
+        '<span class="zt-ic">'+svgI(icon,19)+'</span><span class="zt-nm">'+esc(nm)+'</span>'+(cnt?'<span class="zt-cnt">'+cnt+'</span>':'')+estado+'</div>'; }
+    function archivos(fs){ return '<span class="zt-files">'+fs.map(function(f){ return '<a class="zt-file" href="'+esc(f.url||'#')+'" target="_blank" rel="noopener">'+svgI(ZI.file,13)+esc(f.nombre)+'</a>'+(f.id?'<button class="zt-del" data-del="'+f.id+'" title="Quitar">✕</button>':''); }).join('')+'</span>'; }
+    var meses=ztMeses(), esper=0, ok=0, h=ZT_ERR?'<p class="note" style="padding:10px 16px;margin:0">Falta correr <b>zerty-docs.sql</b> en Supabase para poder subir archivos.</p>':'';
+    ZT_TIPOS.forEach(function(tp){
+      var todos=ztFiles(tp.slug);
+      if(tp.f==='mensual'){
+        var falt=meses.filter(function(p){ return !ztFiles(tp.slug,p).length; });
+        esper+=meses.length; ok+=meses.length-falt.length;
+        h+=fila(0,tp.slug,ZI.fold,tp.nombre,todos.length,st(falt.length),true);
+        if(!ZT_OPEN[tp.slug]) return;
+        var anios={}; meses.forEach(function(p){ var y=p.slice(0,4); (anios[y]=anios[y]||[]).push(p); });
+        Object.keys(anios).sort().reverse().forEach(function(y){
+          var ms=anios[y], fy=ms.filter(function(p){ return !ztFiles(tp.slug,p).length; }).length, ky=tp.slug+'|'+y;
+          h+=fila(1,ky,ZI.fold,'Año '+y,ms.length-fy+'/'+ms.length,st(fy),true);
+          if(!ZT_OPEN[ky]) return;
+          ms.slice().reverse().forEach(function(p){ var fs=ztFiles(tp.slug,p), inf=fs.filter(function(f){ return f.inf; })[0];
+            h+='<div class="zt-row lv2"><span class="zt-mes">'+esc(mesLbl(p))+'</span>'+(fs.length?archivos(fs):'<span class="zt-falta">Falta</span>')+
+              '<span class="zt-act">'+(tp.gen?'<button class="zt-b pri" data-gen="'+p+'">'+(inf?'Rehacer':'Generar')+'</button>':'')+'<button class="zt-b" data-up="'+tp.slug+'|'+p+'">'+svgI(ICO.up,13)+'Subir</button></span></div>'; });
+        });
+      } else if(tp.f==='libre'){
+        h+=fila(0,tp.slug,ZI.fold,tp.nombre,todos.length,todos.length?st(0):st(true),true);
+        if(!ZT_OPEN[tp.slug]) return;
+        h+='<div class="zt-row lv1">'+(todos.length?archivos(todos):'<span class="zt-falta">Sin archivos</span>')+'<span class="zt-act"><button class="zt-b" data-up="'+tp.slug+'|'+todayISO().slice(0,7)+'">'+svgI(ICO.up,13)+'Subir</button></span></div>';
+      } else {
+        esper++; if(todos.length) ok++;
+        var f=todos[todos.length-1];
+        h+='<div class="zt-row lv0 zt-unico"><span class="zt-chev"></span><span class="zt-ic doc">'+svgI(ZI.file,19)+'</span><span class="zt-u"><span class="zt-unm">'+esc(tp.nombre)+'</span><span class="note">'+(f?('Cargado el '+esc(fechaCorta(f.fecha))):'Pendiente de cargar')+'</span></span>'+
+          (f?'<a class="zt-b" href="'+esc(f.url)+'" target="_blank" rel="noopener">Ver</a>':st(true))+'<button class="zt-b" data-up="'+tp.slug+'|">'+svgI(ICO.up,13)+(f?'Reemplazar':'Subir')+'</button></div>';
+      }
+    });
+    c.innerHTML=h;
+    var pct=esper?Math.round(ok/esper*100):0, dn=$('zt-pct'); if(dn){ dn.style.setProperty('--p',pct); dn.querySelector('span').textContent=pct+'%'; }
+    c.querySelectorAll('.zt-click').forEach(function(el){ el.addEventListener('click',function(){ var k=el.dataset.k; ZT_OPEN[k]=!ZT_OPEN[k]; pintarZerty(); }); });
+    c.querySelectorAll('[data-gen]').forEach(function(b){ b.addEventListener('click',function(){ var p=b.dataset.gen, inf=ZT_INF.filter(function(i){ return i.periodo===p; })[0]; abrirAccForm(inf?inf.cliente:ztCliente(), p, inf||null); }); });
+    c.querySelectorAll('[data-up]').forEach(function(b){ b.addEventListener('click',function(){ if(ZT_ERR){ toast('Falta correr zerty-docs.sql en Supabase.'); return; } var a=b.dataset.up.split('|'); ZT_UP={tipo:a[0], periodo:a[1]||null}; var i=$('zt-file'); i.value=''; i.click(); }); });
+    c.querySelectorAll('[data-del]').forEach(function(b){ b.addEventListener('click',function(ev){ ev.preventDefault(); if(!confirm('¿Quitar este archivo de Zerty?')) return; sb.from('zerty_docs').delete().eq('id',+b.dataset.del).then(function(){ cargarZerty(); }); }); });
+  }
+  $('zt-file').addEventListener('change',function(){
+    var fs=Array.prototype.slice.call(this.files||[]); if(!fs.length||!ZT_UP) return; var up=ZT_UP, tp=ZT_TIPOS.filter(function(t){ return t.slug===up.tipo; })[0]||{f:'mensual'};
+    busy(true,'Subiendo…');
+    var previo=(tp.f==='unico')?sb.from('zerty_docs').delete().eq('tipo',up.tipo):Promise.resolve();   // único: reemplaza al anterior
+    Promise.resolve(previo).then(function(){ return Promise.all(fs.map(function(f){ var ext=((f.name||'').split('.').pop()||'pdf').toLowerCase();
+      return subirArchivo(f,'zerty/'+up.tipo,up.tipo.toUpperCase()+(up.periodo?'_'+up.periodo:'')+'.'+ext).then(function(res){ if(!res) return null;
+        return sb.from('zerty_docs').insert({tipo:up.tipo, periodo:up.periodo, url:res.url, nombre:(f.name||'Archivo'), autor:userEmail}); }); })); })
+    .then(function(){ busy(false); toast('✓ Archivo'+(fs.length>1?'s':'')+' cargado'+(fs.length>1?'s':'')); cargarZerty(); }, function(){ busy(false); toast('No se pudo subir.'); });
+  });
+  document.querySelectorAll('#doc-sub .seg-b').forEach(function(b){ b.addEventListener('click',function(){ setZt(b.dataset.z==='1'); }); });
   function servicioDefault(cli){ var f=fichaCli(cli); return cli?('Higiene Industrial, '+cli+(f&&f.direccion?('\n'+f.direccion):'')):''; }
   // Paso 1: datos del informe (cliente, mes, servicio, ¿hubo accidentes?). cli vacío = elegir cliente.
   function abrirAccForm(cli, periodo, inf){
@@ -4508,7 +4619,7 @@
         var row={ periodo:ctx.periodo, cliente:ctx.cliente, servicio:ctx.servicio||null, sin_accidentes:ctx.sin, url:(res?res.url:null), autor:userEmail, created_at:new Date().toISOString() };
         sb.from('informes_accidentes').upsert(row,{onConflict:'periodo,cliente'}).then(function(r){
           if(r&&r.error){ busy(false); toast(/informes_accidentes/.test(r.error.message||'')?'PDF descargado. Falta correr informes-accidentes-alertas.sql para guardarlo.':('PDF descargado, pero no se guardó: '+r.error.message)); return; }
-          function fin(){ busy(false); toast('✓ Informe generado y guardado'); $('docgen').classList.add('hide'); DG_CTX=null; IA_MES=ctx.periodo; if($('doc-empresa')&&!$('doc-empresa').classList.contains('hide')) cargarAccid(); cargarAlertas(); }
+          function fin(){ busy(false); toast('✓ Informe generado y guardado'); $('docgen').classList.add('hide'); DG_CTX=null; if($('rrhh-doc').classList.contains('zt-on')) cargarZerty(); cargarAlertas(); }
           if(ctx.marcar) marcarCliAcc(ctx.cliente, fin); else fin();
         }, function(){ busy(false); toast('PDF descargado, pero no se guardó.'); });
       });
@@ -4519,9 +4630,6 @@
     var q=f? sb.from('clientes').update({pide_accidentes:true}).eq('id',f.id) : sb.from('clientes').insert({nombre:nombre, estado:'activo', pide_accidentes:true, autor:userEmail});
     q.then(function(){ cargarClientes(cb); }, function(){ if(cb)cb(); });
   }
-  $('ia-prev').addEventListener('click',function(){ IA_MES=mesMas(IA_MES||mesPrevio(),-1); cargarAccid(); });
-  $('ia-next').addEventListener('click',function(){ IA_MES=mesMas(IA_MES||mesPrevio(),1); cargarAccid(); });
-  $('ia-otro').addEventListener('click',function(){ cargarClientes(function(){ abrirAccForm('', IA_MES||mesPrevio(), null); }); });
   $('ia-firma').addEventListener('click',function abrirFirma(){ IA_FIRMA=null; cargarFirma(function(){
     $('re-title').textContent='Firma y timbre';
     $('re-body').innerHTML='<div class="card"><p class="note" style="margin:0 0 10px">Firma y timbre de Cristopher Vidal, representante legal. Se estampan en el informe mensual de accidentes y en el contrato de trabajo.</p>'+
