@@ -3790,6 +3790,12 @@
   function setWeekHdr(lblId, rangoId, lun){ if($(lblId)) $(lblId).textContent='Semana '+numSemana(lun); if($(rangoId)) $(rangoId).textContent=fechaCorta(lun)+' – '+fechaCorta(sumarDias(lun,6)); }
   function hm(min){ if(min==null) return '0h'; return Math.floor(min/60)+'h'+(min%60?(' '+(min%60)+'m'):''); }
   function norm(s){ return (s||'').trim().toLowerCase(); }
+  // Única excepción: Enzo Matías Castro Cuyul hace las vueltas en vehículo particular → $15.000 por vuelta.
+  // Se amarra a su ficha de Trabajadores por nombre completo (sin tildes ni mayúsculas); el resto usa el valor general.
+  var VUELTA_PARTICULAR_NOMBRE='enzo matias castro cuyul', VUELTA_PARTICULAR_VALOR=15000;
+  function valorVueltaDe(t, general){
+    var nm=norm(t&&t.nombre).normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\s+/g,' ');
+    return (t&&t.id && nm===VUELTA_PARTICULAR_NOMBRE) ? VUELTA_PARTICULAR_VALOR : general; }
 
   function cargarRemu(){
     if(!REMU_LUNES) REMU_LUNES=lunesDe(todayISO());
@@ -3863,9 +3869,9 @@
         var dReal=Math.round(pmin/60*vh), ajd=(D.ajDia&&t.id)?D.ajDia[t.id+'|'+fd]:null, dCont=ajd?ajd.monto:dReal; if(ajd) hayAjDia=true;
         base+=dReal; baseMin+=pmin; baseCont+=dCont;
         porDiaMonto[fd]=(porDiaMonto[fd]||0)+dCont; porDiaHoras[fd]=(porDiaHoras[fd]||0)+dm; } }
-      var vueltasMonto=tv*D.valorVuelta, totalReal=base+vueltasMonto+tp+bo-de, contable=baseCont+vueltasMonto+tp+bo-de;
+      var vv=valorVueltaDe(t, D.valorVuelta), vueltasMonto=tv*vv, totalReal=base+vueltasMonto+tp+bo-de, contable=baseCont+vueltasMonto+tp+bo-de;
       if(totMin===0 && tv===0 && tp===0 && bo===0 && de===0) return;
-      filas.push({t:t,tipo:tipo,dias:dias,totMin:totMin,base:base,baseCont:baseCont,baseMin:baseMin,vh:vh,jor:jor,vueltas:tv,vueltasMonto:vueltasMonto,peajes:tp,bono:bo,desc:de,total:totalReal,real:totalReal,aj:hayAjDia,contable:contable,H:H});
+      filas.push({t:t,tipo:tipo,dias:dias,totMin:totMin,base:base,baseCont:baseCont,baseMin:baseMin,vh:vh,jor:jor,vueltas:tv,vv:vv,vueltasMonto:vueltasMonto,peajes:tp,bono:bo,desc:de,total:totalReal,real:totalReal,aj:hayAjDia,contable:contable,H:H});
       total+=contable;
     });
     // Personas con horas que NO están en la ficha de Trabajadores (nombre nuevo o distinto):
@@ -3876,8 +3882,8 @@
       var vh=D.valorHora, totMin=H.totalMin, dias=Object.keys(H.porDia).length;
       if(totMin===0 && tv===0 && tp===0) return;
       for(var fd in H.porDia){ var dm=H.porDia[fd]; porDiaMonto[fd]=(porDiaMonto[fd]||0)+Math.round(dm/60*vh); porDiaHoras[fd]=(porDiaHoras[fd]||0)+dm; }
-      var base=Math.round(totMin/60*vh), vueltasMonto=tv*D.valorVuelta, totalTrab=base+vueltasMonto+tp;
-      filas.push({t:{id:null,nombre:(H.nombre||nm),cargo:'Sin ficha en Trabajadores',estado:'activo'},tipo:'hora',dias:dias,totMin:totMin,base:base,baseCont:base,baseMin:totMin,vh:vh,jor:0,vueltas:tv,vueltasMonto:vueltasMonto,peajes:tp,bono:0,desc:0,total:totalTrab,real:totalTrab,aj:null,contable:totalTrab,H:H});
+      var vv=D.valorVuelta, base=Math.round(totMin/60*vh), vueltasMonto=tv*vv, totalTrab=base+vueltasMonto+tp;
+      filas.push({t:{id:null,nombre:(H.nombre||nm),cargo:'Sin ficha en Trabajadores',estado:'activo'},tipo:'hora',dias:dias,totMin:totMin,base:base,baseCont:base,baseMin:totMin,vh:vh,jor:0,vueltas:tv,vv:vv,vueltasMonto:vueltasMonto,peajes:tp,bono:0,desc:0,total:totalTrab,real:totalTrab,aj:null,contable:totalTrab,H:H});
       total+=totalTrab;
     });
     filas.sort(function(a,b){ var af=(a.tipo==='contrato')?1:0, bf=(b.tipo==='contrato')?1:0; if(af!==bf) return af-bf; return (a.t.nombre||'').localeCompare(b.t.nombre||''); });   // spot primero, fijos al final
@@ -4008,7 +4014,7 @@
       desg+='<div class="rd-lin"><span>Descontado por jornada fija</span><b style="color:#dc2626">− '+fmtMoney(descTot)+'</b></div>';
     }
     desg+='<div class="rd-lin"><span>'+(x.tipo==='contrato'?'Horas extra pagadas':'Horas')+' ('+hm(x.baseMin)+(x.vh?(' × '+fmtMoney(x.vh)):'')+')</span><b>'+fmtMoney(x.base)+'</b></div>';
-    if(x.vueltas) desg+='<div class="rd-lin"><span>'+x.vueltas+' vueltas × '+fmtMoney(REMU_DATA.valorVuelta)+'</span><b>'+fmtMoney(x.vueltasMonto)+'</b></div>';
+    if(x.vueltas) desg+='<div class="rd-lin"><span>'+x.vueltas+' vueltas × '+fmtMoney(x.vv!=null?x.vv:REMU_DATA.valorVuelta)+(x.vv!=null&&x.vv!==REMU_DATA.valorVuelta?' (vehículo particular)':'')+'</span><b>'+fmtMoney(x.vueltasMonto)+'</b></div>';
     if(x.peajes) desg+='<div class="rd-lin"><span>Peajes (reembolso)</span><b>'+fmtMoney(x.peajes)+'</b></div>';
     if(x.bono) desg+='<div class="rd-lin"><span>Extras</span><b style="color:#0f6e56">'+fmtMoney(x.bono)+'</b></div>';
     if(x.desc) desg+='<div class="rd-lin"><span>Descuentos</span><b style="color:#dc2626">− '+fmtMoney(x.desc)+'</b></div>';
