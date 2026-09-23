@@ -14,7 +14,7 @@
   :root{ --ground:#eef1f5; --card:#fff; --ink:#1a222d; --mut:#5f6f80; --line:#d9e0e8; --accent:#1a3fb0; --orange:#e8791f; --soft:#f4f7fa; }
   *{box-sizing:border-box;}
   body{margin:0;background:var(--ground);font-family:"Inter",system-ui,sans-serif;color:var(--ink);}
-  .wrap{max-width:640px;margin:0 auto;padding:18px 16px calc(28px + env(safe-area-inset-bottom));}
+  .wrap{max-width:660px;margin:0 auto;padding:18px 16px calc(28px + env(safe-area-inset-bottom));}
   .head{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:14px;}
   .head img{height:44px;width:auto;object-fit:contain;}
   .head .t b{font-family:"Archivo",sans-serif;font-weight:800;font-size:16px;display:block;letter-spacing:.01em;}
@@ -32,6 +32,10 @@
   input[type=file]{padding:9px 11px;background:var(--soft);cursor:pointer;font-size:13px;}
   input[type=file]::file-selector-button{font:inherit;font-weight:600;font-size:12.5px;border:1px solid var(--line);background:#fff;color:var(--accent);border-radius:8px;padding:6px 11px;margin-right:10px;cursor:pointer;}
   .hint{font-size:12.5px;color:var(--mut);margin:-2px 0 11px;line-height:1.45;}
+  .segs{display:flex;gap:8px;}
+  .segs label{flex:1;display:flex;align-items:center;justify-content:center;border:1px solid var(--line);border-radius:10px;padding:10px;cursor:pointer;font-weight:600;font-size:13px;background:#fff;}
+  .segs input{display:none;}
+  .segs label.on{border-color:var(--accent);background:#eef3ff;color:var(--accent);}
   .hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0;}
   .send{width:100%;background:var(--orange);color:#fff;border:none;border-radius:12px;padding:15px;font-family:"Archivo",sans-serif;font-weight:700;font-size:15.5px;cursor:pointer;margin-top:4px;}
   .send:disabled{opacity:.6;}
@@ -52,42 +56,70 @@
   </div>
 
   <form id="form">
-    <p class="intro">Completa tus datos para tu ingreso a InnovaServi. Toma un par de minutos. Los campos con <span style="color:var(--orange)">*</span> son obligatorios.</p>
+    <p class="intro">Completa tus datos para tu ingreso a InnovaServi. Los campos con <span style="color:var(--orange)">*</span> son obligatorios; el resto ayuda a agilizar tu contrato.</p>
 
     <div class="card">
       <h2>Datos personales</h2>
       <div class="grid">
-        <label class="f wide">Nombre completo <span class="req">*</span><input name="nombre" required autocomplete="name"></label>
         <label class="f">RUT <span class="req">*</span><input name="rut" required placeholder="12.345.678-9"></label>
+        <label class="f">Sexo
+          <div class="segs" id="sexo-seg">
+            <label data-v="M"><input type="radio" name="sexo" value="M">Masculino</label>
+            <label data-v="F"><input type="radio" name="sexo" value="F">Femenino</label>
+          </div>
+        </label>
+        <label class="f">Apellido paterno <span class="req">*</span><input name="apellido_paterno" required></label>
+        <label class="f">Apellido materno<input name="apellido_materno"></label>
+        <label class="f wide">Nombres <span class="req">*</span><input name="nombres" required autocomplete="given-name"></label>
         <label class="f">Fecha de nacimiento<input name="nacimiento" type="date"></label>
-        <label class="f">Nacionalidad<input name="nacionalidad" placeholder="Chilena"></label>
-        <label class="f">Estado civil<input name="estado_civil" placeholder="Soltero / Casado…"></label>
+        <label class="f">Estado civil<select name="estado_civil"><option value="">—</option><option>Soltero</option><option>Casado</option><option>Divorciado</option><option>Viudo</option><option>Acuerdo de Unión Civil</option></select></label>
+        <label class="f">Nacionalidad<select name="nacionalidad"><option value="">—</option><option>Chilena</option><option>Venezolana</option><option>Peruana</option><option>Argentina</option><option>Haitiana</option><option>Otras</option></select></label>
         <label class="f">Teléfono <span class="req">*</span><input name="telefono" required type="tel" inputmode="tel" placeholder="+56 9 ..." autocomplete="tel"></label>
-        <label class="f">Correo<input name="email" type="email" inputmode="email" placeholder="correo@ejemplo.com" autocomplete="email"></label>
-        <label class="f wide">Dirección<input name="direccion" placeholder="Calle, número, población" autocomplete="street-address"></label>
-        <label class="f">Comuna<input name="comuna" placeholder="Puerto Montt"></label>
-        <label class="f">Cargo al que ingresas<select name="cargo" id="cargo"><option value="">Selecciona tu cargo…</option></select></label>
+        <label class="f wide">Correo<input name="email" type="email" inputmode="email" placeholder="correo@ejemplo.com" autocomplete="email"></label>
+        <label class="f wide">Cargo al que ingresas<select name="cargo" id="cargo"><option value="">Selecciona tu cargo…</option></select></label>
       </div>
     </div>
 
     <div class="card">
-      <h2>Previsión y emergencia</h2>
+      <h2>Dirección</h2>
       <div class="grid">
-        <label class="f">AFP<input name="afp" placeholder="Ej: Modelo"></label>
-        <label class="f">Salud<input name="salud" placeholder="Fonasa / Isapre"></label>
-        <label class="f">N° de cargas<input name="cargas" type="number" min="0" inputmode="numeric" placeholder="0"></label>
-        <label class="f wide">Contacto de emergencia (nombre y teléfono)<input name="emergencia" placeholder="Nombre · +56 9 ..."></label>
+        <label class="f wide">Calle, avenida o pasaje<input name="direccion" placeholder="Solo el nombre de la calle" autocomplete="street-address"></label>
+        <label class="f">Número<input name="numero" placeholder="N° de casa"></label>
+        <label class="f">Población, villa o sector<input name="poblacion"></label>
+        <label class="f">Región<select name="region" id="region"><option value="">—</option></select></label>
+        <label class="f">Comuna<select name="comuna" id="comuna"><option value="">—</option></select></label>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Previsión y salud</h2>
+      <div class="grid">
+        <label class="f">Régimen previsional<select name="regimen_prev"><option value="">—</option><option>AFP</option><option>No Cotiza</option><option>IPS (Ex-INP)</option></select></label>
+        <label class="f">AFP (fondo de pensiones)<select name="afp"><option value="">—</option><option>Capital</option><option>Cuprum</option><option>Habitat</option><option>Modelo</option><option>PlanVital</option><option>ProVida</option><option>Uno</option></select></label>
+        <label class="f">Sistema de salud<select name="salud"><option value="">—</option><option>Fonasa</option><option>Banmedica</option><option>Colmena</option><option>Consalud</option><option>Cruz Blanca</option><option>Nueva Masvida</option><option>Vida Tres</option><option>Banco Estado</option><option>Esencial</option><option>No Cotiza Salud</option></select></label>
+        <label class="f">Régimen AFC (cesantía)<select name="regimen_afc"><option value="">—</option><option>Menos de 11 Años</option><option>Más de 11 Años</option><option>No Cotiza</option></select></label>
+        <label class="f">N° de cargas familiares<select name="cargas"><option value="">—</option><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select></label>
+        <label class="f">Tramo de cargas<select name="tramo_cargas"><option value="">—</option><option>A</option><option>B</option><option>C</option><option>D</option></select></label>
+        <label class="f">¿Situación de discapacidad?<select name="discapacidad"><option value="">—</option><option>No</option><option>Sí</option></select></label>
+        <label class="f">¿Situación de invalidez?<select name="invalidez"><option value="">—</option><option>No</option><option>Pensionado con Invalidez Parcial</option><option>Asignatario Pensión por Invalidez Total</option></select></label>
       </div>
     </div>
 
     <div class="card">
       <h2>Datos bancarios (para el pago)</h2>
       <div class="grid">
-        <label class="f">Banco<input name="banco" list="bancos" placeholder="Ej: Banco Falabella"></label>
-        <label class="f">Tipo de cuenta<select name="tipo_cuenta"><option value="">—</option><option>Cuenta Corriente</option><option>Cuenta Vista</option><option>Cuenta RUT</option><option>Cuenta de Ahorro</option><option>Chequera Electrónica</option></select></label>
-        <label class="f wide">N° de cuenta<input name="num_cuenta" placeholder="Ej: 1-999-838631-9"></label>
+        <label class="f wide">Banco<select name="banco"><option value="">—</option><option>Banco Estado</option><option>Banco de Chile</option><option>Santander</option><option>BCI</option><option>Scotiabank</option><option>Itau</option><option>BBVA</option><option>BICE</option><option>Security</option><option>Falabella</option><option>Ripley</option><option>Consorcio</option><option>COOPEUCH</option><option>Tenpo Prepago SA</option><option>Mercadopago S.A.</option></select></label>
+        <label class="f">Tipo de cuenta<select name="tipo_cuenta"><option value="">—</option><option>Corriente</option><option>Vista</option><option>Ahorro</option></select></label>
+        <label class="f">N° de cuenta<input name="num_cuenta" placeholder="Ej: 1-999-838631-9"></label>
       </div>
-      <datalist id="bancos"><option>BancoEstado</option><option>Banco de Chile</option><option>Banco Santander</option><option>Banco BCI</option><option>Scotiabank</option><option>Banco Itaú</option><option>Banco Falabella</option><option>Banco Ripley</option><option>Banco BICE</option><option>Banco Security</option><option>Coopeuch</option><option>Mercado Pago</option><option>Tenpo</option><option>Mach</option></datalist>
+    </div>
+
+    <div class="card">
+      <h2>Educación (opcional)</h2>
+      <div class="grid">
+        <label class="f">Título<input name="titulo_educacion" placeholder="Solo si posee alguno"></label>
+        <label class="f">Institución<input name="institucion_titulo"></label>
+      </div>
     </div>
 
     <div class="card">
@@ -100,10 +132,11 @@
     </div>
 
     <div class="card">
-      <h2>Tallas (para el EPP)</h2>
+      <h2>Tallas y emergencia</h2>
       <div class="grid">
         <label class="f">Talla de ropa / overol<input name="talla_ropa" placeholder="Ej: L / XL"></label>
         <label class="f">Talla de calzado<input name="talla_botas" placeholder="Ej: 42"></label>
+        <label class="f wide">Contacto de emergencia (nombre y teléfono)<input name="emergencia" placeholder="Nombre · +56 9 ..."></label>
       </div>
     </div>
 
@@ -127,50 +160,54 @@
   var form=document.getElementById('form'), errEl=document.getElementById('err');
   var params=null; try{ params=new URLSearchParams(location.search); }catch(_){}
 
+  // Región y comuna (opciones exactas de Buk). Comuna es lista plana (no depende de región).
+  var REGIONES=["I: de Tarapacá","II: de Antofagasta","III: de Atacama","IV: de Coquimbo","V: de Valparaíso","VI: del Libertador Gral. Bernardo O'Higgins","VII: del Maule","VIII: del Biobío","IX: de la Araucanía","X: de Los Lagos","XI: de Aysén del Gral. Carlos Ibáñez del Campo","XII: de Magallanes y de la Antártica Chilena","RM: Metropolitana de Santiago","XIV: de Los Ríos","XV: de Arica y Parinacota","XVI: de Ñuble"];
+  var COMUNAS="Algarrobo|Alhué|Alto Biobío|Alto del Carmen|Alto Hospicio|Ancud|Andacollo|Angol|Antártica|Antofagasta|Antuco|Arauco|Arica|Aysén|Buin|Bulnes|Cabildo|Cabo de Hornos|Cabrero|Calama|Calbuco|Caldera|Calera de Tango|Calle Larga|Camarones|Camiña|Canela|Cañete|Carahue|Cartagena|Casablanca|Castro|Catemu|Cauquenes|Cerrillos|Cerro Navia|Chaitén|Chañaral|Chanco|Chépica|Chiguayante|Chile Chico|Chillán|Chillán Viejo|Chimbarongo|Cholchol|Chonchi|Cisnes|Cobquecura|Cochamó|Cochrane|Codegua|Coelemu|Coihueco|Coinco|Colbún|Colchane|Colina|Collipulli|Coltauco|Combarbalá|Concepción|Conchalí|Concón|Constitución|Contulmo|Copiapó|Coquimbo|Coronel|Corral|Coyhaique|Cunco|Curacautín|Curacaví|Curaco de Vélez|Curanilahue|Curarrehue|Curepto|Curicó|Dalcahue|Diego de Almagro|Doñihue|El Bosque|El Carmen|El Monte|El Quisco|El Tabo|Empedrado|Ercilla|Estación Central|Florida|Freire|Freirina|Fresia|Frutillar|Futaleufú|Futrono|Galvarino|General Lagos|Gorbea|Graneros|Guaitecas|Hijuelas|Hualaihué|Hualañé|Hualpén|Hualqui|Huara|Huasco|Huechuraba|Illapel|Independencia|Iquique|Isla de Maipo|Isla de Pascua|Juan Fernández|La Calera|La Cisterna|La Cruz|La Estrella|La Florida|Lago Ranco|Lago Verde|La Granja|Laguna Blanca|La Higuera|Laja|La Ligua|Lampa|Lanco|La Pintana|La Reina|Las Cabras|Las Condes|La Serena|La Unión|Lautaro|Lebu|Licantén|Limache|Linares|Litueche|Llanquihue|Llay Llay|Lo Barnechea|Lo Espejo|Lolol|Loncoche|Longaví|Lonquimay|Lo Prado|Los Álamos|Los Andes|Los Ángeles|Los Lagos|Los Muermos|Los Sauces|Los Vilos|Lota|Lumaco|Machalí|Macul|Máfil|Maipú|Malloa|Marchihue|María Elena|María Pinto|Mariquina|Maule|Maullín|Mejillones|Melipeuco|Melipilla|Molina|Monte Patria|Mostazal|Mulchén|Nacimiento|Nancagua|Natales|Navidad|Negrete|Ninhue|Ñiquén|Nogales|Nueva Imperial|Ñuñoa|O'Higgins|Olivar|Ollagüe|Olmué|Osorno|Ovalle|Padre Hurtado|Padre las Casas|Paihuano|Paillaco|Paine|Palena|Palmilla|Panguipulli|Panquehue|Papudo|Paredones|Parral|Pedro Aguirre Cerda|Pelarco|Pelluhue|Pemuco|Peñaflor|Peñalolén|Pencahue|Penco|Peralillo|Perquenco|Petorca|Peumo|Pica|Pichidegua|Pichilemu|Pinto|Pirque|Pitrufquén|Placilla|Portezuelo|Porvenir|Pozo Almonte|Primavera|Providencia|Puchuncaví|Pucón|Pudahuel|Puente Alto|Puerto Montt|Puerto Octay|Puerto Varas|Pumanque|Punitaqui|Punta Arenas|Puqueldón|Purén|Purranque|Putaendo|Putre|Puyehue|Queilén|Quellón|Quemchi|Quilaco|Quilicura|Quilleco|Quillón|Quillota|Quilpué|Quinchao|Quinta de Tilcoco|Quinta Normal|Quintero|Quirihue|Rancagua|Ránquil|Rauco|Recoleta|Renaico|Renca|Rengo|Requínoa|Retiro|Rinconada|Río Bueno|Río Claro|Río Hurtado|Río Ibáñez|Río Negro|Río Verde|Romeral|Saavedra|Sagrada Familia|Salamanca|San Antonio|San Bernardo|San Carlos|San Clemente|San Esteban|San Fabián|San Felipe|San Fernando|San Gregorio|San Ignacio|San Javier|San Joaquín|San José de Maipo|San Juan de la Costa|San Miguel|San Nicolás|San Pablo|San Pedro|San Pedro de Atacama|San Pedro de la Paz|San Rafael|San Ramón|San Rosendo|Santa Bárbara|Santa Cruz|Santa Juana|Santa María|Santiago|Santo Domingo|San Vicente|Sierra Gorda|Talagante|Talca|Talcahuano|Taltal|Temuco|Teno|Teodoro Schmidt|Tierra Amarilla|Tiltil|Timaukel|Tirúa|Tocopilla|Toltén|Tomé|Torres del Paine|Tortel|Traiguén|Treguaco|Tucapel|Valdivia|Vallenar|Valparaíso|Vichuquén|Victoria|Vicuña|Vilcún|Villa Alegre|Villa Alemana|Villarrica|Viña del Mar|Vitacura|Yerbas Buenas|Yumbel|Yungay|Zapallar".split("|");
+  (function(){ var rs=document.getElementById('region'); REGIONES.forEach(function(r){ var o=document.createElement('option'); o.value=r;o.textContent=r; rs.appendChild(o); });
+    var cs=document.getElementById('comuna'); COMUNAS.forEach(function(c){ var o=document.createElement('option'); o.value=c;o.textContent=c; cs.appendChild(o); }); })();
+
+  // Sexo (botones tipo segmento).
+  document.querySelectorAll('#sexo-seg label').forEach(function(l){ l.addEventListener('click',function(){ document.querySelectorAll('#sexo-seg label').forEach(function(x){x.classList.remove('on');}); l.classList.add('on'); var r=l.querySelector('input'); if(r) r.checked=true; }); });
+
   // Cargo con opción a agregar si viene por URL y no está en la lista.
-  function setCargo(val){
-    var sel=document.getElementById('cargo'); if(!sel||!val) return;
-    var found=false;
+  function setCargo(val){ var sel=document.getElementById('cargo'); if(!sel||!val) return; var found=false;
     for(var i=0;i<sel.options.length;i++){ if(sel.options[i].value.toLowerCase()===String(val).toLowerCase()){ sel.selectedIndex=i; found=true; break; } }
-    if(!found){ var o=document.createElement('option'); o.value=val; o.textContent=val; sel.appendChild(o); sel.value=val; }
-  }
-  // Carga los cargos disponibles (solo nombres, sin montos) desde la vista pública.
-  function cargarCargos(){
-    if(!sb){ return; }
-    sb.from('cargos_publicos').select('nombre').then(function(r){
-      var sel=document.getElementById('cargo'); if(!sel) return;
-      var rows=(r&&r.data)||[];
-      rows.forEach(function(c){ if(!c.nombre) return; var o=document.createElement('option'); o.value=c.nombre; o.textContent=c.nombre; sel.appendChild(o); });
-      // "Otro" para casos que no estén en la lista.
+    if(!found){ var o=document.createElement('option'); o.value=val; o.textContent=val; sel.appendChild(o); sel.value=val; } }
+  function cargarCargos(){ if(!sb) return;
+    sb.from('cargos_publicos').select('nombre').then(function(r){ var sel=document.getElementById('cargo'); if(!sel) return;
+      ((r&&r.data)||[]).forEach(function(c){ if(!c.nombre) return; var o=document.createElement('option'); o.value=c.nombre; o.textContent=c.nombre; sel.appendChild(o); });
       var otro=document.createElement('option'); otro.value='Otro'; otro.textContent='Otro'; sel.appendChild(otro);
       var pc=params&&params.get('cargo'); if(pc) setCargo(pc);
-    }, function(){});
-  }
+    }, function(){}); }
   cargarCargos();
 
-  // Link "por persona": prellena campos desde la URL (?nombre=...&telefono=...). Cargo se maneja aparte.
-  try{ ['nombre','rut','telefono','email','comuna','direccion'].forEach(function(k){ var v=params&&params.get(k); if(v && form[k]) form[k].value=v; }); }catch(_){}
+  // Link "por persona": prellena campos desde la URL. Cargo se maneja aparte.
+  try{ [['nombre','nombres'],['nombres','nombres'],['rut','rut'],['telefono','telefono'],['email','email'],['comuna','comuna'],['direccion','direccion']].forEach(function(p){ var v=params&&params.get(p[0]); if(v && form[p[1]]) form[p[1]].value=v; }); }catch(_){}
+
   form.addEventListener('submit', async function(ev){
     ev.preventDefault();
     errEl.hidden=true;
     if(form.website.value){ return; }   // honeypot anti-spam
-    var reqs=['nombre','rut','telefono'], ok=true;
+    var reqs=['rut','apellido_paterno','nombres','telefono'], ok=true;
     reqs.forEach(function(n){ var el=form[n]; var bad=!el.value.trim(); el.classList.toggle('bad',bad); if(bad) ok=false; });
-    if(!ok){ errEl.textContent='Completa los campos obligatorios (*).'; errEl.hidden=false; return; }
+    if(!ok){ errEl.textContent='Completa los campos obligatorios (*).'; errEl.hidden=false; window.scrollTo(0,0); return; }
     if(!sb){ errEl.textContent='No se pudo conectar. Revisa tu internet e intenta de nuevo.'; errEl.hidden=false; return; }
+
     var row={};
     Array.prototype.forEach.call(form.elements, function(el){
       if(!el.name || el.name==='website') return;
-      if(el.type==='file') return;   // los archivos se suben aparte
+      if(el.type==='file') return;                                  // archivos aparte
+      if(el.type==='radio'){ if(el.checked) row[el.name]=el.value; return; }
       var v=(el.value||'').trim();
-      if(el.name==='cargas'){ row.cargas = v? (parseInt(v,10)||null) : null; return; }
+      if(el.name==='cargas'){ row.cargas = v? (parseInt(v,10)) : null; if(isNaN(row.cargas)) row.cargas=null; return; }
       if(el.name==='nacimiento'){ row.nacimiento = v || null; return; }
       row[el.name] = v || null;
     });
+    // Nombre completo (compatibilidad con el resto del sistema).
+    row.nombre = [row.nombres, row.apellido_paterno, row.apellido_materno].filter(Boolean).join(' ') || null;
     row.estado='pendiente';
-    var btn=document.getElementById('send'); btn.disabled=true; btn.textContent='Enviando…';
 
-    // Sube la cédula (foto o PDF) al bucket privado. Si algo falla, no bloquea el envío de los datos.
+    var btn=document.getElementById('send'); btn.disabled=true; btn.textContent='Enviando…';
     function slug(s){ return (s||'').toString().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-zA-Z0-9]+/g,'-').replace(/^-+|-+$/g,'').toLowerCase().slice(0,40); }
     async function subirCedula(input, lado, folder){
       var f=input && input.files && input.files[0]; if(!f) return null;
@@ -196,10 +233,10 @@
     }catch(e){
       btn.disabled=false; btn.textContent='Enviar mis datos';
       var em=e.message||'';
-      errEl.textContent = (/bucket|storage|not found.*cedula/i.test(em)) ? 'No se pudo subir la cédula (falta preparar el sistema: corre ficha-cedula.sql). Puedes enviar sin la cédula por ahora.'
-        : (/relation|does not exist|schema|column/.test(em)) ? 'Falta preparar el sistema (corre fichas-ingreso.sql / ficha-cedula.sql).'
+      errEl.textContent = (/bucket|storage|not found.*cedula/i.test(em)) ? 'No se pudo subir la cédula (falta correr ficha-cedula.sql). Puedes enviar sin la cédula por ahora.'
+        : (/relation|does not exist|schema|column/.test(em)) ? 'Falta preparar el sistema (corre ficha-buk-campos.sql).'
         : ('No se pudo enviar: '+em+'. Intenta de nuevo.');
-      errEl.hidden=false;
+      errEl.hidden=false; window.scrollTo(0, document.body.scrollHeight);
     }
   });
 </script>
