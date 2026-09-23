@@ -1340,10 +1340,11 @@
         <summary>Datos bancarios</summary>
         <div class="grid2">
           <div class="fld"><label>Banco</label><input id="fi-banco" type="text" list="bancos-list" placeholder="Ej: Banco Falabella"></div>
-          <div class="fld"><label>Tipo de cuenta</label><select id="fi-tipocta"><option value="">—</option><option>Cuenta Corriente</option><option>Cuenta Vista</option><option>Cuenta RUT</option><option>Cuenta de Ahorro</option><option>Chequera Electrónica</option></select></div>
+          <div class="fld"><label>Tipo de cuenta</label><input id="fi-tipocta" type="text" list="tiposcta-list" placeholder="Corriente / Vista / Ahorro / Cuenta RUT"></div>
         </div>
         <div class="fld"><label>N° de cuenta</label><input id="fi-numcta" type="text" placeholder="Ej: 1-999-838631-9"></div>
       </details>
+      <datalist id="tiposcta-list"><option>Corriente</option><option>Vista</option><option>Ahorro</option><option>Cuenta RUT</option><option>Chequera Electrónica</option></datalist>
       <datalist id="bancos-list"><option>BancoEstado</option><option>Banco de Chile</option><option>Banco Santander</option><option>Banco BCI</option><option>Scotiabank</option><option>Banco Itaú</option><option>Banco Falabella</option><option>Banco Ripley</option><option>Banco BICE</option><option>Banco Security</option><option>Banco Consorcio</option><option>Banco Internacional</option><option>Coopeuch</option><option>Mercado Pago</option><option>Tenpo</option><option>Mach</option></datalist>
       <details class="fi-bank" id="fi-extra-det" style="margin-top:11px">
         <summary>Datos personales y previsionales (para Buk)</summary>
