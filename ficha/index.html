@@ -218,17 +218,22 @@
       if(up.error){ throw up.error; }
       return path;
     }
+    var cedulaFallo=false;
     try{
       var folder='ingreso/'+(slug(row.nombre)||'x')+'-'+(slug(row.rut)||Date.now())+'-'+Date.now().toString(36);
       var fF=document.querySelector('[name=cedula_frente]'), fR=document.querySelector('[name=cedula_reverso]');
       if((fF&&fF.files.length)||(fR&&fR.files.length)) btn.textContent='Subiendo cédula…';
-      row.cedula_frente  = await subirCedula(fF,'frente', folder);
-      row.cedula_reverso = await subirCedula(fR,'reverso', folder);
+      // La cédula no debe bloquear el envío: si falla, se guarda igual y se avisa.
+      try{
+        row.cedula_frente  = await subirCedula(fF,'frente', folder);
+        row.cedula_reverso = await subirCedula(fR,'reverso', folder);
+      }catch(ce){ cedulaFallo=true; row.cedula_frente=null; row.cedula_reverso=null; }
       btn.textContent='Enviando…';
       var r=await sb.from('fichas_ingreso').insert(row);
       if(r.error){ throw r.error; }
       document.getElementById('form').style.display='none';
       document.getElementById('ok').style.display='block';
+      if(cedulaFallo){ var p=document.querySelector('#ok p'); if(p) p.innerHTML+='<br><br><b style="color:#c0392b">Nota:</b> tus datos se enviaron, pero la cédula no se pudo subir. Envíala por WhatsApp a InnovaServi.'; }
       window.scrollTo(0,0);
     }catch(e){
       btn.disabled=false; btn.textContent='Enviar mis datos';
