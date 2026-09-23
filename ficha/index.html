@@ -181,8 +181,15 @@
     }, function(){}); }
   cargarCargos();
 
-  // Link "por persona": prellena campos desde la URL. Cargo se maneja aparte.
-  try{ [['nombre','nombres'],['nombres','nombres'],['rut','rut'],['telefono','telefono'],['email','email'],['comuna','comuna'],['direccion','direccion']].forEach(function(p){ var v=params&&params.get(p[0]); if(v && form[p[1]]) form[p[1]].value=v; }); }catch(_){}
+  // Link "por persona" / prueba: prellena cualquier campo desde la URL (?rut=...&nombres=...).
+  // Cargo se maneja aparte (setCargo). 'nombre' es alias de 'nombres'.
+  try{ if(params){ params.forEach(function(v,k){
+    if(!v || k==='cargo' || k==='website') return;
+    var key=(k==='nombre')?'nombres':k;
+    var el=form[key];
+    if(key==='sexo'){ var r=form.querySelector('#sexo-seg input[value="'+v.toUpperCase()+'"]'); if(r){ r.checked=true; r.closest('label').classList.add('on'); } return; }
+    if(el && el.tagName){ el.value=v; }
+  }); } }catch(_){}
 
   form.addEventListener('submit', async function(ev){
     ev.preventDefault();
