@@ -29,6 +29,9 @@
   input,select{font:inherit;font-size:14px;padding:10px 11px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);width:100%;}
   input:focus,select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(26,63,176,.12);}
   input.bad{border-color:#d33;background:#fdecec;}
+  input[type=file]{padding:9px 11px;background:var(--soft);cursor:pointer;font-size:13px;}
+  input[type=file]::file-selector-button{font:inherit;font-weight:600;font-size:12.5px;border:1px solid var(--line);background:#fff;color:var(--accent);border-radius:8px;padding:6px 11px;margin-right:10px;cursor:pointer;}
+  .hint{font-size:12.5px;color:var(--mut);margin:-2px 0 11px;line-height:1.45;}
   .hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0;}
   .send{width:100%;background:var(--orange);color:#fff;border:none;border-radius:12px;padding:15px;font-family:"Archivo",sans-serif;font-weight:700;font-size:15.5px;cursor:pointer;margin-top:4px;}
   .send:disabled{opacity:.6;}
@@ -85,6 +88,15 @@
         <label class="f wide">N° de cuenta<input name="num_cuenta" placeholder="Ej: 1-999-838631-9"></label>
       </div>
       <datalist id="bancos"><option>BancoEstado</option><option>Banco de Chile</option><option>Banco Santander</option><option>Banco BCI</option><option>Scotiabank</option><option>Banco Itaú</option><option>Banco Falabella</option><option>Banco Ripley</option><option>Banco BICE</option><option>Banco Security</option><option>Coopeuch</option><option>Mercado Pago</option><option>Tenpo</option><option>Mach</option></datalist>
+    </div>
+
+    <div class="card">
+      <h2>Cédula de identidad</h2>
+      <p class="hint">Adjunta tu cédula por ambos lados. Puede ser foto o PDF. Si no la tienes a mano, puedes enviarla después.</p>
+      <div class="grid">
+        <label class="f wide">Cédula — lado frente<input name="cedula_frente" type="file" accept="image/*,application/pdf" capture="environment"></label>
+        <label class="f wide">Cédula — lado reverso<input name="cedula_reverso" type="file" accept="image/*,application/pdf" capture="environment"></label>
+      </div>
     </div>
 
     <div class="card">
@@ -149,6 +161,7 @@
     var row={};
     Array.prototype.forEach.call(form.elements, function(el){
       if(!el.name || el.name==='website') return;
+      if(el.type==='file') return;   // los archivos se suben aparte
       var v=(el.value||'').trim();
       if(el.name==='cargas'){ row.cargas = v? (parseInt(v,10)||null) : null; return; }
       if(el.name==='nacimiento'){ row.nacimiento = v || null; return; }
@@ -156,7 +169,25 @@
     });
     row.estado='pendiente';
     var btn=document.getElementById('send'); btn.disabled=true; btn.textContent='Enviando…';
+
+    // Sube la cédula (foto o PDF) al bucket privado. Si algo falla, no bloquea el envío de los datos.
+    function slug(s){ return (s||'').toString().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-zA-Z0-9]+/g,'-').replace(/^-+|-+$/g,'').toLowerCase().slice(0,40); }
+    async function subirCedula(input, lado, folder){
+      var f=input && input.files && input.files[0]; if(!f) return null;
+      if(f.size > 10*1024*1024){ throw new Error('La '+lado+' de la cédula pesa más de 10 MB.'); }
+      var m=(f.name||'').match(/\.([a-zA-Z0-9]+)$/); var ext=(m?m[1]:(/(pdf)/i.test(f.type)?'pdf':'jpg')).toLowerCase();
+      var path=folder+'/'+lado+'.'+ext;
+      var up=await sb.storage.from('cedulas').upload(path, f, {contentType:f.type||undefined, upsert:true});
+      if(up.error){ throw up.error; }
+      return path;
+    }
     try{
+      var folder='ingreso/'+(slug(row.nombre)||'x')+'-'+(slug(row.rut)||Date.now())+'-'+Date.now().toString(36);
+      var fF=document.querySelector('[name=cedula_frente]'), fR=document.querySelector('[name=cedula_reverso]');
+      if((fF&&fF.files.length)||(fR&&fR.files.length)) btn.textContent='Subiendo cédula…';
+      row.cedula_frente  = await subirCedula(fF,'frente', folder);
+      row.cedula_reverso = await subirCedula(fR,'reverso', folder);
+      btn.textContent='Enviando…';
       var r=await sb.from('fichas_ingreso').insert(row);
       if(r.error){ throw r.error; }
       document.getElementById('form').style.display='none';
@@ -164,7 +195,10 @@
       window.scrollTo(0,0);
     }catch(e){
       btn.disabled=false; btn.textContent='Enviar mis datos';
-      errEl.textContent = (/relation|does not exist|schema/.test(e.message||'')) ? 'Falta preparar el sistema (corre fichas-ingreso.sql).' : ('No se pudo enviar: '+(e.message||'error')+'. Intenta de nuevo.');
+      var em=e.message||'';
+      errEl.textContent = (/bucket|storage|not found.*cedula/i.test(em)) ? 'No se pudo subir la cédula (falta preparar el sistema: corre ficha-cedula.sql). Puedes enviar sin la cédula por ahora.'
+        : (/relation|does not exist|schema|column/.test(em)) ? 'Falta preparar el sistema (corre fichas-ingreso.sql / ficha-cedula.sql).'
+        : ('No se pudo enviar: '+em+'. Intenta de nuevo.');
       errEl.hidden=false;
     }
   });
