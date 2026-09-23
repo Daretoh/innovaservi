@@ -170,6 +170,9 @@
   .hrow input[type=time]{flex:0 1 96px;min-width:80px;font:600 13.5px var(--font);padding:6px 6px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);}
   .hrow-times .arw{color:var(--muted);font-weight:800;flex:0 0 auto;}
   .hrow-total{flex:0 0 auto;font-size:.72rem;color:var(--orange-2);font-weight:800;white-space:nowrap;}
+  .turno-tag{display:inline-flex;align-items:center;gap:3px;margin-left:5px;padding:1px 7px 1px 5px;border-radius:20px;font:700 10.5px var(--font);line-height:1.5;vertical-align:middle;white-space:nowrap;}
+  .turno-dia{background:#fef3c7;color:#92400e;border:1px solid #fcd34d;}
+  .turno-noche{background:#1e1b4b;color:#e0e7ff;border:1px solid #312e81;}
   .hrow-cal,.hrow-rm{flex:0 0 auto;width:30px;height:32px;border:1px solid var(--line);background:#fff;border-radius:8px;font-size:14px;cursor:pointer;line-height:1;}
   .hrow-rm{border-color:#f0c0c0;color:#dc2626;}
   .hrow-cal{position:relative;display:inline-flex;align-items:center;justify-content:center;}
@@ -1589,6 +1592,15 @@
   function totalMin(a,b){ if(!a||!b)return null; var pa=a.split(':'),pb=b.split(':'); var m=(pb[0]*60+ +pb[1])-(pa[0]*60+ +pa[1]); if(m<0)m+=1440; return m; }
   function totalTxt(a,b){ var m=totalMin(a,b); return m==null?'':('Total: '+Math.floor(m/60)+'h '+(m%60)+'m'); }
   function totalMini(a,b){ var m=totalMin(a,b); return m==null?'':(Math.floor(m/60)+'h'+(m%60?(' '+(m%60)+'m'):'')); }
+  // Turno Día / Noche (automático): noche si entra desde las 18:00, antes de las 06:00, o si sale al día siguiente.
+  // Registros de 0h (solo vueltas) o sin horario no llevan etiqueta.
+  function turnoDe(a,b){ var m=totalMin(a,b); if(!m) return ''; var e=hhmm2min(a), s=hhmm2min(b);
+    return (e>=1080 || e<360 || s<e) ? 'noche' : 'dia'; }
+  function turnoTag(a,b){ var t=turnoDe(a,b); if(!t) return '';
+    var ico=t==='noche'
+      ? '<svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>'
+      : '<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2" fill="currentColor" stroke="none"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></svg>';
+    return '<span class="turno-tag turno-'+t+'" title="Turno de '+(t==='noche'?'noche':'día')+'">'+ico+(t==='noche'?'Noche':'Día')+'</span>'; }
   function fmtMoney(n){ n=+n||0; return '$'+Math.round(n).toLocaleString('es-CL'); }
   function nombreVeh(){ var marca=$('vf-marca').value.trim(), modelo=$('vf-modelo').value.trim(), pat=$('vf-patente').value.trim(); return [marca,modelo].filter(Boolean).join(' ')||pat||'Vehículo'; }
   function diasHasta(f){ if(!f) return null; var d=new Date(f+'T00:00:00'), t=new Date(todayISO()+'T00:00:00'); return Math.round((d-t)/86400000); }
@@ -2878,7 +2890,7 @@
           '<input class="h-trab" list="trab-datalist" placeholder="Nombre del trabajador" value="'+enc(h.trabajador||'')+'">'+
           '<div class="hrow-times">'+
             '<input type="time" class="h-in" value="'+(h.entrada||'')+'"><span class="arw">→</span><input type="time" class="h-out" value="'+(h.salida||'')+'">'+
-            '<span class="hrow-total">'+totalMini(h.entrada,h.salida)+'</span>'+
+            '<span class="hrow-total">'+totalMini(h.entrada,h.salida)+turnoTag(h.entrada,h.salida)+'</span>'+
             '<label class="hrow-cal" title="Cambiar fecha">📅<input type="date" class="h-fecha" value="'+(h.fecha||todayISO())+'"></label>'+
             '<button class="hrow-rm" data-i="'+i+'" type="button">✕</button>'+
           '</div>'+
@@ -2890,7 +2902,7 @@
     c.querySelectorAll('.hrow-rm').forEach(function(b){ b.addEventListener('click',function(){ removeTrab(+b.dataset.i); }); });
     c.querySelectorAll('.hrow').forEach(function(row){
       var fe=row.querySelector('.h-fecha');
-      var upd=function(){ row.querySelector('.hrow-total').textContent=totalMini(row.querySelector('.h-in').value,row.querySelector('.h-out').value); };
+      var upd=function(){ var hi=row.querySelector('.h-in').value, ho=row.querySelector('.h-out').value; row.querySelector('.hrow-total').innerHTML=totalMini(hi,ho)+turnoTag(hi,ho); };
       row.querySelector('.h-in').addEventListener('change',upd);
       row.querySelector('.h-out').addEventListener('change',upd);
       fe.addEventListener('change',function(){ syncHoras(); renderHoras(); }); // reagrupar por fecha
@@ -2979,7 +2991,7 @@
           '<select class="h-fae" title="Faena (según Planificación)">'+opcionesFaena(h.fecha,h.faena||'')+'</select>'+
           '<label class="hrow-vu'+(esChofer(h.trabajador)?'':' hide')+'" title="Vueltas (solo choferes)">🔄<input type="number" class="h-vu" min="0" value="'+(h.vueltas||0)+'"></label>'+
           '<input type="time" class="h-in" value="'+(h.entrada||'')+'"><span class="arw">→</span><input type="time" class="h-out" value="'+(h.salida||'')+'">'+
-          '<span class="hrow-total">'+totalMini(h.entrada,h.salida)+'</span>'+
+          '<span class="hrow-total">'+totalMini(h.entrada,h.salida)+turnoTag(h.entrada,h.salida)+'</span>'+
           '<label class="hrow-cal" title="Fecha">📅<input type="date" class="h-fecha" value="'+(h.fecha||todayISO())+'"></label>'+
           '<button class="hrow-rm" data-i="'+i+'" type="button">✕</button>'+
           (solapSet[i]?'<span class="hrow-warn">Esta hora se pisa con otra del mismo trabajador ese día — revísala.</span>':'')+'</div>';
@@ -3022,7 +3034,7 @@
     });
     c.querySelectorAll('.jprep').forEach(function(t){ var f=t.dataset.f; t.addEventListener('input',function(){ jget(f).preparacion=t.value; guardarJornada(f); }); });
     c.querySelectorAll('.hrow').forEach(function(row){ var i=+row.dataset.i; var fe=row.querySelector('.h-fecha');
-      var upd=function(){ row.querySelector('.hrow-total').textContent=totalMini(row.querySelector('.h-in').value,row.querySelector('.h-out').value); };
+      var upd=function(){ var hi=row.querySelector('.h-in').value, ho=row.querySelector('.h-out').value; row.querySelector('.hrow-total').innerHTML=totalMini(hi,ho)+turnoTag(hi,ho); };
       function marcar(){ if(HZ[i]) HZ[i]._dirty=true; autoGuardarHz(); }
       var tr=row.querySelector('.h-trab');
       function valTrab(){ var v=(tr.value||'').trim(); tr.classList.toggle('h-bad', !!v && !esTrabajador(v)); }
@@ -4052,7 +4064,7 @@
       // Desglose por faena: cada faena en su punto, con su horario y horas, en el color del cliente (sutil).
       var byFae={}, forder=[]; pd.ents.forEach(function(d){ var fa=(d.faena||''); if(!(fa in byFae)){ byFae[fa]=[]; forder.push(fa); } byFae[fa].push(d); });
       var faeList=forder.map(function(fa){
-        var ents=byFae[fa], hors=ents.map(function(d){ return esc(d.entrada||'--:--')+'→'+esc(d.salida||'--:--'); }).join(', ');
+        var ents=byFae[fa], hors=ents.map(function(d){ return esc(d.entrada||'--:--')+'→'+esc(d.salida||'--:--')+turnoTag(d.entrada,d.salida); }).join(', ');
         var fmin=ents.reduce(function(a,d){ return a+(d.min||0); },0);
         var col=fa?colorEmpresa(claveEmpresa(fa)):{bg:'#f3f4f6',border:'#cbd5e1',text:'#64748b'};
         return '<div class="rd-fae" style="border-left:3px solid '+col.border+';background:'+col.bg+'"><span class="rd-fae-nm" style="color:'+col.text+'">'+(fa?esc(fa):'Sin faena asignada')+'</span><span class="rd-fae-h">'+hors+' · '+hm(fmin)+'</span></div>';
@@ -4231,7 +4243,7 @@
     var faChips=faenas.length?('<div style="margin-top:2px">'+faenas.map(function(f){ return '<span style="'+chip+'">📍 '+esc(f)+'</span>'; }).join('')+'</div>')
       :'<p class="note" style="margin:0">Sin faenas en Planificación para este día.</p>';
     var trabHtml=rows.length?rows.map(function(r,ri){
-      var horarios=r.ents.map(function(d){ return esc(d.entrada||'--:--')+'→'+esc(d.salida||'--:--'); }).join(', ');
+      var horarios=r.ents.map(function(d){ return esc(d.entrada||'--:--')+'→'+esc(d.salida||'--:--')+turnoTag(d.entrada,d.salida); }).join(', ');
       var faTxt=r.faenas.length?('<div class="note" style="margin:1px 0 0;font-size:.71rem">📍 '+esc(r.faenas.join(' · '))+'</div>'):'';
       var fijoTxt='';
       if(r.x.tipo==='contrato'){ var dFull=Math.round(r.dayMin/60*r.x.vh), dDesc=dFull-r.real, exMin=tratoMinDia(r.x.t,r.x.tipo,r.x.jor,r.x.H,fday);
