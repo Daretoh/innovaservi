@@ -703,6 +703,19 @@
   .buk-v{grid-area:v;font:600 14px var(--font);color:var(--ink);word-break:break-word;}
   .buk-v.vacio{color:var(--mut);font-weight:500;}
   .buk-c{grid-area:btn;}
+  .fdet{border:1px solid var(--line);border-radius:10px;background:#fff;margin-bottom:8px;overflow:hidden;}
+  .fdet>summary{list-style:none;cursor:pointer;padding:11px 13px;font:800 13px var(--font);color:var(--ink);display:flex;align-items:center;justify-content:space-between;}
+  .fdet>summary::-webkit-details-marker{display:none;}
+  .fdet>summary::after{content:'▸';color:var(--muted);font-size:12px;}
+  .fdet[open]>summary::after{content:'▾';}
+  .fdet>summary:hover{background:var(--alt);}
+  .fd-body{padding:2px 13px 11px;display:flex;flex-direction:column;gap:6px;}
+  .fd-row{display:flex;justify-content:space-between;gap:12px;align-items:baseline;border-top:1px solid var(--line);padding-top:6px;}
+  .fd-row:first-child{border-top:none;padding-top:2px;}
+  .fd-k{font:600 12px var(--font);color:var(--muted);flex:0 0 auto;}
+  .fd-v{font:600 13.5px var(--font);color:var(--ink);text-align:right;word-break:break-word;}
+  .fd-v.vacio{color:var(--muted);font-weight:500;}
+  .fx-chip{font:700 10px var(--font);background:var(--alt);color:var(--muted);border-radius:20px;padding:2px 8px;margin-left:8px;text-transform:uppercase;letter-spacing:.03em;}
   .docitem{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:10px;padding:9px 11px;margin-bottom:8px;background:var(--alt);}
   .docitem .ic{width:30px;height:30px;border-radius:7px;background:rgba(255,107,0,.14);color:var(--orange);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;}
   .docitem a{flex:1;min-width:0;font:600 13px var(--font);color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -1332,6 +1345,10 @@
         <div class="fld"><label>N° de cuenta</label><input id="fi-numcta" type="text" placeholder="Ej: 1-999-838631-9"></div>
       </details>
       <datalist id="bancos-list"><option>BancoEstado</option><option>Banco de Chile</option><option>Banco Santander</option><option>Banco BCI</option><option>Scotiabank</option><option>Banco Itaú</option><option>Banco Falabella</option><option>Banco Ripley</option><option>Banco BICE</option><option>Banco Security</option><option>Banco Consorcio</option><option>Banco Internacional</option><option>Coopeuch</option><option>Mercado Pago</option><option>Tenpo</option><option>Mach</option></datalist>
+      <details class="fi-bank" id="fi-extra-det" style="margin-top:11px">
+        <summary>Datos personales y previsionales (para Buk)</summary>
+        <div id="fi-extra"></div>
+      </details>
       <div class="fld"><label>Notas</label><textarea id="fi-notas" placeholder="Observaciones, EPP asignado, etc."></textarea></div>
     </div>
     <div class="card">
@@ -3337,72 +3354,87 @@
     var items=open?FICHAS_IN.map(function(f,i){
       var l2=[f.cargo, f.email, f.direccion, f.comuna].filter(Boolean).map(esc).join(' · ');
       var l3=[ (f.afp?('AFP '+f.afp):''), f.salud, (f.banco?(f.banco+' '+(f.tipo_cuenta||'')+' '+(f.num_cuenta||'')):''), ((f.talla_ropa||f.talla_botas)?('Tallas '+[f.talla_ropa,f.talla_botas].filter(Boolean).join(' / ')):''), (f.emergencia?('Emerg.: '+f.emergencia):'') ].filter(Boolean).map(esc).join(' · ');
-      var ced='<button class="btn ghost small fx-buk" data-i="'+i+'" style="width:auto">'+icoBuk+' Datos para Buk</button>';
-      if(f.cedula_frente) ced+='<button class="btn ghost small fx-ced" data-p="'+enc(f.cedula_frente)+'" style="width:auto">'+icoDoc+' Cédula frente</button>';
-      if(f.cedula_reverso) ced+='<button class="btn ghost small fx-ced" data-p="'+enc(f.cedula_reverso)+'" style="width:auto">'+icoDoc+' Cédula reverso</button>';
-      return '<div class="fx-item"><div class="fx-top"><b>'+esc(titleCase(f.nombre||''))+'</b><span class="note" style="margin:0">'+esc(f.rut||'')+(f.telefono?(' · '+esc(f.telefono)):'')+'</span></div>'+
+      var chips=[];
+      if(f.cedula_frente||f.cedula_reverso) chips.push('cédula');
+      var chipTxt=chips.length?('<span class="fx-chip">'+chips.join(' · ')+'</span>'):'';
+      return '<div class="fx-item"><div class="fx-top fx-open" data-i="'+i+'" style="cursor:pointer"><b>'+esc(titleCase(f.nombre||''))+'</b><span class="note" style="margin:0">'+esc(f.rut||'')+(f.telefono?(' · '+esc(f.telefono)):'')+'</span>'+chipTxt+'</div>'+
         (l2?'<div class="note fx-meta">'+l2+'</div>':'')+(l3?'<div class="note fx-meta">'+l3+'</div>':'')+
-        (ced?'<div class="fx-btns" style="margin-bottom:6px">'+ced+'</div>':'')+
-        '<div class="fx-btns"><button class="btn small fx-crear" data-i="'+i+'" style="width:auto">＋ Crear trabajador</button><button class="btn ghost small fx-desc" data-i="'+i+'" style="width:auto">Descartar</button></div></div>';
+        '<div class="fx-btns"><button class="btn small fx-open" data-i="'+i+'" style="width:auto">'+icoBuk+' Abrir ficha</button><button class="btn ghost small fx-crear" data-i="'+i+'" style="width:auto">＋ Crear trabajador</button><button class="btn ghost small fx-desc" data-i="'+i+'" style="width:auto">Descartar</button></div></div>';
     }).join(''):'';
     c.innerHTML='<div class="fx-box"><button class="fx-head" type="button">'+ico+' <b>'+n+'</b> ficha'+(n>1?'s':'')+' recibida'+(n>1?'s':'')+' <span class="fx-chev">'+(open?'▾':'▸')+'</span></button>'+(open?('<div class="fx-list">'+items+'</div>'):'')+'</div>';
     c.querySelector('.fx-head').addEventListener('click',function(){ c.dataset.open=open?'0':'1'; renderFichasInbox(); });
     c.querySelectorAll('.fx-crear').forEach(function(b){ b.addEventListener('click',function(){ crearTrabDeFicha(FICHAS_IN[+b.dataset.i]); }); });
     c.querySelectorAll('.fx-desc').forEach(function(b){ b.addEventListener('click',function(){ descartarFicha(FICHAS_IN[+b.dataset.i]); }); });
-    c.querySelectorAll('.fx-ced').forEach(function(b){ b.addEventListener('click',function(){ abrirCedula(b.dataset.p); }); });
-    c.querySelectorAll('.fx-buk').forEach(function(b){ b.addEventListener('click',function(){ abrirBuk(FICHAS_IN[+b.dataset.i]); }); });
+    c.querySelectorAll('.fx-open').forEach(function(b){ b.addEventListener('click',function(){ abrirFichaInbox(FICHAS_IN[+b.dataset.i]); }); });
   }
   // Panel "Datos para Buk": cada campo con el valor exacto que pide Buk + copiar.
-  function abrirBuk(f){ if(!f) return;
+  // Vista completa de una ficha recibida: secciones desplegables + cédula + copiar para Buk.
+  function abrirFichaInbox(f){ if(!f) return;
     function nz(v){ return (v==null||v==='')?'':String(v); }
+    // Filas de una sección (label/valor). Oculta las vacías.
+    function seccion(titulo, pares, abierta){
+      var rows=pares.filter(function(p){ return p[1]!==''&&p[1]!=null; }).map(function(p){
+        return '<div class="fd-row"><span class="fd-k">'+esc(p[0])+'</span><span class="fd-v">'+esc(String(p[1]))+'</span></div>'; }).join('');
+      if(!rows) rows='<div class="fd-row"><span class="fd-v vacio">Sin datos</span></div>';
+      return '<details class="fdet"'+(abierta?' open':'')+'><summary>'+esc(titulo)+'</summary><div class="fd-body">'+rows+'</div></details>';
+    }
+    var secciones=
+      seccion('Datos personales', [
+        ['Nombres', nz(f.nombres)], ['Apellido paterno', nz(f.apellido_paterno)], ['Apellido materno', nz(f.apellido_materno)],
+        ['RUT', nz(f.rut)], ['Sexo', nz(f.sexo)], ['Fecha de nacimiento', nz(f.nacimiento)], ['Estado civil', nz(f.estado_civil)],
+        ['Nacionalidad', nz(f.nacionalidad)], ['Teléfono', nz(f.telefono)], ['Correo', nz(f.email)], ['Cargo', nz(f.cargo)]
+      ], true) +
+      seccion('Dirección', [
+        ['Calle', nz(f.direccion)], ['Número', nz(f.numero)], ['Población/villa/sector', nz(f.poblacion)], ['Región', nz(f.region)], ['Comuna', nz(f.comuna)]
+      ], false) +
+      seccion('Previsión y salud', [
+        ['Régimen previsional', nz(f.regimen_prev)], ['AFP (fondo)', nz(f.afp)], ['Sistema de salud', nz(f.salud)], ['Régimen AFC', nz(f.regimen_afc)],
+        ['N° cargas', (f.cargas!=null?String(f.cargas):'')], ['Tramo de cargas', nz(f.tramo_cargas)], ['¿Discapacidad?', nz(f.discapacidad)], ['¿Invalidez?', nz(f.invalidez)]
+      ], false) +
+      seccion('Datos bancarios', [
+        ['Banco', nz(f.banco)], ['Tipo de cuenta', nz(f.tipo_cuenta)], ['N° de cuenta', nz(f.num_cuenta)]
+      ], false) +
+      seccion('Educación', [ ['Título', nz(f.titulo_educacion)], ['Institución', nz(f.institucion_titulo)] ], false) +
+      seccion('Tallas y emergencia', [ ['Talla ropa', nz(f.talla_ropa)], ['Talla calzado', nz(f.talla_botas)], ['Emergencia', nz(f.emergencia)] ], false);
+
+    // Cédula.
+    var cedBtns='';
+    if(f.cedula_frente) cedBtns+='<button class="btn ghost small fdo-ced" data-p="'+enc(f.cedula_frente)+'" style="width:auto">Ver frente</button>';
+    if(f.cedula_reverso) cedBtns+='<button class="btn ghost small fdo-ced" data-p="'+enc(f.cedula_reverso)+'" style="width:auto">Ver reverso</button>';
+    var cedSec='<details class="fdet"><summary>Cédula de identidad</summary><div class="fd-body">'+(cedBtns?('<div class="fx-btns" style="margin:2px 0">'+cedBtns+'</div>'):'<div class="fd-row"><span class="fd-v vacio">No adjuntó cédula</span></div>')+'</div></details>';
+
+    // Copiar para Buk.
     var campos=[
-      ['Rut', nz(f.rut)],
-      ['Apellido Paterno', nz(f.apellido_paterno)],
-      ['Apellido Materno', nz(f.apellido_materno)],
-      ['Nombres', nz(f.nombres)],
-      ['Sexo', nz(f.sexo)],
-      ['Nacionalidad', nz(f.nacionalidad)],
-      ['Fecha de Nacimiento', nz(f.nacimiento)],
-      ['Estado Civil', nz(f.estado_civil)],
-      ['Dirección', nz(f.direccion)],
-      ['Numero', nz(f.numero)],
-      ['Población, Villa o Sector', nz(f.poblacion)],
-      ['Región', nz(f.region)],
-      ['Comuna', nz(f.comuna)],
-      ['Teléfono Particular', nz(f.telefono)],
-      ['Correo electrónico', nz(f.email)],
-      ['Titulo Educación', nz(f.titulo_educacion)],
-      ['Institución del título', nz(f.institucion_titulo)],
-      ['Régimen previsional', nz(f.regimen_prev)],
-      ['Fondo de Cotización (AFP)', nz(f.afp)],
-      ['Sistema de Salud', nz(f.salud)],
-      ['Régimen AFC', nz(f.regimen_afc)],
-      ['N° Cargas Familiares', (f.cargas!=null?String(f.cargas):'')],
-      ['Tramo de Cargas', nz(f.tramo_cargas)],
-      ['¿Discapacidad?', nz(f.discapacidad)],
-      ['¿Invalidez?', nz(f.invalidez)],
-      ['Banco', nz(f.banco)],
-      ['Tipo de Cuenta', nz(f.tipo_cuenta)],
-      ['Número de Cuenta', nz(f.num_cuenta)]
+      ['Rut', nz(f.rut)],['Apellido Paterno', nz(f.apellido_paterno)],['Apellido Materno', nz(f.apellido_materno)],['Nombres', nz(f.nombres)],
+      ['Sexo', nz(f.sexo)],['Nacionalidad', nz(f.nacionalidad)],['Fecha de Nacimiento', nz(f.nacimiento)],['Estado Civil', nz(f.estado_civil)],
+      ['Dirección', nz(f.direccion)],['Numero', nz(f.numero)],['Población, Villa o Sector', nz(f.poblacion)],['Región', nz(f.region)],['Comuna', nz(f.comuna)],
+      ['Teléfono Particular', nz(f.telefono)],['Correo electrónico', nz(f.email)],['Titulo Educación', nz(f.titulo_educacion)],['Institución del título', nz(f.institucion_titulo)],
+      ['Régimen previsional', nz(f.regimen_prev)],['Fondo de Cotización (AFP)', nz(f.afp)],['Sistema de Salud', nz(f.salud)],['Régimen AFC', nz(f.regimen_afc)],
+      ['N° Cargas Familiares', (f.cargas!=null?String(f.cargas):'')],['Tramo de Cargas', nz(f.tramo_cargas)],['¿Discapacidad?', nz(f.discapacidad)],['¿Invalidez?', nz(f.invalidez)],
+      ['Banco', nz(f.banco)],['Tipo de Cuenta', nz(f.tipo_cuenta)],['Número de Cuenta', nz(f.num_cuenta)]
     ];
-    var rows=campos.map(function(c){
-      return '<div class="buk-row"><div class="buk-k">'+esc(c[0])+'</div>'+
-        '<div class="buk-v'+(c[1]?'':' vacio')+'">'+(c[1]?esc(c[1]):'—')+'</div>'+
-        '<button class="btn ghost small buk-c" data-v="'+enc(c[1])+'"'+(c[1]?'':' disabled')+' style="width:auto">Copiar</button></div>';
-    }).join('');
+    var bukRows=campos.map(function(c){
+      return '<div class="buk-row"><div class="buk-k">'+esc(c[0])+'</div><div class="buk-v'+(c[1]?'':' vacio')+'">'+(c[1]?esc(c[1]):'—')+'</div>'+
+        '<button class="btn ghost small buk-c" data-v="'+enc(c[1])+'"'+(c[1]?'':' disabled')+' style="width:auto">Copiar</button></div>'; }).join('');
     var todo=campos.filter(function(c){return c[1];}).map(function(c){return c[0]+': '+c[1];}).join('\n');
+    var bukSec='<details class="fdet"><summary>Datos para Buk (copiar)</summary><div class="fd-body"><p class="note" style="margin:0 0 8px">Copia cada campo y pégalo en el formulario de Buk. Las opciones ya vienen con el texto exacto.</p><button class="btn small buk-all" style="width:auto;margin-bottom:8px">Copiar todo</button><div class="buk-list">'+bukRows+'</div></div></details>';
+
     var ov=document.createElement('div'); ov.className='buk-ov'; ov.id='buk-ov';
-    ov.innerHTML='<div class="buk-card"><div class="buk-head"><b>Datos para Buk</b>'+
-      '<div style="display:flex;gap:8px"><button class="btn small buk-all" style="width:auto">Copiar todo</button><button class="btn ghost small buk-x" style="width:auto">Cerrar</button></div></div>'+
-      '<p class="note" style="margin:0 0 10px">Copia cada campo y pégalo en el formulario de Buk. Las opciones ya vienen con el texto exacto que Buk espera.</p>'+
-      '<div class="buk-list">'+rows+'</div></div>';
+    ov.innerHTML='<div class="buk-card"><div class="buk-head"><b>'+esc(titleCase(f.nombre||'Ficha'))+'</b>'+
+      '<button class="btn ghost small buk-x" style="width:auto">Cerrar</button></div>'+
+      '<div class="note" style="margin:0 0 10px">'+esc(f.rut||'')+(f.telefono?(' · '+esc(f.telefono)):'')+(f.created_at?(' · recibida '+fechaCorta((f.created_at||'').slice(0,10))):'')+'</div>'+
+      secciones+cedSec+bukSec+
+      '<div class="fx-btns" style="margin-top:12px"><button class="btn small fdo-crear" style="width:auto">＋ Crear trabajador</button><button class="btn ghost small fdo-desc" style="width:auto">Descartar</button></div></div>';
     document.body.appendChild(ov);
     function cerrar(){ var e=$('buk-ov'); if(e) e.remove(); }
     ov.addEventListener('click',function(e){ if(e.target===ov) cerrar(); });
     ov.querySelector('.buk-x').addEventListener('click',cerrar);
     function copiar(txt,btn){ if(!txt) return; try{ navigator.clipboard.writeText(txt).then(function(){ if(btn){ var t=btn.textContent; btn.textContent='✓'; setTimeout(function(){btn.textContent=t;},900); } }, function(){ toast('No se pudo copiar'); }); }catch(_){ toast('No se pudo copiar'); } }
     ov.querySelectorAll('.buk-c').forEach(function(b){ b.addEventListener('click',function(){ copiar(b.dataset.v,b); }); });
-    ov.querySelector('.buk-all').addEventListener('click',function(){ copiar(todo,ov.querySelector('.buk-all')); });
+    var ba=ov.querySelector('.buk-all'); if(ba) ba.addEventListener('click',function(){ copiar(todo,ba); });
+    ov.querySelectorAll('.fdo-ced').forEach(function(b){ b.addEventListener('click',function(){ abrirCedula(b.dataset.p); }); });
+    ov.querySelector('.fdo-crear').addEventListener('click',function(){ cerrar(); crearTrabDeFicha(f); });
+    ov.querySelector('.fdo-desc').addEventListener('click',function(){ cerrar(); descartarFicha(f); });
   }
   // Abre la cédula (bucket privado) con una URL firmada temporal.
   function abrirCedula(path){ if(!sb||!path) return; busy(true,'Abriendo cédula…');
@@ -3412,13 +3444,27 @@
     }, function(){ busy(false); toast('No se pudo abrir la cédula.'); }); }
   function crearTrabDeFicha(f){ if(!sb||!f) return;
     if(!confirm('¿Crear el trabajador "'+titleCase(f.nombre||'')+'" con estos datos?')) return;
-    var row={ nombre:titleCase((f.nombre||'').trim()), rut:(f.rut||'').trim(), cargo:(f.cargo||'').trim(), estado:'activo',
+    var base={ nombre:titleCase((f.nombre||'').trim()), rut:(f.rut||'').trim(), cargo:(f.cargo||'').trim(), estado:'activo',
       telefono:(f.telefono||''), email:(f.email||''), direccion:(f.direccion||''), emergencia:(f.emergencia||''), afp:(f.afp||''), salud:(f.salud||''),
       talla_ropa:(f.talla_ropa||''), talla_botas:(f.talla_botas||''), banco:(f.banco||null), tipo_cuenta:(f.tipo_cuenta||null), num_cuenta:(f.num_cuenta||null), autor:userEmail };
+    // Campos nuevos (Buk). Si la tabla aún no tiene las columnas, se reintenta sin ellos.
+    var extra={ apellido_paterno:f.apellido_paterno||null, apellido_materno:f.apellido_materno||null, nombres:f.nombres||null,
+      sexo:f.sexo||null, nacionalidad:f.nacionalidad||null, nacimiento:f.nacimiento||null, estado_civil:f.estado_civil||null,
+      numero:f.numero||null, poblacion:f.poblacion||null, region:f.region||null, comuna:f.comuna||null,
+      regimen_prev:f.regimen_prev||null, regimen_afc:f.regimen_afc||null, cargas:(f.cargas!=null?f.cargas:null), tramo_cargas:f.tramo_cargas||null,
+      discapacidad:f.discapacidad||null, invalidez:f.invalidez||null, titulo_educacion:f.titulo_educacion||null, institucion_titulo:f.institucion_titulo||null };
+    var row={}; for(var k in base) row[k]=base[k]; for(var k2 in extra) row[k2]=extra[k2];
     busy(true,'Creando trabajador…');
+    function tras(){ sb.from('fichas_ingreso').update({estado:'procesada'}).eq('id',f.id).then(function(){ busy(false); toast('✓ Trabajador creado desde la ficha'); cargarRrhh(); cargarFichasInbox(); }, function(){ busy(false); toast('Trabajador creado.'); cargarRrhh(); cargarFichasInbox(); }); }
     sb.from('trabajadores').insert(row).then(function(r){
-      if(r.error){ busy(false); toast('No se pudo crear: '+r.error.message); return; }
-      sb.from('fichas_ingreso').update({estado:'procesada'}).eq('id',f.id).then(function(){ busy(false); toast('✓ Trabajador creado desde la ficha'); cargarRrhh(); cargarFichasInbox(); }, function(){ busy(false); toast('Trabajador creado.'); cargarRrhh(); cargarFichasInbox(); });
+      if(r.error){
+        if(/column|schema cache|could not find|does not exist/i.test(r.error.message||'')){ // faltan columnas nuevas: crear con lo básico
+          sb.from('trabajadores').insert(base).then(function(r2){ if(r2.error){ busy(false); toast('No se pudo crear: '+r2.error.message); return; } toast('Creado. Corre trabajadores-buk.sql para guardar los datos previsionales.'); tras(); }, function(){ busy(false); toast('No se pudo crear.'); });
+          return;
+        }
+        busy(false); toast('No se pudo crear: '+r.error.message); return;
+      }
+      tras(); return;
     }, function(){ busy(false); toast('No se pudo crear.'); });
   }
   function descartarFicha(f){ if(!sb||!f) return; if(!confirm('¿Descartar la ficha de "'+titleCase(f.nombre||'')+'"? (no se crea el trabajador)')) return;
@@ -3635,7 +3681,7 @@
     var _bk=document.querySelector('.fi-bank'); if(_bk) _bk.open=!!(t&&(t.banco||t.num_cuenta));   // colapsado por defecto; se abre solo si ya hay datos
     $('fi-notas').value=t?(t.notas||''):'';
     FICHA_DOCS=t?((t.docs||[]).slice()):[]; renderDocs(); fiScanner.reset();
-    renderFichaRrhh(t);
+    renderFichaRrhh(t); renderFichaExtra(t);
     $('fi-title').textContent=t?('Ficha · '+(t.nombre||'')):'Nuevo trabajador';
     $('fi-del').classList.toggle('hide', !t);
     ficha.classList.remove('hide'); ficha.scrollTop=0;
@@ -3671,6 +3717,22 @@
         if(typeof renderRrhh==='function') renderRrhh();
       }, function(){ busy(false); toast('Clasificado. Guarda la ficha para quitar el suelto.'); renderDocs(); });
     }, function(){ busy(false); toast('No se pudo clasificar.'); renderDocs(); });
+  }
+  // Datos personales/previsionales (para Buk) dentro de la ficha del trabajador (solo lectura).
+  function renderFichaExtra(t){
+    var c=$('fi-extra'); if(!c) return;
+    var pares=[
+      ['Sexo', t&&t.sexo], ['Apellido paterno', t&&t.apellido_paterno], ['Apellido materno', t&&t.apellido_materno], ['Nombres', t&&t.nombres],
+      ['Nacionalidad', t&&t.nacionalidad], ['Fecha de nacimiento', t&&t.nacimiento], ['Estado civil', t&&t.estado_civil],
+      ['Número', t&&t.numero], ['Población/villa/sector', t&&t.poblacion], ['Región', t&&t.region], ['Comuna', t&&t.comuna],
+      ['Régimen previsional', t&&t.regimen_prev], ['AFP (fondo)', t&&t.afp], ['Sistema de salud', t&&t.salud], ['Régimen AFC', t&&t.regimen_afc],
+      ['N° cargas', (t&&t.cargas!=null&&t.cargas!==''?t.cargas:'')], ['Tramo de cargas', t&&t.tramo_cargas], ['¿Discapacidad?', t&&t.discapacidad], ['¿Invalidez?', t&&t.invalidez],
+      ['Título', t&&t.titulo_educacion], ['Institución', t&&t.institucion_titulo]
+    ];
+    var rows=pares.filter(function(p){ return p[1]!=null&&p[1]!==''; }).map(function(p){
+      return '<div class="fd-row"><span class="fd-k">'+esc(p[0])+'</span><span class="fd-v">'+esc(String(p[1]))+'</span></div>'; }).join('');
+    c.innerHTML=rows||'<p class="note" style="margin:2px 0 0">Sin datos previsionales. Se llenan solos cuando creas al trabajador desde una ficha recibida.</p>';
+    var det=$('fi-extra-det'); if(det) det.open=!!rows;   // se abre solo si hay datos
   }
   // Checklist de documentación estándar (RRHH) dentro de la ficha del trabajador.
   function renderFichaRrhh(t){
