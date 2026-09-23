@@ -523,6 +523,53 @@
   .pf-emp{font:800 11px var(--font);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .pf-tit{font:600 11px var(--font);color:var(--ink);margin:1px 0 5px;line-height:1.2;}
   .pf-empty{color:#b9bfd0;font-size:11px;text-align:center;padding:8px 0;}
+  /* Planificación: resumen semanal */
+  .pw-sum{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px;}
+  .pw-kpi{background:#fff;border:1px solid var(--line);border-radius:11px;padding:8px 12px;}
+  .pw-kpi b{display:block;font:800 19px var(--font);color:var(--navy);line-height:1.2;}
+  .pw-kpi span{font:700 10px var(--font);text-transform:uppercase;letter-spacing:.05em;color:var(--muted);}
+  .pw-kpi.warn b{color:#b45309;} .pw-kpi.ok b{color:#0f6e56;}
+  .pw-hint{position:sticky;top:6px;z-index:5;display:flex;align-items:center;gap:10px;background:var(--navy);color:#fff;border-radius:10px;padding:8px 12px;margin-bottom:10px;font:600 12.5px var(--font);}
+  .pw-hint button{margin-left:auto;background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:7px;padding:4px 10px;font:700 11.5px var(--font);cursor:pointer;}
+  .pw-grid{display:grid;grid-template-columns:repeat(7,minmax(172px,1fr));gap:8px;overflow-x:auto;padding-bottom:6px;align-items:start;}
+  .pw-col{background:var(--alt);border:1px solid var(--line);border-radius:12px;padding:8px;min-width:0;}
+  .pw-col.hoy{border-color:var(--orange);box-shadow:inset 0 0 0 1px var(--orange);}
+  .pw-dh{display:flex;justify-content:space-between;align-items:baseline;gap:6px;padding:0 2px 7px;border-bottom:1px solid var(--line);margin-bottom:7px;}
+  .pw-dn{font:800 13px var(--font);color:var(--navy);}
+  .pw-ds{font:700 10.5px var(--font);color:var(--muted);white-space:nowrap;}
+  .pw-ds.miss{color:#b45309;} .pw-ds.ok{color:#0f6e56;}
+  .pw-turno{display:inline-flex;align-items:center;gap:4px;font:800 9.5px var(--font);text-transform:uppercase;letter-spacing:.06em;margin:3px 0 5px;padding:2px 8px;border-radius:6px;}
+  .pw-t-dia{background:#fef3c7;color:#92400e;} .pw-t-noche{background:#1e1b4b;color:#e0e7ff;} .pw-t-x{background:#fff;color:var(--muted);border:1px solid var(--line);}
+  .pw-fae{background:#fff;border:1px solid var(--line);border-left:4px solid;border-radius:9px;padding:7px 8px;margin-bottom:7px;}
+  .pw-fae.drop{box-shadow:0 0 0 2px var(--ok);}
+  .pw-col.pickday .pw-fae:not(.locked){cursor:copy;box-shadow:0 0 0 2px var(--orange);}
+  .pw-fh{display:flex;align-items:center;justify-content:space-between;gap:5px;}
+  .pw-h{font:800 11.5px var(--font);color:var(--ink);}
+  .pw-cli{font:800 10.5px var(--font);text-transform:uppercase;margin-top:2px;line-height:1.25;}
+  .pw-cnt{border:none;font:800 10.5px var(--font);border-radius:999px;padding:1px 7px;cursor:pointer;flex:none;}
+  .pw-cnt.ok{background:#e2f3ec;color:#0f6e56;} .pw-cnt.miss{background:#fbf0d9;color:#854f0b;}
+  .pw-tit{font:600 11.5px var(--font);color:var(--body);margin:2px 0 5px;line-height:1.25;}
+  .pw-ol{margin:0;padding-left:19px;font:600 12px var(--font);color:var(--ink);}
+  .pw-ol li{padding:1px 0;}
+  .pw-pr{display:flex;align-items:center;justify-content:space-between;gap:4px;}
+  .pw-p[draggable=true]{cursor:grab;}
+  .pw-p.vac{color:#aab1c4;font-weight:500;font-style:italic;}
+  .pw-p.dup .pw-pr>span{color:#b45309;}
+  .pw-dup{font:800 8.5px var(--font);text-transform:uppercase;background:#fbf0d9;color:#854f0b;border-radius:999px;padding:0 5px;margin-left:4px;font-style:normal;}
+  .pw-x{border:none;background:none;color:var(--muted);cursor:pointer;font-size:14px;line-height:1;padding:0 2px;}
+  .pw-x:hover{color:#dc2626;}
+  .pw-st{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;align-items:center;}
+  .pw-s{font:700 9.5px var(--font);border-radius:999px;padding:1px 7px;display:inline-flex;align-items:center;}
+  .pw-s svg{margin-right:3px !important;vertical-align:0 !important;}
+  .pw-s.ok{background:#e2f3ec;color:#0f6e56;} .pw-s.miss{background:#fbf0d9;color:#854f0b;} .pw-s.neu{background:var(--alt);color:var(--muted);}
+  .pw-open{margin-left:auto;border:none;background:none;color:var(--navy);font:700 10.5px var(--font);cursor:pointer;padding:0;}
+  .pw-disp{margin-top:8px;padding-top:7px;border-top:1px dashed var(--line);}
+  .pw-dl{font:800 9.5px var(--font);text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:5px;}
+  .pw-ws{display:flex;flex-wrap:wrap;gap:4px;}
+  .pw-w{background:#fff;border:1px solid var(--line);border-radius:999px;padding:2px 8px;font:600 10.5px var(--font);cursor:grab;user-select:none;-webkit-user-select:none;}
+  .pw-w:hover{border-color:var(--orange);} .pw-w.pick{background:var(--orange);border-color:var(--orange);color:#fff;}
+  .pw-empty{font-size:11px;color:#aab1c4;text-align:center;padding:10px 0;}
+  @media(max-width:1000px){ .pw-grid{grid-template-columns:1fr;overflow:visible;} .pw-sum{grid-template-columns:repeat(3,1fr);gap:6px;} .pw-kpi{padding:6px 9px;} .pw-kpi b{font-size:15px;} .pw-kpi span{font-size:8.5px;letter-spacing:.03em;} }
   /* RRHH documentación */
   .rrhh-doc{background:#fff;border:1px solid var(--line);border-radius:12px;padding:11px 13px;margin-bottom:9px;}
   .rrhh-doc .rd-top{display:flex;align-items:center;gap:10px;cursor:pointer;}
@@ -1138,9 +1185,9 @@
 
     <!-- ---- PLANIFICACIÓN de faena (jefatura arma → Preparación) ---- -->
     <section class="view" id="v-planif">
-      <div class="h-row"><h2>Planificación de faenas</h2></div>
+      <div class="h-row"><h2>Planificación de faenas</h2><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><div class="seg" id="planif-modo"><button class="seg-b" data-m="semana">Semana</button><button class="seg-b" data-m="dia">Por día</button></div><button id="planif-copy" class="btn ghost small" style="width:auto">Copiar resumen</button></div></div>
       <div class="wknav"><button id="planif-prev" class="btn ghost small" style="width:auto">‹</button><div style="flex:1;text-align:center"><div id="planif-semlbl" style="margin:0;font:800 13px var(--font);color:var(--navy)">Semana</div><b id="planif-rango" style="font-size:.88rem;font-weight:600;color:var(--body)"></b></div><button id="planif-hoy" class="btn ghost small" style="width:auto">Hoy</button><button id="planif-next" class="btn ghost small" style="width:auto">›</button></div>
-      <p class="note" style="margin:0 0 12px">Elige el día, toca una faena y arrastra (o toca) los trabajadores de la derecha para asignarlos. En <b>Detalle</b> agregas EPP/matrices y la <b>envías a Preparación</b>.</p>
+      <p class="note" id="planif-note" style="margin:0 0 12px">Elige el día, toca una faena y arrastra (o toca) los trabajadores de la derecha para asignarlos. En <b>Detalle</b> agregas EPP/matrices y la <b>envías a Preparación</b>.</p>
       <div id="planif-list"></div>
     </section>
 
@@ -1700,7 +1747,7 @@
   function cargarEventos(){
     if(!sb)return;
     // ventana alrededor de hoy (para asociar reportes/horas), luego se ordena por cercanía
-    sb.from('eventos').select('id,fecha,fecha_fin,titulo,ubicacion,sitio,descripcion').gte('fecha',isoMas(-90)).lte('fecha',isoMas(180)).order('fecha',{ascending:true}).limit(600)
+    sb.from('eventos').select('id,fecha,fecha_fin,hora,titulo,ubicacion,sitio,descripcion').gte('fecha',isoMas(-90)).lte('fecha',isoMas(180)).order('fecha',{ascending:true}).limit(600)
       .then(function(r){ EVENTOS=(r&&r.data)||[]; autoSeleccionarHoy(); });
   }
   function diffDias(f){ if(!f)return 99999; var d=new Date(f+'T00:00:00'), t=new Date(todayISO()+'T00:00:00'); return Math.round((d-t)/86400000); }
@@ -1829,6 +1876,7 @@
     if(!PLANIF_LUNES) PLANIF_LUNES=lunesDe(todayISO());
     var lo=PLANIF_LUNES, hi=sumarDias(PLANIF_LUNES,6), hoy=todayISO();
     setWeekHdr('planif-semlbl','planif-rango',PLANIF_LUNES);
+    planModoUI(); if(PLANIF_MODO==='semana'){ renderPlanSemana(c); return; }
     if(!PLANIF_DIA || PLANIF_DIA<lo || PLANIF_DIA>hi) PLANIF_DIA=(hoy>=lo && hoy<=hi)?hoy:lo;
     var DIAS3=['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'], tabs='';
     for(var di=0; di<7; di++){ var f=sumarDias(PLANIF_LUNES,di), dd=new Date(f+'T12:00:00');
@@ -1858,6 +1906,106 @@
     var wq=$('pb-wq'); if(wq){ wq.value=PLANIF_WQ||''; wq.addEventListener('input',function(){ PLANIF_WQ=this.value; renderPlanWorkers(); }); }
     renderPlanWorkers(); planSelName();
   }
+  // ---- Resumen semanal: los 7 días lado a lado (faenas por turno, personas numeradas, matriz/preparación y disponibles) ----
+  var PLANIF_MODO=(function(){ try{ return localStorage.getItem('iserv-planif-modo')||'semana'; }catch(_){ return 'semana'; } })(), PW_PICK=null;
+  function planModoUI(){ document.querySelectorAll('#planif-modo .seg-b').forEach(function(b){ b.classList.toggle('on', b.dataset.m===PLANIF_MODO); });
+    if($('planif-copy')) $('planif-copy').classList.toggle('hide', PLANIF_MODO!=='semana');
+    if($('planif-note')) $('planif-note').innerHTML=PLANIF_MODO==='semana'
+      ? 'Toda la semana de un vistazo. Toca un trabajador <b>disponible</b> y luego la faena (o arrástralo); arrastra un nombre de una faena a otra para moverlo. <b>Abrir</b> lleva al detalle del día.'
+      : 'Elige el día, toca una faena y arrastra (o toca) los trabajadores de la derecha para asignarlos. En <b>Detalle</b> agregas EPP/matrices y la <b>envías a Preparación</b>.'; }
+  document.querySelectorAll('#planif-modo .seg-b').forEach(function(b){ b.addEventListener('click',function(){ PLANIF_MODO=b.dataset.m; PW_PICK=null; try{ localStorage.setItem('iserv-planif-modo',PLANIF_MODO); }catch(_){} renderPlanif(); }); });
+  // Hora del evento del Calendario ("07:00", "20:00 - 06:00", "Todo el día") → inicio / fin / turno
+  function horaIni(h){ var m=(h||'').match(/(\d{1,2})[:.](\d{2})/); return m?(('0'+m[1]).slice(-2)+':'+m[2]):''; }
+  function horaFin(h){ var m=(h||'').match(/\d{1,2}[:.]\d{2}\D+(\d{1,2})[:.](\d{2})/); return m?(('0'+m[1]).slice(-2)+':'+m[2]):''; }
+  function turnoEvento(e){ var a=horaIni(e.hora); if(!a) return ''; var ea=hhmm2min(a), b=horaFin(e.hora);   // misma regla que Horas: noche si entra desde 18:00, antes de 06:00 o sale al día siguiente
+    return (ea>=1080 || ea<360 || (b && hhmm2min(b)<ea)) ? 'noche' : 'dia'; }
+  var PW_TURNOS=[['dia','Día'],['noche','Noche'],['','Sin hora']];
+  function pwTurnoIco(t){ return t==='noche'?'<svg viewBox="0 0 24 24" width="10" height="10" fill="currentColor" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>'
+    : (t==='dia'?'<svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2" fill="currentColor" stroke="none"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></svg>':''); }
+  function faenasDelDia(f){ return (EVENTOS||[]).filter(function(e){ var fn=e.fecha_fin||e.fecha; return e.fecha<=f && fn>=f; })
+    .sort(function(a,b){ var ha=horaIni(a.hora)||'99', hb=horaIni(b.hora)||'99'; return ha<hb?-1:(ha>hb?1:(a.ubicacion||'').localeCompare(b.ubicacion||'')); }); }
+  function pwConteo(fs){ var cnt={}; fs.forEach(function(e){ var p=PLAN_MAP[e.id]; ((p&&p.personas)||[]).forEach(function(pp){ var k=normName(pp.nombre); cnt[k]=(cnt[k]||0)+1; }); }); return cnt; }
+  function pwCard(e,f,cnt){
+    var p=PLAN_MAP[e.id]||{}, pers=p.personas||[], col=colorEmpresa(claveEmpresa(e.ubicacion||'')), need=personasNecesarias(e), locked=(p.estado==='enviada');
+    var n=Math.max(need||0, pers.length), li='';
+    for(var i=0;i<n;i++){ var pp=pers[i];
+      if(pp){ var dup=cnt[normName(pp.nombre)]>1;
+        li+='<li class="pw-p'+(dup?' dup':'')+'" draggable="'+(locked?'false':'true')+'" data-e="'+e.id+'" data-i="'+i+'"'+(dup?' title="Está en más de una faena este día"':'')+'><div class="pw-pr"><span>'+esc(pp.nombre)+(dup?'<i class="pw-dup">doble</i>':'')+'</span>'+(locked?'':'<button class="pw-x" type="button" data-e="'+e.id+'" data-i="'+i+'" title="Quitar">×</button>')+'</div></li>'; }
+      else li+='<li class="pw-p vac">por asignar</li>'; }
+    if(!n) li='<li class="pw-p vac">sin personas</li>';
+    var mats=(p.matrices||[]).length, hi=horaIni(e.hora), hf=horaFin(e.hora);
+    return '<div class="pw-fae'+(locked?' locked':'')+'" data-e="'+e.id+'" style="border-left-color:'+col.border+'">'+
+      '<div class="pw-fh"><b class="pw-h">'+(hi?(hi+(hf?(' – '+hf):'')):'Sin hora')+'</b>'+
+        '<button type="button" class="pw-cnt '+(need&&pers.length>=need?'ok':'miss')+'" data-e="'+e.id+'" title="Personas asignadas / necesarias (toca para editar)">'+pers.length+'/'+(need||'?')+'</button></div>'+
+      '<div class="pw-cli" style="color:'+col.text+'">'+esc(e.ubicacion||'')+(e.sitio?(' · '+esc(e.sitio)):'')+'</div>'+
+      '<div class="pw-tit">'+esc(e.titulo||'Faena')+'</div><ol class="pw-ol">'+li+'</ol>'+
+      '<div class="pw-st"><span class="pw-s '+(mats?'ok':'miss')+'">'+(mats?svgI(ICO.ok,9)+'Matriz':svgI(ICO.warn,9)+'Sin matriz')+'</span>'+
+        '<span class="pw-s '+(locked?'ok':'neu')+'">'+(locked?svgI(ICO.ok,9)+'Enviada a Prep.':'Borrador')+'</span>'+
+        '<button type="button" class="pw-open" data-e="'+e.id+'" data-f="'+f+'">Abrir ›</button></div></div>';
+  }
+  function renderPlanSemana(c){
+    var hoy=todayISO(), DIAS=['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'], trabs=planTrabs(), cols='', faeSet={};
+    var T={nec:0, asg:0, falt:0, sinMat:0, env:0};
+    for(var di=0; di<7; di++){
+      var f=sumarDias(PLANIF_LUNES,di), dd=new Date(f+'T12:00:00'), fs=faenasDelDia(f), cnt=pwConteo(fs), dNec=0, dAsg=0, falt=0, body='';
+      fs.forEach(function(e){ var p=PLAN_MAP[e.id]||{}, nec=personasNecesarias(e)||0, asg=(p.personas||[]).length; dNec+=nec; dAsg+=asg; falt+=Math.max(0,nec-asg);
+        if(!faeSet[e.id]){ faeSet[e.id]=1; if(!(p.matrices||[]).length) T.sinMat++; if(p.estado==='enviada') T.env++; } });
+      T.nec+=dNec; T.asg+=dAsg; T.falt+=falt;
+      PW_TURNOS.forEach(function(t){ var arr=fs.filter(function(e){ return turnoEvento(e)===t[0]; }); if(!arr.length) return;
+        body+='<div class="pw-turno pw-t-'+(t[0]||'x')+'">'+pwTurnoIco(t[0])+t[1]+'</div>'+arr.map(function(e){ return pwCard(e,f,cnt); }).join(''); });
+      var libres=trabs.filter(function(w){ return !cnt[normName(w.nombre)]; });
+      var disp=fs.length?('<div class="pw-disp"><div class="pw-dl">Disponibles ('+libres.length+')</div><div class="pw-ws">'+
+        (libres.map(function(w){ return '<span class="pw-w'+(PW_PICK&&PW_PICK.n===w.nombre&&PW_PICK.f===f?' pick':'')+'" draggable="true" data-n="'+enc(w.nombre)+'" data-f="'+f+'" title="'+enc(w.cargo||'Operario')+(w.chofer?' · chofer':'')+'">'+esc(w.nombre)+'</span>'; }).join('')||'<span class="note" style="margin:0;font-size:.7rem">Todos asignados</span>')+'</div></div>'):'';
+      cols+='<div class="pw-col'+(f===hoy?' hoy':'')+(PW_PICK&&PW_PICK.f===f?' pickday':'')+'" data-f="'+f+'"><div class="pw-dh"><span class="pw-dn">'+DIAS[di]+' '+dd.getDate()+'</span>'+
+        (fs.length?'<span class="pw-ds '+(falt>0?'miss':'ok')+'">'+fs.length+' faena'+(fs.length>1?'s':'')+' · '+dAsg+'/'+dNec+'</span>':'')+'</div>'+
+        (body||'<div class="pw-empty">Sin faenas</div>')+disp+'</div>';
+    }
+    var nF=Object.keys(faeSet).length, falta=T.falt;
+    var kpi=function(v,l,k){ return '<div class="pw-kpi'+(k?(' '+k):'')+'"><b>'+v+'</b><span>'+l+'</span></div>'; };
+    c.innerHTML='<div class="pw-sum">'+kpi(nF,'Faenas')+kpi(T.asg+' / '+T.nec,'Asignadas / necesarias',(T.nec&&!falta)?'ok':'')+kpi(falta,'Faltan personas',falta>0?'warn':'ok')+kpi(T.sinMat,'Sin matriz',T.sinMat?'warn':'ok')+kpi(T.env+' / '+nF,'Enviadas a Prep.')+'</div>'+
+      '<div id="pw-hint"></div><div class="pw-grid">'+cols+'</div>';
+    pwHint(); pwWire(c);
+  }
+  function pwHint(){ var h=$('pw-hint'); if(!h) return; document.querySelectorAll('.pw-col').forEach(function(x){ x.classList.toggle('pickday', !!PW_PICK && x.dataset.f===PW_PICK.f); });
+    h.innerHTML=PW_PICK?('<div class="pw-hint">Asignando a <b>'+esc(PW_PICK.n)+'</b> — toca la faena del '+esc(fechaCorta(PW_PICK.f))+'<button type="button" id="pw-cancel">Cancelar</button></div>'):'';
+    if($('pw-cancel')) $('pw-cancel').addEventListener('click',function(){ PW_PICK=null; document.querySelectorAll('.pw-w.pick').forEach(function(x){ x.classList.remove('pick'); }); pwHint(); }); }
+  function pwMover(de, i, a){ var e1=eventoDe(de), e2=eventoDe(a); if(!e1||!e2||String(de)===String(a)) return; var p1=planDe(e1), p2=planDe(e2);
+    if(p1.estado==='enviada'||p2.estado==='enviada'){ toast('Faena enviada a Preparación; reábrela para cambiarla.'); return; }
+    var pp=p1.personas[+i]; if(!pp) return;
+    if(p2.personas.some(function(x){ return normName(x.nombre)===normName(pp.nombre); })){ toast(pp.nombre+' ya está en esa faena.'); return; }
+    p1.personas.splice(+i,1); p2.personas.push(pp); planSave(e1); planSave(e2); renderPlanif(); }
+  function pwWire(c){
+    c.querySelectorAll('.pw-w').forEach(function(w){
+      w.addEventListener('click',function(){ var on=PW_PICK&&PW_PICK.n===w.dataset.n&&PW_PICK.f===w.dataset.f; PW_PICK=on?null:{n:w.dataset.n, f:w.dataset.f};
+        c.querySelectorAll('.pw-w').forEach(function(x){ x.classList.toggle('pick', !!PW_PICK && x===w); }); pwHint(); });
+      w.addEventListener('dragstart',function(ev){ try{ ev.dataTransfer.setData('text/plain','n|'+w.dataset.n); ev.dataTransfer.effectAllowed='copyMove'; }catch(_){} });
+    });
+    c.querySelectorAll('.pw-p[draggable=true]').forEach(function(li){ li.addEventListener('dragstart',function(ev){ ev.stopPropagation(); try{ ev.dataTransfer.setData('text/plain','m|'+li.dataset.e+'|'+li.dataset.i); ev.dataTransfer.effectAllowed='move'; }catch(_){} }); });
+    c.querySelectorAll('.pw-fae').forEach(function(el){
+      el.addEventListener('click',function(ev){ if(ev.target.closest('button')||!PW_PICK) return; var n=PW_PICK.n; PW_PICK=null; planAsignar(+el.dataset.e, n); });
+      el.addEventListener('dragover',function(ev){ ev.preventDefault(); el.classList.add('drop'); });
+      el.addEventListener('dragleave',function(){ el.classList.remove('drop'); });
+      el.addEventListener('drop',function(ev){ ev.preventDefault(); el.classList.remove('drop'); var d=''; try{ d=ev.dataTransfer.getData('text/plain')||''; }catch(_){}
+        var pz=d.split('|'); if(pz[0]==='n' && pz[1]){ PW_PICK=null; planAsignar(+el.dataset.e, pz[1]); } else if(pz[0]==='m') pwMover(pz[1], pz[2], el.dataset.e); });
+    });
+    c.querySelectorAll('.pw-x').forEach(function(x){ x.addEventListener('click',function(ev){ ev.stopPropagation(); var e=eventoDe(x.dataset.e); if(!e) return; var p=planDe(e); p.personas.splice(+x.dataset.i,1); planSave(e); renderPlanif(); }); });
+    c.querySelectorAll('.pw-cnt').forEach(function(b){ b.addEventListener('click',function(ev){ ev.stopPropagation(); var e=eventoDe(b.dataset.e); if(!e) return; var p=planDe(e); var v=prompt('¿Cuántas personas necesita esta faena?', personasNecesarias(e)||''); if(v===null) return; v=(''+v).trim(); p.personas_nec=(v===''?null:Math.max(0,(+v||0))); planSave(e); renderPlanif(); }); });
+    c.querySelectorAll('.pw-open').forEach(function(b){ b.addEventListener('click',function(ev){ ev.stopPropagation(); PLANIF_MODO='dia'; PLANIF_DIA=b.dataset.f; PLANIF_SEL=+b.dataset.e; PW_PICK=null; try{ localStorage.setItem('iserv-planif-modo','dia'); }catch(_){} renderPlanif(); window.scrollTo(0,0); }); });
+  }
+  // Texto para WhatsApp: mismo formato que se manda a mano (día → turno → faena con personas numeradas)
+  function planResumenTxt(){ var DIAS=['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'], L=PLANIF_LUNES||lunesDe(todayISO()), out=['*Planificación semana '+numSemana(L)+'* ('+fechaCorta(L)+' – '+fechaCorta(sumarDias(L,6))+')'];
+    for(var di=0; di<7; di++){ var f=sumarDias(L,di), fs=faenasDelDia(f); if(!fs.length) continue;
+      out.push('', '*'+DIAS[di]+' '+new Date(f+'T12:00:00').getDate()+'*');
+      PW_TURNOS.forEach(function(t){ var arr=fs.filter(function(e){ return turnoEvento(e)===t[0]; }); if(!arr.length) return; out.push('_'+t[1]+'_');
+        arr.forEach(function(e){ var p=PLAN_MAP[e.id]||{}, pers=p.personas||[], need=personasNecesarias(e)||0, hi=horaIni(e.hora);
+          out.push((hi?hi+' ':'')+(e.ubicacion||'')+(e.sitio?(' · '+e.sitio):'')+' — '+(e.titulo||'Faena')+' ('+pers.length+'/'+(need||'?')+')');
+          for(var i=0;i<Math.max(need,pers.length);i++) out.push('   '+(i+1)+'. '+(pers[i]?pers[i].nombre:'—')); });
+      }); }
+    return out.join('\n'); }
+  if($('planif-copy')) $('planif-copy').addEventListener('click',function(){ var t=planResumenTxt();
+    function ok(){ toast('Resumen copiado · pégalo en WhatsApp'); }
+    function fb(){ var ta=document.createElement('textarea'); ta.value=t; document.body.appendChild(ta); ta.select(); try{ document.execCommand('copy'); ok(); }catch(_){ toast('No se pudo copiar'); } ta.remove(); }
+    if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(ok, fb); else fb(); });
   function abrirPlanif(e){ if(!e) return; var p=PLAN_MAP[e.id]||{};
     PE={ e:e, id:p.id||null, estado:p.estado||'borrador',
       personas:(p.personas||[]).map(function(x){ return {nombre:x.nombre||'', epp:(x.epp||[]).slice()}; }),
