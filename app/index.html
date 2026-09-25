@@ -1696,6 +1696,15 @@
     if(vt) return Math.max(0, dm - minEnVentana((H&&H.ivDia&&H.ivDia[fd])||[], vt.ini, vt.fin));  // por turno horario
     return Math.max(0, dm - (jor||0)*60);          // por horas/día
   }
+  // Minutos que cuentan como pago para UNA faena del día (tratada individualmente).
+  // Sirve para mostrar el monto por faena: la 2da faena fuera de turno cuenta como su propio trato.
+  function faenaPagoMin(t, tipo, jor, fd, faeIvs, faeMin){
+    if(tipo!=='contrato') return faeMin;             // spot: toda la faena cuenta
+    if(esTratoDia(fd)) return faeMin;                // finde/feriado: toda la faena es trato
+    var vt=ventanaTrab(t);
+    if(vt) return Math.max(0, faeMin - minEnVentana(faeIvs||[], vt.ini, vt.fin));  // lo de fuera del turno
+    return faeMin;                                   // jornada por horas: no se puede repartir exacto → se muestra la faena completa
+  }
   var CAT_LBL={sin:'Sin clasificar',antes:'Antes',proceso:'Proceso',despues:'Después',doc:'Registro documental'};
   function catOk(c){ return (c==='antes'||c==='despues'||c==='doc')?c:'proceso'; }
   // categoría de almacenamiento: conserva 'sin' (sin clasificar) además de las etapas
@@ -4402,8 +4411,11 @@
       var faeList=forder.map(function(fa){
         var ents=byFae[fa], hors=ents.map(function(d){ return esc(d.entrada||'--:--')+'→'+esc(d.salida||'--:--')+turnoTag(d.entrada,d.salida); }).join(', ');
         var fmin=ents.reduce(function(a,d){ return a+(d.min||0); },0);
+        // Monto de esta faena tratada individualmente (horas de la faena que cuentan como pago × valor hora).
+        var faeIvs=[]; ents.forEach(function(d){ if(d.entrada&&d.salida&&(d.min||0)>0){ var s=hhmm2min(d.entrada); faeIvs.push([s,s+d.min]); } });
+        var fpmin=faenaPagoMin(x.t, x.tipo, x.jor, f, faeIvs, fmin), fmonto=Math.round(fpmin/60*x.vh);
         var col=fa?colorEmpresa(claveEmpresa(fa)):{bg:'#f3f4f6',border:'#cbd5e1',text:'#64748b'};
-        return '<div class="rd-fae" style="border-left:3px solid '+col.border+';background:'+col.bg+'"><span class="rd-fae-nm" style="color:'+col.text+'">'+(fa?esc(fa):'Sin faena asignada')+'</span><span class="rd-fae-h">'+hors+' · '+hm(fmin)+'</span></div>';
+        return '<div class="rd-fae" style="border-left:3px solid '+col.border+';background:'+col.bg+'"><span class="rd-fae-nm" style="color:'+col.text+'">'+(fa?esc(fa):'Sin faena asignada')+'</span><span class="rd-fae-h">'+hors+' · '+hm(fmin)+' · <b style="color:'+col.text+'">'+fmtMoney(fmonto)+'</b></span></div>';
       }).join('');
       var faTxt='<div class="rd-fae-list">'+faeList+'</div>';
       var fijoTxt='';
