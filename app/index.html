@@ -539,8 +539,14 @@
   .pw-kpi.warn b{color:#b45309;} .pw-kpi.ok b{color:#0f6e56;}
   .pw-hint{position:sticky;top:6px;z-index:5;display:flex;align-items:center;gap:10px;background:var(--navy);color:#fff;border-radius:10px;padding:8px 12px;margin-bottom:10px;font:600 12.5px var(--font);}
   .pw-hint button{margin-left:auto;background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:7px;padding:4px 10px;font:700 11.5px var(--font);cursor:pointer;}
-  .pw-search{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:11px;padding:8px 12px;margin-bottom:10px;color:var(--muted);position:sticky;top:0;z-index:6;}
-  .pw-search input{flex:1;min-width:0;border:none;background:none;font:600 14px var(--font);color:var(--ink);outline:none;}
+  .pw-pool{position:sticky;top:0;z-index:6;background:var(--alt);border:1px solid var(--line);border-radius:12px;padding:9px 11px;margin-bottom:11px;}
+  .pw-search{display:flex;align-items:center;gap:8px;color:var(--muted);margin-bottom:8px;}
+  .pw-search input{flex:1;min-width:60px;border:none;background:none;font:600 14px var(--font);color:var(--ink);outline:none;}
+  .pw-poolhint{font:500 10.5px var(--font);color:var(--muted);white-space:nowrap;}
+  .pw-pool .pw-ws{max-height:132px;overflow-y:auto;gap:5px;}
+  .pw-pool .pw-w{padding:5px 11px;font-size:12px;background:#fff;}
+  .pw-wch{margin-left:5px;font:700 8px var(--font);color:var(--orange-2,#c2410c);text-transform:uppercase;letter-spacing:.03em;}
+  .pw-fae.pick{border-color:var(--orange);cursor:copy;}
   .pw-grid{display:grid;grid-template-columns:repeat(7,minmax(172px,1fr));gap:8px;overflow-x:auto;padding-bottom:6px;align-items:start;}
   .pw-col{background:var(--alt);border:1px solid var(--line);border-radius:12px;padding:8px;min-width:0;}
   .pw-col.hoy{border-color:var(--orange);box-shadow:inset 0 0 0 1px var(--orange);}
@@ -2029,30 +2035,25 @@
       T.nec+=dNec; T.asg+=dAsg; T.falt+=falt;
       PW_TURNOS.forEach(function(t){ var arr=fs.filter(function(e){ return turnoEvento(e)===t[0]; }); if(!arr.length) return;
         body+='<div class="pw-turno pw-t-'+(t[0]||'x')+'">'+pwTurnoIco(t[0])+t[1]+'</div>'+arr.map(function(e){ return pwCard(e,f,cnt); }).join(''); });
-      var libres=trabs.filter(function(w){ return !cnt[normName(w.nombre)]; });
-      var disp=fs.length?('<div class="pw-disp"><div class="pw-dl">Disponibles ('+libres.length+')</div><div class="pw-ws">'+
-        (libres.map(function(w){ return '<span class="pw-w'+(PW_PICK&&PW_PICK.n===w.nombre&&PW_PICK.f===f?' pick':'')+'" draggable="true" data-n="'+enc(w.nombre)+'" data-f="'+f+'" title="'+enc(w.cargo||'Operario')+(w.chofer?' · chofer':'')+'">'+esc(w.nombre)+'</span>'; }).join('')||'<span class="note" style="margin:0;font-size:.7rem">Todos asignados</span>')+'</div></div>'):'';
-      cols+='<div class="pw-col'+(f===hoy?' hoy':'')+(PW_PICK&&PW_PICK.f===f?' pickday':'')+'" data-f="'+f+'"><div class="pw-dh"><span class="pw-dn">'+DIAS[di]+' '+dd.getDate()+'</span>'+
+      cols+='<div class="pw-col'+(f===hoy?' hoy':'')+'" data-f="'+f+'"><div class="pw-dh"><span class="pw-dn">'+DIAS[di]+' '+dd.getDate()+'</span>'+
         (fs.length?'<span class="pw-ds '+(falt>0?'miss':'ok')+'">'+fs.length+' faena'+(fs.length>1?'s':'')+' · '+dAsg+'/'+dNec+'</span>':'')+'</div>'+
-        (body||'<div class="pw-empty">Sin faenas</div>')+disp+'</div>';
+        (body||'<div class="pw-empty">Sin faenas</div>')+'</div>';
     }
     var nF=Object.keys(faeSet).length, falta=T.falt;
     var kpi=function(v,l,k){ return '<div class="pw-kpi'+(k?(' '+k):'')+'"><b>'+v+'</b><span>'+l+'</span></div>'; };
+    var poolChips=trabs.map(function(w){ return '<span class="pw-w" draggable="true" data-n="'+enc(w.nombre)+'" title="'+enc(w.cargo||'Operario')+(w.chofer?' · chofer':'')+'">'+esc(w.nombre)+(w.chofer?'<i class="pw-wch">chofer</i>':'')+'</span>'; }).join('')||'<span class="note" style="margin:0;font-size:.72rem">Sin trabajadores. Créalos en RRHH.</span>';
     c.innerHTML='<div class="pw-sum">'+kpi(nF,'Faenas')+kpi(T.asg+' / '+T.nec,'Asignadas / necesarias',(T.nec&&!falta)?'ok':'')+kpi(falta,'Faltan personas',falta>0?'warn':'ok')+kpi(T.sinMat,'Sin matriz',T.sinMat?'warn':'ok')+kpi(T.env+' / '+nF,'Enviadas a Prep.')+'</div>'+
-      '<div class="pw-search"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg><input id="pw-q" type="search" placeholder="Buscar trabajador para asignar…" value="'+enc(PW_Q)+'"></div>'+
+      '<div class="pw-pool"><div class="pw-search"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg><input id="pw-q" type="search" placeholder="Buscar trabajador…" value="'+enc(PW_Q)+'"><span class="pw-poolhint">tócalo y luego la faena, o arrástralo</span></div><div class="pw-ws" id="pw-pool">'+poolChips+'</div></div>'+
       '<div id="pw-hint"></div><div class="pw-grid">'+cols+'</div>';
     pwHint(); pwWire(c);
     var wq=$('pw-q'); if(wq){ wq.addEventListener('input',function(){ PW_Q=this.value; pwFiltrar(); }); pwFiltrar(); }
   }
-  // Filtra los chips de trabajadores disponibles (en todos los días) por el buscador de arriba.
-  function pwFiltrar(){ var q=(PW_Q||'').toLowerCase().trim();
-    document.querySelectorAll('.pw-col').forEach(function(col){
-      var vis=0; col.querySelectorAll('.pw-w').forEach(function(w){ var ok=!q || (w.dataset.n||w.textContent||'').toLowerCase().indexOf(q)>=0; w.style.display=ok?'':'none'; if(ok)vis++; });
-      var dl=col.querySelector('.pw-dl'); if(dl && q) dl.textContent='Disponibles ('+vis+')';
-    });
-  }
-  function pwHint(){ var h=$('pw-hint'); if(!h) return; document.querySelectorAll('.pw-col').forEach(function(x){ x.classList.toggle('pickday', !!PW_PICK && x.dataset.f===PW_PICK.f); });
-    h.innerHTML=PW_PICK?('<div class="pw-hint">Asignando a <b>'+esc(PW_PICK.n)+'</b> — toca la faena del '+esc(fechaCorta(PW_PICK.f))+'<button type="button" id="pw-cancel">Cancelar</button></div>'):'';
+  // Filtra los chips del pool de trabajadores por el buscador de arriba.
+  function pwFiltrar(){ var q=(PW_Q||'').toLowerCase().trim(); var pool=$('pw-pool'); if(!pool) return;
+    pool.querySelectorAll('.pw-w').forEach(function(w){ var ok=!q || (w.dataset.n||'').toLowerCase().indexOf(q)>=0; w.style.display=ok?'':'none'; }); }
+  function pwHint(){ var h=$('pw-hint'); if(!h) return;
+    h.innerHTML=PW_PICK?('<div class="pw-hint">Asignando a <b>'+esc(PW_PICK.n)+'</b> — toca una faena para agregarlo <button type="button" id="pw-cancel">Cancelar</button></div>'):'';
+    document.querySelectorAll('.pw-fae').forEach(function(x){ x.classList.toggle('pick', !!PW_PICK); });
     if($('pw-cancel')) $('pw-cancel').addEventListener('click',function(){ PW_PICK=null; document.querySelectorAll('.pw-w.pick').forEach(function(x){ x.classList.remove('pick'); }); pwHint(); }); }
   function pwMover(de, i, a){ var e1=eventoDe(de), e2=eventoDe(a); if(!e1||!e2||String(de)===String(a)) return; var p1=planDe(e1), p2=planDe(e2);
     if(p1.estado==='enviada'||p2.estado==='enviada'){ toast('Faena enviada a Preparación; reábrela para cambiarla.'); return; }
@@ -2061,7 +2062,7 @@
     p1.personas.splice(+i,1); p2.personas.push(pp); planSave(e1); planSave(e2); renderPlanif(); }
   function pwWire(c){
     c.querySelectorAll('.pw-w').forEach(function(w){
-      w.addEventListener('click',function(){ var on=PW_PICK&&PW_PICK.n===w.dataset.n&&PW_PICK.f===w.dataset.f; PW_PICK=on?null:{n:w.dataset.n, f:w.dataset.f};
+      w.addEventListener('click',function(){ var on=PW_PICK&&PW_PICK.n===w.dataset.n; PW_PICK=on?null:{n:w.dataset.n};
         c.querySelectorAll('.pw-w').forEach(function(x){ x.classList.toggle('pick', !!PW_PICK && x===w); }); pwHint(); });
       w.addEventListener('dragstart',function(ev){ try{ ev.dataTransfer.setData('text/plain','n|'+w.dataset.n); ev.dataTransfer.effectAllowed='copyMove'; }catch(_){} });
     });
