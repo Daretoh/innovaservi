@@ -4230,13 +4230,15 @@
       sb.from('vehiculo_gastos').select('categoria,fecha,monto,cantidad,chofer').in('categoria',['vuelta','peaje']).gte('fecha',lun).lte('fecha',fin).limit(500),
       sb.from('remuneracion_items').select('*').eq('semana',lun).limit(500),
       sb.from('config').select('*').in('clave',['valor_vuelta','valor_hora']),
-      sb.from('remu_ajuste_dia').select('*').gte('fecha',lun).lte('fecha',fin).limit(2000)
+      sb.from('remu_ajuste_dia').select('*').gte('fecha',lun).lte('fecha',fin).limit(2000),
+      sb.from('remu_ajuste_faena').select('*').gte('fecha',lun).lte('fecha',fin).limit(4000).then(function(r){return r;},function(){return {data:[]};})
     ]).then(function(rs){
       var cfgMap={}; ((rs[4]&&rs[4].data)||[]).forEach(function(c){ cfgMap[c.clave]=+c.valor||0; });
       var ajDia={}; ((rs[5]&&rs[5].data)||[]).forEach(function(a){ ajDia[a.trabajador_id+'|'+a.fecha]={monto:(+a.monto||0), obs:a.obs||''}; });
+      var ajFae={}; ((rs[6]&&rs[6].data)||[]).forEach(function(a){ ajFae[a.trabajador_id+'|'+a.fecha+'|'+(a.faena||'')]={monto:(+a.monto||0), obs:a.obs||''}; });
       REMU_DATA={ lun:lun, fin:fin,
         trab:(rs[0]&&rs[0].data)||[], regs:(rs[1]&&rs[1].data)||[], vg:(rs[2]&&rs[2].data)||[],
-        items:(rs[3]&&rs[3].data)||[], ajDia:ajDia, valorVuelta:cfgMap.valor_vuelta||0, valorHora:cfgMap.valor_hora||0 };
+        items:(rs[3]&&rs[3].data)||[], ajDia:ajDia, ajFae:ajFae, valorVuelta:cfgMap.valor_vuelta||0, valorHora:cfgMap.valor_hora||0 };
       computarRemu();
     });
   }
@@ -4405,17 +4407,27 @@
     var fechasD=Object.keys(porDiaD).sort();
     var diasHtml=fechasD.length?fechasD.map(function(f){
       var pd=porDiaD[f], pmin=tratoMinDia(x.t, x.tipo, x.jor, x.H, f), dReal=Math.round(pmin/60*x.vh);
-      var ajd=(REMU_DATA.ajDia&&x.t.id)?REMU_DATA.ajDia[x.t.id+'|'+f]:null, dCont=ajd?ajd.monto:dReal;
-      // Desglose por faena: cada faena en su punto, con su horario y horas, en el color del cliente (sutil).
+      var ajd=(REMU_DATA.ajDia&&x.t.id)?REMU_DATA.ajDia[x.t.id+'|'+f]:null;
+      // Desglose por faena, con su monto individual (editable si la suma por faena cuadra con el día).
       var byFae={}, forder=[]; pd.ents.forEach(function(d){ var fa=(d.faena||''); if(!(fa in byFae)){ byFae[fa]=[]; forder.push(fa); } byFae[fa].push(d); });
-      var faeList=forder.map(function(fa){
+      var faeData=forder.map(function(fa){
         var ents=byFae[fa], hors=ents.map(function(d){ return esc(d.entrada||'--:--')+'→'+esc(d.salida||'--:--')+turnoTag(d.entrada,d.salida); }).join(', ');
         var fmin=ents.reduce(function(a,d){ return a+(d.min||0); },0);
-        // Monto de esta faena tratada individualmente (horas de la faena que cuentan como pago × valor hora).
         var faeIvs=[]; ents.forEach(function(d){ if(d.entrada&&d.salida&&(d.min||0)>0){ var s=hhmm2min(d.entrada); faeIvs.push([s,s+d.min]); } });
         var fpmin=faenaPagoMin(x.t, x.tipo, x.jor, f, faeIvs, fmin), fmonto=Math.round(fpmin/60*x.vh);
+        var aj=(REMU_DATA.ajFae&&x.t.id)?REMU_DATA.ajFae[x.t.id+'|'+f+'|'+fa]:null;
         var col=fa?colorEmpresa(claveEmpresa(fa)):{bg:'#f3f4f6',border:'#cbd5e1',text:'#64748b'};
-        return '<div class="rd-fae" style="border-left:3px solid '+col.border+';background:'+col.bg+'"><span class="rd-fae-nm" style="color:'+col.text+'">'+(fa?esc(fa):'Sin faena asignada')+'</span><span class="rd-fae-h">'+hors+' · '+hm(fmin)+' · <b style="color:'+col.text+'">'+fmtMoney(fmonto)+'</b></span></div>';
+        return {fa:fa,hors:hors,fmin:fmin,real:fmonto,cont:(aj?aj.monto:fmonto),col:col};
+      });
+      var sumReal=faeData.reduce(function(a,d){ return a+d.real; },0);
+      var perEd=!!x.t.id && (sumReal===dReal);   // editar por faena solo si la suma por faena cuadra (spot / turno)
+      var dCont=perEd?faeData.reduce(function(a,d){ return a+d.cont; },0):(ajd?ajd.monto:dReal);
+      var faeList=faeData.map(function(d){
+        var head='<span style="min-width:0;flex:1"><span class="rd-fae-nm" style="color:'+d.col.text+'">'+(d.fa?esc(d.fa):'Sin faena asignada')+'</span><span class="rd-fae-h">'+d.hors+' · '+hm(d.fmin)+'</span></span>';
+        var money=perEd
+          ? '<input class="rd-fcont" type="number" min="0" data-f="'+f+'" data-fae="'+enc(d.fa)+'" data-real="'+d.real+'" value="'+d.cont+'" title="Monto de esta faena (editable)" style="width:98px;text-align:right;font:800 13px var(--font);color:var(--orange-2);padding:5px 7px;border:1px solid var(--line);border-radius:8px;background:#fff;flex:none">'
+          : '<b style="color:'+d.col.text+';flex:none">'+fmtMoney(d.real)+'</b>';
+        return '<div class="rd-fae" style="border-left:3px solid '+d.col.border+';background:'+d.col.bg+';display:flex;justify-content:space-between;align-items:center;gap:8px">'+head+money+'</div>';
       }).join('');
       var faTxt='<div class="rd-fae-list">'+faeList+'</div>';
       var fijoTxt='';
@@ -4423,12 +4435,15 @@
         fijoTxt = esTratoDia(f)
           ? '<div class="note" style="margin:1px 0 0;font-size:.7rem;color:var(--navy)">'+(esFinde(f)?'fin de semana':'feriado')+' · '+hm(pd.min)+' como trato · '+fmtMoney(dReal)+'</div>'
           : '<div class="note" style="margin:1px 0 0;font-size:.7rem;color:var(--navy)">fijo · '+hm(pd.min)+' − '+hm(pd.min-pmin)+(ventanaTrab(x.t)?' en turno':' jornada')+' = '+hm(pmin)+' trato · real '+fmtMoney(dReal)+' <span style="color:var(--muted)">(si spot '+fmtMoney(dFull)+' · −'+fmtMoney(dDesc)+')</span></div>'; }
-      var right=x.t.id
-        ? '<div class="rd-dcol"><div class="rd-real2'+((dCont!==dReal)?' rd-aj2':'')+'">real '+fmtMoney(dReal)+'</div>'+
+      var right;
+      if(!x.t.id){ right='<div class="rd-dcol"><b style="color:var(--orange-2)">'+fmtMoney(dReal)+'</b></div>'; }
+      else if(perEd){ right='<div class="rd-dcol"><div class="rd-real2'+((dCont!==dReal)?' rd-aj2':'')+'">real '+fmtMoney(dReal)+'</div>'+
+            '<div class="rd-dtot" data-f="'+f+'" title="Total del día (suma de las faenas)" style="font:800 14px var(--font);color:var(--orange-2);text-align:right;padding:2px 0">'+fmtMoney(dCont)+'</div>'+
+            '<input class="rd-dobs" type="text" data-f="'+f+'" value="'+enc(ajd?ajd.obs:'')+'" placeholder="motivo (si ajustas)"></div>'; }
+      else { right='<div class="rd-dcol"><div class="rd-real2'+((dCont!==dReal)?' rd-aj2':'')+'">real '+fmtMoney(dReal)+'</div>'+
             '<input class="rd-dcont" type="number" min="0" data-f="'+f+'" data-real="'+dReal+'" value="'+dCont+'" title="Monto contable de este día (editable)">'+
-            '<input class="rd-dobs" type="text" data-f="'+f+'" value="'+enc(ajd?ajd.obs:'')+'" placeholder="motivo (si ajustas)"></div>'
-        : '<div class="rd-dcol"><b style="color:var(--orange-2)">'+fmtMoney(dReal)+'</b></div>';
-      return '<div class="rd-day2"><div style="flex:1;min-width:0"><b>'+fechaDia(f)+'</b> <span class="note" style="margin:0;font-size:.72rem">· '+hm(pd.min)+'</span>'+faTxt+fijoTxt+'</div>'+right+'</div>';
+            '<input class="rd-dobs" type="text" data-f="'+f+'" value="'+enc(ajd?ajd.obs:'')+'" placeholder="motivo (si ajustas)"></div>'; }
+      return '<div class="rd-day2" data-f="'+f+'"><div style="flex:1;min-width:0"><b>'+fechaDia(f)+'</b> <span class="note" style="margin:0;font-size:.72rem">· '+hm(pd.min)+'</span>'+faTxt+fijoTxt+'</div>'+right+'</div>';
     }).join(''):'<p class="note" style="margin:0">Sin días registrados esta semana.</p>';
     var desg='';
     if(x.tipo==='contrato'){
@@ -4479,20 +4494,38 @@
       montosCard;
     // Edición del contable por día (guarda al salir del campo) + total contable en vivo.
     if(x.t.id){
-      var recalcDet=function(){ var sum=0; $('rd-body').querySelectorAll('.rd-dcont').forEach(function(inp){ sum+=(+inp.value||0); }); var el=$('rd-cont-live'); if(el) el.textContent=fmtMoney(sum + x.vueltasMonto + x.peajes + x.bono - x.desc); };
-      var persistDia=function(f){
-        var inp=$('rd-body').querySelector('.rd-dcont[data-f="'+f+'"]'); if(!inp) return;
-        var real=+inp.getAttribute('data-real'), monto=+inp.value||0;
-        var obsEl=$('rd-body').querySelector('.rd-dobs[data-f="'+f+'"]'), obs=obsEl?obsEl.value.trim():'';
-        REMU_DETDIRTY=true;
-        if(monto===real && !obs){ sb.from('remu_ajuste_dia').delete().eq('trabajador_id',x.t.id).eq('fecha',f).then(function(){},function(){}); return; }
+      // Total contable en vivo: por día suma sus faenas (rd-fcont) o su monto de día (rd-dcont).
+      var recalcDet=function(){ var sum=0; $('rd-body').querySelectorAll('.rd-day2').forEach(function(day){ var fc=day.querySelectorAll('.rd-fcont'); if(fc.length){ var s=0; fc.forEach(function(i){ s+=(+i.value||0); }); sum+=s; } else { var dc=day.querySelector('.rd-dcont'); if(dc) sum+=(+dc.value||0); } }); var el=$('rd-cont-live'); if(el) el.textContent=fmtMoney(sum + x.vueltasMonto + x.peajes + x.bono - x.desc); };
+      var dayObs=function(f){ var o=$('rd-body').querySelector('.rd-dobs[data-f="'+f+'"]'); return o?o.value.trim():''; };
+      var saveDiaRow=function(f,monto,real,obs){ REMU_DETDIRTY=true;
+        if(monto===real && !obs){ if(REMU_DATA.ajDia)delete REMU_DATA.ajDia[x.t.id+'|'+f]; sb.from('remu_ajuste_dia').delete().eq('trabajador_id',x.t.id).eq('fecha',f).then(function(){},function(){}); return; }
+        if(REMU_DATA.ajDia)REMU_DATA.ajDia[x.t.id+'|'+f]={monto:monto,obs:obs};
         sb.from('remu_ajuste_dia').upsert({trabajador_id:x.t.id,fecha:f,monto:monto,obs:obs,autor:userEmail},{onConflict:'trabajador_id,fecha'}).then(function(r){ if(r&&r.error&&/schema cache|does not exist|relation/.test(r.error.message||'')) toast('Falta correr remu-ajuste-dia.sql en Supabase.'); },function(){});
       };
+      var persistDia=function(f){
+        var inp=$('rd-body').querySelector('.rd-dcont[data-f="'+f+'"]'); if(!inp) return;
+        saveDiaRow(f, +inp.value||0, +inp.getAttribute('data-real'), dayObs(f));
+      };
+      var persistFaena=function(f){
+        var day=$('rd-body').querySelector('.rd-day2[data-f="'+f+'"]'); if(!day) return;
+        var sum=0, sumReal=0;
+        day.querySelectorAll('.rd-fcont').forEach(function(inp){ var fae=inp.getAttribute('data-fae'), real=+inp.getAttribute('data-real'), monto=+inp.value||0; sum+=monto; sumReal+=real; var key=x.t.id+'|'+f+'|'+fae;
+          if(monto===real){ if(REMU_DATA.ajFae&&REMU_DATA.ajFae[key]){ delete REMU_DATA.ajFae[key]; sb.from('remu_ajuste_faena').delete().eq('trabajador_id',x.t.id).eq('fecha',f).eq('faena',fae).then(function(){},function(){}); } }
+          else { if(REMU_DATA.ajFae)REMU_DATA.ajFae[key]={monto:monto,obs:''}; sb.from('remu_ajuste_faena').upsert({trabajador_id:x.t.id,fecha:f,faena:fae,monto:monto,autor:userEmail},{onConflict:'trabajador_id,fecha,faena'}).then(function(r){ if(r&&r.error&&/schema cache|does not exist|relation/.test(r.error.message||'')) toast('Falta correr remu-ajuste-faena.sql en Supabase.'); },function(){}); }
+        });
+        var dt=day.querySelector('.rd-dtot'); if(dt) dt.textContent=fmtMoney(sum); var rr=day.querySelector('.rd-real2'); if(rr) rr.classList.toggle('rd-aj2', sum!==sumReal);
+        saveDiaRow(f, sum, sumReal, dayObs(f));   // el pago del día = suma de las faenas
+        recalcDet();
+      };
+      $('rd-body').querySelectorAll('.rd-fcont').forEach(function(inp){
+        inp.addEventListener('input',recalcDet);
+        inp.addEventListener('change',function(){ persistFaena(inp.dataset.f); });
+      });
       $('rd-body').querySelectorAll('.rd-dcont').forEach(function(inp){
         inp.addEventListener('input',function(){ var real=+inp.getAttribute('data-real'); var rr=inp.closest('.rd-day2').querySelector('.rd-real2'); if(rr) rr.classList.toggle('rd-aj2',(+inp.value||0)!==real); recalcDet(); });
         inp.addEventListener('change',function(){ persistDia(inp.dataset.f); });
       });
-      $('rd-body').querySelectorAll('.rd-dobs').forEach(function(o){ o.addEventListener('change',function(){ persistDia(o.dataset.f); }); });
+      $('rd-body').querySelectorAll('.rd-dobs').forEach(function(o){ o.addEventListener('change',function(){ var day=o.closest('.rd-day2'); if(day && day.querySelector('.rd-fcont')) persistFaena(o.dataset.f); else persistDia(o.dataset.f); }); });
     }
     $('rd-body').querySelectorAll('.rd-dia.rd-link[data-reg]').forEach(function(el){ el.addEventListener('click',function(){ var reg=(REGISTROS||[]).filter(function(r){ return String(r.id)===el.dataset.reg; })[0]; if(reg){ cerrarDetalleRemu(); abrirEdicion(reg); } }); });
     if(!x.t.id){
