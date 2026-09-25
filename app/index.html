@@ -448,8 +448,8 @@
   .trab .meta{font-size:.72rem;color:var(--muted);margin-top:1px;}
   .trab .badge{font-size:.66rem;font-weight:800;padding:2px 8px;border-radius:999px;background:rgba(34,160,107,.14);color:var(--ok);}
   .trab.off .badge{background:var(--alt);color:var(--muted);}
-  #ficha,#veh-ficha,#remu-detalle,#acc-ficha,#rrhh-edit,#cli-ficha,#cargos-mgr,#dups-mgr,#planif-edit{position:fixed;inset:0;z-index:75;background:var(--alt);overflow-y:auto;-webkit-overflow-scrolling:touch;}
-  #ficha.hide,#veh-ficha.hide,#remu-detalle.hide,#acc-ficha.hide,#rrhh-edit.hide,#cli-ficha.hide,#cargos-mgr.hide,#dups-mgr.hide,#planif-edit.hide{display:none;}
+  #ficha,#veh-ficha,#remu-detalle,#acc-ficha,#rrhh-edit,#cli-ficha,#cargos-mgr,#dups-mgr,#nomina-mgr,#planif-edit{position:fixed;inset:0;z-index:75;background:var(--alt);overflow-y:auto;-webkit-overflow-scrolling:touch;}
+  #ficha.hide,#veh-ficha.hide,#remu-detalle.hide,#acc-ficha.hide,#rrhh-edit.hide,#cli-ficha.hide,#cargos-mgr.hide,#dups-mgr.hide,#nomina-mgr.hide,#planif-edit.hide{display:none;}
   .pe-lbl{display:block;font:800 12.5px var(--font);color:var(--ink);margin-bottom:8px;}
   .planif-item{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--line);border-left:4px solid var(--navy);border-radius:12px;padding:12px 14px;margin-bottom:9px;cursor:pointer;}
   .planif-item:hover{background:var(--alt);}
@@ -523,6 +523,14 @@
   .pf-emp{font:800 11px var(--font);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .pf-tit{font:600 11px var(--font);color:var(--ink);margin:1px 0 5px;line-height:1.2;}
   .pf-empty{color:#b9bfd0;font-size:11px;text-align:center;padding:8px 0;}
+  /* Nómina para el cliente */
+  .nom-list{display:flex;flex-direction:column;max-height:46vh;overflow:auto;border:1px solid var(--line);border-radius:10px;background:#fff;}
+  .nom-row{display:flex;align-items:center;gap:10px;padding:7px 11px;border-bottom:1px solid var(--line);font:600 13px var(--font);cursor:pointer;}
+  .nom-row:last-child{border-bottom:none;}
+  .nom-row .nm{flex:1;min-width:0;color:var(--ink);}
+  .nom-row .rt{font:600 12.5px var(--font);color:var(--body);white-space:nowrap;font-variant-numeric:tabular-nums;}
+  .nom-row .rt.miss{color:#b45309;font-style:italic;}
+  .nom-warn{background:#fbf0d9;color:#854f0b;border-radius:9px;padding:7px 10px;font:600 12px var(--font);margin-bottom:8px;}
   /* Planificación: resumen semanal */
   .pw-sum{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px;}
   .pw-kpi{background:#fff;border:1px solid var(--line);border-radius:11px;padding:8px 12px;}
@@ -1125,7 +1133,7 @@
 
       <!-- Panel Trabajadores -->
       <div id="rrhh-trab">
-        <div class="h-row" style="margin-top:0"><b style="font:800 15px var(--font);color:var(--ink)">Trabajadores <span class="cnt" id="trab-cnt"></span></b><div style="display:flex;gap:8px;flex-wrap:wrap"><button id="dups-btn" class="btn ghost small" style="width:auto">🔍 Duplicados</button><button id="cargos-btn" class="btn ghost small" style="width:auto">⚙️ Cargos y tratos</button><button id="trab-import" class="btn ghost small" style="width:auto">⬆ Importar</button><button id="trab-nuevo" class="btn small" style="width:auto">＋ Nuevo</button></div></div>
+        <div class="h-row" style="margin-top:0"><b style="font:800 15px var(--font);color:var(--ink)">Trabajadores <span class="cnt" id="trab-cnt"></span></b><div style="display:flex;gap:8px;flex-wrap:wrap"><button id="nomina-btn" class="btn ghost small" style="width:auto" title="Nómina de personal activo y avisos de baja para el cliente"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M4 4h16v16H4z"/><path d="M4 9h16M9 9v11"/></svg>Nómina</button><button id="dups-btn" class="btn ghost small" style="width:auto">🔍 Duplicados</button><button id="cargos-btn" class="btn ghost small" style="width:auto">⚙️ Cargos y tratos</button><button id="trab-import" class="btn ghost small" style="width:auto">⬆ Importar</button><button id="trab-nuevo" class="btn small" style="width:auto">＋ Nuevo</button></div></div>
         <div id="fichas-inbox"></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
           <input id="trab-search" type="search" placeholder="Buscar nombre, RUT o cargo…" style="flex:1;min-width:150px;font:500 15px var(--font);padding:10px 12px;border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--ink)">
@@ -1526,6 +1534,45 @@
   </div>
 </div>
 
+<!-- Nómina de personal activo / aviso de baja (para enviar al cliente por correo) -->
+<div id="nomina-mgr" class="hide">
+  <div class="ficha-bar">
+    <button id="nom-close" class="btn ghost small" style="width:auto">✕ Cerrar</button>
+    <b>Nómina para el cliente</b>
+    <span style="width:56px"></span>
+  </div>
+  <div class="ficha-body">
+    <div class="seg" id="nom-seg" style="margin-bottom:12px"><button class="seg-b on" data-m="nomina">Nómina de activos</button><button class="seg-b" data-m="baja">Aviso de baja</button></div>
+    <div class="card">
+      <div class="grid2"><div class="fld" style="margin:0"><label>Para (correo)</label><input id="nom-para" type="email" placeholder="correo@cliente.cl" autocomplete="off"></div><div class="fld" style="margin:0"><label>Asunto</label><input id="nom-asunto" type="text"></div></div>
+    </div>
+    <div id="nom-pnl-nomina">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px"><label class="pe-lbl" style="margin:0">Personas activas <span id="nom-cnt" class="note" style="margin:0"></span></label><span style="display:flex;gap:6px"><button id="nom-todos" class="btn ghost small" style="width:auto" type="button">Todos</button><button id="nom-ninguno" class="btn ghost small" style="width:auto" type="button">Ninguno</button></span></div>
+        <div id="nom-warn"></div>
+        <div id="nom-list" class="nom-list"></div>
+      </div>
+    </div>
+    <div id="nom-pnl-baja" class="hide">
+      <div class="card">
+        <div class="grid2"><div class="fld" style="margin:0"><label>Trabajador</label><select id="nom-baja-t"></select></div><div class="fld" style="margin:0"><label>Deja de prestar servicios desde</label><input id="nom-baja-f" type="date"></div></div>
+      </div>
+    </div>
+    <div class="card">
+      <label class="pe-lbl">Texto del correo <span class="note" style="margin:0;font-weight:500">(puedes editarlo)</span></label>
+      <textarea id="nom-cuerpo" rows="14" style="width:100%;font:500 13.5px var(--font);padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);resize:vertical"></textarea>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+        <button id="nom-copiar" class="btn" style="width:auto" type="button">Copiar texto</button>
+        <button id="nom-mail" class="btn ghost" style="width:auto" type="button">Abrir en correo</button>
+        <button id="nom-gmail" class="btn ghost" style="width:auto" type="button">Abrir en Gmail</button>
+        <button id="nom-pdf" class="btn ghost" style="width:auto" type="button">Descargar PDF</button>
+        <button id="nom-xls" class="btn ghost" style="width:auto" type="button">Descargar Excel</button>
+      </div>
+      <p class="note" style="margin:8px 0 0">El correo se abre con el texto listo; el documento (PDF o Excel) se descarga aparte y lo adjuntas tú.</p>
+    </div>
+  </div>
+</div>
+
 <!-- Editar documento RRHH (trabajador × tipo) -->
 <div id="rrhh-edit" class="hide">
   <div class="ficha-bar">
@@ -1611,7 +1658,7 @@
   var EDIT_ID=null;             // id del registro que se está editando (null = nuevo)
   var REGISTROS=[];             // registros cargados (lista + dedup por trabajo)
   var TRAB=[];                  // trabajadores (RRHH)
-  var FICHA_ID=null, FICHA_DOCS=[]; // ficha en edición + sus documentos
+  var FICHA_ID=null, FICHA_DOCS=[], FICHA_EST0='activo'; // ficha en edición + sus documentos
   var VEH=[];                   // vehículos/maquinaria
   var VEH_ID=null, VEH_DOCS=[]; // ficha de vehículo en edición + sus documentos
   var VEH_GASTOS=[];            // gastos del vehículo abierto
@@ -3669,8 +3716,86 @@
   if($('dups-btn')) $('dups-btn').addEventListener('click',abrirDups);
   if($('dups-close')) $('dups-close').addEventListener('click',function(){ $('dups-mgr').classList.add('hide'); });
 
+  // ====== Nómina de personal activo / aviso de baja (correo al cliente: casino, torniquetes, etc.) ======
+  var NOM_MODO='nomina', NOM_SEL={}, NOM_T=[];
+  var MES_L=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  function fechaLarga(f){ var d=new Date((f||todayISO())+'T12:00:00'); return d.getDate()+' de '+MES_L[d.getMonth()]+' de '+d.getFullYear(); }
+  function fechaNum(f){ var p=(f||todayISO()).split('-'); return p[2]+'/'+p[1]+'/'+p[0]; }
+  function rutFmt(r){ var c=(r||'').replace(/[^0-9kK]/g,'').toUpperCase(); if(c.length<2) return (r||'').trim(); var b=c.slice(0,-1).replace(/^0+/,''), dv=c.slice(-1); return b.replace(/\B(?=(\d{3})+(?!\d))/g,'.')+'-'+dv; }
+  function nomFirma(){ var u=(userEmail||'').split('@')[0].replace(/[._-]+/g,' ').trim(); return u?titleCase(u):''; }
+  function nomActivos(){ var seen={}; return (TRAB||[]).filter(function(t){ if(t.estado==='inactivo'||!(t.nombre||'').trim()) return false; var k=normName(t.nombre); if(seen[k]) return false; seen[k]=1; return true; })
+    .map(function(t){ return {id:t.id, nombre:titleCase(t.nombre.trim()), rut:rutFmt(t.rut)}; }).sort(function(a,b){ return a.nombre.localeCompare(b.nombre); }); }
+  function nomElegidos(){ return NOM_T.filter(function(t){ return NOM_SEL[t.id]; }); }
+  function nomCuerpo(){ var fir=nomFirma();
+    if(NOM_MODO==='baja'){ var t=(TRAB||[]).filter(function(x){ return String(x.id)===$('nom-baja-t').value; })[0];
+      var nm=t?titleCase((t.nombre||'').trim()):'[nombre]', rt=t&&t.rut?rutFmt(t.rut):'[RUT]';
+      return 'Hola, buenos días:\n\nInformo que la siguiente persona dejó de prestar servicios en Innovaservi a contar del '+fechaLarga($('nom-baja-f').value)+', por lo que solicito su desactivación del sistema (ticket de casino y torniquetes):\n\n'+nm+'\n'+rt+'\n\nQuedo atento.\n\nSaludos cordiales,\n'+fir; }
+    var L=nomElegidos();
+    return 'Hola, buenos días:\n\nJunto con saludar, envío la nómina actualizada del personal activo de Innovaservi al '+fechaLarga()+' ('+L.length+' persona'+(L.length===1?'':'s')+'), para la revisión de tickets y el enrolamiento en torniquetes. También va adjunta como documento.\n\n'+
+      L.map(function(t,i){ return (i+1)+'. '+t.nombre+'\n    '+(t.rut||'(RUT pendiente)'); }).join('\n')+
+      '\n\nCada vez que una persona deje de prestar servicios se lo informaremos para su desactivación.\n\nQuedo atento.\n\nSaludos cordiales,\n'+fir; }
+  function nomAsunto(){ if(NOM_MODO==='baja'){ var t=(TRAB||[]).filter(function(x){ return String(x.id)===$('nom-baja-t').value; })[0]; return 'Baja de personal Innovaservi'+(t?(' – '+titleCase((t.nombre||'').trim())):''); }
+    return 'Nómina personal activo Innovaservi – '+fechaNum(); }
+  function nomRefrescar(){ $('nom-cuerpo').value=nomCuerpo(); $('nom-asunto').value=nomAsunto(); }
+  function nomPintarLista(){ var L=nomElegidos(), sinRut=L.filter(function(t){ return !t.rut; }).length;
+    $('nom-cnt').textContent='· '+L.length+' de '+NOM_T.length;
+    $('nom-warn').innerHTML=sinRut?('<div class="nom-warn">'+sinRut+' persona'+(sinRut>1?'s':'')+' sin RUT en la ficha. Complétalo en RRHH antes de enviar.</div>'):'';
+    $('nom-list').innerHTML=NOM_T.map(function(t){ return '<label class="nom-row"><input type="checkbox" data-id="'+t.id+'"'+(NOM_SEL[t.id]?' checked':'')+'><span class="nm">'+esc(t.nombre)+'</span><span class="rt'+(t.rut?'':' miss')+'">'+(t.rut?esc(t.rut):'sin RUT')+'</span></label>'; }).join('')||'<p class="note" style="margin:10px">No hay trabajadores activos.</p>';
+    $('nom-list').querySelectorAll('input').forEach(function(ch){ ch.addEventListener('change',function(){ NOM_SEL[ch.dataset.id]=ch.checked; nomPintarLista(); nomRefrescar(); }); }); }
+  function nomModo(m){ NOM_MODO=m; document.querySelectorAll('#nom-seg .seg-b').forEach(function(b){ b.classList.toggle('on', b.dataset.m===m); });
+    $('nom-pnl-nomina').classList.toggle('hide', m!=='nomina'); $('nom-pnl-baja').classList.toggle('hide', m!=='baja');
+    ['nom-pdf','nom-xls'].forEach(function(id){ $(id).classList.toggle('hide', m!=='nomina'); }); nomRefrescar(); }
+  // abrirNominaCli() → nómina; abrirNominaCli('baja', idTrabajador, fecha) → aviso de baja prellenado
+  function abrirNominaCli(modo, tid, fecha){
+    cargarTrab(function(){
+      NOM_T=nomActivos(); NOM_SEL={}; NOM_T.forEach(function(t){ NOM_SEL[t.id]=true; });
+      try{ $('nom-para').value=localStorage.getItem('iserv-nom-para')||''; }catch(_){}
+      $('nom-baja-t').innerHTML='<option value="">— elige —</option>'+(TRAB||[]).slice().sort(function(a,b){ return (a.nombre||'').localeCompare(b.nombre||''); })
+        .map(function(t){ return '<option value="'+t.id+'">'+esc(titleCase(t.nombre||''))+(t.estado==='inactivo'?' (inactivo)':'')+'</option>'; }).join('');
+      if(tid!=null) $('nom-baja-t').value=String(tid);
+      $('nom-baja-f').value=fecha||todayISO();
+      nomPintarLista(); nomModo(modo||'nomina');
+      $('nomina-mgr').classList.remove('hide'); $('nomina-mgr').scrollTop=0;
+    });
+  }
+  function nomCopiar(t, msg){ function ok(){ toast(msg||'Copiado'); }
+    function fb(){ var ta=document.createElement('textarea'); ta.value=t; document.body.appendChild(ta); ta.select(); try{ document.execCommand('copy'); ok(); }catch(_){ toast('No se pudo copiar'); } ta.remove(); }
+    if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(ok, fb); else fb(); }
+  function nomArchivo(ext){ return (NOM_MODO==='baja'?'baja':'nomina-personal-activo')+'-innovaservi-'+todayISO()+'.'+ext; }
+  function nomPDF(){ if(!window.jspdf){ toast('No se pudo cargar el generador de PDF. Revisa tu conexión y recarga.'); return; }
+    var L=nomElegidos(); if(!L.length){ toast('No hay personas seleccionadas.'); return; }
+    var doc=new window.jspdf.jsPDF({unit:'mm',format:'a4'}), x=18, y=22, W=174;
+    doc.setFont('helvetica','bold'); doc.setFontSize(15); doc.setTextColor(26,31,110); doc.text('Nómina de personal activo',x,y);
+    doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(90,90,90); y+=6; doc.text('Innovaservi · al '+fechaLarga()+' · '+L.length+' persona'+(L.length===1?'':'s'),x,y);
+    y+=9;
+    function head(){ doc.setFillColor(26,31,110); doc.rect(x,y-5,W,8,'F'); doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(10);
+      doc.text('N°',x+3,y); doc.text('Nombre completo',x+15,y); doc.text('RUT',x+W-3,y,{align:'right'}); y+=8; doc.setFont('helvetica','normal'); doc.setTextColor(30,30,30); }
+    head();
+    L.forEach(function(t,i){ if(y>280){ doc.addPage(); y=20; head(); }
+      if(i%2){ doc.setFillColor(244,245,250); doc.rect(x,y-5,W,7,'F'); }
+      doc.text(String(i+1),x+3,y); doc.text(t.nombre,x+15,y); doc.text(t.rut||'—',x+W-3,y,{align:'right'}); y+=7; });
+    doc.save(nomArchivo('pdf')); }
+  function nomXLS(){ var L=nomElegidos(); if(!L.length){ toast('No hay personas seleccionadas.'); return; }
+    var rows=[['N°','Nombre completo','RUT']].concat(L.map(function(t,i){ return [i+1, t.nombre, t.rut||'']; }));
+    var csv='﻿'+rows.map(function(r){ return r.map(function(v){ v=String(v); return /[;"\n]/.test(v)?('"'+v.replace(/"/g,'""')+'"'):v; }).join(';'); }).join('\r\n');
+    var a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'})); a.download=nomArchivo('csv'); document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },500); }
+  function nomListo(){ if(NOM_MODO==='baja' && !$('nom-baja-t').value){ toast('Elige el trabajador.'); return false; } if(NOM_MODO==='nomina' && !nomElegidos().length){ toast('No hay personas seleccionadas.'); return false; } return true; }
+  if($('nomina-btn')) $('nomina-btn').addEventListener('click',function(){ abrirNominaCli('nomina'); });
+  if($('nom-close')) $('nom-close').addEventListener('click',function(){ $('nomina-mgr').classList.add('hide'); });
+  document.querySelectorAll('#nom-seg .seg-b').forEach(function(b){ b.addEventListener('click',function(){ nomModo(b.dataset.m); }); });
+  if($('nom-para')) $('nom-para').addEventListener('change',function(){ try{ localStorage.setItem('iserv-nom-para', this.value.trim()); }catch(_){} });
+  if($('nom-todos')) $('nom-todos').addEventListener('click',function(){ NOM_T.forEach(function(t){ NOM_SEL[t.id]=true; }); nomPintarLista(); nomRefrescar(); });
+  if($('nom-ninguno')) $('nom-ninguno').addEventListener('click',function(){ NOM_SEL={}; nomPintarLista(); nomRefrescar(); });
+  if($('nom-baja-t')) $('nom-baja-t').addEventListener('change',nomRefrescar);
+  if($('nom-baja-f')) $('nom-baja-f').addEventListener('change',nomRefrescar);
+  if($('nom-copiar')) $('nom-copiar').addEventListener('click',function(){ if(nomListo()) nomCopiar($('nom-cuerpo').value,'Texto copiado · pégalo en el correo'); });
+  if($('nom-mail')) $('nom-mail').addEventListener('click',function(){ if(!nomListo()) return; location.href='mailto:'+encodeURIComponent($('nom-para').value.trim())+'?subject='+encodeURIComponent($('nom-asunto').value)+'&body='+encodeURIComponent($('nom-cuerpo').value); });
+  if($('nom-gmail')) $('nom-gmail').addEventListener('click',function(){ if(!nomListo()) return; window.open('https://mail.google.com/mail/?view=cm&fs=1&to='+encodeURIComponent($('nom-para').value.trim())+'&su='+encodeURIComponent($('nom-asunto').value)+'&body='+encodeURIComponent($('nom-cuerpo').value),'_blank'); });
+  if($('nom-pdf')) $('nom-pdf').addEventListener('click',nomPDF);
+  if($('nom-xls')) $('nom-xls').addEventListener('click',nomXLS);
+
   function abrirFicha(t){
-    FICHA_ID=t?t.id:null;
+    FICHA_ID=t?t.id:null; FICHA_EST0=(t&&t.estado)||'activo';
     $('fi-nombre').value=t?(t.nombre||''):''; $('fi-rut').value=t?(t.rut||''):''; poblarSelectCargo($('fi-cargo'), t?(t.cargo||''):''); trHint();
     $('fi-estado').value=(t&&t.estado)||'activo'; $('fi-ingreso').value=t?(t.fecha_ingreso||''):''; if($('fi-chofer')) $('fi-chofer').checked=!!(t&&t.chofer);
     if($('fi-fijo')){ var esFijo=!!(t&&t.tipo_pago==='contrato'); $('fi-fijo').checked=esFijo; $('fi-jornada').value=(t&&t.jornada_horas)||''; if($('fi-jini')) $('fi-jini').value=(t&&t.jornada_ini)||''; if($('fi-jfin')) $('fi-jfin').value=(t&&t.jornada_fin)||''; $('fi-jornada-wrap').style.display=esFijo?'':'none'; }
@@ -3841,7 +3966,7 @@
     busy(true,'Guardando…');
     var q=FICHA_ID? sb.from('trabajadores').update(row).eq('id',FICHA_ID) : sb.from('trabajadores').insert(row);
     q.then(function(r){ busy(false); if(r.error){ toast('No se pudo guardar: '+r.error.message); return; }
-      toast('✓ Trabajador guardado'); cerrarFicha(); cargarTrab(function(){ actualizarDatalist(); pintarTrab(); }); });
+      toast('✓ Trabajador guardado'); var _baja=(FICHA_ID && FICHA_EST0!=='inactivo' && row.estado==='inactivo')?FICHA_ID:null; cerrarFicha(); cargarTrab(function(){ actualizarDatalist(); pintarTrab(); if(_baja && confirm(nom+' quedó inactivo. ¿Preparar el aviso de baja para el cliente (casino / torniquetes)?')) abrirNominaCli('baja', _baja); }); });
   });
   $('fi-del').addEventListener('click',function(){
     if(!FICHA_ID) return; if(!confirm('¿Eliminar este trabajador? (sus documentos no se borran del bucket)')) return;
@@ -4589,7 +4714,8 @@
         var q=f.id?sb.from('finiquitos').update(row).eq('id',f.id):sb.from('finiquitos').insert(row);
         q.then(function(r){ busy(false);
           if(r.error){ toast(/finiquitos/.test(r.error.message||'')?'Falta correr finiquitos.sql en Supabase.':('No se pudo guardar: '+r.error.message)); return; }
-          if(inact && tid){ sb.from('trabajadores').update({estado:'inactivo'}).eq('id',tid).then(function(){},function(){}); }
+          var _baja=(inact && tid && t && t.estado!=='inactivo');
+          if(inact && tid){ sb.from('trabajadores').update({estado:'inactivo'}).eq('id',tid).then(function(){ if(_baja && confirm(titleCase(t.nombre||'')+' quedó inactivo. ¿Preparar el aviso de baja para el cliente (casino / torniquetes)?')) abrirNominaCli('baja', tid, row.fecha); },function(){}); }
           toast('✓ Guardado'); $('rrhh-edit').classList.add('hide'); renderFin();
         }, function(){ busy(false); toast('No se pudo guardar.'); });
       }
