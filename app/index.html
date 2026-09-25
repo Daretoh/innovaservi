@@ -4425,7 +4425,7 @@
       var faeList=faeData.map(function(d){
         var head='<span style="min-width:0;flex:1"><span class="rd-fae-nm" style="color:'+d.col.text+'">'+(d.fa?esc(d.fa):'Sin faena asignada')+'</span><span class="rd-fae-h">'+d.hors+' · '+hm(d.fmin)+'</span></span>';
         var money=perEd
-          ? '<input class="rd-fcont" type="number" min="0" data-f="'+f+'" data-fae="'+enc(d.fa)+'" data-real="'+d.real+'" value="'+d.cont+'" title="Monto de esta faena (editable)" style="width:98px;text-align:right;font:800 13px var(--font);color:var(--orange-2);padding:5px 7px;border:1px solid var(--line);border-radius:8px;background:#fff;flex:none">'
+          ? '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex:none"><span class="rd-freal'+(d.cont!==d.real?' rd-aj2':'')+'" style="font-size:.62rem;color:var(--muted)">real '+fmtMoney(d.real)+'</span><input class="rd-fcont" type="number" min="0" data-f="'+f+'" data-fae="'+enc(d.fa)+'" data-real="'+d.real+'" value="'+d.cont+'" title="Monto de esta faena (editable)" style="width:98px;text-align:right;font:800 13px var(--font);color:var(--orange-2);padding:5px 7px;border:1px solid var(--line);border-radius:8px;background:#fff"></div>'
           : '<b style="color:'+d.col.text+';flex:none">'+fmtMoney(d.real)+'</b>';
         return '<div class="rd-fae" style="border-left:3px solid '+d.col.border+';background:'+d.col.bg+';display:flex;justify-content:space-between;align-items:center;gap:8px">'+head+money+'</div>';
       }).join('');
@@ -4518,7 +4518,7 @@
         recalcDet();
       };
       $('rd-body').querySelectorAll('.rd-fcont').forEach(function(inp){
-        inp.addEventListener('input',recalcDet);
+        inp.addEventListener('input',function(){ var real=+inp.getAttribute('data-real'); var fr=inp.parentNode.querySelector('.rd-freal'); if(fr) fr.classList.toggle('rd-aj2',(+inp.value||0)!==real); recalcDet(); });
         inp.addEventListener('change',function(){ persistFaena(inp.dataset.f); });
       });
       $('rd-body').querySelectorAll('.rd-dcont').forEach(function(inp){
