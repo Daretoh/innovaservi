@@ -4561,12 +4561,24 @@
       var payload={ trabajador_id:x.t.id, semana:REMU_DATA.lun, tipo:tipo, concepto:obs, monto:monto, autor:userEmail };
       btn.disabled=true; busy(true,'Guardando…');
       var q=editItemId? sb.from('remuneracion_items').update(payload).eq('id',editItemId) : sb.from('remuneracion_items').insert(payload);
-      q.then(function(r){ busy(false); if(r.error){ btn.disabled=false; toast('No se pudo guardar: '+r.error.message); return; } toast('✓ Guardado'); cerrarDetalleRemu(); cargarRemu(); }, function(){ busy(false); btn.disabled=false; toast('No se pudo guardar.'); });
+      q.then(function(r){ busy(false); if(r.error){ btn.disabled=false; toast('No se pudo guardar: '+r.error.message); return; } toast('✓ Guardado');
+        editItemId=null; $('rd-tipo').value='otro'; $('rd-monto').value=''; $('rd-concepto').value=''; if($('rd-add'))$('rd-add').textContent='Agregar'; if($('rd-cancel'))$('rd-cancel').classList.add('hide');
+        refrescarDetalleItems(x);   // se queda en el detalle, sin salir
+      }, function(){ busy(false); btn.disabled=false; toast('No se pudo guardar.'); });
     });
     if($('rd-cancel')) $('rd-cancel').addEventListener('click',function(){ editItemId=null; $('rd-tipo').value='otro'; $('rd-monto').value=''; $('rd-concepto').value=''; $('rd-add').textContent='Agregar'; $('rd-cancel').classList.add('hide'); });
-    $('rd-body').querySelectorAll('.ri-del').forEach(function(b){ b.addEventListener('click',function(){ var id=b.closest('.ri-item').dataset.id; if(!confirm('¿Quitar este monto?')) return; busy(true,'Quitando…'); sb.from('remuneracion_items').delete().eq('id',id).then(function(r){ busy(false); if(r.error){ toast('No se pudo quitar: '+r.error.message); return; } toast('✓ Quitado'); cerrarDetalleRemu(); cargarRemu(); }); }); });
+    $('rd-body').querySelectorAll('.ri-del').forEach(function(b){ b.addEventListener('click',function(){ var id=b.closest('.ri-item').dataset.id; if(!confirm('¿Quitar este monto?')) return; busy(true,'Quitando…'); sb.from('remuneracion_items').delete().eq('id',id).then(function(r){ busy(false); if(r.error){ toast('No se pudo quitar: '+r.error.message); return; } toast('✓ Quitado'); refrescarDetalleItems(x); }); }); });
     $('rd-body').querySelectorAll('.ri-edit').forEach(function(b){ b.addEventListener('click',function(){ var id=b.closest('.ri-item').dataset.id; var it=(REMU_DATA.items||[]).filter(function(z){ return String(z.id)===String(id); })[0]; if(!it) return; editItemId=id; $('rd-tipo').value=it.tipo; $('rd-monto').value=it.monto; $('rd-concepto').value=it.concepto||''; $('rd-add').textContent='Guardar cambios'; $('rd-cancel').classList.remove('hide'); $('rd-monto').focus(); }); });
     $('remu-detalle').classList.remove('hide'); $('remu-detalle').scrollTop=0;
+  }
+  // Refresca los ítems (extras/descuentos) SIN cerrar el detalle: re-lee, recalcula y re-dibuja el mismo trabajador.
+  function refrescarDetalleItems(x){
+    if(!sb) return; REMU_DETDIRTY=true;
+    sb.from('remuneracion_items').select('*').eq('semana',REMU_DATA.lun).limit(500).then(function(r){
+      REMU_DATA.items=(r&&r.data)||[]; computarRemu();
+      var nf=(REMU_DATA.filas||[]).filter(function(z){ return z.t&&x.t&&((x.t.id&&String(z.t.id)===String(x.t.id))||(!x.t.id&&norm(z.t.nombre)===norm(x.t.nombre))); })[0];
+      if(nf) abrirDetalleRemu(nf);
+    }, function(){});
   }
   var REMU_DETDIRTY=false;
   function cerrarDetalleRemu(){ $('remu-detalle').classList.add('hide'); if(REMU_DETDIRTY){ REMU_DETDIRTY=false; cargarRemu(); } }
