@@ -221,9 +221,11 @@
       if(f.size > 10*1024*1024){ throw new Error('La '+lado+' de la cédula pesa más de 10 MB.'); }
       var m=(f.name||'').match(/\.([a-zA-Z0-9]+)$/); var ext=(m?m[1]:(/(pdf)/i.test(f.type)?'pdf':'jpg')).toLowerCase();
       var path=folder+'/'+lado+'.'+ext;
-      var up=await sb.storage.from('cedulas').upload(path, f, {contentType:f.type||undefined, upsert:true});
-      if(up.error){ throw up.error; }
-      return path;
+      // Sube por Edge Function (rol de servicio): la key anónima no puede subir a Storage.
+      var r=await fetch(SB_URL+'/functions/v1/subir-cedula',{method:'POST',headers:{'apikey':SB_KEY,'content-type':f.type||'application/octet-stream','x-path':path},body:f});
+      var d=null; try{ d=await r.json(); }catch(_){}
+      if(!r.ok || !d || !d.ok){ throw new Error((d&&d.error)||('subida '+r.status)); }
+      return d.path;
     }
     var cedulaFallo=false;
     try{
