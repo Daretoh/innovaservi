@@ -123,11 +123,12 @@
     </div>
 
     <div class="card">
-      <h2>Cédula de identidad</h2>
-      <p class="hint">Adjunta tu cédula por ambos lados (foto o PDF). Así la subes aquí mismo y no la envías por WhatsApp. Si no la tienes a mano, puedes enviarla después.</p>
+      <h2>Documentos</h2>
+      <p class="hint">Adjunta tu cédula por ambos lados y tu certificado de antecedentes (foto o PDF). Así los subes aquí mismo y no los envías por WhatsApp. Si no los tienes a mano, puedes enviarlos después.</p>
       <div class="grid">
         <label class="f wide">Cédula — lado frente<input name="cedula_frente" type="file" accept="image/*,application/pdf" capture="environment"></label>
         <label class="f wide">Cédula — lado reverso<input name="cedula_reverso" type="file" accept="image/*,application/pdf" capture="environment"></label>
+        <label class="f wide">Certificado de antecedentes<input name="antecedentes" type="file" accept="image/*,application/pdf" capture="environment"></label>
       </div>
     </div>
 
@@ -177,7 +178,7 @@
     sb.from('cargos_publicos').select('nombre').then(function(r){ var sel=document.getElementById('cargo'); if(!sel) return;
       ((r&&r.data)||[]).forEach(function(c){ if(!c.nombre) return; var o=document.createElement('option'); o.value=c.nombre; o.textContent=c.nombre; sel.appendChild(o); });
       var otro=document.createElement('option'); otro.value='Otro'; otro.textContent='Otro'; sel.appendChild(otro);
-      var pc=params&&params.get('cargo'); if(pc) setCargo(pc);
+      var pc=params&&params.get('cargo'); if(pc) setCargo(pc); else setCargo('Operario de Servicios');   // por defecto
     }, function(){}); }
   cargarCargos();
 
@@ -230,19 +231,20 @@
     var cedulaFallo=false;
     try{
       var folder='ingreso/'+(slug(row.nombre)||'x')+'-'+(slug(row.rut)||Date.now())+'-'+Date.now().toString(36);
-      var fF=document.querySelector('[name=cedula_frente]'), fR=document.querySelector('[name=cedula_reverso]');
-      if((fF&&fF.files.length)||(fR&&fR.files.length)) btn.textContent='Subiendo cédula…';
-      // La cédula no debe bloquear el envío: si falla, se guarda igual y se avisa.
+      var fF=document.querySelector('[name=cedula_frente]'), fR=document.querySelector('[name=cedula_reverso]'), fA=document.querySelector('[name=antecedentes]');
+      if((fF&&fF.files.length)||(fR&&fR.files.length)||(fA&&fA.files.length)) btn.textContent='Subiendo documentos…';
+      // Los documentos no deben bloquear el envío: si fallan, se guarda igual y se avisa.
       try{
         row.cedula_frente  = await subirCedula(fF,'frente', folder);
         row.cedula_reverso = await subirCedula(fR,'reverso', folder);
-      }catch(ce){ cedulaFallo=true; row.cedula_frente=null; row.cedula_reverso=null; }
+        row.antecedentes   = await subirCedula(fA,'antecedentes', folder);
+      }catch(ce){ cedulaFallo=true; row.cedula_frente=null; row.cedula_reverso=null; row.antecedentes=null; }
       btn.textContent='Enviando…';
       var r=await sb.from('fichas_ingreso').insert(row);
       if(r.error){ throw r.error; }
       document.getElementById('form').style.display='none';
       document.getElementById('ok').style.display='block';
-      if(cedulaFallo){ var p=document.querySelector('#ok p'); if(p) p.innerHTML+='<br><br><b style="color:#c0392b">Nota:</b> tus datos se enviaron, pero la cédula no se pudo subir. Envíala por WhatsApp a InnovaServi.'; }
+      if(cedulaFallo){ var p=document.querySelector('#ok p'); if(p) p.innerHTML+='<br><br><b style="color:#c0392b">Nota:</b> tus datos se enviaron, pero los documentos no se pudieron subir. Envíalos por WhatsApp a InnovaServi.'; }
       window.scrollTo(0,0);
     }catch(e){
       btn.disabled=false; btn.textContent='Enviar mis datos';

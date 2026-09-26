@@ -3425,6 +3425,7 @@
       var l3=[ (f.afp?('AFP '+f.afp):''), f.salud, (f.banco?(f.banco+' '+(f.tipo_cuenta||'')+' '+(f.num_cuenta||'')):''), ((f.talla_ropa||f.talla_botas)?('Tallas '+[f.talla_ropa,f.talla_botas].filter(Boolean).join(' / ')):''), (f.emergencia?('Emerg.: '+f.emergencia):'') ].filter(Boolean).map(esc).join(' · ');
       var chips=[];
       if(f.cedula_frente||f.cedula_reverso) chips.push('cédula');
+      if(f.antecedentes) chips.push('antecedentes');
       var chipTxt=chips.length?('<span class="fx-chip">'+chips.join(' · ')+'</span>'):'';
       return '<div class="fx-item"><div class="fx-top fx-open" data-i="'+i+'" style="cursor:pointer"><b>'+esc(titleCase(f.nombre||''))+'</b><span class="note" style="margin:0">'+esc(f.rut||'')+(f.telefono?(' · '+esc(f.telefono)):'')+'</span>'+chipTxt+'</div>'+
         (l2?'<div class="note fx-meta">'+l2+'</div>':'')+(l3?'<div class="note fx-meta">'+l3+'</div>':'')+
@@ -3470,7 +3471,8 @@
     var cedBtns='';
     if(f.cedula_frente) cedBtns+='<button class="btn ghost small fdo-ced" data-p="'+enc(f.cedula_frente)+'" style="width:auto">Ver frente</button>';
     if(f.cedula_reverso) cedBtns+='<button class="btn ghost small fdo-ced" data-p="'+enc(f.cedula_reverso)+'" style="width:auto">Ver reverso</button>';
-    var cedSec='<details class="fdet"><summary>Cédula de identidad</summary><div class="fd-body">'+(cedBtns?('<div class="fx-btns" style="margin:2px 0">'+cedBtns+'</div>'):'<div class="fd-row"><span class="fd-v vacio">No adjuntó cédula</span></div>')+'</div></details>';
+    if(f.antecedentes) cedBtns+='<button class="btn ghost small fdo-ced" data-p="'+enc(f.antecedentes)+'" style="width:auto">Ver antecedentes</button>';
+    var cedSec='<details class="fdet"><summary>Documentos (cédula / antecedentes)</summary><div class="fd-body">'+(cedBtns?('<div class="fx-btns" style="margin:2px 0">'+cedBtns+'</div>'):'<div class="fd-row"><span class="fd-v vacio">No adjuntó documentos</span></div>')+'</div></details>';
 
     // Copiar para Buk.
     var campos=[
