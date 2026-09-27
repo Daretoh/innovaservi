@@ -447,6 +447,9 @@
   .trab .cg{font-size:.82rem;color:var(--body);}
   .trab .meta{font-size:.72rem;color:var(--muted);margin-top:1px;}
   .trab .badge{font-size:.66rem;font-weight:800;padding:2px 8px;border-radius:999px;background:rgba(34,160,107,.14);color:var(--ok);}
+  .trab-buk{font:800 .62rem var(--font);padding:2px 8px;border-radius:999px;border:1px solid var(--line);background:#fff;color:var(--muted);cursor:pointer;margin-right:6px;letter-spacing:.02em;}
+  .trab-buk:hover{border-color:#1a3fb0;color:#1a3fb0;}
+  .trab-buk.on{background:#e6edff;border-color:#e6edff;color:#1a3fb0;}
   .trab.off .badge{background:var(--alt);color:var(--muted);}
   #ficha,#veh-ficha,#remu-detalle,#acc-ficha,#rrhh-edit,#cli-ficha,#cargos-mgr,#dups-mgr,#nomina-mgr,#planif-edit{position:fixed;inset:0;z-index:75;background:var(--alt);overflow-y:auto;-webkit-overflow-scrolling:touch;}
   #ficha.hide,#veh-ficha.hide,#remu-detalle.hide,#acc-ficha.hide,#rrhh-edit.hide,#cli-ficha.hide,#cargos-mgr.hide,#dups-mgr.hide,#nomina-mgr.hide,#planif-edit.hide{display:none;}
@@ -3532,7 +3535,8 @@
       sexo:f.sexo||null, nacionalidad:f.nacionalidad||null, nacimiento:f.nacimiento||null, estado_civil:f.estado_civil||null,
       numero:f.numero||null, poblacion:f.poblacion||null, region:f.region||null, comuna:f.comuna||null,
       regimen_prev:f.regimen_prev||null, regimen_afc:f.regimen_afc||null, cargas:(f.cargas!=null?f.cargas:null), tramo_cargas:f.tramo_cargas||null,
-      discapacidad:f.discapacidad||null, invalidez:f.invalidez||null, titulo_educacion:f.titulo_educacion||null, institucion_titulo:f.institucion_titulo||null };
+      discapacidad:f.discapacidad||null, invalidez:f.invalidez||null, titulo_educacion:f.titulo_educacion||null, institucion_titulo:f.institucion_titulo||null,
+      buk:!!f.buk, buk_at:(f.buk?(f.buk_at||new Date().toISOString()):null) };
     var row={}; for(var k in base) row[k]=base[k]; for(var k2 in extra) row[k2]=extra[k2];
     busy(true,'Creando trabajador…');
     function tras(){ sb.from('fichas_ingreso').update({estado:'procesada'}).eq('id',f.id).then(function(){ busy(false); toast('✓ Trabajador creado desde la ficha'); cargarRrhh(); cargarFichasInbox(); }, function(){ busy(false); toast('Trabajador creado.'); cargarRrhh(); cargarFichasInbox(); }); }
@@ -3571,9 +3575,16 @@
       return '<div class="trab'+(off?' off':'')+'" data-idx="'+idx+'"><div class="av">'+esc(inic(t.nombre).toUpperCase()||'·')+'</div>'+
         '<div class="tt"><div class="nm">'+esc(titleCase(t.nombre)||'—')+'</div>'+(t.cargo?'<div class="cg">'+esc(t.cargo)+'</div>':'')+
         '<div class="meta">'+(t.rut?esc(t.rut)+' · ':'')+nd+' doc'+(nd===1?'':'s')+(p!=null?(' · <span class="pct" style="color:'+col+'">'+p+'% docs</span>'):'')+'</div></div>'+
+        '<button class="trab-buk'+(t.buk?' on':'')+'" data-idx="'+idx+'" type="button" title="'+(t.buk?'Registrado en Buk · toca para quitar':'Toca para marcar registrado en Buk')+'">'+(t.buk?'✓ Buk':'+ Buk')+'</button>'+
         '<span class="badge">'+(off?'Inactivo':'Activo')+'</span>'+
         (p!=null?('<div class="tbar" title="Documentación: '+p+'% al día"><i style="width:'+p+'%;background:'+col+'"></i></div>'):'')+'</div>'; }).join('');
+    list.querySelectorAll('.trab-buk[data-idx]').forEach(function(b){ b.addEventListener('click',function(ev){ ev.stopPropagation(); marcarBukTrab(TRAB_VISTA[+b.dataset.idx]); }); });
     list.querySelectorAll('.trab[data-idx]').forEach(function(el){ el.addEventListener('click',function(){ abrirFicha(TRAB_VISTA[+el.dataset.idx]); }); });
+  }
+  // Marca/desmarca a un trabajador como registrado en Buk.
+  function marcarBukTrab(t){ if(!sb||!t||!t.id) return; var val=!t.buk, at=val?new Date().toISOString():null; t.buk=val; t.buk_at=at;
+    sb.from('trabajadores').update({buk:val, buk_at:at}).eq('id',t.id).then(function(r){ if(r&&r.error) toast('No se pudo guardar: '+r.error.message); else toast(val?'✓ '+titleCase(t.nombre||'')+' registrado en Buk':'Desmarcado'); }, function(){ toast('No se pudo guardar.'); });
+    pintarTrab();
   }
   $('trab-search').addEventListener('input',function(){ trabQ=this.value.trim(); pintarTrab(); });
   $('trab-sort').addEventListener('change',function(){ trabSort=this.value; pintarTrab(); });
