@@ -3427,7 +3427,7 @@
       if(f.cedula_frente||f.cedula_reverso) chips.push('cédula');
       if(f.antecedentes) chips.push('antecedentes');
       var chipTxt=chips.length?('<span class="fx-chip">'+chips.join(' · ')+'</span>'):'';
-      var bukBadge=f.buk?'<span class="fx-chip" style="background:#dcfce7;color:#0f6e56">✓ Buk</span>':'';
+      var bukBadge=f.buk?'<span class="fx-chip" style="background:#e6edff;color:#1a3fb0;font-size:9px;padding:1px 7px;letter-spacing:.02em">✓ Buk</span>':'';
       var bukBtn='<button class="btn '+(f.buk?'':'ghost ')+'small fx-buk-btn" data-i="'+i+'" style="width:auto'+(f.buk?';background:#0f6e56;border-color:#0f6e56':'')+'">'+(f.buk?'✓ Registrado en Buk':'Marcar registrado en Buk')+'</button>';
       return '<div class="fx-item"><div class="fx-top fx-open" data-i="'+i+'" style="cursor:pointer"><b>'+esc(titleCase(f.nombre||''))+'</b><span class="note" style="margin:0">'+esc(f.rut||'')+(f.telefono?(' · '+esc(f.telefono)):'')+'</span>'+chipTxt+bukBadge+'</div>'+
         (l2?'<div class="note fx-meta">'+l2+'</div>':'')+(l3?'<div class="note fx-meta">'+l3+'</div>':'')+
