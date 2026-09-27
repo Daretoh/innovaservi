@@ -3514,9 +3514,12 @@
     ov.querySelector('.fdo-crear').addEventListener('click',function(){ cerrar(); crearTrabDeFicha(f); });
     ov.querySelector('.fdo-desc').addEventListener('click',function(){ cerrar(); descartarFicha(f); });
   }
-  // Marca/desmarca una ficha como "registrada en Buk".
+  // Marca/desmarca una ficha como "registrada en Buk" (y sincroniza el trabajador del mismo RUT).
   function marcarBuk(f){ if(!sb||!f) return; var val=!f.buk, at=val?new Date().toISOString():null; f.buk=val; f.buk_at=at;
     sb.from('fichas_ingreso').update({buk:val, buk_at:at}).eq('id',f.id).then(function(r){ if(r&&r.error) toast('No se pudo guardar: '+r.error.message); else toast(val?'✓ Marcada como registrada en Buk':'Desmarcada'); }, function(){ toast('No se pudo guardar.'); });
+    var rn=(f.rut||'').replace(/[^0-9kK]/g,'').toLowerCase();
+    if(rn){ var t=(TRAB||[]).filter(function(x){ return (x.rut||'').replace(/[^0-9kK]/g,'').toLowerCase()===rn; })[0];
+      if(t){ t.buk=val; t.buk_at=at; sb.from('trabajadores').update({buk:val, buk_at:at}).eq('id',t.id).then(function(){},function(){}); if(typeof pintarTrab==='function') pintarTrab(); } }
     renderFichasInbox();
   }
   // Abre la cédula (bucket privado) con una URL firmada temporal.
@@ -3540,16 +3543,41 @@
     var row={}; for(var k in base) row[k]=base[k]; for(var k2 in extra) row[k2]=extra[k2];
     busy(true,'Creando trabajador…');
     function tras(){ sb.from('fichas_ingreso').update({estado:'procesada'}).eq('id',f.id).then(function(){ busy(false); toast('✓ Trabajador creado desde la ficha'); cargarRrhh(); cargarFichasInbox(); }, function(){ busy(false); toast('Trabajador creado.'); cargarRrhh(); cargarFichasInbox(); }); }
-    sb.from('trabajadores').insert(row).then(function(r){
+    sb.from('trabajadores').insert(row).select().single().then(function(r){
       if(r.error){
         if(/column|schema cache|could not find|does not exist/i.test(r.error.message||'')){ // faltan columnas nuevas: crear con lo básico
-          sb.from('trabajadores').insert(base).then(function(r2){ if(r2.error){ busy(false); toast('No se pudo crear: '+r2.error.message); return; } toast('Creado. Corre trabajadores-buk.sql para guardar los datos previsionales.'); tras(); }, function(){ busy(false); toast('No se pudo crear.'); });
+          sb.from('trabajadores').insert(base).select().single().then(function(r2){ if(r2.error){ busy(false); toast('No se pudo crear: '+r2.error.message); return; } toast('Creado. Corre trabajadores-buk.sql para guardar los datos previsionales.'); adjuntarDocsFicha((r2.data&&r2.data.id), f, tras); }, function(){ busy(false); toast('No se pudo crear.'); });
           return;
         }
         busy(false); toast('No se pudo crear: '+r.error.message); return;
       }
-      tras(); return;
+      adjuntarDocsFicha((r.data&&r.data.id), f, tras); return;
     }, function(){ busy(false); toast('No se pudo crear.'); });
+  }
+  // Lleva la cédula y el certificado de antecedentes de la ficha a la documentación del trabajador
+  // (cédula y antecedentes quedan clasificados y cuentan en el % ; reverso como documento suelto).
+  function adjuntarDocsFicha(tid, f, cb){
+    if(!tid || !sb || (!f.cedula_frente && !f.cedula_reverso && !f.antecedentes)){ if(cb)cb(); return; }
+    var items=[];
+    if(f.cedula_frente)  items.push({tipo:'cedula',       path:f.cedula_frente,  nombre:'Cédula (frente)'});
+    if(f.antecedentes)   items.push({tipo:'antecedentes', path:f.antecedentes,   nombre:'Certificado de antecedentes'});
+    if(f.cedula_reverso) items.push({tipo:null,           path:f.cedula_reverso, nombre:'Cédula (reverso)'});
+    var pend=items.length, rrhhRows=[], loose=[];
+    function done(){ if(--pend>0) return;
+      if(loose.length) sb.from('trabajadores').update({docs:loose}).eq('id',tid).then(function(){},function(){});
+      if(rrhhRows.length) sb.from('rrhh_docs').upsert(rrhhRows,{onConflict:'trabajador_id,tipo'}).then(function(){ if(cb)cb(); }, function(){ if(cb)cb(); });
+      else if(cb) cb();
+    }
+    items.forEach(function(it){
+      sb.storage.from('cedulas').createSignedUrl(it.path, 315360000).then(function(r){   // ~10 años
+        var url=(r&&r.data&&r.data.signedUrl)||null;
+        if(url){ var img=/\.(png|jpe?g|webp|heic|heif|gif)$/i.test(it.path);
+          if(it.tipo) rrhhRows.push({trabajador_id:tid, tipo:it.tipo, estado:'entregado', fecha:todayISO(), url:url, nota:it.nombre+' · desde ficha de ingreso', autor:userEmail});
+          else loose.push({url:url, nombre:it.nombre, tipo:(img?'image':'doc'), fecha:todayISO()});
+        }
+        done();
+      }, function(){ done(); });
+    });
   }
   function descartarFicha(f){ if(!sb||!f) return; if(!confirm('¿Descartar la ficha de "'+titleCase(f.nombre||'')+'"? (no se crea el trabajador)')) return;
     busy(true,'Descartando…'); sb.from('fichas_ingreso').update({estado:'descartada'}).eq('id',f.id).then(function(){ busy(false); toast('Ficha descartada'); cargarFichasInbox(); }, function(){ busy(false); }); }
@@ -4712,6 +4740,7 @@
   // ====== RRHH · Documentación (solo admin) ======
   var RRHH_TIPOS=[
     {slug:'cedula',nombre:'Cédula de identidad',corto:'Cédula',vence:false},
+    {slug:'antecedentes',nombre:'Certificado de antecedentes',corto:'Antecedentes',vence:false},
     {slug:'contrato',nombre:'Contrato',corto:'Contrato',vence:false},
     {slug:'datos',nombre:'Ficha datos del trabajador',corto:'Datos',vence:false},
     {slug:'riohs',nombre:'Recepción RIOHS',corto:'RIOHS',vence:false},
