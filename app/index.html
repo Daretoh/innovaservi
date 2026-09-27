@@ -3427,12 +3427,15 @@
       if(f.cedula_frente||f.cedula_reverso) chips.push('cédula');
       if(f.antecedentes) chips.push('antecedentes');
       var chipTxt=chips.length?('<span class="fx-chip">'+chips.join(' · ')+'</span>'):'';
-      return '<div class="fx-item"><div class="fx-top fx-open" data-i="'+i+'" style="cursor:pointer"><b>'+esc(titleCase(f.nombre||''))+'</b><span class="note" style="margin:0">'+esc(f.rut||'')+(f.telefono?(' · '+esc(f.telefono)):'')+'</span>'+chipTxt+'</div>'+
+      var bukBadge=f.buk?'<span class="fx-chip" style="background:#dcfce7;color:#0f6e56">✓ Buk</span>':'';
+      var bukBtn='<button class="btn '+(f.buk?'':'ghost ')+'small fx-buk-btn" data-i="'+i+'" style="width:auto'+(f.buk?';background:#0f6e56;border-color:#0f6e56':'')+'">'+(f.buk?'✓ Registrado en Buk':'Marcar registrado en Buk')+'</button>';
+      return '<div class="fx-item"><div class="fx-top fx-open" data-i="'+i+'" style="cursor:pointer"><b>'+esc(titleCase(f.nombre||''))+'</b><span class="note" style="margin:0">'+esc(f.rut||'')+(f.telefono?(' · '+esc(f.telefono)):'')+'</span>'+chipTxt+bukBadge+'</div>'+
         (l2?'<div class="note fx-meta">'+l2+'</div>':'')+(l3?'<div class="note fx-meta">'+l3+'</div>':'')+
-        '<div class="fx-btns"><button class="btn small fx-open" data-i="'+i+'" style="width:auto">'+icoBuk+' Abrir ficha</button><button class="btn ghost small fx-crear" data-i="'+i+'" style="width:auto">＋ Crear trabajador</button><button class="btn ghost small fx-desc" data-i="'+i+'" style="width:auto">Descartar</button></div></div>';
+        '<div class="fx-btns"><button class="btn small fx-open" data-i="'+i+'" style="width:auto">'+icoBuk+' Abrir ficha</button>'+bukBtn+'<button class="btn ghost small fx-crear" data-i="'+i+'" style="width:auto">＋ Crear trabajador</button><button class="btn ghost small fx-desc" data-i="'+i+'" style="width:auto">Descartar</button></div></div>';
     }).join(''):'';
     c.innerHTML='<div class="fx-box"><button class="fx-head" type="button">'+ico+' <b>'+n+'</b> ficha'+(n>1?'s':'')+' recibida'+(n>1?'s':'')+' <span class="fx-chev">'+(open?'▾':'▸')+'</span></button>'+(open?('<div class="fx-list">'+items+'</div>'):'')+'</div>';
     c.querySelector('.fx-head').addEventListener('click',function(){ c.dataset.open=open?'0':'1'; renderFichasInbox(); });
+    c.querySelectorAll('.fx-buk-btn').forEach(function(b){ b.addEventListener('click',function(ev){ ev.stopPropagation(); marcarBuk(FICHAS_IN[+b.dataset.i]); }); });
     c.querySelectorAll('.fx-crear').forEach(function(b){ b.addEventListener('click',function(){ crearTrabDeFicha(FICHAS_IN[+b.dataset.i]); }); });
     c.querySelectorAll('.fx-desc').forEach(function(b){ b.addEventListener('click',function(){ descartarFicha(FICHAS_IN[+b.dataset.i]); }); });
     c.querySelectorAll('.fx-open').forEach(function(b){ b.addEventListener('click',function(){ abrirFichaInbox(FICHAS_IN[+b.dataset.i]); }); });
@@ -3495,7 +3498,7 @@
       '<button class="btn ghost small buk-x" style="width:auto">Cerrar</button></div>'+
       '<div class="note" style="margin:0 0 10px">'+esc(f.rut||'')+(f.telefono?(' · '+esc(f.telefono)):'')+(f.created_at?(' · recibida '+fechaCorta((f.created_at||'').slice(0,10))):'')+'</div>'+
       secciones+cedSec+bukSec+
-      '<div class="fx-btns" style="margin-top:12px"><button class="btn small fdo-crear" style="width:auto">＋ Crear trabajador</button><button class="btn ghost small fdo-desc" style="width:auto">Descartar</button></div></div>';
+      '<div class="fx-btns" style="margin-top:12px"><button class="btn '+(f.buk?'':'ghost ')+'small fdo-buk" style="width:auto'+(f.buk?';background:#0f6e56;border-color:#0f6e56':'')+'">'+(f.buk?'✓ Registrado en Buk':'Marcar registrado en Buk')+'</button><button class="btn small fdo-crear" style="width:auto">＋ Crear trabajador</button><button class="btn ghost small fdo-desc" style="width:auto">Descartar</button></div></div>';
     document.body.appendChild(ov);
     function cerrar(){ var e=$('buk-ov'); if(e) e.remove(); }
     ov.addEventListener('click',function(e){ if(e.target===ov) cerrar(); });
@@ -3504,8 +3507,14 @@
     ov.querySelectorAll('.buk-c').forEach(function(b){ b.addEventListener('click',function(){ copiar(b.dataset.v,b); }); });
     var ba=ov.querySelector('.buk-all'); if(ba) ba.addEventListener('click',function(){ copiar(todo,ba); });
     ov.querySelectorAll('.fdo-ced').forEach(function(b){ b.addEventListener('click',function(){ abrirCedula(b.dataset.p); }); });
+    var fb=ov.querySelector('.fdo-buk'); if(fb) fb.addEventListener('click',function(){ marcarBuk(f); cerrar(); abrirFichaInbox(f); });
     ov.querySelector('.fdo-crear').addEventListener('click',function(){ cerrar(); crearTrabDeFicha(f); });
     ov.querySelector('.fdo-desc').addEventListener('click',function(){ cerrar(); descartarFicha(f); });
+  }
+  // Marca/desmarca una ficha como "registrada en Buk".
+  function marcarBuk(f){ if(!sb||!f) return; var val=!f.buk, at=val?new Date().toISOString():null; f.buk=val; f.buk_at=at;
+    sb.from('fichas_ingreso').update({buk:val, buk_at:at}).eq('id',f.id).then(function(r){ if(r&&r.error) toast('No se pudo guardar: '+r.error.message); else toast(val?'✓ Marcada como registrada en Buk':'Desmarcada'); }, function(){ toast('No se pudo guardar.'); });
+    renderFichasInbox();
   }
   // Abre la cédula (bucket privado) con una URL firmada temporal.
   function abrirCedula(path){ if(!sb||!path) return; busy(true,'Abriendo cédula…');
