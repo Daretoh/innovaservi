@@ -5862,7 +5862,42 @@
       im.onload=function(){ res({data:data,w:im.naturalWidth||0,h:im.naturalHeight||0,fmt:(/png/i.test(b.type)?'PNG':'JPEG')}); };
       im.onerror=function(){ res({data:data,w:0,h:0,fmt:(/png/i.test(b.type)?'PNG':'JPEG')}); }; im.src=data; }; fr.readAsDataURL(b); });
   }); }
+  // Si algún lado es PDF (ficha de ingreso sube PDFs), se arma con pdf-lib: copia sus páginas + imágenes en A4.
+  function esPdfUrl(u){ return /\.pdf(\?|$)/i.test(String(u||'').split('#')[0]); }
+  function cargarPdfLib(){ if(window.PDFLib) return Promise.resolve(); return new Promise(function(res,rej){ var s=document.createElement('script');
+    s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js'; s.onload=function(){ res(); }; s.onerror=rej; document.head.appendChild(s); }); }
+  function carnetPDFMixto(real, nombre){
+    busy(true,'Armando PDF del carnet…');
+    cargarPdfLib().then(function(){
+      return Promise.all(real.map(function(s){ return fetch(s.url).then(function(r){ if(!r.ok) throw 0; return r.arrayBuffer().then(function(ab){ return {label:s.label, ab:ab, ct:(r.headers.get('content-type')||'')}; }); }); }));
+    }).then(function(arr){
+      var L=window.PDFLib;
+      return L.PDFDocument.create().then(function(out){
+        var font=null, n=0;
+        return out.embedFont(L.StandardFonts.Helvetica).then(function(f){ font=f; }).then(function(){
+          return arr.reduce(function(p,o){ return p.then(function(){
+            var b=new Uint8Array(o.ab), pdf=(b[0]===0x25&&b[1]===0x50&&b[2]===0x44&&b[3]===0x46), png=(b[0]===0x89&&b[1]===0x50), jpg=(b[0]===0xFF&&b[1]===0xD8);
+            if(pdf) return L.PDFDocument.load(o.ab,{ignoreEncryption:true}).then(function(src){ return out.copyPages(src, src.getPageIndices()).then(function(pgs){ pgs.forEach(function(pg){ out.addPage(pg); n++; }); }); });
+            if(!png && !jpg) return;
+            return (png?out.embedPng(o.ab):out.embedJpg(o.ab)).then(function(img){
+              var W=595.28, H=841.89, M=45, page=out.addPage([W,H]); n++;
+              page.drawText('Cédula de identidad · '+(o.label||''), {x:M, y:H-M, size:12, font:font, color:L.rgb(.16,.16,.16)});
+              page.drawText(titleCase(nombre||''), {x:M, y:H-M-14, size:9, font:font, color:L.rgb(.47,.47,.47)});
+              var maxW=W-2*M, maxH=H-2*M-34, s=Math.min(maxW/img.width, maxH/img.height), w=img.width*s, h=img.height*s;
+              page.drawImage(img, {x:(W-w)/2, y:H-M-28-h, width:w, height:h});
+            });
+          }); }, Promise.resolve());
+        }).then(function(){ if(!n) throw 'vacio'; return out.save(); });
+      });
+    }).then(function(bytes){
+      busy(false);
+      var a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([bytes],{type:'application/pdf'})); a.download='carnet-'+slug(nombre||'trabajador')+'.pdf';
+      document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+    }, function(e){ busy(false); toast(e==='vacio'?'No se pudieron leer los archivos (¿formato HEIC? intenta con JPG).':'No se pudo armar el PDF del carnet.'); });
+  }
   function carnetPDF(sides, nombre){
+    var algunPdf=(sides||[]).some(function(s){ return s.url && esPdfUrl(s.url); });
+    if(algunPdf){ carnetPDFMixto((sides||[]).filter(function(s){ return s.url; }), nombre); return; }
     if(!window.jspdf){ toast('No se pudo cargar el generador de PDF. Recarga la app.'); return; }
     var real=(sides||[]).filter(function(s){ return s.url; }); if(!real.length){ toast('No hay imágenes de carnet para juntar.'); return; }
     busy(true,'Armando PDF del carnet…');
