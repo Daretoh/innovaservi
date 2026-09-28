@@ -920,11 +920,11 @@
     <nav class="sbar-nav">
       <button class="sb-item sb-admin" data-v="v-alertas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>Alertas<span class="al-num hide" id="sb-al-num"></span></button>
       <div class="sbar-grp">Operaciones</div>
-      <button class="sb-item on" data-v="v-reporte"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>Multimedia</button>
+      <button class="sb-item sb-admin" data-v="v-reporte"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><circle cx="10" cy="13" r="2"/><path d="m20 17-1.5-1.5L14 20"/></svg>Informe (editor)</button>
       <button class="sb-item" data-v="v-hist"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>Reportes</button>
       <button class="sb-item sb-admin" data-v="v-horas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Registro</button>
       <button class="sb-item sb-admin" data-v="v-asist"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M16 3v4M8 3v4M3 10h13"/><rect x="3" y="5" width="18" height="16" rx="2"/></svg>Asistencia</button>
-      <button class="sb-item sb-admin" data-v="v-fotos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>Fotos faena</button>
+      <button class="sb-item on" data-v="v-fotos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>Multimedia</button>
       <button class="sb-item" data-v="v-cuadrilla"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Preparación</button>
       <button class="sb-item" data-v="v-veh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M1 3h15v13H1zM16 8h4l3 3v5h-7z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>Vehículos</button>
       <button class="sb-item sb-admin" data-v="v-clientes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-4h6v4M8 6h.01M16 6h.01M8 10h.01M16 10h.01M8 14h.01M16 14h.01"/></svg>Clientes</button>
@@ -1917,12 +1917,15 @@
     if(isAdmin){ cargarTrab(actualizarDatalist); cargarClientes(); cargarCargos(); cargarAlertas(); }
     ofrecerBorrador();
     // Restaura la última pestaña usada (si sigue siendo visible/permitida para este usuario).
+    var _did=false;
     try{ var vv=localStorage.getItem('iserv-vista');
       if(vv && vv!=='v-reporte' && $(vv)){
         var navVis=Array.prototype.some.call(document.querySelectorAll('.tabbar button[data-v="'+vv+'"], .sbar .sb-item[data-v="'+vv+'"]'), function(n){ return !n.classList.contains('hide'); });
-        if(navVis) abrirVista(vv);
+        if(navVis){ abrirVista(vv); _did=true; }
       }
     }catch(_){}
+    // El editor de informe es solo para admin; cualquier otro parte en Multimedia (subida simple).
+    if(!_did && !isAdmin){ var cur=(document.querySelector('.view.on')||{}).id||''; if(cur==='v-reporte'||cur===''){ var d=(MI_TIENE && typeof primeraVistaPermitida==='function' && primeraVistaPermitida())||'v-fotos'; abrirVista(d); } }
   }
   function registroDe(eventoId){ if(!eventoId) return null; var id=String(eventoId);
     // Coincide por la faena principal (evento_id) O por cualquier faena dentro de un reporte consolidado.
@@ -2069,7 +2072,7 @@
 
   // ====== Fotos de faena (prevencionista): sube multimedia al reporte desde el celular ======
   var FOT={ eventos:[], faenaSel:'', registro:null, media:[], subiendo:0 };
-  var FOT_CATS=[['antes','Antes','#8b93a7'],['proceso','Proceso','#f59e0b'],['despues','Después','#22a06b'],['doc','Registro documental','#6366f1']];
+  var FOT_CATS=[['sin','Sin ordenar','#64748b'],['antes','Antes','#8b93a7'],['proceso','Proceso','#f59e0b'],['despues','Después','#22a06b'],['doc','Registro documental','#6366f1']];
   function cargarFotos(){ if(!sb) return; var hoy=todayISO(); if($('fot-fecha')) $('fot-fecha').textContent=fechaDia(hoy);
     sb.from('eventos').select('*').gte('fecha',sumarDias(hoy,-10)).lte('fecha',hoy).limit(500).then(function(r){
       FOT.eventos=((r&&r.data)||[]).filter(function(e){ var fn=e.fecha_fin||e.fecha; return e.fecha<=hoy && fn>=hoy; }).sort(function(a,b){ return (a.hora||'').localeCompare(b.hora||''); });
@@ -2112,11 +2115,11 @@
     });
   }
   function fotRenderCats(){ var box=$('fot-cats'); if(!box) return;
-    box.innerHTML=FOT_CATS.map(function(c){ var mine=FOT.media.filter(function(m){ return (m.cat||'proceso')===c[0]; });
+    box.innerHTML=FOT_CATS.map(function(c){ var mine=FOT.media.filter(function(m){ return (m.cat||'sin')===c[0]; });
       var thumbs=mine.map(function(m){ var gi=FOT.media.indexOf(m); var inner=(m.tipo==='video')?'<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#111;color:#fff;font:700 11px var(--font)">▶ Video</div>':'<img src="'+esc(m.url)+'" style="width:100%;height:100%;object-fit:cover" loading="lazy">';
         return '<div style="position:relative;width:80px;height:80px;border-radius:10px;overflow:hidden;border:1px solid var(--line)">'+inner+'<button class="fot-del" data-i="'+gi+'" style="position:absolute;top:2px;right:2px;width:22px;height:22px;border:none;border-radius:50%;background:rgba(0,0,0,.6);color:#fff;font:700 13px/1 var(--font);cursor:pointer">×</button></div>';
       }).join('');
-      return '<div style="margin:10px 0 4px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="display:inline-block;width:11px;height:11px;border-radius:3px;background:'+c[2]+'"></span><b style="font:800 14px var(--font);color:var(--ink)">'+c[1]+'</b>'+(mine.length?('<span class="note" style="margin:0;font-size:.75rem">'+mine.length+'</span>'):'')+'</div><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">'+thumbs+'<label style="width:80px;height:80px;border:2px dashed var(--line);border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--muted);font:700 11px var(--font);cursor:pointer;text-align:center;gap:2px"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>Agregar<input type="file" accept="image/*,video/*" capture="environment" multiple hidden data-fcat="'+c[0]+'"></label></div></div>';
+      return '<div style="margin:10px 0 4px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="display:inline-block;width:11px;height:11px;border-radius:3px;background:'+c[2]+'"></span><b style="font:800 14px var(--font);color:var(--ink)">'+c[1]+(c[0]==='sin'?' <span class="note" style="margin:0;font-size:.72rem;font-weight:600">(rápido, sin categorizar)</span>':'')+'</b>'+(mine.length?('<span class="note" style="margin:0;font-size:.75rem">'+mine.length+'</span>'):'')+'</div><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">'+thumbs+'<label style="width:80px;height:80px;border:2px dashed var(--line);border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--muted);font:700 11px var(--font);cursor:pointer;text-align:center;gap:2px"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>Agregar<input type="file" accept="image/*,video/*" capture="environment" multiple hidden data-fcat="'+c[0]+'"></label></div></div>';
     }).join('');
     box.querySelectorAll('input[data-fcat]').forEach(function(inp){ inp.addEventListener('change',function(){ fotSubir(inp,inp.dataset.fcat); }); });
     box.querySelectorAll('.fot-del').forEach(function(b){ b.addEventListener('click',function(){ fotDel(+b.dataset.i); }); });
@@ -5854,7 +5857,7 @@
   document.querySelectorAll('.rrhh-vis').forEach(function(b){ b.addEventListener('click',function(){ document.querySelectorAll('.rrhh-vis').forEach(function(x){ x.classList.toggle('on',x===b); }); RRHH_VISTA=b.dataset.v; renderRrhh(); }); });
 
   // ====== ACCESOS / PERMISOS (solo Enzo) ======
-  var SECCIONES=[['asistencia','Asistencia (terreno)'],['fotos','Fotos de faena (subir)'],['reporte','Registro / Reportes'],['planificacion','Planificación'],['calendario','Calendario'],['matriz','Matriz PTS'],['rrhh','RRHH / Documentación'],['remu','Remuneraciones'],['veh','Vehículos'],['clientes','Clientes'],['alertas','Alertas']];
+  var SECCIONES=[['asistencia','Asistencia (terreno)'],['fotos','Multimedia (subir fotos)'],['reporte','Registro / Reportes'],['planificacion','Planificación'],['calendario','Calendario'],['matriz','Matriz PTS'],['rrhh','RRHH / Documentación'],['remu','Remuneraciones'],['veh','Vehículos'],['clientes','Clientes'],['alertas','Alertas']];
   var NIVELES=[['oculto','Oculto'],['ver','Ver'],['editar','Editar'],['total','Total']];
   var ROL_DEFAULTS={
     admin:         {asistencia:'total',fotos:'total',reporte:'total',planificacion:'total',calendario:'total',matriz:'total',rrhh:'total',remu:'total',veh:'total',clientes:'total',alertas:'total'},
@@ -5975,7 +5978,15 @@
   });
 
   // ====== Service worker (instalable) ======
-  if('serviceWorker' in navigator){ window.addEventListener('load',function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); }); }
+  if('serviceWorker' in navigator){ window.addEventListener('load',function(){
+    navigator.serviceWorker.register('sw.js').then(function(reg){
+      // Auto-actualización: cuando el SW nuevo toma control, recarga una vez para tomar la última versión.
+      if(reg){ reg.addEventListener('updatefound',function(){ var nw=reg.installing; if(!nw) return; nw.addEventListener('statechange',function(){ if(nw.state==='installed' && navigator.serviceWorker.controller){ /* hay versión nueva lista */ } }); });
+        setInterval(function(){ reg.update().catch(function(){}); }, 60*1000); }
+    }).catch(function(){});
+    var _hadCtrl=!!navigator.serviceWorker.controller, _reloaded=false;
+    navigator.serviceWorker.addEventListener('controllerchange',function(){ if(_reloaded||!_hadCtrl) return; _reloaded=true; window.location.reload(); });
+  }); }
 })();
 </script>
 </body>
