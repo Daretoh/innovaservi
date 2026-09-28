@@ -5936,7 +5936,13 @@
         ((typeof DOC_GEN!=='undefined'&&DOC_GEN[ts])?'<button id="re-gen" type="button" class="btn ghost small" style="width:100%;margin-top:8px">'+svgI(ICO.gen)+'Generar documento</button>':'')+
       '</div>';
     if($('re-gen')) $('re-gen').addEventListener('click',function(){ $('rrhh-edit').classList.add('hide'); generarDoc(tid, ts); });
-    if($('re-carnet')) $('re-carnet').addEventListener('click',function(){ carnetPDF(_sides, t.nombre); });
+    // Relee la fila antes de armar el PDF (la memoria puede estar desfasada, p. ej. tras repararCedulas)
+    if($('re-carnet')) $('re-carnet').addEventListener('click',function(){
+      if(!sb){ carnetPDF(_sides, t.nombre); return; }
+      sb.from('rrhh_docs').select('*').eq('trabajador_id',tid).eq('tipo','cedula').maybeSingle().then(function(q){
+        var f=(q&&!q.error&&q.data)||null; if(f){ RRHH_D[tid+'|cedula']=f; } carnetPDF(carnetSides(t, f||d), t.nombre);
+      }, function(){ carnetPDF(_sides, t.nombre); });
+    });
     var pend={file:null,file2:null};
     if($('re-file')) $('re-file').addEventListener('change',function(){ pend.file=this.files&&this.files[0]; if($('re-file-n')) $('re-file-n').textContent=pend.file?('· '+pend.file.name):''; });
     if($('re-file2')) $('re-file2').addEventListener('change',function(){ pend.file2=this.files&&this.files[0]; if($('re-file2-n')) $('re-file2-n').textContent=pend.file2?('· '+pend.file2.name):''; });
