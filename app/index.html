@@ -1475,7 +1475,7 @@
       <div class="fld"><label>Correo</label><input id="af-email" type="email" placeholder="correo@innovaservi.com"></div>
       <div class="grid2">
         <div class="fld"><label>Nombre (opcional)</label><input id="af-nombre" type="text"></div>
-        <div class="fld"><label>Rol</label><select id="af-rol"><option value="admin">Admin</option><option value="supervisor">Supervisor</option><option value="operario">Operario</option><option value="chofer">Chofer</option></select></div>
+        <div class="fld"><label>Rol</label><select id="af-rol"><option value="admin">Admin</option><option value="supervisor">Supervisor</option><option value="prevencionista">Prevencionista</option><option value="operario">Operario</option><option value="chofer">Chofer</option></select></div>
       </div>
     </div>
     <div class="card">
@@ -1657,6 +1657,18 @@
   // Solo estos 3 (supervisores) generan reporte, editan datos/horas y eliminan. El resto solo adjunta fotos.
   var ADMIN_EMAILS=['enzo.castro@innovaservi.com','jorge.castro@innovaservi.com','cristopher.ruiz@innovaservi.com'];
   var authed=false, userEmail='', isAdmin=false;
+  // Accesos por sección del usuario logueado (además de los dueños/admin).
+  var MI_SECC={}, MI_ROL='', MI_TIENE=false, NIV_ORD={oculto:0,ver:1,editar:2,total:3};
+  function nivelSec(sec){ if(isAdmin) return 3; var v=MI_SECC&&MI_SECC[sec]; return (NIV_ORD[v]!=null?NIV_ORD[v]:0); }
+  function verSec(sec){ return nivelSec(sec)>=1; }
+  function editaSec(sec){ return nivelSec(sec)>=2; }
+  function cargarMiPermiso(cb){ MI_SECC={}; MI_ROL=''; MI_TIENE=false;
+    if(isAdmin || !sb){ if(cb)cb(); return; }
+    sb.from('permisos').select('rol,secciones').eq('email',(userEmail||'').trim().toLowerCase()).limit(1).then(function(r){
+      var p=(r&&r.data&&r.data[0]);
+      if(p){ MI_TIENE=true; MI_ROL=p.rol||''; if(p.rol==='admin') isAdmin=true; MI_SECC=(p.secciones&&Object.keys(p.secciones).length)?p.secciones:((typeof ROL_DEFAULTS!=='undefined'&&ROL_DEFAULTS[p.rol])||{}); }
+      if(cb)cb();
+    }, function(){ if(cb)cb(); }); }
   var EVENTOS=[];               // trabajos del calendario
   var R_MEDIA=[];               // archivos del registro actual [{file?,url,tipo,cat,fecha,nombre,existing?}]
   var R_JOB=null;               // faena principal (primera de R_JOBS)
@@ -1747,8 +1759,7 @@
     if(authed){ $('gate').classList.add('hide'); $('app').classList.remove('hide'); $('who').textContent=userEmail+(isAdmin?'':' · operario');
       if($('sb-who')) $('sb-who').textContent=userEmail;
       if($('sb-av')) $('sb-av').textContent=(userEmail||'·').trim().charAt(0).toUpperCase();
-      aplicarRol();
-      if(!setAuth._loaded){ setAuth._loaded=true; init(); } }
+      cargarMiPermiso(function(){ aplicarRol(); if(!setAuth._loaded){ setAuth._loaded=true; init(); } }); }
     else { $('gate').classList.remove('hide'); $('app').classList.add('hide'); }
   }
   function aplicarRol(){
@@ -1773,6 +1784,16 @@
     if($('c-faena')) $('c-faena').disabled=op;
     if($('add-asig')) $('add-asig').style.display=op?'none':'';
     if($('asig-note')) $('asig-note').style.display=op?'none':'';
+    if(!isAdmin && MI_TIENE) aplicarSecciones();   // usuario configurado: muestra solo sus secciones
+  }
+  // Muestra en el menú solo las secciones que el usuario tiene permitidas (además de lo que ya ocultó aplicarRol).
+  var SEC_DE_V={ 'v-alertas':'alertas','v-horas':'reporte','v-hist':'reporte','v-cuadrilla':'reporte','v-clientes':'clientes','v-planif':'planificacion','v-plan':'calendario','v-matriz':'matriz','v-rrhh':'rrhh','v-remu':'remu','v-veh':'veh' };
+  function aplicarSecciones(){
+    document.querySelectorAll('.sbar .sb-item[data-v]').forEach(function(x){ var sec=SEC_DE_V[x.dataset.v]; if(sec) x.classList.toggle('hide', !verSec(sec)); });
+    document.querySelectorAll('.sbar-grp').forEach(function(g){ var t=(g.textContent||'').toLowerCase();
+      if(t.indexOf('rrhh')>=0) g.classList.toggle('hide', !verSec('rrhh'));
+      else if(t.indexOf('remun')>=0) g.classList.toggle('hide', !verSec('remu')); });
+    [['btn-rrhh','rrhh'],['btn-cli','clientes'],['btn-alertas','alertas'],['btn-plan','calendario'],['btn-planif','planificacion'],['btn-pagos','remu'],['tab-horas','reporte'],['tab-matriz','matriz'],['tab-veh','veh']].forEach(function(m){ if($(m[0])) $(m[0]).classList.toggle('hide', !verSec(m[1])); });
   }
   // Ajusta títulos y botones según rol y si es edición
   function aplicarModo(){
@@ -1863,7 +1884,7 @@
     if(v==='v-horas') cargarHoras();
     if(v==='v-cuadrilla'){ cargarTrab(actualizarDatalist); cargarPlantillas(function(){ cargarRegistros(function(){ if(C_JOB) elegirJobCuadrilla(C_JOB); else renderFaenaSelect(); }); }); }
     if(v==='v-matriz'){ cargarPlantillas(renderMatriz); }
-    if(v==='v-veh'){ if(isAdmin){ cargarVeh(pintarVehList); } else { cargarChoferForm(); } }
+    if(v==='v-veh'){ if(isAdmin || (MI_TIENE && verSec('veh'))){ cargarVeh(pintarVehList); } else { cargarChoferForm(); } }
     if(v==='v-remu'){ cargarRemu(); }
     if(v==='v-rrhh'){ cargarRrhh(); }
     if(v==='v-clientes'){ cargarClientes(pintarCli); }
@@ -5593,17 +5614,18 @@
   document.querySelectorAll('.rrhh-vis').forEach(function(b){ b.addEventListener('click',function(){ document.querySelectorAll('.rrhh-vis').forEach(function(x){ x.classList.toggle('on',x===b); }); RRHH_VISTA=b.dataset.v; renderRrhh(); }); });
 
   // ====== ACCESOS / PERMISOS (solo Enzo) ======
-  var SECCIONES=[['reporte','Registro'],['hist','Registros'],['cuadrilla','Preparación'],['matriz','Matriz'],['trab','Personas'],['veh','Vehículos'],['remu','Remuneraciones'],['planificacion','Planificación']];
+  var SECCIONES=[['reporte','Registro / Reportes'],['planificacion','Planificación'],['calendario','Calendario'],['matriz','Matriz PTS'],['rrhh','RRHH / Documentación'],['remu','Remuneraciones'],['veh','Vehículos'],['clientes','Clientes'],['alertas','Alertas']];
   var NIVELES=[['oculto','Oculto'],['ver','Ver'],['editar','Editar'],['total','Total']];
   var ROL_DEFAULTS={
-    admin:      {reporte:'total',hist:'total',cuadrilla:'total',matriz:'total',trab:'total',veh:'total',remu:'total',planificacion:'total'},
-    supervisor: {reporte:'total',hist:'total',cuadrilla:'total',matriz:'editar',trab:'editar',veh:'total',remu:'ver',planificacion:'editar'},
-    operario:   {reporte:'editar',hist:'ver',cuadrilla:'ver',matriz:'oculto',trab:'oculto',veh:'editar',remu:'oculto',planificacion:'oculto'},
-    chofer:     {reporte:'ver',hist:'oculto',cuadrilla:'oculto',matriz:'oculto',trab:'oculto',veh:'editar',remu:'oculto',planificacion:'oculto'}
+    admin:         {reporte:'total',planificacion:'total',calendario:'total',matriz:'total',rrhh:'total',remu:'total',veh:'total',clientes:'total',alertas:'total'},
+    supervisor:    {reporte:'total',planificacion:'editar',calendario:'editar',matriz:'editar',rrhh:'editar',remu:'ver',veh:'total',clientes:'editar',alertas:'ver'},
+    prevencionista:{reporte:'ver',planificacion:'ver',calendario:'ver',matriz:'ver',rrhh:'total',remu:'oculto',veh:'ver',clientes:'ver',alertas:'ver'},
+    operario:      {reporte:'editar',planificacion:'oculto',calendario:'oculto',matriz:'oculto',rrhh:'oculto',remu:'oculto',veh:'editar',clientes:'oculto',alertas:'oculto'},
+    chofer:        {reporte:'ver',planificacion:'oculto',calendario:'oculto',matriz:'oculto',rrhh:'oculto',remu:'oculto',veh:'editar',clientes:'oculto',alertas:'oculto'}
   };
   var PERMISOS=[], ACC_EMAIL=null;
   function cargarPermisos(){ if(!sb) return; sb.from('permisos').select('*').order('rol',{ascending:true}).then(function(r){ PERMISOS=(r&&r.data)||[]; pintarAcc(); }); }
-  function rolLbl(x){ return ({admin:'Admin',supervisor:'Supervisor',operario:'Operario',chofer:'Chofer'})[x]||x; }
+  function rolLbl(x){ return ({admin:'Admin',supervisor:'Supervisor',prevencionista:'Prevencionista',operario:'Operario',chofer:'Chofer'})[x]||x; }
   function pintarAcc(){
     var c=$('acc-list');
     if(!PERMISOS.length){ c.innerHTML='<div class="empty"><div class="big">🔐</div>Aún no hay personas.<br><span style="font-size:.82rem">Corre permisos.sql o toca “＋ Persona”.</span></div>'; return; }
