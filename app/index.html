@@ -312,6 +312,13 @@
     #app.drawer-open #drawer-bg{display:block;position:fixed;inset:0;background:rgba(12,15,46,.55);z-index:70;}
     main{padding-bottom:calc(28px + var(--safe-b)) !important;}
   }
+  /* Navegador de días de la semana (hasta hoy) */
+  .daystrip{display:flex;gap:7px;overflow-x:auto;padding:2px 0 10px;-webkit-overflow-scrolling:touch;}
+  .daystrip .day{flex:0 0 auto;min-width:52px;border:1px solid var(--line);background:#fff;border-radius:12px;padding:7px 8px;text-align:center;cursor:pointer;color:var(--ink);}
+  .daystrip .day .dw{font:800 10px var(--font);letter-spacing:.04em;text-transform:uppercase;color:var(--muted);}
+  .daystrip .day .dn{font:800 17px var(--font);line-height:1.15;}
+  .daystrip .day.on{background:var(--orange);border-color:var(--orange);color:#fff;}
+  .daystrip .day.on .dw{color:rgba(255,255,255,.88);}
 
   /* Sheet (selector trabajo) */
   .sheet{position:fixed;inset:0;z-index:60;display:none;}
@@ -1223,9 +1230,10 @@
 
     <!-- ---- ASISTENCIA DE TERRENO (capataz: la cuadrilla marca con los últimos 4 del RUT) ---- -->
     <section class="view" id="v-asist">
-      <div class="h-row"><h2>Asistencia · terreno</h2><div class="asist-tools"><span class="cnt" id="asist-cnt"></span><button id="asist-kiosco" class="btn ghost small" style="width:auto">⛶ Pantalla completa</button><button id="asist-salir" class="btn small hide" style="width:auto">✕ Salir</button></div></div>
+      <div class="h-row"><h2>Asistencia · terreno</h2><span class="cnt" id="asist-cnt"></span></div>
+      <div id="asist-days" class="daystrip"></div>
       <div class="card" style="border:1px solid var(--orange)">
-        <div class="fld" style="margin:0 0 8px"><label>Faena de hoy · <b id="asist-fecha"></b></label><select id="asist-faena" style="font:700 15px var(--font)"></select></div>
+        <div class="fld" style="margin:0 0 8px"><label>Faena · <b id="asist-fecha"></b></label><select id="asist-faena" style="font:700 15px var(--font)"></select></div>
         <p class="note" style="margin:0" id="asist-faena-info"></p>
       </div>
       <div class="card">
@@ -1254,9 +1262,10 @@
 
     <!-- ---- FOTOS DE FAENA (prevencionista: sube multimedia al reporte desde el celular) ---- -->
     <section class="view" id="v-fotos">
-      <div class="h-row"><h2>Fotos de faena</h2><span class="cnt" id="fot-cnt"></span></div>
+      <div class="h-row"><h2>Multimedia</h2><span class="cnt" id="fot-cnt"></span></div>
+      <div id="fot-days" class="daystrip"></div>
       <div class="card" style="border:1px solid var(--orange)">
-        <div class="fld" style="margin:0 0 8px"><label>Faena de hoy · <b id="fot-fecha"></b></label><select id="fot-faena" style="font:700 15px var(--font)"></select></div>
+        <div class="fld" style="margin:0 0 8px"><label>Faena · <b id="fot-fecha"></b></label><select id="fot-faena" style="font:700 15px var(--font)"></select></div>
         <p class="note" style="margin:0" id="fot-faena-info"></p>
       </div>
       <div id="fot-body">
@@ -1982,35 +1991,40 @@
     window.scrollTo(0,0);
   }
   // ====== Asistencia de terreno (capataz) — la cuadrilla marca con los últimos 4 del RUT ======
-  var ASIST={ trab:[], eventos:[], horas:[], faenaSel:'', registro:null };
+  var ASIST={ trab:[], eventos:[], horas:[], faenaSel:'', registro:null, fecha:'' };
   function rut4(r){ var d=(r||'').replace(/[^0-9kK]/g,''); if(d.length>1) d=d.slice(0,-1); return d.slice(-4); }   // últimos 4 del cuerpo (sin dígito verificador)
   function faenaStrDe(e){ return [e.ubicacion, e.sitio, e.titulo].filter(Boolean).join(' · '); }
-  function cargarAsistencia(){ if(!sb) return; var hoy=todayISO(); $('asist-fecha').textContent=fechaDia(hoy);
+  // Navegación por días: solo la semana actual, de lunes hasta hoy (para completar lo que se pasó, sin salir de la semana).
+  function isoDow(iso){ var d=new Date(iso+'T12:00:00'); var g=d.getDay(); return g===0?7:g; }   // 1=Lun .. 7=Dom
+  function semanaHastaHoy(){ var hoy=todayISO(), dow=isoDow(hoy), out=[]; for(var i=dow-1;i>=0;i--) out.push(sumarDias(hoy,-i)); return out; }
+  function pintarDaystrip(elId, sel, onPick){ var box=$(elId); if(!box) return; var dias=semanaHastaHoy();
+    box.innerHTML=dias.map(function(f){ var d=new Date(f+'T12:00:00'), dw=['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB'][d.getDay()], hoy=(f===todayISO());
+      return '<button class="day'+(f===sel?' on':'')+'" data-f="'+f+'"><div class="dw">'+(hoy?'HOY':dw)+'</div><div class="dn">'+d.getDate()+'</div></button>'; }).join('');
+    box.querySelectorAll('.day').forEach(function(b){ b.addEventListener('click',function(){ onPick(b.dataset.f); }); });
+  }
+  function cargarAsistencia(){ if(!sb) return; var wk=semanaHastaHoy(); if(!ASIST.fecha||wk.indexOf(ASIST.fecha)<0) ASIST.fecha=todayISO();
+    pintarDaystrip('asist-days',ASIST.fecha,function(f){ ASIST.fecha=f; ASIST.registro=null; cargarAsistencia(); });
+    sb.from('trabajadores').select('id,nombre,rut,estado').limit(800).then(function(r){ ASIST.trab=((r&&r.data)||[]).filter(function(t){ return t.estado!=='inactivo'; }); asistCargaDia(); }, function(){ toast('No se pudo cargar la asistencia.'); });
+  }
+  function asistCargaDia(){ var f=ASIST.fecha; if($('asist-fecha')) $('asist-fecha').textContent=fechaDia(f);
     Promise.all([
-      sb.from('trabajadores').select('id,nombre,rut,estado').limit(800),
-      sb.from('eventos').select('*').gte('fecha',sumarDias(hoy,-10)).lte('fecha',hoy).limit(500),
-      sb.from('horas').select('*').eq('fecha',hoy).limit(2000)
+      sb.from('eventos').select('*').gte('fecha',sumarDias(f,-10)).lte('fecha',f).limit(500),
+      sb.from('horas').select('*').eq('fecha',f).limit(2000)
     ]).then(function(rs){
-      ASIST.trab=((rs[0]&&rs[0].data)||[]).filter(function(t){ return t.estado!=='inactivo'; });
-      ASIST.eventos=((rs[1]&&rs[1].data)||[]).filter(function(e){ var fn=e.fecha_fin||e.fecha; return e.fecha<=hoy && fn>=hoy; }).sort(function(a,b){ return (a.hora||'').localeCompare(b.hora||''); });
-      ASIST.horas=(rs[2]&&rs[2].data)||[];
-      // opciones de faena: SOLO las agendadas hoy en el calendario (no hay faena manual)
+      ASIST.eventos=((rs[0]&&rs[0].data)||[]).filter(function(e){ var fn=e.fecha_fin||e.fecha; return e.fecha<=f && fn>=f; }).sort(function(a,b){ return (a.hora||'').localeCompare(b.hora||''); });
+      ASIST.horas=(rs[1]&&rs[1].data)||[];
       if(ASIST.eventos.length){
-        var opts=ASIST.eventos.map(function(e){ return '<option value="ev:'+e.id+'">'+esc(faenaStrDe(e))+(e.hora?(' · '+esc(e.hora)):'')+'</option>'; }).join('');
-        $('asist-faena').innerHTML=opts;
+        $('asist-faena').innerHTML=ASIST.eventos.map(function(e){ return '<option value="ev:'+e.id+'">'+esc(faenaStrDe(e))+(e.hora?(' · '+esc(e.hora)):'')+'</option>'; }).join('');
         var def=ASIST.eventos.filter(function(e){ return /frigo|apoyo/i.test((e.titulo||'')+(e.ubicacion||'')); })[0]||ASIST.eventos[0];
         $('asist-faena').value='ev:'+def.id;
-      } else {
-        $('asist-faena').innerHTML='<option value="">— No hay faenas agendadas hoy —</option>';
-      }
-      asistFaenaCambio();
-      pintarAsistencia();
+      } else { $('asist-faena').innerHTML='<option value="">— No hay faenas agendadas ese día —</option>'; }
+      ASIST.registro=null; asistFaenaCambio();
     }, function(){ toast('No se pudo cargar la asistencia.'); });
   }
   function asistEventoSel(){ var v=$('asist-faena').value||''; if(v.indexOf('ev:')!==0) return null; var id=v.slice(3); return ASIST.eventos.filter(function(e){ return String(e.id)===String(id); })[0]||null; }
   function asistFaenaCambio(){ var e=asistEventoSel(); var hay=!!e;
     if(e){ ASIST.faenaSel=faenaStrDe(e); $('asist-faena-info').textContent=(e.hora?('Horario: '+e.hora+' · '):'')+((e.personas_nec!=null)?('Necesita '+e.personas_nec+' personas'):'Selecciona los que van llegando'); }
-    else { ASIST.faenaSel=''; $('asist-faena-info').textContent='No hay faena agendada hoy en el calendario. Crea la faena en Planificación / Calendario para poder tomar asistencia.'; }
+    else { ASIST.faenaSel=''; $('asist-faena-info').textContent='No hay faena agendada ese día en el calendario. Crea la faena en Planificación / Calendario para poder tomar asistencia.'; }
     if($('asist-rut')) $('asist-rut').disabled=!hay; if($('asist-mark')) $('asist-mark').disabled=!hay;
     if($('asist-notas')) $('asist-notas').disabled=!hay; if($('asist-notas-save')) $('asist-notas-save').disabled=!hay;
     ASIST.registro=null; pintarAsistencia(); if(hay) asistRegLoad();
@@ -2018,13 +2032,13 @@
   if($('asist-faena')) $('asist-faena').addEventListener('change',asistFaenaCambio);
   // Un solo registro por faena+día: la asistencia y la bitácora se cargan a "Registros" sin duplicar.
   function asistRegLoad(){ if(!sb) return; var ta=$('asist-notas'); if(ta){ ta.value=''; } if($('asist-notas-msg')) $('asist-notas-msg').textContent='';
-    var e=asistEventoSel(); if(!e){ ASIST.registro=null; return; } var hoy=todayISO();
-    sb.from('registros').select('*').eq('fecha',hoy).eq('evento_id',e.id).limit(1).then(function(r){ var reg=(r&&r.data&&r.data[0])||null; ASIST.registro=reg; if(reg&&ta) ta.value=reg.notas||''; }, function(){});
+    var e=asistEventoSel(); if(!e){ ASIST.registro=null; return; } var f=ASIST.fecha;
+    sb.from('registros').select('*').eq('fecha',f).eq('evento_id',e.id).limit(1).then(function(r){ var reg=(r&&r.data&&r.data[0])||null; ASIST.registro=reg; if(reg&&ta) ta.value=reg.notas||''; }, function(){});
   }
   function asistRegistro(cb){ if(!sb){ cb(null); return; } if(ASIST.registro&&ASIST.registro.id){ cb(ASIST.registro); return; }
-    var e=asistEventoSel(); if(!e){ cb(null); return; } var hoy=todayISO();
-    sb.from('registros').select('*').eq('fecha',hoy).eq('evento_id',e.id).limit(1).then(function(r){ var reg=(r&&r.data&&r.data[0])||null; if(reg){ ASIST.registro=reg; cb(reg); return; }
-      var row={ evento_id:e.id, empresa:(e.ubicacion||''), lugar:(e.sitio||''), fecha:hoy, faenas:[ASIST.faenaSel], notas:'', autor:userEmail };
+    var e=asistEventoSel(); if(!e){ cb(null); return; } var f=ASIST.fecha;
+    sb.from('registros').select('*').eq('fecha',f).eq('evento_id',e.id).limit(1).then(function(r){ var reg=(r&&r.data&&r.data[0])||null; if(reg){ ASIST.registro=reg; cb(reg); return; }
+      var row={ evento_id:e.id, empresa:(e.ubicacion||''), lugar:(e.sitio||''), fecha:f, faenas:[ASIST.faenaSel], notas:'', autor:userEmail };
       sb.from('registros').insert(row).select().single().then(function(r2){ if(r2.error){ cb(null); return; } ASIST.registro=r2.data; cb(r2.data); }, function(){ cb(null); });
     }, function(){ cb(null); });
   }
@@ -2036,20 +2050,20 @@
   }
   if($('asist-notas-save')) $('asist-notas-save').addEventListener('click',asistGuardarNotas);
   function asistMarcasHoy(){ var fa=ASIST.faenaSel; return ASIST.horas.filter(function(h){ return (h.faena||'')===fa; }); }
-  function pintarAsistencia(){ var marcas=asistMarcasHoy();
+  function pintarAsistencia(){ var marcas=asistMarcasHoy(); var esHoy=(ASIST.fecha===todayISO());
     $('asist-n').textContent=marcas.length+(marcas.length===1?' persona':' personas');
-    if($('asist-cnt')) $('asist-cnt').textContent='';
+    if($('asist-cnt')) $('asist-cnt').textContent=esHoy?'':('· '+fechaDia(ASIST.fecha));
     var rows=marcas.slice().sort(function(a,b){ return (a.entrada||'').localeCompare(b.entrada||''); }).map(function(h){
       var sal=h.salida?(' → '+esc(h.salida)):' <span class="note" style="margin:0;color:#0f6e56">presente</span>';
       return '<div class="dgp-row" style="justify-content:space-between"><span class="nm">'+esc(titleCase(h.trabajador||''))+'</span><span class="note" style="margin:0;font-variant-numeric:tabular-nums">'+esc(h.entrada||'--:--')+sal+' <button class="btn ghost small asist-x" data-id="'+enc(String(h.id||''))+'" style="width:auto;margin-left:8px">✕</button></span></div>';
-    }).join('')||'<p class="note" style="margin:0">Nadie ha marcado aún en esta faena hoy.</p>';
+    }).join('')||'<p class="note" style="margin:0">Nadie ha marcado aún en esta faena.</p>';
     $('asist-list').innerHTML=rows;
     $('asist-list').querySelectorAll('.asist-x').forEach(function(b){ b.addEventListener('click',function(){ asistQuitar(b.dataset.id); }); });
   }
   function nowHHMM(){ var d=new Date(); return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }
   function asistMsg(txt,ok){ var m=$('asist-msg'); if(m) m.innerHTML='<span style="font:700 14px var(--font);color:'+(ok?'#0f6e56':'#c0392b')+'">'+esc(txt)+'</span>'; }
   function asistMarcar(){
-    if(!sb) return; if(!asistEventoSel()){ asistMsg('No hay faena agendada hoy. Créala en el calendario para tomar asistencia.',false); return; }
+    if(!sb) return; if(!asistEventoSel()){ asistMsg('No hay faena agendada ese día. Créala en el calendario para tomar asistencia.',false); return; }
     var v=($('asist-rut').value||'').replace(/[^0-9]/g,''); if(v.length<3){ asistMsg('Escribe los últimos 4 del RUT.',false); return; }
     var cand=ASIST.trab.filter(function(t){ return rut4(t.rut)===v; });
     if(!cand.length){ asistMsg('No se encontró un trabajador con esos dígitos.',false); return; }
@@ -2059,7 +2073,7 @@
     $('asist-rut').value='';
     if(!ya){   // entrada
       asistRegistro(function(reg){
-        var row={ trabajador:titleCase(t.nombre), empresa:(e?e.ubicacion:''), lugar:(e?e.sitio:''), faena:ASIST.faenaSel, fecha:todayISO(), entrada:nowHHMM(), salida:null, evento_id:(e?e.id:null), registro_id:(reg?reg.id:null), autor:userEmail };
+        var row={ trabajador:titleCase(t.nombre), empresa:(e?e.ubicacion:''), lugar:(e?e.sitio:''), faena:ASIST.faenaSel, fecha:ASIST.fecha, entrada:nowHHMM(), salida:null, evento_id:(e?e.id:null), registro_id:(reg?reg.id:null), autor:userEmail };
         sb.from('horas').insert(row).select().single().then(function(r){ if(r.error){ asistMsg('No se pudo marcar: '+r.error.message,false); return; } ASIST.horas.push(r.data); asistMsg('✓ '+titleCase(t.nombre)+' · entrada '+row.entrada,true); pintarAsistencia(); }, function(){ asistMsg('No se pudo marcar.',false); });
       });
     } else if(!ya.salida){   // salida
@@ -2071,32 +2085,34 @@
   function asistQuitar(id){ if(!sb||!id) return; if(!confirm('¿Quitar esta marca?')) return; sb.from('horas').delete().eq('id',id).then(function(r){ if(r&&r.error){ toast('No se pudo quitar.'); return; } ASIST.horas=ASIST.horas.filter(function(h){ return String(h.id)!==String(id); }); pintarAsistencia(); }); }
 
   // ====== Fotos de faena (prevencionista): sube multimedia al reporte desde el celular ======
-  var FOT={ eventos:[], faenaSel:'', registro:null, media:[], subiendo:0 };
+  var FOT={ eventos:[], faenaSel:'', registro:null, media:[], subiendo:0, fecha:'' };
   var FOT_CATS=[['sin','Sin ordenar','#64748b'],['antes','Antes','#8b93a7'],['proceso','Proceso','#f59e0b'],['despues','Después','#22a06b'],['doc','Registro documental','#6366f1']];
-  function cargarFotos(){ if(!sb) return; var hoy=todayISO(); if($('fot-fecha')) $('fot-fecha').textContent=fechaDia(hoy);
-    sb.from('eventos').select('*').gte('fecha',sumarDias(hoy,-10)).lte('fecha',hoy).limit(500).then(function(r){
-      FOT.eventos=((r&&r.data)||[]).filter(function(e){ var fn=e.fecha_fin||e.fecha; return e.fecha<=hoy && fn>=hoy; }).sort(function(a,b){ return (a.hora||'').localeCompare(b.hora||''); });
+  function cargarFotos(){ if(!sb) return; var wk=semanaHastaHoy(); if(!FOT.fecha||wk.indexOf(FOT.fecha)<0) FOT.fecha=todayISO();
+    pintarDaystrip('fot-days',FOT.fecha,function(f){ FOT.fecha=f; FOT.registro=null; FOT.media=[]; cargarFotos(); });
+    var f=FOT.fecha; if($('fot-fecha')) $('fot-fecha').textContent=fechaDia(f);
+    sb.from('eventos').select('*').gte('fecha',sumarDias(f,-10)).lte('fecha',f).limit(500).then(function(r){
+      FOT.eventos=((r&&r.data)||[]).filter(function(e){ var fn=e.fecha_fin||e.fecha; return e.fecha<=f && fn>=f; }).sort(function(a,b){ return (a.hora||'').localeCompare(b.hora||''); });
       if(FOT.eventos.length){
         $('fot-faena').innerHTML=FOT.eventos.map(function(e){ return '<option value="ev:'+e.id+'">'+esc(faenaStrDe(e))+(e.hora?(' · '+esc(e.hora)):'')+'</option>'; }).join('');
         var def=FOT.eventos.filter(function(e){ return /frigo|apoyo/i.test((e.titulo||'')+(e.ubicacion||'')); })[0]||FOT.eventos[0];
         $('fot-faena').value='ev:'+def.id;
-      } else { $('fot-faena').innerHTML='<option value="">— No hay faenas agendadas hoy —</option>'; }
+      } else { $('fot-faena').innerHTML='<option value="">— No hay faenas agendadas ese día —</option>'; }
       fotFaenaCambio();
     }, function(){ toast('No se pudo cargar las faenas.'); });
   }
   function fotEventoSel(){ var v=($('fot-faena')&&$('fot-faena').value)||''; if(v.indexOf('ev:')!==0) return null; var id=v.slice(3); return FOT.eventos.filter(function(e){ return String(e.id)===String(id); })[0]||null; }
   function fotFaenaCambio(){ var e=fotEventoSel();
     if(e){ FOT.faenaSel=faenaStrDe(e); if($('fot-faena-info')) $('fot-faena-info').textContent=(e.hora?('Horario: '+e.hora+' · '):'')+'Sube las fotos de esta faena.'; }
-    else { FOT.faenaSel=''; if($('fot-faena-info')) $('fot-faena-info').textContent='No hay faena agendada hoy. Créala en el calendario para subir fotos.'; }
+    else { FOT.faenaSel=''; if($('fot-faena-info')) $('fot-faena-info').textContent='No hay faena agendada ese día. Créala en el calendario para subir fotos.'; }
     if($('fot-body')) $('fot-body').classList.toggle('hide', !e);
     FOT.registro=null; FOT.media=[]; fotRenderCats();
-    if(e){ var hoy=todayISO(); sb.from('registros').select('*').eq('fecha',hoy).eq('evento_id',e.id).limit(1).then(function(r){ var reg=(r&&r.data&&r.data[0])||null; FOT.registro=reg; FOT.media=(reg&&reg.media)?reg.media.slice():[]; fotRenderCats(); }, function(){}); }
+    if(e){ var f=FOT.fecha; sb.from('registros').select('*').eq('fecha',f).eq('evento_id',e.id).limit(1).then(function(r){ var reg=(r&&r.data&&r.data[0])||null; FOT.registro=reg; FOT.media=(reg&&reg.media)?reg.media.slice():[]; fotRenderCats(); }, function(){}); }
   }
   if($('fot-faena')) $('fot-faena').addEventListener('change',fotFaenaCambio);
   function fotRegistro(cb){ if(!sb){ cb(null); return; } if(FOT.registro&&FOT.registro.id){ cb(FOT.registro); return; }
-    var e=fotEventoSel(); if(!e){ cb(null); return; } var hoy=todayISO();
-    sb.from('registros').select('*').eq('fecha',hoy).eq('evento_id',e.id).limit(1).then(function(r){ var reg=(r&&r.data&&r.data[0])||null; if(reg){ FOT.registro=reg; if(!FOT.media.length && reg.media) FOT.media=reg.media.slice(); cb(reg); return; }
-      var row={ evento_id:e.id, empresa:(e.ubicacion||''), lugar:(e.sitio||''), fecha:hoy, faenas:[FOT.faenaSel], notas:'', media:[], autor:userEmail };
+    var e=fotEventoSel(); if(!e){ cb(null); return; } var f=FOT.fecha;
+    sb.from('registros').select('*').eq('fecha',f).eq('evento_id',e.id).limit(1).then(function(r){ var reg=(r&&r.data&&r.data[0])||null; if(reg){ FOT.registro=reg; if(!FOT.media.length && reg.media) FOT.media=reg.media.slice(); cb(reg); return; }
+      var row={ evento_id:e.id, empresa:(e.ubicacion||''), lugar:(e.sitio||''), fecha:f, faenas:[FOT.faenaSel], notas:'', media:[], autor:userEmail };
       sb.from('registros').insert(row).select().single().then(function(r2){ if(r2.error){ cb(null); return; } FOT.registro=r2.data; cb(r2.data); }, function(){ cb(null); });
     }, function(){ cb(null); });
   }
@@ -2108,7 +2124,7 @@
     var carpeta='reportes/'+(e.id||'faena'); var pend=files.length, hubo=false;
     files.forEach(function(f){
       subirArchivo(f,carpeta,f.name).then(function(res){
-        if(res&&res.url){ FOT.media.push({ url:res.url, tipo:res.tipo||'image', nombre:res.nombre||f.name, cat:cat, fecha:todayISO(), faena:'' }); hubo=true; fotRenderCats(); }
+        if(res&&res.url){ FOT.media.push({ url:res.url, tipo:res.tipo||'image', nombre:res.nombre||f.name, cat:cat, fecha:FOT.fecha, faena:'' }); hubo=true; fotRenderCats(); }
         pend--; FOT.subiendo=Math.max(0,FOT.subiendo-1);
         if(pend===0){ if(hubo){ fotGuardarMedia(function(ok){ fotMsg(ok?'✓ Fotos subidas al reporte':'⚠ Subió pero no se guardó, reintenta',ok); }); } else { fotMsg('⚠ No se pudo subir.',false); } }
       }, function(){ pend--; FOT.subiendo=Math.max(0,FOT.subiendo-1); if(pend===0){ if(hubo) fotGuardarMedia(function(ok){ fotMsg(ok?'✓ Fotos subidas':'⚠ Error al guardar',ok); }); else fotMsg('⚠ No se pudo subir.',false); } });
@@ -2125,11 +2141,6 @@
     box.querySelectorAll('.fot-del').forEach(function(b){ b.addEventListener('click',function(){ fotDel(+b.dataset.i); }); });
   }
   function fotDel(i){ if(i<0||i>=FOT.media.length) return; if(!confirm('¿Quitar esta foto del reporte?')) return; FOT.media.splice(i,1); fotRenderCats(); fotGuardarMedia(function(ok){ fotMsg(ok?'✓ Actualizado':'⚠ No se pudo actualizar',ok); }); }
-  // Modo kiosco: Asistencia a pantalla completa (para el capataz en terreno).
-  function kioscoOn(){ var a=$('app'); if(a)a.classList.add('kiosco'); if($('asist-kiosco'))$('asist-kiosco').classList.add('hide'); if($('asist-salir'))$('asist-salir').classList.remove('hide'); try{ if(document.documentElement.requestFullscreen) document.documentElement.requestFullscreen(); }catch(_){} window.scrollTo(0,0); }
-  function kioscoOff(){ var a=$('app'); if(a)a.classList.remove('kiosco'); if($('asist-kiosco'))$('asist-kiosco').classList.remove('hide'); if($('asist-salir'))$('asist-salir').classList.add('hide'); try{ if(document.fullscreenElement && document.exitFullscreen) document.exitFullscreen(); }catch(_){} }
-  if($('asist-kiosco')) $('asist-kiosco').addEventListener('click',function(){ abrirVista('v-asist'); kioscoOn(); });
-  if($('asist-salir')) $('asist-salir').addEventListener('click',kioscoOff);
   document.querySelectorAll('.tabbar button').forEach(function(b){ b.addEventListener('click',function(){ abrirVista(b.dataset.v); }); });
   document.querySelectorAll('.sbar .sb-item[data-v]').forEach(function(b){ b.addEventListener('click',function(){
     abrirVista(b.dataset.v);
