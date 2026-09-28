@@ -299,6 +299,19 @@
     .rrhh-segbar{display:none !important;}   /* segmentos ya están en la barra lateral */
     .topbar{display:none !important;}        /* marca, nav y usuario viven en la barra lateral */
   }
+  /* --- Móvil: un solo menú (cajón/hamburguesa) en vez de iconos arriba + tabbar abajo --- */
+  #hamb{display:none;align-items:center;justify-content:center;width:38px;height:38px;border:none;background:rgba(255,255,255,.18);color:#fff;border-radius:10px;cursor:pointer;flex:0 0 auto;margin-right:2px;}
+  #hamb svg{width:20px;height:20px;}
+  #drawer-bg{display:none;}
+  @keyframes drawin{from{transform:translateX(-100%);}to{transform:none;}}
+  @media(max-width:899px){
+    #hamb{display:inline-flex;}
+    #btn-alertas,#btn-cli,#btn-rrhh,#btn-pagos,#btn-planif,#btn-plan,#btn-acc-h{display:none !important;}  /* nav suelta de arriba: ahora vive en el cajón */
+    .tabbar{display:none !important;}     /* nav única = cajón */
+    #app.drawer-open .sbar{display:flex;flex-direction:column;position:fixed;left:0;top:0;bottom:0;width:252px;max-width:84vw;background:var(--navy);z-index:75;padding:16px 12px calc(16px + var(--safe-b));overflow-y:auto;animation:drawin .22s ease;}
+    #app.drawer-open #drawer-bg{display:block;position:fixed;inset:0;background:rgba(12,15,46,.55);z-index:70;}
+    main{padding-bottom:calc(28px + var(--safe-b)) !important;}
+  }
 
   /* Sheet (selector trabajo) */
   .sheet{position:fixed;inset:0;z-index:60;display:none;}
@@ -887,6 +900,7 @@
 <!-- ============ APP ============ -->
 <div id="app" class="hide">
   <div class="topbar">
+    <button id="hamb" aria-label="Menú" title="Menú"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
     <div class="tt"><img src="../assets/images/InnovaLOGO.png" alt="" onerror="this.style.display='none'"><div><b>InnovaGestión</b><div class="who" id="who"></div></div></div>
     <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
       <button id="btn-alertas" class="out hide" title="Alertas" aria-label="Alertas" style="padding-left:10px;padding-right:10px;display:inline-flex;align-items:center"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><span class="al-num hide" id="top-al-num"></span></button>
@@ -900,6 +914,7 @@
     </div>
   </div>
 
+  <div id="drawer-bg"></div>
   <aside class="sbar" id="sbar">
     <div class="sbar-brand"><img src="../assets/images/InnovaLOGO.png" alt="" onerror="this.style.display='none'"><span>InnovaGestión</span></div>
     <nav class="sbar-nav">
@@ -2117,7 +2132,14 @@
     abrirVista(b.dataset.v);
     if(b.dataset.seg && typeof rrhhSeg==='function') rrhhSeg(b.dataset.seg);
     if(b.dataset.seg){ document.querySelectorAll('.sbar .sb-item[data-seg]').forEach(function(x){ x.classList.remove('on'); }); b.classList.add('on'); }
+    drawerClose();
   }); });
+  // Cajón (menú móvil): un solo lugar para navegar, en vez de iconos arriba + tabbar abajo.
+  function drawerClose(){ if($('app')) $('app').classList.remove('drawer-open'); }
+  function drawerOpen(){ if($('app')) $('app').classList.add('drawer-open'); }
+  if($('hamb')) $('hamb').addEventListener('click',drawerOpen);
+  if($('drawer-bg')) $('drawer-bg').addEventListener('click',drawerClose);
+  if($('sb-out')) $('sb-out').addEventListener('click',drawerClose);
   if($('sb-out')) $('sb-out').addEventListener('click',function(){ if($('out')) $('out').click(); });
   if($('btn-pagos')) $('btn-pagos').addEventListener('click',function(){ abrirVista('v-remu'); });
   if($('btn-rrhh')) $('btn-rrhh').addEventListener('click',function(){ abrirVista('v-rrhh'); });
