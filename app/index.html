@@ -1231,9 +1231,8 @@
     <!-- ---- ASISTENCIA DE TERRENO (capataz: la cuadrilla marca con los últimos 4 del RUT) ---- -->
     <section class="view" id="v-asist">
       <div class="h-row"><h2>Asistencia · terreno</h2><span class="cnt" id="asist-cnt"></span></div>
-      <div id="asist-days" class="daystrip"></div>
       <div class="card" style="border:1px solid var(--orange)">
-        <div class="fld" style="margin:0 0 8px"><label>Faena · <b id="asist-fecha"></b></label><select id="asist-faena" style="font:700 15px var(--font)"></select></div>
+        <div class="fld" style="margin:0 0 8px"><label>Faena de hoy · <b id="asist-fecha"></b></label><select id="asist-faena" style="font:700 15px var(--font)"></select></div>
         <p class="note" style="margin:0" id="asist-faena-info"></p>
       </div>
       <div class="card">
@@ -2002,8 +2001,7 @@
       return '<button class="day'+(f===sel?' on':'')+'" data-f="'+f+'"><div class="dw">'+(hoy?'HOY':dw)+'</div><div class="dn">'+d.getDate()+'</div></button>'; }).join('');
     box.querySelectorAll('.day').forEach(function(b){ b.addEventListener('click',function(){ onPick(b.dataset.f); }); });
   }
-  function cargarAsistencia(){ if(!sb) return; var wk=semanaHastaHoy(); if(!ASIST.fecha||wk.indexOf(ASIST.fecha)<0) ASIST.fecha=todayISO();
-    pintarDaystrip('asist-days',ASIST.fecha,function(f){ ASIST.fecha=f; ASIST.registro=null; cargarAsistencia(); });
+  function cargarAsistencia(){ if(!sb) return; ASIST.fecha=todayISO();   // terreno: marcaje en vivo, solo hoy
     sb.from('trabajadores').select('id,nombre,rut,estado').limit(800).then(function(r){ ASIST.trab=((r&&r.data)||[]).filter(function(t){ return t.estado!=='inactivo'; }); asistCargaDia(); }, function(){ toast('No se pudo cargar la asistencia.'); });
   }
   function asistCargaDia(){ var f=ASIST.fecha; if($('asist-fecha')) $('asist-fecha').textContent=fechaDia(f);
