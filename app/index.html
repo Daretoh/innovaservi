@@ -1510,7 +1510,7 @@
   </div>
   <div class="ficha-body">
     <div class="card">
-      <div class="fld" id="af-trab-wrap"><label>Cargar desde trabajadores</label><input id="af-trab" type="search" list="af-trab-list" placeholder="Escribe nombre o correo…" autocomplete="off"><datalist id="af-trab-list"></datalist><p class="note" style="margin:4px 0 0">Escribe y elige de las sugerencias: toma el correo y nombre. Recuerda crearle también el usuario en Supabase para que pueda entrar.</p></div>
+      <div class="fld" id="af-trab-wrap" style="position:relative"><label>Cargar desde trabajadores</label><input id="af-trab" type="search" placeholder="Escribe nombre o correo…" autocomplete="off"><div id="af-trab-sug" class="hide" style="position:absolute;left:0;right:0;top:100%;z-index:40;background:#fff;border:1px solid var(--line);border-radius:11px;box-shadow:0 10px 26px rgba(0,0,0,.14);max-height:250px;overflow:auto;margin-top:4px"></div><p class="note" style="margin:4px 0 0">Escribe y toca una sugerencia: carga nombre y correo. Si no tiene correo, escríbelo tú. Recuerda crearle también el usuario en Supabase para que pueda entrar.</p></div>
       <div class="fld"><label>Correo</label><input id="af-email" type="email" placeholder="correo@innovaservi.com"></div>
       <div class="grid2">
         <div class="fld"><label>Nombre (opcional)</label><input id="af-nombre" type="text"></div>
@@ -5759,18 +5759,24 @@
   };
   var PERMISOS=[], ACC_EMAIL=null, ACC_TRAB=[];
   function cargarPermisos(){ if(!sb) return; sb.from('permisos').select('*').order('rol',{ascending:true}).then(function(r){ PERMISOS=(r&&r.data)||[]; pintarAcc(); });
-    sb.from('trabajadores').select('nombre,email,estado').order('nombre',{ascending:true}).limit(800).then(function(r){ ACC_TRAB=((r&&r.data)||[]).filter(function(t){ return (t.email||'').trim() && t.estado!=='inactivo'; }); });
+    sb.from('trabajadores').select('nombre,email,estado').order('nombre',{ascending:true}).limit(800).then(function(r){ ACC_TRAB=((r&&r.data)||[]).filter(function(t){ return t.estado!=='inactivo'; }); });
   }
-  function afTrabTxt(t){ return titleCase(t.nombre||(t.email||''))+' · '+(t.email||'').trim(); }
-  function llenarAfTrab(){ var dl=$('af-trab-list'); if(dl){ var yaCon={}; PERMISOS.forEach(function(p){ yaCon[(p.email||'').trim().toLowerCase()]=1; });
-      dl.innerHTML=ACC_TRAB.map(function(t){ var dupe=yaCon[(t.email||'').trim().toLowerCase()]?' (ya tiene acceso)':''; return '<option value="'+esc(afTrabTxt(t))+dupe+'"></option>'; }).join(''); }
-    if($('af-trab')) $('af-trab').value='';
+  function llenarAfTrab(){ if($('af-trab')) $('af-trab').value=''; afTrabHide(); }
+  function afTrabHide(){ var s=$('af-trab-sug'); if(s) s.classList.add('hide'); }
+  function afTrabRender(q){ var box=$('af-trab-sug'); if(!box) return; q=(q||'').trim().toLowerCase();
+    var yaCon={}; PERMISOS.forEach(function(p){ yaCon[(p.email||'').trim().toLowerCase()]=1; });
+    var list=ACC_TRAB.filter(function(t){ if(!q) return true; return (titleCase(t.nombre||'')+' '+(t.email||'')).toLowerCase().indexOf(q)>=0; }).slice(0,12);
+    if(!list.length){ box.innerHTML='<div class="note" style="padding:10px 12px;margin:0">Sin coincidencias.</div>'; box.classList.remove('hide'); return; }
+    box.innerHTML=list.map(function(t){ var i=ACC_TRAB.indexOf(t); var em=(t.email||'').trim();
+      var sub=em?(esc(em)+(yaCon[em.toLowerCase()]?' · ya tiene acceso':'')):'<span style="color:#c0392b">sin correo — lo escribes tú</span>';
+      return '<div class="af-trab-it" data-i="'+i+'" style="padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--line)"><b style="font:700 14px var(--font);color:var(--ink)">'+esc(titleCase(t.nombre||em))+'</b><div class="note" style="margin:0;font-size:.75rem">'+sub+'</div></div>';
+    }).join('');
+    box.classList.remove('hide');
+    box.querySelectorAll('.af-trab-it').forEach(function(el){ el.addEventListener('mousedown',function(ev){ ev.preventDefault(); afTrabChoose(ACC_TRAB[+el.dataset.i]); }); });
   }
-  function afTrabPick(){ var s=$('af-trab'); if(!s) return; var v=(s.value||'').replace(/\s*\(ya tiene acceso\)\s*$/,'').trim(); if(!v) return;
-    var t=ACC_TRAB.filter(function(x){ return afTrabTxt(x)===v; })[0];
-    if(!t){ var q=v.toLowerCase(); t=ACC_TRAB.filter(function(x){ return afTrabTxt(x).toLowerCase().indexOf(q)>=0; })[0]; }
-    if(!t) return;
-    $('af-email').value=(t.email||'').trim(); $('af-nombre').value=titleCase(t.nombre||''); s.value='';
+  function afTrabChoose(t){ if(!t) return; var em=(t.email||'').trim(); $('af-nombre').value=titleCase(t.nombre||''); $('af-email').value=em;
+    if($('af-trab')) $('af-trab').value=''; afTrabHide();
+    if(!em){ toast('Ese trabajador no tiene correo cargado: escríbelo.'); if($('af-email')) $('af-email').focus(); }
   }
   function rolLbl(x){ return ({admin:'Admin',supervisor:'Supervisor',capataz:'Capataz',prevencionista:'Prevencionista',operario:'Operario',chofer:'Chofer'})[x]||x; }
   function pintarAcc(){
@@ -5797,7 +5803,7 @@
     $('af-del').classList.toggle('hide', !p);
     $('acc-ficha').classList.remove('hide'); $('acc-ficha').scrollTop=0;
   }
-  if($('af-trab')) $('af-trab').addEventListener('change',afTrabPick);
+  if($('af-trab')){ $('af-trab').addEventListener('input',function(){ afTrabRender(this.value); }); $('af-trab').addEventListener('focus',function(){ afTrabRender(this.value); }); $('af-trab').addEventListener('blur',function(){ setTimeout(afTrabHide,160); }); }
   $('af-rol').addEventListener('change',function(){ renderAfSecciones(ROL_DEFAULTS[this.value]||{}); });
   $('af-close').addEventListener('click',function(){ $('acc-ficha').classList.add('hide'); });
   $('acc-nuevo').addEventListener('click',function(){ abrirAccFicha(null); });
