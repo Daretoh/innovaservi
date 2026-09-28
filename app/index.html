@@ -4984,6 +4984,10 @@
   var ZI={ fold:'<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>', file:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>', chev:'<polyline points="9 18 15 12 9 6"/>', ext:'<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>' };
   function ztCliente(){ var f=(CLIENTES||[]).filter(function(x){ return _cliKey(x.nombre).indexOf('CERMAQ')>=0; })[0]; return f?f.nombre:'CERMAQ'; }
   function ztMeses(){ var out=[], p=ZT_DESDE, fin=mesPrevio(); while(p<=fin){ out.push(p); p=mesMas(p,1); } return out; }
+  // Opciones de mes para el desplegable "¿Otro mes?": últimos 15 meses hasta el actual (incluye el mes en curso).
+  function ztMesOpts(){ var now=new Date(), p=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0'), out=[];
+    for(var i=0;i<15;i++){ out.push(p); p=mesMas(p,-1); }
+    return out.map(function(x){ return '<option value="'+x+'">'+esc(mesLbl(x))+'</option>'; }).join(''); }
   function setZt(on){
     var d=$('rrhh-doc'); if(!d) return; d.classList.toggle('zt-on',!!on);
     var col=colorEmpresa('CERMAQ');
@@ -5022,7 +5026,7 @@
       meses.slice().reverse().forEach(function(p){ var d=ztDoc(tp.slug,p);
         h+='<div class="zt-row lv2"><span class="zt-mes">'+esc(mesLbl(p))+'</span>'+(d?('<a class="zt-file" href="'+esc(d.url||'#')+'" target="_blank" rel="noopener">'+svgI(ZI.file,13)+esc(d.txt)+' · '+esc(fechaCorta(d.fecha))+'</a>'):'<span class="zt-falta">Pendiente</span>')+
           '<span class="zt-act"><button class="zt-b '+(d?'':'pri')+'" data-gen="'+tp.slug+'|'+p+'">'+svgI(ICO.gen,13)+(d?'Rehacer':'Generar')+'</button></span></div>'; });
-      h+='<div class="zt-row lv2 zt-otro"><span class="note" style="margin:0">¿Otro mes?</span><input type="month" class="zt-mesin" data-t="'+tp.slug+'" max="'+mesPrevio()+'"><button class="zt-b" data-otro="'+tp.slug+'">'+svgI(ICO.gen,13)+'Generar</button></div>';
+      h+='<div class="zt-row lv2 zt-otro"><span class="note" style="margin:0">¿Otro mes?</span><select class="zt-mesin" data-t="'+tp.slug+'"><option value="">Elige mes…</option>'+ztMesOpts()+'</select><button class="zt-b" data-otro="'+tp.slug+'">'+svgI(ICO.gen,13)+'Generar</button></div>';
     });
     h+='<div class="zt-sec">Se cargan directo en Zerty <span>(los emiten terceros; no se duplican aquí)</span></div>';
     h+=ZT_EXT.map(function(x){ return '<div class="zt-row lv0 zt-ext"><span class="zt-chev"></span><span class="zt-ic doc">'+svgI(ZI.ext,17)+'</span><span class="zt-u"><span class="zt-unm">'+esc(x[0])+'</span><span class="note">'+esc(x[1])+'</span></span></div>'; }).join('');
@@ -5038,7 +5042,7 @@
     if(!sb) return; busy(true,'Buscando trabajadores…');
     var ini=p+'-01', fin=mesMas(p,1)+'-01';
     Promise.all([ sb.from('trabajadores').select('id,nombre,rut,cargo,fecha_ingreso,estado').order('nombre',{ascending:true}).limit(800),
-      sb.from('horas').select('trabajador,empresa,fecha').gte('fecha',ini).lt('fecha',fin).ilike('empresa','%cermaq%').limit(6000) ]).then(function(rs){ busy(false);
+      sb.from('horas').select('trabajador,empresa,faena,lugar,fecha').gte('fecha',ini).lt('fecha',fin).or('empresa.ilike.%cermaq%,faena.ilike.%cermaq%,lugar.ilike.%cermaq%').limit(6000) ]).then(function(rs){ busy(false);
       var T=(rs[0]&&rs[0].data)||[], H=(rs[1]&&rs[1].data)||[], dias={};
       H.forEach(function(x){ var k=normName(x.trabajador); if(!k) return; (dias[k]=dias[k]||{})[x.fecha]=1; });
       var byN={}; T.forEach(function(t){ byN[normName(t.nombre)]=t; });
