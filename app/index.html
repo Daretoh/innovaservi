@@ -67,6 +67,12 @@
   @media(max-width:600px){ .topbar .out{padding:7px 10px;} .topbar .out .hlbl{display:none;} }
 
   main{flex:1;padding:16px 14px calc(96px + var(--safe-b));max-width:640px;width:100%;margin:0 auto;}
+  /* Modo kiosco: Asistencia a pantalla completa, sin menú ni barras (para el capataz en terreno). */
+  #app.kiosco .topbar, #app.kiosco .sbar, #app.kiosco .tabbar{ display:none !important; }
+  #app.kiosco .view:not(#v-asist){ display:none !important; }
+  #app.kiosco main{ padding:16px 12px calc(24px + var(--safe-b)); max-width:560px; }
+  #app.kiosco #v-asist{ display:block !important; }
+  .asist-tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
   /* Vistas anchas (Remuneraciones / Horas) en pantallas grandes: aprovechan todo el espacio */
   @media(min-width:900px){
     main.wide{max-width:min(1400px,96vw);}
@@ -1201,7 +1207,7 @@
 
     <!-- ---- ASISTENCIA DE TERRENO (capataz: la cuadrilla marca con los últimos 4 del RUT) ---- -->
     <section class="view" id="v-asist">
-      <div class="h-row"><h2>Asistencia · terreno</h2><span class="cnt" id="asist-cnt"></span></div>
+      <div class="h-row"><h2>Asistencia · terreno</h2><div class="asist-tools"><span class="cnt" id="asist-cnt"></span><button id="asist-kiosco" class="btn ghost small" style="width:auto">⛶ Pantalla completa</button><button id="asist-salir" class="btn small hide" style="width:auto">✕ Salir</button></div></div>
       <div class="card" style="border:1px solid var(--orange)">
         <div class="fld" style="margin:0 0 8px"><label>Faena de hoy · <b id="asist-fecha"></b></label><select id="asist-faena" style="font:700 15px var(--font)"></select></div>
         <p class="note" style="margin:0" id="asist-faena-info"></p>
@@ -1979,6 +1985,11 @@
   if($('asist-mark')) $('asist-mark').addEventListener('click',asistMarcar);
   if($('asist-rut')) $('asist-rut').addEventListener('keydown',function(ev){ if(ev.key==='Enter') asistMarcar(); });
   function asistQuitar(id){ if(!sb||!id) return; if(!confirm('¿Quitar esta marca?')) return; sb.from('horas').delete().eq('id',id).then(function(r){ if(r&&r.error){ toast('No se pudo quitar.'); return; } ASIST.horas=ASIST.horas.filter(function(h){ return String(h.id)!==String(id); }); pintarAsistencia(); }); }
+  // Modo kiosco: Asistencia a pantalla completa (para el capataz en terreno).
+  function kioscoOn(){ var a=$('app'); if(a)a.classList.add('kiosco'); if($('asist-kiosco'))$('asist-kiosco').classList.add('hide'); if($('asist-salir'))$('asist-salir').classList.remove('hide'); try{ if(document.documentElement.requestFullscreen) document.documentElement.requestFullscreen(); }catch(_){} window.scrollTo(0,0); }
+  function kioscoOff(){ var a=$('app'); if(a)a.classList.remove('kiosco'); if($('asist-kiosco'))$('asist-kiosco').classList.remove('hide'); if($('asist-salir'))$('asist-salir').classList.add('hide'); try{ if(document.fullscreenElement && document.exitFullscreen) document.exitFullscreen(); }catch(_){} }
+  if($('asist-kiosco')) $('asist-kiosco').addEventListener('click',function(){ abrirVista('v-asist'); kioscoOn(); });
+  if($('asist-salir')) $('asist-salir').addEventListener('click',kioscoOff);
   document.querySelectorAll('.tabbar button').forEach(function(b){ b.addEventListener('click',function(){ abrirVista(b.dataset.v); }); });
   document.querySelectorAll('.sbar .sb-item[data-v]').forEach(function(b){ b.addEventListener('click',function(){
     abrirVista(b.dataset.v);
