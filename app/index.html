@@ -1148,7 +1148,7 @@
         <div id="fichas-inbox"></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
           <input id="trab-search" type="search" placeholder="Buscar nombre, RUT o cargo…" style="flex:1;min-width:150px;font:500 15px var(--font);padding:10px 12px;border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--ink)">
-          <select id="trab-sort" style="font:600 13px var(--font);padding:10px 12px;border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--ink)"><option value="nombre">A–Z</option><option value="cargo">Por cargo</option><option value="reciente">Recientes</option></select>
+          <select id="trab-sort" style="font:600 13px var(--font);padding:10px 12px;border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--ink)"><option value="reciente" selected>Recientes</option><option value="nombre">A–Z</option><option value="cargo">Por cargo</option></select>
         </div>
         <div style="display:flex;gap:8px;margin-bottom:14px">
           <button class="btn ghost small tfil" data-f="todos" style="flex:1">Todos</button>
@@ -3406,7 +3406,7 @@
       .sort(function(a,b){ return (a.nombre||'').localeCompare(b.nombre||''); })
       .map(function(t){ return '<option value="'+enc(titleCase(t.nombre))+'"></option>'; }).join(''); }
   function inic(n){ n=(n||'').trim().split(/\s+/); return ((n[0]||'')[0]||'')+((n[1]||'')[0]||''); }
-  var trabQ='', trabFilter='activo', trabSort='nombre', TRAB_VISTA=[];
+  var trabQ='', trabFilter='activo', trabSort='reciente', TRAB_VISTA=[];
   // % de documentación cumplida de un trabajador (docs entregadas y vigentes / total del catálogo).
   function docPct(t){ if(!t||!t.id||typeof estadoDoc!=='function'||!(typeof RRHH_TIPOS!=='undefined'&&RRHH_TIPOS.length)) return null;
     if(typeof RRHH_LOADED==='undefined'||!RRHH_LOADED) return null;   // aún no cargó la documentación
