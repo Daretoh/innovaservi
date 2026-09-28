@@ -1166,7 +1166,7 @@
         <div id="rrhh-alert"></div>
         <div class="segrow">
           <div class="segwrap"><span class="seglbl">Mostrar</span><div class="seg"><button class="seg-b rrhh-fil on" data-f="activo">Solo activos</button><button class="seg-b rrhh-fil" data-f="todos">Todos</button></div></div>
-          <div class="segwrap"><span class="seglbl">Agrupar por</span><div class="seg"><button class="seg-b rrhh-vis on" data-v="doc">Documento</button><button class="seg-b rrhh-vis" data-v="persona">Persona</button></div></div>
+          <div class="segwrap"><span class="seglbl">Agrupar por</span><div class="seg"><button class="seg-b rrhh-vis on" data-v="doc">Documento</button><button class="seg-b rrhh-vis" data-v="persona">Persona</button><button class="seg-b rrhh-vis" data-v="vencer">Por vencer</button></div></div>
         </div>
         <div id="rrhh-list"></div>
       </div>
@@ -5489,7 +5489,7 @@
   // Estado calculado de un documento: pend | ok | prox | venc
   function estadoDoc(tid,s){ var d=RRHH_D[tid+'|'+s]; if(!d||d.estado!=='entregado') return {k:'pend',txt:'Pendiente'};
     var tp=rrhhTipo(s);
-    if(tp.vence && d.vencimiento){ var n=diffDiasV(d.vencimiento); if(n<0) return {k:'venc',txt:'Vencido',doc:d}; if(n<=30) return {k:'prox',txt:'Vence '+n+'d',doc:d}; }
+    if(d.vencimiento){ var n=diffDiasV(d.vencimiento); if(n<0) return {k:'venc',txt:'Vencido',doc:d}; if(n<=30) return {k:'prox',txt:'Vence '+n+'d',doc:d}; }
     return {k:'ok',txt:'Entregado',doc:d};
   }
   var DCLS={pend:'pend',ok:'ok',venc:'venc',prox:'prox'};
@@ -5501,7 +5501,32 @@
     $('rrhh-alert').innerHTML=(venc||prox||pend)?('<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">'+(venc?'<span class="dchip venc">⛔ '+venc+' vencidos</span>':'')+(prox?'<span class="dchip prox">⏰ '+prox+' por vencer</span>':'')+'<span class="dchip pend">⏳ '+pend+' pendientes</span></div>'):'';
     var cont=$('rrhh-list');
     if(!N){ cont.innerHTML='<div class="empty"><div class="big">📋</div>No hay trabajadores.</div>'; return; }
-    if(RRHH_VISTA==='doc') renderRrhhDoc(trabs,cont); else renderRrhhPersona(trabs,cont);
+    if(RRHH_VISTA==='vencer') renderRrhhVencer(trabs,cont);
+    else if(RRHH_VISTA==='doc') renderRrhhDoc(trabs,cont); else renderRrhhPersona(trabs,cont);
+  }
+  // Ámbito de gestión de un documento: nuestro (interno) o plataforma del cliente.
+  var AMB={interno:['Nuestro','#1a3fb0','#e6edff'], cliente:['Plataforma cliente','#7c3aed','#efe7fe']};
+  function ambBadge(a){ var c=AMB[a==='cliente'?'cliente':'interno']; return '<span class="dchip" style="background:'+c[2]+';color:'+c[1]+'">'+c[0]+'</span>'; }
+  // Panel de Prevención: todo lo VENCIDO / POR VENCER de todos los trabajadores, ordenado por urgencia.
+  function renderRrhhVencer(trabs,cont){
+    var tipos=RRHH_TIPOS.concat(typeof CAP_TIPOS!=='undefined'?CAP_TIPOS:[]);
+    var items=[];
+    trabs.forEach(function(t){ tipos.forEach(function(tp){ var d=RRHH_D[t.id+'|'+tp.slug]; if(!d||d.estado!=='entregado'||!d.vencimiento) return;
+      var n=diffDiasV(d.vencimiento); if(n>60) return;   // solo lo que vence dentro de 60 días o ya venció
+      items.push({t:t, tp:tp, n:n, venc:d.vencimiento, amb:(d.ambito||'interno'), url:d.url}); }); });
+    items.sort(function(a,b){ return a.n-b.n; });   // más vencido / más próximo primero
+    var nVenc=items.filter(function(x){return x.n<0;}).length, nProx=items.filter(function(x){return x.n>=0;}).length;
+    if(!items.length){ cont.innerHTML='<div class="empty"><div class="big">✅</div>Nada por vencer.<br><span style="font-size:.82rem">Marca las <b>fechas de vencimiento</b> en los documentos (exámenes, capacitaciones…) para que aparezcan aquí.</span></div>'; return; }
+    var head='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">'+(nVenc?'<span class="dchip venc">⛔ '+nVenc+' vencidos</span>':'')+(nProx?'<span class="dchip prox">⏰ '+nProx+' por vencer</span>':'')+'</div>';
+    var rows=items.map(function(x){ var vencido=x.n<0;
+      var est=vencido?('Vencido hace '+(-x.n)+'d'):(x.n===0?'Vence hoy':'Vence en '+x.n+'d');
+      var ver=x.url?' <a href="'+esc(x.url)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:var(--orange-2);font-weight:700;font-size:.78rem">ver</a>':'';
+      return '<div class="rrhh-pers venc-row" data-t="'+x.t.id+'" data-s="'+x.tp.slug+'" style="border-left:4px solid '+(vencido?'#dc2626':'#f0a020')+'">'+
+        '<span class="rp-nm"><b>'+esc(x.t.nombre||'—')+'</b><div class="note" style="margin:0;font-size:.72rem">'+esc(x.tp.nombre)+' · vence '+esc(fechaCorta(x.venc))+'</div></span>'+
+        '<span class="dchip '+(vencido?'venc':'prox')+'">'+est+'</span>'+ambBadge(x.amb)+ver+'</div>';
+    }).join('');
+    cont.innerHTML=head+'<div class="note" style="margin:0 0 8px;font-size:.72rem">Toca una fila para actualizar el documento. El badge indica si lo gestionamos <b>nosotros</b> o va a la <b>plataforma del cliente</b>.</div>'+rows;
+    cont.querySelectorAll('.venc-row').forEach(function(el){ el.addEventListener('click',function(){ abrirDocRrhh(+el.dataset.t, el.dataset.s); }); });
   }
   function renderRrhhDoc(trabs,cont){
     cont.innerHTML=RRHH_CAT.map(function(tp,ti){
@@ -5534,8 +5559,9 @@
     $('re-body').innerHTML=
       '<div class="card">'+
         '<div class="fld"><label>Estado</label><select id="re-estado"><option value="pendiente"'+((d.estado||'pendiente')==='pendiente'?' selected':'')+'>Pendiente</option><option value="entregado"'+(d.estado==='entregado'?' selected':'')+'>Entregado</option></select></div>'+
+        '<div class="fld"><label>¿Dónde se gestiona?</label><select id="re-ambito"><option value="interno"'+((d.ambito||'interno')==='interno'?' selected':'')+'>Nuestro (lo gestionamos acá)</option><option value="cliente"'+(d.ambito==='cliente'?' selected':'')+'>Plataforma del cliente (Zerty / acreditación)</option></select></div>'+
         '<div class="grid2"><div class="fld" style="margin:0"><label>Fecha</label><input type="date" id="re-fecha" value="'+(d.fecha||'')+'"></div>'+
-          (tp.vence?('<div class="fld" style="margin:0"><label>Vence</label><input type="date" id="re-venc" value="'+(d.vencimiento||'')+'"></div>'):'<div></div>')+'</div>'+
+          '<div class="fld" style="margin:0"><label>Vence (si aplica)</label><input type="date" id="re-venc" value="'+(d.vencimiento||'')+'"></div></div>'+
         '<div class="fld"><label>Archivo</label><div>'+(d.url?('<a href="'+esc(d.url)+'" target="_blank" rel="noopener" style="color:var(--orange-2);font-weight:700">'+svgI(ICO.clip,14)+'Ver archivo actual</a><br>'):'')+'<label class="catadd" style="display:inline-block;margin-top:4px">'+svgI(ICO.up,15)+'Subir archivo<input type="file" id="re-file" accept="image/*,application/pdf" hidden></label> <span id="re-fname" class="note"></span></div></div>'+
         '<div class="fld"><label>Nota</label><input type="text" id="re-nota" value="'+enc(d.nota||'')+'" placeholder="Opcional"></div>'+
         '<button id="re-save" class="btn" style="width:100%;margin-top:8px">'+svgI(ICO.save)+'Guardar</button>'+
@@ -5545,7 +5571,7 @@
     var pend={file:null};
     $('re-file').addEventListener('change',function(){ pend.file=this.files&&this.files[0]; $('re-fname').textContent=pend.file?('· '+pend.file.name):''; });
     $('re-save').addEventListener('click',function(){
-      var row={ trabajador_id:tid, tipo:ts, estado:$('re-estado').value, fecha:($('re-fecha').value||null), vencimiento:(tp.vence?($('re-venc').value||null):null), nota:($('re-nota').value.trim()||null), autor:userEmail };
+      var row={ trabajador_id:tid, tipo:ts, estado:$('re-estado').value, fecha:($('re-fecha').value||null), vencimiento:($('re-venc')?($('re-venc').value||null):null), ambito:($('re-ambito')?$('re-ambito').value:'interno'), nota:($('re-nota').value.trim()||null), autor:userEmail };
       function guardar(){
         sb.from('rrhh_docs').upsert(row,{onConflict:'trabajador_id,tipo'}).then(function(r){ busy(false);
           if(r.error){ toast(/rrhh_docs/.test(r.error.message||'')?'Falta correr rrhh-docs.sql en Supabase.':('No se pudo guardar: '+r.error.message)); return; }
