@@ -1996,7 +1996,7 @@
   function faenaStrDe(e){ return [e.ubicacion, e.sitio, e.titulo].filter(Boolean).join(' · '); }
   // Navegación por días: solo la semana actual, de lunes hasta hoy (para completar lo que se pasó, sin salir de la semana).
   function isoDow(iso){ var d=new Date(iso+'T12:00:00'); var g=d.getDay(); return g===0?7:g; }   // 1=Lun .. 7=Dom
-  function semanaHastaHoy(){ var hoy=todayISO(), dow=isoDow(hoy), out=[]; for(var i=dow-1;i>=0;i--) out.push(sumarDias(hoy,-i)); return out; }
+  function semanaHastaHoy(){ var hoy=todayISO(), dow=isoDow(hoy), out=[]; for(var i=dow-1+7;i>=0;i--) out.push(sumarDias(hoy,-i)); return out; }   // desde el lunes de la semana pasada hasta hoy
   function pintarDaystrip(elId, sel, onPick){ var box=$(elId); if(!box) return; var dias=semanaHastaHoy();
     box.innerHTML=dias.map(function(f){ var d=new Date(f+'T12:00:00'), dw=['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB'][d.getDay()], hoy=(f===todayISO());
       return '<button class="day'+(f===sel?' on':'')+'" data-f="'+f+'"><div class="dw">'+(hoy?'HOY':dw)+'</div><div class="dn">'+d.getDate()+'</div></button>'; }).join('');
