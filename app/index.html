@@ -1510,7 +1510,7 @@
   </div>
   <div class="ficha-body">
     <div class="card">
-      <div class="fld" id="af-trab-wrap"><label>Cargar desde trabajadores</label><select id="af-trab"></select><p class="note" style="margin:4px 0 0">Toma el correo y nombre de un trabajador ya registrado. Recuerda crearle también el usuario en Supabase para que pueda entrar.</p></div>
+      <div class="fld" id="af-trab-wrap"><label>Cargar desde trabajadores</label><input id="af-trab" type="search" list="af-trab-list" placeholder="Escribe nombre o correo…" autocomplete="off"><datalist id="af-trab-list"></datalist><p class="note" style="margin:4px 0 0">Escribe y elige de las sugerencias: toma el correo y nombre. Recuerda crearle también el usuario en Supabase para que pueda entrar.</p></div>
       <div class="fld"><label>Correo</label><input id="af-email" type="email" placeholder="correo@innovaservi.com"></div>
       <div class="grid2">
         <div class="fld"><label>Nombre (opcional)</label><input id="af-nombre" type="text"></div>
@@ -5761,11 +5761,15 @@
   function cargarPermisos(){ if(!sb) return; sb.from('permisos').select('*').order('rol',{ascending:true}).then(function(r){ PERMISOS=(r&&r.data)||[]; pintarAcc(); });
     sb.from('trabajadores').select('nombre,email,estado').order('nombre',{ascending:true}).limit(800).then(function(r){ ACC_TRAB=((r&&r.data)||[]).filter(function(t){ return (t.email||'').trim() && t.estado!=='inactivo'; }); });
   }
-  function llenarAfTrab(){ var s=$('af-trab'); if(!s) return; var yaCon={}; PERMISOS.forEach(function(p){ yaCon[(p.email||'').trim().toLowerCase()]=1; });
-    var opts='<option value="">— Elegir trabajador —</option>'+ACC_TRAB.map(function(t,i){ var em=(t.email||'').trim(); var dupe=yaCon[em.toLowerCase()]?' · ya tiene acceso':''; return '<option value="'+i+'">'+esc(titleCase(t.nombre||em))+' · '+esc(em)+dupe+'</option>'; }).join('');
-    s.innerHTML=opts;
+  function afTrabTxt(t){ return titleCase(t.nombre||(t.email||''))+' · '+(t.email||'').trim(); }
+  function llenarAfTrab(){ var dl=$('af-trab-list'); if(dl){ var yaCon={}; PERMISOS.forEach(function(p){ yaCon[(p.email||'').trim().toLowerCase()]=1; });
+      dl.innerHTML=ACC_TRAB.map(function(t){ var dupe=yaCon[(t.email||'').trim().toLowerCase()]?' (ya tiene acceso)':''; return '<option value="'+esc(afTrabTxt(t))+dupe+'"></option>'; }).join(''); }
+    if($('af-trab')) $('af-trab').value='';
   }
-  function afTrabPick(){ var s=$('af-trab'); if(!s||s.value==='') return; var t=ACC_TRAB[+s.value]; if(!t) return;
+  function afTrabPick(){ var s=$('af-trab'); if(!s) return; var v=(s.value||'').replace(/\s*\(ya tiene acceso\)\s*$/,'').trim(); if(!v) return;
+    var t=ACC_TRAB.filter(function(x){ return afTrabTxt(x)===v; })[0];
+    if(!t){ var q=v.toLowerCase(); t=ACC_TRAB.filter(function(x){ return afTrabTxt(x).toLowerCase().indexOf(q)>=0; })[0]; }
+    if(!t) return;
     $('af-email').value=(t.email||'').trim(); $('af-nombre').value=titleCase(t.nombre||''); s.value='';
   }
   function rolLbl(x){ return ({admin:'Admin',supervisor:'Supervisor',capataz:'Capataz',prevencionista:'Prevencionista',operario:'Operario',chofer:'Chofer'})[x]||x; }
