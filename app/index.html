@@ -4177,10 +4177,13 @@
     var tp=rrhhTipo(tipo), ya=RRHH_D[FICHA_ID+'|'+tipo];
     if(ya && ya.estado==='entregado' && !confirm('“'+tp.nombre+'” ya está marcado como entregado. ¿Reemplazar con este archivo?')){ renderDocs(); return; }
     var row={ trabajador_id:FICHA_ID, tipo:tipo, estado:'entregado', fecha:(d.fecha||todayISO()), url:d.url, nota:(d.nombre||''), autor:userEmail };
+    // Cédula: el reverso va a url2; no pisar el frente que ya está en url (y viceversa)
+    if(tipo==='cedula'){ var rev=/reverso/i.test((d.nombre||'')+' '+(d.url||'').split('?')[0]);
+      if(rev){ delete row.url; row.url2=d.url; if(ya&&ya.url) row.nota=(ya.nota||row.nota); } }
     busy(true,'Clasificando…');
     sb.from('rrhh_docs').upsert(row,{onConflict:'trabajador_id,tipo'}).then(function(r){
       if(r&&r.error){ busy(false); toast(/rrhh_docs/.test(r.error.message||'')?'Falta correr rrhh-docs.sql.':('No se pudo: '+r.error.message)); renderDocs(); return; }
-      RRHH_D[FICHA_ID+'|'+tipo]=row; FICHA_DOCS.splice(i,1);
+      RRHH_D[FICHA_ID+'|'+tipo]=Object.assign({}, ya||{}, row); FICHA_DOCS.splice(i,1);
       sb.from('trabajadores').update({docs:FICHA_DOCS}).eq('id',FICHA_ID).then(function(){ busy(false);
         toast('✓ Clasificado como '+tp.nombre); renderDocs();
         renderFichaRrhh({id:FICHA_ID, nombre:($('fi-nombre')?$('fi-nombre').value:'')});
@@ -5038,6 +5041,24 @@
   function rrhhTipo(s){ var L=RRHH_TIPOS.concat(CAP_TIPOS); for(var i=0;i<L.length;i++) if(L[i].slug===s) return L[i]; return {slug:s,nombre:s,corto:s,vence:false}; }
   var RRHH_T=[], RRHH_D={}, RRHH_LOADED=false, RRHH_FILTRO='activo', RRHH_VISTA='doc', RRHH_CAT=RRHH_TIPOS;
   function diffDiasV(v){ if(!v) return null; return Math.floor((new Date(v+'T12:00:00')-new Date())/86400000); }
+  // Repara cédulas donde el reverso quedó guardado como frente (url apunta a .../reverso.* y no hay url2):
+  // el reverso pasa a url2 y el frente se vuelve a enlazar desde la misma carpeta de la ficha de ingreso.
+  function repararCedulas(){
+    Object.keys(RRHH_D).forEach(function(k){ var d=RRHH_D[k];
+      if(!d || d.tipo!=='cedula' || d.url2 || !d.url) return;
+      var m=/\/cedulas\/(.+)\/reverso\.[a-z0-9]+(\?|$)/i.exec(decodeURIComponent(d.url)); if(!m) return;
+      var carpeta=m[1];
+      sb.storage.from('cedulas').list(carpeta).then(function(r){ if(!r || r.error) return;
+        var fr=((r&&r.data)||[]).filter(function(o){ return /^frente\./i.test(o.name||''); })[0];
+        var upd={url2:d.url, url:null};
+        function aplicar(){ sb.from('rrhh_docs').update(upd).eq('trabajador_id',d.trabajador_id).eq('tipo','cedula').then(function(q){
+          if(q&&q.error) return; Object.assign(d, upd); renderRrhh(); }); }
+        if(!fr){ aplicar(); return; }
+        sb.storage.from('cedulas').createSignedUrl(carpeta+'/'+fr.name, 315360000).then(function(s){
+          var u=s&&s.data&&s.data.signedUrl; if(u) upd.url=u; aplicar(); }, aplicar);
+      });
+    });
+  }
   function cargarRrhh(){
     if(!sb) return;
     Promise.all([
@@ -5048,6 +5069,7 @@
       TRAB=RRHH_T;   // misma lista alimenta el panel Trabajadores
       RRHH_D={}; ((rs[1]&&rs[1].data)||[]).forEach(function(d){ RRHH_D[d.trabajador_id+'|'+d.tipo]=d; });
       RRHH_LOADED=true;
+      repararCedulas();
       renderRrhh();
       if(typeof actualizarDatalist==='function') actualizarDatalist();
       if(typeof pintarTrab==='function') pintarTrab();
