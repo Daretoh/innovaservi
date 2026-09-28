@@ -902,6 +902,7 @@
       <button class="sb-item on" data-v="v-reporte"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>Multimedia</button>
       <button class="sb-item" data-v="v-hist"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>Reportes</button>
       <button class="sb-item sb-admin" data-v="v-horas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Registro</button>
+      <button class="sb-item sb-admin" data-v="v-asist"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M16 3v4M8 3v4M3 10h13"/><rect x="3" y="5" width="18" height="16" rx="2"/></svg>Asistencia</button>
       <button class="sb-item" data-v="v-cuadrilla"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Preparación</button>
       <button class="sb-item" data-v="v-veh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M1 3h15v13H1zM16 8h4l3 3v5h-7z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>Vehículos</button>
       <button class="sb-item sb-admin" data-v="v-clientes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-4h6v4M8 6h.01M16 6h.01M8 10h.01M16 10h.01M8 14h.01M16 14h.01"/></svg>Clientes</button>
@@ -1198,6 +1199,28 @@
       <div id="al-list"></div>
     </section>
 
+    <!-- ---- ASISTENCIA DE TERRENO (capataz: la cuadrilla marca con los últimos 4 del RUT) ---- -->
+    <section class="view" id="v-asist">
+      <div class="h-row"><h2>Asistencia · terreno</h2><span class="cnt" id="asist-cnt"></span></div>
+      <div class="card" style="border:1px solid var(--orange)">
+        <div class="fld" style="margin:0 0 8px"><label>Faena de hoy · <b id="asist-fecha"></b></label><select id="asist-faena" style="font:700 15px var(--font)"></select></div>
+        <p class="note" style="margin:0" id="asist-faena-info"></p>
+      </div>
+      <div class="card">
+        <label style="display:block;font:800 15px var(--font);color:var(--ink);margin-bottom:8px">Marcar asistencia</label>
+        <p class="note" style="margin:0 0 8px">Cada trabajador escribe los <b>últimos 4 dígitos de su RUT</b> y toca Marcar. La 1ª vez marca <b>entrada</b>; la 2ª, <b>salida</b>.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <input id="asist-rut" type="text" inputmode="numeric" maxlength="4" placeholder="Ej: 6747" style="flex:1;min-width:120px;font:800 22px var(--font);letter-spacing:.15em;text-align:center;padding:12px;border:1px solid var(--line);border-radius:12px;background:#fff;color:var(--ink)">
+          <button id="asist-mark" class="btn" style="width:auto;font-size:16px;padding:13px 22px">Marcar</button>
+        </div>
+        <div id="asist-msg" style="margin-top:10px;min-height:22px"></div>
+      </div>
+      <div class="card">
+        <label style="display:block;font:800 14px var(--font);color:var(--ink);margin-bottom:6px">Cuadrilla de hoy <span class="cnt" id="asist-n"></span></label>
+        <div id="asist-list"></div>
+      </div>
+    </section>
+
     <!-- ---- CLIENTES (solo admin) ---- -->
     <section class="view" id="v-clientes">
       <div class="h-row"><h2>Clientes <span class="cnt" id="cli-cnt"></span></h2><button id="cli-nuevo" class="btn small" style="width:auto">＋ Nuevo</button></div>
@@ -1475,7 +1498,7 @@
       <div class="fld"><label>Correo</label><input id="af-email" type="email" placeholder="correo@innovaservi.com"></div>
       <div class="grid2">
         <div class="fld"><label>Nombre (opcional)</label><input id="af-nombre" type="text"></div>
-        <div class="fld"><label>Rol</label><select id="af-rol"><option value="admin">Admin</option><option value="supervisor">Supervisor</option><option value="prevencionista">Prevencionista</option><option value="operario">Operario</option><option value="chofer">Chofer</option></select></div>
+        <div class="fld"><label>Rol</label><select id="af-rol"><option value="admin">Admin</option><option value="supervisor">Supervisor</option><option value="capataz">Capataz (asistencia terreno)</option><option value="prevencionista">Prevencionista</option><option value="operario">Operario</option><option value="chofer">Chofer</option></select></div>
       </div>
     </div>
     <div class="card">
@@ -1787,7 +1810,7 @@
     if(!isAdmin && MI_TIENE) aplicarSecciones();   // usuario configurado: muestra solo sus secciones
   }
   // Muestra en el menú solo las secciones que el usuario tiene permitidas (además de lo que ya ocultó aplicarRol).
-  var SEC_DE_V={ 'v-alertas':'alertas','v-horas':'reporte','v-hist':'reporte','v-cuadrilla':'reporte','v-clientes':'clientes','v-planif':'planificacion','v-plan':'calendario','v-matriz':'matriz','v-rrhh':'rrhh','v-remu':'remu','v-veh':'veh' };
+  var SEC_DE_V={ 'v-alertas':'alertas','v-asist':'asistencia','v-horas':'reporte','v-hist':'reporte','v-cuadrilla':'reporte','v-clientes':'clientes','v-planif':'planificacion','v-plan':'calendario','v-matriz':'matriz','v-rrhh':'rrhh','v-remu':'remu','v-veh':'veh' };
   function aplicarSecciones(){
     document.querySelectorAll('.sbar .sb-item[data-v]').forEach(function(x){ var sec=SEC_DE_V[x.dataset.v]; if(sec) x.classList.toggle('hide', !verSec(sec)); });
     document.querySelectorAll('.sbar-grp').forEach(function(g){ var t=(g.textContent||'').toLowerCase();
@@ -1892,8 +1915,70 @@
     if(v==='v-plan'){ var fr=$('plan-frame'); if(fr && !fr.getAttribute('src')) fr.setAttribute('src','../planificacion/?embed=1'); }
     if(v==='v-planif'){ cargarPlanif(); }
     if(v==='v-alertas'){ pintarAlertas(); cargarAlertas(); }
+    if(v==='v-asist'){ cargarAsistencia(); }
     window.scrollTo(0,0);
   }
+  // ====== Asistencia de terreno (capataz) — la cuadrilla marca con los últimos 4 del RUT ======
+  var ASIST={ trab:[], eventos:[], horas:[], faenaSel:'' };
+  function rut4(r){ var d=(r||'').replace(/[^0-9kK]/g,''); if(d.length>1) d=d.slice(0,-1); return d.slice(-4); }   // últimos 4 del cuerpo (sin dígito verificador)
+  function faenaStrDe(e){ return [e.ubicacion, e.sitio, e.titulo].filter(Boolean).join(' · '); }
+  function cargarAsistencia(){ if(!sb) return; var hoy=todayISO(); $('asist-fecha').textContent=fechaDia(hoy);
+    Promise.all([
+      sb.from('trabajadores').select('id,nombre,rut,estado').limit(800),
+      sb.from('eventos').select('*').lte('fecha',hoy).limit(1500),
+      sb.from('horas').select('*').eq('fecha',hoy).limit(2000)
+    ]).then(function(rs){
+      ASIST.trab=((rs[0]&&rs[0].data)||[]).filter(function(t){ return t.estado!=='inactivo'; });
+      ASIST.eventos=((rs[1]&&rs[1].data)||[]).filter(function(e){ var fn=e.fecha_fin||e.fecha; return e.fecha<=hoy && fn>=hoy; }).sort(function(a,b){ return (a.hora||'').localeCompare(b.hora||''); });
+      ASIST.horas=(rs[2]&&rs[2].data)||[];
+      // opciones de faena: eventos de hoy + "otra"
+      var opts=ASIST.eventos.map(function(e){ return '<option value="ev:'+e.id+'">'+esc(faenaStrDe(e))+(e.hora?(' · '+esc(e.hora)):'')+'</option>'; }).join('');
+      $('asist-faena').innerHTML=opts+'<option value="otra">Otra faena (apoyo frigorífico)…</option>';
+      // por defecto: la que menciona frigo/apoyo, si no la primera
+      var def=ASIST.eventos.filter(function(e){ return /frigo|apoyo/i.test((e.titulo||'')+(e.ubicacion||'')); })[0]||ASIST.eventos[0];
+      $('asist-faena').value=def?('ev:'+def.id):'otra';
+      asistFaenaCambio();
+      pintarAsistencia();
+    }, function(){ toast('No se pudo cargar la asistencia.'); });
+  }
+  function asistEventoSel(){ var v=$('asist-faena').value||''; if(v.indexOf('ev:')!==0) return null; var id=v.slice(3); return ASIST.eventos.filter(function(e){ return String(e.id)===String(id); })[0]||null; }
+  function asistFaenaCambio(){ var e=asistEventoSel();
+    if(e){ ASIST.faenaSel=faenaStrDe(e); $('asist-faena-info').textContent=(e.hora?('Horario: '+e.hora+' · '):'')+((e.personas_nec!=null)?('Necesita '+e.personas_nec+' personas'):'Selecciona los que van llegando'); }
+    else { ASIST.faenaSel='Apoyo Frigorífico'; $('asist-faena-info').textContent='Faena manual (apoyo frigorífico). Se registra con este nombre.'; }
+    pintarAsistencia();
+  }
+  if($('asist-faena')) $('asist-faena').addEventListener('change',asistFaenaCambio);
+  function asistMarcasHoy(){ var fa=ASIST.faenaSel; return ASIST.horas.filter(function(h){ return (h.faena||'')===fa; }); }
+  function pintarAsistencia(){ var marcas=asistMarcasHoy();
+    $('asist-n').textContent=marcas.length+(marcas.length===1?' persona':' personas');
+    if($('asist-cnt')) $('asist-cnt').textContent='';
+    var rows=marcas.slice().sort(function(a,b){ return (a.entrada||'').localeCompare(b.entrada||''); }).map(function(h){
+      var sal=h.salida?(' → '+esc(h.salida)):' <span class="note" style="margin:0;color:#0f6e56">presente</span>';
+      return '<div class="dgp-row" style="justify-content:space-between"><span class="nm">'+esc(titleCase(h.trabajador||''))+'</span><span class="note" style="margin:0;font-variant-numeric:tabular-nums">'+esc(h.entrada||'--:--')+sal+' <button class="btn ghost small asist-x" data-id="'+enc(String(h.id||''))+'" style="width:auto;margin-left:8px">✕</button></span></div>';
+    }).join('')||'<p class="note" style="margin:0">Nadie ha marcado aún en esta faena hoy.</p>';
+    $('asist-list').innerHTML=rows;
+    $('asist-list').querySelectorAll('.asist-x').forEach(function(b){ b.addEventListener('click',function(){ asistQuitar(b.dataset.id); }); });
+  }
+  function nowHHMM(){ var d=new Date(); return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }
+  function asistMsg(txt,ok){ var m=$('asist-msg'); if(m) m.innerHTML='<span style="font:700 14px var(--font);color:'+(ok?'#0f6e56':'#c0392b')+'">'+esc(txt)+'</span>'; }
+  function asistMarcar(){
+    if(!sb) return; var v=($('asist-rut').value||'').replace(/[^0-9]/g,''); if(v.length<3){ asistMsg('Escribe los últimos 4 del RUT.',false); return; }
+    var cand=ASIST.trab.filter(function(t){ return rut4(t.rut)===v; });
+    if(!cand.length){ asistMsg('No se encontró un trabajador con esos dígitos.',false); return; }
+    if(cand.length>1){ asistMsg('Hay '+cand.length+' con esos dígitos: '+cand.map(function(t){return titleCase(t.nombre);}).join(', ')+'. Avisa al capataz.',false); return; }
+    var t=cand[0], e=asistEventoSel();
+    var ya=asistMarcasHoy().filter(function(h){ return normName(h.trabajador)===normName(t.nombre); })[0];
+    $('asist-rut').value='';
+    if(!ya){   // entrada
+      var row={ trabajador:titleCase(t.nombre), empresa:(e?e.ubicacion:''), lugar:(e?e.sitio:''), faena:ASIST.faenaSel, fecha:todayISO(), entrada:nowHHMM(), salida:null, evento_id:(e?e.id:null), autor:userEmail };
+      sb.from('horas').insert(row).select().single().then(function(r){ if(r.error){ asistMsg('No se pudo marcar: '+r.error.message,false); return; } ASIST.horas.push(r.data); asistMsg('✓ '+titleCase(t.nombre)+' · entrada '+row.entrada,true); pintarAsistencia(); }, function(){ asistMsg('No se pudo marcar.',false); });
+    } else if(!ya.salida){   // salida
+      sb.from('horas').update({salida:nowHHMM()}).eq('id',ya.id).then(function(r){ if(r.error){ asistMsg('No se pudo marcar salida: '+r.error.message,false); return; } ya.salida=nowHHMM(); asistMsg('✓ '+titleCase(t.nombre)+' · salida '+ya.salida,true); pintarAsistencia(); }, function(){ asistMsg('No se pudo marcar.',false); });
+    } else { asistMsg(titleCase(t.nombre)+' ya marcó entrada y salida hoy.',false); }
+  }
+  if($('asist-mark')) $('asist-mark').addEventListener('click',asistMarcar);
+  if($('asist-rut')) $('asist-rut').addEventListener('keydown',function(ev){ if(ev.key==='Enter') asistMarcar(); });
+  function asistQuitar(id){ if(!sb||!id) return; if(!confirm('¿Quitar esta marca?')) return; sb.from('horas').delete().eq('id',id).then(function(r){ if(r&&r.error){ toast('No se pudo quitar.'); return; } ASIST.horas=ASIST.horas.filter(function(h){ return String(h.id)!==String(id); }); pintarAsistencia(); }); }
   document.querySelectorAll('.tabbar button').forEach(function(b){ b.addEventListener('click',function(){ abrirVista(b.dataset.v); }); });
   document.querySelectorAll('.sbar .sb-item[data-v]').forEach(function(b){ b.addEventListener('click',function(){
     abrirVista(b.dataset.v);
@@ -5614,18 +5699,19 @@
   document.querySelectorAll('.rrhh-vis').forEach(function(b){ b.addEventListener('click',function(){ document.querySelectorAll('.rrhh-vis').forEach(function(x){ x.classList.toggle('on',x===b); }); RRHH_VISTA=b.dataset.v; renderRrhh(); }); });
 
   // ====== ACCESOS / PERMISOS (solo Enzo) ======
-  var SECCIONES=[['reporte','Registro / Reportes'],['planificacion','Planificación'],['calendario','Calendario'],['matriz','Matriz PTS'],['rrhh','RRHH / Documentación'],['remu','Remuneraciones'],['veh','Vehículos'],['clientes','Clientes'],['alertas','Alertas']];
+  var SECCIONES=[['asistencia','Asistencia (terreno)'],['reporte','Registro / Reportes'],['planificacion','Planificación'],['calendario','Calendario'],['matriz','Matriz PTS'],['rrhh','RRHH / Documentación'],['remu','Remuneraciones'],['veh','Vehículos'],['clientes','Clientes'],['alertas','Alertas']];
   var NIVELES=[['oculto','Oculto'],['ver','Ver'],['editar','Editar'],['total','Total']];
   var ROL_DEFAULTS={
-    admin:         {reporte:'total',planificacion:'total',calendario:'total',matriz:'total',rrhh:'total',remu:'total',veh:'total',clientes:'total',alertas:'total'},
-    supervisor:    {reporte:'total',planificacion:'editar',calendario:'editar',matriz:'editar',rrhh:'editar',remu:'ver',veh:'total',clientes:'editar',alertas:'ver'},
-    prevencionista:{reporte:'ver',planificacion:'ver',calendario:'ver',matriz:'ver',rrhh:'total',remu:'oculto',veh:'ver',clientes:'ver',alertas:'ver'},
-    operario:      {reporte:'editar',planificacion:'oculto',calendario:'oculto',matriz:'oculto',rrhh:'oculto',remu:'oculto',veh:'editar',clientes:'oculto',alertas:'oculto'},
-    chofer:        {reporte:'ver',planificacion:'oculto',calendario:'oculto',matriz:'oculto',rrhh:'oculto',remu:'oculto',veh:'editar',clientes:'oculto',alertas:'oculto'}
+    admin:         {asistencia:'total',reporte:'total',planificacion:'total',calendario:'total',matriz:'total',rrhh:'total',remu:'total',veh:'total',clientes:'total',alertas:'total'},
+    supervisor:    {asistencia:'total',reporte:'total',planificacion:'editar',calendario:'editar',matriz:'editar',rrhh:'editar',remu:'ver',veh:'total',clientes:'editar',alertas:'ver'},
+    capataz:       {asistencia:'total',reporte:'editar',planificacion:'ver',calendario:'ver',matriz:'ver',rrhh:'oculto',remu:'oculto',veh:'ver',clientes:'oculto',alertas:'oculto'},
+    prevencionista:{asistencia:'ver',reporte:'ver',planificacion:'ver',calendario:'ver',matriz:'ver',rrhh:'total',remu:'oculto',veh:'ver',clientes:'ver',alertas:'ver'},
+    operario:      {asistencia:'oculto',reporte:'editar',planificacion:'oculto',calendario:'oculto',matriz:'oculto',rrhh:'oculto',remu:'oculto',veh:'editar',clientes:'oculto',alertas:'oculto'},
+    chofer:        {asistencia:'oculto',reporte:'ver',planificacion:'oculto',calendario:'oculto',matriz:'oculto',rrhh:'oculto',remu:'oculto',veh:'editar',clientes:'oculto',alertas:'oculto'}
   };
   var PERMISOS=[], ACC_EMAIL=null;
   function cargarPermisos(){ if(!sb) return; sb.from('permisos').select('*').order('rol',{ascending:true}).then(function(r){ PERMISOS=(r&&r.data)||[]; pintarAcc(); }); }
-  function rolLbl(x){ return ({admin:'Admin',supervisor:'Supervisor',prevencionista:'Prevencionista',operario:'Operario',chofer:'Chofer'})[x]||x; }
+  function rolLbl(x){ return ({admin:'Admin',supervisor:'Supervisor',capataz:'Capataz',prevencionista:'Prevencionista',operario:'Operario',chofer:'Chofer'})[x]||x; }
   function pintarAcc(){
     var c=$('acc-list');
     if(!PERMISOS.length){ c.innerHTML='<div class="empty"><div class="big">🔐</div>Aún no hay personas.<br><span style="font-size:.82rem">Corre permisos.sql o toca “＋ Persona”.</span></div>'; return; }
