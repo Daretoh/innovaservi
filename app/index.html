@@ -1225,6 +1225,15 @@
         <label style="display:block;font:800 14px var(--font);color:var(--ink);margin-bottom:6px">Cuadrilla de hoy <span class="cnt" id="asist-n"></span></label>
         <div id="asist-list"></div>
       </div>
+      <div class="card">
+        <label style="display:block;font:800 14px var(--font);color:var(--ink);margin-bottom:4px" for="asist-notas">Bitácora de la faena</label>
+        <p class="note" style="margin:0 0 8px">Desayuno, colación, almuerzo (con horas), novedades u observaciones del día. No cuenta horas: para el pago solo valen entrada y salida.</p>
+        <textarea id="asist-notas" rows="6" placeholder="Ej.&#10;Desayuno 7:40 — José, Ignacio&#10;Colación 11:30 — todos&#10;Novedad: faltó guante talla L" style="width:100%;box-sizing:border-box;font:500 15px var(--font);padding:11px 12px;border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--ink);resize:vertical;line-height:1.45"></textarea>
+        <div style="display:flex;gap:10px;align-items:center;margin-top:8px">
+          <button id="asist-notas-save" class="btn small" style="width:auto">Guardar bitácora</button>
+          <span id="asist-notas-msg" class="note" style="margin:0"></span>
+        </div>
+      </div>
     </section>
 
     <!-- ---- CLIENTES (solo admin) ---- -->
@@ -1925,7 +1934,7 @@
     window.scrollTo(0,0);
   }
   // ====== Asistencia de terreno (capataz) — la cuadrilla marca con los últimos 4 del RUT ======
-  var ASIST={ trab:[], eventos:[], horas:[], faenaSel:'' };
+  var ASIST={ trab:[], eventos:[], horas:[], faenaSel:'', registro:null };
   function rut4(r){ var d=(r||'').replace(/[^0-9kK]/g,''); if(d.length>1) d=d.slice(0,-1); return d.slice(-4); }   // últimos 4 del cuerpo (sin dígito verificador)
   function faenaStrDe(e){ return [e.ubicacion, e.sitio, e.titulo].filter(Boolean).join(' · '); }
   function cargarAsistencia(){ if(!sb) return; var hoy=todayISO(); $('asist-fecha').textContent=fechaDia(hoy);
@@ -1951,9 +1960,30 @@
   function asistFaenaCambio(){ var e=asistEventoSel();
     if(e){ ASIST.faenaSel=faenaStrDe(e); $('asist-faena-info').textContent=(e.hora?('Horario: '+e.hora+' · '):'')+((e.personas_nec!=null)?('Necesita '+e.personas_nec+' personas'):'Selecciona los que van llegando'); }
     else { ASIST.faenaSel='Apoyo Frigorífico'; $('asist-faena-info').textContent='Faena manual (apoyo frigorífico). Se registra con este nombre.'; }
-    pintarAsistencia();
+    ASIST.registro=null; pintarAsistencia(); asistRegLoad();
   }
   if($('asist-faena')) $('asist-faena').addEventListener('change',asistFaenaCambio);
+  // Un solo registro por faena+día: la asistencia y la bitácora se cargan a "Registros" sin duplicar.
+  function asistRegLoad(){ if(!sb) return; var ta=$('asist-notas'); if(ta){ ta.value=''; } if($('asist-notas-msg')) $('asist-notas-msg').textContent='';
+    var e=asistEventoSel(), hoy=todayISO(), q=sb.from('registros').select('*').eq('fecha',hoy);
+    q=e?q.eq('evento_id',e.id):q.is('evento_id',null).contains('faenas',[ASIST.faenaSel]);
+    q.limit(1).then(function(r){ var reg=(r&&r.data&&r.data[0])||null; ASIST.registro=reg; if(reg&&ta) ta.value=reg.notas||''; }, function(){});
+  }
+  function asistRegistro(cb){ if(!sb){ cb(null); return; } if(ASIST.registro&&ASIST.registro.id){ cb(ASIST.registro); return; }
+    var e=asistEventoSel(), hoy=todayISO(), q=sb.from('registros').select('*').eq('fecha',hoy);
+    q=e?q.eq('evento_id',e.id):q.is('evento_id',null).contains('faenas',[ASIST.faenaSel]);
+    q.limit(1).then(function(r){ var reg=(r&&r.data&&r.data[0])||null; if(reg){ ASIST.registro=reg; cb(reg); return; }
+      var row={ evento_id:(e?e.id:null), empresa:(e?e.ubicacion:''), lugar:(e?e.sitio:''), fecha:hoy, faenas:[ASIST.faenaSel], notas:'', autor:userEmail };
+      sb.from('registros').insert(row).select().single().then(function(r2){ if(r2.error){ cb(null); return; } ASIST.registro=r2.data; cb(r2.data); }, function(){ cb(null); });
+    }, function(){ cb(null); });
+  }
+  function asistGuardarNotas(){ if(!sb) return; var ta=$('asist-notas'); if(!ta) return; var txt=ta.value||''; var m=$('asist-notas-msg');
+    if(m){ m.style.color='var(--muted)'; m.textContent='Guardando…'; }
+    asistRegistro(function(reg){ if(!reg){ if(m){ m.style.color='#c0392b'; m.textContent='No se pudo guardar.'; } return; }
+      sb.from('registros').update({notas:txt}).eq('id',reg.id).then(function(r){ if(r&&r.error){ if(m){ m.style.color='#c0392b'; m.textContent='No se pudo guardar: '+r.error.message; } return; } reg.notas=txt; if(m){ m.style.color='#0f6e56'; m.textContent='✓ Bitácora guardada'; } }, function(){ if(m){ m.style.color='#c0392b'; m.textContent='No se pudo guardar.'; } });
+    });
+  }
+  if($('asist-notas-save')) $('asist-notas-save').addEventListener('click',asistGuardarNotas);
   function asistMarcasHoy(){ var fa=ASIST.faenaSel; return ASIST.horas.filter(function(h){ return (h.faena||'')===fa; }); }
   function pintarAsistencia(){ var marcas=asistMarcasHoy();
     $('asist-n').textContent=marcas.length+(marcas.length===1?' persona':' personas');
@@ -1976,8 +2006,10 @@
     var ya=asistMarcasHoy().filter(function(h){ return normName(h.trabajador)===normName(t.nombre); })[0];
     $('asist-rut').value='';
     if(!ya){   // entrada
-      var row={ trabajador:titleCase(t.nombre), empresa:(e?e.ubicacion:''), lugar:(e?e.sitio:''), faena:ASIST.faenaSel, fecha:todayISO(), entrada:nowHHMM(), salida:null, evento_id:(e?e.id:null), autor:userEmail };
-      sb.from('horas').insert(row).select().single().then(function(r){ if(r.error){ asistMsg('No se pudo marcar: '+r.error.message,false); return; } ASIST.horas.push(r.data); asistMsg('✓ '+titleCase(t.nombre)+' · entrada '+row.entrada,true); pintarAsistencia(); }, function(){ asistMsg('No se pudo marcar.',false); });
+      asistRegistro(function(reg){
+        var row={ trabajador:titleCase(t.nombre), empresa:(e?e.ubicacion:''), lugar:(e?e.sitio:''), faena:ASIST.faenaSel, fecha:todayISO(), entrada:nowHHMM(), salida:null, evento_id:(e?e.id:null), registro_id:(reg?reg.id:null), autor:userEmail };
+        sb.from('horas').insert(row).select().single().then(function(r){ if(r.error){ asistMsg('No se pudo marcar: '+r.error.message,false); return; } ASIST.horas.push(r.data); asistMsg('✓ '+titleCase(t.nombre)+' · entrada '+row.entrada,true); pintarAsistencia(); }, function(){ asistMsg('No se pudo marcar.',false); });
+      });
     } else if(!ya.salida){   // salida
       sb.from('horas').update({salida:nowHHMM()}).eq('id',ya.id).then(function(r){ if(r.error){ asistMsg('No se pudo marcar salida: '+r.error.message,false); return; } ya.salida=nowHHMM(); asistMsg('✓ '+titleCase(t.nombre)+' · salida '+ya.salida,true); pintarAsistencia(); }, function(){ asistMsg('No se pudo marcar.',false); });
     } else { asistMsg(titleCase(t.nombre)+' ya marcó entrada y salida hoy.',false); }
