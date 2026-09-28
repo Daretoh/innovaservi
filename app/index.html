@@ -1320,6 +1320,8 @@
   </div>
 
   <nav class="tabbar">
+    <button data-v="v-asist" id="tab-asist" class="hide"><span class="em">🗓️</span>Asistencia</button>
+    <button data-v="v-fotos" id="tab-fotos" class="hide"><span class="em">📷</span>Fotos</button>
     <button data-v="v-reporte" class="on"><span class="em">🖼️</span>Multimedia</button>
     <button data-v="v-hist"><span class="em">🗂️</span>Reportes</button>
     <button data-v="v-horas" id="tab-horas" class="hide"><span class="em">📋</span>Registro</button>
@@ -1812,7 +1814,7 @@
   function setAuth(session){
     authed=!!session; userEmail=(session&&session.user&&session.user.email)||'';
     isAdmin=ADMIN_EMAILS.indexOf((userEmail||'').trim().toLowerCase())>=0;
-    if(authed){ $('gate').classList.add('hide'); $('app').classList.remove('hide'); $('who').textContent=userEmail+(isAdmin?'':' · operario');
+    if(authed){ $('gate').classList.add('hide'); $('app').classList.remove('hide'); $('who').textContent=userEmail;
       if($('sb-who')) $('sb-who').textContent=userEmail;
       if($('sb-av')) $('sb-av').textContent=(userEmail||'·').trim().charAt(0).toUpperCase();
       cargarMiPermiso(function(){ aplicarRol(); if(!setAuth._loaded){ setAuth._loaded=true; init(); } }); }
@@ -1821,6 +1823,8 @@
   function aplicarRol(){
     var op=!isAdmin;
     if($('tab-horas')) $('tab-horas').classList.toggle('hide', op);  // Horas: solo admin
+    if($('tab-asist')) $('tab-asist').classList.toggle('hide', op);  // Asistencia: admin (config la re-muestra)
+    if($('tab-fotos')) $('tab-fotos').classList.toggle('hide', op);  // Fotos: admin (config la re-muestra)
     $('tab-matriz').classList.toggle('hide', op);         // Matriz: solo admin
     // (Trabajadores ahora vive dentro de RRHH; el botón RRHH ya es admin-only)
     if($('btn-pagos')) $('btn-pagos').classList.toggle('hide', op); // Pagos: solo admin (en el header)
@@ -1840,16 +1844,23 @@
     if($('c-faena')) $('c-faena').disabled=op;
     if($('add-asig')) $('add-asig').style.display=op?'none':'';
     if($('asig-note')) $('asig-note').style.display=op?'none':'';
+    if($('who')) $('who').textContent=userEmail+(isAdmin?' · admin':(MI_ROL?(' · '+rolLbl(MI_ROL)):''));
     if(!isAdmin && MI_TIENE) aplicarSecciones();   // usuario configurado: muestra solo sus secciones
   }
   // Muestra en el menú solo las secciones que el usuario tiene permitidas (además de lo que ya ocultó aplicarRol).
   var SEC_DE_V={ 'v-alertas':'alertas','v-asist':'asistencia','v-fotos':'fotos','v-horas':'reporte','v-hist':'reporte','v-cuadrilla':'reporte','v-clientes':'clientes','v-planif':'planificacion','v-plan':'calendario','v-matriz':'matriz','v-rrhh':'rrhh','v-remu':'remu','v-veh':'veh' };
+  var SEC_TO_V={ asistencia:'v-asist', fotos:'v-fotos', reporte:'v-reporte', planificacion:'v-planif', calendario:'v-plan', matriz:'v-matriz', rrhh:'v-rrhh', remu:'v-remu', veh:'v-veh', clientes:'v-clientes', alertas:'v-alertas' };
+  function primeraVistaPermitida(){ for(var i=0;i<SECCIONES.length;i++){ var k=SECCIONES[i][0]; if(verSec(k) && SEC_TO_V[k]) return SEC_TO_V[k]; } return null; }
   function aplicarSecciones(){
     document.querySelectorAll('.sbar .sb-item[data-v]').forEach(function(x){ var sec=SEC_DE_V[x.dataset.v]; if(sec) x.classList.toggle('hide', !verSec(sec)); });
+    document.querySelectorAll('.tabbar button[data-v]').forEach(function(x){ var sec=SEC_DE_V[x.dataset.v]; if(sec) x.classList.toggle('hide', !verSec(sec)); });
     document.querySelectorAll('.sbar-grp').forEach(function(g){ var t=(g.textContent||'').toLowerCase();
       if(t.indexOf('rrhh')>=0) g.classList.toggle('hide', !verSec('rrhh'));
       else if(t.indexOf('remun')>=0) g.classList.toggle('hide', !verSec('remu')); });
     [['btn-rrhh','rrhh'],['btn-cli','clientes'],['btn-alertas','alertas'],['btn-plan','calendario'],['btn-planif','planificacion'],['btn-pagos','remu'],['tab-horas','reporte'],['tab-matriz','matriz'],['tab-veh','veh']].forEach(function(m){ if($(m[0])) $(m[0]).classList.toggle('hide', !verSec(m[1])); });
+    // Si la vista actual no está permitida para este usuario, llévalo a la primera que sí lo esté.
+    var actual=(document.querySelector('.view.on')||{}).id||'', secAct=SEC_DE_V[actual];
+    if(secAct && !verSec(secAct)){ var dest=primeraVistaPermitida(); if(dest) abrirVista(dest); }
   }
   // Ajusta títulos y botones según rol y si es edición
   function aplicarModo(){
