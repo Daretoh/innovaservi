@@ -1124,13 +1124,14 @@
         <p class="note" style="margin:2px 0 0">Los clientes salen de Planificación. Elige un cliente y su faena para editarla, o crea una nueva.</p>
       </div>
       <div class="card" id="m-editor">
+        <p class="note" style="margin:0 0 10px">Editando la faena elegida arriba (cliente <b id="m-edit-cli"></b>).</p>
         <div class="grid2">
-          <div class="fld"><label>Cliente de esta faena</label><select id="m-ecliente"></select></div>
+          <div class="fld"><label>Nombre de la faena</label><input id="m-nombre" type="text" placeholder="Ej: Apoyo frigorífico"></div>
           <div class="fld"><label>Ubicación / sitio <span class="note" style="font-weight:400">(vacío = todas)</span></label><input id="m-esitio" type="text" list="m-esitio-list" placeholder="Ej: Chinquihue"><datalist id="m-esitio-list"></datalist></div>
         </div>
         <div class="grid2">
-          <div class="fld"><label>Nombre de la faena</label><input id="m-nombre" type="text" placeholder="Ej: Apoyo frigorífico"></div>
           <div class="fld"><label>Personas necesarias <span class="note" style="font-weight:400">(para la faena)</span></label><input id="m-personas" type="number" min="0" step="1" placeholder="Ej: 4"></div>
+          <div class="fld"></div>
         </div>
         <label class="m-pidechk"><input type="checkbox" id="m-pide"><span><b>El cliente pide reporte</b> (fotos / multimedia) de esta faena</span></label>
         <label style="display:block;font:700 13px var(--font);color:var(--ink);margin:6px 0 2px">Ítems (EPP / herramienta / maquinaria)</label>
@@ -2746,7 +2747,7 @@
   var MATRIZ_PRECLI=null, MATRIZ_PREFAENA=null;
   function renderMatriz(){
     var pre=MATRIZ_PRECLI||$('m-cliente').value||'CERMAQ'; MATRIZ_PRECLI=null;
-    opcionesCli($('m-cliente'), pre, false);
+    opcionesCli($('m-cliente'), pre, true);
     renderFaenasMatriz();
   }
   function renderFaenasMatriz(){
@@ -2760,11 +2761,11 @@
   function cargarFaenaMatriz(id){
     var p=PLANT.filter(function(x){ return String(x.id)===String(id); })[0];
     if(!p){ nuevaFaenaMatriz(); return; }
-    M_ID=p.id; opcionesCli($('m-ecliente'), p.cliente, true); poblarSitiosMatriz(p.cliente); if($('m-esitio')) $('m-esitio').value=p.sitio||''; $('m-nombre').value=p.faena||''; if($('m-personas')) $('m-personas').value=(p.personas!=null?p.personas:''); if($('m-pide')) $('m-pide').checked=!!p.pide_reporte;
+    M_ID=p.id; if($('m-edit-cli')) $('m-edit-cli').textContent=(p.cliente||$('m-cliente').value||''); poblarSitiosMatriz(p.cliente); if($('m-esitio')) $('m-esitio').value=p.sitio||''; $('m-nombre').value=p.faena||''; if($('m-personas')) $('m-personas').value=(p.personas!=null?p.personas:''); if($('m-pide')) $('m-pide').checked=!!p.pide_reporte;
     M_ITEMS=(p.items||[]).map(function(it){ return {tipo:it.tipo||'herramienta',item:it.item||'',cantidad:it.cantidad||''}; });
     if(!M_ITEMS.length)M_ITEMS=[{tipo:'herramienta',item:'',cantidad:''}]; renderMItems(); $('m-del').style.display='';
   }
-  function nuevaFaenaMatriz(){ M_ID=null; opcionesCli($('m-ecliente'), $('m-cliente').value, true); poblarSitiosMatriz($('m-cliente').value); if($('m-esitio')) $('m-esitio').value=''; $('m-nombre').value=''; if($('m-personas')) $('m-personas').value=''; if($('m-pide')) $('m-pide').checked=false; M_ITEMS=[{tipo:'herramienta',item:'',cantidad:''}]; renderMItems(); $('m-del').style.display='none'; if($('m-faena')) $('m-faena').value=''; }
+  function nuevaFaenaMatriz(){ M_ID=null; if($('m-edit-cli')) $('m-edit-cli').textContent=($('m-cliente').value||''); poblarSitiosMatriz($('m-cliente').value); if($('m-esitio')) $('m-esitio').value=''; $('m-nombre').value=''; if($('m-personas')) $('m-personas').value=''; if($('m-pide')) $('m-pide').checked=false; M_ITEMS=[{tipo:'herramienta',item:'',cantidad:''}]; renderMItems(); $('m-del').style.display='none'; if($('m-faena')) $('m-faena').value=''; }
   function renderMItems(){
     var c=$('m-items');
     c.innerHTML=M_ITEMS.map(function(it,i){
@@ -2778,21 +2779,20 @@
     c.querySelectorAll('.mi-rm').forEach(function(b){ b.addEventListener('click',function(){ syncMItems(); M_ITEMS.splice(+b.dataset.i,1); if(!M_ITEMS.length)M_ITEMS=[{tipo:'herramienta',item:'',cantidad:''}]; renderMItems(); }); });
   }
   function syncMItems(){ $('m-items').querySelectorAll('.mrow').forEach(function(row,i){ if(M_ITEMS[i]){ M_ITEMS[i].tipo=row.querySelector('.mi-tipo').value; M_ITEMS[i].item=row.querySelector('.mi-item').value; M_ITEMS[i].cantidad=row.querySelector('.mi-cant').value; } }); }
-  $('m-cliente').addEventListener('change',renderFaenasMatriz);
-  $('m-faena').addEventListener('change',function(){ if(this.value) cargarFaenaMatriz(this.value); else nuevaFaenaMatriz(); });
-  $('m-ecliente').addEventListener('change',function(){
+  $('m-cliente').addEventListener('change',function(){
     if(this.value==='__new'){
       var n=(prompt('Nombre del nuevo cliente:')||'').trim().toUpperCase();
       if(n){ var o=document.createElement('option'); o.value=n; o.textContent=n; this.insertBefore(o, this.querySelector('option[value="__new"]')); this.value=n; }
-      else { this.value=($('m-cliente').value||'CERMAQ').toUpperCase(); }
+      else { this.value=($('m-cliente').querySelector('option:not([value="__new"])')||{}).value||'CERMAQ'; }
     }
-    poblarSitiosMatriz(this.value); if($('m-esitio')) $('m-esitio').value='';
+    renderFaenasMatriz();
   });
+  $('m-faena').addEventListener('change',function(){ if(this.value) cargarFaenaMatriz(this.value); else nuevaFaenaMatriz(); });
   $('m-nueva').addEventListener('click',nuevaFaenaMatriz);
   $('m-add-item').addEventListener('click',function(){ syncMItems(); M_ITEMS.push({tipo:'herramienta',item:'',cantidad:''}); renderMItems(); });
   $('m-save').addEventListener('click',function(){
     if(!sb) return;
-    var cli=$('m-ecliente').value.trim().toUpperCase(); if(!cli||cli==='__NEW') cli=$('m-cliente').value.trim().toUpperCase();
+    var cli=($('m-cliente').value||'').trim().toUpperCase(); if(cli==='__NEW') cli='';
     var faena=$('m-nombre').value.trim();
     if(!cli||!faena){ toast('Elige cliente y pon el nombre de la faena.'); return; }
     syncMItems();
