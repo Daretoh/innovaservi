@@ -1947,34 +1947,37 @@
       ASIST.trab=((rs[0]&&rs[0].data)||[]).filter(function(t){ return t.estado!=='inactivo'; });
       ASIST.eventos=((rs[1]&&rs[1].data)||[]).filter(function(e){ var fn=e.fecha_fin||e.fecha; return e.fecha<=hoy && fn>=hoy; }).sort(function(a,b){ return (a.hora||'').localeCompare(b.hora||''); });
       ASIST.horas=(rs[2]&&rs[2].data)||[];
-      // opciones de faena: eventos de hoy + "otra"
-      var opts=ASIST.eventos.map(function(e){ return '<option value="ev:'+e.id+'">'+esc(faenaStrDe(e))+(e.hora?(' · '+esc(e.hora)):'')+'</option>'; }).join('');
-      $('asist-faena').innerHTML=opts+'<option value="otra">Otra faena (apoyo frigorífico)…</option>';
-      // por defecto: la que menciona frigo/apoyo, si no la primera
-      var def=ASIST.eventos.filter(function(e){ return /frigo|apoyo/i.test((e.titulo||'')+(e.ubicacion||'')); })[0]||ASIST.eventos[0];
-      $('asist-faena').value=def?('ev:'+def.id):'otra';
+      // opciones de faena: SOLO las agendadas hoy en el calendario (no hay faena manual)
+      if(ASIST.eventos.length){
+        var opts=ASIST.eventos.map(function(e){ return '<option value="ev:'+e.id+'">'+esc(faenaStrDe(e))+(e.hora?(' · '+esc(e.hora)):'')+'</option>'; }).join('');
+        $('asist-faena').innerHTML=opts;
+        var def=ASIST.eventos.filter(function(e){ return /frigo|apoyo/i.test((e.titulo||'')+(e.ubicacion||'')); })[0]||ASIST.eventos[0];
+        $('asist-faena').value='ev:'+def.id;
+      } else {
+        $('asist-faena').innerHTML='<option value="">— No hay faenas agendadas hoy —</option>';
+      }
       asistFaenaCambio();
       pintarAsistencia();
     }, function(){ toast('No se pudo cargar la asistencia.'); });
   }
   function asistEventoSel(){ var v=$('asist-faena').value||''; if(v.indexOf('ev:')!==0) return null; var id=v.slice(3); return ASIST.eventos.filter(function(e){ return String(e.id)===String(id); })[0]||null; }
-  function asistFaenaCambio(){ var e=asistEventoSel();
+  function asistFaenaCambio(){ var e=asistEventoSel(); var hay=!!e;
     if(e){ ASIST.faenaSel=faenaStrDe(e); $('asist-faena-info').textContent=(e.hora?('Horario: '+e.hora+' · '):'')+((e.personas_nec!=null)?('Necesita '+e.personas_nec+' personas'):'Selecciona los que van llegando'); }
-    else { ASIST.faenaSel='Apoyo Frigorífico'; $('asist-faena-info').textContent='Faena manual (apoyo frigorífico). Se registra con este nombre.'; }
-    ASIST.registro=null; pintarAsistencia(); asistRegLoad();
+    else { ASIST.faenaSel=''; $('asist-faena-info').textContent='No hay faena agendada hoy en el calendario. Crea la faena en Planificación / Calendario para poder tomar asistencia.'; }
+    if($('asist-rut')) $('asist-rut').disabled=!hay; if($('asist-mark')) $('asist-mark').disabled=!hay;
+    if($('asist-notas')) $('asist-notas').disabled=!hay; if($('asist-notas-save')) $('asist-notas-save').disabled=!hay;
+    ASIST.registro=null; pintarAsistencia(); if(hay) asistRegLoad();
   }
   if($('asist-faena')) $('asist-faena').addEventListener('change',asistFaenaCambio);
   // Un solo registro por faena+día: la asistencia y la bitácora se cargan a "Registros" sin duplicar.
   function asistRegLoad(){ if(!sb) return; var ta=$('asist-notas'); if(ta){ ta.value=''; } if($('asist-notas-msg')) $('asist-notas-msg').textContent='';
-    var e=asistEventoSel(), hoy=todayISO(), q=sb.from('registros').select('*').eq('fecha',hoy);
-    q=e?q.eq('evento_id',e.id):q.is('evento_id',null).contains('faenas',[ASIST.faenaSel]);
-    q.limit(1).then(function(r){ var reg=(r&&r.data&&r.data[0])||null; ASIST.registro=reg; if(reg&&ta) ta.value=reg.notas||''; }, function(){});
+    var e=asistEventoSel(); if(!e){ ASIST.registro=null; return; } var hoy=todayISO();
+    sb.from('registros').select('*').eq('fecha',hoy).eq('evento_id',e.id).limit(1).then(function(r){ var reg=(r&&r.data&&r.data[0])||null; ASIST.registro=reg; if(reg&&ta) ta.value=reg.notas||''; }, function(){});
   }
   function asistRegistro(cb){ if(!sb){ cb(null); return; } if(ASIST.registro&&ASIST.registro.id){ cb(ASIST.registro); return; }
-    var e=asistEventoSel(), hoy=todayISO(), q=sb.from('registros').select('*').eq('fecha',hoy);
-    q=e?q.eq('evento_id',e.id):q.is('evento_id',null).contains('faenas',[ASIST.faenaSel]);
-    q.limit(1).then(function(r){ var reg=(r&&r.data&&r.data[0])||null; if(reg){ ASIST.registro=reg; cb(reg); return; }
-      var row={ evento_id:(e?e.id:null), empresa:(e?e.ubicacion:''), lugar:(e?e.sitio:''), fecha:hoy, faenas:[ASIST.faenaSel], notas:'', autor:userEmail };
+    var e=asistEventoSel(); if(!e){ cb(null); return; } var hoy=todayISO();
+    sb.from('registros').select('*').eq('fecha',hoy).eq('evento_id',e.id).limit(1).then(function(r){ var reg=(r&&r.data&&r.data[0])||null; if(reg){ ASIST.registro=reg; cb(reg); return; }
+      var row={ evento_id:e.id, empresa:(e.ubicacion||''), lugar:(e.sitio||''), fecha:hoy, faenas:[ASIST.faenaSel], notas:'', autor:userEmail };
       sb.from('registros').insert(row).select().single().then(function(r2){ if(r2.error){ cb(null); return; } ASIST.registro=r2.data; cb(r2.data); }, function(){ cb(null); });
     }, function(){ cb(null); });
   }
@@ -1999,7 +2002,8 @@
   function nowHHMM(){ var d=new Date(); return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }
   function asistMsg(txt,ok){ var m=$('asist-msg'); if(m) m.innerHTML='<span style="font:700 14px var(--font);color:'+(ok?'#0f6e56':'#c0392b')+'">'+esc(txt)+'</span>'; }
   function asistMarcar(){
-    if(!sb) return; var v=($('asist-rut').value||'').replace(/[^0-9]/g,''); if(v.length<3){ asistMsg('Escribe los últimos 4 del RUT.',false); return; }
+    if(!sb) return; if(!asistEventoSel()){ asistMsg('No hay faena agendada hoy. Créala en el calendario para tomar asistencia.',false); return; }
+    var v=($('asist-rut').value||'').replace(/[^0-9]/g,''); if(v.length<3){ asistMsg('Escribe los últimos 4 del RUT.',false); return; }
     var cand=ASIST.trab.filter(function(t){ return rut4(t.rut)===v; });
     if(!cand.length){ asistMsg('No se encontró un trabajador con esos dígitos.',false); return; }
     if(cand.length>1){ asistMsg('Hay '+cand.length+' con esos dígitos: '+cand.map(function(t){return titleCase(t.nombre);}).join(', ')+'. Avisa al capataz.',false); return; }
