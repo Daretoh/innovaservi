@@ -628,6 +628,12 @@
   .pw-dup{font:800 8.5px var(--font);text-transform:uppercase;background:#fbf0d9;color:#854f0b;border-radius:999px;padding:0 5px;margin-left:4px;font-style:normal;}
   .pw-x{border:none;background:none;color:var(--muted);cursor:pointer;font-size:14px;line-height:1;padding:0 2px;}
   .pw-x:hover{color:#dc2626;}
+  .pw-ac{position:absolute;z-index:200;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 12px 30px rgba(12,15,46,.2);max-height:250px;overflow:auto;-webkit-overflow-scrolling:touch;}
+  .pw-ac.hide{display:none;}
+  .pw-aci{padding:9px 12px;font:600 13.5px var(--font);color:var(--ink);cursor:pointer;white-space:nowrap;display:flex;align-items:baseline;gap:8px;}
+  .pw-aci i{font:600 11px var(--font);color:var(--muted);font-style:normal;}
+  .pw-aci.on{background:var(--orange);color:#fff;}
+  .pw-aci.on i{color:rgba(255,255,255,.85);}
   .pw-add{width:100%;margin-top:6px;padding:7px 9px;border:1px dashed var(--orange);border-radius:8px;font:600 12.5px var(--font);background:#fff;color:var(--ink);box-sizing:border-box;}
   .pw-add::placeholder{color:var(--muted);font-weight:500;}
   .pw-add:focus{outline:none;box-shadow:0 0 0 2px rgba(255,107,0,.18);}
@@ -2363,7 +2369,7 @@
         '<button type="button" class="pw-cnt '+(need&&pers.length>=need?'ok':'miss')+'" title="Personas asignadas / necesarias (toca para editar)">'+pers.length+'/'+(need||'?')+'</button></div>'+
       '<div class="pw-cli" style="color:'+col.text+'">'+esc(e.ubicacion||'')+(e.sitio?(' · '+esc(e.sitio)):'')+'</div>'+
       '<div class="pw-tit">'+esc(e.titulo||'Faena')+'</div><ol class="pw-ol">'+li+'</ol>'+
-      (locked?'':'<input class="pw-add" data-k="'+planKey(e,f)+'" list="pw-trablist" placeholder="Escribe y Enter…" autocomplete="off" spellcheck="false">')+
+      (locked?'':'<input class="pw-add" data-k="'+planKey(e,f)+'" placeholder="Escribe y Enter…" autocomplete="off" spellcheck="false">')+
       (function(){ var m0=(p.maquinaria&&p.maquinaria[0])||{};
         if(locked){ var vt=[m0.veh,m0.chofer].filter(Boolean).join(' · '); return vt?('<div class="pw-vlock">🚚 '+esc(vt)+'</div>'):''; }
         return '<div class="pw-veh"><select class="pw-veh1">'+vehOpts(m0.veh||'')+'</select><select class="pw-cho1">'+choferOpts(m0.chofer||'')+'</select><select class="pw-prep1" title="Preparador de carga">'+planPrepOpts(p.preparador)+'</select></div>'; })()+
@@ -2388,8 +2394,7 @@
     var nF=Object.keys(faeSet).length, falta=T.falt;
     var kpi=function(v,l,k){ return '<div class="pw-kpi'+(k?(' '+k):'')+'"><b>'+v+'</b><span>'+l+'</span></div>'; };
     var poolChips=trabs.map(function(w){ return '<span class="pw-w" draggable="true" data-n="'+enc(w.nombre)+'" title="'+enc(w.cargo||'Operario')+(w.chofer?' · chofer':'')+'">'+esc(w.nombre)+(w.chofer?'<i class="pw-wch">chofer</i>':'')+'</span>'; }).join('')||'<span class="note" style="margin:0;font-size:.72rem">Sin trabajadores. Créalos en RRHH.</span>';
-    var dlSem='<datalist id="pw-trablist">'+trabs.map(function(w){ return '<option value="'+enc(w.nombre)+'"></option>'; }).join('')+'</datalist>';
-    c.innerHTML=dlSem+'<div class="pw-sum">'+kpi(nF,'Faenas')+kpi(T.asg+' / '+T.nec,'Asignadas / necesarias',(T.nec&&!falta)?'ok':'')+kpi(falta,'Faltan personas',falta>0?'warn':'ok')+kpi(T.sinMat,'Sin matriz',T.sinMat?'warn':'ok')+kpi(T.env+' / '+nF,'Enviadas a Prep.')+'</div>'+
+    c.innerHTML='<div class="pw-sum">'+kpi(nF,'Faenas')+kpi(T.asg+' / '+T.nec,'Asignadas / necesarias',(T.nec&&!falta)?'ok':'')+kpi(falta,'Faltan personas',falta>0?'warn':'ok')+kpi(T.sinMat,'Sin matriz',T.sinMat?'warn':'ok')+kpi(T.env+' / '+nF,'Enviadas a Prep.')+'</div>'+
       '<div class="pw-grid">'+cols+'</div>';
     pwWire(c);
     if(PW_FOCUS){ var fi=c.querySelector('.pw-add[data-k="'+PW_FOCUS+'"]'); PW_FOCUS=null; if(fi){ try{ fi.focus(); }catch(_){} } }
@@ -2405,6 +2410,25 @@
     var toks=q.split(/\s+/).filter(Boolean); if(toks.length>1){ var all=list.filter(function(w){ var nn=normName(w.nombre); return toks.every(function(tk){ return nn.indexOf(tk)>=0; }); }); if(all.length===1) return all[0].nombre; }
     return null;
   }
+  // ---- Autocompletado propio (teclado) para agregar trabajadores a una faena ----
+  var AC={ el:null, inp:null, items:[], idx:-1 };
+  function acEl(){ if(!AC.el){ AC.el=document.createElement('div'); AC.el.id='pw-ac'; AC.el.className='pw-ac hide'; document.body.appendChild(AC.el);
+      AC.el.addEventListener('mousedown',function(ev){ var it=ev.target.closest('.pw-aci'); if(it){ ev.preventDefault(); acPick(+it.dataset.i); } }); } return AC.el; }
+  function acHide(){ if(AC.el) AC.el.classList.add('hide'); AC.inp=null; AC.items=[]; AC.idx=-1; }
+  function acMatches(inp){ var e=faeE(inp), f=faeF(inp); var p=e?(PLAN_MAP[planKey(e,f)]||{}):{}; var pers=p.personas||[];
+    var list=planTrabs().filter(function(w){ return !pers.some(function(pp){ return normName(pp.nombre)===normName(w.nombre); }); });
+    var q=normName(inp.value||''); if(!q) return list.slice(0,10);
+    var toks=q.split(/\s+/).filter(Boolean);
+    return list.filter(function(w){ var nn=normName(w.nombre); return toks.every(function(tk){ return nn.indexOf(tk)>=0; }); }).slice(0,10);
+  }
+  function acShow(inp){ AC.inp=inp; AC.items=acMatches(inp); AC.idx=AC.items.length?0:-1; var el=acEl();
+    if(!AC.items.length){ el.classList.add('hide'); return; }
+    el.innerHTML=AC.items.map(function(w,i){ return '<div class="pw-aci'+(i===AC.idx?' on':'')+'" data-i="'+i+'">'+esc(w.nombre)+(w.cargo?('<i>'+esc(w.cargo)+'</i>'):'')+'</div>'; }).join('');
+    var r=inp.getBoundingClientRect(); el.style.left=(r.left+window.scrollX)+'px'; el.style.top=(r.bottom+window.scrollY+2)+'px'; el.style.minWidth=r.width+'px'; el.classList.remove('hide');
+  }
+  function acMove(d){ if(!AC.items.length) return; AC.idx=(AC.idx+d+AC.items.length)%AC.items.length;
+    if(AC.el) AC.el.querySelectorAll('.pw-aci').forEach(function(x,i){ x.classList.toggle('on',i===AC.idx); if(i===AC.idx) x.scrollIntoView({block:'nearest'}); }); }
+  function acPick(i){ if(i<0||!AC.items[i]||!AC.inp) return; var w=AC.items[i], inp=AC.inp, e=faeE(inp), f=faeF(inp); acHide(); if(!e) return; PW_FOCUS=inp.dataset.k; planAsignar(e.id, f, w.nombre); }
   // Filtra los chips del pool de trabajadores por el buscador de arriba.
   function pwFiltrar(){ var q=(PW_Q||'').toLowerCase().trim(); var pool=$('pw-pool'); if(!pool) return;
     pool.querySelectorAll('.pw-w').forEach(function(w){ var ok=!q || (w.dataset.n||'').toLowerCase().indexOf(q)>=0; w.style.display=ok?'':'none'; }); }
@@ -2430,8 +2454,24 @@
     c.querySelectorAll('.pw-x').forEach(function(x){ x.addEventListener('click',function(ev){ ev.stopPropagation(); var e=faeE(x), f=faeF(x); if(!e) return; var p=planDe(e,f); p.personas.splice(+x.dataset.i,1); planSave(e,f); renderPlanif(); }); });
     c.querySelectorAll('.pw-cnt').forEach(function(b){ b.addEventListener('click',function(ev){ ev.stopPropagation(); var e=faeE(b), f=faeF(b); if(!e) return; var p=planDe(e,f); var v=prompt('¿Cuántas personas necesita esta faena? (solo este día)', (personasNecesarias(e,f)||personasSugeridas(e))||''); if(v===null) return; v=(''+v).trim(); p.personas_nec=(v===''?null:Math.max(0,(+v||0))); planSave(e,f); renderPlanif(); }); });
     c.querySelectorAll('.pw-open').forEach(function(b){ b.addEventListener('click',function(ev){ ev.stopPropagation(); var e=faeE(b), f=faeF(b); if(e) abrirPlanif(e,f); }); });
-    // Agregar trabajador con teclado (Excel): escribir + Enter agrega y deja el foco para el siguiente (solo fichas).
-    c.querySelectorAll('.pw-add').forEach(function(inp){ inp.addEventListener('keydown',function(ev){ if(ev.key!=='Enter') return; ev.preventDefault(); var v=(inp.value||'').trim(); if(!v) return; var nm=planResolveTrab(v); if(!nm){ toast('"'+v+'" no está en fichas. Créalo en RRHH.'); return; } var e=faeE(inp), f=faeF(inp); if(!e) return; PW_FOCUS=inp.dataset.k; planAsignar(e.id, f, nm); }); });
+    // Agregar trabajador con teclado (tipo Excel): escribe, baja con Tab/flechas, Enter para elegir.
+    c.querySelectorAll('.pw-add').forEach(function(inp){
+      inp.addEventListener('input',function(){ acShow(inp); });
+      inp.addEventListener('focus',function(){ acShow(inp); });
+      inp.addEventListener('blur',function(){ setTimeout(acHide,150); });
+      inp.addEventListener('keydown',function(ev){
+        if(ev.key==='ArrowDown'){ ev.preventDefault(); if(AC.inp!==inp){ acShow(inp); } else { acMove(1); } }
+        else if(ev.key==='ArrowUp'){ ev.preventDefault(); acMove(-1); }
+        else if(ev.key==='Tab'){ if(AC.inp===inp && AC.items.length){ ev.preventDefault(); acMove(ev.shiftKey?-1:1); } }
+        else if(ev.key==='Enter'){ ev.preventDefault();
+          if(AC.inp===inp && AC.items.length && AC.idx>=0){ acPick(AC.idx); return; }
+          var v=(inp.value||'').trim(); if(!v) return; var nm=planResolveTrab(v);
+          if(!nm){ toast('"'+v+'" no está en fichas. Créalo en RRHH.'); return; }
+          var e=faeE(inp), f=faeF(inp); if(!e) return; PW_FOCUS=inp.dataset.k; planAsignar(e.id, f, nm);
+        }
+        else if(ev.key==='Escape'){ acHide(); }
+      });
+    });
     // Un vehículo + un chofer + preparador por faena+día (directo en la tarjeta)
     function setVeh0(e,f,campo,val){ var p=planDe(e,f); if(!p.maquinaria)p.maquinaria=[]; if(!p.maquinaria[0])p.maquinaria[0]={veh:'',chofer:''}; p.maquinaria[0][campo]=val; planSave(e,f); }
     c.querySelectorAll('.pw-veh1').forEach(function(s){ s.addEventListener('change',function(){ setVeh0(faeE(s),faeF(s),'veh',s.value); }); });
