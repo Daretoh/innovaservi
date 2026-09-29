@@ -2418,17 +2418,17 @@
     });
     c.querySelectorAll('.pw-p[draggable=true]').forEach(function(li){ li.addEventListener('dragstart',function(ev){ ev.stopPropagation(); try{ ev.dataTransfer.setData('text/plain','m|'+li.dataset.e+'|'+li.dataset.i); ev.dataTransfer.effectAllowed='move'; }catch(_){} }); });
     c.querySelectorAll('.pw-fae').forEach(function(el){
-      el.addEventListener('click',function(ev){ if(ev.target.closest('button,select,input')||!PW_PICK) return; var n=PW_PICK.n; PW_PICK=null; planAsignar(+el.dataset.e, n); });
+      el.addEventListener('click',function(ev){ if(ev.target.closest('button,select,input')||!PW_PICK) return; var n=PW_PICK.n; PW_PICK=null; planAsignar(el.dataset.e, n); });
       el.addEventListener('dragover',function(ev){ ev.preventDefault(); el.classList.add('drop'); });
       el.addEventListener('dragleave',function(){ el.classList.remove('drop'); });
       el.addEventListener('drop',function(ev){ ev.preventDefault(); el.classList.remove('drop'); var d=''; try{ d=ev.dataTransfer.getData('text/plain')||''; }catch(_){}
-        var pz=d.split('|'); if(pz[0]==='n' && pz[1]){ PW_PICK=null; planAsignar(+el.dataset.e, pz[1]); } else if(pz[0]==='m') pwMover(pz[1], pz[2], el.dataset.e); });
+        var pz=d.split('|'); if(pz[0]==='n' && pz[1]){ PW_PICK=null; planAsignar(el.dataset.e, pz[1]); } else if(pz[0]==='m') pwMover(pz[1], pz[2], el.dataset.e); });
     });
     c.querySelectorAll('.pw-x').forEach(function(x){ x.addEventListener('click',function(ev){ ev.stopPropagation(); var e=eventoDe(x.dataset.e); if(!e) return; var p=planDe(e); p.personas.splice(+x.dataset.i,1); planSave(e); renderPlanif(); }); });
     c.querySelectorAll('.pw-cnt').forEach(function(b){ b.addEventListener('click',function(ev){ ev.stopPropagation(); var e=eventoDe(b.dataset.e); if(!e) return; var p=planDe(e); var v=prompt('¿Cuántas personas necesita esta faena? (solo esta faena)', (personasNecesarias(e)||personasSugeridas(e))||''); if(v===null) return; v=(''+v).trim(); p.personas_nec=(v===''?null:Math.max(0,(+v||0))); planSave(e); renderPlanif(); }); });
     c.querySelectorAll('.pw-open').forEach(function(b){ b.addEventListener('click',function(ev){ ev.stopPropagation(); var e=eventoDe(b.dataset.e); if(e) abrirPlanif(e); }); });
     // Agregar trabajador desde el desplegable (solo fichas; no permite nombres inexistentes)
-    c.querySelectorAll('.pw-addsel').forEach(function(s){ s.addEventListener('change',function(ev){ ev.stopPropagation(); if(!s.value) return; planAsignar(+s.dataset.e, s.value); }); });
+    c.querySelectorAll('.pw-addsel').forEach(function(s){ s.addEventListener('change',function(ev){ ev.stopPropagation(); if(!s.value) return; planAsignar(s.dataset.e, s.value); }); });
     // Un vehículo + un chofer + preparador por faena (directo en la tarjeta)
     function setVeh0(e,campo,val){ var p=planDe(e); if(!p.maquinaria)p.maquinaria=[]; if(!p.maquinaria[0])p.maquinaria[0]={veh:'',chofer:''}; p.maquinaria[0][campo]=val; planSave(e); }
     c.querySelectorAll('.pw-veh1').forEach(function(s){ s.addEventListener('change',function(){ setVeh0(eventoDe(s.dataset.e),'veh',s.value); }); });
