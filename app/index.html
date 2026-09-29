@@ -642,7 +642,14 @@
   .pw-add{width:100%;margin-top:6px;padding:7px 9px;border:1px dashed var(--orange);border-radius:8px;font:600 12.5px var(--font);background:#fff;color:var(--ink);box-sizing:border-box;}
   .pw-add::placeholder{color:var(--muted);font-weight:500;}
   .pw-add:focus{outline:none;box-shadow:0 0 0 2px rgba(255,107,0,.18);}
+  .pw-vdet{margin-top:6px;}
+  .pw-vdet>summary{list-style:none;cursor:pointer;font:700 11px var(--font);color:var(--body);background:var(--alt);border:1px solid var(--line);border-radius:8px;padding:6px 9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:4px;}
+  .pw-vdet>summary::-webkit-details-marker{display:none;}
+  .pw-vdet>summary::after{content:'▾';margin-left:auto;color:var(--muted);font-size:10px;}
+  .pw-vdet[open]>summary::after{content:'▴';}
+  .pw-vdet[open]>summary{border-bottom-left-radius:0;border-bottom-right-radius:0;color:var(--ink);}
   .pw-veh{margin-top:6px;display:flex;flex-direction:column;gap:4px;}
+  .pw-vdet .pw-veh{margin-top:0;border:1px solid var(--line);border-top:none;border-radius:0 0 8px 8px;padding:6px;}
   .pw-veh select{width:100%;padding:6px 7px;border:1px solid var(--line);border-radius:8px;background:#fff;font:600 12px var(--font);color:var(--ink);}
   .pw-veh .pw-prep1{border-style:dashed;color:var(--body);}
   .pw-vlock{margin-top:6px;font:700 11px var(--font);color:var(--navy);}
@@ -2380,8 +2387,9 @@
       '<div class="pw-tit">'+esc(e.titulo||'Faena')+'</div><ol class="pw-ol">'+li+'</ol>'+
       (locked?'':'<input class="pw-add" data-k="'+planKey(e,f)+'" placeholder="Escribe y Enter…" autocomplete="off" spellcheck="false">')+
       (function(){ var m0=(p.maquinaria&&p.maquinaria[0])||{};
-        if(locked){ var vt=[m0.veh,m0.chofer].filter(Boolean).join(' · '); return vt?('<div class="pw-vlock">🚚 '+esc(vt)+'</div>'):''; }
-        return '<div class="pw-veh"><select class="pw-veh1">'+vehOpts(m0.veh||'')+'</select><select class="pw-cho1">'+choferOpts(m0.chofer||'')+'</select><select class="pw-prep1" title="Preparador de carga">'+planPrepOpts(p.preparador)+'</select></div>'; })()+
+        if(locked){ var vt=[m0.veh,m0.chofer,p.preparador].filter(Boolean).join(' · '); return vt?('<div class="pw-vlock">🚚 '+esc(vt)+'</div>'):''; }
+        var cur=[m0.veh,m0.chofer,p.preparador].filter(Boolean).join(' · ');
+        return '<details class="pw-vdet"><summary>🚚 '+(cur?esc(cur):'Vehículo · chofer · prep.')+'</summary><div class="pw-veh"><select class="pw-veh1">'+vehOpts(m0.veh||'')+'</select><select class="pw-cho1">'+choferOpts(m0.chofer||'')+'</select><select class="pw-prep1" title="Preparador de carga">'+planPrepOpts(p.preparador)+'</select></div></details>'; })()+
       '<div class="pw-st"><span class="pw-s '+(locked?'ok':'neu')+'">'+(locked?svgI(ICO.ok,9)+'Enviada':'Borrador')+'</span>'+
         '<button type="button" class="pw-open">Detalle ›</button></div></div>';
   }
