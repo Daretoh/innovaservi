@@ -76,6 +76,7 @@
   /* Vistas anchas (Remuneraciones / Horas) en pantallas grandes: aprovechan todo el espacio */
   @media(min-width:900px){
     main.wide{max-width:min(1400px,96vw);}
+    main.planwide{max-width:98vw;}
     main.wide .remu-tbl{font-size:14px;}
     main.wide .remu-tbl th{font-size:11px;padding:12px 16px;}
     main.wide .remu-tbl td{padding:12px 16px;}
@@ -542,6 +543,30 @@
   .pb-wch{font-size:9.5px;color:var(--navy);background:#eef1fb;border-radius:999px;padding:1px 7px;flex:none;}
   .pb-wya{font-size:9.5px;color:#854f0b;background:#fbf0d9;border-radius:999px;padding:1px 7px;flex:none;}
   @media(max-width:640px){ .pb-grid{grid-template-columns:1fr;} .pb-panel{position:static;} .pb-wlist{max-height:none;} }
+  /* Planificación día · tabla tipo Excel (a pantalla completa) */
+  .pb-xlswrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:#fff;box-shadow:0 10px 30px -22px rgba(26,31,110,.4);}
+  .pb-xls{width:100%;border-collapse:separate;border-spacing:0;font:500 13px var(--font);min-width:820px;}
+  .pb-xls th{background:var(--navy);color:#fff;font:800 10.5px var(--font);text-transform:uppercase;letter-spacing:.04em;text-align:left;padding:10px 11px;position:sticky;top:0;z-index:2;}
+  .pb-xls td{border-top:1px solid var(--line);padding:9px 11px;vertical-align:top;}
+  .pb-xls tr:hover td{background:#fafbff;}
+  .pb-xls tr.locked td{background:var(--alt);}
+  .pb-xls .xf-c1{border-left:4px solid var(--muted);min-width:190px;}
+  .pb-xls .xf-t{font:800 13.5px var(--font);color:var(--ink);line-height:1.25;}
+  .pb-xls .xf-e{font-size:11.5px;color:var(--muted);margin-top:1px;}
+  .pb-xls .xf-need{border:none;border-radius:8px;padding:6px 10px;font:800 13px var(--font);cursor:pointer;white-space:nowrap;}
+  .pb-xls .xf-need.ok{background:#e6f7ef;color:#0f6e56;} .pb-xls .xf-need.miss{background:#fdeaea;color:#c0392b;}
+  .pb-xls .xf-ws{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;}
+  .pb-xls .xf-ws:empty{margin:0;}
+  .pb-xls .xf-add{width:100%;max-width:230px;padding:7px 10px;border:1px dashed var(--orange);border-radius:9px;font:600 12.5px var(--font);background:#fff;color:var(--ink);}
+  .pb-xls .xf-add:focus{outline:none;box-shadow:0 0 0 3px rgba(255,107,0,.15);}
+  .pb-xls .xf-veh{min-width:210px;}
+  .pb-xls .xf-veh .pb-veh-row{margin-top:0;margin-bottom:5px;}
+  .pb-xls .xf-veh .pb-addveh{width:100%;padding:6px;border:1px solid var(--line);border-radius:8px;background:#fff;font:600 11.5px var(--font);margin-top:2px;}
+  .pb-xls .xf-prep{margin-top:6px;font-size:11px;color:var(--muted);}
+  .pb-xls .xf-prep select{width:100%;margin-top:2px;padding:6px;border:1px solid var(--line);border-radius:8px;background:#fff;font:600 11.5px var(--font);}
+  .pb-xls .xf-det{background:var(--navy);color:#fff;border:none;border-radius:9px;padding:8px 12px;font:800 12px var(--font);cursor:pointer;white-space:nowrap;}
+  .pb-xls .xf-lock{font:700 11px var(--font);color:var(--orange-2);white-space:nowrap;}
+  .pb-xlshint{font-size:.72rem;color:var(--muted);margin:8px 2px 0;}
   .pf-grid{display:grid;grid-template-columns:repeat(7,minmax(148px,1fr));gap:8px;overflow-x:auto;padding-bottom:6px;}
   .pf-col{background:var(--alt);border:1px solid var(--line);border-radius:11px;padding:7px 7px 9px;min-height:130px;}
   .pf-col.pf-today{border-color:var(--orange);box-shadow:inset 0 0 0 1px var(--orange);}
@@ -1974,7 +1999,7 @@
     document.querySelectorAll('.sbar .sb-item[data-v]:not([data-seg])').forEach(function(x){ x.classList.toggle('on',x.dataset.v===v); });
     if(v!=='v-rrhh') document.querySelectorAll('.sbar .sb-item[data-seg]').forEach(function(x){ x.classList.remove('on'); });
     document.querySelectorAll('.view').forEach(function(x){ x.classList.toggle('on',x.id===v); });
-    var _main=document.querySelector('main'); if(_main){ _main.classList.toggle('wide', v==='v-remu'||v==='v-horas'||v==='v-rrhh'||v==='v-planif'); _main.classList.toggle('planview', v==='v-plan'); }  // vistas anchas / calendario full
+    var _main=document.querySelector('main'); if(_main){ _main.classList.toggle('wide', v==='v-remu'||v==='v-horas'||v==='v-rrhh'||v==='v-planif'); _main.classList.toggle('planwide', v==='v-planif'); _main.classList.toggle('planview', v==='v-plan'); }  // vistas anchas / calendario full
     if(v==='v-hist') cargarRegistros(pintarRegistros);
     if(v==='v-horas') cargarHoras();
     if(v==='v-cuadrilla'){ cargarTrab(actualizarDatalist); cargarPlantillas(function(){ cargarRegistros(function(){ if(C_JOB) elegirJobCuadrilla(C_JOB); else renderFaenaSelect(); }); }); }
@@ -2217,6 +2242,23 @@
       (locked?'<div class="pb-lock">🔒 Enviada a Preparación</div>':'<div class="pb-fbtns"><select class="pb-addveh" data-e="'+e.id+'">'+planAddVehOpts()+'</select><label class="pb-prep">Prep. carga: <select class="pb-prepsel" data-e="'+e.id+'">'+planPrepOpts(p.preparador)+'</select></label></div>')+
       '<button class="pb-detalle" data-e="'+e.id+'" type="button">Detalle / enviar ›</button></div>';
   }
+  // Fila tipo Excel para el modo "Por día"
+  function planFaeRow(e){
+    var p=planDe(e), col=colorEmpresa(claveEmpresa(e.ubicacion||''));
+    var need=personasNecesarias(e), asg=p.personas.length, ok=need&&asg>=need, locked=(p.estado==='enviada');
+    var chips=p.personas.map(function(pp,i){ return '<span class="pb-wc">'+esc(pp.nombre)+(locked?'':'<span class="x" data-e="'+e.id+'" data-i="'+i+'">✕</span>')+'</span>'; }).join('');
+    var addW=locked?'':'<input class="xf-add" data-e="'+e.id+'" list="pb-trablist" placeholder="Escribe y Enter…" autocomplete="off">';
+    var vehChips=p.maquinaria.map(function(mq,i){ return '<div class="pb-veh-row"><select class="pb-veh" data-e="'+e.id+'" data-i="'+i+'"'+(locked?' disabled':'')+'>'+vehOpts(mq.veh||'')+'</select><select class="pb-cho" data-e="'+e.id+'" data-i="'+i+'"'+(locked?' disabled':'')+'>'+choferOpts(mq.chofer||'')+'</select>'+(locked?'':'<button class="pb-veh-rm" data-e="'+e.id+'" data-i="'+i+'" type="button">✕</button>')+'</div>'; }).join('');
+    var vehAdd=locked?'':'<select class="pb-addveh" data-e="'+e.id+'">'+planAddVehOpts()+'</select>';
+    var prep=locked?'':'<div class="xf-prep">Prep. carga:<select class="pb-prepsel" data-e="'+e.id+'">'+planPrepOpts(p.preparador)+'</select></div>';
+    return '<tr class="'+(locked?'locked':'')+'" data-e="'+e.id+'">'+
+      '<td class="xf-c1" style="border-left-color:'+col.border+'"><div class="xf-t">'+esc(e.titulo||'Faena')+'</div><div class="xf-e">'+esc(e.ubicacion||'')+(e.sitio?(' · '+esc(e.sitio)):'')+'</div>'+repBadge(e)+'</td>'+
+      '<td><button type="button" class="xf-need '+(ok?'ok':'miss')+' pb-editneed" data-e="'+e.id+'" title="Editar personas necesarias">'+asg+' / '+(need||'?')+'</button></td>'+
+      '<td><div class="xf-ws">'+chips+'</div>'+addW+'</td>'+
+      '<td class="xf-veh">'+vehChips+vehAdd+prep+'</td>'+
+      '<td>'+(locked?'<span class="xf-lock">🔒 Enviada</span><br>':'')+'<button class="xf-det pb-detalle" data-e="'+e.id+'" type="button">Detalle ›</button></td>'+
+    '</tr>';
+  }
   function renderPlanWorkers(){ var el=$('pb-wlist'); if(!el) return; var q=(PLANIF_WQ||'').toLowerCase();
     var asignados={}; (EVENTOS||[]).forEach(function(e){ var i=e.fecha, fn=e.fecha_fin||e.fecha; if(!(i<=PLANIF_DIA&&fn>=PLANIF_DIA))return; var p=PLAN_MAP[e.id]; if(p&&p.personas) p.personas.forEach(function(pp){ asignados[normName(pp.nombre)]=1; }); });
     el.innerHTML=planTrabs().filter(function(w){ return w.nombre.toLowerCase().indexOf(q)>=0; }).map(function(w){ var ya=asignados[normName(w.nombre)];
@@ -2244,8 +2286,9 @@
     }
     var fs=(EVENTOS||[]).filter(function(e){ var i=e.fecha, fn=e.fecha_fin||e.fecha; return i<=PLANIF_DIA&&fn>=PLANIF_DIA; }).sort(function(a,b){ return (a.ubicacion||'').localeCompare(b.ubicacion||''); });
     if((PLANIF_SEL==null || !fs.some(function(e){return e.id===PLANIF_SEL;})) && fs.length) PLANIF_SEL=fs[0].id;
-    var faeCards=fs.length? fs.map(planFaeCard).join('') : '<div class="empty"><div class="big">📋</div>No hay faenas este día.<br><span style="font-size:.82rem">Agéndalas en Calendario.</span></div>';
-    c.innerHTML='<div class="pb-tabs">'+tabs+'</div><div class="pb-grid"><div class="pb-faes">'+faeCards+'</div><div class="pb-panel"><div class="pb-psticky"><h3>Trabajadores disponibles</h3><div class="pb-selfae" id="pb-selfae"></div><input type="search" id="pb-wq" placeholder="Buscar trabajador…"><div class="pb-wlist" id="pb-wlist"></div><div class="note" style="margin-top:8px;font-size:.7rem">Toca una faena y luego un trabajador para asignarlo; o arrástralo a la faena.</div></div></div></div>';
+    var dl='<datalist id="pb-trablist">'+planTrabs().map(function(w){ return '<option value="'+enc(w.nombre)+'">'+esc(w.cargo||'')+'</option>'; }).join('')+'</datalist>';
+    var rows=fs.length? fs.map(planFaeRow).join('') : '<tr><td colspan="5"><div class="empty" style="padding:26px"><div class="big">📋</div>No hay faenas este día.<br><span style="font-size:.82rem">Agéndalas en Calendario.</span></div></td></tr>';
+    c.innerHTML='<div class="pb-tabs">'+tabs+'</div>'+dl+'<div class="pb-xlswrap"><table class="pb-xls"><thead><tr><th>Faena / Cliente</th><th>Necesarios</th><th>Trabajadores (escribe y Enter)</th><th>Vehículo · Chofer · Prep.</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div><p class="pb-xlshint">Escribe el nombre del trabajador y toca <b>Enter</b> para sumarlo a la fila. La cuadrilla, el chofer/vehículo y el preparador se guardan solos.</p>';
     // wiring
     c.querySelectorAll('.pb-tab').forEach(function(b){ b.addEventListener('click',function(){ PLANIF_DIA=b.dataset.f; PLANIF_SEL=null; renderPlanif(); }); });
     c.querySelectorAll('.pb-fae').forEach(function(el){
@@ -2262,6 +2305,7 @@
     c.querySelectorAll('.pb-veh-rm').forEach(function(b){ b.addEventListener('click',function(){ var e=eventoDe(b.dataset.e),p=planDe(e); p.maquinaria.splice(+b.dataset.i,1); planSave(e); renderPlanif(); }); });
     c.querySelectorAll('.pb-prepsel').forEach(function(s){ s.addEventListener('change',function(){ var e=eventoDe(s.dataset.e),p=planDe(e); p.preparador=s.value; planSave(e); }); });
     c.querySelectorAll('.pb-detalle').forEach(function(b){ b.addEventListener('click',function(ev){ ev.stopPropagation(); var e=eventoDe(b.dataset.e); if(e) abrirPlanif(e); }); });
+    c.querySelectorAll('.xf-add').forEach(function(inp){ inp.addEventListener('keydown',function(ev){ if(ev.key==='Enter'){ ev.preventDefault(); var v=(inp.value||'').trim(); if(v){ PLANIF_SEL=+inp.dataset.e; planAsignar(+inp.dataset.e, v); } } }); });
     var wq=$('pb-wq'); if(wq){ wq.value=PLANIF_WQ||''; wq.addEventListener('input',function(){ PLANIF_WQ=this.value; renderPlanWorkers(); }); }
     renderPlanWorkers(); planSelName();
   }
