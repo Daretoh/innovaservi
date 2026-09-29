@@ -604,14 +604,16 @@
   .pw-grid{display:grid;grid-template-columns:repeat(7,minmax(172px,1fr));gap:8px;overflow-x:auto;padding-bottom:6px;align-items:start;}
   .pw-col{background:var(--alt);border:1px solid var(--line);border-radius:12px;padding:8px;min-width:0;}
   .pw-col.hoy{border-color:var(--orange);box-shadow:inset 0 0 0 1px var(--orange);}
-  .pw-dh{display:flex;justify-content:space-between;align-items:baseline;gap:6px;padding:0 2px 7px;border-bottom:1px solid var(--line);margin-bottom:7px;}
-  .pw-dn{font:800 13px var(--font);color:var(--navy);}
+  .pw-dh{display:flex;justify-content:space-between;align-items:baseline;gap:6px;padding:2px 3px 8px;border-bottom:2px solid var(--orange);margin-bottom:8px;}
+  .pw-dn{font:900 17px var(--font);color:var(--navy);letter-spacing:.01em;}
+  .pw-col.hoy .pw-dn{color:var(--orange-2);}
   .pw-ds{font:700 10.5px var(--font);color:var(--muted);white-space:nowrap;}
   .pw-ds.miss{color:#b45309;} .pw-ds.ok{color:#0f6e56;}
   .pw-turno{display:inline-flex;align-items:center;gap:4px;font:800 9.5px var(--font);text-transform:uppercase;letter-spacing:.06em;margin:3px 0 5px;padding:2px 8px;border-radius:6px;}
   .pw-t-dia{background:#fef3c7;color:#92400e;} .pw-t-noche{background:#1e1b4b;color:#e0e7ff;} .pw-t-x{background:#fff;color:var(--muted);border:1px solid var(--line);}
   .pw-fae{background:#fff;border:1px solid var(--line);border-left:4px solid;border-radius:9px;padding:7px 8px;margin-bottom:7px;}
   .pw-fae.frigo{background:#ecfeff;border-color:#a5f3fc;border-left-width:5px;}
+  .pw-fae.frigo .pw-tit{font:800 13px var(--font);color:#0e7490;}
   .pw-frigo-tag{display:inline-block;background:#0891b2;color:#fff;font:800 8px var(--font);letter-spacing:.05em;text-transform:uppercase;border-radius:5px;padding:1px 5px;margin-left:6px;vertical-align:1px;}
   .pw-hora{width:98px;padding:3px 6px;border:1px solid var(--line);border-radius:7px;font:800 11.5px var(--font);color:var(--ink);background:#fff;}
   .pw-hora:focus{outline:none;border-color:var(--orange);box-shadow:0 0 0 2px rgba(255,107,0,.15);}
@@ -668,7 +670,7 @@
     /* En celular hay ancho de sobra: letras más grandes y legibles */
     .pw-fae{padding:11px 13px;} .pw-h{font-size:14px;} .pw-cnt{font-size:12.5px;padding:2px 10px;} .pw-cli{font-size:12.5px;} .pw-tit{font-size:13.5px;} .pw-ol{font-size:14.5px;padding-left:22px;} .pw-ol li{padding:3px 0;}
     .pw-add{font-size:14px;padding:9px 10px;} .pw-veh select{font-size:14px;padding:8px 9px;} .pw-s{font-size:11px;} .pw-open{font-size:13px;} .pw-hora{font-size:13px;width:110px;padding:6px 8px;}
-    .pw-dh .pw-dn{font-size:15px;} }
+    .pw-dh .pw-dn{font-size:19px;} }
   /* RRHH documentación */
   .rrhh-doc{background:#fff;border:1px solid var(--line);border-radius:12px;padding:11px 13px;margin-bottom:9px;}
   .rrhh-doc .rd-top{display:flex;align-items:center;gap:10px;cursor:pointer;}
@@ -2247,6 +2249,11 @@
   function planDe(e,f){ f=f||e.fecha; var k=planKey(e,f); var p=PLAN_MAP[k]; if(!p){ p={ evento_id:e.id, fecha:f, empresa:e.ubicacion||'', sitio:e.sitio||'', titulo:e.titulo||'', personas:[], matrices:[], maquinaria:[], notas:'', estado:'borrador', preparador:'', hora:'' }; PLAN_MAP[k]=p; } if(!p.personas)p.personas=[]; if(!p.maquinaria)p.maquinaria=[]; return p; }
   // Es apoyo frigorífico (lo más frecuente): va primero y con color propio.
   function esFrigo(e){ return /frigo|apoyo/i.test((e.titulo||'')+' '+(e.ubicacion||'')); }
+  function turnoFrigo(e){ var t=(e.titulo||'').toLowerCase(); return /noche/.test(t)?'Noche':(/d[ií]a/.test(t)?'Día':''); }
+  // Abreviaturas para achicar texto: cliente CERMAQ→CQ, SAL LOBOS→SL; sitio Chinquihue→CH, Diego Portales→DP.
+  function abrevCli(s){ s=(s||'').trim(); if(!s) return ''; var w=s.split(/\s+/); if(w.length>1) return w.map(function(x){return x.charAt(0);}).join('').toUpperCase().slice(0,3); return (s.charAt(0)+s.charAt(s.length-1)).toUpperCase(); }
+  function abrevSit(s){ s=(s||'').trim(); if(!s) return ''; var w=s.split(/\s+/); if(w.length>1) return w.map(function(x){return x.charAt(0);}).join('').toUpperCase().slice(0,3); return s.slice(0,2).toUpperCase(); }
+  function faeCliSit(e){ var u=abrevCli(e.ubicacion||''), s=abrevSit(e.sitio||''); return u+(s?('-'+s):''); }
   // Horario a mostrar: el escrito en el plan (por día) o, si no hay, el del calendario.
   function planHora(e,f){ var p=PLAN_MAP[planKey(e,f)]; var h=(p&&p.hora!=null&&p.hora!=='')?p.hora:(e.hora||''); return h; }
   // Necesarios: SOLO el valor propio de esa faena+día (independiente aunque el evento dure varios días).
@@ -2358,7 +2365,7 @@
   var PLANIF_MODO=(function(){ try{ return localStorage.getItem('iserv-planif-modo')||'semana'; }catch(_){ return 'semana'; } })(), PW_PICK=null, PW_Q='', PW_FOCUS=null;
   function planModoUI(){ document.querySelectorAll('#planif-modo .seg-b').forEach(function(b){ b.classList.toggle('on', b.dataset.m===PLANIF_MODO); });
     if($('planif-copy')) $('planif-copy').classList.toggle('hide', PLANIF_MODO!=='semana');
-    if($('planif-note')) $('planif-note').innerHTML='Toda la semana de un vistazo. En cada faena <b>escribe el nombre del trabajador</b> (te sugiere de las fichas) y toca <b>Enter</b>; solo se aceptan trabajadores con ficha. Arrastra un nombre de una faena a otra para moverlo. <b>Detalle</b> abre EPP/matrices y el envío a Preparación.'; }
+    if($('planif-note')) $('planif-note').classList.add('hide'); }
   document.querySelectorAll('#planif-modo .seg-b').forEach(function(b){ b.addEventListener('click',function(){ PLANIF_MODO=b.dataset.m; PW_PICK=null; try{ localStorage.setItem('iserv-planif-modo',PLANIF_MODO); }catch(_){} renderPlanif(); }); });
   // Hora del evento del Calendario ("07:00", "20:00 - 06:00", "Todo el día") → inicio / fin / turno
   function horaIni(h){ var m=(h||'').match(/(\d{1,2})[:.](\d{2})/); return m?(('0'+m[1]).slice(-2)+':'+m[2]):''; }
@@ -2383,8 +2390,8 @@
     return '<div class="pw-fae'+(locked?' locked':'')+(frigo?' frigo':'')+'" data-e="'+e.id+'" data-f="'+f+'" style="border-left-color:'+lc+'">'+
       '<div class="pw-fh">'+(locked?('<b class="pw-h">'+(esc(hval)||'Sin hora')+'</b>'):('<input class="pw-hora" value="'+enc(hval)+'" placeholder="Horario…" autocomplete="off" spellcheck="false">'))+
         '<button type="button" class="pw-cnt '+(need&&pers.length>=need?'ok':'miss')+'" title="Personas asignadas / necesarias (toca para editar)">'+pers.length+'/'+(need||'?')+'</button></div>'+
-      '<div class="pw-cli" style="color:'+(frigo?'#0e7490':col.text)+'">'+esc(e.ubicacion||'')+(e.sitio?(' · '+esc(e.sitio)):'')+(frigo?'<span class="pw-frigo-tag">Frigo</span>':'')+'</div>'+
-      '<div class="pw-tit">'+esc(e.titulo||'Faena')+'</div><ol class="pw-ol">'+li+'</ol>'+
+      '<div class="pw-cli" style="color:'+(frigo?'#0e7490':col.text)+'" title="'+enc((e.ubicacion||'')+(e.sitio?(' · '+e.sitio):''))+'">'+esc(faeCliSit(e))+(frigo?'<span class="pw-frigo-tag">Frigo</span>':'')+'</div>'+
+      '<div class="pw-tit" title="'+enc(e.titulo||'')+'">'+esc(frigo?(turnoFrigo(e)||e.titulo||'Faena'):(e.titulo||'Faena'))+'</div><ol class="pw-ol">'+li+'</ol>'+
       (locked?'':'<input class="pw-add" data-k="'+planKey(e,f)+'" placeholder="Escribe y Enter…" autocomplete="off" spellcheck="false">')+
       (function(){ var m0=(p.maquinaria&&p.maquinaria[0])||{};
         if(locked){ var vt=[m0.veh,m0.chofer,p.preparador].filter(Boolean).join(' · '); return vt?('<div class="pw-vlock">🚚 '+esc(vt)+'</div>'):''; }
@@ -2413,8 +2420,7 @@
     var nF=Object.keys(faeSet).length, falta=T.falt;
     var kpi=function(v,l,k){ return '<div class="pw-kpi'+(k?(' '+k):'')+'"><b>'+v+'</b><span>'+l+'</span></div>'; };
     var poolChips=trabs.map(function(w){ return '<span class="pw-w" draggable="true" data-n="'+enc(w.nombre)+'" title="'+enc(w.cargo||'Operario')+(w.chofer?' · chofer':'')+'">'+esc(w.nombre)+(w.chofer?'<i class="pw-wch">chofer</i>':'')+'</span>'; }).join('')||'<span class="note" style="margin:0;font-size:.72rem">Sin trabajadores. Créalos en RRHH.</span>';
-    c.innerHTML='<div class="pw-sum">'+kpi(nF,'Faenas')+kpi(T.asg+' / '+T.nec,'Asignadas / necesarias',(T.nec&&!falta)?'ok':'')+kpi(falta,'Faltan personas',falta>0?'warn':'ok')+kpi(T.sinMat,'Sin matriz',T.sinMat?'warn':'ok')+kpi(T.env+' / '+nF,'Enviadas a Prep.')+'</div>'+
-      '<div class="pw-grid">'+cols+'</div>';
+    c.innerHTML='<div class="pw-grid">'+cols+'</div>';
     pwWire(c);
     if(PW_FOCUS){ var fi=c.querySelector('.pw-add[data-k="'+PW_FOCUS+'"]'); PW_FOCUS=null; if(fi){ try{ fi.focus(); }catch(_){} } }
   }
