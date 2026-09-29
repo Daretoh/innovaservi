@@ -2328,9 +2328,7 @@
   var PLANIF_MODO=(function(){ try{ return localStorage.getItem('iserv-planif-modo')||'semana'; }catch(_){ return 'semana'; } })(), PW_PICK=null, PW_Q='';
   function planModoUI(){ document.querySelectorAll('#planif-modo .seg-b').forEach(function(b){ b.classList.toggle('on', b.dataset.m===PLANIF_MODO); });
     if($('planif-copy')) $('planif-copy').classList.toggle('hide', PLANIF_MODO!=='semana');
-    if($('planif-note')) $('planif-note').innerHTML=PLANIF_MODO==='semana'
-      ? 'Toda la semana de un vistazo. Toca un trabajador <b>disponible</b> y luego la faena (o arrástralo); arrastra un nombre de una faena a otra para moverlo. <b>Abrir</b> lleva al detalle del día.'
-      : 'Elige el día, toca una faena y arrastra (o toca) los trabajadores de la derecha para asignarlos. En <b>Detalle</b> agregas EPP/matrices y la <b>envías a Preparación</b>.'; }
+    if($('planif-note')) $('planif-note').innerHTML='Toda la semana de un vistazo. En cada faena <b>escribe el nombre del trabajador</b> (te sugiere de las fichas) y toca <b>Enter</b>; solo se aceptan trabajadores con ficha. Arrastra un nombre de una faena a otra para moverlo. <b>Detalle</b> abre EPP/matrices y el envío a Preparación.'; }
   document.querySelectorAll('#planif-modo .seg-b').forEach(function(b){ b.addEventListener('click',function(){ PLANIF_MODO=b.dataset.m; PW_PICK=null; try{ localStorage.setItem('iserv-planif-modo',PLANIF_MODO); }catch(_){} renderPlanif(); }); });
   // Hora del evento del Calendario ("07:00", "20:00 - 06:00", "Todo el día") → inicio / fin / turno
   function horaIni(h){ var m=(h||'').match(/(\d{1,2})[:.](\d{2})/); return m?(('0'+m[1]).slice(-2)+':'+m[2]):''; }
@@ -2385,10 +2383,15 @@
     var poolChips=trabs.map(function(w){ return '<span class="pw-w" draggable="true" data-n="'+enc(w.nombre)+'" title="'+enc(w.cargo||'Operario')+(w.chofer?' · chofer':'')+'">'+esc(w.nombre)+(w.chofer?'<i class="pw-wch">chofer</i>':'')+'</span>'; }).join('')||'<span class="note" style="margin:0;font-size:.72rem">Sin trabajadores. Créalos en RRHH.</span>';
     var dlSem='<datalist id="pw-trablist">'+trabs.map(function(w){ return '<option value="'+enc(w.nombre)+'">'+esc(w.cargo||'')+'</option>'; }).join('')+'</datalist>';
     c.innerHTML=dlSem+'<div class="pw-sum">'+kpi(nF,'Faenas')+kpi(T.asg+' / '+T.nec,'Asignadas / necesarias',(T.nec&&!falta)?'ok':'')+kpi(falta,'Faltan personas',falta>0?'warn':'ok')+kpi(T.sinMat,'Sin matriz',T.sinMat?'warn':'ok')+kpi(T.env+' / '+nF,'Enviadas a Prep.')+'</div>'+
-      '<div class="pw-pool"><div class="pw-search"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg><input id="pw-q" type="search" placeholder="Buscar trabajador…" value="'+enc(PW_Q)+'"><span class="pw-poolhint">tócalo y luego la faena, o arrástralo</span></div><div class="pw-ws" id="pw-pool">'+poolChips+'</div></div>'+
-      '<div id="pw-hint"></div><div class="pw-grid">'+cols+'</div>';
-    pwHint(); pwWire(c);
-    var wq=$('pw-q'); if(wq){ wq.addEventListener('input',function(){ PW_Q=this.value; pwFiltrar(); }); pwFiltrar(); }
+      '<div class="pw-grid">'+cols+'</div>';
+    pwWire(c);
+  }
+  // Resuelve lo escrito a un trabajador con ficha (exacto o único que empieza/contiene). Si no, null (no se agrega).
+  function planResolveTrab(txt){ var q=normName(txt); if(!q) return null; var list=planTrabs();
+    var ex=list.filter(function(w){ return normName(w.nombre)===q; })[0]; if(ex) return ex.nombre;
+    var pref=list.filter(function(w){ return normName(w.nombre).indexOf(q)===0; }); if(pref.length===1) return pref[0].nombre;
+    var cont=list.filter(function(w){ return normName(w.nombre).indexOf(q)>=0; }); if(cont.length===1) return cont[0].nombre;
+    return null;
   }
   // Filtra los chips del pool de trabajadores por el buscador de arriba.
   function pwFiltrar(){ var q=(PW_Q||'').toLowerCase().trim(); var pool=$('pw-pool'); if(!pool) return;
@@ -2420,7 +2423,7 @@
     c.querySelectorAll('.pw-cnt').forEach(function(b){ b.addEventListener('click',function(ev){ ev.stopPropagation(); var e=eventoDe(b.dataset.e); if(!e) return; var p=planDe(e); var v=prompt('¿Cuántas personas necesita esta faena?', personasNecesarias(e)||''); if(v===null) return; v=(''+v).trim(); p.personas_nec=(v===''?null:Math.max(0,(+v||0))); planSave(e); renderPlanif(); }); });
     c.querySelectorAll('.pw-open').forEach(function(b){ b.addEventListener('click',function(ev){ ev.stopPropagation(); var e=eventoDe(b.dataset.e); if(e) abrirPlanif(e); }); });
     // Escribir trabajador (Enter) directo en la faena
-    c.querySelectorAll('.pw-add').forEach(function(inp){ inp.addEventListener('keydown',function(ev){ if(ev.key==='Enter'){ ev.preventDefault(); var v=(inp.value||'').trim(); if(v) planAsignar(+inp.dataset.e, v); } }); });
+    c.querySelectorAll('.pw-add').forEach(function(inp){ inp.addEventListener('keydown',function(ev){ if(ev.key==='Enter'){ ev.preventDefault(); var v=(inp.value||'').trim(); if(!v) return; var nm=planResolveTrab(v); if(!nm){ toast('"'+v+'" no está en fichas. Créalo en RRHH para poder asignarlo.'); return; } inp.value=''; planAsignar(+inp.dataset.e, nm); } }); });
     // Chofer / vehículo / preparador compactos, directo en la tarjeta
     c.querySelectorAll('.pw-veh .pb-addveh').forEach(function(s){ s.addEventListener('change',function(){ if(!s.value)return; var e=eventoDe(s.dataset.e); var p=planDe(e); p.maquinaria.push({veh:s.value,chofer:''}); planSave(e); renderPlanif(); }); });
     c.querySelectorAll('.pw-veh .pb-veh').forEach(function(s){ s.addEventListener('change',function(){ var e=eventoDe(s.dataset.e),p=planDe(e); p.maquinaria[+s.dataset.i].veh=s.value; planSave(e); }); });
