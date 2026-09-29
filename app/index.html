@@ -2388,7 +2388,7 @@
     var nF=Object.keys(faeSet).length, falta=T.falt;
     var kpi=function(v,l,k){ return '<div class="pw-kpi'+(k?(' '+k):'')+'"><b>'+v+'</b><span>'+l+'</span></div>'; };
     var poolChips=trabs.map(function(w){ return '<span class="pw-w" draggable="true" data-n="'+enc(w.nombre)+'" title="'+enc(w.cargo||'Operario')+(w.chofer?' · chofer':'')+'">'+esc(w.nombre)+(w.chofer?'<i class="pw-wch">chofer</i>':'')+'</span>'; }).join('')||'<span class="note" style="margin:0;font-size:.72rem">Sin trabajadores. Créalos en RRHH.</span>';
-    var dlSem='<datalist id="pw-trablist">'+trabs.map(function(w){ return '<option value="'+enc(w.nombre)+'">'+esc(w.cargo||'')+'</option>'; }).join('')+'</datalist>';
+    var dlSem='<datalist id="pw-trablist">'+trabs.map(function(w){ return '<option value="'+enc(w.nombre)+'"></option>'; }).join('')+'</datalist>';
     c.innerHTML=dlSem+'<div class="pw-sum">'+kpi(nF,'Faenas')+kpi(T.asg+' / '+T.nec,'Asignadas / necesarias',(T.nec&&!falta)?'ok':'')+kpi(falta,'Faltan personas',falta>0?'warn':'ok')+kpi(T.sinMat,'Sin matriz',T.sinMat?'warn':'ok')+kpi(T.env+' / '+nF,'Enviadas a Prep.')+'</div>'+
       '<div class="pw-grid">'+cols+'</div>';
     pwWire(c);
