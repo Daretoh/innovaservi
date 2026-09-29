@@ -2224,8 +2224,10 @@
   }
   function eventoDe(id){ return (EVENTOS||[]).filter(function(x){ return String(x.id)===String(id); })[0]; }
   function planDe(e){ var p=PLAN_MAP[e.id]; if(!p){ p={ evento_id:e.id, fecha:e.fecha, empresa:e.ubicacion||'', sitio:e.sitio||'', titulo:e.titulo||'', personas:[], matrices:[], maquinaria:[], notas:'', estado:'borrador', preparador:'' }; PLAN_MAP[e.id]=p; } if(!p.personas)p.personas=[]; if(!p.maquinaria)p.maquinaria=[]; return p; }
-  function personasNecesarias(e){ var pl=PLAN_MAP[e.id]; if(pl && pl.personas_nec!=null) return pl.personas_nec;   // override por faena (editado en el tablero)
-    var pts=(typeof plantillasDeFaena==='function')?plantillasDeFaena(e.ubicacion||'', e.sitio||''):[]; var t=(e.titulo||'').trim().toLowerCase(); var m=pts.filter(function(p){ return (p.faena||'').trim().toLowerCase()===t && p.personas!=null; })[0] || pts.filter(function(p){ return p.personas!=null; })[0]; return (m&&m.personas!=null)?m.personas:0; }
+  // Necesarios: SOLO el valor propio de cada faena (independiente por día, aunque sean de una serie repetida).
+  function personasNecesarias(e){ var pl=PLAN_MAP[e.id]; return (pl && pl.personas_nec!=null)?pl.personas_nec:0; }
+  // Sugerencia (default de la Matriz por nombre de faena) — solo para pre-llenar el prompt, no se comparte.
+  function personasSugeridas(e){ var pts=(typeof plantillasDeFaena==='function')?plantillasDeFaena(e.ubicacion||'', e.sitio||''):[]; var t=(e.titulo||'').trim().toLowerCase(); var m=pts.filter(function(p){ return (p.faena||'').trim().toLowerCase()===t && p.personas!=null; })[0] || pts.filter(function(p){ return p.personas!=null; })[0]; return (m&&m.personas!=null)?m.personas:0; }
   // ¿El cliente pide reporte (multimedia) de esta faena? Se marca en Matriz PTS (plantillas.pide_reporte).
   // Coincide por nombre de faena; si no hay coincidencia exacta, vale si TODAS las faenas del cliente/sitio lo piden.
   function pideReporte(e){ if(!e) return false; var pts=(typeof plantillasDeFaena==='function')?plantillasDeFaena(e.ubicacion||'', e.sitio||''):[]; if(!pts.length) return false;
@@ -2315,7 +2317,7 @@
       el.addEventListener('dragleave',function(){ el.classList.remove('drop'); });
       el.addEventListener('drop',function(ev){ ev.preventDefault(); el.classList.remove('drop'); var n=''; try{ n=ev.dataTransfer.getData('text/plain'); }catch(_){}; if(n) planAsignar(+el.dataset.e, n); });
     });
-    c.querySelectorAll('.pb-editneed').forEach(function(b){ b.addEventListener('click',function(ev){ ev.stopPropagation(); var e=eventoDe(b.dataset.e); if(!e)return; var p=planDe(e); var cur=personasNecesarias(e); var v=prompt('¿Cuántas personas necesita esta faena?', cur||''); if(v===null)return; v=(''+v).trim(); p.personas_nec=(v===''?null:Math.max(0,(+v||0))); planSave(e); renderPlanif(); }); });
+    c.querySelectorAll('.pb-editneed').forEach(function(b){ b.addEventListener('click',function(ev){ ev.stopPropagation(); var e=eventoDe(b.dataset.e); if(!e)return; var p=planDe(e); var cur=personasNecesarias(e)||personasSugeridas(e); var v=prompt('¿Cuántas personas necesita esta faena? (solo esta faena)', cur||''); if(v===null)return; v=(''+v).trim(); p.personas_nec=(v===''?null:Math.max(0,(+v||0))); planSave(e); renderPlanif(); }); });
     c.querySelectorAll('.pb-wc .x').forEach(function(x){ x.addEventListener('click',function(ev){ ev.stopPropagation(); var e=eventoDe(x.dataset.e); if(!e)return; var p=planDe(e); p.personas.splice(+x.dataset.i,1); planSave(e); renderPlanif(); }); });
     c.querySelectorAll('.pb-addveh').forEach(function(s){ s.addEventListener('change',function(){ if(!s.value)return; var e=eventoDe(s.dataset.e); var p=planDe(e); p.maquinaria.push({veh:s.value,chofer:''}); planSave(e); renderPlanif(); }); });
     c.querySelectorAll('.pb-veh').forEach(function(s){ s.addEventListener('change',function(){ var e=eventoDe(s.dataset.e),p=planDe(e); p.maquinaria[+s.dataset.i].veh=s.value; planSave(e); }); });
@@ -2423,7 +2425,7 @@
         var pz=d.split('|'); if(pz[0]==='n' && pz[1]){ PW_PICK=null; planAsignar(+el.dataset.e, pz[1]); } else if(pz[0]==='m') pwMover(pz[1], pz[2], el.dataset.e); });
     });
     c.querySelectorAll('.pw-x').forEach(function(x){ x.addEventListener('click',function(ev){ ev.stopPropagation(); var e=eventoDe(x.dataset.e); if(!e) return; var p=planDe(e); p.personas.splice(+x.dataset.i,1); planSave(e); renderPlanif(); }); });
-    c.querySelectorAll('.pw-cnt').forEach(function(b){ b.addEventListener('click',function(ev){ ev.stopPropagation(); var e=eventoDe(b.dataset.e); if(!e) return; var p=planDe(e); var v=prompt('¿Cuántas personas necesita esta faena?', personasNecesarias(e)||''); if(v===null) return; v=(''+v).trim(); p.personas_nec=(v===''?null:Math.max(0,(+v||0))); planSave(e); renderPlanif(); }); });
+    c.querySelectorAll('.pw-cnt').forEach(function(b){ b.addEventListener('click',function(ev){ ev.stopPropagation(); var e=eventoDe(b.dataset.e); if(!e) return; var p=planDe(e); var v=prompt('¿Cuántas personas necesita esta faena? (solo esta faena)', (personasNecesarias(e)||personasSugeridas(e))||''); if(v===null) return; v=(''+v).trim(); p.personas_nec=(v===''?null:Math.max(0,(+v||0))); planSave(e); renderPlanif(); }); });
     c.querySelectorAll('.pw-open').forEach(function(b){ b.addEventListener('click',function(ev){ ev.stopPropagation(); var e=eventoDe(b.dataset.e); if(e) abrirPlanif(e); }); });
     // Agregar trabajador desde el desplegable (solo fichas; no permite nombres inexistentes)
     c.querySelectorAll('.pw-addsel').forEach(function(s){ s.addEventListener('change',function(ev){ ev.stopPropagation(); if(!s.value) return; planAsignar(+s.dataset.e, s.value); }); });
