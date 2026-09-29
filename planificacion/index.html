@@ -319,6 +319,7 @@
     var cal=document.getElementById('cal'); cal.classList.toggle('week',vista==='semana');
     document.querySelector('.cal-dow').style.display=(vista==='proximos')?'none':'';
     if(vista==='proximos'){ renderProximos(); return; }
+    if(vista==='semana' && esMovil()){ renderSemanaLista(); return; }   // en teléfono, la semana se ve como agenda (como Próximos)
     var y=ref.getFullYear(), m=ref.getMonth();
     var cells=[];
     if(vista==='mes'){
@@ -388,6 +389,21 @@
     }).join('');
     grid.querySelectorAll('[data-goid]').forEach(function(r){ r.addEventListener('click',function(){ abrir(r.dataset.goid); }); });
   }
+  function esMovil(){ try{ return window.matchMedia && window.matchMedia('(max-width:760px)').matches; }catch(_){ return false; } }
+  // Semana como agenda (para teléfono): los eventos de la semana en curso, un ítem por día que dura.
+  function renderSemanaLista(){
+    var base=new Date(ref); var dow=(base.getDay()+6)%7; base.setDate(base.getDate()-dow);
+    var desde=iso(base), b7=new Date(base); b7.setDate(base.getDate()+6); var hasta=iso(b7);
+    document.getElementById('title').textContent='Semana '+numSemanaISO(base)+' · '+base.getDate()+' '+MES[base.getMonth()].slice(0,3)+' – '+b7.getDate()+' '+MES[b7.getMonth()].slice(0,3);
+    var out=[];
+    EVENTS.forEach(function(e){ var fin=evFin(e), a=(e.fecha<desde?desde:e.fecha), b=(fin>hasta?hasta:fin); if(b<a) return;
+      var d=new Date(a+'T12:00:00'), cur=a, guard=0;
+      while(cur<=b && guard<40){ var c={}; for(var k in e){ c[k]=e[k]; } c.fecha=cur; out.push(c); d.setDate(d.getDate()+1); cur=iso(d); guard++; }
+    });
+    out.sort(function(a,b){ return a.fecha<b.fecha?-1:(a.fecha>b.fecha?1:0); });
+    if(!out.length){ var grid=document.getElementById('grid'); grid.classList.add('agenda'); document.querySelector('.cal-dow').style.display='none'; document.getElementById('cal').classList.remove('week'); grid.innerHTML='<div style="padding:40px;text-align:center;color:var(--muted)">Sin trabajos esta semana.</div>'; return; }
+    renderAgenda(out, false);
+  }
   function renderProximos(){
     document.getElementById('title').textContent='Próximos eventos';
     var start=todayISO(), out=[];
@@ -453,6 +469,7 @@
   document.getElementById('today').addEventListener('click',function(){ ref=new Date(); if(vista==='proximos'){ vista='mes'; document.querySelectorAll('.pl-seg button').forEach(function(x){x.classList.toggle('on',x.dataset.v==='mes');}); } render(); });
   document.querySelectorAll('.pl-seg button').forEach(function(b){ b.addEventListener('click',function(){ vista=b.dataset.v; document.querySelectorAll('.pl-seg button').forEach(function(x){x.classList.toggle('on',x===b);}); render(); }); });
   document.getElementById('pl-buscar').addEventListener('input',function(){ buscar=this.value.trim().toLowerCase(); render(); });
+  var _rsT=null; window.addEventListener('resize',function(){ clearTimeout(_rsT); _rsT=setTimeout(function(){ if(vista==='semana' && !buscar) render(); }, 250); });
   // ---- Sesión (Supabase Auth) ----
   var formModal=document.getElementById('form-modal');
   function updateAuthUI(){
