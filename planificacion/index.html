@@ -260,6 +260,21 @@
     </div>
   </div>
 
+  <!-- Elegir qué borrar: solo este día o toda la serie -->
+  <div class="pl-modal" id="del-modal" style="z-index:70">
+    <div class="pl-modal-box" style="max-width:390px">
+      <div class="pl-modal-head" style="background:linear-gradient(135deg,#dc2626,#7f1d1d)"><h3 id="del-title">Eliminar trabajo</h3><button id="del-close" aria-label="Cerrar">×</button></div>
+      <div class="pl-modal-body">
+        <p id="del-msg" style="color:#4a5270;font-size:.92rem;line-height:1.6;margin-bottom:16px"></p>
+        <div style="display:flex;flex-direction:column;gap:9px">
+          <button class="pl-del-btn" id="del-uno" style="width:100%">Eliminar solo este día</button>
+          <button class="pl-del-btn" id="del-serie" style="width:100%;background:#dc2626;color:#fff;border-color:#dc2626">Eliminar toda la serie</button>
+          <button class="pl-today" id="del-cancel" style="width:100%">Cancelar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
 <script>
 (function(){
   // Color por CLIENTE (ubicación): colores de marca conocidos + color estable por nombre para el resto
@@ -406,7 +421,7 @@
     modal.classList.add('show');
     if(authed){
       var de=document.getElementById('det-edit'); if(de) de.addEventListener('click',function(){ modal.classList.remove('show'); abrirForm(e); });
-      var dd=document.getElementById('det-del'); if(dd) dd.addEventListener('click',function(){ if(confirm('¿Eliminar «'+e.titulo+'»?')) eliminarEvento(e.id); });
+      var dd=document.getElementById('det-del'); if(dd) dd.addEventListener('click',function(){ modal.classList.remove('show'); abrirBorrado(e); });
     }
   }
   function abrirDia(f){
@@ -624,9 +639,23 @@
   document.getElementById('f-cada').addEventListener('input',actualizarHintRep);
   document.getElementById('f-veces').addEventListener('input',actualizarHintRep);
   document.getElementById('f-fecha').addEventListener('change',actualizarHintRep);
-  document.getElementById('f-del').addEventListener('click',function(){ if(!editId) return; var ev=EVENTS.filter(function(x){return String(x.id)===String(editId);})[0];
-    if(ev && ev.serie){ var q=confirm('Este trabajo es parte de una serie repetida.\n\nAceptar = eliminar TODA la serie.\nCancelar = eliminar solo este.'); if(q){ eliminarSerie(ev.serie); return; } }
-    if(confirm('¿Eliminar este trabajo?')) eliminarEvento(editId); });
+  // Diálogo de borrado: distingue claramente "solo este día" vs "toda la serie".
+  var DEL_EV=null, delModal=document.getElementById('del-modal');
+  function abrirBorrado(ev){ if(!ev) return; DEL_EV=ev; var serie=!!ev.serie;
+    document.getElementById('del-msg').innerHTML = serie
+      ? 'Este trabajo es parte de una <b>serie repetida</b>. ¿Qué querés eliminar?'
+      : '¿Seguro que querés eliminar este trabajo?';
+    document.getElementById('del-serie').style.display = serie ? '' : 'none';
+    document.getElementById('del-uno').textContent = serie ? 'Eliminar solo este día' : 'Eliminar';
+    delModal.classList.add('show');
+  }
+  function cerrarBorrado(){ delModal.classList.remove('show'); DEL_EV=null; }
+  document.getElementById('del-close').addEventListener('click',cerrarBorrado);
+  document.getElementById('del-cancel').addEventListener('click',cerrarBorrado);
+  delModal.addEventListener('click',function(ev){ if(ev.target===delModal) cerrarBorrado(); });
+  document.getElementById('del-uno').addEventListener('click',function(){ var ev=DEL_EV; cerrarBorrado(); if(ev) eliminarEvento(ev.id); });
+  document.getElementById('del-serie').addEventListener('click',function(){ var ev=DEL_EV; cerrarBorrado(); if(ev&&ev.serie) eliminarSerie(ev.serie); });
+  document.getElementById('f-del').addEventListener('click',function(){ if(!editId) return; var ev=EVENTS.filter(function(x){return String(x.id)===String(editId);})[0]; if(ev) abrirBorrado(ev); });
   function eliminarEvento(id){ if(!sb) return; sb.from('eventos').delete().eq('id',id).then(function(r){ if(r.error){ alert('No se pudo eliminar.'); return; } formModal.classList.remove('show'); modal.classList.remove('show'); cargarEventos(render); }); }
   function eliminarSerie(serie){ if(!sb) return; sb.from('eventos').delete().eq('serie_id',serie).then(function(r){ if(r.error){ alert('No se pudo eliminar la serie.'); return; } formModal.classList.remove('show'); modal.classList.remove('show'); cargarEventos(render); }); }
 
