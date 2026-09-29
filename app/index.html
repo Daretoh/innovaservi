@@ -628,6 +628,13 @@
   .pw-dup{font:800 8.5px var(--font);text-transform:uppercase;background:#fbf0d9;color:#854f0b;border-radius:999px;padding:0 5px;margin-left:4px;font-style:normal;}
   .pw-x{border:none;background:none;color:var(--muted);cursor:pointer;font-size:14px;line-height:1;padding:0 2px;}
   .pw-x:hover{color:#dc2626;}
+  .pw-add{width:100%;margin-top:5px;padding:5px 7px;border:1px dashed var(--orange);border-radius:7px;font:600 11px var(--font);background:#fff;color:var(--ink);box-sizing:border-box;}
+  .pw-add:focus{outline:none;box-shadow:0 0 0 2px rgba(255,107,0,.18);}
+  .pw-veh{margin-top:5px;display:flex;flex-direction:column;gap:3px;}
+  .pw-vrow{display:flex;gap:3px;align-items:center;}
+  .pw-veh select{flex:1;min-width:0;padding:4px 5px;border:1px solid var(--line);border-radius:6px;background:#fff;font:600 10.5px var(--font);color:var(--ink);}
+  .pw-veh .pb-veh-rm{flex:0 0 auto;border:none;background:none;color:#c33;cursor:pointer;font-size:14px;line-height:1;padding:0 2px;}
+  .pw-veh .pw-prep{border-style:dashed;}
   .pw-st{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;align-items:center;}
   .pw-s{font:700 9.5px var(--font);border-radius:999px;padding:1px 7px;display:inline-flex;align-items:center;}
   .pw-s svg{margin-right:3px !important;vertical-align:0 !important;}
@@ -1327,7 +1334,7 @@
 
     <!-- ---- PLANIFICACIÓN de faena (jefatura arma → Preparación) ---- -->
     <section class="view" id="v-planif">
-      <div class="h-row"><h2>Planificación de faenas</h2><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><div class="seg" id="planif-modo"><button class="seg-b" data-m="semana">Semana</button><button class="seg-b" data-m="dia">Por día</button></div><button id="planif-copy" class="btn ghost small" style="width:auto">Copiar resumen</button></div></div>
+      <div class="h-row"><h2>Planificación de faenas</h2><button id="planif-copy" class="btn ghost small" style="width:auto">Copiar resumen</button></div>
       <div class="wknav"><button id="planif-prev" class="btn ghost small" style="width:auto">‹</button><div style="flex:1;text-align:center"><div id="planif-semlbl" style="margin:0;font:800 13px var(--font);color:var(--navy)">Semana</div><b id="planif-rango" style="font-size:.88rem;font-weight:600;color:var(--body)"></b></div><button id="planif-hoy" class="btn ghost small" style="width:auto">Hoy</button><button id="planif-next" class="btn ghost small" style="width:auto">›</button></div>
       <p class="note" id="planif-note" style="margin:0 0 12px">Elige el día, toca una faena y arrastra (o toca) los trabajadores de la derecha para asignarlos. En <b>Detalle</b> agregas EPP/matrices y la <b>envías a Preparación</b>.</p>
       <div id="planif-list"></div>
@@ -2284,7 +2291,8 @@
     if(!PLANIF_LUNES) PLANIF_LUNES=lunesDe(todayISO());
     var lo=PLANIF_LUNES, hi=sumarDias(PLANIF_LUNES,6), hoy=todayISO();
     setWeekHdr('planif-semlbl','planif-rango',PLANIF_LUNES);
-    planModoUI(); if(PLANIF_MODO==='semana'){ renderPlanSemana(c); return; }
+    PLANIF_MODO='semana';   // Planificación: una sola vista (semana), con todo dentro
+    planModoUI(); renderPlanSemana(c); return;
     if(!PLANIF_DIA || PLANIF_DIA<lo || PLANIF_DIA>hi) PLANIF_DIA=(hoy>=lo && hoy<=hi)?hoy:lo;
     var DIAS3=['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'], tabs='';
     for(var di=0; di<7; di++){ var f=sumarDias(PLANIF_LUNES,di), dd=new Date(f+'T12:00:00');
@@ -2349,9 +2357,14 @@
         '<button type="button" class="pw-cnt '+(need&&pers.length>=need?'ok':'miss')+'" data-e="'+e.id+'" title="Personas asignadas / necesarias (toca para editar)">'+pers.length+'/'+(need||'?')+'</button></div>'+
       '<div class="pw-cli" style="color:'+col.text+'">'+esc(e.ubicacion||'')+(e.sitio?(' · '+esc(e.sitio)):'')+'</div>'+
       '<div class="pw-tit">'+esc(e.titulo||'Faena')+'</div><ol class="pw-ol">'+li+'</ol>'+
+      (locked?'':'<input class="pw-add" data-e="'+e.id+'" list="pw-trablist" placeholder="+ escribir trabajador" autocomplete="off">')+
+      (function(){ var vr=(p.maquinaria||[]).map(function(mq,i){ return '<div class="pw-vrow"><select class="pb-veh" data-e="'+e.id+'" data-i="'+i+'"'+(locked?' disabled':'')+'>'+vehOpts(mq.veh||'')+'</select><select class="pb-cho" data-e="'+e.id+'" data-i="'+i+'"'+(locked?' disabled':'')+'>'+choferOpts(mq.chofer||'')+'</select>'+(locked?'':'<button class="pb-veh-rm" data-e="'+e.id+'" data-i="'+i+'" type="button">✕</button>')+'</div>'; }).join('');
+        var va=locked?'':'<select class="pb-addveh" data-e="'+e.id+'">'+planAddVehOpts()+'</select>';
+        var pr=locked?'':'<select class="pb-prepsel pw-prep" data-e="'+e.id+'" title="Preparador de carga">'+planPrepOpts(p.preparador)+'</select>';
+        return (vr||va||pr)?('<div class="pw-veh">'+vr+va+pr+'</div>'):''; })()+
       '<div class="pw-st"><span class="pw-s '+(mats?'ok':'miss')+'">'+(mats?svgI(ICO.ok,9)+'Matriz':svgI(ICO.warn,9)+'Sin matriz')+'</span>'+
         '<span class="pw-s '+(locked?'ok':'neu')+'">'+(locked?svgI(ICO.ok,9)+'Enviada a Prep.':'Borrador')+'</span>'+
-        '<button type="button" class="pw-open" data-e="'+e.id+'" data-f="'+f+'">Abrir ›</button></div></div>';
+        '<button type="button" class="pw-open" data-e="'+e.id+'" data-f="'+f+'">Detalle ›</button></div></div>';
   }
   function renderPlanSemana(c){
     var hoy=todayISO(), DIAS=['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'], trabs=planTrabs(), cols='', faeSet={};
@@ -2370,7 +2383,8 @@
     var nF=Object.keys(faeSet).length, falta=T.falt;
     var kpi=function(v,l,k){ return '<div class="pw-kpi'+(k?(' '+k):'')+'"><b>'+v+'</b><span>'+l+'</span></div>'; };
     var poolChips=trabs.map(function(w){ return '<span class="pw-w" draggable="true" data-n="'+enc(w.nombre)+'" title="'+enc(w.cargo||'Operario')+(w.chofer?' · chofer':'')+'">'+esc(w.nombre)+(w.chofer?'<i class="pw-wch">chofer</i>':'')+'</span>'; }).join('')||'<span class="note" style="margin:0;font-size:.72rem">Sin trabajadores. Créalos en RRHH.</span>';
-    c.innerHTML='<div class="pw-sum">'+kpi(nF,'Faenas')+kpi(T.asg+' / '+T.nec,'Asignadas / necesarias',(T.nec&&!falta)?'ok':'')+kpi(falta,'Faltan personas',falta>0?'warn':'ok')+kpi(T.sinMat,'Sin matriz',T.sinMat?'warn':'ok')+kpi(T.env+' / '+nF,'Enviadas a Prep.')+'</div>'+
+    var dlSem='<datalist id="pw-trablist">'+trabs.map(function(w){ return '<option value="'+enc(w.nombre)+'">'+esc(w.cargo||'')+'</option>'; }).join('')+'</datalist>';
+    c.innerHTML=dlSem+'<div class="pw-sum">'+kpi(nF,'Faenas')+kpi(T.asg+' / '+T.nec,'Asignadas / necesarias',(T.nec&&!falta)?'ok':'')+kpi(falta,'Faltan personas',falta>0?'warn':'ok')+kpi(T.sinMat,'Sin matriz',T.sinMat?'warn':'ok')+kpi(T.env+' / '+nF,'Enviadas a Prep.')+'</div>'+
       '<div class="pw-pool"><div class="pw-search"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg><input id="pw-q" type="search" placeholder="Buscar trabajador…" value="'+enc(PW_Q)+'"><span class="pw-poolhint">tócalo y luego la faena, o arrástralo</span></div><div class="pw-ws" id="pw-pool">'+poolChips+'</div></div>'+
       '<div id="pw-hint"></div><div class="pw-grid">'+cols+'</div>';
     pwHint(); pwWire(c);
@@ -2396,7 +2410,7 @@
     });
     c.querySelectorAll('.pw-p[draggable=true]').forEach(function(li){ li.addEventListener('dragstart',function(ev){ ev.stopPropagation(); try{ ev.dataTransfer.setData('text/plain','m|'+li.dataset.e+'|'+li.dataset.i); ev.dataTransfer.effectAllowed='move'; }catch(_){} }); });
     c.querySelectorAll('.pw-fae').forEach(function(el){
-      el.addEventListener('click',function(ev){ if(ev.target.closest('button')||!PW_PICK) return; var n=PW_PICK.n; PW_PICK=null; planAsignar(+el.dataset.e, n); });
+      el.addEventListener('click',function(ev){ if(ev.target.closest('button,select,input')||!PW_PICK) return; var n=PW_PICK.n; PW_PICK=null; planAsignar(+el.dataset.e, n); });
       el.addEventListener('dragover',function(ev){ ev.preventDefault(); el.classList.add('drop'); });
       el.addEventListener('dragleave',function(){ el.classList.remove('drop'); });
       el.addEventListener('drop',function(ev){ ev.preventDefault(); el.classList.remove('drop'); var d=''; try{ d=ev.dataTransfer.getData('text/plain')||''; }catch(_){}
@@ -2404,7 +2418,15 @@
     });
     c.querySelectorAll('.pw-x').forEach(function(x){ x.addEventListener('click',function(ev){ ev.stopPropagation(); var e=eventoDe(x.dataset.e); if(!e) return; var p=planDe(e); p.personas.splice(+x.dataset.i,1); planSave(e); renderPlanif(); }); });
     c.querySelectorAll('.pw-cnt').forEach(function(b){ b.addEventListener('click',function(ev){ ev.stopPropagation(); var e=eventoDe(b.dataset.e); if(!e) return; var p=planDe(e); var v=prompt('¿Cuántas personas necesita esta faena?', personasNecesarias(e)||''); if(v===null) return; v=(''+v).trim(); p.personas_nec=(v===''?null:Math.max(0,(+v||0))); planSave(e); renderPlanif(); }); });
-    c.querySelectorAll('.pw-open').forEach(function(b){ b.addEventListener('click',function(ev){ ev.stopPropagation(); PLANIF_MODO='dia'; PLANIF_DIA=b.dataset.f; PLANIF_SEL=+b.dataset.e; PW_PICK=null; try{ localStorage.setItem('iserv-planif-modo','dia'); }catch(_){} renderPlanif(); window.scrollTo(0,0); }); });
+    c.querySelectorAll('.pw-open').forEach(function(b){ b.addEventListener('click',function(ev){ ev.stopPropagation(); var e=eventoDe(b.dataset.e); if(e) abrirPlanif(e); }); });
+    // Escribir trabajador (Enter) directo en la faena
+    c.querySelectorAll('.pw-add').forEach(function(inp){ inp.addEventListener('keydown',function(ev){ if(ev.key==='Enter'){ ev.preventDefault(); var v=(inp.value||'').trim(); if(v) planAsignar(+inp.dataset.e, v); } }); });
+    // Chofer / vehículo / preparador compactos, directo en la tarjeta
+    c.querySelectorAll('.pw-veh .pb-addveh').forEach(function(s){ s.addEventListener('change',function(){ if(!s.value)return; var e=eventoDe(s.dataset.e); var p=planDe(e); p.maquinaria.push({veh:s.value,chofer:''}); planSave(e); renderPlanif(); }); });
+    c.querySelectorAll('.pw-veh .pb-veh').forEach(function(s){ s.addEventListener('change',function(){ var e=eventoDe(s.dataset.e),p=planDe(e); p.maquinaria[+s.dataset.i].veh=s.value; planSave(e); }); });
+    c.querySelectorAll('.pw-veh .pb-cho').forEach(function(s){ s.addEventListener('change',function(){ var e=eventoDe(s.dataset.e),p=planDe(e); p.maquinaria[+s.dataset.i].chofer=s.value; planSave(e); }); });
+    c.querySelectorAll('.pw-veh .pb-veh-rm').forEach(function(b){ b.addEventListener('click',function(ev){ ev.stopPropagation(); var e=eventoDe(b.dataset.e),p=planDe(e); p.maquinaria.splice(+b.dataset.i,1); planSave(e); renderPlanif(); }); });
+    c.querySelectorAll('.pw-veh .pb-prepsel').forEach(function(s){ s.addEventListener('change',function(){ var e=eventoDe(s.dataset.e),p=planDe(e); p.preparador=s.value; planSave(e); }); });
   }
   // Texto para WhatsApp: mismo formato que se manda a mano (día → turno → faena con personas numeradas)
   function planResumenTxt(){ var DIAS=['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'], L=PLANIF_LUNES||lunesDe(todayISO()), out=['*Planificación semana '+numSemana(L)+'* ('+fechaCorta(L)+' – '+fechaCorta(sumarDias(L,6))+')'];
