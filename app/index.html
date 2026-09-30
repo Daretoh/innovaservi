@@ -383,6 +383,15 @@
   .dg-tbl td.f{width:90px;}
   .dg-firmas{display:flex;justify-content:space-around;gap:20px;margin-top:36px;text-align:center;font-size:12px;}
   .dg-firmas div{flex:1;border-top:1px solid #333;padding-top:6px;}
+  #dg-var{width:auto;max-width:46%;font:600 12px var(--font);padding:6px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.1);color:#fff;}
+  #dg-var option{color:#222;}
+  .dg-ul{margin:0 0 12px 18px;padding:0;line-height:1.5;font-size:12px;} .dg-ul li{margin:0 0 3px;text-align:justify;}
+  .dg-h4{font:800 12.5px var(--font);color:var(--ink);text-transform:uppercase;letter-spacing:.03em;margin:16px 0 6px;padding-bottom:3px;border-bottom:1px solid #dde1ec;}
+  .dg-tbl td.dg-k{width:30%;font-weight:700;background:#f7f8fc;}
+  .dg-opt{position:relative;}
+  .dg-bar{position:absolute;left:-12px;top:0;bottom:12px;width:3px;background:#f0c9a0;border-radius:2px;}
+  .dg-opt-l{font:700 9.5px var(--font);color:#b45309;text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px;}
+  .dg-x{position:absolute;right:-30px;top:0;width:22px;height:22px;border-radius:50%;border:1px solid #e3b98f;background:#fff7ef;color:#b45309;font:700 14px/1 var(--font);cursor:pointer;padding:0;}
   .report-actions{position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:10px;
     background:var(--deep);color:#fff;padding:calc(10px + var(--safe-t)) 14px 10px;}
   .rep-hint{font-size:.72rem;color:#c9cee8;flex:1;text-align:center;}
@@ -1454,6 +1463,7 @@
   <div class="report-actions">
     <button id="dg-close" class="btn ghost small" style="width:auto">Cerrar</button>
     <span class="rep-hint" id="dg-hint">Revisa los datos y descarga</span>
+    <select id="dg-var" class="hide" title="Formato según el cargo"></select>
     <button id="dg-save" class="btn small" style="width:auto">Descargar y guardar</button>
   </div>
   <div id="dg-doc"></div>
@@ -5207,6 +5217,7 @@
     {slug:'cedula',nombre:'Cédula de identidad',corto:'Cédula',vence:false},
     {slug:'antecedentes',nombre:'Certificado de antecedentes',corto:'Antecedentes',vence:false},
     {slug:'contrato',nombre:'Contrato',corto:'Contrato',vence:false},
+    {slug:'perfil',nombre:'Perfil de cargo',corto:'Perfil cargo',vence:false},
     {slug:'datos',nombre:'Ficha datos del trabajador',corto:'Datos',vence:false},
     {slug:'riohs',nombre:'Recepción RIOHS',corto:'RIOHS',vence:false},
     {slug:'epp',nombre:'Registro entrega EPP',corto:'Entrega EPP',vence:false},
@@ -5859,8 +5870,12 @@
   function ce(v){ return '<span contenteditable>'+(v?esc(v):'')+'</span>'; }
 
   // Plantilla: Contrato de trabajo por obra o faena (Operario de Servicios) — fiel al formato del Drive.
-  function docContrato(t){
-    var duties=['Aseo general de la planta: barrido seco y húmedo; aplicaciones de detergente; acción mecánica; enjuague y sanitizado de líneas de proceso, máquinas, mesones, canaletas, rejillas, piso, etc. Montar y desmontar cintas y estructuras; secado de estructuras y pisos.','Aseo general de exteriores: limpieza con hidrolavado, acción mecánica, barrido y recolección de desechos generados producto de la limpieza.','Limpieza de estanques de agua dulce, agua salada y estanques de flow ice.','Aseo en pasillos, andenes de carga, cámaras de frigorífico, baños, etc.','Limpieza de bodegas y armado de cajas, limpieza de pisos con máquina, retiro de polvo y secado de pisos.','Limpieza de tolvas de vísceras, plantas de riles, y cámaras de canalizado agua RIL.','Limpieza de fachadas en piso y altura, considerar apoyo de limpieza en altura siempre que cuente con el examen ocupacional y EPP correspondiente.','Limpieza y retiro de hielo y nieve de cámaras frigoríficas, trabajo bajo condiciones extremas de frío y en altura siempre que cuente con examen ocupacional y equipo necesario para dicha maniobra.','Servicios generales de exterior, obras menores y servicios de jardinería y podado de árboles.','Limpieza de barcos en general, bodegas, corteza externa y cubiertas, según amerite el trabajo.','Manejar químicos siempre y cuando haya recibido la capacitación pertinente. Para ello deberá ser capacitado y firmar planilla de registro.','Por ningún motivo limpiar con agua directa equipos electrónicos que posea la planta.'];
+  function docContratoOper(t){
+    var duties=OPER_FUN;
+    return docContratoOperHtml(t, duties);
+  }
+  var OPER_FUN=['Aseo general de la planta: barrido seco y húmedo; aplicaciones de detergente; acción mecánica; enjuague y sanitizado de líneas de proceso, máquinas, mesones, canaletas, rejillas, piso, etc. Montar y desmontar cintas y estructuras; secado de estructuras y pisos.','Aseo general de exteriores: limpieza con hidrolavado, acción mecánica, barrido y recolección de desechos generados producto de la limpieza.','Limpieza de estanques de agua dulce, agua salada y estanques de flow ice.','Aseo en pasillos, andenes de carga, cámaras de frigorífico, baños, etc.','Limpieza de bodegas y armado de cajas, limpieza de pisos con máquina, retiro de polvo y secado de pisos.','Limpieza de tolvas de vísceras, plantas de riles, y cámaras de canalizado agua RIL.','Limpieza de fachadas en piso y altura, considerar apoyo de limpieza en altura siempre que cuente con el examen ocupacional y EPP correspondiente.','Limpieza y retiro de hielo y nieve de cámaras frigoríficas, trabajo bajo condiciones extremas de frío y en altura siempre que cuente con examen ocupacional y equipo necesario para dicha maniobra.','Servicios generales de exterior, obras menores y servicios de jardinería y podado de árboles.','Limpieza de barcos en general, bodegas, corteza externa y cubiertas, según amerite el trabajo.','Manejar químicos siempre y cuando haya recibido la capacitación pertinente. Para ello deberá ser capacitado y firmar planilla de registro.','Por ningún motivo limpiar con agua directa equipos electrónicos que posea la planta.'];
+  function docContratoOperHtml(t, duties){
     var li=duties.map(function(d){ return '<li>'+d+'</li>'; }).join('');
     return dgHead('CONTRATO DE TRABAJO')+
       '<p style="text-align:center;margin-top:-6px;color:#667;font-weight:700">Por obra o faena · '+esc(t.cargo||'Operario de Servicios')+'</p>'+
@@ -5876,6 +5891,107 @@
       '<p><b>OCTAVO — Domicilio.</b> Las partes fijan domicilio en Puerto Montt y se someten a la jurisdicción de sus Tribunales de Justicia.</p>'+
       '<p><b>NOVENO — Ejemplares.</b> El presente contrato se suscribe en dos ejemplares, quedando uno en poder del trabajador.</p>'+
       '<div class="dg-firmas'+((FIRMA_SIG||FIRMA_TIM)?' con-rep':'')+'"><div>Firma del Trabajador<br>RUT '+esc(t.rut||'____')+'</div><div class="dg-rep">'+firmaRepHtml()+'Firma del Empleador<br>'+EMP.rz+'</div></div>';
+  }
+
+  // ---- Variantes por cargo (contrato y perfil): Operario · Técnico en prevención · Prevención y administración ----
+  var DG_VARS=[{v:'oper',n:'Operario de servicios'},{v:'prev',n:'Técnico en prevención de riesgos'},{v:'prevadm',n:'Prevención y administración'}];
+  function varDefault(t){ var c=(t.cargo||'').toLowerCase(); if(/prevenc/.test(c)) return /admin/.test(c)?'prevadm':'prev'; return 'oper'; }
+  function fLarga(iso){ if(!iso) return ''; var p=String(iso).slice(0,10).split('-'); if(p.length<3) return String(iso);
+    var M=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre']; return (+p[2])+' de '+M[+p[1]-1]+' de '+p[0]; }
+  // Bloque opcional: en pantalla lleva una "×" para quitarlo; la "×" no sale en el PDF.
+  function dgOpt(etq, html){ return '<div class="dg-opt"><span class="dg-bar" data-html2canvas-ignore></span><button type="button" class="dg-x" data-html2canvas-ignore title="Quitar este bloque">×</button><div class="dg-opt-l" data-html2canvas-ignore>'+etq+' · quitar si no aplica</div>'+html+'</div>'; }
+  function ulDg(L){ return '<ul class="dg-ul">'+L.map(function(d){ return '<li>'+d+'</li>'; }).join('')+'</ul>'; }
+
+  var PREV_OBJ='Velar por el cumplimiento de la normativa legal y reglamentaria en materia de seguridad y salud en el trabajo, resguardar la integridad de los trabajadores de la empresa y mantener al día su documentación laboral y preventiva, así como la acreditación de la empresa y su personal en las plataformas de los clientes.';
+  var PREV_FUN=[
+    'Velar por el cumplimiento de la normativa de seguridad y salud en el trabajo aplicable a la empresa —Ley N° 16.744 y sus reglamentos, en especial el D.S. N° 44 del Ministerio del Trabajo y Previsión Social (gestión preventiva de los riesgos laborales) y el D.S. N° 594 del Ministerio de Salud, la Ley N° 21.643 (Ley Karin) y el Reglamento Interno de Orden, Higiene y Seguridad—, informando oportunamente a la Gerencia las desviaciones detectadas.',
+    'Elaborar, implementar y mantener actualizados la matriz de identificación de peligros y evaluación de riesgos, el programa de trabajo preventivo y los procedimientos de trabajo seguro de los servicios que presta la empresa.',
+    'Realizar inspecciones y observaciones de seguridad en las plantas, faenas y centros de los clientes, verificando las condiciones de trabajo, el uso correcto de los elementos de protección personal y el cumplimiento de los procedimientos, y hacer seguimiento a las medidas correctivas.',
+    'Informar a los trabajadores los riesgos laborales propios de sus funciones y las medidas preventivas, realizar inducciones de ingreso, charlas y capacitaciones, y mantener sus registros.',
+    'Mantener al día la documentación laboral y preventiva de cada trabajador —contrato y anexos, recepción del Reglamento Interno, información de riesgos, entrega de EPP, exámenes ocupacionales, capacitaciones y demás registros exigidos—, controlando sus vencimientos.',
+    'Gestionar la acreditación de la empresa, sus trabajadores y vehículos en las plataformas de los clientes, cargando y renovando oportunamente la documentación exigida y respondiendo a sus observaciones.',
+    'Registrar, notificar e investigar los accidentes del trabajo y enfermedades profesionales, coordinar con el organismo administrador del seguro de la Ley N° 16.744, y elaborar el informe mensual de accidentabilidad y las estadísticas requeridas por la empresa y sus clientes.',
+    'Controlar la entrega, stock y reposición de los elementos de protección personal, proponiendo su adquisición.',
+    'Asesorar al Comité Paritario de Higiene y Seguridad cuando corresponda, y atender los requerimientos del organismo administrador y de los organismos fiscalizadores (Dirección del Trabajo, SEREMI de Salud, entre otros).',
+    'Apoyar la difusión y aplicación del protocolo de prevención del acoso sexual, laboral y la violencia en el trabajo.',
+    'Registrar la gestión en los sistemas de la empresa e informar mensualmente a la Gerencia el estado de cumplimiento documental y de seguridad.'
+  ];
+  var ADM_FUN=[
+    'Preparar y administrar la documentación de personal: borradores de contratos, anexos y comunicaciones, y mantener ordenadas y actualizadas las carpetas de los trabajadores.',
+    'Recopilar y controlar la asistencia y los reportes de horas del personal, y preparar los antecedentes para el cálculo de remuneraciones y cotizaciones previsionales.',
+    'Apoyar la emisión y seguimiento de cotizaciones, órdenes de compra, estados de pago y facturación a clientes, así como el control de pagos a proveedores.',
+    'Coordinar la compra de insumos, materiales y EPP, y controlar la documentación y vencimientos de los vehículos de la empresa.',
+    'Atender los requerimientos administrativos de clientes, proveedores y trabajadores, y la correspondencia de la empresa.'
+  ];
+  var CIERRE_FUN='Toda otra labor afín o complementaria a las anteriores que le encomiende su jefatura directa.';
+
+  function docContrato(t, v){ return (v||varDefault(t))==='oper' ? docContratoOper(t) : docContratoPrev(t, v==='prevadm'); }
+  function docContratoPrev(t, adm){
+    var cargo=adm?'TÉCNICO EN PREVENCIÓN DE RIESGOS Y ASISTENTE ADMINISTRATIVO(A)':'TÉCNICO EN PREVENCIÓN DE RIESGOS';
+    var dom=[t.direccion, t.numero?('N° '+t.numero):'', t.poblacion].filter(Boolean).join(', ');
+    var n=0, ORD=['PRIMERO','SEGUNDO','TERCERO','CUARTO','QUINTO','SEXTO','SÉPTIMO','OCTAVO','NOVENO','DÉCIMO','UNDÉCIMO','DUODÉCIMO'];
+    function cl(tit){ return '<b>'+ORD[n++]+' — '+tit+'.</b> '; }
+    return dgHead('CONTRATO INDIVIDUAL DE TRABAJO')+
+      '<p style="text-align:center;margin-top:-6px;color:#667;font-weight:700">'+esc(cargo)+'</p>'+
+      '<p>En Puerto Montt, a '+ce(fLarga(todayISO()))+', entre <b>'+EMP.rz+'</b>, R.U.T. '+EMP.rut+', representada legalmente por don <b>'+EMP.rep+'</b>, R.U.T. '+EMP.repRut+', ambos con domicilio en Los Lirios 35, Mirasol, comuna de Puerto Montt, en adelante «el Empleador»; y don(ña) '+ce(t.nombre)+', R.U.T. '+ce(t.rut)+', de nacionalidad '+ce(t.nacionalidad||'chilena')+', estado civil '+ce(t.estado_civil)+', nacido(a) el '+ce(fLarga(t.nacimiento))+', domiciliado(a) en '+ce(dom)+', comuna de '+ce(t.comuna||'Puerto Montt')+', en adelante «el Trabajador», se ha convenido el siguiente Contrato Individual de Trabajo:</p>'+
+      '<p>'+cl('Cargo y funciones')+'El Trabajador desempeñará el cargo de <b>'+cargo+'</b>, cuyo objetivo es '+PREV_OBJ.charAt(0).toLowerCase()+PREV_OBJ.slice(1)+' Para ello deberá dar estricto cumplimiento a las siguientes funciones, cuya enumeración es a modo ejemplar:</p>'+
+      (adm?'<p style="margin:0 0 4px"><b>a) Prevención de riesgos</b></p>':'')+ulDg(PREV_FUN)+
+      (adm?'<p style="margin:0 0 4px"><b>b) Administración</b></p>'+ulDg(ADM_FUN.concat([CIERRE_FUN])):ulDg([CIERRE_FUN]))+
+      dgOpt('Registro SEREMI','<p>Se deja constancia de que el Trabajador se encuentra inscrito en el registro de la SEREMI de Salud de la Región de '+ce('Los Lagos')+', con el N° '+ce('')+', como Experto en Prevención de Riesgos, categoría Técnico.</p>')+
+      '<p>'+cl('Lugar de trabajo')+'El Trabajador prestará sus servicios en las dependencias de la empresa ubicadas en Los Lirios 35, Mirasol, Puerto Montt, y en las plantas de proceso, frigoríficos, pisciculturas y centros de los clientes en que la empresa preste servicios en la Región de Los Lagos, debiendo trasladarse a ellos según las necesidades del servicio, sin que ello importe menoscabo para el Trabajador.</p>'+
+      '<p>'+cl('Jornada de trabajo')+'El Trabajador cumplirá una jornada ordinaria de '+ce('42')+' horas semanales, distribuidas de '+ce('lunes a jueves de 08:30 a 18:00 horas y viernes de 08:30 a 17:30 horas')+', con '+ce('60')+' minutos de colación no imputables a la jornada. Por la naturaleza de sus funciones, y previo aviso, la distribución podrá ajustarse a los turnos de las faenas de los clientes dentro de los límites legales. Las horas extraordinarias solo se trabajarán cuando sean pactadas por escrito y se pagarán con el recargo legal.</p>'+
+      '<p>'+cl('Obligaciones')+'El Trabajador deberá cumplir fielmente las políticas, instrucciones, reglamentos y órdenes impartidas por el Empleador o sus representantes, realizando todas aquellas labores que directa o indirectamente digan relación con su cargo y que sean necesarias para cumplirlo en forma adecuada, eficiente y oportuna. Las partes consideran esenciales estas obligaciones, por lo que su inobservancia constituirá incumplimiento grave de las obligaciones que impone el contrato, en los términos del N° 7 del artículo 160 del Código del Trabajo, sin perjuicio de las responsabilidades civiles y penales que correspondan.</p>'+
+      '<p>'+cl('Remuneración')+'El Empleador pagará al Trabajador un sueldo base mensual de $ '+ce(t.sueldo_base?Number(t.sueldo_base).toLocaleString('es-CL'):'')+' ('+ce('')+' pesos). Adicionalmente se pagará una gratificación legal equivalente al 25% de lo devengado por concepto de remuneraciones mensuales, con tope de 4,75 ingresos mínimos mensuales anuales, conforme al artículo 50 del Código del Trabajo, entendiéndose con ello cumplida la obligación legal de gratificar. Las remuneraciones se pagarán por mes vencido, a más tardar el último día hábil de cada mes, mediante depósito o transferencia a la cuenta bancaria del Trabajador, previa deducción de los impuestos, cotizaciones de seguridad social y demás descuentos legales.</p>'+
+      dgOpt('Asignaciones','<p>Asimismo, el Empleador pagará mensualmente una asignación de colación de $ '+ce('')+' y una asignación de movilización de $ '+ce('')+', ambas de carácter no imponible y proporcionales a los días efectivamente trabajados.</p>')+
+      '<p>'+cl('Confidencialidad y datos personales')+'Con motivo de su cargo, el Trabajador tendrá acceso a datos personales y sensibles de los trabajadores —incluidos antecedentes de salud y exámenes ocupacionales—, a información de los clientes y a las credenciales de acceso de las plataformas de acreditación. El Trabajador se obliga a guardar estricta reserva de dicha información, a utilizarla únicamente para fines propios de su cargo y conforme a la legislación sobre protección de datos personales, a no compartir ni ceder las credenciales que se le asignen, y a restituir toda información y accesos al término de la relación laboral. Esta obligación subsistirá aun terminado el contrato.</p>'+
+      '<p>'+cl('Reglamento Interno y Ley Karin')+'El Trabajador declara recibir en este acto un ejemplar del Reglamento Interno de Orden, Higiene y Seguridad de la empresa, que incluye el protocolo de prevención del acoso sexual, laboral y la violencia en el trabajo y el procedimiento de investigación y sanción establecido por la Ley N° 21.643, obligándose a conocerlo y cumplirlo.</p>'+
+      '<p>'+cl('Fecha de ingreso')+'Se deja constancia de que el Trabajador ingresó a prestar servicios el '+ce(t.fecha_ingreso?fLarga(t.fecha_ingreso):'')+'.</p>'+
+      '<p>'+cl('Duración')+'</p>'+
+      dgOpt('Opción A','<p>El presente contrato es a plazo fijo y durará hasta el '+ce('')+'. Si el Trabajador continúa prestando servicios con conocimiento del Empleador después de expirado dicho plazo, el contrato se transformará en indefinido, conforme al artículo 159 N° 4 del Código del Trabajo.</p>')+
+      dgOpt('Opción B','<p>El presente contrato es de duración indefinida.</p>')+
+      '<p>'+cl('Correo y firma electrónica')+'El Trabajador autoriza expresamente que la documentación derivada de la relación laboral, así como las comunicaciones internas de la empresa, sean confeccionadas, firmadas y remitidas en forma electrónica a su correo personal '+ce(t.email)+', y que pueda suscribirlas mediante firma electrónica simple conforme a la Ley N° 19.799, siendo de su responsabilidad resguardar sus accesos.</p>'+
+      '<p>'+cl('Domicilio y ejemplares')+'Para todos los efectos derivados del presente contrato, las partes fijan domicilio en la ciudad de Puerto Montt y se someten a la jurisdicción de sus Tribunales de Justicia. El contrato se firma en dos ejemplares, quedando uno en poder de cada parte.</p>'+
+      '<div class="dg-firmas'+((FIRMA_SIG||FIRMA_TIM)?' con-rep':'')+'"><div>Firma del Trabajador<br>'+esc(t.nombre||'')+'<br>RUT '+esc(t.rut||'____')+'</div><div class="dg-rep">'+firmaRepHtml()+'Firma del Empleador<br>'+EMP.rep+'<br>p.p. '+EMP.rz+'</div></div>';
+  }
+
+  // Plantilla: Perfil de cargo (según la variante).
+  function docPerfil(t, v){
+    v=v||varDefault(t);
+    var P;
+    if(v==='oper') P={ cargo:t.cargo||'Operario de Servicios', area:'Operaciones', rep:'Supervisor de faena', sup:'No aplica',
+      obj:'Ejecutar los servicios de limpieza, sanitización y servicios generales en las plantas, frigoríficos y centros de los clientes, cumpliendo los procedimientos de trabajo seguro y los estándares de calidad e inocuidad exigidos.',
+      fun:OPER_FUN.concat([CIERRE_FUN]),
+      req:[['Formación','Enseñanza media (deseable).'],['Experiencia','Deseable en limpieza industrial, plantas de proceso o industria acuícola.'],['Requisitos específicos','Examen ocupacional vigente para trabajos en altura o frío, cuando la faena lo exija. Capacitación en manejo de químicos.']],
+      comp:['Responsabilidad y puntualidad','Trabajo en equipo','Apego a los procedimientos y al uso de EPP','Orden y prolijidad'],
+      rie:'Caídas al mismo y distinto nivel, contacto con productos químicos, exposición a frío y humedad, manejo manual de carga, ruido, trabajo cerca del agua.',
+      epp:'Calzado de seguridad, guantes (nitrilo / engomados), antiparras, protector auditivo, ropa térmica e impermeable, mascarilla según químico, arnés para trabajos en altura.',
+      kpi:['Cumplimiento del programa de limpieza de la faena','Observaciones de calidad del cliente','Cumplimiento de uso de EPP y procedimientos'] };
+    else { var adm=(v==='prevadm'); P={ cargo:adm?'Técnico en Prevención de Riesgos y Asistente Administrativo(a)':'Técnico en Prevención de Riesgos', area:adm?'Prevención de Riesgos y Administración':'Prevención de Riesgos', rep:'Gerencia General', sup:'Relación funcional con supervisores y trabajadores en materias de seguridad y documentación',
+      obj:PREV_OBJ+(adm?' Además, apoyar la gestión administrativa y de personal de la empresa.':''),
+      fun:PREV_FUN, fun2:adm?ADM_FUN:null,
+      req:[['Formación','Título de Técnico de Nivel Superior en Prevención de Riesgos, otorgado por un CFT o IP reconocido por el Estado.'+(adm?' Deseable formación o experiencia en administración.':'')],
+        ['Registro','Deseable inscripción en la SEREMI de Salud como Experto en Prevención de Riesgos, categoría Técnico.'],
+        ['Experiencia','Deseable 1 año en prevención de riesgos, idealmente en industria acuícola, alimentaria o empresas de servicios.'],
+        ['Conocimientos','Ley N° 16.744, D.S. N° 44 (MINTRAB), D.S. N° 594 (MINSAL), Ley N° 21.643 (Ley Karin); matriz de riesgos y procedimientos de trabajo seguro; investigación de accidentes; plataformas de acreditación de contratistas; Excel y herramientas ofimáticas'+(adm?'; nociones de remuneraciones, facturación y gestión documental':'')+'.'],
+        ['Otros','Licencia de conducir clase B (deseable). Disponibilidad para desplazarse a las faenas de la región.']],
+      comp:['Rigurosidad y orden documental','Orientación al cumplimiento normativo','Comunicación efectiva y liderazgo en terreno','Planificación y seguimiento de plazos','Confidencialidad y criterio en el manejo de información','Proactividad y trabajo en equipo'],
+      rie:'Tránsito y conducción de vehículos, caídas al mismo nivel en plantas y centros, exposición a frío, humedad, ruido y productos químicos durante visitas a faenas, trabajo con pantallas de visualización, riesgos psicosociales.',
+      epp:'Calzado de seguridad, casco, chaleco reflectante, antiparras, protector auditivo y ropa térmica / impermeable, según las exigencias de cada faena.',
+      kpi:['Porcentaje de trabajadores con documentación al día','Porcentaje de acreditación vigente en plataformas de clientes','Informe mensual de accidentabilidad entregado en plazo','Inspecciones realizadas versus programadas','Tasa de accidentabilidad y seguimiento de medidas correctivas'].concat(adm?['Reportes de asistencia y antecedentes de remuneraciones entregados en plazo']:[]) }; }
+    function tr(a,b){ return '<tr><td class="dg-k">'+a+'</td><td>'+b+'</td></tr>'; }
+    function h4(x){ return '<h4 class="dg-h4">'+x+'</h4>'; }
+    return dgHead('PERFIL DE CARGO')+
+      h4('1. Identificación del cargo')+
+      '<table class="dg-tbl">'+tr('Cargo','<b>'+esc(P.cargo)+'</b>')+tr('Área',P.area)+tr('Reporta a',P.rep)+tr('Supervisa a',P.sup)+tr('Lugar de trabajo','Dependencias de la empresa (Puerto Montt) y faenas de clientes en la Región de Los Lagos')+tr('Ocupante',ce(t.nombre)+' · RUT '+ce(t.rut))+'</table>'+
+      h4('2. Objetivo del cargo')+'<p>'+P.obj+'</p>'+
+      h4('3. Funciones y responsabilidades')+
+      (P.fun2?'<p style="margin:0 0 4px"><b>a) Prevención de riesgos</b></p>'+ulDg(P.fun)+'<p style="margin:0 0 4px"><b>b) Administración</b></p>'+ulDg(P.fun2.concat([CIERRE_FUN])):ulDg(v==='oper'?P.fun:P.fun.concat([CIERRE_FUN])))+
+      h4('4. Requisitos')+'<table class="dg-tbl">'+P.req.map(function(r){ return tr(r[0],r[1]); }).join('')+'</table>'+
+      h4('5. Competencias')+ulDg(P.comp)+
+      h4('6. Riesgos del cargo y elementos de protección')+'<table class="dg-tbl">'+tr('Riesgos principales',P.rie)+tr('EPP',P.epp)+'</table>'+
+      h4('7. Indicadores de desempeño')+ulDg(P.kpi)+
+      '<p style="margin-top:14px">Declaro haber recibido y tomado conocimiento del presente perfil de cargo.</p>'+
+      '<div class="dg-firmas'+((FIRMA_SIG||FIRMA_TIM)?' con-rep':'')+'"><div>Toma de conocimiento<br>'+esc(t.nombre||'')+'</div><div class="dg-rep">'+firmaRepHtml()+'Aprobado por<br>Gerencia · '+EMP.rz+'</div></div>';
   }
 
   // Plantilla: ODI — Obligación de Informar los Riesgos (Derecho a Saber, D.S. 40).
@@ -5901,7 +6017,8 @@
   }
 
   var DOC_GEN={
-    contrato:{ nombre:'Contrato de trabajo', build:docContrato },
+    contrato:{ nombre:'Contrato de trabajo', build:docContrato, variantes:true },
+    perfil:{ nombre:'Perfil de cargo', build:docPerfil, variantes:true },
     datos:{ nombre:'Ficha de datos', build:docDatos },
     epp:{ nombre:'Entrega de EPP', build:docEPP },
     odi:{ nombre:'ODI (riesgos)', build:docODI }
@@ -5918,13 +6035,17 @@
     ok:'<polyline points="20 6 9 17 4 12"/>'
   };
   var DG_CTX=null, DG_QUEUE=[], DG_QI=0, DG_QTIPO=null, DGP_TIPO=null;
-  function generarDoc(tid, tipo){
+  function generarDoc(tid, tipo, variante){
     var g=DOC_GEN[tipo]; if(!g) return;
     var pool=(typeof RRHH_T!=='undefined'?RRHH_T:[]).concat(typeof TRAB!=='undefined'?TRAB:[]);
     var t=pool.filter(function(x){return x.id===tid;})[0]; if(!t) return;
-    DG_CTX={tid:tid, tipo:tipo, nombre:t.nombre};
-    if(IA_FIRMA===null){ cargarFirma(function(){ generarDoc(tid, tipo); }); return; }   // la firma del representante se usa en el contrato
-    $('dg-doc').classList.remove('fa-mode'); $('dg-doc').innerHTML=g.build(t);
+    var v=g.variantes?(variante||varDefault(t)):null;
+    DG_CTX={tid:tid, tipo:tipo, nombre:t.nombre, v:v};
+    if(IA_FIRMA===null){ cargarFirma(function(){ generarDoc(tid, tipo, variante); }); return; }   // la firma del representante se usa en el contrato
+    // Selector de formato (contrato / perfil): Operario · Prevención · Prevención y administración.
+    $('dg-var').classList.toggle('hide', !v);
+    if(v){ $('dg-var').innerHTML=DG_VARS.map(function(o){ return '<option value="'+o.v+'"'+(o.v===v?' selected':'')+'>'+o.n+'</option>'; }).join(''); }
+    $('dg-doc').classList.remove('fa-mode'); $('dg-doc').innerHTML=g.build(t, v);
     $('dg-hint').textContent=g.nombre+' · '+(t.nombre||'')+(DG_QUEUE.length?(' ('+(DG_QI+1)+' de '+DG_QUEUE.length+')'):'');
     $('docgen').classList.remove('hide'); $('docgen').scrollTop=0;
   }
@@ -5952,6 +6073,9 @@
     DG_QUEUE=ids; DG_QI=0; DG_QTIPO=DGP_TIPO; $('dg-pick').classList.add('hide'); generarDocNext();
   });
   $('dg-close').addEventListener('click',function(){ $('docgen').classList.add('hide'); DG_QUEUE=[]; DG_QTIPO=null; });
+  $('dg-var').addEventListener('change',function(){ if(DG_CTX) generarDoc(DG_CTX.tid, DG_CTX.tipo, this.value); });
+  // Quitar un bloque opcional (cláusula que no aplica).
+  $('dg-doc').addEventListener('click',function(e){ var x=e.target.closest&&e.target.closest('.dg-x'); if(x){ var b=x.closest('.dg-opt'); if(b) b.remove(); } });
   $('dg-save').addEventListener('click',function(){
     if(!DG_CTX) return;
     if(DG_CTX.save){ DG_CTX.save(); return; }   // documentos que no son de un trabajador (ej. informe de accidentes)
