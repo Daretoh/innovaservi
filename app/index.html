@@ -490,6 +490,7 @@
   .trab .cg{font-size:.82rem;color:var(--body);}
   .trab .meta{font-size:.72rem;color:var(--muted);margin-top:1px;}
   .trab .badge{font-size:.66rem;font-weight:800;padding:2px 8px;border-radius:999px;background:rgba(34,160,107,.14);color:var(--ok);}
+  .trab .badge.b-espera{background:#fef3c7;color:#92400e;}
   .trab-buk{font:800 .62rem var(--font);padding:2px 8px;border-radius:999px;border:1px solid var(--line);background:#fff;color:var(--muted);cursor:pointer;margin-right:6px;letter-spacing:.02em;}
   .trab-buk:hover{border-color:#1a3fb0;color:#1a3fb0;}
   .trab-buk.on{background:#e6edff;border-color:#e6edff;color:#1a3fb0;}
@@ -1263,6 +1264,7 @@
         <div style="display:flex;gap:8px;margin-bottom:14px">
           <button class="btn ghost small tfil" data-f="todos" style="flex:1">Todos</button>
           <button class="btn ghost small tfil on" data-f="activo" style="flex:1">Activos</button>
+          <button class="btn ghost small tfil" data-f="espera" style="flex:1">En espera</button>
           <button class="btn ghost small tfil" data-f="inactivo" style="flex:1">Inactivos</button>
         </div>
         <div id="trab-list"></div>
@@ -1494,7 +1496,7 @@
         <div class="fld"><label>Cargo</label><select id="fi-cargo"></select><div id="fi-trato-h" class="note" style="margin:4px 0 0;font-size:.72rem"></div></div>
       </div>
       <div class="grid2">
-        <div class="fld"><label>Estado</label><select id="fi-estado"><option value="activo">Activo</option><option value="inactivo">Inactivo</option></select></div>
+        <div class="fld"><label>Estado</label><select id="fi-estado"><option value="espera">En espera</option><option value="activo">Activo</option><option value="inactivo">Inactivo</option></select></div>
         <div class="fld"><label>Fecha ingreso</label><input id="fi-ingreso" type="date"></div>
       </div>
       <div class="fld"><label style="display:flex;align-items:center;gap:9px;cursor:pointer;font-weight:600"><input id="fi-chofer" type="checkbox" style="width:18px;height:18px;accent-color:var(--orange)">🚚 Es chofer (puede registrar vueltas)</label></div>
@@ -3981,7 +3983,7 @@
     }, function(){ busy(false); toast('No se pudo abrir la cédula.'); }); }
   function crearTrabDeFicha(f){ if(!sb||!f) return;
     if(!confirm('¿Crear el trabajador "'+titleCase(f.nombre||'')+'" con estos datos?')) return;
-    var base={ nombre:titleCase((f.nombre||'').trim()), rut:(f.rut||'').trim(), cargo:(f.cargo||'').trim(), estado:'activo',
+    var base={ nombre:titleCase((f.nombre||'').trim()), rut:(f.rut||'').trim(), cargo:(f.cargo||'').trim(), estado:'espera',
       telefono:(f.telefono||''), email:(f.email||''), direccion:(f.direccion||''), emergencia:(f.emergencia||''), afp:(f.afp||''), salud:(f.salud||''),
       talla_ropa:(f.talla_ropa||''), talla_botas:(f.talla_botas||''), banco:(f.banco||null), tipo_cuenta:(f.tipo_cuenta||null), num_cuenta:(f.num_cuenta||null), autor:userEmail };
     // Campos nuevos (Buk). Si la tabla aún no tiene las columnas, se reintenta sin ellos.
@@ -4035,13 +4037,16 @@
   function pintarTrab(){
     var list=$('trab-list'); var q=trabQ.toLowerCase();
     var arr=TRAB.filter(function(t){
-      if(trabFilter==='activo' && t.estado==='inactivo') return false;
-      if(trabFilter==='inactivo' && t.estado!=='inactivo') return false;
+      var e=t.estado||'activo';
+      if(trabFilter==='activo' && e!=='activo') return false;
+      if(trabFilter==='espera' && e!=='espera') return false;
+      if(trabFilter==='inactivo' && e!=='inactivo') return false;
       if(q){ if((((t.nombre||'')+' '+(t.rut||'')+' '+(t.cargo||'')).toLowerCase()).indexOf(q)<0) return false; }
       return true;
     });
+    function estRank(e){ return e==='inactivo'?2:(e==='espera'?1:0); }   // activos, luego en espera, luego inactivos
     arr.sort(function(a,b){
-      var ai=(a.estado==='inactivo')?1:0, bi=(b.estado==='inactivo')?1:0; if(ai!==bi) return ai-bi;  // activos primero
+      var ai=estRank(a.estado), bi=estRank(b.estado); if(ai!==bi) return ai-bi;
       if(trabSort==='reciente') return (b.id||0)-(a.id||0);
       if(trabSort==='cargo'){ var c=(a.cargo||'').localeCompare(b.cargo||''); if(c) return c; }
       return (a.nombre||'').localeCompare(b.nombre||'');
@@ -4050,12 +4055,12 @@
     $('trab-cnt').textContent=arr.length+(arr.length===1?' persona':' personas');
     if(!TRAB.length){ list.innerHTML='<div class="empty"><div class="big">👷</div>Aún no hay trabajadores.<br><span style="font-size:.82rem">Toca “＋ Nuevo” o “⬆ Importar”.</span></div>'; return; }
     if(!arr.length){ list.innerHTML='<div class="empty">Sin resultados para ese filtro/búsqueda.</div>'; return; }
-    list.innerHTML=arr.map(function(t,idx){ var off=(t.estado==='inactivo'); var nd=(t.docs||[]).length; var p=docPct(t); var col=(p!=null?pctColor(p):'var(--line)');
+    list.innerHTML=arr.map(function(t,idx){ var est=t.estado||'activo', off=(est==='inactivo'); var estTxt=(est==='inactivo'?'Inactivo':(est==='espera'?'En espera':'Activo')); var estCls=(est==='inactivo'?' b-off':(est==='espera'?' b-espera':' b-ok')); var nd=(t.docs||[]).length; var p=docPct(t); var col=(p!=null?pctColor(p):'var(--line)');
       return '<div class="trab'+(off?' off':'')+'" data-idx="'+idx+'"><div class="av">'+esc(inic(t.nombre).toUpperCase()||'·')+'</div>'+
         '<div class="tt"><div class="nm">'+esc(titleCase(t.nombre)||'—')+'</div>'+(t.cargo?'<div class="cg">'+esc(t.cargo)+'</div>':'')+
         '<div class="meta">'+(t.rut?esc(t.rut)+' · ':'')+nd+' doc'+(nd===1?'':'s')+(p!=null?(' · <span class="pct" style="color:'+col+'">'+p+'% docs</span>'):'')+'</div></div>'+
         '<button class="trab-buk'+(t.buk?' on':'')+'" data-idx="'+idx+'" type="button" title="'+(t.buk?'Registrado en Buk · toca para quitar':'Toca para marcar registrado en Buk')+'">'+(t.buk?'✓ Buk':'+ Buk')+'</button>'+
-        '<span class="badge">'+(off?'Inactivo':'Activo')+'</span>'+
+        '<span class="badge'+estCls+'">'+estTxt+'</span>'+
         (p!=null?('<div class="tbar" title="Documentación: '+p+'% al día"><i style="width:'+p+'%;background:'+col+'"></i></div>'):'')+'</div>'; }).join('');
     list.querySelectorAll('.trab-buk[data-idx]').forEach(function(b){ b.addEventListener('click',function(ev){ ev.stopPropagation(); marcarBukTrab(TRAB_VISTA[+b.dataset.idx]); }); });
     list.querySelectorAll('.trab[data-idx]').forEach(function(el){ el.addEventListener('click',function(){ abrirFicha(TRAB_VISTA[+el.dataset.idx]); }); });
@@ -4210,7 +4215,7 @@
     nm=(nm||'').trim(); if(!nm||!sb) return;
     if(!confirm('¿Crear ficha de trabajador para “'+nm+'”?')) return;
     busy(true,'Creando ficha…');
-    sb.from('trabajadores').insert({nombre:titleCase(nm),estado:'activo',autor:userEmail}).then(function(r){ busy(false);
+    sb.from('trabajadores').insert({nombre:titleCase(nm),estado:'espera',autor:userEmail}).then(function(r){ busy(false);
       if(r.error){ toast('No se pudo crear: '+r.error.message); return; }
       toast('✓ Ficha creada'); cargarTrab(function(){ actualizarDatalist(); if(typeof pintarTrab==='function') pintarTrab(); abrirDups(); }); if(typeof cargarRemu==='function') cargarRemu();
     }, function(){ busy(false); toast('No se pudo crear.'); });
@@ -4317,9 +4322,9 @@
   if($('nom-xls')) $('nom-xls').addEventListener('click',nomXLS);
 
   function abrirFicha(t){
-    FICHA_ID=t?t.id:null; FICHA_EST0=(t&&t.estado)||'activo';
+    FICHA_ID=t?t.id:null; FICHA_EST0=(t&&t.estado)||'espera';
     $('fi-nombre').value=t?(t.nombre||''):''; $('fi-rut').value=t?(t.rut||''):''; poblarSelectCargo($('fi-cargo'), t?(t.cargo||''):''); trHint();
-    $('fi-estado').value=(t&&t.estado)||'activo'; $('fi-ingreso').value=t?(t.fecha_ingreso||''):''; if($('fi-chofer')) $('fi-chofer').checked=!!(t&&t.chofer);
+    $('fi-estado').value=(t&&t.estado)||'espera'; $('fi-ingreso').value=t?(t.fecha_ingreso||''):''; if($('fi-chofer')) $('fi-chofer').checked=!!(t&&t.chofer);
     if($('fi-fijo')){ var esFijo=!!(t&&t.tipo_pago==='contrato'); $('fi-fijo').checked=esFijo; $('fi-jornada').value=(t&&t.jornada_horas)||''; if($('fi-jini')) $('fi-jini').value=(t&&t.jornada_ini)||''; if($('fi-jfin')) $('fi-jfin').value=(t&&t.jornada_fin)||''; $('fi-jornada-wrap').style.display=esFijo?'':'none'; }
     $('fi-tel').value=t?(t.telefono||''):''; $('fi-email').value=t?(t.email||''):'';
     $('fi-botas').value=t?(t.talla_botas||''):''; $('fi-ropa').value=t?(t.talla_ropa||''):'';
