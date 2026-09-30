@@ -2167,7 +2167,7 @@
     if(!ya){   // entrada
       asistRegistro(function(reg){
         var row={ trabajador:titleCase(t.nombre), empresa:(e?e.ubicacion:''), lugar:(e?e.sitio:''), faena:ASIST.faenaSel, fecha:ASIST.fecha, entrada:nowHHMM(), salida:null, evento_id:(e?e.id:null), registro_id:(reg?reg.id:null), autor:userEmail };
-        sb.from('horas').insert(row).select().single().then(function(r){ if(r.error){ asistMsg('No se pudo marcar: '+r.error.message,false); return; } ASIST.horas.push(r.data); asistMsg('✓ '+titleCase(t.nombre)+' · entrada '+row.entrada,true); pintarAsistencia(); }, function(){ asistMsg('No se pudo marcar.',false); });
+        sb.from('horas').insert(row).select().single().then(function(r){ if(r.error){ asistMsg('No se pudo marcar: '+r.error.message,false); return; } ASIST.horas.push(r.data); if(t.estado==='espera'){ t.estado='activo'; sb.from('trabajadores').update({estado:'activo'}).eq('id',t.id).then(function(){},function(){}); } asistMsg('✓ '+titleCase(t.nombre)+' · entrada '+row.entrada,true); pintarAsistencia(); }, function(){ asistMsg('No se pudo marcar.',false); });
       });
     } else if(!ya.salida){   // salida
       sb.from('horas').update({salida:nowHHMM()}).eq('id',ya.id).then(function(r){ if(r.error){ asistMsg('No se pudo marcar salida: '+r.error.message,false); return; } ya.salida=nowHHMM(); asistMsg('✓ '+titleCase(t.nombre)+' · salida '+ya.salida,true); pintarAsistencia(); }, function(){ asistMsg('No se pudo marcar.',false); });
@@ -2309,7 +2309,12 @@
         maquinaria:(p.maquinaria||[]).filter(function(m){ return (m.veh||'')||(m.chofer||''); }), notas:p.notas||'', estado:p.estado||'borrador', preparador:p.preparador||'', hora:(p.hora!=null?p.hora:null), personas_nec:(p.personas_nec!=null?p.personas_nec:null), autor:userEmail, updated_at:new Date().toISOString() };
       sb.from('faena_plan').upsert(row,{onConflict:'evento_id,fecha'}).then(function(r){ if(r&&r.error) toast(/preparador|column|faena_plan/.test(r.error.message||'')?'Falta correr faena-plan-preparador.sql en Supabase.':('No se guardó: '+r.error.message)); }, function(){});
     }, 500); }
-  function planAsignar(eid, f, nombre){ var e=eventoDe(eid); if(!e) return; var p=planDe(e,f); if(p.estado==='enviada'){ toast('Faena enviada; ábrela en Detalle para cambiarla.'); return; } nombre=titleCase((nombre||'').trim()); if(!nombre) return; if(p.personas.some(function(pp){ return normName(pp.nombre)===normName(nombre); })){ toast(nombre+' ya está en esta faena.'); return; } p.personas.push({nombre:nombre, epp:[]}); planSave(e,f); renderPlanif(); }
+  // Si un trabajador "en espera" entra a Planificación o registra horas, pasa a "activo" automáticamente.
+  function activarSiEspera(nombre){ if(!sb||!nombre) return; var k=normName(nombre);
+    var t=(TRAB||[]).filter(function(x){ return normName(x.nombre)===k; })[0];
+    if(t && t.estado==='espera'){ t.estado='activo'; sb.from('trabajadores').update({estado:'activo'}).eq('id',t.id).then(function(){},function(){}); }
+  }
+  function planAsignar(eid, f, nombre){ var e=eventoDe(eid); if(!e) return; var p=planDe(e,f); if(p.estado==='enviada'){ toast('Faena enviada; ábrela en Detalle para cambiarla.'); return; } nombre=titleCase((nombre||'').trim()); if(!nombre) return; if(p.personas.some(function(pp){ return normName(pp.nombre)===normName(nombre); })){ toast(nombre+' ya está en esta faena.'); return; } p.personas.push({nombre:nombre, epp:[]}); planSave(e,f); activarSiEspera(nombre); renderPlanif(); }
   function planFaeCard(e){
     var p=planDe(e), col=colorEmpresa(claveEmpresa(e.ubicacion||''));
     var need=personasNecesarias(e), asg=p.personas.length, ok=need&&asg>=need, locked=(p.estado==='enviada');
@@ -2600,6 +2605,7 @@
   if($('pe-notas')) $('pe-notas').addEventListener('input',function(){ if(PE) PE.notas=this.value; });
   function peGuardar(estado, cb){ if(!sb||!PE) return; var e=PE.e;
     var personas=PE.personas.filter(function(p){ return (p.nombre||'').trim(); }).map(function(p){ return {nombre:titleCase(p.nombre.trim()), epp:p.epp||[]}; });
+    personas.forEach(function(p){ activarSiEspera(p.nombre); });
     var maq=PE.maquinaria.filter(function(m){ return (m.veh||'').trim()||(m.chofer||'').trim(); });
     var row={ evento_id:e.id, fecha:(PE.f||e.fecha||null), empresa:(e.ubicacion||''), sitio:(e.sitio||''), titulo:(e.titulo||''), personas:personas, matrices:PE.matrices, maquinaria:maq, notas:PE.notas||'', estado:estado, autor:userEmail, updated_at:new Date().toISOString() };
     if(estado==='enviada') row.enviada_at=new Date().toISOString();
@@ -3751,7 +3757,7 @@
       if(!(h.trabajador||'').trim()) return;   // no guarda líneas sin nombre
       if(!esTrabajador(h.trabajador)) return;  // solo trabajadores con ficha
       var row={ fecha:h.fecha||todayISO(), trabajador:h.trabajador.trim(), entrada:h.entrada||null, salida:h.salida||null, vueltas:(+h.vueltas||0), faena:(h.faena||null), autor:userEmail };
-      h._dirty=false;
+      h._dirty=false; activarSiEspera(h.trabajador);
       if(h.id){ sb.from('horas').update(row).eq('id',h.id).then(function(){},function(){}); }
       else if(!h._saving){ h._saving=true; sb.from('horas').insert(row).select('id').maybeSingle().then(function(r){ h._saving=false; if(r&&r.data&&r.data.id) h.id=r.data.id; }, function(){ h._saving=false; }); }
     });
