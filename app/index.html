@@ -4946,7 +4946,10 @@
             '<input class="rd-dcont" type="number" min="0" data-f="'+f+'" data-real="'+dReal+'" value="'+dCont+'" title="'+(perEd?'Total del día — suma de las faenas, editable':'Monto contable de este día (editable)')+'">'+
             '<input class="rd-dobs" type="text" data-f="'+f+'" value="'+enc(ajd?ajd.obs:'')+'" placeholder="motivo (si ajustas)"></div>'
         : '<div class="rd-dcol"><b style="color:var(--orange-2)">'+fmtMoney(dReal)+'</b></div>';
-      return '<div class="rd-day2" data-f="'+f+'"><div style="flex:1;min-width:0"><b>'+fechaDia(f)+'</b> <span class="note" style="margin:0;font-size:.72rem">· '+hm(pd.min)+'</span>'+faTxt+fijoTxt+'</div>'+right+'</div>';
+      var vuD=pd.ents.reduce(function(a,d){ return a+(d.vueltas||0); },0), nmV=norm(x.t.nombre);
+      (REMU_DATA.vg||[]).forEach(function(g){ if(g.categoria==='vuelta' && g.fecha===f && norm(g.chofer)===nmV) vuD+=(+g.cantidad||0); });
+      var vuChip=vuD?' <span class="turno-tag" style="background:#ecfeff;color:#0e7490;border:1px solid #67e8f9" title="Vueltas de este día">'+vuD+' vuelta'+(vuD>1?'s':'')+'</span>':'';
+      return '<div class="rd-day2" data-f="'+f+'"><div style="flex:1;min-width:0"><b>'+fechaDia(f)+'</b> <span class="note" style="margin:0;font-size:.72rem">· '+hm(pd.min)+'</span>'+vuChip+faTxt+fijoTxt+'</div>'+right+'</div>';
     }).join(''):'<p class="note" style="margin:0">Sin días registrados esta semana.</p>';
     var desg='';
     if(x.tipo==='contrato'){
@@ -4956,7 +4959,18 @@
       desg+='<div class="rd-lin"><span>Descontado por jornada fija</span><b style="color:#dc2626">− '+fmtMoney(descTot)+'</b></div>';
     }
     desg+='<div class="rd-lin"><span>'+(x.tipo==='contrato'?'Horas extra pagadas':'Horas')+' ('+hm(x.baseMin)+(x.vh?(' × '+fmtMoney(x.vh)):'')+')</span><b>'+fmtMoney(x.base)+'</b></div>';
-    if(x.vueltas) desg+='<div class="rd-lin"><span>'+x.vueltas+' vueltas × '+fmtMoney(x.vv!=null?x.vv:REMU_DATA.valorVuelta)+(x.vv!=null&&x.vv!==REMU_DATA.valorVuelta?' (vehículo particular)':'')+'</span><b>'+fmtMoney(x.vueltasMonto)+'</b></div>';
+    if(x.vueltas){
+      desg+='<div class="rd-lin"><span>'+x.vueltas+' vueltas × '+fmtMoney(x.vv!=null?x.vv:REMU_DATA.valorVuelta)+(x.vv!=null&&x.vv!==REMU_DATA.valorVuelta?' (vehículo particular)':'')+'</span><b>'+fmtMoney(x.vueltasMonto)+'</b></div>';
+      // De dónde salen: por fecha, desde el Registro de horas y desde lo que registró el chofer en Vehículos.
+      var vuF={}, nmT=norm(x.t.nombre);
+      ((x.H&&x.H.detalle)||[]).forEach(function(d){ if(d.vueltas){ var o=vuF[d.fecha]||(vuF[d.fecha]={h:0,v:0,fae:{}}); o.h+=d.vueltas; if(d.faena) o.fae[d.faena]=1; } });
+      (REMU_DATA.vg||[]).forEach(function(g){ if(g.categoria==='vuelta' && +g.cantidad && norm(g.chofer)===nmT && g.fecha>=REMU_DATA.lun && g.fecha<=REMU_DATA.fin){ var o=vuF[g.fecha]||(vuF[g.fecha]={h:0,v:0,fae:{}}); o.v+=(+g.cantidad); } });
+      var vuLis=Object.keys(vuF).sort().map(function(f){ var o=vuF[f], src=[];
+        if(o.h) src.push(o.h+' en Registro de horas'+(Object.keys(o.fae).length?(' ('+esc(Object.keys(o.fae).join(' · '))+')'):''));
+        if(o.v) src.push(o.v+' registrada'+(o.v>1?'s':'')+' en Vehículos');
+        return '<div style="display:flex;justify-content:space-between;gap:10px;padding:2px 0"><span><b style="color:var(--ink)">'+fechaDia(f)+'</b> <span style="color:var(--muted)">· '+src.join(' + ')+'</span></span><b style="flex:none">'+(o.h+o.v)+'</b></div>'; }).join('');
+      if(vuLis) desg+='<div style="margin:-2px 0 6px 12px;padding-left:10px;border-left:2px solid var(--line);font-size:.74rem">'+vuLis+'</div>';
+    }
     if(x.peajes) desg+='<div class="rd-lin"><span>Peajes (reembolso)</span><b>'+fmtMoney(x.peajes)+'</b></div>';
     if(x.bono) desg+='<div class="rd-lin"><span>Extras</span><b style="color:#0f6e56">'+fmtMoney(x.bono)+'</b></div>';
     if(x.desc) desg+='<div class="rd-lin"><span>Descuentos</span><b style="color:#dc2626">− '+fmtMoney(x.desc)+'</b></div>';
