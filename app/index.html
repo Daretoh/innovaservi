@@ -382,6 +382,17 @@
   .dg-h4{font:800 12.5px var(--font);color:var(--ink);text-transform:uppercase;letter-spacing:.03em;margin:16px 0 6px;padding-bottom:3px;border-bottom:1px solid #dde1ec;}
   .dg-tbl td.dg-k{width:30%;font-weight:700;background:#f7f8fc;}
   .dg-opt{position:relative;}
+  .sal-chks{display:flex;flex-wrap:wrap;gap:6px;}
+  .sal-chk{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:10px;padding:7px 10px;font:600 13px var(--font);cursor:pointer;background:#fff;}
+  .sal-chk input{width:16px;height:16px;accent-color:var(--orange);margin:0;}
+  .sal-chk:has(input:checked){border-color:var(--orange);background:#fff4ec;}
+  .sl-res{display:flex;flex-direction:column;margin-top:4px;border-radius:10px;overflow:hidden;}
+  .sl-res button{display:flex;flex-direction:column;align-items:flex-start;gap:1px;text-align:left;border:1px solid var(--line);border-top:none;background:#fff;padding:8px 10px;font:500 13px var(--font);color:var(--ink);cursor:pointer;}
+  .sl-res button:first-child{border-top:1px solid var(--line);border-radius:10px 10px 0 0;} .sl-res button:last-child{border-radius:0 0 10px 10px;} .sl-res button:only-child{border-radius:10px;}
+  .sl-res button span{font-size:11.5px;color:var(--muted);} .sl-res button:hover{background:#fff4ec;}
+  .dg-sg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px 14px;font-size:12.5px;} .dg-sg>div{display:flex;align-items:center;gap:7px;} .dg-sg .dg-sg-otro{grid-column:1/-1;}
+  .dg-bx{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border:1.5px solid #555;border-radius:2px;font:800 11px/1 var(--font);flex:none;} .dg-bx.on{background:var(--orange);border-color:var(--orange);color:#fff;}
+  .dg-box{border:1px solid #cfd3e0;border-radius:4px;min-height:48px;padding:8px 10px;font-size:12.5px;line-height:1.5;margin-bottom:6px;white-space:pre-wrap;}
   .dg-bar{position:absolute;left:-12px;top:0;bottom:12px;width:3px;background:#f0c9a0;border-radius:2px;}
   .dg-opt-l{font:700 9.5px var(--font);color:#b45309;text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px;}
   .dg-x{position:absolute;right:-30px;top:0;width:22px;height:22px;border-radius:50%;border:1px solid #e3b98f;background:#fff7ef;color:#b45309;font:700 14px/1 var(--font);cursor:pointer;padding:0;}
@@ -1059,6 +1070,7 @@
       <button class="sb-item sb-admin" data-v="v-rrhh" data-seg="doc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>Documentación</button>
       <button class="sb-item sb-admin" data-v="v-rrhh" data-seg="capacit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c0 1 2.5 3 6 3s6-2 6-3v-5"/></svg>Capacitaciones</button>
       <button class="sb-item sb-admin" data-v="v-rrhh" data-seg="finiquito"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="m9 15 2 2 4-4"/></svg>Finiquitos</button>
+      <button class="sb-item sb-admin" data-v="v-rrhh" data-seg="salida"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M12 8v8M8 12h8"/></svg>Salidas médicas</button>
 
       <div class="sbar-grp sb-admin">Remuneraciones</div>
       <button class="sb-item sb-admin" data-v="v-remu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg>Remuneraciones</button>
@@ -1317,6 +1329,7 @@
         <button class="btn ghost small rrhh-seg" data-seg="doc" style="flex:1;min-width:120px">📋 Documentación</button>
         <button class="btn ghost small rrhh-seg" data-seg="capacit" style="flex:1;min-width:120px">🎓 Capacitaciones</button>
         <button class="btn ghost small rrhh-seg" data-seg="finiquito" style="flex:1;min-width:120px">📄 Finiquitos</button>
+        <button class="btn ghost small rrhh-seg" data-seg="salida" style="flex:1;min-width:120px">Salidas médicas</button>
       </div>
 
       <!-- Panel Trabajadores -->
@@ -1354,6 +1367,13 @@
         <div class="h-row" style="margin-top:0"><b style="font:800 15px var(--font);color:var(--ink)">Finiquitos <span class="cnt" id="fin-cnt"></span></b><button id="fin-nuevo" class="btn small" style="width:auto">＋ Nuevo</button></div>
         <p class="note" style="margin:0 0 10px">Registro de finiquitos: trabajador, fecha, motivo, monto y el documento.</p>
         <div id="fin-list"></div>
+      </div>
+
+      <!-- Panel Salidas a atención médica -->
+      <div id="rrhh-sal" class="hide">
+        <div class="h-row" style="margin-top:0"><b style="font:800 15px var(--font);color:var(--ink)">Salidas a atención médica <span class="cnt" id="sal-cnt"></span></b><button id="sal-nueva" class="btn small" style="width:auto">＋ Nueva</button></div>
+        <p class="note" style="margin:0 0 10px">Registro de salida por síntomas leves o malestar general: llena el formulario y genera el documento con membrete.</p>
+        <div id="sal-list"></div>
       </div>
 
       <!-- (el informe mensual de accidentes vive en Documentación → Documentos de la empresa) -->
@@ -5633,11 +5653,13 @@
     $('rrhh-trab').classList.toggle('hide', seg!=='trab');
     $('rrhh-doc').classList.toggle('hide', seg!=='doc' && seg!=='capacit');
     $('rrhh-fin').classList.toggle('hide', seg!=='finiquito');
+    $('rrhh-sal').classList.toggle('hide', seg!=='salida');
     if($('doc-sub')) $('doc-sub').classList.toggle('hide', seg!=='doc');
     if(seg!=='doc') $('rrhh-doc').classList.remove('zt-on');
     if(seg==='doc'){ RRHH_CAT=RRHH_TIPOS; RRHH_VISTA='doc'; $('rrhh-panel-note').innerHTML='Documentación estándar por trabajador <span class="cnt" id="rrhh-cnt"></span>. Marca lo entregado, adjunta el archivo y su vencimiento.'; renderRrhh(); }
     else if(seg==='capacit'){ RRHH_CAT=CAP_TIPOS; RRHH_VISTA='doc'; $('rrhh-panel-note').innerHTML='Capacitaciones por trabajador <span class="cnt" id="rrhh-cnt"></span>. Marca la fecha, el vencimiento y adjunta el registro.'; renderRrhh(); }
     else if(seg==='finiquito'){ renderFin(); }
+    else if(seg==='salida'){ renderSal(); }
     if(seg==='doc') setZt(zt);
   }
   document.querySelectorAll('.rrhh-seg').forEach(function(b){ b.addEventListener('click',function(){ rrhhSeg(b.dataset.seg); }); });
@@ -5690,6 +5712,126 @@
     $('rrhh-edit').classList.remove('hide'); $('rrhh-edit').scrollTop=0;
   }
   $('fin-nuevo').addEventListener('click',function(){ abrirFin(null); });
+
+  // ---- Salidas a atención médica (síntomas leves / malestar general) ----
+  // Se llena el formulario, se guarda y se genera el registro con nuestro membrete (PDF).
+  var SAL=[];
+  var SAL_SINT=['Dolor de cabeza','Dolor estomacal','Resfrío o congestión nasal','Dolor muscular','Dolor de oído','Fiebre','Mareos','Cólicos','Fatiga y decaimiento','Malestar general'];
+  function renderSal(){ if(!sb){ pintarSal(); return; } sb.from('salidas_medicas').select('*').order('fecha',{ascending:false}).order('id',{ascending:false}).limit(500).then(function(r){ SAL=(r&&r.data)||[]; pintarSal(); }, function(){ pintarSal(); }); }
+  function pintarSal(){
+    $('sal-cnt').textContent=SAL.length+(SAL.length===1?' registro':' registros');
+    var c=$('sal-list');
+    if(!SAL.length){ c.innerHTML='<div class="empty">Sin salidas registradas.<br><span style="font-size:.82rem">Toca “＋ Nueva”.</span></div>'; return; }
+    c.innerHTML=SAL.map(function(s,i){ var sin=(s.sintomas||[]).concat(s.otro?[s.otro]:[]);
+      return '<div class="rrhh-doc" data-i="'+i+'" style="cursor:pointer"><div class="rd-top"><span class="rd-nm">'+esc(s.nombre||'—')+'</span>'+(s.url?'<span class="dchip ok">PDF</span>':'<span class="dchip pend">Sin PDF</span>')+'</div>'+
+        '<div class="note" style="margin:6px 0 0;font-size:.8rem">'+esc(fechaCorta(s.fecha||''))+(s.hora_salida?' · salida '+esc(s.hora_salida)+' hrs':'')+(sin.length?' · '+esc(sin.join(', ')):'')+
+        (s.url?' · <a href="'+esc(s.url)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:var(--orange-2);font-weight:700">ver PDF</a>':'')+'</div></div>'; }).join('');
+    c.querySelectorAll('[data-i]').forEach(function(el){ el.addEventListener('click',function(){ abrirSal(SAL[+el.dataset.i]); }); });
+  }
+  function horaAhora(){ var d=new Date(); return ('0'+d.getHours()).slice(-2)+':'+('0'+(Math.floor(d.getMinutes()/5)*5)).slice(-2); }
+  function abrirSal(s){
+    s=s||{};
+    $('re-title').textContent=s.id?'Salida a atención médica':'Nueva salida a atención médica';
+    var SEL=s.trabajador_id||null;
+    var pool=RRHH_T.filter(function(t){ return t.estado!=='inactivo' || t.id===SEL; }).sort(function(a,b){ return (a.nombre||'').localeCompare(b.nombre||''); });
+    var marc=s.sintomas||[];
+    var chips=SAL_SINT.map(function(x){ return '<label class="sal-chk"><input type="checkbox" value="'+enc(x)+'"'+(marc.indexOf(x)>=0?' checked':'')+'> '+esc(x)+'</label>'; }).join('');
+    $('re-body').innerHTML='<div class="card">'+
+      '<div class="fld"><label>Trabajador</label><input type="search" id="sl-q" placeholder="Buscar por nombre o RUT…" autocomplete="off" value="'+enc(s.nombre||'')+'"><div id="sl-res" class="sl-res"></div><div id="sl-sel" class="note" style="margin:6px 0 0"></div></div>'+
+      '<div class="grid2"><div class="fld" style="margin:0"><label>Cargo</label><input type="text" id="sl-cargo" value="'+enc(s.cargo||'')+'"></div><div class="fld" style="margin:0"><label>Área / faena</label><input type="text" id="sl-area" value="'+enc(s.area||'')+'" placeholder="Ej: Cermaq Chamiza"></div></div>'+
+      '<div class="fld" style="margin-top:10px"><label>Fecha</label><input type="date" id="sl-fecha" value="'+(s.fecha||todayISO())+'"></div>'+
+      '<div class="fld"><label>Síntomas informados</label><div class="sal-chks" id="sl-sint">'+chips+'</div>'+
+        '<input type="text" id="sl-otro" value="'+enc(s.otro||'')+'" placeholder="Otro (especificar)" style="margin-top:8px"></div>'+
+      '<div class="fld"><label>Descripción breve</label><textarea id="sl-desc" rows="3" placeholder="Qué siente, desde cuándo…">'+esc(s.descripcion||'')+'</textarea></div>'+
+      '<div class="grid2"><div class="fld" style="margin:0"><label>Hora de aviso del malestar</label>'+'<input type="time" id="sl-haviso" value="'+(s.id?(s.hora_aviso||''):horaAhora())+'">'+'</div><div class="fld" style="margin:0"><label>Hora de salida autorizada</label>'+'<input type="time" id="sl-hsal" value="'+(s.id?(s.hora_salida||''):horaAhora())+'">'+'</div></div>'+
+      '<div class="fld" style="margin-top:10px"><label>Centro médico al que asistirá (si corresponde)</label><input type="text" id="sl-centro" value="'+enc(s.centro||'')+'" placeholder="Ej: CESFAM, SAPU, clínica…"></div>'+
+      '<div class="fld"><label>Traslado</label><select id="sl-tras">'+['','Por sus propios medios','Acompañado por un familiar','Acompañado por personal de la empresa','En vehículo de la empresa','Ambulancia'].map(function(o){ return '<option value="'+o+'"'+((s.traslado||'')===o?' selected':'')+'>'+(o||'— elige —')+'</option>'; }).join('')+'</select></div>'+
+      '<div class="fld"><label>Autorizado por</label><input type="text" id="sl-aut" value="'+enc(s.autorizado_por||'')+'" placeholder="Nombre de la jefatura / supervisor"></div>'+
+      '<div class="fld"><label>Observaciones</label><input type="text" id="sl-obs" value="'+enc(s.observaciones||'')+'" placeholder="Opcional"></div>'+
+      '<button id="sl-gen" class="btn" style="width:100%;margin-top:10px">'+svgI(ICO.gen)+'Guardar y generar documento</button>'+
+      '<button id="sl-save" type="button" class="btn ghost" style="width:100%;margin-top:8px">'+svgI(ICO.save)+'Solo guardar</button>'+
+      (s.id?'<button id="sl-del" type="button" style="width:100%;margin-top:8px;background:#fff;border:1px solid #f0c0c0;color:#dc2626;padding:11px;border-radius:12px;font:800 13px var(--font);cursor:pointer">Eliminar</button>':'')+
+    '</div>';
+    // Buscador de trabajador (nombre o RUT): al elegir, rellena RUT y cargo.
+    function nrm(x){ return (x||'').toString().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[.\-\s]/g,''); }
+    function pintarSel(){ var t=RRHH_T.filter(function(x){ return x.id===SEL; })[0];
+      $('sl-sel').innerHTML=t?('<b style="color:var(--ink)">'+esc(t.nombre||'')+'</b> · RUT '+esc(t.rut||'—')+(t.cargo?' · '+esc(t.cargo):'')):'Escribe y elige un trabajador de la lista.'; }
+    function elegir(t){ if(!t) return; SEL=t.id; $('sl-q').value=t.nombre||''; $('sl-res').innerHTML=''; if(t.cargo) $('sl-cargo').value=t.cargo; pintarSel(); }
+    $('sl-q').addEventListener('input',function(){ var q=nrm(this.value); SEL=null; pintarSel();
+      if(!q){ $('sl-res').innerHTML=''; return; }
+      var hits=pool.filter(function(t){ return nrm(t.nombre).indexOf(q)>=0 || nrm(t.rut).indexOf(q)>=0; }).slice(0,8);
+      $('sl-res').innerHTML=hits.length?hits.map(function(t){ return '<button type="button" data-id="'+t.id+'"><b>'+esc(t.nombre||'')+'</b><span>'+esc(t.rut||'')+(t.cargo?' · '+esc(t.cargo):'')+'</span></button>'; }).join(''):'<div class="note" style="padding:8px;margin:0">Sin coincidencias.</div>';
+      $('sl-res').querySelectorAll('button').forEach(function(b){ b.addEventListener('click',function(){ elegir(pool.filter(function(t){ return t.id===+b.dataset.id; })[0]); }); }); });
+    pintarSel();
+    function leer(){
+      var tid=SEL, t=RRHH_T.filter(function(x){ return x.id===tid; })[0], sin=[];
+      $('sl-sint').querySelectorAll('input:checked').forEach(function(c){ sin.push(c.value); });
+      return { trabajador_id:tid, nombre:(t?t.nombre:(s.nombre||'')), rut:(t?t.rut:(s.rut||null)), cargo:($('sl-cargo').value.trim()||null), area:($('sl-area').value.trim()||null),
+        fecha:($('sl-fecha').value||null), sintomas:sin, otro:($('sl-otro').value.trim()||null), descripcion:($('sl-desc').value.trim()||null),
+        hora_aviso:($('sl-haviso').value||null), hora_salida:($('sl-hsal').value||null),
+        centro:($('sl-centro').value.trim()||null), traslado:($('sl-tras').value||null), autorizado_por:($('sl-aut').value.trim()||null), observaciones:($('sl-obs').value.trim()||null), autor:userEmail };
+    }
+    function guardar(gen){
+      var row=leer(); if(!row.nombre){ toast('Elige el trabajador.'); return; }
+      if(!row.sintomas.length && !row.otro){ toast('Marca al menos un síntoma.'); return; }
+      if(s.url) row.url=s.url;
+      busy(true,'Guardando…');
+      var q=s.id?sb.from('salidas_medicas').update(row).eq('id',s.id).select().maybeSingle():sb.from('salidas_medicas').insert(row).select().maybeSingle();
+      q.then(function(r){ busy(false);
+        if(r.error){ toast('No se pudo guardar: '+r.error.message); return; }
+        var saved=r.data||Object.assign({id:s.id},row);
+        $('rrhh-edit').classList.add('hide'); renderSal();
+        if(gen) generarSalDoc(saved); else toast('✓ Guardado');
+      }, function(){ busy(false); toast('No se pudo guardar.'); });
+    }
+    $('sl-gen').addEventListener('click',function(){ guardar(true); });
+    $('sl-save').addEventListener('click',function(){ guardar(false); });
+    if($('sl-del')) $('sl-del').addEventListener('click',function(){ if(!confirm('¿Eliminar este registro?')) return; busy(true,'Eliminando…'); sb.from('salidas_medicas').delete().eq('id',s.id).then(function(){ busy(false); toast('✓ Eliminado'); $('rrhh-edit').classList.add('hide'); renderSal(); }); });
+    $('rrhh-edit').classList.remove('hide'); $('rrhh-edit').scrollTop=0;
+  }
+  $('sal-nueva').addEventListener('click',function(){ abrirSal(null); });
+
+  // Documento: Registro de salida a atención médica (con nuestro membrete).
+  function docSalida(s){
+    var sin=s.sintomas||[];
+    function bx(on){ return '<span class="dg-bx'+(on?' on':'')+'">'+(on?'✓':'')+'</span>'; }
+    function tr(a,b){ return '<tr><td class="dg-k">'+a+'</td><td>'+b+'</td></tr>'; }
+    function hr(h){ return h?(esc(h)+' hrs.'):'______ hrs.'; }
+    var grid=SAL_SINT.map(function(x){ return '<div>'+bx(sin.indexOf(x)>=0)+esc(x)+'</div>'; }).join('')+'<div class="dg-sg-otro">'+bx(!!s.otro)+'Otro: '+(s.otro?'<b>'+esc(s.otro)+'</b>':'____________________')+'</div>';
+    return dgHead('REGISTRO DE SALIDA A ATENCIÓN MÉDICA')+
+      '<p style="text-align:center;margin-top:-6px;color:#667;font-weight:700">Por síntomas leves o malestar general</p>'+
+      '<h4 class="dg-h4">1. Datos del trabajador</h4>'+
+      '<table class="dg-tbl">'+tr('Empresa',EMP.rz+' · RUT '+EMP.rut)+tr('Fecha',ce(fFaena(s.fecha)))+tr('Nombre completo',ce(s.nombre))+tr('RUT',ce(s.rut))+tr('Cargo',ce(s.cargo))+tr('Área / faena',ce(s.area))+'</table>'+
+      '<h4 class="dg-h4">2. Motivo de la salida</h4>'+
+      '<p style="margin-bottom:6px">El trabajador informa presentar el siguiente malestar o síntoma:</p>'+
+      '<div class="dg-sg">'+grid+'</div>'+
+      '<p style="margin:10px 0 4px"><b>Descripción breve:</b></p><div class="dg-box">'+(s.descripcion?esc(s.descripcion):'&nbsp;')+'</div>'+
+      '<h4 class="dg-h4">3. Horario y destino</h4>'+
+      '<table class="dg-tbl">'+tr('Hora de aviso del malestar',hr(s.hora_aviso))+tr('Hora de salida autorizada',hr(s.hora_salida))+tr('Centro médico al que asistirá',ce(s.centro||''))+tr('Traslado',ce(s.traslado||''))+(s.observaciones?tr('Observaciones',esc(s.observaciones)):'')+'</table>'+
+      '<h4 class="dg-h4">4. Declaración</h4>'+
+      '<p>El trabajador declara que los síntomas informados <b>no tienen relación con un accidente del trabajo ni con las labores que desempeña</b>, y que la salida se autoriza para que acuda a atención médica por cuenta de su sistema de salud. Si el malestar tuviera origen laboral, deberá informarlo de inmediato a su jefatura para efectuar la denuncia correspondiente ante el organismo administrador de la Ley N° 16.744. El trabajador se compromete a informar el resultado de la atención y a presentar la licencia médica o comprobante de atención, si corresponde.</p>'+
+      '<div class="dg-firmas"><div>Firma del trabajador<br>'+esc(s.nombre||'')+'</div><div>Autorizado por<br>'+esc(s.autorizado_por||'Jefatura / Supervisor')+'</div></div>';
+  }
+  function generarSalDoc(s){
+    $('dg-var').classList.add('hide');
+    $('dg-doc').classList.remove('fa-mode'); $('dg-doc').innerHTML=docSalida(s);
+    $('dg-hint').textContent='Salida a atención médica · '+(s.nombre||'');
+    DG_CTX={ save:function(){
+      busy(true,'Generando PDF…');
+      pdfDesde($('dg-doc')).then(function(doc){
+        var blob=doc.output('blob'), nombre='SALIDA_MEDICA_'+slug(s.nombre||'x')+'_'+(s.fecha||todayISO())+'.pdf';
+        descargarBlob(blob, nombre);
+        if(!s.id){ busy(false); $('docgen').classList.add('hide'); return; }
+        busy(true,'Guardando…');
+        var f; try{ f=new File([blob], nombre, {type:'application/pdf'}); }catch(_){ f=blob; }
+        subirArchivo(f,'rrhh/salidas-medicas', nombre).then(function(res){
+          if(!res){ busy(false); toast('PDF descargado, pero no se guardó el archivo.'); $('docgen').classList.add('hide'); return; }
+          sb.from('salidas_medicas').update({url:res.url}).eq('id',s.id).then(function(){ busy(false); toast('✓ Documento generado y guardado'); $('docgen').classList.add('hide'); renderSal(); }, function(){ busy(false); $('docgen').classList.add('hide'); });
+        });
+      }).catch(function(){ busy(false); toast('No se pudo generar el PDF.'); });
+    } }; DG_QUEUE=[];
+    $('docgen').classList.remove('hide'); $('docgen').scrollTop=0;
+  }
 
   // ====== Clientes (solo admin) ======
   var CLI_ID=null, CLI_DOCS=[], CLI_Q='';
