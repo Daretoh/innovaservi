@@ -1334,7 +1334,7 @@
 
       <!-- Panel Trabajadores -->
       <div id="rrhh-trab">
-        <div class="h-row" style="margin-top:0"><b style="font:800 15px var(--font);color:var(--ink)">Trabajadores <span class="cnt" id="trab-cnt"></span></b><div style="display:flex;gap:8px;flex-wrap:wrap"><button id="nomina-btn" class="btn ghost small" style="width:auto" title="Nómina de personal activo y avisos de baja para el cliente"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M4 4h16v16H4z"/><path d="M4 9h16M9 9v11"/></svg>Nómina</button><button id="dups-btn" class="btn ghost small" style="width:auto">🔍 Duplicados</button><button id="cargos-btn" class="btn ghost small" style="width:auto">⚙️ Cargos y tratos</button><button id="trab-import" class="btn ghost small" style="width:auto">⬆ Importar</button><button id="trab-nuevo" class="btn small" style="width:auto">＋ Nuevo</button></div></div>
+        <div class="h-row" style="margin-top:0"><b style="font:800 15px var(--font);color:var(--ink)">Trabajadores <span class="cnt" id="trab-cnt"></span></b><div style="display:flex;gap:8px;flex-wrap:wrap"><button id="nomina-btn" class="btn ghost small" style="width:auto" title="Nómina de personal activo y avisos de baja para el cliente"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M4 4h16v16H4z"/><path d="M4 9h16M9 9v11"/></svg>Nómina</button><button id="dups-btn" class="btn ghost small" style="width:auto">🔍 Duplicados</button><button id="cargos-btn" class="btn ghost small" style="width:auto">⚙️ Cargos y tratos</button><button id="trab-import" class="btn ghost small" style="width:auto">⬆ Importar</button><button id="trab-export" class="btn ghost small hide" style="width:auto" title="Descargar la lista de trabajadores (CSV)">⬇ Exportar</button><button id="trab-nuevo" class="btn small" style="width:auto">＋ Nuevo</button></div></div>
         <div id="fichas-inbox"></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
           <input id="trab-search" type="search" placeholder="Buscar nombre, RUT o cargo…" style="flex:1;min-width:150px;font:500 15px var(--font);padding:10px 12px;border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--ink)">
@@ -2025,6 +2025,7 @@
     if($('btn-cli')) $('btn-cli').classList.toggle('hide', op);     // Clientes: solo admin (en el header)
     if($('btn-alertas')) $('btn-alertas').classList.toggle('hide', op); // Alertas: solo admin (en el header)
     if($('btn-acc-h')) $('btn-acc-h').classList.toggle('hide', (userEmail||'').trim().toLowerCase()!=='enzo.castro@innovaservi.com'); // Accesos: solo Enzo (en el header)
+    if($('trab-export')) $('trab-export').classList.toggle('hide', (userEmail||'').trim().toLowerCase()!=='enzo.castro@innovaservi.com'); // Exportar trabajadores: solo Enzo
     document.querySelectorAll('.sb-admin').forEach(function(x){ x.classList.toggle('hide', op); });   // sidebar: items admin
     document.querySelectorAll('.sb-enzo').forEach(function(x){ x.classList.toggle('hide', (userEmail||'').trim().toLowerCase()!=='enzo.castro@innovaservi.com'); });
     if(isAdmin){ ['v-asist','v-fotos'].forEach(function(vv){ var b=document.querySelector('.sbar .sb-item[data-v="'+vv+'"]'); if(b) b.classList.add('hide'); }); }   // Asistencia y Fotos son de terreno: fuera del menu de los duenos
@@ -4424,6 +4425,21 @@
   function cerrarFicha(){ ficha.classList.add('hide'); fiScanner.reset(); }
   $('fi-close').addEventListener('click',cerrarFicha);
   $('trab-nuevo').addEventListener('click',function(){ abrirFicha(null); });
+  // Exportar trabajadores a CSV (solo Enzo). Separador ';' y BOM para que Excel abra bien los acentos.
+  function exportarTrab(){
+    var cols=[['nombre','Nombre'],['rut','RUT'],['cargo','Cargo'],['estado','Estado'],['email','Email'],['telefono','Teléfono'],['fecha_ingreso','Fecha ingreso'],['chofer','Chofer'],['buk','En Buk'],['tipo_pago','Tipo pago'],['sexo','Sexo'],['nacionalidad','Nacionalidad'],['nacimiento','Nacimiento'],['estado_civil','Estado civil']];
+    function cell(v){ if(v==null)v=''; v=String(v); if(/[";\n\r]/.test(v)) v='"'+v.replace(/"/g,'""')+'"'; return v; }
+    var arr=(TRAB||[]).slice().sort(function(a,b){ return (a.nombre||'').localeCompare(b.nombre||''); });
+    var out=[cols.map(function(c){ return c[1]; }).join(';')];
+    arr.forEach(function(t){ out.push(cols.map(function(c){ var v=t[c[0]]; if(c[0]==='chofer'||c[0]==='buk') v=v?'Sí':'No'; if(c[0]==='nombre') v=titleCase(v||''); return cell(v); }).join(';')); });
+    var csv='﻿'+out.join('\r\n');
+    var blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+    var url=URL.createObjectURL(blob), a=document.createElement('a');
+    a.href=url; a.download='trabajadores-'+todayISO()+'.csv'; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){ try{ URL.revokeObjectURL(url); }catch(_){} },800);
+    toast('✓ Exportados '+arr.length+' trabajadores (CSV)');
+  }
+  if($('trab-export')) $('trab-export').addEventListener('click',exportarTrab);
   function renderDocs(){
     var c=$('fi-docs');
     var opts=(typeof RRHH_TIPOS!=='undefined'?RRHH_TIPOS:[]).map(function(tp){ return '<option value="'+tp.slug+'">'+esc(tp.corto||tp.nombre)+'</option>'; }).join('');
