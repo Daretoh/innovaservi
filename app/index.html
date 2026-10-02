@@ -4425,19 +4425,58 @@
   function cerrarFicha(){ ficha.classList.add('hide'); fiScanner.reset(); }
   $('fi-close').addEventListener('click',cerrarFicha);
   $('trab-nuevo').addEventListener('click',function(){ abrirFicha(null); });
-  // Exportar trabajadores a CSV (solo Enzo). Separador ';' y BOM para que Excel abra bien los acentos.
-  function exportarTrab(){
-    var cols=[['nombre','Nombre'],['rut','RUT'],['cargo','Cargo'],['estado','Estado'],['email','Email'],['telefono','Teléfono'],['fecha_ingreso','Fecha ingreso'],['chofer','Chofer'],['buk','En Buk'],['tipo_pago','Tipo pago'],['sexo','Sexo'],['nacionalidad','Nacionalidad'],['nacimiento','Nacimiento'],['estado_civil','Estado civil']];
+  // Exportar trabajadores (solo Enzo): abre una vista de tabla ordenada, con Imprimir/PDF y descarga CSV.
+  function trabExportFilas(){ var orden={activo:0,espera:1,inactivo:2};
+    return (TRAB||[]).slice().sort(function(a,b){
+      var ea=orden[a.estado||'activo']||0, eb=orden[b.estado||'activo']||0; if(ea!==eb) return ea-eb;
+      var c=(a.cargo||'').localeCompare(b.cargo||''); if(c) return c;
+      return (a.nombre||'').localeCompare(b.nombre||'');
+    });
+  }
+  function trabExportCSV(arr){
+    var cols=[['nombre','Nombre'],['rut','RUT'],['cargo','Cargo'],['estado','Estado'],['email','Email'],['telefono','Teléfono'],['fecha_ingreso','Ingreso'],['chofer','Chofer'],['buk','En Buk'],['tipo_pago','Tipo pago']];
     function cell(v){ if(v==null)v=''; v=String(v); if(/[";\n\r]/.test(v)) v='"'+v.replace(/"/g,'""')+'"'; return v; }
-    var arr=(TRAB||[]).slice().sort(function(a,b){ return (a.nombre||'').localeCompare(b.nombre||''); });
-    var out=[cols.map(function(c){ return c[1]; }).join(';')];
-    arr.forEach(function(t){ out.push(cols.map(function(c){ var v=t[c[0]]; if(c[0]==='chofer'||c[0]==='buk') v=v?'Sí':'No'; if(c[0]==='nombre') v=titleCase(v||''); return cell(v); }).join(';')); });
-    var csv='﻿'+out.join('\r\n');
-    var blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
-    var url=URL.createObjectURL(blob), a=document.createElement('a');
-    a.href=url; a.download='trabajadores-'+todayISO()+'.csv'; document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(function(){ try{ URL.revokeObjectURL(url); }catch(_){} },800);
-    toast('✓ Exportados '+arr.length+' trabajadores (CSV)');
+    var out=[cols.map(function(c){return c[1];}).join(';')];
+    arr.forEach(function(t){ out.push(cols.map(function(c){ var v=t[c[0]]; if(c[0]==='chofer'||c[0]==='buk')v=v?'Sí':'No'; if(c[0]==='nombre')v=titleCase(v||''); return cell(v); }).join(';')); });
+    return '﻿'+out.join('\r\n');
+  }
+  function exportarTrab(){
+    var arr=trabExportFilas();
+    var estLbl={activo:'Activo',espera:'En espera',inactivo:'Inactivo'};
+    var estCol={activo:'#0f6e56',espera:'#92400e',inactivo:'#94a3b8'};
+    var filas=arr.map(function(t,i){ var p=(typeof docPct==='function')?docPct(t):null; var est=t.estado||'activo';
+      return '<tr>'+
+        '<td class="n">'+(i+1)+'</td>'+
+        '<td class="nm">'+esc(titleCase(t.nombre||'')||'—')+'</td>'+
+        '<td>'+esc(t.rut||'')+'</td>'+
+        '<td>'+esc(t.cargo||'')+'</td>'+
+        '<td><span class="chip" style="color:'+(estCol[est]||'#555')+';border-color:'+(estCol[est]||'#999')+'44">'+esc(estLbl[est]||est)+'</span></td>'+
+        '<td>'+esc(t.email||'')+'</td>'+
+        '<td>'+esc(t.telefono||'')+'</td>'+
+        '<td>'+esc(t.fecha_ingreso||'')+'</td>'+
+        '<td class="c">'+(t.chofer?'Sí':'')+'</td>'+
+        '<td class="c">'+(t.buk?'✓':'')+'</td>'+
+        '<td class="c">'+(p!=null?(p+'%'):'')+'</td>'+
+      '</tr>';
+    }).join('');
+    var csvData='data:text/csv;charset=utf-8,'+encodeURIComponent(trabExportCSV(arr));
+    var cuenta={activo:0,espera:0,inactivo:0}; arr.forEach(function(t){ var e=t.estado||'activo'; if(cuenta[e]!=null)cuenta[e]++; });
+    var html='<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Trabajadores · InnovaServi</title>'+
+      '<style>*{box-sizing:border-box}body{font:14px/1.4 -apple-system,Segoe UI,Roboto,sans-serif;color:#1b1f4d;margin:0;background:#f5f6fb}'+
+      '.wrap{max-width:1100px;margin:0 auto;padding:22px 18px 50px}h1{font-size:1.5rem;margin:0 0 2px}.meta{color:#6b7186;font-size:.85rem;margin-bottom:14px}'+
+      '.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}.btn{font:700 13px sans-serif;border:1px solid #d6d8e4;background:#fff;color:#1b1f4d;border-radius:9px;padding:9px 14px;cursor:pointer;text-decoration:none;display:inline-block}.btn.main{background:#ff6b00;border-color:#ff6b00;color:#fff}'+
+      'table{border-collapse:collapse;width:100%;background:#fff;border:1px solid #d6d8e4;border-radius:10px;overflow:hidden;font-size:13px}'+
+      'th{background:#1a1f6e;color:#fff;text-align:left;padding:9px 10px;font-size:11px;letter-spacing:.03em;text-transform:uppercase}'+
+      'td{padding:8px 10px;border-top:1px solid #eceef5}td.n,td.c{text-align:center;color:#6b7186}td.nm{font-weight:700}'+
+      'tr:nth-child(even) td{background:#fafbff}.chip{font-weight:800;font-size:11px;border:1px solid;border-radius:999px;padding:1px 9px}'+
+      '@media print{.toolbar{display:none}body{background:#fff}.wrap{max-width:none;padding:0}table{border-radius:0}}</style></head><body>'+
+      '<div class="wrap"><h1>Trabajadores — InnovaServi</h1>'+
+      '<div class="meta">'+arr.length+' en total · Activos '+cuenta.activo+' · En espera '+cuenta.espera+' · Inactivos '+cuenta.inactivo+' · '+new Date().toLocaleDateString('es-CL')+'</div>'+
+      '<div class="toolbar"><button class="btn main" onclick="window.print()">Imprimir / Guardar PDF</button><a class="btn" href="'+csvData+'" download="trabajadores-'+todayISO()+'.csv">Descargar CSV</a></div>'+
+      '<table><thead><tr><th>#</th><th>Nombre</th><th>RUT</th><th>Cargo</th><th>Estado</th><th>Email</th><th>Teléfono</th><th>Ingreso</th><th>Chofer</th><th>Buk</th><th>% Docs</th></tr></thead><tbody>'+filas+'</tbody></table></div></body></html>';
+    var w=window.open('','_blank');
+    if(w){ w.document.open(); w.document.write(html); w.document.close(); toast('✓ Tabla de '+arr.length+' trabajadores'); }
+    else { var blob=new Blob([html],{type:'text/html'}); var u=URL.createObjectURL(blob); var a=document.createElement('a'); a.href=u; a.download='trabajadores-'+todayISO()+'.html'; a.click(); setTimeout(function(){URL.revokeObjectURL(u);},800); toast('✓ Tabla descargada (HTML)'); }
   }
   if($('trab-export')) $('trab-export').addEventListener('click',exportarTrab);
   function renderDocs(){
