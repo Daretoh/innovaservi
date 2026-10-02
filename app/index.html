@@ -994,6 +994,8 @@
   .rm-c{display:block;margin:0 auto;width:16px;height:16px;border-radius:4px;border:0;padding:0;cursor:pointer;}
   .rm-c.sp{background:var(--orange);} .rm-c.fj{background:var(--navy);}
   .rm-c{font:800 10px/1 var(--font);color:#fff;}
+  .rm-tbl tbody tr:not(.rm-grp):not(.rm-sub):not(.rm-tot):hover td{background:#fff4ec;}
+  .rm-tbl tbody tr:not(.rm-grp):not(.rm-sub):not(.rm-tot):hover td.rm-nm{box-shadow:inset 3px 0 0 var(--orange);}
   .rm-tbl .rm-open{cursor:pointer;} .rm-tbl .rm-open:hover b{color:var(--orange-2);text-decoration:underline;}
   .rm-mdia{cursor:pointer;margin:0 -6px;padding-left:6px !important;padding-right:6px !important;border-radius:8px;} .rm-mdia:hover{background:#fff4ec;}
   .rm-ver{font:700 10.5px var(--font);color:var(--orange-2);margin-top:2px;}
@@ -1608,6 +1610,7 @@
       <div class="fld" id="fi-jornada-wrap" style="display:none"><label>Jornada normal (horas/día, incl. colación)</label><input id="fi-jornada" type="number" min="0" step="0.5" placeholder="Ej: 9"><div class="note" style="margin:4px 0 0;font-size:.72rem">Dentro de esta jornada no se cuenta trato; solo las horas por sobre ella cuentan como extra.</div>
         <div class="grid2" style="margin-top:8px"><div class="fld" style="margin:0"><label>Turno desde <span class="note" style="font-weight:400">(opcional)</span></label><input id="fi-jini" type="time"></div><div class="fld" style="margin:0"><label>Turno hasta</label><input id="fi-jfin" type="time"></div></div>
         <div class="grid2" style="margin-top:8px"><div class="fld" style="margin:0"><label>Sueldo base mensual ($)</label><input id="fi-sueldo" type="number" min="0" step="1000" placeholder="Ej: 750000"></div><div class="fld" style="margin:0"><label>Sueldo lo paga</label><select id="fi-sueldo-emp"><option value="">Innova Servi</option><option value="IS Performance">IS Performance</option></select></div></div>
+        <div class="fld" style="margin:8px 0 0"><label>Sueldo vigente desde (mes)</label><input id="fi-sueldo-desde" type="month"><div class="note" style="margin:4px 0 0;font-size:.72rem">En los meses anteriores no se muestra este sueldo en Remuneraciones.</div></div>
         <div class="note" style="margin:4px 0 0;font-size:.72rem">Si defines un turno (ej. 09:00–18:00), las horas <b>dentro</b> del turno no generan trato; las de <b>fuera</b> del turno, y los fines de semana/feriados, sí. (Usa esto en vez de las horas/día.)</div></div>
       <div class="grid2">
         <div class="fld"><label>Teléfono</label><input id="fi-tel" type="tel" placeholder="+56 9 ..."></div>
@@ -4429,7 +4432,7 @@
     FICHA_ID=t?t.id:null; FICHA_EST0=(t&&t.estado)||'espera';
     $('fi-nombre').value=t?(t.nombre||''):''; $('fi-rut').value=t?(t.rut||''):''; poblarSelectCargo($('fi-cargo'), t?(t.cargo||''):''); trHint();
     $('fi-estado').value=(t&&t.estado)||'espera'; $('fi-ingreso').value=t?(t.fecha_ingreso||''):''; if($('fi-chofer')) $('fi-chofer').checked=!!(t&&t.chofer);
-    if($('fi-fijo')){ var esFijo=!!(t&&t.tipo_pago==='contrato'); $('fi-fijo').checked=esFijo; $('fi-jornada').value=(t&&t.jornada_horas)||''; if($('fi-jini')) $('fi-jini').value=(t&&t.jornada_ini)||''; if($('fi-jfin')) $('fi-jfin').value=(t&&t.jornada_fin)||''; if($('fi-sueldo')) $('fi-sueldo').value=(t&&t.sueldo_base)||''; if($('fi-sueldo-emp')) $('fi-sueldo-emp').value=(t&&t.sueldo_empresa)||''; $('fi-jornada-wrap').style.display=esFijo?'':'none'; }
+    if($('fi-fijo')){ var esFijo=!!(t&&t.tipo_pago==='contrato'); $('fi-fijo').checked=esFijo; $('fi-jornada').value=(t&&t.jornada_horas)||''; if($('fi-jini')) $('fi-jini').value=(t&&t.jornada_ini)||''; if($('fi-jfin')) $('fi-jfin').value=(t&&t.jornada_fin)||''; if($('fi-sueldo')) $('fi-sueldo').value=(t&&t.sueldo_base)||''; if($('fi-sueldo-emp')) $('fi-sueldo-emp').value=(t&&t.sueldo_empresa)||''; if($('fi-sueldo-desde')) $('fi-sueldo-desde').value=(t&&t.sueldo_desde)?String(t.sueldo_desde).slice(0,7):''; $('fi-jornada-wrap').style.display=esFijo?'':'none'; }
     $('fi-tel').value=t?(t.telefono||''):''; $('fi-email').value=t?(t.email||''):'';
     $('fi-botas').value=t?(t.talla_botas||''):''; $('fi-ropa').value=t?(t.talla_ropa||''):'';
     $('fi-afp').value=t?(t.afp||''):''; $('fi-salud').value=t?(t.salud||''):'';
@@ -4645,7 +4648,7 @@
   $('fi-save').addEventListener('click',function(){
     if(!sb) return; var nom=titleCase($('fi-nombre').value.trim()); if(!nom){ toast('El nombre es obligatorio.'); return; }
     var _fijo=!!($('fi-fijo')&&$('fi-fijo').checked);
-    var row={ nombre:nom, rut:$('fi-rut').value.trim(), cargo:$('fi-cargo').value.trim(), estado:$('fi-estado').value, chofer:!!($('fi-chofer')&&$('fi-chofer').checked), tipo_pago:(_fijo?'contrato':'hora'), jornada_horas:(_fijo?(+$('fi-jornada').value||null):null), jornada_ini:(_fijo&&$('fi-jini')?($('fi-jini').value||null):null), jornada_fin:(_fijo&&$('fi-jfin')?($('fi-jfin').value||null):null), sueldo_base:(_fijo&&$('fi-sueldo')?(+$('fi-sueldo').value||null):null), sueldo_empresa:(_fijo&&$('fi-sueldo-emp')?($('fi-sueldo-emp').value||null):null),
+    var row={ nombre:nom, rut:$('fi-rut').value.trim(), cargo:$('fi-cargo').value.trim(), estado:$('fi-estado').value, chofer:!!($('fi-chofer')&&$('fi-chofer').checked), tipo_pago:(_fijo?'contrato':'hora'), jornada_horas:(_fijo?(+$('fi-jornada').value||null):null), jornada_ini:(_fijo&&$('fi-jini')?($('fi-jini').value||null):null), jornada_fin:(_fijo&&$('fi-jfin')?($('fi-jfin').value||null):null), sueldo_base:(_fijo&&$('fi-sueldo')?(+$('fi-sueldo').value||null):null), sueldo_empresa:(_fijo&&$('fi-sueldo-emp')?($('fi-sueldo-emp').value||null):null), sueldo_desde:(_fijo&&$('fi-sueldo-desde')&&$('fi-sueldo-desde').value?($('fi-sueldo-desde').value+'-01'):null),
       telefono:$('fi-tel').value.trim(), email:$('fi-email').value.trim(), fecha_ingreso:$('fi-ingreso').value||null,
       talla_botas:$('fi-botas').value.trim(), talla_ropa:$('fi-ropa').value.trim(), afp:$('fi-afp').value.trim(),
       salud:$('fi-salud').value.trim(), direccion:$('fi-dir').value.trim(), emergencia:$('fi-emerg').value.trim(),
@@ -5115,7 +5118,8 @@
   function rmVuDia(x,f){ return (x.vuDia&&x.vuDia[f])||0; }
   function rmSoloVu(x){ if(x.ext||!x.vuDia) return 0; var n=0; for(var f in x.vuDia){ if(x.vuDia[f] && !(rmMinDia(x,f)>0)) n++; } return n; }
   // Sueldo base de los fijos (ficha del trabajador). Si lo paga IS Performance se muestra, pero no suma en Innova.
-  function rmSueldo(x){ return (!x.ext && rmEsFijo(x)) ? (+x.t.sueldo_base||0) : 0; }
+  function rmSueldoAntes(x){ var d=x.t&&x.t.sueldo_desde; return !!(d && RM_DATA && RM_DATA.mes < String(d).slice(0,7)); }   // mes anterior a la vigencia
+  function rmSueldo(x){ return (!x.ext && rmEsFijo(x) && !rmSueldoAntes(x)) ? (+x.t.sueldo_base||0) : 0; }
   function rmSueldoOtra(x){ return rmSueldo(x) && x.t.sueldo_empresa ? x.t.sueldo_empresa : ''; }
   function rmSueldoPropio(x){ return rmSueldoOtra(x)?0:rmSueldo(x); }
   function rmTotal(x){ return x.contable+rmSueldoPropio(x); }
@@ -5253,7 +5257,7 @@
         (rmEsFijo(x)&&!x.ext?(rmJornadaTxt(x)?'<div class="rm-jor">'+esc(rmJornadaTxt(x))+'</div>':'<div class="rm-jor bad" title="Configura la jornada en la ficha del trabajador: sin ella todas sus horas se pagan como trato">Sin jornada configurada: todas sus horas cuentan como trato</div>'):'')+
         (ambas?'<span class="rm-both" title="Mismo RUT en las dos empresas">También en '+(x.ext?'Innova Servi':'IS Performance')+'</span>':'')+'</td>'+
         '<td class="rm-tp"><span class="rm-chip '+(fj?'fj':'sp')+'">'+(fj?'Fijo':'Spot')+'</span></td>'+celdas+
-        '<td><b>'+rmDias(x)+'</b>'+(soloVu?'<div class="rt-sub" style="color:#0e7490">+'+soloVu+' solo vueltas</div>':'')+'</td><td>'+hm(x.totMin)+'</td><td>'+(rmSueldoOtra(x)?'<span class="rt-z" style="color:var(--muted)">'+fmtMoney(rmSueldo(x))+'</span><div class="rt-sub">lo paga '+esc(rmSueldoOtra(x))+'</div>':(rmEsFijo(x)&&!x.ext&&!rmSueldo(x)?'<span class="rt-z">sin sueldo</span>':m(rmSueldo(x))))+'</td><td>'+m(x.baseCont)+(rmEsFijo(x)&&!x.ext&&x.baseMin?'<div class="rt-sub">'+hm(x.baseMin)+' extra</div>':'')+'</td><td>'+m(x.vueltasMonto)+(x.vueltas&&!x.ext?'<div class="rt-sub">'+x.vueltas+' vuelta'+(x.vueltas>1?'s':'')+'</div>':'')+'</td><td>'+m(x.peajes)+'</td>'+
+        '<td><b>'+rmDias(x)+'</b>'+(soloVu?'<div class="rt-sub" style="color:#0e7490">+'+soloVu+' solo vueltas</div>':'')+'</td><td>'+hm(x.totMin)+'</td><td>'+(rmSueldoOtra(x)?'<span class="rt-z" style="color:var(--muted)">'+fmtMoney(rmSueldo(x))+'</span><div class="rt-sub">lo paga '+esc(rmSueldoOtra(x))+'</div>':(rmEsFijo(x)&&!x.ext&&!rmSueldo(x)?(rmSueldoAntes(x)&&+x.t.sueldo_base?'<span class="rt-z">—</span><div class="rt-sub">rige desde '+esc(fechaCorta(String(x.t.sueldo_desde).slice(0,10)).replace(/^\d+ /,''))+'</div>':'<span class="rt-z">sin sueldo</span>'):m(rmSueldo(x))))+'</td><td>'+m(x.baseCont)+(rmEsFijo(x)&&!x.ext&&x.baseMin?'<div class="rt-sub">'+hm(x.baseMin)+' extra</div>':'')+'</td><td>'+m(x.vueltasMonto)+(x.vueltas&&!x.ext?'<div class="rt-sub">'+x.vueltas+' vuelta'+(x.vueltas>1?'s':'')+'</div>':'')+'</td><td>'+m(x.peajes)+'</td>'+
         extra+'<td class="rt-bad">'+m(x.desc,true)+'</td><td class="rt-tot">'+fmtMoney(rmTotal(x))+'</td></tr>'; }
     function totFila(cls,lbl,s){ return '<tr class="'+cls+'"><td class="rm-n"></td><td class="rm-nm">'+lbl+'</td><td class="rm-tp"></td><td colspan="'+fechas.length+'"></td>'+
       '<td>'+s.dias+'</td><td>'+hm(s.min)+'</td><td>'+fmtMoney(s.sueldo)+'</td><td>'+fmtMoney(s.tratos)+'</td><td>'+fmtMoney(s.vueltas)+'</td><td>'+fmtMoney(s.peajes)+'</td><td>'+fmtMoney(s.bono)+'</td><td>'+(s.desc?'−'+fmtMoney(s.desc):'$0')+'</td><td>'+fmtMoney(s.total)+'</td></tr>'; }
