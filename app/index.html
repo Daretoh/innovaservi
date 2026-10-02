@@ -994,6 +994,10 @@
   .rm-c{display:block;margin:0 auto;width:16px;height:16px;border-radius:4px;border:0;padding:0;cursor:pointer;}
   .rm-c.sp{background:var(--orange);} .rm-c.fj{background:var(--navy);}
   .rm-c{font:800 10px/1 var(--font);color:#fff;}
+  .rm-tbl .rm-open{cursor:pointer;} .rm-tbl .rm-open:hover b{color:var(--orange-2);text-decoration:underline;}
+  .rm-mdia{cursor:pointer;margin:0 -6px;padding-left:6px !important;padding-right:6px !important;border-radius:8px;} .rm-mdia:hover{background:#fff4ec;}
+  .rm-ver{font:700 10.5px var(--font);color:var(--orange-2);margin-top:2px;}
+  .rm-fatbl .rm-l{text-align:left;} .rm-fa-dot{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:7px;vertical-align:0;}
   .rm-jor{display:inline-block;margin-top:3px;font:700 9.5px var(--font);background:rgba(26,31,110,.08);color:var(--navy);padding:1px 7px;border-radius:999px;}
   .rm-jor.bad{background:#fef3c7;color:#b45309;white-space:normal;}
   .rm-tbl .rm-sinreg{color:var(--muted);background:repeating-linear-gradient(-45deg,#fafbfd 0 6px,#f3f4f8 6px 12px);}
@@ -1314,7 +1318,7 @@
           </div>
         </div>
         <div id="rm-ext-info"></div>
-        <p class="note" style="margin:0 0 10px">Casilla llena = día con horas (el número dentro son las vueltas de ese día). Casilla con borde celeste y número = día con <b>solo vueltas</b>: no cuenta como día trabajado. Casilla roja = registro con 0 horas, revisar. Toca una casilla para abrir esa semana y ver el detalle (horas, faenas y ajustes). <b>Tratos</b> = pago por horas trabajadas (en los fijos, solo lo que pasa la jornada, fines de semana y feriados).</p>
+        <p class="note" style="margin:0 0 10px">Casilla llena = día con horas (el número dentro son las vueltas de ese día). Casilla con borde celeste y número = día con <b>solo vueltas</b>: no cuenta como día trabajado. Casilla roja = registro con 0 horas, revisar. Toca el <b>nombre</b> para ver todos sus trabajos del mes, o una casilla para abrir esa semana y ver el detalle (horas, faenas y ajustes). <b>Tratos</b> = pago por horas trabajadas (en los fijos, solo lo que pasa la jornada, fines de semana y feriados).</p>
         <div id="rm-list"></div>
       </div>
       <div id="remu-sem">
@@ -5222,6 +5226,7 @@
       '<th>Días</th><th>Horas</th><th>Tratos</th><th>Vueltas</th><th>Peajes</th><th>Extras</th><th>Desc.</th><th>Total</th></tr>';
     var m=function(v,neg){ return v?((neg?'−':'')+fmtMoney(v)):'<span class="rt-z">—</span>'; };
     var idx=0;
+    function extIdx(x){ return ext.indexOf(x); }
     function fila(x){ idx++; var fj=rmEsFijo(x), ri=inn.indexOf(x), rk=rutCuerpo(x.t.rut);
       var celdas;
       if(x.ext) celdas='<td class="rm-extd" colspan="'+fechas.length+'">'+x.dias+' día'+(x.dias===1?'':'s')+' · el detalle por día está en IS Performance</td>';
@@ -5239,7 +5244,7 @@
       var ambas=rk && (x.ext?cruce.inn[rk]:cruce.ext[rk]);
       var badge=(!x.ext&&!x.t.id)?'<span class="rm-warn" title="No está registrado como trabajador">Sin ficha</span> ':'';
       var extra=x.ext?('<td class="rt-ok"'+(x.bonoAutos?' title="Bono autos '+fmtMoney(x.bonoAutos)+(x.extras?(' + extras '+fmtMoney(x.extras)):'')+'"':'')+'>'+m(x.bono)+(x.bonoAutos?'<div class="rt-sub">incl. bono autos</div>':'')+'</td>'):('<td class="rt-ok">'+m(x.bono)+'</td>');
-      return '<tr'+(x.ext?' class="rm-isrow"':'')+'><td class="rm-n">'+idx+'</td><td class="rm-nm"><b>'+badge+esc(titleCase(x.t.nombre)||'')+'</b><div class="rt-sub">'+(x.t.rut?esc(x.t.rut):'')+(x.t.rut&&x.t.cargo?' · ':'')+esc(x.t.cargo||'')+'</div>'+
+      return '<tr'+(x.ext?' class="rm-isrow"':'')+'><td class="rm-n">'+idx+'</td><td class="rm-nm rm-open" data-k="'+(x.ext?('e'+extIdx(x)):('i'+ri))+'" title="Ver todos sus trabajos del mes"><b>'+badge+esc(titleCase(x.t.nombre)||'')+'</b><div class="rt-sub">'+(x.t.rut?esc(x.t.rut):'')+(x.t.rut&&x.t.cargo?' · ':'')+esc(x.t.cargo||'')+'</div>'+
         (rmEsFijo(x)&&!x.ext?(rmJornadaTxt(x)?'<div class="rm-jor">'+esc(rmJornadaTxt(x))+'</div>':'<div class="rm-jor bad" title="Configura la jornada en la ficha del trabajador: sin ella todas sus horas se pagan como trato">Sin jornada configurada: todas sus horas cuentan como trato</div>'):'')+
         (ambas?'<span class="rm-both" title="Mismo RUT en las dos empresas">También en '+(x.ext?'Innova Servi':'IS Performance')+'</span>':'')+'</td>'+
         '<td class="rm-tp"><span class="rm-chip '+(fj?'fj':'sp')+'">'+(fj?'Fijo':'Spot')+'</span></td>'+celdas+
@@ -5253,7 +5258,72 @@
     if(G.length>1) body+=totFila('rm-tot','Total general',rmSuma(vis));
     if(!body) body='<tr><td colspan="'+nCol+'" style="text-align:center;padding:20px">Sin trabajadores en este grupo.</td></tr>';
     $('rm-list').innerHTML='<div class="remu-scroll"><table class="rm-tbl"><thead>'+head+'</thead><tbody>'+body+'</tbody></table></div>';
+    $('rm-list').querySelectorAll('.rm-open[data-k]').forEach(function(el){ el.addEventListener('click',function(){ var k=el.dataset.k, x=k[0]==='e'?ext[+k.slice(1)]:inn[+k.slice(1)]; if(x) abrirMesTrab(x); }); });
     $('rm-list').querySelectorAll('.rm-c').forEach(function(b){ b.addEventListener('click',function(){ rmIrSemana(inn[+b.dataset.i], b.dataset.f); }); });
+  }
+  // Detalle del MES de un trabajador: todos sus trabajos día a día (agrupados por semana), resumen por faena y desglose del pago.
+  function abrirMesTrab(x){
+    var D=RM_DATA; if(!D||!x) return;
+    var fj=rmEsFijo(x), nom=titleCase(x.t.nombre)||'Trabajador';
+    $('rd-title').textContent=nom+' · '+D.lbl;
+    var card=function(lbl,html){ return '<div class="card"><label style="display:block;font:700 13px var(--font);color:var(--ink);margin-bottom:8px">'+lbl+'</label>'+html+'</div>'; };
+    var lin=function(a,b,c){ return '<div class="rd-lin"><span>'+a+'</span><b'+(c?' style="color:'+c+'"':'')+'>'+b+'</b></div>'; };
+    var sub='<div class="note" style="margin:0 0 10px">'+(x.t.rut?esc(x.t.rut)+' · ':'')+esc(x.t.cargo||'')+' · <b>'+(x.ext?'IS Performance':'Innova Servi')+'</b> · '+(fj?'Fijo (contrato)'+(!x.ext&&rmJornadaTxt(x)?' · '+esc(rmJornadaTxt(x)):''):'Spot (trato)')+'</div>';
+    var kpi=function(l,v,c){ return '<div class="rm-kpi'+(c?' '+c:'')+'"><div class="l">'+l+'</div><div class="v">'+v+'</div></div>'; };
+    var soloVu=rmSoloVu(x);
+    var kpis='<div class="rm-kpis" style="margin-bottom:10px">'+kpi('Total a pagar',fmtMoney(x.contable),'main')+kpi('Días con horas',rmDias(x))+kpi('Horas',hm(x.totMin))+
+      (soloVu?kpi('Días solo vueltas',soloVu):'')+(x.vueltas&&!x.ext?kpi('Vueltas',x.vueltas):'')+'</div>';
+    // Desglose del pago
+    var des=lin((fj?'Tratos (horas fuera de jornada, findes y feriados'+(x.baseMin?(' · '+hm(x.baseMin)):'')+')':'Tratos ('+hm(x.baseMin||x.totMin)+(x.vh?(' × '+fmtMoney(x.vh)+'/h'):'')+')'), fmtMoney(x.baseCont));
+    if(!x.ext && x.baseCont!==x.base) des+='<div class="note" style="margin:-4px 0 6px;font-size:.72rem;color:#b45309">Incluye ajustes contables por día (real por horas: '+fmtMoney(x.base)+').</div>';
+    if(x.vueltasMonto) des+=lin(x.vueltas+' vuelta'+(x.vueltas>1?'s':'')+' × '+fmtMoney(x.vv||D.valorVuelta), fmtMoney(x.vueltasMonto));
+    if(x.peajes) des+=lin('Peajes (reembolso)', fmtMoney(x.peajes));
+    if(x.ext && x.bonoAutos) des+=lin('Bono autos', fmtMoney(x.bonoAutos), '#0f6e56');
+    var its=(!x.ext&&x.t.id)?(D.items||[]).filter(function(it){ return String(it.trabajador_id)===String(x.t.id); }):[];
+    if(its.length){ its.sort(function(a,b){ return (a.semana||'').localeCompare(b.semana||''); });
+      its.forEach(function(it){ var neg=it.tipo==='descuento';
+        des+=lin((neg?'Descuento':(it.tipo==='bono'?'Extra':'Monto adicional'))+' · '+esc(it.concepto||'—')+' <span class="note" style="margin:0;font-size:.7rem">(sem. '+numSemana(it.semana)+')</span>', (neg?'− ':'')+fmtMoney(+it.monto||0), neg?'#dc2626':'#0f6e56'); }); }
+    else { if(x.bono && !x.ext) des+=lin('Extras', fmtMoney(x.bono), '#0f6e56'); if(x.ext && x.extras) des+=lin('Extras', fmtMoney(x.extras), '#0f6e56'); if(x.desc) des+=lin('Descuentos', '− '+fmtMoney(x.desc), '#dc2626'); }
+    des+='<div class="rd-lin rd-tot"><span>Total a pagar</span><b style="color:var(--orange-2)">'+fmtMoney(x.contable)+'</b></div>';
+    if(x.ext){
+      $('rd-body').innerHTML=sub+kpis+card('Pago del mes',des)+'<div class="card"><p class="note" style="margin:0">El detalle día a día de este trabajador está en la app de <b>IS Performance</b> (Remuneraciones). Aquí solo llega el resumen del CSV importado'+(D.ext&&D.ext.archivo?(' ('+esc(D.ext.archivo)+')'):'')+'.</p></div>';
+      $('remu-detalle').classList.remove('hide'); $('remu-detalle').scrollTop=0; return; }
+    // Días del mes (con horas o con vueltas)
+    var porDia={};
+    ((x.H&&x.H.detalle)||[]).forEach(function(d){ (porDia[d.fecha]||(porDia[d.fecha]=[])).push(d); });
+    for(var fv in (x.vuDia||{})) if(!porDia[fv]) porDia[fv]=[];
+    var fechasT=Object.keys(porDia).sort();
+    // Resumen por faena
+    var byFa={}, faOrd=[];
+    fechasT.forEach(function(f){ porDia[f].forEach(function(d){ var fa=d.faena||'Sin faena asignada'; if(!byFa[fa]){ byFa[fa]={dias:{},min:0,vu:0}; faOrd.push(fa); } byFa[fa].dias[f]=1; byFa[fa].min+=(d.min||0); byFa[fa].vu+=(d.vueltas||0); }); });
+    faOrd.sort(function(a,b){ return byFa[b].min-byFa[a].min; });
+    var faHtml=faOrd.length?('<div class="remu-scroll"><table class="rm-tbl rm-fatbl"><thead><tr><th class="rm-l">Faena</th><th>Días</th><th>Horas</th><th>Vueltas</th></tr></thead><tbody>'+
+      faOrd.map(function(fa){ var g=byFa[fa], col=/^sin faena/i.test(fa)?{border:'#cbd5e1',text:'#64748b'}:colorEmpresa(claveEmpresa(fa));
+        return '<tr><td class="rm-l"><span class="rm-fa-dot" style="background:'+col.border+'"></span><b style="color:'+col.text+'">'+esc(fa)+'</b></td><td>'+Object.keys(g.dias).length+'</td><td>'+hm(g.min)+'</td><td>'+(g.vu||'—')+'</td></tr>'; }).join('')+
+      '</tbody></table></div>'):'<p class="note" style="margin:0">Sin trabajos registrados este mes.</p>';
+    // Día a día, agrupado por semana; cada día abre la semana para ver/editar el detalle.
+    var semanas={}, semOrd=[];
+    fechasT.forEach(function(f){ var l=lunesDe(f); if(!semanas[l]){ semanas[l]=[]; semOrd.push(l); } semanas[l].push(f); });
+    var diasHtml=semOrd.length?semOrd.map(function(l){ var fs2=semanas[l], sMin=0, sMonto=0;
+      var filasD=fs2.map(function(f){ var ents=porDia[f], mn=rmMinDia(x,f), vu=rmVuDia(x,f), monto=(x.diaMonto&&x.diaMonto[f])||0;
+        var real=(mn!=null&&x.vh)?Math.round(tratoMinDia(x.t,x.tipo,x.jor,x.H,f)/60*x.vh):monto;
+        sMin+=(mn||0); sMonto+=monto;
+        var entHtml=ents.map(function(d){ var col=d.faena?colorEmpresa(claveEmpresa(d.faena)):{bg:'#f3f4f6',border:'#cbd5e1',text:'#64748b'};
+          var hor=(d.entrada||d.salida)?(esc(d.entrada||'--:--')+'→'+esc(d.salida||'--:--')+turnoTag(d.entrada,d.salida)+horarioMaloTag(d)+' · '+hm(d.min)):'sin horario';
+          return '<div class="rd-fae" style="border-left:3px solid '+col.border+';background:'+col.bg+'"><span class="rd-fae-nm" style="color:'+col.text+'">'+(d.faena?esc(d.faena):'Sin faena asignada')+'</span><span class="rd-fae-h">'+hor+(d.vueltas?(' · '+d.vueltas+' vuelta'+(d.vueltas>1?'s':'')):'')+'</span></div>'; }).join('');
+        var vuVeh=vu-ents.reduce(function(a,d){ return a+(d.vueltas||0); },0);
+        if(vuVeh>0) entHtml+='<div class="rd-fae" style="border-left:3px solid #67e8f9;background:#ecfeff"><span class="rd-fae-nm" style="color:#0e7490">Vehículos</span><span class="rd-fae-h">'+vuVeh+' vuelta'+(vuVeh>1?'s':'')+' registrada'+(vuVeh>1?'s':'')+' por el chofer</span></div>';
+        var etq=mn>0?'':(vu?'<span class="turno-tag" style="background:#ecfeff;color:#0e7490;border:1px solid #67e8f9">Solo vueltas</span>':'');
+        return '<div class="rd-day2 rm-mdia" data-f="'+f+'" title="Abrir la semana para ver o ajustar este día"><div style="flex:1;min-width:0"><b>'+fechaDia(f)+'</b> <span class="note" style="margin:0;font-size:.72rem">· '+hm(mn||0)+'</span> '+etq+'<div class="rd-fae-list">'+entHtml+'</div></div>'+
+          '<div class="rd-dcol"><b style="color:var(--orange-2);font-size:.95rem">'+fmtMoney(monto)+'</b>'+(monto!==real?'<span class="rd-real2 rd-aj2">real '+fmtMoney(real)+'</span>':'')+'<span class="rm-ver">ver semana ›</span></div></div>'; }).join('');
+      return '<div class="rd-fagrp"><div class="rd-fahead"><b>Semana '+numSemana(l)+'</b><span class="note" style="margin:0;font-size:.72rem">'+fechaCorta(l)+' – '+fechaCorta(sumarDias(l,6))+'</span><span class="rd-fasub">'+hm(sMin)+' · '+fmtMoney(sMonto)+'</span></div>'+filasD+'</div>'; }).join('')
+      :'<p class="note" style="margin:0">Sin días registrados este mes.</p>';
+    $('rd-body').innerHTML=sub+kpis+
+      card('Pago del mes',des)+
+      card('Por faena ('+faOrd.length+')',faHtml)+
+      card('Trabajos día a día <span class="note" style="margin:0;font-weight:600">· toca un día para abrir esa semana y ajustar</span>',diasHtml);
+    $('rd-body').querySelectorAll('.rm-mdia[data-f]').forEach(function(el){ el.addEventListener('click',function(){ $('remu-detalle').classList.add('hide'); rmIrSemana(x, el.dataset.f); }); });
+    $('remu-detalle').classList.remove('hide'); $('remu-detalle').scrollTop=0;
   }
   // Trazabilidad: desde una casilla del mes, abre esa semana con el detalle del trabajador.
   function rmIrSemana(x, f){
