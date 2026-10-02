@@ -5119,10 +5119,10 @@
   function rmSoloVu(x){ if(x.ext||!x.vuDia) return 0; var n=0; for(var f in x.vuDia){ if(x.vuDia[f] && !(rmMinDia(x,f)>0)) n++; } return n; }
   // Sueldo base de los fijos (ficha del trabajador). Si lo paga IS Performance se muestra, pero no suma en Innova.
   function rmSueldoAntes(x){ var d=x.t&&x.t.sueldo_desde; return !!(d && RM_DATA && RM_DATA.mes < String(d).slice(0,7)); }   // mes anterior a la vigencia
-  function rmSueldo(x){ return (!x.ext && rmEsFijo(x) && !rmSueldoAntes(x)) ? (+x.t.sueldo_base||0) : 0; }
+  function rmSueldo(x){ if(x.ext) return x.sueldoExt||0; return (rmEsFijo(x) && !rmSueldoAntes(x)) ? (+x.t.sueldo_base||0) : 0; }
   function rmSueldoOtra(x){ return rmSueldo(x) && x.t.sueldo_empresa ? x.t.sueldo_empresa : ''; }
   function rmSueldoPropio(x){ return rmSueldoOtra(x)?0:rmSueldo(x); }
-  function rmTotal(x){ return x.contable+rmSueldoPropio(x); }
+  function rmTotal(x){ return x.ext ? x.contable : x.contable+rmSueldoPropio(x); }
   function rmSuma(L){ var s={n:L.length,dias:0,min:0,sueldo:0,tratos:0,nvu:0,vueltas:0,peajes:0,bono:0,desc:0,total:0};
     L.forEach(function(x){ s.dias+=rmDias(x); s.nvu+=(x.ext?0:(x.vueltas||0)); s.sueldo+=rmSueldoPropio(x); s.min+=x.totMin; s.tratos+=x.baseCont; s.vueltas+=x.vueltasMonto; s.peajes+=x.peajes; s.bono+=x.bono; s.desc+=x.desc; s.total+=rmTotal(x); }); return s; }
 
@@ -5134,7 +5134,7 @@
   function rmExtFilas(){ var E=RM_DATA&&RM_DATA.ext; if(!E||!E.filas) return [];
     return E.filas.map(function(r){ var fj=/fijo|contrato|mensual/i.test(r.tipo||'');
       return { ext:true, t:{id:null,nombre:r.nombre,rut:r.rut,cargo:r.cargo}, tipo:fj?'contrato':'hora', dias:r.dias, totMin:r.min,
-        baseCont:r.base, vueltasMonto:0, peajes:0, bonoAutos:r.bonoAutos, extras:r.extras, bono:r.bonoAutos+r.extras, desc:r.desc, contable:r.total, real:r.real, H:null }; }); }
+        baseCont:r.base, vueltasMonto:0, peajes:0, bonoAutos:r.bonoAutos, extras:r.extras, bono:r.bonoAutos+r.extras, desc:r.desc, sueldoExt:(+r.sueldo||0), contable:r.total, real:r.real, H:null }; }); }
   // Grupos del consolidado (mismo orden en pantalla, Excel y PDF). filt: 'todos' | 'spot' | 'fijo'.
   function rmGrupos(filt){
     var inn=RM_DATA.R.filas, ext=rmExtFilas(), E=RM_DATA.ext;
@@ -5176,7 +5176,7 @@
       var total=rmNum(g(r,H.totalapagar!=null?'totalapagar':'totalreal'));
       filas.push({ nombre:nom, rut:g(r,'rut'), cargo:g(r,'cargo'), tipo:g(r,'tipo'), dias:Math.round(rmNum(g(r,'dias'))),
         min:Math.round(rmNum(g(r,'horas'))*60), base:Math.round(rmNum(g(r,'base'))), bonoAutos:Math.round(rmNum(g(r,'bonoautos'))),
-        extras:Math.round(rmNum(g(r,'extras'))), desc:Math.round(rmNum(g(r,'descuentos'))), real:Math.round(rmNum(g(r,'totalreal'))||total), total:Math.round(total) }); });
+        extras:Math.round(rmNum(g(r,'extras'))), desc:Math.round(rmNum(g(r,'descuentos'))), sueldo:Math.round(rmNum(g(r,'sueldobase'))), real:Math.round(rmNum(g(r,'totalreal'))||total), total:Math.round(total) }); });
     if(!filas.length) return {error:'El archivo no trae trabajadores.'};
     return {filas:filas, meses:Object.keys(meses)}; }
   function rmPintarExtInfo(){
