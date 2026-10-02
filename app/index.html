@@ -1607,6 +1607,7 @@
       <div class="fld"><label style="display:flex;align-items:center;gap:9px;cursor:pointer;font-weight:600"><input id="fi-fijo" type="checkbox" style="width:18px;height:18px;accent-color:var(--orange)">📄 Contrato fijo (renta fija, no por trato)</label></div>
       <div class="fld" id="fi-jornada-wrap" style="display:none"><label>Jornada normal (horas/día, incl. colación)</label><input id="fi-jornada" type="number" min="0" step="0.5" placeholder="Ej: 9"><div class="note" style="margin:4px 0 0;font-size:.72rem">Dentro de esta jornada no se cuenta trato; solo las horas por sobre ella cuentan como extra.</div>
         <div class="grid2" style="margin-top:8px"><div class="fld" style="margin:0"><label>Turno desde <span class="note" style="font-weight:400">(opcional)</span></label><input id="fi-jini" type="time"></div><div class="fld" style="margin:0"><label>Turno hasta</label><input id="fi-jfin" type="time"></div></div>
+        <div class="grid2" style="margin-top:8px"><div class="fld" style="margin:0"><label>Sueldo base mensual ($)</label><input id="fi-sueldo" type="number" min="0" step="1000" placeholder="Ej: 750000"></div><div class="fld" style="margin:0"><label>Sueldo lo paga</label><select id="fi-sueldo-emp"><option value="">Innova Servi</option><option value="IS Performance">IS Performance</option></select></div></div>
         <div class="note" style="margin:4px 0 0;font-size:.72rem">Si defines un turno (ej. 09:00–18:00), las horas <b>dentro</b> del turno no generan trato; las de <b>fuera</b> del turno, y los fines de semana/feriados, sí. (Usa esto en vez de las horas/día.)</div></div>
       <div class="grid2">
         <div class="fld"><label>Teléfono</label><input id="fi-tel" type="tel" placeholder="+56 9 ..."></div>
@@ -4428,7 +4429,7 @@
     FICHA_ID=t?t.id:null; FICHA_EST0=(t&&t.estado)||'espera';
     $('fi-nombre').value=t?(t.nombre||''):''; $('fi-rut').value=t?(t.rut||''):''; poblarSelectCargo($('fi-cargo'), t?(t.cargo||''):''); trHint();
     $('fi-estado').value=(t&&t.estado)||'espera'; $('fi-ingreso').value=t?(t.fecha_ingreso||''):''; if($('fi-chofer')) $('fi-chofer').checked=!!(t&&t.chofer);
-    if($('fi-fijo')){ var esFijo=!!(t&&t.tipo_pago==='contrato'); $('fi-fijo').checked=esFijo; $('fi-jornada').value=(t&&t.jornada_horas)||''; if($('fi-jini')) $('fi-jini').value=(t&&t.jornada_ini)||''; if($('fi-jfin')) $('fi-jfin').value=(t&&t.jornada_fin)||''; $('fi-jornada-wrap').style.display=esFijo?'':'none'; }
+    if($('fi-fijo')){ var esFijo=!!(t&&t.tipo_pago==='contrato'); $('fi-fijo').checked=esFijo; $('fi-jornada').value=(t&&t.jornada_horas)||''; if($('fi-jini')) $('fi-jini').value=(t&&t.jornada_ini)||''; if($('fi-jfin')) $('fi-jfin').value=(t&&t.jornada_fin)||''; if($('fi-sueldo')) $('fi-sueldo').value=(t&&t.sueldo_base)||''; if($('fi-sueldo-emp')) $('fi-sueldo-emp').value=(t&&t.sueldo_empresa)||''; $('fi-jornada-wrap').style.display=esFijo?'':'none'; }
     $('fi-tel').value=t?(t.telefono||''):''; $('fi-email').value=t?(t.email||''):'';
     $('fi-botas').value=t?(t.talla_botas||''):''; $('fi-ropa').value=t?(t.talla_ropa||''):'';
     $('fi-afp').value=t?(t.afp||''):''; $('fi-salud').value=t?(t.salud||''):'';
@@ -4644,7 +4645,7 @@
   $('fi-save').addEventListener('click',function(){
     if(!sb) return; var nom=titleCase($('fi-nombre').value.trim()); if(!nom){ toast('El nombre es obligatorio.'); return; }
     var _fijo=!!($('fi-fijo')&&$('fi-fijo').checked);
-    var row={ nombre:nom, rut:$('fi-rut').value.trim(), cargo:$('fi-cargo').value.trim(), estado:$('fi-estado').value, chofer:!!($('fi-chofer')&&$('fi-chofer').checked), tipo_pago:(_fijo?'contrato':'hora'), jornada_horas:(_fijo?(+$('fi-jornada').value||null):null), jornada_ini:(_fijo&&$('fi-jini')?($('fi-jini').value||null):null), jornada_fin:(_fijo&&$('fi-jfin')?($('fi-jfin').value||null):null),
+    var row={ nombre:nom, rut:$('fi-rut').value.trim(), cargo:$('fi-cargo').value.trim(), estado:$('fi-estado').value, chofer:!!($('fi-chofer')&&$('fi-chofer').checked), tipo_pago:(_fijo?'contrato':'hora'), jornada_horas:(_fijo?(+$('fi-jornada').value||null):null), jornada_ini:(_fijo&&$('fi-jini')?($('fi-jini').value||null):null), jornada_fin:(_fijo&&$('fi-jfin')?($('fi-jfin').value||null):null), sueldo_base:(_fijo&&$('fi-sueldo')?(+$('fi-sueldo').value||null):null), sueldo_empresa:(_fijo&&$('fi-sueldo-emp')?($('fi-sueldo-emp').value||null):null),
       telefono:$('fi-tel').value.trim(), email:$('fi-email').value.trim(), fecha_ingreso:$('fi-ingreso').value||null,
       talla_botas:$('fi-botas').value.trim(), talla_ropa:$('fi-ropa').value.trim(), afp:$('fi-afp').value.trim(),
       salud:$('fi-salud').value.trim(), direccion:$('fi-dir').value.trim(), emergencia:$('fi-emerg').value.trim(),
@@ -5113,8 +5114,13 @@
   function rmMinDia(x,f){ return (x.H&&x.H.porDia&&x.H.porDia[f]!=null)?x.H.porDia[f]:null; }
   function rmVuDia(x,f){ return (x.vuDia&&x.vuDia[f])||0; }
   function rmSoloVu(x){ if(x.ext||!x.vuDia) return 0; var n=0; for(var f in x.vuDia){ if(x.vuDia[f] && !(rmMinDia(x,f)>0)) n++; } return n; }
-  function rmSuma(L){ var s={n:L.length,dias:0,min:0,tratos:0,nvu:0,vueltas:0,peajes:0,bono:0,desc:0,total:0};
-    L.forEach(function(x){ s.dias+=rmDias(x); s.nvu+=(x.ext?0:(x.vueltas||0)); s.min+=x.totMin; s.tratos+=x.baseCont; s.vueltas+=x.vueltasMonto; s.peajes+=x.peajes; s.bono+=x.bono; s.desc+=x.desc; s.total+=x.contable; }); return s; }
+  // Sueldo base de los fijos (ficha del trabajador). Si lo paga IS Performance se muestra, pero no suma en Innova.
+  function rmSueldo(x){ return (!x.ext && rmEsFijo(x)) ? (+x.t.sueldo_base||0) : 0; }
+  function rmSueldoOtra(x){ return rmSueldo(x) && x.t.sueldo_empresa ? x.t.sueldo_empresa : ''; }
+  function rmSueldoPropio(x){ return rmSueldoOtra(x)?0:rmSueldo(x); }
+  function rmTotal(x){ return x.contable+rmSueldoPropio(x); }
+  function rmSuma(L){ var s={n:L.length,dias:0,min:0,sueldo:0,tratos:0,nvu:0,vueltas:0,peajes:0,bono:0,desc:0,total:0};
+    L.forEach(function(x){ s.dias+=rmDias(x); s.nvu+=(x.ext?0:(x.vueltas||0)); s.sueldo+=rmSueldoPropio(x); s.min+=x.totMin; s.tratos+=x.baseCont; s.vueltas+=x.vueltasMonto; s.peajes+=x.peajes; s.bono+=x.bono; s.desc+=x.desc; s.total+=rmTotal(x); }); return s; }
 
   // ---- IS Performance (importado desde su CSV de Remuneraciones) ----
   // Se guarda en config ('remu_ext_is_AAAA-MM') como JSON: compartido entre usuarios y sin tablas nuevas.
@@ -5131,7 +5137,7 @@
     var pasa=function(x){ return filt==='spot'?!rmEsFijo(x):(filt==='fijo'?rmEsFijo(x):true); };
     return [
       {k:'sp', emp:'Innova Servi', lbl:'Innova Servi · Spot · pago por trato', L:inn.filter(function(x){ return !rmEsFijo(x); })},
-      {k:'fj', emp:'Innova Servi', lbl:'Innova Servi · Fijos (contrato) · sueldo aparte; Tratos = solo horas fuera de su jornada, fines de semana y feriados', L:inn.filter(rmEsFijo)},
+      {k:'fj', emp:'Innova Servi', lbl:'Innova Servi · Fijos (contrato) · sueldo base + tratos (horas fuera de su jornada, fines de semana y feriados)', L:inn.filter(rmEsFijo)},
       {k:'is', emp:'IS Performance', lbl:'IS Performance · importado'+(E&&E.archivo?(' de '+E.archivo):''), L:ext}
     ].map(function(g){ g.L=g.L.filter(pasa); return g; }).filter(function(g){ return g.L.length; }); }
   // Personas que aparecen en las dos empresas (por RUT): se marca para que remuneraciones lo vea.
@@ -5211,18 +5217,18 @@
     var sinFicha=inn.filter(function(x){ return !x.t.id; }).length, cruce=rmCruce();
     $('remu-cnt').innerHTML=todas.length+(todas.length===1?' trabajador':' trabajadores')+' en '+esc(D.lbl);
     $('rm-kpis').innerHTML=
-      '<div class="rm-kpi main"><div class="l">Total del mes</div><div class="v">'+fmtMoney(T.total)+'</div><div class="s">'+(ext.length?('Innova '+fmtMoney(S.total+F.total)+' · IS '+fmtMoney(I.total)):('tratos '+fmtMoney(T.tratos)+(T.total!==T.tratos?(' · otros '+fmtMoney(T.total-T.tratos)):'')))+'</div></div>'+
+      '<div class="rm-kpi main"><div class="l">Total del mes</div><div class="v">'+fmtMoney(T.total)+'</div><div class="s">'+(ext.length?('Innova '+fmtMoney(S.total+F.total)+' · IS '+fmtMoney(I.total)):((T.sueldo?('sueldos '+fmtMoney(T.sueldo)+' · '):'')+'tratos '+fmtMoney(T.tratos)+(T.total-T.sueldo!==T.tratos?(' · otros '+fmtMoney(T.total-T.sueldo-T.tratos)):'')))+'</div></div>'+
       '<div class="rm-kpi"><div class="l"><i class="rm-dot sp"></i>Innova · Spot</div><div class="v">'+fmtMoney(S.total)+'</div><div class="s">'+S.n+' persona'+(S.n===1?'':'s')+' · '+S.dias+' días</div></div>'+
-      '<div class="rm-kpi"><div class="l"><i class="rm-dot fj"></i>Innova · Fijos</div><div class="v">'+fmtMoney(F.total)+'</div><div class="s">'+F.n+' persona'+(F.n===1?'':'s')+' · '+F.dias+' días · extras y findes</div></div>'+
+      '<div class="rm-kpi"><div class="l"><i class="rm-dot fj"></i>Innova · Fijos</div><div class="v">'+fmtMoney(F.total)+'</div><div class="s">'+F.n+' persona'+(F.n===1?'':'s')+' · '+F.dias+' días · sueldos '+fmtMoney(F.sueldo)+' + tratos '+fmtMoney(F.total-F.sueldo)+'</div></div>'+
       (ext.length?'<div class="rm-kpi"><div class="l"><i class="rm-dot is"></i>IS Performance</div><div class="v">'+fmtMoney(I.total)+'</div><div class="s">'+I.n+' persona'+(I.n===1?'':'s')+' · '+I.dias+' días</div></div>'
         :'<div class="rm-kpi" style="border-style:dashed"><div class="l"><i class="rm-dot is"></i>IS Performance</div><div class="v" style="color:var(--muted);font-size:15px">Sin importar</div><div class="s">usa “Importar IS Performance”</div></div>')+
       '<div class="rm-kpi"><div class="l">Días trabajados</div><div class="v">'+T.dias+'</div><div class="s">'+hm(T.min)+' en total</div></div>'+
       (sinFicha?'<div class="rm-kpi warn"><div class="l">Sin ficha</div><div class="v">'+sinFicha+'</div><div class="s">nombres en horas que no están en Trabajadores</div></div>':'');
     if(!todas.length){ $('rm-list').innerHTML='<div class="empty">Sin horas ni pagos registrados en '+esc(D.lbl)+'.</div>'; return; }
-    var fechas=rmFechas(), hoy=todayISO(), nCol=fechas.length+11;
+    var fechas=rmFechas(), hoy=todayISO(), nCol=fechas.length+12;
     var head='<tr><th class="rm-n">N°</th><th class="rm-nm">Trabajador</th><th class="rm-tp">Tipo</th>'+
       fechas.map(function(f){ var dd=new Date(f+'T12:00:00'); return '<th class="rm-d'+(esTratoDia(f)?' we':'')+(f===hoy?' hoy':'')+'">'+DIA_INI[dd.getDay()]+'<small>'+dd.getDate()+'</small></th>'; }).join('')+
-      '<th>Días</th><th>Horas</th><th>Tratos</th><th>Vueltas</th><th>Peajes</th><th>Extras</th><th>Desc.</th><th>Total</th></tr>';
+      '<th>Días</th><th>Horas</th><th>Sueldo base</th><th>Tratos</th><th>Vueltas</th><th>Peajes</th><th>Extras</th><th>Desc.</th><th>Total</th></tr>';
     var m=function(v,neg){ return v?((neg?'−':'')+fmtMoney(v)):'<span class="rt-z">—</span>'; };
     var idx=0;
     function extIdx(x){ return ext.indexOf(x); }
@@ -5239,7 +5245,7 @@
         else { cls='rm-c rm-err'; tip=fechaDia(f)+' · registro con 0 horas y sin vueltas: revisa el horario'+faTxt; txt='!'; }
         return '<td class="rm-d'+we+'"><button type="button" class="'+cls+'" data-i="'+ri+'" data-f="'+f+'" title="'+enc(tip)+'" aria-label="'+enc(tip)+'">'+txt+'</button></td>'; }).join('');
       var soloVu=rmSoloVu(x);
-      if(x.sinReg) celdas='<td class="rm-extd rm-sinreg" colspan="'+fechas.length+'">Sin registros de horas este mes · sueldo fijo según contrato</td>';
+      if(x.sinReg) celdas='<td class="rm-extd rm-sinreg" colspan="'+fechas.length+'">Sin registros de horas este mes · solo sueldo base</td>';
       var ambas=rk && (x.ext?cruce.inn[rk]:cruce.ext[rk]);
       var badge=(!x.ext&&!x.t.id)?'<span class="rm-warn" title="No está registrado como trabajador">Sin ficha</span> ':'';
       var extra=x.ext?('<td class="rt-ok"'+(x.bonoAutos?' title="Bono autos '+fmtMoney(x.bonoAutos)+(x.extras?(' + extras '+fmtMoney(x.extras)):'')+'"':'')+'>'+m(x.bono)+(x.bonoAutos?'<div class="rt-sub">incl. bono autos</div>':'')+'</td>'):('<td class="rt-ok">'+m(x.bono)+'</td>');
@@ -5247,10 +5253,10 @@
         (rmEsFijo(x)&&!x.ext?(rmJornadaTxt(x)?'<div class="rm-jor">'+esc(rmJornadaTxt(x))+'</div>':'<div class="rm-jor bad" title="Configura la jornada en la ficha del trabajador: sin ella todas sus horas se pagan como trato">Sin jornada configurada: todas sus horas cuentan como trato</div>'):'')+
         (ambas?'<span class="rm-both" title="Mismo RUT en las dos empresas">También en '+(x.ext?'Innova Servi':'IS Performance')+'</span>':'')+'</td>'+
         '<td class="rm-tp"><span class="rm-chip '+(fj?'fj':'sp')+'">'+(fj?'Fijo':'Spot')+'</span></td>'+celdas+
-        '<td><b>'+rmDias(x)+'</b>'+(soloVu?'<div class="rt-sub" style="color:#0e7490">+'+soloVu+' solo vueltas</div>':'')+'</td><td>'+hm(x.totMin)+'</td><td>'+m(x.baseCont)+(rmEsFijo(x)&&!x.ext&&x.baseMin?'<div class="rt-sub">'+hm(x.baseMin)+' extra</div>':'')+'</td><td>'+m(x.vueltasMonto)+(x.vueltas&&!x.ext?'<div class="rt-sub">'+x.vueltas+' vuelta'+(x.vueltas>1?'s':'')+'</div>':'')+'</td><td>'+m(x.peajes)+'</td>'+
-        extra+'<td class="rt-bad">'+m(x.desc,true)+'</td><td class="rt-tot">'+fmtMoney(x.contable)+'</td></tr>'; }
+        '<td><b>'+rmDias(x)+'</b>'+(soloVu?'<div class="rt-sub" style="color:#0e7490">+'+soloVu+' solo vueltas</div>':'')+'</td><td>'+hm(x.totMin)+'</td><td>'+(rmSueldoOtra(x)?'<span class="rt-z" style="color:var(--muted)">'+fmtMoney(rmSueldo(x))+'</span><div class="rt-sub">lo paga '+esc(rmSueldoOtra(x))+'</div>':(rmEsFijo(x)&&!x.ext&&!rmSueldo(x)?'<span class="rt-z">sin sueldo</span>':m(rmSueldo(x))))+'</td><td>'+m(x.baseCont)+(rmEsFijo(x)&&!x.ext&&x.baseMin?'<div class="rt-sub">'+hm(x.baseMin)+' extra</div>':'')+'</td><td>'+m(x.vueltasMonto)+(x.vueltas&&!x.ext?'<div class="rt-sub">'+x.vueltas+' vuelta'+(x.vueltas>1?'s':'')+'</div>':'')+'</td><td>'+m(x.peajes)+'</td>'+
+        extra+'<td class="rt-bad">'+m(x.desc,true)+'</td><td class="rt-tot">'+fmtMoney(rmTotal(x))+'</td></tr>'; }
     function totFila(cls,lbl,s){ return '<tr class="'+cls+'"><td class="rm-n"></td><td class="rm-nm">'+lbl+'</td><td class="rm-tp"></td><td colspan="'+fechas.length+'"></td>'+
-      '<td>'+s.dias+'</td><td>'+hm(s.min)+'</td><td>'+fmtMoney(s.tratos)+'</td><td>'+fmtMoney(s.vueltas)+'</td><td>'+fmtMoney(s.peajes)+'</td><td>'+fmtMoney(s.bono)+'</td><td>'+(s.desc?'−'+fmtMoney(s.desc):'$0')+'</td><td>'+fmtMoney(s.total)+'</td></tr>'; }
+      '<td>'+s.dias+'</td><td>'+hm(s.min)+'</td><td>'+fmtMoney(s.sueldo)+'</td><td>'+fmtMoney(s.tratos)+'</td><td>'+fmtMoney(s.vueltas)+'</td><td>'+fmtMoney(s.peajes)+'</td><td>'+fmtMoney(s.bono)+'</td><td>'+(s.desc?'−'+fmtMoney(s.desc):'$0')+'</td><td>'+fmtMoney(s.total)+'</td></tr>'; }
     var G=rmGrupos(RM_FILT), body='', vis=[];
     G.forEach(function(g){ vis=vis.concat(g.L);
       body+='<tr class="rm-grp"><td colspan="'+nCol+'"><i class="rm-dot '+g.k+'"></i>'+esc(g.lbl)+'</td></tr>'+g.L.map(fila).join('')+totFila('rm-sub','Subtotal '+(g.k==='is'?'IS Performance':(g.k==='sp'?'Innova spot':'Innova fijos')),rmSuma(g.L)); });
@@ -5270,10 +5276,10 @@
     var sub='<div class="note" style="margin:0 0 10px">'+(x.t.rut?esc(x.t.rut)+' · ':'')+esc(x.t.cargo||'')+' · <b>'+(x.ext?'IS Performance':'Innova Servi')+'</b> · '+(fj?'Fijo (contrato)'+(!x.ext&&rmJornadaTxt(x)?' · '+esc(rmJornadaTxt(x)):''):'Spot (trato)')+'</div>';
     var kpi=function(l,v,c){ return '<div class="rm-kpi'+(c?' '+c:'')+'"><div class="l">'+l+'</div><div class="v">'+v+'</div></div>'; };
     var soloVu=rmSoloVu(x);
-    var kpis='<div class="rm-kpis" style="margin-bottom:10px">'+kpi('Total a pagar',fmtMoney(x.contable),'main')+kpi('Días con horas',rmDias(x))+kpi('Horas',hm(x.totMin))+
+    var kpis='<div class="rm-kpis" style="margin-bottom:10px">'+kpi('Total a pagar',fmtMoney(rmTotal(x)),'main')+kpi('Días con horas',rmDias(x))+kpi('Horas',hm(x.totMin))+
       (soloVu?kpi('Días solo vueltas',soloVu):'')+(x.vueltas&&!x.ext?kpi('Vueltas',x.vueltas):'')+'</div>';
     // Desglose del pago
-    var des=lin((fj?'Tratos (horas fuera de jornada, findes y feriados'+(x.baseMin?(' · '+hm(x.baseMin)):'')+')':'Tratos ('+hm(x.baseMin||x.totMin)+(x.vh?(' × '+fmtMoney(x.vh)+'/h'):'')+')'), fmtMoney(x.baseCont));
+    var des=(rmSueldo(x)?lin('Sueldo base'+(rmSueldoOtra(x)?' <span class="note" style="margin:0;font-size:.72rem">(lo paga '+esc(rmSueldoOtra(x))+', no suma aquí)</span>':''), fmtMoney(rmSueldo(x)), rmSueldoOtra(x)?'var(--muted)':''):'')+lin((fj?'Tratos (horas fuera de jornada, findes y feriados'+(x.baseMin?(' · '+hm(x.baseMin)):'')+')':'Tratos ('+hm(x.baseMin||x.totMin)+(x.vh?(' × '+fmtMoney(x.vh)+'/h'):'')+')'), fmtMoney(x.baseCont));
     if(!x.ext && x.baseCont!==x.base) des+='<div class="note" style="margin:-4px 0 6px;font-size:.72rem;color:#b45309">Incluye ajustes contables por día (real por horas: '+fmtMoney(x.base)+').</div>';
     if(x.vueltasMonto) des+=lin(x.vueltas+' vuelta'+(x.vueltas>1?'s':'')+' × '+fmtMoney(x.vv||D.valorVuelta), fmtMoney(x.vueltasMonto));
     if(x.peajes) des+=lin('Peajes (reembolso)', fmtMoney(x.peajes));
@@ -5283,7 +5289,7 @@
       its.forEach(function(it){ var neg=it.tipo==='descuento';
         des+=lin((neg?'Descuento':(it.tipo==='bono'?'Extra':'Monto adicional'))+' · '+esc(it.concepto||'—')+' <span class="note" style="margin:0;font-size:.7rem">(sem. '+numSemana(it.semana)+')</span>', (neg?'− ':'')+fmtMoney(+it.monto||0), neg?'#dc2626':'#0f6e56'); }); }
     else { if(x.bono && !x.ext) des+=lin('Extras', fmtMoney(x.bono), '#0f6e56'); if(x.ext && x.extras) des+=lin('Extras', fmtMoney(x.extras), '#0f6e56'); if(x.desc) des+=lin('Descuentos', '− '+fmtMoney(x.desc), '#dc2626'); }
-    des+='<div class="rd-lin rd-tot"><span>Total a pagar</span><b style="color:var(--orange-2)">'+fmtMoney(x.contable)+'</b></div>';
+    des+='<div class="rd-lin rd-tot"><span>Total a pagar</span><b style="color:var(--orange-2)">'+fmtMoney(rmTotal(x))+'</b></div>';
     if(x.ext){
       $('rd-body').innerHTML=sub+kpis+card('Pago del mes',des)+'<div class="card"><p class="note" style="margin:0">El detalle día a día de este trabajador está en la app de <b>IS Performance</b> (Remuneraciones). Aquí solo llega el resumen del CSV importado'+(D.ext&&D.ext.archivo?(' ('+esc(D.ext.archivo)+')'):'')+'.</p></div>';
       $('remu-detalle').classList.remove('hide'); $('remu-detalle').scrollTop=0; return; }
@@ -5352,12 +5358,12 @@
   function rmCSV(){
     var D=RM_DATA, fechas=rmFechas(), G=rmGrupos(RM_FILT), todas=[];
     var hs=function(min){ return (Math.round(min/6)/10).toString().replace('.',','); };
-    var rows=[['Asistencia mensual · '+D.lbl+(rmSegNom()?(' · '+rmSegNom()):'')],[],['N°','Empresa','Nombre','RUT','Cargo','Tipo contrato'].concat(fechas.map(function(f){ return +f.slice(8); })).concat(['Días trabajados','Horas','Tratos','Vueltas','Peajes','Bono autos','Extras','Descuentos','Total a pagar'])];
+    var rows=[['Asistencia mensual · '+D.lbl+(rmSegNom()?(' · '+rmSegNom()):'')],[],['N°','Empresa','Nombre','RUT','Cargo','Tipo contrato'].concat(fechas.map(function(f){ return +f.slice(8); })).concat(['Días trabajados','Horas','Sueldo base','Tratos','Vueltas','Peajes','Bono autos','Extras','Descuentos','Total a pagar'])];
     var n=0;
     G.forEach(function(g){ g.L.forEach(function(x){ n++; todas.push(x); rows.push([n, g.emp, titleCase(x.t.nombre), x.t.rut||'', x.t.cargo||'', rmEsFijo(x)?'Mensual':'Spot']
       .concat(fechas.map(function(f){ var mn=rmMinDia(x,f), vu=rmVuDia(x,f); return mn>0?1:(vu?vu+'v':''); }))
-      .concat([rmDias(x), hs(x.totMin), x.baseCont, x.vueltasMonto, x.peajes, x.bonoAutos||0, x.ext?x.extras:x.bono, x.desc, x.contable])); }); });
-    var s=rmSuma(todas); rows.push(['','','TOTAL GENERAL','','',''].concat(fechas.map(function(){ return ''; })).concat([s.dias, hs(s.min), s.tratos, s.vueltas, s.peajes, '', '', s.desc, s.total]));
+      .concat([rmDias(x), hs(x.totMin), rmSueldo(x), x.baseCont, x.vueltasMonto, x.peajes, x.bonoAutos||0, x.ext?x.extras:x.bono, x.desc, rmTotal(x)])); }); });
+    var s=rmSuma(todas); rows.push(['','','TOTAL GENERAL','','',''].concat(fechas.map(function(){ return ''; })).concat([s.dias, hs(s.min), s.sueldo, s.tratos, s.vueltas, s.peajes, '', '', s.desc, s.total]));
     var csv='﻿'+rows.map(function(r){ return r.map(function(v){ v=String(v); return /[;"\n]/.test(v)?('"'+v.replace(/"/g,'""')+'"'):v; }).join(';'); }).join('\r\n');
     descargarBlob(new Blob([csv],{type:'text/csv;charset=utf-8'}), rmArchivo('csv')); }
   $('rm-xls').addEventListener('click',function(){
@@ -5371,8 +5377,8 @@
     var ws=wb.addWorksheet('Asistencia '+D.mes, {views:[{state:'frozen', xSplit:7, ySplit:5, showGridLines:false}],
       pageSetup:{orientation:'landscape', paperSize:9, fitToPage:true, fitToWidth:1, fitToHeight:0, margins:{left:.3,right:.3,top:.4,bottom:.4,header:.2,footer:.2}}});
     var FIJAS=['N°','NOMBRES','RUT','DV','CARGO','TIPO CONTRATO','EMPRESA'];
-    var RES=['N° DÍAS ASISTIDOS','HORAS','TRATOS','N° VUELTAS','$ VUELTAS','PEAJES','BONO AUTOS','EXTRAS','DESCUENTOS','TOTAL A PAGAR'];
-    var fmtRes=function(i){ return (i===0||i===3)?'0':(i===1?'0.0':MONEDA); }, centro=function(i){ return i<2||i===3; };
+    var RES=['N° DÍAS ASISTIDOS','HORAS','SUELDO BASE','TRATOS','N° VUELTAS','$ VUELTAS','PEAJES','BONO AUTOS','EXTRAS','DESCUENTOS','TOTAL A PAGAR'];
+    var fmtRes=function(i){ return (i===0||i===4)?'0':(i===1?'0.0':MONEDA); }, centro=function(i){ return i<2||i===4; };
     var c0=FIJAS.length+1, cR=c0+nd, cMax=cR+RES.length-1;
     var NAVY='FF1A1F6E', AZUL='FF2F5597', BORDE={style:'thin',color:{argb:'FFBFC5D6'}};
     var MONEDA='_-"$"* #,##0_-;-"$"* #,##0_-;_-"$"* "-"_-;_-@_-';
@@ -5381,7 +5387,7 @@
     // Anchos
     [5,34,11,4,30,14,15].forEach(function(w,i){ ws.getColumn(i+1).width=w; });
     for(var k=0;k<nd;k++) ws.getColumn(c0+k).width=3.6;
-    [11,8,13,9,11,10,11,11,12,14].forEach(function(w,i){ ws.getColumn(cR+i).width=w; });
+    [11,8,13,13,9,11,10,11,11,12,14].forEach(function(w,i){ ws.getColumn(cR+i).width=w; });
     // Título
     ws.mergeCells(1,1,1,cMax); var t1=ws.getCell(1,1); t1.value='ASISTENCIA MENSUAL · '+D.lbl.toUpperCase()+(rmSegNom()?(' · '+rmSegNom().toUpperCase()):''); t1.font={bold:true,size:14,color:{argb:NAVY}};
     ws.mergeCells(2,1,2,cMax); var t2=ws.getCell(2,1);
@@ -5403,7 +5409,7 @@
         var vals=[n, titleCase(x.t.nombre)+((!x.ext&&!x.t.id)?' (sin ficha)':''), rp[0]?(+rp[0]||rp[0]):'', rp[1], x.t.cargo||'', rmEsFijo(x)?'Mensual':'Spot', g.emp];
         vals.forEach(function(v,i){ var cell=row.getCell(i+1); cell.value=v; cell.font={size:10}; cell.alignment={vertical:'middle',horizontal:(i===1||i===4)?'left':'center'}; });
         if(rmEsFijo(x)&&!x.ext) row.getCell(6).note=rmJornadaTxt(x)||'Sin jornada configurada: todas sus horas cuentan como trato';
-        if(x.sinReg){ ws.mergeCells(r,c0,r,c0+nd-1); var sc=row.getCell(c0); sc.value='Sin registros de horas este mes · sueldo fijo según contrato'; sc.font={size:9,italic:true,color:{argb:'FF6B7280'}}; sc.alignment={horizontal:'center',vertical:'middle'}; }
+        if(x.sinReg){ ws.mergeCells(r,c0,r,c0+nd-1); var sc=row.getCell(c0); sc.value='Sin registros de horas este mes · solo sueldo base'; sc.font={size:9,italic:true,color:{argb:'FF6B7280'}}; sc.alignment={horizontal:'center',vertical:'middle'}; }
         else if(x.ext){ ws.mergeCells(r,c0,r,c0+nd-1); var mc=row.getCell(c0); mc.value=x.dias+' día'+(x.dias===1?'':'s')+' · detalle por día en IS Performance'; mc.font={size:9,italic:true,color:{argb:'FF0E7490'}}; mc.fill=fill('FFECFEFF'); mc.alignment={horizontal:'center',vertical:'middle'}; }
         else fechas.forEach(function(f,i){ var cell=row.getCell(c0+i), mn=rmMinDia(x,f), vu=rmVuDia(x,f), vuTxt=vu?(' · '+vu+' vuelta'+(vu>1?'s':'')):'';
           cell.alignment={horizontal:'center',vertical:'middle'};
@@ -5412,23 +5418,24 @@
           else if(vu){ cell.value=vu+'v'; cell.fill=fill('FFDDEBF7'); cell.font={size:8,bold:true,color:{argb:'FF1F4E79'}}; cell.note=fechaDia(f)+' · solo vueltas'+vuTxt; }
           else if(mn===0){ cell.value='!'; cell.fill=fill('FFFDE2E2'); cell.font={size:9,bold:true,color:{argb:'FFB91C1C'}}; cell.note=fechaDia(f)+' · registro con 0 horas: revisar horario'; }
           else if(esTratoDia(f)) cell.fill=fill(GRIS); });
-        var res=[rmDias(x), Math.round(x.totMin/6)/10, x.baseCont, x.ext?0:(x.vueltas||0), x.vueltasMonto, x.peajes, x.bonoAutos||0, x.ext?x.extras:x.bono, x.desc, x.contable];
+        var res=[rmDias(x), Math.round(x.totMin/6)/10, rmSueldo(x), x.baseCont, x.ext?0:(x.vueltas||0), x.vueltasMonto, x.peajes, x.bonoAutos||0, x.ext?x.extras:x.bono, x.desc, rmTotal(x)];
         res.forEach(function(v,i){ var cell=row.getCell(cR+i); cell.value=v; cell.alignment={vertical:'middle',horizontal:centro(i)?'center':'right'};
           cell.numFmt=fmtRes(i); cell.font={size:10,bold:(i===0||i===res.length-1)}; });
         row.getCell(cR).fill=fill('FFE2EFDA'); row.getCell(cMax).fill=fill('FFFFF1E6');
-        if(x.desc) row.getCell(cR+8).font={size:10,color:{argb:'FFDC2626'}};
+        if(rmSueldoOtra(x)){ var sc2=row.getCell(cR+2); sc2.font={size:10,italic:true,color:{argb:'FF9CA3AF'}}; sc2.note='Lo paga '+rmSueldoOtra(x)+' (no suma al total)'; }
+        if(x.desc) row.getCell(cR+9).font={size:10,color:{argb:'FFDC2626'}};
         fmtFila(row); row.height=16; r++; });
     });
     // Totales: subtotal por grupo y total general.
     r++;
     function filaTot(lbl, L, fuerte){ var s=rmSuma(L), ba=L.reduce(function(a,x){ return a+(x.bonoAutos||0); },0), row=ws.getRow(r);
       ws.mergeCells(r,1,r,7); var lc=row.getCell(1); lc.value=lbl; lc.alignment={horizontal:'right',vertical:'middle'};
-      [s.dias, Math.round(s.min/6)/10, s.tratos, s.nvu, s.vueltas, s.peajes, ba, s.bono-ba, s.desc, s.total].forEach(function(v,i){ var cell=row.getCell(cR+i); cell.value=v; cell.numFmt=fmtRes(i); cell.alignment={horizontal:centro(i)?'center':'right',vertical:'middle'}; });
+      [s.dias, Math.round(s.min/6)/10, s.sueldo, s.tratos, s.nvu, s.vueltas, s.peajes, ba, s.bono-ba, s.desc, s.total].forEach(function(v,i){ var cell=row.getCell(cR+i); cell.value=v; cell.numFmt=fmtRes(i); cell.alignment={horizontal:centro(i)?'center':'right',vertical:'middle'}; });
       for(var c=1;c<=cMax;c++){ var cell=row.getCell(c); cell.font={bold:true,size:fuerte?11:10,color:{argb:fuerte?'FFC2410C':NAVY}}; cell.fill=fill(fuerte?'FFFFE4D1':'FFEEF0F7'); caja(cell); }
       row.height=fuerte?20:17; r++; }
     G.forEach(function(g){ filaTot('Subtotal '+(g.k==='is'?'IS Performance':(g.k==='sp'?'Innova Servi · Spot':'Innova Servi · Mensual')), g.L, false); });
     filaTot(rmSegNom()?('TOTAL '+rmSegNom().toUpperCase()):'TOTAL GENERAL', todas, true);
-    ws.getCell(r+1,1).value='Montos Innova Servi según registro de horas y ajustes de InnovaGestión. IS Performance según su CSV de Remuneraciones. El sueldo base de los contratos mensuales se paga aparte.';
+    ws.getCell(r+1,1).value='Montos Innova Servi según registro de horas y ajustes de InnovaGestión. IS Performance según su CSV de Remuneraciones. Total a pagar = sueldo base + tratos + vueltas + peajes + extras - descuentos. Sueldo en gris = lo paga otra empresa (no suma al total).';
     ws.getCell(r+1,1).font={size:8,italic:true,color:{argb:'FF6B7280'}};
     return wb.xlsx.writeBuffer().then(function(buf){
       descargarBlob(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}), rmArchivo('xlsx')); });
@@ -5439,9 +5446,9 @@
     if(!window.jspdf){ toast('No se pudo cargar el generador de PDF. Revisa tu conexión y recarga.'); return; }
     var doc=new window.jspdf.jsPDF({unit:'mm',format:'a4',orientation:'landscape'}), X=9, y=15;
     var fechas=rmFechas(), G=rmGrupos(RM_FILT), todas=[]; G.forEach(function(g){ todas=todas.concat(g.L); });
-    var dw=Math.min(4.6, 127/fechas.length);
-    var C={n:6, nm:46, rut:19, tp:11, dias:9, tr:20, ot:18, tot:22};
-    var xs={}; var cx=X; ['n','nm','rut','tp'].forEach(function(k){ xs[k]=cx; cx+=C[k]; }); xs.d0=cx; cx+=dw*fechas.length; ['dias','tr','ot','tot'].forEach(function(k){ xs[k]=cx; cx+=C[k]; }); var W=cx-X;
+    var dw=Math.min(4.3, 118/fechas.length);
+    var C={n:6, nm:40, rut:17, tp:10, dias:9, su:19, tr:19, ot:17, tot:21};
+    var xs={}; var cx=X; ['n','nm','rut','tp'].forEach(function(k){ xs[k]=cx; cx+=C[k]; }); xs.d0=cx; cx+=dw*fechas.length; ['dias','su','tr','ot','tot'].forEach(function(k){ xs[k]=cx; cx+=C[k]; }); var W=cx-X;
     var NAVY=[26,31,110], COL={sp:[255,107,0], fj:NAVY, is:[14,116,144]};
     doc.setFont('helvetica','bold'); doc.setFontSize(14); doc.setTextColor(NAVY[0],NAVY[1],NAVY[2]); doc.text('Asistencia mensual · '+D.lbl+(rmSegNom()?(' · '+rmSegNom()):''),X,y);
     doc.setFont('helvetica','normal'); doc.setFontSize(8.5); doc.setTextColor(90,90,90); y+=5;
@@ -5453,7 +5460,7 @@
       doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(7);
       doc.text('N°',xs.n+1,y+1.5); doc.text('Trabajador',xs.nm+1,y+1.5); doc.text('RUT',xs.rut+1,y+1.5); doc.text('Tipo',xs.tp+1,y+1.5);
       fechas.forEach(function(f,i){ var dd=new Date(f+'T12:00:00'), c=xs.d0+i*dw+dw/2; doc.setFontSize(5.5); doc.text(DIA_INI[dd.getDay()],c,y-0.5,{align:'center'}); doc.setFontSize(6.5); doc.text(String(dd.getDate()),c,y+3.2,{align:'center'}); });
-      doc.setFontSize(7); doc.text('Días',xs.dias+C.dias-1,y+1.5,{align:'right'}); doc.text('Tratos',xs.tr+C.tr-1,y+1.5,{align:'right'}); doc.text('Otros*',xs.ot+C.ot-1,y+1.5,{align:'right'}); doc.text('Total',xs.tot+C.tot-1,y+1.5,{align:'right'});
+      doc.setFontSize(7); doc.text('Días',xs.dias+C.dias-1,y+1.5,{align:'right'}); doc.text('Sueldo',xs.su+C.su-1,y+1.5,{align:'right'}); doc.text('Tratos',xs.tr+C.tr-1,y+1.5,{align:'right'}); doc.text('Otros*',xs.ot+C.ot-1,y+1.5,{align:'right'}); doc.text('Total',xs.tot+C.tot-1,y+1.5,{align:'right'});
       y+=9; doc.setTextColor(30,30,30); }
     function salto(h){ if(y+h>198){ doc.addPage(); y=14; head(); } }
     head();
@@ -5463,7 +5470,7 @@
       doc.setFont('helvetica','bold'); doc.setFontSize(7.5); doc.setTextColor(NAVY[0],NAVY[1],NAVY[2]); doc.text(g.lbl,X+5,y); y+=5.5;
       L.forEach(function(x,i){ salto(6); n++;
         if(i%2){ doc.setFillColor(248,249,252); doc.rect(X,y-3.8,W,5.6,'F'); }
-        if(x.ext||x.sinReg){ doc.setFont('helvetica','italic'); doc.setFontSize(6.5); doc.setTextColor(120,120,120); doc.text(x.sinReg?'Sin registros de horas este mes · sueldo fijo según contrato':(x.dias+' día'+(x.dias===1?'':'s')+' · detalle por día en IS Performance'),xs.d0+2,y); }
+        if(x.ext||x.sinReg){ doc.setFont('helvetica','italic'); doc.setFontSize(6.5); doc.setTextColor(120,120,120); doc.text(x.sinReg?'Sin registros de horas este mes · solo sueldo base':(x.dias+' día'+(x.dias===1?'':'s')+' · detalle por día en IS Performance'),xs.d0+2,y); }
         else fechas.forEach(function(f,k){ if(esTratoDia(f)){ doc.setFillColor(236,238,246); doc.rect(xs.d0+k*dw,y-3.8,dw,5.6,'F'); }
           var mn=rmMinDia(x,f), vu=rmVuDia(x,f), s=Math.min(dw-1,3.2), qx=xs.d0+k*dw+(dw-s)/2;
           if(mn>0){ doc.setFillColor(col[0],col[1],col[2]); doc.rect(qx,y-2.6,s,s,'F'); }
@@ -5471,22 +5478,23 @@
           else if(mn===0){ doc.setDrawColor(185,28,28); doc.setLineWidth(0.35); doc.rect(qx,y-2.6,s,s,'S'); doc.setLineWidth(0.2); } });
         doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(30,30,30);
         doc.text(String(n),xs.n+1,y); doc.text(corta(titleCase(x.t.nombre)+((!x.ext&&!x.t.id)?' (sin ficha)':''),C.nm-2),xs.nm+1,y); doc.text(corta(x.t.rut||'—',C.rut-2),xs.rut+1,y); doc.text(rmEsFijo(x)?'Fijo':'Spot',xs.tp+1,y);
-        doc.text(String(rmDias(x)),xs.dias+C.dias-1,y,{align:'right'}); doc.text(fmtMoney(x.baseCont),xs.tr+C.tr-1,y,{align:'right'});
+        doc.text(String(rmDias(x)),xs.dias+C.dias-1,y,{align:'right'});
+        var su=rmSueldo(x); if(su){ if(rmSueldoOtra(x)) doc.setTextColor(160,160,160); doc.text(fmtMoney(su)+(rmSueldoOtra(x)?'*':''),xs.su+C.su-1,y,{align:'right'}); doc.setTextColor(30,30,30); } doc.text(fmtMoney(x.baseCont),xs.tr+C.tr-1,y,{align:'right'});
         var ot=rmOtros(x); doc.text(ot?((ot<0?'-':'')+fmtMoney(Math.abs(ot))):'—',xs.ot+C.ot-1,y,{align:'right'});
-        doc.setFont('helvetica','bold'); doc.text(fmtMoney(x.contable),xs.tot+C.tot-1,y,{align:'right'});
+        doc.setFont('helvetica','bold'); doc.text(fmtMoney(rmTotal(x)),xs.tot+C.tot-1,y,{align:'right'});
         y+=5.6; });
       totRow('Subtotal '+(g.k==='is'?'IS Performance':(g.k==='sp'?'Innova spot':'Innova fijos')), rmSuma(L), false); }
     function totRow(lbl,s,main){ salto(7);
       if(main){ doc.setFillColor(255,236,222); doc.rect(X,y-4,W,6.5,'F'); doc.setTextColor(194,65,12); doc.setFontSize(8.5); } else { doc.setDrawColor(200,204,220); doc.line(X,y-3.9,X+W,y-3.9); doc.setTextColor(NAVY[0],NAVY[1],NAVY[2]); doc.setFontSize(7.5); }
       doc.setFont('helvetica','bold'); doc.text(lbl,xs.nm+1,y);
-      doc.text(String(s.dias),xs.dias+C.dias-1,y,{align:'right'}); doc.text(fmtMoney(s.tratos),xs.tr+C.tr-1,y,{align:'right'});
+      doc.text(String(s.dias),xs.dias+C.dias-1,y,{align:'right'}); if(s.sueldo) doc.text(fmtMoney(s.sueldo),xs.su+C.su-1,y,{align:'right'}); doc.text(fmtMoney(s.tratos),xs.tr+C.tr-1,y,{align:'right'});
       var ot=s.vueltas+s.peajes+s.bono-s.desc; doc.text(ot?((ot<0?'-':'')+fmtMoney(Math.abs(ot))):'—',xs.ot+C.ot-1,y,{align:'right'}); doc.text(fmtMoney(s.total),xs.tot+C.tot-1,y,{align:'right'});
       y+=main?8:7; doc.setTextColor(30,30,30); }
     G.forEach(grupo);
     totRow(rmSegNom()?('TOTAL '+rmSegNom().toUpperCase()):'TOTAL GENERAL', rmSuma(todas), true);
     salto(10); doc.setFont('helvetica','normal'); doc.setFontSize(6.8); doc.setTextColor(110,110,110);
     doc.text('Casilla llena = día con horas · casilla con número = solo vueltas ese día (no cuenta como día) · sombreado = fin de semana o feriado. *Otros = vueltas + peajes + bono autos + extras - descuentos.',X,y);
-    doc.text('Innova Servi: según el registro de horas y ajustes de InnovaGestión. IS Performance: según su CSV de Remuneraciones'+(D.ext&&D.ext.archivo?(' ('+D.ext.archivo+')'):'')+'. El sueldo base de los fijos se paga aparte.',X,y+3.5);
+    doc.text('Innova Servi: según el registro de horas y ajustes de InnovaGestión. IS Performance: según su CSV de Remuneraciones'+(D.ext&&D.ext.archivo?(' ('+D.ext.archivo+')'):'')+'. Total = sueldo base + tratos + otros. *Sueldo en gris = lo paga otra empresa (no suma).',X,y+3.5);
     doc.save(rmArchivo('pdf'));
   });
   function renderCfgPago(){
