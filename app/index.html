@@ -2018,7 +2018,8 @@
       : '<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2" fill="currentColor" stroke="none"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></svg>';
     return '<span class="turno-tag turno-'+t+'" title="Turno de '+(t==='noche'?'noche':'día')+'">'+ico+(t==='noche'?'Noche':'Día')+'</span>'; }
   // Registro con entrada = salida (0h) y sin vueltas: casi siempre es un error de tipeo en la hora de salida.
-  function horarioMaloTag(d){ return (d && d.entrada && d.salida && d.entrada===d.salida && !(+d.vueltas)) ? ' <span class="turno-tag" style="background:#fee2e2;color:#b91c1c;border:1px solid #fca5a5" title="La hora de salida es igual a la de entrada: el registro cuenta 0 horas">Revisar horario: entrada = salida</span>' : ''; }
+  function horarioMaloTag(d){ if(d && !(+d.vueltas) && (!d.entrada || !d.salida)) return ' <span class="turno-tag" style="background:#fef3c7;color:#b45309;border:1px solid #fcd34d" title="El registro no tiene hora de entrada y/o salida: cuenta 0 horas">Falta horario</span>';
+    return (d && d.entrada && d.salida && d.entrada===d.salida && !(+d.vueltas)) ? ' <span class="turno-tag" style="background:#fee2e2;color:#b91c1c;border:1px solid #fca5a5" title="La hora de salida es igual a la de entrada: el registro cuenta 0 horas">Revisar horario: entrada = salida</span>' : ''; }
   function fmtMoney(n){ n=+n||0; return '$'+Math.round(n).toLocaleString('es-CL'); }
   function nombreVeh(){ var marca=$('vf-marca').value.trim(), modelo=$('vf-modelo').value.trim(), pat=$('vf-patente').value.trim(); return [marca,modelo].filter(Boolean).join(' ')||pat||'Vehículo'; }
   function diasHasta(f){ if(!f) return null; var d=new Date(f+'T00:00:00'), t=new Date(todayISO()+'T00:00:00'); return Math.round((d-t)/86400000); }
@@ -5561,8 +5562,13 @@
         var fpmin=faenaPagoMin(x.t, x.tipo, x.jor, f, faeIvs, fmin), fmonto=Math.round(fpmin/60*x.vh);
         var aj=(REMU_DATA.ajFae&&x.t.id)?REMU_DATA.ajFae[x.t.id+'|'+f+'|'+fa]:null;
         var col=fa?colorEmpresa(claveEmpresa(fa)):{bg:'#f3f4f6',border:'#cbd5e1',text:'#64748b'};
-        return {fa:fa,hors:hors,fmin:fmin,real:fmonto,cont:(aj?aj.monto:fmonto),col:col};
+        return {fa:fa,hors:hors,fmin:fmin,real:fmonto,cont:(aj?aj.monto:fmonto),col:col,aj:aj};
       });
+      // Fijo con jornada por horas/día: el trato del día (lo que pasa la jornada) se reparte entre sus faenas según sus horas,
+      // así cada faena muestra lo que realmente se paga (antes mostraba la faena completa como si fuera spot).
+      if(x.tipo==='contrato' && !esTratoDia(f) && !ventanaTrab(x.t)){
+        var totF=faeData.reduce(function(a,d){ return a+(d.fmin||0); },0), rest=dReal;
+        faeData.forEach(function(d,i){ var v=(i===faeData.length-1)?rest:(totF?Math.round(dReal*(d.fmin||0)/totF):0); rest-=v; d.real=v; d.cont=d.aj?d.aj.monto:v; }); }
       var sumReal=faeData.reduce(function(a,d){ return a+d.real; },0);
       var sumCont=faeData.reduce(function(a,d){ return a+d.cont; },0);
       // Si el monto del día se ajustó desde el detalle del DÍA (no cuadra con la suma por faena), manda ese monto: es el que se paga.
