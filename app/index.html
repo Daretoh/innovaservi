@@ -5562,7 +5562,7 @@
         var fpmin=faenaPagoMin(x.t, x.tipo, x.jor, f, faeIvs, fmin), fmonto=Math.round(fpmin/60*x.vh);
         var aj=(REMU_DATA.ajFae&&x.t.id)?REMU_DATA.ajFae[x.t.id+'|'+f+'|'+fa]:null;
         var col=fa?colorEmpresa(claveEmpresa(fa)):{bg:'#f3f4f6',border:'#cbd5e1',text:'#64748b'};
-        return {fa:fa,hors:hors,fmin:fmin,real:fmonto,cont:(aj?aj.monto:fmonto),col:col,aj:aj};
+        return {fa:fa,hors:hors,fmin:fmin,real:fmonto,cont:(aj?aj.monto:fmonto),col:col,aj:aj,full:Math.round(fmin/60*x.vh)};
       });
       // Fijo con jornada por horas/día: el trato del día (lo que pasa la jornada) se reparte entre sus faenas según sus horas,
       // así cada faena muestra lo que realmente se paga (antes mostraba la faena completa como si fuera spot).
@@ -5576,7 +5576,9 @@
       var perEd=!!x.t.id && (sumReal===dReal) && !ajDiaManda;   // editar por faena solo si la suma por faena cuadra (spot / turno)
       var dCont=perEd?sumCont:(ajd?ajd.monto:dReal);
       var faeList=faeData.map(function(d){
-        var head='<span style="min-width:0;flex:1"><span class="rd-fae-nm" style="color:'+d.col.text+'">'+(d.fa?esc(d.fa):'Sin faena asignada')+'</span><span class="rd-fae-h">'+d.hors+' · '+hm(d.fmin)+'</span></span>';
+        var head='<span style="min-width:0;flex:1"><span class="rd-fae-nm" style="color:'+d.col.text+'">'+(d.fa?esc(d.fa):'Sin faena asignada')+'</span><span class="rd-fae-h">'+d.hors+' · '+hm(d.fmin)+'</span>'+
+          // Fijo: valor de la faena como trato (referencia) y cuánto se paga realmente.
+          ((x.tipo==='contrato' && d.full>d.real)?'<span class="rd-fae-h" style="display:block;color:var(--navy);font-weight:600">valor trato '+fmtMoney(d.full)+' · '+(d.real?('se paga '+fmtMoney(d.real)+' (horas sobre la jornada)'):'cubierto por el sueldo')+'</span>':'')+'</span>';
         var money=perEd
           ? '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex:none"><span class="rd-freal'+(d.cont!==d.real?' rd-aj2':'')+'" style="font-size:.62rem;color:var(--muted)">real '+fmtMoney(d.real)+'</span><input class="rd-fcont" type="number" min="0" data-f="'+f+'" data-fae="'+enc(d.fa)+'" data-real="'+d.real+'" value="'+d.cont+'" title="Monto de esta faena (editable)" style="width:98px;text-align:right;font:800 13px var(--font);color:var(--orange-2);padding:5px 7px;border:1px solid var(--line);border-radius:8px;background:#fff"></div>'
           : '<b style="color:'+d.col.text+';flex:none">'+fmtMoney(d.real)+'</b>';
