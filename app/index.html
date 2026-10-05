@@ -1358,7 +1358,7 @@
         <div id="fichas-inbox"></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
           <input id="trab-search" type="search" placeholder="Buscar nombre, RUT o cargo…" style="flex:1;min-width:150px;font:500 15px var(--font);padding:10px 12px;border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--ink)">
-          <select id="trab-sort" style="font:600 13px var(--font);padding:10px 12px;border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--ink)"><option value="reciente" selected>Recientes</option><option value="nombre">A–Z</option><option value="cargo">Por cargo</option></select>
+          <select id="trab-sort" style="font:600 13px var(--font);padding:10px 12px;border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--ink)"><option value="reciente" selected>Recientes</option><option value="nombre">A–Z</option><option value="cargo">Por cargo</option><option value="buk">Buk (pendientes primero)</option><option value="bukok">Buk (registrados primero)</option></select>
         </div>
         <div style="display:flex;gap:8px;margin-bottom:14px">
           <button class="btn ghost small tfil" data-f="todos" style="flex:1">Todos</button>
@@ -4154,6 +4154,7 @@
     });
     function estRank(e){ return e==='inactivo'?2:(e==='espera'?1:0); }   // activos, luego en espera, luego inactivos
     arr.sort(function(a,b){
+      if(trabSort==='buk' || trabSort==='bukok'){ var ba=a.buk?1:0, bb=b.buk?1:0; if(ba!==bb) return (trabSort==='buk')?(ba-bb):(bb-ba); }  // buk: pendientes primero · bukok: registrados primero
       var ai=estRank(a.estado), bi=estRank(b.estado); if(ai!==bi) return ai-bi;
       if(trabSort==='reciente') return (b.id||0)-(a.id||0);
       if(trabSort==='cargo'){ var c=(a.cargo||'').localeCompare(b.cargo||''); if(c) return c; }
