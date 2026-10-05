@@ -182,7 +182,7 @@
   .jprep-lbl{display:block;font:700 11px var(--font);color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:4px 0 4px;}
   .jprep{width:100%;font:500 13px var(--font);padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink);resize:vertical;}
   .jprep:focus,.jv-veh:focus,.jv-cho:focus{outline:none;border-color:var(--orange);box-shadow:0 0 0 3px rgba(255,107,0,.13);}
-  .hrow input[type=time]{flex:0 1 96px;min-width:80px;font:600 13.5px var(--font);padding:6px 6px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);}
+  .hrow input[type=time]{flex:0 1 118px;min-width:108px;font:700 14.5px var(--font);padding:7px 7px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);letter-spacing:.02em;}
   .hrow-times .arw{color:var(--muted);font-weight:800;flex:0 0 auto;}
   .hrow-total{flex:0 0 auto;font-size:.72rem;color:var(--orange-2);font-weight:800;white-space:nowrap;}
   .turno-tag{display:inline-flex;align-items:center;gap:3px;margin-left:5px;padding:1px 7px 1px 5px;border-radius:20px;font:700 10.5px var(--font);line-height:1.5;vertical-align:middle;white-space:nowrap;}
@@ -204,6 +204,12 @@
   .hgroup.collapsed .hg-chev{transform:rotate(-90deg);}
   .hgroup.collapsed .hgroup-body{display:none;}
   .hrow input:focus{outline:none;border-color:var(--orange);box-shadow:0 0 0 3px rgba(255,107,0,.13);}
+  .hrow .h-veh{flex:0 1 150px;min-width:120px;font:600 12px var(--font);padding:6px 7px;border:1px solid var(--orange);border-radius:8px;background:#fff7f0;color:var(--ink);}
+  .hz-add-fae{margin:2px 0 2px;}
+  /* buscador de trabajador con teclado */
+  .hzac{position:absolute;z-index:120;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 12px 30px -8px rgba(26,31,110,.4);max-height:240px;overflow:auto;}
+  .hzac-it{padding:8px 13px;font:700 13.5px var(--font);color:var(--ink);cursor:pointer;white-space:nowrap;}
+  .hzac-it.on,.hzac-it:hover{background:var(--orange);color:#fff;}
   /* Cuadrilla + EPP */
   .arow{border:1px solid var(--line);border-radius:12px;padding:10px 11px;margin-bottom:9px;background:var(--alt);}
   .arow .atop{display:flex;gap:8px;align-items:center;margin-bottom:9px;}
@@ -812,6 +818,60 @@
   .af-sec select{flex:0 0 116px;}
   .acc-row{background:#fff;border:1px solid var(--line);border-radius:12px;padding:11px 13px;margin-bottom:9px;cursor:pointer;display:flex;align-items:center;gap:10px;}
   .acc-row .rolchip{font:800 10.5px var(--font);text-transform:uppercase;letter-spacing:.03em;padding:3px 10px;border-radius:999px;background:rgba(26,31,110,.1);color:var(--navy);flex-shrink:0;}
+  /* ---- Accesos v2 ---- */
+  .acc-tabs{display:flex;gap:4px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:4px;margin:0 0 12px;overflow-x:auto;}
+  .acc-tab{flex:1;min-width:max-content;border:none;background:none;padding:8px 12px;border-radius:9px;font:700 13px var(--font);color:var(--body);cursor:pointer;}
+  .acc-tab.on{background:var(--navy);color:#fff;}
+  .acc-filtros{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
+  .acc-filtros input{flex:1;min-width:150px;font:500 15px var(--font);padding:10px 12px;border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--ink);}
+  .acc-filtros select{flex:0 0 auto;width:auto;}
+  .acc-av{width:34px;height:34px;border-radius:50%;background:rgba(26,31,110,.1);color:var(--navy);display:flex;align-items:center;justify-content:center;font:800 14px var(--font);flex-shrink:0;}
+  #acc-list .acc-row .acc-t .note{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .acc-chip{display:inline-flex;align-items:center;font:700 10.5px var(--font);padding:3px 8px;border-radius:999px;flex-shrink:0;white-space:nowrap;}
+  .acc-chip svg{margin-right:3px!important;}
+  .acc-chip.bad{background:#fdecec;color:#b42318;} .acc-chip.warn{background:#fff4e5;color:#b45309;}
+  .acc-aviso{background:#fff4e5;border:1px solid #fcd9a8;border-radius:10px;padding:9px 12px;margin:0 0 10px;color:#7a4a06;}
+  .af-grp{font:800 11px var(--font);text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:14px 0 2px;}
+  .af-grp:first-child{margin-top:6px;}
+  #af-secciones .af-sec{display:block;padding:9px 0;border-bottom:1px solid var(--line);}
+  #af-secciones .af-sec.dif{background:linear-gradient(90deg,rgba(255,107,0,.06),transparent);}
+  .af-sec-h{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .af-sec-h b{flex:1;min-width:140px;font-weight:700;font-size:.92rem;color:var(--ink);}
+  .af-dif{font:700 10px var(--font);color:var(--orange-2);background:rgba(255,107,0,.1);padding:2px 6px;border-radius:6px;margin-left:4px;}
+  .af-niv{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:#fff;flex-shrink:0;}
+  .af-niv button{border:none;background:none;padding:6px 10px;font:700 12px var(--font);color:var(--body);cursor:pointer;border-left:1px solid var(--line);}
+  .af-niv button:first-child{border-left:none;}
+  .af-niv button.on.oculto{background:#eef0f6;color:var(--ink);}
+  .af-niv button.on.ver{background:#e6f0ff;color:#1d4ed8;}
+  .af-niv button.on.editar{background:#fff1e6;color:var(--orange-2);}
+  .af-niv button.on.total{background:var(--navy);color:#fff;}
+  .af-acc{margin:6px 0 0 4px;display:flex;flex-direction:column;gap:2px;}
+  .af-ck{display:flex;align-items:flex-start;gap:8px;font:500 13px var(--font);color:var(--body);cursor:pointer;padding:3px 0;}
+  .af-ck input{width:16px;height:16px;margin:1px 0 0;flex-shrink:0;accent-color:var(--navy);}
+  .af-ck.adj span{color:var(--orange-2);font-weight:700;}
+  .af-tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+  .af-tools select{flex:1;min-width:160px;}
+  .af-perm-h{display:flex;gap:10px;align-items:flex-start;justify-content:space-between;margin-bottom:4px;}
+  .af-resumen{font:500 13px/1.5 var(--font);color:var(--body);}
+  .acc-mx-wrap{overflow-x:auto;background:#fff;border:1px solid var(--line);border-radius:12px;}
+  .acc-mx{border-collapse:collapse;font:600 12px var(--font);min-width:100%;}
+  .acc-mx th{padding:6px 4px;vertical-align:bottom;border-bottom:1px solid var(--line);color:var(--body);font-weight:700;}
+  .acc-mx th span{writing-mode:vertical-rl;transform:rotate(180deg);white-space:nowrap;display:inline-block;max-height:130px;font-size:11px;}
+  .acc-mx td{padding:5px 4px;text-align:center;border-bottom:1px solid var(--line);}
+  .acc-mx .acc-mx-n{text-align:left;position:sticky;left:0;background:#fff;min-width:150px;padding-left:10px;z-index:1;}
+  .acc-mx .acc-mx-n .note{margin:0;font-size:.72rem;}
+  .acc-mx tbody tr{cursor:pointer;} .acc-mx tbody tr:hover td{background:var(--alt);}
+  .acc-mx tr.off td{opacity:.45;}
+  .mx{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;border-radius:6px;font:800 11px var(--font);color:var(--muted);border:1.5px solid transparent;}
+  .mx.ver{background:#e6f0ff;color:#1d4ed8;} .mx.editar{background:#fff1e6;color:var(--orange-2);} .mx.total{background:var(--navy);color:#fff;}
+  .mx.dif{border-color:var(--orange);}
+  .acc-log{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 13px;margin-bottom:8px;}
+  .acc-log-h{display:flex;justify-content:space-between;gap:10px;align-items:baseline;}
+  .acc-log-h b{color:var(--ink);font-size:.9rem;} .acc-log .note{margin:0;font-size:.75rem;}
+  .acc-log ul{margin:6px 0 0;padding-left:18px;font:500 12.5px/1.45 var(--font);color:var(--body);}
+  /* Permisos de multimedia: ocultar controles sin permiso */
+  .no-subir #dropzone,.no-subir #v-reporte .catadd,.no-subir #fot-cats label:has(input[data-fcat]){display:none!important;}
+  .no-elim-media .fot-del{display:none!important;}
   .ficha-bar{position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:10px;background:linear-gradient(135deg,#12163f,#1a1f6e);color:#fff;padding:calc(10px + var(--safe-t)) 14px 10px;}
   .ficha-bar b{font-size:1rem;}
   .ficha-body{max-width:640px;margin:0 auto;padding:14px 14px calc(30px + var(--safe-b));}
@@ -1474,13 +1534,26 @@
       <div id="cli-list"></div>
     </section>
 
-    <!-- ---- ACCESOS / PERMISOS (solo Enzo) ---- -->
+    <!-- ---- ACCESOS / PERMISOS ---- -->
     <section class="view" id="v-acc">
-      <div class="h-row"><h2>Accesos</h2><button id="acc-nuevo" class="btn small" style="width:auto">＋ Persona</button></div>
-      <p class="note" style="margin:0 0 12px">Toca una persona para editar sus permisos. El <b>rol</b> setea todo; luego ajustas por apartado.</p>
-      <div id="acc-list"></div>
+      <div class="h-row"><h2>Accesos</h2><button id="acc-nuevo" class="btn small" style="width:auto">Persona</button></div>
+      <div class="acc-tabs">
+        <button class="acc-tab on" data-t="personas">Personas</button>
+        <button class="acc-tab" data-t="roles">Roles</button>
+        <button class="acc-tab" data-t="matriz">Resumen</button>
+        <button class="acc-tab" data-t="historial">Historial</button>
+      </div>
+      <div id="acc-p-personas">
+        <div class="acc-filtros"><input id="acc-q" type="search" placeholder="Buscar nombre o correo…"><select id="acc-frol"></select></div>
+        <div id="acc-list"></div>
+      </div>
+      <div id="acc-p-roles" class="hide">
+        <p class="note" style="margin:0 0 10px">Un rol es una plantilla de permisos. Al asignarlo a una persona se cargan sus permisos, que luego puedes ajustar solo para esa persona.</p>
+        <div id="acc-roles-list"></div>
+      </div>
+      <div id="acc-p-matriz" class="hide"><div id="acc-matriz-tbl"></div></div>
+      <div id="acc-p-historial" class="hide"><div id="acc-hist-list"></div></div>
     </section>
-
     <!-- ---- PLANIFICACIÓN de faena (jefatura arma → Preparación) ---- -->
     <section class="view" id="v-planif">
       <div class="h-row"><h2>Planificación de faenas</h2><button id="planif-copy" class="btn ghost small" style="width:auto">Copiar resumen</button></div>
@@ -1735,31 +1808,52 @@
   </div>
 </div>
 
-<!-- Editar permisos de una persona (solo Enzo) -->
+<!-- Editar permisos de una persona o de un rol -->
 <div id="acc-ficha" class="hide">
   <div class="ficha-bar">
-    <button id="af-close" class="btn ghost small" style="width:auto">✕ Cerrar</button>
+    <button id="af-close" class="btn ghost small" style="width:auto">Cerrar</button>
     <b id="af-title">Permisos</b>
     <button id="af-save" class="btn small" style="width:auto">Guardar</button>
   </div>
   <div class="ficha-body">
-    <div class="card">
-      <div class="fld" id="af-trab-wrap" style="position:relative"><label>Cargar desde trabajadores</label><input id="af-trab" type="search" placeholder="Escribe nombre o correo…" autocomplete="off"><div id="af-trab-sug" class="hide" style="position:absolute;left:0;right:0;top:100%;z-index:40;background:#fff;border:1px solid var(--line);border-radius:11px;box-shadow:0 10px 26px rgba(0,0,0,.14);max-height:250px;overflow:auto;margin-top:4px"></div><p class="note" style="margin:4px 0 0">Escribe y toca una sugerencia: carga nombre y correo. Si no tiene correo, escríbelo tú. Recuerda crearle también el usuario en Supabase para que pueda entrar.</p></div>
-      <div class="fld"><label>Correo</label><input id="af-email" type="email" placeholder="correo@innovaservi.com"></div>
-      <div class="grid2">
-        <div class="fld"><label>Nombre (opcional)</label><input id="af-nombre" type="text"></div>
-        <div class="fld"><label>Rol</label><select id="af-rol"><option value="admin">Admin</option><option value="supervisor">Supervisor</option><option value="capataz">Capataz (asistencia terreno)</option><option value="prevencionista">Prevencionista</option><option value="operario">Operario</option><option value="chofer">Chofer</option></select></div>
+    <div id="af-persona">
+      <div class="card">
+        <div class="fld" id="af-trab-wrap" style="position:relative"><label>Cargar desde trabajadores</label><input id="af-trab" type="search" placeholder="Escribe nombre o correo…" autocomplete="off"><div id="af-trab-sug" class="hide" style="position:absolute;left:0;right:0;top:100%;z-index:40;background:#fff;border:1px solid var(--line);border-radius:11px;box-shadow:0 10px 26px rgba(0,0,0,.14);max-height:250px;overflow:auto;margin-top:4px"></div><p class="note" style="margin:4px 0 0">Escribe y toca una sugerencia: carga nombre y correo. Si no tiene correo, escríbelo tú. Recuerda crearle también el usuario en Supabase para que pueda entrar.</p></div>
+        <div class="fld"><label>Correo</label><input id="af-email" type="email" placeholder="correo@innovaservi.com"></div>
+        <div class="grid2">
+          <div class="fld"><label>Nombre</label><input id="af-nombre" type="text"></div>
+          <div class="fld"><label>Rol</label><select id="af-rol"></select></div>
+        </div>
+        <div class="grid2">
+          <div class="fld" style="margin:0"><label>Estado</label><select id="af-activo"><option value="1">Activo</option><option value="0">Suspendido (no puede entrar)</option></select></div>
+          <div class="fld" style="margin:0"><label>Acceso hasta (opcional)</label><input id="af-vence" type="date"></div>
+        </div>
+        <div class="fld" style="margin-top:12px"><label>Nota interna</label><input id="af-nota" type="text" placeholder="Ej: reemplazo de vacaciones, contratista…"></div>
+      </div>
+      <div class="card af-tools">
+        <button id="af-reset" type="button" class="btn ghost small" style="width:auto"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:5px"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>Restablecer al rol</button>
+        <select id="af-copiar"></select>
+      </div>
+    </div>
+    <div id="af-rolbox" class="hide">
+      <div class="card">
+        <div class="fld"><label>Nombre del rol</label><input id="ar-nombre" type="text" placeholder="Ej: Jefe de terreno"></div>
+        <div class="fld"><label>Descripción</label><input id="ar-desc" type="text" placeholder="Para qué sirve este rol"></div>
+        <label id="ar-aplicar-wrap" class="af-ck" style="margin:0"><input type="checkbox" id="ar-aplicar" checked><span id="ar-aplicar-lbl"></span></label>
       </div>
     </div>
     <div class="card">
-      <label style="display:block;font:700 13px var(--font);color:var(--ink);margin-bottom:2px">Permisos por apartado</label>
-      <p class="note" style="margin:0 0 8px">Oculto = no lo ve · Ver = solo mira · Editar = crea/edita · Total = edita y elimina.</p>
+      <div class="af-perm-h">
+        <div><label style="display:block;font:700 13px var(--font);color:var(--ink);margin-bottom:2px">Permisos por apartado</label>
+        <p class="note" style="margin:0">El nivel pre-marca las acciones; puedes ajustar cada una. <b>Oculto</b> no lo ve · <b>Ver</b> solo mira · <b>Editar</b> crea y modifica · <b>Total</b> además elimina.</p></div>
+        <select id="af-todo" style="flex:0 0 auto;width:auto"><option value="">Todo a…</option><option value="oculto">Oculto</option><option value="ver">Ver</option><option value="editar">Editar</option><option value="total">Total</option></select>
+      </div>
       <div id="af-secciones"></div>
     </div>
-    <button id="af-del" class="pl-del-btn hide" style="width:100%;background:#fff;border:1px solid #f0c0c0;color:#dc2626;padding:13px;border-radius:13px;font:800 14px var(--font);cursor:pointer">🗑 Quitar persona</button>
+    <div class="card af-resumen" id="af-resumen"></div>
+    <button id="af-del" class="pl-del-btn hide" style="width:100%;background:#fff;border:1px solid #f0c0c0;color:#dc2626;padding:13px;border-radius:13px;font:800 14px var(--font);cursor:pointer">Quitar persona</button>
   </div>
 </div>
-
 <!-- Detalle de pago de un trabajador (semana) -->
 <div id="remu-detalle" class="hide">
   <div class="ficha-bar">
@@ -1930,18 +2024,25 @@
   // Solo estos 3 (supervisores) generan reporte, editan datos/horas y eliminan. El resto solo adjunta fotos.
   var ADMIN_EMAILS=['enzo.castro@innovaservi.com','jorge.castro@innovaservi.com','cristopher.ruiz@innovaservi.com'];
   var authed=false, userEmail='', isAdmin=false;
-  // Accesos por sección del usuario logueado (además de los dueños/admin).
-  var MI_SECC={}, MI_ROL='', MI_TIENE=false, NIV_ORD={oculto:0,ver:1,editar:2,total:3};
-  function nivelSec(sec){ if(isAdmin) return 3; var v=MI_SECC&&MI_SECC[sec]; return (NIV_ORD[v]!=null?NIV_ORD[v]:0); }
-  function verSec(sec){ return nivelSec(sec)>=1; }
-  function editaSec(sec){ return nivelSec(sec)>=2; }
-  function cargarMiPermiso(cb){ MI_SECC={}; MI_ROL=''; MI_TIENE=false;
-    if(isAdmin || !sb){ if(cb)cb(); return; }
-    sb.from('permisos').select('rol,secciones').eq('email',(userEmail||'').trim().toLowerCase()).limit(1).then(function(r){
-      var p=(r&&r.data&&r.data[0]);
-      if(p){ MI_TIENE=true; MI_ROL=p.rol||''; if(p.rol==='admin') isAdmin=true; MI_SECC=(p.secciones&&Object.keys(p.secciones).length)?p.secciones:((typeof ROL_DEFAULTS!=='undefined'&&ROL_DEFAULTS[p.rol])||{}); }
-      if(cb)cb();
-    }, function(){ if(cb)cb(); }); }
+  // Permisos del usuario logueado (ver "ACCESOS / PERMISOS v2"). Los dueños (isAdmin) pueden todo.
+  var MI_PERM=null, MI_ROL='', MI_TIENE=false, NIV_ORD={oculto:0,ver:1,editar:2,total:3};
+  function nivelMod(m){ if(isAdmin) return 3; var p=MI_PERM&&MI_PERM[m]; return p?(NIV_ORD[p.n]||0):0; }
+  function verMod(m){ return nivelMod(m)>=1; }
+  // puede('multimedia.ordenar'), puede('informe.generar')…  ('x.ver' = el apartado es visible)
+  function puede(k){ if(isAdmin) return true; var s=String(k).split('.'), p=MI_PERM&&MI_PERM[s[0]]; if(!p) return false;
+    if(s[1]==='ver') return (NIV_ORD[p.n]||0)>=1; return !!(p.a&&p.a[s[1]]); }
+  function cargarMiPermiso(cb){ MI_PERM=null; MI_ROL=''; MI_TIENE=false;
+    if(!sb){ if(cb)cb(); return; }
+    cargarRoles(function(){
+      sb.from('permisos').select('rol,secciones').eq('email',(userEmail||'').trim().toLowerCase()).limit(1).then(function(r){
+        var p=(r&&r.data&&r.data[0]);
+        if(p){
+          if(!isAdmin && !accesoVigente(metaDeFila(p))){ var m=$('l-msg'); if(sb) sb.auth.signOut(); if(m){ m.className='msg err'; m.textContent='Tu acceso está suspendido o vencido. Habla con administración.'; } return; }
+          MI_TIENE=true; MI_ROL=p.rol||''; if(p.rol==='admin') isAdmin=true; MI_PERM=permDeFila(p);
+        } else if(!isAdmin){ MI_PERM=permDeRol('operario'); }   // sin ficha de accesos: lo básico de terreno
+        if(cb)cb();
+      }, function(){ if(!isAdmin) MI_PERM=permDeRol('operario'); if(cb)cb(); });
+    }); }
   var EVENTOS=[];               // trabajos del calendario
   var R_MEDIA=[];               // archivos del registro actual [{file?,url,tipo,cat,fecha,nombre,existing?}]
   var R_JOB=null;               // faena principal (primera de R_JOBS)
@@ -2049,53 +2150,56 @@
     if($('btn-rrhh')) $('btn-rrhh').classList.toggle('hide', op);   // RRHH: solo admin (en el header)
     if($('btn-cli')) $('btn-cli').classList.toggle('hide', op);     // Clientes: solo admin (en el header)
     if($('btn-alertas')) $('btn-alertas').classList.toggle('hide', op); // Alertas: solo admin (en el header)
-    if($('btn-acc-h')) $('btn-acc-h').classList.toggle('hide', (userEmail||'').trim().toLowerCase()!=='enzo.castro@innovaservi.com'); // Accesos: solo Enzo (en el header)
-    if($('trab-export')) $('trab-export').classList.toggle('hide', (userEmail||'').trim().toLowerCase()!=='enzo.castro@innovaservi.com'); // Exportar trabajadores: solo Enzo
-    document.querySelectorAll('.sb-admin').forEach(function(x){ x.classList.toggle('hide', op); });   // sidebar: items admin
-    document.querySelectorAll('.sb-enzo').forEach(function(x){ x.classList.toggle('hide', (userEmail||'').trim().toLowerCase()!=='enzo.castro@innovaservi.com'); });
+    if($('btn-acc-h')) $('btn-acc-h').classList.toggle('hide', !puedeGestionar()); // Accesos: Enzo o quien tenga "gestionar accesos"
+    if($('trab-export')) $('trab-export').classList.toggle('hide', !((userEmail||'').trim().toLowerCase()===SUPER_EMAIL || (!esDueno(userEmail) && puede('trabajadores.exportar'))));
+    document.querySelectorAll('.sb-admin').forEach(function(x){ x.classList.toggle('hide', op); });   // sidebar: items admin (luego aplicarSecciones afina por permiso)
+    document.querySelectorAll('.sb-enzo').forEach(function(x){ x.classList.toggle('hide', !puedeGestionar()); });
     if(isAdmin){ ['v-asist','v-fotos'].forEach(function(vv){ var b=document.querySelector('.sbar .sb-item[data-v="'+vv+'"]'); if(b) b.classList.add('hide'); }); }   // Asistencia y Fotos son de terreno: fuera del menu de los duenos
     $('tab-veh').classList.remove('hide');                // Vehículos: visible para todos (chofer registra vueltas)
-    if($('veh-admin')) $('veh-admin').classList.toggle('hide', op);   // flota completa: solo admin
-    if($('veh-chofer')) $('veh-chofer').classList.toggle('hide', !op); // registrar vuelta/peaje: choferes (no admin)
+    if($('veh-admin')) $('veh-admin').classList.toggle('hide', !puede('vehiculos.flota'));   // flota completa
+    if($('veh-chofer')) $('veh-chofer').classList.toggle('hide', isAdmin || !puede('vehiculos.vuelta')); // registrar vuelta/peaje
     if($('btn-plan')) $('btn-plan').classList.toggle('hide', op); // Calendario: solo admin
     if($('btn-planif')) $('btn-planif').classList.toggle('hide', op); // Planificación: solo admin
-    ['r-empresa','r-lugar','r-fecha','r-notas'].forEach(function(id){ $(id).disabled=op; });
-    // Preparación es visible a todos; pero faena y cuadrilla solo las edita admin (el resto solo marca el checklist)
-    if($('c-faena')) $('c-faena').disabled=op;
-    if($('add-asig')) $('add-asig').style.display=op?'none':'';
-    if($('asig-note')) $('asig-note').style.display=op?'none':'';
+    ['r-empresa','r-lugar','r-fecha','r-notas'].forEach(function(id){ $(id).disabled=!puede('informe.editar'); });
+    // Preparación: el checklist lo marca cualquiera con acceso; faena y cuadrilla solo con "asignar"
+    var asig=puede('preparacion.asignar');
+    if($('c-faena')) $('c-faena').disabled=!asig;
+    if($('add-asig')) $('add-asig').style.display=asig?'':'none';
+    if($('asig-note')) $('asig-note').style.display=asig?'':'none';
+    // Multimedia: subir / eliminar (clases en <body> que ocultan esos controles)
+    document.body.classList.toggle('no-subir', !puede('multimedia.subir'));
+    document.body.classList.toggle('no-elim-media', !puede('multimedia.eliminar'));
     if($('who')) $('who').textContent=userEmail+(isAdmin?' · admin':(MI_ROL?(' · '+rolLbl(MI_ROL)):''));
-    if(!isAdmin && MI_TIENE) aplicarSecciones();   // usuario configurado: muestra solo sus secciones
+    if(!isAdmin) aplicarSecciones();   // muestra solo los apartados permitidos
   }
-  // Muestra en el menú solo las secciones que el usuario tiene permitidas (además de lo que ya ocultó aplicarRol).
-  var SEC_DE_V={ 'v-alertas':'alertas','v-asist':'asistencia','v-fotos':'fotos','v-horas':'reporte','v-hist':'reporte','v-cuadrilla':'reporte','v-clientes':'clientes','v-planif':'planificacion','v-plan':'calendario','v-matriz':'matriz','v-rrhh':'rrhh','v-remu':'remu','v-veh':'veh' };
-  var SEC_TO_V={ asistencia:'v-asist', fotos:'v-fotos', reporte:'v-reporte', planificacion:'v-planif', calendario:'v-plan', matriz:'v-matriz', rrhh:'v-rrhh', remu:'v-remu', veh:'v-veh', clientes:'v-clientes', alertas:'v-alertas' };
-  function primeraVistaPermitida(){ for(var i=0;i<SECCIONES.length;i++){ var k=SECCIONES[i][0]; if(verSec(k) && SEC_TO_V[k]) return SEC_TO_V[k]; } return null; }
+  // Apartado (módulo de permisos) de cada vista / botón del menú.
+  var MOD_DE_V={ 'v-alertas':'alertas','v-reporte':'informe','v-hist':'reportes','v-horas':'registro','v-asist':'asistencia','v-fotos':'multimedia','v-cuadrilla':'preparacion','v-veh':'vehiculos','v-clientes':'clientes','v-planif':'planificacion','v-plan':'calendario','v-matriz':'matriz','v-remu':'remu','v-acc':'accesos' };
+  var RRHH_MODS=['trabajadores','documentacion','capacitaciones','finiquitos','salidas'];
+  function verRrhh(){ return RRHH_MODS.some(verMod); }
+  function modDeNav(el){ var v=el.dataset.v; if(v==='v-rrhh') return el.dataset.seg?SEG_MOD[el.dataset.seg]:null; return MOD_DE_V[v]||null; }
+  function verVista(v){ if(v==='v-rrhh') return verRrhh(); if(v==='v-acc') return puedeGestionar(); var m=MOD_DE_V[v]; return m?verMod(m):true; }
+  function primeraVistaPermitida(){ for(var i=0;i<PERM_MODS.length;i++){ var m=PERM_MODS[i]; if(m.k!=='accesos' && verMod(m.k)) return m.v; } return null; }
+  function primerSegRrhh(){ var segs=['trab','doc','capacit','finiquito','salida']; for(var i=0;i<segs.length;i++){ if(verMod(SEG_MOD[segs[i]])) return segs[i]; } return 'trab'; }
   function aplicarSecciones(){
-    document.querySelectorAll('.sbar .sb-item[data-v]').forEach(function(x){ var sec=SEC_DE_V[x.dataset.v]; if(sec) x.classList.toggle('hide', !verSec(sec)); });
-    document.querySelectorAll('.tabbar button[data-v]').forEach(function(x){ var sec=SEC_DE_V[x.dataset.v]; if(sec) x.classList.toggle('hide', !verSec(sec)); });
-    document.querySelectorAll('.sbar-grp').forEach(function(g){ var t=(g.textContent||'').toLowerCase();
-      if(t.indexOf('rrhh')>=0) g.classList.toggle('hide', !verSec('rrhh'));
-      else if(t.indexOf('remun')>=0) g.classList.toggle('hide', !verSec('remu')); });
-    [['btn-rrhh','rrhh'],['btn-cli','clientes'],['btn-alertas','alertas'],['btn-plan','calendario'],['btn-planif','planificacion'],['btn-pagos','remu'],['tab-horas','reporte'],['tab-matriz','matriz'],['tab-veh','veh']].forEach(function(m){ if($(m[0])) $(m[0]).classList.toggle('hide', !verSec(m[1])); });
+    document.querySelectorAll('.sbar .sb-item[data-v], .tabbar button[data-v]').forEach(function(x){ if(x.dataset.v==='v-acc') return; var m=modDeNav(x);
+      if(m) x.classList.toggle('hide', !verMod(m)); else if(x.dataset.v==='v-rrhh') x.classList.toggle('hide', !verRrhh()); });
+    document.querySelectorAll('.rrhh-seg').forEach(function(x){ var m=SEG_MOD[x.dataset.seg]; if(m) x.classList.toggle('hide', !verMod(m)); });
+    // Títulos de grupo del menú: visibles solo si queda algún ítem visible debajo
+    document.querySelectorAll('.sbar-nav .sbar-grp').forEach(function(g){ var n=g.nextElementSibling, alguno=false;
+      while(n && !n.classList.contains('sbar-grp')){ if(n.classList.contains('sb-item') && !n.classList.contains('hide')) alguno=true; n=n.nextElementSibling; }
+      g.classList.toggle('hide', !alguno); });
+    [['btn-rrhh',null],['btn-cli','clientes'],['btn-alertas','alertas'],['btn-plan','calendario'],['btn-planif','planificacion'],['btn-pagos','remu'],['tab-horas','registro'],['tab-matriz','matriz'],['tab-veh','vehiculos'],['tab-asist','asistencia'],['tab-fotos','multimedia']].forEach(function(m){ if($(m[0])) $(m[0]).classList.toggle('hide', m[1]?!verMod(m[1]):!verRrhh()); });
     // Si la vista actual no está permitida para este usuario, llévalo a la primera que sí lo esté.
-    var actual=(document.querySelector('.view.on')||{}).id||'', secAct=SEC_DE_V[actual];
-    if(secAct && !verSec(secAct)){ var dest=primeraVistaPermitida(); if(dest) abrirVista(dest); }
+    var actual=(document.querySelector('.view.on')||{}).id||'';
+    if(actual && actual!=='v-reporte' && !verVista(actual)){ var dest=primeraVistaPermitida(); if(dest) abrirVista(dest); }
   }
-  // Ajusta títulos y botones según rol y si es edición
+  // Ajusta títulos y botones según permisos y si es edición
   function aplicarModo(){
-    var editing=!!EDIT_ID;
-    if(isAdmin){
-      $('r-title').textContent=editing?'Editar multimedia':'Multimedia';
-      $('r-save').textContent=editing?'Guardar cambios':'Guardar registro';
-      $('r-del').classList.toggle('hide',!editing);
-      $('r-report').classList.toggle('hide',!editing);
-    } else {
-      $('r-title').textContent=editing?'Agregar fotos':'Registro de fotos';
-      $('r-save').textContent='Guardar fotos';
-      $('r-del').classList.add('hide');
-      $('r-report').classList.add('hide');
-    }
+    var editing=!!EDIT_ID, full=puede('informe.editar');
+    $('r-title').textContent=full?(editing?'Editar multimedia':'Multimedia'):(editing?'Agregar fotos':'Registro de fotos');
+    $('r-save').textContent=full?(editing?'Guardar cambios':'Guardar registro'):'Guardar fotos';
+    $('r-del').classList.toggle('hide', !(editing && puede('informe.eliminar')));
+    $('r-report').classList.toggle('hide', !(editing && puede('informe.generar')));
     $('r-cancel').classList.toggle('hide',!editing);
   }
   if(sb&&sb.auth){ sb.auth.getSession().then(function(r){ setAuth(r&&r.data&&r.data.session); });
@@ -2120,6 +2224,7 @@
     cargarRegistros();
     cargarPlantillas();   // para saber qué faenas piden reporte (Matriz PTS)
     if(isAdmin){ cargarTrab(actualizarDatalist); cargarClientes(); cargarCargos(); cargarAlertas(); }
+    else if(verMod('alertas')){ cargarAlertas(); }
     ofrecerBorrador();
     // Restaura la última pestaña usada (si sigue siendo visible/permitida para este usuario).
     var _did=false;
@@ -2130,7 +2235,7 @@
       }
     }catch(_){}
     // El editor de informe es solo para admin; cualquier otro parte en Multimedia (subida simple).
-    if(!_did && !isAdmin){ var cur=(document.querySelector('.view.on')||{}).id||''; if(cur==='v-reporte'||cur===''){ var d=(MI_TIENE && typeof primeraVistaPermitida==='function' && primeraVistaPermitida())||'v-fotos'; abrirVista(d); } }
+    if(!_did && !isAdmin){ var cur=(document.querySelector('.view.on')||{}).id||''; if((cur==='v-reporte' && !verMod('informe'))||cur===''){ var d=primeraVistaPermitida()||'v-fotos'; abrirVista(d); } }
   }
   function registroDe(eventoId){ if(!eventoId) return null; var id=String(eventoId);
     // Coincide por la faena principal (evento_id) O por cualquier faena dentro de un reporte consolidado.
@@ -2174,9 +2279,9 @@
     if(v==='v-horas') cargarHoras();
     if(v==='v-cuadrilla'){ cargarTrab(actualizarDatalist); cargarPlantillas(function(){ cargarRegistros(function(){ if(C_JOB) elegirJobCuadrilla(C_JOB); else renderFaenaSelect(); }); }); }
     if(v==='v-matriz'){ cargarPlantillas(renderMatriz); }
-    if(v==='v-veh'){ if(isAdmin || (MI_TIENE && verSec('veh'))){ cargarVeh(pintarVehList); } else { cargarChoferForm(); } }
+    if(v==='v-veh'){ if(puede('vehiculos.flota')){ cargarVeh(pintarVehList); } else { cargarChoferForm(); } }
     if(v==='v-remu'){ cargarRemu(); }
-    if(v==='v-rrhh'){ cargarRrhh(); }
+    if(v==='v-rrhh'){ cargarRrhh(); if(!isAdmin && typeof rrhhSeg==='function'){ var _on=document.querySelector('.rrhh-seg.on'); if(!_on || !verMod(SEG_MOD[_on.dataset.seg])) rrhhSeg(primerSegRrhh()); } }
     if(v==='v-clientes'){ cargarClientes(pintarCli); }
     if(v==='v-acc'){ cargarPermisos(); }
     if(v==='v-plan'){ var fr=$('plan-frame'); if(fr && !fr.getAttribute('src')) fr.setAttribute('src','../planificacion/?embed=1'); }
@@ -2335,7 +2440,7 @@
     box.querySelectorAll('input[data-fcat]').forEach(function(inp){ inp.addEventListener('change',function(){ fotSubir(inp,inp.dataset.fcat); }); });
     box.querySelectorAll('.fot-del').forEach(function(b){ b.addEventListener('click',function(){ fotDel(+b.dataset.i); }); });
   }
-  function fotDel(i){ if(i<0||i>=FOT.media.length) return; if(!confirm('¿Quitar esta foto del reporte?')) return; FOT.media.splice(i,1); fotRenderCats(); fotGuardarMedia(function(ok){ fotMsg(ok?'✓ Actualizado':'⚠ No se pudo actualizar',ok); }); }
+  function fotDel(i){ if(i<0||i>=FOT.media.length) return; if(!puede('multimedia.eliminar')){ toast('No tienes permiso para eliminar fotos.'); return; } if(!confirm('¿Quitar esta foto del reporte?')) return; FOT.media.splice(i,1); fotRenderCats(); fotGuardarMedia(function(ok){ fotMsg(ok?'✓ Actualizado':'⚠ No se pudo actualizar',ok); }); }
   document.querySelectorAll('.tabbar button').forEach(function(b){ b.addEventListener('click',function(){ abrirVista(b.dataset.v); }); });
   document.querySelectorAll('.sbar .sb-item[data-v]').forEach(function(b){ b.addEventListener('click',function(){
     abrirVista(b.dataset.v);
@@ -3006,7 +3111,7 @@
     var preparacion={ faena:C_FAENA, items:PREP.map(function(it){ return {tipo:it.tipo,item:it.item,cantidad:it.cantidad||'',cargado:!!it.cargado,personal:!!it.personal}; }) };
     busy(true,'Guardando preparación…');
     var reg=registroDe(C_JOB.id);
-    var payload = isAdmin ? {asignacion:asignacion, preparacion:preparacion} : {preparacion:preparacion};
+    var payload = puede('preparacion.asignar') ? {asignacion:asignacion, preparacion:preparacion} : {preparacion:preparacion};
     var q = reg ? sb.from('registros').update(payload).eq('id',reg.id)
                 : sb.from('registros').insert({ evento_id:C_JOB.id, empresa:(C_JOB.ubicacion||''), lugar:(C_JOB.titulo||''), fecha:(C_JOB.fecha||todayISO()), asignacion:asignacion, preparacion:preparacion, autor:userEmail });
     q.then(function(r){ busy(false);
@@ -3188,10 +3293,10 @@
     R_MEDIA.forEach(function(m,i){
       if(multi && (m.faena||'')!==FOTO_FAENA) return;
       var c=catStore(m.cat); cnt[c]++; if(!buckets[c]) return;
-      var canDel=isAdmin||!!m.file;
+      var canDel=puede('multimedia.eliminar')||!!m.file, ord=puede('multimedia.ordenar');
       var div=document.createElement('div'); div.className='thumb'+(m._sel?' sel':''); div.dataset.i=i;
-      div.innerHTML=thumbInner(m)+faenaBadgeHtml(m)+(isAdmin?'<span class="selck">'+(m._sel?'✓':'')+'</span>':'')+(canDel?'<button class="rm" data-i="'+i+'">✕</button>':'');
-      if(isAdmin) div.setAttribute('draggable','true');
+      div.innerHTML=thumbInner(m)+faenaBadgeHtml(m)+(ord?'<span class="selck">'+(m._sel?'✓':'')+'</span>':'')+(canDel?'<button class="rm" data-i="'+i+'">✕</button>':'');
+      if(ord) div.setAttribute('draggable','true');
       buckets[c].appendChild(div);
     });
     $('cnt-sin').textContent=cnt.sin?(cnt.sin+' sin ordenar'):'';
@@ -3199,7 +3304,7 @@
     $('cnt-proceso').textContent=cnt.proceso?(cnt.proceso+' archivo'+(cnt.proceso>1?'s':'')):'';
     $('cnt-despues').textContent=cnt.despues?(cnt.despues+' archivo'+(cnt.despues>1?'s':'')):'';
     if($('cnt-doc')) $('cnt-doc').textContent=cnt.doc?(cnt.doc+' archivo'+(cnt.doc>1?'s':'')):'';
-    var gs=$('grp-sin'); if(gs) gs.style.display=(cnt.sin||isAdmin)?'':'none';
+    var gs=$('grp-sin'); if(gs) gs.style.display=(cnt.sin||puede('multimedia.ordenar'))?'':'none';
     bindThumbs(); renderSelBar();
   }
   function bindThumbs(){
@@ -3207,7 +3312,7 @@
       var i=+div.dataset.i;
       var rm=div.querySelector('.rm');
       if(rm) rm.addEventListener('click',function(ev){ ev.stopPropagation(); var m=R_MEDIA[i]; if(m&&m.file){ try{ URL.revokeObjectURL(m.url); }catch(_){}} R_MEDIA.splice(i,1); pintarThumbs(); });
-      if(isAdmin){
+      if(puede('multimedia.ordenar')){
         div.addEventListener('click',function(){ if(R_MEDIA[i]){ R_MEDIA[i]._sel=!R_MEDIA[i]._sel; pintarThumbs(); } });
         div.addEventListener('dragstart',function(ev){ ev.dataTransfer.setData('text/plain',String(i)); ev.dataTransfer.effectAllowed='move'; });
       }
@@ -3217,7 +3322,7 @@
   function renderSelBar(){
     var bar=$('sel-bar'); if(!bar) return;
     var n=selCount();
-    if(!isAdmin || !n){ bar.hidden=true; bar.innerHTML=''; return; }
+    if(!puede('multimedia.ordenar') || !n){ bar.hidden=true; bar.innerHTML=''; return; }
     bar.hidden=false;
     // Con 2+ faenas, botones para asignar las fotos seleccionadas a una faena (F1/F2…) o dejarlas Sin faena.
     var faenaBtns='';
@@ -3246,9 +3351,9 @@
   // Arrastrar una miniatura a su categoría (admin, escritorio)
   ['th-sin','th-antes','th-proceso','th-despues','th-doc'].forEach(function(id){
     var box=$(id); if(!box) return;
-    box.addEventListener('dragover',function(e){ if(!isAdmin)return; e.preventDefault(); box.classList.add('drop-ok'); });
+    box.addEventListener('dragover',function(e){ if(!puede('multimedia.ordenar'))return; e.preventDefault(); box.classList.add('drop-ok'); });
     box.addEventListener('dragleave',function(){ box.classList.remove('drop-ok'); });
-    box.addEventListener('drop',function(e){ box.classList.remove('drop-ok'); if(!isAdmin)return; e.preventDefault(); var i=+e.dataTransfer.getData('text/plain'); if(R_MEDIA[i]){ R_MEDIA[i].cat=box.dataset.cat; R_MEDIA[i]._sel=false; pintarThumbs(); } });
+    box.addEventListener('drop',function(e){ box.classList.remove('drop-ok'); if(!puede('multimedia.ordenar'))return; e.preventDefault(); var i=+e.dataTransfer.getData('text/plain'); if(R_MEDIA[i]){ R_MEDIA[i].cat=box.dataset.cat; R_MEDIA[i]._sel=false; pintarThumbs(); } });
   });
 
   // ====== Subir un archivo (Supabase Storage por defecto; R2 si está configurado) ======
@@ -3419,7 +3524,7 @@
   }
   $('r-cancel').addEventListener('click',function(){ borrarBorrador(); resetForm(); irA('v-hist'); });
   $('r-del').addEventListener('click',function(){
-    if(!EDIT_ID) return;
+    if(!EDIT_ID || !puede('informe.eliminar')) return;
     if(!confirm('¿Eliminar este registro? (los archivos ya subidos no se borran del bucket)')) return;
     busy(true,'Eliminando…');
     sb.from('registros').delete().eq('id',EDIT_ID).then(function(r){ busy(false);
@@ -3432,7 +3537,7 @@
   var REP_LBL={antes:'Estado inicial',proceso:'Proceso',despues:'Resultado',doc:'Registro documental'};
   function fFaena(f){ if(!f)return'—'; var d=new Date(f+'T00:00:00'); return String(d.getDate()).padStart(2,'0')+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+d.getFullYear(); }
   function generarReporte(){
-    if(!isAdmin) return;
+    if(!puede('informe.generar')){ toast('No tienes permiso para generar informes.'); return; }
     syncHoras();
     var empresa=$('r-empresa').value.trim()||(R_JOB&&R_JOB.ubicacion)||'—';
     var lugar=$('r-lugar').value.trim(), fecha=$('r-fecha').value||todayISO(), notas=$('r-notas').value.trim();
@@ -3716,7 +3821,7 @@
   function nrm(s){ return (s||'').trim().toLowerCase(); }
   var JORN={};   // fecha -> {vehiculos:[{veh,chofer}], preparacion:''}
   function cargarHoras(){
-    if(isAdmin) cargarTrab(function(){ actualizarDatalist(); if($('hz-list')&&HZ.length) renderHz(); });
+    if(isAdmin||verMod('registro')) cargarTrab(function(){ actualizarDatalist(); if($('hz-list')&&HZ.length) renderHz(); });
     if(!sb) return;
     if(!HZ_LUNES) HZ_LUNES=lunesDe(todayISO());
     var lo=HZ_LUNES, hi=sumarDias(HZ_LUNES,6);
@@ -3725,7 +3830,7 @@
     var jq=sb.from('jornada').select('*'); if(lo){ jq=jq.gte('fecha',lo).lte('fecha',hi); } jq=jq.limit(800);
     var vq=sb.from('vehiculos').select('id,nombre,marca,modelo,patente').order('nombre',{ascending:true}).limit(300);
     Promise.all([hq,jq,vq]).then(function(rs){
-      HZ=((rs[0]&&rs[0].data)||[]).map(function(h){ return {id:h.id, fecha:h.fecha, trabajador:h.trabajador||'', entrada:h.entrada||'', salida:h.salida||'', vueltas:(+h.vueltas||0), faena:(h.faena||'')}; });
+      HZ=((rs[0]&&rs[0].data)||[]).map(function(h){ return {id:h.id, fecha:h.fecha, trabajador:h.trabajador||'', entrada:h.entrada||'', salida:h.salida||'', vueltas:(+h.vueltas||0), faena:(h.faena||''), veh:(h.veh||'')}; });
       JORN={}; ((rs[1]&&rs[1].data)||[]).forEach(function(j){ JORN[j.fecha]={vehiculos:(j.vehiculos||[]), preparacion:(j.preparacion||'')}; });
       if(rs[2]&&rs[2].data) VEH=rs[2].data;
       HZ_DEL=[]; renderHz();
@@ -3768,6 +3873,27 @@
   function colorEmpresa(nombre){ var hex=cliColorDef(nombre); if(hex){ return { bg:mixBg(hex), border:hex, text:hex }; } var hue=cliHue(nombre); return { bg:'hsl('+hue+',72%,94%)', border:'hsl('+hue+',56%,50%)', text:'hsl('+hue+',50%,32%)' }; }
   function hslHex(h,s,l){ s/=100; l/=100; var a=s*Math.min(l,1-l); var f=function(n){ var k=(n+h/30)%12, c=l-a*Math.max(-1,Math.min(k-3,Math.min(9-k,1))); return Math.round(255*c).toString(16).padStart(2,'0'); }; return '#'+f(0)+f(8)+f(4); }
   function autoHex(nombre){ return hslHex(cliHue(nombre),56,50); }
+  // Buscador de trabajador con teclado (reemplaza al datalist): ↓/↑ mueve, Tab/Enter elige, Esc cierra.
+  var HZAC=(function(){
+    var box=null, cur=null, items=[], idx=-1, timer=null;
+    function el(){ if(!box){ box=document.createElement('div'); box.className='hzac'; box.style.display='none'; document.body.appendChild(box); document.addEventListener('scroll',hide,true); window.addEventListener('resize',hide); } return box; }
+    function roster(){ return (TRAB||[]).filter(function(t){ return t.estado!=='inactivo'; }).map(function(t){ return titleCase(t.nombre); }).sort(function(a,b){ return a.localeCompare(b,'es'); }); }
+    function hide(){ if(box) box.style.display='none'; items=[]; idx=-1; }
+    function hideLater(){ clearTimeout(timer); timer=setTimeout(hide,160); }
+    function show(inp){ clearTimeout(timer); cur=inp; var v=nrm(inp.value);
+      items=roster().filter(function(n){ var ln=n.toLowerCase(); return v ? (ln.indexOf(v)>=0 && ln!==v) : true; }).slice(0,8);
+      if(!items.length){ hide(); return; }
+      idx=-1; var b=el(); b.innerHTML=items.map(function(n,i){ return '<div class="hzac-it" data-i="'+i+'">'+esc(n)+'</div>'; }).join('');
+      var r=inp.getBoundingClientRect(); b.style.left=(r.left+window.scrollX)+'px'; b.style.top=(r.bottom+window.scrollY)+'px'; b.style.minWidth=r.width+'px'; b.style.display='block';
+      Array.prototype.forEach.call(b.querySelectorAll('.hzac-it'),function(it){ it.addEventListener('mousedown',function(e){ e.preventDefault(); choose(+it.dataset.i); }); });
+    }
+    function paint(){ if(!box) return; Array.prototype.forEach.call(box.querySelectorAll('.hzac-it'),function(it,i){ it.classList.toggle('on', i===idx); }); }
+    function move(d){ if(!items.length) return; idx=(idx+d+items.length)%items.length; paint(); var on=box.querySelector('.hzac-it.on'); if(on) on.scrollIntoView({block:'nearest'}); }
+    function choose(i){ if(!cur||i<0||i>=items.length) return; cur.value=items[i]; hide(); cur.dispatchEvent(new Event('input',{bubbles:true})); cur.dispatchEvent(new Event('change',{bubbles:true})); }
+    function open(){ return box && box.style.display!=='none' && items.length; }
+    function key(e){ if(!open()) return; if(e.key==='ArrowDown'){ e.preventDefault(); move(1); } else if(e.key==='ArrowUp'){ e.preventDefault(); move(-1); } else if(e.key==='Escape'){ e.preventDefault(); hide(); } else if((e.key==='Enter'||e.key==='Tab') && idx>=0){ e.preventDefault(); choose(idx); } }
+    return {show:show, hideLater:hideLater, key:key};
+  })();
   function renderHz(){
     var c=$('hz-list'); if(!c) return;
     HZ.forEach(function(h){ if(!h.fecha) h.fecha=todayISO(); });
@@ -3785,9 +3911,10 @@
       var nT=Object.keys(nombres).length, totTxt=hay?(' · '+Math.floor(tot/60)+'h '+(tot%60)+'m'):'';
       function renderRow(i){ var h=HZ[i];
         return '<div class="hrow'+(solapSet[i]?' hrow-dup':'')+'" data-i="'+i+'">'+
-          '<input class="h-trab" list="trab-datalist" placeholder="Trabajador" value="'+enc(h.trabajador||'')+'">'+
+          '<input class="h-trab" autocomplete="off" placeholder="Trabajador" value="'+enc(h.trabajador||'')+'">'+
           '<select class="h-fae" title="Faena (según Planificación)">'+opcionesFaena(h.fecha,h.faena||'')+'</select>'+
           '<label class="hrow-vu'+(esChofer(h.trabajador)?'':' hide')+'" title="Vueltas (solo choferes)">🔄<input type="number" class="h-vu" min="0" value="'+(h.vueltas||0)+'"></label>'+
+          '<select class="h-veh'+((esChofer(h.trabajador)||(+h.vueltas>0))?'':' hide')+'" title="Vehículo de la vuelta">'+vehOpts(h.veh||'')+'</select>'+
           '<input type="time" class="h-in" value="'+(h.entrada||'')+'"><span class="arw">→</span><input type="time" class="h-out" value="'+(h.salida||'')+'">'+
           '<span class="hrow-total">'+totalMini(h.entrada,h.salida)+turnoTag(h.entrada,h.salida)+'</span>'+
           '<label class="hrow-cal" title="Fecha">📅<input type="date" class="h-fecha" value="'+(h.fecha||todayISO())+'"></label>'+
@@ -3800,11 +3927,11 @@
       forder.sort(function(a,b){ if(!a) return 1; if(!b) return -1; return a.localeCompare(b); });
       var rows=forder.map(function(fa){
         var rws=byFae[fa].map(renderRow).join('');
-        if(!fa){ return '<div class="hfae">'+(anyFae?'<div class="hfae-h hfae-none">Sin faena</div>':'')+rws+'</div>'; }
+        var addFae='<button class="hz-add-day hz-add-fae" data-f="'+f+'" data-fa="'+enc(fa)+'" type="button">＋ persona'+(fa?' en esta faena':' (sin faena)')+'</button>';
+        if(!fa){ return '<div class="hfae">'+(anyFae?'<div class="hfae-h hfae-none">Sin faena</div>':'')+rws+addFae+'</div>'; }
         var col=colorEmpresa(claveEmpresa(fa));
-        return '<div class="hfae" style="border-left:4px solid '+col.border+'"><div class="hfae-h" style="background:'+col.bg+';color:'+col.text+'">🏢 '+esc(fa)+'</div>'+rws+'</div>';
+        return '<div class="hfae" style="border-left:4px solid '+col.border+'"><div class="hfae-h" style="background:'+col.bg+';color:'+col.text+'">🏢 '+esc(fa)+'</div>'+rws+addFae+'</div>';
       }).join('');
-      var addBtn='<button class="hz-add-day" data-f="'+f+'" type="button">＋ Agregar hora ('+fechaCorta(f)+')</button>';
       // Vehículos + preparación del día (debajo de las horas)
       var jr=JORN[f]||{vehiculos:[],preparacion:''};
       var jvRows=(jr.vehiculos||[]).map(function(vx,vi){ return '<div class="jv-row" data-f="'+f+'" data-i="'+vi+'"><select class="jv-veh">'+vehOpts(vx.veh||'')+'</select><select class="jv-cho">'+choferOpts(vx.chofer||'')+'</select><button class="jv-rm" type="button" title="Quitar">✕</button></div>'; }).join('');
@@ -3815,12 +3942,12 @@
         '<textarea class="jprep" data-f="'+f+'" rows="2" placeholder="Ej: charla de 5 min, EPP entregado, revisión de equipos, materiales cargados…">'+esc(jr.preparacion||'')+'</textarea>'+
       '</div>';
       var colapsado=(HZ_COL[f]!==false);   // colapsado por defecto; se abre al tocar
-      return '<div class="hgroup'+(colapsado?' collapsed':'')+'"><div class="hgroup-h" data-f="'+f+'"><span class="hg-chev">▾</span>📅 '+fechaDia(f)+' <span style="color:var(--muted);font-weight:600">('+nT+(nT===1?' trabajador':' trabajadores')+totTxt+')</span></div><div class="hgroup-body">'+rows+addBtn+jday+'</div></div>';
+      return '<div class="hgroup'+(colapsado?' collapsed':'')+'"><div class="hgroup-h" data-f="'+f+'"><span class="hg-chev">▾</span>📅 '+fechaDia(f)+' <span style="color:var(--muted);font-weight:600">('+nT+(nT===1?' trabajador':' trabajadores')+totTxt+')</span></div><div class="hgroup-body">'+rows+jday+'</div></div>';
     }).join('')||'<div class="empty"><div class="big">⏱️</div>Sin horas esta semana.<br><span style="font-size:.82rem">Cambia de semana o toca “＋ Agregar hora”.</span></div>';
     $('hz-cnt').textContent=HZ.length+(HZ.length===1?' línea':' líneas');
     c.querySelectorAll('.hgroup-h').forEach(function(h){ h.addEventListener('click',function(){ HZ_COL[h.dataset.f]=h.parentNode.classList.toggle('collapsed'); }); });
     c.querySelectorAll('.hrow-rm').forEach(function(b){ b.addEventListener('click',function(){ removeHz(+b.dataset.i); }); });
-    c.querySelectorAll('.hz-add-day').forEach(function(b){ b.addEventListener('click',function(){ addHzDay(b.dataset.f); }); });
+    c.querySelectorAll('.hz-add-fae').forEach(function(b){ b.addEventListener('click',function(){ addHzFae(b.dataset.f, b.dataset.fa); }); });
     // Vehículos + preparación del día
     function jget(f){ if(!JORN[f]) JORN[f]={vehiculos:[],preparacion:''}; return JORN[f]; }
     c.querySelectorAll('.jv-add').forEach(function(b){ b.addEventListener('click',function(){ var f=b.dataset.f; jget(f).vehiculos.push({veh:'',chofer:''}); HZ_COL[f]=false; renderHz(); guardarJornada(f); }); });
@@ -3836,18 +3963,30 @@
       function marcar(){ if(HZ[i]) HZ[i]._dirty=true; autoGuardarHz(); }
       var tr=row.querySelector('.h-trab');
       function valTrab(){ var v=(tr.value||'').trim(); tr.classList.toggle('h-bad', !!v && !esTrabajador(v)); }
-      valTrab();   // estado inicial (marca en rojo los que no tengan ficha)
-      tr.addEventListener('input',function(){ valTrab(); var vl=row.querySelector('.hrow-vu'); if(vl) vl.classList.toggle('hide', !esChofer(tr.value)); marcar(); });
+      function toggleVu(){ var ch=esChofer(tr.value); var vuIn=row.querySelector('.h-vu'); var nv=+((vuIn&&vuIn.value)||0)||0;
+        var vl=row.querySelector('.hrow-vu'); if(vl) vl.classList.toggle('hide', !ch);
+        var vv=row.querySelector('.h-veh'); if(vv) vv.classList.toggle('hide', !(ch||nv>0)); }
+      valTrab(); toggleVu();   // estado inicial (marca en rojo los que no tengan ficha)
+      tr.addEventListener('input',function(){ valTrab(); toggleVu(); HZAC.show(tr); marcar(); });
+      tr.addEventListener('focus',function(){ HZAC.show(tr); });
+      tr.addEventListener('blur',function(){ HZAC.hideLater(); });
+      tr.addEventListener('keydown',function(e){ HZAC.key(e); });
       tr.addEventListener('change',function(){ var v=(tr.value||'').trim(); if(v && !esTrabajador(v)){ toast('“'+v+'” no tiene ficha. Créalo en Trabajadores (RRHH) para poder cargarle horas.'); } });
+      var vv=row.querySelector('.h-veh'); if(vv) vv.addEventListener('change',marcar);
       var fa=row.querySelector('.h-fae'); if(fa) fa.addEventListener('change',function(){ syncHz(); if(HZ[i]) HZ[i]._dirty=true; HZ_COL[HZ[i]?HZ[i].fecha:'']=false; renderHz(); autoGuardarHz(); });
-      var vu=row.querySelector('.h-vu'); if(vu) vu.addEventListener('input',marcar);
+      var vu=row.querySelector('.h-vu'); if(vu) vu.addEventListener('input',function(){ toggleVu(); marcar(); });
       row.querySelector('.h-in').addEventListener('change',function(){ upd(); marcar(); });
       row.querySelector('.h-out').addEventListener('change',function(){ upd(); marcar(); syncHz(); renderHz(); });   // re-render para avisar si la hora se pisa con otra
       fe.addEventListener('change',function(){ syncHz(); if(HZ[i]) HZ[i]._dirty=true; if(fe.value) HZ_COL[fe.value]=false; renderHz(); autoGuardarHz(); });
     });
   }
-  // Agrega una línea de hora en la fecha del grupo (no en hoy) y deja el grupo abierto.
-  function addHzDay(f){ syncHz(); f=f||todayISO(); HZ.unshift({fecha:f,trabajador:'',entrada:'',salida:'',faena:''}); HZ_COL[f]=false; renderHz(); }
+  // Agrega una persona a una faena de ese día, heredando la hora de la última persona de esa misma faena.
+  function addHzFae(f, fa){ syncHz(); f=f||todayISO(); fa=fa||'';
+    var ent='', sal='';
+    HZ.forEach(function(h){ if(h.fecha===f && (h.faena||'')===fa){ if(h.entrada) ent=h.entrada; if(h.salida) sal=h.salida; } });
+    HZ.unshift({fecha:f,trabajador:'',entrada:ent,salida:sal,faena:fa,vueltas:0,veh:''}); HZ_COL[f]=false; renderHz();
+    var box=$('hz-list'); if(box){ var nueva=box.querySelector('.hrow[data-i="0"]'); if(nueva){ try{ nueva.scrollIntoView({block:'center'}); var tr=nueva.querySelector('.h-trab'); if(tr) tr.focus(); }catch(_){} } }
+  }
   // Autoguardado silencioso de Horas (sin recargar): guarda solo las líneas cambiadas.
   var _hzTimer=null;
   function autoGuardarHz(){ clearTimeout(_hzTimer); _hzTimer=setTimeout(guardarHzAuto, 900); }
@@ -3858,14 +3997,14 @@
       if(!h._dirty) return;
       if(!(h.trabajador||'').trim()) return;   // no guarda líneas sin nombre
       if(!esTrabajador(h.trabajador)) return;  // solo trabajadores con ficha
-      var row={ fecha:h.fecha||todayISO(), trabajador:h.trabajador.trim(), entrada:h.entrada||null, salida:h.salida||null, vueltas:(+h.vueltas||0), faena:(h.faena||null), autor:userEmail };
+      var row={ fecha:h.fecha||todayISO(), trabajador:h.trabajador.trim(), entrada:h.entrada||null, salida:h.salida||null, vueltas:(+h.vueltas||0), faena:(h.faena||null), veh:(h.veh||null), autor:userEmail };
       h._dirty=false; activarSiEspera(h.trabajador);
       if(h.id){ sb.from('horas').update(row).eq('id',h.id).then(function(){},function(){}); }
       else if(!h._saving){ h._saving=true; sb.from('horas').insert(row).select('id').maybeSingle().then(function(r){ h._saving=false; if(r&&r.data&&r.data.id) h.id=r.data.id; }, function(){ h._saving=false; }); }
     });
     var ind=$('hz-saved'); if(ind){ ind.textContent='✓ guardado'; ind.style.opacity='1'; clearTimeout(ind._t); ind._t=setTimeout(function(){ ind.style.opacity='0'; },1600); }
   }
-  function syncHz(){ var c=$('hz-list'); if(!c) return; c.querySelectorAll('.hrow').forEach(function(row){ var i=+row.dataset.i; if(HZ[i]){ HZ[i].trabajador=row.querySelector('.h-trab').value; HZ[i].entrada=row.querySelector('.h-in').value; HZ[i].salida=row.querySelector('.h-out').value; var fa=row.querySelector('.h-fae'); if(fa) HZ[i].faena=fa.value; var vu=row.querySelector('.h-vu'); if(vu) HZ[i].vueltas=(+vu.value||0); var fe=row.querySelector('.h-fecha'); if(fe) HZ[i].fecha=fe.value||todayISO(); } }); }
+  function syncHz(){ var c=$('hz-list'); if(!c) return; c.querySelectorAll('.hrow').forEach(function(row){ var i=+row.dataset.i; if(HZ[i]){ HZ[i].trabajador=row.querySelector('.h-trab').value; HZ[i].entrada=row.querySelector('.h-in').value; HZ[i].salida=row.querySelector('.h-out').value; var fa=row.querySelector('.h-fae'); if(fa) HZ[i].faena=fa.value; var vu=row.querySelector('.h-vu'); if(vu) HZ[i].vueltas=(+vu.value||0); var vh=row.querySelector('.h-veh'); if(vh) HZ[i].veh=vh.value; var fe=row.querySelector('.h-fecha'); if(fe) HZ[i].fecha=fe.value||todayISO(); } }); }
   function addHz(){ syncHz(); var hoy=todayISO();
     // Fecha dentro de la semana que se está viendo (hoy si aplica, si no el lunes de la semana), y deja el día abierto.
     var f=(HZ_LUNES && (hoy<HZ_LUNES||hoy>sumarDias(HZ_LUNES,6)))?HZ_LUNES:hoy;
@@ -3878,7 +4017,7 @@
     var ins=[], upds=[], sinFicha=[];
     HZ.forEach(function(h){ if(!(h.trabajador||'').trim()) return;
       if(!esTrabajador(h.trabajador)){ if(sinFicha.indexOf(h.trabajador.trim())<0) sinFicha.push(h.trabajador.trim()); return; }
-      var row={ fecha:h.fecha||todayISO(), trabajador:h.trabajador.trim(), entrada:h.entrada||null, salida:h.salida||null, vueltas:(+h.vueltas||0), faena:(h.faena||null), autor:userEmail };
+      var row={ fecha:h.fecha||todayISO(), trabajador:h.trabajador.trim(), entrada:h.entrada||null, salida:h.salida||null, vueltas:(+h.vueltas||0), faena:(h.faena||null), veh:(h.veh||null), autor:userEmail };
       if(h.id) upds.push({id:h.id,row:row}); else ins.push(row); });
     if(sinFicha.length){ toast('Sin ficha (no se guardan): '+sinFicha.join(', ')+'. Créalos en Trabajadores.'); }
     busy(true,'Guardando horas…'); var err=null;
@@ -3896,7 +4035,7 @@
 
   // ====== Cuadrilla y EPP de salida ======
   function renderAsig(){
-    var c=$('asig-rows'); if(!c) return; var ro=!isAdmin;   // read-only para no-admin
+    var c=$('asig-rows'); if(!c) return; var ro=!puede('preparacion.asignar');   // solo lectura sin permiso de asignar
     if(ro){
       c.innerHTML=ASIG.length ? ASIG.map(function(a){ return '<div class="arow" style="padding:7px 2px;border-bottom:1px solid var(--line);font-weight:600">'+esc(a.nombre||'—')+'</div>'; }).join('')
                               : '<div class="note">Aún no hay cuadrilla asignada (la asigna un supervisor).</div>';
@@ -6499,7 +6638,7 @@
   var AL=null;
   function setAlNum(n){ ['sb-al-num','top-al-num'].forEach(function(id){ var el=$(id); if(!el) return; el.textContent=n>99?'99+':String(n); el.classList.toggle('hide',!n); }); }
   function cargarAlertas(){
-    if(!sb||!isAdmin) return;
+    if(!sb||!verMod('alertas')) return;
     var hoy=todayISO(), prev=mesPrevio(), en14=isoMas(14), hace60=isoMas(-60);
     Promise.all([
       sb.from('trabajadores').select('id,nombre,estado').limit(800),
@@ -7042,21 +7181,181 @@
   document.querySelectorAll('.rrhh-fil').forEach(function(b){ b.addEventListener('click',function(){ document.querySelectorAll('.rrhh-fil').forEach(function(x){ x.classList.toggle('on',x===b); }); RRHH_FILTRO=b.dataset.f; renderRrhh(); }); });
   document.querySelectorAll('.rrhh-vis').forEach(function(b){ b.addEventListener('click',function(){ document.querySelectorAll('.rrhh-vis').forEach(function(x){ x.classList.toggle('on',x===b); }); RRHH_VISTA=b.dataset.v; renderRrhh(); }); });
 
-  // ====== ACCESOS / PERMISOS (solo Enzo) ======
-  var SECCIONES=[['asistencia','Asistencia (terreno)'],['fotos','Multimedia (subir fotos)'],['reporte','Registro / Reportes'],['planificacion','Planificación'],['calendario','Calendario'],['matriz','Matriz PTS'],['rrhh','RRHH / Documentación'],['remu','Remuneraciones'],['veh','Vehículos'],['clientes','Clientes'],['alertas','Alertas']];
+  // ====== ACCESOS / PERMISOS v2 ======
+  // Modelo (inspirado en ERPNext / Odoo / Dolibarr): cada apartado del menú tiene un NIVEL (oculto/ver/editar/total)
+  // que pre-marca sus ACCIONES; las acciones se pueden ajustar una a una. Los ROLES son plantillas editables.
+  // Formato guardado en permisos.secciones: {_v:2, _meta:{activo,vence,nota}, <modulo>:{n:'editar', a:{accion:true,...}}}
   var NIVELES=[['oculto','Oculto'],['ver','Ver'],['editar','Editar'],['total','Total']];
-  var ROL_DEFAULTS={
-    admin:         {asistencia:'total',fotos:'total',reporte:'total',planificacion:'total',calendario:'total',matriz:'total',rrhh:'total',remu:'total',veh:'total',clientes:'total',alertas:'total'},
-    supervisor:    {asistencia:'total',fotos:'total',reporte:'total',planificacion:'editar',calendario:'editar',matriz:'editar',rrhh:'editar',remu:'ver',veh:'total',clientes:'editar',alertas:'ver'},
-    capataz:       {asistencia:'total',fotos:'editar',reporte:'editar',planificacion:'ver',calendario:'ver',matriz:'ver',rrhh:'oculto',remu:'oculto',veh:'ver',clientes:'oculto',alertas:'oculto'},
-    prevencionista:{asistencia:'ver',fotos:'editar',reporte:'ver',planificacion:'ver',calendario:'ver',matriz:'ver',rrhh:'total',remu:'oculto',veh:'ver',clientes:'ver',alertas:'ver'},
-    operario:      {asistencia:'oculto',fotos:'editar',reporte:'editar',planificacion:'oculto',calendario:'oculto',matriz:'oculto',rrhh:'oculto',remu:'oculto',veh:'editar',clientes:'oculto',alertas:'oculto'},
-    chofer:        {asistencia:'oculto',fotos:'oculto',reporte:'ver',planificacion:'oculto',calendario:'oculto',matriz:'oculto',rrhh:'oculto',remu:'oculto',veh:'editar',clientes:'oculto',alertas:'oculto'}
-  };
-  var PERMISOS=[], ACC_EMAIL=null, ACC_TRAB=[];
-  function cargarPermisos(){ if(!sb) return; sb.from('permisos').select('*').order('rol',{ascending:true}).then(function(r){ PERMISOS=(r&&r.data)||[]; pintarAcc(); });
+  // [clave, nombre, vista, seg, acciones[[clave, texto, nivel mínimo por defecto]]]
+  var PERM_GRUPOS=[
+    ['Operaciones',[
+      ['alertas','Alertas','v-alertas',null,[]],
+      ['informe','Informe (editor)','v-reporte',null,[['editar','Editar datos del informe (cliente, lugar, fecha, notas)','editar'],['generar','Generar el informe / PDF para el cliente','editar'],['eliminar','Eliminar informes','total']]],
+      ['reportes','Reportes','v-hist',null,[]],
+      ['registro','Registro (horas)','v-horas',null,[]],
+      ['asistencia','Asistencia (terreno)','v-asist',null,[]],
+      ['multimedia','Multimedia (fotos)','v-fotos',null,[['subir','Subir fotos y videos','editar'],['ordenar','Ordenar fotos (Antes / Proceso / Después, por faena)','editar'],['eliminar','Eliminar fotos ya guardadas','total']]],
+      ['preparacion','Preparación','v-cuadrilla',null,[['asignar','Asignar faena y cuadrilla (el checklist lo marca cualquiera con acceso)','total']]],
+      ['vehiculos','Vehículos','v-veh',null,[['vuelta','Registrar vueltas y peajes','ver'],['flota','Ver la flota completa','total']]],
+      ['clientes','Clientes','v-clientes',null,[]],
+      ['planificacion','Planificación','v-planif',null,[]],
+      ['calendario','Calendario','v-plan',null,[]],
+      ['matriz','Matriz PTS','v-matriz',null,[]]
+    ]],
+    ['RRHH',[
+      ['trabajadores','Trabajadores','v-rrhh','trab',[['exportar','Exportar listado de trabajadores','total']]],
+      ['documentacion','Documentación','v-rrhh','doc',[]],
+      ['capacitaciones','Capacitaciones','v-rrhh','capacit',[]],
+      ['finiquitos','Finiquitos','v-rrhh','finiquito',[]],
+      ['salidas','Salidas médicas','v-rrhh','salida',[]]
+    ]],
+    ['Remuneraciones',[
+      ['remu','Remuneraciones','v-remu',null,[]]
+    ]],
+    ['Sistema',[
+      ['accesos','Accesos','v-acc',null,[['gestionar','Gestionar personas, roles y permisos','total']]]
+    ]]
+  ];
+  var PERM_MODS=[]; PERM_GRUPOS.forEach(function(g){ g[1].forEach(function(m){ PERM_MODS.push({k:m[0],nombre:m[1],v:m[2],seg:m[3],acc:m[4],grupo:g[0]}); }); });
+  var PERM_MOD={}; PERM_MODS.forEach(function(m){ PERM_MOD[m.k]=m; });
+  var SEG_MOD={trab:'trabajadores',doc:'documentacion',capacit:'capacitaciones',finiquito:'finiquitos',salida:'salidas',zerty:'documentacion'};
+  var SUPER_EMAIL='enzo.castro@innovaservi.com';
+
+  // Roles base (si la tabla roles_perm aún no existe o está vacía). Valor: nivel, o [nivel, {accion:bool}] para ajustar.
+  var ROLES_BASE=[
+    {clave:'admin',nombre:'Admin',descripcion:'Todo, salvo gestionar accesos (eso se otorga aparte).',def:{_todo:'total',accesos:'oculto'}},
+    {clave:'supervisor',nombre:'Supervisor',descripcion:'Opera faenas, informes y equipo; ve remuneraciones.',def:{alertas:'ver',informe:'total',reportes:'total',registro:'total',asistencia:'total',multimedia:'total',preparacion:'total',vehiculos:'total',clientes:'editar',planificacion:'editar',calendario:'editar',matriz:'editar',trabajadores:['editar',{exportar:false}],documentacion:'editar',capacitaciones:'editar',finiquitos:'ver',salidas:'editar',remu:'ver'}},
+    {clave:'capataz',nombre:'Capataz',descripcion:'Asistencia en terreno, fotos y preparación de la cuadrilla.',def:{asistencia:'total',multimedia:'editar',reportes:'ver',preparacion:'editar',planificacion:'ver',calendario:'ver',matriz:'ver',vehiculos:'ver'}},
+    {clave:'prevencionista',nombre:'Prevencionista',descripcion:'Fotos y su orden, genera informes, documentación y capacitaciones.',def:{alertas:'ver',informe:'editar',reportes:'ver',multimedia:'total',preparacion:'editar',planificacion:'ver',calendario:'ver',matriz:'ver',vehiculos:'ver',clientes:'ver',trabajadores:'ver',documentacion:'total',capacitaciones:'total',salidas:'ver'}},
+    {clave:'operario',nombre:'Operario',descripcion:'Sube fotos de su faena y marca el checklist.',def:{multimedia:['editar',{ordenar:false}],reportes:'ver',preparacion:'editar',vehiculos:'ver'}},
+    {clave:'chofer',nombre:'Chofer',descripcion:'Registra vueltas y peajes.',def:{vehiculos:'editar',reportes:'ver'}}
+  ];
+  var ROLES=ROLES_BASE.map(function(b){ return {clave:b.clave,nombre:b.nombre,descripcion:b.descripcion,perm:permDeDef(b.def),db:false}; });   // [{clave,nombre,descripcion,perm(resuelto),db}] (se completa con roles_perm)
+
+  function permVacio(){ var p={}; PERM_MODS.forEach(function(m){ p[m.k]={n:'oculto',a:{}}; m.acc.forEach(function(a){ p[m.k].a[a[0]]=false; }); }); return p; }
+  function accDeNivel(mk,n){ var o={}; (PERM_MOD[mk]?PERM_MOD[mk].acc:[]).forEach(function(a){ o[a[0]]=(NIV_ORD[n]||0)>=(NIV_ORD[a[2]]||0) && n!=='oculto'; }); return o; }
+  function permDeDef(def){ var p=permVacio(); PERM_MODS.forEach(function(m){ var v=(def&&def[m.k]!=null)?def[m.k]:((def&&def._todo)||'oculto');
+      var n=Array.isArray(v)?v[0]:v, ov=Array.isArray(v)?(v[1]||{}):{}; p[m.k]={n:n,a:accDeNivel(m.k,n)}; for(var k in ov){ if(k in p[m.k].a) p[m.k].a[k]=!!ov[k]; } });
+    return p; }
+  // Normaliza un perm (v2) asegurando que existan todos los módulos/acciones del catálogo actual.
+  function permNorm(src){ var p=permVacio(); PERM_MODS.forEach(function(m){ var s=src&&src[m.k]; if(!s||typeof s!=='object') return;
+      var n=NIV_ORD[s.n]!=null?s.n:'oculto', def=accDeNivel(m.k,n); p[m.k]={n:n,a:{}};
+      for(var k in def){ p[m.k].a[k]=(s.a&&typeof s.a[k]==='boolean')?s.a[k]:def[k]; } });
+    return p; }
+  // Formato antiguo (apartado → nivel) → v2
+  var LEGACY_MAP={asistencia:['asistencia'],fotos:['multimedia'],reporte:['reportes','registro','preparacion'],planificacion:['planificacion'],calendario:['calendario'],matriz:['matriz'],rrhh:['trabajadores','documentacion','capacitaciones','finiquitos','salidas'],remu:['remu'],veh:['vehiculos'],clientes:['clientes'],alertas:['alertas']};
+  function permDeLegacy(secc){ var def={}; for(var k in secc){ (LEGACY_MAP[k]||[]).forEach(function(mk){ def[mk]=secc[k]; }); }
+    var p=permDeDef(def); if(secc.veh && NIV_ORD[secc.veh]>=2) p.vehiculos.a.flota=true; return p; }
+  function rolPorClave(c){ return ROLES.filter(function(r){ return r.clave===c; })[0] || null; }
+  function rolBasePerm(c){ var b=ROLES_BASE.filter(function(r){ return r.clave===c; })[0]; return b?permDeDef(b.def):permVacio(); }
+  function permDeRol(c){ var r=rolPorClave(c); return r?permNorm(r.perm):rolBasePerm(c); }
+  // Permisos efectivos de una fila de la tabla permisos.
+  function permDeFila(p){ if(!p) return permVacio(); var s=p.secciones||{};
+    if(s._v===2) return permNorm(s);
+    var keys=Object.keys(s).filter(function(k){ return k.charAt(0)!=='_'; });
+    return keys.length?permDeLegacy(s):permDeRol(p.rol); }
+  function metaDeFila(p){ var m=(p&&p.secciones&&p.secciones._meta)||{}; return {activo:m.activo!==false, vence:m.vence||'', nota:m.nota||''}; }
+  function accesoVigente(meta){ return meta.activo && (!meta.vence || meta.vence>=todayISO()); }
+  function permIgual(a,b){ return PERM_MODS.every(function(m){ var x=a[m.k], y=b[m.k]; if(x.n!==y.n) return false; for(var k in x.a){ if(!!x.a[k]!==!!y.a[k]) return false; } return true; }); }
+  function permDiff(a,b){ var out=[]; PERM_MODS.forEach(function(m){ var x=a[m.k], y=b[m.k];
+      if(x.n!==y.n) out.push(m.nombre+': '+nivLbl(x.n)+' → '+nivLbl(y.n));
+      m.acc.forEach(function(ac){ if(!!x.a[ac[0]]!==!!y.a[ac[0]] && x.n===y.n) out.push(m.nombre+' · '+ac[1].split(' (')[0]+': '+(y.a[ac[0]]?'sí':'no')); }); });
+    return out; }
+  function nivLbl(n){ return ({oculto:'Oculto',ver:'Ver',editar:'Editar',total:'Total'})[n]||n; }
+  function rolLbl(x){ var r=rolPorClave(x); if(r) return r.nombre; var b=ROLES_BASE.filter(function(r){ return r.clave===x; })[0]; return b?b.nombre:(x||'—'); }
+  function cargarRoles(cb){
+    ROLES=ROLES_BASE.map(function(b){ return {clave:b.clave,nombre:b.nombre,descripcion:b.descripcion,perm:permDeDef(b.def),db:false}; });
+    if(!sb){ if(cb)cb(); return; }
+    sb.from('roles_perm').select('*').order('orden',{ascending:true}).then(function(r){
+      if(r&&!r.error){ ROLES_DB_OK=true; (r.data||[]).forEach(function(row){ var x={clave:row.clave,nombre:row.nombre,descripcion:row.descripcion||'',perm:permNorm(row.perm||{}),db:true}; var i=-1; ROLES.forEach(function(q,ix){ if(q.clave===row.clave) i=ix; }); if(i>=0) ROLES[i]=x; else ROLES.push(x); }); }
+      else ROLES_DB_OK=false;
+      if(cb)cb(); }, function(){ ROLES_DB_OK=false; if(cb)cb(); });
+  }
+  var ROLES_DB_OK=null, LOG_DB_OK=null;
+
+  // ---------- Pantalla de Accesos ----------
+  var PERMISOS=[], ACC_EMAIL=null, ACC_TRAB=[], ACC_TAB='personas', ACC_MODO='persona', ACC_ROL=null, AF_PERM=null, AF_ORIG=null;
+  function puedeGestionar(){ return (userEmail||'').trim().toLowerCase()===SUPER_EMAIL || !!(MI_PERM && MI_PERM.accesos && MI_PERM.accesos.a.gestionar); }
+  function cargarPermisos(){ if(!sb) return;
+    cargarRoles(function(){
+      sb.from('permisos').select('*').order('rol',{ascending:true}).then(function(r){ PERMISOS=(r&&r.data)||[]; pintarAcc(); });
+    });
     sb.from('trabajadores').select('nombre,email,estado').order('nombre',{ascending:true}).limit(800).then(function(r){ ACC_TRAB=((r&&r.data)||[]).filter(function(t){ return t.estado!=='inactivo'; }); });
   }
+  function accTab(t){ ACC_TAB=t;
+    document.querySelectorAll('.acc-tab').forEach(function(b){ b.classList.toggle('on', b.dataset.t===t); });
+    ['personas','roles','matriz','historial'].forEach(function(k){ var el=$('acc-p-'+k); if(el) el.classList.toggle('hide', k!==t); });
+    $('acc-nuevo').classList.toggle('hide', t!=='personas' && t!=='roles');
+    $('acc-nuevo').innerHTML=svgI('<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',15)+(t==='roles'?'Rol':'Persona');
+    pintarAcc();
+  }
+  function pintarAcc(){
+    if(ACC_TAB==='personas') pintarAccPersonas();
+    else if(ACC_TAB==='roles') pintarAccRoles();
+    else if(ACC_TAB==='matriz') pintarAccMatriz();
+    else if(ACC_TAB==='historial') pintarAccHist();
+  }
+  var ACC_IC={lock:'<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',edit:'<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',trash:'<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>',copy:'<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',reset:'<polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>',chev:'<polyline points="9 18 15 12 9 6"/>'};
+  function estadoChip(p){ var m=metaDeFila(p);
+    if(!m.activo) return '<span class="acc-chip bad">'+svgI(ACC_IC.lock,11)+'Suspendido</span>';
+    if(m.vence && m.vence<todayISO()) return '<span class="acc-chip bad">'+svgI(ACC_IC.clock,11)+'Venció '+esc(fechaCorta(m.vence))+'</span>';
+    if(m.vence) return '<span class="acc-chip warn">'+svgI(ACC_IC.clock,11)+'Hasta '+esc(fechaCorta(m.vence))+'</span>';
+    return ''; }
+  function esDueno(email){ return ADMIN_EMAILS.indexOf((email||'').trim().toLowerCase())>=0; }
+  function pintarAccPersonas(){
+    var c=$('acc-list'); if(!c) return;
+    if(!PERMISOS.length){ c.innerHTML='<div class="empty">Aún no hay personas.<br><span style="font-size:.82rem">Toca “Persona” para agregar.</span></div>'; return; }
+    var q=(($('acc-q')&&$('acc-q').value)||'').trim().toLowerCase(), fr=($('acc-frol')&&$('acc-frol').value)||'';
+    var rows=PERMISOS.map(function(p,i){ return {p:p,i:i}; }).filter(function(x){ var p=x.p;
+      if(fr && p.rol!==fr) return false;
+      if(q && ((p.nombre||'')+' '+(p.email||'')+' '+rolLbl(p.rol)).toLowerCase().indexOf(q)<0) return false; return true; });
+    // Filtro de rol (se rellena con los roles presentes)
+    if($('acc-frol')){ var cur=$('acc-frol').value, roles={}; PERMISOS.forEach(function(p){ roles[p.rol]=1; });
+      $('acc-frol').innerHTML='<option value="">Todos los roles</option>'+Object.keys(roles).map(function(r){ return '<option value="'+esc(r)+'"'+(r===cur?' selected':'')+'>'+esc(rolLbl(r))+'</option>'; }).join(''); }
+    if(!rows.length){ c.innerHTML='<div class="empty">Sin coincidencias.</div>'; return; }
+    c.innerHTML=rows.map(function(x){ var p=x.p, pm=permDeFila(p), dueno=esDueno(p.email);
+      var mods=PERM_MODS.filter(function(m){ return pm[m.k].n!=='oculto'; }).length;
+      var custom=!dueno && !permIgual(pm, permDeRol(p.rol));
+      var sub=dueno?'Dueño · acceso total':(mods+' apartado'+(mods===1?'':'s')+(custom?' · personalizado':''));
+      return '<div class="acc-row" data-i="'+x.i+'"><div class="acc-av">'+esc(((p.nombre||p.email||'?').trim().charAt(0)||'?').toUpperCase())+'</div><div class="acc-t"><b>'+esc(p.nombre||p.email)+'</b><div class="note">'+esc(p.email)+' · '+esc(sub)+'</div></div>'+estadoChip(p)+'<span class="rolchip">'+esc(rolLbl(p.rol))+'</span></div>'; }).join('');
+    c.querySelectorAll('.acc-row').forEach(function(el){ el.addEventListener('click',function(){ abrirAccFicha(PERMISOS[+el.dataset.i]); }); });
+  }
+  function pintarAccRoles(){
+    var c=$('acc-roles-list'); if(!c) return;
+    var aviso=(ROLES_DB_OK===false)?'<div class="note acc-aviso">Para guardar cambios en los roles corre <b>db/permisos-v2.sql</b> en Supabase. Mientras tanto se usan los roles base.</div>':'';
+    c.innerHTML=aviso+ROLES.map(function(r,i){ var n=PERMISOS.filter(function(p){ return p.rol===r.clave; }).length;
+      var mods=PERM_MODS.filter(function(m){ return r.perm[m.k].n!=='oculto'; }).map(function(m){ return m.nombre; });
+      return '<div class="acc-row" data-r="'+i+'"><div class="acc-t"><b>'+esc(r.nombre)+'</b><div class="note">'+esc(r.descripcion||'')+'</div><div class="note" style="margin-top:3px">'+esc(mods.slice(0,6).join(' · ')+(mods.length>6?(' · +'+(mods.length-6)):''))+'</div></div><span class="rolchip">'+n+' persona'+(n===1?'':'s')+'</span></div>'; }).join('');
+    c.querySelectorAll('.acc-row[data-r]').forEach(function(el){ el.addEventListener('click',function(){ abrirRolFicha(ROLES[+el.dataset.r]); }); });
+  }
+  function pintarAccMatriz(){
+    var c=$('acc-matriz-tbl'); if(!c) return;
+    if(!PERMISOS.length){ c.innerHTML='<div class="empty">Sin personas.</div>'; return; }
+    var head='<tr><th class="acc-mx-n">Persona</th>'+PERM_MODS.map(function(m){ return '<th title="'+esc(m.nombre)+'"><span>'+esc(m.nombre)+'</span></th>'; }).join('')+'</tr>';
+    var body=PERMISOS.map(function(p,i){ var pm=permDeFila(p), dueno=esDueno(p.email), rp=permDeRol(p.rol), vig=accesoVigente(metaDeFila(p));
+      return '<tr data-i="'+i+'"'+(vig?'':' class="off"')+'><td class="acc-mx-n"><b>'+esc(p.nombre||p.email)+'</b><div class="note">'+esc(rolLbl(p.rol))+'</div></td>'+PERM_MODS.map(function(m){
+        var n=dueno?'total':pm[m.k].n, adj=!dueno && JSON.stringify(pm[m.k].a)!==JSON.stringify(accDeNivel(m.k,pm[m.k].n)), dif=!dueno && pm[m.k].n!==rp[m.k].n;
+        return '<td><span class="mx '+n+(dif?' dif':'')+'" title="'+esc(m.nombre+': '+nivLbl(n)+(adj?' (acciones ajustadas)':'')+(dif?' · distinto al rol':''))+'">'+(n==='oculto'?'·':nivLbl(n).charAt(0))+(adj?'*':'')+'</span></td>'; }).join('')+'</tr>'; }).join('');
+    c.innerHTML='<div class="acc-mx-wrap"><table class="acc-mx"><thead>'+head+'</thead><tbody>'+body+'</tbody></table></div>'+
+      '<p class="note" style="margin-top:8px"><span class="mx ver">V</span> Ver · <span class="mx editar">E</span> Editar · <span class="mx total">T</span> Total · <b>*</b> acciones ajustadas a mano · borde naranjo: distinto a su rol.</p>';
+    c.querySelectorAll('tr[data-i]').forEach(function(tr){ tr.addEventListener('click',function(){ abrirAccFicha(PERMISOS[+tr.dataset.i]); }); });
+  }
+  function pintarAccHist(){
+    var c=$('acc-hist-list'); if(!c||!sb) return; c.innerHTML='<div class="note">Cargando…</div>';
+    sb.from('permisos_log').select('*').order('fecha',{ascending:false}).limit(150).then(function(r){
+      if(r&&r.error){ LOG_DB_OK=false; c.innerHTML='<div class="note acc-aviso">El historial se activa al correr <b>db/permisos-v2.sql</b> en Supabase.</div>'; return; }
+      LOG_DB_OK=true; var rows=(r&&r.data)||[];
+      if(!rows.length){ c.innerHTML='<div class="empty">Aún no hay cambios registrados.</div>'; return; }
+      c.innerHTML=rows.map(function(l){ var d=l.detalle||{}, cambios=d.cambios||[], f=new Date(l.fecha);
+        var cuando=f.toLocaleDateString('es-CL',{day:'2-digit',month:'short'})+' '+f.toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});
+        return '<div class="acc-log"><div class="acc-log-h"><b>'+esc(({crear:'Agregó',editar:'Cambió permisos de',quitar:'Quitó a',rol:'Editó el rol'})[l.accion]||l.accion)+' '+esc(l.objetivo||'')+'</b><span class="note">'+esc(cuando)+'</span></div>'+
+          '<div class="note">por '+esc(l.actor||'—')+'</div>'+(cambios.length?'<ul>'+cambios.slice(0,14).map(function(x){ return '<li>'+esc(x)+'</li>'; }).join('')+(cambios.length>14?'<li>… y '+(cambios.length-14)+' más</li>':'')+'</ul>':'')+'</div>'; }).join('');
+    }, function(){ c.innerHTML='<div class="note">No se pudo cargar el historial.</div>'; });
+  }
+  function logAcc(accion, objetivo, cambios){ if(!sb||LOG_DB_OK===false) return;
+    sb.from('permisos_log').insert({actor:(userEmail||'').trim().toLowerCase(), objetivo:objetivo, accion:accion, detalle:{cambios:cambios||[]}}).then(function(r){ if(r&&r.error) LOG_DB_OK=false; }, function(){}); }
+
+  // ---------- Buscador de trabajadores (nueva persona) ----------
   function llenarAfTrab(){ if($('af-trab')) $('af-trab').value=''; afTrabHide(); }
   function afTrabHide(){ var s=$('af-trab-sug'); if(s) s.classList.add('hide'); }
   function afTrabRender(q){ var box=$('af-trab-sug'); if(!box) return; q=(q||'').trim().toLowerCase();
@@ -7074,55 +7373,132 @@
     if($('af-trab')) $('af-trab').value=''; afTrabHide();
     if(!em){ toast('Ese trabajador no tiene correo cargado: escríbelo.'); if($('af-email')) $('af-email').focus(); }
   }
-  function rolLbl(x){ return ({admin:'Admin',supervisor:'Supervisor',capataz:'Capataz',prevencionista:'Prevencionista',operario:'Operario',chofer:'Chofer'})[x]||x; }
-  function pintarAcc(){
-    var c=$('acc-list');
-    if(!PERMISOS.length){ c.innerHTML='<div class="empty"><div class="big">🔐</div>Aún no hay personas.<br><span style="font-size:.82rem">Corre permisos.sql o toca “＋ Persona”.</span></div>'; return; }
-    c.innerHTML=PERMISOS.map(function(p,i){ return '<div class="acc-row" data-i="'+i+'"><div style="flex:1"><b>'+esc(p.nombre||p.email)+'</b><div class="note" style="margin:0;font-size:.74rem">'+esc(p.email)+'</div></div><span class="rolchip">'+esc(rolLbl(p.rol))+'</span></div>'; }).join('');
-    c.querySelectorAll('.acc-row').forEach(function(el){ el.addEventListener('click',function(){ abrirAccFicha(PERMISOS[+el.dataset.i]); }); });
-  }
-  function renderAfSecciones(secc){
-    $('af-secciones').innerHTML=SECCIONES.map(function(s){ var lvl=(secc&&secc[s[0]])||'oculto';
-      return '<div class="af-sec"><b>'+esc(s[1])+'</b><select data-sec="'+s[0]+'">'+NIVELES.map(function(n){ return '<option value="'+n[0]+'"'+(n[0]===lvl?' selected':'')+'>'+n[1]+'</option>'; }).join('')+'</select></div>';
+
+  // ---------- Editor de permisos (persona o rol) ----------
+  function llenarSelRoles(sel, val){ if(!$(sel)) return; $(sel).innerHTML=ROLES.map(function(r){ return '<option value="'+esc(r.clave)+'"'+(r.clave===val?' selected':'')+'>'+esc(r.nombre)+'</option>'; }).join(''); if(val) $(sel).value=val; }
+  function renderAfPerm(){
+    var ref=(ACC_MODO==='persona')?permDeRol($('af-rol').value):null, box=$('af-secciones');
+    box.innerHTML=PERM_GRUPOS.map(function(g){
+      return '<div class="af-grp">'+esc(g[0])+'</div>'+g[1].map(function(mm){ var m=PERM_MOD[mm[0]], cur=AF_PERM[m.k], dif=ref && (cur.n!==ref[m.k].n || JSON.stringify(cur.a)!==JSON.stringify(ref[m.k].a));
+        var seg='<div class="af-niv" data-m="'+m.k+'">'+NIVELES.map(function(n){ return '<button type="button" data-n="'+n[0]+'" class="'+n[0]+(cur.n===n[0]?' on':'')+'">'+n[1]+'</button>'; }).join('')+'</div>';
+        var acc=(m.acc.length && cur.n!=='oculto')?'<div class="af-acc">'+m.acc.map(function(a){ var defOn=accDeNivel(m.k,cur.n)[a[0]], on=!!cur.a[a[0]];
+            return '<label class="af-ck'+(on!==defOn?' adj':'')+'"><input type="checkbox" data-m="'+m.k+'" data-a="'+a[0]+'"'+(on?' checked':'')+'><span>'+esc(a[1])+'</span></label>'; }).join('')+'</div>':'';
+        return '<div class="af-sec'+(dif?' dif':'')+'"><div class="af-sec-h"><b>'+esc(m.nombre)+(dif?' <span class="af-dif" title="Distinto a lo que trae el rol">≠ rol</span>':'')+'</b>'+seg+'</div>'+acc+'</div>'; }).join('');
     }).join('');
+    box.querySelectorAll('.af-niv button').forEach(function(b){ b.addEventListener('click',function(){ var mk=b.parentNode.dataset.m, n=b.dataset.n; AF_PERM[mk]={n:n,a:accDeNivel(mk,n)}; renderAfPerm(); }); });
+    box.querySelectorAll('.af-acc input').forEach(function(ck){ ck.addEventListener('change',function(){ AF_PERM[ck.dataset.m].a[ck.dataset.a]=ck.checked; renderAfPerm(); }); });
+    renderAfResumen();
+  }
+  function renderAfResumen(){ var el=$('af-resumen'); if(!el) return;
+    if(ACC_MODO==='persona' && esDueno($('af-email').value)){ el.innerHTML='<b>Dueño:</b> tiene acceso total siempre, sin importar lo que se marque acá.'; return; }
+    var ve=[], ac=[];
+    PERM_MODS.forEach(function(m){ var c=AF_PERM[m.k]; if(c.n==='oculto') return; ve.push(m.nombre+' ('+nivLbl(c.n).toLowerCase()+')');
+      m.acc.forEach(function(a){ if(c.a[a[0]]) ac.push(a[1].split(' (')[0]); }); });
+    el.innerHTML=ve.length?('<b>Ve:</b> '+esc(ve.join(', '))+'.'+(ac.length?('<br><b>Puede:</b> '+esc(ac.join(' · '))+'.'):'')):'<b>No ve ningún apartado.</b>';
   }
   function abrirAccFicha(p){
-    ACC_EMAIL=p?p.email:null;
+    ACC_MODO='persona'; ACC_EMAIL=p?p.email:null; ACC_ROL=null;
+    $('af-persona').classList.remove('hide'); $('af-rolbox').classList.add('hide');
     if($('af-trab-wrap')) $('af-trab-wrap').classList.toggle('hide', !!p);
     if(!p){ llenarAfTrab(); }
     $('af-email').value=p?(p.email||''):''; $('af-email').disabled=!!p;
     $('af-nombre').value=p?(p.nombre||''):'';
-    var rol=(p&&p.rol)||'operario'; $('af-rol').value=rol;
-    var secc=(p&&p.secciones&&Object.keys(p.secciones).length)?p.secciones:ROL_DEFAULTS[rol];
-    renderAfSecciones(secc);
+    var rol=(p&&p.rol)||'operario'; llenarSelRoles('af-rol', rol); $('af-rol').dataset.prev=rol;
+    var meta=metaDeFila(p); $('af-activo').value=meta.activo?'1':'0'; $('af-vence').value=meta.vence; $('af-nota').value=meta.nota;
+    AF_PERM=p?permDeFila(p):permDeRol(rol); AF_ORIG=JSON.parse(JSON.stringify(AF_PERM));
+    $('af-copiar').innerHTML='<option value="">Copiar permisos de…</option>'+PERMISOS.filter(function(x){ return !p || x.email!==p.email; }).map(function(x,i){ return '<option value="'+esc(x.email)+'">'+esc(x.nombre||x.email)+'</option>'; }).join('');
     $('af-title').textContent=p?('Permisos · '+(p.nombre||p.email)):'Nueva persona';
     $('af-del').classList.toggle('hide', !p);
+    $('af-del').innerHTML=svgI(ACC_IC.trash,15)+'Quitar persona';
+    renderAfPerm();
+    $('acc-ficha').classList.remove('hide'); $('acc-ficha').scrollTop=0;
+  }
+  function abrirRolFicha(r){
+    ACC_MODO='rol'; ACC_ROL=r?r.clave:null; ACC_EMAIL=null;
+    $('af-persona').classList.add('hide'); $('af-rolbox').classList.remove('hide');
+    $('ar-nombre').value=r?r.nombre:''; $('ar-desc').value=r?(r.descripcion||''):'';
+    var n=r?PERMISOS.filter(function(p){ return p.rol===r.clave; }).length:0;
+    $('ar-aplicar-wrap').classList.toggle('hide', !n); $('ar-aplicar').checked=true;
+    $('ar-aplicar-lbl').textContent='Aplicar también a '+n+' persona'+(n===1?'':'s')+' con este rol que no tengan permisos personalizados';
+    AF_PERM=r?permNorm(r.perm):permVacio(); AF_ORIG=JSON.parse(JSON.stringify(AF_PERM));
+    $('af-title').textContent=r?('Rol · '+r.nombre):'Nuevo rol';
+    var esBase=r && ROLES_BASE.some(function(b){ return b.clave===r.clave; });
+    $('af-del').classList.toggle('hide', !r || esBase || n>0);
+    $('af-del').innerHTML=svgI(ACC_IC.trash,15)+'Eliminar rol';
+    renderAfPerm();
     $('acc-ficha').classList.remove('hide'); $('acc-ficha').scrollTop=0;
   }
   if($('af-trab')){ $('af-trab').addEventListener('input',function(){ afTrabRender(this.value); }); $('af-trab').addEventListener('focus',function(){ afTrabRender(this.value); }); $('af-trab').addEventListener('blur',function(){ setTimeout(afTrabHide,160); }); }
-  $('af-rol').addEventListener('change',function(){ renderAfSecciones(ROL_DEFAULTS[this.value]||{}); });
+  $('af-rol').addEventListener('change',function(){
+    var prev=this.dataset.prev||'';
+    if(prev && !permIgual(AF_PERM, permDeRol(prev)) && !confirm('Esta persona tiene permisos ajustados a mano. ¿Reemplazarlos por los del rol “'+rolLbl(this.value)+'”?')){ this.value=prev; return; }
+    this.dataset.prev=this.value; AF_PERM=permDeRol(this.value); renderAfPerm(); });
+  $('af-reset').addEventListener('click',function(){ AF_PERM=permDeRol($('af-rol').value); renderAfPerm(); toast('Permisos del rol cargados (falta Guardar)'); });
+  $('af-copiar').addEventListener('change',function(){ var em=this.value; if(!em) return; var src=PERMISOS.filter(function(x){ return x.email===em; })[0];
+    if(src){ AF_PERM=permDeFila(src); $('af-rol').value=src.rol; $('af-rol').dataset.prev=src.rol; renderAfPerm(); toast('Permisos copiados de '+(src.nombre||src.email)+' (falta Guardar)'); } this.value=''; });
+  $('af-todo').addEventListener('change',function(){ var n=this.value; if(!n) return; PERM_MODS.forEach(function(m){ if(m.k==='accesos' && n!=='oculto') return; AF_PERM[m.k]={n:n,a:accDeNivel(m.k,n)}; }); this.value=''; renderAfPerm(); });
   $('af-close').addEventListener('click',function(){ $('acc-ficha').classList.add('hide'); });
-  $('acc-nuevo').addEventListener('click',function(){ abrirAccFicha(null); });
+  $('acc-nuevo').addEventListener('click',function(){ if(ACC_TAB==='roles') abrirRolFicha(null); else abrirAccFicha(null); });
+  document.querySelectorAll('.acc-tab').forEach(function(b){ b.addEventListener('click',function(){ accTab(b.dataset.t); }); });
+  if($('acc-q')) $('acc-q').addEventListener('input',pintarAccPersonas);
+  if($('acc-frol')) $('acc-frol').addEventListener('change',pintarAccPersonas);
+  function seccionesDe(perm, meta){ var s={_v:2,_meta:meta}; PERM_MODS.forEach(function(m){ s[m.k]={n:perm[m.k].n,a:perm[m.k].a}; }); return s; }
   $('af-save').addEventListener('click',function(){
     if(!sb) return;
+    if(ACC_MODO==='rol'){ guardarRol(); return; }
     var email=$('af-email').value.trim().toLowerCase(); if(!email){ toast('Pon el correo.'); return; }
-    var secc={}; $('af-secciones').querySelectorAll('select').forEach(function(s){ secc[s.dataset.sec]=s.value; });
-    var orden=SECCIONES.map(function(s){ return s[0]; }).filter(function(k){ return secc[k]!=='oculto'; });
-    var row={ email:email, rol:$('af-rol').value, nombre:$('af-nombre').value.trim(), secciones:secc, orden:orden, updated_at:new Date().toISOString() };
+    if(!ACC_EMAIL && PERMISOS.some(function(p){ return (p.email||'').toLowerCase()===email; })){ toast('Ese correo ya tiene acceso: búscalo en la lista.'); return; }
+    if(email===SUPER_EMAIL && ((userEmail||'').toLowerCase()!==SUPER_EMAIL)){ toast('No puedes modificar al administrador principal.'); return; }
+    var meta={activo:$('af-activo').value!=='0', vence:$('af-vence').value||null, nota:$('af-nota').value.trim()||null};
+    if(email===(userEmail||'').trim().toLowerCase() && (!meta.activo || (AF_PERM.accesos && !AF_PERM.accesos.a.gestionar && email!==SUPER_EMAIL))){
+      if(!confirm('Te estás quitando el acceso a esta pantalla. ¿Seguro?')) return; }
+    var orden=PERM_MODS.filter(function(m){ return AF_PERM[m.k].n!=='oculto'; }).map(function(m){ return m.k; });
+    var row={ email:email, rol:$('af-rol').value, nombre:$('af-nombre').value.trim(), secciones:seccionesDe(AF_PERM,meta), orden:orden, updated_at:new Date().toISOString() };
+    var prev=PERMISOS.filter(function(p){ return (p.email||'').toLowerCase()===email; })[0];
+    var cambios=prev?permDiff(permDeFila(prev),AF_PERM):[];
+    if(prev){ var pm=metaDeFila(prev); if(prev.rol!==row.rol) cambios.unshift('Rol: '+rolLbl(prev.rol)+' → '+rolLbl(row.rol));
+      if(pm.activo!==meta.activo) cambios.unshift(meta.activo?'Reactivado':'Suspendido');
+      if((pm.vence||'')!==(meta.vence||'')) cambios.unshift('Vence: '+(meta.vence||'sin fecha')); }
+    else cambios=['Rol: '+rolLbl(row.rol)];
     busy(true,'Guardando…');
     sb.from('permisos').upsert(row,{onConflict:'email'}).then(function(r){ busy(false);
       if(r.error){ toast('No se pudo guardar: '+r.error.message); return; }
-      toast('✓ Permisos guardados'); $('acc-ficha').classList.add('hide'); cargarPermisos();
+      logAcc(prev?'editar':'crear', row.nombre||email, cambios);
+      toast('Permisos guardados'); $('acc-ficha').classList.add('hide'); cargarPermisos();
     });
   });
+  function guardarRol(){
+    var nombre=$('ar-nombre').value.trim(); if(!nombre){ toast('Ponle un nombre al rol.'); return; }
+    var clave=ACC_ROL || slug(nombre).toLowerCase().replace(/-/g,'_');
+    if(!ACC_ROL && rolPorClave(clave)){ toast('Ya existe un rol con ese nombre.'); return; }
+    if(ROLES_DB_OK===false){ toast('Corre db/permisos-v2.sql en Supabase para guardar roles.'); return; }
+    var orden=ROLES.map(function(r){ return r.clave; }).indexOf(clave); if(orden<0) orden=ROLES.length;
+    var antes=rolPorClave(clave), cambios=antes?permDiff(permNorm(antes.perm),AF_PERM):['Rol nuevo'];
+    var permG={}; PERM_MODS.forEach(function(m){ permG[m.k]={n:AF_PERM[m.k].n,a:AF_PERM[m.k].a}; });
+    busy(true,'Guardando rol…');
+    sb.from('roles_perm').upsert({clave:clave,nombre:nombre,descripcion:$('ar-desc').value.trim(),perm:permG,orden:orden,updated_at:new Date().toISOString()},{onConflict:'clave'}).then(function(r){
+      if(r.error){ busy(false); toast('No se pudo guardar: '+r.error.message); return; }
+      logAcc('rol', nombre, cambios);
+      // Propaga a las personas con este rol que NO estaban personalizadas (sus permisos eran iguales al rol anterior).
+      var prevPerm=antes?permNorm(antes.perm):null;
+      var afect=($('ar-aplicar').checked && prevPerm)?PERMISOS.filter(function(p){ return p.rol===clave && !esDueno(p.email) && permIgual(permDeFila(p), prevPerm); }):[];
+      var pend=afect.length; if(!pend){ busy(false); toast('Rol guardado'); $('acc-ficha').classList.add('hide'); cargarPermisos(); return; }
+      afect.forEach(function(p){ sb.from('permisos').update({secciones:seccionesDe(AF_PERM, metaDeFila(p)), updated_at:new Date().toISOString()}).eq('email',p.email).then(function(){ if(--pend===0){ busy(false); toast('Rol guardado y aplicado a '+afect.length+' persona'+(afect.length===1?'':'s')); $('acc-ficha').classList.add('hide'); cargarPermisos(); } }); });
+    });
+  }
   $('af-del').addEventListener('click',function(){
-    if(!ACC_EMAIL||!sb) return;
-    if(ACC_EMAIL==='enzo.castro@innovaservi.com'){ toast('No puedes quitarte a ti mismo.'); return; }
-    if(!confirm('¿Quitar a esta persona de los accesos?')) return;
+    if(!sb) return;
+    if(ACC_MODO==='rol'){ if(!ACC_ROL) return; if(!confirm('¿Eliminar este rol?')) return;
+      busy(true,'Eliminando…'); sb.from('roles_perm').delete().eq('clave',ACC_ROL).then(function(r){ busy(false); if(r.error){ toast('No se pudo: '+r.error.message); return; } logAcc('rol', ACC_ROL, ['Rol eliminado']); toast('Rol eliminado'); $('acc-ficha').classList.add('hide'); cargarPermisos(); }); return; }
+    if(!ACC_EMAIL) return;
+    if(ACC_EMAIL===SUPER_EMAIL){ toast('No se puede quitar al administrador principal.'); return; }
+    if(!confirm('¿Quitar a esta persona de los accesos? (Si solo quieres bloquearla un tiempo, usa Estado: Suspendido)')) return;
     busy(true,'Quitando…');
+    var obj=$('af-nombre').value.trim()||ACC_EMAIL;
     sb.from('permisos').delete().eq('email',ACC_EMAIL).then(function(r){ busy(false);
       if(r.error){ toast('No se pudo: '+r.error.message); return; }
-      toast('✓ Quitada'); $('acc-ficha').classList.add('hide'); cargarPermisos();
+      logAcc('quitar', obj, []);
+      toast('Persona quitada'); $('acc-ficha').classList.add('hide'); cargarPermisos();
     });
   });
   $('vf-gasto-nuevo').addEventListener('click',function(){
