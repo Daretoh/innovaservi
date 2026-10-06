@@ -751,8 +751,6 @@
   .acc-row .acc-t{flex:1;min-width:0;} .acc-row .acc-t b{color:var(--ink);} .acc-row .acc-t .note{margin:2px 0 0;font-size:.76rem;}
   /* Zerty · Cermaq (árbol de documentos de la empresa) */
   .doc-sub{display:inline-flex;margin-bottom:12px;}
-  #rrhh-emp.zt-on #emp-docs{display:none !important;}
-  #rrhh-emp:not(.zt-on) #doc-empresa-slot{display:none;}
   .dchip.na{background:transparent;color:var(--muted);border:1px dashed var(--line);}
   .trab-modo{display:inline-flex;margin-bottom:12px;}
   .fr-sec{font:800 11px var(--font);color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:12px 0 6px;display:flex;align-items:center;gap:8px;}
@@ -1420,7 +1418,7 @@
         <button class="btn ghost small rrhh-seg" data-seg="salida" style="flex:1;min-width:120px">Salidas médicas</button>
         <button class="btn ghost small rrhh-seg" data-seg="empresa" style="flex:1;min-width:120px">Empresa</button>
       </div>
-      <div class="seg trab-modo" id="trab-modo"><button class="seg-b on" data-m="trab">Fichas</button><button class="seg-b" data-m="doc">Estado documental</button>
+      <div class="seg trab-modo" id="trab-modo"><button class="seg-b on" data-m="trab">Fichas</button><button class="seg-b" data-m="doc">Estado documental</button><button class="seg-b" data-m="zerty">Zerty · Cermaq</button>
       </div>
 
       <!-- Panel Trabajadores -->
@@ -1460,13 +1458,13 @@
 
       <!-- Panel Empresa: documentación general + Zerty -->
       <div id="rrhh-emp" class="hide">
-        <div class="seg doc-sub" id="doc-sub"><button class="seg-b on" data-z="0">Documentos de empresa</button><button class="seg-b" data-z="1">Zerty · Cermaq</button></div>
         <div id="emp-docs">
-          <p class="note" style="margin:0 0 10px">Documentación general de la empresa. Sube la versión vigente y su vencimiento; lo vencido o por vencer aparece en Alertas.</p>
+          <p class="note" style="margin:0 0 10px">Documentos maestros de la empresa (reglamento, procedimientos, PTS, matriz, programa). Sube la versión vigente; desde cada PTS se generan los registros de entrega a los trabajadores.</p>
           <div id="emp-list"></div>
         </div>
-        <div id="doc-empresa-slot"></div>
       </div>
+      <!-- Panel Zerty · Cermaq (se abre desde Trabajadores) -->
+      <div id="rrhh-zt" class="hide"><div id="doc-empresa-slot"></div></div>
 
       <!-- Panel Salidas a atención médica -->
       <div id="rrhh-sal" class="hide">
@@ -6097,9 +6095,8 @@
   // RRHH: Trabajadores (Fichas | Estado documental) · Salidas médicas · Empresa (documentos de empresa | Zerty).
   // 'capacit' y 'finiquito' quedan como alias (Finiquitos se lleva en Buk).
   function rrhhSeg(seg){
-    var zt=false; if(seg==='zerty'){ seg='empresa'; zt=true; }
     if(seg==='capacit'||seg==='finiquito') seg='doc';
-    var top=(seg==='doc')?'trab':seg;
+    var top=(seg==='doc'||seg==='zerty')?'trab':seg;
     document.querySelectorAll('.rrhh-seg').forEach(function(x){ x.classList.toggle('on',x.dataset.seg===top); });
     document.querySelectorAll('.sbar .sb-item[data-seg]').forEach(function(x){ x.classList.toggle('on',x.dataset.seg===top); });
     $('trab-modo').classList.toggle('hide', top!=='trab' || !verMod(SEG_MOD.doc));
@@ -6109,9 +6106,11 @@
     $('rrhh-fin').classList.add('hide');
     $('rrhh-sal').classList.toggle('hide', seg!=='salida');
     $('rrhh-emp').classList.toggle('hide', seg!=='empresa');
+    $('rrhh-zt').classList.toggle('hide', seg!=='zerty');
     if(seg==='doc'){ RRHH_CAT=DOC_TIPOS; $('rrhh-panel-note').innerHTML='Documentación y capacitaciones por trabajador <span class="cnt" id="rrhh-cnt"></span>. Lo firmado en Buk no se lleva aquí.'; renderRrhh(); }
     else if(seg==='salida'){ renderSal(); }
-    else if(seg==='empresa'){ setZt(zt); }
+    else if(seg==='empresa'){ renderEmp(); }
+    else if(seg==='zerty'){ cargarZerty(); }
   }
   document.querySelectorAll('.rrhh-seg').forEach(function(b){ b.addEventListener('click',function(){ rrhhSeg(b.dataset.seg); }); });
   $('trab-modo').querySelectorAll('.seg-b').forEach(function(b){ b.addEventListener('click',function(){ rrhhSeg(b.dataset.m); }); });
@@ -6244,10 +6243,11 @@
   $('sal-nueva').addEventListener('click',function(){ abrirSal(null); });
 
   // ---- Empresa: documentación general (por carpeta; cada documento guarda versiones, manda la más reciente) ----
+  // Basado en la carpeta de prevención (02- Fichas de ingreso / Ficha Nicolas).
   var EMP_CARPETAS=[
-    {k:'legal', n:'Legal', tipos:[['erut','e-RUT de la empresa',false],['escritura','Escritura / estatutos',false],['vigencia','Certificado de vigencia',true]]},
-    {k:'laboral', n:'Laboral y previsional', tipos:[['f30_1','Certificado F30-1 (cumplimiento laboral)',true],['f30','Certificado F30 (antecedentes laborales)',true],['mutual','Certificado de adhesión a la mutual',false],['tasa','Certificado de tasa de cotización',true]]},
-    {k:'prev', n:'Prevención de riesgos', tipos:[['riohs','Reglamento Interno (RIOHS) vigente',false],['iper','Matriz de riesgos (IPER)',false],['programa','Programa de trabajo preventivo',false],['emergencia','Plan de emergencia',false],['proc_acc','Procedimiento en caso de accidentes',false],['pts','Procedimientos de trabajo seguro (PTS)',false]]}
+    {k:'prev', n:'Reglamento y gestión preventiva', tipos:[['riohs','Reglamento Interno de Orden, Higiene y Seguridad (RIOHS)',false],['programa','Programa de prevención de riesgos',false],['iper','Matriz de riesgos (IPER)',false],['proc_iper','Procedimiento IPER',false],['proc_acc','Procedimiento en caso de accidentes del trabajo y enfermedad profesional',false]]},
+    {k:'pts', n:'Procedimientos de trabajo seguro (PTS)', tipos:[['pts_quimicos','PTS uso y manejo de químicos',false],['pts_extintores','PTS uso y manejo de extintores',false],['pts_altura','PTS trabajos en altura',false],['pts_confinados','PTS espacios confinados',false],['pts_alzahombre','PTS alza hombre / grúa Genie',false],['pts_funciones','PTS acorde a sus funciones',false]]},
+    {k:'legal', n:'Legal y previsional', tipos:[['erut','e-RUT de la empresa',false],['escritura','Escritura / estatutos',false],['vigencia','Certificado de vigencia',true],['mutual','Certificado de adhesión a la mutual',false],['tasa','Certificado de tasa de cotización',true]]}
   ];
   var EMP_D=[];
   function empUlt(tipo){ var L=EMP_D.filter(function(d){ return d.tipo===tipo; }); L.sort(function(a,b){ return (b.fecha||b.created_at||'')<(a.fecha||a.created_at||'')?-1:1; }); return {ult:L[0]||null, n:L.length, todos:L}; }
@@ -6260,12 +6260,14 @@
       else if(u.vencimiento){ var n=diffDiasV(u.vencimiento); chip=n<0?'<span class="dchip venc">Vencido</span>':(n<=30?'<span class="dchip prox">Vence '+n+'d</span>':'<span class="dchip ok">Vigente</span>'); }
       else chip='<span class="dchip ok">Cargado</span>';
       return '<div class="emp-row" data-tipo="'+enc(tipo)+'" data-nom="'+enc(nombre)+'" data-v="'+(vence?1:0)+'"><div class="en"><b>'+esc(nombre)+'</b><span>'+(u?('Actualizado '+esc(fechaCorta(u.fecha||String(u.created_at||'').slice(0,10)))+(u.vencimiento?' · vence '+esc(fechaCorta(u.vencimiento)):'')+(E.n>1?' · '+E.n+' versiones':'')):(vence?'Con vencimiento':'Sin archivo'))+'</span></div>'+chip+
-        (u&&u.url?'<a href="'+esc(u.url)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:var(--orange-2);font-weight:700;font-size:.8rem">ver</a>':'')+'</div>'; }
+        (u&&u.url?'<a href="'+esc(u.url)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:var(--orange-2);font-weight:700;font-size:.8rem">ver</a>':'')+
+        ((typeof DOC_GEN!=='undefined'&&DOC_GEN[tipo])?'<button class="rd-gen emp-gen" data-gen="'+enc(tipo)+'" title="Generar el registro de entrega para varios trabajadores">'+svgI(ICO.gen,15)+'Registrar entrega</button>':'')+'</div>'; }
     var otros={}; EMP_D.forEach(function(d){ if(!conocidos[d.tipo]) otros[d.tipo]=d.nombre||d.tipo; });
     c.innerHTML=EMP_CARPETAS.map(function(cp){ return '<div class="card" style="padding:12px 14px"><div class="rd-grp" style="margin-top:0">'+esc(cp.n)+'</div>'+cp.tipos.map(function(x){ return fila(x[0],x[1],x[2]); }).join('')+'</div>'; }).join('')+
       '<div class="card" style="padding:12px 14px"><div class="rd-grp" style="margin-top:0">Otros documentos</div>'+Object.keys(otros).map(function(k){ return fila(k, otros[k], false); }).join('')+
       '<button id="emp-otro" type="button" class="btn ghost small" style="width:auto;margin-top:8px">＋ Agregar otro documento</button></div>';
     c.querySelectorAll('.emp-row').forEach(function(el){ el.addEventListener('click',function(){ abrirEmpDoc(el.dataset.tipo, el.dataset.nom, el.dataset.v==='1'); }); });
+    c.querySelectorAll('.emp-gen').forEach(function(b){ b.addEventListener('click',function(ev){ ev.stopPropagation(); abrirPickDoc(b.dataset.gen); }); });
     $('emp-otro').addEventListener('click',function(){ abrirEmpDoc(null, '', false); });
   }
   function abrirEmpDoc(tipo, nombre, vence){
@@ -6489,12 +6491,7 @@
   function ztMesOpts(){ var now=new Date(), p=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0'), out=[];
     for(var i=0;i<15;i++){ out.push(p); p=mesMas(p,-1); }
     return out.map(function(x){ return '<option value="'+x+'">'+esc(mesLbl(x))+'</option>'; }).join(''); }
-  function setZt(on){
-    var d=$('rrhh-emp'); if(!d) return; d.classList.toggle('zt-on',!!on);
-    var col=colorEmpresa('CERMAQ');
-    document.querySelectorAll('#doc-sub .seg-b').forEach(function(b){ var a=(b.dataset.z==='1')===!!on; b.classList.toggle('on',a); b.style.background=(a&&b.dataset.z==='1')?col.border:''; });
-    if(on) cargarZerty(); else renderEmp();
-  }
+  function setZt(on){ rrhhSeg(on?'zerty':'trab'); }   // Zerty · Cermaq es una pestaña de Trabajadores
   function cargarZerty(){ if(!sb) return;
     Promise.all([ new Promise(function(res){ cargarClientes(res); }),
       sb.from('zerty_docs').select('*').order('created_at',{ascending:true}).limit(3000),
@@ -6709,7 +6706,7 @@
         var row={ periodo:ctx.periodo, cliente:ctx.cliente, servicio:ctx.servicio||null, sin_accidentes:ctx.sin, url:(res?res.url:null), autor:userEmail, created_at:new Date().toISOString() };
         sb.from('informes_accidentes').upsert(row,{onConflict:'periodo,cliente'}).then(function(r){
           if(r&&r.error){ busy(false); toast(/informes_accidentes/.test(r.error.message||'')?'PDF descargado. Falta correr informes-accidentes-alertas.sql para guardarlo.':('PDF descargado, pero no se guardó: '+r.error.message)); return; }
-          function fin(){ busy(false); toast('✓ Informe generado y guardado'); $('docgen').classList.add('hide'); DG_CTX=null; if($('rrhh-emp').classList.contains('zt-on')) cargarZerty(); cargarAlertas(); }
+          function fin(){ busy(false); toast('✓ Informe generado y guardado'); $('docgen').classList.add('hide'); DG_CTX=null; if(!$('rrhh-zt').classList.contains('hide')) cargarZerty(); cargarAlertas(); }
           if(ctx.marcar) marcarCliAcc(ctx.cliente, fin); else fin();
         }, function(){ busy(false); toast('PDF descargado, pero no se guardó.'); });
       });
@@ -7030,9 +7027,70 @@
       '<div class="dg-firmas"><div>Firma trabajador</div><div>Recibido por · '+EMP.rz+'</div></div>';
   }
 
+  // Plantilla: Registro de entrega e instrucción de un PTS (temario según el procedimiento de la empresa).
+  var PTS_INFO={
+    pts_quimicos:{ n:'Uso y manejo de productos químicos en aseo industrial', t:[
+      'Identificación de productos químicos, lectura de hojas de datos de seguridad (HDS) y rombo NFPA 704.',
+      'Riesgos más frecuentes y efectos para la salud.',
+      'Elementos de protección personal obligatorios: guantes de nitrilo, antiparras, mascarilla o respirador, traje impermeable y botas.',
+      'Antes de utilizar un producto, trasvasije y dilución (solo personal autorizado).',
+      'Uso del producto en el aseo: barrido, aplicación de detergente, acción mecánica, enjuague y sanitizado.',
+      'Actuación en caso de derrame.',
+      'Primeros auxilios ante inhalación, contacto con la piel u ojos e ingestión.'] },
+    pts_extintores:{ n:'Uso y manejo de extintores', t:[
+      'Combustión y triángulo del fuego.',
+      'Clases de fuego A, B, C, D y K (NCh 934) y su simbología.',
+      'Tipos de extintor según el agente extintor y sus limitaciones.',
+      'Partes del extintor y verificación previa (manómetro, sello y vigencia).',
+      'Uso del extintor: retirar el seguro, apuntar a la base del fuego, presionar y barrer, con el viento a la espalda.',
+      'Ubicación y señalización de extintores (NCh 1433).',
+      'Recomendaciones de seguridad y aviso inmediato a la jefatura.'] },
+    pts_altura:{ n:'Trabajos en altura (alza hombre, andamios y escaleras)', t:[
+      'Riesgos más frecuentes: caídas de distinto nivel, caída de objetos y fallas de equipos.',
+      'Requisitos para trabajar en altura: examen ocupacional vigente y capacitación.',
+      'Inspección previa de alza hombre, andamios y escaleras.',
+      'Operación segura del alza hombre: límites de carga, viento máximo 35 km/h y distancia a líneas eléctricas.',
+      'Uso de arnés de cuerpo completo, línea de vida y punto de anclaje.',
+      'Delimitación y señalización del área de trabajo.',
+      'Elementos de protección personal: casco con barbiquejo, arnés, calzado de seguridad y guantes.'] },
+    pts_confinados:{ n:'Trabajo seguro en espacios confinados', t:[
+      'Definición e identificación de un espacio confinado.',
+      'Peligros: atmósfera deficiente o enriquecida en oxígeno (bajo 19,5% o sobre 23,5%), gases tóxicos o inflamables, atrapamiento e inmersión.',
+      'Permiso y registro de entrada al espacio confinado.',
+      'Medición de la atmósfera antes y durante el trabajo.',
+      'Aislamiento, bloqueo, limpieza y ventilación del espacio.',
+      'Roles del vigía, del entrante y del supervisor; comunicación y rescate.',
+      'Prohibición de ingresar sin autorización.'] }
+  };
+  function lsGet(k){ try{ return localStorage.getItem(k)||''; }catch(_){ return ''; } }
+  function lsSet(k,v){ try{ localStorage.setItem(k,v); }catch(_){} }
+  function docEntregaPTS(slug){ return function(t){
+    var I=PTS_INFO[slug];
+    var ver=(typeof EMP_D!=='undefined')?EMP_D.filter(function(d){ return d.tipo===slug; }).sort(function(a,b){ return (b.fecha||'')<(a.fecha||'')?-1:1; })[0]:null;
+    function tr(a,b){ return '<tr><td class="dg-k">'+a+'</td><td>'+b+'</td></tr>'; }
+    function rel(id,def){ return '<span contenteditable data-ls="'+id+'">'+esc(lsGet(id)||def||'')+'</span>'; }
+    return dgHead('REGISTRO DE ENTREGA E INSTRUCCIÓN')+
+      '<p style="text-align:center;margin-top:-6px;color:#667;font-weight:700">Procedimiento de trabajo seguro · '+esc(I.n)+'</p>'+
+      '<h4 class="dg-h4">1. Datos del trabajador</h4>'+
+      '<table class="dg-tbl">'+tr('Nombre',ce(t.nombre))+tr('RUT',ce(t.rut))+tr('Cargo',ce(t.cargo||''))+tr('Fecha',ce(fLarga(todayISO())))+'</table>'+
+      '<h4 class="dg-h4">2. Instrucción</h4>'+
+      '<table class="dg-tbl">'+tr('Relator',rel('dg_rel_nom',''))+tr('Cargo del relator',rel('dg_rel_cargo','Prevención de Riesgos'))+
+        tr('Horario',rel('dg_rel_hi','08:00')+' a '+rel('dg_rel_hf','09:00')+' hrs.')+tr('Modalidad',rel('dg_rel_mod','Presencial'))+
+        tr('Documento entregado','PTS '+esc(I.n)+(ver&&ver.fecha?' · versión del '+esc(fFaena(ver.fecha)):''))+'</table>'+
+      '<h4 class="dg-h4">3. Temario</h4>'+ulDg(I.t)+
+      '<h4 class="dg-h4">4. Declaración</h4>'+
+      '<p>Declaro haber recibido una copia del procedimiento de trabajo seguro indicado y haber sido instruido(a) en su contenido, en los riesgos de la tarea y en sus medidas de control. Me comprometo a cumplirlo, a utilizar correctamente los elementos de protección personal y a consultar a mi jefatura ante cualquier duda.</p>'+
+      '<div class="dg-firmas"><div>Firma del trabajador<br>'+esc(t.nombre||'')+'</div><div>Firma del relator<br>'+esc(lsGet('dg_rel_nom')||'')+'</div></div>';
+  }; }
+  // Lo que se escribe en el relator / horario se recuerda para el siguiente registro (útil al generar en lote).
+  $('dg-doc').addEventListener('input',function(e){ var k=e.target&&e.target.getAttribute&&e.target.getAttribute('data-ls'); if(k) lsSet(k, e.target.textContent.trim()); });
   var DOC_GEN={
     contrato:{ nombre:'Contrato de trabajo', build:docContrato, variantes:true },
     perfil:{ nombre:'Perfil de cargo', build:docPerfil, variantes:true },
+    pts_quimicos:{ nombre:'Registro entrega PTS químicos', build:docEntregaPTS('pts_quimicos') },
+    pts_extintores:{ nombre:'Registro entrega PTS extintores', build:docEntregaPTS('pts_extintores') },
+    pts_altura:{ nombre:'Registro entrega PTS altura', build:docEntregaPTS('pts_altura') },
+    pts_confinados:{ nombre:'Registro entrega PTS confinados', build:docEntregaPTS('pts_confinados') },
     datos:{ nombre:'Ficha de datos', build:docDatos },
     epp:{ nombre:'Entrega de EPP', build:docEPP },
     odi:{ nombre:'ODI (riesgos)', build:docODI }
