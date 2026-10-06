@@ -4732,7 +4732,7 @@
         '<div class="rrhh-chips">'+tipos.map(function(tp){ var e=estadoDoc(t.id,tp.slug); return '<span class="dchip '+DCLS[e.k]+'" data-t="'+t.id+'" data-s="'+tp.slug+'" style="cursor:pointer" title="'+enc(tp.nombre+' · '+e.txt)+'">'+esc(tp.corto)+' '+icoDoc(e.k)+'</span>'; }).join('')+'</div>'; }
     function pinta(){
       var T=pctDe(t.id, DOC_TIPOS);
-      var gen=['contrato','perfil','datos','epp','odi'].filter(function(k){ return typeof DOC_GEN!=='undefined'&&DOC_GEN[k]; });
+      var gen=['perfil'].filter(function(k){ return typeof DOC_GEN!=='undefined'&&DOC_GEN[k]; });
       c.innerHTML='<div style="display:flex;align-items:baseline;gap:8px;margin-top:6px"><b style="font:800 22px var(--font);color:'+(T.pct===100?'#0f6e56':(T.pct>=60?'#b45309':'#dc2626'))+'">'+T.pct+'%</b><span class="note" style="margin:0">al día · '+T.ok+' de '+T.n+' que le aplican</span></div>'+
         sec('Documentación', RRHH_TIPOS)+sec('Capacitaciones y cursos', CAP_TIPOS)+
         '<div class="fr-buk">'+svgI('<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>',14)+'<span style="flex:1">Ingreso firmado en Buk: contrato, anexos, RIOHS, ODI, EPP, inducción, Ley Karin. No cuenta en el %.</span></div>'+
