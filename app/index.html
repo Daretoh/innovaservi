@@ -386,6 +386,11 @@
   .dg-h .ver{border-left:1px solid #d9dce8;background:#f6f7fb;font:600 10px var(--font);color:#55607a;line-height:1.7;white-space:nowrap;}
   .dg-h .ver b{color:var(--ink);font-weight:800;}
   .dg-band{height:4px;border-radius:2px;background:linear-gradient(90deg,var(--orange) 0 70%,var(--ink) 70% 100%);margin:0 0 16px;}
+  .dg-sig td{width:40%;height:52px;} .dg-sig td.fx{width:20%;text-align:center;}
+  .dg-sig .sl,.pts-ctl .sl{display:block;font:800 9px var(--font);color:#8a90a6;text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px;}
+  .dg-sig td.fx img.rs-sig{max-height:42px;max-width:100%;display:block;margin:0 auto;} .dg-sig td.fx img.rs-tim{display:none;}
+  .pts-tit{font:800 19px var(--font);color:var(--ink);text-align:center;margin:4px 0 10px;text-transform:uppercase;letter-spacing:.02em;}
+  .pts-ctl td{width:25%;}
   .dg-foot{margin-top:26px;border-top:1px solid #e3e5ee;padding-top:8px;display:flex;justify-content:space-between;gap:10px;font:600 9px var(--font);color:#9a9fb0;}
   #dg-doc h3{font:800 15px var(--font);text-align:center;color:var(--ink);margin:0 0 14px;text-transform:uppercase;letter-spacing:.03em;}
   #dg-doc p{line-height:1.6;margin:0 0 12px;text-align:justify;}
@@ -6281,7 +6286,7 @@
       else if(u.vencimiento){ var n=diffDiasV(u.vencimiento); chip=n<0?'<span class="dchip venc">Vencido</span>':(n<=30?'<span class="dchip prox">Vence '+n+'d</span>':'<span class="dchip ok">Vigente</span>'); }
       else chip='<span class="dchip ok">Cargado</span>';
       var gen='';
-      if(tipo==='pts_funciones') gen='<button class="rd-gen emp-pf" title="Generar el PTS según el cargo">'+svgI(ICO.gen,15)+'Generar PTS</button>';
+      if(tipo==='pts_funciones'||(typeof PTS_DOC!=='undefined'&&PTS_DOC[tipo])) gen='<button class="rd-gen emp-pf" data-pts="'+enc(tipo)+'" title="Generar el procedimiento con formato 2026">'+svgI(ICO.gen,15)+'Generar PTS</button>';
       if(typeof DOC_GEN!=='undefined'&&DOC_GEN[tipo]) gen+='<button class="rd-gen emp-gen" data-gen="'+enc(tipo)+'" title="Generar el registro de entrega para varios trabajadores">'+svgI(ICO.gen,15)+'Registrar entrega</button>';
       return '<div class="emp-row" data-tipo="'+enc(tipo)+'" data-nom="'+enc(nombre)+'" data-v="'+(vence?1:0)+'"><div class="en"><b>'+esc(nombre)+'</b><span>'+(u?('Actualizado '+esc(fechaCorta(u.fecha||String(u.created_at||'').slice(0,10)))+(u.vencimiento?' · vence '+esc(fechaCorta(u.vencimiento)):'')+(E.n>1?' · '+E.n+' versiones':'')):(vence?'Con vencimiento':'Toca para subir el archivo'))+'</span></div>'+chip+
         (u&&u.url?'<a href="'+esc(u.url)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:var(--orange-2);font-weight:700;font-size:.8rem">descargar</a>':'')+gen+'</div>'; }
@@ -6300,7 +6305,9 @@
     c.innerHTML=html||'<div class="empty">Nada coincide con “'+esc(EMP_Q)+'”.</div>';
     c.querySelectorAll('.emp-row[data-tipo]').forEach(function(el){ el.addEventListener('click',function(){ abrirEmpDoc(el.dataset.tipo, el.dataset.nom, el.dataset.v==='1'); }); });
     c.querySelectorAll('.emp-gen').forEach(function(b){ b.addEventListener('click',function(ev){ ev.stopPropagation(); abrirPickDoc(b.dataset.gen); }); });
-    c.querySelectorAll('.emp-pf').forEach(function(b){ b.addEventListener('click',function(ev){ ev.stopPropagation(); abrirDocEmpresa({ nombre:'PTS acorde a sus funciones', tipo:'pts_funciones', opciones:DG_VARS, build:docPTSFunciones }); }); });
+    c.querySelectorAll('.emp-pf').forEach(function(b){ b.addEventListener('click',function(ev){ ev.stopPropagation(); var s=b.dataset.pts, nom=b.closest('.emp-row').dataset.nom;
+      if(s==='pts_funciones') abrirDocEmpresa({ nombre:nom, tipo:s, opciones:DG_VARS, build:docPTSFunciones });
+      else abrirDocEmpresa({ nombre:nom, tipo:s, build:function(){ return docPTSDoc(s); } }); }); });
     c.querySelectorAll('.emp-fmt').forEach(function(el){ el.addEventListener('click',function(){ var f=EMP_FMT.filter(function(x){ return x.k===el.dataset.k; })[0]; if(f) abrirDocEmpresa({ nombre:f.n, opciones:f.opciones?f.opciones():null, build:f.build }); }); });
     c.querySelectorAll('.emp-add').forEach(function(b){ b.addEventListener('click',function(){ abrirEmpDoc(null, '', false, b.dataset.c); }); });
   }
@@ -6376,7 +6383,7 @@
     function tr(a,b){ return '<tr><td class="dg-k">'+a+'</td><td>'+b+'</td></tr>'; }
     return dgHead('PROCEDIMIENTO DE TRABAJO SEGURO')+
       '<p style="text-align:center;margin-top:-6px;color:#667;font-weight:700">Acorde a sus funciones · '+esc(cargo)+'</p>'+
-      '<table class="dg-tbl">'+tr('Código',ce('PTS-FUN-'+(oper?'01':(adm?'03':'02'))))+tr('Versión',ce('01'))+tr('Fecha',ce(fFaena(todayISO())))+'</table>'+
+      '<table class="dg-tbl pts-ctl"><tbody><tr><td><span class="sl">Código</span><b>PTS-FUN-'+(oper?'01':(adm?'03':'02'))+'</b></td><td><span class="sl">Versión</span><b>02</b></td><td><span class="sl">Fecha</span>'+ce(fFaena(todayISO()))+'</td><td><span class="sl">Cargo</span><b>'+esc(cargo)+'</b></td></tr></tbody></table>'+dgFirmasPTS()+
       '<h4 class="dg-h4">1. Objetivo</h4><p>Establecer la forma segura de ejecutar las funciones propias del cargo de '+esc(cargo.toLowerCase())+', identificando sus riesgos y las medidas de control, para prevenir accidentes del trabajo y enfermedades profesionales.</p>'+
       '<h4 class="dg-h4">2. Alcance</h4><p>Aplica a todo trabajador de '+EMP.rz+' que se desempeñe en el cargo de '+esc(cargo.toLowerCase())+', en las dependencias de la empresa y en las plantas, faenas y centros de los clientes.</p>'+
       '<h4 class="dg-h4">3. Responsabilidades</h4>'+ulDg([
@@ -6394,7 +6401,7 @@
         'Informar de inmediato todo accidente o incidente a la jefatura, aunque parezca leve.',
         'Prohibido trabajar bajo la influencia del alcohol o drogas.',
         'Mantener el orden y la limpieza del lugar de trabajo.']) +
-      '<div class="dg-firmas'+((FIRMA_SIG||FIRMA_TIM)?' con-rep':'')+'"><div>Elaboró<br>Prevención de Riesgos</div><div class="dg-rep">'+firmaRepHtml()+'Aprobó<br>'+EMP.rep+'<br>Gerente General</div></div>';
+      '';
   }
   function abrirEmpDoc(tipo, nombre, vence, carpetaNueva){
     var E=tipo?empUlt(tipo):{ult:null,n:0,todos:[]}, nuevo=!tipo;
@@ -6977,9 +6984,16 @@
       return window.html2canvas(el,{scale:2,useCORS:true,backgroundColor:'#ffffff',logging:false}).then(function(cv){
         var imgH=cv.height*A4W/cv.width;
         if(imgH<=A4H){ doc.addImage(cv.toDataURL('image/jpeg',0.92),'JPEG',0,0,A4W,imgH); return doc; }
-        var srcPageH=Math.floor(cv.width*A4H/A4W), y=0, first=true;
+        var srcPageH=Math.floor(cv.width*A4H/A4W), y=0, first=true, ctx=cv.getContext('2d');
+        // Corta la página en una franja blanca (sin texto) para no partir líneas por la mitad.
+        function corte(y0,hMax){ var band=Math.floor(hMax*0.18), top=y0+hMax-band;
+          try{ var d=ctx.getImageData(0,top,cv.width,band).data, W=cv.width;
+            for(var r=band-1;r>=0;r--){ var ok=true; for(var x=0;x<W;x+=3){ var i=(r*W+x)*4; if(d[i]<245||d[i+1]<245||d[i+2]<245){ ok=false; break; } } if(ok) return r+(hMax-band)+1; }
+          }catch(_){}
+          return hMax; }
         while(y<cv.height){
-          var h=Math.min(srcPageH,cv.height-y), sl=document.createElement('canvas'); sl.width=cv.width; sl.height=h;
+          var h=Math.min(srcPageH,cv.height-y); if(cv.height-y>srcPageH) h=corte(y,srcPageH);
+          var sl=document.createElement('canvas'); sl.width=cv.width; sl.height=h;
           sl.getContext('2d').drawImage(cv,0,y,cv.width,h,0,0,cv.width,h);
           if(!first) doc.addPage(); first=false;
           doc.addImage(sl.toDataURL('image/jpeg',0.92),'JPEG',0,0,A4W,h*A4W/cv.width);
@@ -7155,6 +7169,104 @@
       '<div class="dg-firmas"><div>Firma trabajador</div><div>Recibido por · '+EMP.rz+'</div></div>';
   }
 
+  // ====== PTS completos (documento maestro de la empresa), actualizados 2026 y con formato corporativo ======
+  // Base: PTS originales de la carpeta de prevención (Drive). Firman: prevencionista (Elaboró) y Gerente General (Aprobó).
+  var EMP_PREV={ nombre:'Yocelyn Paola Mansilla Reyes', cargo:'Técnico en Prevención de Riesgos' };
+  // Tabla de firmas de 3 columnas (Elaboró/Aprobó · Cargo · Firma), igual a la de los PTS originales.
+  function dgFirmasPTS(){
+    return '<table class="dg-tbl dg-sig"><tbody>'+
+      '<tr><td><span class="sl">Elaboró</span>'+ce(lsGet('pts_elab_nom')||EMP_PREV.nombre).replace('<span contenteditable','<span contenteditable data-ls="pts_elab_nom"')+'</td><td><span class="sl">Cargo</span>'+ce(lsGet('pts_elab_cargo')||EMP_PREV.cargo).replace('<span contenteditable','<span contenteditable data-ls="pts_elab_cargo"')+'</td><td class="fx"><span class="sl">Firma</span></td></tr>'+
+      '<tr><td><span class="sl">Aprobó</span><b>'+EMP.rep+'</b></td><td><span class="sl">Cargo</span><b>Gerente General</b></td><td class="fx"><span class="sl">Firma</span>'+firmaRepHtml()+'</td></tr>'+
+      '</tbody></table>';
+  }
+  var NORM_BASE=['Ley N° 16.744, sobre accidentes del trabajo y enfermedades profesionales.','D.S. N° 44 del Ministerio del Trabajo y Previsión Social, reglamento sobre gestión preventiva de los riesgos laborales (reemplaza al D.S. N° 40).','D.S. N° 594 de 1999 del Ministerio de Salud, condiciones sanitarias y ambientales básicas en los lugares de trabajo.','Reglamento Interno de Orden, Higiene y Seguridad de '+'Innovación y Servicios SpA'+'.'];
+  var PTS_DOC={
+    pts_altura:{ cod:'PTS-PREV-01', titulo:'Trabajos en altura', orig:'14-11-2022',
+      obj:'Establecer los estándares y medidas de control para el uso seguro de alza hombre, andamios y escaleras en las faenas de limpieza y desinfección en altura, evitando accidentes y daños a los equipos.',
+      alc:'Aplica a todo trabajador de Innovación y Servicios SpA que ejecute trabajos a más de 1,8 metros de altura, utilizando alza hombre, andamios o escaleras, en las instalaciones de la empresa y de sus clientes.',
+      norm:NORM_BASE.concat(['NCh 1258, equipos de protección personal para trabajos con riesgo de caída.','NCh 351, escalas portátiles.','Instrucciones del fabricante y normas de la empresa mandante.']),
+      resp:[['Gerencia','Proporcionar los recursos necesarios para aplicar este procedimiento y fiscalizar su cumplimiento.'],['Supervisor','Instruir al personal, verificar que los equipos entregados por la empresa o el mandante estén en perfectas condiciones de uso y hacer cumplir este procedimiento.'],['Prevención de riesgos','Capacitar al personal, mantener actualizado este procedimiento y registrar su entrega.'],['Trabajador','Cumplir este procedimiento, contar con examen ocupacional de altura vigente, usar el arnés y sus EPP, e informar cualquier condición insegura.']],
+      des:[
+        ['Requisitos previos',['Solo podrá trabajar en altura el personal con examen ocupacional de altura vigente y capacitación en este procedimiento.','Revisar el estado del arnés, la cola de seguridad y los puntos de anclaje antes de cada uso.','Delimitar y señalizar el área bajo el trabajo con conos o cintas para evitar el paso de personas.','No trabajar en altura con lluvia intensa, viento sobre 35 km/h o tormenta eléctrica.']],
+        ['Alza hombre',['La operación del alza hombre solo está permitida a operadores capacitados y autorizados, y debe mantenerse el manual del equipo a su alcance.','No exceder la capacidad de carga indicada por el fabricante y distribuir la carga de forma uniforme.','No operar cerca de líneas eléctricas energizadas.','Todo el personal en la plataforma debe usar arnés anclado al punto designado y mantener la puerta cerrada.','Subir y bajar solo por la puerta con la plataforma completamente abajo; nunca caminar por la pluma.','No colocar escaleras, cajones u objetos sobre la plataforma para alcanzar mayor altura.']],
+        ['Andamios',['Montar sobre una base firme y nivelada, con todas sus piezas, crucetas y barandas.','Asegurar el andamio a una estructura estable cuando su altura lo requiera.','Acceder por la escala del andamio, nunca trepando por los marcos.','Inspeccionar el andamio antes de cada jornada.']],
+        ['Escaleras',['Usar solo escaleras tipo tijera en buen estado, inspeccionadas antes de su uso.','Apoyarlas sobre superficie firme, abiertas completamente y con el seguro puesto.','Mantener tres puntos de apoyo al subir y bajar; no usar los dos últimos peldaños.','No trasladar la escalera con una persona sobre ella.']]],
+      ries:[['Trabajo sobre plataforma, andamio o escalera','Caída de distinto nivel','Arnés de cuerpo completo anclado; barandas; examen de altura vigente; inspección previa.'],['Herramientas y materiales en altura','Golpeado por objetos que caen','Delimitar el área inferior; amarrar herramientas; casco con barbiquejo.'],['Operación del alza hombre','Volcamiento, atrapamiento, aplastamiento','Superficie firme y nivelada; respetar carga máxima; operador autorizado.'],['Superficies húmedas','Caída al mismo nivel','Calzado antideslizante; limpiar el piso de la plataforma.'],['Manipulación de equipos','Sobreesfuerzo','Técnica de levante; trabajo entre dos personas.']],
+      epp:['Casco con barbiquejo','Arnés de seguridad de cuerpo completo con cola y absorbedor de energía','Antiparras o lentes de seguridad','Guantes','Calzado de seguridad','Protección auditiva','Chaleco reflectante'] },
+    pts_alzahombre:{ cod:'PTS-PREV-02', titulo:'Alza hombre / grúa Genie', orig:'2022',
+      obj:'Establecer la metodología para la operación segura del alza hombre (grúa Genie) en las tareas de limpieza en altura, manteniendo controlados los riesgos para las personas y los equipos.',
+      alc:'Aplica a todos los trabajos realizados por personal de Innovación y Servicios SpA que utilicen alza hombre para la ejecución de faenas de limpieza y desinfección.',
+      norm:NORM_BASE.concat(['NCh 1258, equipos de protección personal para trabajos con riesgo de caída.','Manual de operación del fabricante del equipo.']),
+      resp:[['Gerencia','Proporcionar los recursos necesarios y fiscalizar el cumplimiento de este procedimiento.'],['Supervisor','Instruir al personal, autorizar a los operadores y exigir que el equipo entregado por el mandante esté en perfectas condiciones.'],['Prevención de riesgos','Capacitar, registrar la entrega de este procedimiento y verificar su cumplimiento en terreno.'],['Operador y ayudantes','Cumplir este procedimiento en todos los trabajos con alza hombre.']],
+      des:[
+        ['Antes de la operación',['Operar solo si está capacitado y autorizado; mantener el manual del equipo al alcance.','Inspeccionar controles, frenos, bocina, baterías o combustible, neumáticos y fugas hidráulicas.','No operar con viento sobre 35 km/h ni cerca de líneas eléctricas energizadas.','No exceder los límites de carga del fabricante.']],
+        ['Conducción',['Estar atento a obstáculos alrededor y sobre la máquina.','Usar velocidad baja en pendientes, lugares estrechos y marcha atrás, y antes de detenerse.','Hacer sonar la bocina en zonas de visión obstruida.','Mantener a las personas ajenas a la operación a un mínimo de 2 metros de la máquina.','No conducir cerca de excavaciones, andenes de carga o desniveles, ni sobre superficies blandas o irregulares.']],
+        ['Operación en la plataforma',['Usar arnés anclado a la plataforma y mantener la puerta cerrada en todo momento.','Subir y bajar solo por la puerta, con la plataforma completamente abajo.','No colocar escaleras ni objetos para lograr mayor alcance; ambos pies sobre el piso de la plataforma.','No fijar letreros u objetos que aumenten la superficie expuesta al viento.','Nunca usar la pluma como grúa ni empujar o tirar objetos con ella.','Si la máquina queda trabada, todo el personal debe bajar antes de intentar liberarla.','Delimitar el área de trabajo con vallas o conos.','La operación temeraria o imprudente está prohibida.']]],
+      ries:[['Trabajo en la plataforma','Caída de distinto nivel','Arnés anclado; puerta cerrada; no salir de la plataforma en altura.'],['Desplazamiento del equipo','Volcamiento, golpes, atropello','Terreno firme y nivelado; velocidad baja; distancia de 2 m de las personas.'],['Movimiento de la pluma','Atrapamiento, aplastamiento','Verificar espacio libre arriba, abajo y a los costados.'],['Cercanía a instalaciones eléctricas','Contacto eléctrico','Mantener distancia; trabajar solo con circuitos desenergizados.']],
+      epp:['Casco con barbiquejo','Arnés de seguridad de cuerpo completo','Antiparras o lentes de seguridad','Guantes','Calzado de seguridad','Protección auditiva','Chaleco reflectante'] },
+    pts_quimicos:{ cod:'PTS-PREV-03', titulo:'Uso y manipulación de productos químicos en aseo industrial', orig:'17-10-2022',
+      obj:'Asegurar que todo el personal de Innovación y Servicios SpA que utiliza productos químicos industriales conozca sus obligaciones, los riesgos, las medidas preventivas y las buenas prácticas para su uso correcto.',
+      alc:'Aplica a todo el personal que utiliza o manipula productos químicos en las faenas de limpieza y sanitización, en las instalaciones de la empresa y de sus clientes.',
+      norm:NORM_BASE.concat(['D.S. N° 43 de 2015 del Ministerio de Salud, almacenamiento de sustancias peligrosas.','NCh 2245, hoja de datos de seguridad de productos químicos.','NFPA 704, sistema de identificación de riesgos (rombo).']),
+      resp:[['Gerencia','Proporcionar los recursos necesarios y fiscalizar el cumplimiento de este procedimiento.'],['Jefe de higiene / supervisor','Instruir al personal; controlar bodegas y stock; exigir el uso de EPP; está autorizado para dosificar y diluir químicos.'],['Capataz','Controlar la bodega interna, supervisar el uso de EPP e instruir a los operarios; está autorizado para dosificar y diluir.'],['Encargado / responsable de químicos','Dosificar y diluir los productos, mantener el orden de la bodega y entregar los químicos diluidos a los operarios.'],['Trabajador','Cumplir este procedimiento. Prohibido manipular químicos puros o sin diluir: debe solicitarlos al supervisor, capataz o responsable de químicos.']],
+      des:[
+        ['Recomendaciones generales',['Usar en todo momento los EPP indicados en la hoja de datos de seguridad (HDS).','La bodega de químicos debe estar ventilada, con piso no poroso, cerrada con candado y señalizada (solo personal autorizado, no fumar, peligro sustancias químicas).','Mantener las HDS y fichas técnicas disponibles en la bodega y en el lugar de trabajo.','Todo envase debe estar rotulado, en buen estado, sin filtraciones y con su tapa. Informar de inmediato un envase sin rótulo.','Almacenar los productos segregados por compatibilidad; los envases sobre 25 litros se trasvasijan con bomba, nunca volteándolos.','Prohibido fumar, comer o beber en áreas de almacenamiento o uso de químicos.','No usar productos puros sin diluir y nunca mezclar productos químicos.']],
+        ['Antes de utilizar un producto',['Solicitar el producto al supervisor, quien entrega los químicos diluidos o designa a una persona capacitada.','Si no conoce el producto, leer su HDS y pedir capacitación a su jefatura.']],
+        ['Trasvasije (solo personal autorizado)',['Leer la etiqueta del producto.','Lavar el embudo, jarra o balde antes de usarlo.','Trasvasijar con embudo a un envase limpio y rotulado con el nombre del producto.','Respetar la dosificación indicada por la jefatura o publicada en la bodega.','Tapar el envase original y devolverlo a su lugar.']],
+        ['Uso del producto en el aseo',['Usar solo la cantidad necesaria; no introducir la mano en el balde, solo la esponja.','No dejar rociadores o envases con producto al alcance de terceros.','Secuencia de limpieza de estructuras y líneas: 1) barrido húmedo de arriba hacia abajo; 2) aplicación de detergente con espumadora; 3) acción mecánica con esponja abrasiva; 4) enjuague total; 5) aplicación de sanitizante.','No proyectar agua sobre tableros, motores o cableado eléctrico.']],
+        ['Actuación en caso de derrame',['Eliminar fuentes de ignición y ventilar la zona.','Si siente malestar, evacuar e informar a la jefatura.','El personal capacitado contiene el derrame con material absorbente (arena, aserrín, paños).','Descontaminar con agua y jabón; disponer el material en un recipiente con tapa, rotulado como residuo peligroso.']],
+        ['Primeros auxilios',['Inhalación: llevar a la persona a un lugar ventilado, mantenerla en reposo y pedir asistencia médica.','Contacto con la piel: enjuagar con abundante agua, lavar con agua y jabón y retirar la ropa contaminada.','Contacto con los ojos: lavar con abundante agua durante 15 minutos; si persiste la molestia, acudir al centro asistencial.','Ingestión: no inducir el vómito; seguir la HDS del producto y acudir al centro asistencial.']],
+        ['Hojas de datos de seguridad y rombo NFPA 704',['La HDS indica la identificación del producto, sus peligros, primeros auxilios, manejo, almacenamiento, EPP y actuación ante derrames e incendios.','Rombo NFPA 704: azul = salud, rojo = inflamabilidad, amarillo = reactividad (escala de 0 a 4), blanco = riesgos especiales (oxidante, corrosivo, etc.).']]],
+      ries:[['Manipulación y aplicación de químicos','Contacto, quemadura química, proyección a los ojos','Guantes de nitrilo, antiparras o careta facial, pechera PVC; HDS disponible.'],['Vapores en lugares cerrados','Intoxicación por inhalación','Ventilación; mascarilla con filtro según HDS.'],['Mezcla de productos','Reacción química','Prohibido mezclar; usar solo diluciones autorizadas.'],['Pisos con espuma o agua','Caída al mismo nivel','Calzado antideslizante; señalizar el área.'],['Traslado de bidones','Golpes, sobreesfuerzo','Uso de bomba y carro; técnica de levante.']],
+      epp:['Guantes de nitrilo','Antiparras, lentes de seguridad o careta facial, según el caso','Mascarilla o respirador con filtro según HDS','Pechera o traje de PVC','Botas o calzado de seguridad'] },
+    pts_extintores:{ cod:'PTS-PREV-04', titulo:'Uso y manejo de extintores', orig:'2022',
+      obj:'Establecer los estándares y medidas de control para el uso adecuado de los extintores ante un amago de incendio, evitando accidentes y daños.',
+      alc:'Aplica a todo el personal de Innovación y Servicios SpA, en sus tareas internas y en la prestación de servicios a clientes.',
+      norm:NORM_BASE.concat(['NCh 934, clasificación de fuegos.','NCh 1433, ubicación y señalización de extintores.','D.S. N° 594, artículos sobre prevención y protección contra incendios.']),
+      resp:[['Gerencia','Proporcionar los recursos y mantener los extintores con su mantención al día.'],['Supervisor','Verificar la ubicación y el estado de los extintores en la faena e instruir al personal.'],['Prevención de riesgos','Capacitar al personal y registrar la entrega de este procedimiento.'],['Trabajador','Conocer la ubicación de los extintores, usarlos correctamente e informar todo amago de incendio.']],
+      des:[
+        ['El fuego y sus clases (NCh 934)',['El fuego requiere combustible, oxígeno y calor; al eliminar uno de ellos se extingue.','Clase A (triángulo verde): sólidos comunes como madera, papel, género o plástico.','Clase B (cuadrado rojo): líquidos y gases inflamables como bencina, pinturas o gas.','Clase C (círculo azul): equipos eléctricos energizados. No usar agua.','Clase D (estrella amarilla): metales combustibles como magnesio o sodio.','Clase K: aceites y grasas de cocina.']],
+        ['Tipos de extintor',['Polvo químico seco (PQS): fuegos A, B y C; deja residuo, no se recomienda en áreas de alimentos o equipos delicados.','Dióxido de carbono (CO₂): fuegos B y C; elimina el oxígeno; poco efectivo a la intemperie.','Agua y espuma: fuegos clase A; nunca en fuegos clase C.']],
+        ['Ubicación (NCh 1433)',['Colgados en muros o columnas, en lugares de fácil acceso, señalizados y libres de obstáculos.','A una altura máxima de 1,30 m medida desde el suelo hasta la base del extintor.','A una distancia máxima de 23 metros del lugar habitual de trabajo.']],
+        ['Uso del extintor',['Dar la alarma y avisar a la jefatura.','Descolgar el extintor más cercano y verificar en el manómetro que esté cargado.','Retirar el seguro, sostener la manguera y ubicarse a unos 3 metros, con el viento a la espalda.','Presionar la manilla y dirigir el chorro a la base del fuego con un movimiento de barrido.','No dar la espalda a la zona extinguida por posibles reigniciones.']],
+        ['Recomendaciones',['El extintor sirve para fuegos incipientes; ante un incendio declarado, evacuar.','Identificar la clase de fuego antes de actuar.','No golpear el extintor: es un recipiente a presión.','Informar todo extintor usado, descargado o con la mantención vencida.']]],
+      ries:[['Combate de un amago de incendio','Quemaduras','Actuar solo en fuegos incipientes; distancia de 3 m; viento a la espalda.'],['Uso de agente inadecuado','Electrocución, propagación del fuego','Identificar la clase de fuego; no usar agua en fuegos eléctricos.'],['Humo y gases','Intoxicación','Evacuar si el fuego no se controla; no ingresar a recintos con humo.']],
+      epp:['Calzado de seguridad','Guantes','Antiparras o lentes de seguridad'] },
+    pts_confinados:{ cod:'PTS-PREV-05', titulo:'Trabajo seguro en espacios confinados', orig:'03-05-2023',
+      obj:'Definir los requerimientos de seguridad y permisos para ingresar y trabajar en espacios confinados, minimizando la exposición de los trabajadores a sus peligros.',
+      alc:'Aplica a todo trabajador de Innovación y Servicios SpA que ingrese o apoye trabajos en espacios confinados, como estanques, tolvas, cámaras de RIL, silos, ductos o fosas, en las instalaciones de la empresa y de sus clientes.',
+      norm:NORM_BASE.concat(['Guía técnica para trabajos en espacios confinados del Instituto de Salud Pública (ISP).','Procedimientos de permiso de trabajo y bloqueo de la empresa mandante.']),
+      resp:[['Gerencia','Asegurar que este procedimiento se cumpla y que el personal esté capacitado.'],['Persona competente (supervisor)','Evaluar el espacio, determinar las medidas de seguridad, emitir o rechazar el permiso de entrada y detener el trabajo ante cualquier riesgo.'],['Analista de atmósfera','Medir oxígeno, gases tóxicos e inflamables antes y durante el trabajo, con equipo calibrado.'],['Vigía','Permanecer en el acceso, controlar entradas y salidas, mantener la comunicación y activar el rescate. No ingresa al espacio.'],['Trabajador entrante','Conocer los peligros, cumplir el permiso, usar sus EPP y salir de inmediato ante una alarma.']],
+      des:[
+        ['Definición',['Espacio confinado: lugar no diseñado para ocupación continua, con entrada o salida restringida, que puede tener atmósfera peligrosa, riesgo de inmersión, atrapamiento o elementos móviles.','Ejemplos: estanques, tolvas, cámaras y canaletas de RIL, silos, ductos, alcantarillas y espacios sobre cielo raso.','Se considera que una persona ingresó cuando cualquier parte de su cuerpo traspasa la abertura.']],
+        ['Permiso de entrada',['Ningún trabajo en un espacio confinado puede iniciar sin el permiso correspondiente, firmado por la persona competente.','El permiso registra las entradas y salidas, es válido por una jornada y debe permanecer en el lugar.','Aplicar bloqueo con candado y tarjeta personal por cada persona que ingrese (control de energías peligrosas).','El acceso debe señalizarse: “Peligro – Espacio confinado – No entrar – Permiso requerido”.']],
+        ['Preparación para la entrada',['Aislar líneas, cañerías y energías; bloquear válvulas.','Limpiar, descontaminar y ventilar el espacio.','Medir la atmósfera: oxígeno entre 19,5% y 23,5%, inflamables bajo el 10% del límite inferior de explosividad y tóxicos bajo los límites permitidos.','Repetir la medición al inicio de cada turno y monitorear en forma continua cuando la tarea pueda generar gases.','Definir los medios de acceso, salida y rescate antes de ingresar.']],
+        ['Durante el trabajo',['El vigía permanece en el acceso durante todo el trabajo.','Usar arnés y línea de vida cuando exista riesgo de caída o para un eventual rescate.','Equipos eléctricos con protección diferencial, cables sin daños y, de preferencia, herramientas con doble aislamiento.','Trabajos en caliente requieren un permiso adicional.']],
+        ['Rescate y emergencias',['El vigía activa el rescate y presta primeros auxilios desde el exterior; nunca ingresa sin ayuda y sin equipo.','No mover a la persona afectada hasta que llegue personal capacitado, salvo peligro inminente.','Al terminar, la persona competente verifica que no quede nadie dentro antes de cerrar el espacio.']]],
+      ries:[['Atmósfera con poco oxígeno o gases','Asfixia, intoxicación, explosión','Medición de gases, ventilación, permiso de entrada y vigía.'],['Energías no controladas','Atrapamiento, electrocución','Bloqueo con candado y tarjeta personal.'],['Acceso y salida restringidos','Caídas, golpes','Arnés y línea de vida; escalas seguras.'],['Equipos y herramientas','Contacto eléctrico, proyección de partículas','Protección diferencial; EPP; herramientas en buen estado.'],['Condiciones del espacio','Estrés térmico, inmersión','Pausas; control de líquidos; vigía permanente.']],
+      epp:['Casco con barbiquejo','Arnés de cuerpo completo con línea de vida','Respirador con filtro o equipo de aire según la medición','Antiparras o careta facial','Guantes según la tarea','Calzado de seguridad','Detector de gases personal cuando se requiera'] }
+  };
+  function docPTSDoc(slug){
+    var P=PTS_DOC[slug], n=0;
+    function H(t){ n++; return '<h4 class="dg-h4">'+n+'. '+t+'</h4>'; }
+    function tr(a,b){ return '<tr><td class="dg-k">'+a+'</td><td>'+b+'</td></tr>'; }
+    return dgHead('PROCEDIMIENTO DE TRABAJO SEGURO','02')+
+      '<div class="pts-tit">'+esc(P.titulo)+'</div>'+
+      '<table class="dg-tbl pts-ctl"><tbody><tr><td><span class="sl">Código</span><b>'+P.cod+'</b></td><td><span class="sl">Versión</span><b>02</b></td><td><span class="sl">Fecha</span>'+ce(fFaena(todayISO()))+'</td><td><span class="sl">Reemplaza a</span><b>Versión 01 ('+esc(P.orig)+')</b></td></tr></tbody></table>'+
+      dgFirmasPTS()+
+      H('Objetivo')+'<p>'+P.obj+'</p>'+
+      H('Alcance')+'<p>'+P.alc+'</p>'+
+      H('Normativa y referencias')+ulDg(P.norm)+
+      H('Responsabilidades')+'<table class="dg-tbl">'+P.resp.map(function(r){ return tr(r[0],r[1]); }).join('')+'</table>'+
+      H('Desarrollo')+P.des.map(function(d,i){ return '<p style="margin:10px 0 4px"><b>'+n+'.'+(i+1)+' '+d[0]+'</b></p>'+ulDg(d[1]); }).join('')+
+      H('Riesgos y medidas de control')+'<table class="dg-tbl"><thead><tr><th style="width:30%">Actividad / peligro</th><th style="width:24%">Riesgo</th><th>Medidas de control</th></tr></thead><tbody>'+P.ries.map(function(r){ return '<tr><td>'+r[0]+'</td><td>'+r[1]+'</td><td>'+r[2]+'</td></tr>'; }).join('')+'</tbody></table>'+
+      H('Elementos de protección personal')+ulDg(P.epp)+'<p style="font-size:12px">Los EPP deben usarse correctamente puestos, con ropa de trabajo adecuada y sin partes sueltas, colgantes, pulseras ni objetos que puedan quedar atrapados.</p>'+
+      H('Emergencias')+ulDg(['Detener el trabajo, dar aviso de inmediato a la jefatura directa y seguir el plan de emergencia de la faena.','Teléfonos: Ambulancia 131 · Bomberos 132 · Carabineros 133 · Mutual de Seguridad 1407.','Todo accidente, aunque parezca leve, se informa de inmediato para su atención y denuncia ante el organismo administrador de la Ley N° 16.744.'])+
+      H('Registros')+ulDg(['Registro de entrega e instrucción de este procedimiento, firmado por cada trabajador (InnovaGestión → Empresa → Registrar entrega).'].concat(slug==='pts_confinados'?['Permiso de entrada y registro de entradas y salidas del espacio confinado.','Registro de mediciones de atmósfera.']:[]))+
+      H('Control de cambios')+'<table class="dg-tbl"><thead><tr><th style="width:15%">Versión</th><th style="width:20%">Fecha</th><th>Descripción del cambio</th></tr></thead><tbody>'+
+        '<tr><td>01</td><td>'+esc(P.orig)+'</td><td>Emisión original.</td></tr>'+
+        '<tr><td>02</td><td>'+fFaena(todayISO())+'</td><td>Actualización 2026: formato corporativo, normativa vigente (D.S. N° 44 reemplaza al D.S. N° 40), revisión del contenido y de las responsabilidades, tabla de riesgos y sección de emergencias.</td></tr></tbody></table>';
+  }
   // Plantilla: Registro de entrega e instrucción de un PTS (temario según el procedimiento de la empresa).
   var PTS_INFO={
     pts_quimicos:{ n:'Uso y manejo de productos químicos en aseo industrial', t:[
