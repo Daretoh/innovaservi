@@ -636,21 +636,20 @@
   .pw-pool .pw-w{padding:5px 11px;font-size:12px;background:#fff;}
   .pw-wch{margin-left:5px;font:700 8px var(--font);color:var(--orange-2,#c2410c);text-transform:uppercase;letter-spacing:.03em;}
   .pw-fae.pick{border-color:var(--orange);cursor:copy;}
-  .pw-grid{display:grid;grid-template-columns:repeat(7,minmax(172px,1fr));gap:8px;overflow-x:auto;padding-bottom:6px;align-items:start;}
-  .pw-col{background:var(--alt);border:1px solid var(--line);border-radius:12px;padding:8px;min-width:0;}
-  .pw-col.hoy{border-color:var(--orange);box-shadow:inset 0 0 0 1px var(--orange);}
-  .pw-dh{display:flex;justify-content:space-between;align-items:center;gap:6px;padding:6px 9px;background:#ffe600;border:1px solid #e3cc00;border-radius:8px;margin-bottom:8px;}
-  .pw-dn{font:900 16px var(--font);color:#1a1a1a;letter-spacing:.01em;}
-  .pw-col.hoy .pw-dh{background:#ffd400;border-color:var(--orange);}
-  .pw-col.hoy .pw-dn{color:#1a1a1a;}
-  .pw-dh .pw-ds{color:#5a5114;}
-  .pw-ds{font:700 10.5px var(--font);color:var(--muted);white-space:nowrap;}
-  .pw-ds.miss{color:#b45309;} .pw-ds.ok{color:#0f6e56;}
+  .pw-xls{display:flex;gap:18px;overflow-x:auto;padding-bottom:10px;align-items:flex-start;}
+  .pw-day{flex:none;}
+  .pw-dh{display:flex;justify-content:center;align-items:baseline;gap:10px;padding:11px 16px;background:#ffe600;border:1px solid #e3cc00;border-radius:9px;margin-bottom:10px;text-align:center;}
+  .pw-dn{font:900 23px var(--font);color:#1a1a1a;letter-spacing:.01em;}
+  .pw-day.hoy .pw-dh{background:#ffd400;border-color:var(--orange);box-shadow:0 0 0 2px var(--orange);}
+  .pw-day.hoy .pw-dn{color:#1a1a1a;}
+  .pw-ds{font:800 12.5px var(--font);color:#5a5114;white-space:nowrap;}
+  .pw-ds.miss{color:#9a3412;} .pw-ds.ok{color:#15603f;}
+  .pw-faes{display:flex;gap:8px;align-items:flex-start;}
   .pw-turno{display:inline-flex;align-items:center;gap:4px;font:800 9.5px var(--font);text-transform:uppercase;letter-spacing:.06em;margin:3px 0 5px;padding:2px 8px;border-radius:6px;}
   .pw-t-dia{background:#fef3c7;color:#92400e;} .pw-t-noche{background:#1e1b4b;color:#e0e7ff;} .pw-t-x{background:#fff;color:var(--muted);border:1px solid var(--line);}
-  .pw-fae{background:#fff;border:1px solid var(--line);border-radius:10px;margin-bottom:8px;overflow:hidden;}
+  .pw-fae{width:196px;flex:none;background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden;}
   .pw-fae.frigo{border-color:#a5f3fc;}
-  .pw-body{padding:6px 9px 7px;}
+  .pw-body{padding:6px 8px 7px;}
   .pw-frigo-tag{display:inline-block;background:#0891b2;color:#fff;font:800 8px var(--font);letter-spacing:.05em;text-transform:uppercase;border-radius:5px;padding:1px 5px;margin-left:6px;vertical-align:1px;}
   .pw-hora{width:100%;padding:4px 7px;border:none;border-radius:6px;font:800 13px var(--font);color:#10222b;background:rgba(255,255,255,.95);text-align:center;}
   .pw-hora:focus{outline:none;border-color:var(--orange);box-shadow:0 0 0 2px rgba(255,107,0,.15);}
@@ -664,12 +663,12 @@
   .pw-foot{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:6px 9px;border-top:1px solid var(--line);}
   .pw-cnt{border:none;font:800 11.5px var(--font);border-radius:7px;padding:3px 10px;cursor:pointer;color:#fff;background:#ef3e36;}
   .pw-cnt.ok{background:#17a34a;} .pw-cnt.miss{background:#ef3e36;}
-  .pw-ol{margin:0;padding-left:22px;font:700 15px var(--font);color:var(--ink);}
-  .pw-ol li{padding:5px 0;border-bottom:1px solid var(--line);}
-  .pw-ol li:last-child{border-bottom:none;}
+  .pw-ol{margin:0;padding:0;list-style:none;}
+  .pw-ol li{background:#e9f2db;border:1px solid #cfe0b8;border-radius:5px;margin-bottom:3px;padding:4px 7px;}
+  .pw-ol li .pw-pr>span{font:800 13px var(--font);color:#14321a;}
   .pw-pr{display:flex;align-items:center;justify-content:space-between;gap:4px;}
   .pw-p[draggable=true]{cursor:grab;}
-  .pw-p.vac{color:#aab1c4;font-weight:500;font-style:italic;}
+  .pw-p.vac{background:#fff;border-style:dashed !important;border-color:var(--line) !important;color:#9aa1b4;font-weight:500;font-style:italic;font-size:12px;}
   .pw-p.dup .pw-pr>span{color:#b45309;}
   .pw-dup{font:800 8.5px var(--font);text-transform:uppercase;background:#fbf0d9;color:#854f0b;border-radius:999px;padding:0 5px;margin-left:4px;font-style:normal;}
   .pw-x{border:none;background:none;color:var(--muted);cursor:pointer;font-size:14px;line-height:1;padding:0 2px;}
@@ -705,11 +704,11 @@
   .pw-w{background:#fff;border:1px solid var(--line);border-radius:999px;padding:2px 8px;font:600 10.5px var(--font);cursor:grab;user-select:none;-webkit-user-select:none;}
   .pw-w:hover{border-color:var(--orange);} .pw-w.pick{background:var(--orange);border-color:var(--orange);color:#fff;}
   .pw-empty{font-size:11px;color:#aab1c4;text-align:center;padding:10px 0;}
-  @media(max-width:1000px){ .pw-grid{grid-template-columns:1fr;overflow:visible;} .pw-sum{grid-template-columns:repeat(3,1fr);gap:6px;} .pw-kpi{padding:6px 9px;} .pw-kpi b{font-size:15px;} .pw-kpi span{font-size:8.5px;letter-spacing:.03em;}
+  @media(max-width:1000px){ .pw-xls{flex-direction:column;overflow:visible;gap:14px;} .pw-day{width:100%;} .pw-faes{flex-wrap:wrap;} .pw-fae{width:100%;}
     /* En celular hay ancho de sobra: letras más grandes y legibles */
-    .pw-fae{padding:12px 14px;} .pw-h{font-size:14px;} .pw-cnt{font-size:13px;padding:2px 10px;} .pw-cli{font-size:12.5px;} .pw-tit{font-size:14px;} .pw-ol{font-size:17px;padding-left:24px;} .pw-ol li{padding:7px 0;}
-    .pw-add{font-size:14px;padding:9px 10px;} .pw-veh select{font-size:14px;padding:8px 9px;} .pw-s{font-size:11px;} .pw-open{font-size:13px;} .pw-hora{font-size:13px;width:110px;padding:6px 8px;}
-    .pw-dh .pw-dn{font-size:19px;} }
+    .pw-head .pw-cli{font-size:12.5px;} .pw-head .pw-tit{font-size:13px;} .pw-h{font-size:15px;} .pw-hora{font-size:15px;} .pw-cnt{font-size:13px;padding:3px 12px;} .pw-ol li .pw-pr>span{font-size:15px;}
+    .pw-add{font-size:14px;padding:9px 10px;} .pw-veh select{font-size:14px;padding:8px 9px;} .pw-open{font-size:13px;}
+    .pw-dn{font-size:26px;} }
   /* RRHH documentación */
   .rrhh-doc{background:#fff;border:1px solid var(--line);border-radius:12px;padding:11px 13px;margin-bottom:9px;}
   .rrhh-doc .rd-top{display:flex;align-items:center;gap:10px;cursor:pointer;}
@@ -2662,15 +2661,16 @@
       var ord=fs.slice().sort(function(a,b){ var fa=esFrigo(a)?0:1, fb=esFrigo(b)?0:1; if(fa!==fb) return fa-fb;
         var na=((PLAN_MAP[planKey(a,f)]||{}).personas||[]).length, nb=((PLAN_MAP[planKey(b,f)]||{}).personas||[]).length; if(nb!==na) return nb-na;
         return (planHora(a,f)||'99').localeCompare(planHora(b,f)||'99'); });
+      if(!fs.length) continue;   // en la rejilla tipo Excel solo salen los días con faenas
       body=ord.map(function(e){ return pwCard(e,f,cnt); }).join('');
-      cols+='<div class="pw-col'+(f===hoy?' hoy':'')+'" data-f="'+f+'"><div class="pw-dh"><span class="pw-dn">'+DIAS[di]+' '+dd.getDate()+'</span>'+
-        (fs.length?'<span class="pw-ds '+(falt>0?'miss':'ok')+'">'+fs.length+' faena'+(fs.length>1?'s':'')+' · '+dAsg+'/'+dNec+'</span>':'')+'</div>'+
-        (body||'<div class="pw-empty">Sin faenas</div>')+'</div>';
+      cols+='<div class="pw-day'+(f===hoy?' hoy':'')+'" data-f="'+f+'"><div class="pw-dh"><span class="pw-dn">'+DIAS[di]+' '+dd.getDate()+'</span>'+
+        '<span class="pw-ds '+(falt>0?'miss':'ok')+'">'+dAsg+'/'+dNec+'</span></div>'+
+        '<div class="pw-faes">'+body+'</div></div>';
     }
     var nF=Object.keys(faeSet).length, falta=T.falt;
     var kpi=function(v,l,k){ return '<div class="pw-kpi'+(k?(' '+k):'')+'"><b>'+v+'</b><span>'+l+'</span></div>'; };
     var poolChips=trabs.map(function(w){ return '<span class="pw-w" draggable="true" data-n="'+enc(w.nombre)+'" title="'+enc(w.cargo||'Operario')+(w.chofer?' · chofer':'')+'">'+esc(w.nombre)+(w.chofer?'<i class="pw-wch">chofer</i>':'')+'</span>'; }).join('')||'<span class="note" style="margin:0;font-size:.72rem">Sin trabajadores. Créalos en RRHH.</span>';
-    c.innerHTML='<div class="pw-grid">'+cols+'</div>';
+    c.innerHTML=cols?('<div class="pw-xls">'+cols+'</div>'):'<div class="empty" style="padding:30px"><div class="big">📋</div>No hay faenas esta semana.<br><span style="font-size:.82rem">Agéndalas en Calendario.</span></div>';
     pwWire(c);
     if(PW_FOCUS){ var fi=c.querySelector('.pw-add[data-k="'+PW_FOCUS+'"]'); PW_FOCUS=null; if(fi){ try{ fi.focus(); }catch(_){} } }
   }
