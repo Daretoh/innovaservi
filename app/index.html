@@ -6306,8 +6306,7 @@
     c.querySelectorAll('.emp-row[data-tipo]').forEach(function(el){ el.addEventListener('click',function(){ abrirEmpDoc(el.dataset.tipo, el.dataset.nom, el.dataset.v==='1'); }); });
     c.querySelectorAll('.emp-gen').forEach(function(b){ b.addEventListener('click',function(ev){ ev.stopPropagation(); abrirPickDoc(b.dataset.gen); }); });
     c.querySelectorAll('.emp-pf').forEach(function(b){ b.addEventListener('click',function(ev){ ev.stopPropagation(); var s=b.dataset.pts, nom=b.closest('.emp-row').dataset.nom;
-      if(s==='pts_funciones') abrirDocEmpresa({ nombre:nom, tipo:s, opciones:DG_VARS, build:docPTSFunciones });
-      else abrirDocEmpresa({ nombre:nom, tipo:s, build:function(){ return docPTSDoc(s); } }); }); });
+      generarPTS(s); }); });
     c.querySelectorAll('.emp-fmt').forEach(function(el){ el.addEventListener('click',function(){ var f=EMP_FMT.filter(function(x){ return x.k===el.dataset.k; })[0]; if(f) abrirDocEmpresa({ nombre:f.n, opciones:f.opciones?f.opciones():null, build:f.build }); }); });
     c.querySelectorAll('.emp-add').forEach(function(b){ b.addEventListener('click',function(){ abrirEmpDoc(null, '', false, b.dataset.c); }); });
   }
@@ -7246,6 +7245,24 @@
       ries:[['Atmósfera con poco oxígeno o gases','Asfixia, intoxicación, explosión','Medición de gases, ventilación, permiso de entrada y vigía.'],['Energías no controladas','Atrapamiento, electrocución','Bloqueo con candado y tarjeta personal.'],['Acceso y salida restringidos','Caídas, golpes','Arnés y línea de vida; escalas seguras.'],['Equipos y herramientas','Contacto eléctrico, proyección de partículas','Protección diferencial; EPP; herramientas en buen estado.'],['Condiciones del espacio','Estrés térmico, inmersión','Pausas; control de líquidos; vigía permanente.']],
       epp:['Casco con barbiquejo','Arnés de cuerpo completo con línea de vida','Respirador con filtro o equipo de aire según la medición','Antiparras o careta facial','Guantes según la tarea','Calzado de seguridad','Detector de gases personal cuando se requiera'] }
   };
+  function esPTS(s){ return s==='pts_funciones' || !!(typeof PTS_DOC!=='undefined'&&PTS_DOC[s]); }
+  function nombrePTS(s){ var n=s; EMP_CARPETAS.forEach(function(c){ c.tipos.forEach(function(x){ if(x[0]===s) n=x[1]; }); }); return n; }
+  function generarPTS(s){ var nom=nombrePTS(s);
+    if(s==='pts_funciones') abrirDocEmpresa({ nombre:nom, tipo:s, opciones:DG_VARS, build:docPTSFunciones });
+    else abrirDocEmpresa({ nombre:nom, tipo:s, build:function(){ return docPTSDoc(s); } }); }
+  function abrirPTS(s){
+    if(!sb){ generarPTS(s); return; }
+    sb.from('empresa_docs').select('*').eq('tipo',s).order('created_at',{ascending:false}).limit(1).then(function(r){
+      var u=r&&!r.error&&r.data&&r.data[0];
+      if(u&&u.url){ $('re-title').textContent=nombrePTS(s);
+        $('re-body').innerHTML='<div class="card"><p class="note" style="margin:0 0 10px">Versión vigente cargada el '+esc(fechaCorta(u.fecha||String(u.created_at||'').slice(0,10)))+'.</p>'+
+          '<a class="btn" href="'+esc(u.url)+'" target="_blank" rel="noopener" style="display:block;text-align:center;text-decoration:none">'+svgI(ICO.clip)+'Descargar PTS vigente</a>'+
+          '<button id="pts-nuevo" type="button" class="btn ghost small" style="width:100%;margin-top:8px">'+svgI(ICO.gen)+'Generar nueva versión (formato 2026)</button></div>';
+        $('pts-nuevo').addEventListener('click',function(){ $('rrhh-edit').classList.add('hide'); generarPTS(s); });
+        $('rrhh-edit').classList.remove('hide'); $('rrhh-edit').scrollTop=0; }
+      else generarPTS(s);
+    }, function(){ generarPTS(s); });
+  }
   function docPTSDoc(slug){
     var P=PTS_DOC[slug], n=0;
     function H(t){ n++; return '<h4 class="dg-h4">'+n+'. '+t+'</h4>'; }
@@ -7476,11 +7493,13 @@
         var ver=(e.doc&&e.doc.url)?' <a href="'+esc(e.doc.url)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:var(--orange-2);font-weight:700;font-size:.8rem">ver</a>':'';
         return '<div class="rrhh-pers" data-t="'+t.id+'" data-s="'+tp.slug+'"><span class="rp-nm">'+esc(t.nombre||'—')+'</span><span class="dchip '+DCLS[e.k]+'">'+e.txt+'</span>'+ver+'</div>';
       }).join('');
-      var genBtn=(typeof DOC_GEN!=='undefined'&&DOC_GEN[tp.slug])?'<button class="rd-gen" data-gen="'+tp.slug+'" title="Generar para varios">'+svgI(ICO.gen,15)+'Generar</button>':'';
+      var genBtn=(esPTS(tp.slug)?'<button class="rd-gen rd-pts" data-pts="'+tp.slug+'" title="El procedimiento (PTS) para entregar">'+svgI(ICO.gen,15)+'PTS</button>':'')+
+        ((typeof DOC_GEN!=='undefined'&&DOC_GEN[tp.slug])?'<button class="rd-gen" data-gen="'+tp.slug+'" title="Registro de entrega para varios trabajadores">'+svgI(ICO.gen,15)+(esPTS(tp.slug)?'Registro entrega':'Generar')+'</button>':'');
       return grp+'<div class="rrhh-doc"><div class="rd-top" data-exp="rd'+ti+'"><span class="rd-nm">'+esc(tp.nombre)+(tp.vence?' <span class="note" style="font-weight:600;font-size:.7rem">(vence)</span>':'')+'</span>'+(ap?'<span class="dchip '+(pct===100?'ok':'pend')+'">'+ok+'/'+ap+'</span>':'<span class="dchip na">No aplica</span>')+(vc?' <span class="dchip venc">'+vc+'</span>':'')+genBtn+'</div><div class="rrhh-bar"><i style="width:'+pct+'%"></i></div><div class="hide" id="rd'+ti+'" style="margin-top:8px">'+rows+'</div></div>';
     }).join('');
     cont.querySelectorAll('.rd-top').forEach(function(el){ el.addEventListener('click',function(){ var b=$(el.dataset.exp); if(b) b.classList.toggle('hide'); }); });
-    cont.querySelectorAll('.rd-gen').forEach(function(b){ b.addEventListener('click',function(ev){ ev.stopPropagation(); abrirPickDoc(b.dataset.gen); }); });
+    cont.querySelectorAll('.rd-gen[data-gen]').forEach(function(b){ b.addEventListener('click',function(ev){ ev.stopPropagation(); abrirPickDoc(b.dataset.gen); }); });
+    cont.querySelectorAll('.rd-pts').forEach(function(b){ b.addEventListener('click',function(ev){ ev.stopPropagation(); abrirPTS(b.dataset.pts); }); });
     cont.querySelectorAll('.rrhh-pers').forEach(function(el){ el.addEventListener('click',function(){ abrirDocRrhh(+el.dataset.t, el.dataset.s); }); });
   }
   function renderRrhhPersona(trabs,cont){
@@ -7574,9 +7593,11 @@
         '<div class="fld"><label>Nota</label><input type="text" id="re-nota" value="'+enc(d.nota||'')+'" placeholder="Opcional"></div>'+
         ((esCed&&_sides.length)?('<button id="re-carnet" type="button" class="btn ghost small" style="width:100%;margin-top:2px;margin-bottom:6px">'+svgI(ICO.clip,14)+'Carnet en PDF ('+_sides.map(function(s){return s.label.toLowerCase();}).join(' + ')+')</button>'):'')+
         '<button id="re-save" class="btn" style="width:100%;margin-top:8px">'+svgI(ICO.save)+'Guardar</button>'+
-        ((typeof DOC_GEN!=='undefined'&&DOC_GEN[ts])?'<button id="re-gen" type="button" class="btn ghost small" style="width:100%;margin-top:8px">'+svgI(ICO.gen)+'Generar documento</button>':'')+
+        (esPTS(ts)?'<button id="re-pts" type="button" class="btn ghost small" style="width:100%;margin-top:8px">'+svgI(ICO.gen)+'PTS (procedimiento) para entregar</button>':'')+
+        ((typeof DOC_GEN!=='undefined'&&DOC_GEN[ts])?'<button id="re-gen" type="button" class="btn ghost small" style="width:100%;margin-top:8px">'+svgI(ICO.gen)+(esPTS(ts)?'Registro de entrega firmado por el trabajador':'Generar documento')+'</button>':'')+
       '</div>';
     if($('re-gen')) $('re-gen').addEventListener('click',function(){ $('rrhh-edit').classList.add('hide'); generarDoc(tid, ts); });
+    if($('re-pts')) $('re-pts').addEventListener('click',function(){ $('rrhh-edit').classList.add('hide'); abrirPTS(ts); });
     // Relee la fila antes de armar el PDF (la memoria puede estar desfasada, p. ej. tras repararCedulas)
     if($('re-carnet')) $('re-carnet').addEventListener('click',function(){
       if(!sb){ carnetPDF(_sides, t.nombre); return; }
