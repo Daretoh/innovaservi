@@ -647,19 +647,19 @@
   .pw-faes{display:flex;gap:8px;align-items:flex-start;}
   .pw-turno{display:inline-flex;align-items:center;gap:4px;font:800 9.5px var(--font);text-transform:uppercase;letter-spacing:.06em;margin:3px 0 5px;padding:2px 8px;border-radius:6px;}
   .pw-t-dia{background:#fef3c7;color:#92400e;} .pw-t-noche{background:#1e1b4b;color:#e0e7ff;} .pw-t-x{background:#fff;color:var(--muted);border:1px solid var(--line);}
-  .pw-fae{width:196px;flex:none;background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden;}
+  .pw-fae{width:210px;flex:none;background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden;}
   .pw-fae.frigo{border-color:#a5f3fc;}
   .pw-body{padding:6px 8px 7px;}
   .pw-frigo-tag{display:inline-block;background:#0891b2;color:#fff;font:800 8px var(--font);letter-spacing:.05em;text-transform:uppercase;border-radius:5px;padding:1px 5px;margin-left:6px;vertical-align:1px;}
-  .pw-hora{width:100%;padding:4px 7px;border:none;border-radius:6px;font:800 13px var(--font);color:#10222b;background:rgba(255,255,255,.95);text-align:center;}
-  .pw-hora:focus{outline:none;border-color:var(--orange);box-shadow:0 0 0 2px rgba(255,107,0,.15);}
-  .pw-hora::placeholder{color:var(--muted);font-weight:600;}
+  .pw-hora{width:100%;padding:3px 4px;border:none;border-radius:6px;font:800 16px var(--font);color:#fff;background:transparent;text-align:center;letter-spacing:.02em;}
+  .pw-hora:focus{outline:none;background:rgba(255,255,255,.97);color:#10222b;box-shadow:0 0 0 2px rgba(0,0,0,.15);}
+  .pw-hora::placeholder{color:rgba(255,255,255,.72);font-weight:700;font-size:12.5px;}
   .pw-fae.drop{box-shadow:0 0 0 2px var(--ok);}
   .pw-col.pickday .pw-fae:not(.locked){cursor:copy;box-shadow:0 0 0 2px var(--orange);}
-  .pw-head{padding:6px 8px;color:#fff;}
-  .pw-head .pw-cli{font:800 11px var(--font);text-transform:uppercase;line-height:1.2;color:#fff;margin:0;}
-  .pw-head .pw-tit{font:600 11px var(--font);color:rgba(255,255,255,.92);margin:1px 0 5px;line-height:1.25;}
-  .pw-h{display:block;background:rgba(255,255,255,.95);color:#10222b;border-radius:6px;padding:4px 7px;font:800 13px var(--font);text-align:center;}
+  .pw-head{padding:8px 10px;color:#fff;}
+  .pw-head .pw-cli{font:800 14.5px var(--font);text-transform:uppercase;line-height:1.15;color:#fff;margin:0;}
+  .pw-head .pw-tit{font:700 12.5px var(--font);color:rgba(255,255,255,.95);margin:2px 0 6px;line-height:1.2;}
+  .pw-h{display:block;background:transparent;color:#fff;padding:3px 4px;font:800 16px var(--font);text-align:center;letter-spacing:.02em;}
   .pw-foot{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:6px 9px;border-top:1px solid var(--line);}
   .pw-cnt{border:none;font:800 11.5px var(--font);border-radius:7px;padding:3px 10px;cursor:pointer;color:#fff;background:#ef3e36;}
   .pw-cnt.ok{background:#17a34a;} .pw-cnt.miss{background:#ef3e36;}
@@ -750,8 +750,18 @@
   .acc-row .acc-t{flex:1;min-width:0;} .acc-row .acc-t b{color:var(--ink);} .acc-row .acc-t .note{margin:2px 0 0;font-size:.76rem;}
   /* Zerty · Cermaq (árbol de documentos de la empresa) */
   .doc-sub{display:inline-flex;margin-bottom:12px;}
-  #rrhh-doc.zt-on > *:not(#doc-empresa-slot):not(.doc-sub){display:none !important;}
-  #rrhh-doc:not(.zt-on) #doc-empresa-slot{display:none;}
+  #rrhh-emp.zt-on #emp-docs{display:none !important;}
+  #rrhh-emp:not(.zt-on) #doc-empresa-slot{display:none;}
+  .dchip.na{background:transparent;color:var(--muted);border:1px dashed var(--line);}
+  .trab-modo{display:inline-flex;margin-bottom:12px;}
+  .fr-sec{font:800 11px var(--font);color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:12px 0 6px;display:flex;align-items:center;gap:8px;}
+  .fr-sec .fr-pct{margin-left:auto;font:800 11px var(--font);text-transform:none;letter-spacing:0;}
+  .fr-buk{display:flex;align-items:center;gap:8px;border-top:1px solid var(--line);margin-top:12px;padding-top:10px;font-size:.78rem;color:var(--muted);}
+  .fr-gen{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+  .rd-grp{font:800 11px var(--font);color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:14px 0 6px;}
+  .emp-row{display:flex;align-items:center;gap:8px;padding:10px 4px;border-bottom:1px solid var(--line);cursor:pointer;}
+  .emp-row:hover{background:var(--alt);}
+  .emp-row .en{flex:1;min-width:0;} .emp-row .en b{display:block;font:700 14px var(--font);color:var(--ink);} .emp-row .en span{font-size:.75rem;color:var(--muted);}
   .zt-box{--zt:#1aa6c4;--zt-bg:#e5f6fa;background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden;}
   .zt-head{display:flex;align-items:center;gap:14px;padding:16px 18px;background:var(--zt-bg);border-bottom:3px solid var(--zt);}
   .zt-logo{font:800 20px var(--font);letter-spacing:.14em;color:var(--zt);}
@@ -1149,10 +1159,8 @@
 
       <div class="sbar-grp sb-admin">RRHH</div>
       <button class="sb-item sb-admin" data-v="v-rrhh" data-seg="trab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>Trabajadores</button>
-      <button class="sb-item sb-admin" data-v="v-rrhh" data-seg="doc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>Documentación</button>
-      <button class="sb-item sb-admin" data-v="v-rrhh" data-seg="capacit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c0 1 2.5 3 6 3s6-2 6-3v-5"/></svg>Capacitaciones</button>
-      <button class="sb-item sb-admin" data-v="v-rrhh" data-seg="finiquito"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="m9 15 2 2 4-4"/></svg>Finiquitos</button>
       <button class="sb-item sb-admin" data-v="v-rrhh" data-seg="salida"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M12 8v8M8 12h8"/></svg>Salidas médicas</button>
+      <button class="sb-item sb-admin" data-v="v-rrhh" data-seg="empresa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 9h1M14 9h1M9 13h1M14 13h1M10 21v-4h4v4"/></svg>Empresa</button>
 
       <div class="sbar-grp sb-admin">Remuneraciones</div>
       <button class="sb-item sb-admin" data-v="v-remu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg>Remuneraciones</button>
@@ -1408,10 +1416,10 @@
       <div class="h-row"><h2>Recursos Humanos</h2></div>
       <div class="rrhh-segbar" style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">
         <button class="btn ghost small rrhh-seg on" data-seg="trab" style="flex:1;min-width:120px">👷 Trabajadores</button>
-        <button class="btn ghost small rrhh-seg" data-seg="doc" style="flex:1;min-width:120px">📋 Documentación</button>
-        <button class="btn ghost small rrhh-seg" data-seg="capacit" style="flex:1;min-width:120px">🎓 Capacitaciones</button>
-        <button class="btn ghost small rrhh-seg" data-seg="finiquito" style="flex:1;min-width:120px">📄 Finiquitos</button>
         <button class="btn ghost small rrhh-seg" data-seg="salida" style="flex:1;min-width:120px">Salidas médicas</button>
+        <button class="btn ghost small rrhh-seg" data-seg="empresa" style="flex:1;min-width:120px">Empresa</button>
+      </div>
+      <div class="seg trab-modo" id="trab-modo"><button class="seg-b on" data-m="trab">Fichas</button><button class="seg-b" data-m="doc">Estado documental</button>
       </div>
 
       <!-- Panel Trabajadores -->
@@ -1434,8 +1442,6 @@
       <!-- Panel Documentación / Capacitaciones (comparten UI) -->
       <div id="rrhh-doc" class="hide">
         <p class="note" style="margin:0 0 10px" id="rrhh-panel-note">Documentación estándar por trabajador <span class="cnt" id="rrhh-cnt"></span>.</p>
-        <div class="seg doc-sub" id="doc-sub"><button class="seg-b on" data-z="0">Trabajadores</button><button class="seg-b" data-z="1">Zerty · Cermaq</button></div>
-        <div id="doc-empresa-slot"></div>
         <div id="rrhh-alert"></div>
         <div class="segrow">
           <div class="segwrap"><span class="seglbl">Mostrar</span><div class="seg"><button class="seg-b rrhh-fil on" data-f="activo">Solo activos</button><button class="seg-b rrhh-fil" data-f="todos">Todos</button></div></div>
@@ -1449,6 +1455,16 @@
         <div class="h-row" style="margin-top:0"><b style="font:800 15px var(--font);color:var(--ink)">Finiquitos <span class="cnt" id="fin-cnt"></span></b><button id="fin-nuevo" class="btn small" style="width:auto">＋ Nuevo</button></div>
         <p class="note" style="margin:0 0 10px">Registro de finiquitos: trabajador, fecha, motivo, monto y el documento.</p>
         <div id="fin-list"></div>
+      </div>
+
+      <!-- Panel Empresa: documentación general + Zerty -->
+      <div id="rrhh-emp" class="hide">
+        <div class="seg doc-sub" id="doc-sub"><button class="seg-b on" data-z="0">Documentos de empresa</button><button class="seg-b" data-z="1">Zerty · Cermaq</button></div>
+        <div id="emp-docs">
+          <p class="note" style="margin:0 0 10px">Documentación general de la empresa. Sube la versión vigente y su vencimiento; lo vencido o por vencer aparece en Alertas.</p>
+          <div id="emp-list"></div>
+        </div>
+        <div id="doc-empresa-slot"></div>
       </div>
 
       <!-- Panel Salidas a atención médica -->
@@ -2176,12 +2192,12 @@
   }
   // Apartado (módulo de permisos) de cada vista / botón del menú.
   var MOD_DE_V={ 'v-alertas':'alertas','v-reporte':'informe','v-hist':'reportes','v-horas':'registro','v-asist':'asistencia','v-fotos':'multimedia','v-cuadrilla':'preparacion','v-veh':'vehiculos','v-clientes':'clientes','v-planif':'planificacion','v-plan':'calendario','v-matriz':'matriz','v-remu':'remu','v-acc':'accesos' };
-  var RRHH_MODS=['trabajadores','documentacion','capacitaciones','finiquitos','salidas'];
+  var RRHH_MODS=['trabajadores','documentacion','salidas'];
   function verRrhh(){ return RRHH_MODS.some(verMod); }
   function modDeNav(el){ var v=el.dataset.v; if(v==='v-rrhh') return el.dataset.seg?SEG_MOD[el.dataset.seg]:null; return MOD_DE_V[v]||null; }
   function verVista(v){ if(v==='v-rrhh') return verRrhh(); if(v==='v-acc') return puedeGestionar(); var m=MOD_DE_V[v]; return m?verMod(m):true; }
   function primeraVistaPermitida(){ for(var i=0;i<PERM_MODS.length;i++){ var m=PERM_MODS[i]; if(m.k!=='accesos' && verMod(m.k)) return m.v; } return null; }
-  function primerSegRrhh(){ var segs=['trab','doc','capacit','finiquito','salida']; for(var i=0;i<segs.length;i++){ if(verMod(SEG_MOD[segs[i]])) return segs[i]; } return 'trab'; }
+  function primerSegRrhh(){ var segs=['trab','salida','empresa']; for(var i=0;i<segs.length;i++){ if(verMod(SEG_MOD[segs[i]])) return segs[i]; } return 'trab'; }
   function aplicarSecciones(){
     document.querySelectorAll('.sbar .sb-item[data-v], .tabbar button[data-v]').forEach(function(x){ if(x.dataset.v==='v-acc') return; var m=modDeNav(x);
       if(m) x.classList.toggle('hide', !verMod(m)); else if(x.dataset.v==='v-rrhh') x.classList.toggle('hide', !verRrhh()); });
@@ -6393,7 +6409,7 @@
     for(var i=0;i<15;i++){ out.push(p); p=mesMas(p,-1); }
     return out.map(function(x){ return '<option value="'+x+'">'+esc(mesLbl(x))+'</option>'; }).join(''); }
   function setZt(on){
-    var d=$('rrhh-doc'); if(!d) return; d.classList.toggle('zt-on',!!on);
+    var d=$('rrhh-emp'); if(!d) return; d.classList.toggle('zt-on',!!on);
     var col=colorEmpresa('CERMAQ');
     document.querySelectorAll('#doc-sub .seg-b').forEach(function(b){ var a=(b.dataset.z==='1')===!!on; b.classList.toggle('on',a); b.style.background=(a&&b.dataset.z==='1')?col.border:''; });
     if(on) cargarZerty();
@@ -6612,7 +6628,7 @@
         var row={ periodo:ctx.periodo, cliente:ctx.cliente, servicio:ctx.servicio||null, sin_accidentes:ctx.sin, url:(res?res.url:null), autor:userEmail, created_at:new Date().toISOString() };
         sb.from('informes_accidentes').upsert(row,{onConflict:'periodo,cliente'}).then(function(r){
           if(r&&r.error){ busy(false); toast(/informes_accidentes/.test(r.error.message||'')?'PDF descargado. Falta correr informes-accidentes-alertas.sql para guardarlo.':('PDF descargado, pero no se guardó: '+r.error.message)); return; }
-          function fin(){ busy(false); toast('✓ Informe generado y guardado'); $('docgen').classList.add('hide'); DG_CTX=null; if($('rrhh-doc').classList.contains('zt-on')) cargarZerty(); cargarAlertas(); }
+          function fin(){ busy(false); toast('✓ Informe generado y guardado'); $('docgen').classList.add('hide'); DG_CTX=null; if($('rrhh-emp').classList.contains('zt-on')) cargarZerty(); cargarAlertas(); }
           if(ctx.marcar) marcarCliAcc(ctx.cliente, fin); else fin();
         }, function(){ busy(false); toast('PDF descargado, pero no se guardó.'); });
       });
@@ -7212,9 +7228,7 @@
     ]],
     ['RRHH',[
       ['trabajadores','Trabajadores','v-rrhh','trab',[['exportar','Exportar listado de trabajadores','total']]],
-      ['documentacion','Documentación','v-rrhh','doc',[]],
-      ['capacitaciones','Capacitaciones','v-rrhh','capacit',[]],
-      ['finiquitos','Finiquitos','v-rrhh','finiquito',[]],
+      ['documentacion','Documentación y Empresa','v-rrhh','empresa',[]],
       ['salidas','Salidas médicas','v-rrhh','salida',[]]
     ]],
     ['Remuneraciones',[
@@ -7226,7 +7240,7 @@
   ];
   var PERM_MODS=[]; PERM_GRUPOS.forEach(function(g){ g[1].forEach(function(m){ PERM_MODS.push({k:m[0],nombre:m[1],v:m[2],seg:m[3],acc:m[4],grupo:g[0]}); }); });
   var PERM_MOD={}; PERM_MODS.forEach(function(m){ PERM_MOD[m.k]=m; });
-  var SEG_MOD={trab:'trabajadores',doc:'documentacion',capacit:'capacitaciones',finiquito:'finiquitos',salida:'salidas',zerty:'documentacion'};
+  var SEG_MOD={trab:'trabajadores',doc:'documentacion',salida:'salidas',empresa:'documentacion',zerty:'documentacion'};
   var SUPER_EMAIL='enzo.castro@innovaservi.com';
 
   // Roles base (si la tabla roles_perm aún no existe o está vacía). Valor: nivel, o [nivel, {accion:bool}] para ajustar.
