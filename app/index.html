@@ -367,6 +367,7 @@
 
   /* ---- Reporte (vista imprimible) ---- */
   #report-view,#docgen,#dg-pick{position:fixed;inset:0;z-index:70;background:#e9ebf2;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+  #docgen{z-index:80;}   /* por encima de la ficha del trabajador (se genera desde ahí) */
   #report-view.hide,#docgen.hide,#dg-pick.hide{display:none;}
   .rd-gen{margin-left:8px;display:inline-flex;align-items:center;gap:2px;font:700 .72rem var(--font);color:var(--orange-2);background:none;border:1px solid var(--orange);border-radius:8px;padding:3px 8px;cursor:pointer;}
   .rd-gen:hover{background:var(--orange);color:#fff;}
@@ -1734,8 +1735,8 @@
       <div class="fld"><label>Notas</label><textarea id="fi-notas" placeholder="Observaciones, EPP asignado, etc."></textarea></div>
     </div>
     <div class="card">
-      <label style="display:block;font:700 13px var(--font);color:var(--ink);margin-bottom:2px;">📋 Documentación estándar (RRHH)</label>
-      <p class="note" style="margin:0 0 8px">Toca un ítem para marcarlo entregado, adjuntar el archivo y su vencimiento.</p>
+      <label style="display:block;font:700 13px var(--font);color:var(--ink);margin-bottom:2px;">Documentación y capacitaciones</label>
+      <p class="note" style="margin:0 0 4px">Toca un ítem para marcarlo entregado, adjuntar el archivo y su vencimiento, o marcar "No aplica".</p>
       <div id="fi-rrhh"></div>
     </div>
     <div class="card">
@@ -4134,7 +4135,7 @@
   // % de documentación cumplida de un trabajador (docs entregadas y vigentes / total del catálogo).
   function docPct(t){ if(!t||!t.id||typeof estadoDoc!=='function'||!(typeof RRHH_TIPOS!=='undefined'&&RRHH_TIPOS.length)) return null;
     if(typeof RRHH_LOADED==='undefined'||!RRHH_LOADED) return null;   // aún no cargó la documentación
-    var ok=0; RRHH_TIPOS.forEach(function(tp){ var e=estadoDoc(t.id,tp.slug); if(e.k==='ok'||e.k==='prox') ok++; }); return Math.round(ok/RRHH_TIPOS.length*100); }
+    return pctDe(t.id, DOC_TIPOS).pct; }
   function pctColor(p){ if(p>=100) return 'var(--ok)'; if(p>=60) return '#e8a13a'; if(p>=30) return 'var(--orange)'; return '#dc2626'; }
   // ====== Bandeja de fichas de ingreso recibidas (auto-registro público) ======
   var FICHAS_IN=[];
@@ -4720,9 +4721,18 @@
   function renderFichaRrhh(t){
     var c=$('fi-rrhh'); if(!c) return;
     if(!t||!t.id){ c.innerHTML='<p class="note" style="margin:0">Guarda el trabajador para llevar su documentación.</p>'; return; }
+    function sec(tit, tipos){ var P=pctDe(t.id, tipos);
+      return '<div class="fr-sec">'+tit+'<span class="fr-pct" style="color:'+(P.pct===100?'#0f6e56':(P.pct>=60?'#b45309':'#dc2626'))+'">'+P.ok+'/'+P.n+' · '+P.pct+'%</span></div>'+
+        '<div class="rrhh-chips">'+tipos.map(function(tp){ var e=estadoDoc(t.id,tp.slug); return '<span class="dchip '+DCLS[e.k]+'" data-t="'+t.id+'" data-s="'+tp.slug+'" style="cursor:pointer" title="'+enc(tp.nombre+' · '+e.txt)+'">'+esc(tp.corto)+' '+icoDoc(e.k)+'</span>'; }).join('')+'</div>'; }
     function pinta(){
-      c.innerHTML='<div class="rrhh-chips">'+RRHH_TIPOS.map(function(tp){ var e=estadoDoc(t.id,tp.slug); var ic=(e.k==='ok'?'✔':(e.k==='venc'?'⛔':(e.k==='prox'?'⏰':'○'))); return '<span class="dchip '+DCLS[e.k]+'" data-t="'+t.id+'" data-s="'+tp.slug+'" style="cursor:pointer">'+esc(tp.corto)+' '+ic+'</span>'; }).join('')+'</div>';
+      var T=pctDe(t.id, DOC_TIPOS);
+      var gen=['contrato','perfil','datos','epp','odi'].filter(function(k){ return typeof DOC_GEN!=='undefined'&&DOC_GEN[k]; });
+      c.innerHTML='<div style="display:flex;align-items:baseline;gap:8px;margin-top:6px"><b style="font:800 22px var(--font);color:'+(T.pct===100?'#0f6e56':(T.pct>=60?'#b45309':'#dc2626'))+'">'+T.pct+'%</b><span class="note" style="margin:0">al día · '+T.ok+' de '+T.n+' que le aplican</span></div>'+
+        sec('Documentación', RRHH_TIPOS)+sec('Capacitaciones y cursos', CAP_TIPOS)+
+        '<div class="fr-buk">'+svgI('<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>',14)+'<span style="flex:1">Ingreso firmado en Buk: contrato, anexos, RIOHS, ODI, EPP, inducción, Ley Karin. No cuenta en el %.</span></div>'+
+        (gen.length?'<div class="fr-gen">'+gen.map(function(k){ return '<button type="button" class="btn ghost small fr-g" data-g="'+k+'" style="width:auto">'+svgI(ICO.gen,14)+esc(DOC_GEN[k].nombre)+'</button>'; }).join('')+'</div>':'');
       c.querySelectorAll('.dchip[data-t]').forEach(function(el){ el.addEventListener('click',function(){ abrirDocRrhh(+el.dataset.t, el.dataset.s); }); });
+      c.querySelectorAll('.fr-g').forEach(function(b){ b.addEventListener('click',function(){ generarDoc(t.id, b.dataset.g); }); });
     }
     pinta();
     if(sb) sb.from('rrhh_docs').select('*').eq('trabajador_id',t.id).then(function(r){ if(r&&!r.error){ (r.data||[]).forEach(function(d){ RRHH_D[d.trabajador_id+'|'+d.tipo]=d; }); pinta(); } });
@@ -6016,32 +6026,37 @@
   }
 
   // ====== RRHH · Documentación (solo admin) ======
+  // Documentación que llevamos en InnovaGestión (lo de ingreso se firma en Buk).
+  // na:true = se puede marcar "No aplica" en la ficha y sale del % de esa persona.
   var RRHH_TIPOS=[
-    {slug:'cedula',nombre:'Cédula de identidad',corto:'Cédula',vence:false},
+    {slug:'cedula',nombre:'Cédula de identidad (carnet)',corto:'Cédula',vence:false},
     {slug:'antecedentes',nombre:'Certificado de antecedentes',corto:'Antecedentes',vence:false},
-    {slug:'contrato',nombre:'Contrato',corto:'Contrato',vence:false},
-    {slug:'perfil',nombre:'Perfil de cargo',corto:'Perfil cargo',vence:false},
-    {slug:'datos',nombre:'Ficha datos del trabajador',corto:'Datos',vence:false},
-    {slug:'riohs',nombre:'Recepción RIOHS',corto:'RIOHS',vence:false},
-    {slug:'epp',nombre:'Registro entrega EPP',corto:'Entrega EPP',vence:false},
-    {slug:'odi',nombre:'ODI (Obligación de informar)',corto:'ODI',vence:false},
-    {slug:'salud',nombre:'Declaración de salud',corto:'Salud',vence:false},
-    {slug:'induccion',nombre:'Inducción laboral',corto:'Inducción',vence:false},
-    {slug:'accidentes',nombre:'Procedimiento en caso de accidentes',corto:'Accidentes',vence:false},
-    {slug:'pts_extintores',nombre:'PTS uso de extintores',corto:'PTS extintores',vence:false},
-    {slug:'pts_quimicos',nombre:'PTS manejo de químicos',corto:'PTS químicos',vence:false},
-    {slug:'pts_altura',nombre:'PTS trabajo en altura',corto:'PTS altura',vence:false},
-    {slug:'pts_confinados',nombre:'PTS espacios confinados',corto:'PTS confinados',vence:false},
-    {slug:'examen_altura',nombre:'Examen de altura',corto:'Ex. altura',vence:true}
+    {slug:'pts_quimicos',nombre:'PTS manejo de químicos',corto:'PTS químicos',vence:false,na:true},
+    {slug:'pts_extintores',nombre:'PTS uso de extintores',corto:'PTS extintores',vence:false,na:true},
+    {slug:'pts_altura',nombre:'PTS trabajo en altura',corto:'PTS altura',vence:false,na:true},
+    {slug:'pts_confinados',nombre:'PTS espacios confinados',corto:'PTS confinados',vence:false,na:true},
+    {slug:'examen_altura',nombre:'Examen de altura',corto:'Ex. altura',vence:true,na:true}
   ];
-  // Capacitaciones (registros de capacitación; algunas se renuevan). Distinto de los documentos firmados de ingreso.
+  // Capacitaciones y cursos (algunos se renuevan).
   var CAP_TIPOS=[
-    {slug:'cap_epp',nombre:'Capacitación uso de EPP',corto:'Uso EPP',vence:false},
-    {slug:'cap_primeros',nombre:'Primeros auxilios',corto:'1° auxilios',vence:true},
-    {slug:'cap_funciones',nombre:'Acorde a sus funciones',corto:'Funciones',vence:false},
-    {slug:'cap_karin',nombre:'Difusión Ley Karin',corto:'Ley Karin',vence:false}
+    {slug:'cap_barcos',nombre:'Trabajo seguro en barcos',corto:'Barcos',vence:false,na:true},
+    {slug:'cap_frigo',nombre:'Trabajo en cámaras frigoríficas',corto:'Cámaras frigo',vence:false,na:true},
+    {slug:'cap_primeros',nombre:'Primeros auxilios',corto:'1° auxilios',vence:true,na:true}
   ];
-  function rrhhTipo(s){ var L=RRHH_TIPOS.concat(CAP_TIPOS); for(var i=0;i<L.length;i++) if(L[i].slug===s) return L[i]; return {slug:s,nombre:s,corto:s,vence:false}; }
+  // Firmados en Buk: no cuentan en el %; se conservan para sus nombres y para el generador de documentos.
+  var BUK_TIPOS=[
+    {slug:'contrato',nombre:'Contrato',corto:'Contrato'},{slug:'perfil',nombre:'Perfil de cargo',corto:'Perfil cargo'},
+    {slug:'datos',nombre:'Ficha datos del trabajador',corto:'Datos'},{slug:'riohs',nombre:'Recepción RIOHS',corto:'RIOHS'},
+    {slug:'epp',nombre:'Registro entrega EPP',corto:'Entrega EPP'},{slug:'odi',nombre:'ODI (Obligación de informar)',corto:'ODI'},
+    {slug:'salud',nombre:'Declaración de salud',corto:'Salud'},{slug:'induccion',nombre:'Inducción laboral',corto:'Inducción'},
+    {slug:'accidentes',nombre:'Procedimiento en caso de accidentes',corto:'Accidentes'},{slug:'cap_epp',nombre:'Capacitación uso de EPP',corto:'Uso EPP'},
+    {slug:'cap_funciones',nombre:'Acorde a sus funciones',corto:'Funciones'},{slug:'cap_karin',nombre:'Difusión Ley Karin',corto:'Ley Karin'}
+  ];
+  var DOC_TIPOS=RRHH_TIPOS.concat(CAP_TIPOS);   // lo que cuenta para el % al día
+  function rrhhTipo(s){ var L=DOC_TIPOS.concat(BUK_TIPOS); for(var i=0;i<L.length;i++) if(L[i].slug===s) return L[i]; return {slug:s,nombre:s,corto:s,vence:false}; }
+  // % al día = vigentes (entregado o por vencer) ÷ los que le aplican (se excluye "No aplica").
+  function pctDe(tid, tipos){ var ok=0,n=0; (tipos||DOC_TIPOS).forEach(function(tp){ var e=estadoDoc(tid,tp.slug); if(e.k==='na') return; n++; if(e.k==='ok'||e.k==='prox') ok++; });
+    return {ok:ok, n:n, pct:n?Math.round(ok/n*100):100}; }
   var RRHH_T=[], RRHH_D={}, RRHH_LOADED=false, RRHH_FILTRO='activo', RRHH_VISTA='doc', RRHH_CAT=RRHH_TIPOS;
   function diffDiasV(v){ if(!v) return null; return Math.floor((new Date(v+'T12:00:00')-new Date())/86400000); }
   // Repara cédulas donde el reverso quedó guardado como frente (url apunta a .../reverso.* y no hay url2):
@@ -6079,22 +6094,27 @@
       if(typeof cargarFichasInbox==='function') cargarFichasInbox();
     });
   }
+  // RRHH: Trabajadores (Fichas | Estado documental) · Salidas médicas · Empresa (documentos de empresa | Zerty).
+  // 'capacit' y 'finiquito' quedan como alias (Finiquitos se lleva en Buk).
   function rrhhSeg(seg){
-    var zt=false; if(seg==='zerty'){ seg='doc'; zt=true; }
-    document.querySelectorAll('.rrhh-seg').forEach(function(x){ x.classList.toggle('on',x.dataset.seg===seg); });
+    var zt=false; if(seg==='zerty'){ seg='empresa'; zt=true; }
+    if(seg==='capacit'||seg==='finiquito') seg='doc';
+    var top=(seg==='doc')?'trab':seg;
+    document.querySelectorAll('.rrhh-seg').forEach(function(x){ x.classList.toggle('on',x.dataset.seg===top); });
+    document.querySelectorAll('.sbar .sb-item[data-seg]').forEach(function(x){ x.classList.toggle('on',x.dataset.seg===top); });
+    $('trab-modo').classList.toggle('hide', top!=='trab' || !verMod(SEG_MOD.doc));
+    $('trab-modo').querySelectorAll('.seg-b').forEach(function(b){ b.classList.toggle('on', b.dataset.m===seg); });
     $('rrhh-trab').classList.toggle('hide', seg!=='trab');
-    $('rrhh-doc').classList.toggle('hide', seg!=='doc' && seg!=='capacit');
-    $('rrhh-fin').classList.toggle('hide', seg!=='finiquito');
+    $('rrhh-doc').classList.toggle('hide', seg!=='doc');
+    $('rrhh-fin').classList.add('hide');
     $('rrhh-sal').classList.toggle('hide', seg!=='salida');
-    if($('doc-sub')) $('doc-sub').classList.toggle('hide', seg!=='doc');
-    if(seg!=='doc') $('rrhh-doc').classList.remove('zt-on');
-    if(seg==='doc'){ RRHH_CAT=RRHH_TIPOS; RRHH_VISTA='doc'; $('rrhh-panel-note').innerHTML='Documentación estándar por trabajador <span class="cnt" id="rrhh-cnt"></span>. Marca lo entregado, adjunta el archivo y su vencimiento.'; renderRrhh(); }
-    else if(seg==='capacit'){ RRHH_CAT=CAP_TIPOS; RRHH_VISTA='doc'; $('rrhh-panel-note').innerHTML='Capacitaciones por trabajador <span class="cnt" id="rrhh-cnt"></span>. Marca la fecha, el vencimiento y adjunta el registro.'; renderRrhh(); }
-    else if(seg==='finiquito'){ renderFin(); }
+    $('rrhh-emp').classList.toggle('hide', seg!=='empresa');
+    if(seg==='doc'){ RRHH_CAT=DOC_TIPOS; $('rrhh-panel-note').innerHTML='Documentación y capacitaciones por trabajador <span class="cnt" id="rrhh-cnt"></span>. Lo firmado en Buk no se lleva aquí.'; renderRrhh(); }
     else if(seg==='salida'){ renderSal(); }
-    if(seg==='doc') setZt(zt);
+    else if(seg==='empresa'){ setZt(zt); }
   }
   document.querySelectorAll('.rrhh-seg').forEach(function(b){ b.addEventListener('click',function(){ rrhhSeg(b.dataset.seg); }); });
+  $('trab-modo').querySelectorAll('.seg-b').forEach(function(b){ b.addEventListener('click',function(){ rrhhSeg(b.dataset.m); }); });
 
   // ---- Finiquitos ----
   var FIN=[];
@@ -6222,6 +6242,67 @@
     $('rrhh-edit').classList.remove('hide'); $('rrhh-edit').scrollTop=0;
   }
   $('sal-nueva').addEventListener('click',function(){ abrirSal(null); });
+
+  // ---- Empresa: documentación general (por carpeta; cada documento guarda versiones, manda la más reciente) ----
+  var EMP_CARPETAS=[
+    {k:'legal', n:'Legal', tipos:[['erut','e-RUT de la empresa',false],['escritura','Escritura / estatutos',false],['vigencia','Certificado de vigencia',true]]},
+    {k:'laboral', n:'Laboral y previsional', tipos:[['f30_1','Certificado F30-1 (cumplimiento laboral)',true],['f30','Certificado F30 (antecedentes laborales)',true],['mutual','Certificado de adhesión a la mutual',false],['tasa','Certificado de tasa de cotización',true]]},
+    {k:'prev', n:'Prevención de riesgos', tipos:[['riohs','Reglamento Interno (RIOHS) vigente',false],['iper','Matriz de riesgos (IPER)',false],['programa','Programa de trabajo preventivo',false],['emergencia','Plan de emergencia',false],['proc_acc','Procedimiento en caso de accidentes',false],['pts','Procedimientos de trabajo seguro (PTS)',false]]}
+  ];
+  var EMP_D=[];
+  function empUlt(tipo){ var L=EMP_D.filter(function(d){ return d.tipo===tipo; }); L.sort(function(a,b){ return (b.fecha||b.created_at||'')<(a.fecha||a.created_at||'')?-1:1; }); return {ult:L[0]||null, n:L.length, todos:L}; }
+  function renderEmp(){ if(!sb){ pintarEmp(); return; } sb.from('empresa_docs').select('*').order('created_at',{ascending:false}).limit(2000).then(function(r){ EMP_D=(r&&!r.error&&r.data)||[]; pintarEmp(); }, function(){ pintarEmp(); }); }
+  function pintarEmp(){
+    var c=$('emp-list'); if(!c) return;
+    var conocidos={}; EMP_CARPETAS.forEach(function(cp){ cp.tipos.forEach(function(x){ conocidos[x[0]]=1; }); });
+    function fila(tipo, nombre, vence){ var E=empUlt(tipo), u=E.ult, chip;
+      if(!u) chip='<span class="dchip pend">Pendiente</span>';
+      else if(u.vencimiento){ var n=diffDiasV(u.vencimiento); chip=n<0?'<span class="dchip venc">Vencido</span>':(n<=30?'<span class="dchip prox">Vence '+n+'d</span>':'<span class="dchip ok">Vigente</span>'); }
+      else chip='<span class="dchip ok">Cargado</span>';
+      return '<div class="emp-row" data-tipo="'+enc(tipo)+'" data-nom="'+enc(nombre)+'" data-v="'+(vence?1:0)+'"><div class="en"><b>'+esc(nombre)+'</b><span>'+(u?('Actualizado '+esc(fechaCorta(u.fecha||String(u.created_at||'').slice(0,10)))+(u.vencimiento?' · vence '+esc(fechaCorta(u.vencimiento)):'')+(E.n>1?' · '+E.n+' versiones':'')):(vence?'Con vencimiento':'Sin archivo'))+'</span></div>'+chip+
+        (u&&u.url?'<a href="'+esc(u.url)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:var(--orange-2);font-weight:700;font-size:.8rem">ver</a>':'')+'</div>'; }
+    var otros={}; EMP_D.forEach(function(d){ if(!conocidos[d.tipo]) otros[d.tipo]=d.nombre||d.tipo; });
+    c.innerHTML=EMP_CARPETAS.map(function(cp){ return '<div class="card" style="padding:12px 14px"><div class="rd-grp" style="margin-top:0">'+esc(cp.n)+'</div>'+cp.tipos.map(function(x){ return fila(x[0],x[1],x[2]); }).join('')+'</div>'; }).join('')+
+      '<div class="card" style="padding:12px 14px"><div class="rd-grp" style="margin-top:0">Otros documentos</div>'+Object.keys(otros).map(function(k){ return fila(k, otros[k], false); }).join('')+
+      '<button id="emp-otro" type="button" class="btn ghost small" style="width:auto;margin-top:8px">＋ Agregar otro documento</button></div>';
+    c.querySelectorAll('.emp-row').forEach(function(el){ el.addEventListener('click',function(){ abrirEmpDoc(el.dataset.tipo, el.dataset.nom, el.dataset.v==='1'); }); });
+    $('emp-otro').addEventListener('click',function(){ abrirEmpDoc(null, '', false); });
+  }
+  function abrirEmpDoc(tipo, nombre, vence){
+    var E=tipo?empUlt(tipo):{ult:null,n:0,todos:[]}, nuevo=!tipo;
+    $('re-title').textContent=nuevo?'Nuevo documento de empresa':nombre;
+    var hist=E.todos.map(function(d){ return '<div class="rrhh-pers" style="cursor:default"><span class="rp-nm">'+esc(fechaCorta(d.fecha||String(d.created_at||'').slice(0,10)))+(d.vencimiento?' · vence '+esc(fechaCorta(d.vencimiento)):'')+(d.nota?' · '+esc(d.nota):'')+'</span>'+(d.url?'<a href="'+esc(d.url)+'" target="_blank" rel="noopener" style="color:var(--orange-2);font-weight:700;font-size:.8rem">ver</a>':'')+'<button type="button" class="ed-del" data-id="'+d.id+'" title="Eliminar versión" style="border:none;background:none;color:#dc2626;cursor:pointer;font:800 14px var(--font)">×</button></div>'; }).join('');
+    $('re-body').innerHTML='<div class="card">'+
+      (nuevo?'<div class="fld"><label>Nombre del documento</label><input type="text" id="ed-nom" placeholder="Ej: Póliza de seguro, acta comité paritario…"></div>':'')+
+      '<p class="note" style="margin:0 0 8px">'+(E.ult?'Sube la nueva versión; la anterior queda en el historial.':'Sube el archivo vigente.')+'</p>'+
+      '<div class="grid2"><div class="fld" style="margin:0"><label>Fecha del documento</label><input type="date" id="ed-fecha" value="'+todayISO()+'"></div><div class="fld" style="margin:0"><label>Vence'+(vence?'':' (si aplica)')+'</label><input type="date" id="ed-venc"></div></div>'+
+      '<div class="fld" style="margin-top:10px"><label>Archivo</label><div><label class="catadd" style="display:inline-block">'+svgI(ICO.up,15)+'Subir archivo<input type="file" id="ed-file" accept="image/*,application/pdf" hidden></label> <span id="ed-fn" class="note"></span></div></div>'+
+      '<div class="fld"><label>Nota</label><input type="text" id="ed-nota" placeholder="Opcional"></div>'+
+      '<button id="ed-save" class="btn" style="width:100%;margin-top:8px">'+svgI(ICO.save)+'Guardar</button>'+
+      (hist?'<div class="rd-grp">Historial</div>'+hist:'')+
+    '</div>';
+    var file=null;
+    $('ed-file').addEventListener('change',function(){ file=this.files&&this.files[0]; $('ed-fn').textContent=file?('· '+file.name):''; });
+    $('ed-save').addEventListener('click',function(){
+      var nom=nuevo?($('ed-nom').value.trim()):nombre; if(!nom){ toast('Escribe el nombre del documento.'); return; }
+      if(!file){ toast('Sube el archivo.'); return; }
+      var tp=tipo||('otro_'+slug(nom).toLowerCase());
+      var cp=EMP_CARPETAS.filter(function(c){ return c.tipos.some(function(x){ return x[0]===tp; }); })[0];
+      var row={ carpeta:(cp?cp.k:'otros'), tipo:tp, nombre:nom, fecha:($('ed-fecha').value||null), vencimiento:($('ed-venc').value||null), nota:($('ed-nota').value.trim()||null), autor:userEmail };
+      busy(true,'Subiendo…');
+      var ext=((file.name||'').split('.').pop()||'pdf').toLowerCase();
+      subirArchivo(file,'empresa/'+row.carpeta, tp+'_'+(row.fecha||todayISO())+'.'+ext).then(function(res){
+        if(!res||!res.url){ busy(false); toast('No se pudo subir el archivo.'); return; }
+        row.url=res.url; busy(true,'Guardando…');
+        sb.from('empresa_docs').insert(row).then(function(r){ busy(false);
+          if(r&&r.error){ toast('No se pudo guardar: '+r.error.message); return; }
+          toast('✓ Guardado'); $('rrhh-edit').classList.add('hide'); renderEmp(); }, function(){ busy(false); toast('No se pudo guardar.'); });
+      }, function(){ busy(false); toast('No se pudo subir el archivo.'); });
+    });
+    $('re-body').querySelectorAll('.ed-del').forEach(function(b){ b.addEventListener('click',function(){ if(!confirm('¿Eliminar esta versión?')) return;
+      busy(true,'Eliminando…'); sb.from('empresa_docs').delete().eq('id',+b.dataset.id).then(function(){ busy(false); toast('✓ Eliminado'); $('rrhh-edit').classList.add('hide'); renderEmp(); }, function(){ busy(false); }); }); });
+    $('rrhh-edit').classList.remove('hide'); $('rrhh-edit').scrollTop=0;
+  }
 
   // Documento: Registro de salida a atención médica (con nuestro membrete).
   function docSalida(s){
@@ -6412,7 +6493,7 @@
     var d=$('rrhh-emp'); if(!d) return; d.classList.toggle('zt-on',!!on);
     var col=colorEmpresa('CERMAQ');
     document.querySelectorAll('#doc-sub .seg-b').forEach(function(b){ var a=(b.dataset.z==='1')===!!on; b.classList.toggle('on',a); b.style.background=(a&&b.dataset.z==='1')?col.border:''; });
-    if(on) cargarZerty();
+    if(on) cargarZerty(); else renderEmp();
   }
   function cargarZerty(){ if(!sb) return;
     Promise.all([ new Promise(function(res){ cargarClientes(res); }),
@@ -6674,14 +6755,15 @@
       sb.from('faena_plan').select('evento_id,fecha,personas').gte('fecha',hoy).lte('fecha',en14).limit(500),
       sb.from('registros').select('id,evento_id,faenas,confirmado').gte('fecha',isoMas(-75)).limit(1500),
       sb.from('eventos').select('id,fecha,fecha_fin,titulo,ubicacion,sitio').gte('fecha',isoMas(-75)).lte('fecha',en14).limit(800),
-      sb.from('plantillas').select('*').limit(500)
+      sb.from('plantillas').select('*').limit(500),
+      sb.from('empresa_docs').select('*').limit(2000)
     ]).then(function(rs){
       function D(i){ return (rs[i]&&!rs[i].error&&rs[i].data)||[]; }
       var trabs=D(0).filter(function(t){ return t.estado!=='inactivo'; }), tById={}, tByName={}; trabs.forEach(function(t){ tById[t.id]=t; tByName[normName(t.nombre)]=t; });
       if(D(9).length) PLANT=D(9);
       // 1) Documentos vencidos / por vencer (≤30 días) de trabajadores activos
       var docs=[], vencPorT={}, entregado={};
-      D(1).forEach(function(d){ var t=tById[d.trabajador_id]; if(!t||d.estado!=='entregado') return; entregado[d.trabajador_id+'|'+d.tipo]=1;
+      D(1).forEach(function(d){ var t=tById[d.trabajador_id]; if(t&&d.estado==='na'){ entregado[d.trabajador_id+'|'+d.tipo]=1; return; } if(!t||d.estado!=='entregado') return; entregado[d.trabajador_id+'|'+d.tipo]=1;
         if(!d.vencimiento) return; var n=diasHasta(d.vencimiento); if(n==null||n>30) return;
         docs.push({tid:t.id, nombre:t.nombre, tipo:d.tipo, n:n, venc:d.vencimiento}); if(n<0){ (vencPorT[t.id]=vencPorT[t.id]||[]).push(rrhhTipo(d.tipo).corto); } });
       docs.sort(function(a,b){ return a.n-b.n; });
@@ -6689,7 +6771,7 @@
       var evById={}; D(8).forEach(function(e){ evById[e.id]=e; });
       var asig=[], vistos={};
       D(6).forEach(function(p){ (p.personas||[]).forEach(function(pp){ var t=tByName[normName(pp.nombre)]; if(!t) return; var k=t.id+'|'+p.evento_id; if(vistos[k]) return; vistos[k]=1;
-        var venc=vencPorT[t.id]||[], pend=RRHH_TIPOS.filter(function(tp){ return !entregado[t.id+'|'+tp.slug]; }).length;
+        var venc=vencPorT[t.id]||[], pend=DOC_TIPOS.filter(function(tp){ return !entregado[t.id+'|'+tp.slug]; }).length;
         if(!venc.length && !pend) return; var e=evById[p.evento_id]||{};
         asig.push({nombre:t.nombre, venc:venc, pend:pend, fecha:p.fecha||e.fecha, faena:(e.titulo||'Faena')+(e.ubicacion?(' · '+e.ubicacion):'')}); }); });
       asig.sort(function(a,b){ return (b.venc.length-a.venc.length) || ((a.fecha||'')<(b.fecha||'')?-1:1); });
@@ -6705,9 +6787,12 @@
       function regDe(id){ id=String(id); return regs.filter(function(x){ return String(x.evento_id)===id || (x.faenas||[]).some(function(f){ return String(f.id)===id; }); }); }
       var reps=D(8).filter(function(e){ var f=evFin(e); return f<hoy && f>=hace60 && pideReporte(e); }).map(function(e){ var rr=regDe(e.id), ok=rr.some(function(x){ return x.confirmado; });
         return ok?null:{e:e, reg:rr[0]||null}; }).filter(Boolean).sort(function(a,b){ return evFin(a.e)<evFin(b.e)?1:-1; });
-      var faltanDocs=trabs.filter(function(t){ return RRHH_TIPOS.some(function(tp){ return !entregado[t.id+'|'+tp.slug]; }); }).length;
-      AL={docs:docs, asig:asig, vehs:vehs, infs:infs, prev:prev, reps:reps, faltanDocs:faltanDocs, nTrabs:trabs.length, sinSql:!!(rs[5]&&rs[5].error)};
-      setAlNum(docs.length + asig.filter(function(a){ return a.venc.length; }).length + vehs.length + infs.length + reps.length);
+      var faltanDocs=trabs.filter(function(t){ return DOC_TIPOS.some(function(tp){ return !entregado[t.id+'|'+tp.slug]; }); }).length;
+      // 6) Documentos de empresa: por tipo manda la versión más reciente; vencidos o por vencer (≤30 días)
+      var eu={}; D(10).forEach(function(d){ var k=d.tipo; if(!eu[k] || (d.fecha||d.created_at||'')>(eu[k].fecha||eu[k].created_at||'')) eu[k]=d; });
+      var emps=Object.keys(eu).map(function(k){ var d=eu[k]; return d.vencimiento?{nombre:d.nombre||k, n:diasHasta(d.vencimiento), venc:d.vencimiento}:null; }).filter(function(x){ return x&&x.n!=null&&x.n<=30; }).sort(function(a,b){ return a.n-b.n; });
+      AL={docs:docs, asig:asig, vehs:vehs, infs:infs, prev:prev, reps:reps, emps:emps, faltanDocs:faltanDocs, nTrabs:trabs.length, sinSql:!!(rs[5]&&rs[5].error)};
+      setAlNum(docs.length + asig.filter(function(a){ return a.venc.length; }).length + vehs.length + infs.length + reps.length + emps.length);
       pintarAlertas();
     });
   }
@@ -6730,12 +6815,15 @@
     h+=sec('Asignados a faenas próximas con documentación incompleta', IPER, AL.asig.filter(function(a){ return a.venc.length; }).length,
       AL.asig.map(function(a,i){ return '<div class="al-row"><div class="al-t"><b>'+esc(a.nombre)+'</b><div class="note">'+esc(fechaCorta(a.fecha))+' · '+esc(a.faena)+'</div></div>'+(a.venc.length?'<span class="dchip venc">Vencido: '+esc(a.venc.join(', '))+'</span>':'')+(a.pend?'<span class="dchip prox">'+a.pend+' pendiente'+(a.pend>1?'s':'')+'</span>':'')+'<button class="btn ghost small al-per" data-i="'+i+'">Ver</button></div>'; }).join(''),
       'Todos los asignados de los próximos 14 días tienen su documentación al día.');
+    h+=sec('Empresa: documentos vencidos o por vencer', IVEH, (AL.emps||[]).length,
+      (AL.emps||[]).map(function(x){ return '<div class="al-row al-emp" style="cursor:pointer"><div class="al-t"><b>'+esc(x.nombre)+'</b><div class="note">vence '+esc(fechaCorta(x.venc))+'</div></div>'+chipN(x.n)+'</div>'; }).join(''),
+      'Documentos de empresa al día.');
     h+=sec('Vehículos: documentos vencidos o por vencer', IVEH, AL.vehs.length,
       AL.vehs.map(function(v){ return '<div class="al-row al-veh" style="cursor:pointer"><div class="al-t"><b>'+esc(v.veh)+'</b><div class="note">'+esc(v.cat)+' · '+esc(fechaCorta(v.venc))+'</div></div>'+chipN(v.n)+'</div>'; }).join(''),
       'Permisos, SOAP y revisiones al día.');
     if(AL.faltanDocs) h+='<div class="al-sec" style="display:flex;align-items:center;gap:10px"><div style="flex:1"><b style="color:var(--ink)">Documentación incompleta</b><div class="note" style="margin:2px 0 0">'+AL.faltanDocs+' de '+AL.nTrabs+' trabajadores activos tienen documentos estándar pendientes.</div></div><button class="btn ghost small" id="al-verdocs" style="width:auto">Ver</button></div>';
     c.innerHTML=h;
-    var tot=AL.docs.length+AL.vehs.length+AL.infs.length+AL.reps.length+AL.asig.filter(function(a){ return a.venc.length; }).length;
+    var tot=AL.docs.length+AL.vehs.length+AL.infs.length+AL.reps.length+(AL.emps||[]).length+AL.asig.filter(function(a){ return a.venc.length; }).length;
     $('al-cnt').textContent=tot?(tot+' pendiente'+(tot>1?'s':'')):'Todo al día';
     c.querySelectorAll('.al-inf').forEach(function(b){ b.addEventListener('click',function(){ cargarClientes(function(){ abrirAccForm(AL.infs[+b.dataset.i], AL.prev, null); }); }); });
     c.querySelectorAll('.al-rep').forEach(function(b){ b.addEventListener('click',function(){ var r=AL.reps[+b.dataset.i]; if(!r) return;
@@ -6748,6 +6836,7 @@
         if(!RRHH_T.some(function(t){ return t.id===d.tid; }) && !(TRAB||[]).some(function(t){ return t.id===d.tid; })) RRHH_T.push({id:d.tid, nombre:d.nombre});
         abrirDocRrhh(d.tid, d.tipo); }); }); });
     c.querySelectorAll('.al-per').forEach(function(b){ b.addEventListener('click',function(){ var a=AL.asig[+b.dataset.i]; if(!a) return; abrirVista('v-rrhh'); rrhhSeg('doc'); RRHH_VISTA='persona'; document.querySelectorAll('.rrhh-vis').forEach(function(x){ x.classList.toggle('on',x.dataset.v==='persona'); }); cargarRrhh(); }); });
+    c.querySelectorAll('.al-emp').forEach(function(el){ el.addEventListener('click',function(){ abrirVista('v-rrhh'); rrhhSeg('empresa'); }); });
     c.querySelectorAll('.al-veh').forEach(function(el){ el.addEventListener('click',function(){ abrirVista('v-veh'); }); });
     if($('al-verdocs')) $('al-verdocs').addEventListener('click',function(){ abrirVista('v-rrhh'); rrhhSeg('doc'); cargarRrhh(); });
   }
@@ -7024,17 +7113,18 @@
   });
   function rrhhTrabs(){ return RRHH_T.filter(function(t){ return RRHH_FILTRO==='todos' || t.estado!=='inactivo'; }).sort(function(a,b){ return (a.nombre||'').localeCompare(b.nombre||''); }); }
   // Estado calculado de un documento: pend | ok | prox | venc
-  function estadoDoc(tid,s){ var d=RRHH_D[tid+'|'+s]; if(!d||d.estado!=='entregado') return {k:'pend',txt:'Pendiente'};
+  function estadoDoc(tid,s){ var d=RRHH_D[tid+'|'+s]; if(d&&d.estado==='na') return {k:'na',txt:'No aplica',doc:d}; if(!d||d.estado!=='entregado') return {k:'pend',txt:'Pendiente'};
     var tp=rrhhTipo(s);
     if(d.vencimiento){ var n=diffDiasV(d.vencimiento); if(n<0) return {k:'venc',txt:'Vencido',doc:d}; if(n<=30) return {k:'prox',txt:'Vence '+n+'d',doc:d}; }
     return {k:'ok',txt:'Entregado',doc:d};
   }
-  var DCLS={pend:'pend',ok:'ok',venc:'venc',prox:'prox'};
+  var DCLS={pend:'pend',ok:'ok',venc:'venc',prox:'prox',na:'na'};
+  function icoDoc(k){ return k==='ok'?'✔':(k==='venc'?'⛔':(k==='prox'?'⏰':(k==='na'?'–':'○'))); }
   function renderRrhh(){
     var trabs=rrhhTrabs(), N=trabs.length;
     $('rrhh-cnt').textContent=N+(N===1?' persona':' personas');
     var venc=0,prox=0,pend=0;
-    trabs.forEach(function(t){ RRHH_CAT.forEach(function(tp){ var e=estadoDoc(t.id,tp.slug); if(e.k==='pend')pend++; else if(e.k==='venc')venc++; else if(e.k==='prox')prox++; }); });
+    trabs.forEach(function(t){ RRHH_CAT.forEach(function(tp){ var e=estadoDoc(t.id,tp.slug); if(e.k==='pend')pend++; else if(e.k==='venc')venc++; else if(e.k==='prox')prox++; }); });   // 'na' no suma
     $('rrhh-alert').innerHTML=(venc||prox||pend)?('<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">'+(venc?'<span class="dchip venc">⛔ '+venc+' vencidos</span>':'')+(prox?'<span class="dchip prox">⏰ '+prox+' por vencer</span>':'')+'<span class="dchip pend">⏳ '+pend+' pendientes</span></div>'):'';
     var cont=$('rrhh-list');
     if(!N){ cont.innerHTML='<div class="empty"><div class="big">📋</div>No hay trabajadores.</div>'; return; }
@@ -7067,14 +7157,15 @@
   }
   function renderRrhhDoc(trabs,cont){
     cont.innerHTML=RRHH_CAT.map(function(tp,ti){
-      var ok=0,vc=0; trabs.forEach(function(t){ var e=estadoDoc(t.id,tp.slug); if(e.k==='ok'||e.k==='prox')ok++; if(e.k==='venc')vc++; });
-      var pct=trabs.length?Math.round(ok/trabs.length*100):0;
+      var ok=0,vc=0,ap=0; trabs.forEach(function(t){ var e=estadoDoc(t.id,tp.slug); if(e.k==='na') return; ap++; if(e.k==='ok'||e.k==='prox')ok++; if(e.k==='venc')vc++; });
+      var pct=ap?Math.round(ok/ap*100):100;
+      var grp=(ti===0)?'<div class="rd-grp">Documentación</div>':(tp===CAP_TIPOS[0]?'<div class="rd-grp">Capacitaciones y cursos</div>':'');
       var rows=trabs.map(function(t){ var e=estadoDoc(t.id,tp.slug);
         var ver=(e.doc&&e.doc.url)?' <a href="'+esc(e.doc.url)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:var(--orange-2);font-weight:700;font-size:.8rem">ver</a>':'';
         return '<div class="rrhh-pers" data-t="'+t.id+'" data-s="'+tp.slug+'"><span class="rp-nm">'+esc(t.nombre||'—')+'</span><span class="dchip '+DCLS[e.k]+'">'+e.txt+'</span>'+ver+'</div>';
       }).join('');
       var genBtn=(typeof DOC_GEN!=='undefined'&&DOC_GEN[tp.slug])?'<button class="rd-gen" data-gen="'+tp.slug+'" title="Generar para varios">'+svgI(ICO.gen,15)+'Generar</button>':'';
-      return '<div class="rrhh-doc"><div class="rd-top" data-exp="rd'+ti+'"><span class="rd-nm">'+esc(tp.nombre)+(tp.vence?' <span class="note" style="font-weight:600;font-size:.7rem">(vence)</span>':'')+'</span><span class="dchip '+(pct===100?'ok':'pend')+'">'+ok+'/'+trabs.length+'</span>'+(vc?' <span class="dchip venc">'+vc+'</span>':'')+genBtn+'</div><div class="rrhh-bar"><i style="width:'+pct+'%"></i></div><div class="hide" id="rd'+ti+'" style="margin-top:8px">'+rows+'</div></div>';
+      return grp+'<div class="rrhh-doc"><div class="rd-top" data-exp="rd'+ti+'"><span class="rd-nm">'+esc(tp.nombre)+(tp.vence?' <span class="note" style="font-weight:600;font-size:.7rem">(vence)</span>':'')+'</span>'+(ap?'<span class="dchip '+(pct===100?'ok':'pend')+'">'+ok+'/'+ap+'</span>':'<span class="dchip na">No aplica</span>')+(vc?' <span class="dchip venc">'+vc+'</span>':'')+genBtn+'</div><div class="rrhh-bar"><i style="width:'+pct+'%"></i></div><div class="hide" id="rd'+ti+'" style="margin-top:8px">'+rows+'</div></div>';
     }).join('');
     cont.querySelectorAll('.rd-top').forEach(function(el){ el.addEventListener('click',function(){ var b=$(el.dataset.exp); if(b) b.classList.toggle('hide'); }); });
     cont.querySelectorAll('.rd-gen').forEach(function(b){ b.addEventListener('click',function(ev){ ev.stopPropagation(); abrirPickDoc(b.dataset.gen); }); });
@@ -7082,9 +7173,9 @@
   }
   function renderRrhhPersona(trabs,cont){
     cont.innerHTML=trabs.map(function(t){
-      var ok=0; var chips=RRHH_CAT.map(function(tp){ var e=estadoDoc(t.id,tp.slug); if(e.k==='ok'||e.k==='prox')ok++; var ic=(e.k==='ok'?'✔':(e.k==='venc'?'⛔':(e.k==='prox'?'⏰':'○'))); return '<span class="dchip '+DCLS[e.k]+'" data-t="'+t.id+'" data-s="'+tp.slug+'" style="cursor:pointer">'+esc(tp.corto)+' '+ic+'</span>'; }).join('');
-      var pct=Math.round(ok/RRHH_CAT.length*100);
-      return '<div class="rrhh-doc"><div class="rd-top"><span class="rd-nm">'+esc(t.nombre||'—')+(t.estado==='inactivo'?' <span class="note" style="font-weight:600;font-size:.7rem">(inactivo)</span>':'')+'</span><span class="dchip '+(pct===100?'ok':'pend')+'">'+ok+'/'+RRHH_CAT.length+'</span></div><div class="rrhh-bar"><i style="width:'+pct+'%"></i></div><div class="rrhh-chips">'+chips+'</div></div>';
+      var P=pctDe(t.id, RRHH_CAT), ok=P.ok; var chips=RRHH_CAT.map(function(tp){ var e=estadoDoc(t.id,tp.slug); return '<span class="dchip '+DCLS[e.k]+'" data-t="'+t.id+'" data-s="'+tp.slug+'" style="cursor:pointer">'+esc(tp.corto)+' '+icoDoc(e.k)+'</span>'; }).join('');
+      var pct=P.pct;
+      return '<div class="rrhh-doc"><div class="rd-top"><span class="rd-nm">'+esc(t.nombre||'—')+(t.estado==='inactivo'?' <span class="note" style="font-weight:600;font-size:.7rem">(inactivo)</span>':'')+'</span><span class="dchip '+(pct===100?'ok':'pend')+'">'+ok+'/'+P.n+' · '+pct+'%</span></div><div class="rrhh-bar"><i style="width:'+pct+'%"></i></div><div class="rrhh-chips">'+chips+'</div></div>';
     }).join('');
     cont.querySelectorAll('.dchip[data-t]').forEach(function(el){ el.addEventListener('click',function(){ abrirDocRrhh(+el.dataset.t, el.dataset.s); }); });
   }
@@ -7163,7 +7254,7 @@
     $('re-title').textContent=(t.nombre||'')+' · '+tp.nombre;
     $('re-body').innerHTML=
       '<div class="card">'+
-        '<div class="fld"><label>Estado</label><select id="re-estado"><option value="pendiente"'+((d.estado||'pendiente')==='pendiente'?' selected':'')+'>Pendiente</option><option value="entregado"'+(d.estado==='entregado'?' selected':'')+'>Entregado</option></select></div>'+
+        '<div class="fld"><label>Estado</label><select id="re-estado"><option value="pendiente"'+((d.estado||'pendiente')==='pendiente'?' selected':'')+'>Pendiente</option><option value="entregado"'+(d.estado==='entregado'?' selected':'')+'>Entregado</option>'+(tp.na?'<option value="na"'+(d.estado==='na'?' selected':'')+'>No aplica a esta persona</option>':'')+'</select></div>'+
         '<div class="fld"><label>¿Dónde se gestiona?</label><select id="re-ambito"><option value="interno"'+((d.ambito||'interno')==='interno'?' selected':'')+'>Nuestro (lo gestionamos acá)</option><option value="cliente"'+(d.ambito==='cliente'?' selected':'')+'>Plataforma del cliente (Zerty / acreditación)</option></select></div>'+
         '<div class="grid2"><div class="fld" style="margin:0"><label>Fecha</label><input type="date" id="re-fecha" value="'+(d.fecha||'')+'"></div>'+
           '<div class="fld" style="margin:0"><label>Vence (si aplica)</label><input type="date" id="re-venc" value="'+(d.vencimiento||'')+'"></div></div>'+
