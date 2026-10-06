@@ -388,7 +388,18 @@
   .dg-band{height:4px;border-radius:2px;background:linear-gradient(90deg,var(--orange) 0 70%,var(--ink) 70% 100%);margin:0 0 16px;}
   .dg-sig td{width:40%;height:52px;} .dg-sig td.fx{width:20%;text-align:center;}
   .dg-sig .sl,.pts-ctl .sl{display:block;font:800 9px var(--font);color:#8a90a6;text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px;}
-  .dg-sig td.fx img.rs-sig{max-height:42px;max-width:100%;display:block;margin:0 auto;} .dg-sig td.fx img.rs-tim{display:none;}
+  .dg-sig td.fx img.rs-sig,.dg-sig td.fx img.rs-prev{height:44px;width:auto;max-width:100%;object-fit:contain;display:block;margin:0 auto;} .dg-sig td.fx img.rs-tim{display:none;}
+  .dg-firmas>div{position:relative;}
+  .dg-firmas .rs-prev{position:absolute;left:50%;bottom:100%;transform:translateX(-50%);height:52px;width:auto;max-width:80%;object-fit:contain;margin-bottom:-6px;}
+  .emp-firmas{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;}
+  .emp-firma{border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;}
+  .emp-firma .fz{height:70px;display:flex;align-items:center;justify-content:center;gap:10px;background:repeating-conic-gradient(#f3f4f8 0 25%,#fff 0 50%) 0 0/14px 14px;border-radius:8px;}
+  .emp-firma .fz img{max-height:62px;max-width:46%;object-fit:contain;}
+  .pts-figs{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin:6px 0 12px;}
+  .pts-fig{margin:0;border:1px solid #e3e5ee;border-radius:8px;padding:10px 8px 8px;text-align:center;background:#fbfbfd;}
+  .pts-fig svg{display:block;width:100%;height:120px;}
+  .pts-fig.ancha{grid-column:1/-1;} .pts-fig.ancha svg{height:auto;max-height:118px;}
+  .pts-fig figcaption{font:600 10.5px var(--font);color:#55607a;margin-top:6px;line-height:1.35;}
   .pts-tit{font:800 19px var(--font);color:var(--ink);text-align:center;margin:4px 0 10px;text-transform:uppercase;letter-spacing:.02em;}
   .pts-ctl td{width:25%;}
   .dg-foot{margin-top:26px;border-top:1px solid #e3e5ee;padding-top:8px;display:flex;justify-content:space-between;gap:10px;font:600 9px var(--font);color:#9a9fb0;}
@@ -6301,7 +6312,12 @@
       fmts.map(function(f){ return '<div class="emp-row emp-fmt" data-k="'+f.k+'"><div class="en"><b>'+esc(f.n)+'</b><span>Formato con membrete, en blanco para completar y firmar</span></div><span class="dchip ok">InnovaGestión</span><button class="rd-gen" type="button">'+svgI(ICO.gen,15)+'Descargar formato</button></div>'; }).join('')+
       propios('formatos').filter(function(x){ return pasa(x[1]); }).map(function(x){ return fila(x[0],x[1],x[2]); }).join('')+
       (q?'':'<button type="button" class="btn ghost small emp-add" data-c="formatos" style="width:auto;margin-top:8px">＋ Subir otro formato (Word, Excel o PDF)</button>')+'</div>';
-    var html=EMP_CARPETAS.map(function(cp){ return card(cp.k, cp.n, cp.tipos.concat(propios(cp.k))); }).join('')+fmtCard+card('otros','Otros documentos',propios('otros'),'Agregar otro documento');
+    if(IA_FIRMA===null && sb){ cargarFirma(pintarEmp); }
+    var firmas=q?'':'<div class="card" style="padding:12px 14px"><div class="rd-grp" style="margin-top:0">Firmas para los documentos</div><div class="emp-firmas">'+
+      '<div class="emp-firma"><b style="font-size:.85rem">'+esc(EMP.rep)+'</b><span class="note" style="margin:0">Gerente General · firma y timbre</span><div class="fz">'+(FIRMA_SIG?'<img src="'+FIRMA_SIG+'">':'')+(FIRMA_TIM?'<img src="'+esc(FIRMA_TIM)+'">':'')+((FIRMA_SIG||FIRMA_TIM)?'':'<span class="note">Sin firma</span>')+'</div><button type="button" class="btn ghost small" id="ef-rep" style="width:auto">Cambiar</button></div>'+
+      '<div class="emp-firma"><b style="font-size:.85rem">'+esc(EMP_PREV.nombre)+'</b><span class="note" style="margin:0">'+esc(EMP_PREV.cargo)+' · firma</span><div class="fz">'+(FIRMA_PREV?'<img src="'+FIRMA_PREV+'">':'<span class="note">Sin firma</span>')+'</div><label class="btn ghost small" style="width:auto;text-align:center;cursor:pointer">'+(FIRMA_PREV?'Cambiar':'Subir foto de la firma')+'<input type="file" id="ef-prev" accept="image/*" hidden></label></div>'+
+      '</div><p class="note" style="margin:8px 0 0">Basta una foto de la firma sobre papel blanco: se quita el fondo y se ajusta el tamaño sola.</p></div>';
+    var html=firmas+EMP_CARPETAS.map(function(cp){ return card(cp.k, cp.n, cp.tipos.concat(propios(cp.k))); }).join('')+fmtCard+card('otros','Otros documentos',propios('otros'),'Agregar otro documento');
     c.innerHTML=html||'<div class="empty">Nada coincide con “'+esc(EMP_Q)+'”.</div>';
     c.querySelectorAll('.emp-row[data-tipo]').forEach(function(el){ el.addEventListener('click',function(){ abrirEmpDoc(el.dataset.tipo, el.dataset.nom, el.dataset.v==='1'); }); });
     c.querySelectorAll('.emp-gen').forEach(function(b){ b.addEventListener('click',function(ev){ ev.stopPropagation(); abrirPickDoc(b.dataset.gen); }); });
@@ -6309,6 +6325,13 @@
       generarPTS(s); }); });
     c.querySelectorAll('.emp-fmt').forEach(function(el){ el.addEventListener('click',function(){ var f=EMP_FMT.filter(function(x){ return x.k===el.dataset.k; })[0]; if(f) abrirDocEmpresa({ nombre:f.n, opciones:f.opciones?f.opciones():null, build:f.build }); }); });
     c.querySelectorAll('.emp-add').forEach(function(b){ b.addEventListener('click',function(){ abrirEmpDoc(null, '', false, b.dataset.c); }); });
+    if($('ef-rep')) $('ef-rep').addEventListener('click',function(){ $('ia-firma').click(); });
+    if($('ef-prev')) $('ef-prev').addEventListener('change',function(){ var f=this.files&&this.files[0]; if(!f) return; busy(true,'Limpiando la firma…');
+      var u=URL.createObjectURL(f);
+      limpiarFirma(u).then(function(png){ URL.revokeObjectURL(u); busy(true,'Guardando…');
+        sb.from('config').upsert([{clave:'firma_prev_url',valor:png}],{onConflict:'clave'}).then(function(r){ busy(false);
+          if(r&&r.error){ toast('No se guardó: '+r.error.message); return; } FIRMA_PREV=png; toast('✓ Firma guardada'); pintarEmp(); }, function(){ busy(false); toast('No se pudo guardar.'); });
+      }, function(){ busy(false); toast('No se detectó la firma. Prueba con una foto sobre papel blanco.'); }); });
   }
   function nrmQ(x){ return (x||'').toString().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''); }
   if($('emp-q')) $('emp-q').addEventListener('input',function(){ EMP_Q=this.value; pintarEmp(); });
@@ -6569,7 +6592,31 @@
   // "no registra accidentes"; si hubo, se llena el mismo formulario. Firma+timbre en config (firma_timbre_url).
   var MESES_L=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
   var ACC_EMP={ dir:'Avenida Nueva Providencia 1881, Comuna de Providencia', tel:'956635547', rep:'Cristopher Vidal Ruiz', cargo:'Representante Legal' };
-  var IA_FIRMA=null, FIRMA_SIG='', FIRMA_TIM='';
+  var IA_FIRMA=null, FIRMA_SIG='', FIRMA_TIM='', FIRMA_PREV='';
+  // Firma de la prevencionista (Elaboró en los PTS y relator en los registros de entrega), PNG sin fondo.
+  function firmaPrevHtml(){ return FIRMA_PREV?'<img class="rs-prev" src="'+FIRMA_PREV+'" alt="">':''; }
+  // Limpia la foto de una firma: quita el papel y las sombras (fondo local adaptativo), deja la tinta azul oscuro,
+  // recorta justo a la firma y la normaliza a 180 px de alto (nítida al imprimir y liviana).
+  function limpiarFirma(src){ return new Promise(function(res,rej){ var im=new Image(); im.crossOrigin='anonymous';
+    im.onload=function(){ try{
+      var s=Math.min(1,1000/im.naturalWidth), W=Math.round(im.naturalWidth*s), H=Math.round(im.naturalHeight*s);
+      var c=document.createElement('canvas'); c.width=W; c.height=H; var x=c.getContext('2d'); x.fillStyle='#fff'; x.fillRect(0,0,W,H); x.drawImage(im,0,0,W,H);   // fondo blanco: sirve también si ya viene sin fondo
+      var p=x.getImageData(0,0,W,H).data, L=new Float32Array(W*H), I=new Float64Array((W+1)*(H+1));
+      for(var i=0;i<W*H;i++) L[i]=0.3*p[i*4]+0.59*p[i*4+1]+0.11*p[i*4+2];
+      for(var y=0;y<H;y++){ var fila=0; for(var xx=0;xx<W;xx++){ fila+=L[y*W+xx]; I[(y+1)*(W+1)+xx+1]=I[y*(W+1)+xx+1]+fila; } }
+      var R=Math.max(12,Math.round(Math.min(W,H)/20)), a=W,b=H,cc=-1,dd=-1, o=x.createImageData(W,H);
+      for(var y2=0;y2<H;y2++) for(var x2=0;x2<W;x2++){
+        var x0=Math.max(0,x2-R),x1=Math.min(W,x2+R+1),y0=Math.max(0,y2-R),y1=Math.min(H,y2+R+1);
+        var bg=(I[y1*(W+1)+x1]-I[y0*(W+1)+x1]-I[y1*(W+1)+x0]+I[y0*(W+1)+x0])/((x1-x0)*(y1-y0)), k=y2*W+x2, dif=bg-L[k];
+        if(dif<22) continue; var al=Math.min(255,Math.round((dif-22)*7)); if(al<30) continue;
+        o.data[k*4]=22; o.data[k*4+1]=34; o.data[k*4+2]=92; o.data[k*4+3]=al;
+        if(x2<a)a=x2; if(x2>cc)cc=x2; if(y2<b)b=y2; if(y2>dd)dd=y2; }
+      if(cc<0){ rej('vacia'); return; }
+      a=Math.max(0,a-4); b=Math.max(0,b-4); cc=Math.min(W-1,cc+4); dd=Math.min(H-1,dd+4);
+      var c2=document.createElement('canvas'); c2.width=cc-a+1; c2.height=dd-b+1; c2.getContext('2d').putImageData(o,-a,-b);
+      var k2=Math.min(1,180/c2.height), c3=document.createElement('canvas'); c3.width=Math.round(c2.width*k2); c3.height=Math.round(c2.height*k2);
+      c3.getContext('2d').drawImage(c2,0,0,c3.width,c3.height); res(c3.toDataURL('image/png'));
+    }catch(e){ rej(e); } }; im.onerror=rej; im.src=src; }); }
   // Inserta el bloque "Documentos de la empresa" dentro de Documentación (queda oculto en Capacitaciones).
   (function(){ var t=$('tpl-doc-empresa'), s=$('doc-empresa-slot'); if(t&&s){ s.appendChild(t.content.cloneNode(true)); } })();
   // Separa la imagen subida en firma (tinta azul) y timbre (tinta negra), cada una recortada, como data-URL
@@ -6595,7 +6642,8 @@
   function cliPideAcc(){ return (CLIENTES||[]).filter(function(c){ return c.pide_accidentes && c.estado!=='inactivo'; }); }
   function fichaCli(n){ return (CLIENTES||[]).filter(function(x){ return _cliKey(x.nombre)===_cliKey(n); })[0]; }
   function cargarFirma(cb){ if(IA_FIRMA!==null||!sb){ if(cb)cb(); return; }
-    sb.from('config').select('valor').eq('clave','firma_timbre_url').maybeSingle().then(function(r){ IA_FIRMA=(r&&r.data&&r.data.valor)||'';
+    sb.from('config').select('clave,valor').in('clave',['firma_timbre_url','firma_prev_url']).then(function(r){ var m={}; ((r&&r.data)||[]).forEach(function(x){ m[x.clave]=x.valor||''; });
+      IA_FIRMA=m.firma_timbre_url||''; FIRMA_PREV=m.firma_prev_url||'';
       if(!IA_FIRMA){ FIRMA_SIG=''; FIRMA_TIM=''; if(cb)cb(); return; } separarFirma(IA_FIRMA).then(function(){ if(cb)cb(); }); }, function(){ IA_FIRMA=''; if(cb)cb(); }); }
   // ====== Zerty · Cermaq: SOLO lo que generamos nosotros (lo emitido por terceros se sube directo en Zerty) ======
   var ZT_DESDE='2026-08';   // desde aquí se controla lo pendiente (el historial anterior ya está en Zerty)
@@ -6987,11 +7035,25 @@
         // Corta la página en una franja blanca (sin texto) para no partir líneas por la mitad.
         function corte(y0,hMax){ var band=Math.floor(hMax*0.18), top=y0+hMax-band;
           try{ var d=ctx.getImageData(0,top,cv.width,band).data, W=cv.width;
-            for(var r=band-1;r>=0;r--){ var ok=true; for(var x=0;x<W;x+=3){ var i=(r*W+x)*4; if(d[i]<245||d[i+1]<245||d[i+2]<245){ ok=false; break; } } if(ok) return r+(hMax-band)+1; }
+            function blanca(r,lim){ for(var x=0;x<W;x+=3){ var i=(r*W+x)*4; if(d[i]<lim||d[i+1]<lim||d[i+2]<lim) return false; } return true; }
+            // borde horizontal de una tabla: fila clara con muchos píxeles grises (se corta justo debajo, entre filas)
+            function borde(r){ var g=0,n=0; for(var x=0;x<W;x+=3){ var i=(r*W+x)*4; if(d[i]<215||d[i+1]<215||d[i+2]<215) return false; n++; if(d[i]<246) g++; } return g>n*0.5; }
+            function naranja(r){ for(var x=0;x<W;x+=6){ var i=(r*W+x)*4; if(d[i]>220&&d[i+1]>80&&d[i+1]<140&&d[i+2]<70) return true; } return false; }
+            // 1° franja totalmente blanca (entre bloques); 2° franja clara (entre líneas dentro de una tabla)
+            for(var pase=0;pase<3;pase++){ var lim=pase===2?215:248;
+              for(var r=band-1;r>=0;r--){ if(pase===1){ if(!borde(r)) continue; } else if(!blanca(r,lim)) continue;
+                // si justo arriba hay un título de sección (barra naranja), cortar antes del título para que no quede solo
+                var tit=-1; for(var q=r-1;q>=Math.max(0,r-Math.round(W*0.07));q--){ if(naranja(q)){ tit=q; break; } }
+                if(tit<0) return r+(hMax-band)+1;
+                r=tit; } }
           }catch(_){}
           return hMax; }
+        function soloBlanco(y0,hh){ try{ var dd=ctx.getImageData(0,y0,cv.width,hh).data; for(var i=0;i<dd.length;i+=4*7){ if(dd[i]<240||dd[i+1]<240||dd[i+2]<240) return false; } return true; }catch(_){ return false; } }
         while(y<cv.height){
-          var h=Math.min(srcPageH,cv.height-y); if(cv.height-y>srcPageH) h=corte(y,srcPageH);
+          var h=Math.min(srcPageH,cv.height-y), resto=cv.height-y-srcPageH;
+          // si a la última página le quedaría muy poco (p. ej. solo el pie), se corta antes para equilibrar
+          if(resto>0) h=corte(y, resto<srcPageH*0.12 ? Math.round(srcPageH*0.85) : srcPageH);
+          if(!first && soloBlanco(y,h)) break;   // no agregar una última página vacía (solo margen)
           var sl=document.createElement('canvas'); sl.width=cv.width; sl.height=h;
           sl.getContext('2d').drawImage(cv,0,y,cv.width,h,0,0,cv.width,h);
           if(!first) doc.addPage(); first=false;
@@ -7174,7 +7236,7 @@
   // Tabla de firmas de 3 columnas (Elaboró/Aprobó · Cargo · Firma), igual a la de los PTS originales.
   function dgFirmasPTS(){
     return '<table class="dg-tbl dg-sig"><tbody>'+
-      '<tr><td><span class="sl">Elaboró</span>'+ce(lsGet('pts_elab_nom')||EMP_PREV.nombre).replace('<span contenteditable','<span contenteditable data-ls="pts_elab_nom"')+'</td><td><span class="sl">Cargo</span>'+ce(lsGet('pts_elab_cargo')||EMP_PREV.cargo).replace('<span contenteditable','<span contenteditable data-ls="pts_elab_cargo"')+'</td><td class="fx"><span class="sl">Firma</span></td></tr>'+
+      '<tr><td><span class="sl">Elaboró</span>'+ce(lsGet('pts_elab_nom')||EMP_PREV.nombre).replace('<span contenteditable','<span contenteditable data-ls="pts_elab_nom"')+'</td><td><span class="sl">Cargo</span>'+ce(lsGet('pts_elab_cargo')||EMP_PREV.cargo).replace('<span contenteditable','<span contenteditable data-ls="pts_elab_cargo"')+'</td><td class="fx"><span class="sl">Firma</span>'+((!lsGet('pts_elab_nom')||lsGet('pts_elab_nom')===EMP_PREV.nombre)?firmaPrevHtml():'')+'</td></tr>'+
       '<tr><td><span class="sl">Aprobó</span><b>'+EMP.rep+'</b></td><td><span class="sl">Cargo</span><b>Gerente General</b></td><td class="fx"><span class="sl">Firma</span>'+firmaRepHtml()+'</td></tr>'+
       '</tbody></table>';
   }
@@ -7245,6 +7307,65 @@
       ries:[['Atmósfera con poco oxígeno o gases','Asfixia, intoxicación, explosión','Medición de gases, ventilación, permiso de entrada y vigía.'],['Energías no controladas','Atrapamiento, electrocución','Bloqueo con candado y tarjeta personal.'],['Acceso y salida restringidos','Caídas, golpes','Arnés y línea de vida; escalas seguras.'],['Equipos y herramientas','Contacto eléctrico, proyección de partículas','Protección diferencial; EPP; herramientas en buen estado.'],['Condiciones del espacio','Estrés térmico, inmersión','Pausas; control de líquidos; vigía permanente.']],
       epp:['Casco con barbiquejo','Arnés de cuerpo completo con línea de vida','Respirador con filtro o equipo de aire según la medición','Antiparras o careta facial','Guantes según la tarea','Calzado de seguridad','Detector de gases personal cuando se requiera'] }
   };
+  // Ilustraciones de referencia de los PTS (SVG propio, colores corporativos; nítidas en el PDF).
+  var FIG_N='#1d2a5c', FIG_O='#f26b1d';
+  function svgF(vb,body){ return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="'+vb+'" font-family="Arial,Helvetica,sans-serif">'+body+'</svg>'; }
+  var FIG={
+    alza: svgF('0 0 160 200',
+      '<line x1="28" y1="28" x2="132" y2="28" stroke="'+FIG_N+'" stroke-width="4"/><line x1="30" y1="28" x2="30" y2="52" stroke="'+FIG_N+'" stroke-width="4"/><line x1="130" y1="28" x2="130" y2="52" stroke="'+FIG_N+'" stroke-width="4"/><line x1="80" y1="28" x2="80" y2="52" stroke="'+FIG_N+'" stroke-width="3"/><line x1="30" y1="40" x2="130" y2="40" stroke="'+FIG_N+'" stroke-width="2"/>'+
+      '<circle cx="62" cy="13" r="6" fill="'+FIG_O+'"/><line x1="62" y1="19" x2="62" y2="40" stroke="'+FIG_O+'" stroke-width="5" stroke-linecap="round"/><path d="M62 24 Q74 22 80 28" fill="none" stroke="'+FIG_O+'" stroke-width="2"/>'+
+      '<rect x="24" y="52" width="112" height="9" rx="2" fill="'+FIG_N+'"/>'+
+      '<g stroke="'+FIG_N+'" stroke-width="6" stroke-linecap="round"><line x1="38" y1="62" x2="122" y2="100"/><line x1="122" y1="62" x2="38" y2="100"/><line x1="38" y1="100" x2="122" y2="138"/><line x1="122" y1="100" x2="38" y2="138"/></g>'+
+      '<rect x="18" y="138" width="124" height="22" rx="3" fill="'+FIG_N+'"/><circle cx="40" cy="168" r="11" fill="'+FIG_N+'"/><circle cx="120" cy="168" r="11" fill="'+FIG_N+'"/><circle cx="40" cy="168" r="4" fill="#fff"/><circle cx="120" cy="168" r="4" fill="#fff"/>'+
+      '<line x1="6" y1="190" x2="154" y2="190" stroke="#c9ccd8" stroke-width="2"/>'),
+    andamio: svgF('0 0 160 200',
+      '<g stroke="'+FIG_N+'" stroke-width="5" stroke-linecap="round"><line x1="25" y1="18" x2="25" y2="185"/><line x1="135" y1="18" x2="135" y2="185"/><line x1="25" y1="18" x2="135" y2="18"/><line x1="25" y1="34" x2="135" y2="34"/></g>'+
+      '<rect x="20" y="48" width="120" height="8" fill="'+FIG_N+'"/><rect x="20" y="116" width="120" height="8" fill="'+FIG_N+'"/>'+
+      '<g stroke="'+FIG_O+'" stroke-width="4" stroke-linecap="round"><line x1="25" y1="56" x2="135" y2="116"/><line x1="135" y1="56" x2="25" y2="116"/><line x1="25" y1="124" x2="135" y2="182"/><line x1="135" y1="124" x2="25" y2="182"/></g>'+
+      '<rect x="12" y="185" width="26" height="6" fill="'+FIG_N+'"/><rect x="122" y="185" width="26" height="6" fill="'+FIG_N+'"/>'),
+    escala: svgF('0 0 140 200',
+      '<g stroke="'+FIG_N+'" stroke-width="6" stroke-linecap="round"><line x1="30" y1="188" x2="62" y2="14"/><line x1="108" y1="188" x2="74" y2="14"/><line x1="58" y1="14" x2="78" y2="14"/></g>'+
+      '<g stroke="'+FIG_N+'" stroke-width="5" stroke-linecap="round"><line x1="56" y1="46" x2="66" y2="46"/><line x1="50" y1="80" x2="62" y2="80"/><line x1="44" y1="114" x2="56" y2="114"/><line x1="38" y1="148" x2="50" y2="148"/></g>'+
+      '<line x1="46" y1="120" x2="94" y2="120" stroke="'+FIG_O+'" stroke-width="4"/><text x="70" y="114" text-anchor="middle" font-size="10" font-weight="bold" fill="'+FIG_O+'">seguro</text>'+
+      '<line x1="6" y1="190" x2="134" y2="190" stroke="#c9ccd8" stroke-width="2"/>'),
+    arnes: svgF('0 0 140 200',
+      '<rect x="50" y="6" width="40" height="10" rx="2" fill="'+FIG_N+'"/><circle cx="70" cy="22" r="6" fill="none" stroke="'+FIG_N+'" stroke-width="3"/>'+
+      '<path d="M70 28 q10 8 0 14 q-10 6 0 12 q8 5 0 10" fill="none" stroke="'+FIG_O+'" stroke-width="3"/>'+
+      '<circle cx="70" cy="76" r="11" fill="'+FIG_N+'"/>'+
+      '<g stroke="'+FIG_N+'" stroke-width="7" stroke-linecap="round"><line x1="70" y1="90" x2="70" y2="140"/><line x1="70" y1="100" x2="46" y2="128"/><line x1="70" y1="100" x2="94" y2="128"/><line x1="70" y1="140" x2="54" y2="190"/><line x1="70" y1="140" x2="86" y2="190"/></g>'+
+      '<g stroke="'+FIG_O+'" stroke-width="4" stroke-linecap="round" fill="none"><line x1="60" y1="92" x2="80" y2="136"/><line x1="80" y1="92" x2="60" y2="136"/><line x1="58" y1="138" x2="82" y2="138"/><circle cx="62" cy="150" r="7"/><circle cx="78" cy="150" r="7"/></g>'),
+    nfpa: svgF('0 0 160 160',
+      '<polygon points="80,8 116,44 80,80 44,44" fill="#d7262e" stroke="#222" stroke-width="2"/><polygon points="44,44 80,80 44,116 8,80" fill="#1f5fbf" stroke="#222" stroke-width="2"/><polygon points="116,44 152,80 116,116 80,80" fill="#f5d000" stroke="#222" stroke-width="2"/><polygon points="80,80 116,116 80,152 44,116" fill="#fff" stroke="#222" stroke-width="2"/>'+
+      '<g font-size="9" font-weight="bold" text-anchor="middle"><text x="80" y="47" fill="#fff">Inflamable</text><text x="44" y="83" fill="#fff">Salud</text><text x="116" y="83" fill="#222">Reactivo</text><text x="80" y="119" fill="#222">Especial</text></g>'),
+    secuencia: svgF('0 0 520 96', (function(){ var L=[['Barrido','húmedo'],['Detergente','(espuma)'],['Acción','mecánica'],['Enjuague','total'],['Sanitizado','']], s='';
+      L.forEach(function(t,i){ var x=52+i*104; s+='<circle cx="'+x+'" cy="30" r="22" fill="'+(i===4?FIG_O:FIG_N)+'"/><text x="'+x+'" y="37" text-anchor="middle" font-size="20" font-weight="bold" fill="#fff">'+(i+1)+'</text><text x="'+x+'" y="72" text-anchor="middle" font-size="12" font-weight="bold" fill="'+FIG_N+'">'+t[0]+'</text><text x="'+x+'" y="87" text-anchor="middle" font-size="11" fill="#55607a">'+t[1]+'</text>'+(i<4?'<path d="M'+(x+28)+' 30 h42" stroke="#c9ccd8" stroke-width="3"/><path d="M'+(x+70)+' 24 l8 6 l-8 6z" fill="#c9ccd8"/>':''); }); return s; })()),
+    clases: svgF('0 0 520 112',
+      '<polygon points="50,14 84,74 16,74" fill="#1e9a4a"/><text x="50" y="64" text-anchor="middle" font-size="26" font-weight="bold" fill="#fff">A</text>'+
+      '<rect x="122" y="16" width="56" height="56" fill="#d7262e"/><text x="150" y="54" text-anchor="middle" font-size="26" font-weight="bold" fill="#fff">B</text>'+
+      '<circle cx="250" cy="44" r="30" fill="#1f5fbf"/><text x="250" y="53" text-anchor="middle" font-size="26" font-weight="bold" fill="#fff">C</text>'+
+      '<polygon points="350.0,13.0 357.6,34.5 380.4,35.1 362.4,49.0 368.8,70.9 350.0,58.0 331.2,70.9 337.6,49.0 319.6,35.1 342.4,34.5" fill="#f5d000"/><text x="350" y="52" text-anchor="middle" font-size="18" font-weight="bold" fill="#222">D</text>'+
+      '<polygon points="477.7,61.0 450.0,77.0 422.3,61.0 422.3,29.0 450.0,13.0 477.7,29.0" fill="#222"/><text x="450" y="54" text-anchor="middle" font-size="24" font-weight="bold" fill="#fff">K</text>'+
+      '<g font-size="11" text-anchor="middle" fill="'+FIG_N+'" font-weight="bold"><text x="50" y="96">Sólidos</text><text x="150" y="96">Líquidos inflamables</text><text x="250" y="96">Eléctricos</text><text x="350" y="96">Metales</text><text x="450" y="96">Aceites de cocina</text></g>'),
+    pass: svgF('0 0 520 70', (function(){ var L=['Retire el seguro','Apunte a la base','Presione la manilla','Barra de lado a lado'], s='';
+      L.forEach(function(t,i){ var x=6+i*128; s+='<rect x="'+x+'" y="8" width="120" height="54" rx="10" fill="'+(i%2?'#fff4ec':'#eef1f9')+'" stroke="'+(i%2?FIG_O:FIG_N)+'" stroke-width="2"/><text x="'+(x+60)+'" y="30" text-anchor="middle" font-size="16" font-weight="bold" fill="'+(i%2?FIG_O:FIG_N)+'">'+(i+1)+'</text><text x="'+(x+60)+'" y="49" text-anchor="middle" font-size="11.5" fill="#222">'+t+'</text>'; }); return s; })()),
+    senal: svgF('0 0 220 130',
+      '<rect x="3" y="3" width="214" height="124" rx="6" fill="#fff" stroke="#222" stroke-width="4"/><rect x="9" y="9" width="202" height="34" rx="3" fill="#d7262e"/><text x="110" y="34" text-anchor="middle" font-size="22" font-weight="bold" fill="#fff">PELIGRO</text>'+
+      '<g text-anchor="middle" font-weight="bold" fill="#222"><text x="110" y="66" font-size="15">ESPACIO CONFINADO</text><text x="110" y="88" font-size="15" fill="#d7262e">NO ENTRAR</text><text x="110" y="110" font-size="13">PERMISO REQUERIDO</text></g>'),
+    atmosfera: svgF('0 0 360 120',
+      '<text x="10" y="16" font-size="12" font-weight="bold" fill="'+FIG_N+'">Oxígeno (%)</text><rect x="10" y="24" width="340" height="16" rx="3" fill="#f2c4c4"/><rect x="'+(10+340*19.5/30)+'" y="24" width="'+(340*4/30)+'" height="16" fill="#1e9a4a"/>'+
+      '<g font-size="10" fill="#55607a" text-anchor="middle"><text x="10" y="54">0</text><text x="'+(10+340*19.5/30)+'" y="54">19,5</text><text x="'+(10+340*23.5/30)+'" y="54">23,5</text><text x="350" y="54">30</text></g>'+
+      '<text x="10" y="78" font-size="12" font-weight="bold" fill="'+FIG_N+'">Gases inflamables (% del LIE)</text><rect x="10" y="86" width="340" height="16" rx="3" fill="#f2c4c4"/><rect x="10" y="86" width="34" height="16" rx="3" fill="#1e9a4a"/>'+
+      '<g font-size="10" fill="#55607a" text-anchor="middle"><text x="12" y="116">0</text><text x="44" y="116">10</text><text x="346" y="116">100</text></g>')
+  };
+  var PTS_FIG={
+    pts_altura:[['alza','Alza hombre tipo tijera: arnés anclado y puerta cerrada'],['andamio','Andamio completo, con barandas, crucetas y base firme'],['escala','Escalera tijera abierta, con seguro y apoyo firme'],['arnes','Arnés de cuerpo completo con línea de vida anclada']],
+    pts_alzahombre:[['alza','Plataforma de trabajo en altura (alza hombre / Genie)'],['arnes','Arnés anclado a la plataforma en todo momento']],
+    pts_quimicos:[['nfpa','Rombo NFPA 704: identificación de riesgos (salud, inflamabilidad, reactividad y riesgos especiales, escala 0 a 4)',true],['secuencia','Secuencia de limpieza de estructuras y líneas',true]],
+    pts_extintores:[['clases','Clases de fuego (NCh 934)',true],['pass','Uso del extintor, paso a paso',true]],
+    pts_confinados:[['senal','Señalización obligatoria en el acceso'],['atmosfera','Rangos seguros de la atmósfera para ingresar (verde)']]
+  };
+  function figurasPTS(slug){ var L=PTS_FIG[slug]; if(!L) return '';
+    return '<div class="pts-figs">'+L.map(function(f){ return '<figure class="pts-fig'+(f[2]?' ancha':'')+'">'+FIG[f[0]]+'<figcaption>'+esc(f[1])+'</figcaption></figure>'; }).join('')+'</div>'; }
   function esPTS(s){ return s==='pts_funciones' || !!(typeof PTS_DOC!=='undefined'&&PTS_DOC[s]); }
   function nombrePTS(s){ var n=s; EMP_CARPETAS.forEach(function(c){ c.tipos.forEach(function(x){ if(x[0]===s) n=x[1]; }); }); return n; }
   function generarPTS(s){ var nom=nombrePTS(s);
@@ -7276,6 +7397,7 @@
       H('Normativa y referencias')+ulDg(P.norm)+
       H('Responsabilidades')+'<table class="dg-tbl">'+P.resp.map(function(r){ return tr(r[0],r[1]); }).join('')+'</table>'+
       H('Desarrollo')+P.des.map(function(d,i){ return '<p style="margin:10px 0 4px"><b>'+n+'.'+(i+1)+' '+d[0]+'</b></p>'+ulDg(d[1]); }).join('')+
+      (PTS_FIG[slug]?H('Ilustraciones de referencia')+figurasPTS(slug):'')+
       H('Riesgos y medidas de control')+'<table class="dg-tbl"><thead><tr><th style="width:30%">Actividad / peligro</th><th style="width:24%">Riesgo</th><th>Medidas de control</th></tr></thead><tbody>'+P.ries.map(function(r){ return '<tr><td>'+r[0]+'</td><td>'+r[1]+'</td><td>'+r[2]+'</td></tr>'; }).join('')+'</tbody></table>'+
       H('Elementos de protección personal')+ulDg(P.epp)+'<p style="font-size:12px">Los EPP deben usarse correctamente puestos, con ropa de trabajo adecuada y sin partes sueltas, colgantes, pulseras ni objetos que puedan quedar atrapados.</p>'+
       H('Emergencias')+ulDg(['Detener el trabajo, dar aviso de inmediato a la jefatura directa y seguir el plan de emergencia de la faena.','Teléfonos: Ambulancia 131 · Bomberos 132 · Carabineros 133 · Mutual de Seguridad 1407.','Todo accidente, aunque parezca leve, se informa de inmediato para su atención y denuncia ante el organismo administrador de la Ley N° 16.744.'])+
@@ -7343,13 +7465,13 @@
       '<h4 class="dg-h4">1. Datos del trabajador</h4>'+
       '<table class="dg-tbl">'+tr('Nombre',ce(t.nombre))+tr('RUT',ce(t.rut))+tr('Cargo',ce(t.cargo||''))+tr('Fecha',ce(fLarga(todayISO())))+'</table>'+
       '<h4 class="dg-h4">2. Instrucción</h4>'+
-      '<table class="dg-tbl">'+tr('Relator',rel('dg_rel_nom',''))+tr('Cargo del relator',rel('dg_rel_cargo','Prevención de Riesgos'))+
+      '<table class="dg-tbl">'+tr('Relator',rel('dg_rel_nom',EMP_PREV.nombre))+tr('Cargo del relator',rel('dg_rel_cargo',EMP_PREV.cargo))+
         tr('Horario',rel('dg_rel_hi','08:00')+' a '+rel('dg_rel_hf','09:00')+' hrs.')+tr('Modalidad',rel('dg_rel_mod','Presencial'))+
         tr('Documento entregado','PTS '+esc(I.n)+(ver&&ver.fecha?' · versión del '+esc(fFaena(ver.fecha)):''))+'</table>'+
       '<h4 class="dg-h4">3. Temario</h4>'+ulDg(I.t)+
       '<h4 class="dg-h4">4. Declaración</h4>'+
       '<p>Declaro haber recibido una copia del procedimiento de trabajo seguro indicado y haber sido instruido(a) en su contenido, en los riesgos de la tarea y en sus medidas de control. Me comprometo a cumplirlo, a utilizar correctamente los elementos de protección personal y a consultar a mi jefatura ante cualquier duda.</p>'+
-      '<div class="dg-firmas"><div>Firma del trabajador<br>'+esc(t.nombre||'')+'</div><div>Firma del relator<br>'+esc(lsGet('dg_rel_nom')||'')+'</div></div>';
+      '<div class="dg-firmas"><div>Firma del trabajador<br>'+esc(t.nombre||'')+'</div><div>'+(((lsGet('dg_rel_nom')||EMP_PREV.nombre)===EMP_PREV.nombre)?firmaPrevHtml():'')+'Firma del relator<br>'+esc(lsGet('dg_rel_nom')||EMP_PREV.nombre)+'</div></div>';
   }; }
   // Lo que se escribe en el relator / horario se recuerda para el siguiente registro (útil al generar en lote).
   $('dg-doc').addEventListener('input',function(e){ var k=e.target&&e.target.getAttribute&&e.target.getAttribute('data-ls'); if(k) lsSet(k, e.target.textContent.trim()); });
