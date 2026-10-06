@@ -386,11 +386,13 @@
   .dg-h .ver{border-left:1px solid #d9dce8;background:#f6f7fb;font:600 10px var(--font);color:#55607a;line-height:1.7;white-space:nowrap;}
   .dg-h .ver b{color:var(--ink);font-weight:800;}
   .dg-band{height:4px;border-radius:2px;background:linear-gradient(90deg,var(--orange) 0 70%,var(--ink) 70% 100%);margin:0 0 16px;}
-  .dg-sig td{width:40%;height:52px;} .dg-sig td.fx{width:20%;text-align:center;}
+  /* Estándar de firmas en todas las hojas: alto real de una firma en A4 (~1,9 cm = --firma-h), apenas sobresale del cuadro */
+  #dg-doc{--firma-h:82px;}
+  .dg-sig{overflow:visible !important;} .dg-sig td{width:36%;height:70px;} .dg-sig td.fx{width:28%;text-align:center;position:relative;} .dg-sig .sl{position:relative;z-index:1;}
   .dg-sig .sl,.pts-ctl .sl{display:block;font:800 9px var(--font);color:#8a90a6;text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px;}
-  .dg-sig td.fx img.rs-sig,.dg-sig td.fx img.rs-prev{height:44px;width:auto;max-width:100%;object-fit:contain;display:block;margin:0 auto;} .dg-sig td.fx img.rs-tim{display:none;}
+  .dg-sig td.fx img.rs-sig,.dg-sig td.fx img.rs-prev{position:absolute;left:50%;top:52%;transform:translate(-50%,-50%);height:var(--firma-h);width:auto;max-width:112%;object-fit:contain;} .dg-sig td.fx img.rs-tim{display:none;}
   .dg-firmas>div{position:relative;}
-  .dg-firmas .rs-prev{position:absolute;left:50%;bottom:100%;transform:translateX(-50%);height:52px;width:auto;max-width:80%;object-fit:contain;margin-bottom:-6px;}
+  .dg-firmas .rs-prev{position:absolute;left:50%;bottom:100%;transform:translateX(-50%);height:var(--firma-h);width:auto;max-width:95%;object-fit:contain;margin-bottom:-16px;}
   .emp-firmas{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;}
   .emp-firma{border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;}
   .emp-firma .fz{height:70px;display:flex;align-items:center;justify-content:center;gap:10px;background:repeating-conic-gradient(#f3f4f8 0 25%,#fff 0 50%) 0 0/14px 14px;border-radius:8px;}
@@ -412,7 +414,7 @@
   .dg-tbl th{background:var(--ink);color:#fff;font-weight:700;font-size:11px;letter-spacing:.02em;}
   .dg-tbl td.n{width:26px;text-align:center;color:var(--muted);}
   .dg-tbl td.f{width:90px;}
-  .dg-firmas{display:flex;justify-content:space-around;gap:20px;margin-top:36px;text-align:center;font-size:12px;}
+  .dg-firmas{display:flex;justify-content:space-around;gap:20px;margin-top:84px;text-align:center;font-size:12px;}
   .dg-firmas div{flex:1;border-top:1px solid #333;padding-top:6px;}
   #dg-var{width:auto;max-width:46%;font:600 12px var(--font);padding:6px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.1);color:#fff;}
   #dg-var option{color:#222;}
@@ -845,7 +847,7 @@
   .fa-firma .rs-tim{position:absolute;right:1%;top:4px;max-height:185px;max-width:30%;}
   .dg-firmas.con-rep{margin-top:130px;}
   .dg-rep{position:relative;}
-  .dg-rep .rs-sig{position:absolute;left:32%;bottom:100%;transform:translateX(-50%);max-height:95px;max-width:60%;margin-bottom:-12px;}
+  .dg-rep .rs-sig{position:absolute;left:32%;bottom:100%;transform:translateX(-50%);height:var(--firma-h);width:auto;max-width:60%;object-fit:contain;margin-bottom:-16px;}
   .dg-rep .rs-tim{position:absolute;right:-8px;bottom:100%;margin-bottom:-24px;max-height:125px;max-width:48%;}
   .af-sec{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line);}
   .af-sec b{flex:1;font-weight:600;font-size:.9rem;}
