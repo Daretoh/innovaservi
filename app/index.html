@@ -783,6 +783,21 @@
   .fr-buk{display:flex;align-items:center;gap:8px;border-top:1px solid var(--line);margin-top:12px;padding-top:10px;font-size:.78rem;color:var(--muted);}
   .fr-gen{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
   .rd-grp{font:800 11px var(--font);color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:14px 0 6px;}
+  .emp-minis{display:flex;gap:4px;flex:none;}
+  .mini,.ed-th{display:flex;align-items:center;justify-content:center;background:#fff;border:1px solid var(--line);border-radius:4px;overflow:hidden;cursor:zoom-in;box-shadow:0 1px 3px rgba(20,30,70,.12);}
+  .mini{width:34px;height:44px;} .mini img,.ed-th img{width:100%;height:100%;object-fit:cover;object-position:top;}
+  .mini-ext{font:800 9px var(--font);color:var(--muted);}
+  .ed-docs{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:10px;margin-bottom:6px;}
+  .ed-doc{display:flex;gap:10px;border:1px solid var(--line);border-radius:12px;padding:8px;background:#fff;}
+  .ed-th{width:84px;height:108px;flex:none;}
+  .ed-inf{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
+  .ed-tit{font:700 13px var(--font);padding:7px 9px;border:1px solid var(--line);border-radius:9px;width:100%;box-sizing:border-box;}
+  .ed-acc{display:flex;gap:10px;margin-top:auto;font:700 12px var(--font);}
+  .ed-acc button,.ed-acc a{background:none;border:none;padding:0;cursor:pointer;color:var(--orange-2);font:inherit;text-decoration:none;}
+  .ed-acc .ed-del{color:#dc2626;margin-left:auto;}
+  #doc-prev{position:fixed;inset:0;z-index:86;background:#525866;overflow-y:auto;}
+  #dp-body{display:flex;flex-direction:column;align-items:center;gap:12px;padding:14px 12px 30px;}
+  #dp-body canvas,#dp-body>img{max-width:100%;background:#fff;box-shadow:0 6px 24px rgba(0,0,0,.35);}
   .emp-row{display:flex;align-items:center;gap:8px;padding:10px 4px;border-bottom:1px solid var(--line);cursor:pointer;}
   .emp-row:hover{background:var(--alt);}
   .emp-row .en{flex:1;min-width:0;} .emp-row .en b{display:block;font:700 14px var(--font);color:var(--ink);} .emp-row .en span{font-size:.75rem;color:var(--muted);}
@@ -6301,8 +6316,11 @@
       var gen='';
       if(tipo==='pts_funciones'||(typeof PTS_DOC!=='undefined'&&PTS_DOC[tipo])) gen='<button class="rd-gen emp-pf" data-pts="'+enc(tipo)+'" title="Generar el procedimiento con formato 2026">'+svgI(ICO.gen,15)+'Generar PTS</button>';
       if(typeof DOC_GEN!=='undefined'&&DOC_GEN[tipo]) gen+='<button class="rd-gen emp-gen" data-gen="'+enc(tipo)+'" title="Generar el registro de entrega para varios trabajadores">'+svgI(ICO.gen,15)+'Registrar entrega</button>';
-      return '<div class="emp-row" data-tipo="'+enc(tipo)+'" data-nom="'+enc(nombre)+'" data-v="'+(vence?1:0)+'"><div class="en"><b>'+esc(nombre)+'</b><span>'+(u?('Actualizado '+esc(fechaCorta(u.fecha||String(u.created_at||'').slice(0,10)))+(u.vencimiento?' · vence '+esc(fechaCorta(u.vencimiento)):'')+(E.n>1?' · '+E.n+' versiones':'')):(vence?'Con vencimiento':'Toca para subir el archivo'))+'</span></div>'+chip+
-        (u&&u.url?'<a href="'+esc(u.url)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:var(--orange-2);font-weight:700;font-size:.8rem">descargar</a>':'')+gen+'</div>'; }
+      var multi=esMulti(tipo,E.todos), vis=multi?E.todos.slice(0,4):(u?[u]:[]);
+      var sub=!u?(vence?'Con vencimiento':'Toca para subir el archivo'):(multi?(E.n+(E.n===1?' documento':' documentos')+' · '+E.todos.map(function(d){ return d.titular||'sin nombre'; }).join(', ')):('Actualizado '+fechaCorta(u.fecha||String(u.created_at||'').slice(0,10))+(u.vencimiento?' · vence '+fechaCorta(u.vencimiento):'')+(E.n>1?' · '+E.n+' versiones':'')));
+      var minis=vis.filter(function(d){ return d.url; }).map(function(d){ return '<span class="mini" data-mini="'+esc(d.url)+'" data-url="'+esc(d.url)+'" data-t="'+enc(nombre+(d.titular?' · '+d.titular:''))+'" title="Vista previa'+(d.titular?': '+enc(d.titular):'')+'"></span>'; }).join('');
+      return '<div class="emp-row" data-tipo="'+enc(tipo)+'" data-nom="'+enc(nombre)+'" data-v="'+(vence?1:0)+'">'+(minis?'<div class="emp-minis">'+minis+'</div>':'')+'<div class="en"><b>'+esc(nombre)+'</b><span>'+esc(sub)+'</span></div>'+chip+
+        ((u&&u.url&&!multi)?'<a href="'+esc(u.url)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:var(--orange-2);font-weight:700;font-size:.8rem">descargar</a>':'')+gen+'</div>'; }
     function propios(k){ var vistos={}, out=[]; EMP_D.forEach(function(d){ if(conocidos[d.tipo]||vistos[d.tipo]) return; if((d.carpeta||'otros')!==k) return; vistos[d.tipo]=1; out.push([d.tipo, d.nombre||d.tipo, false]); }); return out; }
     function card(k, n, filas, addLbl){ var vis=filas.filter(function(x){ return pasa(x[1]); });
       if(q && !vis.length) return '';
@@ -6316,18 +6334,30 @@
       (q?'':'<button type="button" class="btn ghost small emp-add" data-c="formatos" style="width:auto;margin-top:8px">＋ Subir otro formato (Word, Excel o PDF)</button>')+'</div>';
     if(IA_FIRMA===null && sb){ cargarFirma(pintarEmp); }
     var firmas=q?'':'<div class="card" style="padding:12px 14px"><div class="rd-grp" style="margin-top:0">Firmas para los documentos</div><div class="emp-firmas">'+
-      '<div class="emp-firma"><b style="font-size:.85rem">'+esc(EMP.rep)+'</b><span class="note" style="margin:0">Gerente General · firma y timbre</span><div class="fz">'+(FIRMA_SIG?'<img src="'+FIRMA_SIG+'">':'')+(FIRMA_TIM?'<img src="'+esc(FIRMA_TIM)+'">':'')+((FIRMA_SIG||FIRMA_TIM)?'':'<span class="note">Sin firma</span>')+'</div><button type="button" class="btn ghost small" id="ef-rep" style="width:auto">Cambiar</button></div>'+
+      '<div class="emp-firma"><b style="font-size:.85rem">'+esc(EMP.rep)+'</b><span class="note" style="margin:0">Gerente General · firma y timbre por separado</span><div class="fz">'+(FIRMA_SIG?'<img src="'+FIRMA_SIG+'" title="Firma">':'<span class="note">Sin firma</span>')+(FIRMA_TIM?'<img src="'+esc(FIRMA_TIM)+'" title="Timbre">':'<span class="note">Sin timbre</span>')+'</div>'+
+        '<div style="display:flex;gap:6px;flex-wrap:wrap"><label class="btn ghost small" style="width:auto;cursor:pointer">'+(FIRMA_SIG?'Cambiar firma':'Subir firma')+'<input type="file" id="ef-repf" accept="image/*" hidden></label><label class="btn ghost small" style="width:auto;cursor:pointer">'+(FIRMA_TIM?'Cambiar timbre':'Subir timbre')+'<input type="file" id="ef-tim" accept="image/*" hidden></label>'+
+        (FIRMA_SIG?'<a class="btn ghost small" style="width:auto;text-decoration:none" download="firma-gerente.png" href="'+FIRMA_SIG+'">PNG firma</a>':'')+(FIRMA_TIM&&FIRMA_TIM.indexOf('data:')===0?'<a class="btn ghost small" style="width:auto;text-decoration:none" download="timbre.png" href="'+FIRMA_TIM+'">PNG timbre</a>':'')+'</div></div>'+
       '<div class="emp-firma"><b style="font-size:.85rem">'+esc(EMP_PREV.nombre)+'</b><span class="note" style="margin:0">'+esc(EMP_PREV.cargo)+' · firma</span><div class="fz">'+(FIRMA_PREV?'<img src="'+FIRMA_PREV+'">':'<span class="note">Sin firma</span>')+'</div><label class="btn ghost small" style="width:auto;text-align:center;cursor:pointer">'+(FIRMA_PREV?'Cambiar':'Subir foto de la firma')+'<input type="file" id="ef-prev" accept="image/*" hidden></label></div>'+
       '</div><p class="note" style="margin:8px 0 0">Basta una foto de la firma sobre papel blanco: se quita el fondo y se ajusta el tamaño sola.</p></div>';
     var html=firmas+EMP_CARPETAS.map(function(cp){ return card(cp.k, cp.n, cp.tipos.concat(propios(cp.k))); }).join('')+fmtCard+card('otros','Otros documentos',propios('otros'),'Agregar otro documento');
     c.innerHTML=html||'<div class="empty">Nada coincide con “'+esc(EMP_Q)+'”.</div>';
+    pintarMinis(c);
+    c.querySelectorAll('.emp-row .mini').forEach(function(m){ m.addEventListener('click',function(ev){ ev.stopPropagation(); verDoc(m.getAttribute('data-url'), m.getAttribute('data-t')); }); });
     c.querySelectorAll('.emp-row[data-tipo]').forEach(function(el){ el.addEventListener('click',function(){ abrirEmpDoc(el.dataset.tipo, el.dataset.nom, el.dataset.v==='1'); }); });
     c.querySelectorAll('.emp-gen').forEach(function(b){ b.addEventListener('click',function(ev){ ev.stopPropagation(); abrirPickDoc(b.dataset.gen); }); });
     c.querySelectorAll('.emp-pf').forEach(function(b){ b.addEventListener('click',function(ev){ ev.stopPropagation(); var s=b.dataset.pts, nom=b.closest('.emp-row').dataset.nom;
       generarPTS(s); }); });
     c.querySelectorAll('.emp-fmt').forEach(function(el){ el.addEventListener('click',function(){ var f=EMP_FMT.filter(function(x){ return x.k===el.dataset.k; })[0]; if(f) abrirDocEmpresa({ nombre:f.n, opciones:f.opciones?f.opciones():null, build:f.build }); }); });
     c.querySelectorAll('.emp-add').forEach(function(b){ b.addEventListener('click',function(){ abrirEmpDoc(null, '', false, b.dataset.c); }); });
-    if($('ef-rep')) $('ef-rep').addEventListener('click',function(){ $('ia-firma').click(); });
+    // Sube una foto, la limpia (sin fondo, recortada) y la guarda como PNG en la configuración.
+    function subirFirmaCfg(input, clave, op, aplicar){ input.addEventListener('change',function(){ var f=this.files&&this.files[0]; if(!f) return; busy(true,'Limpiando la imagen…');
+      var u=URL.createObjectURL(f);
+      limpiarFirma(u, op).then(function(png){ URL.revokeObjectURL(u); busy(true,'Guardando…');
+        sb.from('config').upsert([{clave:clave,valor:png}],{onConflict:'clave'}).then(function(r){ busy(false);
+          if(r&&r.error){ toast('No se guardó: '+r.error.message); return; } aplicar(png); toast('✓ Guardado'); pintarEmp(); }, function(){ busy(false); toast('No se pudo guardar.'); });
+      }, function(){ busy(false); toast('No se detectó la imagen. Prueba con una foto sobre papel blanco.'); }); }); }
+    if($('ef-repf')) subirFirmaCfg($('ef-repf'),'firma_rep_url',{color:true},function(p){ FIRMA_SIG=p; });
+    if($('ef-tim')) subirFirmaCfg($('ef-tim'),'timbre_url',{color:true,alto:320},function(p){ FIRMA_TIM=p; });
     if($('ef-prev')) $('ef-prev').addEventListener('change',function(){ var f=this.files&&this.files[0]; if(!f) return; busy(true,'Limpiando la firma…');
       var u=URL.createObjectURL(f);
       limpiarFirma(u).then(function(png){ URL.revokeObjectURL(u); busy(true,'Guardando…');
@@ -6427,27 +6457,79 @@
         'Mantener el orden y la limpieza del lugar de trabajo.']) +
       '';
   }
+  // ---- Vista previa de documentos (miniatura de la 1ª página y visor dentro de la app) ----
+  function cargarPdfJs(){ if(window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+    return new Promise(function(res,rej){ var s=document.createElement('script'); s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+      // El worker se carga como blob local: un Worker desde otro dominio queda bloqueado y pdf.js se cuelga.
+      s.onload=function(){ fetch('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js').then(function(r){ return r.text(); }).then(function(js){
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc=URL.createObjectURL(new Blob([js],{type:'text/javascript'})); res(window.pdfjsLib); }, rej); };
+      s.onerror=rej; document.head.appendChild(s); }); }
+  function extDoc(u){ return (String(u||'').split('?')[0].split('#')[0].split('.').pop()||'').toLowerCase(); }
+  function abrirPdfJs(url){ return cargarPdfJs().then(function(L){ return fetch(urlCors(url),{mode:'cors'}).then(function(r){ if(!r.ok) throw 0; return r.arrayBuffer(); }).then(function(ab){ return L.getDocument({data:ab}).promise; }); }); }
+  function pagCanvas(pdf,n,ancho){ return pdf.getPage(n).then(function(pg){ var v=pg.getViewport({scale:1}), vp=pg.getViewport({scale:ancho/v.width}), c=document.createElement('canvas');
+    c.width=Math.round(vp.width); c.height=Math.round(vp.height); return pg.render({canvasContext:c.getContext('2d'),viewport:vp,intent:'print'}).promise.then(function(){ return c; }); }); }
+  // e-RUT: lee el "Usuario cédula" del PDF para sugerir a quién corresponde
+  function sugerirTitular(url){ if(extDoc(url)!=='pdf') return Promise.resolve(null);
+    return abrirPdfJs(url).then(function(pdf){ return pdf.getPage(1); }).then(function(pg){ return pg.getTextContent(); }).then(function(tc){
+      var it=tc.items.map(function(i){ return String(i.str||'').trim(); }).filter(Boolean);
+      for(var i=0;i<it.length-2;i++){ if(/^USUARIO$/i.test(it[i]) && /^C[ÉE]DULA$/i.test(it[i+1])) return 'Usuario: '+titleCase(it[i+2]); }
+      return null; }).catch(function(){ return null; }); }
+  var MINI={};
+  function miniDoc(url){ if(!url) return Promise.resolve(null); if(MINI[url]) return MINI[url]; var e=extDoc(url);
+    if(/^(png|jpe?g|webp|gif)$/.test(e)) return (MINI[url]=Promise.resolve(url));
+    if(e!=='pdf') return (MINI[url]=Promise.resolve(null));
+    return (MINI[url]=abrirPdfJs(url).then(function(pdf){ return pagCanvas(pdf,1,300); }).then(function(c){ return c.toDataURL('image/jpeg',0.85); }).catch(function(){ return null; })); }
+  function pintarMinis(cont){ cont.querySelectorAll('[data-mini]').forEach(function(el){ var u=el.getAttribute('data-mini');
+    miniDoc(u).then(function(src){ el.innerHTML=src?'<img src="'+src+'" alt="">':'<span class="mini-ext">'+esc(extDoc(u).toUpperCase()||'DOC')+'</span>'; }); }); }
+  // Visor: muestra todas las páginas del PDF (o la imagen) antes de descargar.
+  function verDoc(url, titulo){
+    var ov=$('doc-prev'); if(!ov){ ov=document.createElement('div'); ov.id='doc-prev'; ov.className='hide';
+      ov.innerHTML='<div class="report-actions"><button id="dp-close" class="btn ghost small" style="width:auto">Cerrar</button><span class="rep-hint" id="dp-t"></span><a id="dp-dl" class="btn small" target="_blank" rel="noopener" style="width:auto;text-decoration:none">Descargar</a></div><div id="dp-body"></div>';
+      document.body.appendChild(ov); $('dp-close').addEventListener('click',function(){ ov.classList.add('hide'); $('dp-body').innerHTML=''; }); }
+    $('dp-t').textContent=titulo||''; $('dp-dl').href=url; var b=$('dp-body'), e=extDoc(url);
+    ov.classList.remove('hide'); ov.scrollTop=0;
+    if(/^(png|jpe?g|webp|gif)$/.test(e)){ b.innerHTML='<img src="'+esc(url)+'" alt="">'; return; }
+    if(e!=='pdf'){ b.innerHTML='<div class="card" style="max-width:520px;margin:30px auto;text-align:center"><p class="note" style="margin:0">Este archivo ('+esc(e.toUpperCase())+') no tiene vista previa. Usa “Descargar” para abrirlo.</p></div>'; return; }
+    b.innerHTML='<div class="note" style="text-align:center;margin:30px">Cargando vista previa…</div>';
+    abrirPdfJs(url).then(function(pdf){ b.innerHTML=''; var n=0, ancho=Math.min(900, (window.innerWidth||900)-24);
+      (function sig(){ n++; if(n>pdf.numPages) return; pagCanvas(pdf,n,ancho*(window.devicePixelRatio>1?1.5:1)).then(function(c){ c.style.width=ancho+'px'; b.appendChild(c); sig(); }); })(); })
+    .catch(function(){ b.innerHTML='<div class="card" style="max-width:520px;margin:30px auto;text-align:center"><p class="note" style="margin:0">No se pudo mostrar la vista previa. Usa “Descargar”.</p></div>'; });
+  }
+
+  // e-RUT y similares: varios documentos vigentes a la vez (uno por titular), no versiones.
+  var EMP_MULTI={ erut:true };
+  function esMulti(tipo, todos){ return !!EMP_MULTI[tipo] || (todos||[]).some(function(d){ return d.titular; }); }
   function abrirEmpDoc(tipo, nombre, vence, carpetaNueva){
-    var E=tipo?empUlt(tipo):{ult:null,n:0,todos:[]}, nuevo=!tipo;
+    var E=tipo?empUlt(tipo):{ult:null,n:0,todos:[]}, nuevo=!tipo, multi=esMulti(tipo,E.todos);
     $('re-title').textContent=nuevo?'Nuevo documento de empresa':nombre;
-    var hist=E.todos.map(function(d){ return '<div class="rrhh-pers" style="cursor:default"><span class="rp-nm">'+esc(fechaCorta(d.fecha||String(d.created_at||'').slice(0,10)))+(d.vencimiento?' · vence '+esc(fechaCorta(d.vencimiento)):'')+(d.nota?' · '+esc(d.nota):'')+'</span>'+(d.url?'<a href="'+esc(d.url)+'" target="_blank" rel="noopener" style="color:var(--orange-2);font-weight:700;font-size:.8rem">ver</a>':'')+'<button type="button" class="ed-del" data-id="'+d.id+'" title="Eliminar versión" style="border:none;background:none;color:#dc2626;cursor:pointer;font:800 14px var(--font)">×</button></div>'; }).join('');
+    var docs=E.todos.map(function(d){ var f=fechaCorta(d.fecha||String(d.created_at||'').slice(0,10));
+      return '<div class="ed-doc"><div class="ed-th" data-mini="'+esc(d.url||'')+'" data-url="'+esc(d.url||'')+'" data-t="'+enc(d.titular||nombre||'')+'" title="Ver"></div>'+
+        '<div class="ed-inf"><input class="ed-tit" data-id="'+d.id+'" value="'+enc(d.titular||'')+'" placeholder="'+(multi?'¿A quién corresponde? (ej: Empresa, socio…)':'Nombre o detalle (opcional)')+'">'+
+        '<span class="note" style="margin:2px 0 0">'+esc(f)+(d.vencimiento?' · vence '+esc(fechaCorta(d.vencimiento)):'')+(d.nota?' · '+esc(d.nota):'')+'</span>'+
+        '<div class="ed-acc">'+(d.url?'<button type="button" class="ed-ver" data-url="'+esc(d.url)+'" data-t="'+enc(d.titular||nombre||'')+'">Ver</button><a href="'+esc(d.url)+'" target="_blank" rel="noopener">Descargar</a>':'')+'<button type="button" class="ed-del" data-id="'+d.id+'">Eliminar</button></div></div></div>'; }).join('');
     $('re-body').innerHTML='<div class="card">'+
+      (docs?'<div class="rd-grp" style="margin-top:0">'+(multi?'Documentos ('+E.n+')':'Versiones · la más reciente es la vigente')+'</div><div class="ed-docs">'+docs+'</div><div class="rd-grp">'+(multi?'Agregar otro':'Subir nueva versión')+'</div>':'')+
       (nuevo?'<div class="fld"><label>Nombre del documento</label><input type="text" id="ed-nom" placeholder="Ej: Póliza de seguro, acta comité paritario…"></div>':'')+
-      '<p class="note" style="margin:0 0 8px">'+(E.ult?'Sube la nueva versión; la anterior queda en el historial.':'Sube el archivo vigente.')+'</p>'+
+      '<div class="fld"><label>'+(multi?'¿A quién corresponde?':'Nombre o detalle (opcional)')+'</label><input type="text" id="ed-titular" placeholder="'+(multi?'Ej: Innovación y Servicios SpA, Cristopher Ruiz…':'Opcional')+'"></div>'+
       '<div class="grid2"><div class="fld" style="margin:0"><label>Fecha del documento</label><input type="date" id="ed-fecha" value="'+todayISO()+'"></div><div class="fld" style="margin:0"><label>Vence'+(vence?'':' (si aplica)')+'</label><input type="date" id="ed-venc"></div></div>'+
       '<div class="fld" style="margin-top:10px"><label>Archivo</label><div><label class="catadd" style="display:inline-block">'+svgI(ICO.up,15)+'Subir archivo<input type="file" id="ed-file" accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx" hidden></label> <span id="ed-fn" class="note"></span></div></div>'+
       '<div class="fld"><label>Nota</label><input type="text" id="ed-nota" placeholder="Opcional"></div>'+
       '<button id="ed-save" class="btn" style="width:100%;margin-top:8px">'+svgI(ICO.save)+'Guardar</button>'+
-      (hist?'<div class="rd-grp">Historial</div>'+hist:'')+
     '</div>';
+    pintarMinis($('re-body'));
+    // sin nombre todavía: se sugiere desde el documento (e-RUT → usuario autorizado) y se guarda; se puede editar
+    if(multi && sb) E.todos.forEach(function(d){ if(d.titular||!d.url) return; sugerirTitular(d.url).then(function(t){ if(!t) return;
+      var inp=$('re-body').querySelector('.ed-tit[data-id="'+d.id+'"]'); if(inp&&!inp.value){ inp.value=t; }
+      sb.from('empresa_docs').update({titular:t}).eq('id',d.id).then(function(r){ if(!(r&&r.error)){ d.titular=t; pintarEmp(); } }); }); });
     var file=null;
     $('ed-file').addEventListener('change',function(){ file=this.files&&this.files[0]; $('ed-fn').textContent=file?('· '+file.name):''; });
     $('ed-save').addEventListener('click',function(){
       var nom=nuevo?($('ed-nom').value.trim()):nombre; if(!nom){ toast('Escribe el nombre del documento.'); return; }
+      var tit=$('ed-titular').value.trim(); if(multi && !tit){ toast('Indica a quién corresponde.'); return; }
       if(!file){ toast('Sube el archivo.'); return; }
       var tp=tipo||('otro_'+slug(nom).toLowerCase());
       var cp=EMP_CARPETAS.filter(function(c){ return c.tipos.some(function(x){ return x[0]===tp; }); })[0];
-      var row={ carpeta:(cp?cp.k:(carpetaNueva||'otros')), tipo:tp, nombre:nom, fecha:($('ed-fecha').value||null), vencimiento:($('ed-venc').value||null), nota:($('ed-nota').value.trim()||null), autor:userEmail };
+      var row={ carpeta:(cp?cp.k:(carpetaNueva||'otros')), tipo:tp, nombre:nom, titular:(tit||null), fecha:($('ed-fecha').value||null), vencimiento:($('ed-venc').value||null), nota:($('ed-nota').value.trim()||null), autor:userEmail };
       busy(true,'Subiendo…');
       var ext=((file.name||'').split('.').pop()||'pdf').toLowerCase();
       subirArchivo(file,'empresa/'+row.carpeta, tp+'_'+(row.fecha||todayISO())+'.'+ext).then(function(res){
@@ -6458,7 +6540,12 @@
           toast('✓ Guardado'); $('rrhh-edit').classList.add('hide'); renderEmp(); }, function(){ busy(false); toast('No se pudo guardar.'); });
       }, function(){ busy(false); toast('No se pudo subir el archivo.'); });
     });
-    $('re-body').querySelectorAll('.ed-del').forEach(function(b){ b.addEventListener('click',function(){ if(!confirm('¿Eliminar esta versión?')) return;
+    // Nombrar / asignar cada archivo (se guarda al salir del campo)
+    $('re-body').querySelectorAll('.ed-tit').forEach(function(inp){ inp.addEventListener('change',function(){ var id=+inp.dataset.id, v=inp.value.trim()||null;
+      sb.from('empresa_docs').update({titular:v}).eq('id',id).then(function(r){ if(r&&r.error){ toast('No se guardó: '+r.error.message); return; }
+        EMP_D.forEach(function(d){ if(d.id===id) d.titular=v; }); toast('✓ Nombre guardado'); pintarEmp(); }); }); });
+    $('re-body').querySelectorAll('.ed-ver,.ed-th').forEach(function(b){ b.addEventListener('click',function(){ var u=b.getAttribute('data-url'); if(u) verDoc(u, nombre+(b.getAttribute('data-t')&&b.getAttribute('data-t')!==nombre?' · '+b.getAttribute('data-t'):'')); }); });
+    $('re-body').querySelectorAll('.ed-del').forEach(function(b){ b.addEventListener('click',function(){ if(!confirm('¿Eliminar este archivo?')) return;
       busy(true,'Eliminando…'); sb.from('empresa_docs').delete().eq('id',+b.dataset.id).then(function(){ busy(false); toast('✓ Eliminado'); $('rrhh-edit').classList.add('hide'); renderEmp(); }, function(){ busy(false); }); }); });
     $('rrhh-edit').classList.remove('hide'); $('rrhh-edit').scrollTop=0;
   }
@@ -6599,7 +6686,7 @@
   function firmaPrevHtml(){ return FIRMA_PREV?'<img class="rs-prev" src="'+FIRMA_PREV+'" alt="">':''; }
   // Limpia la foto de una firma: quita el papel y las sombras (fondo local adaptativo), deja la tinta azul oscuro,
   // recorta justo a la firma y la normaliza a 180 px de alto (nítida al imprimir y liviana).
-  function limpiarFirma(src){ return new Promise(function(res,rej){ var im=new Image(); im.crossOrigin='anonymous';
+  function limpiarFirma(src, op){ op=op||{}; return new Promise(function(res,rej){ var im=new Image(); im.crossOrigin='anonymous';
     im.onload=function(){ try{
       var s=Math.min(1,1000/im.naturalWidth), W=Math.round(im.naturalWidth*s), H=Math.round(im.naturalHeight*s);
       var c=document.createElement('canvas'); c.width=W; c.height=H; var x=c.getContext('2d'); x.fillStyle='#fff'; x.fillRect(0,0,W,H); x.drawImage(im,0,0,W,H);   // fondo blanco: sirve también si ya viene sin fondo
@@ -6611,12 +6698,14 @@
         var x0=Math.max(0,x2-R),x1=Math.min(W,x2+R+1),y0=Math.max(0,y2-R),y1=Math.min(H,y2+R+1);
         var bg=(I[y1*(W+1)+x1]-I[y0*(W+1)+x1]-I[y1*(W+1)+x0]+I[y0*(W+1)+x0])/((x1-x0)*(y1-y0)), k=y2*W+x2, dif=bg-L[k];
         if(dif<22) continue; var al=Math.min(255,Math.round((dif-22)*7)); if(al<30) continue;
-        o.data[k*4]=22; o.data[k*4+1]=34; o.data[k*4+2]=92; o.data[k*4+3]=al;
+        if(op.color){ var f=0.75; o.data[k*4]=Math.round(p[k*4]*f); o.data[k*4+1]=Math.round(p[k*4+1]*f); o.data[k*4+2]=Math.round(p[k*4+2]*f); }   // tinta real, algo más oscura
+        else { o.data[k*4]=22; o.data[k*4+1]=34; o.data[k*4+2]=92; }
+        o.data[k*4+3]=al;
         if(x2<a)a=x2; if(x2>cc)cc=x2; if(y2<b)b=y2; if(y2>dd)dd=y2; }
       if(cc<0){ rej('vacia'); return; }
       a=Math.max(0,a-4); b=Math.max(0,b-4); cc=Math.min(W-1,cc+4); dd=Math.min(H-1,dd+4);
       var c2=document.createElement('canvas'); c2.width=cc-a+1; c2.height=dd-b+1; c2.getContext('2d').putImageData(o,-a,-b);
-      var k2=Math.min(1,180/c2.height), c3=document.createElement('canvas'); c3.width=Math.round(c2.width*k2); c3.height=Math.round(c2.height*k2);
+      var k2=Math.min(1,(op.alto||180)/c2.height), c3=document.createElement('canvas'); c3.width=Math.round(c2.width*k2); c3.height=Math.round(c2.height*k2);
       c3.getContext('2d').drawImage(c2,0,0,c3.width,c3.height); res(c3.toDataURL('image/png'));
     }catch(e){ rej(e); } }; im.onerror=rej; im.src=src; }); }
   // Inserta el bloque "Documentos de la empresa" dentro de Documentación (queda oculto en Capacitaciones).
@@ -6644,9 +6733,10 @@
   function cliPideAcc(){ return (CLIENTES||[]).filter(function(c){ return c.pide_accidentes && c.estado!=='inactivo'; }); }
   function fichaCli(n){ return (CLIENTES||[]).filter(function(x){ return _cliKey(x.nombre)===_cliKey(n); })[0]; }
   function cargarFirma(cb){ if(IA_FIRMA!==null||!sb){ if(cb)cb(); return; }
-    sb.from('config').select('clave,valor').in('clave',['firma_timbre_url','firma_prev_url']).then(function(r){ var m={}; ((r&&r.data)||[]).forEach(function(x){ m[x.clave]=x.valor||''; });
+    sb.from('config').select('clave,valor').in('clave',['firma_timbre_url','firma_prev_url','firma_rep_url','timbre_url']).then(function(r){ var m={}; ((r&&r.data)||[]).forEach(function(x){ m[x.clave]=x.valor||''; });
       IA_FIRMA=m.firma_timbre_url||''; FIRMA_PREV=m.firma_prev_url||'';
-      if(!IA_FIRMA){ FIRMA_SIG=''; FIRMA_TIM=''; if(cb)cb(); return; } separarFirma(IA_FIRMA).then(function(){ if(cb)cb(); }); }, function(){ IA_FIRMA=''; if(cb)cb(); }); }
+      function sep(){ if(m.firma_rep_url) FIRMA_SIG=m.firma_rep_url; if(m.timbre_url) FIRMA_TIM=m.timbre_url; if(cb)cb(); }
+      if(!IA_FIRMA){ FIRMA_SIG=''; FIRMA_TIM=''; sep(); return; } separarFirma(IA_FIRMA).then(sep, sep); }, function(){ IA_FIRMA=''; if(cb)cb(); }); }
   // ====== Zerty · Cermaq: SOLO lo que generamos nosotros (lo emitido por terceros se sube directo en Zerty) ======
   var ZT_DESDE='2026-08';   // desde aquí se controla lo pendiente (el historial anterior ya está en Zerty)
   var ZT_GEN=[
