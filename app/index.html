@@ -6254,7 +6254,7 @@
     $('rrhh-zt').classList.toggle('hide', seg!=='zerty');
     if(seg==='doc'){ RRHH_CAT=DOC_TIPOS; $('rrhh-panel-note').innerHTML='Documentación y capacitaciones por trabajador <span class="cnt" id="rrhh-cnt"></span>. Lo firmado en Buk no se lleva aquí.'; renderRrhh(); }
     else if(seg==='salida'){ renderSal(); }
-    else if(seg==='empresa'){ renderEmp(); }
+    else if(seg==='empresa'){ EMP_ABIERTAS={}; renderEmp(); }
     else if(seg==='zerty'){ cargarZerty(); }
   }
   document.querySelectorAll('.rrhh-seg').forEach(function(b){ b.addEventListener('click',function(){ rrhhSeg(b.dataset.seg); }); });
@@ -6488,6 +6488,7 @@
     'Formatos':'<path d="M9 3h6v3H9z"/><path d="M7 5H5v16h14V5h-2"/><path d="M8 12h8M8 16h5"/>',
     'Otros':'<path d="M3 7h6l2 2h10v10H3z"/>'
   };
+  var EMP_ABIERTAS={};   // secciones abiertas mientras se trabaja; se reinicia al volver a entrar a Empresa
   function empSecciones(c, abrirTodo){
     c.querySelectorAll(':scope > .card').forEach(function(card){
       var tit=card.querySelector(':scope > .rd-grp'); if(!tit) return;
@@ -6503,9 +6504,9 @@
         (filas&&!fmt&&nombre.indexOf('Firmas')!==0?'<span class="emp-sbar"><i style="width:'+Math.round(cargados/filas*100)+'%"></i></span>':'')+
         '<svg class="emp-schev" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>';
       tit.replaceWith(cab); card.appendChild(cuerpo); card.classList.add('emp-sec');
-      var abierta=abrirTodo || lsGet(clave)==='1';
+      var abierta=abrirTodo || !!EMP_ABIERTAS[clave];   // al entrar a Empresa parten todas cerradas
       card.classList.toggle('abierta', abierta);
-      cab.addEventListener('click',function(){ var a=!card.classList.contains('abierta'); card.classList.toggle('abierta',a); if(!abrirTodo) lsSet(clave, a?'1':'0'); });
+      cab.addEventListener('click',function(){ var a=!card.classList.contains('abierta'); card.classList.toggle('abierta',a); if(!abrirTodo) EMP_ABIERTAS[clave]=a; });
     });
   }
   function nrmQ(x){ return (x||'').toString().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''); }
