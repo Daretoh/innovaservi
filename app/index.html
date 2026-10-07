@@ -409,6 +409,9 @@
   .pts-fig figcaption{font:600 10.5px var(--font);color:#55607a;margin-top:6px;line-height:1.35;}
   .pts-tit{font:800 19px var(--font);color:var(--ink);text-align:center;margin:4px 0 10px;text-transform:uppercase;letter-spacing:.02em;}
   .pts-ctl td{width:25%;}
+  .dg-acc{display:flex;gap:6px;flex:none;} .dg-acc .btn{width:auto;display:inline-flex;align-items:center;gap:6px;}
+  .report-actions .dg-acc .btn.ghost{color:#fff;border-color:rgba(255,255,255,.45);background:rgba(255,255,255,.08);}
+  @media(max-width:600px){ .dg-acc .btn span{display:none;} .dg-acc .btn{padding:8px 10px;} }
   .dg-foot{margin-top:26px;border-top:1px solid #e3e5ee;padding-top:8px;display:flex;justify-content:space-between;gap:10px;font:600 9px var(--font);color:#9a9fb0;}
   #dg-doc h3{font:800 15px var(--font);text-align:center;color:var(--ink);margin:0 0 14px;text-transform:uppercase;letter-spacing:.03em;}
   #dg-doc p{line-height:1.6;margin:0 0 12px;text-align:justify;}
@@ -1764,7 +1767,11 @@
     <button id="dg-close" class="btn ghost small" style="width:auto">Cerrar</button>
     <span class="rep-hint" id="dg-hint">Revisa los datos y descarga</span>
     <select id="dg-var" class="hide" title="Formato según el cargo"></select>
-    <button id="dg-save" class="btn small" style="width:auto">Descargar y guardar</button>
+    <div class="dg-acc">
+      <button id="dg-print" type="button" class="btn ghost small" title="Imprimir"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg><span>Imprimir</span></button>
+      <button id="dg-dl" type="button" class="btn ghost small" title="Descargar PDF"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span>Descargar</span></button>
+      <button id="dg-save" type="button" class="btn small" title="Guardar en la app"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg><span>Guardar</span></button>
+    </div>
   </div>
   <div id="dg-doc"></div>
 </div>
@@ -6523,19 +6530,19 @@
       $('dg-hint').textContent=o.nombre+(o.opciones?(' · '+(o.opciones.filter(function(x){ return x.v===v; })[0]||{}).n):'');
     }
     DG_QUEUE=[];
-    DG_CTX={ rebuild:pinta, save:function(){
+    DG_CTX={ rebuild:pinta, guardable:!!o.tipo, save:function(){
       busy(true,'Generando PDF…');
       pdfDesde($('dg-doc')).then(function(doc){
         var blob=doc.output('blob'), nombre=slug(o.nombre)+(v?'_'+slug(v):'')+'_'+todayISO()+'.pdf';
-        descargarBlob(blob, nombre);
+        // Guardar: solo guarda (Descargar es un botón aparte)
         if(!o.tipo || !sb){ busy(false); $('docgen').classList.add('hide'); return; }
         busy(true,'Guardando versión…');
         var f; try{ f=new File([blob], nombre, {type:'application/pdf'}); }catch(_){ f=blob; }
         subirArchivo(f,'empresa/pts', nombre).then(function(res){
-          if(!res||!res.url){ busy(false); toast('PDF descargado, pero no se guardó la versión.'); $('docgen').classList.add('hide'); return; }
+          if(!res||!res.url){ busy(false); toast('No se pudo guardar la versión. Revisa la conexión.'); $('docgen').classList.add('hide'); return; }
           var lbl=(o.opciones&&(o.opciones.filter(function(x){ return x.v===v; })[0]||{}).n)||'';
           var cpG=EMP_CARPETAS.filter(function(cx){ return cx.tipos.some(function(x){ return x[0]===o.tipo; }); })[0];
-          sb.from('empresa_docs').insert({ carpeta:(cpG?cpG.k:'pts'), tipo:o.tipo, nombre:o.nombre, fecha:todayISO(), url:res.url, nota:lbl||null, autor:userEmail }).then(function(){ busy(false); toast('✓ Descargado y guardado como versión vigente'); $('docgen').classList.add('hide'); renderEmp(); }, function(){ busy(false); $('docgen').classList.add('hide'); });
+          sb.from('empresa_docs').insert({ carpeta:(cpG?cpG.k:'pts'), tipo:o.tipo, nombre:o.nombre, fecha:todayISO(), url:res.url, nota:lbl||null, autor:userEmail }).then(function(){ busy(false); toast('✓ Guardado como versión vigente'); $('docgen').classList.add('hide'); renderEmp(); }, function(){ busy(false); $('docgen').classList.add('hide'); });
         });
       }).catch(function(){ busy(false); toast('No se pudo generar el PDF.'); });
     } };
@@ -6735,16 +6742,16 @@
     $('dg-var').classList.add('hide');
     dgSet(docSalida(s));
     $('dg-hint').textContent='Salida a atención médica · '+(s.nombre||'');
-    DG_CTX={ save:function(){
+    DG_CTX={ guardable:!!s.id, save:function(){
       busy(true,'Generando PDF…');
       pdfDesde($('dg-doc')).then(function(doc){
         var blob=doc.output('blob'), nombre='SALIDA_MEDICA_'+slug(s.nombre||'x')+'_'+(s.fecha||todayISO())+'.pdf';
-        descargarBlob(blob, nombre);
+        // Guardar: solo guarda (Descargar es un botón aparte)
         if(!s.id){ busy(false); $('docgen').classList.add('hide'); return; }
         busy(true,'Guardando…');
         var f; try{ f=new File([blob], nombre, {type:'application/pdf'}); }catch(_){ f=blob; }
         subirArchivo(f,'rrhh/salidas-medicas', nombre).then(function(res){
-          if(!res){ busy(false); toast('PDF descargado, pero no se guardó el archivo.'); $('docgen').classList.add('hide'); return; }
+          if(!res){ busy(false); toast('No se pudo guardar el archivo. Revisa la conexión.'); $('docgen').classList.add('hide'); return; }
           sb.from('salidas_medicas').update({url:res.url}).eq('id',s.id).then(function(){ busy(false); toast('✓ Documento generado y guardado'); $('docgen').classList.add('hide'); renderSal(); }, function(){ busy(false); $('docgen').classList.add('hide'); });
         });
       }).catch(function(){ busy(false); toast('No se pudo generar el PDF.'); });
@@ -7008,13 +7015,13 @@
     busy(true,'Generando PDF…');
     pdfDesde($('dg-doc')).then(function(doc){
       var blob=doc.output('blob'), nombre='NOMINA-TRABAJADORES_CERMAQ_'+p+'.pdf';
-      descargarBlob(blob,nombre); busy(true,'Guardando…');
+      busy(true,'Guardando…');   // solo guarda; Descargar es un botón aparte
       var f; try{ f=new File([blob],nombre,{type:'application/pdf'}); }catch(_){ f=blob; }
       subirArchivo(f,'zerty/nomina',nombre).then(function(res){
-        if(!res){ busy(false); toast('PDF descargado, pero no se pudo guardar.'); return; }
+        if(!res){ busy(false); toast('No se pudo guardar. Revisa la conexión.'); return; }
         sb.from('zerty_docs').delete().eq('tipo','nomina').eq('periodo',p).then(function(){
           sb.from('zerty_docs').insert({tipo:'nomina', periodo:p, url:res.url, nombre:'Nómina', autor:userEmail}).then(function(r){ busy(false);
-            if(r&&r.error){ toast(/zerty_docs/.test(r.error.message||'')?'PDF descargado. Falta correr zerty-docs.sql para guardarlo.':('PDF descargado, pero no se guardó: '+r.error.message)); return; }
+            if(r&&r.error){ toast(/zerty_docs/.test(r.error.message||'')?'Falta correr zerty-docs.sql para guardarlo.':('No se guardó: '+r.error.message)); return; }
             toast('✓ Nómina generada y guardada'); $('docgen').classList.add('hide'); DG_CTX=null; cargarZerty(); });
         });
       });
@@ -7131,16 +7138,16 @@
     pdfPaginas(Array.prototype.slice.call(d.querySelectorAll('.fa-page'))).then(function(doc){
       d.classList.remove('cap');
       var blob=doc.output('blob'), nombre='INFORME-ACCIDENTES_'+slug(ctx.cliente)+'_'+ctx.periodo+'.pdf';
-      descargarBlob(blob,nombre);
+      // solo guarda; Descargar es un botón aparte
       busy(true,'Guardando…');
       var f; try{ f=new File([blob],nombre,{type:'application/pdf'}); }catch(_){ f=blob; }
       subirArchivo(f,'prevencion/accidentes',nombre).then(function(res){
         var row={ periodo:ctx.periodo, cliente:ctx.cliente, servicio:ctx.servicio||null, sin_accidentes:ctx.sin, url:(res?res.url:null), autor:userEmail, created_at:new Date().toISOString() };
         sb.from('informes_accidentes').upsert(row,{onConflict:'periodo,cliente'}).then(function(r){
-          if(r&&r.error){ busy(false); toast(/informes_accidentes/.test(r.error.message||'')?'PDF descargado. Falta correr informes-accidentes-alertas.sql para guardarlo.':('PDF descargado, pero no se guardó: '+r.error.message)); return; }
+          if(r&&r.error){ busy(false); toast(/informes_accidentes/.test(r.error.message||'')?'Falta correr informes-accidentes-alertas.sql para guardarlo.':('No se guardó: '+r.error.message)); return; }
           function fin(){ busy(false); toast('✓ Informe generado y guardado'); $('docgen').classList.add('hide'); DG_CTX=null; if(!$('rrhh-zt').classList.contains('hide')) cargarZerty(); cargarAlertas(); }
           if(ctx.marcar) marcarCliAcc(ctx.cliente, fin); else fin();
-        }, function(){ busy(false); toast('PDF descargado, pero no se guardó.'); });
+        }, function(){ busy(false); toast('No se pudo guardar. Revisa la conexión.'); });
       });
     }).catch(function(){ d.classList.remove('cap'); busy(false); toast('No se pudo generar el PDF.'); });
   }
@@ -8098,24 +8105,44 @@
   $('dg-var').addEventListener('change',function(){ if(DG_CTX&&DG_CTX.rebuild) DG_CTX.rebuild(this.value); else if(DG_CTX) generarDoc(DG_CTX.tid, DG_CTX.tipo, this.value); });
   // Quitar un bloque opcional (cláusula que no aplica).
   $('dg-doc').addEventListener('click',function(e){ var x=e.target.closest&&e.target.closest('.dg-x'); if(x){ var b=x.closest('.dg-opt'); if(b) b.remove(); } });
+  // ---- Barra del documento: Imprimir · Descargar · Guardar ----
+  function dgNombreArchivo(){ return slug(($('dg-hint').textContent||'documento').split('·')[0].trim()||'documento')+'_'+todayISO()+'.pdf'; }
+  // Guardar solo aparece si el documento tiene dónde guardarse (ficha, Empresa, registro); los formatos en blanco solo se imprimen o descargan.
+  function dgPuedeGuardar(){ return !!(DG_CTX && (DG_CTX.tid || (DG_CTX.save && DG_CTX.guardable!==false))); }
+  (function(){ var dg=$('docgen'); if(!dg||!window.MutationObserver) return;
+    new MutationObserver(function(){ if(!dg.classList.contains('hide')) $('dg-save').classList.toggle('hide', !dgPuedeGuardar()); }).observe(dg,{attributes:true,attributeFilter:['class']}); })();
+  $('dg-dl').addEventListener('click',function(){
+    busy(true,'Generando PDF…');
+    pdfDesde($('dg-doc')).then(function(doc){ busy(false); descargarBlob(doc.output('blob'), dgNombreArchivo()); toast('✓ PDF descargado'); })
+      .catch(function(){ busy(false); toast('No se pudo generar el PDF.'); });
+  });
+  $('dg-print').addEventListener('click',function(){
+    // Imprime el documento tal cual se ve, en un marco aparte con los mismos estilos (sin la barra ni los controles de pantalla)
+    var css=Array.prototype.map.call(document.querySelectorAll('style'),function(s){ return s.textContent; }).join('\n');
+    var links=Array.prototype.map.call(document.querySelectorAll('link[rel="stylesheet"]'),function(l){ return l.outerHTML; }).join('');
+    var html='<!doctype html><html><head><meta charset="utf-8"><base href="'+location.href+'">'+links+'<style>'+css+'</style><style>@page{size:A4;margin:12mm 0} html,body{background:#fff !important} body>#dg-doc{display:block !important;box-shadow:none !important;margin:0 auto !important;padding:0 14mm !important;max-width:none !important} @media print{body>#dg-doc{display:block !important}} #dg-doc [contenteditable]{border-bottom-color:transparent !important} [data-html2canvas-ignore]{display:none !important} .dg-h4{break-after:avoid} .dg-tbl tr,#dg-doc p,.dg-ul li,.pts-fig,.dg-firmas,.dg-sig,.pts-ctl{break-inside:avoid}</style></head><body><div id="dg-doc">'+$('dg-doc').innerHTML+'</div></body></html>';
+    var f=document.createElement('iframe'); f.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0;'; document.body.appendChild(f);
+    var d=f.contentWindow.document; d.open(); d.write(html); d.close();
+    setTimeout(function(){ try{ f.contentWindow.focus(); f.contentWindow.print(); }catch(_){ toast('No se pudo abrir la impresión.'); } setTimeout(function(){ f.remove(); },60000); }, 600);
+  });
   $('dg-save').addEventListener('click',function(){
     if(!DG_CTX) return;
     if(DG_CTX.save){ DG_CTX.save(); return; }   // documentos que no son de un trabajador (ej. informe de accidentes)
     busy(true,'Generando PDF…');
     pdfDesde($('dg-doc')).then(function(doc){
       var blob=doc.output('blob'), nombre=(DG_CTX.tipo.toUpperCase())+'_'+slug(DG_CTX.nombre||'doc')+'_'+todayISO()+'.pdf';
-      descargarBlob(blob, nombre);
+      // solo guarda; Descargar es un botón aparte
       busy(true,'Guardando en la ficha…');
       var pdfFile; try{ pdfFile=new File([blob], nombre, {type:'application/pdf'}); }catch(_){ pdfFile=blob; }
       subirArchivo(pdfFile,'rrhh/'+slug(DG_CTX.nombre||'trab'), nombre).then(function(res){
         var row={ trabajador_id:DG_CTX.tid, tipo:DG_CTX.tipo, estado:'entregado', fecha:todayISO(), url:(res?res.url:null), autor:userEmail };
         sb.from('rrhh_docs').upsert(row,{onConflict:'trabajador_id,tipo'}).then(function(r){ busy(false);
-          if(r&&r.error){ toast('PDF descargado, pero no se guardó en la ficha.'); $('docgen').classList.add('hide'); dgAdvance(); return; }
+          if(r&&r.error){ toast('No se pudo guardar en la ficha. Revisa la conexión.'); $('docgen').classList.add('hide'); dgAdvance(); return; }
           RRHH_D[DG_CTX.tid+'|'+DG_CTX.tipo]=row; toast('✓ Documento generado y guardado');
           $('docgen').classList.add('hide'); if(typeof renderRrhh==='function') renderRrhh();
           if(typeof FICHA_ID!=='undefined' && FICHA_ID===DG_CTX.tid) renderFichaRrhh({id:DG_CTX.tid,nombre:DG_CTX.nombre});
           dgAdvance();
-        }, function(){ busy(false); toast('PDF descargado.'); $('docgen').classList.add('hide'); dgAdvance(); });
+        }, function(){ busy(false); toast('No se pudo guardar. Revisa la conexión.'); $('docgen').classList.add('hide'); dgAdvance(); });
       });
     }).catch(function(){ busy(false); toast('No se pudo generar el PDF.'); });
   });
