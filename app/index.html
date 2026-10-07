@@ -6379,6 +6379,7 @@
   var EMP_CARPETAS=[
     {k:'prev', n:'Reglamento y gestión preventiva', tipos:[['riohs','Reglamento Interno de Orden, Higiene y Seguridad (RIOHS)',false],['programa','Programa de prevención de riesgos',false],['iper','Matriz de riesgos (IPER)',false],['proc_iper','Procedimiento IPER',false],['proc_acc','Procedimiento en caso de accidentes del trabajo y enfermedad profesional',false],['proc_emerg','Procedimiento de emergencia · limpieza de estanques',false]]},
     {k:'pts', n:'Procedimientos de trabajo seguro (PTS)', tipos:[['pts_quimicos','PTS uso y manejo de químicos',false],['pts_extintores','PTS uso y manejo de extintores',false],['pts_altura','PTS trabajos en altura',false],['pts_confinados','PTS espacios confinados',false],['pts_alzahombre','PTS alza hombre / grúa Genie',false],['pts_herramientas','PTS uso de herramientas · limpieza de estanques',false],['pts_funciones','PTS acorde a sus funciones',false]]},
+    {k:'cap', n:'Capacitaciones', tipos:[['cap_herr','Capacitación: uso seguro de herramientas manuales y equipos de apoyo',false]]},
     {k:'legal', n:'Legal y previsional', tipos:[['erut','e-RUT de la empresa',false],['escritura','Escritura / estatutos',false],['vigencia','Certificado de vigencia',true],['mutual','Certificado de adhesión a la mutual',false],['tasa','Certificado de tasa de cotización',true]]}
   ];
   var EMP_D=[];
@@ -6386,9 +6387,9 @@
   function renderEmp(){ if(!sb){ pintarEmp(); return; } sb.from('empresa_docs').select('*').order('created_at',{ascending:false}).limit(2000).then(function(r){ EMP_D=(r&&!r.error&&r.data)||[]; pintarEmp(); }, function(){ pintarEmp(); }); }
   // Formatos en blanco que genera InnovaGestión (se descargan para que firme quien corresponda).
   var EMP_FMT=[
-    {k:'fmt_asist', n:'Registro de capacitación / charla (lista de asistencia)', build:function(){ return docAsistencia(null); }},
-    {k:'fmt_cap_herr', n:'Capacitación: uso seguro de herramientas manuales y equipos de apoyo', build:function(){ return docCapHerr(); }},
-    {k:'fmt_pts', n:'Registro de entrega de PTS (grupal)', opciones:function(){ return Object.keys(PTS_INFO).map(function(s){ return {v:s, n:PTS_INFO[s].n}; }); }, build:function(v){ return docAsistencia(v); }},
+    // Un solo registro: se elige la capacitación o el PTS y se rellena solo (tema, temario, duración, relator)
+    {k:'fmt_asist', n:'Registro de capacitación (lista de asistencia)', opciones:opcionesRegistro, build:function(v){ return docAsistencia(v); }},
+    {k:'fmt_eval', n:'Evaluación de aprendizaje (individual)', opciones:function(){ return Object.keys(CAP_DOC).filter(function(k){ return CAP_DOC[k].preg; }).map(function(k){ return {v:k, n:CAP_DOC[k].n}; }); }, build:function(v){ return docEvaluacion(v); }},
     {k:'fmt_epp', n:'Entrega de elementos de protección personal', build:function(){ return docEPP({nombre:'',rut:''}); }},
     {k:'fmt_odi', n:'Información de riesgos laborales (IRL)', build:function(){ return docODI({nombre:'',rut:'',cargo:''}); }},
     {k:'fmt_salida', n:'Registro de salida a atención médica', build:function(){ return docSalida({}); }}
@@ -6489,17 +6490,31 @@
   }
 
   // Formato: lista de asistencia a capacitación / charla. Con slug de PTS = registro de entrega grupal de ese PTS.
-  function docAsistencia(slugPts){
-    var I=slugPts?PTS_INFO[slugPts]:null, rows='';
+  // Opciones del Registro de capacitación: capacitaciones del catálogo, capacitaciones subidas en Empresa, PTS y tema libre
+  function opcionesRegistro(){
+    var L=Object.keys(CAP_DOC).map(function(k){ return {v:'cap:'+k, n:'Capacitación · '+CAP_DOC[k].n}; });
+    var vis={}; (EMP_D||[]).forEach(function(d){ if(d.carpeta==='cap' && !CAP_DOC[d.tipo] && !vis[d.tipo]){ vis[d.tipo]=1; L.push({v:'emp:'+d.tipo, n:'Capacitación · '+(d.nombre||d.tipo)}); } });
+    Object.keys(PTS_INFO).forEach(function(s){ L.push({v:'pts:'+s, n:'Entrega de PTS · '+PTS_INFO[s].n}); });
+    L.push({v:'libre', n:'Charla o tema libre'});
+    return L; }
+  function docAsistencia(sel){
+    sel=sel||'libre'; var p=String(sel).split(':'), tipo=p[0], id=p[1], I=null, C=null, tema='', sub='Capacitación · charla · instrucción', dur='';
+    if(tipo==='pts' || PTS_INFO[sel]){ I=PTS_INFO[id||sel]; tema='PTS '+I.n; sub='Procedimiento de trabajo seguro · '+I.n; }
+    else if(tipo==='cap'){ C=CAP_DOC[id]; tema=C.n; sub='Capacitación · '+C.n; dur=C.dur||''; }
+    else if(tipo==='emp'){ var d=(EMP_D||[]).filter(function(x){ return x.tipo===id; })[0]; tema=d?(d.nombre||''):''; sub='Capacitación · '+tema; }
+    var temario=I?I.t:(C?C.t:null), rows='';
     for(var i=1;i<=15;i++) rows+='<tr><td class="n">'+i+'</td><td></td><td style="width:110px"></td><td style="width:120px"></td><td style="width:110px"></td></tr>';
     function tr(a,b){ return '<tr><td class="dg-k">'+a+'</td><td>'+b+'</td></tr>'; }
+    function rel(k,def){ return '<span contenteditable data-ls="'+k+'">'+esc(lsGet(k)||def||'')+'</span>'; }
+    var relNom=lsGet('dg_rel_nom')||EMP_PREV.nombre;
     return dgHead(I?'REGISTRO DE ENTREGA E INSTRUCCIÓN':'REGISTRO DE CAPACITACIÓN')+
-      '<p style="text-align:center;margin-top:-6px;color:#667;font-weight:700">'+(I?('Procedimiento de trabajo seguro · '+esc(I.n)):'Capacitación · charla · instrucción')+'</p>'+
-      '<table class="dg-tbl">'+tr('Tema',I?('PTS '+esc(I.n)):ce(''))+tr('Fecha',ce(''))+tr('Horario',ce('')+' a '+ce('')+' hrs.')+tr('Lugar / faena',ce(''))+tr('Relator',ce(lsGet('dg_rel_nom')))+tr('Cargo del relator',ce(lsGet('dg_rel_cargo')||'Prevención de Riesgos'))+'</table>'+
-      '<h4 class="dg-h4">Temario</h4>'+(I?ulDg(I.t):'<div class="dg-box" style="min-height:90px" contenteditable></div>')+
-      '<p style="margin-top:10px">Los trabajadores individualizados declaran haber recibido la instrucción'+(I?' y una copia del procedimiento indicado':'')+', haber comprendido su contenido y se comprometen a cumplirlo.</p>'+
+      '<p style="text-align:center;margin-top:-6px;color:#667;font-weight:700">'+esc(sub)+'</p>'+
+      '<table class="dg-tbl">'+tr('Tema',tema?'<b>'+esc(tema)+'</b>':ce(''))+tr('Fecha',ce(fLarga(todayISO())))+tr('Horario',ce('')+' a '+ce('')+' hrs.')+(C||tipo==='emp'?tr('Duración',ce(dur)):'')+tr('Lugar / faena',ce(''))+
+        tr('Relator',rel('dg_rel_nom',EMP_PREV.nombre))+tr('Cargo del relator',rel('dg_rel_cargo',EMP_PREV.cargo))+'</table>'+
+      '<h4 class="dg-h4">Temario</h4>'+(temario?ulDg(temario):'<div class="dg-box" style="min-height:90px" contenteditable></div>')+
+      '<p style="margin-top:10px">Los trabajadores individualizados declaran haber recibido la '+(I?'instrucción y una copia del procedimiento indicado':'capacitación')+', haber comprendido su contenido y se comprometen a cumplirlo.</p>'+
       '<table class="dg-tbl"><thead><tr><th class="n">N°</th><th>Nombre</th><th>RUT</th><th>Cargo</th><th>Firma</th></tr></thead><tbody>'+rows+'</tbody></table>'+
-      '<div class="dg-firmas"><div>Firma del relator</div><div>V°B° jefatura</div></div>';
+      '<div class="dg-firmas"><div>'+(relNom===EMP_PREV.nombre?firmaPrevHtml():'')+'Firma del relator<br>'+esc(relNom)+'</div><div>V°B° jefatura</div></div>';
   }
 
   // PTS acorde a sus funciones, según el cargo (usa las funciones del contrato / perfil de cargo).
@@ -7802,11 +7817,10 @@
       ['Llave regulable (caimán)','Golpes, deslizamiento.','Ajustar correctamente; aplicar fuerza controlada; no usar extensiones.'],
       ['Llave Stilson','Golpes, atrapamiento.','Revisar las mordazas; usar sobre tuberías adecuadas; mantener la regulación correcta.'],
       ['Medidor de gases portátil','No detectar una atmósfera peligrosa.','Calibración vigente, batería cargada, sensores operativos y prueba funcional; encender antes del ingreso, medir desde el exterior, registrar lecturas, monitoreo continuo y suspender ante cualquier alarma.']];
-    var rows=''; for(var i=1;i<=10;i++) rows+='<tr><td class="n">'+i+'</td><td></td><td style="width:110px"></td><td style="width:120px"></td><td style="width:110px"></td></tr>';
-    var preg=['¿Qué debe hacer si detecta una herramienta defectuosa?','¿Qué EPP debe utilizar al trabajar con esmeril angular?','¿Cuándo debe utilizarse el detector de gases?','¿Está permitido modificar una herramienta para facilitar el trabajo?','¿Qué debe hacer si el detector de gases activa una alarma?'];
-    return dgHead('REGISTRO DE CAPACITACIÓN','01')+
+    // Material de la capacitación (contenido). La asistencia se firma en "Registro de capacitación" y la evaluación es un formato aparte.
+    return dgHead('CAPACITACIÓN','01')+
       '<div class="pts-tit">Uso seguro de herramientas manuales y equipos de apoyo</div>'+
-      '<table class="dg-tbl">'+tr('Empresa',EMP.rz)+tr('Fecha',ce(''))+tr('Duración',ce(''))+tr('Lugar / faena',ce(''))+tr('Relator',ce(lsGet('dg_rel_nom')||EMP_PREV.nombre))+'</table>'+
+      tablaCtl('CAP-PREV-01','Trabajadores que usan herramientas')+
       H('Objetivo')+'<p>Capacitar a los trabajadores en el uso seguro, inspección, manipulación, almacenamiento y control de riesgos de las herramientas manuales y equipos de apoyo utilizados en limpieza industrial, mantenimiento, trabajos mecánicos y espacios confinados.</p>'+
       H('Alcance')+'<p style="margin:0 0 4px">Aplica a todos los trabajadores que utilicen:</p><div class="dg-cols">'+ulDg(['Llave de cadena','Juego de dados','Llave de torque','Taladro de impacto','Pala blanca','Pala metálica','Carbonera'])+ulDg(['Palas olleras','Caja hidrolavadora','Cuchillo grande amarillo','Esmeril angular a batería','Llave regulable (caimán)','Llave Stilson','Medidor de gases portátil'])+'</div>'+
       H('Riesgos asociados')+'<table class="dg-tbl"><tbody>'+tr('Mecánicos','Golpes por manipulación incorrecta, cortes y laceraciones, proyección de partículas, atrapamiento de dedos y manos, caída de herramientas.')+tr('Ergonómicos','Sobreesfuerzo físico, movimientos repetitivos, posturas forzadas.')+tr('Espacios confinados','Deficiencia de oxígeno, gases tóxicos, atmósferas explosivas, ventilación insuficiente.')+'</tbody></table>'+
@@ -7816,12 +7830,31 @@
       H('Uso seguro por herramienta')+'<table class="dg-tbl"><thead><tr><th style="width:24%">Herramienta</th><th style="width:28%">Riesgos</th><th>Medidas preventivas</th></tr></thead><tbody>'+T.map(function(r){ return '<tr><td><b>'+r[0]+'</b></td><td>'+r[1]+'</td><td>'+r[2]+'</td></tr>'; }).join('')+'</tbody></table>'+
       H('Prohibiciones')+ulDg(['Modificar herramientas.','Utilizar herramientas para funciones distintas a las de su diseño.','Trabajar con herramientas defectuosas.','Exponer partes del cuerpo a herramientas en movimiento.','Transportar cuchillos o elementos cortantes sin protección.','Utilizar accesorios artesanales para aumentar fuerza o palanca.'])+
       H('Almacenamiento y transporte')+ulDg(['Mantener las herramientas limpias y secas.','Guardarlas en cajas, bolsos o áreas designadas.','Transportarlas siempre protegidas.','Mantener orden y aseo en el área de trabajo.'])+
-      H('Evaluación de aprendizaje')+'<table class="dg-tbl">'+tr('Nombre del trabajador','')+tr('Cargo','')+tr('Fecha','')+'</table>'+
-        preg.map(function(p,i){ return '<p style="margin:10px 0 2px"><b>'+(i+1)+'. '+p+'</b></p><div class="dg-lin"></div><div class="dg-lin"></div>'; }).join('')+
-      H('Registro de asistencia')+'<table class="dg-tbl"><thead><tr><th class="n">N°</th><th>Nombre completo</th><th>RUT</th><th>Cargo</th><th>Firma</th></tr></thead><tbody>'+rows+'</tbody></table>'+
-      '<div class="dg-firmas"><div>'+((lsGet('dg_rel_nom')||EMP_PREV.nombre)===EMP_PREV.nombre?firmaPrevHtml():'')+'Firma del relator<br>'+esc(lsGet('dg_rel_nom')||EMP_PREV.nombre)+'</div><div>Firma del supervisor<br>Nombre: ____________________</div></div>';
+      H('Registro')+'<p>La asistencia se registra en el formato <b>Registro de capacitación</b> y el aprendizaje se verifica con la <b>Evaluación de aprendizaje</b> (InnovaGestión → Empresa → Formatos para firmar).</p>';
   }
-  var EMP_GEN={ proc_emerg:{ build:docEmergencia } };
+  // Catálogo de capacitaciones: alimenta el Registro de capacitación (tema, temario, duración) y la Evaluación de aprendizaje.
+  var CAP_DOC={
+    cap_herr:{ n:'Uso seguro de herramientas manuales y equipos de apoyo', dur:'', t:[
+      'Riesgos mecánicos, ergonómicos y de espacios confinados asociados a las herramientas.',
+      'Elementos de protección personal obligatorios.',
+      'Inspección previa de herramientas y retiro de las defectuosas.',
+      'Uso seguro por herramienta: llaves, dados, llave de torque, taladro, palas, hidrolavadora, cuchillo, esmeril, caimán, Stilson y medidor de gases.',
+      'Prohibiciones, almacenamiento y transporte de herramientas.'],
+      preg:['¿Qué debe hacer si detecta una herramienta defectuosa?','¿Qué EPP debe utilizar al trabajar con esmeril angular?','¿Cuándo debe utilizarse el detector de gases?','¿Está permitido modificar una herramienta para facilitar el trabajo?','¿Qué debe hacer si el detector de gases activa una alarma?'] }
+  };
+  // Evaluación de aprendizaje individual de una capacitación del catálogo
+  function docEvaluacion(id){
+    var C=CAP_DOC[id]||CAP_DOC.cap_herr;
+    function tr(a,b){ return '<tr><td class="dg-k">'+a+'</td><td>'+b+'</td></tr>'; }
+    return dgHead('EVALUACIÓN DE APRENDIZAJE','01')+
+      '<div class="pts-tit">'+esc(C.n)+'</div>'+
+      '<table class="dg-tbl">'+tr('Nombre del trabajador',ce(''))+tr('RUT',ce(''))+tr('Cargo',ce(''))+tr('Fecha',ce(fLarga(todayISO())))+tr('Relator',ce(EMP_PREV.nombre))+'</table>'+
+      '<h4 class="dg-h4">Preguntas</h4>'+
+      C.preg.map(function(p,i){ return '<p style="margin:12px 0 2px"><b>'+(i+1)+'. '+p+'</b></p><div class="dg-lin"></div><div class="dg-lin"></div><div class="dg-lin"></div>'; }).join('')+
+      '<table class="dg-tbl" style="margin-top:16px">'+tr('Resultado',ce('')+' &nbsp; (Aprobado / Reprobado)')+tr('Observaciones',ce(''))+'</table>'+
+      '<div class="dg-firmas"><div>Firma del trabajador</div><div>'+firmaPrevHtml()+'Firma del relator<br>'+esc(EMP_PREV.nombre)+'</div></div>';
+  }
+  var EMP_GEN={ proc_emerg:{ build:docEmergencia }, cap_herr:{ build:docCapHerr } };
   function esPTS(s){ return s==='pts_funciones' || !!(typeof PTS_DOC!=='undefined'&&PTS_DOC[s]); }
   function nombrePTS(s){ var n=s; EMP_CARPETAS.forEach(function(c){ c.tipos.forEach(function(x){ if(x[0]===s) n=x[1]; }); }); return n; }
   function generarPTS(s){ var nom=nombrePTS(s);
