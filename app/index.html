@@ -397,6 +397,8 @@
   .emp-firma{border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;}
   .emp-firma .fz{height:70px;display:flex;align-items:center;justify-content:center;gap:10px;background:repeating-conic-gradient(#f3f4f8 0 25%,#fff 0 50%) 0 0/14px 14px;border-radius:8px;}
   .emp-firma .fz img{max-height:62px;max-width:46%;object-fit:contain;}
+  .pts-herr td{font-size:11.5px;} .pts-chk{text-align:center !important;vertical-align:middle !important;}
+  .pts-chk span{display:inline-block;width:14px;height:14px;border:1.5px solid #6b7390;border-radius:3px;}
   .pts-figs{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin:6px 0 12px;}
   .pts-fig{margin:0;border:1px solid #e3e5ee;border-radius:8px;padding:10px 8px 8px;text-align:center;background:#fbfbfd;}
   .pts-fig svg{display:block;width:100%;height:120px;}
@@ -6373,7 +6375,7 @@
   // Basado en la carpeta de prevención (02- Fichas de ingreso / Ficha Nicolas).
   var EMP_CARPETAS=[
     {k:'prev', n:'Reglamento y gestión preventiva', tipos:[['riohs','Reglamento Interno de Orden, Higiene y Seguridad (RIOHS)',false],['programa','Programa de prevención de riesgos',false],['iper','Matriz de riesgos (IPER)',false],['proc_iper','Procedimiento IPER',false],['proc_acc','Procedimiento en caso de accidentes del trabajo y enfermedad profesional',false]]},
-    {k:'pts', n:'Procedimientos de trabajo seguro (PTS)', tipos:[['pts_quimicos','PTS uso y manejo de químicos',false],['pts_extintores','PTS uso y manejo de extintores',false],['pts_altura','PTS trabajos en altura',false],['pts_confinados','PTS espacios confinados',false],['pts_alzahombre','PTS alza hombre / grúa Genie',false],['pts_funciones','PTS acorde a sus funciones',false]]},
+    {k:'pts', n:'Procedimientos de trabajo seguro (PTS)', tipos:[['pts_quimicos','PTS uso y manejo de químicos',false],['pts_extintores','PTS uso y manejo de extintores',false],['pts_altura','PTS trabajos en altura',false],['pts_confinados','PTS espacios confinados',false],['pts_alzahombre','PTS alza hombre / grúa Genie',false],['pts_herramientas','PTS uso de herramientas · limpieza de estanques',false],['pts_funciones','PTS acorde a sus funciones',false]]},
     {k:'legal', n:'Legal y previsional', tipos:[['erut','e-RUT de la empresa',false],['escritura','Escritura / estatutos',false],['vigencia','Certificado de vigencia',true],['mutual','Certificado de adhesión a la mutual',false],['tasa','Certificado de tasa de cotización',true]]}
   ];
   var EMP_D=[];
@@ -7622,7 +7624,47 @@
         ['Durante el trabajo',['El vigía permanece en el acceso durante todo el trabajo.','Usar arnés y línea de vida cuando exista riesgo de caída o para un eventual rescate.','Equipos eléctricos con protección diferencial, cables sin daños y, de preferencia, herramientas con doble aislamiento.','Trabajos en caliente requieren un permiso adicional.']],
         ['Rescate y emergencias',['El vigía activa el rescate y presta primeros auxilios desde el exterior; nunca ingresa sin ayuda y sin equipo.','No mover a la persona afectada hasta que llegue personal capacitado, salvo peligro inminente.','Al terminar, la persona competente verifica que no quede nadie dentro antes de cerrar el espacio.']]],
       ries:[['Atmósfera con poco oxígeno o gases','Asfixia, intoxicación, explosión','Medición de gases, ventilación, permiso de entrada y vigía.'],['Energías no controladas','Atrapamiento, electrocución','Bloqueo con candado y tarjeta personal.'],['Acceso y salida restringidos','Caídas, golpes','Arnés y línea de vida; escalas seguras.'],['Equipos y herramientas','Contacto eléctrico, proyección de partículas','Protección diferencial; EPP; herramientas en buen estado.'],['Condiciones del espacio','Estrés térmico, inmersión','Pausas; control de líquidos; vigía permanente.']],
-      epp:['Casco con barbiquejo','Arnés de cuerpo completo con línea de vida','Respirador con filtro o equipo de aire según la medición','Antiparras o careta facial','Guantes según la tarea','Calzado de seguridad','Detector de gases personal cuando se requiera'] }
+      epp:['Casco con barbiquejo','Arnés de cuerpo completo con línea de vida','Respirador con filtro o equipo de aire según la medición','Antiparras o careta facial','Guantes según la tarea','Calzado de seguridad','Detector de gases personal cuando se requiera'] },
+    pts_herramientas:{ cod:'PTS-PREV-06', titulo:'Uso de herramientas en faena de limpieza de estanques', orig:null, aplica:'Limpieza de estanques',
+      obj:'Establecer la forma segura de inspeccionar, usar, mantener y guardar las herramientas manuales, eléctricas, de alta presión y de medición empleadas en la limpieza de estanques, para prevenir lesiones a los trabajadores y daños a los equipos.',
+      alc:'Aplica a todo trabajador de Innovación y Servicios SpA que participe en faenas de limpieza de estanques (agua dulce, agua salada, flow ice, RIL y similares) en las instalaciones de los clientes. Como un estanque es un espacio confinado, este procedimiento se aplica junto con el PTS de espacios confinados (PTS-PREV-05).',
+      norm:NORM_BASE.concat(['PTS espacios confinados de la empresa (PTS-PREV-05) y guía técnica del ISP para trabajos en espacios confinados.','Ley N° 20.949, sobre manejo manual de carga.','Instrucciones del fabricante de cada herramienta y equipo, y normas de la empresa mandante.']),
+      resp:[['Gerencia','Proporcionar herramientas en buen estado, su mantención y reposición, y fiscalizar el cumplimiento de este procedimiento.'],
+        ['Supervisor','Verificar la inspección diaria de herramientas, autorizar el uso del esmeril, el taladro y la hidrolavadora solo a personal capacitado, y retirar del uso toda herramienta defectuosa.'],
+        ['Prevención de riesgos','Capacitar al personal, revisar el cumplimiento en terreno y controlar la calibración del medidor de gases.'],
+        ['Trabajador','Usar cada herramienta solo para su fin, inspeccionarla antes de usarla, informar cualquier daño y devolverla limpia a su caja al terminar.']],
+      des:[
+        ['Antes de iniciar',['Realizar la charla de inicio y el análisis de riesgos de la tarea con todo el equipo.','Contar con el permiso de trabajo del mandante y el permiso de entrada a espacio confinado; el estanque debe estar vaciado, aislado y bloqueado.','Medir la atmósfera con el medidor de gases antes de ingresar, desde el exterior y a distintas alturas (arriba, medio y fondo).','Inspeccionar cada herramienta con la tabla de la sección 6 y retirar las que estén en mal estado.','Ubicar las herramientas en su caja o bolso, fuera del paso, y bajarlas al estanque con cuerda o balde, nunca lanzándolas.']],
+        ['Herramientas manuales (llaves, dados, llave de torque, palas, cuchillo)',['Usar la herramienta adecuada a cada tarea y a la medida del perno o tubería; no usar llaves como martillo ni palas como palanca.','No alargar el mango de las llaves con tubos; si un perno no cede, aplicar desoxidante o pedir apoyo.','Tirar de la llave en vez de empujarla, con el cuerpo en posición estable y las manos fuera de la trayectoria.','La llave de torque se usa solo para el apriete final al valor indicado; después de usarla se deja en su valor mínimo.','Con las palas, cargar poco material por vez, doblar las rodillas, no girar el tronco con carga y alternar la tarea.','El cuchillo se usa con corte alejado del cuerpo y de las manos, con guantes anticorte, y se guarda siempre en su funda.']],
+        ['Herramientas eléctricas y a batería (taladro de impacto, esmeril)',['Solo personal capacitado y autorizado; dentro del estanque se usan de preferencia herramientas a batería.','Verificar carcasa, batería, interruptor y brocas o discos antes de usar; el esmeril debe tener su guarda puesta.','El disco de corte debe ser el adecuado al material y a las revoluciones del esmeril, sin fisuras; esperar la detención total antes de dejarlo.','El esmeril genera chispas: dentro del estanque requiere permiso de trabajo en caliente, medición de gases continua y ventilación; nunca en presencia de gases o vapores inflamables.','Retirar la batería antes de cambiar brocas o discos, y no tirar del equipo por el cable.']],
+        ['Hidrolavadora',['La opera solo personal capacitado; revisar mangueras, acoples, gatillo y seguro antes de encender.','Conectar a una red con protección diferencial y mantener el equipo y las conexiones lejos del agua.','Nunca apuntar el chorro a personas, al propio cuerpo ni a tableros, motores o cableado eléctrico.','Sujetar la lanza con ambas manos y en posición firme; poner el seguro del gatillo en cada pausa.','Apagar y liberar la presión antes de desconectar o cambiar boquillas.']],
+        ['Medidor de gases',['Hacer la prueba de funcionamiento (bump test) al inicio de cada jornada y verificar que la calibración esté vigente.','Valores para ingresar: oxígeno entre 19,5% y 23,5%, gases inflamables bajo el 10% del límite inferior de explosividad, y H₂S y CO bajo los límites permitidos.','Mantener el monitoreo durante todo el trabajo; ante una alarma, todo el personal sale de inmediato y no se reingresa hasta una nueva medición segura.','Registrar las mediciones y guardar el equipo en su bolso, protegido del agua y los golpes.']],
+        ['Al terminar',['Contar las herramientas al salir del estanque para no dejar ninguna dentro.','Limpiar, secar y guardar cada herramienta en su caja; cargar las baterías.','Informar al supervisor toda herramienta dañada o faltante.']]],
+      herr:[
+        ['Llave de cadena','1','Desarmar y ajustar tuberías y uniones de gran diámetro.','Cadena sin eslabones dañados ni estirados; mango sin fisuras.'],
+        ['Juego de dados','1','Apernar y desapernar tapas, bridas y soportes.','Dados sin fisuras ni bordes redondeados; chicharra con el trinquete funcionando.'],
+        ['Llave de torque','1','Apriete final de pernos al valor indicado.','Escala legible, calibración vigente; guardada en su valor mínimo.'],
+        ['Taladro de impacto','1','Perforar y apernar en estructuras.','Carcasa sin daños, batería cargada, broca firme, interruptor funcionando.'],
+        ['Esmeril a batería con 2 discos de corte','1','Cortar pernos oxidados y amarras metálicas.','Guarda puesta, disco correcto sin fisuras, mango lateral, batería en buen estado.'],
+        ['Caja de hidrolavadora','1','Lavado a presión de paredes y fondo del estanque.','Mangueras y acoples sin fugas, gatillo con seguro, boquillas completas.'],
+        ['Pala blanca grande','1','Retiro de lodos y sólidos blandos.','Hoja sin trizaduras, mango firme.'],
+        ['Pala de metal','','Retiro de sedimentos compactos.','Hoja sin filos dañados, mango sin astillas.'],
+        ['Pala carbonera','','Carga de material suelto a baldes o contenedores.','Hoja firme al mango, sin deformaciones.'],
+        ['Palas olleras','2','Retiro de sólidos desde el fondo y las esquinas.','Hoja y mango firmes, sin fisuras.'],
+        ['Cuchillo grande amarillo','1','Cortar amarras, mallas y plásticos.','Hoja firme al mango, con su funda.'],
+        ['Llave regulable (caimán)','1','Ajuste de pernos y tuercas de distintas medidas.','Mandíbula sin juego, tornillo de ajuste funcionando.'],
+        ['Llave Stilson grande','','Sujetar y girar tubos y fittings.','Dientes sin desgaste, mandíbula sin juego.'],
+        ['Medidor de gases con su bolso','1','Medir oxígeno, gases inflamables, H₂S y CO antes y durante el trabajo.','Prueba de funcionamiento del día, calibración vigente, batería cargada, alarmas funcionando.']],
+      ries:[['Uso de llaves, dados y llave de cadena','Golpes, atrapamiento de dedos, sobreesfuerzo','Herramienta adecuada, sin alargadores; tirar en vez de empujar; guantes.'],
+        ['Uso de palas y retiro de lodos','Lesiones musculoesqueléticas, caídas al mismo nivel','Cargas pequeñas, técnica de levante, pausas y rotación; calzado antideslizante.'],
+        ['Uso del cuchillo','Cortes','Corte alejado del cuerpo, guantes anticorte, funda.'],
+        ['Uso del esmeril','Proyección de partículas, cortes, incendio o explosión por chispas','Guarda puesta, careta facial y antiparras, permiso de trabajo en caliente y medición continua de gases.'],
+        ['Uso del taladro de impacto','Atrapamiento, proyección de partículas, contacto eléctrico','Preferir batería; ropa sin partes sueltas; antiparras; no usar con agua.'],
+        ['Uso de la hidrolavadora','Inyección de agua en la piel, proyección, contacto eléctrico','No apuntar a personas ni equipos eléctricos; seguro en el gatillo; protección diferencial.'],
+        ['Atmósfera dentro del estanque','Asfixia, intoxicación, explosión','Medición de gases antes y durante, ventilación, vigía y permiso de entrada (PTS-PREV-05).'],
+        ['Superficies húmedas y con lodo','Caídas al mismo y distinto nivel','Calzado de seguridad antideslizante; acceso por escala segura; arnés cuando corresponda.']],
+      epp:['Casco de seguridad','Antiparras; careta facial al usar el esmeril o la hidrolavadora','Guantes según la tarea: anticorte para el cuchillo, de goma o nitrilo para lodos y agua','Botas de seguridad de goma','Traje impermeable','Protección auditiva','Respirador con filtro según la medición de gases','Arnés de cuerpo completo y línea de vida para ingreso y rescate'],
+      registros:['Inspección diaria de herramientas (tabla de la sección 6).','Permiso de entrada al espacio confinado y registro de mediciones de gases.','Permiso de trabajo en caliente cuando se use el esmeril.'] }
   };
   // Ilustraciones de referencia de los PTS (SVG propio, colores corporativos; nítidas en el PDF).
   var FIG_N='#1d2a5c', FIG_O='#f26b1d';
@@ -7679,7 +7721,8 @@
     pts_alzahombre:[['alza','Plataforma de trabajo en altura (alza hombre / Genie)'],['arnes','Arnés anclado a la plataforma en todo momento']],
     pts_quimicos:[['nfpa','Rombo NFPA 704: identificación de riesgos (salud, inflamabilidad, reactividad y riesgos especiales, escala 0 a 4)',true],['secuencia','Secuencia de limpieza de estructuras y líneas',true]],
     pts_extintores:[['clases','Clases de fuego (NCh 934)',true],['pass','Uso del extintor, paso a paso',true]],
-    pts_confinados:[['senal','Señalización obligatoria en el acceso'],['atmosfera','Rangos seguros de la atmósfera para ingresar (verde)']]
+    pts_confinados:[['senal','Señalización obligatoria en el acceso'],['atmosfera','Rangos seguros de la atmósfera para ingresar (verde)']],
+    pts_herramientas:[['senal','El estanque es un espacio confinado: acceso señalizado'],['atmosfera','Valores del medidor de gases para ingresar (verde)']]
   };
   function figurasPTS(slug){ var L=PTS_FIG[slug]; if(!L) return '';
     return '<div class="pts-figs">'+L.map(function(f){ return '<figure class="pts-fig'+(f[2]?' ancha':'')+'">'+FIG[f[0]]+'<figcaption>'+esc(f[1])+'</figcaption></figure>'; }).join('')+'</div>'; }
@@ -7702,26 +7745,31 @@
     }, function(){ generarPTS(s); });
   }
   function docPTSDoc(slug){
-    var P=PTS_DOC[slug], n=0;
+    var P=PTS_DOC[slug], n=0, nuevo=!P.orig, ver=nuevo?'01':'02';   // PTS nuevo: versión 01, sin documento anterior
     function H(t){ n++; return '<h4 class="dg-h4">'+n+'. '+t+'</h4>'; }
     function tr(a,b){ return '<tr><td class="dg-k">'+a+'</td><td>'+b+'</td></tr>'; }
-    return dgHead('PROCEDIMIENTO DE TRABAJO SEGURO','02')+
+    return dgHead('PROCEDIMIENTO DE TRABAJO SEGURO',ver)+
       '<div class="pts-tit">'+esc(P.titulo)+'</div>'+
-      '<table class="dg-tbl pts-ctl"><tbody><tr><td><span class="sl">Código</span><b>'+P.cod+'</b></td><td><span class="sl">Versión</span><b>02</b></td><td><span class="sl">Fecha</span>'+ce(fFaena(todayISO()))+'</td><td><span class="sl">Reemplaza a</span><b>Versión 01 ('+esc(P.orig)+')</b></td></tr></tbody></table>'+
+      '<table class="dg-tbl pts-ctl"><tbody><tr><td><span class="sl">Código</span><b>'+P.cod+'</b></td><td><span class="sl">Versión</span><b>'+ver+'</b></td><td><span class="sl">Fecha</span>'+ce(fFaena(todayISO()))+'</td><td><span class="sl">'+(nuevo?'Aplica a':'Reemplaza a')+'</span><b>'+(nuevo?esc(P.aplica||'Documento nuevo'):'Versión 01 ('+esc(P.orig)+')')+'</b></td></tr></tbody></table>'+
       dgFirmasPTS()+
       H('Objetivo')+'<p>'+P.obj+'</p>'+
       H('Alcance')+'<p>'+P.alc+'</p>'+
       H('Normativa y referencias')+ulDg(P.norm)+
       H('Responsabilidades')+'<table class="dg-tbl">'+P.resp.map(function(r){ return tr(r[0],r[1]); }).join('')+'</table>'+
       H('Desarrollo')+P.des.map(function(d,i){ return '<p style="margin:10px 0 4px"><b>'+n+'.'+(i+1)+' '+d[0]+'</b></p>'+ulDg(d[1]); }).join('')+
+      (P.herr?H('Herramientas: uso e inspección previa')+'<p style="font-size:12px;margin:0 0 6px">Antes de cada jornada, el trabajador revisa cada herramienta y marca su estado. Toda herramienta en mal estado se retira, se rotula “FUERA DE SERVICIO” y se informa a la jefatura.</p>'+
+        '<table class="dg-tbl pts-herr"><thead><tr><th style="width:21%">Herramienta</th><th style="width:6%">Cant.</th><th style="width:25%">Uso en la faena</th><th>Revisar antes de usar</th><th style="width:7%">Bien</th><th style="width:7%">Mal</th></tr></thead><tbody>'+
+        P.herr.map(function(x){ return '<tr><td><b>'+esc(x[0])+'</b></td><td style="text-align:center">'+(x[1]?esc(x[1]):ce(''))+'</td><td>'+x[2]+'</td><td>'+x[3]+'</td><td class="pts-chk"><span></span></td><td class="pts-chk"><span></span></td></tr>'; }).join('')+
+        '</tbody></table><p style="font-size:12px;margin:0 0 4px">Revisado por: '+ce('')+' &nbsp; Fecha: '+ce('')+' &nbsp; Firma: ______________________</p>':'')+
       (PTS_FIG[slug]?H('Ilustraciones de referencia')+figurasPTS(slug):'')+
       H('Riesgos y medidas de control')+'<table class="dg-tbl"><thead><tr><th style="width:30%">Actividad / peligro</th><th style="width:24%">Riesgo</th><th>Medidas de control</th></tr></thead><tbody>'+P.ries.map(function(r){ return '<tr><td>'+r[0]+'</td><td>'+r[1]+'</td><td>'+r[2]+'</td></tr>'; }).join('')+'</tbody></table>'+
       H('Elementos de protección personal')+ulDg(P.epp)+'<p style="font-size:12px">Los EPP deben usarse correctamente puestos, con ropa de trabajo adecuada y sin partes sueltas, colgantes, pulseras ni objetos que puedan quedar atrapados.</p>'+
       H('Emergencias')+ulDg(['Detener el trabajo, dar aviso de inmediato a la jefatura directa y seguir el plan de emergencia de la faena.','Teléfonos: Ambulancia 131 · Bomberos 132 · Carabineros 133 · Mutual de Seguridad 1407.','Todo accidente, aunque parezca leve, se informa de inmediato para su atención y denuncia ante el organismo administrador de la Ley N° 16.744.'])+
-      H('Registros')+ulDg(['Registro de entrega e instrucción de este procedimiento, firmado por cada trabajador (InnovaGestión → Empresa → Registrar entrega).'].concat(slug==='pts_confinados'?['Permiso de entrada y registro de entradas y salidas del espacio confinado.','Registro de mediciones de atmósfera.']:[]))+
+      H('Registros')+ulDg(['Registro de entrega e instrucción de este procedimiento, firmado por cada trabajador (InnovaGestión → Empresa → Registrar entrega).'].concat(P.registros||(slug==='pts_confinados'?['Permiso de entrada y registro de entradas y salidas del espacio confinado.','Registro de mediciones de atmósfera.']:[])))+
       H('Control de cambios')+'<table class="dg-tbl"><thead><tr><th style="width:15%">Versión</th><th style="width:20%">Fecha</th><th>Descripción del cambio</th></tr></thead><tbody>'+
+        (nuevo?'<tr><td>01</td><td>'+fFaena(todayISO())+'</td><td>Emisión original.</td></tr>':
         '<tr><td>01</td><td>'+esc(P.orig)+'</td><td>Emisión original.</td></tr>'+
-        '<tr><td>02</td><td>'+fFaena(todayISO())+'</td><td>Actualización 2026: formato corporativo, normativa vigente (D.S. N° 44 reemplaza al D.S. N° 40), revisión del contenido y de las responsabilidades, tabla de riesgos y sección de emergencias.</td></tr></tbody></table>';
+        '<tr><td>02</td><td>'+fFaena(todayISO())+'</td><td>Actualización 2026: formato corporativo, normativa vigente (D.S. N° 44 reemplaza al D.S. N° 40), revisión del contenido y de las responsabilidades, tabla de riesgos y sección de emergencias.</td></tr>')+'</tbody></table>';
   }
   // Plantilla: Registro de entrega e instrucción de un PTS (temario según el procedimiento de la empresa).
   var PTS_INFO={
@@ -7757,6 +7805,13 @@
       'Aislamiento, bloqueo, limpieza y ventilación del espacio.',
       'Roles del vigía, del entrante y del supervisor; comunicación y rescate.',
       'Prohibición de ingresar sin autorización.'] },
+    pts_herramientas:{ n:'Uso de herramientas en faena de limpieza de estanques', t:[
+      'Inspección diaria de herramientas y retiro de las que están en mal estado.',
+      'Uso correcto de llaves, dados, llave de torque, palas y cuchillo.',
+      'Uso seguro del taladro de impacto, el esmeril (trabajo en caliente) y la hidrolavadora.',
+      'Uso del medidor de gases: prueba diaria, valores para ingresar y actuación ante alarmas.',
+      'El estanque como espacio confinado: permiso de entrada, ventilación y vigía.',
+      'Elementos de protección personal y orden de las herramientas al terminar.'] },
     pts_alzahombre:{ n:'Alza hombre / grúa Genie', t:[
       'Operación permitida solo a operadores capacitados y autorizados.',
       'Inspección previa del equipo y manual del fabricante al alcance.',
@@ -7801,6 +7856,7 @@
     pts_confinados:{ nombre:'Registro entrega PTS confinados', build:docEntregaPTS('pts_confinados') },
     pts_alzahombre:{ nombre:'Registro entrega PTS alza hombre', build:docEntregaPTS('pts_alzahombre') },
     pts_funciones:{ nombre:'Registro entrega PTS acorde a sus funciones', build:docEntregaPTS('pts_funciones') },
+    pts_herramientas:{ nombre:'Registro entrega PTS herramientas (estanques)', build:docEntregaPTS('pts_herramientas') },
     datos:{ nombre:'Ficha de datos', build:docDatos },
     epp:{ nombre:'Entrega de EPP', build:docEPP },
     odi:{ nombre:'IRL (riesgos laborales)', build:docODI }
