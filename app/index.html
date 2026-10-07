@@ -6404,7 +6404,7 @@
       else if(u.vencimiento){ var n=diffDiasV(u.vencimiento); chip=n<0?'<span class="dchip venc">Vencido</span>':(n<=30?'<span class="dchip prox">Vence '+n+'d</span>':'<span class="dchip ok">Vigente</span>'); }
       else chip='<span class="dchip ok">Cargado</span>';
       var gen='';
-      if(tipo==='pts_funciones'||(typeof PTS_DOC!=='undefined'&&PTS_DOC[tipo])||(typeof EMP_GEN!=='undefined'&&EMP_GEN[tipo])) gen='<button class="rd-gen emp-pf" data-pts="'+enc(tipo)+'" title="Generar el procedimiento con formato 2026">'+svgI(ICO.gen,15)+'Generar PTS</button>';
+      if(tipo==='pts_funciones'||(typeof PTS_DOC!=='undefined'&&PTS_DOC[tipo])||(typeof EMP_GEN!=='undefined'&&EMP_GEN[tipo])) gen='<button class="rd-gen emp-pf" data-pts="'+enc(tipo)+'" title="Generar el documento con formato 2026">'+svgI(ICO.gen,15)+((typeof EMP_GEN!=='undefined'&&EMP_GEN[tipo])?'Generar documento':'Generar PTS')+'</button>';
       if(typeof DOC_GEN!=='undefined'&&DOC_GEN[tipo]) gen+='<button class="rd-gen emp-gen" data-gen="'+enc(tipo)+'" title="Generar el registro de entrega para varios trabajadores">'+svgI(ICO.gen,15)+'Registrar entrega</button>';
       var multi=esMulti(tipo,E.todos), vis=multi?E.todos.slice(0,4):(u?[u]:[]);
       var sub=!u?(vence?'Con vencimiento':'Toca para subir el archivo'):(multi?(E.n+(E.n===1?' documento':' documentos')+' · '+E.todos.map(function(d){ return d.titular||'sin nombre'; }).join(', ')):('Actualizado '+fechaCorta(u.fecha||String(u.created_at||'').slice(0,10))+(u.vencimiento?' · vence '+fechaCorta(u.vencimiento):'')+(E.n>1?' · '+E.n+' versiones':'')));
