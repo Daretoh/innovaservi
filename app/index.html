@@ -2038,7 +2038,7 @@
     </div>
     <div class="card">
       <label class="pe-lbl">Texto del correo <span class="note" style="margin:0;font-weight:500">(puedes editarlo)</span></label>
-      <textarea id="nom-cuerpo" rows="14" style="width:100%;font:500 13.5px var(--font);padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);resize:vertical"></textarea>
+      <textarea id="nom-cuerpo" rows="16" wrap="off" style="width:100%;font:500 12px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);resize:vertical;white-space:pre;overflow:auto"></textarea>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
         <button id="nom-copiar" class="btn" style="width:auto" type="button">Copiar texto</button>
         <button id="nom-mail" class="btn ghost" style="width:auto" type="button">Abrir en correo</button>
@@ -4614,13 +4614,24 @@
   function nomActivos(){ var seen={}; return (TRAB||[]).filter(function(t){ if(t.estado==='inactivo'||!(t.nombre||'').trim()) return false; var k=normName(t.nombre); if(seen[k]) return false; seen[k]=1; return true; })
     .map(function(t){ return {id:t.id, nombre:titleCase(t.nombre.trim()), rut:rutFmt(t.rut), telefono:nomTel(t.telefono)}; }).sort(function(a,b){ return a.nombre.localeCompare(b.nombre); }); }
   function nomElegidos(){ return NOM_T.filter(function(t){ return NOM_SEL[t.id]; }); }
+  // Tabla en texto (monoespaciado) con bordes para el cuerpo del correo.
+  function nomTabla(L){
+    var H=['N°','Nombre','RUT','Teléfono'];
+    var data=L.map(function(t,i){ return [(i+1)+'.', t.nombre, t.rut||'(pendiente)', t.telefono||'(pendiente)']; });
+    var w=H.map(function(h,c){ var mx=h.length; data.forEach(function(r){ if(r[c].length>mx) mx=r[c].length; }); return mx; });
+    function rep(ch,n){ var s=''; while(s.length<n) s+=ch; return s; }
+    function pad(s,n){ s=String(s); return s+rep(' ',n-s.length); }
+    function line(){ return '+'+w.map(function(x){ return rep('-',x+2); }).join('+')+'+'; }
+    function row(r){ return '| '+r.map(function(v,c){ return pad(v,w[c]); }).join(' | ')+' |'; }
+    return [line(),row(H),line()].concat(data.map(row)).concat([line()]).join('\n');
+  }
   function nomCuerpo(){ var fir=nomFirma();
     if(NOM_MODO==='baja'){ var t=(TRAB||[]).filter(function(x){ return String(x.id)===$('nom-baja-t').value; })[0];
       var nm=t?titleCase((t.nombre||'').trim()):'[nombre]', rt=t&&t.rut?rutFmt(t.rut):'[RUT]';
       return 'Hola, buenos días:\n\nInformo que la siguiente persona dejó de prestar servicios en Innovaservi a contar del '+fechaLarga($('nom-baja-f').value)+', por lo que solicito su desactivación del sistema (ticket de casino y torniquetes):\n\n'+nm+'\n'+rt+'\n\nQuedo atento.\n\nSaludos cordiales,\n'+fir; }
     var L=nomElegidos();
     return 'Hola, buenos días:\n\nJunto con saludar, envío la nómina actualizada del personal activo de Innovaservi al '+fechaLarga()+' ('+L.length+' persona'+(L.length===1?'':'s')+'), para la revisión de tickets y el enrolamiento en torniquetes. También va adjunta como documento.\n\n'+
-      L.map(function(t,i){ return (i+1)+'. '+t.nombre+'  ·  '+(t.rut||'RUT pendiente')+'  ·  '+(t.telefono||'tel. pendiente'); }).join('\n')+
+      nomTabla(L)+
       '\n\nCada vez que una persona deje de prestar servicios se lo informaremos para su desactivación.\n\nQuedo atento.\n\nSaludos cordiales,\n'+fir; }
   function nomAsunto(){ if(NOM_MODO==='baja'){ var t=(TRAB||[]).filter(function(x){ return String(x.id)===$('nom-baja-t').value; })[0]; return 'Baja de personal Innovaservi'+(t?(' – '+titleCase((t.nombre||'').trim())):''); }
     return 'Nómina personal activo Innovaservi – '+fechaNum(); }
