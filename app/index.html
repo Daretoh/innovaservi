@@ -639,15 +639,17 @@
   .pf-tit{font:600 11px var(--font);color:var(--ink);margin:1px 0 5px;line-height:1.2;}
   .pf-empty{color:#b9bfd0;font-size:11px;text-align:center;padding:8px 0;}
   /* Nómina para el cliente */
-  .nom-list{display:flex;flex-direction:column;max-height:46vh;overflow:auto;border:1px solid var(--line);border-radius:10px;background:#fff;}
-  .nom-head,.nom-row{display:grid;grid-template-columns:22px minmax(0,1fr) max-content max-content;align-items:center;gap:10px;padding:7px 11px;border-bottom:1px solid var(--line);}
-  .nom-head{position:sticky;top:0;z-index:1;background:var(--navy);color:#fff;font:800 10.5px var(--font);text-transform:uppercase;letter-spacing:.03em;}
-  .nom-head .r{text-align:right;}
-  .nom-row{font:600 13px var(--font);cursor:pointer;}
-  .nom-row:last-child{border-bottom:none;}
-  .nom-row .nm{min-width:0;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  .nom-row .rt,.nom-row .tl{font:600 12.5px var(--font);color:var(--body);white-space:nowrap;font-variant-numeric:tabular-nums;text-align:right;}
-  .nom-row .rt.miss,.nom-row .tl.miss{color:#b45309;font-style:italic;}
+  .nom-list{max-height:46vh;overflow:auto;border:1px solid var(--navy);border-radius:10px;background:#fff;}
+  .nom-tbl{border-collapse:collapse;width:100%;font:600 13px var(--font);}
+  .nom-tbl th,.nom-tbl td{border:1px solid var(--line);padding:7px 10px;text-align:left;}
+  .nom-tbl thead th{position:sticky;top:0;z-index:1;background:var(--navy);color:#fff;font:800 10.5px var(--font);text-transform:uppercase;letter-spacing:.03em;border-color:var(--navy);}
+  .nom-tbl th.r,.nom-tbl td.rt,.nom-tbl td.tl{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;}
+  .nom-tbl td.ck,.nom-tbl th.ck{width:34px;text-align:center;padding:4px;}
+  .nom-tbl td.nm{color:var(--ink);font-weight:700;}
+  .nom-tbl tbody tr{cursor:pointer;}
+  .nom-tbl tbody tr:nth-child(even) td{background:var(--alt);}
+  .nom-tbl tbody tr:hover td{background:#fff4ec;}
+  .nom-tbl td.rt.miss,.nom-tbl td.tl.miss{color:#b45309;font-style:italic;}
   .nom-warn{background:#fbf0d9;color:#854f0b;border-radius:9px;padding:7px 10px;font:600 12px var(--font);margin-bottom:8px;}
   /* Planificación: resumen semanal */
   .pw-sum{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px;}
@@ -4626,9 +4628,10 @@
   function nomPintarLista(){ var L=nomElegidos(), sinRut=L.filter(function(t){ return !t.rut; }).length;
     $('nom-cnt').textContent='· '+L.length+' de '+NOM_T.length;
     $('nom-warn').innerHTML=sinRut?('<div class="nom-warn">'+sinRut+' persona'+(sinRut>1?'s':'')+' sin RUT en la ficha. Complétalo en RRHH antes de enviar.</div>'):'';
-    var nomHead='<div class="nom-head"><span></span><span>Nombre</span><span class="r">RUT</span><span class="r">Teléfono</span></div>';
-    $('nom-list').innerHTML=nomHead+(NOM_T.map(function(t){ return '<label class="nom-row"><input type="checkbox" data-id="'+t.id+'"'+(NOM_SEL[t.id]?' checked':'')+'><span class="nm">'+esc(t.nombre)+'</span><span class="rt'+(t.rut?'':' miss')+'">'+(t.rut?esc(t.rut):'sin RUT')+'</span><span class="tl'+(t.telefono?'':' miss')+'">'+(t.telefono?esc(t.telefono):'sin tel.')+'</span></label>'; }).join('')||'<p class="note" style="margin:10px">No hay trabajadores activos.</p>');
-    $('nom-list').querySelectorAll('input').forEach(function(ch){ ch.addEventListener('change',function(){ NOM_SEL[ch.dataset.id]=ch.checked; nomPintarLista(); nomRefrescar(); }); }); }
+    var filas=NOM_T.map(function(t){ return '<tr data-id="'+t.id+'"><td class="ck"><input type="checkbox" data-id="'+t.id+'"'+(NOM_SEL[t.id]?' checked':'')+'></td><td class="nm">'+esc(t.nombre)+'</td><td class="rt'+(t.rut?'':' miss')+'">'+(t.rut?esc(t.rut):'sin RUT')+'</td><td class="tl'+(t.telefono?'':' miss')+'">'+(t.telefono?esc(t.telefono):'sin tel.')+'</td></tr>'; }).join('');
+    $('nom-list').innerHTML=NOM_T.length?('<table class="nom-tbl"><thead><tr><th class="ck"></th><th>Nombre</th><th class="r">RUT</th><th class="r">Teléfono</th></tr></thead><tbody>'+filas+'</tbody></table>'):'<p class="note" style="margin:10px">No hay trabajadores activos.</p>';
+    $('nom-list').querySelectorAll('input[type=checkbox]').forEach(function(ch){ ch.addEventListener('change',function(ev){ ev.stopPropagation(); NOM_SEL[ch.dataset.id]=ch.checked; nomPintarLista(); nomRefrescar(); }); });
+    $('nom-list').querySelectorAll('tbody tr').forEach(function(tr){ tr.addEventListener('click',function(ev){ if(ev.target.tagName==='INPUT') return; var id=tr.dataset.id; NOM_SEL[id]=!NOM_SEL[id]; nomPintarLista(); nomRefrescar(); }); }); }
   function nomModo(m){ NOM_MODO=m; document.querySelectorAll('#nom-seg .seg-b').forEach(function(b){ b.classList.toggle('on', b.dataset.m===m); });
     $('nom-pnl-nomina').classList.toggle('hide', m!=='nomina'); $('nom-pnl-baja').classList.toggle('hide', m!=='baja');
     ['nom-pdf','nom-xls'].forEach(function(id){ $(id).classList.toggle('hide', m!=='nomina'); }); nomRefrescar(); }
