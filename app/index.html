@@ -1553,7 +1553,10 @@
       <div id="rrhh-emp" class="hide">
         <div id="emp-docs">
           <p class="note" style="margin:0 0 10px">Todo lo de la empresa en un solo lugar: procedimientos, PTS, reglamento y formatos. Cuando un cliente pida algo, búscalo aquí, descárgalo y hazlo firmar.</p>
-          <input id="emp-q" type="search" placeholder="Buscar procedimiento, PTS, formato…" style="width:100%;font:500 15px var(--font);padding:10px 12px;border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--ink);margin-bottom:10px">
+          <div style="display:flex;gap:8px;margin-bottom:10px">
+            <input id="emp-q" type="search" placeholder="Buscar procedimiento, PTS, formato…" style="flex:1;min-width:0;font:500 15px var(--font);padding:10px 12px;border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--ink)">
+            <button id="emp-firmas-btn" type="button" class="btn ghost small" style="width:auto;display:flex;align-items:center;gap:6px;white-space:nowrap"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17c3-3 5-9 8-9s1 6 4 6 3-4 6-4"/><path d="M3 21h18"/></svg>Firmas</button>
+          </div>
           <div id="emp-list"></div>
         </div>
       </div>
@@ -6434,29 +6437,37 @@
       propios('formatos').filter(function(x){ return pasa(x[1]); }).map(function(x){ return fila(x[0],x[1],x[2]); }).join('')+
       (q?'':'<button type="button" class="btn ghost small emp-add" data-c="formatos" style="width:auto;margin-top:8px">＋ Subir otro formato (Word, Excel o PDF)</button>')+'</div>';
     if(IA_FIRMA===null && sb){ cargarFirma(pintarEmp); }
-    var firmas=q?'':'<div class="card" style="padding:12px 14px"><div class="rd-grp" style="margin-top:0">Firmas para los documentos</div><div class="emp-firmas">'+
-      '<div class="emp-firma"><b style="font-size:.85rem">'+esc(EMP.rep)+'</b><span class="note" style="margin:0">Gerente General · firma y timbre por separado</span><div class="fz">'+(FIRMA_SIG?'<img src="'+FIRMA_SIG+'" title="Firma">':'<span class="note">Sin firma</span>')+(FIRMA_TIM?'<img src="'+esc(FIRMA_TIM)+'" title="Timbre">':'<span class="note">Sin timbre</span>')+'</div>'+
-        '<div style="display:flex;gap:6px;flex-wrap:wrap"><label class="btn ghost small" style="width:auto;cursor:pointer">'+(FIRMA_SIG?'Cambiar firma':'Subir firma')+'<input type="file" id="ef-repf" accept="image/*" hidden></label><label class="btn ghost small" style="width:auto;cursor:pointer">'+(FIRMA_TIM?'Cambiar timbre':'Subir timbre')+'<input type="file" id="ef-tim" accept="image/*" hidden></label>'+
-        (FIRMA_SIG?'<a class="btn ghost small" style="width:auto;text-decoration:none" download="firma-gerente.png" href="'+FIRMA_SIG+'">PNG firma</a>':'')+(FIRMA_TIM&&FIRMA_TIM.indexOf('data:')===0?'<a class="btn ghost small" style="width:auto;text-decoration:none" download="timbre.png" href="'+FIRMA_TIM+'">PNG timbre</a>':'')+'</div></div>'+
-      '<div class="emp-firma"><b style="font-size:.85rem">'+esc(EMP_PREV.nombre)+'</b><span class="note" style="margin:0">'+esc(EMP_PREV.cargo)+' · firma</span><div class="fz">'+(FIRMA_PREV?'<img src="'+FIRMA_PREV+'">':'<span class="note">Sin firma</span>')+'</div><label class="btn ghost small" style="width:auto;text-align:center;cursor:pointer">'+(FIRMA_PREV?'Cambiar':'Subir foto de la firma')+'<input type="file" id="ef-prev" accept="image/*" hidden></label></div>'+
-      '</div><p class="note" style="margin:8px 0 0">Basta una foto de la firma sobre papel blanco: se quita el fondo y se ajusta el tamaño sola.</p></div>';
-    var html=firmas+EMP_CARPETAS.map(function(cp){ return card(cp.k, cp.n, cp.tipos.concat(propios(cp.k))); }).join('')+fmtCard+card('otros','Otros documentos',propios('otros'),'Agregar otro documento');
+    // Orden: carpetas de trabajo, formatos, y al final lo legal y "otros". Las firmas van en el botón de arriba.
+    var legal=EMP_CARPETAS.filter(function(cp){ return cp.k==='legal'; })[0];
+    var html=EMP_CARPETAS.filter(function(cp){ return cp.k!=='legal'; }).map(function(cp){ return card(cp.k, cp.n, cp.tipos.concat(propios(cp.k))); }).join('')+fmtCard+
+      (legal?card(legal.k, legal.n, legal.tipos.concat(propios(legal.k))):'')+card('otros','Otros documentos',propios('otros'),'Agregar otro documento');
     c.innerHTML=html||'<div class="empty">Nada coincide con “'+esc(EMP_Q)+'”.</div>';
     empSecciones(c, !!q);
     pintarMinis(c);
     c.querySelectorAll('.emp-row .mini').forEach(function(m){ m.addEventListener('click',function(ev){ ev.stopPropagation(); verDoc(m.getAttribute('data-url'), m.getAttribute('data-t')); }); });
     c.querySelectorAll('.emp-row[data-tipo]').forEach(function(el){ el.addEventListener('click',function(){ abrirEmpDoc(el.dataset.tipo, el.dataset.nom, el.dataset.v==='1'); }); });
     c.querySelectorAll('.emp-gen').forEach(function(b){ b.addEventListener('click',function(ev){ ev.stopPropagation(); abrirPickDoc(b.dataset.gen); }); });
-    c.querySelectorAll('.emp-pf').forEach(function(b){ b.addEventListener('click',function(ev){ ev.stopPropagation(); var s=b.dataset.pts, nom=b.closest('.emp-row').dataset.nom;
-      generarPTS(s); }); });
+    c.querySelectorAll('.emp-pf').forEach(function(b){ b.addEventListener('click',function(ev){ ev.stopPropagation(); generarPTS(b.dataset.pts); }); });
     c.querySelectorAll('.emp-fmt').forEach(function(el){ el.addEventListener('click',function(){ var f=EMP_FMT.filter(function(x){ return x.k===el.dataset.k; })[0]; if(f) abrirDocEmpresa({ nombre:f.n, opciones:f.opciones?f.opciones():null, build:f.build }); }); });
     c.querySelectorAll('.emp-add').forEach(function(b){ b.addEventListener('click',function(){ abrirEmpDoc(null, '', false, b.dataset.c); }); });
+  }
+  // Firmas para los documentos (botón arriba a la derecha en Empresa): gerente (firma y timbre) y prevencionista.
+  function abrirFirmas(){
+    if(IA_FIRMA===null && sb){ cargarFirma(abrirFirmas); return; }
+    $('re-title').textContent='Firmas para los documentos';
+    $('re-body').innerHTML='<div class="card"><div class="emp-firmas">'+
+      '<div class="emp-firma"><b style="font-size:.85rem">'+esc(EMP.rep)+'</b><span class="note" style="margin:0">Gerente General · firma y timbre por separado</span><div class="fz">'+(FIRMA_SIG?'<img src="'+FIRMA_SIG+'" title="Firma">':'<span class="note">Sin firma</span>')+(FIRMA_TIM?'<img src="'+esc(FIRMA_TIM)+'" title="Timbre">':'<span class="note">Sin timbre</span>')+'</div>'+
+        '<div style="display:flex;gap:6px;flex-wrap:wrap"><label class="btn ghost small" style="width:auto;cursor:pointer">'+(FIRMA_SIG?'Cambiar firma':'Subir firma')+'<input type="file" id="ef-repf" accept="image/*" hidden></label><label class="btn ghost small" style="width:auto;cursor:pointer">'+(FIRMA_TIM?'Cambiar timbre':'Subir timbre')+'<input type="file" id="ef-tim" accept="image/*" hidden></label>'+
+        (FIRMA_SIG?'<a class="btn ghost small" style="width:auto;text-decoration:none" download="firma-gerente.png" href="'+FIRMA_SIG+'">PNG firma</a>':'')+(FIRMA_TIM&&FIRMA_TIM.indexOf('data:')===0?'<a class="btn ghost small" style="width:auto;text-decoration:none" download="timbre.png" href="'+FIRMA_TIM+'">PNG timbre</a>':'')+'</div></div>'+
+      '<div class="emp-firma"><b style="font-size:.85rem">'+esc(EMP_PREV.nombre)+'</b><span class="note" style="margin:0">'+esc(EMP_PREV.cargo)+' · firma</span><div class="fz">'+(FIRMA_PREV?'<img src="'+FIRMA_PREV+'">':'<span class="note">Sin firma</span>')+'</div><label class="btn ghost small" style="width:auto;text-align:center;cursor:pointer">'+(FIRMA_PREV?'Cambiar':'Subir foto de la firma')+'<input type="file" id="ef-prev" accept="image/*" hidden></label></div>'+
+      '</div><p class="note" style="margin:10px 0 0">Basta una foto de la firma sobre papel blanco: se quita el fondo y se ajusta el tamaño sola. Se estampan en los documentos que genera InnovaGestión.</p></div>';
+    $('rrhh-edit').classList.remove('hide'); $('rrhh-edit').scrollTop=0;
     // Sube una foto, la limpia (sin fondo, recortada) y la guarda como PNG en la configuración.
     function subirFirmaCfg(input, clave, op, aplicar){ input.addEventListener('change',function(){ var f=this.files&&this.files[0]; if(!f) return; busy(true,'Limpiando la imagen…');
       var u=URL.createObjectURL(f);
       limpiarFirma(u, op).then(function(png){ URL.revokeObjectURL(u); busy(true,'Guardando…');
         sb.from('config').upsert([{clave:clave,valor:png}],{onConflict:'clave'}).then(function(r){ busy(false);
-          if(r&&r.error){ toast('No se guardó: '+r.error.message); return; } aplicar(png); toast('✓ Guardado'); pintarEmp(); }, function(){ busy(false); toast('No se pudo guardar.'); });
+          if(r&&r.error){ toast('No se guardó: '+r.error.message); return; } aplicar(png); toast('✓ Guardado'); abrirFirmas(); }, function(){ busy(false); toast('No se pudo guardar.'); });
       }, function(){ busy(false); toast('No se detectó la imagen. Prueba con una foto sobre papel blanco.'); }); }); }
     if($('ef-repf')) subirFirmaCfg($('ef-repf'),'firma_rep_url',{color:true},function(p){ FIRMA_SIG=p; });
     if($('ef-tim')) subirFirmaCfg($('ef-tim'),'timbre_url',{color:true,alto:320},function(p){ FIRMA_TIM=p; });
@@ -6464,7 +6475,7 @@
       var u=URL.createObjectURL(f);
       limpiarFirma(u).then(function(png){ URL.revokeObjectURL(u); busy(true,'Guardando…');
         sb.from('config').upsert([{clave:'firma_prev_url',valor:png}],{onConflict:'clave'}).then(function(r){ busy(false);
-          if(r&&r.error){ toast('No se guardó: '+r.error.message); return; } FIRMA_PREV=png; toast('✓ Firma guardada'); pintarEmp(); }, function(){ busy(false); toast('No se pudo guardar.'); });
+          if(r&&r.error){ toast('No se guardó: '+r.error.message); return; } FIRMA_PREV=png; toast('✓ Firma guardada'); abrirFirmas(); }, function(){ busy(false); toast('No se pudo guardar.'); });
       }, function(){ busy(false); toast('No se detectó la firma. Prueba con una foto sobre papel blanco.'); }); });
   }
   // Secciones desplegables de Empresa: cabecera con ícono, nombre, avance y flecha; recuerda cuáles quedaron abiertas.
@@ -6499,6 +6510,7 @@
   }
   function nrmQ(x){ return (x||'').toString().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''); }
   if($('emp-q')) $('emp-q').addEventListener('input',function(){ EMP_Q=this.value; pintarEmp(); });
+  if($('emp-firmas-btn')) $('emp-firmas-btn').addEventListener('click',function(){ abrirFirmas(); });
 
   // Abre un documento de empresa en el generador: con opciones (selector) y, si tiene "tipo", se guarda como nueva versión.
   function abrirDocEmpresa(o){
