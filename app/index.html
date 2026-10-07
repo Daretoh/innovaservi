@@ -2021,14 +2021,20 @@
   </div>
   <div class="ficha-body">
     <div class="seg" id="nom-seg" style="margin-bottom:12px"><button class="seg-b on" data-m="nomina">Nómina de activos</button><button class="seg-b" data-m="baja">Aviso de baja</button></div>
-    <div class="card">
-      <div class="grid2"><div class="fld" style="margin:0"><label>Para (correo)</label><input id="nom-para" type="email" placeholder="correo@cliente.cl" autocomplete="off"></div><div class="fld" style="margin:0"><label>Asunto</label><input id="nom-asunto" type="text"></div></div>
+    <div class="card" id="nom-card-correo">
+      <div class="grid2"><div class="fld" style="margin:0"><label>Para (correo)</label><input id="nom-para" type="email" placeholder="correo@cliente.cl" autocomplete="off"></div><div class="fld" style="margin:0"><label>Asunto / título del documento</label><input id="nom-asunto" type="text"></div></div>
     </div>
     <div id="nom-pnl-nomina">
       <div class="card">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px"><label class="pe-lbl" style="margin:0">Personas activas <span id="nom-cnt" class="note" style="margin:0"></span></label><span style="display:flex;gap:6px"><button id="nom-todos" class="btn ghost small" style="width:auto" type="button">Todos</button><button id="nom-ninguno" class="btn ghost small" style="width:auto" type="button">Ninguno</button></span></div>
         <div id="nom-warn"></div>
         <div id="nom-list" class="nom-list"></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+          <button id="nom-copia-tabla" class="btn" style="width:auto" type="button">Copiar tabla</button>
+          <button id="nom-pdf" class="btn ghost" style="width:auto" type="button">Descargar PDF</button>
+          <button id="nom-xls" class="btn ghost" style="width:auto" type="button">Descargar Excel</button>
+        </div>
+        <p class="note" style="margin:8px 0 0">“Copiar tabla” la pega directo en Excel con las columnas separadas. El PDF o Excel se descargan para adjuntar.</p>
       </div>
     </div>
     <div id="nom-pnl-baja" class="hide">
@@ -2036,17 +2042,15 @@
         <div class="grid2"><div class="fld" style="margin:0"><label>Trabajador</label><select id="nom-baja-t"></select></div><div class="fld" style="margin:0"><label>Deja de prestar servicios desde</label><input id="nom-baja-f" type="date"></div></div>
       </div>
     </div>
-    <div class="card">
+    <div class="card" id="nom-card-texto">
       <label class="pe-lbl">Texto del correo <span class="note" style="margin:0;font-weight:500">(puedes editarlo)</span></label>
-      <textarea id="nom-cuerpo" rows="16" wrap="off" style="width:100%;font:500 12px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);resize:vertical;white-space:pre;overflow:auto"></textarea>
+      <textarea id="nom-cuerpo" rows="10" style="width:100%;font:500 13.5px var(--font);padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);resize:vertical"></textarea>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
         <button id="nom-copiar" class="btn" style="width:auto" type="button">Copiar texto</button>
         <button id="nom-mail" class="btn ghost" style="width:auto" type="button">Abrir en correo</button>
         <button id="nom-gmail" class="btn ghost" style="width:auto" type="button">Abrir en Gmail</button>
-        <button id="nom-pdf" class="btn ghost" style="width:auto" type="button">Descargar PDF</button>
-        <button id="nom-xls" class="btn ghost" style="width:auto" type="button">Descargar Excel</button>
       </div>
-      <p class="note" style="margin:8px 0 0">El correo se abre con el texto listo; el documento (PDF o Excel) se descarga aparte y lo adjuntas tú.</p>
+      <p class="note" style="margin:8px 0 0">El correo se abre con el texto listo para enviar.</p>
     </div>
   </div>
 </div>
@@ -4601,7 +4605,7 @@
   if($('dups-close')) $('dups-close').addEventListener('click',function(){ $('dups-mgr').classList.add('hide'); });
 
   // ====== Nómina de personal activo / aviso de baja (correo al cliente: casino, torniquetes, etc.) ======
-  var NOM_MODO='nomina', NOM_SEL={}, NOM_T=[];
+  var NOM_MODO='nomina', NOM_SEL={}, NOM_T=[], NOM_ASUNTO_DIRTY=false;
   var MES_L=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
   function fechaLarga(f){ var d=new Date((f||todayISO())+'T12:00:00'); return d.getDate()+' de '+MES_L[d.getMonth()]+' de '+d.getFullYear(); }
   function fechaNum(f){ var p=(f||todayISO()).split('-'); return p[2]+'/'+p[1]+'/'+p[0]; }
@@ -4635,7 +4639,7 @@
       '\n\nCada vez que una persona deje de prestar servicios se lo informaremos para su desactivación.\n\nQuedo atento.\n\nSaludos cordiales,\n'+fir; }
   function nomAsunto(){ if(NOM_MODO==='baja'){ var t=(TRAB||[]).filter(function(x){ return String(x.id)===$('nom-baja-t').value; })[0]; return 'Baja de personal Innovaservi'+(t?(' – '+titleCase((t.nombre||'').trim())):''); }
     return 'Nómina personal activo Innovaservi – '+fechaNum(); }
-  function nomRefrescar(){ $('nom-cuerpo').value=nomCuerpo(); $('nom-asunto').value=nomAsunto(); }
+  function nomRefrescar(){ $('nom-cuerpo').value=nomCuerpo(); if(!NOM_ASUNTO_DIRTY) $('nom-asunto').value=nomAsunto(); }
   function nomPintarLista(){ var L=nomElegidos(), sinRut=L.filter(function(t){ return !t.rut; }).length;
     $('nom-cnt').textContent='· '+L.length+' de '+NOM_T.length;
     $('nom-warn').innerHTML=sinRut?('<div class="nom-warn">'+sinRut+' persona'+(sinRut>1?'s':'')+' sin RUT en la ficha. Complétalo en RRHH antes de enviar.</div>'):'';
@@ -4643,9 +4647,10 @@
     $('nom-list').innerHTML=NOM_T.length?('<table class="nom-tbl"><thead><tr><th class="ck"></th><th>Nombre</th><th class="r">RUT</th><th class="r">Teléfono</th></tr></thead><tbody>'+filas+'</tbody></table>'):'<p class="note" style="margin:10px">No hay trabajadores activos.</p>';
     $('nom-list').querySelectorAll('input[type=checkbox]').forEach(function(ch){ ch.addEventListener('change',function(ev){ ev.stopPropagation(); NOM_SEL[ch.dataset.id]=ch.checked; nomPintarLista(); nomRefrescar(); }); });
     $('nom-list').querySelectorAll('tbody tr').forEach(function(tr){ tr.addEventListener('click',function(ev){ if(ev.target.tagName==='INPUT') return; var id=tr.dataset.id; NOM_SEL[id]=!NOM_SEL[id]; nomPintarLista(); nomRefrescar(); }); }); }
-  function nomModo(m){ NOM_MODO=m; document.querySelectorAll('#nom-seg .seg-b').forEach(function(b){ b.classList.toggle('on', b.dataset.m===m); });
+  function nomModo(m){ NOM_MODO=m; NOM_ASUNTO_DIRTY=false; document.querySelectorAll('#nom-seg .seg-b').forEach(function(b){ b.classList.toggle('on', b.dataset.m===m); });
     $('nom-pnl-nomina').classList.toggle('hide', m!=='nomina'); $('nom-pnl-baja').classList.toggle('hide', m!=='baja');
-    ['nom-pdf','nom-xls'].forEach(function(id){ $(id).classList.toggle('hide', m!=='nomina'); }); nomRefrescar(); }
+    $('nom-card-texto').classList.toggle('hide', m!=='baja');   // el texto de correo es solo para el aviso de baja
+    nomRefrescar(); }
   // abrirNominaCli() → nómina; abrirNominaCli('baja', idTrabajador, fecha) → aviso de baja prellenado
   function abrirNominaCli(modo, tid, fecha){
     cargarTrab(function(){
@@ -4662,11 +4667,13 @@
   function nomCopiar(t, msg){ function ok(){ toast(msg||'Copiado'); }
     function fb(){ var ta=document.createElement('textarea'); ta.value=t; document.body.appendChild(ta); ta.select(); try{ document.execCommand('copy'); ok(); }catch(_){ toast('No se pudo copiar'); } ta.remove(); }
     if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(ok, fb); else fb(); }
-  function nomArchivo(ext){ return (NOM_MODO==='baja'?'baja':'nomina-personal-activo')+'-innovaservi-'+todayISO()+'.'+ext; }
+  function nomSlug(s){ return (s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,60); }
+  function nomArchivo(ext){ if(NOM_MODO==='baja') return 'baja-innovaservi-'+todayISO()+'.'+ext; var s=nomSlug($('nom-asunto').value)||'nomina-personal-activo'; return s+'-'+todayISO()+'.'+ext; }
   function nomPDF(){ if(!window.jspdf){ toast('No se pudo cargar el generador de PDF. Revisa tu conexión y recarga.'); return; }
     var L=nomElegidos(); if(!L.length){ toast('No hay personas seleccionadas.'); return; }
     var doc=new window.jspdf.jsPDF({unit:'mm',format:'a4'}), x=18, y=22, W=174;
-    doc.setFont('helvetica','bold'); doc.setFontSize(15); doc.setTextColor(26,31,110); doc.text('Nómina de personal activo',x,y);
+    var titulo=($('nom-asunto').value||'').trim()||'Nómina de personal activo';
+    doc.setFont('helvetica','bold'); doc.setFontSize(14); doc.setTextColor(26,31,110); var tl=doc.splitTextToSize(titulo,W); doc.text(tl,x,y); y+=(tl.length-1)*6;
     doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(90,90,90); y+=6; doc.text('Innovaservi · al '+fechaLarga()+' · '+L.length+' persona'+(L.length===1?'':'s'),x,y);
     y+=9;
     var cRut=x+104, cTel=x+W-3;
@@ -4683,6 +4690,16 @@
     var rows=[['N°','Nombre completo','RUT','Teléfono']].concat(L.map(function(t,i){ return [i+1, t.nombre, t.rut||'', t.telefono||'']; }));
     var csv='﻿'+rows.map(function(r){ return r.map(function(v){ v=String(v); return /[;"\n]/.test(v)?('"'+v.replace(/"/g,'""')+'"'):v; }).join(';'); }).join('\r\n');
     var a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'})); a.download=nomArchivo('csv'); document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },500); }
+  // Copia la tabla (encabezado + filas) al portapapeles como TSV (Excel separa las columnas) y HTML (tabla).
+  function nomCopiaTabla(){ var L=nomElegidos(); if(!L.length){ toast('No hay personas seleccionadas.'); return; }
+    var H=['N°','Nombre','RUT','Teléfono'];
+    var tsv=[H.join('\t')].concat(L.map(function(t,i){ return [i+1,t.nombre,t.rut||'',t.telefono||''].join('\t'); })).join('\r\n');
+    var html='<table border="1" cellspacing="0" cellpadding="4" style="border-collapse:collapse"><tr>'+H.map(function(h){ return '<th>'+esc(h)+'</th>'; }).join('')+'</tr>'+L.map(function(t,i){ return '<tr><td>'+(i+1)+'</td><td>'+esc(t.nombre)+'</td><td>'+esc(t.rut||'')+'</td><td>'+esc(t.telefono||'')+'</td></tr>'; }).join('')+'</table>';
+    if(navigator.clipboard && window.ClipboardItem){
+      try{ navigator.clipboard.write([new ClipboardItem({'text/plain':new Blob([tsv],{type:'text/plain'}),'text/html':new Blob([html],{type:'text/html'})})])
+        .then(function(){ toast('✓ Tabla copiada · pégala en Excel'); }, function(){ nomCopiar(tsv,'✓ Tabla copiada · pégala en Excel'); }); return; }catch(_){}
+    }
+    nomCopiar(tsv,'✓ Tabla copiada · pégala en Excel'); }
   function nomListo(){ if(NOM_MODO==='baja' && !$('nom-baja-t').value){ toast('Elige el trabajador.'); return false; } if(NOM_MODO==='nomina' && !nomElegidos().length){ toast('No hay personas seleccionadas.'); return false; } return true; }
   if($('nomina-btn')) $('nomina-btn').addEventListener('click',function(){ abrirNominaCli('nomina'); });
   if($('nom-close')) $('nom-close').addEventListener('click',function(){ $('nomina-mgr').classList.add('hide'); });
@@ -4697,6 +4714,8 @@
   if($('nom-gmail')) $('nom-gmail').addEventListener('click',function(){ if(!nomListo()) return; window.open('https://mail.google.com/mail/?view=cm&fs=1&to='+encodeURIComponent($('nom-para').value.trim())+'&su='+encodeURIComponent($('nom-asunto').value)+'&body='+encodeURIComponent($('nom-cuerpo').value),'_blank'); });
   if($('nom-pdf')) $('nom-pdf').addEventListener('click',nomPDF);
   if($('nom-xls')) $('nom-xls').addEventListener('click',nomXLS);
+  if($('nom-copia-tabla')) $('nom-copia-tabla').addEventListener('click',nomCopiaTabla);
+  if($('nom-asunto')) $('nom-asunto').addEventListener('input',function(){ NOM_ASUNTO_DIRTY=true; });
 
   function abrirFicha(t){
     FICHA_ID=t?t.id:null; FICHA_EST0=(t&&t.estado)||'espera';
