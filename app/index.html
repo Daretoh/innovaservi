@@ -397,6 +397,9 @@
   .emp-firma{border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;}
   .emp-firma .fz{height:70px;display:flex;align-items:center;justify-content:center;gap:10px;background:repeating-conic-gradient(#f3f4f8 0 25%,#fff 0 50%) 0 0/14px 14px;border-radius:8px;}
   .emp-firma .fz img{max-height:62px;max-width:46%;object-fit:contain;}
+  .dg-cols{display:grid;grid-template-columns:1fr 1fr;gap:0 18px;} .dg-cols .dg-ul{margin-bottom:6px;}
+  .dg-lin{border-bottom:1px solid #b9bfd1;height:22px;}
+  .pts-fig.org svg{height:auto !important;max-height:none !important;}
   .pts-herr td{font-size:11.5px;} .pts-chk{text-align:center !important;vertical-align:middle !important;}
   .pts-chk span{display:inline-block;width:14px;height:14px;border:1.5px solid #6b7390;border-radius:3px;}
   .pts-figs{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin:6px 0 12px;}
@@ -6374,7 +6377,7 @@
   // ---- Empresa: documentación general (por carpeta; cada documento guarda versiones, manda la más reciente) ----
   // Basado en la carpeta de prevención (02- Fichas de ingreso / Ficha Nicolas).
   var EMP_CARPETAS=[
-    {k:'prev', n:'Reglamento y gestión preventiva', tipos:[['riohs','Reglamento Interno de Orden, Higiene y Seguridad (RIOHS)',false],['programa','Programa de prevención de riesgos',false],['iper','Matriz de riesgos (IPER)',false],['proc_iper','Procedimiento IPER',false],['proc_acc','Procedimiento en caso de accidentes del trabajo y enfermedad profesional',false]]},
+    {k:'prev', n:'Reglamento y gestión preventiva', tipos:[['riohs','Reglamento Interno de Orden, Higiene y Seguridad (RIOHS)',false],['programa','Programa de prevención de riesgos',false],['iper','Matriz de riesgos (IPER)',false],['proc_iper','Procedimiento IPER',false],['proc_acc','Procedimiento en caso de accidentes del trabajo y enfermedad profesional',false],['proc_emerg','Procedimiento de emergencia · limpieza de estanques',false]]},
     {k:'pts', n:'Procedimientos de trabajo seguro (PTS)', tipos:[['pts_quimicos','PTS uso y manejo de químicos',false],['pts_extintores','PTS uso y manejo de extintores',false],['pts_altura','PTS trabajos en altura',false],['pts_confinados','PTS espacios confinados',false],['pts_alzahombre','PTS alza hombre / grúa Genie',false],['pts_herramientas','PTS uso de herramientas · limpieza de estanques',false],['pts_funciones','PTS acorde a sus funciones',false]]},
     {k:'legal', n:'Legal y previsional', tipos:[['erut','e-RUT de la empresa',false],['escritura','Escritura / estatutos',false],['vigencia','Certificado de vigencia',true],['mutual','Certificado de adhesión a la mutual',false],['tasa','Certificado de tasa de cotización',true]]}
   ];
@@ -6384,6 +6387,7 @@
   // Formatos en blanco que genera InnovaGestión (se descargan para que firme quien corresponda).
   var EMP_FMT=[
     {k:'fmt_asist', n:'Registro de capacitación / charla (lista de asistencia)', build:function(){ return docAsistencia(null); }},
+    {k:'fmt_cap_herr', n:'Capacitación: uso seguro de herramientas manuales y equipos de apoyo', build:function(){ return docCapHerr(); }},
     {k:'fmt_pts', n:'Registro de entrega de PTS (grupal)', opciones:function(){ return Object.keys(PTS_INFO).map(function(s){ return {v:s, n:PTS_INFO[s].n}; }); }, build:function(v){ return docAsistencia(v); }},
     {k:'fmt_epp', n:'Entrega de elementos de protección personal', build:function(){ return docEPP({nombre:'',rut:''}); }},
     {k:'fmt_odi', n:'Información de riesgos laborales (IRL)', build:function(){ return docODI({nombre:'',rut:'',cargo:''}); }},
@@ -6400,7 +6404,7 @@
       else if(u.vencimiento){ var n=diffDiasV(u.vencimiento); chip=n<0?'<span class="dchip venc">Vencido</span>':(n<=30?'<span class="dchip prox">Vence '+n+'d</span>':'<span class="dchip ok">Vigente</span>'); }
       else chip='<span class="dchip ok">Cargado</span>';
       var gen='';
-      if(tipo==='pts_funciones'||(typeof PTS_DOC!=='undefined'&&PTS_DOC[tipo])) gen='<button class="rd-gen emp-pf" data-pts="'+enc(tipo)+'" title="Generar el procedimiento con formato 2026">'+svgI(ICO.gen,15)+'Generar PTS</button>';
+      if(tipo==='pts_funciones'||(typeof PTS_DOC!=='undefined'&&PTS_DOC[tipo])||(typeof EMP_GEN!=='undefined'&&EMP_GEN[tipo])) gen='<button class="rd-gen emp-pf" data-pts="'+enc(tipo)+'" title="Generar el procedimiento con formato 2026">'+svgI(ICO.gen,15)+'Generar PTS</button>';
       if(typeof DOC_GEN!=='undefined'&&DOC_GEN[tipo]) gen+='<button class="rd-gen emp-gen" data-gen="'+enc(tipo)+'" title="Generar el registro de entrega para varios trabajadores">'+svgI(ICO.gen,15)+'Registrar entrega</button>';
       var multi=esMulti(tipo,E.todos), vis=multi?E.todos.slice(0,4):(u?[u]:[]);
       var sub=!u?(vence?'Con vencimiento':'Toca para subir el archivo'):(multi?(E.n+(E.n===1?' documento':' documentos')+' · '+E.todos.map(function(d){ return d.titular||'sin nombre'; }).join(', ')):('Actualizado '+fechaCorta(u.fecha||String(u.created_at||'').slice(0,10))+(u.vencimiento?' · vence '+fechaCorta(u.vencimiento):'')+(E.n>1?' · '+E.n+' versiones':'')));
@@ -6475,7 +6479,8 @@
         subirArchivo(f,'empresa/pts', nombre).then(function(res){
           if(!res||!res.url){ busy(false); toast('PDF descargado, pero no se guardó la versión.'); $('docgen').classList.add('hide'); return; }
           var lbl=(o.opciones&&(o.opciones.filter(function(x){ return x.v===v; })[0]||{}).n)||'';
-          sb.from('empresa_docs').insert({ carpeta:'pts', tipo:o.tipo, nombre:o.nombre, fecha:todayISO(), url:res.url, nota:lbl||null, autor:userEmail }).then(function(){ busy(false); toast('✓ Descargado y guardado como versión vigente'); $('docgen').classList.add('hide'); renderEmp(); }, function(){ busy(false); $('docgen').classList.add('hide'); });
+          var cpG=EMP_CARPETAS.filter(function(cx){ return cx.tipos.some(function(x){ return x[0]===o.tipo; }); })[0];
+          sb.from('empresa_docs').insert({ carpeta:(cpG?cpG.k:'pts'), tipo:o.tipo, nombre:o.nombre, fecha:todayISO(), url:res.url, nota:lbl||null, autor:userEmail }).then(function(){ busy(false); toast('✓ Descargado y guardado como versión vigente'); $('docgen').classList.add('hide'); renderEmp(); }, function(){ busy(false); $('docgen').classList.add('hide'); });
         });
       }).catch(function(){ busy(false); toast('No se pudo generar el PDF.'); });
     } };
@@ -7726,9 +7731,101 @@
   };
   function figurasPTS(slug){ var L=PTS_FIG[slug]; if(!L) return '';
     return '<div class="pts-figs">'+L.map(function(f){ return '<figure class="pts-fig'+(f[2]?' ancha':'')+'">'+FIG[f[0]]+'<figcaption>'+esc(f[1])+'</figcaption></figure>'; }).join('')+'</div>'; }
+  // ====== Documentos de empresa generados (procedimientos y capacitaciones con formato corporativo) ======
+  function tablaCtl(cod, aplica){ return '<table class="dg-tbl pts-ctl"><tbody><tr><td><span class="sl">Código</span><b>'+cod+'</b></td><td><span class="sl">Versión</span><b>01</b></td><td><span class="sl">Fecha</span>'+ce(fFaena(todayISO()))+'</td><td><span class="sl">Aplica a</span><b>'+esc(aplica)+'</b></td></tr></tbody></table>'; }
+  function seccionador(){ var n=0; return function(t){ n++; return '<h4 class="dg-h4">'+n+'. '+t+'</h4>'; }; }
+  // Organigrama de emergencia (SVG propio)
+  function orgEmergencia(){
+    function caja(x,y,w,t1,t2,fuerte){ return '<rect x="'+x+'" y="'+y+'" width="'+w+'" height="46" rx="8" fill="'+(fuerte?FIG_N:'#fff')+'" stroke="'+(fuerte?FIG_N:FIG_O)+'" stroke-width="2"/>'+
+      '<text x="'+(x+w/2)+'" y="'+(y+20)+'" text-anchor="middle" font-size="12" font-weight="bold" fill="'+(fuerte?'#fff':FIG_N)+'">'+t1+'</text>'+
+      '<text x="'+(x+w/2)+'" y="'+(y+36)+'" text-anchor="middle" font-size="10" fill="'+(fuerte?'#dfe3f3':'#55607a')+'">'+t2+'</text>'; }
+    var L='stroke="#9aa2bd" stroke-width="2" fill="none"';
+    return '<figure class="pts-fig ancha org" style="margin:0 0 12px">'+svgF('0 0 640 230',
+      caja(230,8,180,'Gerencia','Recursos y apoyo',false)+
+      '<path d="M320 54 V76" '+L+'/>'+
+      caja(210,76,220,'Supervisor de faena','Activa y dirige la emergencia',true)+
+      caja(470,76,160,'Prevencionista','Asesoría técnica',false)+'<path d="M430 99 H470" '+L+' stroke-dasharray="5 4"/>'+
+      '<path d="M320 122 V146 M90 146 H550 M90 146 V166 M250 146 V166 M410 146 V166 M550 146 V166" '+L+'/>'+
+      caja(10,166,160,'Vigía externo','Da la alarma, no ingresa',false)+
+      caja(178,166,144,'Rescatistas (2)','Rescate con/sin ingreso',false)+
+      caja(330,166,160,'Primeros auxilios','Atención y traslado',false)+
+      caja(498,166,132,'Apoyo exterior','Comunicación y equipos',false)
+    )+'<figcaption>Organigrama de emergencia en la faena</figcaption></figure>'; }
+  function docEmergencia(){
+    var H=seccionador();
+    function tr(a,b){ return '<tr><td class="dg-k">'+a+'</td><td>'+b+'</td></tr>'; }
+    return dgHead('PROCEDIMIENTO DE EMERGENCIA','01')+
+      '<div class="pts-tit">Emergencias en limpieza de estanques (espacio confinado)</div>'+
+      tablaCtl('PE-PREV-01','Estanques de salmuera y similares')+dgFirmasPTS()+
+      H('Objetivo')+'<p>Establecer las acciones de respuesta, comunicación, evacuación y rescate ante emergencias ocurridas durante los trabajos de limpieza de estanques de salmuera en espacios confinados, con el fin de proteger la vida y la salud de los trabajadores, minimizar los daños materiales y asegurar una respuesta organizada y eficaz.</p>'+
+      H('Alcance')+'<p>Aplica a todo el personal de '+EMP.rz+' que participe directa o indirectamente en trabajos de limpieza de estanques de salmuera: supervisores, prevencionistas, brigadistas y personal de apoyo. Se aplica junto con el PTS de espacios confinados (PTS-PREV-05) y el PTS de uso de herramientas en limpieza de estanques (PTS-PREV-06).</p>'+
+      H('Responsabilidades')+'<table class="dg-tbl">'+
+        tr('Gerencia','Proporcionar los recursos humanos y materiales para aplicar este procedimiento y garantizar la capacitación del personal.')+
+        tr('Supervisor de faena','Activar el procedimiento de emergencia, coordinar la evacuación y el rescate, y mantener la comunicación con los organismos externos.')+
+        tr('Prevencionista de riesgos','Asesorar técnicamente durante la emergencia y coordinar la investigación posterior.')+
+        tr('Vigía u observador externo','Mantener vigilancia permanente durante los trabajos, activar de inmediato la emergencia ante cualquier incidente y prohibir el ingreso de personal no autorizado.')+
+        tr('Trabajadores','Cumplir las instrucciones de emergencia, evacuar cuando se requiera y participar en simulacros y capacitaciones.')+'</table>'+
+      H('Organigrama de emergencia')+orgEmergencia()+
+      H('Recursos de emergencia')+'<div class="dg-cols">'+ulDg(['Equipo detector multigases.','Arnés de rescate de cuerpo completo.','Trípode de rescate (si aplica).','Línea de vida.','Equipo de comunicación radial.','Camilla de rescate.'])+ulDg(['Botiquín de primeros auxilios.','Extintores PQS.','Equipos de ventilación forzada.','Linternas certificadas.','Señalización y cintas de peligro.'])+'</div>'+
+      H('Situaciones de emergencia')+'<div class="dg-cols">'+ulDg(['Desmayo o pérdida de conciencia dentro del estanque.','Atmósfera deficiente en oxígeno.','Presencia de gases peligrosos.','Incendio o explosión.','Electrocución.'])+ulDg(['Caída al mismo o distinto nivel.','Lesiones graves durante la limpieza.','Derrumbes o atrapamientos.','Emergencias médicas.'])+'</div>'+
+      H('Procedimiento de actuación')+
+        '<p style="margin:8px 0 4px"><b>Detección de la emergencia</b> — el vigía externo:</p>'+ulDg(['Suspende de inmediato los trabajos.','Alerta verbalmente al personal.','Activa la comunicación radial o telefónica.','Informa al supervisor de faena.'])+
+        '<p style="margin:8px 0 4px"><b>Evacuación</b></p>'+ulDg(['Todo trabajador que pueda hacerlo abandona el espacio confinado.','Se suspenden todas las actividades.','El personal se dirige al punto de encuentro de emergencia (PEE).','Se realiza el conteo del personal.'])+
+        '<p style="margin:8px 0 4px"><b>Rescate sin ingreso</b> (siempre la primera opción)</p>'+ulDg(['Utilizar líneas de vida y el sistema de recuperación.','Extraer a la víctima sin ingresar al estanque.','Aplicar primeros auxilios una vez rescatada.'])+
+        '<p style="margin:8px 0 4px"><b>Rescate con ingreso</b> — solo cuando:</p>'+ulDg(['El rescate sin ingreso no sea posible.','Exista autorización del supervisor.','Se verifique atmósfera segura con el multigás.','Los rescatistas cuenten con EPP completo.','Exista personal de apoyo externo.'])+
+        '<p style="margin:4px 0 12px">Equipo mínimo: supervisor, dos rescatistas, apoyo exterior y personal de primeros auxilios. <b>El vigía nunca ingresa solo al estanque.</b></p>'+
+      H('Primeros auxilios')+'<table class="dg-tbl"><thead><tr><th style="width:28%">Situación</th><th>Qué hacer</th></tr></thead><tbody>'+
+        '<tr><td><b>Persona inconsciente</b></td><td>Retirar a zona segura, verificar la respiración, aplicar RCP si corresponde y solicitar ambulancia.</td></tr>'+
+        '<tr><td><b>Intoxicación por gases</b></td><td>Retirar de inmediato del espacio, mantener en reposo, administrar oxígeno si hay disponible y trasladar de inmediato a un centro asistencial.</td></tr>'+
+        '<tr><td><b>Lesiones traumáticas</b></td><td>Inmovilizar al trabajador, controlar hemorragias y esperar asistencia especializada.</td></tr></tbody></table>'+
+      H('Comunicación de la emergencia')+'<p style="margin:0 0 4px">El supervisor informa:</p>'+'<div class="dg-cols">'+ulDg(['Tipo de emergencia.','Lugar exacto.','Cantidad de afectados.'])+ulDg(['Estado de los lesionados.','Recursos requeridos.'])+'</div>'+
+      H('Números de emergencia')+'<table class="dg-tbl"><thead><tr><th>Organismo</th><th style="width:40%">Teléfono</th></tr></thead><tbody>'+
+        [['Ambulancia SAMU','131'],['Bomberos','132'],['Carabineros','133'],['Mutual de Seguridad','1407'],['Hospital más cercano',''],['Supervisor de faena',''],['Prevencionista',''],['Contacto del mandante','']].map(function(r){ return '<tr><td>'+r[0]+'</td><td>'+(r[1]?'<b>'+r[1]+'</b>':ce(''))+'</td></tr>'; }).join('')+'</tbody></table>'+
+      H('Punto de encuentro de emergencia (PEE)')+'<p>Ubicación: '+ce('')+'</p>'+ulDg(['Área libre de tránsito.','Alejada de la emergencia.','De fácil acceso para los organismos de emergencia.','Debidamente señalizada.'])+
+      H('Investigación del incidente')+'<p style="margin:0 0 4px">Toda emergencia se investiga dentro de las 24 horas siguientes para determinar:</p>'+'<div class="dg-cols">'+ulDg(['Causas inmediatas.','Causas básicas.'])+ulDg(['Medidas correctivas.','Acciones preventivas.'])+'</div>'+
+        '<p style="font-size:12px">Los accidentes del trabajo se denuncian además ante el organismo administrador de la Ley N° 16.744 (DIAT).</p>'+
+      H('Simulacros')+ulDg(['Como mínimo, 1 simulacro semestral de rescate en espacio confinado.','Como mínimo, 1 simulacro anual de evacuación general.','Los resultados se registran y generan planes de mejora.'])+
+      H('Control de cambios')+'<table class="dg-tbl"><thead><tr><th style="width:15%">Versión</th><th style="width:20%">Fecha</th><th>Descripción del cambio</th></tr></thead><tbody><tr><td>01</td><td>'+fFaena(todayISO())+'</td><td>Emisión original.</td></tr></tbody></table>';
+  }
+  // Capacitación: uso seguro de herramientas manuales y equipos de apoyo (contenido + evaluación + asistencia)
+  function docCapHerr(){
+    var H=seccionador();
+    function tr(a,b){ return '<tr><td class="dg-k">'+a+'</td><td>'+b+'</td></tr>'; }
+    var T=[['Llave de cadena','Golpes, atrapamiento, deslizamiento.','Revisar el estado de la cadena; usar la medida adecuada; manos fuera de los puntos de atrapamiento.'],
+      ['Juego de dados','Golpes, resbalamiento, daño de pernos.','Usar el dado correcto; no usar extensiones artesanales; mantener limpio el encastre.'],
+      ['Llave de torque','Sobreesfuerzo, golpes por liberación brusca.','Verificar la calibración; aplicar el torque especificado; no usarla como palanca.'],
+      ['Taladro de impacto','Proyección de partículas, atrapamiento, contacto eléctrico.','Revisar batería y mandril; sujetar firmemente; usar lentes de seguridad.'],
+      ['Palas (blanca, metálica, carbonera y olleras)','Sobreesfuerzo, golpes, lesiones musculares.','Postura correcta; evitar sobrecargas; técnica de levantamiento seguro.'],
+      ['Caja hidrolavadora','Inyección de agua a presión, resbalones, contacto eléctrico.','Revisar conexiones; mantener orden y limpieza; no dirigir el chorro hacia personas.'],
+      ['Cuchillo','Cortes, punciones.','Mantener la funda protectora; cortar alejando el cuerpo; no dejar el filo expuesto.'],
+      ['Esmeril angular a batería','Proyección de partículas, rotura de disco, cortes graves.','Revisar el disco; usar la guarda protectora y pantalla facial; esperar la detención completa antes de apoyar.'],
+      ['Llave regulable (caimán)','Golpes, deslizamiento.','Ajustar correctamente; aplicar fuerza controlada; no usar extensiones.'],
+      ['Llave Stilson','Golpes, atrapamiento.','Revisar las mordazas; usar sobre tuberías adecuadas; mantener la regulación correcta.'],
+      ['Medidor de gases portátil','No detectar una atmósfera peligrosa.','Calibración vigente, batería cargada, sensores operativos y prueba funcional; encender antes del ingreso, medir desde el exterior, registrar lecturas, monitoreo continuo y suspender ante cualquier alarma.']];
+    var rows=''; for(var i=1;i<=10;i++) rows+='<tr><td class="n">'+i+'</td><td></td><td style="width:110px"></td><td style="width:120px"></td><td style="width:110px"></td></tr>';
+    var preg=['¿Qué debe hacer si detecta una herramienta defectuosa?','¿Qué EPP debe utilizar al trabajar con esmeril angular?','¿Cuándo debe utilizarse el detector de gases?','¿Está permitido modificar una herramienta para facilitar el trabajo?','¿Qué debe hacer si el detector de gases activa una alarma?'];
+    return dgHead('REGISTRO DE CAPACITACIÓN','01')+
+      '<div class="pts-tit">Uso seguro de herramientas manuales y equipos de apoyo</div>'+
+      '<table class="dg-tbl">'+tr('Empresa',EMP.rz)+tr('Fecha',ce(''))+tr('Duración',ce(''))+tr('Lugar / faena',ce(''))+tr('Relator',ce(lsGet('dg_rel_nom')||EMP_PREV.nombre))+'</table>'+
+      H('Objetivo')+'<p>Capacitar a los trabajadores en el uso seguro, inspección, manipulación, almacenamiento y control de riesgos de las herramientas manuales y equipos de apoyo utilizados en limpieza industrial, mantenimiento, trabajos mecánicos y espacios confinados.</p>'+
+      H('Alcance')+'<p style="margin:0 0 4px">Aplica a todos los trabajadores que utilicen:</p><div class="dg-cols">'+ulDg(['Llave de cadena','Juego de dados','Llave de torque','Taladro de impacto','Pala blanca','Pala metálica','Carbonera'])+ulDg(['Palas olleras','Caja hidrolavadora','Cuchillo grande amarillo','Esmeril angular a batería','Llave regulable (caimán)','Llave Stilson','Medidor de gases portátil'])+'</div>'+
+      H('Riesgos asociados')+'<table class="dg-tbl"><tbody>'+tr('Mecánicos','Golpes por manipulación incorrecta, cortes y laceraciones, proyección de partículas, atrapamiento de dedos y manos, caída de herramientas.')+tr('Ergonómicos','Sobreesfuerzo físico, movimientos repetitivos, posturas forzadas.')+tr('Espacios confinados','Deficiencia de oxígeno, gases tóxicos, atmósferas explosivas, ventilación insuficiente.')+'</tbody></table>'+
+      H('Elementos de protección personal obligatorios')+'<div class="dg-cols">'+ulDg(['Casco de seguridad.','Lentes de seguridad.','Guantes adecuados a la tarea.','Calzado de seguridad.'])+ulDg(['Protector auditivo.','Respirador cuando corresponda.','Arnés de seguridad para trabajos en altura.'])+'</div>'+
+      H('Inspección previa de herramientas')+'<div class="dg-cols">'+ulDg(['Estado general.','Sin grietas ni deformaciones.','Herramienta limpia.','Funcionamiento correcto.'])+ulDg(['Etiqueta de inspección vigente.','Protecciones de fábrica instaladas.','Herramienta adecuada para la tarea.'])+'</div>'+
+        '<p style="font-size:12px"><b>Toda herramienta defectuosa se retira de inmediato de servicio y se informa al supervisor.</b></p>'+
+      H('Uso seguro por herramienta')+'<table class="dg-tbl"><thead><tr><th style="width:24%">Herramienta</th><th style="width:28%">Riesgos</th><th>Medidas preventivas</th></tr></thead><tbody>'+T.map(function(r){ return '<tr><td><b>'+r[0]+'</b></td><td>'+r[1]+'</td><td>'+r[2]+'</td></tr>'; }).join('')+'</tbody></table>'+
+      H('Prohibiciones')+ulDg(['Modificar herramientas.','Utilizar herramientas para funciones distintas a las de su diseño.','Trabajar con herramientas defectuosas.','Exponer partes del cuerpo a herramientas en movimiento.','Transportar cuchillos o elementos cortantes sin protección.','Utilizar accesorios artesanales para aumentar fuerza o palanca.'])+
+      H('Almacenamiento y transporte')+ulDg(['Mantener las herramientas limpias y secas.','Guardarlas en cajas, bolsos o áreas designadas.','Transportarlas siempre protegidas.','Mantener orden y aseo en el área de trabajo.'])+
+      H('Evaluación de aprendizaje')+'<table class="dg-tbl">'+tr('Nombre del trabajador','')+tr('Cargo','')+tr('Fecha','')+'</table>'+
+        preg.map(function(p,i){ return '<p style="margin:10px 0 2px"><b>'+(i+1)+'. '+p+'</b></p><div class="dg-lin"></div><div class="dg-lin"></div>'; }).join('')+
+      H('Registro de asistencia')+'<table class="dg-tbl"><thead><tr><th class="n">N°</th><th>Nombre completo</th><th>RUT</th><th>Cargo</th><th>Firma</th></tr></thead><tbody>'+rows+'</tbody></table>'+
+      '<div class="dg-firmas"><div>'+((lsGet('dg_rel_nom')||EMP_PREV.nombre)===EMP_PREV.nombre?firmaPrevHtml():'')+'Firma del relator<br>'+esc(lsGet('dg_rel_nom')||EMP_PREV.nombre)+'</div><div>Firma del supervisor<br>Nombre: ____________________</div></div>';
+  }
+  var EMP_GEN={ proc_emerg:{ build:docEmergencia } };
   function esPTS(s){ return s==='pts_funciones' || !!(typeof PTS_DOC!=='undefined'&&PTS_DOC[s]); }
   function nombrePTS(s){ var n=s; EMP_CARPETAS.forEach(function(c){ c.tipos.forEach(function(x){ if(x[0]===s) n=x[1]; }); }); return n; }
   function generarPTS(s){ var nom=nombrePTS(s);
+    if(typeof EMP_GEN!=='undefined'&&EMP_GEN[s]){ abrirDocEmpresa({ nombre:nom, tipo:s, build:EMP_GEN[s].build }); return; }
     if(s==='pts_funciones') abrirDocEmpresa({ nombre:nom, tipo:s, opciones:DG_VARS, build:docPTSFunciones });
     else abrirDocEmpresa({ nombre:nom, tipo:s, build:function(){ return docPTSDoc(s); } }); }
   function abrirPTS(s){
