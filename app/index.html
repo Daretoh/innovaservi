@@ -4119,11 +4119,9 @@
       fe.addEventListener('change',function(){ syncHz(); if(HZ[i]) HZ[i]._dirty=true; if(fe.value) HZ_COL[fe.value]=false; renderHz(); autoGuardarHz(); });
     });
   }
-  // Agrega una persona a una faena de ese día, heredando la hora de la última persona de esa misma faena.
+  // Agrega una persona a una faena de ese día (fila en blanco: no copia horas de otros, confunde).
   function addHzFae(f, fa){ syncHz(); f=f||todayISO(); fa=fa||'';
-    var ent='', sal='';
-    HZ.forEach(function(h){ if(h.fecha===f && (h.faena||'')===fa){ if(h.entrada) ent=h.entrada; if(h.salida) sal=h.salida; } });
-    HZ.unshift({fecha:f,trabajador:'',entrada:ent,salida:sal,faena:fa,vueltas:0,veh:''}); HZ_COL[f]=false; renderHz();
+    HZ.unshift({fecha:f,trabajador:'',entrada:'',salida:'',faena:fa,vueltas:0,veh:''}); HZ_COL[f]=false; renderHz();
     var box=$('hz-list'); if(box){ var nueva=box.querySelector('.hrow[data-i="0"]'); if(nueva){ try{ nueva.scrollIntoView({block:'center'}); var tr=nueva.querySelector('.h-trab'); if(tr) tr.focus(); }catch(_){} } }
   }
   // Autoguardado silencioso de Horas (sin recargar): guarda solo las líneas cambiadas.
