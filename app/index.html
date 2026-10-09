@@ -6398,7 +6398,7 @@
   // ---- Empresa: documentación general (por carpeta; cada documento guarda versiones, manda la más reciente) ----
   // Basado en la carpeta de prevención (02- Fichas de ingreso / Ficha Nicolas).
   var EMP_CARPETAS=[
-    {k:'prev', n:'Reglamento y gestión preventiva', tipos:[['riohs','Reglamento Interno de Orden, Higiene y Seguridad (RIOHS)',false],['programa','Programa de prevención de riesgos',false],['iper','Matriz de riesgos (IPER)',false],['proc_iper','Procedimiento IPER',false],['proc_acc','Procedimiento en caso de accidentes del trabajo y enfermedad profesional',false],['proc_emerg','Procedimiento de emergencia · limpieza de estanques',false]]},
+    {k:'prev', n:'Reglamento y gestión preventiva', tipos:[['riohs','Reglamento Interno de Orden, Higiene y Seguridad (RIOHS)',false],['programa','Programa de prevención de riesgos',false],['iper','Matriz de riesgos (IPER)',false],['proc_iper','Procedimiento IPER',false],['proc_acc','Procedimiento de emergencia y/o accidentes',false]]},
     {k:'pts', n:'Procedimientos de trabajo seguro (PTS)', tipos:[['pts_quimicos','PTS uso y manejo de químicos',false],['pts_extintores','PTS uso y manejo de extintores',false],['pts_altura','PTS trabajos en altura',false],['pts_confinados','PTS espacios confinados',false],['pts_alzahombre','PTS alza hombre / grúa Genie',false],['pts_herramientas','PTS uso de herramientas · limpieza de estanques',false],['pts_funciones','PTS acorde a sus funciones',false]]},
     {k:'cap', n:'Capacitaciones', tipos:[['cap_herr','Capacitación: uso seguro de herramientas manuales y equipos de apoyo',false]]},
     {k:'legal', n:'Legal y previsional', tipos:[['erut','e-RUT de la empresa',false],['escritura','Escritura / estatutos',false],['vigencia','Certificado de vigencia',true],['mutual','Certificado de adhesión a la mutual',false],['tasa','Certificado de tasa de cotización',true]]}
@@ -7828,43 +7828,6 @@
       caja(330,166,160,'Primeros auxilios','Atención y traslado',false)+
       caja(498,166,132,'Apoyo exterior','Comunicación y equipos',false)
     )+'<figcaption>Organigrama de emergencia en la faena</figcaption></figure>'; }
-  function docEmergencia(){
-    var H=seccionador();
-    function tr(a,b){ return '<tr><td class="dg-k">'+a+'</td><td>'+b+'</td></tr>'; }
-    return dgHead('PROCEDIMIENTO DE EMERGENCIA','01')+
-      '<div class="pts-tit">Emergencias en limpieza de estanques (espacio confinado)</div>'+
-      tablaCtl('PE-PREV-01','Estanques de salmuera y similares')+dgFirmasPTS()+
-      H('Objetivo')+'<p>Establecer las acciones de respuesta, comunicación, evacuación y rescate ante emergencias ocurridas durante los trabajos de limpieza de estanques de salmuera en espacios confinados, con el fin de proteger la vida y la salud de los trabajadores, minimizar los daños materiales y asegurar una respuesta organizada y eficaz.</p>'+
-      H('Alcance')+'<p>Aplica a todo el personal de '+EMP.rz+' que participe directa o indirectamente en trabajos de limpieza de estanques de salmuera: supervisores, prevencionistas, brigadistas y personal de apoyo. Se aplica junto con el PTS de espacios confinados (PTS-PREV-05) y el PTS de uso de herramientas en limpieza de estanques (PTS-PREV-06).</p>'+
-      H('Responsabilidades')+'<table class="dg-tbl">'+
-        tr('Gerencia','Proporcionar los recursos humanos y materiales para aplicar este procedimiento y garantizar la capacitación del personal.')+
-        tr('Supervisor de faena','Activar el procedimiento de emergencia, coordinar la evacuación y el rescate, y mantener la comunicación con los organismos externos.')+
-        tr('Prevencionista de riesgos','Asesorar técnicamente durante la emergencia y coordinar la investigación posterior.')+
-        tr('Vigía u observador externo','Mantener vigilancia permanente durante los trabajos, activar de inmediato la emergencia ante cualquier incidente y prohibir el ingreso de personal no autorizado.')+
-        tr('Trabajadores','Cumplir las instrucciones de emergencia, evacuar cuando se requiera y participar en simulacros y capacitaciones.')+'</table>'+
-      H('Organigrama de emergencia')+orgEmergencia()+
-      H('Recursos de emergencia')+'<div class="dg-cols">'+ulDg(['Equipo detector multigases.','Arnés de rescate de cuerpo completo.','Trípode de rescate (si aplica).','Línea de vida.','Equipo de comunicación radial.','Camilla de rescate.'])+ulDg(['Botiquín de primeros auxilios.','Extintores PQS.','Equipos de ventilación forzada.','Linternas certificadas.','Señalización y cintas de peligro.'])+'</div>'+
-      H('Situaciones de emergencia')+'<div class="dg-cols">'+ulDg(['Desmayo o pérdida de conciencia dentro del estanque.','Atmósfera deficiente en oxígeno.','Presencia de gases peligrosos.','Incendio o explosión.','Electrocución.'])+ulDg(['Caída al mismo o distinto nivel.','Lesiones graves durante la limpieza.','Derrumbes o atrapamientos.','Emergencias médicas.'])+'</div>'+
-      H('Procedimiento de actuación')+
-        '<p style="margin:8px 0 4px"><b>Detección de la emergencia</b> — el vigía externo:</p>'+ulDg(['Suspende de inmediato los trabajos.','Alerta verbalmente al personal.','Activa la comunicación radial o telefónica.','Informa al supervisor de faena.'])+
-        '<p style="margin:8px 0 4px"><b>Evacuación</b></p>'+ulDg(['Todo trabajador que pueda hacerlo abandona el espacio confinado.','Se suspenden todas las actividades.','El personal se dirige al punto de encuentro de emergencia (PEE).','Se realiza el conteo del personal.'])+
-        '<p style="margin:8px 0 4px"><b>Rescate sin ingreso</b> (siempre la primera opción)</p>'+ulDg(['Utilizar líneas de vida y el sistema de recuperación.','Extraer a la víctima sin ingresar al estanque.','Aplicar primeros auxilios una vez rescatada.'])+
-        '<p style="margin:8px 0 4px"><b>Rescate con ingreso</b> — solo cuando:</p>'+ulDg(['El rescate sin ingreso no sea posible.','Exista autorización del supervisor.','Se verifique atmósfera segura con el multigás.','Los rescatistas cuenten con EPP completo.','Exista personal de apoyo externo.'])+
-        '<p style="margin:4px 0 12px">Equipo mínimo: supervisor, dos rescatistas, apoyo exterior y personal de primeros auxilios. <b>El vigía nunca ingresa solo al estanque.</b></p>'+
-      H('Primeros auxilios')+'<table class="dg-tbl"><thead><tr><th style="width:28%">Situación</th><th>Qué hacer</th></tr></thead><tbody>'+
-        '<tr><td><b>Persona inconsciente</b></td><td>Retirar a zona segura, verificar la respiración, aplicar RCP si corresponde y solicitar ambulancia.</td></tr>'+
-        '<tr><td><b>Intoxicación por gases</b></td><td>Retirar de inmediato del espacio, mantener en reposo, administrar oxígeno si hay disponible y trasladar de inmediato a un centro asistencial.</td></tr>'+
-        '<tr><td><b>Lesiones traumáticas</b></td><td>Inmovilizar al trabajador, controlar hemorragias y esperar asistencia especializada.</td></tr></tbody></table>'+
-      H('Comunicación de la emergencia')+'<p style="margin:0 0 4px">El supervisor informa:</p>'+'<div class="dg-cols">'+ulDg(['Tipo de emergencia.','Lugar exacto.','Cantidad de afectados.'])+ulDg(['Estado de los lesionados.','Recursos requeridos.'])+'</div>'+
-      H('Números de emergencia')+'<table class="dg-tbl"><thead><tr><th>Organismo</th><th style="width:40%">Teléfono</th></tr></thead><tbody>'+
-        [['Ambulancia SAMU','131'],['Bomberos','132'],['Carabineros','133'],['Mutual de Seguridad','1407'],['Hospital más cercano',''],['Supervisor de faena',''],['Prevencionista',''],['Contacto del mandante','']].map(function(r){ return '<tr><td>'+r[0]+'</td><td>'+(r[1]?'<b>'+r[1]+'</b>':ce(''))+'</td></tr>'; }).join('')+'</tbody></table>'+
-      H('Punto de encuentro de emergencia (PEE)')+'<p>Ubicación: '+ce('')+'</p>'+ulDg(['Área libre de tránsito.','Alejada de la emergencia.','De fácil acceso para los organismos de emergencia.','Debidamente señalizada.'])+
-      H('Investigación del incidente')+'<p style="margin:0 0 4px">Toda emergencia se investiga dentro de las 24 horas siguientes para determinar:</p>'+'<div class="dg-cols">'+ulDg(['Causas inmediatas.','Causas básicas.'])+ulDg(['Medidas correctivas.','Acciones preventivas.'])+'</div>'+
-        '<p style="font-size:12px">Los accidentes del trabajo se denuncian además ante el organismo administrador de la Ley N° 16.744 (DIAT).</p>'+
-      H('Simulacros')+ulDg(['Como mínimo, 1 simulacro semestral de rescate en espacio confinado.','Como mínimo, 1 simulacro anual de evacuación general.','Los resultados se registran y generan planes de mejora.'])+
-      H('Control de cambios')+'<table class="dg-tbl"><thead><tr><th style="width:15%">Versión</th><th style="width:20%">Fecha</th><th>Descripción del cambio</th></tr></thead><tbody><tr><td>01</td><td>'+fFaena(todayISO())+'</td><td>Emisión original.</td></tr></tbody></table>';
-  }
-  // Capacitación: uso seguro de herramientas manuales y equipos de apoyo (contenido + evaluación + asistencia)
   function docCapHerr(){
     var H=seccionador();
     function tr(a,b){ return '<tr><td class="dg-k">'+a+'</td><td>'+b+'</td></tr>'; }
@@ -7941,17 +7904,20 @@
       '<path d="M320 424 V440" '+L+'/>'+
       caja(190,442,260,26,'Medidas correctivas y seguimiento','',N,'#fff')
     )+'<figcaption>Flujograma de actuación</figcaption></figure>'; }
-  function docAccidentes(){
+  // ====== Procedimiento de emergencia y/o accidentes (une el procedimiento de accidentes v01 y el procedimiento de emergencia) ======
+  function docEmergAcc(){
     var H=seccionador();
     function tr(a,b){ return '<tr><td class="dg-k">'+a+'</td><td>'+b+'</td></tr>'; }
+    function paso(t,L){ return '<p style="margin:8px 0 4px"><b>'+t+'</b></p>'+ulDg(L); }
     return dgHead('PROCEDIMIENTO','02')+
-      '<div class="pts-tit">En caso de accidente del trabajo o enfermedad profesional</div>'+
+      '<div class="pts-tit">Procedimiento de emergencia y/o accidentes</div>'+
       '<table class="dg-tbl pts-ctl"><tbody><tr><td><span class="sl">Código</span><b>PR-PREV-03</b></td><td><span class="sl">Versión</span><b>02</b></td><td><span class="sl">Fecha</span>'+ce(fFaena(todayISO()))+'</td><td><span class="sl">Reemplaza a</span><b>Versión 01 (01-11-2025)</b></td></tr></tbody></table>'+
       dgFirmasPTS()+
-      H('Objetivo')+'<p>Dar a conocer a todo el personal de '+EMP.rz+' cómo actuar ante un accidente del trabajo, un accidente de trayecto o una enfermedad profesional, para asegurar la atención oportuna del trabajador, cumplir las obligaciones legales y registrar, investigar y analizar las causas de los accidentes e incidentes, con el fin de aplicar medidas correctivas que disminuyan y controlen la accidentabilidad.</p>'+
-      H('Alcance')+'<p>Aplica a todo el personal de '+EMP.rz+', tanto en las dependencias de la empresa como en las plantas, faenas y centros de los clientes donde presta servicios, incluidos los accidentes de trayecto.</p>'+
-      H('Normativa y referencias')+ulDg(['Ley N° 16.744, sobre accidentes del trabajo y enfermedades profesionales, y su reglamento (D.S. N° 101).','D.S. N° 44 del Ministerio del Trabajo y Previsión Social, reglamento sobre gestión preventiva de los riesgos laborales.','Compendio de Normas del Seguro de la Ley N° 16.744 de la Superintendencia de Seguridad Social (SUSESO), en lo relativo a accidentes graves y fatales.','Reglamento Interno de Orden, Higiene y Seguridad de la empresa.'])+
+      H('Objetivo')+'<p>Establecer cómo actuar ante emergencias, accidentes del trabajo, accidentes de trayecto y enfermedades profesionales —incluidas las emergencias en espacios confinados, como la limpieza de estanques—, para proteger la vida y la salud de los trabajadores, asegurar una respuesta organizada en la comunicación, la evacuación, el rescate y la atención médica, cumplir las obligaciones legales e investigar las causas para aplicar medidas correctivas.</p>'+
+      H('Alcance')+'<p>Aplica a todo el personal de '+EMP.rz+' —trabajadores, supervisores, prevencionistas, brigadistas y personal de apoyo—, en las dependencias de la empresa y en las plantas, faenas y centros de los clientes, incluidos los trabajos en espacios confinados y los accidentes de trayecto. Se complementa con los PTS de espacios confinados (PTS-PREV-05) y de uso de herramientas en limpieza de estanques (PTS-PREV-06).</p>'+
+      H('Normativa y referencias')+ulDg(['Ley N° 16.744, sobre accidentes del trabajo y enfermedades profesionales, y su reglamento (D.S. N° 101).','D.S. N° 44 del Ministerio del Trabajo y Previsión Social, reglamento sobre gestión preventiva de los riesgos laborales (incluye el plan de gestión de emergencias).','Compendio de Normas del Seguro de la Ley N° 16.744 de la Superintendencia de Seguridad Social (SUSESO), en lo relativo a accidentes graves y fatales.','Reglamento Interno de Orden, Higiene y Seguridad de la empresa.'])+
       H('Definiciones')+'<table class="dg-tbl"><tbody>'+
+        tr('Emergencia','Situación imprevista que pone en riesgo la vida o la salud de las personas, las instalaciones o el ambiente, y que exige una respuesta inmediata.')+
         tr('Incidente','Evento relacionado con el trabajo que da lugar o puede dar lugar a lesiones o enfermedad. Si no hay lesión se denomina cuasi accidente o evento peligroso, y también debe informarse.')+
         tr('Accidente del trabajo','Toda lesión que una persona sufra a causa o con ocasión del trabajo y que le produzca incapacidad o muerte (art. 5, Ley N° 16.744).')+
         tr('Accidente de trayecto','El ocurrido en el trayecto directo, de ida o regreso, entre la habitación y el lugar de trabajo, o entre dos lugares de trabajo.')+
@@ -7959,39 +7925,55 @@
         tr('Accidente grave','Aquel que: a) provoca en forma inmediata la amputación o pérdida de cualquier parte del cuerpo; b) obliga a realizar maniobras de reanimación; c) obliga a realizar maniobras de rescate; d) ocurre por caída de altura de más de 1,8 metros; e) ocurre en condiciones hiperbáricas; f) se sospecha intoxicación aguda por plaguicidas; g) involucra a un número tal de trabajadores que afecta el desarrollo normal de la faena.')+
         tr('Accidente fatal','Aquel que provoca la muerte del trabajador en forma inmediata o durante su traslado a un centro asistencial.')+
         tr('DIAT / DIEP','Declaración Individual de Accidente del Trabajo / de Enfermedad Profesional, que se presenta ante el organismo administrador (Mutual de Seguridad CChC).')+
+        tr('Punto de encuentro (PEE)','Lugar seguro y señalizado donde se reúne el personal evacuado para su conteo.')+
       '</tbody></table>'+
       H('Responsabilidades')+'<table class="dg-tbl"><tbody>'+
-        tr('Trabajador','Informar de inmediato a su jefatura todo accidente o incidente, aunque parezca leve, y colaborar en la investigación.')+
-        tr('Supervisor / jefatura directa','Asegurar la atención del accidentado, coordinar el traslado, informar a Gerencia y a Prevención, y participar en la investigación.')+
-        tr('Prevención de riesgos','Gestionar la DIAT o DIEP, dirigir la investigación, proponer las medidas correctivas, hacer su seguimiento y registrar la accidentabilidad.')+
-        tr('Gerencia','Proporcionar los recursos, cumplir las obligaciones ante accidentes graves y fatales, y aprobar las medidas correctivas.')+
+        tr('Gerencia','Proporcionar los recursos humanos y materiales, garantizar la capacitación del personal, cumplir las obligaciones ante accidentes graves y fatales y aprobar las medidas correctivas.')+
+        tr('Supervisor de faena','Activar el procedimiento, dirigir la evacuación y el rescate, coordinar el traslado de los afectados, mantener la comunicación con los organismos externos e informar a Gerencia y a Prevención.')+
+        tr('Prevención de riesgos','Asesorar técnicamente durante la emergencia, gestionar la DIAT o DIEP, dirigir la investigación, proponer medidas correctivas y registrar la accidentabilidad.')+
+        tr('Vigía u observador externo','En espacios confinados: vigilar en forma permanente, dar la alarma de inmediato, impedir el ingreso de personal no autorizado y apoyar el rescate desde el exterior. Nunca ingresa solo.')+
+        tr('Trabajadores','Informar de inmediato todo accidente o incidente, cumplir las instrucciones de emergencia, evacuar cuando se requiera y participar en simulacros y capacitaciones.')+
       '</tbody></table>'+
-      H('Procedimiento de actuación')+
-        '<p style="margin:8px 0 4px"><b>Paso 1 · Atender y asegurar.</b></p>'+ulDg(['Evaluar si el peligro sigue presente y controlar la zona antes de acercarse.','Verificar si hay más personas afectadas y prestar primeros auxilios solo si se está capacitado.'])+
-        '<p style="margin:8px 0 4px"><b>Paso 2 · Informar.</b></p>'+ulDg(['El accidentado o un compañero avisa de inmediato al supervisor directo, quien informa a Gerencia y a Prevención de riesgos.'])+
-        '<p style="margin:8px 0 4px"><b>Paso 3 · Traslado al centro asistencial.</b></p>'+ulDg([
-          '<b>Lesiones graves:</b> se requiere atención de urgencia; agotar todos los medios para conseguirla: rescate Mutual (1407), ambulancia SAMU (131) o vehículo particular si no hay respuesta.',
-          '<b>Lesiones leves:</b> el trabajador puede ser trasladado o acudir por sus propios medios, con su cédula de identidad, al centro asistencial que corresponda según el horario.',
-          '<b>Centros de atención:</b> Mutual de Seguridad CChC, Urmeneta 895, Puerto Montt, lunes a viernes de 09:00 a 18:00 h; fuera de ese horario, '+ce('Clínica Andes Salud, Bellavista 123, Puerto Montt')+'.'])+
-        '<p style="margin:8px 0 4px"><b>Paso 4 · Denuncia (DIAT / DIEP).</b></p>'+ulDg(['La empresa emite la DIAT o DIEP dentro de las 24 horas siguientes, ante la Mutual de Seguridad o en su plataforma en línea.','Si la empresa no la presenta, puede hacerlo el propio trabajador, sus familiares, el Comité Paritario o el médico tratante.'])+
-        '<p style="margin:8px 0 4px"><b>Paso 5 · Investigación y medidas correctivas</b> (sección 9).</p>'+
+      H('Organigrama de emergencia')+orgEmergencia()+
+      H('Situaciones de emergencia y recursos')+
+        '<p style="margin:0 0 4px"><b>Se consideran emergencias, entre otras:</b></p><div class="dg-cols">'+ulDg(['Accidentes con lesionados.','Desmayo o pérdida de conciencia (por ejemplo, dentro de un estanque).','Atmósfera deficiente en oxígeno o presencia de gases peligrosos.','Incendio o explosión.','Electrocución.'])+ulDg(['Caída al mismo o distinto nivel.','Derrumbes o atrapamientos.','Derrame de sustancias peligrosas.','Sismos o condiciones climáticas adversas.','Emergencias médicas.'])+'</div>'+
+        '<p style="margin:6px 0 4px"><b>Recursos de emergencia disponibles en la faena:</b></p><div class="dg-cols">'+ulDg(['Botiquín de primeros auxilios.','Extintores PQS.','Equipo de comunicación radial o teléfono.','Linternas certificadas.','Señalización y cintas de peligro.'])+ulDg(['En espacios confinados: detector multigases, ventilación forzada, arnés de rescate, línea de vida, trípode de rescate (si aplica) y camilla.'])+'</div>'+
+      H('Actuación ante una emergencia o accidente')+
+        paso('Paso 1 · Detectar y dar la alarma.',['Quien detecte la emergencia —en espacios confinados, el vigía— suspende de inmediato los trabajos y alerta verbalmente al personal.','Se activa la comunicación radial o telefónica y se informa al supervisor de faena.'])+
+        paso('Paso 2 · Asegurar y atender.',['Evaluar si el peligro sigue presente y controlar la zona antes de acercarse.','Verificar si hay más afectados y prestar primeros auxilios solo si se está capacitado (sección 10).'])+
+        paso('Paso 3 · Comunicar.',['El supervisor informa a Gerencia, a Prevención y, si corresponde, a los servicios de emergencia, indicando: tipo de emergencia, lugar exacto, cantidad de afectados, estado de los lesionados y recursos requeridos.'])+
+        paso('Paso 4 · Evacuar.',['Todo trabajador que pueda hacerlo abandona el área o el espacio confinado y se suspenden todas las actividades.','El personal se dirige al punto de encuentro (PEE) y el supervisor realiza el conteo.'])+
+        paso('Paso 5 · Trasladar al centro asistencial.',['<b>Lesiones graves:</b> atención de urgencia por todos los medios: rescate Mutual (1407), ambulancia SAMU (131) o vehículo particular si no hay respuesta.','<b>Lesiones leves:</b> el trabajador puede ser trasladado o acudir por sus propios medios, con su cédula de identidad.','<b>Centros de atención:</b> Mutual de Seguridad CChC, Urmeneta 895, Puerto Montt, lunes a viernes de 09:00 a 18:00 h; fuera de ese horario, '+ce('Clínica Andes Salud, Bellavista 123, Puerto Montt')+'.'])+
+        paso('Paso 6 · Denunciar (DIAT / DIEP).',['La empresa emite la DIAT o DIEP dentro de las 24 horas siguientes, ante la Mutual de Seguridad o en su plataforma en línea.','Si la empresa no la presenta, puede hacerlo el propio trabajador, sus familiares, el Comité Paritario o el médico tratante.'])+
+        paso('Paso 7 · Investigar (sección 13).',['Toda emergencia, incidente o accidente se investiga para evitar que se repita.'])+
+      H('Rescate en espacios confinados')+
+        paso('Rescate sin ingreso — siempre la primera opción',['Utilizar la línea de vida y el sistema de recuperación para extraer a la víctima sin ingresar al estanque.','Aplicar primeros auxilios una vez rescatada.'])+
+        paso('Rescate con ingreso — solo cuando:',['El rescate sin ingreso no sea posible.','Exista autorización del supervisor.','Se verifique atmósfera segura con el multigás.','Los rescatistas cuenten con EPP completo y exista personal de apoyo externo.'])+
+        '<p style="margin:4px 0 12px">Equipo mínimo: supervisor, dos rescatistas, apoyo exterior y personal de primeros auxilios.</p>'+
+      H('Primeros auxilios')+'<table class="dg-tbl"><thead><tr><th style="width:28%">Situación</th><th>Qué hacer</th></tr></thead><tbody>'+
+        '<tr><td><b>Persona inconsciente</b></td><td>Retirar a zona segura, verificar la respiración, aplicar RCP si corresponde y solicitar ambulancia.</td></tr>'+
+        '<tr><td><b>Intoxicación por gases</b></td><td>Retirar de inmediato del espacio, mantener en reposo, administrar oxígeno si hay disponible y trasladar de inmediato a un centro asistencial.</td></tr>'+
+        '<tr><td><b>Lesiones traumáticas</b></td><td>Inmovilizar al trabajador, controlar hemorragias y esperar asistencia especializada.</td></tr></tbody></table>'+
       H('Accidentes graves o fatales')+ulDg(['Suspender de inmediato las faenas afectadas y, si es necesario, evacuar el lugar.','Informar de inmediato a la Inspección del Trabajo y a la SEREMI de Salud que correspondan al lugar del accidente, y a la Mutual de Seguridad.','No modificar el lugar del accidente, salvo para rescatar o atender a los afectados o evitar nuevos riesgos.','Las faenas solo se reanudan cuando la autoridad fiscalizadora lo autorice, una vez corregidas las condiciones que causaron el accidente.'])+
       H('Accidentes de trayecto')+ulDg(['Acudir a la Mutual de Seguridad e informar a la jefatura lo antes posible.','Acreditar el accidente con el parte de Carabineros, la constancia en el centro asistencial, testigos u otros medios.'])+
-      H('Investigación del accidente')+ulDg(['Todo cuasi accidente, incidente y accidente se investiga, sin importar su gravedad.','La investigación se inicia lo antes posible y en el lugar de los hechos, porque con el tiempo se pierden detalles importantes.','La realizan la jefatura directa del trabajador y Prevención de riesgos, con participación del Comité Paritario cuando corresponda.','Se determinan las causas inmediatas y básicas, se definen medidas correctivas con responsable y plazo, y se hace su seguimiento.'])+
+      H('Investigación')+ulDg(['Todo cuasi accidente, incidente, accidente o emergencia se investiga, sin importar su gravedad, dentro de las 24 horas siguientes y en el lugar de los hechos.','La realizan la jefatura directa y Prevención de riesgos, con participación del Comité Paritario cuando corresponda.','Se determinan las causas inmediatas y básicas, se definen medidas correctivas y preventivas con responsable y plazo, y se hace su seguimiento.'])+
       H('Flujograma')+flujoAccidente()+
-      H('Contactos')+'<table class="dg-tbl"><thead><tr><th style="width:36%">Cargo / institución</th><th>Nombre</th><th style="width:22%">Teléfono</th></tr></thead><tbody>'+
-        [['Gerente General',EMP.rep,''],['Jefe de Operaciones','Jorge Enrique Castro Vega',''],['Prevención de riesgos',EMP_PREV.nombre,''],['Administración','','']].map(function(r){ return '<tr><td>'+r[0]+'</td><td>'+ce(r[1])+'</td><td>'+ce(r[2])+'</td></tr>'; }).join('')+
+      H('Números de emergencia y contactos')+'<table class="dg-tbl"><thead><tr><th style="width:36%">Cargo / institución</th><th>Nombre</th><th style="width:22%">Teléfono</th></tr></thead><tbody>'+
+        '<tr><td>Ambulancia SAMU / Bomberos / Carabineros</td><td>—</td><td><b>131 / 132 / 133</b></td></tr>'+
         '<tr><td>Rescate Mutual de Seguridad CChC</td><td>—</td><td><b>1407</b></td></tr>'+
         '<tr><td>Mutual de Seguridad, Puerto Montt</td><td>Urmeneta 895</td><td><b>65 232 8000</b></td></tr>'+
-        '<tr><td>Ambulancia SAMU / Bomberos / Carabineros</td><td>—</td><td><b>131 / 132 / 133</b></td></tr>'+
+        '<tr><td>Clínica Andes Salud (fuera del horario de la Mutual)</td><td>Bellavista 123</td><td>'+ce('65 2 209149')+'</td></tr>'+
+        [['Hospital más cercano a la faena',''],['Gerente General',EMP.rep],['Jefe de Operaciones','Jorge Enrique Castro Vega'],['Prevención de riesgos',EMP_PREV.nombre],['Supervisor de faena',''],['Administración',''],['Contacto del mandante','']].map(function(r){ return '<tr><td>'+r[0]+'</td><td>'+ce(r[1])+'</td><td>'+ce('')+'</td></tr>'; }).join('')+
       '</tbody></table>'+
-      H('Traslado de personal accidentado')+'<p>Administración o los supervisores coordinan el traslado del personal accidentado con '+ce('Daniela Donoso (Empresa Sey), 9 8308 4282')+'. Si no está disponible o la emergencia es nocturna, el traslado lo coordina el personal administrativo de turno.</p>'+
-      H('Registros')+ulDg(['DIAT / DIEP presentada.','Informe de investigación del accidente.','Informe mensual de accidentabilidad (InnovaGestión).','Registro de entrega de este procedimiento firmado por cada trabajador.'])+
+      H('Punto de encuentro de emergencia (PEE)')+'<p>Ubicación: '+ce('')+'</p>'+ulDg(['Área libre de tránsito, alejada de la emergencia.','De fácil acceso para los organismos de emergencia.','Debidamente señalizada.'])+
+      H('Traslado de personal accidentado')+'<p style="text-align:left">Administración o los supervisores coordinan el traslado del personal accidentado. Si el contacto de traslado no está disponible o la emergencia es nocturna, lo coordina el personal administrativo de turno.</p><p style="text-align:left;margin-top:4px">Contacto de traslado: '+ce('Daniela Donoso (Empresa Sey), 9 8308 4282')+'</p>'+
+      H('Simulacros')+ulDg(['Como mínimo, 1 simulacro semestral de rescate en espacio confinado.','Como mínimo, 1 simulacro anual de evacuación general.','Los resultados se registran y generan planes de mejora.'])+
+      H('Registros')+ulDg(['DIAT / DIEP presentada.','Informe de investigación del accidente o emergencia.','Registro de simulacros.','Informe mensual de accidentabilidad (InnovaGestión).','Registro de entrega de este procedimiento firmado por cada trabajador.'])+
       H('Control de cambios')+'<table class="dg-tbl"><thead><tr><th style="width:15%">Versión</th><th style="width:20%">Fecha</th><th>Descripción del cambio</th></tr></thead><tbody>'+
-        '<tr><td>01</td><td>01-11-2025</td><td>Emisión original.</td></tr>'+
-        '<tr><td>02</td><td>'+fFaena(todayISO())+'</td><td>Formato corporativo; normativa vigente (D.S. N° 44); se agregan accidente de trayecto, obligaciones ante accidentes graves y fatales, responsabilidades y flujograma; se corrige la definición de accidente fatal y se actualizan los contactos.</td></tr></tbody></table>';
+        '<tr><td>01</td><td>01-11-2025</td><td>Emisión original (procedimiento en caso de accidente del trabajo o enfermedad profesional).</td></tr>'+
+        '<tr><td>02</td><td>'+fFaena(todayISO())+'</td><td>Formato corporativo; se integra el procedimiento de emergencia (organigrama, situaciones, recursos, evacuación, rescate en espacios confinados, primeros auxilios y simulacros); se agregan accidente de trayecto y obligaciones ante accidentes graves y fatales; normativa vigente (D.S. N° 44); se corrige la definición de accidente fatal y se actualizan los contactos.</td></tr></tbody></table>';
   }
-  var EMP_GEN={ proc_emerg:{ build:docEmergencia }, cap_herr:{ build:docCapHerr }, proc_acc:{ build:docAccidentes } };
+  var EMP_GEN={ cap_herr:{ build:docCapHerr }, proc_acc:{ build:docEmergAcc } };
   function esPTS(s){ return s==='pts_funciones' || !!(typeof PTS_DOC!=='undefined'&&PTS_DOC[s]); }
   function nombrePTS(s){ var n=s; EMP_CARPETAS.forEach(function(c){ c.tipos.forEach(function(x){ if(x[0]===s) n=x[1]; }); }); return n; }
   function generarPTS(s){ var nom=nombrePTS(s);
