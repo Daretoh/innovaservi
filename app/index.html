@@ -417,6 +417,16 @@
   #dg-doc p{line-height:1.6;margin:0 0 12px;text-align:justify;}
   #dg-doc [contenteditable]{outline:none;border-bottom:1px dashed #c7ccdd;min-width:60px;padding:0 3px;font-weight:700;}
   #dg-doc [contenteditable].dg-vacio{background:#fff1e4;border-bottom:2px solid #f26b1d;display:inline-block;min-height:1.2em;}
+  .dgv-back{position:fixed;inset:0;z-index:95;background:rgba(12,15,46,.55);display:flex;align-items:center;justify-content:center;padding:16px;}
+  .dgv{background:#fff;border-radius:16px;width:100%;max-width:520px;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 30px 70px -20px rgba(0,0,0,.5);overflow:hidden;}
+  .dgv-h{padding:16px 18px 10px;border-bottom:1px solid var(--line);} .dgv-h b{display:block;color:var(--ink);font-size:1rem;} .dgv-h span{font-size:.8rem;color:var(--muted);}
+  .dgv-list{overflow:auto;padding:10px 18px;display:flex;flex-direction:column;gap:10px;}
+  .dgv-f{display:flex;flex-direction:column;gap:4px;} .dgv-l{font:700 .74rem var(--font);color:var(--body);}
+  .dgv-r{display:flex;gap:6px;} .dgv-r input{flex:1;min-width:0;padding:9px 11px;border:1.5px solid var(--line);border-radius:10px;font-size:.9rem;}
+  .dgv-r input:focus{outline:none;border-color:var(--orange);}
+  .dgv-ir{flex:none;width:40px;border:1.5px solid var(--line);border-radius:10px;background:#fff;color:var(--orange-2);cursor:pointer;display:flex;align-items:center;justify-content:center;}
+  .dgv-ir:hover{border-color:var(--orange);background:#fff6ee;}
+  .dgv-acc{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;padding:12px 18px;border-top:1px solid var(--line);background:#fafbfd;} .dgv-acc .btn{width:auto;}
   .dg-tbl{width:100%;border-collapse:separate;border-spacing:0;font-size:12px;margin:8px 0 14px;border:1px solid #d9dce8;border-radius:8px;overflow:hidden;}
   .dg-tbl th,.dg-tbl td{border-right:1px solid #e3e5ee;border-bottom:1px solid #e3e5ee;padding:6px 9px;text-align:left;vertical-align:top;}
   .dg-tbl tr>*:last-child{border-right:none;} .dg-tbl tr:last-child>td{border-bottom:none;}
@@ -8177,26 +8187,45 @@
     if(td){ var sl=td.querySelector('.sl'); if(sl) return sl.textContent.trim();
       var th=tr.closest('table').querySelector('thead tr'); var cab=th&&th.cells[td.cellIndex]?th.cells[td.cellIndex].textContent.trim():'';
       var c0=tr.cells[0]&&!tr.cells[0].contains(el)?tr.cells[0].textContent.trim():''; return (c0&&cab)?c0+' · '+cab:(c0||cab||'Campo de tabla'); }
-    var p=el.closest('p,li,div'); var t=p?p.textContent.replace(/\s+/g,' ').trim():''; return t?(t.length>60?t.slice(0,60)+'…':t):'Campo sin título';
+    var p=el.closest('p,li,div'); var t=p?p.textContent.replace(/\s+/g,' ').trim():''; t=t.replace(/[:\s]+$/,''); return t?(t.length>60?t.slice(0,60)+'…':t):'Campo sin título';
   }
-  function dgRevisar(fn){
+  // Ventana de campos vacíos: se rellenan ahí mismo, o se salta al campo dentro del documento.
+  function dgIrCampo(el){ var v=dgVacios(); v.forEach(function(e){ e.classList.add('dg-vacio'); });
+    try{ el.scrollIntoView({block:'center',behavior:'smooth'}); setTimeout(function(){ el.focus(); },350); }catch(_){} }
+  function dgRevisar(fn, accion){
     $('dg-doc').querySelectorAll('.dg-vacio').forEach(function(e){ e.classList.remove('dg-vacio'); });
     var v=dgVacios(); if(!v.length){ fn(); return; }
-    var et=[]; v.forEach(function(e){ var x=dgEtiqueta(e); if(et.indexOf(x)<0) et.push(x); });
-    var msg='Quedan '+v.length+' campo(s) para rellenar sin completar:\n\n• '+et.slice(0,8).join('\n• ')+(et.length>8?'\n… y '+(et.length-8)+' más':'')+'\n\nAceptar: continuar de todas formas.\nCancelar: volver y marcarlos en el documento.';
-    if(confirm(msg)){ fn(); return; }
-    v.forEach(function(e){ e.classList.add('dg-vacio'); });
-    try{ v[0].scrollIntoView({block:'center',behavior:'smooth'}); v[0].focus(); }catch(_){}
-    toast('Campos vacíos marcados en naranjo');
+    var cuenta={}, et=v.map(function(e){ var x=dgEtiqueta(e); cuenta[x]=(cuenta[x]||0)+1; return x; }), vistos={};
+    var ICO_IR='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>';
+    var m=document.createElement('div'); m.className='dgv-back';
+    m.innerHTML='<div class="dgv" role="dialog" aria-modal="true"><div class="dgv-h"><b>Faltan '+v.length+' campo'+(v.length===1?'':'s')+' por rellenar</b><span>Complétalos aquí o ve directo al campo en el documento.</span></div>'+
+      '<div class="dgv-list">'+v.map(function(e,i){ var x=et[i]; vistos[x]=(vistos[x]||0)+1;
+        return '<label class="dgv-f"><span class="dgv-l">'+esc(x)+(cuenta[x]>1?' ('+vistos[x]+')':'')+'</span><span class="dgv-r"><input type="text" data-i="'+i+'" autocomplete="off"><button type="button" class="dgv-ir" data-i="'+i+'" title="Ir a este campo en el documento">'+ICO_IR+'</button></span></label>'; }).join('')+'</div>'+
+      '<div class="dgv-acc"><button type="button" class="btn ghost small" data-a="doc">Ir al documento</button><button type="button" class="btn ghost small" data-a="sin">'+esc(accion||'Continuar')+' sin completar</button><button type="button" class="btn small" data-a="ok">Rellenar y '+esc((accion||'continuar').toLowerCase())+'</button></div></div>';
+    document.body.appendChild(m);
+    function cerrar(){ document.removeEventListener('keydown',tecla); m.remove(); }
+    function aplicar(){ m.querySelectorAll('input[data-i]').forEach(function(inp){ var t=inp.value.trim(); if(t) v[+inp.dataset.i].textContent=t; }); }
+    function tecla(e){ if(e.key==='Escape') cerrar(); }
+    document.addEventListener('keydown',tecla);
+    m.addEventListener('click',function(e){
+      if(e.target===m){ cerrar(); return; }
+      var ir=e.target.closest('.dgv-ir'); if(ir){ e.preventDefault(); aplicar(); cerrar(); dgIrCampo(v[+ir.dataset.i]); return; }
+      var b=e.target.closest('[data-a]'); if(!b) return;
+      if(b.dataset.a==='doc'){ aplicar(); cerrar(); var r=dgVacios(); if(r.length) dgIrCampo(r[0]); return; }
+      if(b.dataset.a==='ok') aplicar();
+      cerrar(); fn();
+    });
+    m.querySelectorAll('input[data-i]').forEach(function(inp,i,L){ inp.addEventListener('keydown',function(e){ if(e.key!=='Enter') return; e.preventDefault(); if(L[i+1]) L[i+1].focus(); else m.querySelector('[data-a="ok"]').click(); }); });
+    setTimeout(function(){ var f=m.querySelector('input'); if(f) f.focus({preventScroll:true}); m.querySelector('.dgv-list').scrollTop=0; },50);
   }
   $('dg-doc').addEventListener('input',function(e){ var el=e.target.closest&&e.target.closest('.dg-vacio'); if(el&&(el.textContent||'').trim()) el.classList.remove('dg-vacio'); });
-  $('dg-dl').addEventListener('click',function(){ dgRevisar(dgDescargar); });
+  $('dg-dl').addEventListener('click',function(){ dgRevisar(dgDescargar,'Descargar'); });
   function dgDescargar(){
     busy(true,'Generando PDF…');
     pdfDesde($('dg-doc')).then(function(doc){ busy(false); descargarBlob(doc.output('blob'), dgNombreArchivo()); toast('✓ PDF descargado'); })
       .catch(function(){ busy(false); toast('No se pudo generar el PDF.'); });
   }
-  $('dg-print').addEventListener('click',function(){ dgRevisar(dgImprimir); });
+  $('dg-print').addEventListener('click',function(){ dgRevisar(dgImprimir,'Imprimir'); });
   function dgImprimir(){
     // Imprime el documento tal cual se ve, en un marco aparte con los mismos estilos (sin la barra ni los controles de pantalla)
     var css=Array.prototype.map.call(document.querySelectorAll('style'),function(s){ return s.textContent; }).join('\n');
@@ -8206,7 +8235,7 @@
     var d=f.contentWindow.document; d.open(); d.write(html); d.close();
     setTimeout(function(){ try{ f.contentWindow.focus(); f.contentWindow.print(); }catch(_){ toast('No se pudo abrir la impresión.'); } setTimeout(function(){ f.remove(); },60000); }, 600);
   }
-  $('dg-save').addEventListener('click',function(){ if(DG_CTX) dgRevisar(dgGuardar); });
+  $('dg-save').addEventListener('click',function(){ if(DG_CTX) dgRevisar(dgGuardar,'Guardar'); });
   function dgGuardar(){
     if(!DG_CTX) return;
     if(DG_CTX.save){ DG_CTX.save(); return; }   // documentos que no son de un trabajador (ej. informe de accidentes)
