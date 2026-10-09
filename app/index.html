@@ -416,6 +416,7 @@
   #dg-doc h3{font:800 15px var(--font);text-align:center;color:var(--ink);margin:0 0 14px;text-transform:uppercase;letter-spacing:.03em;}
   #dg-doc p{line-height:1.6;margin:0 0 12px;text-align:justify;}
   #dg-doc [contenteditable]{outline:none;border-bottom:1px dashed #c7ccdd;min-width:60px;padding:0 3px;font-weight:700;}
+  #dg-doc [contenteditable].dg-vacio{background:#fff1e4;border-bottom:2px solid #f26b1d;display:inline-block;min-height:1.2em;}
   .dg-tbl{width:100%;border-collapse:separate;border-spacing:0;font-size:12px;margin:8px 0 14px;border:1px solid #d9dce8;border-radius:8px;overflow:hidden;}
   .dg-tbl th,.dg-tbl td{border-right:1px solid #e3e5ee;border-bottom:1px solid #e3e5ee;padding:6px 9px;text-align:left;vertical-align:top;}
   .dg-tbl tr>*:last-child{border-right:none;} .dg-tbl tr:last-child>td{border-bottom:none;}
@@ -8169,12 +8170,34 @@
   function dgPuedeGuardar(){ return !!(DG_CTX && (DG_CTX.tid || (DG_CTX.save && DG_CTX.guardable!==false))); }
   (function(){ var dg=$('docgen'); if(!dg||!window.MutationObserver) return;
     new MutationObserver(function(){ if(!dg.classList.contains('hide')) $('dg-save').classList.toggle('hide', !dgPuedeGuardar()); }).observe(dg,{attributes:true,attributeFilter:['class']}); })();
-  $('dg-dl').addEventListener('click',function(){
+  // Antes de imprimir, descargar o guardar: avisa si quedan campos para rellenar vacíos y permite volver a revisarlos.
+  function dgVacios(){ return Array.prototype.filter.call($('dg-doc').querySelectorAll('[contenteditable]'),function(el){ return !el.closest('[data-html2canvas-ignore]') && !(el.textContent||'').replace(/[\s_.\-—]/g,''); }); }
+  function dgEtiqueta(el){
+    var td=el.closest('td'), tr=el.closest('tr');
+    if(td){ var sl=td.querySelector('.sl'); if(sl) return sl.textContent.trim();
+      var th=tr.closest('table').querySelector('thead tr'); var cab=th&&th.cells[td.cellIndex]?th.cells[td.cellIndex].textContent.trim():'';
+      var c0=tr.cells[0]&&!tr.cells[0].contains(el)?tr.cells[0].textContent.trim():''; return (c0&&cab)?c0+' · '+cab:(c0||cab||'Campo de tabla'); }
+    var p=el.closest('p,li,div'); var t=p?p.textContent.replace(/\s+/g,' ').trim():''; return t?(t.length>60?t.slice(0,60)+'…':t):'Campo sin título';
+  }
+  function dgRevisar(fn){
+    $('dg-doc').querySelectorAll('.dg-vacio').forEach(function(e){ e.classList.remove('dg-vacio'); });
+    var v=dgVacios(); if(!v.length){ fn(); return; }
+    var et=[]; v.forEach(function(e){ var x=dgEtiqueta(e); if(et.indexOf(x)<0) et.push(x); });
+    var msg='Quedan '+v.length+' campo(s) para rellenar sin completar:\n\n• '+et.slice(0,8).join('\n• ')+(et.length>8?'\n… y '+(et.length-8)+' más':'')+'\n\nAceptar: continuar de todas formas.\nCancelar: volver y marcarlos en el documento.';
+    if(confirm(msg)){ fn(); return; }
+    v.forEach(function(e){ e.classList.add('dg-vacio'); });
+    try{ v[0].scrollIntoView({block:'center',behavior:'smooth'}); v[0].focus(); }catch(_){}
+    toast('Campos vacíos marcados en naranjo');
+  }
+  $('dg-doc').addEventListener('input',function(e){ var el=e.target.closest&&e.target.closest('.dg-vacio'); if(el&&(el.textContent||'').trim()) el.classList.remove('dg-vacio'); });
+  $('dg-dl').addEventListener('click',function(){ dgRevisar(dgDescargar); });
+  function dgDescargar(){
     busy(true,'Generando PDF…');
     pdfDesde($('dg-doc')).then(function(doc){ busy(false); descargarBlob(doc.output('blob'), dgNombreArchivo()); toast('✓ PDF descargado'); })
       .catch(function(){ busy(false); toast('No se pudo generar el PDF.'); });
-  });
-  $('dg-print').addEventListener('click',function(){
+  }
+  $('dg-print').addEventListener('click',function(){ dgRevisar(dgImprimir); });
+  function dgImprimir(){
     // Imprime el documento tal cual se ve, en un marco aparte con los mismos estilos (sin la barra ni los controles de pantalla)
     var css=Array.prototype.map.call(document.querySelectorAll('style'),function(s){ return s.textContent; }).join('\n');
     var links=Array.prototype.map.call(document.querySelectorAll('link[rel="stylesheet"]'),function(l){ return l.outerHTML; }).join('');
@@ -8182,8 +8205,9 @@
     var f=document.createElement('iframe'); f.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0;'; document.body.appendChild(f);
     var d=f.contentWindow.document; d.open(); d.write(html); d.close();
     setTimeout(function(){ try{ f.contentWindow.focus(); f.contentWindow.print(); }catch(_){ toast('No se pudo abrir la impresión.'); } setTimeout(function(){ f.remove(); },60000); }, 600);
-  });
-  $('dg-save').addEventListener('click',function(){
+  }
+  $('dg-save').addEventListener('click',function(){ if(DG_CTX) dgRevisar(dgGuardar); });
+  function dgGuardar(){
     if(!DG_CTX) return;
     if(DG_CTX.save){ DG_CTX.save(); return; }   // documentos que no son de un trabajador (ej. informe de accidentes)
     busy(true,'Generando PDF…');
@@ -8203,7 +8227,7 @@
         }, function(){ busy(false); toast('No se pudo guardar. Revisa la conexión.'); $('docgen').classList.add('hide'); dgAdvance(); });
       });
     }).catch(function(){ busy(false); toast('No se pudo generar el PDF.'); });
-  });
+  }
   function rrhhTrabs(){ return RRHH_T.filter(function(t){ return RRHH_FILTRO==='todos' || t.estado!=='inactivo'; }).sort(function(a,b){ return (a.nombre||'').localeCompare(b.nombre||''); }); }
   // Estado calculado de un documento: pend | ok | prox | venc
   function estadoDoc(tid,s){ var d=RRHH_D[tid+'|'+s]; if(d&&d.estado==='na') return {k:'na',txt:'No aplica',doc:d}; if(!d||d.estado!=='entregado') return {k:'pend',txt:'Pendiente'};
