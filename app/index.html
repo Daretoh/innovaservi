@@ -6421,7 +6421,7 @@
   var EMP_FMT=[
     // Un solo registro: se elige la capacitación o el PTS y se rellena solo (tema, temario, duración, relator)
     {k:'fmt_asist', n:'Registro de capacitación (lista de asistencia)', opciones:opcionesRegistro, build:function(v){ return docAsistencia(v); }},
-    {k:'fmt_eval', n:'Evaluación de aprendizaje (individual)', opciones:function(){ return Object.keys(CAP_DOC).filter(function(k){ return CAP_DOC[k].preg; }).map(function(k){ return {v:k, n:CAP_DOC[k].n}; }); }, build:function(v){ return docEvaluacion(v); }},
+    {k:'fmt_eval', n:'Evaluación de aprendizaje (individual)', opciones:function(){ var o=[]; Object.keys(CAP_DOC).filter(function(k){ return CAP_DOC[k].vf; }).forEach(function(k){ o.push({v:k, n:CAP_DOC[k].n}); o.push({v:k+'|pauta', n:CAP_DOC[k].n+' · pauta de corrección (relator)'}); }); return o; }, build:function(v){ return docEvaluacion(v); }},
     {k:'fmt_epp', n:'Entrega de elementos de protección personal', build:function(){ return docEPP({nombre:'',rut:''}); }},
     {k:'fmt_odi', n:'Información de riesgos laborales (IRL)', build:function(){ return docODI({nombre:'',rut:'',cargo:''}); }},
     {k:'fmt_salida', n:'Registro de salida a atención médica', build:function(){ return docSalida({}); }}
@@ -7876,18 +7876,36 @@
       'Inspección previa de herramientas y retiro de las defectuosas.',
       'Uso seguro por herramienta: llaves, dados, llave de torque, taladro, palas, hidrolavadora, cuchillo, esmeril, caimán, Stilson y medidor de gases.',
       'Prohibiciones, almacenamiento y transporte de herramientas.'],
-      preg:['¿Qué debe hacer si detecta una herramienta defectuosa?','¿Qué EPP debe utilizar al trabajar con esmeril angular?','¿Cuándo debe utilizarse el detector de gases?','¿Está permitido modificar una herramienta para facilitar el trabajo?','¿Qué debe hacer si el detector de gases activa una alarma?'] }
+      // Evaluación de verdadero o falso: [afirmación, respuesta correcta]
+      vf:[['Toda herramienta defectuosa debe retirarse de inmediato de servicio e informarse al supervisor.',true],
+        ['Se puede seguir usando una herramienta con daños menores si se trabaja con cuidado.',false],
+        ['Está permitido modificar una herramienta para facilitar el trabajo.',false],
+        ['Antes de usar cualquier herramienta se debe realizar una inspección previa.',true],
+        ['Al usar el esmeril angular se debe utilizar la guarda protectora y pantalla facial.',true],
+        ['El esmeril angular se puede apoyar apenas se suelta el gatillo, aunque el disco siga girando.',false],
+        ['El medidor de gases debe encenderse y probarse antes del ingreso, midiendo desde el exterior.',true],
+        ['Si el detector de gases activa una alarma, se puede continuar si el trabajador se siente bien.',false],
+        ['El medidor de gases debe tener calibración vigente, batería cargada y sensores operativos.',true],
+        ['Al terminar la jornada, las herramientas pueden dejarse en cualquier lugar del área de trabajo.',false]] }
   };
   // Evaluación de aprendizaje individual de una capacitación del catálogo
   function docEvaluacion(id){
-    var C=CAP_DOC[id]||CAP_DOC.cap_herr;
+    var pauta=/\|pauta$/.test(id||''); id=(id||'').replace(/\|pauta$/,'');
+    var C=CAP_DOC[id]||CAP_DOC.cap_herr, N=C.vf.length, min=Math.ceil(N*0.7);
+    var caja='<span style="display:inline-block;width:15px;height:15px;border:1.5px solid #6b7390;border-radius:3px;vertical-align:middle"></span>';
+    if(pauta) return dgHead('PAUTA DE CORRECCIÓN','01')+
+      '<div class="pts-tit">'+esc(C.n)+'</div><p>Uso exclusivo del relator. Aprueba con <b>'+min+' o más</b> respuestas correctas de '+N+'.</p>'+
+      '<table class="dg-tbl"><thead><tr><th style="width:30px">N°</th><th>Afirmación</th><th style="width:90px;text-align:center">Respuesta</th></tr></thead><tbody>'+
+      C.vf.map(function(q,i){ return '<tr><td class="n">'+(i+1)+'</td><td>'+esc(q[0])+'</td><td style="text-align:center;font-weight:800;color:'+(q[1]?'#16794a':'#c2410c')+'">'+(q[1]?'V':'F')+'</td></tr>'; }).join('')+'</tbody></table>'+
+      '<div class="dg-firmas"><div>'+firmaPrevHtml()+'Firma del relator<br>'+esc(EMP_PREV.nombre)+'</div></div>';
     function tr(a,b){ return '<tr><td class="dg-k">'+a+'</td><td>'+b+'</td></tr>'; }
     return dgHead('EVALUACIÓN DE APRENDIZAJE','01')+
       '<div class="pts-tit">'+esc(C.n)+'</div>'+
       '<table class="dg-tbl">'+tr('Nombre del trabajador',ce(''))+tr('RUT',ce(''))+tr('Cargo',ce(''))+tr('Fecha',ce(fLarga(todayISO())))+tr('Relator',ce(EMP_PREV.nombre))+'</table>'+
-      '<h4 class="dg-h4">Preguntas</h4>'+
-      C.preg.map(function(p,i){ return '<p style="margin:12px 0 2px"><b>'+(i+1)+'. '+p+'</b></p><div class="dg-lin"></div><div class="dg-lin"></div><div class="dg-lin"></div>'; }).join('')+
-      '<table class="dg-tbl" style="margin-top:16px">'+tr('Resultado',ce('')+' &nbsp; (Aprobado / Reprobado)')+tr('Observaciones',ce(''))+'</table>'+
+      '<h4 class="dg-h4">Verdadero o falso</h4><p style="margin:0 0 8px">Marque con una X la casilla <b>V</b> si la afirmación es verdadera o <b>F</b> si es falsa. Se aprueba con '+min+' o más respuestas correctas de '+N+'.</p>'+
+      '<table class="dg-tbl pts-herr"><thead><tr><th style="width:30px">N°</th><th>Afirmación</th><th style="width:44px;text-align:center">V</th><th style="width:44px;text-align:center">F</th></tr></thead><tbody>'+
+      C.vf.map(function(q,i){ return '<tr><td class="n">'+(i+1)+'</td><td>'+esc(q[0])+'</td><td class="pts-chk"><span></span></td><td class="pts-chk"><span></span></td></tr>'; }).join('')+'</tbody></table>'+
+      '<table class="dg-tbl" style="margin-top:16px">'+tr('Respuestas correctas','____ de '+N)+tr('Resultado',caja+' Aprobado &nbsp;&nbsp; '+caja+' Reprobado')+tr('Observaciones','')+'</table>'+
       '<div class="dg-firmas"><div>Firma del trabajador</div><div>'+firmaPrevHtml()+'Firma del relator<br>'+esc(EMP_PREV.nombre)+'</div></div>';
   }
   // ====== Procedimiento en caso de accidente del trabajo o enfermedad profesional (versión 02, formato corporativo) ======
