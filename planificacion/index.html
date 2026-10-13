@@ -389,11 +389,12 @@
   var SB_KEY='sb_publishable_Uz01bxGvGArhB-h4KOvbqA_WtQg1zer';
   var sb=null; try{ if(window.supabase) sb=window.supabase.createClient(SB_URL,SB_KEY); }catch(e){}
   var authed=false, userEmail='';
-  var EVENTS=[];
+  var EVENTS=[], _evCargados=false;
   function cargarEventos(cb){
     if(!sb){ if(cb)cb(); return; }
     var all=[], chunk=1000;
-    function finish(){ EVENTS=all.map(function(e){ return { id:e.id, fecha:e.fecha, fin:e.fecha_fin||'', serie:e.serie_id||'', hora:(/^all\s*day$/i.test(e.hora||'')?'Todo el día':(e.hora||'')), titulo:e.titulo||'', ubic:e.ubicacion||'', sitio:e.sitio||'', color:clienteColor(e.ubicacion), desc:e.descripcion||'', pers:(e.personas_nec!=null?e.personas_nec:null), tareas:(Array.isArray(e.tareas)?e.tareas:[]).map(function(t){ return String(t||'').trim(); }).filter(Boolean) }; }); if(cb)cb(); }
+    function finish(){ if(_evCargados && window.parent!==window){ try{ window.parent.postMessage('iserv-eventos', location.origin); }catch(_){} } _evCargados=true;   // avisa a la app (Planificación) que hubo cambios
+      EVENTS=all.map(function(e){ return { id:e.id, fecha:e.fecha, fin:e.fecha_fin||'', serie:e.serie_id||'', hora:(/^all\s*day$/i.test(e.hora||'')?'Todo el día':(e.hora||'')), titulo:e.titulo||'', ubic:e.ubicacion||'', sitio:e.sitio||'', color:clienteColor(e.ubicacion), desc:e.descripcion||'', pers:(e.personas_nec!=null?e.personas_nec:null), tareas:(Array.isArray(e.tareas)?e.tareas:[]).map(function(t){ return String(t||'').trim(); }).filter(Boolean) }; }); if(cb)cb(); }
     function fetchFrom(off){
       sb.from('eventos').select('*').order('fecha',{ascending:true}).range(off, off+chunk-1).then(function(r){
         if(r.error){ console.warn('Supabase:',r.error.message); finish(); return; }
