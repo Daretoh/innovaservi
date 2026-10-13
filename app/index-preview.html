@@ -821,6 +821,44 @@
   /* Zerty · Cermaq (árbol de documentos de la empresa) */
   .doc-sub{display:inline-flex;margin-bottom:12px;}
   .dchip.na{background:transparent;color:var(--muted);border:1px dashed var(--line);}
+  /* Lista de Trabajadores: acciones como íconos que se despliegan, filtro deslizante y tarjetas animadas */
+  .tb-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px;}
+  .tb-tit{display:flex;align-items:baseline;gap:8px;} .tb-tit b{font:800 17px var(--font);color:var(--ink);}
+  .tb-acc{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+  .tb-ico{display:inline-flex;align-items:center;height:40px;padding:0 11px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;font:700 13px var(--font);
+    transition:background .2s,border-color .2s,color .2s,box-shadow .2s,transform .15s;}
+  .tb-ico svg{flex:none;}
+  .tb-ico span{display:inline-block;max-width:0;opacity:0;overflow:hidden;white-space:nowrap;margin-left:0;transition:max-width .32s cubic-bezier(.2,.8,.2,1),opacity .22s,margin-left .32s;}
+  .tb-ico:hover,.tb-ico:focus-visible{border-color:var(--orange);color:var(--orange-2);box-shadow:0 6px 16px -10px rgba(255,107,0,.6);outline:none;}
+  .tb-ico:hover span,.tb-ico:focus-visible span{max-width:150px;opacity:1;margin-left:8px;}
+  .tb-ico:active{transform:scale(.96);}
+  .tb-ico.tb-pri{background:var(--orange);border-color:var(--orange);color:#fff;box-shadow:0 8px 18px -10px rgba(255,107,0,.8);}
+  .tb-ico.tb-pri:hover,.tb-ico.tb-pri:focus-visible{background:var(--orange-2);border-color:var(--orange-2);color:#fff;}
+  @media(hover:none){ .tb-ico.tb-pri span{max-width:150px;opacity:1;margin-left:6px;} }
+  .tb-bus{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
+  .tb-q{flex:1;min-width:170px;display:flex;align-items:center;gap:8px;padding:0 12px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--muted);transition:border-color .2s,box-shadow .2s;}
+  .tb-q:focus-within{border-color:var(--orange);box-shadow:0 0 0 3px rgba(255,107,0,.12);color:var(--orange-2);}
+  .tb-q input{flex:1;min-width:0;border:none;outline:none;background:transparent;font:500 15px var(--font);padding:11px 0;color:var(--ink);}
+  .tb-sort{max-width:44%;font:600 13px var(--font);padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink);cursor:pointer;}
+  .tseg{position:relative;display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:4px;margin-bottom:14px;background:var(--card);border:1px solid var(--line);border-radius:14px;}
+  .tseg-ind{position:absolute;top:4px;bottom:4px;left:4px;width:0;border-radius:10px;background:var(--orange);box-shadow:0 6px 14px -8px rgba(255,107,0,.9);transition:left .32s cubic-bezier(.2,.8,.2,1),width .32s cubic-bezier(.2,.8,.2,1);z-index:0;}
+  .tseg .tfil{position:relative;z-index:1;border:none;background:transparent;color:var(--body);font:700 13px var(--font);padding:9px 6px;border-radius:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:color .25s;}
+  .tseg .tfil.on{color:#fff;background:transparent;}
+  .tseg .tfil .n{font:800 .68rem var(--font);padding:1px 7px;border-radius:999px;background:var(--alt);color:var(--muted);transition:background .25s,color .25s;}
+  .tseg .tfil.on .n{background:rgba(255,255,255,.25);color:#fff;}
+  .tseg .tfil .n:empty{display:none;}
+  @media(max-width:520px){ .tseg .tfil{font-size:12px;flex-direction:column;gap:2px;} }
+  #trab-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,360px),1fr));gap:10px;}
+  #trab-list .trab{margin:0;padding:12px 14px;border-left-width:4px;transition:transform .2s cubic-bezier(.2,.8,.2,1),box-shadow .2s,border-color .2s;}
+  #trab-list .trab:hover{transform:translateY(-2px);box-shadow:0 12px 26px -16px rgba(26,31,110,.45);border-left-color:var(--orange);}
+  #trab-list.anim .trab{animation:trabIn .42s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i,0)*35ms);}
+  @keyframes trabIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
+  .trab .av.ring{position:relative;background:conic-gradient(var(--c) calc(var(--p)*1%),var(--line) 0);padding:3px;width:46px;height:46px;}
+  .trab .av.ring span{width:100%;height:100%;border-radius:50%;background:var(--navy);display:flex;align-items:center;justify-content:center;font-size:.86rem;}
+  .trab.off .av.ring span{background:var(--muted);}
+  #trab-list .trab .tbar{display:none;} #trab-list .trab .av{width:46px;height:46px;}
+  .trab .cg{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  @media(prefers-reduced-motion:reduce){ .tb-ico span,.tseg-ind,#trab-list .trab{transition:none;} #trab-list.anim .trab{animation:none;} }
   .trab-modo{display:inline-flex;margin-bottom:12px;}
   .fr-sec{font:800 11px var(--font);color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:12px 0 6px;display:flex;align-items:center;gap:8px;}
   .fr-sec .fr-pct{margin-left:auto;font:800 11px var(--font);text-transform:none;letter-spacing:0;}
@@ -1568,7 +1606,7 @@
     <section class="view" id="v-rrhh">
       <div class="h-row"><h2>Recursos Humanos</h2></div>
       <div class="rrhh-segbar" style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">
-        <button class="btn ghost small rrhh-seg on" data-seg="trab" style="flex:1;min-width:120px">👷 Trabajadores</button>
+        <button class="btn ghost small rrhh-seg on" data-seg="trab" style="flex:1;min-width:120px">Trabajadores</button>
         <button class="btn ghost small rrhh-seg" data-seg="salida" style="flex:1;min-width:120px">Salidas médicas</button>
         <button class="btn ghost small rrhh-seg" data-seg="empresa" style="flex:1;min-width:120px">Empresa</button>
       </div>
@@ -1577,17 +1615,28 @@
 
       <!-- Panel Trabajadores -->
       <div id="rrhh-trab">
-        <div class="h-row" style="margin-top:0"><b style="font:800 15px var(--font);color:var(--ink)">Trabajadores <span class="cnt" id="trab-cnt"></span></b><div style="display:flex;gap:8px;flex-wrap:wrap"><button id="nomina-btn" class="btn ghost small" style="width:auto" title="Nómina de personal activo y avisos de baja para el cliente"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M4 4h16v16H4z"/><path d="M4 9h16M9 9v11"/></svg>Nómina</button><button id="dups-btn" class="btn ghost small" style="width:auto"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>Duplicados</button><button id="cargos-btn" class="btn ghost small" style="width:auto"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V15z"/></svg>Cargos y tratos</button><button id="trab-import" class="btn ghost small" style="width:auto"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>Importar</button><button id="trab-export" class="btn ghost small hide" style="width:auto" title="Descargar la lista de trabajadores (CSV)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>Exportar</button><button id="trab-nuevo" class="btn small" style="width:auto">＋ Nuevo</button></div></div>
-        <div id="fichas-inbox"></div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
-          <input id="trab-search" type="search" placeholder="Buscar nombre, RUT o cargo…" style="flex:1;min-width:150px;font:500 15px var(--font);padding:10px 12px;border:1px solid var(--line);border-radius:11px;background:var(--card);color:var(--ink)">
-          <select id="trab-sort" style="font:600 13px var(--font);padding:10px 12px;border:1px solid var(--line);border-radius:11px;background:var(--card);color:var(--ink)"><option value="reciente" selected>Recientes</option><option value="nombre">A–Z</option><option value="cargo">Por cargo</option><option value="buk">Buk (pendientes primero)</option><option value="bukok">Buk (registrados primero)</option></select>
+        <div class="tb-head">
+          <div class="tb-tit"><b>Trabajadores</b><span class="cnt" id="trab-cnt"></span></div>
+          <div class="tb-acc">
+            <button id="nomina-btn" class="tb-ico" type="button" aria-label="Nómina" title="Nómina de personal activo y avisos de baja para el cliente"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"/><path d="M4 9h16M9 9v11"/></svg><span>Nómina</span></button>
+            <button id="dups-btn" class="tb-ico" type="button" aria-label="Duplicados"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg><span>Duplicados</span></button>
+            <button id="cargos-btn" class="tb-ico" type="button" aria-label="Cargos y tratos"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/></svg><span>Cargos y tratos</span></button>
+            <button id="trab-import" class="tb-ico" type="button" aria-label="Importar"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg><span>Importar</span></button>
+            <button id="trab-export" class="tb-ico hide" type="button" aria-label="Exportar" title="Descargar la lista de trabajadores (CSV)"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg><span>Exportar</span></button>
+            <button id="trab-nuevo" class="tb-ico tb-pri" type="button" aria-label="Nuevo trabajador"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg><span>Nuevo</span></button>
+          </div>
         </div>
-        <div style="display:flex;gap:8px;margin-bottom:14px">
-          <button class="btn ghost small tfil" data-f="todos" style="flex:1">Todos</button>
-          <button class="btn ghost small tfil on" data-f="activo" style="flex:1">Activos</button>
-          <button class="btn ghost small tfil" data-f="espera" style="flex:1">En espera</button>
-          <button class="btn ghost small tfil" data-f="inactivo" style="flex:1">Inactivos</button>
+        <div id="fichas-inbox"></div>
+        <div class="tb-bus">
+          <label class="tb-q"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><input id="trab-search" type="search" placeholder="Buscar nombre, RUT o cargo…"></label>
+          <select id="trab-sort" class="tb-sort"><option value="reciente" selected>Recientes</option><option value="nombre">A–Z</option><option value="cargo">Por cargo</option><option value="buk">Buk (pendientes primero)</option><option value="bukok">Buk (registrados primero)</option></select>
+        </div>
+        <div class="tseg" id="trab-seg">
+          <i class="tseg-ind"></i>
+          <button class="tfil" data-f="todos" type="button">Todos<span class="n"></span></button>
+          <button class="tfil on" data-f="activo" type="button">Activos<span class="n"></span></button>
+          <button class="tfil" data-f="espera" type="button">En espera<span class="n"></span></button>
+          <button class="tfil" data-f="inactivo" type="button">Inactivos<span class="n"></span></button>
         </div>
         <div id="trab-list"></div>
       </div>
@@ -4513,8 +4562,16 @@
   }
   function descartarFicha(f){ if(!sb||!f) return; if(!confirm('¿Descartar la ficha de "'+titleCase(f.nombre||'')+'"? (no se crea el trabajador)')) return;
     busy(true,'Descartando…'); sb.from('fichas_ingreso').update({estado:'descartada'}).eq('id',f.id).then(function(){ busy(false); toast('Ficha descartada'); cargarFichasInbox(); }, function(){ busy(false); }); }
+  // Mueve la pastilla naranja bajo el filtro activo.
+  function trabSegInd(){ var s=$('trab-seg'); if(!s) return; var on=s.querySelector('.tfil.on'), ind=s.querySelector('.tseg-ind'); if(!on||!ind) return; ind.style.left=on.offsetLeft+'px'; ind.style.width=on.offsetWidth+'px'; }
+  if(window.ResizeObserver && $('trab-seg')) new ResizeObserver(trabSegInd).observe($('trab-seg'));   // también al mostrarse el panel
+  var TRAB_ANIM=true;   // anima la entrada de las tarjetas al cargar o cambiar filtro/orden (no al escribir en el buscador)
   function pintarTrab(){
     var list=$('trab-list'); var q=trabQ.toLowerCase();
+    var cuenta={todos:0,activo:0,espera:0,inactivo:0}; TRAB.forEach(function(t){ if(q && (((t.nombre||'')+' '+(t.rut||'')+' '+(t.cargo||'')).toLowerCase()).indexOf(q)<0) return; cuenta.todos++; cuenta[t.estado||'activo']=(cuenta[t.estado||'activo']||0)+1; });
+    document.querySelectorAll('#trab-seg .tfil').forEach(function(b){ var nn=b.querySelector('.n'); if(nn) nn.textContent=TRAB.length?String(cuenta[b.dataset.f]||0):''; });
+    trabSegInd();
+    list.classList.toggle('anim', TRAB_ANIM); TRAB_ANIM=false;
     var arr=TRAB.filter(function(t){
       var e=t.estado||'activo';
       if(trabFilter==='activo' && e!=='activo') return false;
@@ -4536,7 +4593,8 @@
     if(!TRAB.length){ list.innerHTML='<div class="empty"><div class="big">👷</div>Aún no hay trabajadores.<br><span style="font-size:.82rem">Toca “＋ Nuevo” o “⬆ Importar”.</span></div>'; return; }
     if(!arr.length){ list.innerHTML='<div class="empty">Sin resultados para ese filtro/búsqueda.</div>'; return; }
     list.innerHTML=arr.map(function(t,idx){ var est=t.estado||'activo', off=(est==='inactivo'); var estTxt=(est==='inactivo'?'Inactivo':(est==='espera'?'En espera':'Activo')); var estCls=(est==='inactivo'?' b-off':(est==='espera'?' b-espera':' b-ok')); var nd=(t.docs||[]).length; var p=docPct(t); var col=(p!=null?pctColor(p):'var(--line)');
-      return '<div class="trab'+(off?' off':'')+'" data-idx="'+idx+'"><div class="av">'+esc(inic(t.nombre).toUpperCase()||'·')+'</div>'+
+      var ini=esc(inic(t.nombre).toUpperCase()||'·');
+      return '<div class="trab'+(off?' off':'')+'" data-idx="'+idx+'" style="--i:'+Math.min(idx,14)+'">'+(p!=null?'<div class="av ring" style="--p:'+p+';--c:'+col+'" title="Documentación: '+p+'% al día"><span>'+ini+'</span></div>':'<div class="av">'+ini+'</div>')+
         '<div class="tt"><div class="nm">'+esc(titleCase(t.nombre)||'—')+'</div>'+(t.cargo?'<div class="cg">'+esc(t.cargo)+'</div>':'')+
         '<div class="meta">'+(t.rut?esc(t.rut)+' · ':'')+nd+' doc'+(nd===1?'':'s')+(p!=null?(' · <span class="pct" style="color:'+col+'">'+p+'% docs</span>'):'')+'</div></div>'+
         '<button class="trab-buk'+(t.buk?' on':'')+'" data-idx="'+idx+'" type="button" title="'+(t.buk?'Registrado en Buk · toca para quitar':'Toca para marcar registrado en Buk')+'">'+(t.buk?'✓ Buk':'+ Buk')+'</button>'+
@@ -4551,8 +4609,8 @@
     pintarTrab();
   }
   $('trab-search').addEventListener('input',function(){ trabQ=this.value.trim(); pintarTrab(); });
-  $('trab-sort').addEventListener('change',function(){ trabSort=this.value; pintarTrab(); });
-  document.querySelectorAll('.tfil').forEach(function(b){ b.addEventListener('click',function(){ document.querySelectorAll('.tfil').forEach(function(x){ x.classList.toggle('on',x===b); }); trabFilter=b.dataset.f; pintarTrab(); }); });
+  $('trab-sort').addEventListener('change',function(){ trabSort=this.value; TRAB_ANIM=true; pintarTrab(); });
+  document.querySelectorAll('.tfil').forEach(function(b){ b.addEventListener('click',function(){ document.querySelectorAll('.tfil').forEach(function(x){ x.classList.toggle('on',x===b); }); trabFilter=b.dataset.f; TRAB_ANIM=true; pintarTrab(); }); });
   // Botón "Atrás" del navegador: cierra el panel/overlay abierto en vez de salir de la app.
   (function(){
     var OVS=['remu-aj','report-view','docgen','dg-pick','ficha','veh-ficha','remu-detalle','cargos-mgr','dups-mgr','cli-ficha','acc-ficha','rrhh-edit','planif-edit'];
