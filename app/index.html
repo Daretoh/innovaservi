@@ -5085,58 +5085,174 @@
   function cerrarFicha(){ ficha.classList.add('hide'); fiScanner.reset(); }
   $('fi-close').addEventListener('click',cerrarFicha);
   $('trab-nuevo').addEventListener('click',function(){ abrirFicha(null); });
-  // Exportar trabajadores (solo Enzo): abre una vista de tabla ordenada, con Imprimir/PDF y descarga CSV.
+  // ====== Exportar trabajadores a Excel (.xlsx) con diseño corporativo ======
+  // Hoja "Resumen" (totales, por cargo, documentación, vencimientos) y hoja "Trabajadores" (todas las columnas, con filtros,
+  // grupos plegables con + / −, nombre fijo y estados con color). Se arma en el navegador con ExcelJS.
+  function cargarExcelJS(){ if(window.ExcelJS) return Promise.resolve(window.ExcelJS);
+    return new Promise(function(ok,ko){ var s=document.createElement('script'); s.src='https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js'; s.onload=function(){ ok(window.ExcelJS); }; s.onerror=ko; document.head.appendChild(s); }); }
+  function logoBase64(){ return fetch('../assets/images/InnovaServi-completo.png').then(function(r){ if(!r.ok) throw 0; return r.blob(); }).then(function(b){
+    return new Promise(function(ok){ var fr=new FileReader(); fr.onload=function(){ ok(fr.result); }; fr.onerror=function(){ ok(null); }; fr.readAsDataURL(b); }); }).catch(function(){ return null; }); }
+  // Columnas: [clave, título, grupo, valor(t), tipo, ancho]  tipos: t texto · d fecha · $ monto · n número · p porcentaje · e estado · s documento
+  function trabExportCols(){
+    var D=function(v){ return v?new Date(String(v).slice(0,10)+'T12:00:00'):null; }, N=function(v){ return (v!=null&&v!=='')?+v:null; };
+    var edad=function(n){ if(!n) return null; var d=new Date(n+'T12:00:00'), h=new Date(), e=h.getFullYear()-d.getFullYear(); if(h<new Date(h.getFullYear(),d.getMonth(),d.getDate())) e--; return isNaN(e)?null:e; };
+    var EST={activo:'Activo',espera:'En espera',inactivo:'Inactivo'};
+    var C=[
+      ['nombre','Nombre','Principal',function(t){ return titleCase(t.nombre||''); },'t',30],
+      ['rut','RUT','Principal',function(t){ return t.rut||''; },'t',13],
+      ['cargo','Cargo','Principal',function(t){ return t.cargo||''; },'t',24],
+      ['estado','Estado','Principal',function(t){ return EST[t.estado||'activo']||t.estado||''; },'e',11],
+      ['ingreso','Fecha ingreso','Principal',function(t){ return D(t.fecha_ingreso); },'d',12],
+      ['buk','En Buk','Principal',function(t){ return t.buk?'Sí':'No'; },'t',8],
+      ['tipo','Tipo de pago','Contrato y remuneración',function(t){ return t.tipo_pago==='contrato'?'Contrato fijo':'Por trato'; },'t',13],
+      ['chofer','Chofer','Contrato y remuneración',function(t){ return t.chofer?'Sí':'No'; },'t',8],
+      ['jornada','Jornada (h/día)','Contrato y remuneración',function(t){ return N(t.jornada_horas); },'n',10],
+      ['turno','Turno','Contrato y remuneración',function(t){ return (t.jornada_ini||t.jornada_fin)?((t.jornada_ini||'')+' – '+(t.jornada_fin||'')):''; },'t',13],
+      ['sueldo','Sueldo base','Contrato y remuneración',function(t){ return N(t.sueldo_base); },'$',13],
+      ['paga','Sueldo lo paga','Contrato y remuneración',function(t){ return t.tipo_pago==='contrato'?(t.sueldo_empresa||'Innova Servi'):''; },'t',14],
+      ['desde','Sueldo desde','Contrato y remuneración',function(t){ return D(t.sueldo_desde); },'m',11],
+      ['trato','Trato del cargo','Contrato y remuneración',function(t){ return cargoTrato(t.cargo)||null; },'$',13],
+      ['vhora','Valor hora','Contrato y remuneración',function(t){ var x=cargoTrato(t.cargo); return x?Math.round(x/8):null; },'$',11],
+      ['tel','Teléfono','Contacto',function(t){ return t.telefono||''; },'t',15],
+      ['email','Correo','Contacto',function(t){ return t.email||''; },'t',28],
+      ['dir','Dirección','Contacto',function(t){ return t.direccion||''; },'t',26],
+      ['num','Número','Contacto',function(t){ return t.numero||''; },'t',8],
+      ['pob','Población / villa','Contacto',function(t){ return t.poblacion||''; },'t',18],
+      ['comuna','Comuna','Contacto',function(t){ return t.comuna||''; },'t',15],
+      ['region','Región','Contacto',function(t){ return t.region||''; },'t',15],
+      ['emerg','Contacto de emergencia','Contacto',function(t){ return t.emergencia||''; },'t',24],
+      ['fnac','Fecha nacimiento','Datos personales',function(t){ return D(t.nacimiento); },'d',12],
+      ['apat','Apellido paterno','Datos personales',function(t){ return t.apellido_paterno||''; },'t',15],
+      ['amat','Apellido materno','Datos personales',function(t){ return t.apellido_materno||''; },'t',15],
+      ['nombres','Nombres','Datos personales',function(t){ return t.nombres||''; },'t',18],
+      ['sexo','Sexo','Datos personales',function(t){ return t.sexo||''; },'t',8],
+      ['nac','Nacionalidad','Datos personales',function(t){ return t.nacionalidad||''; },'t',12],
+      ['edad','Edad','Datos personales',function(t){ return edad(t.nacimiento); },'n',7],
+      ['civil','Estado civil','Datos personales',function(t){ return t.estado_civil||''; },'t',12],
+      ['titulo','Título / educación','Datos personales',function(t){ return t.titulo_educacion||''; },'t',20],
+      ['inst','Institución','Datos personales',function(t){ return t.institucion_titulo||''; },'t',18],
+      ['disc','Discapacidad','Datos personales',function(t){ return t.discapacidad||''; },'t',11],
+      ['inval','Invalidez','Datos personales',function(t){ return t.invalidez||''; },'t',10],
+      ['afp','AFP','Previsión y tallas',function(t){ return t.afp||''; },'t',12],
+      ['salud','Salud','Previsión y tallas',function(t){ return t.salud||''; },'t',12],
+      ['regprev','Régimen previsional','Previsión y tallas',function(t){ return t.regimen_prev||''; },'t',14],
+      ['afc','Régimen AFC','Previsión y tallas',function(t){ return t.regimen_afc||''; },'t',12],
+      ['cargas','N° cargas','Previsión y tallas',function(t){ return N(t.cargas); },'n',8],
+      ['tramo','Tramo cargas','Previsión y tallas',function(t){ return t.tramo_cargas||''; },'t',10],
+      ['botas','Talla botas','Previsión y tallas',function(t){ return t.talla_botas||''; },'t',9],
+      ['ropa','Talla ropa','Previsión y tallas',function(t){ return t.talla_ropa||''; },'t',9],
+      ['banco','Banco','Datos bancarios',function(t){ return t.banco||''; },'t',16],
+      ['tcta','Tipo de cuenta','Datos bancarios',function(t){ return t.tipo_cuenta||''; },'t',14],
+      ['ncta','N° de cuenta','Datos bancarios',function(t){ return t.num_cuenta||''; },'t',16],
+      ['pct','% al día','Documentación',function(t){ return t.id?pctDe(t.id, DOC_TIPOS).pct/100:null; },'p',9]
+    ];
+    // Por documento: su estado (para filtrar) y, si vence, la fecha de vencimiento
+    (typeof DOC_TIPOS!=='undefined'?DOC_TIPOS:[]).forEach(function(tp){
+      C.push(['d_'+tp.slug, tp.corto||tp.nombre, 'Documentación', function(t){ var d=RRHH_D[t.id+'|'+tp.slug]; if(!d) return 'Pendiente'; var e=estadoDoc(t.id,tp.slug); return e.k==='prox'?'Por vencer':e.txt; },'s',12]);
+      if(tp.vence) C.push(['v_'+tp.slug, (tp.corto||tp.nombre)+' vence', 'Documentación', function(t){ var d=RRHH_D[t.id+'|'+tp.slug]; return d&&d.vencimiento?D(d.vencimiento):null; },'d',12]);
+    });
+    C.push(['notas','Notas (anteriores)','Otros',function(t){ return (t.notas||'').replace(/\s+/g,' ').trim(); },'t',40]);
+    C.push(['adj','Archivos adjuntos','Otros',function(t){ return (t.docs||[]).length; },'n',9]);
+    C.push(['alta','Creado en la app','Otros',function(t){ return D(t.created_at); },'d',12]);
+    return C;
+  }
   function trabExportFilas(){ var orden={activo:0,espera:1,inactivo:2};
     return (TRAB||[]).slice().sort(function(a,b){
       var ea=orden[a.estado||'activo']||0, eb=orden[b.estado||'activo']||0; if(ea!==eb) return ea-eb;
       var c=(a.cargo||'').localeCompare(b.cargo||''); if(c) return c;
       return (a.nombre||'').localeCompare(b.nombre||'');
-    });
-  }
-  function trabExportCSV(arr){
-    var cols=[['nombre','Nombre'],['rut','RUT'],['cargo','Cargo'],['estado','Estado'],['email','Email'],['telefono','Teléfono'],['fecha_ingreso','Ingreso'],['chofer','Chofer'],['buk','En Buk'],['tipo_pago','Tipo pago']];
-    function cell(v){ if(v==null)v=''; v=String(v); if(/[";\n\r]/.test(v)) v='"'+v.replace(/"/g,'""')+'"'; return v; }
-    var out=[cols.map(function(c){return c[1];}).join(';')];
-    arr.forEach(function(t){ out.push(cols.map(function(c){ var v=t[c[0]]; if(c[0]==='chofer'||c[0]==='buk')v=v?'Sí':'No'; if(c[0]==='nombre')v=titleCase(v||''); return cell(v); }).join(';')); });
-    return '﻿'+out.join('\r\n');
-  }
+    }); }
   function exportarTrab(){
-    var arr=trabExportFilas();
-    var estLbl={activo:'Activo',espera:'En espera',inactivo:'Inactivo'};
-    var estCol={activo:'#0f6e56',espera:'#92400e',inactivo:'#94a3b8'};
-    var filas=arr.map(function(t,i){ var p=(typeof docPct==='function')?docPct(t):null; var est=t.estado||'activo';
-      return '<tr>'+
-        '<td class="n">'+(i+1)+'</td>'+
-        '<td class="nm">'+esc(titleCase(t.nombre||'')||'—')+'</td>'+
-        '<td>'+esc(t.rut||'')+'</td>'+
-        '<td>'+esc(t.cargo||'')+'</td>'+
-        '<td><span class="chip" style="color:'+(estCol[est]||'#555')+';border-color:'+(estCol[est]||'#999')+'44">'+esc(estLbl[est]||est)+'</span></td>'+
-        '<td>'+esc(t.email||'')+'</td>'+
-        '<td>'+esc(t.telefono||'')+'</td>'+
-        '<td>'+esc(t.fecha_ingreso||'')+'</td>'+
-        '<td class="c">'+(t.chofer?'Sí':'')+'</td>'+
-        '<td class="c">'+(t.buk?'✓':'')+'</td>'+
-        '<td class="c">'+(p!=null?(p+'%'):'')+'</td>'+
-      '</tr>';
-    }).join('');
-    var csvData='data:text/csv;charset=utf-8,'+encodeURIComponent(trabExportCSV(arr));
-    var cuenta={activo:0,espera:0,inactivo:0}; arr.forEach(function(t){ var e=t.estado||'activo'; if(cuenta[e]!=null)cuenta[e]++; });
-    var html='<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Trabajadores · InnovaServi</title>'+
-      '<style>*{box-sizing:border-box}body{font:14px/1.4 -apple-system,Segoe UI,Roboto,sans-serif;color:#1b1f4d;margin:0;background:#f5f6fb}'+
-      '.wrap{max-width:1100px;margin:0 auto;padding:22px 18px 50px}h1{font-size:1.5rem;margin:0 0 2px}.meta{color:#6b7186;font-size:.85rem;margin-bottom:14px}'+
-      '.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}.btn{font:700 13px sans-serif;border:1px solid #d6d8e4;background:#fff;color:#1b1f4d;border-radius:9px;padding:9px 14px;cursor:pointer;text-decoration:none;display:inline-block}.btn.main{background:#ff6b00;border-color:#ff6b00;color:#fff}'+
-      'table{border-collapse:collapse;width:100%;background:#fff;border:1px solid #d6d8e4;border-radius:10px;overflow:hidden;font-size:13px}'+
-      'th{background:#1a1f6e;color:#fff;text-align:left;padding:9px 10px;font-size:11px;letter-spacing:.03em;text-transform:uppercase}'+
-      'td{padding:8px 10px;border-top:1px solid #eceef5}td.n,td.c{text-align:center;color:#6b7186}td.nm{font-weight:700}'+
-      'tr:nth-child(even) td{background:#fafbff}.chip{font-weight:800;font-size:11px;border:1px solid;border-radius:999px;padding:1px 9px}'+
-      '@media print{.toolbar{display:none}body{background:#fff}.wrap{max-width:none;padding:0}table{border-radius:0}}</style></head><body>'+
-      '<div class="wrap"><h1>Trabajadores — InnovaServi</h1>'+
-      '<div class="meta">'+arr.length+' en total · Activos '+cuenta.activo+' · En espera '+cuenta.espera+' · Inactivos '+cuenta.inactivo+' · '+new Date().toLocaleDateString('es-CL')+'</div>'+
-      '<div class="toolbar"><button class="btn main" onclick="window.print()">Imprimir / Guardar PDF</button><a class="btn" href="'+csvData+'" download="trabajadores-'+todayISO()+'.csv">Descargar CSV</a></div>'+
-      '<table><thead><tr><th>#</th><th>Nombre</th><th>RUT</th><th>Cargo</th><th>Estado</th><th>Email</th><th>Teléfono</th><th>Ingreso</th><th>Chofer</th><th>Buk</th><th>% Docs</th></tr></thead><tbody>'+filas+'</tbody></table></div></body></html>';
-    var w=window.open('','_blank');
-    if(w){ w.document.open(); w.document.write(html); w.document.close(); toast('✓ Tabla de '+arr.length+' trabajadores'); }
-    else { var blob=new Blob([html],{type:'text/html'}); var u=URL.createObjectURL(blob); var a=document.createElement('a'); a.href=u; a.download='trabajadores-'+todayISO()+'.html'; a.click(); setTimeout(function(){URL.revokeObjectURL(u);},800); toast('✓ Tabla descargada (HTML)'); }
+    busy(true,'Preparando Excel…');
+    var docs=(sb && !RRHH_LOADED)?sb.from('rrhh_docs').select('*').limit(6000).then(function(r){ ((r&&r.data)||[]).forEach(function(d){ RRHH_D[d.trabajador_id+'|'+d.tipo]=d; }); }, function(){}):Promise.resolve();
+    Promise.all([cargarExcelJS(), logoBase64(), docs]).then(function(r){ return trabExcel(r[0], r[1]); })
+      .then(function(buf){ busy(false); descargarBlob(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}), 'Trabajadores_InnovaServi_'+todayISO()+'.xlsx'); toast('✓ Excel descargado'); })
+      .catch(function(e){ busy(false); console.error(e); toast('No se pudo generar el Excel. Revisa la conexión.'); });
+  }
+  function trabExcel(ExcelJS, logo){
+    var NAVY='FF1A1F6E', DEEP='FF0C0F2E', ORANGE='FFFF6B00', ALT='FFF5F6FB', LINE='FFE3E5EE', MUTED='FF8B93A7', INK='FF1B1F4D';
+    var arr=trabExportFilas(), C=trabExportCols(), hoy=new Date(), fhoy=fFaena(todayISO());
+    var wb=new ExcelJS.Workbook(); wb.creator='InnovaGestión'; wb.created=hoy;
+    var img=logo?wb.addImage({base64:logo, extension:'png'}):null;
+    var fill=function(c){ return {type:'pattern',pattern:'solid',fgColor:{argb:c}}; }, borde={bottom:{style:'thin',color:{argb:LINE}}};
+    var COL={'Activo':['FFE7F6EE','FF16794A'],'En espera':['FFFFF4E6','FFB45309'],'Inactivo':['FFF1F2F6','FF6B7390'],
+      'Entregado':['FFE7F6EE','FF16794A'],'Por vencer':['FFFFF4E6','FFB45309'],'Vencido':['FFFDECEC','FFB91C1C'],'Pendiente':['FFFDECEC','FFB91C1C'],'No aplica':['FFF1F2F6','FF6B7390']};
+    function cabecera(ws, titulo, sub, ncol){
+      ws.getRow(1).height=26; ws.getRow(2).height=18; ws.getRow(3).height=18;
+      if(img!=null) ws.addImage(img,{tl:{col:0.15,row:0.15},ext:{width:92,height:63}});
+      var a=ws.getCell(1,3); a.value=titulo; a.font={name:'Calibri',size:16,bold:true,color:{argb:INK}};
+      var b=ws.getCell(2,3); b.value='Innovación y Servicios SpA · RUT 77.647.955-1 · Los Lirios 35, Mirasol, Puerto Montt'; b.font={size:10,color:{argb:MUTED}};
+      var c=ws.getCell(3,3); c.value=sub; c.font={size:10,italic:true,color:{argb:MUTED}};
+      for(var i=1;i<=ncol;i++){ ws.getCell(4,i).fill=fill(i<=Math.ceil(ncol*0.7)?ORANGE:NAVY); } ws.getRow(4).height=4;
+    }
+    var cnt={Activo:0,'En espera':0,Inactivo:0}, EST={activo:'Activo',espera:'En espera',inactivo:'Inactivo'};
+    arr.forEach(function(t){ cnt[EST[t.estado||'activo']]++; });
+
+    // ---------- Hoja Resumen ----------
+    var R=wb.addWorksheet('Resumen',{properties:{tabColor:{argb:ORANGE}},views:[{showGridLines:false}]});
+    R.columns=[{width:16},{width:34},{width:24},{width:14},{width:14},{width:14},{width:14}];
+    cabecera(R,'Trabajadores · Resumen','Exportado el '+fhoy+' desde InnovaGestión',7);
+    var fila=6;
+    function titulo(t){ var c=R.getCell(fila,2); c.value=t; c.font={bold:true,size:12,color:{argb:INK}}; R.getRow(fila).height=20; fila++; }
+    function tabla(cab, filas, anchoPrimera){
+      cab.forEach(function(h,i){ var c=R.getCell(fila,2+i); c.value=h; c.fill=fill(NAVY); c.font={bold:true,color:{argb:'FFFFFFFF'},size:10}; c.alignment={vertical:'middle',horizontal:i?'center':'left'}; }); R.getRow(fila).height=20; fila++;
+      filas.forEach(function(f,k){ f.forEach(function(v,i){ var c=R.getCell(fila,2+i); c.value=v; c.border=borde; c.alignment={horizontal:i?'center':'left',vertical:'middle',wrapText:(typeof v==='string')}; if(k%2) c.fill=fill(ALT); if(i===0) c.font={bold:true,color:{argb:INK}}; }); fila++; });
+      fila++; }
+    // Tarjetas de totales
+    var kp=[['Total',arr.length,NAVY],['Activos',cnt.Activo,'FF16794A'],['En espera',cnt['En espera'],'FFB45309'],['Inactivos',cnt.Inactivo,'FF6B7390']];
+    kp.forEach(function(k,i){ var col=i===0?2:2+i; var l=R.getCell(fila,col), v=R.getCell(fila+1,col);
+      l.value=k[0]; l.font={bold:true,size:10,color:{argb:'FFFFFFFF'}}; l.fill=fill(k[2]); l.alignment={horizontal:'center'};
+      v.value=k[1]; v.font={bold:true,size:20,color:{argb:k[2]}}; v.alignment={horizontal:'center',vertical:'middle'}; v.border={bottom:{style:'medium',color:{argb:k[2]}},left:{style:'thin',color:{argb:LINE}},right:{style:'thin',color:{argb:LINE}}}; });
+    R.getRow(fila+1).height=34; fila+=3;
+    // Por cargo
+    var porCargo={}; arr.forEach(function(t){ var k=t.cargo||'(sin cargo)'; if(!porCargo[k]) porCargo[k]={Activo:0,'En espera':0,Inactivo:0}; porCargo[k][EST[t.estado||'activo']]++; });
+    titulo('Personas por cargo');
+    tabla(['Cargo','Activos','En espera','Inactivos','Total'], Object.keys(porCargo).sort().map(function(k){ var x=porCargo[k]; return [k,x.Activo,x['En espera'],x.Inactivo,x.Activo+x['En espera']+x.Inactivo]; }));
+    // Documentación (solo activos y en espera)
+    var vig=arr.filter(function(t){ return t.estado!=='inactivo'; });
+    titulo('Documentación de activos y en espera ('+vig.length+' personas)');
+    tabla(['Documento','Entregado','Por vencer','Vencido','Pendiente','No aplica'], (typeof DOC_TIPOS!=='undefined'?DOC_TIPOS:[]).map(function(tp){ var c={ok:0,prox:0,venc:0,pend:0,na:0};
+      vig.forEach(function(t){ var e=RRHH_D[t.id+'|'+tp.slug]?estadoDoc(t.id,tp.slug).k:'pend'; c[e]=(c[e]||0)+1; }); return [tp.nombre,c.ok,c.prox,c.venc,c.pend,c.na]; }));
+    // Vencimientos (vencidos y próximos 60 días)
+    var ven=[]; vig.forEach(function(t){ (typeof DOC_TIPOS!=='undefined'?DOC_TIPOS:[]).forEach(function(tp){ var d=RRHH_D[t.id+'|'+tp.slug]; if(!d||!d.vencimiento||d.estado!=='entregado') return; var n=diffDiasV(d.vencimiento); if(n<=60) ven.push([titleCase(t.nombre||''), tp.nombre, new Date(d.vencimiento+'T12:00:00'), n<0?('Vencido hace '+(-n)+' d'):('En '+n+' d')]); }); });
+    ven.sort(function(a,b){ return a[2]-b[2]; });
+    titulo('Vencimientos (vencidos y próximos 60 días)');
+    if(ven.length){ var f0=fila; tabla(['Trabajador','Documento','Vence','Plazo'], ven); for(var q=f0+1;q<f0+1+ven.length;q++) R.getCell(q,4).numFmt='dd-mm-yyyy'; }
+    else { var cv=R.getCell(fila,2); cv.value='Sin vencimientos en los próximos 60 días.'; cv.font={italic:true,color:{argb:MUTED}}; fila+=2; }
+    var ay=R.getCell(fila,2); ay.value='Cómo usar la hoja "Trabajadores": filtra con las flechas de cada título; con los botones + / − sobre las columnas muestras u ocultas cada grupo de datos.'; ay.font={size:9,italic:true,color:{argb:MUTED}};
+    R.pageSetup={orientation:'portrait',fitToPage:true,fitToWidth:1,fitToHeight:0,margins:{left:.4,right:.4,top:.5,bottom:.5,header:.2,footer:.2}};
+
+    // ---------- Hoja Trabajadores ----------
+    var nc=C.length+1, H=6;   // columna 1 = N°; fila 5 = grupos; fila 6 = títulos
+    var W=wb.addWorksheet('Trabajadores',{properties:{tabColor:{argb:NAVY}},views:[{state:'frozen',xSplit:3,ySplit:H,showGridLines:false}]});
+    W.columns=[{width:5}].concat(C.map(function(c){ return {width:c[5]}; }));
+    cabecera(W,'Trabajadores',arr.length+' personas · Activos '+cnt.Activo+' · En espera '+cnt['En espera']+' · Inactivos '+cnt.Inactivo+' · exportado el '+fhoy+'  ·  Usa + sobre las columnas para ver más datos y las flechas de cada título para filtrar',nc);
+    // Bandas de grupo (fila 5) y grupos plegables: la primera columna de cada grupo queda visible, el resto se pliega con + / −
+    var ini=0; while(ini<C.length){ var g=C[ini][2], fin=ini; while(fin+1<C.length && C[fin+1][2]===g) fin++;
+      var c1=ini+2, c2=fin+2; if(c2>c1) W.mergeCells(5,c1,5,c2);
+      var kc=W.getColumn(c1); kc.width=Math.max(kc.width||10, g.length+5);   // el título del grupo se lee completo aunque esté plegado
+      var gc=W.getCell(5,c1); gc.value=g.toUpperCase(); gc.font={bold:true,size:9,color:{argb:'FFFFB27A'}}; gc.fill=fill(DEEP); gc.alignment={horizontal:'left',vertical:'middle',indent:1};
+      for(var k=c1;k<=c2;k++){ W.getCell(5,k).fill=fill(DEEP); if(g!=='Principal' && k>c1){ W.getColumn(k).outlineLevel=1; W.getColumn(k).hidden=true; } }
+      ini=fin+1; }
+    W.getCell(5,1).fill=fill(DEEP); W.getRow(5).height=18;
+    var hr=W.getRow(H); hr.height=34;
+    ['N°'].concat(C.map(function(c){ return c[1]; })).forEach(function(t,i){ var c=hr.getCell(i+1); c.value=t; c.fill=fill(NAVY); c.font={bold:true,size:10,color:{argb:'FFFFFFFF'}}; c.alignment={vertical:'middle',horizontal:i?'left':'center',wrapText:true}; c.border={right:{style:'thin',color:{argb:'FF2A3190'}}}; });
+    arr.forEach(function(t,r){ var row=W.getRow(H+1+r), off=(t.estado==='inactivo');
+      row.getCell(1).value=r+1; row.getCell(1).alignment={horizontal:'center'}; row.getCell(1).font={color:{argb:MUTED},size:10};
+      C.forEach(function(c,i){ var v; try{ v=c[3](t); }catch(_){ v=null; } var cell=row.getCell(i+2);
+        cell.value=(v===''?null:v);
+        if(c[4]==='d') cell.numFmt='dd-mm-yyyy'; else if(c[4]==='m') cell.numFmt='mm-yyyy'; else if(c[4]==='$') cell.numFmt='"$"#,##0'; else if(c[4]==='p') cell.numFmt='0%';
+        if((c[4]==='e'||c[4]==='s') && COL[v]){ cell.fill=fill(COL[v][0]); cell.font={bold:true,size:10,color:{argb:COL[v][1]}}; cell.alignment={horizontal:'center'}; }
+        else { cell.font={size:10,color:{argb:off?MUTED:INK},bold:(i===0)}; if(c[4]==='p'&&v!=null) cell.font={size:10,bold:true,color:{argb:v>=1?'FF16794A':(v>=.6?'FFB45309':'FFB91C1C')}}; }
+        if(r%2 && !(c[4]==='e'||c[4]==='s')) cell.fill=fill(ALT);
+        if(c[0]==='notas') cell.alignment={wrapText:true,vertical:'top'};
+        cell.border=borde; });
+      if(r%2) row.getCell(1).fill=fill(ALT); row.getCell(1).border=borde; });
+    W.autoFilter={from:{row:H,column:1},to:{row:H+Math.max(arr.length,1),column:nc}};
+    W.pageSetup={orientation:'landscape',fitToPage:true,fitToWidth:1,fitToHeight:0,printTitlesRow:'5:6',margins:{left:.3,right:.3,top:.4,bottom:.4,header:.2,footer:.2}};
+    W.headerFooter={oddFooter:'&L&8Innovación y Servicios SpA · Trabajadores&R&8Página &P de &N'};
+    wb.views=[{activeTab:0}];
+    return wb.xlsx.writeBuffer();
   }
   if($('trab-export')) $('trab-export').addEventListener('click',exportarTrab);
   function renderDocs(){
