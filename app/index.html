@@ -918,6 +918,25 @@
   #trab-list .trab .tbar{display:none;} #trab-list .trab .av{width:46px;height:46px;}
   .trab .cg{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   @media(prefers-reduced-motion:reduce){ .tb-ico span,.tseg-ind,#trab-list .trab{transition:none;} #trab-list.anim .trab{animation:none;} }
+  /* Actividad del trabajador: franja de 30 días en la lista y tarjeta con calendario y faenas en la ficha */
+  .act-strip{display:grid;grid-template-columns:repeat(30,1fr);gap:2px;height:7px;margin-top:6px;max-width:250px;}
+  .act-strip i,.act-cal i,.act-esc i{display:block;border-radius:2px;background:var(--line);}
+  .act-strip i.l1,.act-cal i.l1,.act-esc i.l1{background:#ffd6b3;} .act-strip i.l2,.act-cal i.l2,.act-esc i.l2{background:#ff9a4d;} .act-strip i.l3,.act-cal i.l3,.act-esc i.l3{background:var(--orange);}
+  .trab .act-t{font-size:.7rem;color:var(--muted);margin-top:3px;} .trab .act-t b{color:var(--ink);font-weight:700;}
+  .act-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;}
+  .act-kpis div{background:var(--alt);border:1px solid var(--line);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:3px;}
+  .act-kpis b{font:800 20px var(--font);color:var(--ink);} .act-kpis span{font-size:.68rem;color:var(--muted);line-height:1.3;}
+  .act-cal-w{display:flex;gap:6px;} .act-dias{display:grid;grid-template-rows:repeat(7,1fr);gap:3px;font:700 .58rem var(--font);color:var(--muted);}
+  .act-dias{gap:4px;} .act-dias span{height:16px;line-height:16px;}
+  .act-cal{display:grid;grid-template-columns:repeat(8,22px);gap:4px;} .act-sem{display:grid;grid-template-rows:repeat(7,16px);gap:4px;}
+  .act-cal i.fut{background:transparent;border:1px dashed var(--line);}
+  .act-ley{display:flex;justify-content:space-between;align-items:center;margin-top:6px;font-size:.66rem;color:var(--muted);}
+  .act-esc{display:flex;align-items:center;gap:3px;} .act-esc i{width:10px;height:10px;}
+  .act-fae{display:flex;flex-direction:column;gap:6px;}
+  .act-f{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;transition:border-color .2s,background .2s;}
+  .act-f:hover{border-color:var(--orange);background:rgba(255,107,0,.04);}
+  .act-f div{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;} .act-f b{font-size:.8rem;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .act-f span{font-size:.68rem;color:var(--muted);} .act-f em{font-style:normal;font:800 .72rem var(--font);color:var(--orange-2);text-align:right;line-height:1.3;}
   .trab-modo{display:inline-flex;margin-bottom:12px;}
   .fr-sec{font:800 11px var(--font);color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:12px 0 6px;display:flex;align-items:center;gap:8px;}
   .fr-sec .fr-pct{margin-left:auto;font:800 11px var(--font);text-transform:none;letter-spacing:0;}
@@ -1687,7 +1706,7 @@
         <div id="fichas-inbox"></div>
         <div class="tb-bus">
           <label class="tb-q"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><input id="trab-search" type="search" placeholder="Buscar nombre, RUT o cargo…"></label>
-          <select id="trab-sort" class="tb-sort"><option value="reciente" selected>Recientes</option><option value="nombre">A–Z</option><option value="cargo">Por cargo</option><option value="buk">Buk (pendientes primero)</option><option value="bukok">Buk (registrados primero)</option></select>
+          <select id="trab-sort" class="tb-sort"><option value="reciente" selected>Recientes</option><option value="activos">Más activos (30 días)</option><option value="nombre">A–Z</option><option value="cargo">Por cargo</option><option value="buk">Buk (pendientes primero)</option><option value="bukok">Buk (registrados primero)</option></select>
         </div>
         <div class="tseg" id="trab-seg">
           <i class="tseg-ind"></i>
@@ -2036,6 +2055,10 @@
       </div>
     </div>
     <div class="fi-side">
+      <div class="card hide" id="fi-act-card">
+        <div class="fi-tit">Actividad</div>
+        <div id="fi-act"></div>
+      </div>
       <div class="card">
         <div class="fi-tit">Documentación y capacitaciones</div>
         <div id="fi-rrhh"></div>
@@ -4765,12 +4788,52 @@
   }
   function descartarFicha(f){ if(!sb||!f) return; if(!confirm('¿Descartar la ficha de "'+titleCase(f.nombre||'')+'"? (no se crea el trabajador)')) return;
     busy(true,'Descartando…'); sb.from('fichas_ingreso').update({estado:'descartada'}).eq('id',f.id).then(function(){ busy(false); toast('Ficha descartada'); cargarFichasInbox(); }, function(){ busy(false); }); }
+  // ====== Actividad de cada trabajador (desde las horas registradas): días, horas, última jornada y faenas ======
+  var ACT=null, ACT_CARGANDO=false, ACT_DIAS=120;
+  function actKey(n){ return String(n||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/\s+/g,' ').trim(); }
+  function actHoras(e,s){ if(!e||!s) return 0; var a=String(e).split(':'), b=String(s).split(':'), m=(+b[0]*60+(+b[1]||0))-(+a[0]*60+(+a[1]||0)); if(isNaN(m)) return 0; if(m<0) m+=1440; return m/60; }
+  function isoHace(d){ var x=new Date(); x.setDate(x.getDate()-d); return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0'); }
+  function cargarActividad(cb){ if(ACT){ if(cb) cb(); return; } if(ACT_CARGANDO||!sb) return; ACT_CARGANDO=true;
+    sb.from('horas').select('trabajador,fecha,entrada,salida,faena,empresa,lugar').gte('fecha',isoHace(ACT_DIAS)).limit(20000).then(function(r){ ACT_CARGANDO=false; if(r&&r.error) return; ACT={};
+      ((r&&r.data)||[]).forEach(function(x){ var k=actKey(x.trabajador); if(k) (ACT[k]=ACT[k]||[]).push(x); }); if(cb) cb(); }, function(){ ACT_CARGANDO=false; }); }
+  // Resumen: días distintos y horas en los últimos N días, última jornada, horas por día y faenas trabajadas
+  function actDe(t, dias){ var L=(ACT&&ACT[actKey(t&&t.nombre)])||[], lim=isoHace((dias||30)-1), porDia={}, dd={}, h=0, ult='', fae={};
+    L.forEach(function(x){ var hs=actHoras(x.entrada,x.salida); porDia[x.fecha]=(porDia[x.fecha]||0)+hs; if(x.fecha>ult) ult=x.fecha;
+      if(x.fecha>=lim){ dd[x.fecha]=1; h+=hs; }
+      var nf=x.faena||[x.empresa,x.lugar].filter(Boolean).join(' · ')||'Sin faena indicada', F=fae[nf]=fae[nf]||{n:nf,dias:{},h:0,ult:''}; F.dias[x.fecha]=1; F.h+=hs; if(x.fecha>F.ult) F.ult=x.fecha; });
+    return {dias:Object.keys(dd).length, horas:Math.round(h), ult:ult, porDia:porDia, total:L.length,
+      faenas:Object.keys(fae).map(function(k){ var F=fae[k]; return {n:F.n, dias:Object.keys(F.dias).length, h:Math.round(F.h), ult:F.ult}; }).sort(function(a,b){ return a.ult<b.ult?1:(a.ult>b.ult?-1:b.dias-a.dias); })}; }
+  function actNivel(h){ return !h?0:(h<4?1:(h<8?2:3)); }
+  function actHace(f){ if(!f) return ''; var n=-diffDiasV(f); return n<=0?'hoy':(n===1?'ayer':'hace '+n+' d'); }
+  // Franja de los últimos 30 días para la tarjeta de la lista (un cuadrito por día, más intenso según horas)
+  function actStrip(a){ var s=''; for(var i=29;i>=0;i--){ var f=isoHace(i), h=a.porDia[f]||0; s+='<i class="l'+actNivel(h)+'" title="'+fFaena(f)+(h?' · '+(Math.round(h*10)/10)+' h':' · sin registro')+'"></i>'; } return '<div class="act-strip">'+s+'</div>'; }
+  // Tarjeta "Actividad" de la ficha
+  function renderFichaAct(t){ var c=$('fi-act'), card=$('fi-act-card'); if(!c) return;
+    if(!t||!t.id){ if(card) card.classList.add('hide'); return; } if(card) card.classList.remove('hide');
+    if(!ACT){ c.innerHTML='<p class="fi-hint" style="margin:0">Cargando actividad…</p>'; cargarActividad(function(){ if(FICHA_ID===t.id) renderFichaAct(t); }); return; }
+    var a=actDe(t,30);
+    // Calendario: 8 semanas (lunes a domingo)
+    var hoy=new Date(), ini=new Date(hoy); ini.setDate(hoy.getDate()-((hoy.getDay()+6)%7)-49);
+    var cal=''; for(var w=0;w<8;w++){ cal+='<div class="act-sem">'; for(var d=0;d<7;d++){ var x=new Date(ini); x.setDate(ini.getDate()+w*7+d);
+      var f=x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0'), h=a.porDia[f]||0, fut=x>hoy;
+      cal+='<i class="'+(fut?'fut':'l'+actNivel(h))+'" title="'+fFaena(f)+(fut?'':(h?' · '+(Math.round(h*10)/10)+' h':' · sin registro'))+'"></i>'; } cal+='</div>'; }
+    var fa=a.faenas, MAX=6;
+    c.innerHTML='<div class="act-kpis"><div><b>'+a.dias+'</b><span>días trabajados<br>últimos 30 días</span></div><div><b>'+a.horas+'</b><span>horas<br>últimos 30 días</span></div><div><b>'+(a.ult?fFaena(a.ult).slice(0,5):'—')+'</b><span>última jornada<br>'+(a.ult?actHace(a.ult):'sin registros')+'</span></div></div>'+
+      '<div class="act-cal-w"><div class="act-dias"><span>L</span><span></span><span>M</span><span></span><span>V</span><span></span><span>D</span></div><div class="act-cal">'+cal+'</div></div>'+
+      '<div class="act-ley"><span>Últimas 8 semanas</span><span class="act-esc">Menos<i class="l0"></i><i class="l1"></i><i class="l2"></i><i class="l3"></i>Más</span></div>'+
+      '<div class="fi-tit" style="margin:14px 0 6px">Faenas trabajadas <span class="fi-hint">· últimos 4 meses</span></div>'+
+      (fa.length?('<div class="act-fae">'+fa.map(function(F,i){ return '<div class="act-f'+(i>=MAX?' hide':'')+'"><div><b>'+esc(F.n)+'</b><span>Última vez '+fFaena(F.ult)+'</span></div><em>'+F.dias+' día'+(F.dias===1?'':'s')+'<br>'+F.h+' h</em></div>'; }).join('')+'</div>'+
+        (fa.length>MAX?'<button type="button" class="btn ghost small" id="act-mas" style="width:auto;margin-top:8px">Ver las '+fa.length+' faenas</button>':''))
+        :'<p class="fi-hint" style="margin:0">Sin horas registradas en los últimos 4 meses.</p>');
+    if($('act-mas')) $('act-mas').addEventListener('click',function(){ c.querySelectorAll('.act-f.hide').forEach(function(e){ e.classList.remove('hide'); }); this.remove(); });
+  }
   // Mueve la pastilla naranja bajo el filtro activo.
   function trabSegInd(){ var s=$('trab-seg'); if(!s) return; var on=s.querySelector('.tfil.on'), ind=s.querySelector('.tseg-ind'); if(!on||!ind) return; ind.style.left=on.offsetLeft+'px'; ind.style.width=on.offsetWidth+'px'; }
   if(window.ResizeObserver && $('trab-seg')) new ResizeObserver(trabSegInd).observe($('trab-seg'));   // también al mostrarse el panel
   var TRAB_ANIM=true;   // anima la entrada de las tarjetas al cargar o cambiar filtro/orden (no al escribir en el buscador)
   function pintarTrab(){
     var list=$('trab-list'); var q=trabQ.toLowerCase();
+    if(!ACT && sb) cargarActividad(function(){ pintarTrab(); });
     var cuenta={todos:0,activo:0,espera:0,inactivo:0}; TRAB.forEach(function(t){ if(q && (((t.nombre||'')+' '+(t.rut||'')+' '+(t.cargo||'')).toLowerCase()).indexOf(q)<0) return; cuenta.todos++; cuenta[t.estado||'activo']=(cuenta[t.estado||'activo']||0)+1; });
     document.querySelectorAll('#trab-seg .tfil').forEach(function(b){ var nn=b.querySelector('.n'); if(nn) nn.textContent=TRAB.length?String(cuenta[b.dataset.f]||0):''; });
     trabSegInd();
@@ -4788,6 +4851,7 @@
       var ia=(a.estado==='inactivo')?1:0, ib=(b.estado==='inactivo')?1:0; if(ia!==ib) return ia-ib;   // inactivos siempre al final
       if(trabSort==='buk' || trabSort==='bukok'){ var ba=a.buk?1:0, bb=b.buk?1:0; if(ba!==bb) return (trabSort==='buk')?(ba-bb):(bb-ba); }  // buk: pendientes primero · bukok: registrados primero
       var ai=estRank(a.estado), bi=estRank(b.estado); if(ai!==bi) return ai-bi;
+      if(trabSort==='activos' && ACT){ var xa=actDe(a,30), xb=actDe(b,30); if(xa.dias!==xb.dias) return xb.dias-xa.dias; if(xa.horas!==xb.horas) return xb.horas-xa.horas; }
       if(trabSort==='reciente') return (b.id||0)-(a.id||0);
       if(trabSort==='cargo'){ var c=(a.cargo||'').localeCompare(b.cargo||''); if(c) return c; }
       return (a.nombre||'').localeCompare(b.nombre||'');
@@ -4800,7 +4864,8 @@
       var ini=esc(inic(t.nombre).toUpperCase()||'·');
       return '<div class="trab'+(off?' off':'')+'" data-idx="'+idx+'" style="--i:'+Math.min(idx,14)+'">'+(p!=null?'<div class="av ring" style="--p:'+p+';--c:'+col+'" title="Documentación: '+p+'% al día"><span>'+ini+'</span></div>':'<div class="av">'+ini+'</div>')+
         '<div class="tt"><div class="nm">'+esc(titleCase(t.nombre)||'—')+'</div>'+(t.cargo?'<div class="cg">'+esc(t.cargo)+'</div>':'')+
-        '<div class="meta">'+(t.rut?esc(t.rut)+' · ':'')+nd+' doc'+(nd===1?'':'s')+(p!=null?(' · <span class="pct" style="color:'+col+'">'+p+'% docs</span>'):'')+'</div></div>'+
+        '<div class="meta">'+(t.rut?esc(t.rut)+' · ':'')+nd+' doc'+(nd===1?'':'s')+(p!=null?(' · <span class="pct" style="color:'+col+'">'+p+'% docs</span>'):'')+'</div>'+
+        (ACT?(function(a){ return '<div class="act-t">'+(a.dias?('<b>'+a.dias+' día'+(a.dias===1?'':'s')+'</b> · '+a.horas+' h en 30 días · '+actHace(a.ult)):(a.ult?('Sin jornadas en 30 días · última '+fFaena(a.ult)):'Sin jornadas registradas'))+'</div>'+actStrip(a); })(actDe(t,30)):'')+'</div>'+
         '<button class="trab-buk'+(t.buk?' on':'')+'" data-idx="'+idx+'" type="button" title="'+(t.buk?'Registrado en Buk · toca para quitar':'Toca para marcar registrado en Buk')+'">'+(t.buk?'✓ Buk':'+ Buk')+'</button>'+
         (puedeEstado()?'<button type="button" class="badge est-btn'+estCls+'" data-idx="'+idx+'" title="Cambiar estado">'+estTxt+'<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>':'<span class="badge'+estCls+'">'+estTxt+'</span>')+
         '<span class="go"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span>'+
@@ -5150,7 +5215,7 @@
     if($('fi-banco')) $('fi-banco').value=t?(t.banco||''):''; if($('fi-tipocta')) $('fi-tipocta').value=t?(t.tipo_cuenta||''):''; if($('fi-numcta')) $('fi-numcta').value=t?(t.num_cuenta||''):'';
     document.querySelectorAll('#ficha .fi-sec').forEach(function(d){ d.open=false; });   // las secciones parten siempre cerradas
     FICHA_DOCS=t?((t.docs||[]).slice()):[]; renderDocs(); fiScanner.reset();
-    renderFichaRrhh(t); renderFichaExtra(t); fiResumen();
+    renderFichaRrhh(t); renderFichaExtra(t); renderFichaAct(t); fiResumen();
     $('fi-title').textContent=t?('Ficha · '+(t.nombre||'')):'Nuevo trabajador';
     $('fi-del').classList.toggle('hide', !t);
     ficha.classList.remove('hide'); ficha.scrollTop=0;
