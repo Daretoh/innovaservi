@@ -1636,11 +1636,11 @@
           <div class="tb-tit"><b>Trabajadores</b><span class="cnt" id="trab-cnt"></span></div>
           <div class="tb-acc">
             <button id="nomina-btn" class="tb-ico" type="button" aria-label="Nómina" title="Nómina de personal activo y avisos de baja para el cliente"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"/><path d="M4 9h16M9 9v11"/></svg><span>Nómina</span></button>
-            <button id="dups-btn" class="tb-ico" type="button" aria-label="Duplicados"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg><span>Duplicados</span></button>
-            <button id="cargos-btn" class="tb-ico" type="button" aria-label="Cargos y tratos"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/></svg><span>Cargos y tratos</span></button>
-            <button id="trab-import" class="tb-ico" type="button" aria-label="Importar"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg><span>Importar</span></button>
+            <button id="dups-btn" title="Duplicados" class="tb-ico" type="button" aria-label="Duplicados"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg><span>Duplicados</span></button>
+            <button id="cargos-btn" title="Cargos y tratos" class="tb-ico" type="button" aria-label="Cargos y tratos"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/></svg><span>Cargos y tratos</span></button>
+            <button id="trab-import" title="Importar trabajadores" class="tb-ico" type="button" aria-label="Importar"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg><span>Importar</span></button>
             <button id="trab-export" class="tb-ico hide" type="button" aria-label="Exportar" title="Descargar la lista de trabajadores (CSV)"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg><span>Exportar</span></button>
-            <button id="trab-nuevo" class="tb-ico tb-pri" type="button" aria-label="Nuevo trabajador"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg><span>Nuevo</span></button>
+            <button id="trab-nuevo" title="Nuevo trabajador" class="tb-ico tb-pri" type="button" aria-label="Nuevo trabajador"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg><span>Nuevo</span></button>
           </div>
         </div>
         <div id="fichas-inbox"></div>
@@ -1650,8 +1650,8 @@
         </div>
         <div class="tseg" id="trab-seg">
           <i class="tseg-ind"></i>
-          <button class="tfil" data-f="todos" type="button">Todos<span class="n"></span></button>
-          <button class="tfil on" data-f="activo" type="button">Activos<span class="n"></span></button>
+          <button class="tfil on" data-f="todos" type="button">Todos<span class="n"></span></button>
+          <button class="tfil" data-f="activo" type="button">Activos<span class="n"></span></button>
           <button class="tfil" data-f="espera" type="button">En espera<span class="n"></span></button>
           <button class="tfil" data-f="inactivo" type="button">Inactivos<span class="n"></span></button>
         </div>
@@ -4404,7 +4404,7 @@
       .sort(function(a,b){ return (a.nombre||'').localeCompare(b.nombre||''); })
       .map(function(t){ return '<option value="'+enc(titleCase(t.nombre))+'"></option>'; }).join(''); }
   function inic(n){ n=(n||'').trim().split(/\s+/); return ((n[0]||'')[0]||'')+((n[1]||'')[0]||''); }
-  var trabQ='', trabFilter='activo', trabSort='reciente', TRAB_VISTA=[];
+  var trabQ='', trabFilter='todos', trabSort='reciente', TRAB_VISTA=[];
   // % de documentación cumplida de un trabajador (docs entregadas y vigentes / total del catálogo).
   function docPct(t){ if(!t||!t.id||typeof estadoDoc!=='function'||!(typeof RRHH_TIPOS!=='undefined'&&RRHH_TIPOS.length)) return null;
     if(typeof RRHH_LOADED==='undefined'||!RRHH_LOADED) return null;   // aún no cargó la documentación
@@ -4599,6 +4599,7 @@
     });
     function estRank(e){ return e==='inactivo'?2:(e==='espera'?1:0); }   // activos, luego en espera, luego inactivos
     arr.sort(function(a,b){
+      var ia=(a.estado==='inactivo')?1:0, ib=(b.estado==='inactivo')?1:0; if(ia!==ib) return ia-ib;   // inactivos siempre al final
       if(trabSort==='buk' || trabSort==='bukok'){ var ba=a.buk?1:0, bb=b.buk?1:0; if(ba!==bb) return (trabSort==='buk')?(ba-bb):(bb-ba); }  // buk: pendientes primero · bukok: registrados primero
       var ai=estRank(a.estado), bi=estRank(b.estado); if(ai!==bi) return ai-bi;
       if(trabSort==='reciente') return (b.id||0)-(a.id||0);
