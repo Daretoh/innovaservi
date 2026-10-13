@@ -423,7 +423,9 @@
   .asis-tb td{height:31px;vertical-align:middle !important;} .asis-tb td.n{width:32px;font-weight:700;} .asis-tb tbody tr:nth-child(even) td{background:#f8f9fc;}
   .asis-tb td+td{border-left:1px solid #e3e5ee;}
   .dg-firmas.asis-fir{margin-top:56px;}
-  .mepp td{vertical-align:middle !important;} .mepp td.mepp-i{text-align:center;padding:4px !important;} .mepp td.mepp-i svg{width:62px;height:50px;display:inline-block;}
+  .mepp td{vertical-align:middle !important;font-size:11.5px;padding-top:4px !important;padding-bottom:4px !important;} .mepp td.mepp-i{text-align:center;padding:2px !important;} .mepp td.mepp-i svg{width:52px;height:40px;display:inline-block;}
+  .mepp .mepp-z{display:block;font:800 8.5px var(--font);color:#ff6b00;text-transform:uppercase;letter-spacing:.06em;margin-bottom:1px;} .mepp td.mepp-c{text-align:center;}
+  .mepp-si{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#22a06b;} .mepp-no{color:#b9bfd1;font-weight:700;}
   .pts-tit{font:800 19px var(--font);color:var(--ink);text-align:center;margin:4px 0 10px;text-transform:uppercase;letter-spacing:.02em;}
   .pts-ctl td{width:25%;}
   .dg-acc{display:flex;gap:6px;flex:none;} .dg-acc .btn{width:auto;display:inline-flex;align-items:center;gap:6px;}
@@ -7549,7 +7551,7 @@
   // ---- Empresa: documentación general (por carpeta; cada documento guarda versiones, manda la más reciente) ----
   // Basado en la carpeta de prevención (02- Fichas de ingreso / Ficha Nicolas).
   var EMP_CARPETAS=[
-    {k:'prev', n:'Reglamento y gestión preventiva', tipos:[['riohs','Reglamento Interno de Orden, Higiene y Seguridad (RIOHS)',false],['programa','Programa de prevención de riesgos',false],['iper','Matriz de riesgos (IPER)',false],['proc_iper','Procedimiento IPER',false],['proc_acc','Procedimiento de emergencia y/o accidentes',false]]},
+    {k:'prev', n:'Reglamento y gestión preventiva', tipos:[['riohs','Reglamento Interno de Orden, Higiene y Seguridad (RIOHS)',false],['programa','Programa de prevención de riesgos',false],['iper','Matriz de riesgos (IPER)',false],['proc_iper','Procedimiento IPER',false],['proc_acc','Procedimiento de emergencia y/o accidentes',false],['matriz_epp','Matriz general de elementos de protección personal (EPP)',false]]},
     {k:'pts', n:'Procedimientos de trabajo seguro (PTS)', tipos:[['pts_quimicos','PTS uso y manejo de químicos',false],['pts_extintores','PTS uso y manejo de extintores',false],['pts_altura','PTS trabajos en altura',false],['pts_confinados','PTS espacios confinados',false],['pts_alzahombre','PTS alza hombre / grúa Genie',false],['pts_herramientas','PTS uso de herramientas · limpieza de estanques',false],['pts_frigorifico','PTS limpieza de cámaras frigoríficas',false],['pts_funciones','PTS acorde a sus funciones',false]]},
     {k:'cap', n:'Capacitaciones', tipos:[['cap_herr','Capacitación: uso seguro de herramientas manuales y equipos de apoyo',false],['cap_primeros','Capacitación: primeros auxilios',false]]},
     {k:'legal', n:'Legal y previsional', tipos:[['erut','e-RUT de la empresa',false],['escritura','Escritura / estatutos',false],['vigencia','Certificado de vigencia',true],['mutual','Certificado de adhesión a la mutual',false],['tasa','Certificado de tasa de cotización',true]]}
@@ -7564,8 +7566,7 @@
     {k:'fmt_eval', n:'Evaluación de aprendizaje (individual)', opciones:function(){ var o=[]; Object.keys(CAP_DOC).filter(function(k){ return CAP_DOC[k].vf; }).forEach(function(k){ o.push({v:k, n:CAP_DOC[k].n}); o.push({v:k+'|pauta', n:CAP_DOC[k].n+' · pauta de corrección (relator)'}); }); return o; }, build:function(v){ return docEvaluacion(v); }},
     {k:'fmt_epp', n:'Entrega de elementos de protección personal', build:function(){ return docEPP({nombre:'',rut:''}); }},
     {k:'fmt_odi', n:'Información de riesgos laborales (IRL)', build:function(){ return docODI({nombre:'',rut:'',cargo:''}); }},
-    {k:'fmt_salida', n:'Registro de salida a atención médica', build:function(){ return docSalida({}); }},
-    {k:'fmt_matriz_epp', n:'Matriz de elementos de protección personal (EPP)', build:function(){ return docMatrizEPP(); }}
+    {k:'fmt_salida', n:'Registro de salida a atención médica', build:function(){ return docSalida({}); }}
   ];
   var EMP_Q='';
   function pintarEmp(){
@@ -9033,33 +9034,42 @@
   var EPP_ICO=null;   // se arma al usarse: FIG_N y FIG_O se definen más abajo en el archivo
   function eppIco(){ if(EPP_ICO) return EPP_ICO; EPP_ICO={
     casco: svgF('0 0 80 64','<path d="M14 40 Q14 12 40 12 Q66 12 66 40 Z" fill="#f2f3f7" stroke="'+FIG_N+'" stroke-width="3"/><path d="M40 12 V40" stroke="'+FIG_N+'" stroke-width="2.5"/><rect x="8" y="38" width="64" height="7" rx="3.5" fill="'+FIG_N+'"/><path d="M20 45 Q24 60 40 58 Q56 60 60 45" fill="none" stroke="'+FIG_O+'" stroke-width="3"/>'),
-    respirador: svgF('0 0 80 64','<path d="M18 22 Q40 4 62 22 L58 46 Q40 58 22 46 Z" fill="#f2f3f7" stroke="'+FIG_N+'" stroke-width="3"/><circle cx="20" cy="44" r="11" fill="'+FIG_O+'" stroke="'+FIG_N+'" stroke-width="2.5"/><circle cx="60" cy="44" r="11" fill="'+FIG_O+'" stroke="'+FIG_N+'" stroke-width="2.5"/><g stroke="#fff" stroke-width="2"><line x1="15" y1="44" x2="25" y2="44"/><line x1="55" y1="44" x2="65" y2="44"/></g><circle cx="40" cy="44" r="5" fill="'+FIG_N+'"/>'),
     lentes: svgF('0 0 80 64','<path d="M8 26 H72 V36 Q72 46 60 46 H48 Q42 46 40 38 Q38 46 32 46 H20 Q8 46 8 36 Z" fill="#dfe8f7" stroke="'+FIG_N+'" stroke-width="3" stroke-linejoin="round"/><path d="M8 26 L2 22 M72 26 L78 22" stroke="'+FIG_N+'" stroke-width="3" stroke-linecap="round"/><path d="M16 31 L22 37 M52 31 L58 37" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>'),
-    arnes: svgF('0 0 80 64','<circle cx="30" cy="8" r="5" fill="'+FIG_N+'"/><g stroke="'+FIG_O+'" stroke-width="4" stroke-linecap="round" fill="none"><path d="M22 14 L36 40 M38 14 L24 40"/><path d="M20 40 H40"/><circle cx="24" cy="50" r="7"/><circle cx="36" cy="50" r="7"/></g><path d="M42 18 q10 6 4 14 q-6 8 4 14 q8 5 2 12" fill="none" stroke="'+FIG_N+'" stroke-width="3"/><path d="M50 58 q6 2 6 -4 v-8" fill="none" stroke="'+FIG_N+'" stroke-width="3" stroke-linecap="round"/>'),
-    zapato: svgF('0 0 80 64','<path d="M10 18 H34 V34 L58 40 Q72 43 72 52 V54 H10 Z" fill="#8a5a3c" stroke="'+FIG_N+'" stroke-width="3" stroke-linejoin="round"/><rect x="8" y="52" width="66" height="6" rx="2" fill="'+FIG_N+'"/><path d="M56 41 Q68 44 70 52 H56 Z" fill="'+FIG_O+'"/><g stroke="#f2f3f7" stroke-width="2" stroke-linecap="round"><line x1="20" y1="24" x2="30" y2="24"/><line x1="20" y1="30" x2="30" y2="30"/></g>'),
-    guante1: svgF('0 0 80 64','<path d="M26 60 V30 q0-5 4-5 q4 0 4 5 V18 q0-5 4-5 q4 0 4 5 V16 q0-5 4-5 q4 0 4 5 V20 q0-5 4-5 q4 0 4 5 V40 l6-7 q4-4 7 0 q2 3 0 6 L54 60 Z" fill="#4a90e2" stroke="'+FIG_N+'" stroke-width="2.5" stroke-linejoin="round"/>'),
+    auditivo: svgF('0 0 80 64','<path d="M18 36 Q18 8 40 8 Q62 8 62 36" fill="none" stroke="'+FIG_N+'" stroke-width="5" stroke-linecap="round"/><rect x="8" y="30" width="18" height="26" rx="8" fill="'+FIG_O+'" stroke="'+FIG_N+'" stroke-width="2.5"/><rect x="54" y="30" width="18" height="26" rx="8" fill="'+FIG_O+'" stroke="'+FIG_N+'" stroke-width="2.5"/>'),
+    respirador: svgF('0 0 80 64','<path d="M18 22 Q40 4 62 22 L58 46 Q40 58 22 46 Z" fill="#f2f3f7" stroke="'+FIG_N+'" stroke-width="3"/><circle cx="20" cy="44" r="11" fill="'+FIG_O+'" stroke="'+FIG_N+'" stroke-width="2.5"/><circle cx="60" cy="44" r="11" fill="'+FIG_O+'" stroke="'+FIG_N+'" stroke-width="2.5"/><g stroke="#fff" stroke-width="2"><line x1="15" y1="44" x2="25" y2="44"/><line x1="55" y1="44" x2="65" y2="44"/></g><circle cx="40" cy="44" r="5" fill="'+FIG_N+'"/>'),
+    overol: svgF('0 0 80 64','<circle cx="40" cy="8" r="6" fill="#f2f3f7" stroke="'+FIG_N+'" stroke-width="2.5"/><path d="M30 14 H50 L62 30 L56 34 L52 28 V40 L54 62 H44 L40 42 L36 62 H26 L28 40 V28 L24 34 L18 30 Z" fill="#2c3a7a" stroke="'+FIG_N+'" stroke-width="2.5" stroke-linejoin="round"/><line x1="40" y1="15" x2="40" y2="40" stroke="#f2f3f7" stroke-width="2"/><rect x="31" y="22" width="6" height="5" fill="'+FIG_O+'"/><path d="M28 38 H52" stroke="'+FIG_O+'" stroke-width="2.5"/>'),
+    pechera: svgF('0 0 80 64','<path d="M30 4 Q40 12 50 4" fill="none" stroke="'+FIG_N+'" stroke-width="2.5"/><path d="M30 6 H50 V16 L60 20 V58 Q40 62 20 58 V20 L30 16 Z" fill="#dff1fb" stroke="'+FIG_N+'" stroke-width="2.5" stroke-linejoin="round"/><path d="M20 26 L8 22 M60 26 L72 22" stroke="'+FIG_N+'" stroke-width="2.5" stroke-linecap="round"/><g fill="#4a90e2"><circle cx="33" cy="34" r="2.2"/><circle cx="46" cy="42" r="2.2"/><circle cx="38" cy="50" r="2.2"/></g>'),
+    guante0: svgF('0 0 80 64','<path d="M26 60 V30 q0-5 4-5 q4 0 4 5 V18 q0-5 4-5 q4 0 4 5 V16 q0-5 4-5 q4 0 4 5 V20 q0-5 4-5 q4 0 4 5 V40 l6-7 q4-4 7 0 q2 3 0 6 L54 60 Z" fill="#e9dcc3" stroke="'+FIG_N+'" stroke-width="2.5" stroke-linejoin="round"/><g stroke="#b8a37f" stroke-width="1.6"><line x1="28" y1="50" x2="52" y2="50"/><line x1="28" y1="55" x2="52" y2="55"/></g>'),
     guante2: svgF('0 0 80 64','<path d="M28 62 V32 q0-5 4-5 q4 0 4 5 V20 q0-5 4-5 q4 0 4 5 V18 q0-5 4-5 q4 0 4 5 V22 q0-5 4-5 q4 0 4 5 V40 l5-6 q4-4 7 0 q2 3 0 6 L54 52 V62 Z" fill="#2bb39a" stroke="'+FIG_N+'" stroke-width="2.5" stroke-linejoin="round"/><line x1="28" y1="54" x2="54" y2="54" stroke="'+FIG_N+'" stroke-width="2"/>'),
-    overol: svgF('0 0 80 64','<circle cx="40" cy="8" r="6" fill="#f2f3f7" stroke="'+FIG_N+'" stroke-width="2.5"/><path d="M30 14 H50 L62 30 L56 34 L52 28 V40 L54 62 H44 L40 42 L36 62 H26 L28 40 V28 L24 34 L18 30 Z" fill="#f2f3f7" stroke="'+FIG_N+'" stroke-width="2.5" stroke-linejoin="round"/><line x1="40" y1="14" x2="40" y2="40" stroke="'+FIG_O+'" stroke-width="2.5"/>')
+    guante1: svgF('0 0 80 64','<path d="M26 60 V30 q0-5 4-5 q4 0 4 5 V18 q0-5 4-5 q4 0 4 5 V16 q0-5 4-5 q4 0 4 5 V20 q0-5 4-5 q4 0 4 5 V40 l6-7 q4-4 7 0 q2 3 0 6 L54 60 Z" fill="#4a90e2" stroke="'+FIG_N+'" stroke-width="2.5" stroke-linejoin="round"/>'),
+    zapato: svgF('0 0 80 64','<path d="M10 18 H34 V34 L58 40 Q72 43 72 52 V54 H10 Z" fill="#8a5a3c" stroke="'+FIG_N+'" stroke-width="3" stroke-linejoin="round"/><rect x="8" y="52" width="66" height="6" rx="2" fill="'+FIG_N+'"/><path d="M56 41 Q68 44 70 52 H56 Z" fill="'+FIG_O+'"/><g stroke="#f2f3f7" stroke-width="2" stroke-linecap="round"><line x1="20" y1="24" x2="30" y2="24"/><line x1="20" y1="30" x2="30" y2="30"/></g>'),
+    botas: svgF('0 0 80 64','<path d="M18 2 H40 V40 L60 44 Q72 47 72 54 V56 H18 Z" fill="#f5c400" stroke="'+FIG_N+'" stroke-width="3" stroke-linejoin="round"/><rect x="16" y="54" width="58" height="7" rx="2" fill="#1b1b1b"/><rect x="18" y="2" width="22" height="6" fill="#1b1b1b"/><path d="M58 45 Q69 48 70 54 H58 Z" fill="'+FIG_O+'"/>'),
+    arnes: svgF('0 0 80 64','<circle cx="30" cy="8" r="5" fill="'+FIG_N+'"/><g stroke="'+FIG_O+'" stroke-width="4" stroke-linecap="round" fill="none"><path d="M22 14 L36 40 M38 14 L24 40"/><path d="M20 40 H40"/><circle cx="24" cy="50" r="7"/><circle cx="36" cy="50" r="7"/></g><path d="M42 18 q10 6 4 14 q-6 8 4 14 q8 5 2 12" fill="none" stroke="'+FIG_N+'" stroke-width="3"/><path d="M50 58 q6 2 6 -4 v-8" fill="none" stroke="'+FIG_N+'" stroke-width="3" stroke-linecap="round"/>')
   }; return EPP_ICO; }
+  // Matriz general (base) de EPP de la empresa: qué EPP se usa y si aplica a trabajos en seco, húmedos o ambos.
   function docMatrizEPP(){
-    var L=[['casco','Casco de seguridad con barbiquejo','Protección de cabeza; barbiquejo ajustado para evitar la caída del casco.'],
-      ['respirador','Protección respiratoria','Respirador reutilizable de media cara o de rostro completo, con cartuchos o filtros específicos según el tipo de sustancia.'],
-      ['lentes','Lentes de seguridad','Protección ocular contra partículas y salpicaduras, según el riesgo.'],
-      ['arnes','Arnés de seguridad con cabo de vida','Sistema anticaídas; usar solo con anclaje compatible y capacitación.'],
-      ['zapato','Zapatos de seguridad','Calzado con protección adecuada al riesgo y suela antideslizante cuando corresponda.'],
-      ['guante1','Guantes de nitrilo desechables','Protección de manos frente a químicos compatibles; verificar la hoja de datos de seguridad.'],
-      ['guante2','Guantes de nitrilo','Protección de manos frente a químicos compatibles; verificar la hoja de datos de seguridad.'],
-      ['overol','Overol desechable','Protección corporal según el químico, la concentración y la tarea; revisar compatibilidad.']];
-    var caja='<span style="display:inline-block;width:14px;height:14px;border:1.5px solid #6b7390;border-radius:3px;vertical-align:middle"></span>';
+    // [zona, ícono, elemento, riesgo / uso principal, seco, húmedo]
+    var L=[['Cabeza','casco','Casco de seguridad con barbiquejo','Protección de la cabeza ante golpes y caída de objetos; barbiquejo ajustado para evitar que el casco se caiga.',1,1],
+      ['Ojos','lentes','Lentes de seguridad','Protección ocular contra partículas, polvo y salpicaduras.',1,1],
+      ['Oídos','auditivo','Protección auditiva','Tapones u orejeras ante el ruido de equipos como hidrolavadoras, abrillantadoras o aspiradoras industriales.',1,1],
+      ['Vías respiratorias','respirador','Protección respiratoria','Respirador reutilizable de media cara o rostro completo, con cartuchos o filtros específicos según la sustancia o el polvo.',1,1],
+      ['Cuerpo','overol','Overol de trabajo','Ropa de trabajo base: protege el cuerpo de suciedad y roces. Se usa limpio y sin partes sueltas.',1,1],
+      ['Cuerpo','pechera','Pechera desechable','Protege el torso de salpicaduras de agua, lodos o químicos; se desecha después de usarla.',0,1],
+      ['Manos','guante0','Guantes de lana o tela','Protección ante roces, golpes leves y frío en trabajos en seco. No protegen de químicos ni del agua.',1,0],
+      ['Manos','guante2','Guantes de nitrilo','Protección de manos frente al agua y químicos compatibles; verificar la hoja de datos de seguridad.',0,1],
+      ['Manos','guante1','Guantes de nitrilo desechables','Protección de manos en tareas breves con químicos compatibles; se desechan después de usarlos.',1,1],
+      ['Pies','zapato','Zapatos de seguridad','Calzado con punta de protección y suela antideslizante para trabajos en seco.',1,0],
+      ['Pies','botas','Botas de agua','Botas de goma con punta de acero y suela antideslizante para trabajos húmedos.',0,1],
+      ['Trabajo en altura','arnes','Arnés de seguridad con cabo de vida','Sistema anticaídas para trabajos en altura; usar solo con anclaje compatible y capacitación.',1,1]];
+    var si='<span class="mepp-si"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>', no='<span class="mepp-no">—</span>';
     return dgHead('MATRIZ DE EPP','01')+
-      '<div class="pts-tit">Matriz de elementos de protección personal</div>'+
-      '<table class="dg-tbl pts-ctl"><tbody><tr><td><span class="sl">Empresa / mandante</span>'+ce('')+'</td><td><span class="sl">Área / faena</span>'+ce('')+'</td><td><span class="sl">Fecha</span>'+ce(fFaena(todayISO()))+'</td></tr>'+
-        '<tr><td><span class="sl">Trabajador</span>'+ce('')+'</td><td><span class="sl">RUT</span>'+ce('')+'</td><td><span class="sl">Cargo</span>'+ce('')+'</td></tr></tbody></table>'+
-      '<table class="dg-tbl mepp"><thead><tr><th style="width:84px;text-align:center">Imagen</th><th style="width:20%">Elemento de protección personal</th><th>Riesgo / uso principal</th><th style="width:86px;text-align:center">Estado</th><th style="width:66px;text-align:center">Entregado</th><th style="width:16%">Observaciones</th></tr></thead><tbody>'+
-        L.map(function(e){ return '<tr><td class="mepp-i">'+eppIco()[e[0]]+'</td><td><b>'+e[1]+'</b></td><td>'+e[2]+'</td><td style="text-align:center;white-space:nowrap">'+caja+' B &nbsp;'+caja+' M</td><td class="pts-chk"><span></span></td><td></td></tr>'; }).join('')+
+      '<div class="pts-tit">Matriz general de elementos de protección personal</div>'+
+      '<table class="dg-tbl pts-ctl"><tbody><tr><td><span class="sl">Código</span><b>MAT-PREV-01</b></td><td><span class="sl">Versión</span><b>01</b></td><td><span class="sl">Fecha de publicación</span>'+ce(fFaena(todayISO()))+'</td><td><span class="sl">Aplica a</span><b>Todo el personal</b></td></tr></tbody></table>'+
+      '<p style="font-size:12px;margin:0 0 10px">Matriz base de los elementos de protección personal que utiliza Innovación y Servicios SpA. Indica el uso principal de cada EPP y si aplica a <b>trabajos en seco</b>, a <b>trabajos húmedos</b> o a ambos. El EPP específico de cada tarea se define en su procedimiento de trabajo seguro (PTS).</p>'+
+      '<table class="dg-tbl mepp"><thead><tr><th style="width:80px;text-align:center">Imagen</th><th style="width:23%">Elemento de protección personal</th><th>Riesgo / uso principal</th><th style="width:66px;text-align:center">Trabajo en seco</th><th style="width:66px;text-align:center">Trabajo húmedo</th></tr></thead><tbody>'+
+        L.map(function(e){ return '<tr><td class="mepp-i">'+eppIco()[e[1]]+'</td><td><span class="mepp-z">'+e[0]+'</span><b>'+e[2]+'</b></td><td>'+e[3]+'</td><td class="mepp-c">'+(e[4]?si:no)+'</td><td class="mepp-c">'+(e[5]?si:no)+'</td></tr>'; }).join('')+
       '</tbody></table>'+
-      '<p style="font-size:11.5px;color:#55607a"><b>Estado:</b> B = bueno, M = malo. <b>Nota:</b> las imágenes son referenciales. El EPP se selecciona según la evaluación de riesgos, las instrucciones del fabricante y las hojas de datos de seguridad. Se inspecciona antes de cada uso y se reemplaza cuando está dañado.</p>'+
-      '<div class="dg-firmas"><div>Firma del trabajador</div><div>'+firmaPrevHtml()+'Entregado por<br>'+esc(EMP_PREV.nombre)+'</div></div>';
+      '<p style="font-size:11px;color:#55607a;margin:0">Las imágenes son referenciales. El EPP se selecciona según la evaluación de riesgos, las instrucciones del fabricante y las hojas de datos de seguridad; se inspecciona antes de cada uso y se reemplaza cuando está dañado. Su entrega a cada trabajador se registra en el formato <b>Entrega de elementos de protección personal</b>.</p>';
   }
 
   // ====== Capacitación: primeros auxilios (material de la capacitación) ======
@@ -9285,7 +9295,7 @@
         '<tr><td>01</td><td>01-11-2025</td><td>Emisión original (procedimiento en caso de accidente del trabajo o enfermedad profesional).</td></tr>'+
         '<tr><td>02</td><td>'+fFaena(todayISO())+'</td><td>Formato corporativo; se integra el procedimiento de emergencia (organigrama, situaciones, recursos, evacuación, rescate en espacios confinados, primeros auxilios y simulacros); se agregan accidente de trayecto y obligaciones ante accidentes graves y fatales; normativa vigente (D.S. N° 44); se corrige la definición de accidente fatal y se actualizan los contactos.</td></tr></tbody></table>';
   }
-  var EMP_GEN={ cap_herr:{ build:docCapHerr }, cap_primeros:{ build:docCapPrimeros }, proc_acc:{ build:docEmergAcc } };
+  var EMP_GEN={ matriz_epp:{ build:docMatrizEPP }, cap_herr:{ build:docCapHerr }, cap_primeros:{ build:docCapPrimeros }, proc_acc:{ build:docEmergAcc } };
   function esPTS(s){ return s==='pts_funciones' || !!(typeof PTS_DOC!=='undefined'&&PTS_DOC[s]); }
   function nombrePTS(s){ var n=s; EMP_CARPETAS.forEach(function(c){ c.tipos.forEach(function(x){ if(x[0]===s) n=x[1]; }); }); return n; }
   function generarPTS(s){ var nom=nombrePTS(s);
