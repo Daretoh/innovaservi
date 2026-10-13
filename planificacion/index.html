@@ -149,6 +149,80 @@
   .pl-del-btn{background:#fff;border:1px solid #f0c0c0;color:#dc2626;padding:10px 18px;border-radius:10px;font:700 13px var(--font);cursor:pointer;}
   .pl-del-btn:hover{background:#dc2626;color:#fff;border-color:#dc2626;}
 
+  /* Formulario nuevo/editar trabajo */
+  .ff-box{max-width:940px;display:flex;flex-direction:column;max-height:calc(100vh - 40px);}
+  .ff-head{background:linear-gradient(135deg,#ff6b00,#c24e00);padding:16px 22px;}
+  .ff-sub{font-size:.8rem;color:rgba(255,255,255,.88);margin-top:3px;line-height:1.45;}
+  .ff-body{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);overflow-y:auto;flex:1;}
+  .ff-col{padding:18px 22px;display:flex;flex-direction:column;gap:18px;}
+  .ff-side{background:var(--alt);border-left:1px solid var(--line);}
+  .ff-side .fgrid input,.ff-side .fgrid select,.ff-side .ff-rep select,.ff-side .ff-step input{background:#fff;}
+  .ff-sec h4{display:flex;align-items:center;gap:8px;font:800 11.5px var(--font);text-transform:uppercase;letter-spacing:.08em;color:var(--ink);margin-bottom:10px;}
+  .ff-sec h4 svg{width:16px;height:16px;fill:none;stroke:var(--orange);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;}
+  .ff-sec .fgrid{margin-bottom:0;}
+  .fgrid .full{grid-column:1/-1;}
+  .fgrid select{font:500 14px var(--font);padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:var(--alt);color:var(--ink);width:100%;}
+  .fgrid select:focus{outline:none;border-color:var(--orange);box-shadow:0 0 0 3px rgba(255,107,0,.15);}
+  .ff-big{font-size:16px !important;font-weight:600 !important;padding:11px 12px !important;}
+  .req{color:var(--orange);font-style:normal;}
+  .ff-opt{color:var(--muted);font-weight:400;}
+  .ff-hint{display:block;color:var(--muted);font:400 11.5px/1.5 var(--font);margin-top:4px;}
+  .ff-dur{font:600 12px var(--font);color:var(--orange-2);min-height:0;}
+  .ff-dur:empty{display:none;}
+  .ff-chips{display:flex;flex-wrap:wrap;gap:6px;}
+  .ff-chips:empty{display:none;}
+  .ff-chips button{border:1px solid var(--line);background:#fff;color:var(--body);font:600 12px var(--font);padding:5px 10px;border-radius:999px;cursor:pointer;}
+  .ff-chips button:hover,.ff-chips button.on{border-color:var(--orange);color:var(--orange-2);background:#fff5ee;}
+  .ff-cnt{background:var(--orange);color:#fff;border-radius:999px;font-size:10px;padding:1px 7px;letter-spacing:0;}
+  .ff-cnt:empty{display:none;}
+  .ff-tareas{list-style:none;counter-reset:t;display:flex;flex-direction:column;gap:6px;margin-bottom:8px;}
+  .ff-tareas:empty{display:none;}
+  .ff-tareas li{counter-increment:t;display:flex;align-items:center;gap:8px;background:var(--alt);border:1px solid var(--line);border-radius:9px;padding:6px 6px 6px 10px;}
+  .ff-tareas li::before{content:counter(t);font:800 11px var(--font);color:var(--orange-2);background:#fff;border:1px solid var(--line);border-radius:50%;width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .ff-tareas li input{flex:1;border:none;background:transparent;font:500 13.5px var(--font);color:var(--ink);padding:3px 2px;min-width:0;}
+  .ff-tareas li input:focus{outline:none;background:#fff;border-radius:5px;}
+  .ff-tareas li button{border:none;background:transparent;color:var(--muted);width:26px;height:26px;border-radius:6px;cursor:pointer;font-size:16px;line-height:1;flex-shrink:0;}
+  .ff-tareas li button:hover{background:#fde8e8;color:#dc2626;}
+  .ff-tadd{display:flex;gap:8px;}
+  .ff-tadd input{flex:1;font:500 14px var(--font);padding:9px 11px;border:1px dashed #cfd3e3;border-radius:9px;background:#fff;color:var(--ink);min-width:0;}
+  .ff-tadd input:focus{outline:none;border-style:solid;border-color:var(--orange);box-shadow:0 0 0 3px rgba(255,107,0,.15);}
+  .ff-mini{border:1px solid var(--line);background:#fff;color:var(--ink);font:700 12.5px var(--font);padding:0 14px;border-radius:9px;cursor:pointer;}
+  .ff-mini:hover{border-color:var(--orange);color:var(--orange-2);}
+  .ff-step{display:inline-flex;align-items:stretch;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff;}
+  .ff-step button{border:none;background:#fff;width:42px;font:700 18px var(--font);color:var(--ink);cursor:pointer;}
+  .ff-step button:hover{background:#fff5ee;color:var(--orange-2);}
+  .ff-step input{width:64px;border:none;border-left:1px solid var(--line);border-right:1px solid var(--line);text-align:center;font:800 18px var(--font);color:var(--ink);padding:8px 0;-moz-appearance:textfield;}
+  .ff-step input::-webkit-outer-spin-button,.ff-step input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
+  .ff-step input:focus{outline:none;background:#fff5ee;}
+  .ff-rep{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+  .ff-rep select{flex:1;min-width:140px;font:500 14px var(--font);padding:9px 11px;border:1px solid var(--line);border-radius:9px;color:var(--ink);}
+  .ff-inl{display:inline-flex;align-items:center;gap:6px;font:600 12px var(--font);color:var(--body);}
+  .ff-inl input{width:62px;font:600 14px var(--font);padding:8px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink);}
+  .ff-foot{display:flex;align-items:center;gap:10px;padding:12px 22px;border-top:1px solid var(--line);background:#fff;}
+  .ff-foot .pl-today{margin-left:auto;}
+  .ff-kbd{color:var(--muted);font-size:11.5px;}
+  /* Detalle: tareas y personas */
+  .det-ico{width:16px;height:16px;fill:none;stroke:var(--muted);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;}
+  .det-tareas{list-style:none;counter-reset:t;margin-top:4px;}
+  .det-tareas li{counter-increment:t;display:flex;gap:8px;font-size:.88rem;color:var(--ink);padding:5px 0;border-top:1px dashed var(--line);}
+  .det-tareas li:first-child{border-top:none;}
+  .det-tareas li::before{content:counter(t)'.';font-weight:800;color:var(--orange-2);min-width:16px;}
+  .det-lbl{font:800 11px var(--font);text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:14px 0 2px;}
+
+  @media (max-width:760px){
+    .ff-body{display:flex;flex-direction:column;}
+    .ff-col{display:contents;}
+    .ff-sec{padding:14px 16px 0;}
+    .ff-o1{order:1}.ff-o2{order:2}.ff-o3{order:3}.ff-o4{order:4}.ff-o5{order:5;padding-bottom:16px;}
+    .ff-side .fgrid input,.ff-side .fgrid select{background:var(--alt);}
+    .ff-sec{min-width:0;}
+    .ff-sec .fgrid{grid-template-columns:minmax(0,1fr) minmax(0,1fr);}
+    .ff-sec .fgrid input{min-width:0;}
+    .ff-o1 .fgrid label{grid-column:1/-1;}
+    .ff-kbd{display:none;}
+    .ff-foot{padding:10px 16px;}
+    .ff-head{padding:14px 16px;}
+  }
   @media (max-width:760px){
     .pl-wrap{padding:14px 12px 40px;}
     /* Barra superior: cada control ocupa todo el ancho (justificado), menos alto */
@@ -234,29 +308,55 @@
 
   <!-- Modal nuevo/editar trabajo -->
   <div class="pl-modal" id="form-modal">
-    <div class="pl-modal-box">
-      <div class="pl-modal-head" style="background:linear-gradient(135deg,#ff6b00,#c24e00)"><h3 id="form-title">Nuevo trabajo</h3><button id="form-close" aria-label="Cerrar">×</button></div>
-      <div class="pl-modal-body">
-        <div class="fgrid">
-          <label>Fecha inicio<input type="date" id="f-fecha"></label>
-          <label>Fecha fin <span style="color:#8b93a7;font-weight:400">(si dura varios días)</span><input type="date" id="f-fin"></label>
-          <label class="full">Hora<input type="text" id="f-hora" placeholder="09:00 - 13:00 o Todo el día"></label>
-          <label class="full">Título<input type="text" id="f-titulo" placeholder="Ej: Limpieza estanque"></label>
-          <label class="full">Empresa / Cliente<select id="f-ubic"><option value="">— elige cliente —</option></select><span style="color:#8b93a7;font-weight:400;font-size:11.5px;display:block;margin-top:3px">Solo clientes registrados. ¿Falta uno? Agrégalo en Clientes.</span></label>
-          <label class="full">Ubicación / Sitio<input type="text" id="f-sitio" list="f-sitio-list" placeholder="Ej: Chinquihue"></label>
-          <datalist id="f-sitio-list"></datalist>
-          <label class="full">Descripción<textarea id="f-desc" rows="4" placeholder="Detalle, materiales, tareas…"></textarea></label>
-          <label class="full" id="f-rep-row">Repetir
-            <div style="display:flex;gap:8px;margin-top:4px;flex-wrap:wrap">
-              <select id="f-repetir" style="flex:1;min-width:130px"><option value="no">No repetir</option><option value="dia">Cada día</option><option value="semana">Cada semana</option><option value="quincena">Cada 2 semanas</option><option value="mes">Cada mes</option></select>
-              <input type="number" id="f-cada" min="1" max="60" value="1" style="width:110px;display:none" title="Separación" placeholder="cada…">
-              <input type="number" id="f-veces" min="2" max="52" value="4" style="width:96px;display:none" title="Cuántas veces en total" placeholder="veces">
+    <div class="pl-modal-box ff-box">
+      <div class="pl-modal-head ff-head"><div><h3 id="form-title">Nuevo trabajo</h3><p class="ff-sub">Lo que pongas en <b>Personas</b> y <b>Tareas</b> aparece en Planificación al armar la faena.</p></div><button id="form-close" aria-label="Cerrar">×</button></div>
+      <div class="ff-body">
+        <div class="ff-col ff-main">
+          <section class="ff-sec ff-o1">
+            <h4><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>Trabajo</h4>
+            <div class="fgrid">
+              <label class="full"><span>Título <i class="req">*</i></span><input type="text" id="f-titulo" class="ff-big" placeholder="Ej: Limpieza estanque"></label>
+              <label><span>Empresa / Cliente <i class="req">*</i></span><select id="f-ubic" title="Solo clientes registrados. ¿Falta uno? Agrégalo en Clientes."><option value="">— elige cliente —</option></select></label>
+              <label><span>Ubicación / Sitio <i class="req">*</i></span><input type="text" id="f-sitio" list="f-sitio-list" placeholder="Ej: Chinquihue"></label>
+              <datalist id="f-sitio-list"></datalist>
+              <span class="full ff-hint" style="margin-top:-6px">Solo clientes registrados. ¿Falta uno? Agrégalo en Clientes. El sitio sugiere los ya usados por ese cliente.</span>
+              <label class="full">Descripción / observaciones<textarea id="f-desc" rows="3" placeholder="Detalle, materiales, accesos, contacto en sitio…"></textarea></label>
             </div>
-            <span id="f-rep-hint" style="display:none;color:#8b93a7;font-weight:400;font-size:11.5px;margin-top:5px;line-height:1.5"></span>
-          </label>
+          </section>
+          <section class="ff-sec ff-o4">
+            <h4><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Tareas <span class="ff-cnt" id="f-tareas-cnt"></span></h4>
+            <ol class="ff-tareas" id="f-tareas"></ol>
+            <div class="ff-tadd"><input type="text" id="f-tarea-in" placeholder="Escribe una tarea y presiona Enter…" autocomplete="off"><button type="button" id="f-tarea-btn" class="ff-mini">Agregar</button></div>
+          </section>
         </div>
-        <div class="fbtns"><button class="pl-del-btn" id="f-del" style="display:none">Eliminar</button><button class="pl-add" id="f-save">Guardar</button></div>
+        <div class="ff-col ff-side">
+          <section class="ff-sec ff-o2">
+            <h4><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Cuándo</h4>
+            <div class="fgrid">
+              <label><span>Inicio <i class="req">*</i></span><input type="date" id="f-fecha"></label>
+              <label><span>Fin <span class="ff-opt">(si dura varios días)</span></span><input type="date" id="f-fin"></label>
+              <div class="full ff-dur" id="f-dur"></div>
+              <label class="full">Horario<input type="text" id="f-hora" placeholder="09:00 - 13:00 o Todo el día"></label>
+              <div class="full ff-chips" id="f-hora-chips"></div>
+            </div>
+          </section>
+          <section class="ff-sec ff-o3">
+            <h4><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>Personas necesarias</h4>
+            <div class="ff-step"><button type="button" data-d="-1" aria-label="Menos">−</button><input type="number" id="f-pers" min="0" max="99" placeholder="—"><button type="button" data-d="1" aria-label="Más">+</button></div>
+            <span class="ff-hint">Cupo que verás en Planificación (se puede ajustar por día allá).</span>
+          </section>
+          <section class="ff-sec ff-o5" id="f-rep-row">
+            <h4><svg viewBox="0 0 24 24"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>Repetir</h4>
+            <div class="ff-rep">
+              <select id="f-repetir"><option value="no">No repetir</option><option value="dia">Cada día</option><option value="semana">Cada semana</option><option value="quincena">Cada 2 semanas</option><option value="mes">Cada mes</option></select>
+              <label class="ff-inl" id="f-cada-w" style="display:none">cada<input type="number" id="f-cada" min="1" max="60" value="1" title="Separación"></label>
+              <label class="ff-inl" id="f-veces-w" style="display:none">veces<input type="number" id="f-veces" min="2" max="52" value="4" title="Cuántas veces en total"></label>
+            </div>
+            <span id="f-rep-hint" class="ff-hint" style="display:none"></span>
+          </section>
+        </div>
       </div>
+      <div class="ff-foot"><button class="pl-del-btn" id="f-del" style="display:none">Eliminar</button><span class="ff-kbd">Ctrl + Enter para guardar</span><button class="pl-today" id="f-cancel" type="button">Cancelar</button><button class="pl-add" id="f-save">Guardar</button></div>
     </div>
   </div>
 
@@ -293,7 +393,7 @@
   function cargarEventos(cb){
     if(!sb){ if(cb)cb(); return; }
     var all=[], chunk=1000;
-    function finish(){ EVENTS=all.map(function(e){ return { id:e.id, fecha:e.fecha, fin:e.fecha_fin||'', serie:e.serie_id||'', hora:(/^all\s*day$/i.test(e.hora||'')?'Todo el día':(e.hora||'')), titulo:e.titulo||'', ubic:e.ubicacion||'', sitio:e.sitio||'', color:clienteColor(e.ubicacion), desc:e.descripcion||'' }; }); if(cb)cb(); }
+    function finish(){ EVENTS=all.map(function(e){ return { id:e.id, fecha:e.fecha, fin:e.fecha_fin||'', serie:e.serie_id||'', hora:(/^all\s*day$/i.test(e.hora||'')?'Todo el día':(e.hora||'')), titulo:e.titulo||'', ubic:e.ubicacion||'', sitio:e.sitio||'', color:clienteColor(e.ubicacion), desc:e.descripcion||'', pers:(e.personas_nec!=null?e.personas_nec:null), tareas:(Array.isArray(e.tareas)?e.tareas:[]).map(function(t){ return String(t||'').trim(); }).filter(Boolean) }; }); if(cb)cb(); }
     function fetchFrom(off){
       sb.from('eventos').select('*').order('fecha',{ascending:true}).range(off, off+chunk-1).then(function(r){
         if(r.error){ console.warn('Supabase:',r.error.message); finish(); return; }
@@ -430,9 +530,11 @@
     document.getElementById('modal-head').style.background='linear-gradient(135deg,'+e.color+',#0c0f2e)';
     document.getElementById('modal-title').textContent=e.titulo;
     document.getElementById('modal-body').innerHTML=
-      '<div class="row">📅 <b>'+(function(){ if(e.fin&&e.fin>e.fecha){ var d2=new Date(e.fin+'T00:00:00'); var n=Math.round((new Date(e.fin)-new Date(e.fecha))/86400000)+1; return 'Del '+d.getDate()+' '+MES[d.getMonth()].slice(0,3)+' al '+d2.getDate()+' '+MES[d2.getMonth()].slice(0,3)+' '+d2.getFullYear()+' · '+n+' días'; } return d.getDate()+' de '+MES[d.getMonth()]+' '+d.getFullYear(); })()+'</b>'+(e.hora?' · '+esc(e.hora):'')+'</div>'+
-      (e.ubic?'<div class="row">📍 Cliente: <span class="cat-chip" style="background:'+e.color+'">'+esc(e.ubic)+'</span>'+(e.sitio?' <span style="color:#5a5e70;font-weight:600">· '+esc(e.sitio)+'</span>':'')+'</div>':'')+
+      '<div class="row"><svg class="det-ico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg><b>'+(function(){ if(e.fin&&e.fin>e.fecha){ var d2=new Date(e.fin+'T00:00:00'); var n=Math.round((new Date(e.fin)-new Date(e.fecha))/86400000)+1; return 'Del '+d.getDate()+' '+MES[d.getMonth()].slice(0,3)+' al '+d2.getDate()+' '+MES[d2.getMonth()].slice(0,3)+' '+d2.getFullYear()+' · '+n+' días'; } return d.getDate()+' de '+MES[d.getMonth()]+' '+d.getFullYear(); })()+'</b>'+(e.hora?' · '+esc(e.hora):'')+'</div>'+
+      (e.ubic?'<div class="row"><svg class="det-ico" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>Cliente:<span class="cat-chip" style="background:'+e.color+'">'+esc(e.ubic)+'</span>'+(e.sitio?' <span style="color:#5a5e70;font-weight:600">· '+esc(e.sitio)+'</span>':'')+'</div>':'')+
+      (e.pers?'<div class="row"><svg class="det-ico" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg><span><b>'+e.pers+'</b> persona'+(e.pers===1?'':'s')+' necesaria'+(e.pers===1?'':'s')+'</span></div>':'')+
       (e.desc?'<div class="pl-desc">'+esc(e.desc)+'</div>':'')+
+      ((e.tareas&&e.tareas.length)?'<div class="det-lbl">Tareas ('+e.tareas.length+')</div><ol class="det-tareas">'+e.tareas.map(function(t){ return '<li>'+esc(t)+'</li>'; }).join('')+'</ol>':'')+
       (authed?'<div class="fbtns" style="margin-top:14px"><button class="pl-del-btn" id="det-del">Eliminar</button><button class="pl-add" id="det-edit">✎ Editar</button></div>':'');
     modal.classList.add('show');
     if(authed){
@@ -559,23 +661,75 @@
     poblarSitios(e?(e.ubic||''):'');
     document.getElementById('f-sitio').value=e?(e.sitio||''):'';
     document.getElementById('f-desc').value=e?(e.desc||''):'';
+    document.getElementById('f-pers').value=(e&&e.pers!=null)?e.pers:'';
+    F_TAREAS=e?(e.tareas||[]).slice():[]; pintarTareas(); document.getElementById('f-tarea-in').value='';
+    pintarChipsHora(); actualizarDur();
     document.getElementById('f-del').style.display=e?'':'none';
     document.getElementById('f-rep-row').style.display='';
     document.getElementById('f-repetir').value='no';
-    document.getElementById('f-cada').value='1'; document.getElementById('f-cada').style.display='none';
-    document.getElementById('f-veces').style.display='none';
+    document.getElementById('f-cada').value='1'; document.getElementById('f-cada-w').style.display='none';
+    document.getElementById('f-veces-w').style.display='none';
     document.getElementById('f-rep-hint').style.display='none';
-    formModal.classList.add('show'); document.getElementById('f-titulo').focus();
+    formModal.classList.add('show'); setTimeout(function(){ document.getElementById('f-titulo').focus(); },30);
   }
   document.getElementById('form-close').addEventListener('click',function(){ formModal.classList.remove('show'); });
-  formModal.addEventListener('click',function(ev){ if(ev.target===formModal) formModal.classList.remove('show'); });
+  document.getElementById('f-cancel').addEventListener('click',function(){ formModal.classList.remove('show'); });
+  document.addEventListener('keydown',function(ev){
+    if(!formModal.classList.contains('show')) return;
+    if(ev.key==='Escape'){ formModal.classList.remove('show'); }
+    else if(ev.key==='Enter' && (ev.ctrlKey||ev.metaKey)){ ev.preventDefault(); document.getElementById('f-save').click(); }
+  });
+  // ---- Tareas del trabajo (lista simple; se ven en Planificación) ----
+  var F_TAREAS=[];
+  function pintarTareas(){
+    var ol=document.getElementById('f-tareas');
+    ol.innerHTML=F_TAREAS.map(function(t,i){ return '<li><input value="'+enc(esc(t))+'" data-i="'+i+'" aria-label="Tarea '+(i+1)+'"><button type="button" data-i="'+i+'" title="Quitar tarea" aria-label="Quitar">×</button></li>'; }).join('');
+    document.getElementById('f-tareas-cnt').textContent=F_TAREAS.length?F_TAREAS.length:'';
+    ol.querySelectorAll('input').forEach(function(inp){ inp.addEventListener('input',function(){ F_TAREAS[+inp.dataset.i]=inp.value; });
+      inp.addEventListener('keydown',function(ev){ if(ev.key==='Enter' && !ev.ctrlKey){ ev.preventDefault(); document.getElementById('f-tarea-in').focus(); } }); });
+    ol.querySelectorAll('button').forEach(function(b){ b.addEventListener('click',function(){ F_TAREAS.splice(+b.dataset.i,1); pintarTareas(); }); });
+  }
+  function agregarTarea(){ var inp=document.getElementById('f-tarea-in'), v=inp.value.trim(); if(!v) return;
+    F_TAREAS.push(v); inp.value=''; pintarTareas(); inp.focus(); }
+  document.getElementById('f-tarea-btn').addEventListener('click',agregarTarea);
+  document.getElementById('f-tarea-in').addEventListener('keydown',function(ev){ if(ev.key==='Enter' && !ev.ctrlKey){ ev.preventDefault(); agregarTarea(); } });
+  // Pegar una lista (varias líneas) crea una tarea por línea
+  document.getElementById('f-tarea-in').addEventListener('paste',function(ev){ var t=(ev.clipboardData||window.clipboardData); t=t?t.getData('text'):''; if(t.indexOf('\n')<0) return; ev.preventDefault();
+    t.split(/\r?\n+/).map(function(x){ return x.replace(/^\s*(?:[-*•]|\d+[.)])\s*/,'').trim(); }).filter(Boolean).forEach(function(x){ F_TAREAS.push(x); }); pintarTareas(); });
+  // ---- Personas necesarias (stepper) ----
+  document.querySelectorAll('.ff-step button').forEach(function(b){ b.addEventListener('click',function(){ var inp=document.getElementById('f-pers'); var n=(parseInt(inp.value,10)||0)+(+b.dataset.d); inp.value=n<=0?'':Math.min(n,99); }); });
+  // ---- Horario: atajos con los horarios más usados ----
+  function pintarChipsHora(){
+    var cnt={}; EVENTS.forEach(function(e){ var h=(e.hora||'').trim(); if(h) cnt[h]=(cnt[h]||0)+1; });
+    var top=Object.keys(cnt).filter(function(h){ return h!=='Todo el día'; }).sort(function(a,b){ return cnt[b]-cnt[a]; }).slice(0,4);
+    top.unshift('Todo el día');
+    var cur=document.getElementById('f-hora').value.trim(), el=document.getElementById('f-hora-chips');
+    el.innerHTML=top.map(function(h){ return '<button type="button" class="'+(h===cur?'on':'')+'" data-h="'+enc(esc(h))+'">'+esc(h)+'</button>'; }).join('');
+    el.querySelectorAll('button').forEach(function(b){ b.addEventListener('click',function(){ document.getElementById('f-hora').value=b.dataset.h; pintarChipsHora(); }); });
+  }
+  document.getElementById('f-hora').addEventListener('input',function(){ var v=this.value.trim(); document.querySelectorAll('#f-hora-chips button').forEach(function(b){ b.classList.toggle('on', b.dataset.h===v); }); });
+  // ---- Duración (texto bajo las fechas) ----
+  function actualizarDur(){
+    var fi=document.getElementById('f-fecha').value, ff=document.getElementById('f-fin').value, el=document.getElementById('f-dur');
+    if(!fi){ el.textContent=''; return; }
+    var a=new Date(fi+'T00:00:00');
+    if(ff && ff<fi){ el.textContent='La fecha de fin es anterior al inicio; se guardará como trabajo de un día.'; return; }
+    if(ff && ff>fi){ var b=new Date(ff+'T00:00:00'), n=Math.round((b-a)/86400000)+1; el.textContent=n+' días · del '+a.getDate()+' '+MES[a.getMonth()].slice(0,3)+' al '+b.getDate()+' '+MES[b.getMonth()].slice(0,3); return; }
+    el.textContent='1 día · '+DIAS[a.getDay()]+' '+a.getDate()+' de '+MES[a.getMonth()];
+  }
+  document.getElementById('f-fin').addEventListener('change',actualizarDur);
+  // El formulario no se cierra al tocar fuera (evita perder lo escrito); se cierra con ×, Cancelar o Esc.
   document.getElementById('f-save').addEventListener('click',function(){
     if(!sb) return;
     var _fi=document.getElementById('f-fecha').value, _ff=document.getElementById('f-fin').value;
     var row={ fecha:_fi, fecha_fin:(_ff && _ff>=_fi)?_ff:null, hora:document.getElementById('f-hora').value.trim(),
       titulo:document.getElementById('f-titulo').value.trim(), ubicacion:document.getElementById('f-ubic').value.trim(),
       sitio:document.getElementById('f-sitio').value.trim(),
-      categoria:'Trabajo', descripcion:document.getElementById('f-desc').value };
+      categoria:'Trabajo', descripcion:document.getElementById('f-desc').value,
+      personas_nec:(function(){ var v=parseInt(document.getElementById('f-pers').value,10); return v>0?v:null; })(),
+      tareas:F_TAREAS.map(function(t){ return String(t||'').trim(); }).filter(Boolean) };
+    // una tarea escrita pero sin presionar Enter también se guarda
+    var _tPend=document.getElementById('f-tarea-in').value.trim(); if(_tPend) row.tareas.push(_tPend);
     if(!row.fecha||!row.titulo){ alert('Fecha y título son obligatorios.'); return; }
     if(!row.ubicacion){ alert('Elige la empresa / cliente (de la lista).'); return; }
     if(!row.sitio){ alert('Indica la ubicación / sitio.'); document.getElementById('f-sitio').focus(); return; }
@@ -587,7 +741,7 @@
       var dur=row.fecha_fin?Math.round((new Date(row.fecha_fin+'T00:00:00')-base)/86400000):0;
       fechasSerie(_fi, repetir, cada, veces).forEach(function(fd){
         var fe=new Date(fd); if(dur) fe.setDate(fe.getDate()+dur);
-        rows.push({ fecha:iso(fd), fecha_fin:dur?iso(fe):null, hora:row.hora, titulo:row.titulo, ubicacion:row.ubicacion, sitio:row.sitio, categoria:'Trabajo', descripcion:row.descripcion, serie_id:serie });
+        rows.push({ fecha:iso(fd), fecha_fin:dur?iso(fe):null, hora:row.hora, titulo:row.titulo, ubicacion:row.ubicacion, sitio:row.sitio, categoria:'Trabajo', descripcion:row.descripcion, personas_nec:row.personas_nec, tareas:row.tareas, serie_id:serie });
       });
       if(editId){
         // Al editar con repetición: este trabajo pasa a ser el 1º de la nueva serie y se agregan los demás
@@ -646,8 +800,8 @@
   }
   document.getElementById('f-repetir').addEventListener('change',function(){
     var rep=this.value;
-    document.getElementById('f-veces').style.display=(rep==='no')?'none':'';
-    document.getElementById('f-cada').style.display=repUsaCada(rep)?'':'none';
+    document.getElementById('f-veces-w').style.display=(rep==='no')?'none':'';
+    document.getElementById('f-cada-w').style.display=repUsaCada(rep)?'':'none';
     if(rep==='dia') document.getElementById('f-cada').title='Repetir cada N días (2 = lun, mié, vie…)';
     else if(rep==='semana') document.getElementById('f-cada').title='Repetir cada N semanas';
     else if(rep==='mes') document.getElementById('f-cada').title='Repetir cada N meses';
@@ -655,7 +809,7 @@
   });
   document.getElementById('f-cada').addEventListener('input',actualizarHintRep);
   document.getElementById('f-veces').addEventListener('input',actualizarHintRep);
-  document.getElementById('f-fecha').addEventListener('change',actualizarHintRep);
+  document.getElementById('f-fecha').addEventListener('change',function(){ actualizarHintRep(); actualizarDur(); });
   // Diálogo de borrado: distingue claramente "solo este día" vs "toda la serie".
   var DEL_EV=null, delModal=document.getElementById('del-modal');
   function abrirBorrado(ev){ if(!ev) return; DEL_EV=ev; var serie=!!ev.serie;
