@@ -4638,12 +4638,12 @@
   }
   function cambiarEstado(t, nuevo){ var antes=t.estado||'activo'; if(!sb||!t||!t.id||nuevo===antes) return;
     var nom=titleCase(t.nombre||''), lbl={activo:'Activo',espera:'En espera',inactivo:'Inactivo'};
+    if(nuevo==='inactivo' && !confirm('¿Pasar a '+nom+' a Inactivo?')) return;
     t.estado=nuevo; pintarTrab();
     sb.from('trabajadores').update({estado:nuevo}).eq('id',t.id).select('id').then(function(r){
       if(r&&r.error){ t.estado=antes; pintarTrab(); toast('No se pudo cambiar: '+r.error.message); return; }
       if(!r||!r.data||!r.data.length){ t.estado=antes; pintarTrab(); toast('No se guardó el cambio (sin permiso o trabajador no encontrado).'); return; }
       toast(nom+' · '+lbl[nuevo]); if(typeof renderRrhh==='function' && RRHH_LOADED) renderRrhh();
-      if(nuevo==='inactivo' && antes!=='inactivo' && confirm(nom+' quedó inactivo. ¿Preparar el aviso de baja para el cliente (casino / torniquetes)?')) abrirNominaCli('baja', t.id);
     }, function(){ t.estado=antes; pintarTrab(); toast('No se pudo cambiar el estado. Revisa la conexión.'); });
   }
   // Marca/desmarca a un trabajador como registrado en Buk.
@@ -5187,7 +5187,7 @@
     busy(true,'Guardando…');
     var q=FICHA_ID? sb.from('trabajadores').update(row).eq('id',FICHA_ID) : sb.from('trabajadores').insert(row);
     q.then(function(r){ busy(false); if(r.error){ toast('No se pudo guardar: '+r.error.message); return; }
-      toast('✓ Trabajador guardado'); var _baja=(FICHA_ID && FICHA_EST0!=='inactivo' && row.estado==='inactivo')?FICHA_ID:null; cerrarFicha(); cargarTrab(function(){ actualizarDatalist(); pintarTrab(); if(_baja && confirm(nom+' quedó inactivo. ¿Preparar el aviso de baja para el cliente (casino / torniquetes)?')) abrirNominaCli('baja', _baja); }); });
+      toast('✓ Trabajador guardado'); cerrarFicha(); cargarTrab(function(){ actualizarDatalist(); pintarTrab(); }); });
   });
   $('fi-del').addEventListener('click',function(){
     if(!FICHA_ID) return; if(!confirm('¿Eliminar este trabajador? (sus documentos no se borran del bucket)')) return;
@@ -6510,8 +6510,7 @@
         var q=f.id?sb.from('finiquitos').update(row).eq('id',f.id):sb.from('finiquitos').insert(row);
         q.then(function(r){ busy(false);
           if(r.error){ toast(/finiquitos/.test(r.error.message||'')?'Falta correr finiquitos.sql en Supabase.':('No se pudo guardar: '+r.error.message)); return; }
-          var _baja=(inact && tid && t && t.estado!=='inactivo');
-          if(inact && tid){ sb.from('trabajadores').update({estado:'inactivo'}).eq('id',tid).then(function(){ if(_baja && confirm(titleCase(t.nombre||'')+' quedó inactivo. ¿Preparar el aviso de baja para el cliente (casino / torniquetes)?')) abrirNominaCli('baja', tid, row.fecha); },function(){}); }
+          if(inact && tid){ sb.from('trabajadores').update({estado:'inactivo'}).eq('id',tid).then(function(){},function(){}); }
           toast('✓ Guardado'); $('rrhh-edit').classList.add('hide'); renderFin();
         }, function(){ busy(false); toast('No se pudo guardar.'); });
       }
