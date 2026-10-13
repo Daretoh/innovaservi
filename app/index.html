@@ -418,6 +418,7 @@
   .pts-fig svg{display:block;width:100%;height:120px;}
   .pts-fig.ancha{grid-column:1/-1;} .pts-fig.ancha svg{height:auto;max-height:118px;}
   .pts-fig figcaption{font:600 10.5px var(--font);color:#55607a;margin-top:6px;line-height:1.35;}
+  .mepp td{vertical-align:middle !important;} .mepp td.mepp-i{text-align:center;padding:4px !important;} .mepp td.mepp-i svg{width:62px;height:50px;display:inline-block;}
   .pts-tit{font:800 19px var(--font);color:var(--ink);text-align:center;margin:4px 0 10px;text-transform:uppercase;letter-spacing:.02em;}
   .pts-ctl td{width:25%;}
   .dg-acc{display:flex;gap:6px;flex:none;} .dg-acc .btn{width:auto;display:inline-flex;align-items:center;gap:6px;}
@@ -7545,7 +7546,7 @@
   var EMP_CARPETAS=[
     {k:'prev', n:'Reglamento y gestión preventiva', tipos:[['riohs','Reglamento Interno de Orden, Higiene y Seguridad (RIOHS)',false],['programa','Programa de prevención de riesgos',false],['iper','Matriz de riesgos (IPER)',false],['proc_iper','Procedimiento IPER',false],['proc_acc','Procedimiento de emergencia y/o accidentes',false]]},
     {k:'pts', n:'Procedimientos de trabajo seguro (PTS)', tipos:[['pts_quimicos','PTS uso y manejo de químicos',false],['pts_extintores','PTS uso y manejo de extintores',false],['pts_altura','PTS trabajos en altura',false],['pts_confinados','PTS espacios confinados',false],['pts_alzahombre','PTS alza hombre / grúa Genie',false],['pts_herramientas','PTS uso de herramientas · limpieza de estanques',false],['pts_frigorifico','PTS limpieza de cámaras frigoríficas',false],['pts_funciones','PTS acorde a sus funciones',false]]},
-    {k:'cap', n:'Capacitaciones', tipos:[['cap_herr','Capacitación: uso seguro de herramientas manuales y equipos de apoyo',false]]},
+    {k:'cap', n:'Capacitaciones', tipos:[['cap_herr','Capacitación: uso seguro de herramientas manuales y equipos de apoyo',false],['cap_primeros','Capacitación: primeros auxilios',false]]},
     {k:'legal', n:'Legal y previsional', tipos:[['erut','e-RUT de la empresa',false],['escritura','Escritura / estatutos',false],['vigencia','Certificado de vigencia',true],['mutual','Certificado de adhesión a la mutual',false],['tasa','Certificado de tasa de cotización',true]]}
   ];
   var EMP_D=[];
@@ -7558,7 +7559,8 @@
     {k:'fmt_eval', n:'Evaluación de aprendizaje (individual)', opciones:function(){ var o=[]; Object.keys(CAP_DOC).filter(function(k){ return CAP_DOC[k].vf; }).forEach(function(k){ o.push({v:k, n:CAP_DOC[k].n}); o.push({v:k+'|pauta', n:CAP_DOC[k].n+' · pauta de corrección (relator)'}); }); return o; }, build:function(v){ return docEvaluacion(v); }},
     {k:'fmt_epp', n:'Entrega de elementos de protección personal', build:function(){ return docEPP({nombre:'',rut:''}); }},
     {k:'fmt_odi', n:'Información de riesgos laborales (IRL)', build:function(){ return docODI({nombre:'',rut:'',cargo:''}); }},
-    {k:'fmt_salida', n:'Registro de salida a atención médica', build:function(){ return docSalida({}); }}
+    {k:'fmt_salida', n:'Registro de salida a atención médica', build:function(){ return docSalida({}); }},
+    {k:'fmt_matriz_epp', n:'Matriz de elementos de protección personal (EPP)', build:function(){ return docMatrizEPP(); }}
   ];
   var EMP_Q='';
   function pintarEmp(){
@@ -9018,6 +9020,83 @@
       caja(330,166,160,'Primeros auxilios','Atención y traslado',false)+
       caja(498,166,132,'Apoyo exterior','Comunicación y equipos',false)
     )+'<figcaption>Organigrama de emergencia en la faena</figcaption></figure>'; }
+  // ====== Matriz de elementos de protección personal (EPP): formato para revisar y entregar EPP en faena ======
+  // Ilustraciones propias de cada EPP (SVG, colores corporativos); reemplazan las fotos referenciales del formato original.
+  var EPP_ICO=null;   // se arma al usarse: FIG_N y FIG_O se definen más abajo en el archivo
+  function eppIco(){ if(EPP_ICO) return EPP_ICO; EPP_ICO={
+    casco: svgF('0 0 80 64','<path d="M14 40 Q14 12 40 12 Q66 12 66 40 Z" fill="#f2f3f7" stroke="'+FIG_N+'" stroke-width="3"/><path d="M40 12 V40" stroke="'+FIG_N+'" stroke-width="2.5"/><rect x="8" y="38" width="64" height="7" rx="3.5" fill="'+FIG_N+'"/><path d="M20 45 Q24 60 40 58 Q56 60 60 45" fill="none" stroke="'+FIG_O+'" stroke-width="3"/>'),
+    respirador: svgF('0 0 80 64','<path d="M18 22 Q40 4 62 22 L58 46 Q40 58 22 46 Z" fill="#f2f3f7" stroke="'+FIG_N+'" stroke-width="3"/><circle cx="20" cy="44" r="11" fill="'+FIG_O+'" stroke="'+FIG_N+'" stroke-width="2.5"/><circle cx="60" cy="44" r="11" fill="'+FIG_O+'" stroke="'+FIG_N+'" stroke-width="2.5"/><g stroke="#fff" stroke-width="2"><line x1="15" y1="44" x2="25" y2="44"/><line x1="55" y1="44" x2="65" y2="44"/></g><circle cx="40" cy="44" r="5" fill="'+FIG_N+'"/>'),
+    lentes: svgF('0 0 80 64','<path d="M8 26 H72 V36 Q72 46 60 46 H48 Q42 46 40 38 Q38 46 32 46 H20 Q8 46 8 36 Z" fill="#dfe8f7" stroke="'+FIG_N+'" stroke-width="3" stroke-linejoin="round"/><path d="M8 26 L2 22 M72 26 L78 22" stroke="'+FIG_N+'" stroke-width="3" stroke-linecap="round"/><path d="M16 31 L22 37 M52 31 L58 37" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>'),
+    arnes: svgF('0 0 80 64','<circle cx="30" cy="8" r="5" fill="'+FIG_N+'"/><g stroke="'+FIG_O+'" stroke-width="4" stroke-linecap="round" fill="none"><path d="M22 14 L36 40 M38 14 L24 40"/><path d="M20 40 H40"/><circle cx="24" cy="50" r="7"/><circle cx="36" cy="50" r="7"/></g><path d="M42 18 q10 6 4 14 q-6 8 4 14 q8 5 2 12" fill="none" stroke="'+FIG_N+'" stroke-width="3"/><path d="M50 58 q6 2 6 -4 v-8" fill="none" stroke="'+FIG_N+'" stroke-width="3" stroke-linecap="round"/>'),
+    zapato: svgF('0 0 80 64','<path d="M10 18 H34 V34 L58 40 Q72 43 72 52 V54 H10 Z" fill="#8a5a3c" stroke="'+FIG_N+'" stroke-width="3" stroke-linejoin="round"/><rect x="8" y="52" width="66" height="6" rx="2" fill="'+FIG_N+'"/><path d="M56 41 Q68 44 70 52 H56 Z" fill="'+FIG_O+'"/><g stroke="#f2f3f7" stroke-width="2" stroke-linecap="round"><line x1="20" y1="24" x2="30" y2="24"/><line x1="20" y1="30" x2="30" y2="30"/></g>'),
+    guante1: svgF('0 0 80 64','<path d="M26 60 V30 q0-5 4-5 q4 0 4 5 V18 q0-5 4-5 q4 0 4 5 V16 q0-5 4-5 q4 0 4 5 V20 q0-5 4-5 q4 0 4 5 V40 l6-7 q4-4 7 0 q2 3 0 6 L54 60 Z" fill="#4a90e2" stroke="'+FIG_N+'" stroke-width="2.5" stroke-linejoin="round"/>'),
+    guante2: svgF('0 0 80 64','<path d="M28 62 V32 q0-5 4-5 q4 0 4 5 V20 q0-5 4-5 q4 0 4 5 V18 q0-5 4-5 q4 0 4 5 V22 q0-5 4-5 q4 0 4 5 V40 l5-6 q4-4 7 0 q2 3 0 6 L54 52 V62 Z" fill="#2bb39a" stroke="'+FIG_N+'" stroke-width="2.5" stroke-linejoin="round"/><line x1="28" y1="54" x2="54" y2="54" stroke="'+FIG_N+'" stroke-width="2"/>'),
+    overol: svgF('0 0 80 64','<circle cx="40" cy="8" r="6" fill="#f2f3f7" stroke="'+FIG_N+'" stroke-width="2.5"/><path d="M30 14 H50 L62 30 L56 34 L52 28 V40 L54 62 H44 L40 42 L36 62 H26 L28 40 V28 L24 34 L18 30 Z" fill="#f2f3f7" stroke="'+FIG_N+'" stroke-width="2.5" stroke-linejoin="round"/><line x1="40" y1="14" x2="40" y2="40" stroke="'+FIG_O+'" stroke-width="2.5"/>')
+  }; return EPP_ICO; }
+  function docMatrizEPP(){
+    var L=[['casco','Casco de seguridad con barbiquejo','Protección de cabeza; barbiquejo ajustado para evitar la caída del casco.'],
+      ['respirador','Protección respiratoria','Respirador reutilizable de media cara o de rostro completo, con cartuchos o filtros específicos según el tipo de sustancia.'],
+      ['lentes','Lentes de seguridad','Protección ocular contra partículas y salpicaduras, según el riesgo.'],
+      ['arnes','Arnés de seguridad con cabo de vida','Sistema anticaídas; usar solo con anclaje compatible y capacitación.'],
+      ['zapato','Zapatos de seguridad','Calzado con protección adecuada al riesgo y suela antideslizante cuando corresponda.'],
+      ['guante1','Guantes de nitrilo desechables','Protección de manos frente a químicos compatibles; verificar la hoja de datos de seguridad.'],
+      ['guante2','Guantes de nitrilo','Protección de manos frente a químicos compatibles; verificar la hoja de datos de seguridad.'],
+      ['overol','Overol desechable','Protección corporal según el químico, la concentración y la tarea; revisar compatibilidad.']];
+    var caja='<span style="display:inline-block;width:14px;height:14px;border:1.5px solid #6b7390;border-radius:3px;vertical-align:middle"></span>';
+    return dgHead('MATRIZ DE EPP','01')+
+      '<div class="pts-tit">Matriz de elementos de protección personal</div>'+
+      '<table class="dg-tbl pts-ctl"><tbody><tr><td><span class="sl">Empresa / mandante</span>'+ce('')+'</td><td><span class="sl">Área / faena</span>'+ce('')+'</td><td><span class="sl">Fecha</span>'+ce(fFaena(todayISO()))+'</td></tr>'+
+        '<tr><td><span class="sl">Trabajador</span>'+ce('')+'</td><td><span class="sl">RUT</span>'+ce('')+'</td><td><span class="sl">Cargo</span>'+ce('')+'</td></tr></tbody></table>'+
+      '<table class="dg-tbl mepp"><thead><tr><th style="width:84px;text-align:center">Imagen</th><th style="width:20%">Elemento de protección personal</th><th>Riesgo / uso principal</th><th style="width:86px;text-align:center">Estado</th><th style="width:66px;text-align:center">Entregado</th><th style="width:16%">Observaciones</th></tr></thead><tbody>'+
+        L.map(function(e){ return '<tr><td class="mepp-i">'+eppIco()[e[0]]+'</td><td><b>'+e[1]+'</b></td><td>'+e[2]+'</td><td style="text-align:center;white-space:nowrap">'+caja+' B &nbsp;'+caja+' M</td><td class="pts-chk"><span></span></td><td></td></tr>'; }).join('')+
+      '</tbody></table>'+
+      '<p style="font-size:11.5px;color:#55607a"><b>Estado:</b> B = bueno, M = malo. <b>Nota:</b> las imágenes son referenciales. El EPP se selecciona según la evaluación de riesgos, las instrucciones del fabricante y las hojas de datos de seguridad. Se inspecciona antes de cada uso y se reemplaza cuando está dañado.</p>'+
+      '<div class="dg-firmas"><div>Firma del trabajador</div><div>'+firmaPrevHtml()+'Entregado por<br>'+esc(EMP_PREV.nombre)+'</div></div>';
+  }
+
+  // ====== Capacitación: primeros auxilios (material de la capacitación) ======
+  function figsAux(){ if(FIG.pas) return;   // figuras de primeros auxilios (FIG se define más abajo en el archivo)
+  FIG.pas=svgF('0 0 520 100',(function(){ var L=[['P','Proteger','Asegure la escena'],['A','Avisar','131 · Rescate Mutual 1407'],['S','Socorrer','Primeros auxilios']], s='';
+    L.forEach(function(t,i){ var x=90+i*170; s+='<circle cx="'+x+'" cy="34" r="27" fill="'+(i===1?FIG_O:FIG_N)+'"/><text x="'+x+'" y="44" text-anchor="middle" font-size="28" font-weight="bold" fill="#fff">'+t[0]+'</text><text x="'+x+'" y="78" text-anchor="middle" font-size="13" font-weight="bold" fill="'+FIG_N+'">'+t[1]+'</text><text x="'+x+'" y="94" text-anchor="middle" font-size="11" fill="#55607a">'+t[2]+'</text>'+(i<2?'<path d="M'+(x+34)+' 34 h96" stroke="#c9ccd8" stroke-width="3"/><path d="M'+(x+130)+' 28 l8 6 l-8 6z" fill="#c9ccd8"/>':''); }); return s; })());
+  FIG.rcp=svgF('0 0 620 104',(function(){ var L=[['¿Responde?','¿Respira normal?'],['Llamar 131','y pedir un DEA'],['30 compresiones','5 a 6 cm de profundidad'],['2 ventilaciones','solo si está entrenado'],['Seguir sin parar','hasta que llegue ayuda']], s='';
+    L.forEach(function(t,i){ var x=62+i*124; s+='<circle cx="'+x+'" cy="30" r="22" fill="'+(i===2?FIG_O:FIG_N)+'"/><text x="'+x+'" y="37" text-anchor="middle" font-size="20" font-weight="bold" fill="#fff">'+(i+1)+'</text><text x="'+x+'" y="72" text-anchor="middle" font-size="11.5" font-weight="bold" fill="'+FIG_N+'">'+t[0]+'</text><text x="'+x+'" y="87" text-anchor="middle" font-size="10.5" fill="#55607a">'+t[1]+'</text>'+(i<4?'<path d="M'+(x+26)+' 30 h64" stroke="#c9ccd8" stroke-width="3"/><path d="M'+(x+90)+' 24 l8 6 l-8 6z" fill="#c9ccd8"/>':''); }); return s; })());
+  FIG.fonos=svgF('0 0 520 86',(function(){ var L=[['131','Ambulancia SAMU','#d7262e'],['132','Bomberos','#e8590c'],['133','Carabineros','#2b7a3d'],['1407','Rescate Mutual','#1f5fbf']], s='';
+    L.forEach(function(t,i){ var x=8+i*128; s+='<rect x="'+x+'" y="6" width="120" height="74" rx="12" fill="'+t[2]+'"/><text x="'+(x+60)+'" y="46" text-anchor="middle" font-size="30" font-weight="bold" fill="#fff">'+t[0]+'</text><text x="'+(x+60)+'" y="68" text-anchor="middle" font-size="12" font-weight="bold" fill="#fff">'+t[1]+'</text>'; }); return s; })());
+  }
+  function docCapPrimeros(){
+    figsAux(); var H=seccionador();
+    function tr(a,b){ return '<tr><td class="dg-k">'+a+'</td><td>'+b+'</td></tr>'; }
+    function fig(k,cap){ return '<div class="pts-figs"><figure class="pts-fig ancha">'+FIG[k]+'<figcaption>'+cap+'</figcaption></figure></div>'; }
+    return dgHead('CAPACITACIÓN','01')+
+      '<div class="pts-tit">Primeros auxilios</div>'+
+      tablaCtl('CAP-PREV-02','Todo el personal')+
+      H('Objetivo')+'<p>Entregar a los trabajadores los conocimientos básicos para actuar ante una emergencia o accidente en la faena, proteger su vida y la de sus compañeros, avisar oportunamente y prestar la primera atención mientras llega la ayuda especializada.</p>'+
+      H('Alcance')+'<p>Aplica a todo el personal de Innovación y Servicios SpA, con énfasis en las tareas de mayor riesgo de la empresa: espacios confinados y limpieza de estanques, cámaras frigoríficas, uso de productos químicos y trabajos en altura. Esta capacitación es una instrucción básica y no reemplaza un curso certificado de primeros auxilios.</p>'+
+      H('Conducta PAS')+'<p style="margin:0 0 6px">Ante cualquier emergencia, actuar siempre en este orden:</p>'+fig('pas','Proteger · Avisar · Socorrer')+
+        ulDg(['<b>Proteger:</b> verificar que el lugar sea seguro para usted y para el lesionado. No se convierta en otra víctima.','<b>Avisar:</b> llamar a emergencias e informar a la jefatura: qué pasó, dónde, cuántos lesionados y su estado.','<b>Socorrer:</b> prestar los primeros auxilios que conozca, sin exponerse a riesgos.'])+
+      H('Números de emergencia')+fig('fonos','Teléfonos de emergencia')+
+      H('Evaluación inicial del lesionado')+ulDg(['Acercarse solo si la escena es segura.','Comprobar si responde: hablarle fuerte y tocarle los hombros.','Comprobar si respira con normalidad: mirar, escuchar y sentir durante no más de 10 segundos.','Si no responde y no respira normalmente: llamar al 131 o al Rescate Mutual 1407, pedir un desfibrilador (DEA) e iniciar la reanimación.','Si responde: preguntar qué le pasó, buscar lesiones y no moverlo si no es necesario.'])+
+      H('Reanimación cardiopulmonar (RCP) en adultos')+fig('rcp','Secuencia de RCP')+
+        ulDg(['Persona de espalda sobre una superficie firme.','Talón de una mano al centro del pecho y la otra encima, brazos rectos.','Compresiones fuertes y rápidas: 5 a 6 cm de profundidad y 100 a 120 por minuto, dejando que el pecho vuelva a su posición.','Si está entrenado: 30 compresiones y 2 ventilaciones. Si no lo está: solo compresiones continuas.','Si llega un DEA: encenderlo y seguir sus instrucciones; nadie debe tocar a la persona durante la descarga.','No detenerse hasta que llegue la ayuda especializada o la persona comience a respirar normalmente.'])+
+      H('Posición lateral de seguridad')+'<p>Para una persona inconsciente que respira normalmente y sin sospecha de lesión de columna: ponerla de costado, con la cabeza ligeramente hacia atrás para mantener la vía aérea abierta, y vigilar su respiración hasta que llegue la ayuda.</p>'+
+      H('Atención según la situación')+'<table class="dg-tbl"><thead><tr><th style="width:24%">Situación</th><th>Qué hacer</th></tr></thead><tbody>'+
+        tr('Atragantamiento','Si tose con fuerza, animarlo a seguir tosiendo. Si no puede toser, hablar ni respirar: 5 golpes entre los omóplatos y 5 compresiones abdominales (maniobra de Heimlich), alternando. Si pierde el conocimiento: llamar al 131 e iniciar RCP.')+
+        tr('Hemorragia','Presión directa y firme sobre la herida con gasa o paño limpio, sin soltar. Si se empapa, poner otro encima. No retirar objetos incrustados.')+
+        tr('Heridas','Lavar con agua limpia o suero, cubrir con gasa limpia y derivar si es profunda o sucia.')+
+        tr('Quemaduras','Enfriar con agua corriente a temperatura ambiente por 10 a 20 minutos, retirar anillos y relojes, cubrir con gasa limpia. No reventar ampollas ni aplicar cremas, pasta dental ni otros productos.')+
+        tr('Químicos en piel u ojos','Retirar la ropa contaminada y lavar con abundante agua por al menos 15 a 20 minutos. Revisar la hoja de datos de seguridad del producto y llevarla al centro asistencial.')+
+        tr('Fracturas y esguinces','Inmovilizar la zona en la posición en que se encuentra; no intentar acomodar el hueso. Ante sospecha de lesión de columna, no mover al lesionado salvo peligro inminente.')+
+        tr('Contacto eléctrico','Cortar la energía antes de tocar a la persona; si no es posible, separarla con un elemento seco y no conductor. Evaluar su respiración y llamar al 131.')+
+        tr('Intoxicación por gases o espacio confinado','No ingresar a rescatar sin autorización, equipo y vigía (PTS-PREV-05). Una vez fuera, llevar a la persona al aire fresco, mantenerla en reposo y llamar al 131.')+
+        tr('Frío e hipotermia','Llevar a la persona a un lugar templado, retirar la ropa húmeda y abrigarla. Si está consciente, darle bebidas tibias. No frotar las zonas congeladas.')+
+        tr('Golpe de calor','Llevar a la sombra, aflojar la ropa, enfriar con paños húmedos y dar agua si está consciente. Si está confuso o inconsciente, llamar al 131.')+
+        tr('Desmayo','Recostar a la persona con las piernas elevadas, aflojar la ropa y verificar que respire. Si no se recupera rápido, llamar al 131.')+
+      '</tbody></table>'+
+      H('Botiquín básico de faena')+'<div class="dg-cols">'+ulDg(['Gasas y apósitos estériles.','Vendas de distintos anchos.','Tela adhesiva.','Suero fisiológico.'])+ulDg(['Guantes desechables.','Tijeras.','Manta térmica.','Mascarilla para RCP.'])+'</div>'+
+      '<p style="font-size:12px">El botiquín no debe contener medicamentos de uso oral: no se administran remedios a un lesionado.</p>'+
+      H('Después de la emergencia')+ulDg(['Informar de inmediato a la jefatura y a prevención de riesgos.','Todo accidente se atiende en la Mutual de Seguridad y se denuncia (DIAT) dentro de 24 horas, según el Procedimiento de emergencia y/o accidentes (PR-PREV-03).','Reponer los elementos usados del botiquín.'])+
+      H('Registro')+'<p>La asistencia se registra en el formato <b>Registro de capacitación</b> y el aprendizaje se verifica con la <b>Evaluación de aprendizaje</b> (InnovaGestión → Empresa → Formatos para firmar).</p>';
+  }
   function docCapHerr(){
     var H=seccionador();
     function tr(a,b){ return '<tr><td class="dg-k">'+a+'</td><td>'+b+'</td></tr>'; }
@@ -9049,6 +9128,23 @@
   }
   // Catálogo de capacitaciones: alimenta el Registro de capacitación (tema, temario, duración) y la Evaluación de aprendizaje.
   var CAP_DOC={
+    cap_primeros:{ n:'Primeros auxilios', dur:'', t:[
+      'Conducta PAS: proteger, avisar y socorrer; números de emergencia.',
+      'Evaluación inicial del lesionado: conciencia y respiración.',
+      'Reanimación cardiopulmonar (RCP) en adultos y uso del desfibrilador (DEA).',
+      'Posición lateral de seguridad.',
+      'Atención de atragantamiento, hemorragias, heridas, quemaduras, químicos, fracturas, contacto eléctrico, gases, frío, calor y desmayo.',
+      'Botiquín de faena y pasos después de la emergencia.'],
+      vf:[['Antes de ayudar a un lesionado se debe verificar que el lugar sea seguro.',true],
+        ['Si la persona no responde y no respira normalmente, se llama al 131 y se inician las compresiones.',true],
+        ['Las compresiones del pecho se hacen a un ritmo de 100 a 120 por minuto.',true],
+        ['A una quemadura se le debe aplicar pasta dental o crema para aliviar el dolor.',false],
+        ['Una hemorragia se controla con presión directa y firme sobre la herida.',true],
+        ['Ante un contacto eléctrico, se puede tocar a la persona antes de cortar la energía si se actúa rápido.',false],
+        ['Hay que ingresar de inmediato a un espacio confinado para rescatar a un compañero desmayado.',false],
+        ['La posición lateral de seguridad se usa en una persona inconsciente que respira normalmente.',true],
+        ['Una fractura se debe acomodar en el lugar antes de trasladar al lesionado.',false],
+        ['A una persona con hipotermia se le frota con fuerza la piel para calentarla.',false]] },
     cap_herr:{ n:'Uso seguro de herramientas manuales y equipos de apoyo', dur:'', t:[
       'Riesgos mecánicos, ergonómicos y de espacios confinados asociados a las herramientas.',
       'Elementos de protección personal obligatorios.',
@@ -9181,7 +9277,7 @@
         '<tr><td>01</td><td>01-11-2025</td><td>Emisión original (procedimiento en caso de accidente del trabajo o enfermedad profesional).</td></tr>'+
         '<tr><td>02</td><td>'+fFaena(todayISO())+'</td><td>Formato corporativo; se integra el procedimiento de emergencia (organigrama, situaciones, recursos, evacuación, rescate en espacios confinados, primeros auxilios y simulacros); se agregan accidente de trayecto y obligaciones ante accidentes graves y fatales; normativa vigente (D.S. N° 44); se corrige la definición de accidente fatal y se actualizan los contactos.</td></tr></tbody></table>';
   }
-  var EMP_GEN={ cap_herr:{ build:docCapHerr }, proc_acc:{ build:docEmergAcc } };
+  var EMP_GEN={ cap_herr:{ build:docCapHerr }, cap_primeros:{ build:docCapPrimeros }, proc_acc:{ build:docEmergAcc } };
   function esPTS(s){ return s==='pts_funciones' || !!(typeof PTS_DOC!=='undefined'&&PTS_DOC[s]); }
   function nombrePTS(s){ var n=s; EMP_CARPETAS.forEach(function(c){ c.tipos.forEach(function(x){ if(x[0]===s) n=x[1]; }); }); return n; }
   function generarPTS(s){ var nom=nombrePTS(s);
