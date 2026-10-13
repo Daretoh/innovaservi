@@ -828,7 +828,7 @@
   .tb-ico{display:inline-flex;align-items:center;height:40px;padding:0 11px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;font:700 13px var(--font);
     transition:background .2s,border-color .2s,color .2s,box-shadow .2s,transform .15s;}
   .tb-ico svg{flex:none;}
-  .tb-ico span{display:inline-block;max-width:0;opacity:0;overflow:hidden;white-space:nowrap;margin-left:0;transition:max-width .32s cubic-bezier(.2,.8,.2,1),opacity .22s,margin-left .32s;}
+  .tb-ico span{display:inline-block;max-width:0;opacity:0;overflow:hidden;white-space:nowrap;margin-left:0;transition:max-width .55s cubic-bezier(.25,.8,.25,1),opacity .45s ease .05s,margin-left .55s cubic-bezier(.25,.8,.25,1);}
   .tb-ico:hover,.tb-ico:focus-visible{border-color:var(--orange);color:var(--orange-2);box-shadow:0 6px 16px -10px rgba(255,107,0,.6);outline:none;}
   .tb-ico:hover span,.tb-ico:focus-visible span{max-width:150px;opacity:1;margin-left:8px;}
   .tb-ico:active{transform:scale(.96);}
@@ -850,7 +850,24 @@
   @media(max-width:520px){ .tseg .tfil{font-size:12px;flex-direction:column;gap:2px;} }
   #trab-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,360px),1fr));gap:10px;}
   #trab-list .trab{margin:0;padding:12px 14px;border-left-width:4px;transition:transform .2s cubic-bezier(.2,.8,.2,1),box-shadow .2s,border-color .2s;}
-  #trab-list .trab:hover{transform:translateY(-2px);box-shadow:0 12px 26px -16px rgba(26,31,110,.45);border-left-color:var(--orange);}
+  #trab-list .trab:hover{transform:translateY(-3px);box-shadow:0 14px 28px -16px rgba(26,31,110,.5);border-left-color:var(--orange);background:linear-gradient(90deg,rgba(255,107,0,.06),var(--card) 55%);}
+  #trab-list .trab .av{transition:transform .3s cubic-bezier(.25,.8,.25,1),box-shadow .3s;}
+  #trab-list .trab:hover .av{transform:scale(1.07);box-shadow:0 6px 14px -6px rgba(26,31,110,.55);}
+  #trab-list .trab .nm{transition:color .25s;} #trab-list .trab:hover .nm{color:var(--orange-2);}
+  .trab .go{flex:none;width:0;opacity:0;margin-left:-6px;color:var(--orange-2);transform:translateX(-6px);transition:width .3s,opacity .3s,transform .3s,margin .3s;display:flex;}
+  #trab-list .trab:hover .go{width:16px;opacity:1;transform:none;margin-left:0;}
+  /* Estado editable desde la lista */
+  .est-btn{display:inline-flex;align-items:center;gap:4px;border:1px solid transparent;cursor:pointer;font-family:var(--font);transition:border-color .2s,box-shadow .2s,transform .15s;}
+  .est-btn svg{transition:transform .25s;}
+  .est-btn:hover{border-color:currentColor;box-shadow:0 4px 10px -6px currentColor;}
+  .est-btn.abierto svg{transform:rotate(180deg);}
+  .est-menu{position:fixed;z-index:120;min-width:170px;background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:0 18px 40px -16px rgba(12,15,46,.45);padding:5px;
+    transform-origin:top right;animation:estIn .2s cubic-bezier(.25,.8,.25,1);}
+  @keyframes estIn{from{opacity:0;transform:scale(.92) translateY(-4px);}to{opacity:1;transform:none;}}
+  .est-menu button{display:flex;align-items:center;gap:9px;width:100%;border:none;background:transparent;padding:9px 10px;border-radius:8px;font:700 13px var(--font);color:var(--ink);cursor:pointer;text-align:left;transition:background .15s;}
+  .est-menu button:hover{background:var(--alt);}
+  .est-menu .dot{width:9px;height:9px;border-radius:50%;flex:none;} .est-menu .ok{margin-left:auto;color:var(--orange-2);}
+  .est-menu .tit{font:800 .66rem var(--font);color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:6px 10px 4px;}
   #trab-list.anim .trab{animation:trabIn .42s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i,0)*35ms);}
   @keyframes trabIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
   .trab .av.ring{position:relative;background:conic-gradient(var(--c) calc(var(--p)*1%),var(--line) 0);padding:3px;width:46px;height:46px;}
@@ -4598,10 +4615,36 @@
         '<div class="tt"><div class="nm">'+esc(titleCase(t.nombre)||'—')+'</div>'+(t.cargo?'<div class="cg">'+esc(t.cargo)+'</div>':'')+
         '<div class="meta">'+(t.rut?esc(t.rut)+' · ':'')+nd+' doc'+(nd===1?'':'s')+(p!=null?(' · <span class="pct" style="color:'+col+'">'+p+'% docs</span>'):'')+'</div></div>'+
         '<button class="trab-buk'+(t.buk?' on':'')+'" data-idx="'+idx+'" type="button" title="'+(t.buk?'Registrado en Buk · toca para quitar':'Toca para marcar registrado en Buk')+'">'+(t.buk?'✓ Buk':'+ Buk')+'</button>'+
-        '<span class="badge'+estCls+'">'+estTxt+'</span>'+
+        (puedeEstado()?'<button type="button" class="badge est-btn'+estCls+'" data-idx="'+idx+'" title="Cambiar estado">'+estTxt+'<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>':'<span class="badge'+estCls+'">'+estTxt+'</span>')+
+        '<span class="go"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span>'+
         (p!=null?('<div class="tbar" title="Documentación: '+p+'% al día"><i style="width:'+p+'%;background:'+col+'"></i></div>'):'')+'</div>'; }).join('');
+    list.querySelectorAll('.est-btn[data-idx]').forEach(function(b){ b.addEventListener('click',function(ev){ ev.stopPropagation(); menuEstado(b, TRAB_VISTA[+b.dataset.idx]); }); });
     list.querySelectorAll('.trab-buk[data-idx]').forEach(function(b){ b.addEventListener('click',function(ev){ ev.stopPropagation(); marcarBukTrab(TRAB_VISTA[+b.dataset.idx]); }); });
     list.querySelectorAll('.trab[data-idx]').forEach(function(el){ el.addEventListener('click',function(){ abrirFicha(TRAB_VISTA[+el.dataset.idx]); }); });
+  }
+  // Cambiar el estado (activo / en espera / inactivo) desde la lista, sin entrar a la ficha.
+  function puedeEstado(){ return isAdmin || nivelMod('trabajadores')>=2; }
+  var EST_OPC=[['activo','Activo','#22a06b'],['espera','En espera','#d97706'],['inactivo','Inactivo','#8b93a7']];
+  function cerrarMenuEstado(){ var m=document.querySelector('.est-menu'); if(m){ m.remove(); } document.querySelectorAll('.est-btn.abierto').forEach(function(b){ b.classList.remove('abierto'); }); document.removeEventListener('click',cerrarMenuEstado); document.removeEventListener('keydown',escMenuEstado); window.removeEventListener('scroll',cerrarMenuEstado,true); }
+  function escMenuEstado(e){ if(e.key==='Escape') cerrarMenuEstado(); }
+  function menuEstado(btn, t){ var ya=btn.classList.contains('abierto'); cerrarMenuEstado(); if(ya||!t) return;
+    var act=t.estado||'activo', m=document.createElement('div'); m.className='est-menu'; m.setAttribute('role','menu');
+    m.innerHTML='<div class="tit">Estado</div>'+EST_OPC.map(function(o){ return '<button type="button" role="menuitem" data-e="'+o[0]+'"><span class="dot" style="background:'+o[2]+'"></span>'+o[1]+(o[0]===act?'<svg class="ok" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>':'')+'</button>'; }).join('');
+    document.body.appendChild(m); btn.classList.add('abierto');
+    var r=btn.getBoundingClientRect(), w=m.offsetWidth, hh=m.offsetHeight, top=r.bottom+6; if(top+hh>innerHeight-8){ top=r.top-hh-6; m.style.transformOrigin='bottom right'; }
+    m.style.top=top+'px'; m.style.left=Math.max(8,Math.min(r.right-w, innerWidth-w-8))+'px';
+    m.addEventListener('click',function(e){ e.stopPropagation(); var b=e.target.closest('button[data-e]'); if(!b) return; cerrarMenuEstado(); cambiarEstado(t, b.dataset.e); });
+    setTimeout(function(){ document.addEventListener('click',cerrarMenuEstado); document.addEventListener('keydown',escMenuEstado); window.addEventListener('scroll',cerrarMenuEstado,true); },0);
+  }
+  function cambiarEstado(t, nuevo){ var antes=t.estado||'activo'; if(!sb||!t||!t.id||nuevo===antes) return;
+    var nom=titleCase(t.nombre||''), lbl={activo:'Activo',espera:'En espera',inactivo:'Inactivo'};
+    t.estado=nuevo; pintarTrab();
+    sb.from('trabajadores').update({estado:nuevo}).eq('id',t.id).select('id').then(function(r){
+      if(r&&r.error){ t.estado=antes; pintarTrab(); toast('No se pudo cambiar: '+r.error.message); return; }
+      if(!r||!r.data||!r.data.length){ t.estado=antes; pintarTrab(); toast('No se guardó el cambio (sin permiso o trabajador no encontrado).'); return; }
+      toast(nom+' · '+lbl[nuevo]); if(typeof renderRrhh==='function' && RRHH_LOADED) renderRrhh();
+      if(nuevo==='inactivo' && antes!=='inactivo' && confirm(nom+' quedó inactivo. ¿Preparar el aviso de baja para el cliente (casino / torniquetes)?')) abrirNominaCli('baja', t.id);
+    }, function(){ t.estado=antes; pintarTrab(); toast('No se pudo cambiar el estado. Revisa la conexión.'); });
   }
   // Marca/desmarca a un trabajador como registrado en Buk.
   function marcarBukTrab(t){ if(!sb||!t||!t.id) return; var val=!t.buk, at=val?new Date().toISOString():null; t.buk=val; t.buk_at=at;
