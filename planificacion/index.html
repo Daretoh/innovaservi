@@ -188,6 +188,12 @@
   .ff-tadd input:focus{outline:none;border-style:solid;border-color:var(--orange);box-shadow:0 0 0 3px rgba(255,107,0,.15);}
   .ff-mini{border:1px solid var(--line);background:#fff;color:var(--ink);font:700 12.5px var(--font);padding:0 14px;border-radius:9px;cursor:pointer;}
   .ff-mini:hover{border-color:var(--orange);color:var(--orange-2);}
+  .ff-roles{display:flex;flex-direction:column;gap:7px;}
+  .ff-rol{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+  .ff-rl{display:inline-flex;align-items:center;gap:8px;font:700 13px var(--font);color:var(--ink);}
+  .ff-rl i{width:11px;height:11px;border-radius:3px;display:inline-block;}
+  .r-op .ff-rl i{background:#7cb342;} .r-sup .ff-rl i{background:#2563eb;} .r-prev .ff-rl i{background:#f59e0b;}
+  .ff-rol .ff-step button{width:36px;font-size:16px;} .ff-rol .ff-step input{width:50px;font-size:16px;padding:6px 0;}
   .ff-step{display:inline-flex;align-items:stretch;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff;}
   .ff-step button{border:none;background:#fff;width:42px;font:700 18px var(--font);color:var(--ink);cursor:pointer;}
   .ff-step button:hover{background:#fff5ee;color:var(--orange-2);}
@@ -341,9 +347,13 @@
             </div>
           </section>
           <section class="ff-sec ff-o3">
-            <h4><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>Personas necesarias</h4>
-            <div class="ff-step"><button type="button" data-d="-1" aria-label="Menos">−</button><input type="number" id="f-pers" min="0" max="99" placeholder="—"><button type="button" data-d="1" aria-label="Más">+</button></div>
-            <span class="ff-hint">Cupo que verás en Planificación (se puede ajustar por día allá).</span>
+            <h4><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>Personas necesarias <span class="ff-cnt" id="f-pers-tot"></span></h4>
+            <div class="ff-roles">
+              <div class="ff-rol r-op"><span class="ff-rl"><i></i>Operarios</span><div class="ff-step"><button type="button" data-d="-1" aria-label="Menos">−</button><input type="number" id="f-d-op" min="0" max="99" placeholder="0"><button type="button" data-d="1" aria-label="Más">+</button></div></div>
+              <div class="ff-rol r-sup"><span class="ff-rl"><i></i>Supervisor</span><div class="ff-step"><button type="button" data-d="-1" aria-label="Menos">−</button><input type="number" id="f-d-sup" min="0" max="99" placeholder="0"><button type="button" data-d="1" aria-label="Más">+</button></div></div>
+              <div class="ff-rol r-prev"><span class="ff-rl"><i></i>Prevencionista</span><div class="ff-step"><button type="button" data-d="-1" aria-label="Menos">−</button><input type="number" id="f-d-prev" min="0" max="99" placeholder="0"><button type="button" data-d="1" aria-label="Más">+</button></div></div>
+            </div>
+            <span class="ff-hint">Cupo que verás en Planificación, con el color de cada rol (se puede ajustar por día allá).</span>
           </section>
           <section class="ff-sec ff-o5" id="f-rep-row">
             <h4><svg viewBox="0 0 24 24"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>Repetir</h4>
@@ -390,11 +400,17 @@
   var sb=null; try{ if(window.supabase) sb=window.supabase.createClient(SB_URL,SB_KEY); }catch(e){}
   var authed=false, userEmail='';
   var EVENTS=[], _evCargados=false;
+  // Dotación por rol {op,sup,prev}; si solo hay un total antiguo, se toma como operarios.
+  function dotNorm(d, total){ var o={op:0,sup:0,prev:0}; if(d && typeof d==='object'){ o.op=+d.op||0; o.sup=+d.sup||0; o.prev=+d.prev||0; } else if(total){ o.op=+total||0; o.gen=true; } return o; }
+  function dotTotal(d){ return d?((+d.op||0)+(+d.sup||0)+(+d.prev||0)):0; }
+  function dotTexto(d){ if(d.gen) return d.op+' persona'+(d.op===1?'':'s'); var p=[]; if(d.op) p.push(d.op+' operario'+(d.op===1?'':'s')); if(d.sup) p.push(d.sup+' supervisor'+(d.sup===1?'':'es')); if(d.prev) p.push(d.prev+' prevencionista'+(d.prev===1?'':'s')); return p.join(' · '); }
+  // La app (Planificación) pide recargar cuando cambia la dotación de un trabajo
+  window.addEventListener('message',function(ev){ if(ev.origin===location.origin && ev.data==='iserv-recargar' && authed) cargarEventos(render); });
   function cargarEventos(cb){
     if(!sb){ if(cb)cb(); return; }
     var all=[], chunk=1000;
     function finish(){ if(_evCargados && window.parent!==window){ try{ window.parent.postMessage('iserv-eventos', location.origin); }catch(_){} } _evCargados=true;   // avisa a la app (Planificación) que hubo cambios
-      EVENTS=all.map(function(e){ return { id:e.id, fecha:e.fecha, fin:e.fecha_fin||'', serie:e.serie_id||'', hora:(/^all\s*day$/i.test(e.hora||'')?'Todo el día':(e.hora||'')), titulo:e.titulo||'', ubic:e.ubicacion||'', sitio:e.sitio||'', color:clienteColor(e.ubicacion), desc:e.descripcion||'', pers:(e.personas_nec!=null?e.personas_nec:null), tareas:(Array.isArray(e.tareas)?e.tareas:[]).map(function(t){ return String(t||'').trim(); }).filter(Boolean) }; }); if(cb)cb(); }
+      EVENTS=all.map(function(e){ return { id:e.id, fecha:e.fecha, fin:e.fecha_fin||'', serie:e.serie_id||'', hora:(/^all\s*day$/i.test(e.hora||'')?'Todo el día':(e.hora||'')), titulo:e.titulo||'', ubic:e.ubicacion||'', sitio:e.sitio||'', color:clienteColor(e.ubicacion), desc:e.descripcion||'', pers:(e.personas_nec!=null?e.personas_nec:null), dot:dotNorm(e.dotacion, e.personas_nec), tareas:(Array.isArray(e.tareas)?e.tareas:[]).map(function(t){ return String(t||'').trim(); }).filter(Boolean) }; }); if(cb)cb(); }
     function fetchFrom(off){
       sb.from('eventos').select('*').order('fecha',{ascending:true}).range(off, off+chunk-1).then(function(r){
         if(r.error){ console.warn('Supabase:',r.error.message); finish(); return; }
@@ -533,7 +549,7 @@
     document.getElementById('modal-body').innerHTML=
       '<div class="row"><svg class="det-ico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg><b>'+(function(){ if(e.fin&&e.fin>e.fecha){ var d2=new Date(e.fin+'T00:00:00'); var n=Math.round((new Date(e.fin)-new Date(e.fecha))/86400000)+1; return 'Del '+d.getDate()+' '+MES[d.getMonth()].slice(0,3)+' al '+d2.getDate()+' '+MES[d2.getMonth()].slice(0,3)+' '+d2.getFullYear()+' · '+n+' días'; } return d.getDate()+' de '+MES[d.getMonth()]+' '+d.getFullYear(); })()+'</b>'+(e.hora?' · '+esc(e.hora):'')+'</div>'+
       (e.ubic?'<div class="row"><svg class="det-ico" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>Cliente:<span class="cat-chip" style="background:'+e.color+'">'+esc(e.ubic)+'</span>'+(e.sitio?' <span style="color:#5a5e70;font-weight:600">· '+esc(e.sitio)+'</span>':'')+'</div>':'')+
-      (e.pers?'<div class="row"><svg class="det-ico" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg><span><b>'+e.pers+'</b> persona'+(e.pers===1?'':'s')+' necesaria'+(e.pers===1?'':'s')+'</span></div>':'')+
+      (dotTotal(e.dot)?'<div class="row"><svg class="det-ico" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg><span><b>'+dotTotal(e.dot)+'</b> necesarias · '+esc(dotTexto(e.dot))+'</span></div>':'')+
       (e.desc?'<div class="pl-desc">'+esc(e.desc)+'</div>':'')+
       ((e.tareas&&e.tareas.length)?'<div class="det-lbl">Tareas ('+e.tareas.length+')</div><ol class="det-tareas">'+e.tareas.map(function(t){ return '<li>'+esc(t)+'</li>'; }).join('')+'</ol>':'')+
       (authed?'<div class="fbtns" style="margin-top:14px"><button class="pl-del-btn" id="det-del">Eliminar</button><button class="pl-add" id="det-edit">✎ Editar</button></div>':'');
@@ -662,7 +678,7 @@
     poblarSitios(e?(e.ubic||''):'');
     document.getElementById('f-sitio').value=e?(e.sitio||''):'';
     document.getElementById('f-desc').value=e?(e.desc||''):'';
-    document.getElementById('f-pers').value=(e&&e.pers!=null)?e.pers:'';
+    var _d=e?e.dot:{op:0,sup:0,prev:0}; ['op','sup','prev'].forEach(function(k){ document.getElementById('f-d-'+k).value=_d[k]||''; }); totPers();
     F_TAREAS=e?(e.tareas||[]).slice():[]; pintarTareas(); document.getElementById('f-tarea-in').value='';
     pintarChipsHora(); actualizarDur();
     document.getElementById('f-del').style.display=e?'':'none';
@@ -698,7 +714,10 @@
   document.getElementById('f-tarea-in').addEventListener('paste',function(ev){ var t=(ev.clipboardData||window.clipboardData); t=t?t.getData('text'):''; if(t.indexOf('\n')<0) return; ev.preventDefault();
     t.split(/\r?\n+/).map(function(x){ return x.replace(/^\s*(?:[-*•]|\d+[.)])\s*/,'').trim(); }).filter(Boolean).forEach(function(x){ F_TAREAS.push(x); }); pintarTareas(); });
   // ---- Personas necesarias (stepper) ----
-  document.querySelectorAll('.ff-step button').forEach(function(b){ b.addEventListener('click',function(){ var inp=document.getElementById('f-pers'); var n=(parseInt(inp.value,10)||0)+(+b.dataset.d); inp.value=n<=0?'':Math.min(n,99); }); });
+  document.querySelectorAll('.ff-step button').forEach(function(b){ b.addEventListener('click',function(){ var inp=b.parentNode.querySelector('input'); var n=(parseInt(inp.value,10)||0)+(+b.dataset.d); inp.value=n<=0?'':Math.min(n,99); totPers(); }); });
+  document.querySelectorAll('.ff-roles input').forEach(function(i){ i.addEventListener('input',totPers); });
+  function dotForm(){ var d={}; ['op','sup','prev'].forEach(function(k){ d[k]=Math.max(0,parseInt(document.getElementById('f-d-'+k).value,10)||0); }); return d; }
+  function totPers(){ var t=dotTotal(dotForm()); document.getElementById('f-pers-tot').textContent=t?(t+' en total'):''; }
   // ---- Horario: atajos con los horarios más usados ----
   function pintarChipsHora(){
     var cnt={}; EVENTS.forEach(function(e){ var h=(e.hora||'').trim(); if(h) cnt[h]=(cnt[h]||0)+1; });
@@ -727,7 +746,8 @@
       titulo:document.getElementById('f-titulo').value.trim(), ubicacion:document.getElementById('f-ubic').value.trim(),
       sitio:document.getElementById('f-sitio').value.trim(),
       categoria:'Trabajo', descripcion:document.getElementById('f-desc').value,
-      personas_nec:(function(){ var v=parseInt(document.getElementById('f-pers').value,10); return v>0?v:null; })(),
+      dotacion:(function(){ var d=dotForm(); return dotTotal(d)?d:null; })(),
+      personas_nec:(function(){ var t=dotTotal(dotForm()); return t>0?t:null; })(),
       tareas:F_TAREAS.map(function(t){ return String(t||'').trim(); }).filter(Boolean) };
     // una tarea escrita pero sin presionar Enter también se guarda
     var _tPend=document.getElementById('f-tarea-in').value.trim(); if(_tPend) row.tareas.push(_tPend);
@@ -742,7 +762,7 @@
       var dur=row.fecha_fin?Math.round((new Date(row.fecha_fin+'T00:00:00')-base)/86400000):0;
       fechasSerie(_fi, repetir, cada, veces).forEach(function(fd){
         var fe=new Date(fd); if(dur) fe.setDate(fe.getDate()+dur);
-        rows.push({ fecha:iso(fd), fecha_fin:dur?iso(fe):null, hora:row.hora, titulo:row.titulo, ubicacion:row.ubicacion, sitio:row.sitio, categoria:'Trabajo', descripcion:row.descripcion, personas_nec:row.personas_nec, tareas:row.tareas, serie_id:serie });
+        rows.push({ fecha:iso(fd), fecha_fin:dur?iso(fe):null, hora:row.hora, titulo:row.titulo, ubicacion:row.ubicacion, sitio:row.sitio, categoria:'Trabajo', descripcion:row.descripcion, personas_nec:row.personas_nec, dotacion:row.dotacion, tareas:row.tareas, serie_id:serie });
       });
       if(editId){
         // Al editar con repetición: este trabajo pasa a ser el 1º de la nueva serie y se agregan los demás
