@@ -2235,7 +2235,7 @@
 
   var sb=null; try{ if(window.supabase) sb=window.supabase.createClient(SB_URL,SB_KEY); }catch(e){}
   // Solo estos 3 (supervisores) generan reporte, editan datos/horas y eliminan. El resto solo adjunta fotos.
-  var ADMIN_EMAILS=['enzo.castro@innovaservi.com','jorge.castro@innovaservi.com','cristopher.ruiz@innovaservi.com'];
+  var ADMIN_EMAILS=['enzo.castro@innovaservi.com','enzo.castro@innovaservi.cl','jorge.castro@innovaservi.com','cristopher.ruiz@innovaservi.com'];
   var authed=false, userEmail='', isAdmin=false;
   // Permisos del usuario logueado (ver "ACCESOS / PERMISOS v2"). Los dueños (isAdmin) pueden todo.
   var MI_PERM=null, MI_ROL='', MI_TIENE=false, NIV_ORD={oculto:0,ver:1,editar:2,total:3};
@@ -2369,7 +2369,7 @@
     if($('btn-cli')) $('btn-cli').classList.toggle('hide', op);     // Clientes: solo admin (en el header)
     if($('btn-alertas')) $('btn-alertas').classList.toggle('hide', op); // Alertas: solo admin (en el header)
     if($('btn-acc-h')) $('btn-acc-h').classList.toggle('hide', !puedeGestionar()); // Accesos: Enzo o quien tenga "gestionar accesos"
-    if($('trab-export')) $('trab-export').classList.toggle('hide', !((userEmail||'').trim().toLowerCase()===SUPER_EMAIL || (!esDueno(userEmail) && puede('trabajadores.exportar'))));
+    if($('trab-export')) $('trab-export').classList.toggle('hide', !(esSuper(userEmail) || (!esDueno(userEmail) && puede('trabajadores.exportar'))));
     document.querySelectorAll('.sb-admin').forEach(function(x){ x.classList.toggle('hide', op); });   // sidebar: items admin (luego aplicarSecciones afina por permiso)
     document.querySelectorAll('.sb-enzo').forEach(function(x){ x.classList.toggle('hide', !puedeGestionar()); });
     if(isAdmin){ ['v-asist','v-fotos'].forEach(function(vv){ var b=document.querySelector('.sbar .sb-item[data-v="'+vv+'"]'); if(b) b.classList.add('hide'); }); }   // Asistencia y Fotos son de terreno: fuera del menu de los duenos
@@ -8720,7 +8720,8 @@
   var PERM_MODS=[]; PERM_GRUPOS.forEach(function(g){ g[1].forEach(function(m){ PERM_MODS.push({k:m[0],nombre:m[1],v:m[2],seg:m[3],acc:m[4],grupo:g[0]}); }); });
   var PERM_MOD={}; PERM_MODS.forEach(function(m){ PERM_MOD[m.k]=m; });
   var SEG_MOD={trab:'trabajadores',doc:'documentacion',salida:'salidas',empresa:'documentacion',zerty:'documentacion'};
-  var SUPER_EMAIL='enzo.castro@innovaservi.com';
+  var SUPER_EMAIL='enzo.castro@innovaservi.com', SUPER_EMAILS=[SUPER_EMAIL,'enzo.castro@innovaservi.cl'];
+  function esSuper(email){ return SUPER_EMAILS.indexOf((email||'').trim().toLowerCase())>=0; }
 
   // Roles base (si la tabla roles_perm aún no existe o está vacía). Valor: nivel, o [nivel, {accion:bool}] para ajustar.
   var ROLES_BASE=[
@@ -8776,7 +8777,7 @@
 
   // ---------- Pantalla de Accesos ----------
   var PERMISOS=[], ACC_EMAIL=null, ACC_TRAB=[], ACC_TAB='personas', ACC_MODO='persona', ACC_ROL=null, AF_PERM=null, AF_ORIG=null;
-  function puedeGestionar(){ return (userEmail||'').trim().toLowerCase()===SUPER_EMAIL || !!(MI_PERM && MI_PERM.accesos && MI_PERM.accesos.a.gestionar); }
+  function puedeGestionar(){ return esSuper(userEmail) || !!(MI_PERM && MI_PERM.accesos && MI_PERM.accesos.a.gestionar); }
   function cargarPermisos(){ if(!sb) return;
     cargarRoles(function(){
       sb.from('permisos').select('*').order('rol',{ascending:true}).then(function(r){ PERMISOS=(r&&r.data)||[]; pintarAcc(); });
@@ -8949,9 +8950,9 @@
     if(ACC_MODO==='rol'){ guardarRol(); return; }
     var email=$('af-email').value.trim().toLowerCase(); if(!email){ toast('Pon el correo.'); return; }
     if(!ACC_EMAIL && PERMISOS.some(function(p){ return (p.email||'').toLowerCase()===email; })){ toast('Ese correo ya tiene acceso: búscalo en la lista.'); return; }
-    if(email===SUPER_EMAIL && ((userEmail||'').toLowerCase()!==SUPER_EMAIL)){ toast('No puedes modificar al administrador principal.'); return; }
+    if(esSuper(email) && !esSuper(userEmail)){ toast('No puedes modificar al administrador principal.'); return; }
     var meta={activo:$('af-activo').value!=='0', vence:$('af-vence').value||null, nota:$('af-nota').value.trim()||null};
-    if(email===(userEmail||'').trim().toLowerCase() && (!meta.activo || (AF_PERM.accesos && !AF_PERM.accesos.a.gestionar && email!==SUPER_EMAIL))){
+    if(email===(userEmail||'').trim().toLowerCase() && (!meta.activo || (AF_PERM.accesos && !AF_PERM.accesos.a.gestionar && !esSuper(email)))){
       if(!confirm('Te estás quitando el acceso a esta pantalla. ¿Seguro?')) return; }
     var orden=PERM_MODS.filter(function(m){ return AF_PERM[m.k].n!=='oculto'; }).map(function(m){ return m.k; });
     var row={ email:email, rol:$('af-rol').value, nombre:$('af-nombre').value.trim(), secciones:seccionesDe(AF_PERM,meta), orden:orden, updated_at:new Date().toISOString() };
@@ -8992,7 +8993,7 @@
     if(ACC_MODO==='rol'){ if(!ACC_ROL) return; if(!confirm('¿Eliminar este rol?')) return;
       busy(true,'Eliminando…'); sb.from('roles_perm').delete().eq('clave',ACC_ROL).then(function(r){ busy(false); if(r.error){ toast('No se pudo: '+r.error.message); return; } logAcc('rol', ACC_ROL, ['Rol eliminado']); toast('Rol eliminado'); $('acc-ficha').classList.add('hide'); cargarPermisos(); }); return; }
     if(!ACC_EMAIL) return;
-    if(ACC_EMAIL===SUPER_EMAIL){ toast('No se puede quitar al administrador principal.'); return; }
+    if(esSuper(ACC_EMAIL)){ toast('No se puede quitar al administrador principal.'); return; }
     if(!confirm('¿Quitar a esta persona de los accesos? (Si solo quieres bloquearla un tiempo, usa Estado: Suspendido)')) return;
     busy(true,'Quitando…');
     var obj=$('af-nombre').value.trim()||ACC_EMAIL;
