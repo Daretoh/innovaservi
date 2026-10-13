@@ -1401,6 +1401,110 @@
   .imp-card h3{font-size:1.1rem;color:var(--ink);font-weight:800;margin-bottom:6px;}
   .imp-card textarea{width:100%;font:500 14px var(--font);padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:var(--alt);color:var(--ink);resize:vertical;}
   .imp-card textarea:focus{outline:none;border-color:var(--orange);background:var(--card);}
+  /* ---------- Costos · Mano de obra ---------- */
+  :root{ --cs-su:#1baf7a; --cs-tr:#2a78d6; --cs-vu:#eda100; --cs-pe:#e87ba4; --cs-ex:#4a3aa7; --cs-grid:#eceef5; }
+  :root[data-theme="dark"]{ --cs-su:#199e70; --cs-tr:#3987e5; --cs-vu:#c98500; --cs-pe:#d55181; --cs-ex:#9085e9; --cs-grid:#2a2f4a; }
+  .cos-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:9px 10px;margin-bottom:12px;}
+  .cos-bar .cos-nav{display:flex;align-items:center;gap:6px;flex:1;min-width:230px;}
+  .cos-bar .cos-lbl{flex:1;text-align:center;min-width:0;}
+  .cos-bar .cos-lbl small{display:block;font:800 10px var(--font);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);}
+  .cos-bar .cos-lbl b{font:800 15px var(--font);color:var(--ink);}
+  .cos-bar select{font:600 13px var(--font);padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);max-width:220px;}
+  .cos-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;margin-bottom:12px;}
+  .cos-kpi{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;min-width:0;}
+  .cos-kpi .l{font:800 10px var(--font);text-transform:uppercase;letter-spacing:.05em;color:var(--muted);}
+  .cos-kpi .v{font:800 22px var(--font);color:var(--ink);margin-top:4px;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .cos-kpi .s{font:600 11.5px var(--font);color:var(--muted);margin-top:2px;}
+  .cos-kpi.main{background:linear-gradient(135deg,#12163f,#1a1f6e);border-color:transparent;}
+  .cos-kpi.main .l{color:rgba(255,255,255,.7);} .cos-kpi.main .v{color:#fff;font-size:26px;} .cos-kpi.main .s{color:rgba(255,255,255,.75);}
+  @media(max-width:640px){ .cos-kpi.main{grid-column:1/-1;} .cos-bar select{max-width:none;flex:1;} .cos-kpis{grid-template-columns:repeat(2,minmax(0,1fr));} }
+  .cos-delta{display:inline-flex;align-items:center;gap:3px;font:800 11px var(--font);padding:2px 7px;border-radius:999px;margin-right:4px;}
+  .cos-delta svg{width:11px;height:11px;}
+  .cos-delta.up{background:rgba(255,107,0,.2);color:#ffb37a;} .cos-delta.dn{background:rgba(34,160,107,.22);color:#7ee0b4;} .cos-delta.eq{background:rgba(255,255,255,.14);color:#fff;}
+  .cos-grid{display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:12px;}
+  @media(min-width:1000px){ .cos-grid.g21{grid-template-columns:minmax(0,1.75fr) minmax(0,1fr);} .cos-grid.g11{grid-template-columns:minmax(0,1fr) minmax(0,1fr);} }
+  .cos-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 16px;min-width:0;}
+  .cos-card h3{font:800 14px var(--font);color:var(--ink);margin:0;}
+  .cos-card .cos-sub{font:600 11.5px var(--font);color:var(--muted);margin:2px 0 12px;}
+  .cos-hd{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+  .cos-leg{display:flex;gap:12px;flex-wrap:wrap;font:600 11.5px var(--font);color:var(--body);}
+  .cos-leg span{display:inline-flex;align-items:center;gap:5px;}
+  .cos-sw{width:10px;height:10px;border-radius:3px;display:inline-block;flex:none;}
+  /* columnas apiladas */
+  .cos-chart{position:relative;height:230px;margin:8px 0 0 46px;}
+  .cos-yl{position:absolute;left:-46px;width:40px;text-align:right;font:600 10px var(--font);color:var(--muted);transform:translateY(-50%);font-variant-numeric:tabular-nums;}
+  .cos-gl{position:absolute;left:0;right:0;border-top:1px solid var(--cs-grid);}
+  .cos-gl.base{border-top-color:var(--line);}
+  .cos-cols{position:absolute;inset:0;display:flex;align-items:flex-end;gap:2px;}
+  .cos-col{flex:1;min-width:0;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;cursor:default;position:relative;}
+  .cos-col .stk{width:100%;max-width:38px;display:flex;flex-direction:column-reverse;gap:2px;}
+  .cos-col .stk i{display:block;width:100%;min-height:0;}
+  .cos-col .stk i:last-child{border-radius:4px 4px 0 0;}
+  .cos-col:hover .stk{filter:brightness(1.08);}
+  .cos-col.hoy::after{content:'';position:absolute;bottom:-6px;width:5px;height:5px;border-radius:50%;background:var(--orange);}
+  .cos-col.fut .stk{opacity:.35;}
+  .cos-xl{display:flex;gap:2px;margin:9px 0 0 46px;}
+  .cos-xl span{flex:1;min-width:0;position:relative;height:13px;}
+  .cos-xl span em{position:absolute;left:50%;transform:translateX(-50%);font:600 10px var(--font);font-style:normal;color:var(--muted);white-space:nowrap;}
+  .cos-tip{position:fixed;z-index:90;pointer-events:none;background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:0 14px 34px -12px rgba(12,15,46,.35);padding:9px 11px;font:600 12px var(--font);color:var(--body);min-width:190px;}
+  .cos-tip b.t{display:block;font:800 12.5px var(--font);color:var(--ink);margin-bottom:5px;}
+  .cos-tip .r{display:flex;align-items:center;gap:6px;justify-content:space-between;margin-top:2px;}
+  .cos-tip .r span{display:inline-flex;align-items:center;gap:6px;}
+  .cos-tip .r b{color:var(--ink);font-variant-numeric:tabular-nums;}
+  .cos-tip .tot{border-top:1px solid var(--line);margin-top:6px;padding-top:6px;}
+  /* composición */
+  .cos-stack{display:flex;gap:2px;height:16px;border-radius:5px;overflow:hidden;margin:4px 0 14px;}
+  .cos-stack i{display:block;height:100%;}
+  .cos-comp{display:flex;flex-direction:column;gap:9px;}
+  .cos-comp .r{display:grid;grid-template-columns:14px 1fr auto 46px;align-items:center;gap:8px;font:600 13px var(--font);color:var(--body);}
+  .cos-comp .r b{color:var(--ink);font-variant-numeric:tabular-nums;text-align:right;}
+  .cos-comp .r em{font-style:normal;color:var(--muted);font-size:11.5px;text-align:right;font-variant-numeric:tabular-nums;}
+  .cos-comp .r small{display:block;color:var(--muted);font-size:11px;font-weight:600;}
+  .cos-comp .r.neg b{color:var(--bad);}
+  .cos-comp .tot{border-top:1px solid var(--line);padding-top:9px;}
+  .cos-comp .tot b{font-size:15px;}
+  /* barras horizontales */
+  .cos-hb{display:flex;flex-direction:column;gap:10px;}
+  .cos-hb .r{display:grid;grid-template-columns:minmax(90px,150px) 1fr auto;align-items:center;gap:10px;cursor:pointer;border-radius:8px;padding:2px 4px;margin:0 -4px;}
+  .cos-hb .r:hover{background:var(--alt);}
+  .cos-hb .r.on{background:rgba(255,107,0,.1);}
+  .cos-hb .n{font:700 12.5px var(--font);color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .cos-hb .n small{display:block;font:600 10.5px var(--font);color:var(--muted);}
+  .cos-hb .trk{height:12px;background:var(--alt);border-radius:0 4px 4px 0;overflow:hidden;}
+  .cos-hb .trk i{display:block;height:100%;border-radius:0 4px 4px 0;}
+  .cos-hb .v{font:800 12.5px var(--font);color:var(--ink);text-align:right;font-variant-numeric:tabular-nums;min-width:96px;}
+  .cos-hb .v small{display:block;font:600 10.5px var(--font);color:var(--muted);}
+  /* tablas */
+  .cos-tabs{display:flex;gap:4px;background:var(--alt);border-radius:10px;padding:3px;}
+  .cos-tabs button{border:none;background:none;font:700 12.5px var(--font);color:var(--muted);padding:7px 12px;border-radius:8px;cursor:pointer;}
+  .cos-tabs button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(12,15,46,.12);}
+  .cos-q{font:500 13px var(--font);padding:8px 11px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);min-width:0;width:220px;max-width:100%;}
+  .cos-scroll{overflow-x:auto;margin:10px -16px -14px;-webkit-overflow-scrolling:touch;}
+  .cos-tbl{width:100%;border-collapse:collapse;font:500 13px var(--font);color:var(--body);}
+  .cos-tbl th{font:800 10.5px var(--font);text-transform:uppercase;letter-spacing:.04em;color:var(--muted);text-align:right;padding:9px 12px;border-bottom:1px solid var(--line);white-space:nowrap;cursor:pointer;user-select:none;background:var(--card2);}
+  .cos-tbl th:first-child,.cos-tbl td:first-child{text-align:left;padding-left:16px;}
+  .cos-tbl th:last-child,.cos-tbl td:last-child{padding-right:16px;}
+  .cos-tbl th.on{color:var(--orange-2);}
+  .cos-tbl td{padding:10px 12px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;}
+  .cos-tbl tbody tr{cursor:pointer;} .cos-tbl tbody tr:hover td{background:var(--alt);}
+  .cos-tbl td.nm{white-space:normal;min-width:220px;max-width:380px;}
+  .cos-tbl td.nm b{display:block;color:var(--ink);font-weight:700;}
+  .cos-tbl td.nm small{display:inline-flex;align-items:center;gap:5px;font:600 11px var(--font);color:var(--muted);margin-top:2px;}
+  .cos-tbl td.cost{color:var(--ink);font-weight:800;}
+  .cos-tbl td.shr{min-width:110px;}
+  .cos-shr{display:flex;align-items:center;gap:7px;justify-content:flex-end;}
+  .cos-shr i{display:block;height:6px;border-radius:3px;background:var(--orange);opacity:.85;}
+  .cos-shr span{font:700 11px var(--font);color:var(--muted);min-width:34px;text-align:right;}
+  .cos-tag{display:inline-block;font:800 9.5px var(--font);letter-spacing:.04em;text-transform:uppercase;padding:2px 6px;border-radius:5px;background:var(--chip);color:var(--body);}
+  .cos-tag.fj{background:rgba(26,31,110,.1);color:var(--navy);}
+  :root[data-theme="dark"] .cos-tag.fj{background:rgba(144,133,233,.18);color:#c9c3ff;}
+  .cos-foot td{font-weight:800;color:var(--ink);background:var(--card2);cursor:default;}
+  .cos-note{font:500 11.5px var(--font);color:var(--muted);margin:10px 2px 0;line-height:1.5;}
+  .cos-empty{text-align:center;padding:46px 16px;color:var(--muted);font:600 14px var(--font);}
+  .cos-empty svg{width:40px;height:40px;opacity:.5;margin-bottom:8px;}
+  #cos-detalle{position:fixed;inset:0;z-index:75;background:var(--alt);overflow-y:auto;-webkit-overflow-scrolling:touch;}
+  #cos-detalle.hide{display:none;}
+  #cos-detalle .ficha-body{max-width:980px;}
 </style>
 </head>
 <body>
@@ -1463,6 +1567,9 @@
 
       <div class="sbar-grp sb-admin">Remuneraciones</div>
       <button class="sb-item sb-admin" data-v="v-remu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg>Remuneraciones</button>
+
+      <div class="sbar-grp sb-admin">Costos</div>
+      <button class="sb-item sb-admin" data-v="v-costos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6" rx=".5"/><rect x="12" y="8" width="3" height="10" rx=".5"/><rect x="17" y="5" width="3" height="13" rx=".5"/></svg>Mano de obra</button>
 
       <div class="sbar-grp sb-enzo">Sistema</div>
       <button class="sb-item sb-enzo" data-v="v-acc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Accesos</button>
@@ -1708,6 +1815,22 @@
         <p class="note" style="margin:0 0 10px">Por hora: se pagan todas las horas. Contrato: solo las horas <b>fuera de la jornada</b> (el sueldo del contrato se paga aparte).</p>
         <div id="remu-cfg-list"></div>
       </div>
+    </section>
+
+    <!-- ---- COSTOS · Mano de obra (solo admin / permiso "costos") ---- -->
+    <section class="view" id="v-costos">
+      <div class="h-row"><h2>Costos <span class="cnt">Mano de obra</span></h2><button id="cos-xls" class="btn ghost small" style="width:auto" type="button"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13l4 5M12 13l-4 5"/></svg>Excel</button></div>
+      <div class="card cos-bar">
+        <div class="seg" id="cos-per"><button class="seg-b on" data-p="mes" type="button">Mes</button><button class="seg-b" data-p="tri" type="button">Trimestre</button><button class="seg-b" data-p="anio" type="button">Año</button></div>
+        <div class="cos-nav">
+          <button id="cos-prev" class="btn ghost small" style="width:auto" type="button" aria-label="Período anterior">‹</button>
+          <div class="cos-lbl"><small id="cos-lbl-s">Período</small><b id="cos-lbl"></b></div>
+          <button id="cos-hoy" class="btn ghost small" style="width:auto" type="button">Actual</button>
+          <button id="cos-next" class="btn ghost small" style="width:auto" type="button" aria-label="Período siguiente">›</button>
+        </div>
+        <select id="cos-cli" title="Filtrar por cliente"><option value="">Todos los clientes</option></select>
+      </div>
+      <div id="cos-body"></div>
     </section>
 
     <!-- ---- RRHH (Trabajadores + Documentación) (solo admin) ---- -->
@@ -2237,6 +2360,16 @@
   <div class="ficha-body"><div id="rd-body"></div></div>
 </div>
 
+<!-- Detalle de costos (faena o trabajador) -->
+<div id="cos-detalle" class="hide">
+  <div class="ficha-bar">
+    <button id="cos-d-close" class="btn ghost small" style="width:auto">✕ Cerrar</button>
+    <b id="cos-d-title">Detalle</b>
+    <span style="width:56px"></span>
+  </div>
+  <div class="ficha-body"><div id="cos-d-body"></div></div>
+</div>
+
 <!-- Ajuste del monto contable (por trabajador/semana) -->
 <div id="remu-aj" class="hide">
   <div class="raj-card">
@@ -2555,7 +2688,7 @@
     if(!isAdmin) aplicarSecciones();   // muestra solo los apartados permitidos
   }
   // Apartado (módulo de permisos) de cada vista / botón del menú.
-  var MOD_DE_V={ 'v-alertas':'alertas','v-reporte':'informe','v-hist':'reportes','v-horas':'registro','v-asist':'asistencia','v-fotos':'multimedia','v-cuadrilla':'preparacion','v-veh':'vehiculos','v-clientes':'clientes','v-planif':'planificacion','v-plan':'calendario','v-matriz':'matriz','v-remu':'remu','v-acc':'accesos' };
+  var MOD_DE_V={ 'v-alertas':'alertas','v-reporte':'informe','v-hist':'reportes','v-horas':'registro','v-asist':'asistencia','v-fotos':'multimedia','v-cuadrilla':'preparacion','v-veh':'vehiculos','v-clientes':'clientes','v-planif':'planificacion','v-plan':'calendario','v-matriz':'matriz','v-remu':'remu','v-costos':'costos','v-acc':'accesos' };
   var RRHH_MODS=['trabajadores','documentacion','salidas'];
   function verRrhh(){ return RRHH_MODS.some(verMod); }
   function modDeNav(el){ var v=el.dataset.v; if(v==='v-rrhh') return el.dataset.seg?SEG_MOD[el.dataset.seg]:null; return MOD_DE_V[v]||null; }
@@ -2667,7 +2800,7 @@
     document.querySelectorAll('.sbar .sb-item[data-v]:not([data-seg])').forEach(function(x){ x.classList.toggle('on',x.dataset.v===v); });
     if(v!=='v-rrhh') document.querySelectorAll('.sbar .sb-item[data-seg]').forEach(function(x){ x.classList.remove('on'); });
     document.querySelectorAll('.view').forEach(function(x){ x.classList.toggle('on',x.id===v); });
-    var _main=document.querySelector('main'); if(_main){ _main.classList.toggle('wide', v==='v-inicio'||v==='v-remu'||v==='v-horas'||v==='v-rrhh'||v==='v-planif'); _main.classList.toggle('planwide', v==='v-planif'); _main.classList.toggle('planview', v==='v-plan'); _main.classList.toggle('mesfull', v==='v-remu'&&REMU_MODO==='mes'); }  // vistas anchas / calendario full
+    var _main=document.querySelector('main'); if(_main){ _main.classList.toggle('wide', v==='v-inicio'||v==='v-remu'||v==='v-costos'||v==='v-horas'||v==='v-rrhh'||v==='v-planif'); _main.classList.toggle('planwide', v==='v-planif'); _main.classList.toggle('planview', v==='v-plan'); _main.classList.toggle('mesfull', v==='v-remu'&&REMU_MODO==='mes'); }  // vistas anchas / calendario full
     if(v==='v-inicio') cargarInicio();
     if(v==='v-hist') cargarRegistros(pintarRegistros);
     if(v==='v-horas') cargarHoras();
@@ -2675,6 +2808,7 @@
     if(v==='v-matriz'){ cargarPlantillas(renderMatriz); }
     if(v==='v-veh'){ if(puede('vehiculos.flota')){ cargarVeh(pintarVehList); } else { cargarChoferForm(); } }
     if(v==='v-remu'){ cargarRemu(); }
+    if(v==='v-costos'){ cargarCostos(); }
     if(v==='v-rrhh'){ cargarRrhh(); if(!isAdmin && typeof rrhhSeg==='function'){ var _on=document.querySelector('.rrhh-seg.on'); if(!_on || !verMod(SEG_MOD[_on.dataset.seg])) rrhhSeg(primerSegRrhh()); } }
     if(v==='v-clientes'){ cargarClientes(pintarCli); }
     if(v==='v-acc'){ cargarPermisos(); }
@@ -6522,6 +6656,360 @@
     });
   });
 
+  // ====== COSTOS · MANO DE OBRA ======
+  // Mismo cálculo que Remuneraciones (calcRemu, mes a mes, con ajustes por día y por faena) → el total cuadra con lo que se paga.
+  // Cada peso se reparte a una faena y un día ("libro" de movimientos):
+  //  · tratos/horas del día → según las horas de cada faena ese día (o el monto ajustado por faena, si existe);
+  //  · vueltas anotadas en el registro de horas → a su faena;
+  //  · sueldo base de fijos, peajes, extras, descuentos y vueltas sin faena → según la proporción de horas del trabajador en el mes
+  //    (si no trabajó horas ese mes, quedan en "Sin faena asignada", repartidas en los días del mes).
+  var COS={per:'mes', ref:null, cli:'', tab:'fae', q:'', sort:{fae:['m',-1], trab:['m',-1]}, tok:0, L:null, W:null, Rg:null, tips:[]};
+  var COS_COMP=[['su','Sueldos base','fijos con contrato'],['tr','Tratos y horas','por horas trabajadas'],['vu','Vueltas','traslados de personal'],['pe','Peajes','reembolsos'],['ex','Extras','bonos y adicionales']];
+  var COS_MES3=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  var COS_SIN='Sin faena asignada';
+  function cosMesAdd(mes,n){ var d=new Date(+mes.slice(0,4), +mes.slice(5,7)-1+n, 1); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
+  function cosDias(a,b){ return Math.round((new Date(b+'T12:00:00')-new Date(a+'T12:00:00'))/864e5); }
+  function cosRango(per, ref){
+    var y=+ref.slice(0,4), m=+ref.slice(5,7), ini;
+    if(per==='anio') ini=y+'-01'; else if(per==='tri') ini=y+'-'+String(Math.floor((m-1)/3)*3+1).padStart(2,'0'); else ini=ref;
+    var n=per==='anio'?12:(per==='tri'?3:1), meses=[], prev=[], i;
+    for(i=0;i<n;i++) meses.push(cosMesAdd(ini,i));
+    for(i=0;i<n;i++) prev.push(cosMesAdd(ini,i-n));
+    var lblDe=function(ms){ var yy=ms[0].slice(0,4), mm=+ms[0].slice(5,7); return n===12?yy:(n===3?('T'+(Math.floor((mm-1)/3)+1)+' '+yy):(MESES_L[mm-1]+' '+yy)); };
+    return {meses:meses, prev:prev, n:n, ini:meses[0]+'-01', fin:rmRango(meses[n-1]).fin, pini:prev[0]+'-01', pfin:rmRango(prev[n-1]).fin,
+      lbl:lblDe(meses)+(n===3?(' · '+COS_MES3[+meses[0].slice(5)-1]+'–'+COS_MES3[+meses[2].slice(5)-1]):''), plbl:lblDe(prev)};
+  }
+  // Cliente de una faena ("CERMAQ · Chinquihue — TÍTULO" → CERMAQ). Si el nombre empieza con un cliente registrado, se usa ese.
+  var COS_CLI={};
+  function cosCliente(fa){ if(!fa) return ''; if(fa in COS_CLI) return COS_CLI[fa];
+    var c=(claveEmpresa(fa)||'').toUpperCase().replace(/\s+/g,' ').trim(), best='';
+    (CLIENTES||[]).forEach(function(x){ var n=(x.nombre||'').trim().toUpperCase(); if(n && (c===n || c.indexOf(n+' ')===0) && n.length>best.length) best=n; });
+    return (COS_CLI[fa]=best||c); }
+  function cosTitulo(fa){ var p=(fa||'').split(' — '); return (p.length>1?p.slice(1).join(' — '):(fa||'')).trim(); }
+  function cosSitio(fa){ var p=empresaDeFaena(fa).split(' · '); return p.length>1?p.slice(1).join(' · ').trim():''; }
+  function cosColorCli(c){ return c?colorEmpresa(c).border:'#94a3b8'; }
+  function cosCorto(n){ var a=Math.abs(n); if(a>=1e6) return '$'+(n/1e6).toFixed(a>=1e7?0:1).replace('.',',')+'M'; if(a>=1e3) return '$'+Math.round(n/1e3)+'k'; return '$'+Math.round(n); }
+  function cosHoras(min){ var h=min/60; return (h>=100?Math.round(h).toLocaleString('es-CL'):h.toFixed(1).replace('.',','))+' h'; }
+  function cosPct(a,b){ return b?Math.round(a/b*1000)/10:0; }
+
+  // Libro de un mes: [{f, fa, tk, c, m, min}] (c: su|tr|vu|pe|ex|de; de en negativo).
+  function cosLibroMes(mes, B){
+    var R=rmRango(mes), ini=R.ini, fin=R.fin, hoy=todayISO(), out=[];
+    if(ini>hoy) return out;
+    var dentro=function(f){ return f>=ini && f<=fin; };
+    var D={ lun:ini, fin:fin, trab:B.trab, regs:B.regs.filter(function(h){ return dentro(h.fecha); }), vg:B.vg.filter(function(g){ return dentro(g.fecha); }),
+      items:B.items.filter(function(it){ return it.semana>=sumarDias(ini,-3) && it.semana<=sumarDias(fin,-3); }),   // semana cuenta en el mes de su jueves (igual que la asistencia mensual)
+      ajDia:B.ajDia, ajFae:B.ajFae, valorVuelta:B.valorVuelta, valorHora:B.valorHora };
+    if(!D.regs.length) return out;   // mes sin ningún registro de horas (antes de usar el sistema): no se inventan sueldos
+    var filas=calcRemu(D).filas, ya={};
+    filas.forEach(function(x){ ya[norm(x.t.nombre)]=1; });
+    B.trab.forEach(function(t){ var nm=norm(t.nombre); if(t.tipo_pago!=='contrato' || t.estado!=='activo' || ya[nm]) return; ya[nm]=1;   // fijos sin horas: igual cuesta su sueldo
+      filas.push({t:t,tipo:'contrato',vueltas:0,vv:0,vueltasMonto:0,peajes:0,bono:0,desc:0,H:null,diaMonto:{}}); });
+    var diasMes=[]; for(var f=ini; f<=fin && f<=hoy; f=sumarDias(f,1)) diasMes.push(f);
+    var devengo=diasMes.length/R.nd;   // mes en curso: sueldo base devengado a la fecha (mes cerrado = 1)
+    filas.forEach(function(x){
+      var t=x.t, tk=t.id?('id:'+t.id):('n:'+norm(t.nombre));
+      var w=B.W[tk]||(B.W[tk]={k:tk, nombre:titleCase(t.nombre)||'', cargo:(t.cargo||'').trim(), fijo:false, sinFicha:!t.id});
+      if(x.tipo==='contrato') w.fijo=true;
+      var celdas=[], minTot=0, vuDet=0, H=x.H;
+      var push=function(f,fa,c,m,mn){ if(!m && !mn) return; out.push({f:f, fa:fa, tk:tk, c:c, m:m, min:mn||0}); };
+      if(H){
+        var dia={};
+        H.detalle.forEach(function(d){ var o=dia[d.fecha]||(dia[d.fecha]={}), fa=d.faena||''; var g=o[fa]||(o[fa]={min:0,vu:0}); g.min+=(d.min||0); g.vu+=(d.vueltas||0); });
+        Object.keys(dia).forEach(function(f){
+          var o=dia[f], fas=Object.keys(o), raw=fas.reduce(function(a,fa){ return a+o[fa].min; },0);
+          var uni=(H.porDia[f]!=null)?H.porDia[f]:raw, monto=(x.diaMonto&&x.diaMonto[f])||0;
+          var minFa={}; fas.forEach(function(fa){ minFa[fa]=raw?o[fa].min*uni/raw:0; });   // horas sin solapes, por faena
+          var aj={}, ajSum=0, lib=[];
+          fas.forEach(function(fa){ var a=(B.ajFae&&t.id)?B.ajFae[t.id+'|'+f+'|'+fa]:null; if(a){ aj[fa]=a.monto; ajSum+=a.monto; } else lib.push(fa); });
+          var resto=monto-ajSum, minLib=lib.reduce(function(a,fa){ return a+minFa[fa]; },0), sh={};
+          if(!lib.length && ajSum>0) fas.forEach(function(fa){ sh[fa]=monto*aj[fa]/ajSum; });
+          else if(ajSum>0 && resto>=0) fas.forEach(function(fa){ sh[fa]=(fa in aj)?aj[fa]:(minLib?resto*minFa[fa]/minLib:resto/lib.length); });
+          else fas.forEach(function(fa){ sh[fa]=uni?monto*minFa[fa]/uni:monto/fas.length; });
+          fas.forEach(function(fa){
+            push(f,fa,'tr',sh[fa],minFa[fa]);
+            if(minFa[fa]>0){ celdas.push({f:f,fa:fa,min:minFa[fa]}); minTot+=minFa[fa]; }
+            if(o[fa].vu){ push(f,fa,'vu',o[fa].vu*x.vv,0); vuDet+=o[fa].vu; }
+          });
+        });
+      }
+      var esSueldo=x.tipo==='contrato' && t.id && +t.sueldo_base && !t.sueldo_empresa && !(t.sueldo_desde && mes<String(t.sueldo_desde).slice(0,7));
+      var rep=function(c,m){ if(!m) return;
+        if(minTot>0) celdas.forEach(function(cl){ push(cl.f,cl.fa,c,m*cl.min/minTot,0); });
+        else if(diasMes.length) diasMes.forEach(function(f){ push(f,'',c,m/diasMes.length,0); }); };
+      rep('su', esSueldo?+t.sueldo_base*devengo:0);
+      rep('vu', (x.vueltasMonto||0)-vuDet*(x.vv||0));
+      rep('pe', x.peajes||0);
+      rep('ex', x.bono||0);
+      rep('de', -(x.desc||0));
+    });
+    return out;
+  }
+
+  function cargarCostos(){
+    if(!COS.ref) COS.ref=todayISO().slice(0,7);
+    var Rg=cosRango(COS.per, COS.ref), tok=++COS.tok;
+    $('cos-lbl').textContent=Rg.lbl; $('cos-lbl-s').textContent=COS.per==='anio'?'Año':(COS.per==='tri'?'Trimestre':'Mes');
+    document.querySelectorAll('#cos-per .seg-b').forEach(function(b){ b.classList.toggle('on', b.dataset.p===COS.per); });
+    $('cos-next').disabled=(Rg.fin>=todayISO());
+    if(!sb) return;
+    $('cos-body').innerHTML='<p class="note" style="text-align:center;padding:48px 0">Calculando costos de '+esc(Rg.lbl)+'…</p>';
+    var a=Rg.pini, b=Rg.fin;
+    Promise.all([
+      sb.from('trabajadores').select('*').order('nombre',{ascending:true}).limit(1000),
+      traerTodo(function(){ return sb.from('horas').select('fecha,trabajador,empresa,lugar,faena,entrada,salida,vueltas').gte('fecha',a).lte('fecha',b).order('id'); }),
+      traerTodo(function(){ return sb.from('vehiculo_gastos').select('categoria,fecha,monto,cantidad,chofer').in('categoria',['vuelta','peaje']).gte('fecha',a).lte('fecha',b).order('id'); }),
+      traerTodo(function(){ return sb.from('remuneracion_items').select('*').gte('semana',sumarDias(a,-3)).lte('semana',sumarDias(b,-3)).order('id'); }),
+      sb.from('config').select('*').in('clave',['valor_vuelta','valor_hora']),
+      traerTodo(function(){ return sb.from('remu_ajuste_dia').select('*').gte('fecha',a).lte('fecha',b).order('fecha'); }),
+      traerTodo(function(){ return sb.from('remu_ajuste_faena').select('*').gte('fecha',a).lte('fecha',b).order('fecha'); }),
+      new Promise(function(res){ if(CLIENTES&&CLIENTES.length) res(); else cargarClientes(res); }),
+      new Promise(function(res){ if(CARGOS&&CARGOS.length) res(); else if(typeof cargarCargos==='function') cargarCargos(res); else res(); })
+    ]).then(function(rs){
+      if(tok!==COS.tok) return;   // cambió el período mientras cargaba
+      if(rs[1].error){ $('cos-body').innerHTML='<p class="note">No se pudieron cargar las horas: '+esc(rs[1].error.message||'')+'</p>'; return; }
+      var cfg={}; ((rs[4]&&rs[4].data)||[]).forEach(function(c){ cfg[c.clave]=+c.valor||0; });
+      var ajDia={}; (rs[5].data||[]).forEach(function(x){ ajDia[x.trabajador_id+'|'+x.fecha]={monto:(+x.monto||0), obs:x.obs||''}; });
+      var ajFae={}; (rs[6].data||[]).forEach(function(x){ ajFae[x.trabajador_id+'|'+x.fecha+'|'+(x.faena||'')]={monto:(+x.monto||0), obs:x.obs||''}; });
+      var B={ trab:(rs[0]&&rs[0].data)||[], regs:rs[1].data||[], vg:rs[2].data||[], items:rs[3].data||[], ajDia:ajDia, ajFae:ajFae,
+        valorVuelta:cfg.valor_vuelta||0, valorHora:cfg.valor_hora||0, W:{} };
+      var L=[]; COS_CLI={};
+      Rg.prev.concat(Rg.meses).forEach(function(mes){ L=L.concat(cosLibroMes(mes,B)); });
+      L.forEach(function(r){ r.cli=cosCliente(r.fa); });
+      COS.L=L; COS.W=B.W; COS.Rg=Rg;
+      // clientes del período en el filtro
+      var cs={}; L.forEach(function(r){ if(r.f>=Rg.ini && r.cli) cs[r.cli]=(cs[r.cli]||0)+r.m; });
+      if(COS.cli && !(COS.cli in cs)) cs[COS.cli]=0;
+      $('cos-cli').innerHTML='<option value="">Todos los clientes</option>'+Object.keys(cs).sort(function(p,q){ return cs[q]-cs[p]; }).map(function(c){ return '<option value="'+enc(c)+'"'+(c===COS.cli?' selected':'')+'>'+esc(c)+'</option>'; }).join('');
+      pintarCostos();
+    }, function(e){ if(tok===COS.tok) $('cos-body').innerHTML='<p class="note">Error al calcular: '+esc((e&&e.message)||String(e))+'</p>'; });
+  }
+
+  // Suma un conjunto de movimientos.
+  function cosSuma(rows){
+    var s={m:0, bruto:0, min:0, c:{su:0,tr:0,vu:0,pe:0,ex:0,de:0}, dias:{}, tk:{}, fa:{}, cli:{}};
+    rows.forEach(function(r){ s.m+=r.m; s.c[r.c]+=r.m; if(r.c!=='de') s.bruto+=r.m; s.min+=r.min;
+      if(r.min>0){ s.dias[r.f]=1; s.tk[r.tk]=1; if(r.fa){ s.fa[r.fa]=1; s.cli[r.cli]=1; } } });
+    s.nDias=Object.keys(s.dias).length; s.nTk=Object.keys(s.tk).length; s.nFa=Object.keys(s.fa).length; s.nCli=Object.keys(s.cli).length;
+    s.ph=s.min?s.m/(s.min/60):0; return s; }
+  function cosAgrupar(rows, key){ var g={}; rows.forEach(function(r){ var k=key(r); (g[k]||(g[k]=[])).push(r); });
+    return Object.keys(g).map(function(k){ var s=cosSuma(g[k]); s.k=k; s.rows=g[k]; return s; }); }
+  function cosFiltrados(){ var Rg=COS.Rg, cli=COS.cli, hoy=todayISO();
+    var pasa=function(r){ return !cli || r.cli===cli; };
+    var cur=COS.L.filter(function(r){ return r.f>=Rg.ini && r.f<=Rg.fin && pasa(r); });
+    // Período en curso: se compara con el mismo tramo del período anterior (ej. 1–13 oct vs 1–13 sep).
+    var corte=Rg.pfin, enCurso=(hoy>=Rg.ini && hoy<=Rg.fin);
+    if(enCurso){ corte=sumarDias(Rg.pini, cosDias(Rg.ini,hoy)); if(corte>Rg.pfin) corte=Rg.pfin; }
+    var prev=COS.L.filter(function(r){ return r.f>=Rg.pini && r.f<=corte && pasa(r); });
+    return {cur:cur, prev:prev, enCurso:enCurso, corte:corte}; }
+
+  function cosIco(d){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">'+d+'</svg>'; }
+  function pintarCostos(){
+    var Rg=COS.Rg, F=cosFiltrados(), cur=F.cur, S=cosSuma(cur), P=cosSuma(F.prev), body=$('cos-body');
+    COS.tips=[];
+    if(!cur.length){
+      body.innerHTML='<div class="cos-card cos-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg><div>Sin costos de mano de obra en '+esc(Rg.lbl)+(COS.cli?(' para '+esc(COS.cli)):'')+'.</div><div style="font-size:12px;margin-top:4px">Los costos salen del Registro de horas y de Remuneraciones.</div></div>';
+      return; }
+    // --- KPIs
+    var delta='';
+    if(P.m>0){ var dp=(S.m-P.m)/P.m*100, cls=Math.abs(dp)<0.5?'eq':(dp>0?'up':'dn');
+      var ar=cls==='up'?cosIco('<path d="M12 19V5M5 12l7-7 7 7"/>'):(cls==='dn'?cosIco('<path d="M12 5v14M19 12l-7 7-7-7"/>'):cosIco('<path d="M5 12h14"/>'));
+      delta='<span class="cos-delta '+cls+'">'+ar+(dp>0?'+':'')+dp.toFixed(1).replace('.',',')+'%</span>vs '+(F.enCurso?'mismo tramo de ':'')+esc(Rg.plbl); }
+    else delta=F.enCurso?'período en curso':'sin datos del período anterior';
+    var nFij=0; Object.keys(S.tk).forEach(function(k){ if(COS.W[k]&&COS.W[k].fijo) nFij++; });
+    var kpis='<div class="cos-kpis">'+
+      '<div class="cos-kpi main"><div class="l">Costo mano de obra</div><div class="v">'+fmtMoney(S.m)+'</div><div class="s">'+delta+'</div></div>'+
+      '<div class="cos-kpi"><div class="l">Horas trabajadas</div><div class="v">'+cosHoras(S.min)+'</div><div class="s">'+S.nDias+' día'+(S.nDias===1?'':'s')+' con trabajo</div></div>'+
+      '<div class="cos-kpi"><div class="l">Costo por hora</div><div class="v">'+(S.min?fmtMoney(S.ph):'—')+'</div><div class="s">'+(P.ph&&S.ph?('antes '+fmtMoney(P.ph)):'costo total ÷ horas')+'</div></div>'+
+      '<div class="cos-kpi"><div class="l">Personas</div><div class="v">'+S.nTk+'</div><div class="s">'+(S.nTk-nFij)+' spot · '+nFij+' fijo'+(nFij===1?'':'s')+'</div></div>'+
+      '<div class="cos-kpi"><div class="l">Faenas</div><div class="v">'+S.nFa+'</div><div class="s">'+S.nCli+' cliente'+(S.nCli===1?'':'s')+(S.nFa?(' · prom. '+cosCorto(S.m/S.nFa)):'')+'</div></div>'+
+    '</div>';
+    // --- Evolución + composición
+    var leg='<div class="cos-leg">'+COS_COMP.map(function(c){ return S.c[c[0]]?'<span><i class="cos-sw" style="background:var(--cs-'+c[0]+')"></i>'+c[1]+'</span>':''; }).join('')+'</div>';
+    var gran=COS.per==='mes'?'por día':(COS.per==='tri'?'por semana':'por mes');
+    var evo='<div class="cos-card"><div class="cos-hd"><div><h3>Evolución del costo</h3><div class="cos-sub">'+gran+(COS.cli?(' · '+esc(COS.cli)):'')+'</div></div>'+leg+'</div>'+cosChart(cur, Rg, COS.per)+'</div>';
+    var compRows=COS_COMP.filter(function(c){ return S.c[c[0]]; }).map(function(c){
+      return '<div class="r"><i class="cos-sw" style="background:var(--cs-'+c[0]+')"></i><span>'+c[1]+'<small>'+c[2]+'</small></span><b>'+fmtMoney(S.c[c[0]])+'</b><em>'+cosPct(S.c[c[0]],S.bruto).toLocaleString('es-CL')+'%</em></div>'; }).join('');
+    if(S.c.de) compRows+='<div class="r neg"><i></i><span>Descuentos<small>anticipos y otros</small></span><b>−'+fmtMoney(-S.c.de)+'</b><em></em></div>';
+    var comp='<div class="cos-card"><h3>Composición</h3><div class="cos-sub">en qué se va el costo</div>'+
+      '<div class="cos-stack">'+COS_COMP.filter(function(c){ return S.c[c[0]]>0; }).map(function(c){ return '<i style="flex:'+S.c[c[0]]+';background:var(--cs-'+c[0]+')" title="'+c[1]+'"></i>'; }).join('')+'</div>'+
+      '<div class="cos-comp">'+compRows+'<div class="r tot"><i></i><span style="font-weight:800;color:var(--ink)">Total</span><b>'+fmtMoney(S.m)+'</b><em></em></div></div></div>';
+    // --- Por cliente y por cargo
+    var porCli=cosAgrupar(cur, function(r){ return r.cli||''; }).sort(function(p,q){ return q.m-p.m; });
+    var maxC=porCli.reduce(function(a,g){ return Math.max(a,g.m); },0)||1;
+    var cliHtml=porCli.slice(0,10).map(function(g){
+      return '<div class="r'+(COS.cli&&g.k===COS.cli?' on':'')+'" data-cli="'+enc(g.k)+'" title="'+(g.k?(COS.cli===g.k?'Quitar filtro':'Ver solo '+enc(g.k)):'')+'"><div class="n">'+esc(g.k||COS_SIN)+'<small>'+(g.nFa?(g.nFa+' faena'+(g.nFa===1?'':'s')+' · '):'')+cosHoras(g.min)+'</small></div>'+
+        '<div class="trk"><i style="width:'+Math.max(1,g.m/maxC*100)+'%;background:'+cosColorCli(g.k)+'"></i></div>'+
+        '<div class="v">'+fmtMoney(g.m)+'<small>'+cosPct(g.m,S.m).toLocaleString('es-CL')+'%</small></div></div>'; }).join('');
+    if(porCli.length>10){ var otros=porCli.slice(10).reduce(function(a,g){ return a+g.m; },0); cliHtml+='<div class="r" style="cursor:default"><div class="n">Otros '+(porCli.length-10)+'</div><div class="trk"><i style="width:'+Math.max(1,otros/maxC*100)+'%;background:#94a3b8"></i></div><div class="v">'+fmtMoney(otros)+'<small>'+cosPct(otros,S.m).toLocaleString('es-CL')+'%</small></div></div>'; }
+    var porCargo=cosAgrupar(cur, function(r){ var w=COS.W[r.tk]; return (w&&w.cargo)?titleCase(w.cargo):'Sin cargo'; }).sort(function(p,q){ return q.m-p.m; });
+    var maxG=porCargo.reduce(function(a,g){ return Math.max(a,g.m); },0)||1;
+    var cargoHtml=porCargo.slice(0,10).map(function(g){
+      return '<div class="r" style="cursor:default"><div class="n">'+esc(g.k)+'<small>'+g.nTk+' persona'+(g.nTk===1?'':'s')+(g.min?(' · '+fmtMoney(g.ph)+'/h'):'')+'</small></div>'+
+        '<div class="trk"><i style="width:'+Math.max(1,g.m/maxG*100)+'%;background:var(--cs-tr)"></i></div>'+
+        '<div class="v">'+fmtMoney(g.m)+'<small>'+cosHoras(g.min)+'</small></div></div>'; }).join('');
+    var grid2='<div class="cos-grid g11">'+
+      '<div class="cos-card"><h3>Por cliente</h3><div class="cos-sub">'+(COS.cli?'toca de nuevo para ver todos':'toca un cliente para filtrar todo el panel')+'</div><div class="cos-hb" id="cos-hb-cli">'+cliHtml+'</div></div>'+
+      '<div class="cos-card"><h3>Por cargo</h3><div class="cos-sub">costo y valor hora promedio</div><div class="cos-hb">'+cargoHtml+'</div></div></div>';
+    // --- Tabla
+    var tabla='<div class="cos-card"><div class="cos-hd" style="align-items:center"><div class="cos-tabs" id="cos-tabs"><button type="button" data-t="fae"'+(COS.tab==='fae'?' class="on"':'')+'>Faenas</button><button type="button" data-t="trab"'+(COS.tab==='trab'?' class="on"':'')+'>Trabajadores</button></div>'+
+      '<input id="cos-q" class="cos-q" type="search" placeholder="Buscar…" value="'+enc(COS.q)+'"></div><div id="cos-tabla"></div></div>';
+    var nota='<p class="cos-note">El costo usa el mismo cálculo de Remuneraciones (tratos por cargo, ajustes por día y por faena, vueltas, peajes, extras y descuentos) más el sueldo base de los fijos que paga Innova Servi. '+
+      'Los tratos se asignan a cada faena según sus horas del día; el sueldo base, los peajes, extras y descuentos se reparten según las horas de cada persona en el mes. No incluye leyes sociales ni lo importado de IS Performance.'+
+      (F.enCurso?' Período en curso: el sueldo base de los fijos se cuenta devengado a hoy (días transcurridos del mes).':'')+'</p>';
+    body.innerHTML=kpis+'<div class="cos-grid g21">'+evo+comp+'</div>'+grid2+tabla+nota;
+    body.querySelectorAll('#cos-hb-cli .r[data-cli]').forEach(function(el){ el.addEventListener('click',function(){ var c=el.dataset.cli; if(!c) return; COS.cli=(COS.cli===c)?'':c; $('cos-cli').value=COS.cli; pintarCostos(); }); });
+    body.querySelectorAll('#cos-tabs button').forEach(function(b){ b.addEventListener('click',function(){ COS.tab=b.dataset.t; body.querySelectorAll('#cos-tabs button').forEach(function(x){ x.classList.toggle('on',x===b); }); pintarCosTabla(cur,S); }); });
+    $('cos-q').addEventListener('input',function(){ COS.q=this.value; pintarCosTabla(cur,S); });
+    pintarCosTabla(cur,S);
+  }
+
+  // Tabla de faenas o trabajadores (ordenable).
+  function cosFilasTabla(rows, modo){
+    if(modo==='fae') return cosAgrupar(rows, function(r){ return r.fa; }).map(function(g){ g.nombre=g.k?cosTitulo(g.k):COS_SIN; g.cli=g.k?cosCliente(g.k):''; g.sitio=g.k?cosSitio(g.k):''; g.n=g.nTk; return g; });
+    return cosAgrupar(rows, function(r){ return r.tk; }).map(function(g){ var w=COS.W[g.k]||{}; g.nombre=w.nombre||''; g.cargo=w.cargo||''; g.fijo=!!w.fijo; g.sinFicha=!!w.sinFicha; g.n=g.nFa; return g; });
+  }
+  function pintarCosTabla(cur, S){
+    var modo=COS.tab, q=norm(COS.q), L=cosFilasTabla(cur, modo), so=COS.sort[modo];
+    if(q) L=L.filter(function(g){ return norm(g.nombre+' '+(g.cli||'')+' '+(g.sitio||'')+' '+(g.cargo||'')).indexOf(q)>=0; });
+    var val=function(g,k){ return k==='nombre'?(g.nombre||'').toLowerCase():(k==='dias'?g.nDias:(k==='n'?g.n:(k==='min'?g.min:(k==='ph'?g.ph:g.m)))); };
+    L.sort(function(p,r){ var a=val(p,so[0]), b=val(r,so[0]); return (a<b?-1:(a>b?1:0))*so[1] || (r.m-p.m); });
+    var cols=[['nombre',modo==='fae'?'Faena':'Trabajador'],['dias','Días'],['n',modo==='fae'?'Personas':'Faenas'],['min','Horas'],['m','Costo'],['ph','$/hora'],['shr','% del total']];
+    var th=cols.map(function(c){ var on=so[0]===c[0]; return '<th data-k="'+c[0]+'"'+(on?' class="on"':'')+'>'+c[1]+(on?(so[1]<0?' ↓':' ↑'):'')+'</th>'; }).join('');
+    var maxM=L.reduce(function(a,g){ return Math.max(a,g.m); },0)||1;
+    var tb=L.map(function(g,i){
+      var sub = modo==='fae'
+        ? (g.k?('<small><i class="cos-sw" style="background:'+cosColorCli(g.cli)+'"></i>'+esc(g.cli)+(g.sitio?(' · '+esc(g.sitio)):'')+'</small>'):'<small>sueldos, peajes y extras de días sin faena</small>')
+        : ('<small>'+(g.fijo?'<span class="cos-tag fj">Fijo</span>':'<span class="cos-tag">Spot</span>')+(g.cargo?(' '+esc(g.cargo)):'')+(g.sinFicha?' · sin ficha':'')+'</small>');
+      return '<tr data-i="'+i+'"><td class="nm"><b>'+esc(g.nombre)+'</b>'+sub+'</td><td>'+g.nDias+'</td><td>'+g.n+'</td><td>'+cosHoras(g.min)+'</td><td class="cost">'+fmtMoney(g.m)+'</td><td>'+(g.min?fmtMoney(g.ph):'—')+'</td>'+
+        '<td class="shr"><div class="cos-shr"><i style="width:'+Math.max(2,g.m/maxM*70)+'px"></i><span>'+cosPct(g.m,S.m).toLocaleString('es-CL')+'%</span></div></td></tr>'; }).join('');
+    var T=cosSuma([].concat.apply([], L.map(function(g){ return g.rows; })));
+    var foot='<tr class="cos-foot"><td>Total · '+(modo==='fae'?(function(n){ return n+' faena'+(n===1?'':'s'); })(L.filter(function(g){ return g.k; }).length):(L.length+' persona'+(L.length===1?'':'s')))+'</td><td>'+T.nDias+'</td><td>'+(modo==='fae'?T.nTk:T.nFa)+'</td><td>'+cosHoras(T.min)+'</td><td>'+fmtMoney(T.m)+'</td><td>'+(T.min?fmtMoney(T.ph):'—')+'</td><td>'+cosPct(T.m,S.m).toLocaleString('es-CL')+'%</td></tr>';
+    var c=$('cos-tabla');
+    c.innerHTML=L.length?'<div class="cos-scroll"><table class="cos-tbl"><thead><tr>'+th+'</tr></thead><tbody>'+tb+'</tbody><tfoot>'+foot+'</tfoot></table></div>':'<p class="note" style="text-align:center;padding:20px 0 6px">Sin resultados.</p>';
+    c.querySelectorAll('th[data-k]').forEach(function(h){ h.addEventListener('click',function(){ var k=h.dataset.k; if(k==='shr') k='m'; COS.sort[modo]=(so[0]===k)?[k,-so[1]]:[k,k==='nombre'?1:-1]; pintarCosTabla(cur,S); }); });
+    c.querySelectorAll('tbody tr[data-i]').forEach(function(tr){ tr.addEventListener('click',function(){ abrirCosDetalle(modo, L[+tr.dataset.i]); }); });
+  }
+
+  // Columnas apiladas (HTML), con tooltip. Granularidad: día (mes) · semana (trimestre) · mes (año).
+  function cosBuckets(Rg, per){
+    var out=[], hoy=todayISO(), f;
+    if(per==='mes'){ for(f=Rg.ini; f<=Rg.fin; f=sumarDias(f,1)){ var d=+f.slice(8); out.push({k:f, a:f, b:f, x:(d===1||d%5===0)?String(d):'', t:diaNom(f)+' '+fechaCorta(f), hoy:f===hoy, fut:f>hoy}); } }
+    else if(per==='tri'){ for(f=lunesDe(Rg.ini); f<=Rg.fin; f=sumarDias(f,7)){ var a=f<Rg.ini?Rg.ini:f, b=sumarDias(f,6); if(b>Rg.fin) b=Rg.fin; out.push({k:f, a:a, b:b, x:(out.length%2?'':'S'+numSemana(f)), t:'Semana '+numSemana(f)+' · '+fechaCorta(a)+' – '+fechaCorta(b), hoy:hoy>=a&&hoy<=b, fut:a>hoy}); } }
+    else Rg.meses.forEach(function(m){ var R=rmRango(m); out.push({k:m, a:R.ini, b:R.fin, x:COS_MES3[+m.slice(5)-1], t:R.lbl, hoy:hoy.slice(0,7)===m, fut:R.ini>hoy}); });
+    return out; }
+  function cosNice(v){ if(v<=0) return 1; var e=Math.pow(10,Math.floor(Math.log10(v))), n=v/e; return (n<=1?1:n<=2?2:n<=2.5?2.5:n<=5?5:10)*e; }
+  function cosChart(rows, Rg, per, alto){
+    var bk=cosBuckets(Rg, per), idx={};
+    bk.forEach(function(b,i){ b.c={su:0,tr:0,vu:0,pe:0,ex:0,de:0}; b.min=0; });
+    rows.forEach(function(r){ var i=-1;
+      for(var j=0;j<bk.length;j++){ if(r.f>=bk[j].a && r.f<=bk[j].b){ i=j; break; } }
+      if(i<0) return; bk[i].c[r.c]+=r.m; bk[i].min+=r.min; });
+    var max=0; bk.forEach(function(b){ b.bruto=b.c.su+b.c.tr+b.c.vu+b.c.pe+b.c.ex; if(b.bruto>max) max=b.bruto; });
+    var top=cosNice(max*1.05), H=alto||230, grid='';
+    for(var g=0; g<=4; g++){ var y=g/4; grid+='<div class="cos-gl'+(g===0?' base':'')+'" style="bottom:'+(y*100)+'%"></div><div class="cos-yl" style="bottom:'+(y*100)+'%;transform:translateY(50%)">'+(g?cosCorto(top*y):'$0')+'</div>'; }
+    var cols=bk.map(function(b){
+      var ti=COS.tips.push(b)-1;
+      var seg=COS_COMP.map(function(c){ var v=b.c[c[0]]; return v>0?'<i style="height:'+(v/top*H)+'px;background:var(--cs-'+c[0]+')"></i>':''; }).join('');
+      return '<div class="cos-col'+(b.hoy?' hoy':'')+(b.fut?' fut':'')+'" data-tip="'+ti+'"><div class="stk">'+seg+'</div></div>'; }).join('');
+    return '<div class="cos-chart" style="height:'+H+'px">'+grid+'<div class="cos-cols">'+cols+'</div></div><div class="cos-xl">'+bk.map(function(b){ return '<span>'+(b.x?'<em>'+b.x+'</em>':'')+'</span>'; }).join('')+'</div>';
+  }
+  // Tooltip compartido de los gráficos
+  (function(){
+    var tip=null;
+    function quitar(){ if(tip){ tip.remove(); tip=null; } }
+    function mostrar(col, ev){
+      var b=COS.tips[+col.dataset.tip]; if(!b) return;
+      if(!tip){ tip=document.createElement('div'); tip.className='cos-tip'; document.body.appendChild(tip); }
+      var neto=b.bruto+b.c.de;
+      tip.innerHTML='<b class="t">'+esc(b.t)+'</b>'+
+        (b.bruto||b.c.de?COS_COMP.filter(function(c){ return b.c[c[0]]; }).map(function(c){ return '<div class="r"><span><i class="cos-sw" style="background:var(--cs-'+c[0]+')"></i>'+c[1]+'</span><b>'+fmtMoney(b.c[c[0]])+'</b></div>'; }).join('')+
+          (b.c.de?'<div class="r"><span>Descuentos</span><b>−'+fmtMoney(-b.c.de)+'</b></div>':'')+
+          '<div class="r tot"><span>Total'+(b.min?(' · '+cosHoras(b.min)):'')+'</span><b>'+fmtMoney(neto)+'</b></div>'
+        :'<div class="r"><span>'+(b.fut?'Aún no ocurre':'Sin costos')+'</span></div>');
+      var w=tip.offsetWidth, h=tip.offsetHeight, x=ev.clientX+14, y=ev.clientY-h-12;
+      if(x+w>window.innerWidth-8) x=ev.clientX-w-14; if(x<8) x=8; if(y<8) y=ev.clientY+16;
+      tip.style.left=x+'px'; tip.style.top=y+'px'; }
+    document.addEventListener('mousemove',function(ev){ var col=ev.target.closest&&ev.target.closest('.cos-col[data-tip]'); if(col) mostrar(col,ev); else quitar(); });
+    document.addEventListener('click',function(ev){ var col=ev.target.closest&&ev.target.closest('.cos-col[data-tip]'); if(col) mostrar(col,ev); else quitar(); });
+    window.addEventListener('scroll',quitar,true);
+  })();
+
+  // Detalle de una faena o un trabajador en el período.
+  function abrirCosDetalle(modo, g){
+    if(!g) return;
+    var Rg=COS.Rg, rows=g.rows, S=cosSuma(rows);
+    $('cos-d-title').textContent=(modo==='fae'?g.nombre:g.nombre)+' · '+Rg.lbl;
+    var sub = modo==='fae'
+      ? (g.k?('<span class="cos-sw" style="background:'+cosColorCli(g.cli)+';margin-right:6px"></span>'+esc(g.cli)+(g.sitio?(' · '+esc(g.sitio)):'')):'Costos que no se pudieron asociar a una faena (personas sin horas en el mes)')
+      : ((g.fijo?'<span class="cos-tag fj">Fijo</span> ':'<span class="cos-tag">Spot</span> ')+esc(g.cargo||'Sin cargo'));
+    var kp='<div class="cos-kpis" style="margin-top:12px">'+
+      '<div class="cos-kpi main"><div class="l">Costo</div><div class="v">'+fmtMoney(S.m)+'</div><div class="s">'+cosPct(S.m, cosSuma(cosFiltrados().cur).m).toLocaleString('es-CL')+'% del período</div></div>'+
+      '<div class="cos-kpi"><div class="l">Horas</div><div class="v">'+cosHoras(S.min)+'</div><div class="s">'+S.nDias+' día'+(S.nDias===1?'':'s')+'</div></div>'+
+      '<div class="cos-kpi"><div class="l">Costo por hora</div><div class="v">'+(S.min?fmtMoney(S.ph):'—')+'</div><div class="s">'+(modo==='fae'?(S.nTk+' persona'+(S.nTk===1?'':'s')):(S.nFa+' faena'+(S.nFa===1?'':'s')))+'</div></div></div>';
+    var comp=COS_COMP.filter(function(c){ return S.c[c[0]]; }).map(function(c){ return '<span><i class="cos-sw" style="background:var(--cs-'+c[0]+')"></i>'+c[1]+' <b style="color:var(--ink)">'+fmtMoney(S.c[c[0]])+'</b></span>'; }).join('')+(S.c.de?'<span>Descuentos <b style="color:var(--bad)">−'+fmtMoney(-S.c.de)+'</b></span>':'');
+    COS.tips=COS.tips||[];
+    var chart='<div class="cos-card" style="margin-bottom:12px"><h3>Evolución</h3><div class="cos-leg" style="margin:6px 0 4px">'+comp+'</div>'+cosChart(rows, Rg, COS.per, 170)+'</div>';
+    // desglose por la otra dimensión
+    var otro=cosAgrupar(rows, modo==='fae'?function(r){ return r.tk; }:function(r){ return r.fa; }).sort(function(p,q){ return q.m-p.m; });
+    var tr=otro.map(function(o){
+      var nm, sb2;
+      if(modo==='fae'){ var w=COS.W[o.k]||{}; nm=w.nombre||''; sb2=(w.fijo?'Fijo':'Spot')+(w.cargo?(' · '+esc(w.cargo)):''); }
+      else { nm=o.k?cosTitulo(o.k):COS_SIN; sb2=o.k?('<i class="cos-sw" style="background:'+cosColorCli(cosCliente(o.k))+'"></i>'+esc(cosCliente(o.k))+(cosSitio(o.k)?(' · '+esc(cosSitio(o.k))):'')):''; }
+      var otros=o.c.su+o.c.pe+o.c.ex+o.c.de;
+      return '<tr style="cursor:default"><td class="nm"><b>'+esc(nm)+'</b><small>'+sb2+'</small></td><td>'+o.nDias+'</td><td>'+cosHoras(o.min)+'</td><td>'+fmtMoney(o.c.tr)+'</td><td>'+(o.c.vu?fmtMoney(o.c.vu):'—')+'</td><td>'+(otros?fmtMoney(otros):'—')+'</td><td class="cost">'+fmtMoney(o.m)+'</td></tr>'; }).join('');
+    var tabla='<div class="cos-card"><h3>'+(modo==='fae'?'Personas en la faena':'Faenas trabajadas')+'</h3><div class="cos-sub">"Otros" = sueldo base, peajes y extras menos descuentos, según sus horas</div>'+
+      '<div class="cos-scroll"><table class="cos-tbl"><thead><tr style="cursor:default"><th style="cursor:default">'+(modo==='fae'?'Trabajador':'Faena')+'</th><th style="cursor:default">Días</th><th style="cursor:default">Horas</th><th style="cursor:default">Tratos</th><th style="cursor:default">Vueltas</th><th style="cursor:default">Otros</th><th style="cursor:default">Costo</th></tr></thead><tbody>'+tr+'</tbody></table></div></div>';
+    $('cos-d-body').innerHTML='<div class="note" style="margin:0;display:flex;align-items:center;gap:6px;flex-wrap:wrap">'+sub+'</div>'+kp+chart+tabla;
+    $('cos-detalle').classList.remove('hide'); document.body.style.overflow='hidden';
+  }
+  function cerrarCosDetalle(){ $('cos-detalle').classList.add('hide'); document.body.style.overflow=''; }
+  $('cos-d-close').addEventListener('click',cerrarCosDetalle);
+
+  // Excel: resumen, faenas, trabajadores y detalle por día/faena/persona.
+  function exportarCostosXls(){
+    if(!COS.L||!COS.Rg){ toast('Espera a que carguen los costos.'); return; }
+    var Rg=COS.Rg, cur=cosFiltrados().cur, S=cosSuma(cur);
+    busy(true,'Generando Excel…');
+    cargarExcelJS().then(function(ExcelJS){
+      var wb=new ExcelJS.Workbook(), money='"$"#,##0', hrs='0.0';
+      var head=function(ws, cols){ ws.columns=cols.map(function(c){ return {header:c[0], key:c[1], width:c[2]||14}; });
+        var r=ws.getRow(1); r.font={bold:true,color:{argb:'FFFFFFFF'}}; r.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1A1F6E'}}; r.height=20; ws.views=[{state:'frozen',ySplit:1}]; };
+      var fmt=function(ws, keys, f){ keys.forEach(function(k){ ws.getColumn(k).numFmt=f; }); };
+      var titulo='Costos de mano de obra · '+Rg.lbl+(COS.cli?(' · '+COS.cli):'');
+      var w0=wb.addWorksheet('Resumen'); w0.columns=[{width:34},{width:18},{width:12}];
+      w0.addRow([titulo]).font={bold:true,size:13};
+      w0.addRow(['Innovación y Servicios SpA · generado '+fechaCorta(todayISO())]).font={color:{argb:'FF6B7280'}};
+      w0.addRow([]);
+      [['Costo mano de obra',S.m],['Horas trabajadas',Math.round(S.min/6)/10],['Costo por hora',Math.round(S.ph)],['Personas',S.nTk],['Faenas',S.nFa]].forEach(function(r,i){ var rw=w0.addRow(r); rw.getCell(1).font={bold:true}; if(i===0||i===2) rw.getCell(2).numFmt=money; });
+      w0.addRow([]); w0.addRow(['Composición','Monto','%']).font={bold:true};
+      COS_COMP.forEach(function(c){ if(S.c[c[0]]){ var rw=w0.addRow([c[1],Math.round(S.c[c[0]]),cosPct(S.c[c[0]],S.bruto)/100]); rw.getCell(2).numFmt=money; rw.getCell(3).numFmt='0.0%'; } });
+      if(S.c.de){ var rd=w0.addRow(['Descuentos',Math.round(S.c.de)]); rd.getCell(2).numFmt=money; }
+      var rt=w0.addRow(['Total',Math.round(S.m)]); rt.font={bold:true}; rt.getCell(2).numFmt=money;
+      var cfae=[['Faena','fa',44],['Cliente','cli',18],['Sitio','sitio',20],['Días','dias',8],['Personas','n',10],['Horas','h',10],['Sueldos','su'],['Tratos','tr'],['Vueltas','vu'],['Peajes','pe'],['Extras','ex'],['Descuentos','de'],['Costo total','m',16],['$/hora','ph',12]];
+      var w1=wb.addWorksheet('Faenas'); head(w1,cfae);
+      cosFilasTabla(cur,'fae').sort(function(p,q){ return q.m-p.m; }).forEach(function(g){ w1.addRow({fa:g.nombre, cli:g.cli, sitio:g.sitio, dias:g.nDias, n:g.nTk, h:Math.round(g.min/6)/10, su:Math.round(g.c.su), tr:Math.round(g.c.tr), vu:Math.round(g.c.vu), pe:Math.round(g.c.pe), ex:Math.round(g.c.ex), de:Math.round(g.c.de), m:Math.round(g.m), ph:Math.round(g.ph)}); });
+      fmt(w1,['su','tr','vu','pe','ex','de','m','ph'],money); fmt(w1,['h'],hrs);
+      var w2=wb.addWorksheet('Trabajadores'); head(w2,[['Trabajador','nm',32],['Cargo','cargo',20],['Tipo','tipo',8],['Días','dias',8],['Faenas','n',9],['Horas','h',10],['Sueldos','su'],['Tratos','tr'],['Vueltas','vu'],['Peajes','pe'],['Extras','ex'],['Descuentos','de'],['Costo total','m',16],['$/hora','ph',12]]);
+      cosFilasTabla(cur,'trab').sort(function(p,q){ return q.m-p.m; }).forEach(function(g){ w2.addRow({nm:g.nombre, cargo:g.cargo, tipo:g.fijo?'Fijo':'Spot', dias:g.nDias, n:g.nFa, h:Math.round(g.min/6)/10, su:Math.round(g.c.su), tr:Math.round(g.c.tr), vu:Math.round(g.c.vu), pe:Math.round(g.c.pe), ex:Math.round(g.c.ex), de:Math.round(g.c.de), m:Math.round(g.m), ph:Math.round(g.ph)}); });
+      fmt(w2,['su','tr','vu','pe','ex','de','m','ph'],money); fmt(w2,['h'],hrs);
+      var w3=wb.addWorksheet('Detalle'); head(w3,[['Fecha','f',12],['Cliente','cli',18],['Faena','fa',44],['Trabajador','nm',30],['Concepto','c',16],['Horas','h',9],['Monto','m',14]]);
+      var lbl={su:'Sueldo base',tr:'Tratos y horas',vu:'Vueltas',pe:'Peajes',ex:'Extras',de:'Descuentos'};
+      cur.slice().sort(function(a,b){ return a.f<b.f?-1:(a.f>b.f?1:0); }).forEach(function(r){ w3.addRow({f:r.f, cli:r.cli, fa:r.fa?cosTitulo(r.fa):COS_SIN, nm:(COS.W[r.tk]||{}).nombre||'', c:lbl[r.c], h:r.min?Math.round(r.min/6)/10:null, m:Math.round(r.m)}); });
+      fmt(w3,['m'],money); fmt(w3,['h'],hrs);
+      return wb.xlsx.writeBuffer().then(function(buf){ busy(false);
+        descargarBlob(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}), 'Costos_mano_de_obra_'+Rg.lbl.split(' · ')[0].replace(/\s+/g,'_')+(COS.cli?('_'+slug(COS.cli)):'')+'.xlsx'); });
+    }).catch(function(e){ busy(false); toast('No se pudo generar el Excel'+(e&&e.message?(': '+e.message):'')); });
+  }
+
+  // Controles
+  document.querySelectorAll('#cos-per .seg-b').forEach(function(b){ b.addEventListener('click',function(){ if(COS.per===b.dataset.p) return; COS.per=b.dataset.p; cargarCostos(); }); });
+  $('cos-prev').addEventListener('click',function(){ COS.ref=cosMesAdd(COS.ref||todayISO().slice(0,7), -(COS.per==='anio'?12:(COS.per==='tri'?3:1))); cargarCostos(); });
+  $('cos-next').addEventListener('click',function(){ COS.ref=cosMesAdd(COS.ref||todayISO().slice(0,7), (COS.per==='anio'?12:(COS.per==='tri'?3:1))); cargarCostos(); });
+  $('cos-hoy').addEventListener('click',function(){ COS.ref=todayISO().slice(0,7); cargarCostos(); });
+  $('cos-cli').addEventListener('change',function(){ COS.cli=this.value; if(COS.L) pintarCostos(); });
+  $('cos-xls').addEventListener('click',exportarCostosXls);
+
   // Detalle de un trabajador (semana)
   function abrirDetalleRemu(x){
     if(!x) return;
@@ -9264,6 +9752,9 @@
     ]],
     ['Remuneraciones',[
       ['remu','Remuneraciones','v-remu',null,[]]
+    ]],
+    ['Costos',[
+      ['costos','Costos · Mano de obra','v-costos',null,[]]
     ]],
     ['Sistema',[
       ['accesos','Accesos','v-acc',null,[['gestionar','Gestionar personas, roles y permisos','total']]]
