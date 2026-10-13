@@ -821,6 +821,61 @@
   /* Zerty · Cermaq (árbol de documentos de la empresa) */
   .doc-sub{display:inline-flex;margin-bottom:12px;}
   .dchip.na{background:transparent;color:var(--muted);border:1px dashed var(--line);}
+  /* Lista de Trabajadores: acciones como íconos que se despliegan, filtro deslizante y tarjetas animadas */
+  .tb-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px;}
+  .tb-tit{display:flex;align-items:baseline;gap:8px;} .tb-tit b{font:800 17px var(--font);color:var(--ink);}
+  .tb-acc{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+  .tb-ico{display:inline-flex;align-items:center;height:40px;padding:0 11px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;font:700 13px var(--font);
+    transition:background .2s,border-color .2s,color .2s,box-shadow .2s,transform .15s;}
+  .tb-ico svg{flex:none;}
+  .tb-ico span{display:inline-block;max-width:0;opacity:0;overflow:hidden;white-space:nowrap;margin-left:0;transition:max-width .55s cubic-bezier(.25,.8,.25,1),opacity .45s ease .05s,margin-left .55s cubic-bezier(.25,.8,.25,1);}
+  .tb-ico:hover,.tb-ico:focus-visible{border-color:var(--orange);color:var(--orange-2);box-shadow:0 6px 16px -10px rgba(255,107,0,.6);outline:none;}
+  .tb-ico:hover span,.tb-ico:focus-visible span{max-width:150px;opacity:1;margin-left:8px;}
+  .tb-ico:active{transform:scale(.96);}
+  .tb-ico.tb-pri{background:var(--orange);border-color:var(--orange);color:#fff;box-shadow:0 8px 18px -10px rgba(255,107,0,.8);}
+  .tb-ico.tb-pri:hover,.tb-ico.tb-pri:focus-visible{background:var(--orange-2);border-color:var(--orange-2);color:#fff;}
+  @media(hover:none){ .tb-ico.tb-pri span{max-width:150px;opacity:1;margin-left:6px;} }
+  .tb-bus{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
+  .tb-q{flex:1;min-width:170px;display:flex;align-items:center;gap:8px;padding:0 12px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--muted);transition:border-color .2s,box-shadow .2s;}
+  .tb-q:focus-within{border-color:var(--orange);box-shadow:0 0 0 3px rgba(255,107,0,.12);color:var(--orange-2);}
+  .tb-q input{flex:1;min-width:0;border:none;outline:none;background:transparent;font:500 15px var(--font);padding:11px 0;color:var(--ink);}
+  .tb-sort{max-width:44%;font:600 13px var(--font);padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink);cursor:pointer;}
+  .tseg{position:relative;display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:4px;margin-bottom:14px;background:var(--card);border:1px solid var(--line);border-radius:14px;}
+  .tseg-ind{position:absolute;top:4px;bottom:4px;left:4px;width:0;border-radius:10px;background:var(--orange);box-shadow:0 6px 14px -8px rgba(255,107,0,.9);transition:left .32s cubic-bezier(.2,.8,.2,1),width .32s cubic-bezier(.2,.8,.2,1);z-index:0;}
+  .tseg .tfil{position:relative;z-index:1;border:none;background:transparent;color:var(--body);font:700 13px var(--font);padding:9px 6px;border-radius:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:color .25s;}
+  .tseg .tfil.on{color:#fff;background:transparent;}
+  .tseg .tfil .n{font:800 .68rem var(--font);padding:1px 7px;border-radius:999px;background:var(--alt);color:var(--muted);transition:background .25s,color .25s;}
+  .tseg .tfil.on .n{background:rgba(255,255,255,.25);color:#fff;}
+  .tseg .tfil .n:empty{display:none;}
+  @media(max-width:520px){ .tseg .tfil{font-size:12px;flex-direction:column;gap:2px;} }
+  #trab-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,360px),1fr));gap:10px;}
+  #trab-list .trab{margin:0;padding:12px 14px;border-left-width:4px;transition:transform .2s cubic-bezier(.2,.8,.2,1),box-shadow .2s,border-color .2s;}
+  #trab-list .trab:hover{transform:translateY(-3px);box-shadow:0 14px 28px -16px rgba(26,31,110,.5);border-left-color:var(--orange);background:linear-gradient(90deg,rgba(255,107,0,.06),var(--card) 55%);}
+  #trab-list .trab .av{transition:transform .3s cubic-bezier(.25,.8,.25,1),box-shadow .3s;}
+  #trab-list .trab:hover .av{transform:scale(1.07);box-shadow:0 6px 14px -6px rgba(26,31,110,.55);}
+  #trab-list .trab .nm{transition:color .25s;} #trab-list .trab:hover .nm{color:var(--orange-2);}
+  .trab .go{flex:none;width:0;opacity:0;margin-left:-6px;color:var(--orange-2);transform:translateX(-6px);transition:width .3s,opacity .3s,transform .3s,margin .3s;display:flex;}
+  #trab-list .trab:hover .go{width:16px;opacity:1;transform:none;margin-left:0;}
+  /* Estado editable desde la lista */
+  .est-btn{display:inline-flex;align-items:center;gap:4px;border:1px solid transparent;cursor:pointer;font-family:var(--font);transition:border-color .2s,box-shadow .2s,transform .15s;}
+  .est-btn svg{transition:transform .25s;}
+  .est-btn:hover{border-color:currentColor;box-shadow:0 4px 10px -6px currentColor;}
+  .est-btn.abierto svg{transform:rotate(180deg);}
+  .est-menu{position:fixed;z-index:120;min-width:170px;background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:0 18px 40px -16px rgba(12,15,46,.45);padding:5px;
+    transform-origin:top right;animation:estIn .2s cubic-bezier(.25,.8,.25,1);}
+  @keyframes estIn{from{opacity:0;transform:scale(.92) translateY(-4px);}to{opacity:1;transform:none;}}
+  .est-menu button{display:flex;align-items:center;gap:9px;width:100%;border:none;background:transparent;padding:9px 10px;border-radius:8px;font:700 13px var(--font);color:var(--ink);cursor:pointer;text-align:left;transition:background .15s;}
+  .est-menu button:hover{background:var(--alt);}
+  .est-menu .dot{width:9px;height:9px;border-radius:50%;flex:none;} .est-menu .ok{margin-left:auto;color:var(--orange-2);}
+  .est-menu .tit{font:800 .66rem var(--font);color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:6px 10px 4px;}
+  #trab-list.anim .trab{animation:trabIn .42s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i,0)*35ms);}
+  @keyframes trabIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
+  .trab .av.ring{position:relative;background:conic-gradient(var(--c) calc(var(--p)*1%),var(--line) 0);padding:3px;width:46px;height:46px;}
+  .trab .av.ring span{width:100%;height:100%;border-radius:50%;background:var(--navy);display:flex;align-items:center;justify-content:center;font-size:.86rem;}
+  .trab.off .av.ring span{background:var(--muted);}
+  #trab-list .trab .tbar{display:none;} #trab-list .trab .av{width:46px;height:46px;}
+  .trab .cg{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  @media(prefers-reduced-motion:reduce){ .tb-ico span,.tseg-ind,#trab-list .trab{transition:none;} #trab-list.anim .trab{animation:none;} }
   .trab-modo{display:inline-flex;margin-bottom:12px;}
   .fr-sec{font:800 11px var(--font);color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:12px 0 6px;display:flex;align-items:center;gap:8px;}
   .fr-sec .fr-pct{margin-left:auto;font:800 11px var(--font);text-transform:none;letter-spacing:0;}
@@ -1115,6 +1170,31 @@
   .fcard{border-left:3px solid;border-radius:6px;padding:3px 9px;}
   .fcard .fc-n{display:block;font:700 10.5px var(--font);line-height:1.25;}
   .fcard .fc-s{font-size:9.5px;color:var(--muted);font-variant-numeric:tabular-nums;}
+  /* Ficha del trabajador: en móvil una columna; en escritorio encabezado + datos a la izquierda y documentación a la derecha */
+  .fi-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 16px;margin-bottom:12px;}
+  .fi-av{width:46px;height:46px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--navy),#2a3190);color:#fff;font:800 16px var(--font);letter-spacing:.02em;}
+  .fi-hn{flex:1;min-width:160px;display:flex;flex-direction:column;gap:2px;} .fi-hn b{font:800 16px var(--font);color:var(--ink);line-height:1.25;} .fi-hn span{font-size:.8rem;color:var(--muted);}
+  .fi-chips{display:flex;gap:6px;flex-wrap:wrap;} .fi-chip{font:700 .7rem var(--font);padding:4px 9px;border-radius:999px;background:var(--alt);color:var(--body);border:1px solid var(--line);}
+  .fi-chip.e-activo{background:#e7f6ee;color:#16794a;border-color:#bfe6cf;} .fi-chip.e-espera{background:#fff4e6;color:#b45309;border-color:#f6d6ad;} .fi-chip.e-inactivo{background:#f1f2f6;color:#6b7390;}
+  .fi-tit{font:800 13px var(--font);color:var(--ink);margin-bottom:10px;letter-spacing:.01em;}
+  .fi-trato{display:flex;flex-direction:column;gap:2px;background:var(--alt);border:1px solid var(--line);border-radius:10px;padding:9px 12px;margin-bottom:12px;}
+  .fi-trato span{font-size:.72rem;color:var(--muted);font-weight:600;} .fi-trato b{font-size:.86rem;color:var(--ink);} .fi-trato b:empty::after{content:"Elige un cargo";color:var(--muted);font-weight:500;}
+  .card.fi-secs{padding:2px 16px;}
+  .fi-sec{border-bottom:1px solid var(--line);} .fi-sec:last-of-type{border-bottom:none;}
+  .fi-sec>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;padding:13px 0;}
+  .fi-sec>summary::-webkit-details-marker{display:none;}
+  .fi-sec>summary::after{content:"";margin-left:auto;flex:none;border:solid var(--muted);border-width:0 2px 2px 0;padding:3px;transform:rotate(45deg);transition:transform .15s;}
+  .fi-sec[open]>summary::after{transform:rotate(-135deg);}
+  .fi-st{display:flex;flex-direction:column;gap:2px;min-width:0;} .fi-st b{font:700 13.5px var(--font);color:var(--ink);}
+  .fi-meta{font-size:.76rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .fi-sb{padding:0 0 14px;} .fi-sb textarea{width:100%;min-height:90px;}
+  .fi-chk{display:flex;align-items:center;gap:9px;cursor:pointer;font-weight:600;font-size:.88rem;color:var(--ink);margin-bottom:11px;} .fi-chk input{width:18px;height:18px;accent-color:var(--orange);flex:none;}
+  #fi-del{width:100%;background:var(--card);border:1px solid #f0c0c0;color:#dc2626;padding:13px;border-radius:13px;font:800 14px var(--font);cursor:pointer;}
+  @media(min-width:1000px){
+    .ficha-body.fi-layout{max-width:1180px;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:0 18px;align-items:start;padding-top:18px;}
+    .fi-layout .fi-head{grid-column:1/-1;padding:18px 20px;} .fi-layout .fi-av{width:54px;height:54px;font-size:18px;} .fi-layout .fi-hn b{font-size:19px;}
+    .fi-layout .fi-side{position:sticky;top:72px;}
+  }
   .fi-bank{border:1px solid var(--line);border-radius:11px;padding:9px 12px;margin-bottom:11px;background:var(--alt);}
   .fi-bank>summary{cursor:pointer;font:700 13px var(--font);color:var(--ink);list-style:none;display:flex;align-items:center;gap:8px;}
   .fi-bank>summary::-webkit-details-marker{display:none;}
@@ -1543,7 +1623,7 @@
     <section class="view" id="v-rrhh">
       <div class="h-row"><h2>Recursos Humanos</h2></div>
       <div class="rrhh-segbar" style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">
-        <button class="btn ghost small rrhh-seg on" data-seg="trab" style="flex:1;min-width:120px">👷 Trabajadores</button>
+        <button class="btn ghost small rrhh-seg on" data-seg="trab" style="flex:1;min-width:120px">Trabajadores</button>
         <button class="btn ghost small rrhh-seg" data-seg="salida" style="flex:1;min-width:120px">Salidas médicas</button>
         <button class="btn ghost small rrhh-seg" data-seg="empresa" style="flex:1;min-width:120px">Empresa</button>
       </div>
@@ -1552,17 +1632,27 @@
 
       <!-- Panel Trabajadores -->
       <div id="rrhh-trab">
-        <div class="h-row" style="margin-top:0"><b style="font:800 15px var(--font);color:var(--ink)">Trabajadores <span class="cnt" id="trab-cnt"></span></b><div style="display:flex;gap:8px;flex-wrap:wrap"><button id="nomina-btn" class="btn ghost small" style="width:auto" title="Nómina de personal activo y avisos de baja para el cliente"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M4 4h16v16H4z"/><path d="M4 9h16M9 9v11"/></svg>Nómina</button><button id="dups-btn" class="btn ghost small" style="width:auto"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>Duplicados</button><button id="cargos-btn" class="btn ghost small" style="width:auto"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V15z"/></svg>Cargos y tratos</button><button id="trab-import" class="btn ghost small" style="width:auto"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>Importar</button><button id="trab-export" class="btn ghost small hide" style="width:auto" title="Descargar la lista de trabajadores (CSV)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>Exportar</button><button id="trab-nuevo" class="btn small" style="width:auto">＋ Nuevo</button></div></div>
-        <div id="fichas-inbox"></div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
-          <input id="trab-search" type="search" placeholder="Buscar nombre, RUT o cargo…" style="flex:1;min-width:150px;font:500 15px var(--font);padding:10px 12px;border:1px solid var(--line);border-radius:11px;background:var(--card);color:var(--ink)">
-          <select id="trab-sort" style="font:600 13px var(--font);padding:10px 12px;border:1px solid var(--line);border-radius:11px;background:var(--card);color:var(--ink)"><option value="reciente" selected>Recientes</option><option value="nombre">A–Z</option><option value="cargo">Por cargo</option><option value="buk">Buk (pendientes primero)</option><option value="bukok">Buk (registrados primero)</option></select>
+        <div class="tb-head">
+          <div class="tb-tit"><b>Trabajadores</b><span class="cnt" id="trab-cnt"></span></div>
+          <div class="tb-acc">
+            <button id="dups-btn" title="Duplicados" class="tb-ico" type="button" aria-label="Duplicados"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg><span>Duplicados</span></button>
+            <button id="cargos-btn" title="Cargos y tratos" class="tb-ico" type="button" aria-label="Cargos y tratos"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/></svg><span>Cargos y tratos</span></button>
+            <button id="trab-import" title="Importar trabajadores" class="tb-ico" type="button" aria-label="Importar"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg><span>Importar</span></button>
+            <button id="trab-export" class="tb-ico hide" type="button" aria-label="Exportar" title="Descargar la lista de trabajadores (CSV)"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg><span>Exportar</span></button>
+            <button id="trab-nuevo" title="Nuevo trabajador" class="tb-ico tb-pri" type="button" aria-label="Nuevo trabajador"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg><span>Nuevo</span></button>
+          </div>
         </div>
-        <div style="display:flex;gap:8px;margin-bottom:14px">
-          <button class="btn ghost small tfil" data-f="todos" style="flex:1">Todos</button>
-          <button class="btn ghost small tfil on" data-f="activo" style="flex:1">Activos</button>
-          <button class="btn ghost small tfil" data-f="espera" style="flex:1">En espera</button>
-          <button class="btn ghost small tfil" data-f="inactivo" style="flex:1">Inactivos</button>
+        <div id="fichas-inbox"></div>
+        <div class="tb-bus">
+          <label class="tb-q"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><input id="trab-search" type="search" placeholder="Buscar nombre, RUT o cargo…"></label>
+          <select id="trab-sort" class="tb-sort"><option value="reciente" selected>Recientes</option><option value="nombre">A–Z</option><option value="cargo">Por cargo</option><option value="buk">Buk (pendientes primero)</option><option value="bukok">Buk (registrados primero)</option></select>
+        </div>
+        <div class="tseg" id="trab-seg">
+          <i class="tseg-ind"></i>
+          <button class="tfil on" data-f="todos" type="button">Todos<span class="n"></span></button>
+          <button class="tfil" data-f="activo" type="button">Activos<span class="n"></span></button>
+          <button class="tfil" data-f="espera" type="button">En espera<span class="n"></span></button>
+          <button class="tfil" data-f="inactivo" type="button">Inactivos<span class="n"></span></button>
         </div>
         <div id="trab-list"></div>
       </div>
@@ -1827,67 +1917,91 @@
     <b id="fi-title">Ficha</b>
     <button id="fi-save" class="btn small" style="width:auto">Guardar</button>
   </div>
-  <div class="ficha-body">
-    <div class="card">
-      <div class="fld"><label>Nombre</label><input id="fi-nombre" type="text" placeholder="Nombre completo"></div>
-      <div class="grid2">
-        <div class="fld"><label>RUT</label><input id="fi-rut" type="text" placeholder="12.345.678-9"></div>
-        <div class="fld"><label>Cargo</label><select id="fi-cargo"></select><div id="fi-trato-h" class="note" style="margin:4px 0 0;font-size:.72rem"></div></div>
-      </div>
-      <div class="grid2">
-        <div class="fld"><label>Estado</label><select id="fi-estado"><option value="espera">En espera</option><option value="activo">Activo</option><option value="inactivo">Inactivo</option></select></div>
-        <div class="fld"><label>Fecha ingreso</label><input id="fi-ingreso" type="date"></div>
-      </div>
-      <div class="fld"><label style="display:flex;align-items:center;gap:9px;cursor:pointer;font-weight:600"><input id="fi-chofer" type="checkbox" style="width:18px;height:18px;accent-color:var(--orange)">🚚 Es chofer (puede registrar vueltas)</label></div>
-      <div class="fld"><label style="display:flex;align-items:center;gap:9px;cursor:pointer;font-weight:600"><input id="fi-fijo" type="checkbox" style="width:18px;height:18px;accent-color:var(--orange)">📄 Contrato fijo (renta fija, no por trato)</label></div>
-      <div class="fld" id="fi-jornada-wrap" style="display:none"><label>Jornada normal (horas/día, incl. colación)</label><input id="fi-jornada" type="number" min="0" step="0.5" placeholder="Ej: 9"><div class="note" style="margin:4px 0 0;font-size:.72rem">Dentro de esta jornada no se cuenta trato; solo las horas por sobre ella cuentan como extra.</div>
-        <div class="grid2" style="margin-top:8px"><div class="fld" style="margin:0"><label>Turno desde <span class="note" style="font-weight:400">(opcional)</span></label><input id="fi-jini" type="time"></div><div class="fld" style="margin:0"><label>Turno hasta</label><input id="fi-jfin" type="time"></div></div>
-        <div class="grid2" style="margin-top:8px"><div class="fld" style="margin:0"><label>Sueldo base mensual ($)</label><input id="fi-sueldo" type="number" min="0" step="1000" placeholder="Ej: 750000"></div><div class="fld" style="margin:0"><label>Sueldo lo paga</label><select id="fi-sueldo-emp"><option value="">Innova Servi</option><option value="IS Performance">IS Performance</option></select></div></div>
-        <div class="fld" style="margin:8px 0 0"><label>Sueldo vigente desde (mes)</label><input id="fi-sueldo-desde" type="month"><div class="note" style="margin:4px 0 0;font-size:.72rem">En los meses anteriores no se muestra este sueldo en Remuneraciones.</div></div>
-        <div class="note" style="margin:4px 0 0;font-size:.72rem">Si defines un turno (ej. 09:00–18:00), las horas <b>dentro</b> del turno no generan trato; las de <b>fuera</b> del turno, y los fines de semana/feriados, sí. (Usa esto en vez de las horas/día.)</div></div>
-      <div class="grid2">
-        <div class="fld"><label>Teléfono</label><input id="fi-tel" type="tel" placeholder="+56 9 ..."></div>
-        <div class="fld"><label>Correo</label><input id="fi-email" type="email" placeholder="correo@..."></div>
-      </div>
-      <div class="grid2">
-        <div class="fld"><label>Talla botas</label><input id="fi-botas" type="text" placeholder="Ej: 42"></div>
-        <div class="fld"><label>Talla ropa / overol</label><input id="fi-ropa" type="text" placeholder="Ej: L / XL"></div>
-      </div>
-      <div class="grid2">
-        <div class="fld"><label>AFP</label><input id="fi-afp" type="text" placeholder="Ej: Modelo"></div>
-        <div class="fld"><label>Salud</label><input id="fi-salud" type="text" placeholder="Fonasa / Isapre"></div>
-      </div>
-      <div class="fld"><label>Dirección</label><input id="fi-dir" type="text" placeholder="Calle, población, ciudad"></div>
-      <div class="fld"><label>Contacto de emergencia</label><input id="fi-emerg" type="text" placeholder="Nombre y teléfono"></div>
-      <details class="fi-bank">
-        <summary>Datos bancarios</summary>
+  <div class="ficha-body fi-layout">
+    <div id="fi-head" class="fi-head"></div>
+    <div class="fi-main">
+      <div class="card">
+        <div class="fi-tit">Datos principales</div>
+        <div class="fld"><label>Nombre</label><input id="fi-nombre" type="text" placeholder="Nombre completo"></div>
         <div class="grid2">
-          <div class="fld"><label>Banco</label><input id="fi-banco" type="text" list="bancos-list" placeholder="Ej: Banco Falabella"></div>
-          <div class="fld"><label>Tipo de cuenta</label><input id="fi-tipocta" type="text" list="tiposcta-list" placeholder="Corriente / Vista / Ahorro / Cuenta RUT"></div>
+          <div class="fld"><label>RUT</label><input id="fi-rut" type="text" placeholder="12.345.678-9"></div>
+          <div class="fld"><label>Cargo</label><select id="fi-cargo"></select></div>
         </div>
-        <div class="fld"><label>N° de cuenta</label><input id="fi-numcta" type="text" placeholder="Ej: 1-999-838631-9"></div>
-      </details>
-      <datalist id="tiposcta-list"><option>Corriente</option><option>Vista</option><option>Ahorro</option><option>Cuenta RUT</option><option>Chequera Electrónica</option></datalist>
-      <datalist id="bancos-list"><option>BancoEstado</option><option>Banco de Chile</option><option>Banco Santander</option><option>Banco BCI</option><option>Scotiabank</option><option>Banco Itaú</option><option>Banco Falabella</option><option>Banco Ripley</option><option>Banco BICE</option><option>Banco Security</option><option>Banco Consorcio</option><option>Banco Internacional</option><option>Coopeuch</option><option>Mercado Pago</option><option>Tenpo</option><option>Mach</option></datalist>
-      <details class="fi-bank" id="fi-extra-det" style="margin-top:11px">
-        <summary>Datos personales y previsionales (para Buk)</summary>
-        <div id="fi-extra"></div>
-      </details>
-      <div class="fld"><label>Notas</label><textarea id="fi-notas" placeholder="Observaciones, EPP asignado, etc."></textarea></div>
+        <div class="grid2">
+          <div class="fld" style="margin:0"><label>Estado</label><select id="fi-estado"><option value="espera">En espera</option><option value="activo">Activo</option><option value="inactivo">Inactivo</option></select></div>
+          <div class="fld" style="margin:0"><label>Fecha ingreso</label><input id="fi-ingreso" type="date"></div>
+        </div>
+      </div>
+      <div class="card fi-secs">
+        <details class="fi-sec" data-sec="contrato">
+          <summary><span class="fi-st"><b>Contrato y remuneración</b><span class="fi-meta" id="fi-m-contrato"></span></span></summary>
+          <div class="fi-sb">
+            <div class="fi-trato"><span>Valores del cargo (trato y hora extra)</span><b id="fi-trato-h"></b></div>
+            <label class="fi-chk"><input id="fi-chofer" type="checkbox">Es chofer (puede registrar vueltas)</label>
+            <label class="fi-chk"><input id="fi-fijo" type="checkbox">Contrato fijo (renta fija, no por trato)</label>
+            <div id="fi-jornada-wrap" style="display:none">
+              <div class="fld"><label>Jornada normal (horas/día, incl. colación)</label><input id="fi-jornada" type="number" min="0" step="0.5" placeholder="Ej: 9"></div>
+              <div class="grid2"><div class="fld"><label>Turno desde</label><input id="fi-jini" type="time"></div><div class="fld"><label>Turno hasta</label><input id="fi-jfin" type="time"></div></div>
+              <div class="grid2"><div class="fld"><label>Sueldo base mensual ($)</label><input id="fi-sueldo" type="number" min="0" step="1000" placeholder="Ej: 750000"></div><div class="fld"><label>Sueldo lo paga</label><select id="fi-sueldo-emp"><option value="">Innova Servi</option><option value="IS Performance">IS Performance</option></select></div></div>
+              <div class="fld" style="margin:0"><label>Sueldo vigente desde (mes)</label><input id="fi-sueldo-desde" type="month"></div>
+            </div>
+          </div>
+        </details>
+        <details class="fi-sec" data-sec="contacto">
+          <summary><span class="fi-st"><b>Contacto</b><span class="fi-meta" id="fi-m-contacto"></span></span></summary>
+          <div class="fi-sb">
+            <div class="grid2">
+              <div class="fld"><label>Teléfono</label><input id="fi-tel" type="tel" placeholder="+56 9 ..."></div>
+              <div class="fld"><label>Correo</label><input id="fi-email" type="email" placeholder="correo@..."></div>
+            </div>
+            <div class="fld"><label>Dirección</label><input id="fi-dir" type="text" placeholder="Calle, población, ciudad"></div>
+            <div class="fld" style="margin:0"><label>Contacto de emergencia</label><input id="fi-emerg" type="text" placeholder="Nombre y teléfono"></div>
+          </div>
+        </details>
+        <details class="fi-sec" data-sec="tallas">
+          <summary><span class="fi-st"><b>Tallas y previsión</b><span class="fi-meta" id="fi-m-tallas"></span></span></summary>
+          <div class="fi-sb">
+            <div class="grid2">
+              <div class="fld"><label>Talla botas</label><input id="fi-botas" type="text" placeholder="Ej: 42"></div>
+              <div class="fld"><label>Talla ropa / overol</label><input id="fi-ropa" type="text" placeholder="Ej: L / XL"></div>
+            </div>
+            <div class="grid2">
+              <div class="fld" style="margin:0"><label>AFP</label><input id="fi-afp" type="text" placeholder="Ej: Modelo"></div>
+              <div class="fld" style="margin:0"><label>Salud</label><input id="fi-salud" type="text" placeholder="Fonasa / Isapre"></div>
+            </div>
+          </div>
+        </details>
+        <details class="fi-sec" data-sec="banco">
+          <summary><span class="fi-st"><b>Datos bancarios</b><span class="fi-meta" id="fi-m-banco"></span></span></summary>
+          <div class="fi-sb">
+            <div class="grid2">
+              <div class="fld"><label>Banco</label><input id="fi-banco" type="text" list="bancos-list" placeholder="Ej: Banco Falabella"></div>
+              <div class="fld"><label>Tipo de cuenta</label><input id="fi-tipocta" type="text" list="tiposcta-list" placeholder="Corriente / Vista / Ahorro / Cuenta RUT"></div>
+            </div>
+            <div class="fld" style="margin:0"><label>N° de cuenta</label><input id="fi-numcta" type="text" placeholder="Ej: 1-999-838631-9"></div>
+          </div>
+        </details>
+        <datalist id="tiposcta-list"><option>Corriente</option><option>Vista</option><option>Ahorro</option><option>Cuenta RUT</option><option>Chequera Electrónica</option></datalist>
+        <datalist id="bancos-list"><option>BancoEstado</option><option>Banco de Chile</option><option>Banco Santander</option><option>Banco BCI</option><option>Scotiabank</option><option>Banco Itaú</option><option>Banco Falabella</option><option>Banco Ripley</option><option>Banco BICE</option><option>Banco Security</option><option>Banco Consorcio</option><option>Banco Internacional</option><option>Coopeuch</option><option>Mercado Pago</option><option>Tenpo</option><option>Mach</option></datalist>
+        <details class="fi-sec" id="fi-extra-det" data-sec="buk">
+          <summary><span class="fi-st"><b>Datos personales y previsionales (Buk)</b><span class="fi-meta" id="fi-m-buk"></span></span></summary>
+          <div class="fi-sb"><div id="fi-extra"></div></div>
+        </details>
+      </div>
     </div>
-    <div class="card">
-      <label style="display:block;font:700 13px var(--font);color:var(--ink);margin-bottom:2px;">Documentación y capacitaciones</label>
-      <p class="note" style="margin:0 0 4px">Toca un ítem para marcarlo entregado, adjuntar el archivo y su vencimiento, o marcar "No aplica".</p>
-      <div id="fi-rrhh"></div>
+    <div class="fi-side">
+      <div class="card">
+        <div class="fi-tit">Documentación y capacitaciones</div>
+        <div id="fi-rrhh"></div>
+      </div>
+      <div class="card">
+        <div class="fi-tit">Otros documentos</div>
+        <div id="fi-docs"></div>
+        <label class="catadd">Agregar documento<input type="file" id="fi-doc-input" accept="application/pdf,image/*" multiple hidden></label>
+        <div id="fi-scan-zone" class="hide"></div>
+      </div>
+      <button class="pl-del-btn hide" id="fi-del">Eliminar trabajador</button>
     </div>
-    <div class="card">
-      <label style="display:block;font:700 13px var(--font);color:var(--ink);margin-bottom:2px;">📎 Documentos</label>
-      <p class="note" style="margin:0 0 10px">Otros documentos sueltos (PDF o imagen).</p>
-      <div id="fi-docs"></div>
-      <label class="catadd">＋ Agregar documento<input type="file" id="fi-doc-input" accept="application/pdf,image/*" multiple hidden></label>
-      <div id="fi-scan-zone" class="hide"></div>
-    </div>
-    <button class="pl-del-btn hide" id="fi-del" style="width:100%;background:var(--card);border:1px solid #f0c0c0;color:#dc2626;padding:13px;border-radius:13px;font:800 14px var(--font);cursor:pointer">🗑 Eliminar trabajador</button>
   </div>
 </div>
 
@@ -4289,7 +4403,7 @@
       .sort(function(a,b){ return (a.nombre||'').localeCompare(b.nombre||''); })
       .map(function(t){ return '<option value="'+enc(titleCase(t.nombre))+'"></option>'; }).join(''); }
   function inic(n){ n=(n||'').trim().split(/\s+/); return ((n[0]||'')[0]||'')+((n[1]||'')[0]||''); }
-  var trabQ='', trabFilter='activo', trabSort='reciente', TRAB_VISTA=[];
+  var trabQ='', trabFilter='todos', trabSort='reciente', TRAB_VISTA=[];
   // % de documentación cumplida de un trabajador (docs entregadas y vigentes / total del catálogo).
   function docPct(t){ if(!t||!t.id||typeof estadoDoc!=='function'||!(typeof RRHH_TIPOS!=='undefined'&&RRHH_TIPOS.length)) return null;
     if(typeof RRHH_LOADED==='undefined'||!RRHH_LOADED) return null;   // aún no cargó la documentación
@@ -4464,8 +4578,16 @@
   }
   function descartarFicha(f){ if(!sb||!f) return; if(!confirm('¿Descartar la ficha de "'+titleCase(f.nombre||'')+'"? (no se crea el trabajador)')) return;
     busy(true,'Descartando…'); sb.from('fichas_ingreso').update({estado:'descartada'}).eq('id',f.id).then(function(){ busy(false); toast('Ficha descartada'); cargarFichasInbox(); }, function(){ busy(false); }); }
+  // Mueve la pastilla naranja bajo el filtro activo.
+  function trabSegInd(){ var s=$('trab-seg'); if(!s) return; var on=s.querySelector('.tfil.on'), ind=s.querySelector('.tseg-ind'); if(!on||!ind) return; ind.style.left=on.offsetLeft+'px'; ind.style.width=on.offsetWidth+'px'; }
+  if(window.ResizeObserver && $('trab-seg')) new ResizeObserver(trabSegInd).observe($('trab-seg'));   // también al mostrarse el panel
+  var TRAB_ANIM=true;   // anima la entrada de las tarjetas al cargar o cambiar filtro/orden (no al escribir en el buscador)
   function pintarTrab(){
     var list=$('trab-list'); var q=trabQ.toLowerCase();
+    var cuenta={todos:0,activo:0,espera:0,inactivo:0}; TRAB.forEach(function(t){ if(q && (((t.nombre||'')+' '+(t.rut||'')+' '+(t.cargo||'')).toLowerCase()).indexOf(q)<0) return; cuenta.todos++; cuenta[t.estado||'activo']=(cuenta[t.estado||'activo']||0)+1; });
+    document.querySelectorAll('#trab-seg .tfil').forEach(function(b){ var nn=b.querySelector('.n'); if(nn) nn.textContent=TRAB.length?String(cuenta[b.dataset.f]||0):''; });
+    trabSegInd();
+    list.classList.toggle('anim', TRAB_ANIM); TRAB_ANIM=false;
     var arr=TRAB.filter(function(t){
       var e=t.estado||'activo';
       if(trabFilter==='activo' && e!=='activo') return false;
@@ -4476,6 +4598,7 @@
     });
     function estRank(e){ return e==='inactivo'?2:(e==='espera'?1:0); }   // activos, luego en espera, luego inactivos
     arr.sort(function(a,b){
+      var ia=(a.estado==='inactivo')?1:0, ib=(b.estado==='inactivo')?1:0; if(ia!==ib) return ia-ib;   // inactivos siempre al final
       if(trabSort==='buk' || trabSort==='bukok'){ var ba=a.buk?1:0, bb=b.buk?1:0; if(ba!==bb) return (trabSort==='buk')?(ba-bb):(bb-ba); }  // buk: pendientes primero · bukok: registrados primero
       var ai=estRank(a.estado), bi=estRank(b.estado); if(ai!==bi) return ai-bi;
       if(trabSort==='reciente') return (b.id||0)-(a.id||0);
@@ -4487,14 +4610,41 @@
     if(!TRAB.length){ list.innerHTML='<div class="empty"><div class="big">👷</div>Aún no hay trabajadores.<br><span style="font-size:.82rem">Toca “＋ Nuevo” o “⬆ Importar”.</span></div>'; return; }
     if(!arr.length){ list.innerHTML='<div class="empty">Sin resultados para ese filtro/búsqueda.</div>'; return; }
     list.innerHTML=arr.map(function(t,idx){ var est=t.estado||'activo', off=(est==='inactivo'); var estTxt=(est==='inactivo'?'Inactivo':(est==='espera'?'En espera':'Activo')); var estCls=(est==='inactivo'?' b-off':(est==='espera'?' b-espera':' b-ok')); var nd=(t.docs||[]).length; var p=docPct(t); var col=(p!=null?pctColor(p):'var(--line)');
-      return '<div class="trab'+(off?' off':'')+'" data-idx="'+idx+'"><div class="av">'+esc(inic(t.nombre).toUpperCase()||'·')+'</div>'+
+      var ini=esc(inic(t.nombre).toUpperCase()||'·');
+      return '<div class="trab'+(off?' off':'')+'" data-idx="'+idx+'" style="--i:'+Math.min(idx,14)+'">'+(p!=null?'<div class="av ring" style="--p:'+p+';--c:'+col+'" title="Documentación: '+p+'% al día"><span>'+ini+'</span></div>':'<div class="av">'+ini+'</div>')+
         '<div class="tt"><div class="nm">'+esc(titleCase(t.nombre)||'—')+'</div>'+(t.cargo?'<div class="cg">'+esc(t.cargo)+'</div>':'')+
         '<div class="meta">'+(t.rut?esc(t.rut)+' · ':'')+nd+' doc'+(nd===1?'':'s')+(p!=null?(' · <span class="pct" style="color:'+col+'">'+p+'% docs</span>'):'')+'</div></div>'+
         '<button class="trab-buk'+(t.buk?' on':'')+'" data-idx="'+idx+'" type="button" title="'+(t.buk?'Registrado en Buk · toca para quitar':'Toca para marcar registrado en Buk')+'">'+(t.buk?'✓ Buk':'+ Buk')+'</button>'+
-        '<span class="badge'+estCls+'">'+estTxt+'</span>'+
+        (puedeEstado()?'<button type="button" class="badge est-btn'+estCls+'" data-idx="'+idx+'" title="Cambiar estado">'+estTxt+'<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>':'<span class="badge'+estCls+'">'+estTxt+'</span>')+
+        '<span class="go"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span>'+
         (p!=null?('<div class="tbar" title="Documentación: '+p+'% al día"><i style="width:'+p+'%;background:'+col+'"></i></div>'):'')+'</div>'; }).join('');
+    list.querySelectorAll('.est-btn[data-idx]').forEach(function(b){ b.addEventListener('click',function(ev){ ev.stopPropagation(); menuEstado(b, TRAB_VISTA[+b.dataset.idx]); }); });
     list.querySelectorAll('.trab-buk[data-idx]').forEach(function(b){ b.addEventListener('click',function(ev){ ev.stopPropagation(); marcarBukTrab(TRAB_VISTA[+b.dataset.idx]); }); });
     list.querySelectorAll('.trab[data-idx]').forEach(function(el){ el.addEventListener('click',function(){ abrirFicha(TRAB_VISTA[+el.dataset.idx]); }); });
+  }
+  // Cambiar el estado (activo / en espera / inactivo) desde la lista, sin entrar a la ficha.
+  function puedeEstado(){ return isAdmin || nivelMod('trabajadores')>=2; }
+  var EST_OPC=[['activo','Activo','#22a06b'],['espera','En espera','#d97706'],['inactivo','Inactivo','#8b93a7']];
+  function cerrarMenuEstado(){ var m=document.querySelector('.est-menu'); if(m){ m.remove(); } document.querySelectorAll('.est-btn.abierto').forEach(function(b){ b.classList.remove('abierto'); }); document.removeEventListener('click',cerrarMenuEstado); document.removeEventListener('keydown',escMenuEstado); window.removeEventListener('scroll',cerrarMenuEstado,true); }
+  function escMenuEstado(e){ if(e.key==='Escape') cerrarMenuEstado(); }
+  function menuEstado(btn, t){ var ya=btn.classList.contains('abierto'); cerrarMenuEstado(); if(ya||!t) return;
+    var act=t.estado||'activo', m=document.createElement('div'); m.className='est-menu'; m.setAttribute('role','menu');
+    m.innerHTML='<div class="tit">Estado</div>'+EST_OPC.map(function(o){ return '<button type="button" role="menuitem" data-e="'+o[0]+'"><span class="dot" style="background:'+o[2]+'"></span>'+o[1]+(o[0]===act?'<svg class="ok" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>':'')+'</button>'; }).join('');
+    document.body.appendChild(m); btn.classList.add('abierto');
+    var r=btn.getBoundingClientRect(), w=m.offsetWidth, hh=m.offsetHeight, top=r.bottom+6; if(top+hh>innerHeight-8){ top=r.top-hh-6; m.style.transformOrigin='bottom right'; }
+    m.style.top=top+'px'; m.style.left=Math.max(8,Math.min(r.right-w, innerWidth-w-8))+'px';
+    m.addEventListener('click',function(e){ e.stopPropagation(); var b=e.target.closest('button[data-e]'); if(!b) return; cerrarMenuEstado(); cambiarEstado(t, b.dataset.e); });
+    setTimeout(function(){ document.addEventListener('click',cerrarMenuEstado); document.addEventListener('keydown',escMenuEstado); window.addEventListener('scroll',cerrarMenuEstado,true); },0);
+  }
+  function cambiarEstado(t, nuevo){ var antes=t.estado||'activo'; if(!sb||!t||!t.id||nuevo===antes) return;
+    var nom=titleCase(t.nombre||''), lbl={activo:'Activo',espera:'En espera',inactivo:'Inactivo'};
+    t.estado=nuevo; pintarTrab();
+    sb.from('trabajadores').update({estado:nuevo}).eq('id',t.id).select('id').then(function(r){
+      if(r&&r.error){ t.estado=antes; pintarTrab(); toast('No se pudo cambiar: '+r.error.message); return; }
+      if(!r||!r.data||!r.data.length){ t.estado=antes; pintarTrab(); toast('No se guardó el cambio (sin permiso o trabajador no encontrado).'); return; }
+      toast(nom+' · '+lbl[nuevo]); if(typeof renderRrhh==='function' && RRHH_LOADED) renderRrhh();
+      if(nuevo==='inactivo' && antes!=='inactivo' && confirm(nom+' quedó inactivo. ¿Preparar el aviso de baja para el cliente (casino / torniquetes)?')) abrirNominaCli('baja', t.id);
+    }, function(){ t.estado=antes; pintarTrab(); toast('No se pudo cambiar el estado. Revisa la conexión.'); });
   }
   // Marca/desmarca a un trabajador como registrado en Buk.
   function marcarBukTrab(t){ if(!sb||!t||!t.id) return; var val=!t.buk, at=val?new Date().toISOString():null; t.buk=val; t.buk_at=at;
@@ -4502,8 +4652,8 @@
     pintarTrab();
   }
   $('trab-search').addEventListener('input',function(){ trabQ=this.value.trim(); pintarTrab(); });
-  $('trab-sort').addEventListener('change',function(){ trabSort=this.value; pintarTrab(); });
-  document.querySelectorAll('.tfil').forEach(function(b){ b.addEventListener('click',function(){ document.querySelectorAll('.tfil').forEach(function(x){ x.classList.toggle('on',x===b); }); trabFilter=b.dataset.f; pintarTrab(); }); });
+  $('trab-sort').addEventListener('change',function(){ trabSort=this.value; TRAB_ANIM=true; pintarTrab(); });
+  document.querySelectorAll('.tfil').forEach(function(b){ b.addEventListener('click',function(){ document.querySelectorAll('.tfil').forEach(function(x){ x.classList.toggle('on',x===b); }); trabFilter=b.dataset.f; TRAB_ANIM=true; pintarTrab(); }); });
   // Botón "Atrás" del navegador: cierra el panel/overlay abierto en vez de salir de la app.
   (function(){
     var OVS=['remu-aj','report-view','docgen','dg-pick','ficha','veh-ficha','remu-detalle','cargos-mgr','dups-mgr','cli-ficha','acc-ficha','rrhh-edit','planif-edit'];
@@ -4787,6 +4937,20 @@
   if($('nom-copia-tabla')) $('nom-copia-tabla').addEventListener('click',nomCopiaTabla);
   if($('nom-asunto')) $('nom-asunto').addEventListener('input',function(){ NOM_ASUNTO_DIRTY=true; });
 
+  // Encabezado de la ficha (nombre, cargo, estado) y resumen de cada sección cerrada, para no tener que abrirlas.
+  function fiResumen(){ var v=function(id){ var e=$(id); return e?String(e.value||'').trim():''; }, junta=function(L){ return L.filter(Boolean).join(' · '); };
+    var nom=v('fi-nombre'), est=v('fi-estado'), cargo=v('fi-cargo'), ini=nom?nom.split(/\s+/).filter(Boolean).slice(0,2).map(function(p){ return p[0]; }).join('').toUpperCase():'+';
+    var fijo=$('fi-fijo')&&$('fi-fijo').checked, chofer=$('fi-chofer')&&$('fi-chofer').checked, ESTL={activo:'Activo',espera:'En espera',inactivo:'Inactivo'};
+    if($('fi-head')) $('fi-head').innerHTML='<div class="fi-av">'+esc(ini)+'</div><div class="fi-hn"><b>'+esc(nom?titleCase(nom):'Nuevo trabajador')+'</b><span>'+esc(junta([cargo, v('fi-rut')])||'Completa los datos principales')+'</span></div>'+
+      '<div class="fi-chips"><span class="fi-chip e-'+esc(est||'espera')+'">'+esc(ESTL[est]||'En espera')+'</span>'+(v('fi-ingreso')?'<span class="fi-chip">Ingreso '+esc(fFaena(v('fi-ingreso')))+'</span>':'')+
+      '<span class="fi-chip">'+(fijo?'Contrato fijo':'Por trato')+'</span>'+(chofer?'<span class="fi-chip">Chofer</span>':'')+'</div>';
+    var m=function(id,txt,vacio){ var e=$(id); if(e) e.textContent=txt||vacio; };
+    m('fi-m-contrato', junta([fijo?('Contrato fijo'+(v('fi-sueldo')?' · '+fmtMoney(+v('fi-sueldo')):'')):'Por trato', chofer?'Chofer':'']), '');
+    m('fi-m-contacto', junta([v('fi-tel'), v('fi-email')]), 'Sin datos');
+    m('fi-m-tallas', junta([v('fi-botas')?'Botas '+v('fi-botas'):'', v('fi-ropa')?'Ropa '+v('fi-ropa'):'', v('fi-afp'), v('fi-salud')]), 'Sin datos');
+    m('fi-m-banco', junta([v('fi-banco'), v('fi-tipocta')]), 'Sin datos');
+  }
+  if($('ficha')){ ['input','change'].forEach(function(ev){ $('ficha').addEventListener(ev,function(e){ if(e.target.closest&&e.target.closest('.fi-layout')) fiResumen(); }); }); }
   function abrirFicha(t){
     FICHA_ID=t?t.id:null; FICHA_EST0=(t&&t.estado)||'espera';
     $('fi-nombre').value=t?(t.nombre||''):''; $('fi-rut').value=t?(t.rut||''):''; poblarSelectCargo($('fi-cargo'), t?(t.cargo||''):''); trHint();
@@ -4797,10 +4961,9 @@
     $('fi-afp').value=t?(t.afp||''):''; $('fi-salud').value=t?(t.salud||''):'';
     $('fi-dir').value=t?(t.direccion||''):''; $('fi-emerg').value=t?(t.emergencia||''):'';
     if($('fi-banco')) $('fi-banco').value=t?(t.banco||''):''; if($('fi-tipocta')) $('fi-tipocta').value=t?(t.tipo_cuenta||''):''; if($('fi-numcta')) $('fi-numcta').value=t?(t.num_cuenta||''):'';
-    var _bk=document.querySelector('.fi-bank'); if(_bk) _bk.open=!!(t&&(t.banco||t.num_cuenta));   // colapsado por defecto; se abre solo si ya hay datos
-    $('fi-notas').value=t?(t.notas||''):'';
+    document.querySelectorAll('#ficha .fi-sec').forEach(function(d){ d.open=false; });   // las secciones parten siempre cerradas
     FICHA_DOCS=t?((t.docs||[]).slice()):[]; renderDocs(); fiScanner.reset();
-    renderFichaRrhh(t); renderFichaExtra(t);
+    renderFichaRrhh(t); renderFichaExtra(t); fiResumen();
     $('fi-title').textContent=t?('Ficha · '+(t.nombre||'')):'Nuevo trabajador';
     $('fi-del').classList.toggle('hide', !t);
     ficha.classList.remove('hide'); ficha.scrollTop=0;
@@ -4908,7 +5071,7 @@
     var rows=pares.filter(function(p){ return p[1]!=null&&p[1]!==''; }).map(function(p){
       return '<div class="fd-row"><span class="fd-k">'+esc(p[0])+'</span><span class="fd-v">'+esc(String(p[1]))+'</span></div>'; }).join('');
     c.innerHTML=rows||'<p class="note" style="margin:2px 0 0">Sin datos previsionales. Se llenan solos cuando creas al trabajador desde una ficha recibida.</p>';
-    var det=$('fi-extra-det'); if(det) det.open=!!rows;   // se abre solo si hay datos
+    var mb=$('fi-m-buk'); if(mb){ var nb=pares.filter(function(p){ return p[1]!=null&&p[1]!==''; }).length; mb.textContent=nb?(nb+' dato'+(nb===1?'':'s')+' registrado'+(nb===1?'':'s')):'Sin datos'; }
   }
   // Checklist de documentación estándar (RRHH) dentro de la ficha del trabajador.
   function renderFichaRrhh(t){
@@ -4922,8 +5085,7 @@
       var gen=['perfil'].filter(function(k){ return typeof DOC_GEN!=='undefined'&&DOC_GEN[k]; });
       c.innerHTML='<div style="display:flex;align-items:baseline;gap:8px;margin-top:6px"><b style="font:800 22px var(--font);color:'+(T.pct===100?'#0f6e56':(T.pct>=60?'#b45309':'#dc2626'))+'">'+T.pct+'%</b><span class="note" style="margin:0">al día · '+T.ok+' de '+T.n+' que le aplican</span></div>'+
         sec('Documentación', RRHH_TIPOS)+sec('Capacitaciones y cursos', CAP_TIPOS)+
-        '<div class="fr-buk">'+svgI('<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>',14)+'<span style="flex:1">Ingreso firmado en Buk: contrato, anexos, RIOHS, IRL, EPP, inducción, Ley Karin. No cuenta en el %.</span></div>'+
-        (gen.length?'<div class="fr-gen">'+gen.map(function(k){ return '<button type="button" class="btn ghost small fr-g" data-g="'+k+'" style="width:auto">'+svgI(ICO.gen,14)+esc(DOC_GEN[k].nombre)+'</button>'; }).join('')+'</div>':'');
+        (gen.length?'<div class="fr-gen">'+gen.map(function(k){ return '<button type="button" class="btn ghost small fr-g" data-g="'+k+'" style="width:auto">'+esc(DOC_GEN[k].nombre)+'</button>'; }).join('')+'</div>':'');
       c.querySelectorAll('.dchip[data-t]').forEach(function(el){ el.addEventListener('click',function(){ abrirDocRrhh(+el.dataset.t, el.dataset.s); }); });
       c.querySelectorAll('.fr-g').forEach(function(b){ b.addEventListener('click',function(){ generarDoc(t.id, b.dataset.g); }); });
     }
@@ -5021,7 +5183,7 @@
       talla_botas:$('fi-botas').value.trim(), talla_ropa:$('fi-ropa').value.trim(), afp:$('fi-afp').value.trim(),
       salud:$('fi-salud').value.trim(), direccion:$('fi-dir').value.trim(), emergencia:$('fi-emerg').value.trim(),
       banco:($('fi-banco')?$('fi-banco').value.trim():'')||null, tipo_cuenta:($('fi-tipocta')?$('fi-tipocta').value:'')||null, num_cuenta:($('fi-numcta')?$('fi-numcta').value.trim():'')||null,
-      notas:$('fi-notas').value.trim(), docs:FICHA_DOCS, autor:userEmail };
+      docs:FICHA_DOCS, autor:userEmail };
     busy(true,'Guardando…');
     var q=FICHA_ID? sb.from('trabajadores').update(row).eq('id',FICHA_ID) : sb.from('trabajadores').insert(row);
     q.then(function(r){ busy(false); if(r.error){ toast('No se pudo guardar: '+r.error.message); return; }
