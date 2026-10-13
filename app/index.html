@@ -428,6 +428,15 @@
   #dg-doc p{line-height:1.6;margin:0 0 12px;text-align:justify;}
   #dg-doc [contenteditable]{outline:none;border-bottom:1px dashed #c7ccdd;min-width:60px;padding:0 3px;font-weight:700;}
   #dg-doc [contenteditable].dg-vacio{background:#fff1e4;border-bottom:2px solid #f26b1d;display:inline-block;min-height:1.2em;}
+  .lec-row{display:flex;flex-direction:column;align-items:flex-start;gap:4px;margin:8px 0 10px;} .lec-row .btn{width:auto;}
+  .lec-st{font-size:.76rem;color:var(--muted);line-height:1.35;} .lec-st.ok{color:#16794a;font-weight:600;} .lec-st.warn{color:#b45309;font-weight:600;} .lec-st.bad{color:var(--bad);font-weight:600;}
+  .lec-it{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);} .lec-it:last-child{border-bottom:none;}
+  .lec-th{width:64px;height:42px;object-fit:cover;border-radius:6px;border:1px solid var(--line);cursor:zoom-in;flex:none;background:#f3f4f8;}
+  .lec-th-pdf{display:flex;align-items:center;justify-content:center;font:800 .7rem var(--font);color:var(--muted);}
+  .lec-in{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;} .lec-in b{font-size:.85rem;color:var(--ink);}
+  .lec-it input[type=date]{width:140px;flex:none;padding:6px 8px;border:1.5px solid var(--line);border-radius:8px;font-size:.82rem;}
+  .lec-ok{flex:none;display:flex;align-items:center;} .lec-ok input{width:18px;height:18px;accent-color:var(--orange);}
+  @media(max-width:560px){ .lec-it{flex-wrap:wrap;} .lec-in{flex-basis:calc(100% - 80px);} .lec-it input[type=date]{margin-left:74px;} }
   .dgv-back{position:fixed;inset:0;z-index:95;background:rgba(12,15,46,.55);display:flex;align-items:center;justify-content:center;padding:16px;}
   .dgv{background:var(--card);border-radius:16px;width:100%;max-width:520px;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 30px 70px -20px rgba(0,0,0,.5);overflow:hidden;}
   .dgv-h{padding:16px 18px 10px;border-bottom:1px solid var(--line);} .dgv-h b{display:block;color:var(--ink);font-size:1rem;} .dgv-h span{font-size:.8rem;color:var(--muted);}
@@ -1565,6 +1574,7 @@
         <div class="segrow">
           <div class="segwrap"><span class="seglbl">Mostrar</span><div class="seg"><button class="seg-b rrhh-fil on" data-f="activo">Solo activos</button><button class="seg-b rrhh-fil" data-f="todos">Todos</button></div></div>
           <div class="segwrap"><span class="seglbl">Agrupar por</span><div class="seg"><button class="seg-b rrhh-vis on" data-v="doc">Documento</button><button class="seg-b rrhh-vis" data-v="persona">Persona</button><button class="seg-b rrhh-vis" data-v="vencer">Por vencer</button></div></div>
+          <button id="rrhh-leer" type="button" class="btn ghost small" style="width:auto;align-self:flex-end"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 12h10"/></svg>Leer vencimientos de cédulas</button>
         </div>
         <div id="rrhh-list"></div>
       </div>
@@ -6212,7 +6222,7 @@
   // Documentación que llevamos en InnovaGestión (lo de ingreso se firma en Buk).
   // na:true = se puede marcar "No aplica" en la ficha y sale del % de esa persona.
   var RRHH_TIPOS=[
-    {slug:'cedula',nombre:'Cédula de identidad (carnet)',corto:'Cédula',vence:false},
+    {slug:'cedula',nombre:'Cédula de identidad (carnet)',corto:'Cédula',vence:true},
     {slug:'antecedentes',nombre:'Certificado de antecedentes',corto:'Antecedentes',vence:false},
     {slug:'pts_quimicos',nombre:'PTS manejo de químicos',corto:'PTS químicos',vence:false,na:true},
     {slug:'pts_extintores',nombre:'PTS uso de extintores',corto:'PTS extintores',vence:false,na:true},
@@ -8384,6 +8394,123 @@
   function esPdfUrl(u){ return /\.pdf(\?|$)/i.test(String(u||'').split('#')[0]); }
   function cargarPdfLib(){ if(window.PDFLib) return Promise.resolve(); return new Promise(function(res,rej){ var s=document.createElement('script');
     s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js'; s.onload=function(){ res(); }; s.onerror=rej; document.head.appendChild(s); }); }
+  // ====== Lectura de vencimientos en el navegador (gratis): Tesseract.js lee el carnet y la librería mrz valida el reverso ======
+  // Reverso: la zona MRZ (líneas con <<<) trae el vencimiento con dígito de control → "verificado".
+  // Frente: se buscan las fechas impresas; el vencimiento cae en el cumpleaños y es posterior a la emisión → "revisar con la imagen".
+  // Nunca se guarda solo: la fecha se propone y la persona la confirma.
+  var LEC={};
+  function cargarLector(){
+    if(LEC.listo) return LEC.listo;
+    LEC.listo=new Promise(function(ok,ko){ if(window.Tesseract) return ok(); var s=document.createElement('script'); s.src='https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js'; s.onload=ok; s.onerror=ko; document.head.appendChild(s); })
+      .then(function(){ return import('https://cdn.jsdelivr.net/npm/mrz@4.2.1/+esm'); })
+      .then(function(m){ LEC.mrz=m.parse; return Promise.all([Tesseract.createWorker('spa'), Tesseract.createWorker('eng')]); })
+      .then(function(ws){ LEC.w=ws[0]; LEC.wm=ws[1]; return LEC.wm.setParameters({tessedit_char_whitelist:'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<', tessedit_pageseg_mode:'6'}); });
+    LEC.listo.catch(function(){ LEC.listo=null; });
+    return LEC.listo;
+  }
+  var LEC_MES={ENE:1,FEB:2,MAR:3,ABR:4,MAY:5,JUN:6,JUL:7,AGO:8,SEP:9,SET:9,OCT:10,NOV:11,DIC:12};
+  function lecFechas(t){ var r=[], s=t.toUpperCase().replace(/(\d)O/g,'$10').replace(/O(\d)/g,'0$1');
+    (s.match(/\b(\d{1,2})[\s.,\-]*(ENE|FEB|MAR|ABR|MAY|JUN|JUL|AGO|SEP|SET|OCT|NOV|DIC)[A-Z]*[\s.,\-]*(\d{4})\b/g)||[]).forEach(function(x){
+      var m=x.match(/(\d{1,2})[\s.,\-]*([A-Z]+)[\s.,\-]*(\d{4})/), mm=LEC_MES[m[2].slice(0,3)];
+      if(mm && +m[1]>=1 && +m[1]<=31) r.push(m[3]+'-'+String(mm).padStart(2,'0')+'-'+String(+m[1]).padStart(2,'0')); });
+    return r; }
+  function lecRuts(t){ return (t.match(/\b\d{1,2}\.?\d{3}\.?\d{3}\s*-\s*[\dkK]\b/g)||[]).map(function(x){ return x.replace(/[^\dkK]/g,'').toLowerCase(); }); }
+  // Frente: nacimiento = la fecha más antigua; vencimiento = la más nueva en el día del cumpleaños; emisión entre ambas.
+  function lecFrente(t){ var f=lecFechas(t).filter(function(x,i,a){ return a.indexOf(x)===i; }).sort(), nac=f[0]; if(!nac) return null;
+    var otras=f.filter(function(d){ return d>nac; }), cand=otras.filter(function(d){ return d.slice(5)===nac.slice(5); }), venc=cand.length?cand[cand.length-1]:null;
+    var emis=otras.filter(function(d){ return d!==venc; }).pop()||null, y=function(s){ return +s.slice(0,4); };
+    return {nac:nac, emis:emis, venc:venc, ok:!!venc&&!!emis&&emis<venc&&y(venc)-y(emis)<=11&&y(venc)-y(nac)>=5, ruts:lecRuts(t), fuente:'frente'}; }
+  function lecMrz(t){ var ls=t.split('\n').map(function(l){ return l.replace(/\s/g,''); }).filter(function(l){ return l.length>=25 && l.indexOf('<')>=0; });
+    for(var i=0;i+3<=ls.length;i++){ var tri=ls.slice(i,i+3).map(function(l){ return (l+'<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<').slice(0,30); });
+      try{ var r=LEC.mrz(tri,{autocorrect:true}), F=r&&r.fields; if(!F||!F.expirationDate) continue;
+        var malo=(r.details||[]).some(function(d){ return d.field==='expirationDate' && !d.valid; }) || !F.expirationDateCheckDigit; if(malo) continue;
+        // RUN en la línea 2, tras "CHL" (el OCR suele confundir 1 con I/L y 0 con O)
+        var e=F.expirationDate, z=(tri[1].split('CHL')[1]||'').replace(/[IL]/g,'1').replace(/O/g,'0'), mr=/^(\d{7,8})<*([0-9K])/.exec(z), run=mr?(mr[1]+mr[2]).toLowerCase():'';
+        return {venc:'20'+e.slice(0,2)+'-'+e.slice(2,4)+'-'+e.slice(4,6), ok:true, seguro:true, ruts:run?[run]:[], fuente:'mrz'}; }catch(_){}
+    }
+    return null; }
+  // Imagen o PDF (URL o archivo) → canvas en gris
+  function lecCanvas(src){
+    var blob=(typeof Blob!=='undefined' && src instanceof Blob), pdf=blob?/pdf/i.test(src.type||''):/\.pdf(\?|$)/i.test(src);
+    if(pdf) return (blob?cargarPdfJs().then(function(L){ return src.arrayBuffer().then(function(ab){ return L.getDocument({data:ab}).promise; }); }):abrirPdfJs(src)).then(function(p){ return pagCanvas(p,1,2000); });
+    return (blob?Promise.resolve(src):fetch(urlCors(src),{mode:'cors'}).then(function(r){ if(!r.ok) throw 0; return r.blob(); })).then(function(b){ return createImageBitmap(b); }).then(function(bm){
+      var s=Math.min(1,2600/Math.max(bm.width,bm.height)), c=document.createElement('canvas'); c.width=Math.round(bm.width*s); c.height=Math.round(bm.height*s);
+      var x=c.getContext('2d'); x.filter='grayscale(1)'; x.drawImage(bm,0,0,c.width,c.height); return c; }); }
+  function lecRot(src,deg){ if(!deg) return src; var c=document.createElement('canvas'), s=deg%180!==0; c.width=s?src.height:src.width; c.height=s?src.width:src.height;
+    var x=c.getContext('2d'); x.translate(c.width/2,c.height/2); x.rotate(deg*Math.PI/180); x.drawImage(src,-src.width/2,-src.height/2); return c; }
+  function lecEscala(src,sx,sy,sw,sh,max,filtro){ var e=Math.min(2,max/Math.max(sw,sh)), c=document.createElement('canvas'); c.width=Math.round(sw*e); c.height=Math.round(sh*e);
+    var x=c.getContext('2d'); x.filter=filtro; x.drawImage(src,sx,sy,sw,sh,0,0,c.width,c.height); return c; }
+  // Recorta la zona clara (la tarjeta) y estira el contraste: ayuda con fotos sobreexpuestas o con fondo oscuro.
+  function lecTarjeta(src){ var w=src.width,h=src.height,d=src.getContext('2d').getImageData(0,0,w,h).data,L=new Float32Array(w*h),s=0,i,y,k;
+    for(i=0;i<w*h;i++){ L[i]=d[i*4]*.3+d[i*4+1]*.59+d[i*4+2]*.11; s+=L[i]; }
+    var th=Math.max(s/(w*h)*1.15,110), rows=[], cols=new Float32Array(w);
+    for(y=0;y<h;y++){ var c=0; for(k=0;k<w;k++){ if(L[y*w+k]>th){ c++; cols[k]++; } } rows.push(c/w>0.25); }
+    var cs=Array.prototype.map.call(cols,function(v){ return v/h>0.25; }), y0=rows.indexOf(true), y1=rows.lastIndexOf(true), x0=cs.indexOf(true), x1=cs.lastIndexOf(true);
+    if(y0<0||x0<0||(y1-y0)<h*0.15||(x1-x0)<w*0.15){ y0=0; y1=h-1; x0=0; x1=w-1; }
+    var o=lecEscala(src,x0,y0,x1-x0+1,y1-y0+1,1800,'none'), ox=o.getContext('2d'), im=ox.getImageData(0,0,o.width,o.height), p=im.data, hist=new Uint32Array(256), N=p.length/4, acc=0, lo=0, hi=255;
+    for(i=0;i<p.length;i+=4){ var v=Math.round(p[i]*.3+p[i+1]*.59+p[i+2]*.11); p[i]=v; hist[v]++; }
+    for(v=0;v<256;v++){ acc+=hist[v]; if(acc<N*0.02) lo=v; if(acc<N*0.97) hi=v; }
+    for(i=0;i<p.length;i+=4){ var q=Math.max(0,Math.min(1,(p[i]-lo)/Math.max(1,hi-lo))); p[i]=p[i+1]=p[i+2]=Math.pow(q,1.6)*255; }
+    ox.putImageData(im,0,0); return o; }
+  // Variantes de la imagen, de la más barata a la más costosa: completa, tarjeta recortada y franjas; en 4 rotaciones.
+  function lecVariantes(src){ var L=[]; [0,90,270,180].forEach(function(g){ L.push(function(){ var r=lecRot(src,g); return lecEscala(r,0,0,r.width,r.height,2000,'grayscale(1) contrast(1.4)'); });
+      L.push(function(){ return lecTarjeta(lecRot(src,g)); });
+      [[0,.55],[.22,.78],[.45,1]].forEach(function(f){ L.push(function(){ var r=lecRot(src,g), v=r.width>r.height*1.15;
+        return v?lecEscala(r,f[0]*r.width,0,(f[1]-f[0])*r.width,r.height,1800,'grayscale(1) contrast(1.5)'):lecEscala(r,0,f[0]*r.height,r.width,(f[1]-f[0])*r.height,1800,'grayscale(1) contrast(1.5)'); }); }); });
+    return L; }
+  function lecUna(src, prog){ var V=lecVariantes(src), i=0, mejor=null, t0=Date.now();
+    function sig(){ if(i>=V.length || Date.now()-t0>70000) return Promise.resolve(mejor);
+      var img=V[i++](); if(prog) prog(i,V.length);
+      return LEC.w.recognize(img).then(function(r){ var t=r.data.text||'';
+        if(/<{3,}/.test(t)) return LEC.wm.recognize(img).then(function(r2){ var m=lecMrz(r2.data.text||''); if(m) return m; return sig(); });
+        var f=lecFrente(t); if(f&&f.ok) return f; if(f&&f.venc&&!mejor) mejor=f; return sig(); }); }
+    return sig(); }
+  // fuentes: [reverso, frente] (URL o archivo). Devuelve {venc, fuente:'mrz'|'frente', seguro, rutOk} o null.
+  function leerVencCedula(fuentes, rut, prog){
+    var F=(fuentes||[]).filter(Boolean), rn=String(rut||'').replace(/[^\dkK]/g,'').toLowerCase(), i=0, mejor=null;
+    return cargarLector().then(function sig(){ if(i>=F.length) return mejor;
+      var n=i++; if(prog) prog('Leyendo '+(F.length>1?(n+1)+' de '+F.length:'')+'…');
+      return lecCanvas(F[n]).then(function(c){ return lecUna(c, function(a,b){ if(prog) prog('Leyendo imagen '+(n+1)+(F.length>1?' de '+F.length:'')+' · intento '+a+' de '+b); }); }, function(){ return null; })
+        .then(function(r){ if(r){ var cuerpo=rn.slice(0,-1); r.rutOk=(rn&&r.ruts.length)?r.ruts.some(function(x){ var c=x.slice(0,-1); return c===cuerpo || (c.length>=7 && cuerpo.slice(-c.length)===c); }):null; if(r.seguro) return r; if(!mejor||(r.ok&&!mejor.ok)) mejor=r; } return sig(); }); }); }
+  function lecResumen(r){ if(!r||!r.venc) return {txt:'No se pudo leer la fecha. Escríbela a mano mirando el carnet.', cls:'bad'};
+    var base=r.fuente==='mrz'?'Leído del reverso (zona MRZ con dígito de control): fecha verificada.':(r.ok?'Leído del frente: confirma que coincida con la imagen.':'Lectura dudosa del frente: revisa con la imagen.');
+    var rt=r.rutOk===true?' El RUN coincide con la ficha.':(r.rutOk===false?' Atención: el RUN leído no coincide con la ficha.':'');
+    return {txt:base+rt, cls:(r.fuente==='mrz'&&r.rutOk!==false)?'ok':'warn'}; }
+  // Lectura en lote: cédulas entregadas sin vencimiento. Se revisa cada fecha con su imagen y se guardan solo las marcadas.
+  var ICO_SCAN='<path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 12h10"/>';
+  function abrirLecturaLote(){
+    var L=RRHH_T.filter(function(t){ return t.estado!=='inactivo'; }).map(function(t){ var d=RRHH_D[t.id+'|cedula']; return (d&&d.estado==='entregado'&&!d.vencimiento)?{t:t,d:d}:null; }).filter(Boolean);
+    $('re-title').textContent='Leer vencimientos de cédulas';
+    if(!L.length){ $('re-body').innerHTML='<div class="card"><p class="note" style="margin:0">Todas las cédulas entregadas ya tienen fecha de vencimiento.</p></div>'; $('rrhh-edit').classList.remove('hide'); return; }
+    $('re-body').innerHTML='<div class="card"><p class="note" style="margin:0 0 10px">Se leerán <b>'+L.length+'</b> cédula'+(L.length===1?'':'s')+' sin fecha de vencimiento. La lectura se hace en este equipo (gratis, sin enviar las imágenes a nadie) y tarda unos segundos por carnet. '+
+      'Las fechas del <b>reverso</b> quedan verificadas; las del <b>frente</b> compáralas con la imagen antes de marcarlas.</p>'+
+      '<button id="lec-go" class="btn small" style="width:auto">'+svgI(ICO_SCAN,15)+'Comenzar lectura</button></div>'+
+      '<div class="card" style="padding:6px 12px">'+L.map(function(x,i){ var fr=cedulaFrente(x.t,x.d), img=fr&&!/\.pdf(\?|$)/i.test(fr);
+        return '<div class="lec-it" data-i="'+i+'">'+(img?'<img class="lec-th" src="'+esc(fr)+'" alt="" data-u="'+esc(fr)+'">':'<span class="lec-th lec-th-pdf" data-u="'+esc(fr||cedulaReverso(x.t,x.d))+'">PDF</span>')+
+          '<div class="lec-in"><b>'+esc(titleCase(x.t.nombre||''))+'</b><span class="lec-st" id="lec-st-'+i+'">En espera</span></div>'+
+          '<input type="date" id="lec-f-'+i+'"><label class="lec-ok" title="Guardar esta fecha"><input type="checkbox" id="lec-c-'+i+'"></label></div>'; }).join('')+'</div>'+
+      '<button id="lec-save" class="btn" style="width:100%">'+svgI(ICO.save)+'Guardar fechas marcadas</button>';
+    $('rrhh-edit').classList.remove('hide'); $('rrhh-edit').scrollTop=0;
+    $('re-body').querySelectorAll('.lec-th').forEach(function(el){ el.addEventListener('click',function(){ var u=el.getAttribute('data-u'); if(u) window.open(u,'_blank','noopener'); }); });
+    $('re-body').querySelectorAll('input[type=date]').forEach(function(inp){ inp.addEventListener('change',function(){ var c=$('lec-c-'+inp.id.split('-').pop()); if(c&&inp.value) c.checked=true; }); });
+    var corriendo=false;
+    $('lec-go').addEventListener('click',function(){ if(corriendo) return; corriendo=true; var b=this; b.disabled=true; var i=0;
+      (function sig(){ if(i>=L.length || $('rrhh-edit').classList.contains('hide')){ b.textContent='Lectura terminada'; return; }
+        var n=i++, x=L[n], st=$('lec-st-'+n); st.className='lec-st'; st.textContent='Leyendo…';
+        leerVencCedula([cedulaReverso(x.t,x.d), cedulaFrente(x.t,x.d)], x.t.rut, function(m){ st.textContent=m; }).then(function(r){
+          var R=lecResumen(r); st.textContent=R.txt; st.className='lec-st '+R.cls;
+          if(r&&r.venc){ $('lec-f-'+n).value=r.venc; if(r.fuente==='mrz'&&r.rutOk!==false) $('lec-c-'+n).checked=true; }
+          sig(); }, function(){ st.textContent='No se pudo cargar el lector. Revisa la conexión.'; st.className='lec-st bad'; corriendo=false; b.disabled=false; });
+      })(); });
+    $('lec-save').addEventListener('click',function(){
+      var ups=[]; L.forEach(function(x,i){ var f=$('lec-f-'+i).value; if($('lec-c-'+i).checked && f) ups.push({x:x,f:f}); });
+      if(!ups.length){ toast('Marca al menos una fecha para guardar.'); return; }
+      busy(true,'Guardando fechas…'); var pend=ups.length, malos=0;
+      ups.forEach(function(u){ sb.from('rrhh_docs').update({vencimiento:u.f}).eq('trabajador_id',u.x.t.id).eq('tipo','cedula').then(function(r){
+          if(r&&r.error) malos++; else u.x.d.vencimiento=u.f; fin(); }, function(){ malos++; fin(); }); });
+      function fin(){ if(--pend>0) return; busy(false); toast(malos?('Se guardaron '+(ups.length-malos)+'; '+malos+' fallaron.'):('✓ '+ups.length+' fecha'+(ups.length===1?'':'s')+' guardada'+(ups.length===1?'':'s'))); $('rrhh-edit').classList.add('hide'); renderRrhh(); }
+    });
+  }
   function carnetPDFMixto(real, nombre){
     busy(true,'Armando PDF del carnet…');
     cargarPdfLib().then(function(){
@@ -8447,6 +8574,7 @@
         '<div class="fld"><label>¿Dónde se gestiona?</label><select id="re-ambito"><option value="interno"'+((d.ambito||'interno')==='interno'?' selected':'')+'>Nuestro (lo gestionamos acá)</option><option value="cliente"'+(d.ambito==='cliente'?' selected':'')+'>Plataforma del cliente (Zerty / acreditación)</option></select></div>'+
         '<div class="grid2"><div class="fld" style="margin:0"><label>Fecha</label><input type="date" id="re-fecha" value="'+(d.fecha||'')+'"></div>'+
           '<div class="fld" style="margin:0"><label>Vence (si aplica)</label><input type="date" id="re-venc" value="'+(d.vencimiento||'')+'"></div></div>'+
+        (esCed?'<div class="lec-row"><button id="re-leer" type="button" class="btn ghost small">'+svgI(ICO_SCAN,14)+'Leer vencimiento del carnet</button><span id="re-lee" class="lec-st"></span></div>':'')+
         archivoHtml+
         '<div class="fld"><label>Nota</label><input type="text" id="re-nota" value="'+enc(d.nota||'')+'" placeholder="Opcional"></div>'+
         ((esCed&&_sides.length)?('<button id="re-carnet" type="button" class="btn ghost small" style="width:100%;margin-top:2px;margin-bottom:6px">'+svgI(ICO.clip,14)+'Carnet en PDF ('+_sides.map(function(s){return s.label.toLowerCase();}).join(' + ')+')</button>'):'')+
@@ -8466,6 +8594,13 @@
     var pend={file:null,file2:null};
     if($('re-file')) $('re-file').addEventListener('change',function(){ pend.file=this.files&&this.files[0]; if($('re-file-n')) $('re-file-n').textContent=pend.file?('· '+pend.file.name):''; });
     if($('re-file2')) $('re-file2').addEventListener('change',function(){ pend.file2=this.files&&this.files[0]; if($('re-file2-n')) $('re-file2-n').textContent=pend.file2?('· '+pend.file2.name):''; });
+    // Lee el vencimiento del carnet (reverso primero: la zona MRZ queda verificada) y lo propone en "Vence".
+    function leerCarnet(){ var st=$('re-lee'), b=$('re-leer'); if(!st||b.disabled) return; b.disabled=true; st.className='lec-st'; st.textContent='Cargando el lector…';
+      leerVencCedula([pend.file2||revUrl, pend.file||frUrl], t.rut, function(m){ st.textContent=m; }).then(function(r){ b.disabled=false;
+        var R=lecResumen(r); st.textContent=R.txt; st.className='lec-st '+R.cls; if(r&&r.venc) $('re-venc').value=r.venc; },
+        function(){ b.disabled=false; st.className='lec-st bad'; st.textContent='No se pudo cargar el lector. Revisa la conexión.'; }); }
+    if($('re-leer')){ $('re-leer').addEventListener('click',leerCarnet);
+      ['re-file','re-file2'].forEach(function(id){ if($(id)) $(id).addEventListener('change',function(){ if(this.files&&this.files[0]&&!$('re-venc').value) leerCarnet(); }); }); }
     $('re-save').addEventListener('click',function(){
       var row={ trabajador_id:tid, tipo:ts, estado:$('re-estado').value, fecha:($('re-fecha').value||null), vencimiento:($('re-venc')?($('re-venc').value||null):null), ambito:($('re-ambito')?$('re-ambito').value:'interno'), nota:($('re-nota').value.trim()||null), autor:userEmail };
       if(esCed){ if(frUrl) row.url=frUrl; if(revUrl) row.url2=revUrl; }
@@ -8484,6 +8619,7 @@
     $('rrhh-edit').classList.remove('hide'); $('rrhh-edit').scrollTop=0;
   }
   $('re-close').addEventListener('click',function(){ $('rrhh-edit').classList.add('hide'); });
+  if($('rrhh-leer')) $('rrhh-leer').addEventListener('click',abrirLecturaLote);
   document.querySelectorAll('.rrhh-fil').forEach(function(b){ b.addEventListener('click',function(){ document.querySelectorAll('.rrhh-fil').forEach(function(x){ x.classList.toggle('on',x===b); }); RRHH_FILTRO=b.dataset.f; renderRrhh(); }); });
   document.querySelectorAll('.rrhh-vis').forEach(function(b){ b.addEventListener('click',function(){ document.querySelectorAll('.rrhh-vis').forEach(function(x){ x.classList.toggle('on',x===b); }); RRHH_VISTA=b.dataset.v; renderRrhh(); }); });
 
