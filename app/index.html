@@ -418,6 +418,11 @@
   .pts-fig svg{display:block;width:100%;height:120px;}
   .pts-fig.ancha{grid-column:1/-1;} .pts-fig.ancha svg{height:auto;max-height:118px;}
   .pts-fig figcaption{font:600 10.5px var(--font);color:#55607a;margin-top:6px;line-height:1.35;}
+  .asis-info td{width:33.3%;} .asis-tem .dg-ul{font-size:11.5px;margin-bottom:4px;} .asis-tem .dg-ul li{margin-bottom:2px;text-align:left;}
+  #dg-doc p.asis-decl{font-size:11.5px;margin:8px 0;line-height:1.45;}
+  .asis-tb td{height:31px;vertical-align:middle !important;} .asis-tb td.n{width:32px;font-weight:700;} .asis-tb tbody tr:nth-child(even) td{background:#f8f9fc;}
+  .asis-tb td+td{border-left:1px solid #e3e5ee;}
+  .dg-firmas.asis-fir{margin-top:56px;}
   .mepp td{vertical-align:middle !important;} .mepp td.mepp-i{text-align:center;padding:4px !important;} .mepp td.mepp-i svg{width:62px;height:50px;display:inline-block;}
   .pts-tit{font:800 19px var(--font);color:var(--ink);text-align:center;margin:4px 0 10px;text-transform:uppercase;letter-spacing:.02em;}
   .pts-ctl td{width:25%;}
@@ -7712,18 +7717,21 @@
     else if(tipo==='cap'){ C=CAP_DOC[id]; tema=C.n; sub='Capacitación · '+C.n; dur=C.dur||''; }
     else if(tipo==='emp'){ var d=(EMP_D||[]).filter(function(x){ return x.tipo===id; })[0]; tema=d?(d.nombre||''):''; sub='Capacitación · '+tema; }
     var temario=I?I.t:(C?C.t:null), rows='';
-    for(var i=1;i<=15;i++) rows+='<tr><td class="n">'+i+'</td><td></td><td style="width:110px"></td><td style="width:120px"></td><td style="width:110px"></td></tr>';
+    for(var i=1;i<=10;i++) rows+='<tr><td class="n">'+i+'</td><td></td><td></td><td></td><td></td></tr>';
     function tr(a,b){ return '<tr><td class="dg-k">'+a+'</td><td>'+b+'</td></tr>'; }
     function rel(k,def){ return '<span contenteditable data-ls="'+k+'">'+esc(lsGet(k)||def||'')+'</span>'; }
     var relNom=lsGet('dg_rel_nom')||EMP_PREV.nombre;
     return dgHead(I?'REGISTRO DE ENTREGA E INSTRUCCIÓN':'REGISTRO DE CAPACITACIÓN')+
       '<p style="text-align:center;margin-top:-6px;color:#667;font-weight:700">'+esc(sub)+'</p>'+
-      '<table class="dg-tbl">'+tr('Tema',tema?'<b>'+esc(tema)+'</b>':ce(''))+tr('Fecha',ce(fLarga(todayISO())))+tr('Horario',ce('')+' a '+ce('')+' hrs.')+(C||tipo==='emp'?tr('Duración',ce(dur)):'')+tr('Lugar / faena',ce(''))+
-        tr('Relator',rel('dg_rel_nom',EMP_PREV.nombre))+tr('Cargo del relator',rel('dg_rel_cargo',EMP_PREV.cargo))+'</table>'+
-      '<h4 class="dg-h4">Temario</h4>'+(temario?ulDg(temario):'<div class="dg-box" style="min-height:90px" contenteditable></div>')+
-      '<p style="margin-top:10px">Los trabajadores individualizados declaran haber recibido la '+(I?'instrucción y una copia del procedimiento indicado':'capacitación')+', haber comprendido su contenido y se comprometen a cumplirlo.</p>'+
-      '<table class="dg-tbl"><thead><tr><th class="n">N°</th><th>Nombre</th><th>RUT</th><th>Cargo</th><th>Firma</th></tr></thead><tbody>'+rows+'</tbody></table>'+
-      '<div class="dg-firmas"><div>'+(relNom===EMP_PREV.nombre?firmaPrevHtml():'')+'Firma del relator<br>'+esc(relNom)+'</div><div>V°B° jefatura</div></div>';
+      '<table class="dg-tbl pts-ctl asis-info"><tbody>'+
+        '<tr><td colspan="3"><span class="sl">Tema</span>'+(tema?'<b>'+esc(tema)+'</b>':ce(''))+'</td></tr>'+
+        '<tr><td><span class="sl">Fecha</span>'+ce(fLarga(todayISO()))+'</td><td><span class="sl">Horario</span>'+ce('')+' a '+ce('')+' hrs.</td><td><span class="sl">'+(C||tipo==='emp'?'Duración':'Lugar / faena')+'</span>'+(C||tipo==='emp'?ce(dur):ce(''))+'</td></tr>'+
+        '<tr><td><span class="sl">Relator</span>'+rel('dg_rel_nom',EMP_PREV.nombre)+'</td><td><span class="sl">Cargo del relator</span>'+rel('dg_rel_cargo',EMP_PREV.cargo)+'</td><td>'+(C||tipo==='emp'?'<span class="sl">Lugar / faena</span>'+ce(''):'')+'</td></tr>'+
+      '</tbody></table>'+
+      '<h4 class="dg-h4">Temario</h4>'+(temario?(temario.length>3?'<div class="dg-cols asis-tem">'+ulDg(temario.slice(0,Math.ceil(temario.length/2)))+ulDg(temario.slice(Math.ceil(temario.length/2)))+'</div>':'<div class="asis-tem">'+ulDg(temario)+'</div>'):'<div class="dg-box" style="min-height:70px" contenteditable></div>')+
+      '<p class="asis-decl">Los trabajadores individualizados declaran haber recibido la '+(I?'instrucción y una copia del procedimiento indicado':'capacitación')+', haber comprendido su contenido y se comprometen a cumplirlo.</p>'+
+      '<table class="dg-tbl asis-tb"><thead><tr><th class="n">N°</th><th style="width:34%">Nombre completo</th><th style="width:15%">RUT</th><th style="width:18%">Cargo</th><th>Firma</th></tr></thead><tbody>'+rows+'</tbody></table>'+
+      '<div class="dg-firmas asis-fir"><div>'+(relNom===EMP_PREV.nombre?firmaPrevHtml():'')+'Firma del relator<br>'+esc(relNom)+'</div><div>V°B° jefatura</div></div>';
   }
 
   // PTS acorde a sus funciones, según el cargo (usa las funciones del contrato / perfil de cargo).
