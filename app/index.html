@@ -1364,7 +1364,7 @@
 
       <button class="btn" id="r-save">Guardar registro</button>
       <button class="btn ghost hide" id="r-report" style="margin-top:10px">📄 Generar reporte</button>
-      <button class="pl-del-btn hide" id="r-del" style="width:100%;margin-top:10px;background:#fff;border:1px solid #f0c0c0;color:#dc2626;padding:13px;border-radius:13px;font:800 14px var(--font);cursor:pointer">🗑 Eliminar registro</button>
+      <button class="pl-del-btn hide" id="r-del" style="width:100%;margin-top:10px;background:var(--card);border:1px solid #f0c0c0;color:#dc2626;padding:13px;border-radius:13px;font:800 14px var(--font);cursor:pointer">🗑 Eliminar registro</button>
       <p class="note">Los archivos se guardan ordenados por empresa y fecha (ej. <b>CERMAQ_2026-08-31_1.jpg</b>).</p>
     </section>
 
@@ -1413,7 +1413,7 @@
           </div>
           <div class="fld">
             <label>Peaje <span style="color:var(--muted);font-weight:400">(si hubo)</span></label>
-            <div style="display:flex;align-items:center;border:1px solid var(--line);border-radius:11px;padding:0 12px;background:#fff">
+            <div style="display:flex;align-items:center;border:1px solid var(--line);border-radius:11px;padding:0 12px;background:var(--card)">
               <span style="font-size:17px;color:var(--muted)">$</span>
               <input id="cf-peaje" type="text" inputmode="numeric" placeholder="0" style="border:none;background:transparent;font:600 17px var(--font);padding:12px 8px;width:100%;color:var(--ink);outline:none">
             </div>
@@ -1483,13 +1483,13 @@
         <div id="m-items"></div>
         <button class="catadd" id="m-add-item" type="button">＋ Agregar ítem</button>
         <button class="btn" id="m-save" style="width:100%;margin-top:14px">💾 Guardar faena</button>
-        <button id="m-del" style="width:100%;margin-top:8px;display:none;background:#fff;border:1px solid #f0c0c0;color:#dc2626;padding:13px;border-radius:13px;font:800 14px var(--font);cursor:pointer">🗑 Eliminar faena</button>
+        <button id="m-del" style="width:100%;margin-top:8px;display:none;background:var(--card);border:1px solid #f0c0c0;color:#dc2626;padding:13px;border-radius:13px;font:800 14px var(--font);cursor:pointer">🗑 Eliminar faena</button>
       </div>
     </section>
 
     <!-- ---- REMUNERACIONES / PAGOS (solo admin) ---- -->
     <section class="view" id="v-remu">
-      <div class="h-row"><h2>Remuneraciones <span class="cnt" id="remu-cnt"></span></h2><button id="remu-cfg-btn" class="btn ghost small" style="width:auto">⚙️ Cargos y tratos</button></div>
+      <div class="h-row"><h2>Remuneraciones <span class="cnt" id="remu-cnt"></span></h2><button id="remu-cfg-btn" class="btn ghost small" style="width:auto"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V15z"/></svg>Cargos y tratos</button></div>
       <div class="remu-modos" role="tablist">
         <button class="remu-modo on" data-m="semana" type="button"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>Pago semanal</button>
         <button class="remu-modo" data-m="mes" type="button"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4M7 13h2M11 13h2M15 13h2M7 17h2M11 17h2"/></svg>Asistencia mensual</button>
@@ -1552,11 +1552,11 @@
 
       <!-- Panel Trabajadores -->
       <div id="rrhh-trab">
-        <div class="h-row" style="margin-top:0"><b style="font:800 15px var(--font);color:var(--ink)">Trabajadores <span class="cnt" id="trab-cnt"></span></b><div style="display:flex;gap:8px;flex-wrap:wrap"><button id="nomina-btn" class="btn ghost small" style="width:auto" title="Nómina de personal activo y avisos de baja para el cliente"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M4 4h16v16H4z"/><path d="M4 9h16M9 9v11"/></svg>Nómina</button><button id="dups-btn" class="btn ghost small" style="width:auto">🔍 Duplicados</button><button id="cargos-btn" class="btn ghost small" style="width:auto">⚙️ Cargos y tratos</button><button id="trab-import" class="btn ghost small" style="width:auto">⬆ Importar</button><button id="trab-export" class="btn ghost small hide" style="width:auto" title="Descargar la lista de trabajadores (CSV)">⬇ Exportar</button><button id="trab-nuevo" class="btn small" style="width:auto">＋ Nuevo</button></div></div>
+        <div class="h-row" style="margin-top:0"><b style="font:800 15px var(--font);color:var(--ink)">Trabajadores <span class="cnt" id="trab-cnt"></span></b><div style="display:flex;gap:8px;flex-wrap:wrap"><button id="nomina-btn" class="btn ghost small" style="width:auto" title="Nómina de personal activo y avisos de baja para el cliente"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M4 4h16v16H4z"/><path d="M4 9h16M9 9v11"/></svg>Nómina</button><button id="dups-btn" class="btn ghost small" style="width:auto"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>Duplicados</button><button id="cargos-btn" class="btn ghost small" style="width:auto"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V15z"/></svg>Cargos y tratos</button><button id="trab-import" class="btn ghost small" style="width:auto"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>Importar</button><button id="trab-export" class="btn ghost small hide" style="width:auto" title="Descargar la lista de trabajadores (CSV)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>Exportar</button><button id="trab-nuevo" class="btn small" style="width:auto">＋ Nuevo</button></div></div>
         <div id="fichas-inbox"></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
-          <input id="trab-search" type="search" placeholder="Buscar nombre, RUT o cargo…" style="flex:1;min-width:150px;font:500 15px var(--font);padding:10px 12px;border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--ink)">
-          <select id="trab-sort" style="font:600 13px var(--font);padding:10px 12px;border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--ink)"><option value="reciente" selected>Recientes</option><option value="nombre">A–Z</option><option value="cargo">Por cargo</option><option value="buk">Buk (pendientes primero)</option><option value="bukok">Buk (registrados primero)</option></select>
+          <input id="trab-search" type="search" placeholder="Buscar nombre, RUT o cargo…" style="flex:1;min-width:150px;font:500 15px var(--font);padding:10px 12px;border:1px solid var(--line);border-radius:11px;background:var(--card);color:var(--ink)">
+          <select id="trab-sort" style="font:600 13px var(--font);padding:10px 12px;border:1px solid var(--line);border-radius:11px;background:var(--card);color:var(--ink)"><option value="reciente" selected>Recientes</option><option value="nombre">A–Z</option><option value="cargo">Por cargo</option><option value="buk">Buk (pendientes primero)</option><option value="bukok">Buk (registrados primero)</option></select>
         </div>
         <div style="display:flex;gap:8px;margin-bottom:14px">
           <button class="btn ghost small tfil" data-f="todos" style="flex:1">Todos</button>
@@ -1591,7 +1591,7 @@
         <div id="emp-docs">
           <p class="note" style="margin:0 0 10px">Todo lo de la empresa en un solo lugar: procedimientos, PTS, reglamento y formatos. Cuando un cliente pida algo, búscalo aquí, descárgalo y hazlo firmar.</p>
           <div style="display:flex;gap:8px;margin-bottom:10px">
-            <input id="emp-q" type="search" placeholder="Buscar procedimiento, PTS, formato…" style="flex:1;min-width:0;font:500 15px var(--font);padding:10px 12px;border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--ink)">
+            <input id="emp-q" type="search" placeholder="Buscar procedimiento, PTS, formato…" style="flex:1;min-width:0;font:500 15px var(--font);padding:10px 12px;border:1px solid var(--line);border-radius:11px;background:var(--card);color:var(--ink)">
             <button id="emp-firmas-btn" type="button" class="btn ghost small" style="width:auto;display:flex;align-items:center;gap:6px;white-space:nowrap"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17c3-3 5-9 8-9s1 6 4 6 3-4 6-4"/><path d="M3 21h18"/></svg>Firmas</button>
           </div>
           <div id="emp-list"></div>
@@ -1644,7 +1644,7 @@
         <label style="display:block;font:800 15px var(--font);color:var(--ink);margin-bottom:8px">Marcar asistencia</label>
         <p class="note" style="margin:0 0 8px">Cada trabajador escribe los <b>últimos 4 dígitos de su RUT</b> y toca Marcar. La 1ª vez marca <b>entrada</b>; la 2ª, <b>salida</b>.</p>
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-          <input id="asist-rut" type="text" inputmode="numeric" maxlength="4" placeholder="Ej: 6747" style="flex:1;min-width:120px;font:800 22px var(--font);letter-spacing:.15em;text-align:center;padding:12px;border:1px solid var(--line);border-radius:12px;background:#fff;color:var(--ink)">
+          <input id="asist-rut" type="text" inputmode="numeric" maxlength="4" placeholder="Ej: 6747" style="flex:1;min-width:120px;font:800 22px var(--font);letter-spacing:.15em;text-align:center;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink)">
           <button id="asist-mark" class="btn" style="width:auto;font-size:16px;padding:13px 22px">Marcar</button>
         </div>
         <div id="asist-msg" style="margin-top:10px;min-height:22px"></div>
@@ -1656,7 +1656,7 @@
       <div class="card">
         <label style="display:block;font:800 14px var(--font);color:var(--ink);margin-bottom:4px" for="asist-notas">Bitácora de la faena</label>
         <p class="note" style="margin:0 0 8px">Desayuno, colación, almuerzo (con horas), novedades u observaciones del día. No cuenta horas: para el pago solo valen entrada y salida.</p>
-        <textarea id="asist-notas" rows="6" placeholder="Ej.&#10;Desayuno 7:40 — José, Ignacio&#10;Colación 11:30 — todos&#10;Novedad: faltó guante talla L" style="width:100%;box-sizing:border-box;font:500 15px var(--font);padding:11px 12px;border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--ink);resize:vertical;line-height:1.45"></textarea>
+        <textarea id="asist-notas" rows="6" placeholder="Ej.&#10;Desayuno 7:40 — José, Ignacio&#10;Colación 11:30 — todos&#10;Novedad: faltó guante talla L" style="width:100%;box-sizing:border-box;font:500 15px var(--font);padding:11px 12px;border:1px solid var(--line);border-radius:11px;background:var(--card);color:var(--ink);resize:vertical;line-height:1.45"></textarea>
         <div style="display:flex;gap:10px;align-items:center;margin-top:8px">
           <button id="asist-notas-save" class="btn small" style="width:auto">Guardar bitácora</button>
           <span id="asist-notas-msg" class="note" style="margin:0"></span>
@@ -1685,7 +1685,7 @@
     <section class="view" id="v-clientes">
       <div class="h-row"><h2>Clientes <span class="cnt" id="cli-cnt"></span></h2><button id="cli-nuevo" class="btn small" style="width:auto">＋ Nuevo</button></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
-        <input id="cli-search" type="search" placeholder="Buscar cliente, RUT o sitio…" style="flex:1;min-width:150px;font:500 15px var(--font);padding:10px 12px;border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--ink)">
+        <input id="cli-search" type="search" placeholder="Buscar cliente, RUT o sitio…" style="flex:1;min-width:150px;font:500 15px var(--font);padding:10px 12px;border:1px solid var(--line);border-radius:11px;background:var(--card);color:var(--ink)">
       </div>
       <div id="cli-list"></div>
     </section>
@@ -1750,7 +1750,7 @@
       </div>
       <div class="card">
         <label class="pe-lbl">📝 Notas de jefatura</label>
-        <textarea id="pe-notas" rows="3" style="width:100%;font:500 13.5px var(--font);padding:9px 11px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);resize:vertical" placeholder="Instrucciones, materiales, particularidades…"></textarea>
+        <textarea id="pe-notas" rows="3" style="width:100%;font:500 13.5px var(--font);padding:9px 11px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);resize:vertical" placeholder="Instrucciones, materiales, particularidades…"></textarea>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
         <button id="pe-save" class="btn ghost" style="width:auto">💾 Guardar borrador</button>
@@ -1887,7 +1887,7 @@
       <label class="catadd">＋ Agregar documento<input type="file" id="fi-doc-input" accept="application/pdf,image/*" multiple hidden></label>
       <div id="fi-scan-zone" class="hide"></div>
     </div>
-    <button class="pl-del-btn hide" id="fi-del" style="width:100%;background:#fff;border:1px solid #f0c0c0;color:#dc2626;padding:13px;border-radius:13px;font:800 14px var(--font);cursor:pointer">🗑 Eliminar trabajador</button>
+    <button class="pl-del-btn hide" id="fi-del" style="width:100%;background:var(--card);border:1px solid #f0c0c0;color:#dc2626;padding:13px;border-radius:13px;font:800 14px var(--font);cursor:pointer">🗑 Eliminar trabajador</button>
   </div>
 </div>
 
@@ -1964,7 +1964,7 @@
         </div>
       </div>
     </div>
-    <button class="pl-del-btn hide" id="vf-del" style="width:100%;background:#fff;border:1px solid #f0c0c0;color:#dc2626;padding:13px;border-radius:13px;font:800 14px var(--font);cursor:pointer">🗑 Eliminar vehículo</button>
+    <button class="pl-del-btn hide" id="vf-del" style="width:100%;background:var(--card);border:1px solid #f0c0c0;color:#dc2626;padding:13px;border-radius:13px;font:800 14px var(--font);cursor:pointer">🗑 Eliminar vehículo</button>
   </div>
 </div>
 
@@ -1978,7 +1978,7 @@
   <div class="ficha-body">
     <div id="af-persona">
       <div class="card">
-        <div class="fld" id="af-trab-wrap" style="position:relative"><label>Cargar desde trabajadores</label><input id="af-trab" type="search" placeholder="Escribe nombre o correo…" autocomplete="off"><div id="af-trab-sug" class="hide" style="position:absolute;left:0;right:0;top:100%;z-index:40;background:#fff;border:1px solid var(--line);border-radius:11px;box-shadow:0 10px 26px rgba(0,0,0,.14);max-height:250px;overflow:auto;margin-top:4px"></div><p class="note" style="margin:4px 0 0">Escribe y toca una sugerencia: carga nombre y correo. Si no tiene correo, escríbelo tú. Recuerda crearle también el usuario en Supabase para que pueda entrar.</p></div>
+        <div class="fld" id="af-trab-wrap" style="position:relative"><label>Cargar desde trabajadores</label><input id="af-trab" type="search" placeholder="Escribe nombre o correo…" autocomplete="off"><div id="af-trab-sug" class="hide" style="position:absolute;left:0;right:0;top:100%;z-index:40;background:var(--card);border:1px solid var(--line);border-radius:11px;box-shadow:0 10px 26px rgba(0,0,0,.14);max-height:250px;overflow:auto;margin-top:4px"></div><p class="note" style="margin:4px 0 0">Escribe y toca una sugerencia: carga nombre y correo. Si no tiene correo, escríbelo tú. Recuerda crearle también el usuario en Supabase para que pueda entrar.</p></div>
         <div class="fld"><label>Correo</label><input id="af-email" type="email" placeholder="correo@innovaservi.com"></div>
         <div class="grid2">
           <div class="fld"><label>Nombre</label><input id="af-nombre" type="text"></div>
@@ -2011,7 +2011,7 @@
       <div id="af-secciones"></div>
     </div>
     <div class="card af-resumen" id="af-resumen"></div>
-    <button id="af-del" class="pl-del-btn hide" style="width:100%;background:#fff;border:1px solid #f0c0c0;color:#dc2626;padding:13px;border-radius:13px;font:800 14px var(--font);cursor:pointer">Quitar persona</button>
+    <button id="af-del" class="pl-del-btn hide" style="width:100%;background:var(--card);border:1px solid #f0c0c0;color:#dc2626;padding:13px;border-radius:13px;font:800 14px var(--font);cursor:pointer">Quitar persona</button>
   </div>
 </div>
 <!-- Detalle de pago de un trabajador (semana) -->
@@ -2103,7 +2103,7 @@
     </div>
     <div class="card" id="nom-card-texto">
       <label class="pe-lbl">Texto del correo <span class="note" style="margin:0;font-weight:500">(puedes editarlo)</span></label>
-      <textarea id="nom-cuerpo" rows="10" style="width:100%;font:500 13.5px var(--font);padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);resize:vertical"></textarea>
+      <textarea id="nom-cuerpo" rows="10" style="width:100%;font:500 13.5px var(--font);padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);resize:vertical"></textarea>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
         <button id="nom-copiar" class="btn" style="width:auto" type="button">Copiar texto</button>
         <button id="nom-mail" class="btn ghost" style="width:auto" type="button">Abrir en correo</button>
@@ -2138,7 +2138,7 @@
       <div class="fld"><label>Dirección</label><input id="cf2-dir" type="text" placeholder="Parque Husamontt, Puerto Montt"></div>
       <div class="grid2"><div class="fld" style="margin:0"><label>Solicitante</label><input id="cf2-solic" type="text" placeholder="Karina Abarca"></div><div class="fld" style="margin:0"><label>Contacto (tel / correo)</label><input id="cf2-contacto" type="text" placeholder="+56 9 …"></div></div>
       <div class="fld"><label>Sitios / faenas (uno por línea)</label><textarea id="cf2-sitios" rows="3" placeholder="Chinquihue&#10;Quemchi&#10;SHS"></textarea></div>
-      <div class="grid2"><div class="fld" style="margin:0"><label>Estado</label><select id="cf2-estado"><option value="activo">Activo</option><option value="inactivo">Inactivo</option></select></div><div class="fld" style="margin:0"><label>Color (calendario y planificación)</label><div style="display:flex;align-items:center;gap:8px"><input id="cf2-color" type="color" value="#1a1f6e" style="width:48px;height:38px;border:1px solid var(--line);border-radius:8px;background:#fff;cursor:pointer"><button id="cf2-color-auto" type="button" class="btn ghost small" style="width:auto">Automático</button></div></div></div>
+      <div class="grid2"><div class="fld" style="margin:0"><label>Estado</label><select id="cf2-estado"><option value="activo">Activo</option><option value="inactivo">Inactivo</option></select></div><div class="fld" style="margin:0"><label>Color (calendario y planificación)</label><div style="display:flex;align-items:center;gap:8px"><input id="cf2-color" type="color" value="#1a1f6e" style="width:48px;height:38px;border:1px solid var(--line);border-radius:8px;background:var(--card);cursor:pointer"><button id="cf2-color-auto" type="button" class="btn ghost small" style="width:auto">Automático</button></div></div></div>
       <label class="m-pidechk"><input type="checkbox" id="cf2-pacc"><span><b>Pide informe mensual de accidentes</b> (se sube a Zerty / plataforma del cliente)</span></label>
       <div class="fld"><label>Notas</label><textarea id="cf2-notas" rows="2" placeholder="Documentación que exige, particularidades…"></textarea></div>
     </div>
@@ -2153,7 +2153,7 @@
       <label style="display:block;font:700 13px var(--font);color:var(--ink);margin-bottom:6px;">📄 Reportes de este cliente</label>
       <div id="cf2-reportes"><p class="note" style="margin:0">—</p></div>
     </div>
-    <button class="pl-del-btn hide" id="cf2-del" style="width:100%;background:#fff;border:1px solid #f0c0c0;color:#dc2626;padding:13px;border-radius:13px;font:800 14px var(--font);cursor:pointer">🗑 Eliminar cliente</button>
+    <button class="pl-del-btn hide" id="cf2-del" style="width:100%;background:var(--card);border:1px solid #f0c0c0;color:#dc2626;padding:13px;border-radius:13px;font:800 14px var(--font);cursor:pointer">🗑 Eliminar cliente</button>
     <button id="cf2-save" class="btn" style="width:100%;margin-top:10px">💾 Guardar cliente</button>
   </div>
 </div>
@@ -2961,7 +2961,7 @@
   function pePintar(){
     $('pe-personas').innerHTML=PE.personas.map(function(pp,i){
       var epp=EPP_ITEMS.map(function(it){ var on=(pp.epp||[]).indexOf(it)>=0; return '<label><input type="checkbox" class="pe-epp-c" data-i="'+i+'" data-epp="'+enc(it)+'"'+(on?' checked':'')+'>'+esc(it)+'</label>'; }).join('');
-      return '<div class="pe-pers"><div class="pe-pers-top"><input class="pe-pn" data-i="'+i+'" list="trab-datalist" placeholder="Nombre" value="'+enc(pp.nombre||'')+'" style="flex:1;font:700 13px var(--font);padding:6px 9px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink)"><button class="pe-prm" data-i="'+i+'" type="button" style="width:30px;height:32px;border:1px solid #f0c0c0;background:#fff;color:#dc2626;border-radius:8px;cursor:pointer">✕</button></div><div class="pe-epp">'+epp+'</div></div>';
+      return '<div class="pe-pers"><div class="pe-pers-top"><input class="pe-pn" data-i="'+i+'" list="trab-datalist" placeholder="Nombre" value="'+enc(pp.nombre||'')+'" style="flex:1;font:700 13px var(--font);padding:6px 9px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink)"><button class="pe-prm" data-i="'+i+'" type="button" style="width:30px;height:32px;border:1px solid #f0c0c0;background:var(--card);color:#dc2626;border-radius:8px;cursor:pointer">✕</button></div><div class="pe-epp">'+epp+'</div></div>';
     }).join('')||'<p class="note" style="margin:0">Sin personas asignadas.</p>';
     var TIPLBL={epp:'EPP',herramienta:'Herram.',maquinaria:'Maq.'};
     var pts=(typeof plantillasDeFaena==='function')?plantillasDeFaena((PE.e.ubicacion||''),(PE.e.sitio||'')):[], seen={}, mhtml='';
@@ -2973,7 +2973,7 @@
         '<div class="pe-mdesg hide" data-nm="'+enc(nm)+'">'+desg+'</div></div>'; });
     PE.matrices.forEach(function(nm){ if(!seen[nm]){ seen[nm]=1; mhtml+='<div class="pe-mrow2"><div class="pe-mtop"><label style="flex:1"><input type="checkbox" class="pe-mc" data-nm="'+enc(nm)+'" checked> '+esc(nm)+'</label></div></div>'; } });
     $('pe-matrices').innerHTML=mhtml||'<p class="note" style="margin:0">Sin matrices/PTS para este cliente (créalas en Matriz PTS).</p>';
-    $('pe-maquinaria').innerHTML=PE.maquinaria.map(function(mq,i){ return '<div class="jv-row" data-i="'+i+'"><select class="pe-mv" data-i="'+i+'">'+vehOpts(mq.veh||'')+'</select><select class="pe-mc2" data-i="'+i+'">'+choferOpts(mq.chofer||'')+'</select><button class="pe-mrm" data-i="'+i+'" type="button" style="width:30px;height:34px;border:1px solid #f0c0c0;background:#fff;color:#dc2626;border-radius:8px;cursor:pointer">✕</button></div>'; }).join('')||'<p class="note" style="margin:0">Sin maquinaria.</p>';
+    $('pe-maquinaria').innerHTML=PE.maquinaria.map(function(mq,i){ return '<div class="jv-row" data-i="'+i+'"><select class="pe-mv" data-i="'+i+'">'+vehOpts(mq.veh||'')+'</select><select class="pe-mc2" data-i="'+i+'">'+choferOpts(mq.chofer||'')+'</select><button class="pe-mrm" data-i="'+i+'" type="button" style="width:30px;height:34px;border:1px solid #f0c0c0;background:var(--card);color:#dc2626;border-radius:8px;cursor:pointer">✕</button></div>'; }).join('')||'<p class="note" style="margin:0">Sin maquinaria.</p>';
     peWire();
   }
   function peWire(){ var root=$('planif-edit');
@@ -3346,7 +3346,7 @@
     c.innerHTML=M_ITEMS.map(function(it,i){
       var opts=TIPOS.map(function(t){ return '<option value="'+t[0]+'"'+(it.tipo===t[0]?' selected':'')+'>'+t[1]+'</option>'; }).join('');
       return '<div class="mrow" data-i="'+i+'" style="display:flex;gap:6px;margin-bottom:6px;align-items:center">'+
-        '<select class="mi-tipo" style="flex:0 0 104px;padding:8px;border:1px solid var(--line);border-radius:9px;background:#fff">'+opts+'</select>'+
+        '<select class="mi-tipo" style="flex:0 0 104px;padding:8px;border:1px solid var(--line);border-radius:9px;background:var(--card)">'+opts+'</select>'+
         '<input class="mi-item" placeholder="Ítem" value="'+enc(it.item||'')+'" style="flex:1;min-width:50px;padding:8px;border:1px solid var(--line);border-radius:9px">'+
         '<input class="mi-cant" placeholder="Cant" value="'+enc(it.cantidad||'')+'" style="flex:0 0 52px;padding:8px;border:1px solid var(--line);border-radius:9px">'+
         '<button class="mi-rm" data-i="'+i+'" type="button" style="border:none;background:none;color:#c33;font-size:18px;cursor:pointer">✕</button></div>';
@@ -4533,10 +4533,10 @@
     var c=$('cg-list');
     c.innerHTML=(CARGOS.length?CARGOS:[]).map(function(cg){
       return '<div class="cg-row" data-id="'+(cg.id||'')+'" style="display:flex;gap:8px;align-items:center;margin-bottom:7px;flex-wrap:wrap">'+
-        '<input class="cg-nom" type="text" value="'+enc(cg.nombre||'')+'" placeholder="Cargo" style="flex:1 1 150px;min-width:120px;font:700 13.5px var(--font);padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink)">'+
-        '<div style="display:flex;align-items:center;gap:4px"><span class="note" style="margin:0;font-size:.72rem">Trato $</span><input class="cg-trato" type="number" min="0" value="'+(cg.trato||'')+'" placeholder="0" style="width:110px;font:700 13.5px var(--font);padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--orange-2)"></div>'+
+        '<input class="cg-nom" type="text" value="'+enc(cg.nombre||'')+'" placeholder="Cargo" style="flex:1 1 150px;min-width:120px;font:700 13.5px var(--font);padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink)">'+
+        '<div style="display:flex;align-items:center;gap:4px"><span class="note" style="margin:0;font-size:.72rem">Trato $</span><input class="cg-trato" type="number" min="0" value="'+(cg.trato||'')+'" placeholder="0" style="width:110px;font:700 13.5px var(--font);padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:var(--card);color:var(--orange-2)"></div>'+
         '<span class="cg-vh note" style="margin:0;font-size:.72rem;white-space:nowrap">'+(cg.trato?('= '+fmtMoney(Math.round(cg.trato/8))+'/h'):'')+'</span>'+
-        '<button class="cg-rm" type="button" style="flex:0 0 auto;width:30px;height:34px;border:1px solid #f0c0c0;background:#fff;color:#dc2626;border-radius:8px;cursor:pointer">✕</button>'+
+        '<button class="cg-rm" type="button" style="flex:0 0 auto;width:30px;height:34px;border:1px solid #f0c0c0;background:var(--card);color:#dc2626;border-radius:8px;cursor:pointer">✕</button>'+
       '</div>';
     }).join('')||'<p class="note" style="margin:0">Sin cargos. Toca “＋ Agregar cargo”.</p>';
     c.querySelectorAll('.cg-trato').forEach(function(inp){ inp.addEventListener('input',function(){ var vh=inp.closest('.cg-row').querySelector('.cg-vh'), t=+inp.value||0; vh.textContent=t?('= '+fmtMoney(Math.round(t/8))+'/h'):''; }); });
@@ -5947,7 +5947,7 @@
           // Fijo: valor de la faena como trato (referencia) y cuánto se paga realmente.
           ((x.tipo==='contrato' && d.full>d.real)?'<span class="rd-fae-h" style="display:block;color:var(--navy);font-weight:600">valor trato '+fmtMoney(d.full)+' · '+(d.real?('se paga '+fmtMoney(d.real)+' (horas sobre la jornada)'):'cubierto por el sueldo')+'</span>':'')+'</span>';
         var money=perEd
-          ? '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex:none"><span class="rd-freal'+(d.cont!==d.real?' rd-aj2':'')+'" style="font-size:.62rem;color:var(--muted)">real '+fmtMoney(d.real)+'</span><input class="rd-fcont" type="number" min="0" data-f="'+f+'" data-fae="'+enc(d.fa)+'" data-real="'+d.real+'" value="'+d.cont+'" title="Monto de esta faena (editable)" style="width:98px;text-align:right;font:800 13px var(--font);color:var(--orange-2);padding:5px 7px;border:1px solid var(--line);border-radius:8px;background:#fff"></div>'
+          ? '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex:none"><span class="rd-freal'+(d.cont!==d.real?' rd-aj2':'')+'" style="font-size:.62rem;color:var(--muted)">real '+fmtMoney(d.real)+'</span><input class="rd-fcont" type="number" min="0" data-f="'+f+'" data-fae="'+enc(d.fa)+'" data-real="'+d.real+'" value="'+d.cont+'" title="Monto de esta faena (editable)" style="width:98px;text-align:right;font:800 13px var(--font);color:var(--orange-2);padding:5px 7px;border:1px solid var(--line);border-radius:8px;background:var(--card)"></div>'
           : '<b style="color:'+d.col.text+';flex:none">'+fmtMoney(d.real)+'</b>';
         return '<div class="rd-fae" style="border-left:3px solid '+d.col.border+';background:'+d.col.bg+';display:flex;justify-content:space-between;align-items:center;gap:8px">'+head+money+'</div>';
       }).join('');
@@ -6011,8 +6011,8 @@
       var itemsHtml=misItems.length?misItems.map(function(it){ var neg=it.tipo==='descuento';
         return '<div class="ri-item" data-id="'+it.id+'" style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)">'+
           '<div style="flex:1"><b style="font-size:.85rem;color:'+(neg?'#dc2626':'#0f6e56')+'">'+(neg?'− ':'')+fmtMoney(+it.monto||0)+'</b> <span class="note" style="margin:0;font-size:.72rem">'+esc(tipoLbl[it.tipo]||it.tipo)+'</span><div class="note" style="margin:1px 0 0;font-size:.74rem">'+esc(it.concepto||'—')+'</div></div>'+
-          '<button class="ri-edit" type="button" title="Editar" style="width:30px;height:32px;border:1px solid var(--line);background:#fff;border-radius:8px;cursor:pointer">✎</button>'+
-          '<button class="ri-del" type="button" title="Quitar" style="width:30px;height:32px;border:1px solid #f0c0c0;background:#fff;color:#dc2626;border-radius:8px;cursor:pointer">✕</button></div>';
+          '<button class="ri-edit" type="button" title="Editar" style="width:30px;height:32px;border:1px solid var(--line);background:var(--card);border-radius:8px;cursor:pointer">✎</button>'+
+          '<button class="ri-del" type="button" title="Quitar" style="width:30px;height:32px;border:1px solid #f0c0c0;background:var(--card);color:#dc2626;border-radius:8px;cursor:pointer">✕</button></div>';
       }).join(''):'<p class="note" style="margin:0 0 4px">Sin montos adicionales esta semana.</p>';
       montosCard='<div class="card"><label style="display:block;font:700 13px var(--font);color:var(--ink);margin-bottom:6px">Montos, extras y descuentos</label>'+
         itemsHtml+
@@ -6335,7 +6335,7 @@
       '<div class="fld"><label>Nota</label><input type="text" id="fn-nota" value="'+enc(f.nota||'')+'" placeholder="Opcional"></div>'+
       '<label style="display:flex;align-items:center;gap:8px;font-size:.85rem;margin-top:4px"><input type="checkbox" id="fn-inact"'+(f.id?'':' checked')+'> Marcar trabajador como inactivo</label>'+
       '<button id="fn-save" class="btn" style="width:100%;margin-top:10px">💾 Guardar</button>'+
-      (f.id?'<button id="fn-del" type="button" style="width:100%;margin-top:8px;background:#fff;border:1px solid #f0c0c0;color:#dc2626;padding:11px;border-radius:12px;font:800 13px var(--font);cursor:pointer">🗑 Eliminar</button>':'')+
+      (f.id?'<button id="fn-del" type="button" style="width:100%;margin-top:8px;background:var(--card);border:1px solid #f0c0c0;color:#dc2626;padding:11px;border-radius:12px;font:800 13px var(--font);cursor:pointer">🗑 Eliminar</button>':'')+
     '</div>';
     var pend={file:null};
     $('fn-file').addEventListener('change',function(){ pend.file=this.files&&this.files[0]; $('fn-fname').textContent=pend.file?('· '+pend.file.name):''; });
@@ -6398,7 +6398,7 @@
       '<div class="fld"><label>Observaciones</label><input type="text" id="sl-obs" value="'+enc(s.observaciones||'')+'" placeholder="Opcional"></div>'+
       '<button id="sl-gen" class="btn" style="width:100%;margin-top:10px">'+svgI(ICO.gen)+'Guardar y generar documento</button>'+
       '<button id="sl-save" type="button" class="btn ghost" style="width:100%;margin-top:8px">'+svgI(ICO.save)+'Solo guardar</button>'+
-      (s.id?'<button id="sl-del" type="button" style="width:100%;margin-top:8px;background:#fff;border:1px solid #f0c0c0;color:#dc2626;padding:11px;border-radius:12px;font:800 13px var(--font);cursor:pointer">Eliminar</button>':'')+
+      (s.id?'<button id="sl-del" type="button" style="width:100%;margin-top:8px;background:var(--card);border:1px solid #f0c0c0;color:#dc2626;padding:11px;border-radius:12px;font:800 13px var(--font);cursor:pointer">Eliminar</button>':'')+
     '</div>';
     // Buscador de trabajador (nombre o RUT): al elegir, rellena RUT y cargo.
     function nrm(x){ return (x||'').toString().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[.\-\s]/g,''); }
