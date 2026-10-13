@@ -2837,7 +2837,7 @@
   function planKey(e,f){ return e.id+'|'+(f||e.fecha||''); }
   function planDe(e,f){ f=f||e.fecha; var k=planKey(e,f); var p=PLAN_MAP[k]; if(!p){ p={ evento_id:e.id, fecha:f, empresa:e.ubicacion||'', sitio:e.sitio||'', titulo:e.titulo||'', personas:[], matrices:[], maquinaria:[], notas:'', estado:'borrador', preparador:'', hora:'' }; PLAN_MAP[k]=p; } if(!p.personas)p.personas=[]; if(!p.maquinaria)p.maquinaria=[]; return p; }
   // Es apoyo frigorífico (lo más frecuente): va primero y con color propio.
-  function esFrigo(e){ return /frigo|apoyo/i.test((e.titulo||'')+' '+(e.ubicacion||'')); }
+  function esFrigo(e){ return /\bapoyo\b/i.test(e.titulo||''); }   // solo "Apoyo frigorífico"; otra faena con "frigorífico" en el nombre conserva el color de su cliente
   function turnoFrigo(e){ var t=(e.titulo||'').toLowerCase(); return /noche/.test(t)?'Noche':(/d[ií]a/.test(t)?'Día':''); }
   // Abreviaturas para achicar texto: cliente CERMAQ→CQ, SAL LOBOS→SL; sitio Chinquihue→CH, Diego Portales→DP.
   function abrevCli(s){ s=(s||'').trim(); if(!s) return ''; var w=s.split(/\s+/); if(w.length>1) return w.map(function(x){return x.charAt(0);}).join('').toUpperCase().slice(0,3); return (s.charAt(0)+s.charAt(s.length-1)).toUpperCase(); }
