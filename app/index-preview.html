@@ -4971,68 +4971,75 @@
   function cerrarFicha(){ ficha.classList.add('hide'); fiScanner.reset(); }
   $('fi-close').addEventListener('click',cerrarFicha);
   $('trab-nuevo').addEventListener('click',function(){ abrirFicha(null); });
-  // ====== Exportar trabajadores: todos los datos de la ficha, por grupos, con Excel (.xlsx) e impresión/PDF ======
-  // Cada columna: [clave, título, grupo, función(t) → texto]
+  // ====== Exportar trabajadores a Excel (.xlsx) con diseño corporativo ======
+  // Hoja "Resumen" (totales, por cargo, documentación, vencimientos) y hoja "Trabajadores" (todas las columnas, con filtros,
+  // grupos plegables con + / −, nombre fijo y estados con color). Se arma en el navegador con ExcelJS.
+  function cargarExcelJS(){ if(window.ExcelJS) return Promise.resolve(window.ExcelJS);
+    return new Promise(function(ok,ko){ var s=document.createElement('script'); s.src='https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js'; s.onload=function(){ ok(window.ExcelJS); }; s.onerror=ko; document.head.appendChild(s); }); }
+  function logoBase64(){ return fetch('../assets/images/InnovaServi-completo.png').then(function(r){ if(!r.ok) throw 0; return r.blob(); }).then(function(b){
+    return new Promise(function(ok){ var fr=new FileReader(); fr.onload=function(){ ok(fr.result); }; fr.onerror=function(){ ok(null); }; fr.readAsDataURL(b); }); }).catch(function(){ return null; }); }
+  // Columnas: [clave, título, grupo, valor(t), tipo, ancho]  tipos: t texto · d fecha · $ monto · n número · p porcentaje · e estado · s documento
   function trabExportCols(){
-    var si=function(v){ return v?'Sí':'No'; }, f=function(v){ return v?fFaena(String(v).slice(0,10)):''; }, $$=function(v){ return (v!=null&&v!=='')?fmtMoney(+v):''; };
-    var edad=function(n){ if(!n) return ''; var d=new Date(n+'T12:00:00'), h=new Date(), e=h.getFullYear()-d.getFullYear(); if(h<new Date(h.getFullYear(),d.getMonth(),d.getDate())) e--; return isNaN(e)?'':String(e); };
+    var D=function(v){ return v?new Date(String(v).slice(0,10)+'T12:00:00'):null; }, N=function(v){ return (v!=null&&v!=='')?+v:null; };
+    var edad=function(n){ if(!n) return null; var d=new Date(n+'T12:00:00'), h=new Date(), e=h.getFullYear()-d.getFullYear(); if(h<new Date(h.getFullYear(),d.getMonth(),d.getDate())) e--; return isNaN(e)?null:e; };
     var EST={activo:'Activo',espera:'En espera',inactivo:'Inactivo'};
     var C=[
-      ['nombre','Nombre','Principal',function(t){ return titleCase(t.nombre||''); }],
-      ['rut','RUT','Principal',function(t){ return t.rut||''; }],
-      ['cargo','Cargo','Principal',function(t){ return t.cargo||''; }],
-      ['estado','Estado','Principal',function(t){ return EST[t.estado||'activo']||t.estado||''; }],
-      ['ingreso','Fecha ingreso','Principal',function(t){ return f(t.fecha_ingreso); }],
-      ['buk','En Buk','Principal',function(t){ return t.buk?('Sí'+(t.buk_at?' · '+f(t.buk_at):'')):'No'; }],
-      ['tipo','Tipo de pago','Contrato y remuneración',function(t){ return t.tipo_pago==='contrato'?'Contrato fijo':'Por trato'; }],
-      ['chofer','Chofer','Contrato y remuneración',function(t){ return si(t.chofer); }],
-      ['jornada','Jornada (h/día)','Contrato y remuneración',function(t){ return t.jornada_horas!=null?String(t.jornada_horas):''; }],
-      ['turno','Turno','Contrato y remuneración',function(t){ return (t.jornada_ini||t.jornada_fin)?((t.jornada_ini||'')+'–'+(t.jornada_fin||'')):''; }],
-      ['sueldo','Sueldo base','Contrato y remuneración',function(t){ return $$(t.sueldo_base); }],
-      ['paga','Sueldo lo paga','Contrato y remuneración',function(t){ return t.tipo_pago==='contrato'?(t.sueldo_empresa||'Innova Servi'):''; }],
-      ['desde','Sueldo desde','Contrato y remuneración',function(t){ return t.sueldo_desde?String(t.sueldo_desde).slice(0,7):''; }],
-      ['trato','Trato del cargo','Contrato y remuneración',function(t){ var x=cargoTrato(t.cargo); return x?fmtMoney(x):''; }],
-      ['vhora','Valor hora','Contrato y remuneración',function(t){ var x=cargoTrato(t.cargo); return x?fmtMoney(Math.round(x/8)):''; }],
-      ['tel','Teléfono','Contacto',function(t){ return t.telefono||''; }],
-      ['email','Correo','Contacto',function(t){ return t.email||''; }],
-      ['dir','Dirección','Contacto',function(t){ return t.direccion||''; }],
-      ['num','Número','Contacto',function(t){ return t.numero||''; }],
-      ['pob','Población / villa','Contacto',function(t){ return t.poblacion||''; }],
-      ['comuna','Comuna','Contacto',function(t){ return t.comuna||''; }],
-      ['region','Región','Contacto',function(t){ return t.region||''; }],
-      ['emerg','Contacto de emergencia','Contacto',function(t){ return t.emergencia||''; }],
-      ['apat','Apellido paterno','Datos personales',function(t){ return t.apellido_paterno||''; }],
-      ['amat','Apellido materno','Datos personales',function(t){ return t.apellido_materno||''; }],
-      ['nombres','Nombres','Datos personales',function(t){ return t.nombres||''; }],
-      ['sexo','Sexo','Datos personales',function(t){ return t.sexo||''; }],
-      ['nac','Nacionalidad','Datos personales',function(t){ return t.nacionalidad||''; }],
-      ['fnac','Fecha nacimiento','Datos personales',function(t){ return f(t.nacimiento); }],
-      ['edad','Edad','Datos personales',function(t){ return edad(t.nacimiento); }],
-      ['civil','Estado civil','Datos personales',function(t){ return t.estado_civil||''; }],
-      ['titulo','Título / educación','Datos personales',function(t){ return t.titulo_educacion||''; }],
-      ['inst','Institución','Datos personales',function(t){ return t.institucion_titulo||''; }],
-      ['disc','Discapacidad','Datos personales',function(t){ return t.discapacidad||''; }],
-      ['inval','Invalidez','Datos personales',function(t){ return t.invalidez||''; }],
-      ['afp','AFP','Previsión y tallas',function(t){ return t.afp||''; }],
-      ['salud','Salud','Previsión y tallas',function(t){ return t.salud||''; }],
-      ['regprev','Régimen previsional','Previsión y tallas',function(t){ return t.regimen_prev||''; }],
-      ['afc','Régimen AFC','Previsión y tallas',function(t){ return t.regimen_afc||''; }],
-      ['cargas','N° cargas','Previsión y tallas',function(t){ return t.cargas!=null?String(t.cargas):''; }],
-      ['tramo','Tramo cargas','Previsión y tallas',function(t){ return t.tramo_cargas||''; }],
-      ['botas','Talla botas','Previsión y tallas',function(t){ return t.talla_botas||''; }],
-      ['ropa','Talla ropa','Previsión y tallas',function(t){ return t.talla_ropa||''; }],
-      ['banco','Banco','Datos bancarios',function(t){ return t.banco||''; }],
-      ['tcta','Tipo de cuenta','Datos bancarios',function(t){ return t.tipo_cuenta||''; }],
-      ['ncta','N° de cuenta','Datos bancarios',function(t){ return t.num_cuenta||''; }],
-      ['pct','% documentación al día','Documentación',function(t){ var p=docPct(t); return p!=null?p+'%':''; }]
+      ['nombre','Nombre','Principal',function(t){ return titleCase(t.nombre||''); },'t',30],
+      ['rut','RUT','Principal',function(t){ return t.rut||''; },'t',13],
+      ['cargo','Cargo','Principal',function(t){ return t.cargo||''; },'t',24],
+      ['estado','Estado','Principal',function(t){ return EST[t.estado||'activo']||t.estado||''; },'e',11],
+      ['ingreso','Fecha ingreso','Principal',function(t){ return D(t.fecha_ingreso); },'d',12],
+      ['buk','En Buk','Principal',function(t){ return t.buk?'Sí':'No'; },'t',8],
+      ['tipo','Tipo de pago','Contrato y remuneración',function(t){ return t.tipo_pago==='contrato'?'Contrato fijo':'Por trato'; },'t',13],
+      ['chofer','Chofer','Contrato y remuneración',function(t){ return t.chofer?'Sí':'No'; },'t',8],
+      ['jornada','Jornada (h/día)','Contrato y remuneración',function(t){ return N(t.jornada_horas); },'n',10],
+      ['turno','Turno','Contrato y remuneración',function(t){ return (t.jornada_ini||t.jornada_fin)?((t.jornada_ini||'')+' – '+(t.jornada_fin||'')):''; },'t',13],
+      ['sueldo','Sueldo base','Contrato y remuneración',function(t){ return N(t.sueldo_base); },'$',13],
+      ['paga','Sueldo lo paga','Contrato y remuneración',function(t){ return t.tipo_pago==='contrato'?(t.sueldo_empresa||'Innova Servi'):''; },'t',14],
+      ['desde','Sueldo desde','Contrato y remuneración',function(t){ return D(t.sueldo_desde); },'m',11],
+      ['trato','Trato del cargo','Contrato y remuneración',function(t){ return cargoTrato(t.cargo)||null; },'$',13],
+      ['vhora','Valor hora','Contrato y remuneración',function(t){ var x=cargoTrato(t.cargo); return x?Math.round(x/8):null; },'$',11],
+      ['tel','Teléfono','Contacto',function(t){ return t.telefono||''; },'t',15],
+      ['email','Correo','Contacto',function(t){ return t.email||''; },'t',28],
+      ['dir','Dirección','Contacto',function(t){ return t.direccion||''; },'t',26],
+      ['num','Número','Contacto',function(t){ return t.numero||''; },'t',8],
+      ['pob','Población / villa','Contacto',function(t){ return t.poblacion||''; },'t',18],
+      ['comuna','Comuna','Contacto',function(t){ return t.comuna||''; },'t',15],
+      ['region','Región','Contacto',function(t){ return t.region||''; },'t',15],
+      ['emerg','Contacto de emergencia','Contacto',function(t){ return t.emergencia||''; },'t',24],
+      ['fnac','Fecha nacimiento','Datos personales',function(t){ return D(t.nacimiento); },'d',12],
+      ['apat','Apellido paterno','Datos personales',function(t){ return t.apellido_paterno||''; },'t',15],
+      ['amat','Apellido materno','Datos personales',function(t){ return t.apellido_materno||''; },'t',15],
+      ['nombres','Nombres','Datos personales',function(t){ return t.nombres||''; },'t',18],
+      ['sexo','Sexo','Datos personales',function(t){ return t.sexo||''; },'t',8],
+      ['nac','Nacionalidad','Datos personales',function(t){ return t.nacionalidad||''; },'t',12],
+      ['edad','Edad','Datos personales',function(t){ return edad(t.nacimiento); },'n',7],
+      ['civil','Estado civil','Datos personales',function(t){ return t.estado_civil||''; },'t',12],
+      ['titulo','Título / educación','Datos personales',function(t){ return t.titulo_educacion||''; },'t',20],
+      ['inst','Institución','Datos personales',function(t){ return t.institucion_titulo||''; },'t',18],
+      ['disc','Discapacidad','Datos personales',function(t){ return t.discapacidad||''; },'t',11],
+      ['inval','Invalidez','Datos personales',function(t){ return t.invalidez||''; },'t',10],
+      ['afp','AFP','Previsión y tallas',function(t){ return t.afp||''; },'t',12],
+      ['salud','Salud','Previsión y tallas',function(t){ return t.salud||''; },'t',12],
+      ['regprev','Régimen previsional','Previsión y tallas',function(t){ return t.regimen_prev||''; },'t',14],
+      ['afc','Régimen AFC','Previsión y tallas',function(t){ return t.regimen_afc||''; },'t',12],
+      ['cargas','N° cargas','Previsión y tallas',function(t){ return N(t.cargas); },'n',8],
+      ['tramo','Tramo cargas','Previsión y tallas',function(t){ return t.tramo_cargas||''; },'t',10],
+      ['botas','Talla botas','Previsión y tallas',function(t){ return t.talla_botas||''; },'t',9],
+      ['ropa','Talla ropa','Previsión y tallas',function(t){ return t.talla_ropa||''; },'t',9],
+      ['banco','Banco','Datos bancarios',function(t){ return t.banco||''; },'t',16],
+      ['tcta','Tipo de cuenta','Datos bancarios',function(t){ return t.tipo_cuenta||''; },'t',14],
+      ['ncta','N° de cuenta','Datos bancarios',function(t){ return t.num_cuenta||''; },'t',16],
+      ['pct','% al día','Documentación',function(t){ return t.id?pctDe(t.id, DOC_TIPOS).pct/100:null; },'p',9]
     ];
-    // Un estado por documento (con vencimiento si lo tiene)
-    (typeof DOC_TIPOS!=='undefined'?DOC_TIPOS:[]).forEach(function(tp){ C.push(['d_'+tp.slug, tp.corto||tp.nombre, 'Documentación', function(t){
-      var d=RRHH_D[t.id+'|'+tp.slug], e=estadoDoc(t.id,tp.slug); if(!d) return 'Pendiente';
-      return e.txt+(d.vencimiento?' · vence '+f(d.vencimiento):''); }]); });
-    C.push(['adj','Archivos adjuntos','Otros',function(t){ return String((t.docs||[]).length); }]);
-    C.push(['notas','Notas (anteriores)','Otros',function(t){ return (t.notas||'').replace(/\s+/g,' ').trim(); }]);
-    C.push(['alta','Creado en la app','Otros',function(t){ return f(t.created_at); }]);
+    // Por documento: su estado (para filtrar) y, si vence, la fecha de vencimiento
+    (typeof DOC_TIPOS!=='undefined'?DOC_TIPOS:[]).forEach(function(tp){
+      C.push(['d_'+tp.slug, tp.corto||tp.nombre, 'Documentación', function(t){ var d=RRHH_D[t.id+'|'+tp.slug]; if(!d) return 'Pendiente'; var e=estadoDoc(t.id,tp.slug); return e.k==='prox'?'Por vencer':e.txt; },'s',12]);
+      if(tp.vence) C.push(['v_'+tp.slug, (tp.corto||tp.nombre)+' vence', 'Documentación', function(t){ var d=RRHH_D[t.id+'|'+tp.slug]; return d&&d.vencimiento?D(d.vencimiento):null; },'d',12]);
+    });
+    C.push(['notas','Notas (anteriores)','Otros',function(t){ return (t.notas||'').replace(/\s+/g,' ').trim(); },'t',40]);
+    C.push(['adj','Archivos adjuntos','Otros',function(t){ return (t.docs||[]).length; },'n',9]);
+    C.push(['alta','Creado en la app','Otros',function(t){ return D(t.created_at); },'d',12]);
     return C;
   }
   function trabExportFilas(){ var orden={activo:0,espera:1,inactivo:2};
@@ -5042,59 +5049,96 @@
       return (a.nombre||'').localeCompare(b.nombre||'');
     }); }
   function exportarTrab(){
-    var w=window.open('','_blank');   // se abre al tiro (si no, el navegador lo bloquea) y se llena cuando están los datos
-    if(w){ w.document.write('<p style="font:15px sans-serif;padding:30px;color:#555">Preparando la tabla de trabajadores…</p>'); }
-    function armar(){
-      var arr=trabExportFilas(), C=trabExportCols(), grupos=[];
-      C.forEach(function(c){ if(grupos.indexOf(c[2])<0) grupos.push(c[2]); });
-      var datos={ cols:C.map(function(c){ return [c[0],c[1],c[2]]; }), grupos:grupos, est:arr.map(function(t){ return t.estado||'activo'; }),
-        filas:arr.map(function(t){ return C.map(function(c){ try{ return String(c[3](t)||''); }catch(_){ return ''; } }); }),
-        fecha:new Date().toLocaleDateString('es-CL'), hoy:todayISO() };
-      var html=trabExportHtml(datos);
-      if(w){ w.document.open(); w.document.write(html); w.document.close(); toast('✓ Tabla de '+arr.length+' trabajadores'); }
-      else { var blob=new Blob([html],{type:'text/html'}), u=URL.createObjectURL(blob), a=document.createElement('a'); a.href=u; a.download='trabajadores-'+todayISO()+'.html'; a.click(); setTimeout(function(){ URL.revokeObjectURL(u); },800); toast('✓ Tabla descargada'); }
-    }
-    // La documentación sale de rrhh_docs: si aún no está cargada, se trae antes de armar la tabla
-    if(sb && !RRHH_LOADED){ sb.from('rrhh_docs').select('*').limit(6000).then(function(r){ ((r&&r.data)||[]).forEach(function(d){ RRHH_D[d.trabajador_id+'|'+d.tipo]=d; }); armar(); }, armar); }
-    else armar();
+    busy(true,'Preparando Excel…');
+    var docs=(sb && !RRHH_LOADED)?sb.from('rrhh_docs').select('*').limit(6000).then(function(r){ ((r&&r.data)||[]).forEach(function(d){ RRHH_D[d.trabajador_id+'|'+d.tipo]=d; }); }, function(){}):Promise.resolve();
+    Promise.all([cargarExcelJS(), logoBase64(), docs]).then(function(r){ return trabExcel(r[0], r[1]); })
+      .then(function(buf){ busy(false); descargarBlob(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}), 'Trabajadores_InnovaServi_'+todayISO()+'.xlsx'); toast('✓ Excel descargado'); })
+      .catch(function(e){ busy(false); console.error(e); toast('No se pudo generar el Excel. Revisa la conexión.'); });
   }
-  function trabExportHtml(D){
-    var J=JSON.stringify(D).replace(/</g,'\\u003c');
-    return '<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Trabajadores · Innovación y Servicios</title>'+
-      '<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">'+
-      '<style>*{box-sizing:border-box}body{margin:0;font:13px/1.4 Inter,system-ui,sans-serif;color:#1b1f4d;background:#f5f6fb}'+
-      '.top{position:sticky;top:0;z-index:5;background:#fff;border-bottom:1px solid #e3e5ee;padding:16px 20px 12px}'+
-      'h1{font-size:19px;margin:0 0 2px;font-weight:800}.meta{color:#6b7186;font-size:12.5px;margin-bottom:12px}'+
-      '.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.g{display:inline-flex;align-items:center;gap:6px;border:1px solid #d6d8e4;border-radius:999px;padding:6px 12px;font-weight:700;font-size:12px;cursor:pointer;user-select:none;background:#fff;color:#55607a;transition:all .2s}'+
-      '.g input{display:none}.g.on{background:#1a1f6e;border-color:#1a1f6e;color:#fff}.g .c{opacity:.7;font-weight:600}'+
-      '.acc{margin-left:auto;display:flex;gap:8px}.btn{font:700 13px Inter,sans-serif;border:1px solid #d6d8e4;background:#fff;color:#1b1f4d;border-radius:10px;padding:9px 14px;cursor:pointer}.btn.main{background:#ff6b00;border-color:#ff6b00;color:#fff}'+
-      '.wrap{padding:14px 20px 40px;overflow:auto}table{border-collapse:separate;border-spacing:0;background:#fff;border:1px solid #d6d8e4;border-radius:10px;font-size:12.5px;min-width:100%}'+
-      'th,td{padding:7px 10px;border-bottom:1px solid #eceef5;border-right:1px solid #f1f2f7;white-space:nowrap;text-align:left;vertical-align:top}'+
-      'thead th{position:sticky;top:0;background:#1a1f6e;color:#fff;font-size:11px;letter-spacing:.02em;z-index:2}thead tr.gr th{background:#0c0f2e;color:#ffb27a;font-size:10px;text-transform:uppercase;letter-spacing:.08em}'+
-      'td.n{color:#8b93a7;text-align:center}td.k1,th.k1{position:sticky;left:0;z-index:1;background:inherit}td.k1{font-weight:700;background:#fff}tr:nth-child(even) td{background:#fafbff}tr:nth-child(even) td.k1{background:#fafbff}thead th.k1{z-index:3;background:#1a1f6e}'+
-      'td.e-activo{color:#16794a;font-weight:700}td.e-espera{color:#b45309;font-weight:700}td.e-inactivo{color:#8b93a7;font-weight:700}tr.off td{color:#8b93a7}td.nota{white-space:normal;min-width:260px;max-width:420px}'+
-      '@media print{@page{size:A4 landscape;margin:8mm}.top{position:static;border:none;padding:0 0 8px}.bar{display:none}.wrap{padding:0;overflow:visible}body{background:#fff}table{font-size:8px;border-radius:0}th,td{padding:3px 4px}thead th{position:static}td.k1,th.k1{position:static}}'+
-      '</style></head><body><div class="top"><h1>Trabajadores · Innovación y Servicios SpA</h1><div class="meta" id="meta"></div><div class="bar" id="bar"></div></div><div class="wrap"><table id="tb"></table></div>'+
-      '<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"><\/script>'+
-      '<script>var D='+J+';'+
-      'var ON={};D.grupos.forEach(function(g){ON[g]=true;});'+
-      'function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;");}'+
-      'function vis(){return D.cols.map(function(c,i){return i;}).filter(function(i){return ON[D.cols[i][2]];});}'+
-      'function pinta(){var V=vis(),cnt={activo:0,espera:0,inactivo:0};D.est.forEach(function(e){if(cnt[e]!=null)cnt[e]++;});'+
-      'document.getElementById("meta").textContent=D.filas.length+" en total · Activos "+cnt.activo+" · En espera "+cnt.espera+" · Inactivos "+cnt.inactivo+" · "+V.length+" columnas · "+D.fecha;'+
-      'var gr=[],last=null;V.forEach(function(i){var g=D.cols[i][2];if(last&&last.g===g)last.n++;else{last={g:g,n:1};gr.push(last);}});'+
-      'var h="<thead><tr class=\\"gr\\"><th class=\\"k1\\"></th>"+gr.map(function(x){return "<th colspan=\\""+x.n+"\\">"+esc(x.g)+"</th>";}).join("")+"</tr><tr><th class=\\"k1\\">#</th>"+V.map(function(i){return "<th>"+esc(D.cols[i][1])+"</th>";}).join("")+"</tr></thead><tbody>";'+
-      'D.filas.forEach(function(f,r){h+="<tr"+(D.est[r]==="inactivo"?" class=\\"off\\"":"")+"><td class=\\"n k1\\">"+(r+1)+"</td>"+V.map(function(i){var k=D.cols[i][0],cl=k==="estado"?" class=\\"e-"+D.est[r]+"\\"":(k==="notas"?" class=\\"nota\\"":"");return "<td"+cl+">"+esc(f[i])+"</td>";}).join("")+"</tr>";});'+
-      'document.getElementById("tb").innerHTML=h+"</tbody>";}'+
-      'function barra(){var b=document.getElementById("bar");b.innerHTML=D.grupos.map(function(g){var n=D.cols.filter(function(c){return c[2]===g;}).length;return "<label class=\\"g"+(ON[g]?" on":"")+"\\"><input type=\\"checkbox\\" data-g=\\""+esc(g)+"\\""+(ON[g]?" checked":"")+">"+esc(g)+" <span class=\\"c\\">"+n+"</span></label>";}).join("")+"<div class=\\"acc\\"><button class=\\"btn\\" id=\\"pr\\">Imprimir / PDF</button><button class=\\"btn main\\" id=\\"xl\\">Descargar Excel</button></div>";'+
-      'b.querySelectorAll("input[data-g]").forEach(function(x){x.addEventListener("change",function(){ON[x.dataset.g]=x.checked;x.parentNode.classList.toggle("on",x.checked);pinta();});});'+
-      'document.getElementById("pr").onclick=function(){window.print();};document.getElementById("xl").onclick=excel;}'+
-      'function excel(){var V=vis(),A=[["#"].concat(V.map(function(i){return D.cols[i][1];}))];D.filas.forEach(function(f,r){A.push([r+1].concat(V.map(function(i){return f[i];})));});'+
-      'if(window.XLSX){var ws=XLSX.utils.aoa_to_sheet(A);ws["!cols"]=A[0].map(function(_,c){var m=4;A.forEach(function(row){m=Math.max(m,String(row[c]==null?"":row[c]).length);});return {wch:Math.min(m+2,60)};});ws["!freeze"]={xSplit:2,ySplit:1};'+
-      'var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"Trabajadores");XLSX.writeFile(wb,"trabajadores-"+D.hoy+".xlsx");return;}'+
-      'var csv="\\ufeff"+A.map(function(row){return row.map(function(v){v=String(v==null?"":v);return /[";\\n]/.test(v)?"\\""+v.replace(/"/g,"\\"\\"")+"\\"":v;}).join(";");}).join("\\r\\n");'+
-      'var a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));a.download="trabajadores-"+D.hoy+".csv";a.click();}'+
-      'barra();pinta();<\/script></body></html>';
+  function trabExcel(ExcelJS, logo){
+    var NAVY='FF1A1F6E', DEEP='FF0C0F2E', ORANGE='FFFF6B00', ALT='FFF5F6FB', LINE='FFE3E5EE', MUTED='FF8B93A7', INK='FF1B1F4D';
+    var arr=trabExportFilas(), C=trabExportCols(), hoy=new Date(), fhoy=fFaena(todayISO());
+    var wb=new ExcelJS.Workbook(); wb.creator='InnovaGestión'; wb.created=hoy;
+    var img=logo?wb.addImage({base64:logo, extension:'png'}):null;
+    var fill=function(c){ return {type:'pattern',pattern:'solid',fgColor:{argb:c}}; }, borde={bottom:{style:'thin',color:{argb:LINE}}};
+    var COL={'Activo':['FFE7F6EE','FF16794A'],'En espera':['FFFFF4E6','FFB45309'],'Inactivo':['FFF1F2F6','FF6B7390'],
+      'Entregado':['FFE7F6EE','FF16794A'],'Por vencer':['FFFFF4E6','FFB45309'],'Vencido':['FFFDECEC','FFB91C1C'],'Pendiente':['FFFDECEC','FFB91C1C'],'No aplica':['FFF1F2F6','FF6B7390']};
+    function cabecera(ws, titulo, sub, ncol){
+      ws.getRow(1).height=26; ws.getRow(2).height=18; ws.getRow(3).height=18;
+      if(img!=null) ws.addImage(img,{tl:{col:0.15,row:0.15},ext:{width:92,height:63}});
+      var a=ws.getCell(1,3); a.value=titulo; a.font={name:'Calibri',size:16,bold:true,color:{argb:INK}};
+      var b=ws.getCell(2,3); b.value='Innovación y Servicios SpA · RUT 77.647.955-1 · Los Lirios 35, Mirasol, Puerto Montt'; b.font={size:10,color:{argb:MUTED}};
+      var c=ws.getCell(3,3); c.value=sub; c.font={size:10,italic:true,color:{argb:MUTED}};
+      for(var i=1;i<=ncol;i++){ ws.getCell(4,i).fill=fill(i<=Math.ceil(ncol*0.7)?ORANGE:NAVY); } ws.getRow(4).height=4;
+    }
+    var cnt={Activo:0,'En espera':0,Inactivo:0}, EST={activo:'Activo',espera:'En espera',inactivo:'Inactivo'};
+    arr.forEach(function(t){ cnt[EST[t.estado||'activo']]++; });
+
+    // ---------- Hoja Resumen ----------
+    var R=wb.addWorksheet('Resumen',{properties:{tabColor:{argb:ORANGE}},views:[{showGridLines:false}]});
+    R.columns=[{width:16},{width:34},{width:24},{width:14},{width:14},{width:14},{width:14}];
+    cabecera(R,'Trabajadores · Resumen','Exportado el '+fhoy+' desde InnovaGestión',7);
+    var fila=6;
+    function titulo(t){ var c=R.getCell(fila,2); c.value=t; c.font={bold:true,size:12,color:{argb:INK}}; R.getRow(fila).height=20; fila++; }
+    function tabla(cab, filas, anchoPrimera){
+      cab.forEach(function(h,i){ var c=R.getCell(fila,2+i); c.value=h; c.fill=fill(NAVY); c.font={bold:true,color:{argb:'FFFFFFFF'},size:10}; c.alignment={vertical:'middle',horizontal:i?'center':'left'}; }); R.getRow(fila).height=20; fila++;
+      filas.forEach(function(f,k){ f.forEach(function(v,i){ var c=R.getCell(fila,2+i); c.value=v; c.border=borde; c.alignment={horizontal:i?'center':'left',vertical:'middle',wrapText:(typeof v==='string')}; if(k%2) c.fill=fill(ALT); if(i===0) c.font={bold:true,color:{argb:INK}}; }); fila++; });
+      fila++; }
+    // Tarjetas de totales
+    var kp=[['Total',arr.length,NAVY],['Activos',cnt.Activo,'FF16794A'],['En espera',cnt['En espera'],'FFB45309'],['Inactivos',cnt.Inactivo,'FF6B7390']];
+    kp.forEach(function(k,i){ var col=i===0?2:2+i; var l=R.getCell(fila,col), v=R.getCell(fila+1,col);
+      l.value=k[0]; l.font={bold:true,size:10,color:{argb:'FFFFFFFF'}}; l.fill=fill(k[2]); l.alignment={horizontal:'center'};
+      v.value=k[1]; v.font={bold:true,size:20,color:{argb:k[2]}}; v.alignment={horizontal:'center',vertical:'middle'}; v.border={bottom:{style:'medium',color:{argb:k[2]}},left:{style:'thin',color:{argb:LINE}},right:{style:'thin',color:{argb:LINE}}}; });
+    R.getRow(fila+1).height=34; fila+=3;
+    // Por cargo
+    var porCargo={}; arr.forEach(function(t){ var k=t.cargo||'(sin cargo)'; if(!porCargo[k]) porCargo[k]={Activo:0,'En espera':0,Inactivo:0}; porCargo[k][EST[t.estado||'activo']]++; });
+    titulo('Personas por cargo');
+    tabla(['Cargo','Activos','En espera','Inactivos','Total'], Object.keys(porCargo).sort().map(function(k){ var x=porCargo[k]; return [k,x.Activo,x['En espera'],x.Inactivo,x.Activo+x['En espera']+x.Inactivo]; }));
+    // Documentación (solo activos y en espera)
+    var vig=arr.filter(function(t){ return t.estado!=='inactivo'; });
+    titulo('Documentación de activos y en espera ('+vig.length+' personas)');
+    tabla(['Documento','Entregado','Por vencer','Vencido','Pendiente','No aplica'], (typeof DOC_TIPOS!=='undefined'?DOC_TIPOS:[]).map(function(tp){ var c={ok:0,prox:0,venc:0,pend:0,na:0};
+      vig.forEach(function(t){ var e=RRHH_D[t.id+'|'+tp.slug]?estadoDoc(t.id,tp.slug).k:'pend'; c[e]=(c[e]||0)+1; }); return [tp.nombre,c.ok,c.prox,c.venc,c.pend,c.na]; }));
+    // Vencimientos (vencidos y próximos 60 días)
+    var ven=[]; vig.forEach(function(t){ (typeof DOC_TIPOS!=='undefined'?DOC_TIPOS:[]).forEach(function(tp){ var d=RRHH_D[t.id+'|'+tp.slug]; if(!d||!d.vencimiento||d.estado!=='entregado') return; var n=diffDiasV(d.vencimiento); if(n<=60) ven.push([titleCase(t.nombre||''), tp.nombre, new Date(d.vencimiento+'T12:00:00'), n<0?('Vencido hace '+(-n)+' d'):('En '+n+' d')]); }); });
+    ven.sort(function(a,b){ return a[2]-b[2]; });
+    titulo('Vencimientos (vencidos y próximos 60 días)');
+    if(ven.length){ var f0=fila; tabla(['Trabajador','Documento','Vence','Plazo'], ven); for(var q=f0+1;q<f0+1+ven.length;q++) R.getCell(q,4).numFmt='dd-mm-yyyy'; }
+    else { var cv=R.getCell(fila,2); cv.value='Sin vencimientos en los próximos 60 días.'; cv.font={italic:true,color:{argb:MUTED}}; fila+=2; }
+    var ay=R.getCell(fila,2); ay.value='Cómo usar la hoja "Trabajadores": filtra con las flechas de cada título; con los botones + / − sobre las columnas muestras u ocultas cada grupo de datos.'; ay.font={size:9,italic:true,color:{argb:MUTED}};
+    R.pageSetup={orientation:'portrait',fitToPage:true,fitToWidth:1,fitToHeight:0,margins:{left:.4,right:.4,top:.5,bottom:.5,header:.2,footer:.2}};
+
+    // ---------- Hoja Trabajadores ----------
+    var nc=C.length+1, H=6;   // columna 1 = N°; fila 5 = grupos; fila 6 = títulos
+    var W=wb.addWorksheet('Trabajadores',{properties:{tabColor:{argb:NAVY}},views:[{state:'frozen',xSplit:3,ySplit:H,showGridLines:false}]});
+    W.columns=[{width:5}].concat(C.map(function(c){ return {width:c[5]}; }));
+    cabecera(W,'Trabajadores',arr.length+' personas · Activos '+cnt.Activo+' · En espera '+cnt['En espera']+' · Inactivos '+cnt.Inactivo+' · exportado el '+fhoy+'  ·  Usa + sobre las columnas para ver más datos y las flechas de cada título para filtrar',nc);
+    // Bandas de grupo (fila 5) y grupos plegables: la primera columna de cada grupo queda visible, el resto se pliega con + / −
+    var ini=0; while(ini<C.length){ var g=C[ini][2], fin=ini; while(fin+1<C.length && C[fin+1][2]===g) fin++;
+      var c1=ini+2, c2=fin+2; if(c2>c1) W.mergeCells(5,c1,5,c2);
+      var kc=W.getColumn(c1); kc.width=Math.max(kc.width||10, g.length+5);   // el título del grupo se lee completo aunque esté plegado
+      var gc=W.getCell(5,c1); gc.value=g.toUpperCase(); gc.font={bold:true,size:9,color:{argb:'FFFFB27A'}}; gc.fill=fill(DEEP); gc.alignment={horizontal:'left',vertical:'middle',indent:1};
+      for(var k=c1;k<=c2;k++){ W.getCell(5,k).fill=fill(DEEP); if(g!=='Principal' && k>c1){ W.getColumn(k).outlineLevel=1; W.getColumn(k).hidden=true; } }
+      ini=fin+1; }
+    W.getCell(5,1).fill=fill(DEEP); W.getRow(5).height=18;
+    var hr=W.getRow(H); hr.height=34;
+    ['N°'].concat(C.map(function(c){ return c[1]; })).forEach(function(t,i){ var c=hr.getCell(i+1); c.value=t; c.fill=fill(NAVY); c.font={bold:true,size:10,color:{argb:'FFFFFFFF'}}; c.alignment={vertical:'middle',horizontal:i?'left':'center',wrapText:true}; c.border={right:{style:'thin',color:{argb:'FF2A3190'}}}; });
+    arr.forEach(function(t,r){ var row=W.getRow(H+1+r), off=(t.estado==='inactivo');
+      row.getCell(1).value=r+1; row.getCell(1).alignment={horizontal:'center'}; row.getCell(1).font={color:{argb:MUTED},size:10};
+      C.forEach(function(c,i){ var v; try{ v=c[3](t); }catch(_){ v=null; } var cell=row.getCell(i+2);
+        cell.value=(v===''?null:v);
+        if(c[4]==='d') cell.numFmt='dd-mm-yyyy'; else if(c[4]==='m') cell.numFmt='mm-yyyy'; else if(c[4]==='$') cell.numFmt='"$"#,##0'; else if(c[4]==='p') cell.numFmt='0%';
+        if((c[4]==='e'||c[4]==='s') && COL[v]){ cell.fill=fill(COL[v][0]); cell.font={bold:true,size:10,color:{argb:COL[v][1]}}; cell.alignment={horizontal:'center'}; }
+        else { cell.font={size:10,color:{argb:off?MUTED:INK},bold:(i===0)}; if(c[4]==='p'&&v!=null) cell.font={size:10,bold:true,color:{argb:v>=1?'FF16794A':(v>=.6?'FFB45309':'FFB91C1C')}}; }
+        if(r%2 && !(c[4]==='e'||c[4]==='s')) cell.fill=fill(ALT);
+        if(c[0]==='notas') cell.alignment={wrapText:true,vertical:'top'};
+        cell.border=borde; });
+      if(r%2) row.getCell(1).fill=fill(ALT); row.getCell(1).border=borde; });
+    W.autoFilter={from:{row:H,column:1},to:{row:H+Math.max(arr.length,1),column:nc}};
+    W.pageSetup={orientation:'landscape',fitToPage:true,fitToWidth:1,fitToHeight:0,printTitlesRow:'5:6',margins:{left:.3,right:.3,top:.4,bottom:.4,header:.2,footer:.2}};
+    W.headerFooter={oddFooter:'&L&8Innovación y Servicios SpA · Trabajadores&R&8Página &P de &N'};
+    wb.views=[{activeTab:0}];
+    return wb.xlsx.writeBuffer();
   }
   if($('trab-export')) $('trab-export').addEventListener('click',exportarTrab);
   function renderDocs(){
