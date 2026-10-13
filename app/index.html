@@ -7544,7 +7544,7 @@
   // Basado en la carpeta de prevención (02- Fichas de ingreso / Ficha Nicolas).
   var EMP_CARPETAS=[
     {k:'prev', n:'Reglamento y gestión preventiva', tipos:[['riohs','Reglamento Interno de Orden, Higiene y Seguridad (RIOHS)',false],['programa','Programa de prevención de riesgos',false],['iper','Matriz de riesgos (IPER)',false],['proc_iper','Procedimiento IPER',false],['proc_acc','Procedimiento de emergencia y/o accidentes',false]]},
-    {k:'pts', n:'Procedimientos de trabajo seguro (PTS)', tipos:[['pts_quimicos','PTS uso y manejo de químicos',false],['pts_extintores','PTS uso y manejo de extintores',false],['pts_altura','PTS trabajos en altura',false],['pts_confinados','PTS espacios confinados',false],['pts_alzahombre','PTS alza hombre / grúa Genie',false],['pts_herramientas','PTS uso de herramientas · limpieza de estanques',false],['pts_funciones','PTS acorde a sus funciones',false]]},
+    {k:'pts', n:'Procedimientos de trabajo seguro (PTS)', tipos:[['pts_quimicos','PTS uso y manejo de químicos',false],['pts_extintores','PTS uso y manejo de extintores',false],['pts_altura','PTS trabajos en altura',false],['pts_confinados','PTS espacios confinados',false],['pts_alzahombre','PTS alza hombre / grúa Genie',false],['pts_herramientas','PTS uso de herramientas · limpieza de estanques',false],['pts_frigorifico','PTS limpieza de cámaras frigoríficas',false],['pts_funciones','PTS acorde a sus funciones',false]]},
     {k:'cap', n:'Capacitaciones', tipos:[['cap_herr','Capacitación: uso seguro de herramientas manuales y equipos de apoyo',false]]},
     {k:'legal', n:'Legal y previsional', tipos:[['erut','e-RUT de la empresa',false],['escritura','Escritura / estatutos',false],['vigencia','Certificado de vigencia',true],['mutual','Certificado de adhesión a la mutual',false],['tasa','Certificado de tasa de cotización',true]]}
   ];
@@ -8891,7 +8891,26 @@
         ['Atmósfera dentro del estanque','Asfixia, intoxicación, explosión','Medición de gases antes y durante, ventilación, vigía y permiso de entrada (PTS-PREV-05).'],
         ['Superficies húmedas y con lodo','Caídas al mismo y distinto nivel','Calzado de seguridad antideslizante; acceso por escala segura; arnés cuando corresponda.']],
       epp:['Casco de seguridad','Antiparras; careta facial al usar el esmeril o la hidrolavadora','Guantes según la tarea: anticorte para el cuchillo, de goma o nitrilo para lodos y agua','Botas de seguridad de goma','Traje impermeable','Protección auditiva','Respirador con filtro según la medición de gases','Arnés de cuerpo completo y línea de vida para ingreso y rescate'],
-      registros:['Inspección diaria de herramientas (tabla de la sección 6).','Permiso de entrada al espacio confinado y registro de mediciones de gases.','Permiso de trabajo en caliente cuando se use el esmeril.'] }
+      registros:['Inspección diaria de herramientas (tabla de la sección 6).','Permiso de entrada al espacio confinado y registro de mediciones de gases.','Permiso de trabajo en caliente cuando se use el esmeril.'] },
+    pts_frigorifico:{ cod:'PTS-PREV-07', titulo:'Limpieza de cámaras frigoríficas', orig:'P-09 · 17-07-2024',
+      obj:'Realizar la limpieza profunda de las cámaras frigoríficas de forma segura, definiendo el método de trabajo y las medidas de control de los riesgos de la tarea.',
+      alc:'Todas las superficies disponibles para su limpieza dentro de la cámara: pisos, paredes, cielo, puertas y estructuras. Aplica al personal de Innovación y Servicios SpA que realiza esta tarea en las faenas de los clientes.',
+      norm:NORM_BASE,
+      resp:[['Encargado de faena','Es el responsable de ejecutar este procedimiento y de que se cumpla en terreno.'],
+        ['Supervisor','Autorizar al personal capacitado, mantener los equipos con conexión eléctrica seca y sin cables en el piso, y revisar que los sistemas de seguridad estén activados.'],
+        ['Operador de limpieza','Revisar que todo esté desconectado, mover y despejar la zona de trabajo, verificar el espacio de trabajo y usar los EPP requeridos.'],
+        ['Prevención de riesgos','Instruir al personal en este procedimiento y registrar su entrega. Si la empresa mandante lo requiere, previo acuerdo, se considera un experto en prevención de riesgos de tiempo completo.']],
+      des:[
+        ['Descripción del proceso',['La limpieza de las cámaras se realiza en semi húmedo, sin aplicación directa de agua, para evitar que el agua se congele por las bajas temperaturas.','Limpieza de pisos con máquina abrillantadora, siempre que la temperatura ambiente sea favorable para este proceso.','Limpieza de paredes con telescópicas para las zonas bajas.','Limpieza de racks y retiro de óxido.','Limpieza de puertas.']],
+        ['Antes de comenzar',['El aseo y la mantención deben ser ejecutados por personal capacitado y autorizado por la supervisión.','Verificar que los espacios estén ordenados, las superficies despejadas y los equipos de limpieza asegurados.','Si aplica, la máquina debe quedar con el sistema de bloqueo habilitado y señalizado.']],
+        ['Verificación del supervisor',['Mantener los equipos con conexión eléctrica seca y sin cables en el piso.','Revisar que los sistemas de seguridad estén activados.']],
+        ['Verificación del operador de limpieza',['Revisar que todo esté desconectado.','Mover y despejar la zona de trabajo.','Verificar el espacio de trabajo.']],
+        ['Método de trabajo',['Aplicar acción mecánica en las superficies y estructuras disponibles dentro de la cámara.','Limpiar la plataforma y los equipos de frío.','Limpiar los pisos con máquina abrillantadora y pad de piso.','Para zócalos y pisos, usar paños de piso con ojal con aplicación de detergente.','Limpiar las puertas.','Para finalizar, eliminar toda el agua con barre agua hacia el exterior.','Pasar paños húmedos para el secado final.']]],
+      ries:[['Limpieza de racks, estructuras y retiro de óxido','Contacto con objetos cortantes','Uso de guantes; revisar bordes y piezas oxidadas antes de limpiar; trabajar sin apuro.'],
+        ['Uso de máquina abrillantadora y equipos eléctricos','Contacto con electricidad','Conexión eléctrica seca y sin cables en el piso; equipos desconectados al intervenirlos; bloqueo habilitado y señalizado cuando aplique.'],
+        ['Permanencia en la cámara','Exposición a bajas temperaturas','Chaqueta térmica cuando se requiera; limpieza semi húmeda, sin aplicación directa de agua.'],
+        ['Pisos húmedos durante y al final de la limpieza','Caída al mismo nivel','Zona de trabajo despejada; retirar el agua con barre agua y secar con paños; botas de goma.']],
+      epp:['Casco con barbiquejo','Guantes de nitrilo','Chaqueta térmica, si se requiere','Botas de goma con punta de acero'] }
   };
   // Ilustraciones de referencia de los PTS (SVG propio, colores corporativos; nítidas en el PDF).
   var FIG_N='#1d2a5c', FIG_O='#f26b1d';
@@ -9217,6 +9236,12 @@
       'Aislamiento, bloqueo, limpieza y ventilación del espacio.',
       'Roles del vigía, del entrante y del supervisor; comunicación y rescate.',
       'Prohibición de ingresar sin autorización.'] },
+    pts_frigorifico:{ n:'Limpieza de cámaras frigoríficas', t:[
+      'Limpieza en semi húmedo, sin aplicación directa de agua, por las bajas temperaturas.',
+      'Verificaciones antes de comenzar: personal autorizado, zona despejada, equipos desconectados y bloqueo cuando aplique.',
+      'Método de trabajo: acción mecánica, plataforma y equipos de frío, pisos con máquina abrillantadora, zócalos, puertas y secado final.',
+      'Riesgos: objetos cortantes, contacto con electricidad, bajas temperaturas y caída al mismo nivel.',
+      'Elementos de protección personal: casco con barbiquejo, guantes de nitrilo, chaqueta térmica y botas de goma con punta de acero.'] },
     pts_herramientas:{ n:'Uso de herramientas en faena de limpieza de estanques', t:[
       'Inspección diaria de herramientas y retiro de las que están en mal estado.',
       'Uso correcto de llaves, dados, llave de torque, palas y cuchillo.',
@@ -9269,6 +9294,7 @@
     pts_alzahombre:{ nombre:'Registro entrega PTS alza hombre', build:docEntregaPTS('pts_alzahombre') },
     pts_funciones:{ nombre:'Registro entrega PTS acorde a sus funciones', build:docEntregaPTS('pts_funciones') },
     pts_herramientas:{ nombre:'Registro entrega PTS herramientas (estanques)', build:docEntregaPTS('pts_herramientas') },
+    pts_frigorifico:{ nombre:'Registro entrega PTS cámaras frigoríficas', build:docEntregaPTS('pts_frigorifico') },
     datos:{ nombre:'Ficha de datos', build:docDatos },
     epp:{ nombre:'Entrega de EPP', build:docEPP },
     odi:{ nombre:'IRL (riesgos laborales)', build:docODI }
