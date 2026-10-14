@@ -1632,6 +1632,7 @@
 
       <div class="sbar-grp sb-admin">Costos</div>
       <button class="sb-item sb-admin" data-v="v-costos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6" rx=".5"/><rect x="12" y="8" width="3" height="10" rx=".5"/><rect x="17" y="5" width="3" height="13" rx=".5"/></svg>Mano de obra</button>
+      <button class="sb-item sb-beta hide" type="button" onclick="location.href='costos-prueba.html'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l3-2 3 2 3-2 3 2 3-2 1 .7V2l-1 .7-3-2-3 2-3-2-3 2-3-2z"/><path d="M8 7h8M8 11h8M8 15h5"/></svg>Lector de boletas <span style="font-size:9px;font-weight:800;letter-spacing:.05em;padding:1px 5px;border-radius:5px;background:var(--orange);color:#fff;margin-left:4px">BETA</span></button>
 
       <div class="sbar-grp sb-enzo">Sistema</div>
       <button class="sb-item sb-enzo" data-v="v-acc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Accesos</button>
@@ -2746,6 +2747,7 @@
     if($('trab-export')) $('trab-export').classList.toggle('hide', !(esSuper(userEmail) || (!esDueno(userEmail) && puede('trabajadores.exportar'))));
     document.querySelectorAll('.sb-admin').forEach(function(x){ x.classList.toggle('hide', op); });   // sidebar: items admin (luego aplicarSecciones afina por permiso)
     document.querySelectorAll('.sb-enzo').forEach(function(x){ x.classList.toggle('hide', !puedeGestionar()); });
+    document.querySelectorAll('.sb-beta').forEach(function(x){ x.classList.toggle('hide', !esSuper(userEmail)); });   // funciones en beta: solo Enzo
     if(isAdmin){ ['v-asist','v-fotos'].forEach(function(vv){ var b=document.querySelector('.sbar .sb-item[data-v="'+vv+'"]'); if(b) b.classList.add('hide'); }); }   // Asistencia y Fotos son de terreno: fuera del menu de los duenos
     $('tab-veh').classList.remove('hide');                // Vehículos: visible para todos (chofer registra vueltas)
     if($('veh-admin')) $('veh-admin').classList.toggle('hide', !puede('vehiculos.flota'));   // flota completa

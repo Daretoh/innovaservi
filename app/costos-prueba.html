@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#ff6b00" />
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png?v=6" />
+<title>Lector de documentos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/zxing-wasm@3.1.4/dist/iife/reader/index.js"></script>
+<script>try{var _t=localStorage.getItem('iserv-theme');document.documentElement.setAttribute('data-theme',_t==='dark'?'dark':'light');}catch(e){document.documentElement.setAttribute('data-theme','light');}</script>
+<style>
+  /* Prueba de concepto del apartado Costos: lee el timbre electrónico (PDF417) o el XML del DTE y rellena el formulario. */
+  :root{
+    --orange:#ff6b00; --orange-2:#c24e00; --navy:#1a1f6e;
+    --ink:#1b1f4d; --body:#4a5270; --muted:#8b93a7; --line:#e6e8f2; --alt:#f5f6fb;
+    --card:#fff; --card2:#fafbff; --chip:#eef1f9;
+    --ok:#22a06b; --bad:#dc2626; --warn:#b7791f;
+    --font:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  }
+  :root[data-theme="dark"]{
+    --ink:#eef0f7; --body:#c3c8dc; --muted:#8d94ac; --line:#2c3250; --alt:#141827;
+    --card:#1d2136; --card2:#262b45; --chip:#2a3152; --warn:#e0a84a;
+    color-scheme:dark;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  body{font-family:var(--font);background:var(--alt);color:var(--body);-webkit-font-smoothing:antialiased;}
+  input,select,textarea,button{font-family:inherit;}
+  .hide{display:none !important;}
+  .wrap{max-width:760px;margin:0 auto;padding:18px 16px 60px;}
+  header{display:flex;align-items:center;gap:12px;margin-bottom:16px;}
+  header .ic{width:40px;height:40px;border-radius:12px;background:var(--orange);color:#fff;display:flex;align-items:center;justify-content:center;flex:none;}
+  header h1{font-size:1.15rem;font-weight:800;color:var(--ink);}
+  header p{font-size:.8rem;color:var(--muted);}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:14px;}
+  .card h2{font-size:.95rem;font-weight:800;color:var(--ink);margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+  .acts{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+  @media (max-width:560px){.acts{grid-template-columns:1fr;}}
+  .act{display:flex;flex-direction:column;align-items:center;gap:6px;padding:16px 10px;border:1px solid var(--line);border-radius:14px;
+    background:var(--card2);color:var(--ink);font:700 14px var(--font);cursor:pointer;text-align:center;}
+  .act small{font-weight:500;color:var(--muted);font-size:11.5px;}
+  .act svg{width:26px;height:26px;color:var(--orange);}
+  .act:active{transform:scale(.98);}
+  @media (max-width:560px){
+    .act{display:grid;grid-template-columns:auto 1fr;column-gap:12px;align-items:center;justify-items:start;text-align:left;padding:12px 14px;}
+    .act svg{grid-row:span 2;}
+  }
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--orange);color:#fff;border:none;
+    padding:12px 16px;border-radius:12px;font:800 14px var(--font);cursor:pointer;}
+  .btn.sec{background:var(--chip);color:var(--ink);}
+  .btn svg{width:16px;height:16px;}
+  .cam{position:relative;border-radius:14px;overflow:hidden;background:#000;aspect-ratio:4/3;}
+  .cam video{width:100%;height:100%;object-fit:cover;display:block;}
+  .cam .guide{position:absolute;left:8%;right:8%;top:30%;bottom:30%;border:2px dashed rgba(255,255,255,.8);border-radius:10px;}
+  .cam .hint{position:absolute;left:0;right:0;bottom:8px;text-align:center;color:#fff;font-size:12.5px;text-shadow:0 1px 3px #000;}
+  .cam-bar{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
+  .msg{padding:10px 12px;border-radius:10px;font-size:13px;margin-top:10px;}
+  .msg.ok{background:rgba(34,160,107,.12);color:var(--ok);}
+  .msg.bad{background:rgba(220,38,38,.1);color:var(--bad);}
+  .msg.info{background:var(--chip);color:var(--ink);}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 12px;}
+  .grid .full{grid-column:1/-1;}
+  @media (max-width:560px){.grid{grid-template-columns:1fr;}}
+  .fld label{display:flex;align-items:center;gap:6px;font:600 12px var(--font);color:var(--ink);margin-bottom:4px;}
+  .fld input,.fld select,.fld textarea{width:100%;font:500 15px var(--font);padding:10px 11px;border:1px solid var(--line);border-radius:10px;background:var(--alt);color:var(--ink);}
+  .fld input:focus,.fld select:focus,.fld textarea:focus{outline:none;border-color:var(--orange);box-shadow:0 0 0 3px rgba(255,107,0,.15);}
+  .fld input.err{border-color:var(--bad);}
+  .tag{font:700 10px var(--font);padding:2px 6px;border-radius:6px;text-transform:uppercase;letter-spacing:.04em;}
+  .tag.sii{background:rgba(34,160,107,.14);color:var(--ok);}
+  .tag.xml{background:rgba(26,31,110,.12);color:var(--navy);}
+  :root[data-theme="dark"] .tag.xml{background:rgba(140,150,255,.18);color:#aab2ff;}
+  .tag.calc{background:rgba(183,121,31,.14);color:var(--warn);}
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th,td{text-align:left;padding:7px 6px;border-bottom:1px solid var(--line);}
+  th{font-weight:700;color:var(--ink);font-size:12px;}
+  td.n,th.n{text-align:right;white-space:nowrap;}
+  .tbl{overflow-x:auto;}
+  .row-end{display:flex;gap:8px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap;}
+  .muted{color:var(--muted);font-size:12px;}
+  details{margin-top:10px;} summary{cursor:pointer;font-size:12px;color:var(--muted);}
+  pre{white-space:pre-wrap;word-break:break-all;font-size:11px;background:var(--alt);padding:10px;border-radius:8px;margin-top:6px;color:var(--body);}
+</style>
+</head>
+<body>
+<div class="wrap" id="gate">
+  <div class="card" style="margin-top:40px;text-align:center;">
+    <h2 style="justify-content:center;">Lector de boletas · beta</h2>
+    <p class="muted" id="gateMsg">Verificando sesión…</p>
+    <a class="btn hide" id="gateBtn" href="./" style="margin-top:12px;text-decoration:none;">Ir a InnovaGestión</a>
+  </div>
+</div>
+<div class="wrap hide" id="app">
+  <header>
+    <a href="./" title="Volver a InnovaGestión" style="color:var(--muted);display:flex;"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></a>
+    <div class="ic"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l3-2 3 2 3-2 3 2 3-2 1 .7V2l-1 .7-3-2-3 2-3-2-3 2-3-2z"/><path d="M8 7h8M8 11h8M8 15h5"/></svg></div>
+    <div><h1>Lector de boletas y facturas</h1><p>Prueba del apartado Costos: lee el timbre del SII o el XML y rellena los datos. Nada se guarda en el sistema.</p></div>
+  </header>
+
+  <div class="card">
+    <h2>1. Cargar documento</h2>
+    <div class="acts">
+      <button class="act" id="bCam" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8v8M10 8v8M13 8v8M16 8v8"/></svg>
+        Escanear con cámara<small>Apunta al timbre (código de barras grande)</small>
+      </button>
+      <label class="act" for="fFoto">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        Tomar foto<small>Foto de la boleta o factura</small>
+      </label>
+      <label class="act" for="fArch">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5M12 3v12"/></svg>
+        Subir archivo<small>Imagen, PDF o XML del DTE</small>
+      </label>
+    </div>
+    <input type="file" id="fFoto" accept="image/*" capture="environment" class="hide" />
+    <input type="file" id="fArch" accept="image/*,application/pdf,.pdf,.xml,text/xml,application/xml" multiple class="hide" />
+
+    <div id="camBox" class="hide" style="margin-top:12px;">
+      <div class="cam"><video id="vid" playsinline muted></video><div class="guide"></div><div class="hint">Acerca el timbre hasta que llene el recuadro, con buena luz</div></div>
+      <div class="cam-bar">
+        <button class="btn sec hide" id="bTorch" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>Linterna</button>
+        <button class="btn sec" id="bStop" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>Cerrar cámara</button>
+      </div>
+    </div>
+    <div id="estado"></div>
+  </div>
+
+  <div class="card hide" id="formCard">
+    <h2>2. Revisar y completar</h2>
+    <div class="grid">
+      <div class="fld"><label>Tipo de documento <span class="tag" data-src="td"></span></label>
+        <select id="td"></select></div>
+      <div class="fld"><label>Folio <span class="tag" data-src="folio"></span></label><input id="folio" inputmode="numeric" /></div>
+      <div class="fld"><label>Fecha de emisión <span class="tag" data-src="fecha"></span></label><input id="fecha" type="date" /></div>
+      <div class="fld"><label>RUT emisor <span class="tag" data-src="rut"></span></label><input id="rut" placeholder="76.123.456-7" /></div>
+      <div class="fld full"><label>Razón social del emisor <span class="tag" data-src="razon"></span></label><input id="razon" /></div>
+      <div class="fld"><label>Neto <span class="tag" data-src="neto"></span></label><input id="neto" inputmode="numeric" /></div>
+      <div class="fld"><label>IVA <span class="tag" data-src="iva"></span></label><input id="iva" inputmode="numeric" /></div>
+      <div class="fld"><label>Exento <span class="tag" data-src="exento"></span></label><input id="exento" inputmode="numeric" /></div>
+      <div class="fld"><label>Otros impuestos <span class="tag" data-src="otros"></span></label><input id="otros" inputmode="numeric" /></div>
+      <div class="fld full"><label>Total <span class="tag" data-src="total"></span></label><input id="total" inputmode="numeric" style="font-weight:800" /></div>
+      <div class="fld"><label>Centro de costo</label>
+        <select id="cc"><option value="">Seleccionar…</option><option>Limpieza y sanitización</option><option>Obras menores</option><option>Servicios generales</option><option>Taller / mantención</option><option>Administración</option></select></div>
+      <div class="fld"><label>Categoría</label>
+        <select id="cat"><option value="">Seleccionar…</option><option>Materiales</option><option>Insumos y químicos</option><option>EPP</option><option>Herramientas y repuestos</option><option>Combustible</option><option>Alimentación</option><option>Arriendo de equipos</option><option>Servicios externos</option><option>Transporte y peajes</option><option>Otro</option></select></div>
+      <div class="fld full"><label>Observaciones</label><textarea id="obs" rows="2"></textarea></div>
+    </div>
+    <div id="cuadre"></div>
+
+    <h2 style="margin-top:14px;">Detalle</h2>
+    <div class="tbl"><table><thead><tr><th>Ítem</th><th class="n">Cant.</th><th class="n">Precio</th><th class="n">Monto</th></tr></thead><tbody id="det"></tbody></table></div>
+    <p class="muted" id="detNota" style="margin-top:6px;"></p>
+
+    <details><summary>Ver datos leídos (técnico)</summary><pre id="raw"></pre></details>
+    <div class="row-end">
+      <button class="btn sec" id="bDescartar" type="button">Descartar</button>
+      <button class="btn" id="bAgregar" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Agregar a la lista</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>3. Documentos de esta prueba</h2>
+    <div class="tbl"><table><thead><tr><th>Fecha</th><th>Doc.</th><th>Emisor</th><th>Centro</th><th class="n">Total</th><th>Origen</th><th></th></tr></thead><tbody id="lista"></tbody></table></div>
+    <p class="muted" id="resumen" style="margin-top:8px;"></p>
+    <div class="row-end"><button class="btn sec" id="bCsv" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>Descargar CSV</button></div>
+  </div>
+</div>
+
+<script>
+// Beta: solo se muestra con la sesión de InnovaGestión de Enzo (misma sesión de Supabase que la app).
+(function(){
+  var BETA_EMAILS = ['enzo.castro@innovaservi.com','enzo.castro@innovaservi.cl'];
+  var msg = document.getElementById('gateMsg'), btn = document.getElementById('gateBtn');
+  function negar(t){ msg.textContent = t; btn.classList.remove('hide'); }
+  try {
+    var sb = window.supabase.createClient('https://oabtbzrfgwadnooexdwd.supabase.co','sb_publishable_Uz01bxGvGArhB-h4KOvbqA_WtQg1zer');
+    sb.auth.getSession().then(function(r){
+      var s = r && r.data && r.data.session, em = s && s.user && (s.user.email||'').trim().toLowerCase();
+      if (!s) return negar('Inicia sesión en InnovaGestión y vuelve a abrir esta página.');
+      if (BETA_EMAILS.indexOf(em) < 0) return negar('Este apartado está en prueba y aún no está disponible para tu cuenta.');
+      document.getElementById('gate').classList.add('hide'); document.getElementById('app').classList.remove('hide');
+    }, function(){ negar('No se pudo verificar la sesión.'); });
+  } catch(e){ negar('No se pudo verificar la sesión.'); }
+})();
+</script>
+<script>
+(function(){
+  var TIPOS = {33:'Factura electrónica',34:'Factura exenta electrónica',39:'Boleta electrónica',41:'Boleta exenta electrónica',
+    46:'Factura de compra electrónica',52:'Guía de despacho electrónica',56:'Nota de débito electrónica',61:'Nota de crédito electrónica',110:'Factura de exportación'};
+  var AFECTOS = [33,39,46,56,61];
+  var EXENTOS = [34,41,110];
+  var LS = 'iserv-costos-prueba';
+  var $ = function(id){ return document.getElementById(id); };
+  var actual = null;      // documento en revisión
+  var lista = [];
+  var intentos = {ok:0, fallo:0};
+  try { lista = JSON.parse(localStorage.getItem(LS) || '[]'); } catch(e){ lista = []; }
+
+  $('td').innerHTML = '<option value="">Seleccionar…</option>' + Object.keys(TIPOS).map(function(k){ return '<option value="'+k+'">'+k+' · '+TIPOS[k]+'</option>'; }).join('');
+
+  // ---------- utilidades ----------
+  function estado(txt, cls){ $('estado').innerHTML = txt ? '<div class="msg '+(cls||'info')+'">'+txt+'</div>' : ''; }
+  function num(v){ v = String(v==null?'':v).replace(/[^\d-]/g,''); return v===''||v==='-' ? null : parseInt(v,10); }
+  function clp(n){ return n==null||isNaN(n) ? '' : '$' + Math.round(n).toLocaleString('es-CL'); }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  function dvRut(cuerpo){ var s=0,m=2; for(var i=cuerpo.length-1;i>=0;i--){ s+=parseInt(cuerpo[i],10)*m; m=m===7?2:m+1; } var r=11-(s%11); return r===11?'0':r===10?'K':String(r); }
+  function rutValido(rut){ var c=String(rut||'').replace(/[^\dkK]/g,'').toUpperCase(); if(c.length<2) return false; return dvRut(c.slice(0,-1))===c.slice(-1); }
+  function fmtRut(rut){ var c=String(rut||'').replace(/[^\dkK]/g,'').toUpperCase(); if(c.length<2) return rut||''; var b=c.slice(0,-1).replace(/\B(?=(\d{3})+(?!\d))/g,'.'); return b+'-'+c.slice(-1); }
+  function decodeLatin1(bytes){ try { return new TextDecoder('iso-8859-1').decode(bytes); } catch(e){ return String.fromCharCode.apply(null, bytes); } }
+
+  // ---------- lectura del timbre (TED) ----------
+  function tag(xml, nombre){ var m = xml.match(new RegExp('<'+nombre+'(?:\\s[^>]*)?>([\\s\\S]*?)</'+nombre+'>')); return m ? m[1].trim() : null; }
+  function desXml(s){ return s==null ? null : s.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&apos;/g,"'"); }
+  function parseTED(txt){
+    if (!/<TED[\s>]/.test(txt) || !/<DD>/.test(txt)) return null;
+    var dd = tag(txt,'DD') || '';
+    var dda = dd.replace(/<CAF[\s\S]*<\/CAF>/,'');            // RE/TD del DD, no los del CAF
+    var caf = tag(txt,'DA') || '';
+    return {
+      origen:'timbre', td:num(tag(dda,'TD')), folio:tag(dda,'F'), fecha:tag(dda,'FE'),
+      rut:tag(dda,'RE'), razon:desXml(tag(caf,'RS')), rutReceptor:tag(dda,'RR'), razonReceptor:desXml(tag(dda,'RSR')),
+      total:num(tag(dda,'MNT')), detalle:[{nombre:desXml(tag(dda,'IT1'))||'(sin descripción)', cant:null, precio:null, monto:null}],
+      raw: txt
+    };
+  }
+
+  // ---------- lectura del XML del DTE ----------
+  function parseXML(buf){
+    var u8 = new Uint8Array(buf);
+    var cab = decodeLatin1(u8.slice(0,200));
+    var enc = /encoding=["']([^"']+)/i.exec(cab); enc = enc ? enc[1].toLowerCase() : 'utf-8';
+    var txt; try { txt = new TextDecoder(enc).decode(u8); } catch(e){ txt = decodeLatin1(u8); }
+    var doc = new DOMParser().parseFromString(txt, 'application/xml');
+    var q = function(el, n){ var r = el.getElementsByTagNameNS('*', n); return r.length ? r[0] : null; };
+    var t = function(el, n){ var r = q(el, n); return r ? r.textContent.trim() : null; };
+    var docs = [].slice.call(doc.getElementsByTagNameNS('*','Documento'));
+    return docs.map(function(d){
+      var tot = q(d,'Totales') || d, imp = 0;
+      [].slice.call(tot.getElementsByTagNameNS('*','ImptoReten')).forEach(function(r){ imp += num(t(r,'MontoImp'))||0; });
+      return {
+        origen:'xml', td:num(t(d,'TipoDTE')), folio:t(d,'Folio'), fecha:t(d,'FchEmis'),
+        rut:t(q(d,'Emisor')||d,'RUTEmisor'), razon:t(q(d,'Emisor')||d,'RznSoc') || t(q(d,'Emisor')||d,'RznSocEmisor'),
+        rutReceptor:t(q(d,'Receptor')||d,'RUTRecep'), razonReceptor:t(q(d,'Receptor')||d,'RznSocRecep'),
+        neto:num(t(tot,'MntNeto')), iva:num(t(tot,'IVA')), exento:num(t(tot,'MntExe')), otros:imp||null, total:num(t(tot,'MntTotal')),
+        detalle:[].slice.call(d.getElementsByTagNameNS('*','Detalle')).map(function(l){
+          return {nombre:t(l,'NmbItem'), cant:parseFloat(t(l,'QtyItem'))||null, precio:parseFloat(t(l,'PrcItem'))||null, monto:num(t(l,'MontoItem'))};
+        }),
+        raw: new XMLSerializer().serializeToString(d).slice(0,4000)
+      };
+    });
+  }
+
+  // ---------- decodificador PDF417 ----------
+  var nativo = null;
+  (async function(){
+    try { if ('BarcodeDetector' in window && (await BarcodeDetector.getSupportedFormats()).indexOf('pdf417') >= 0) nativo = new BarcodeDetector({formats:['pdf417']}); } catch(e){}
+  })();
+  async function leerPDF417(fuente){   // fuente: Blob o ImageData
+    if (nativo) {
+      try {
+        var src = fuente instanceof Blob ? await createImageBitmap(fuente) : fuente;
+        var r = await nativo.detect(src);
+        if (r.length && /<TED/.test(r[0].rawValue)) return r[0].rawValue;
+      } catch(e){}
+    }
+    var res = await ZXingWASM.readBarcodes(fuente, {formats:['PDF417'], tryHarder:true, maxNumberOfSymbols:1});
+    if (res.length && res[0].isValid !== false) return res[0].bytes && res[0].bytes.length ? decodeLatin1(res[0].bytes) : res[0].text;
+    return null;
+  }
+
+  // ---------- cámara ----------
+  var stream = null, vivo = false, torch = false;
+  $('bCam').onclick = async function(){
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { estado('Este navegador no permite usar la cámara. Usa "Tomar foto".','bad'); return; }
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}, width:{ideal:1920}, height:{ideal:1080}}, audio:false});
+    } catch(e){ estado('No se pudo abrir la cámara: ' + esc(e.message) + '. Revisa los permisos o usa "Tomar foto".','bad'); return; }
+    var v = $('vid'); v.srcObject = stream; await v.play();
+    $('camBox').classList.remove('hide'); estado('Buscando el timbre…','info');
+    var track = stream.getVideoTracks()[0], cap = track.getCapabilities ? track.getCapabilities() : {};
+    $('bTorch').classList.toggle('hide', !cap.torch);
+    try { if (cap.focusMode && cap.focusMode.indexOf('continuous') >= 0) await track.applyConstraints({advanced:[{focusMode:'continuous'}]}); } catch(e){}
+    vivo = true; bucle();
+  };
+  $('bTorch').onclick = async function(){ torch = !torch; try { await stream.getVideoTracks()[0].applyConstraints({advanced:[{torch:torch}]}); } catch(e){} };
+  $('bStop').onclick = function(){ cerrarCam(); estado(''); };
+  function cerrarCam(){ vivo = false; if (stream) stream.getTracks().forEach(function(t){ t.stop(); }); stream = null; $('camBox').classList.add('hide'); }
+  var cv = document.createElement('canvas'), cx = cv.getContext('2d', {willReadFrequently:true});
+  async function bucle(){
+    var v = $('vid');
+    while (vivo) {
+      if (v.videoWidth) {
+        cv.width = v.videoWidth; cv.height = v.videoHeight; cx.drawImage(v, 0, 0);
+        try {
+          var txt = await leerPDF417(cx.getImageData(0, 0, cv.width, cv.height));
+          var d = txt && parseTED(txt);
+          if (d) { if (navigator.vibrate) navigator.vibrate(80); cerrarCam(); mostrar(d); return; }
+        } catch(e){}
+      }
+      await new Promise(function(r){ setTimeout(r, 150); });
+    }
+  }
+
+  // ---------- archivos ----------
+  $('fFoto').onchange = function(){ procesar([].slice.call(this.files)); this.value=''; };
+  $('fArch').onchange = function(){ procesar([].slice.call(this.files)); this.value=''; };
+
+  var pdfjsCargado = null;
+  function cargarPdfjs(){
+    if (pdfjsCargado) return pdfjsCargado;
+    pdfjsCargado = new Promise(function(ok, mal){
+      var s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+      s.onload = function(){ pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; ok(); };
+      s.onerror = mal; document.head.appendChild(s);
+    });
+    return pdfjsCargado;
+  }
+  async function leerPDF(file){
+    await cargarPdfjs();
+    var pdf = await pdfjsLib.getDocument({data: await file.arrayBuffer()}).promise;
+    for (var p = 1; p <= Math.min(pdf.numPages, 3); p++) {
+      var page = await pdf.getPage(p), vp = page.getViewport({scale:3});
+      var c = document.createElement('canvas'); c.width = vp.width; c.height = vp.height;
+      var g = c.getContext('2d', {willReadFrequently:true});
+      await page.render({canvasContext:g, viewport:vp}).promise;
+      var txt = await leerPDF417(g.getImageData(0, 0, c.width, c.height));
+      if (txt) return txt;
+    }
+    return null;
+  }
+
+  async function procesar(files){
+    if (!files.length) return;
+    cerrarCam();
+    var pendientes = [];
+    for (var i = 0; i < files.length; i++) {
+      var f = files[i]; estado('Leyendo ' + esc(f.name) + '…','info');
+      try {
+        if (/\.xml$/i.test(f.name) || /xml/.test(f.type)) {
+          var ds = parseXML(await f.arrayBuffer());
+          if (!ds.length) throw new Error('El XML no contiene documentos DTE');
+          pendientes = pendientes.concat(ds);
+        } else {
+          var txt = /pdf/.test(f.type) || /\.pdf$/i.test(f.name) ? await leerPDF(f) : await leerPDF417(f);
+          var d = txt && parseTED(txt);
+          if (!d) throw new Error('No se encontró el timbre');
+          pendientes.push(d);
+        }
+        intentos.ok++;
+      } catch(e) {
+        intentos.fallo++;
+        estado('<b>' + esc(f.name) + ':</b> ' + esc(e.message) + '. Prueba con el timbre más cerca, enfocado, derecho y con buena luz (sin reflejos). Si es papel sin timbre, se ingresa a mano.','bad');
+        if (files.length === 1) { mostrar({origen:'manual', detalle:[]}); return; }
+      }
+    }
+    if (pendientes.length === 1) mostrar(pendientes[0]);
+    else if (pendientes.length > 1) {   // varios XML: se agregan directo
+      pendientes.forEach(function(d){ agregar(completar(d)); });
+      estado(pendientes.length + ' documentos agregados desde XML. Revisa centro de costo y categoría en la lista.','ok');
+    }
+  }
+
+  // ---------- formulario ----------
+  function completar(d){
+    var c = Object.assign({neto:null, iva:null, exento:null, otros:null}, d), calc = {};
+    if (d.origen === 'timbre' && d.total != null) {
+      if (EXENTOS.indexOf(d.td) >= 0) { c.exento = d.total; c.neto = 0; c.iva = 0; calc.exento = calc.neto = calc.iva = 1; }
+      else if (AFECTOS.indexOf(d.td) >= 0) { c.neto = Math.round(d.total / 1.19); c.iva = d.total - c.neto; calc.neto = calc.iva = 1; }
+    }
+    c.calc = calc; return c;
+  }
+  var CAMPOS = ['td','folio','fecha','rut','razon','neto','iva','exento','otros','total'];
+  function mostrar(d){
+    actual = completar(d);
+    var etiqueta = actual.origen === 'timbre' ? ['sii','Timbre SII'] : actual.origen === 'xml' ? ['xml','XML'] : null;
+    CAMPOS.forEach(function(k){
+      var v = actual[k];
+      $(k).value = v == null ? '' : (k === 'rut' ? fmtRut(v) : v);
+      var tg = document.querySelector('[data-src="'+k+'"]');
+      if (actual.calc[k]) { tg.className = 'tag calc'; tg.textContent = 'Calculado'; }
+      else if (etiqueta && v != null && v !== '') { tg.className = 'tag ' + etiqueta[0]; tg.textContent = etiqueta[1]; }
+      else { tg.className = 'tag hide'; tg.textContent = ''; }
+    });
+    // Se sugiere centro de costo y categoría según el último documento del mismo proveedor
+    var prev = lista.filter(function(x){ return x.rut && actual.rut && x.rut.replace(/\W/g,'') === String(actual.rut).replace(/\W/g,''); }).pop();
+    $('cc').value = prev ? prev.cc : ''; $('cat').value = prev ? prev.cat : ''; $('obs').value = '';
+    $('det').innerHTML = (actual.detalle||[]).map(function(l){
+      return '<tr><td>'+esc(l.nombre)+'</td><td class="n">'+(l.cant==null?'':l.cant)+'</td><td class="n">'+clp(l.precio)+'</td><td class="n">'+clp(l.monto)+'</td></tr>';
+    }).join('') || '<tr><td colspan="4" class="muted">Sin detalle</td></tr>';
+    $('detNota').textContent = actual.origen === 'timbre' ? 'El timbre solo trae el primer ítem. Para el detalle completo de una factura, sube su XML.' : '';
+    $('raw').textContent = actual.raw || '';
+    $('formCard').classList.remove('hide');
+    validar();
+    if (actual.origen !== 'manual') estado('Documento leído. Revisa los datos, elige centro de costo y categoría, y agrégalo.','ok');
+    $('formCard').scrollIntoView({behavior:'smooth', block:'start'});
+  }
+  function validar(){
+    var avisos = [];
+    var r = $('rut').value; $('rut').classList.toggle('err', !!r && !rutValido(r));
+    if (r && !rutValido(r)) avisos.push('El RUT del emisor no es válido (dígito verificador).');
+    var n = num($('neto').value)||0, i = num($('iva').value)||0, e = num($('exento').value)||0, o = num($('otros').value)||0, t = num($('total').value);
+    if (t != null && (n || i || e || o) && n + i + e + o !== t) avisos.push('Neto + IVA + exento + otros = ' + clp(n+i+e+o) + ', no cuadra con el total ' + clp(t) + '.');
+    if (n && i && Math.abs(Math.round(n * 0.19) - i) > 1) avisos.push('El IVA no es el 19% del neto.');
+    var f = $('folio').value, td = $('td').value;
+    if (r && f && td && lista.some(function(x){ return x.rut.replace(/\W/g,'') === r.replace(/\W/g,'') && String(x.folio) === String(f) && String(x.td) === String(td); }))
+      avisos.push('Este documento ya está en la lista (mismo emisor, tipo y folio).');
+    $('cuadre').innerHTML = avisos.length ? '<div class="msg bad">' + avisos.map(esc).join('<br>') + '</div>'
+      : (t != null ? '<div class="msg ok">Montos y RUT cuadran.</div>' : '');
+    return avisos;
+  }
+  CAMPOS.forEach(function(k){ $(k).addEventListener('input', function(){
+    var tg = document.querySelector('[data-src="'+k+'"]'); if (tg.classList.contains('calc')) { tg.className = 'tag hide'; }
+    validar();
+  }); });
+
+  $('bDescartar').onclick = function(){ actual = null; $('formCard').classList.add('hide'); estado(''); };
+  $('bAgregar').onclick = function(){
+    if (!$('total').value) { estado('Falta el total.','bad'); return; }
+    var d = {origen: actual ? actual.origen : 'manual', detalle: actual ? actual.detalle : []};
+    CAMPOS.forEach(function(k){ d[k] = ['td','neto','iva','exento','otros','total'].indexOf(k) >= 0 ? num($(k).value) : $(k).value.trim(); });
+    d.rut = fmtRut(d.rut); d.cc = $('cc').value; d.cat = $('cat').value; d.obs = $('obs').value.trim();
+    agregar(d);
+    $('formCard').classList.add('hide'); actual = null; estado('Agregado a la lista.','ok');
+  };
+  function agregar(d){
+    if (d.rut) d.rut = fmtRut(d.rut);
+    d.cc = d.cc || ''; d.cat = d.cat || '';
+    lista.push({td:d.td, folio:d.folio, fecha:d.fecha, rut:d.rut||'', razon:d.razon||'', neto:d.neto, iva:d.iva, exento:d.exento, otros:d.otros, total:d.total, cc:d.cc, cat:d.cat, obs:d.obs||'', origen:d.origen, items:(d.detalle||[]).length});
+    guardar(); pintar();
+  }
+  function guardar(){ try { localStorage.setItem(LS, JSON.stringify(lista)); } catch(e){} }
+  function pintar(){
+    $('lista').innerHTML = lista.map(function(x, i){
+      var o = x.origen === 'timbre' ? '<span class="tag sii">Timbre</span>' : x.origen === 'xml' ? '<span class="tag xml">XML</span>' : '<span class="tag calc">Manual</span>';
+      return '<tr><td>'+esc(x.fecha)+'</td><td>'+esc((x.td||'')+' N° '+(x.folio||''))+'</td><td>'+esc(x.razon || x.rut)+'</td><td>'+esc(x.cc||'—')+'</td><td class="n">'+clp(x.total)+'</td><td>'+o+'</td>'+
+        '<td><button class="btn sec" style="padding:4px 8px" data-del="'+i+'" title="Quitar" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></td></tr>';
+    }).join('') || '<tr><td colspan="7" class="muted">Aún no hay documentos.</td></tr>';
+    var suma = lista.reduce(function(a, x){ return a + (x.total||0); }, 0);
+    var porOrigen = {timbre:0, xml:0, manual:0}; lista.forEach(function(x){ porOrigen[x.origen] = (porOrigen[x.origen]||0) + 1; });
+    $('resumen').textContent = lista.length ? lista.length + ' documentos · total ' + clp(suma) + ' · timbre ' + porOrigen.timbre + ', XML ' + porOrigen.xml + ', manual ' + porOrigen.manual +
+      ' · lecturas en esta sesión: ' + intentos.ok + ' bien, ' + intentos.fallo + ' fallidas' : '';
+  }
+  $('lista').onclick = function(e){ var b = e.target.closest('[data-del]'); if (!b) return; lista.splice(+b.dataset.del, 1); guardar(); pintar(); };
+  $('bCsv').onclick = function(){
+    var cols = ['fecha','td','folio','rut','razon','neto','iva','exento','otros','total','cc','cat','obs','origen'];
+    var csv = '﻿' + cols.join(';') + '\n' + lista.map(function(x){ return cols.map(function(k){ return '"' + String(x[k]==null?'':x[k]).replace(/"/g,'""') + '"'; }).join(';'); }).join('\n');
+    var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8'})); a.download = 'costos-prueba.csv'; a.click();
+  };
+  pintar();
+
+  // Expuesto solo para pruebas automáticas
+  window.__costos = {parseTED:parseTED, parseXML:parseXML, rutValido:rutValido, mostrar:mostrar};
+})();
+</script>
+</body>
+</html>
