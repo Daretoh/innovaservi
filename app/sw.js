@@ -26,7 +26,8 @@ self.addEventListener('fetch', function (e) {
   if (url.origin !== self.location.origin) return;
   // App shell: network-first para HTML, cache-first para estáticos.
   if (req.mode === 'navigate') {
-    e.respondWith(fetch(req).catch(function () { return caches.match('./index.html'); }));
+    // no-cache: revalida con el servidor para no quedar con una versión vieja en la caché HTTP
+    e.respondWith(fetch(req.url, { cache: 'no-cache', credentials: 'same-origin' }).catch(function () { return caches.match('./index.html'); }));
     return;
   }
   e.respondWith(caches.match(req).then(function (hit) {
