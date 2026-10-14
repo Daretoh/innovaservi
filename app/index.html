@@ -442,6 +442,7 @@
   .ped-add{border:1px dashed var(--line);background:transparent;color:var(--orange-2);font:700 12px var(--font);padding:6px 10px;border-radius:8px;cursor:pointer;margin-top:2px;}
   .ped-add:hover{border-color:var(--orange);}
   .ped-acc{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:6px;} .ped-acc .btn{width:auto;}
+  .irl-g td{background:#eef1f9 !important;font-weight:800;color:var(--ink);font-size:11.5px;} .irl-tb td .mr-chip{font-size:8.5px;}
   .mr-chip{display:inline-block;font:800 9.5px var(--font);padding:2px 6px;border-radius:999px;border:1px solid;white-space:nowrap;}
   .mr-res{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 8px;}
   .iper td,.prg td{font-size:10.5px;vertical-align:top;} .iper th,.prg th{font-size:10px;} .iper td.c{text-align:center;vertical-align:middle;} .iper td.n,.prg td.n{width:20px;}
@@ -8893,32 +8894,133 @@
 
   // Plantilla: IRL — Información de Riesgos Laborales (D.S. N° 44, reemplaza a la ODI del D.S. N° 40).
   // El slug interno sigue siendo 'odi' para no perder los registros existentes.
+  // Versión 02: tareas reales del puesto (lugar y equipos), condiciones del puesto, peligros por tarea tomados de la
+  // Matriz IPER (MAT-PREV-02), procedimientos de trabajo seguro, productos químicos según HDS y EPP por tarea.
+  // Tarea: n (nombre), d (qué se hace), l (lugar), eq (equipos), iper (inicio de la "tarea" en IPER_FILAS),
+  // pts (procedimientos), met (método de trabajo seguro), epp
+  var IRL_OPER=[
+    { n:'Limpieza y sanitización de plantas de proceso', d:'Barrido seco y húmedo, aplicación de detergente, acción mecánica, enjuague y sanitizado de líneas de proceso, máquinas, mesones, canaletas, rejillas y pisos; montaje y desmontaje de cintas y estructuras; secado.',
+      l:'Salas de proceso de plantas de clientes (frío y humedad).', eq:'Espumador, rociadores, escobillones, escobillas, palas, baldes, mangueras, barre agua, máquina de piso.',
+      iper:['Limpieza de pisos y superficies','Uso de productos químicos de limpieza','Dilución y trasvasije','Uso de abrillantadora','Uso de equipos ruidosos','Traslado de bidones','Limpieza de superficies con movimientos'],
+      pts:['PTS-PREV-03 Uso y manipulación de productos químicos','PTS-FUN-01 Acorde a sus funciones (operario)'],
+      met:'Secuencia de limpieza de arriba hacia abajo; usar solo químicos ya diluidos y entregados por el supervisor; nunca mezclar productos; no proyectar agua sobre tableros ni motores; señalizar el área mojada.',
+      epp:'Botas de goma con punta de acero, traje impermeable, guantes de nitrilo, antiparras o careta facial, protector auditivo, mascarilla o respirador según la HDS.' },
+    { n:'Limpieza de exteriores e hidrolavado', d:'Hidrolavado, acción mecánica, barrido y recolección de los desechos de la limpieza en patios, andenes y fachadas a nivel de piso.',
+      l:'Exteriores de plantas y centros: patios, andenes de carga, fachadas.', eq:'Hidrolavadora, escobillones, palas, carros de basura.',
+      iper:['Hidrolavado','Uso de equipos ruidosos','Tareas en exteriores','Tareas en días de calor','Desplazamiento en instalaciones'],
+      pts:['PTS-FUN-01 Acorde a sus funciones (operario)','Instrucciones del fabricante de la hidrolavadora'],
+      met:'Revisar mangueras y conexiones antes de usar; no apuntar el chorro a personas ni a equipos eléctricos; seguro del gatillo al detenerse; usar vías peatonales y respetar el tránsito de grúas horquilla.',
+      epp:'Careta facial o antiparras, traje impermeable, botas de goma con punta de acero, guantes, protector auditivo, chaleco reflectante, bloqueador solar y legionario en exteriores.' },
+    { n:'Limpieza de cámaras frigoríficas y retiro de hielo y nieve', d:'Limpieza semi húmeda de pisos, paredes, cielos, puertas, racks y equipos de frío; retiro de hielo y nieve acumulados.',
+      l:'Cámaras frigoríficas y de congelado, túneles de frío.', eq:'Máquina abrillantadora, palas, escobillones, mangos telescópicos, paños, baldes.',
+      iper:['Limpieza de cámaras frigoríficas','Tránsito dentro de la cámara','Permanencia dentro de la cámara','Uso de abrillantadora','Traslado de bidones','Limpieza de superficies con movimientos'],
+      pts:['PTS-PREV-07 Limpieza de cámaras frigoríficas'],
+      met:'Verificar antes de entrar que la puerta abre desde el interior; trabajar en pareja; pausas de recuperación en zona temperada; limpieza sin agua directa; cables secos y fuera del piso; secar el piso al terminar.',
+      epp:'Ropa térmica (chaqueta y pantalón), guantes térmicos o de nitrilo, gorro térmico, botas de goma con punta de acero, casco con barbiquejo.' },
+    { n:'Limpieza de estanques, tolvas y cámaras de RIL', d:'Limpieza interior de estanques de agua dulce, salada y flow ice, tolvas de vísceras, plantas de RIL y cámaras de canalizado.',
+      l:'Estanques, tolvas y cámaras (espacios confinados).', eq:'Medidor de gases portátil, ventilador o extractor, hidrolavadora, herramientas manuales (llaves, dados, taladro, esmeril), escalas.',
+      iper:['Ingreso al estanque','Acceso y trabajo dentro del estanque','Uso de herramientas manuales y eléctricas','Trabajo en caliente'],
+      pts:['PTS-PREV-05 Trabajo seguro en espacios confinados','PTS-PREV-06 Uso de herramientas en limpieza de estanques'],
+      met:'Ingresar solo con permiso de entrada, medición de gases desde el exterior y monitoreo continuo, ventilación y vigía permanente; salir ante cualquier alarma; inspeccionar las herramientas antes de usarlas.',
+      epp:'Casco con barbiquejo, arnés con línea de vida, respirador con filtro o equipo autónomo según la medición, antiparras o careta, guantes, botas de goma con punta de acero, traje impermeable.' },
+    { n:'Trabajos en altura', d:'Limpieza de fachadas, estructuras y cámaras a más de 1,8 m, desde alza hombre, andamios o escaleras (solo con examen ocupacional vigente).',
+      l:'Fachadas, estructuras, cielos y cámaras de plantas de clientes.', eq:'Alza hombre o grúa Genie, andamios, escalera tijera, arnés de cuerpo completo con cola y absorbedor.',
+      iper:['Uso de andamios','Trabajo en altura con herramientas','Operación de alza hombre'],
+      pts:['PTS-PREV-01 Trabajos en altura (incluye plan de rescate)','PTS-PREV-02 Alza hombre / grúa Genie'],
+      met:'Inspeccionar el arnés y el equipo antes de usarlo; anclarse siempre a un punto resistente; nunca trabajar solo; delimitar el área inferior; suspender con viento sobre 35 km/h; operar el alza hombre solo si está autorizado.',
+      epp:'Arnés de cuerpo completo con cola y absorbedor, casco con barbiquejo, antiparras, guantes, calzado de seguridad, chaleco reflectante.' },
+    { n:'Limpieza de bodegas, pasillos, andenes y baños', d:'Aseo de bodegas, pasillos, andenes de carga y baños; limpieza de pisos con máquina, retiro de polvo, secado; armado de cajas.',
+      l:'Bodegas, pasillos, andenes y servicios higiénicos de las plantas.', eq:'Máquina de piso, aspiradora, mopas, carros, baldes.',
+      iper:['Limpieza de pisos y superficies','Uso de abrillantadora','Traslado de bidones','Desplazamiento en instalaciones'],
+      pts:['PTS-FUN-01 Acorde a sus funciones (operario)'],
+      met:'Señalizar el piso mojado; revisar cables y enchufes de las máquinas; respetar el peso máximo de carga; usar vías peatonales en andenes con tránsito de grúas.',
+      epp:'Calzado de seguridad o botas antideslizantes, guantes de nitrilo, chaleco reflectante en andenes.' },
+    { n:'Limpieza de barcos', d:'Limpieza de bodegas, cubiertas y corteza externa de embarcaciones, según lo requiera el trabajo.',
+      l:'Embarcaciones en muelle o centro de cultivo.', eq:'Hidrolavadora, escobillones, escalas, baldes.',
+      iper:['Limpieza de bodegas, cubiertas','Ingreso a bodegas de la embarcación','Hidrolavado'],
+      pts:['PTS-PREV-05 Espacios confinados (bodegas de la nave)','Instrucciones de la nave y del centro'],
+      met:'Chaleco salvavidas en todo momento junto al agua; no trabajar solo; seguir las instrucciones de la tripulación; tratar las bodegas como espacio confinado.',
+      epp:'Chaleco salvavidas, botas antideslizantes, traje impermeable, guantes, casco, careta al hidrolavar.' },
+    { n:'Servicios generales, jardinería y obras menores', d:'Servicios generales en exteriores, obras menores, jardinería y podado de árboles.',
+      l:'Exteriores de plantas, centros y dependencias de la empresa.', eq:'Herramientas manuales y de corte (tijeras de podar, serrucho), carretilla, escalas.',
+      iper:['Jardinería','Uso de herramientas manuales y eléctricas','Tareas en exteriores'],
+      pts:['PTS-FUN-01 Acorde a sus funciones (operario)','PTS-PREV-01 Trabajos en altura (si se poda en altura)'],
+      met:'Revisar las herramientas antes de usarlas; delimitar el área de caída de ramas; no podar en altura sin cumplir el PTS de altura.',
+      epp:'Casco, lentes o careta facial, guantes de cabritilla, calzado de seguridad, bloqueador solar y legionario.' }];
+  var IRL_PREV=[
+    { n:'Gestión preventiva y documental en oficina', d:'Elaboración de matrices, procedimientos y registros; acreditación de trabajadores; informes y estadísticas.',
+      l:'Oficina de la empresa (Puerto Montt).', eq:'Computador, impresora, teléfono.', iper:['Trabajo de oficina','Desplazamiento en oficinas'],
+      pts:['PTS-FUN-02 Acorde a sus funciones (prevención)'], met:'Puesto de trabajo ajustado; pausas activas; cables canalizados y orden.', epp:'No requiere EPP específico en oficina.' },
+    { n:'Visitas, inspecciones y capacitaciones en faenas', d:'Inspecciones en terreno, charlas y capacitaciones, entrega de PTS e investigación de accidentes en plantas, frigoríficos y centros.',
+      l:'Plantas de proceso, frigoríficos, pisciculturas y centros de clientes.', eq:'Celular, tablet, cámara, EPP de visita.',
+      iper:['Desplazamiento en instalaciones','Limpieza de pisos y superficies','Limpieza de cámaras frigoríficas','Tareas en exteriores'],
+      pts:['PTS-FUN-02 Acorde a sus funciones (prevención)','Normas de seguridad de cada mandante'],
+      met:'Usar los EPP exigidos por cada faena; no ingresar a espacios confinados ni subir a altura sin los permisos y equipos; observar desde una zona segura; usar vías peatonales.',
+      epp:'Calzado de seguridad, casco, chaleco reflectante, antiparras, protector auditivo y ropa térmica o impermeable según la faena.' },
+    { n:'Traslados a faenas', d:'Conducción o traslado a las faenas de la región.', l:'Rutas y caminos de la Región de Los Lagos.', eq:'Vehículo de la empresa o particular.',
+      iper:['Traslado de personal'], pts:['Ley de Tránsito y normas de conducción segura de la empresa'], met:'Licencia y documentos al día; cinturón de seguridad; respetar velocidades; no usar el celular al conducir; descansos en viajes largos.', epp:'Chaleco reflectante en ruta.' }];
+  var IRL_TRANS=['Organización del trabajo','Relaciones laborales','Atención y contacto','Emergencias en la faena','Conducta en el trabajo'];
+  // Productos químicos de uso habitual en el aseo industrial (por tipo). El nombre comercial se completa según la faena.
+  var IRL_QUIM=[['Detergente alcalino clorado (espumante)','Limpieza de líneas, equipos y pisos','Corrosivo: quemaduras en piel y ojos. Libera gas cloro si se mezcla con ácidos.','Guantes de nitrilo, antiparras o careta, traje impermeable, botas. No mezclar.'],
+    ['Detergente alcalino / desengrasante','Retiro de grasa y materia orgánica','Irritante o corrosivo para la piel y los ojos.','Guantes de nitrilo, antiparras, traje impermeable.'],
+    ['Desincrustante ácido','Retiro de sarro y sales','Corrosivo; libera gases tóxicos si se mezcla con productos clorados.','Guantes de nitrilo, careta facial, respirador según HDS. No mezclar.'],
+    ['Sanitizante de amonio cuaternario','Sanitizado de superficies y equipos','Irritante para la piel y los ojos; nocivo si se ingiere.','Guantes de nitrilo, antiparras.'],
+    ['Hipoclorito de sodio (cloro)','Desinfección','Corrosivo; desprende gas tóxico al mezclarse con ácidos o amoníaco.','Guantes de nitrilo, antiparras, mascarilla en lugares cerrados. No mezclar.']];
   function docODI(t){
-    var R=[['Uso de productos químicos de limpieza y sanitización','Contacto, quemaduras, irritación, intoxicación por inhalación','Usar guantes de nitrilo, antiparras y mascarilla según la hoja de datos de seguridad; no mezclar productos; ventilar.'],
-      ['Pisos húmedos, con espuma o residuos','Caída al mismo nivel: golpes, esguinces, fracturas','Calzado antideslizante; señalizar el área; mantener orden y limpieza.'],
-      ['Agua a presión cerca de equipos eléctricos','Contacto eléctrico','No proyectar agua sobre tableros, motores ni cableado; informar equipos dañados.'],
-      ['Cámaras frigoríficas, frío y humedad','Hipotermia, enfermedades respiratorias','Ropa térmica e impermeable; pausas de recuperación; no trabajar solo.'],
-      ['Trabajo en altura (alza hombre, andamios, escaleras)','Caída de distinto nivel','Examen de altura vigente; arnés con línea de vida; inspección previa de equipos.'],
-      ['Estanques, tolvas y cámaras de RIL','Asfixia, intoxicación, atrapamiento (espacio confinado)','Permiso de entrada, medición de gases y vigía; no ingresar sin autorización.'],
-      ['Manejo manual de carga','Lesiones musculoesqueléticas','Técnica de levante; pedir ayuda o usar apoyo mecánico; respetar el peso máximo legal.'],
-      ['Trabajo en barcos y cerca del agua','Caída al agua, inmersión, golpes','Chaleco salvavidas; seguir las instrucciones de la nave y del centro.'],
-      ['Ruido de maquinaria y equipos','Pérdida auditiva','Protección auditiva en áreas señaladas.']];
+    var v=varDefault(t), oper=(v==='oper'), T=oper?IRL_OPER:IRL_PREV.slice();
+    if(v==='prevadm') T.splice(1,0,{ n:'Gestión administrativa y de personal', d:'Apoyo en remuneraciones, contratos, asistencia, facturación y gestión documental.', l:'Oficina de la empresa.', eq:'Computador, impresora, teléfono.', iper:['Trabajo de oficina'], pts:['PTS-FUN-03 Acorde a sus funciones (prevención y administración)'], met:'Pausas activas; puesto de trabajo ajustado; planificación de plazos.', epp:'No requiere EPP específico en oficina.' });
+    function filas(L){ var out=[]; L.forEach(function(k){ IPER_FILAS.forEach(function(f){ if(f[1].indexOf(k)===0 && out.indexOf(f)<0) out.push(f); }); }); return out; }
     function tr(a,b){ return '<tr><td class="dg-k">'+a+'</td><td>'+b+'</td></tr>'; }
-    return dgHead('INFORMACIÓN DE RIESGOS LABORALES (IRL)')+
+    var H=seccionador();
+    function fila4(f){ return '<tr><td>'+f[3]+'</td><td>'+f[4]+'</td><td style="white-space:nowrap">'+mrChip(f[5]*f[6])+'</td><td>'+f[7]+'</td></tr>'; }
+    var cond=oper?[
+      ['Lugares de trabajo','Plantas de proceso, frigoríficos, pisciculturas y centros de cultivo con base en tierra, embarcaciones en muelle y dependencias de la empresa, en la Región de Los Lagos, según la faena asignada.'],
+      ['Condiciones ambientales','Frío y humedad permanentes en salas de proceso y cámaras (bajo 0 °C en cámaras de congelado); pisos mojados, con espuma o hielo; ruido de equipos de proceso y de limpieza; trabajo a la intemperie con lluvia, viento y radiación UV; iluminación artificial en estanques y cámaras.'],
+      ['Jornada y organización','45 horas semanales en turnos de mañana, tarde o noche según la faena; trabajo de pie, con desplazamientos y esfuerzo físico permanentes; trabajo en cuadrilla bajo la dirección del supervisor de faena.'],
+      ['Equipos y herramientas','Hidrolavadora, espumador, máquina abrillantadora y de piso, aspiradora, herramientas manuales (escobillones, palas, llaves, dados, taladro, esmeril), medidor de gases, alza hombre, andamios y escaleras (tareas específicas), productos químicos de limpieza.'],
+      ['Factores de riesgo relevantes','<b>Seguridad:</b> caídas al mismo y distinto nivel, contacto eléctrico, cortes, golpes, atrapamiento. <b>Higiene:</b> agentes químicos, frío, ruido, radiación UV. <b>Ergonómicos:</b> manejo manual de carga, trabajo repetitivo y posturas forzadas. <b>Psicosociales:</b> turnos y carga de trabajo. <b>Tareas críticas:</b> espacios confinados y trabajo en altura.']]:[
+      ['Lugares de trabajo','Oficina de la empresa en Puerto Montt y faenas de los clientes en la Región de Los Lagos.'],
+      ['Condiciones ambientales','En oficina: trabajo sedentario con computador. En faenas: frío, humedad, ruido, pisos mojados y tránsito de grúas horquilla durante las visitas.'],
+      ['Jornada y organización','Jornada de oficina con salidas frecuentes a terreno; conducción a las faenas.'],
+      ['Equipos y herramientas','Computador, teléfono, vehículo y EPP de visita a faenas.'],
+      ['Factores de riesgo relevantes','Tránsito y conducción, caídas en plantas y centros, exposición ocasional a frío, ruido y químicos, trastornos musculoesqueléticos por trabajo con pantallas, riesgos psicosociales.']];
+    var trans=filas(IRL_TRANS);
+    return dgHead('INFORMACIÓN DE RIESGOS LABORALES (IRL)','02')+
       '<p style="text-align:center;margin-top:-6px;color:#667;font-weight:700">D.S. N° 44 del Ministerio del Trabajo y Previsión Social · Ley N° 16.744</p>'+
-      '<h4 class="dg-h4">1. Datos del trabajador</h4>'+
-      '<table class="dg-tbl">'+tr('Nombre',ce(t.nombre))+tr('RUT',ce(t.rut))+tr('Cargo',ce(t.cargo||''))+tr('Lugar de trabajo',ce('Dependencias de la empresa y faenas de clientes'))+tr('Fecha',ce(fLarga(todayISO())))+'</table>'+
-      '<p>En cumplimiento del D.S. N° 44, que reemplazó la "obligación de informar" (ODI) del D.S. N° 40, '+EMP.rz+' informa al trabajador, antes de iniciar sus labores, los riesgos a los que estará expuesto, sus consecuencias y las medidas preventivas y métodos de trabajo correctos.</p>'+
-      '<h4 class="dg-h4">2. Peligros, riesgos y medidas preventivas</h4>'+
-      '<table class="dg-tbl"><thead><tr><th style="width:28%">Actividad / peligro</th><th style="width:27%">Riesgo y consecuencia</th><th>Medidas preventivas</th></tr></thead><tbody>'+
-        R.map(function(r){ return '<tr><td>'+r[0]+'</td><td>'+r[1]+'</td><td>'+r[2]+'</td></tr>'; }).join('')+
-        '<tr><td>'+ce('')+'</td><td>'+ce('')+'</td><td>'+ce('')+'</td></tr></tbody></table>'+
-      '<h4 class="dg-h4">3. Procedimientos y elementos de protección</h4>'+
-      ulDg(['Procedimientos de trabajo seguro aplicables a su cargo: químicos, extintores, altura, alza hombre, espacios confinados y acorde a sus funciones, según corresponda.',
-        'Elementos de protección personal: calzado de seguridad, guantes, antiparras, protección auditiva, ropa térmica e impermeable y los que exija cada faena.',
-        'Ante cualquier accidente o incidente, aunque parezca leve, informar de inmediato a la jefatura directa.'])+
-      '<h4 class="dg-h4">4. Declaración</h4>'+
-      '<p>Declaro haber recibido por escrito y comprendido la información sobre los riesgos laborales de mi cargo, sus consecuencias, las medidas preventivas y los métodos de trabajo correctos. Me comprometo a cumplirlos y a consultar a mi jefatura ante cualquier duda. Esta información se actualizará cuando cambien mis funciones, el lugar de trabajo o los procesos.</p>'+
+      H('Datos del trabajador')+
+      '<table class="dg-tbl">'+tr('Nombre',ce(t.nombre))+tr('RUT',ce(t.rut))+tr('Cargo',ce(t.cargo||(oper?'Operario de servicios':'')))+tr('Faena / mandante',ce(''))+tr('Fecha',ce(fLarga(todayISO())))+'</table>'+
+      '<p>En cumplimiento del D.S. N° 44, que reemplazó la "obligación de informar" (ODI) del D.S. N° 40, '+EMP.rz+' informa al trabajador, antes de iniciar sus labores, las tareas de su puesto, sus condiciones, los peligros y riesgos a los que estará expuesto según la Matriz IPER (MAT-PREV-02), sus consecuencias, las medidas preventivas, los métodos de trabajo correctos y los elementos de protección personal que debe usar.</p>'+
+      H('Tareas del puesto de trabajo')+
+      '<table class="dg-tbl"><thead><tr><th style="width:4%">N°</th><th style="width:30%">Tarea</th><th style="width:30%">Lugar de trabajo</th><th>Equipos y herramientas</th></tr></thead><tbody>'+
+        T.map(function(x,i){ return '<tr><td class="n">'+(i+1)+'</td><td><b>'+x.n+'</b><br><span style="font-size:11px;color:#55607a">'+x.d+'</span></td><td>'+x.l+'</td><td>'+x.eq+'</td></tr>'; }).join('')+'</tbody></table>'+
+      (oper?'<p style="font-size:11.5px;margin-top:-6px">Las tareas de altura, espacios confinados, uso de alza hombre y manejo de químicos solo se realizan con la capacitación, autorización y examen ocupacional que correspondan.</p>':'')+
+      H('Condiciones del puesto de trabajo')+'<table class="dg-tbl">'+cond.map(function(c){ return tr(c[0],c[1]); }).join('')+'</table>'+
+      H('Peligros, riesgos y medidas preventivas por tarea')+
+      '<p style="font-size:11.5px;margin:0 0 6px">Según la Matriz IPER (MAT-PREV-02). Nivel = magnitud del riesgo (probabilidad × consecuencia) con los controles existentes.</p>'+
+      '<table class="dg-tbl irl-tb"><thead><tr><th style="width:22%">Peligro</th><th style="width:22%">Riesgo / consecuencia</th><th style="width:13%">Nivel</th><th>Medidas preventivas</th></tr></thead><tbody>'+
+        T.map(function(x,i){ return '<tr class="irl-g"><td colspan="4">'+(i+1)+'. '+x.n+'</td></tr>'+filas(x.iper).map(fila4).join(''); }).join('')+
+        '<tr class="irl-g"><td colspan="4">Todas las tareas</td></tr>'+trans.map(fila4).join('')+
+      '</tbody></table>'+
+      H('Métodos de trabajo seguro')+
+      '<table class="dg-tbl"><thead><tr><th style="width:24%">Tarea</th><th style="width:28%">Procedimiento o instrucción</th><th>Método de trabajo correcto</th></tr></thead><tbody>'+
+        T.map(function(x){ return '<tr><td><b>'+x.n+'</b></td><td>'+x.pts.join('<br>')+'</td><td>'+x.met+'</td></tr>'; }).join('')+
+        '<tr><td><b>Todas las tareas</b></td><td>Reglamento Interno (RIOHS)<br>PR-PREV-03 Emergencia y/o accidentes<br>PTS-PREV-04 Uso de extintores</td><td>Cumplir el reglamento y las normas del mandante; informar condiciones inseguras; ante una emergencia, seguir el plan de la faena.</td></tr>'+
+      '</tbody></table>'+
+      (oper?H('Productos químicos')+
+        '<p style="font-size:11.5px;margin:0 0 6px">Solo se usan productos autorizados, rotulados y con su hoja de datos de seguridad (HDS) disponible en la faena. Antes de usar un producto nuevo se debe leer su HDS y recibir instrucción. El nombre comercial se completa con los productos de la faena.</p>'+
+        '<table class="dg-tbl"><thead><tr><th style="width:27%">Producto (tipo · nombre comercial)</th><th style="width:18%">Uso</th><th style="width:27%">Peligros (según HDS)</th><th>Medidas y EPP</th></tr></thead><tbody>'+
+          IRL_QUIM.map(function(q){ return '<tr><td><b>'+q[0]+'</b><br>'+ce('')+'</td><td>'+q[1]+'</td><td>'+q[2]+'</td><td>'+q[3]+'</td></tr>'; }).join('')+
+          '<tr><td>'+ce('')+'</td><td>'+ce('')+'</td><td>'+ce('')+'</td><td>'+ce('')+'</td></tr></tbody></table>'+
+        '<p style="font-size:11.5px"><b>Primeros auxilios:</b> ojos o piel, lavar con abundante agua durante 15 minutos y retirar la ropa contaminada; inhalación, llevar a un lugar ventilado; ingestión, no provocar el vómito. En todos los casos avisar a la jefatura y acudir a la Mutual con la HDS del producto.</p>':
+        H('Productos químicos')+'<p>El cargo no manipula productos químicos. En las visitas a faenas puede estar expuesto a ellos de forma ocasional: respetar la señalización y usar los EPP exigidos en el área.</p>')+
+      H('Elementos de protección personal por tarea')+
+      '<table class="dg-tbl"><thead><tr><th style="width:32%">Tarea</th><th>EPP obligatorios</th></tr></thead><tbody>'+
+        T.map(function(x){ return '<tr><td><b>'+x.n+'</b></td><td>'+x.epp+'</td></tr>'; }).join('')+'</tbody></table>'+
+      '<p style="font-size:11.5px;margin-top:-6px">Los EPP se entregan sin costo y quedan en el registro de entrega de EPP. El trabajador debe usarlos, cuidarlos y pedir su reposición cuando estén dañados.</p>'+
+      H('En caso de accidente o emergencia')+
+      ulDg(['Avisar de inmediato a la jefatura directa, aunque la lesión parezca leve.','Atención en la Mutual de Seguridad (Rescate Mutual 1407 · Ambulancia 131). La empresa emite la DIAT según el procedimiento PR-PREV-03.','Seguir el plan de emergencia y las vías de evacuación de cada faena.'])+
+      H('Declaración')+
+      '<p>Declaro haber recibido por escrito y comprendido la información sobre las tareas de mi puesto, sus condiciones, los riesgos laborales a los que estoy expuesto, sus consecuencias, las medidas preventivas, los métodos de trabajo correctos y los elementos de protección que debo usar. Me comprometo a cumplirlos y a consultar a mi jefatura ante cualquier duda. Esta información se actualizará cuando cambien mis funciones, el lugar de trabajo, los procesos o la matriz de riesgos.</p>'+
       '<div class="dg-firmas"><div>Firma del trabajador<br>'+esc(t.nombre||'')+'</div><div>'+firmaPrevHtml()+'Informado por<br>'+esc(EMP_PREV.nombre)+'<br>'+esc(EMP_PREV.cargo)+'</div></div>';
   }
 
@@ -9295,6 +9397,9 @@
     ['Cámaras frigoríficas','Limpieza de cámaras frigoríficas · Operario de servicios',1,'Bajas temperaturas','Hipotermia, estrés por frío',2,2,'PTS-PREV-07; ropa térmica; pausas de recuperación en zona templada; limpieza semi húmeda.'],
     ['Cámaras frigoríficas','Tránsito dentro de la cámara',1,'Pisos con hielo o húmedos','Caída al mismo nivel',2,2,'Retirar el agua con barre agua; secar con paños; botas antideslizantes.'],
     ['Cámaras frigoríficas','Permanencia dentro de la cámara',0,'Cierre accidental de la puerta','Encierro e hipotermia grave',1,4,'Verificar la apertura interior antes de ingresar; trabajar en pareja; aviso al supervisor al entrar y salir.'],
+    ['Limpieza de barcos','Limpieza de bodegas, cubiertas y casco de embarcaciones · Operario de servicios',0,'Trabajo junto al agua y cubiertas resbaladizas','Caída al agua, inmersión, golpes',1,4,'Chaleco salvavidas; no trabajar solo; seguir las instrucciones de la nave; calzado antideslizante.'],
+    ['Limpieza de barcos','Ingreso a bodegas de la embarcación',0,'Bodega con ventilación deficiente','Asfixia, intoxicación (espacio confinado)',1,4,'Tratar como espacio confinado (PTS-PREV-05): medición de gases, ventilación y vigía.'],
+    ['Servicios generales','Jardinería, podado de árboles y obras menores · Operario de servicios',0,'Herramientas de corte y caída de ramas','Cortes, proyección de partículas, golpes',2,2,'Herramientas en buen estado; lentes o careta, guantes y casco; delimitar el área de caída de ramas; podar en altura solo cumpliendo el PTS-PREV-01.'],
     ['Trabajo al aire libre','Tareas en exteriores · Todos los puestos de terreno',1,'Radiación ultravioleta solar','Quemaduras, daño ocular y de la piel',2,2,'Protocolo de radiación UV (D.S. N° 594); bloqueador solar; legionario; lentes con filtro UV; hidratación.'],
     ['Trabajo al aire libre','Tareas en días de calor extremo',0,'Altas temperaturas','Golpe de calor',1,4,'Hidratación frecuente; pausas a la sombra; reprogramar tareas pesadas en las horas de más calor.'],
     ['Conducción de vehículos','Traslado de personal y materiales · Chofer',1,'Tránsito vehicular, fatiga y distracciones','Choque, colisión, volcamiento',2,4,'Licencia y documentos al día; mantención del vehículo; respeto a la Ley de Tránsito; prohibido usar el celular al conducir; descansos; programa de conducción segura.'],
