@@ -999,6 +999,23 @@
   .in-kpi.bien .in-kico{background:#e6f5ec;color:#1e7a3e;} .in-kpi.medio .in-kico{background:#fdf3d8;color:#9a6b00;} .in-kpi.mal .in-kico{background:#fde8e8;color:#b42318;}
   .in-klbl{font:700 11.5px var(--font);color:var(--muted);text-transform:uppercase;letter-spacing:.04em;}
   .in-kval{font:800 28px/1.15 var(--font);color:var(--ink);}
+  /* Tareas */
+  .tar-card{display:flex;gap:10px;align-items:flex-start;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:9px;}
+  .tar-card.done{opacity:.62;}
+  .tar-card.done .tar-tit{text-decoration:line-through;}
+  .tar-main{flex:1;min-width:0;}
+  .tar-top{display:flex;align-items:center;gap:7px;margin-bottom:3px;flex-wrap:wrap;}
+  .tar-prio{font:800 9.5px var(--font);text-transform:uppercase;letter-spacing:.04em;border-radius:999px;padding:2px 8px;}
+  .tar-prio.p-alta{background:#fde8e8;color:#b42318;} .tar-prio.p-normal{background:var(--chip);color:var(--body);} .tar-prio.p-baja{background:var(--chip);color:var(--muted);}
+  .tar-venc{font:700 11px var(--font);color:var(--muted);} .tar-venc.bad{color:#b42318;}
+  .tar-tit{font:800 15px var(--font);color:var(--ink);line-height:1.25;}
+  .tar-det{font:500 13px var(--font);color:var(--body);margin-top:3px;white-space:pre-wrap;}
+  .tar-meta{font:600 11.5px var(--font);color:var(--muted);margin-top:6px;}
+  .tar-acts{display:flex;align-items:center;gap:6px;flex:0 0 auto;}
+  .tar-del{border:1px solid #f0c0c0;background:var(--card);color:#dc2626;border-radius:8px;width:30px;height:30px;font-size:14px;cursor:pointer;line-height:1;}
+  .in-tar .in-tar-list{list-style:none;margin:0;padding:0;}
+  .in-tar .in-tar-list li{padding:6px 0;border-bottom:1px solid var(--line);font:700 13.5px var(--font);color:var(--ink);}
+  .in-tar .in-tar-list li:last-child{border-bottom:none;}
   .in-ksub{font-size:.76rem;color:var(--muted);}
   .in-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:14px;}
   @media(max-width:560px){ .in-grid{grid-template-columns:1fr;} .in-kpis{grid-template-columns:1fr 1fr;gap:10px;} .in-kpi{padding:12px;column-gap:8px;} .in-kico{width:32px;height:32px;} .in-klbl{font-size:10px;} .in-kval{font-size:24px;} }
@@ -1564,6 +1581,7 @@
     <nav class="sbar-nav">
       <button class="sb-item sb-admin" data-v="v-inicio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h5v-6h4v6h5V9.5"/></svg>Inicio</button>
       <button class="sb-item sb-admin" data-v="v-alertas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>Alertas<span class="al-num hide" id="sb-al-num"></span></button>
+      <button class="sb-item" data-v="v-tareas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/></svg>Tareas<span class="al-num hide" id="sb-tar-num"></span></button>
       <div class="sbar-grp">Operaciones</div>
       <button class="sb-item sb-admin on" data-v="v-reporte"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><circle cx="10" cy="13" r="2"/><path d="m20 17-1.5-1.5L14 20"/></svg>Informe (editor)</button>
       <button class="sb-item" data-v="v-hist"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>Reportes</button>
@@ -1948,6 +1966,19 @@
       <div id="in-body"></div>
     </section>
 
+    <section class="view" id="v-tareas">
+      <div class="h-row"><h2>Tareas <span class="cnt" id="tar-cnt"></span></h2></div>
+      <div class="card" id="tar-crear" style="display:none">
+        <div class="fld" style="margin:0 0 8px"><label>Tarea</label><input id="tar-titulo" type="text" placeholder="Ej: Entregar EPP a cuadrilla CPT" style="background:var(--card)"></div>
+        <div class="fld" style="margin:0 0 8px"><label>Detalle (opcional)</label><textarea id="tar-detalle" rows="2" placeholder="Instrucciones…" style="width:100%;font:500 14px var(--font);padding:9px 11px;border:1px solid var(--line);border-radius:11px;background:var(--card);color:var(--ink);resize:vertical"></textarea></div>
+        <div class="grid2"><div class="fld" style="margin:0"><label>Asignar a</label><select id="tar-asig" style="background:var(--card)"></select></div><div class="fld" style="margin:0"><label>Vence (opcional)</label><input id="tar-vence" type="date" style="background:var(--card)"></div></div>
+        <div class="grid2" style="margin-top:8px"><div class="fld" style="margin:0"><label>Prioridad</label><select id="tar-prio" style="background:var(--card)"><option value="alta">Alta</option><option value="normal" selected>Normal</option><option value="baja">Baja</option></select></div><div class="fld" style="margin:0;display:flex;align-items:flex-end"><button id="tar-crear-btn" class="btn" style="width:100%" type="button">Crear tarea</button></div></div>
+      </div>
+      <div class="seg" id="tar-filtro" style="margin:4px 0 8px"><button class="seg-b on" data-f="pendiente" type="button">Pendientes</button><button class="seg-b" data-f="hecha" type="button">Hechas</button><button class="seg-b" data-f="todas" type="button">Todas</button></div>
+      <div class="seg" id="tar-scope" style="margin:0 0 10px;display:none"><button class="seg-b on" data-s="todas" type="button">Todas</button><button class="seg-b" data-s="mias" type="button">Mías</button></div>
+      <div id="tar-list"></div>
+    </section>
+
     <section class="view" id="v-alertas">
       <div class="h-row"><h2>Alertas</h2><span class="cnt" id="al-cnt"></span></div>
       <p class="note" style="margin:0 0 12px">Documentación vencida o por vencer, informes mensuales pendientes y faenas que piden reporte sin entregar.</p>
@@ -2305,6 +2336,7 @@
           <div class="fld"><label>Kilometraje</label><input id="gf-km" type="text" placeholder="Ej: 45.200"></div>
           <div class="fld"><label>Vence el (opcional)</label><input id="gf-venc" type="date"></div>
         </div>
+        <div class="lec-row"><button id="gf-vleer" type="button" class="btn ghost small"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 12h10"/></svg>Leer vencimiento del comprobante</button><span id="gf-vleer-st" class="lec-st"></span></div>
         <div class="fld">
           <label>Comprobante (foto o PDF)</label>
           <div id="gf-doc-list"></div>
@@ -2757,6 +2789,7 @@
     cargarPlantillas();   // para saber qué faenas piden reporte (Matriz PTS)
     if(isAdmin){ cargarTrab(actualizarDatalist); cargarClientes(); cargarCargos(); cargarAlertas(); }
     else if(verMod('alertas')){ cargarAlertas(); }
+    cargarTareas();   // carga el contador de tareas pendientes (badge en el menú)
     ofrecerBorrador();
     // Restaura la última pestaña usada (si sigue siendo visible/permitida para este usuario).
     var _did=false;
@@ -2832,6 +2865,7 @@
     if(v==='v-plan'){ var fr=$('plan-frame'); if(fr && !fr.getAttribute('src')) fr.setAttribute('src','../planificacion/?embed=1'); }
     if(v==='v-planif'){ cargarPlanif(); }
     if(v==='v-alertas'){ pintarAlertas(); cargarAlertas(); }
+    if(v==='v-tareas'){ if(isAdmin && !(TRAB||[]).length) cargarTrab(function(){ cargarTareas(); }); else cargarTareas(); }
     if(v==='v-asist'){ cargarAsistencia(); }
     if(v==='v-fotos'){ cargarFotos(); }
     window.scrollTo(0,0);
@@ -5958,7 +5992,8 @@
   var gfScanner=crearEscaner({ input:'gf-doc-input', zona:'gf-scan-zone',
     folder:function(){ return 'vehiculos/'+slug(nombreVeh())+'/gastos'; },
     nombreBase:function(){ return slug(nombreVeh())+'_comprobante'; },
-    onDoc:function(d){ GF_DOC.push(d); renderGfDocs(); } });
+    onDoc:function(d){ GF_DOC.push(d); renderGfDocs(); if(['permiso_circulacion','revision_tecnica','soap','seguro'].indexOf($('gf-cat').value)>=0) gfVenAuto(); } });
+  var gfVenAuto=venConectar({btn:'gf-vleer', input:'gf-venc', tipo:'veh', fuentes:function(){ return GF_DOC.map(function(x){ return x.url; }); }});
 
   // ====== Pantalla del CHOFER (registrar vuelta / peaje) — visible para no-admin ======
   var CF_VUELTAS=1, CF_SENT='ida_vuelta', CF_DOC=[];
@@ -7844,7 +7879,7 @@
       (docs?'<div class="rd-grp" style="margin-top:0">'+(multi?'Documentos ('+E.n+')':'Versiones · la más reciente es la vigente')+'</div><div class="ed-docs">'+docs+'</div><div class="rd-grp">'+(multi?'Agregar otro':'Subir nueva versión')+'</div>':'')+
       (nuevo?'<div class="fld"><label>Nombre del documento</label><input type="text" id="ed-nom" placeholder="Ej: Póliza de seguro, acta comité paritario…"></div>':'')+
       '<div class="fld"><label>'+(multi?'¿A quién corresponde?':'Nombre o detalle (opcional)')+'</label><input type="text" id="ed-titular" placeholder="'+(multi?'Ej: Innovación y Servicios SpA, Cristopher Ruiz…':'Opcional')+'"></div>'+
-      '<div class="grid2"><div class="fld" style="margin:0"><label>Fecha del documento</label><input type="date" id="ed-fecha" value="'+todayISO()+'"></div><div class="fld" style="margin:0"><label>Vence'+(vence?'':' (si aplica)')+'</label><input type="date" id="ed-venc"></div></div>'+
+      '<div class="grid2"><div class="fld" style="margin:0"><label>Fecha del documento</label><input type="date" id="ed-fecha" value="'+todayISO()+'"></div><div class="fld" style="margin:0"><label>Vence'+(vence?'':' (si aplica)')+'</label><input type="date" id="ed-venc"></div></div>'+venBotonHtml('ed-vleer')+
       '<div class="fld" style="margin-top:10px"><label>Archivo</label><div><label class="catadd" style="display:inline-block">'+svgI(ICO.up,15)+'Subir archivo<input type="file" id="ed-file" accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx" hidden></label> <span id="ed-fn" class="note"></span></div></div>'+
       '<div class="fld"><label>Nota</label><input type="text" id="ed-nota" placeholder="Opcional"></div>'+
       '<button id="ed-save" class="btn" style="width:100%;margin-top:8px">'+svgI(ICO.save)+'Guardar</button>'+
@@ -7855,7 +7890,8 @@
       var inp=$('re-body').querySelector('.ed-tit[data-id="'+d.id+'"]'); if(inp&&!inp.value){ inp.value=t; }
       sb.from('empresa_docs').update({titular:t}).eq('id',d.id).then(function(r){ if(!(r&&r.error)){ d.titular=t; pintarEmp(); } }); }); });
     var file=null;
-    $('ed-file').addEventListener('change',function(){ file=this.files&&this.files[0]; $('ed-fn').textContent=file?('· '+file.name):''; });
+    var edVen=venConectar({btn:'ed-vleer', input:'ed-venc', tipo:tipo, emision:'ed-fecha', fuentes:function(){ return [file||(E.ult&&!multi?E.ult.url:null)]; }});
+    $('ed-file').addEventListener('change',function(){ file=this.files&&this.files[0]; $('ed-fn').textContent=file?('· '+file.name):''; if(file && vence) edVen(); });
     $('ed-save').addEventListener('click',function(){
       var nom=nuevo?($('ed-nom').value.trim()):nombre; if(!nom){ toast('Escribe el nombre del documento.'); return; }
       var tit=$('ed-titular').value.trim(); if(multi && !tit){ toast('Indica a quién corresponde.'); return; }
@@ -8352,6 +8388,73 @@
     salud:'<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M12 8v8M8 12h8"/>'
   };
   function inIco(k){ return '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+IN_ICO[k]+'</svg>'; }
+  // ====== Tareas (asignar a personas; aparecen en Inicio como pendientes) ======
+  var TAREAS=[], TAR_FILTRO='pendiente', TAR_SCOPE='todas';
+  function nomDeEmail(em){ var lp=(em||'').split('@')[0].replace(/[._\-]+/g,' ').replace(/[0-9]+/g,' ').trim().split(/\s+/).filter(Boolean);
+    return lp.length?lp.slice(0,2).map(function(w){ return w.charAt(0).toUpperCase()+w.slice(1).toLowerCase(); }).join(' '):(em||''); }
+  function miEmail(){ return (userEmail||'').trim().toLowerCase(); }
+  function tarAsignables(){ var seen={}, out=[];
+    (TRAB||[]).forEach(function(t){ var em=(t.email||'').trim().toLowerCase(); if(!em||seen[em]) return; seen[em]=1; out.push({email:em, nombre:titleCase(t.nombre||em)}); });
+    (ADMIN_EMAILS||[]).forEach(function(e){ e=(e||'').toLowerCase(); if(seen[e]) return; seen[e]=1; out.push({email:e, nombre:nomDeEmail(e)}); });
+    return out.sort(function(a,b){ return a.nombre.localeCompare(b.nombre); }); }
+  function renderTarAsig(){ var sel=$('tar-asig'); if(!sel) return; var cur=sel.value;
+    sel.innerHTML=tarAsignables().map(function(p){ return '<option value="'+enc(p.email)+'">'+esc(p.nombre)+'</option>'; }).join('');
+    if(cur){ sel.value=cur; } }
+  function tarBadge(){ var n=TAREAS.filter(function(t){ return (t.estado||'pendiente')==='pendiente' && (t.asignado_email||'').toLowerCase()===miEmail(); }).length;
+    var b=$('sb-tar-num'); if(b){ b.textContent=n>99?'99+':String(n); b.classList.toggle('hide', !n); } }
+  function cargarTareas(cb){ if(!sb){ if(cb)cb(); return; }
+    sb.from('tareas').select('*').order('created_at',{ascending:false}).limit(1000).then(function(r){
+      TAREAS=(r&&!r.error&&r.data)||[]; renderTareas(); tarBadge(); if(cb)cb(); }, function(){ if(cb)cb(); }); }
+  function tarFiltroUI(){ document.querySelectorAll('#tar-filtro .seg-b').forEach(function(x){ x.classList.toggle('on', x.dataset.f===TAR_FILTRO); }); }
+  function tarCard(t){ var done=(t.estado||'pendiente')==='hecha', prio=t.prioridad||'normal';
+    var prLbl={alta:'Alta',normal:'Normal',baja:'Baja'}[prio]||prio;
+    var vencTxt='', vencBad=false;
+    if(t.vence){ var dn=diffDiasV(t.vence); vencTxt=(dn<0?'Venció '+fechaCorta(t.vence):(dn===0?'Vence hoy':'Vence '+fechaCorta(t.vence))); vencBad=(dn<0 && !done); }
+    var puedeBorrar=isAdmin || (t.autor||'').toLowerCase()===miEmail();
+    return '<div class="tar-card'+(done?' done':'')+'" data-id="'+t.id+'">'+
+      '<div class="tar-main">'+
+        '<div class="tar-top"><span class="tar-prio p-'+prio+'">'+prLbl+'</span>'+(t.vence?('<span class="tar-venc'+(vencBad?' bad':'')+'">'+esc(vencTxt)+'</span>'):'')+'</div>'+
+        '<div class="tar-tit">'+esc(t.titulo||'')+'</div>'+
+        (t.detalle?('<div class="tar-det">'+esc(t.detalle)+'</div>'):'')+
+        '<div class="tar-meta">Para <b>'+esc(t.asignado_nombre||nomDeEmail(t.asignado_email)||'—')+'</b>'+(t.autor?(' · de '+esc(nomDeEmail(t.autor))):'')+'</div>'+
+      '</div>'+
+      '<div class="tar-acts">'+
+        (done?'<button class="btn ghost small tar-reabrir" data-id="'+t.id+'" style="width:auto" type="button">Reabrir</button>'
+             :'<button class="btn small tar-hecha" data-id="'+t.id+'" style="width:auto" type="button">Marcar hecha</button>')+
+        (puedeBorrar?'<button class="tar-del" data-id="'+t.id+'" title="Eliminar" type="button">✕</button>':'')+
+      '</div></div>'; }
+  function renderTareas(){ var c=$('tar-list'); if(!c) return;
+    if($('tar-crear')) $('tar-crear').style.display=isAdmin?'':'none';
+    if($('tar-scope')) $('tar-scope').style.display=isAdmin?'':'none';
+    renderTarAsig(); tarFiltroUI();
+    var scope=isAdmin?TAR_SCOPE:'mias';
+    var list=TAREAS.filter(function(t){
+      if(TAR_FILTRO!=='todas' && (t.estado||'pendiente')!==TAR_FILTRO) return false;
+      if(scope==='mias' && (t.asignado_email||'').toLowerCase()!==miEmail()) return false;
+      return true; });
+    if($('tar-cnt')) $('tar-cnt').textContent=list.length+(list.length===1?' tarea':' tareas');
+    c.innerHTML=list.length?list.map(tarCard).join(''):'<div class="empty" style="padding:26px"><div class="big">✓</div>Sin tareas'+(TAR_FILTRO==='pendiente'?' pendientes':'')+'.</div>';
+    c.querySelectorAll('.tar-hecha').forEach(function(b){ b.addEventListener('click',function(){ tarEstado(b.dataset.id,'hecha'); }); });
+    c.querySelectorAll('.tar-reabrir').forEach(function(b){ b.addEventListener('click',function(){ tarEstado(b.dataset.id,'pendiente'); }); });
+    c.querySelectorAll('.tar-del').forEach(function(b){ b.addEventListener('click',function(){ if(confirm('¿Eliminar esta tarea?')) tarDel(b.dataset.id); }); }); }
+  function tarEstado(id, estado){ if(!sb) return; var upd={estado:estado, done_at:(estado==='hecha'?new Date().toISOString():null)};
+    sb.from('tareas').update(upd).eq('id',id).then(function(r){ if(r&&r.error){ toast('No se pudo actualizar.'); return; }
+      var t=TAREAS.filter(function(x){ return String(x.id)===String(id); })[0]; if(t){ t.estado=estado; t.done_at=upd.done_at; }
+      renderTareas(); tarBadge(); }); }
+  function tarDel(id){ if(!sb) return; sb.from('tareas').delete().eq('id',id).then(function(r){ if(r&&r.error){ toast('No se pudo eliminar.'); return; }
+    TAREAS=TAREAS.filter(function(x){ return String(x.id)!==String(id); }); renderTareas(); tarBadge(); }); }
+  function crearTarea(){ if(!sb||!isAdmin) return; var tit=($('tar-titulo').value||'').trim(); if(!tit){ toast('Escribe la tarea.'); return; }
+    var sel=$('tar-asig'), em=(sel&&sel.value)||'', nm=(sel&&sel.options[sel.selectedIndex])?sel.options[sel.selectedIndex].textContent:'';
+    var row={ titulo:tit, detalle:($('tar-detalle').value||'').trim(), asignado_email:(em||'').toLowerCase()||null, asignado_nombre:nm||null,
+      prioridad:($('tar-prio').value||'normal'), estado:'pendiente', vence:($('tar-vence').value||null), autor:userEmail };
+    sb.from('tareas').insert(row).select().single().then(function(r){ if(r.error){ toast('No se pudo crear: '+r.error.message); return; }
+      TAREAS.unshift(r.data); $('tar-titulo').value=''; $('tar-detalle').value=''; $('tar-vence').value='';
+      TAR_FILTRO='pendiente'; renderTareas(); tarBadge(); toast('✓ Tarea creada'); }); }
+  if($('tar-crear-btn')) $('tar-crear-btn').addEventListener('click',crearTarea);
+  if($('tar-titulo')) $('tar-titulo').addEventListener('keydown',function(e){ if(e.key==='Enter'){ e.preventDefault(); crearTarea(); } });
+  document.querySelectorAll('#tar-filtro .seg-b').forEach(function(b){ b.addEventListener('click',function(){ TAR_FILTRO=b.dataset.f; renderTareas(); }); });
+  document.querySelectorAll('#tar-scope .seg-b').forEach(function(b){ b.addEventListener('click',function(){ TAR_SCOPE=b.dataset.s; document.querySelectorAll('#tar-scope .seg-b').forEach(function(x){ x.classList.toggle('on',x===b); }); renderTareas(); }); });
+
   function cargarInicio(){
     var c=$('in-body'); if(!c) return;
     var hoy=todayISO(); $('in-fecha').textContent=fLarga(hoy);
@@ -8367,8 +8470,9 @@
       sb.from('empresa_docs').select('tipo,nombre,titular,fecha,created_at,vencimiento').limit(2000),
       sb.from('vehiculo_gastos').select('vehiculo_id,categoria,vencimiento').not('vencimiento','is',null).limit(4000),
       sb.from('vehiculos').select('id,nombre,marca,modelo,patente,estado').limit(300),
-      sb.from('salidas_medicas').select('id,fecha').gte('fecha',mes).limit(500)
-    ]).then(function(rs){ function D(i){ return (rs[i]&&!rs[i].error&&rs[i].data)||[]; } pintarInicio({ trabs:D(0), docs:D(1), ev:D(2), plan:D(3), cli:D(4), emp:D(5), vg:D(6), veh:D(7), sal:D(8) }); },
+      sb.from('salidas_medicas').select('id,fecha').gte('fecha',mes).limit(500),
+      sb.from('tareas').select('*').eq('estado','pendiente').limit(500)
+    ]).then(function(rs){ function D(i){ return (rs[i]&&!rs[i].error&&rs[i].data)||[]; } pintarInicio({ trabs:D(0), docs:D(1), ev:D(2), plan:D(3), cli:D(4), emp:D(5), vg:D(6), veh:D(7), sal:D(8), tar:D(9) }); },
       function(){ c.innerHTML='<div class="empty">No se pudo cargar el resumen.</div>'; });
   }
   function pintarInicio(X){
@@ -8410,7 +8514,17 @@
 
     // ---------- Render ----------
     function kpi(ico,lbl,val,sub,ir,tono){ return '<button type="button" class="in-kpi'+(tono?' '+tono:'')+'" data-ir="'+ir+'"><span class="in-kico">'+inIco(ico)+'</span><span class="in-klbl">'+lbl+'</span><span class="in-kval">'+val+'</span><span class="in-ksub">'+sub+'</span></button>'; }
-    var h='<div class="in-kpis">'+
+    // Tareas pendientes (del usuario; el admin ve además el total del equipo)
+    var misTar=(X.tar||[]).filter(function(t){ return (t.asignado_email||'').toLowerCase()===miEmail(); });
+    var teamTar=(X.tar||[]).length, tarBlock='';
+    if(misTar.length || (isAdmin && teamTar)){
+      var tli=misTar.slice(0,6).map(function(t){ var v=t.vence?(diffDiasV(t.vence)<0?' · venció '+fechaCorta(t.vence):' · vence '+fechaCorta(t.vence)):''; return '<li>'+esc(t.titulo||'')+'<span class="in-mut">'+v+'</span></li>'; }).join('');
+      tarBlock='<div class="in-card in-tar"><div class="in-ct"><b>Tareas pendientes</b><button type="button" class="in-lnk" id="in-ver-tareas">Ver tareas</button></div>'+
+        (misTar.length?('<ul class="in-tar-list">'+tli+'</ul>'):'<p class="in-mut" style="margin:0">No tienes tareas asignadas.</p>')+
+        ((isAdmin&&teamTar)?('<p class="in-mut" style="margin:8px 0 0">'+teamTar+' pendiente'+(teamTar>1?'s':'')+' en total (equipo).</p>'):'')+
+      '</div>';
+    }
+    var h=tarBlock+'<div class="in-kpis">'+
       kpi('trab','Trabajadores activos',act.length,(espera?espera+' en espera':'Ninguno en espera'),'trab')+
       kpi('doc','Documentación al día',pctProm+'%','Promedio de '+act.length+' activos','doc',pctProm>=80?'bien':(pctProm>=50?'medio':'mal'))+
       kpi('faena','Faenas hoy',hoyEv.length,personasHoy+' personas asignadas','planif')+
@@ -8462,6 +8576,7 @@
       else if(k==='veh'){ abrirVista('v-veh'); } else if(k==='alertas'){ abrirVista('v-alertas'); } }
     c.querySelectorAll('[data-ir]').forEach(function(b){ b.addEventListener('click',function(){ ir(b.dataset.ir); }); });
     c.querySelectorAll('.in-rk[data-tid]').forEach(function(b){ b.addEventListener('click',function(){ ir('doc'); }); });
+    var _vt=$('in-ver-tareas'); if(_vt) _vt.addEventListener('click',function(){ abrirVista('v-tareas'); });
   }
 
   // ====== Alertas (solo admin): documentación, vehículos, informe mensual, faenas que piden reporte ======
@@ -9906,6 +10021,67 @@
     var base=r.fuente==='mrz'?'Leído del reverso (zona MRZ con dígito de control): fecha verificada.':(r.ok?'Leído del frente: confirma que coincida con la imagen.':'Lectura dudosa del frente: revisa con la imagen.');
     var rt=r.rutOk===true?' El RUN coincide con la ficha.':(r.rutOk===false?' Atención: el RUN leído no coincide con la ficha.':'');
     return {txt:base+rt, cls:(r.fuente==='mrz'&&r.rutOk!==false)?'ok':'warn'}; }
+  // ====== Lector de vencimientos para cualquier documento (PDF con texto, PDF escaneado o foto) ======
+  // 1) PDF con capa de texto: se lee directo (exacto). 2) Escaneo o foto: OCR con el lector del carnet.
+  // Se busca la fecha junto a "vence", "válido hasta", "vigencia hasta"…; si solo hay fecha de emisión y el tipo tiene una
+  // vigencia conocida, se sugiere emisión + días. La fecha se propone y la persona la confirma al guardar.
+  var VEN_MES={enero:1,febrero:2,marzo:3,abril:4,mayo:5,junio:6,julio:7,agosto:8,septiembre:9,setiembre:9,octubre:10,noviembre:11,diciembre:12,ene:1,feb:2,mar:3,abr:4,may:5,jun:6,jul:7,ago:8,sep:9,sept:9,set:9,oct:10,nov:11,dic:12};
+  var VEN_REGLA={ vigencia:{dias:30, txt:'El certificado de vigencia no trae vencimiento: se sugieren 30 días desde su emisión (ajústalo si el mandante pide otro plazo).'} };
+  function venIso(y,mo,d){ y=+y; if(y<100) y+=2000; mo=+mo; d=+d; if(!(y>=1990&&y<=2099&&mo>=1&&mo<=12&&d>=1&&d<=31)) return null; return y+'-'+String(mo).padStart(2,'0')+'-'+String(d).padStart(2,'0'); }
+  function venFechas(t){ var s=String(t||'').toLowerCase().replace(/[º°]/g,''), out=[], m;
+    var R=[[/\b(\d{1,2})\s*[\/\-.]\s*(\d{1,2})\s*[\/\-.]\s*(\d{4}|\d{2})\b/g,function(m){ return venIso(m[3],m[2],m[1]); }],
+      [/\b(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})\b/g,function(m){ return venIso(m[1],m[2],m[3]); }],
+      [/\b(\d{1,2})\s*(?:de\s+)?([a-záéíóú]{3,10})\.?\s*(?:del?\s+)?(\d{4})\b/g,function(m){ var mo=VEN_MES[m[2].normalize('NFD').replace(/[̀-ͯ]/g,'')]; return mo?venIso(m[3],mo,m[1]):null; }],
+      [/\b(\d{1,2})\s+del?\s+(\d{1,2})\s+del?\s+(\d{4})\b/g,function(m){ return venIso(m[3],m[2],m[1]); }]];
+    R.forEach(function(r){ r[0].lastIndex=0; while((m=r[0].exec(s))){ var f=r[1](m); if(f) out.push({f:f,i:m.index}); } });
+    return out.sort(function(a,b){ return a.i-b.i; }); }
+  function venDesdeTexto(t, tipo){
+    var F=venFechas(t); if(!F.length) return null;
+    var s=String(t).toLowerCase(), m, cand=[], emi=null;
+    var KEY=/(fecha\s+de\s+(vencimiento|expiraci[oó]n|caducidad)|vencimiento|vence|v[aá]lid[oa]\s+hasta|vigen(cia|te)\s+hasta|hasta\s+el|\bhasta\b|expira|caduca)/gi;
+    while((m=KEY.exec(s))){ var fin=m.index+m[0].length; var d=F.filter(function(x){ return x.i>=fin-1 && x.i-fin<=90; })[0]; if(d) cand.push(d.f); }
+    var EMI=/(fecha\s+de\s+emisi[oó]n(\s+del\s+certificado)?|emitid[oa]|emisi[oó]n|fecha\s+del\s+certificado|en\s+santiago|santiago,|puerto\s+montt,)/gi;
+    while((m=EMI.exec(s))){ var f2=m.index+m[0].length; var e=F.filter(function(x){ return x.i>=f2-1 && x.i-f2<=60; })[0]; if(e){ emi=e.f; break; } }
+    if(cand.length){ cand.sort(); return {venc:cand[cand.length-1], emis:emi, modo:'explicita'}; }
+    var R=VEN_REGLA[tipo];
+    if(R){ var base=emi||F.map(function(x){ return x.f; }).sort().pop(), d2=new Date(base+'T12:00:00'); d2.setDate(d2.getDate()+R.dias);
+      return {venc:venIso(d2.getFullYear(),d2.getMonth()+1,d2.getDate()), emis:base, modo:'regla', txt:R.txt}; }
+    var hoy=todayISO(), fut=F.map(function(x){ return x.f; }).filter(function(f,i,a){ return f>hoy && a.indexOf(f)===i; });
+    if(fut.length===1) return {venc:fut[0], emis:emi, modo:'futura'};
+    return emi?{venc:null, emis:emi, modo:'emision'}:null; }
+  function venOcr(c){ return cargarLector().then(function(){ var giros=[0,90,270], i=0, ult='';
+    function sig(){ if(i>=giros.length) return {t:ult, ocr:true}; var r=lecRot(c,giros[i++]);
+      return LEC.w.recognize(lecEscala(r,0,0,r.width,r.height,2200,'grayscale(1) contrast(1.35)')).then(function(x){ var t=x.data.text||''; ult=ult||t; if(venFechas(t).length) return {t:t, ocr:true}; return sig(); }); }
+    return sig(); }); }
+  function venTexto(src, prog){
+    var blob=(typeof Blob!=='undefined' && src instanceof Blob), pdf=blob?/pdf/i.test(src.type||''):/\.pdf(\?|$)/i.test(String(src));
+    if(pdf){ return (blob?cargarPdfJs().then(function(L){ return src.arrayBuffer().then(function(ab){ return L.getDocument({data:ab}).promise; }); }):abrirPdfJs(src)).then(function(p){
+      var n=Math.min(p.numPages,3), k=0, txt='';
+      function pag(){ if(k>=n) return Promise.resolve(); k++; return p.getPage(k).then(function(pg){ return pg.getTextContent(); }).then(function(tc){ txt+=' '+tc.items.map(function(x){ return x.str; }).join(' '); return pag(); }); }
+      return pag().then(function(){ if(txt.replace(/\s/g,'').length>40) return {t:txt, ocr:false};
+        if(prog) prog('PDF escaneado: leyendo la imagen…'); return pagCanvas(p,1,2000).then(venOcr); }); }); }
+    if(prog) prog('Leyendo la imagen…');
+    return lecCanvas(src).then(venOcr); }
+  // Lee el vencimiento de un documento (URL o archivo). tipo: clave del documento (para reglas como la del certificado de vigencia).
+  function leerVencDoc(src, tipo, prog){ if(prog) prog('Leyendo el documento…'); return venTexto(src, prog).then(function(r){ var x=venDesdeTexto(r.t, tipo); if(x) x.ocr=r.ocr; return x; }); }
+  function venResumen(x){
+    if(!x) return {txt:'No se encontraron fechas en el documento. Escríbela a mano.', cls:'bad'};
+    if(!x.venc) return {txt:'El documento no indica vencimiento'+(x.emis?' (emitido el '+fFaena(x.emis)+')':'')+'. Escríbelo si corresponde.', cls:'warn'};
+    if(x.modo==='regla') return {txt:x.txt+(x.emis?' Emitido el '+fFaena(x.emis)+'.':''), cls:'warn'};
+    if(x.modo==='futura') return {txt:'El documento no dice "vence"; se propone su única fecha futura. Revísala.', cls:'warn'};
+    return x.ocr?{txt:'Leída de la imagen: confírmala con el documento.', cls:'warn'}:{txt:'Fecha de vencimiento leída del documento.', cls:'ok'}; }
+  // Botón + estado para cualquier formulario con fecha de vencimiento.
+  function venBotonHtml(id){ return '<div class="lec-row"><button id="'+id+'" type="button" class="btn ghost small">'+svgI(ICO_SCAN,14)+'Leer vencimiento del documento</button><span id="'+id+'-st" class="lec-st"></span></div>'; }
+  // o: {btn, input (fecha de vencimiento), fuentes() → [URL o archivo], tipo, emision (input opcional para la fecha del documento)}
+  function venConectar(o){ var b=$(o.btn), st=$(o.btn+'-st'); if(!b) return function(){};
+    function leer(){ var F=(o.fuentes()||[]).filter(Boolean); if(!F.length){ st.className='lec-st bad'; st.textContent='Primero sube el documento.'; return; }
+      if(b.disabled) return; b.disabled=true; st.className='lec-st'; st.textContent='Leyendo el documento…';
+      leerVencDoc(F[F.length-1], o.tipo, function(m){ st.textContent=m; }).then(function(x){ b.disabled=false; var R=venResumen(x); st.textContent=R.txt; st.className='lec-st '+R.cls;
+          if(x&&x.venc) $(o.input).value=x.venc; if(x&&x.emis&&o.emision&&$(o.emision)) $(o.emision).value=x.emis; },
+        function(){ b.disabled=false; st.className='lec-st bad'; st.textContent='No se pudo leer el documento. Revisa la conexión o escribe la fecha.'; }); }
+    b.addEventListener('click',leer);
+    return function(){ if(!$(o.input).value) leer(); };   // para leer solo al subir un archivo, si la fecha está vacía
+  }
   // Lectura en lote: cédulas entregadas sin vencimiento. Se revisa cada fecha con su imagen y se guardan solo las marcadas.
   var ICO_SCAN='<path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 12h10"/>';
   function abrirLecturaLote(){
@@ -10004,6 +10180,7 @@
         '<div class="fld"><label>¿Dónde se gestiona?</label><select id="re-ambito"><option value="interno"'+((d.ambito||'interno')==='interno'?' selected':'')+'>Nuestro (lo gestionamos acá)</option><option value="cliente"'+(d.ambito==='cliente'?' selected':'')+'>Plataforma del cliente (Zerty / acreditación)</option></select></div>'+
         '<div class="grid2"><div class="fld" style="margin:0"><label>Fecha</label><input type="date" id="re-fecha" value="'+(d.fecha||'')+'"></div>'+
           '<div class="fld" style="margin:0"><label>Vence (si aplica)</label><input type="date" id="re-venc" value="'+(d.vencimiento||'')+'"></div></div>'+
+        (!esCed&&tp.vence?venBotonHtml('re-vleer'):'')+
         (esCed?'<div class="lec-row"><button id="re-leer" type="button" class="btn ghost small">'+svgI(ICO_SCAN,14)+'Leer vencimiento del carnet</button><span id="re-lee" class="lec-st"></span></div>':'')+
         archivoHtml+
         '<div class="fld"><label>Nota</label><input type="text" id="re-nota" value="'+enc(d.nota||'')+'" placeholder="Opcional"></div>'+
@@ -10029,6 +10206,8 @@
       leerVencCedula([pend.file2||revUrl, pend.file||frUrl], t.rut, function(m){ st.textContent=m; }).then(function(r){ b.disabled=false;
         var R=lecResumen(r); st.textContent=R.txt; st.className='lec-st '+R.cls; if(r&&r.venc) $('re-venc').value=r.venc; },
         function(){ b.disabled=false; st.className='lec-st bad'; st.textContent='No se pudo cargar el lector. Revisa la conexión.'; }); }
+    if($('re-vleer')){ var venAuto=venConectar({btn:'re-vleer', input:'re-venc', tipo:ts, emision:'re-fecha', fuentes:function(){ return [pend.file||d.url]; }});
+      if($('re-file')) $('re-file').addEventListener('change',function(){ if(this.files&&this.files[0]) venAuto(); }); }
     if($('re-leer')){ $('re-leer').addEventListener('click',leerCarnet);
       ['re-file','re-file2'].forEach(function(id){ if($(id)) $(id).addEventListener('change',function(){ if(this.files&&this.files[0]&&!$('re-venc').value) leerCarnet(); }); }); }
     $('re-save').addEventListener('click',function(){
