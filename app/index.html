@@ -159,6 +159,34 @@
   .catcount{font-size:.75rem;color:var(--muted);font-weight:600;}
   .catadd{display:inline-flex;align-items:center;gap:6px;margin-top:10px;border:1px dashed var(--line);background:var(--alt);border-radius:11px;padding:9px 14px;font:700 12.5px var(--font);color:var(--ink);cursor:pointer;}
   .catadd:active{border-color:var(--orange);}
+  /* Checklist de preparación en grilla (tipo planilla) */
+  .pg-sec{margin-top:14px}
+  .pg-head{display:flex;align-items:center;gap:7px;margin:0 0 6px;font:800 12.5px var(--font);color:var(--navy)}
+  :root[data-theme="dark"] .pg-head{color:var(--ink)}
+  .pg-head svg{flex-shrink:0;color:var(--orange-2)}
+  .pg-head .pg-cnt{margin-left:auto;font:700 11.5px var(--font);color:var(--muted)}
+  .pg-head .pg-cnt.full{color:var(--ok)}
+  .pg-tbl{width:100%;border-collapse:collapse;table-layout:fixed;border:1px solid var(--line);border-radius:10px;overflow:hidden;font:500 13.5px var(--font);color:var(--ink)}
+  .pg-tbl th{background:var(--alt);font:700 11px var(--font);text-transform:uppercase;letter-spacing:.03em;color:var(--muted);text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
+  .pg-tbl td{border-bottom:1px solid var(--line);padding:0;height:36px;vertical-align:middle}
+  .pg-tbl td+td,.pg-tbl th+th{border-left:1px solid var(--line)}
+  .pg-tbl tr:last-child td{border-bottom:none}
+  .pg-tbl td.c{text-align:center}
+  .pg-tbl td.t{padding:7px 8px;line-height:1.3;overflow-wrap:anywhere}
+  .pg-tbl input[type=text]{width:100%;height:36px;border:none;background:transparent;padding:0 8px;font:inherit;color:inherit;border-radius:0}
+  .pg-tbl input[type=text]:focus{outline:2px solid var(--orange);outline-offset:-2px;background:var(--card)}
+  .pg-tbl input[type=checkbox]{width:18px;height:18px;margin:0;vertical-align:middle;accent-color:var(--orange);cursor:pointer}
+  .pg-tbl tr.ok td{background:color-mix(in srgb,var(--ok) 8%,transparent)}
+  .pg-tbl tr.ok .pg-name{text-decoration:line-through;color:var(--muted)}
+  .pg-tbl .pg-cant{text-align:center;font-weight:700;color:var(--orange-2)}
+  .pg-tbl .pg-rm{border:none;background:none;color:var(--muted);cursor:pointer;width:100%;height:36px;display:flex;align-items:center;justify-content:center}
+  .pg-tbl .pg-rm:hover{color:var(--bad)}
+  .pg-tbl .pg-falta{color:var(--orange-2);font-weight:700}
+  .pg-tbl input.pg-talla-vacia{background:color-mix(in srgb,var(--orange) 9%,transparent)}
+  .pg-add{display:inline-flex;align-items:center;gap:5px;margin-top:6px;border:1px dashed var(--line);background:var(--alt);border-radius:9px;padding:6px 11px;font:700 12px var(--font);color:var(--ink);cursor:pointer}
+  .pg-tot{display:flex;align-items:center;gap:10px;margin-top:14px;font:600 12.5px var(--font);color:var(--body)}
+  .pg-bar{flex:1;height:6px;border-radius:4px;background:var(--line);overflow:hidden}
+  .pg-bar i{display:block;height:100%;background:var(--ok)}
   .thumbs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px;}
   .thumbs:empty{margin-top:0;}
   .cattag.sin{background:#6b7280;}
@@ -3852,44 +3880,123 @@
   }
 
   // EPP personal: por cada trabajador de la cuadrilla, sus tallas de la ficha
-  function eppPersonal(){
-    syncAsig(); var res=[];
+  // Siempre una fila de overol y una de botas por persona, aunque falte la talla en la ficha
+  // (la talla escrita a mano en el checklist se conserva mientras la ficha siga vacía).
+  var PRENDAS=[['overol','Overol','talla_ropa'],['botas','Botas','talla_botas']];
+  function itemPersonal(prenda,talla,nom){ return (prenda==='botas'?'Botas'+(talla?' T'+talla:''):'Overol'+(talla?' '+talla:''))+' — '+nom; }
+  // Ítems personales guardados antes de tener persona/prenda/talla: "Botas T41 — Nombre", "Overol L — Nombre"
+  function normPersonal(it){
+    if(!it.personal || it.persona) return it;
+    var m=/^(Botas|Overol)(?:\s+T?(\S+))?\s+—\s+(.+)$/.exec(it.item||'');
+    if(m){ it.prenda=m[1].toLowerCase(); it.talla=m[2]||''; it.persona=m[3]; }
+    return it;
+  }
+  function eppPersonal(prev){
+    syncAsig(); var res=[], ant={};
+    (prev||[]).forEach(function(it){ it=normPersonal(it); if(it.personal&&it.persona) ant[it.persona.toLowerCase()+'|'+it.prenda]=it; });
     ASIG.forEach(function(a){ var nom=(a.nombre||'').trim(); if(!nom) return;
-      var t=TRAB.filter(function(x){ return (x.nombre||'').trim().toLowerCase()===nom.toLowerCase(); })[0];
-      if(t && t.talla_botas) res.push({tipo:'epp', item:'Botas T'+t.talla_botas+' — '+nom, cantidad:'1', personal:true, cargado:false});
-      if(t && t.talla_ropa)  res.push({tipo:'epp', item:'Overol '+t.talla_ropa+' — '+nom, cantidad:'1', personal:true, cargado:false});
+      var t=TRAB.filter(function(x){ return (x.nombre||'').trim().toLowerCase()===nom.toLowerCase(); })[0]||{};
+      PRENDAS.forEach(function(p){
+        var a0=ant[nom.toLowerCase()+'|'+p[0]]||{}, deFicha=String(t[p[2]]||'').trim(), talla=deFicha||a0.talla||'';
+        res.push({tipo:'epp', item:itemPersonal(p[0],talla,nom), cantidad:'1', personal:true, persona:nom, prenda:p[0], talla:talla, enFicha:!!deFicha, cargado:!!a0.cargado});
+      });
     });
     return res;
   }
-  // PREP = items de la plantilla (faena) + EPP personal, conservando lo ya marcado
+  // PREP = ítems de la faena + EPP personal. Si ya hay ítems (guardados o editados en la grilla) se
+  // conservan tal cual; solo se toman de la matriz cuando se elige la faena (preserv vacío).
   function armarPrep(preserv){
-    var marcado={}; (preserv||PREP).forEach(function(it){ marcado[it.tipo+'|'+it.item]=!!it.cargado; });
-    var out=[];
-    var pl=plantillasDeCliente(clienteDeJob(C_JOB)).filter(function(p){ return p.faena===C_FAENA; })[0];
-    if(pl){ (pl.items||[]).forEach(function(it){ var tp=it.tipo||'herramienta'; out.push({tipo:tp, item:it.item, cantidad:(it.cantidad||''), cargado:!!marcado[tp+'|'+it.item]}); }); }
-    eppPersonal().forEach(function(it){ it.cargado=!!marcado[it.tipo+'|'+it.item]; out.push(it); });
-    PREP=out; renderPrep();
+    preserv=preserv||PREP;
+    var base=preserv.filter(function(it){ return !it.personal; }), out;
+    if(base.length) out=base;
+    else { out=[];
+      var pl=plantillasDeCliente(clienteDeJob(C_JOB)).filter(function(p){ return p.faena===C_FAENA; })[0];
+      if(pl){ (pl.items||[]).forEach(function(it){ out.push({tipo:it.tipo||'herramienta', item:it.item, cantidad:(it.cantidad||''), cargado:false}); }); }
+    }
+    // EPP sin cantidad = uno por persona de la cuadrilla (se ajusta solo si cambia la cuadrilla, hasta que se edite a mano)
+    var nPers=ASIG.filter(function(a){ return (a.nombre||'').trim(); }).length;
+    out.forEach(function(it){ if(it.tipo!=='epp') return; if(!(it.cantidad||'').trim()) it.cantAuto=true; if(it.cantAuto) it.cantidad=nPers?String(nPers):''; });
+    PREP=out.concat(eppPersonal(preserv)); renderPrep();
   }
   function refrescarEppPersonal(){ if(C_FAENA||PREP.length) armarPrep(PREP); }
 
-  var TIPO_LBL={epp:'🦺 EPP',herramienta:'🧰 Herramientas',maquinaria:'⚙️ Maquinaria'};
-  function renderPrep(){
+  // Checklist en grilla tipo planilla, por sección. Con permiso de asignar se editan ítem, cantidad
+  // y tallas (Enter baja a la fila siguiente); sin permiso solo se marca lo cargado.
+  function pgIco(p){ return '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+p+'</svg>'; }
+  var PG_SEC=[
+    ['epp','EPP','<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>'],
+    ['ropa','Ropa de trabajo por persona','<path d="M20.4 6.6 16 4a4 4 0 0 1-8 0L3.6 6.6a1 1 0 0 0-.5 1.2l1.2 3.6a1 1 0 0 0 1.2.6L7 11.5V20a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-8.5l1.5.5a1 1 0 0 0 1.2-.6l1.2-3.6a1 1 0 0 0-.5-1.2z"/>'],
+    ['herramienta','Herramientas','<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.8-3.8a6 6 0 0 1-7.9 7.9l-6.9 6.9a2.1 2.1 0 0 1-3-3l6.9-6.9a6 6 0 0 1 7.9-7.9z"/>'],
+    ['maquinaria','Maquinaria','<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>']
+  ];
+  var PG_X='<path d="M18 6 6 18M6 6l12 12"/>', PG_MAS='<path d="M12 5v14M5 12h14"/>';
+  function renderPrep(foco){
     var cont=$('prep-list'); if(!cont) return;
     if(!PREP.length){ cont.innerHTML='<div class="note">Elige una faena para cargar su checklist.</div>'; return; }
-    var html='';
-    ['epp','herramienta','maquinaria'].forEach(function(tp){
-      var items=PREP.filter(function(it){ return (it.tipo||'herramienta')===tp; }); if(!items.length) return;
-      html+='<div style="margin:10px 0 2px;font:800 12px var(--font);color:var(--navy)">'+TIPO_LBL[tp]+'</div>';
+    var ed=puede('preparacion.asignar'), html='';
+    function cnt(arr){ var h=arr.filter(function(it){ return it.cargado; }).length; return '<span class="pg-cnt'+(arr.length&&h===arr.length?' full':'')+'">'+h+'/'+arr.length+' listos</span>'; }
+    PG_SEC.forEach(function(s){
+      var tp=s[0];
+      if(tp==='ropa'){
+        var pers=PREP.filter(function(it){ return it.personal; }); if(!pers.length) return;
+        var nombres=[]; pers.forEach(function(it){ if(nombres.indexOf(it.persona)<0) nombres.push(it.persona); });
+        html+='<div class="pg-sec" data-sec="ropa"><div class="pg-head">'+pgIco(s[2])+s[1]+cnt(pers)+'</div>'+
+          '<table class="pg-tbl"><colgroup><col><col style="width:30px"><col style="width:58px"><col style="width:30px"><col style="width:58px"></colgroup>'+
+          '<thead><tr><th>Persona</th><th colspan="2">Overol</th><th colspan="2">Botas</th></tr></thead><tbody>';
+        nombres.forEach(function(nom){
+          var celdas='';
+          PRENDAS.forEach(function(p){
+            var it=PREP.filter(function(x){ return x.personal&&x.persona===nom&&x.prenda===p[0]; })[0]; if(!it){ celdas+='<td></td><td></td>'; return; }
+            var i=PREP.indexOf(it), tal=(ed&&!it.enFicha)
+              ? '<input type="text" class="pg-talla'+(it.talla?'':' pg-talla-vacia')+'" data-i="'+i+'" value="'+enc(it.talla||'')+'" placeholder="talla" title="Falta en la ficha del trabajador">'
+              : (it.talla?esc(it.talla):'<span class="pg-falta" title="Falta en la ficha del trabajador">?</span>');
+            celdas+='<td class="c"><input type="checkbox" class="pg-chk" data-i="'+i+'"'+(it.cargado?' checked':'')+'></td><td class="'+(ed&&!it.enFicha?'':'t c')+'">'+tal+'</td>';
+          });
+          html+='<tr><td class="t"><span class="pg-name">'+esc(nom)+'</span></td>'+celdas+'</tr>';
+        });
+        html+='</tbody></table>';
+        if(pers.some(function(it){ return !it.enFicha; })) html+='<p class="note" style="margin:6px 0 0">Las tallas marcadas en naranjo faltan en la ficha del trabajador (RRHH).'+(ed?' Puedes escribirlas aquí para esta salida.':'')+'</p>';
+        html+='</div>';
+        return;
+      }
+      var items=PREP.filter(function(it){ return !it.personal&&(it.tipo||'herramienta')===tp; });
+      if(!items.length&&!ed) return;
+      html+='<div class="pg-sec" data-sec="'+tp+'"><div class="pg-head">'+pgIco(s[2])+s[1]+cnt(items)+'</div>'+
+        '<table class="pg-tbl"><colgroup><col style="width:34px"><col><col style="width:62px">'+(ed?'<col style="width:32px">':'')+'</colgroup>'+
+        '<thead><tr><th></th><th>Ítem</th><th style="text-align:center">Cant.</th>'+(ed?'<th></th>':'')+'</tr></thead><tbody>';
       items.forEach(function(it){ var i=PREP.indexOf(it);
-        html+='<label style="display:flex;align-items:center;gap:10px;padding:8px 4px;border-bottom:1px solid var(--line);cursor:pointer">'+
-          '<input type="checkbox" class="prep-chk" data-i="'+i+'"'+(it.cargado?' checked':'')+' style="width:20px;height:20px;flex-shrink:0">'+
-          '<span style="flex:1'+(it.cargado?';text-decoration:line-through;color:#9aa0b4':'')+'">'+esc(it.item)+(it.cantidad?' <b style="color:var(--orange-2)">×'+esc(it.cantidad)+'</b>':'')+'</span></label>';
+        html+='<tr class="'+(it.cargado?'ok':'')+'" data-i="'+i+'"><td class="c"><input type="checkbox" class="pg-chk" data-i="'+i+'"'+(it.cargado?' checked':'')+'></td>'+
+          (ed ? '<td><input type="text" class="pg-in pg-name" data-i="'+i+'" data-f="item" value="'+enc(it.item||'')+'" placeholder="Ítem"></td>'+
+                '<td><input type="text" class="pg-in pg-cant" data-i="'+i+'" data-f="cantidad" value="'+enc(it.cantidad||'')+'" inputmode="numeric"></td>'+
+                '<td><button type="button" class="pg-rm" data-i="'+i+'" title="Quitar ítem">'+pgIco(PG_X)+'</button></td>'
+              : '<td class="t"><span class="pg-name">'+esc(it.item)+'</span></td><td class="c pg-cant">'+esc(it.cantidad||'')+'</td>')+'</tr>';
       });
+      if(!items.length) html+='<tr><td colspan="4" class="t" style="color:var(--muted)">Sin ítems</td></tr>';
+      html+='</tbody></table>'+(ed?'<button type="button" class="pg-add" data-tp="'+tp+'">'+pgIco(PG_MAS)+'Agregar a '+esc(s[1])+'</button>':'')+'</div>';
     });
     var hechos=PREP.filter(function(it){return it.cargado;}).length;
-    html+='<div class="note" style="margin-top:8px">Preparado: <b>'+hechos+'/'+PREP.length+'</b></div>';
+    html+='<div class="pg-tot"><span>Preparado <b>'+hechos+'/'+PREP.length+'</b></span><span class="pg-bar"><i style="width:'+Math.round(hechos*100/PREP.length)+'%"></i></span></div>';
+    if(ed&&C_FAENA) html+='<button type="button" class="pg-add" id="pg-recargar" style="margin-top:10px">Volver a cargar ítems desde la matriz</button>';
     cont.innerHTML=html;
-    cont.querySelectorAll('.prep-chk').forEach(function(c){ c.addEventListener('change',function(){ var i=+c.dataset.i; if(PREP[i]){ PREP[i].cargado=c.checked; renderPrep(); } }); });
+    cont.querySelectorAll('.pg-chk').forEach(function(c){ c.addEventListener('change',function(){ var it=PREP[+c.dataset.i]; if(!it) return; it.cargado=c.checked;
+      var tr=c.closest('tr'); if(tr&&!it.personal) tr.classList.toggle('ok',c.checked);
+      var sec=c.closest('.pg-sec'), tp=sec&&sec.dataset.sec, arr=PREP.filter(function(x){ return tp==='ropa'?x.personal:(!x.personal&&(x.tipo||'herramienta')===tp); });
+      var h=arr.filter(function(x){ return x.cargado; }).length, ce=sec&&sec.querySelector('.pg-cnt'); if(ce){ ce.textContent=h+'/'+arr.length+' listos'; ce.classList.toggle('full',h===arr.length); }
+      var tot=PREP.filter(function(x){ return x.cargado; }).length, tb=cont.querySelector('.pg-tot b'), bar=cont.querySelector('.pg-bar i');
+      if(tb) tb.textContent=tot+'/'+PREP.length; if(bar) bar.style.width=Math.round(tot*100/PREP.length)+'%'; }); });
+    cont.querySelectorAll('.pg-in').forEach(function(inp){ inp.addEventListener('input',function(){ var it=PREP[+inp.dataset.i]; if(!it) return; it[inp.dataset.f]=inp.value; if(inp.dataset.f==='cantidad') it.cantAuto=false; }); });
+    cont.querySelectorAll('.pg-talla').forEach(function(inp){ inp.addEventListener('input',function(){ var it=PREP[+inp.dataset.i]; if(!it) return; it.talla=inp.value.trim(); it.item=itemPersonal(it.prenda,it.talla,it.persona); inp.classList.toggle('pg-talla-vacia',!it.talla); }); });
+    // Enter = baja a la misma columna de la fila siguiente (como planilla)
+    cont.querySelectorAll('.pg-tbl input[type=text]').forEach(function(inp){ inp.addEventListener('keydown',function(ev){ if(ev.key!=='Enter') return; ev.preventDefault();
+      var cls=inp.classList.contains('pg-cant')?'.pg-cant':(inp.classList.contains('pg-talla')?'.pg-talla':'.pg-name'), todos=[].slice.call(inp.closest('table').querySelectorAll('input'+cls)), k=todos.indexOf(inp);
+      if(todos[k+1]) todos[k+1].focus(); else { var b=inp.closest('.pg-sec').querySelector('.pg-add'); if(b&&inp.value.trim()) b.click(); } }); });
+    cont.querySelectorAll('.pg-rm').forEach(function(b){ b.addEventListener('click',function(){ PREP.splice(+b.dataset.i,1); renderPrep(); }); });
+    cont.querySelectorAll('.pg-add[data-tp]').forEach(function(b){ b.addEventListener('click',function(){ var tp=b.dataset.tp, nuevo={tipo:tp,item:'',cantidad:'',cargado:false};
+      var ult=-1; PREP.forEach(function(x,i){ if(!x.personal&&(x.tipo||'herramienta')===tp) ult=i; });
+      if(ult<0){ ult=-1; PREP.forEach(function(x,i){ if(!x.personal) ult=i; }); }
+      PREP.splice(ult+1,0,nuevo); renderPrep(PREP.indexOf(nuevo)); }); });
+    var rec=$('pg-recargar'); if(rec) rec.addEventListener('click',function(){ if(!confirm('¿Reemplazar los ítems por los de la matriz de esta faena? Se pierden los cambios y marcas de EPP, herramientas y maquinaria.')) return; armarPrep(PREP.filter(function(x){ return x.personal; })); });
+    if(foco!=null){ var f=cont.querySelector('.pg-name[data-i="'+foco+'"]'); if(f) f.focus(); }
   }
   $('c-faena').addEventListener('change',function(){ C_FAENA=this.value; armarPrep([]); });
 
@@ -3903,8 +4010,8 @@
     renderAsig();
     var prep=(reg&&reg.preparacion)||{};
     C_FAENA=prep.faena||''; renderFaenaSelect();
-    PREP=(prep.items&&prep.items.length)?prep.items.map(function(it){ return {tipo:it.tipo||'herramienta',item:it.item,cantidad:it.cantidad||'',cargado:!!it.cargado,personal:!!it.personal}; }):[];
-    if(C_FAENA && !PREP.length) armarPrep([]); else renderPrep();
+    PREP=(prep.items&&prep.items.length)?prep.items.map(function(it){ return normPersonal({tipo:it.tipo||'herramienta',item:it.item,cantidad:it.cantidad||'',cargado:!!it.cargado,personal:!!it.personal,persona:it.persona,prenda:it.prenda,talla:it.talla,cantAuto:!!it.cantAuto}); }):[];
+    if(C_FAENA || PREP.length) armarPrep(PREP); else renderPrep();
   }
   $('c-job-clear').addEventListener('click',function(){ elegirJobCuadrilla(null); });
 
@@ -3913,7 +4020,7 @@
     if(!C_JOB){ toast('Elige un trabajo para preparar.'); return; }
     syncAsig();
     var asignacion=ASIG.filter(function(a){ return (a.nombre||'').trim(); }).map(function(a){ return { nombre:(a.nombre||'').trim(), epp:a.epp||[] }; });
-    var preparacion={ faena:C_FAENA, items:PREP.map(function(it){ return {tipo:it.tipo,item:it.item,cantidad:it.cantidad||'',cargado:!!it.cargado,personal:!!it.personal}; }) };
+    var preparacion={ faena:C_FAENA, items:PREP.filter(function(it){ return (it.item||'').trim(); }).map(function(it){ var o={tipo:it.tipo,item:it.item.trim(),cantidad:(it.cantidad||'').trim(),cargado:!!it.cargado,personal:!!it.personal}; if(it.cantAuto) o.cantAuto=true; if(it.personal){ o.persona=it.persona; o.prenda=it.prenda; o.talla=it.talla||''; } return o; }) };
     busy(true,'Guardando preparación…');
     var reg=registroDe(C_JOB.id);
     var payload = puede('preparacion.asignar') ? {asignacion:asignacion, preparacion:preparacion} : {preparacion:preparacion};
