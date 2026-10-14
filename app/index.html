@@ -443,6 +443,12 @@
   .ped-add:hover{border-color:var(--orange);}
   .ped-acc{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:6px;} .ped-acc .btn{width:auto;}
   .irl-g td{background:#eef1f9 !important;font-weight:800;color:var(--ink);font-size:11.5px;} .irl-tb td .mr-chip{font-size:8.5px;}
+  .dg-una+.dg-una{break-before:page;page-break-before:always;margin-top:36px;}
+  .dgp-bar{display:flex;gap:6px;padding:10px 18px 4px;} .dgp-bar input{flex:1;min-width:0;padding:8px 11px;border:1.5px solid var(--line);border-radius:10px;font-size:.88rem;background:var(--card);color:var(--ink);} .dgp-bar .btn{width:auto;}
+  .dgp-list{max-height:52vh;overflow:auto;padding:4px 18px 8px;}
+  .dgp-it{display:flex;align-items:center;gap:10px;padding:8px 6px;border-bottom:1px solid var(--line);cursor:pointer;border-radius:8px;} .dgp-it:hover{background:var(--alt);}
+  .dgp-it input{width:17px;height:17px;accent-color:var(--orange);flex:none;} .dgp-it span{display:flex;flex-direction:column;line-height:1.3;} .dgp-it b{font-size:.88rem;color:var(--ink);} .dgp-it small{font-size:.75rem;color:var(--muted);}
+  .dgp-n{margin-right:auto;font-size:.8rem;color:var(--muted);align-self:center;}
   .mr-chip{display:inline-block;font:800 9.5px var(--font);padding:2px 6px;border-radius:999px;border:1px solid;white-space:nowrap;}
   .mr-res{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 8px;}
   .iper td,.prg td{font-size:10.5px;vertical-align:top;} .iper th,.prg th{font-size:10px;} .iper td.c{text-align:center;vertical-align:middle;} .iper td.n,.prg td.n{width:20px;}
@@ -2177,6 +2183,7 @@
     <button id="dg-close" class="btn ghost small" style="width:auto">Cerrar</button>
     <span class="rep-hint" id="dg-hint">Revisa los datos y descarga</span>
     <select id="dg-var" class="hide" title="Formato según el cargo"></select>
+    <button id="dg-pers" type="button" class="btn ghost small hide" title="Elegir los trabajadores que firman: se completan su nombre y RUT"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span id="dg-pers-t">Trabajadores</span></button>
     <div class="dg-acc">
       <button id="dg-print" type="button" class="btn ghost small" title="Imprimir"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg><span>Imprimir</span></button>
       <button id="dg-dl" type="button" class="btn ghost small" title="Descargar PDF"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span>Descargar</span></button>
@@ -7626,10 +7633,10 @@
   // Formatos en blanco que genera InnovaGestión (se descargan para que firme quien corresponda).
   var EMP_FMT=[
     // Un solo registro: se elige la capacitación o el PTS y se rellena solo (tema, temario, duración, relator)
-    {k:'fmt_asist', n:'Registro de capacitación (lista de asistencia)', opciones:opcionesRegistro, build:function(v){ return docAsistencia(v); }},
-    {k:'fmt_eval', n:'Evaluación de aprendizaje (individual)', opciones:function(){ var o=[]; Object.keys(CAP_DOC).filter(function(k){ return CAP_DOC[k].vf; }).forEach(function(k){ o.push({v:k, n:CAP_DOC[k].n}); o.push({v:k+'|pauta', n:CAP_DOC[k].n+' · pauta de corrección (relator)'}); }); return o; }, build:function(v){ return docEvaluacion(v); }},
-    {k:'fmt_epp', n:'Entrega de elementos de protección personal', build:function(){ return docEPP({nombre:'',rut:''}); }},
-    {k:'fmt_odi', n:'Información de riesgos laborales (IRL)', build:function(){ return docODI({nombre:'',rut:'',cargo:''}); }},
+    {k:'fmt_asist', n:'Registro de capacitación (lista de asistencia)', opciones:opcionesRegistro, personas:'lista', build:function(v,PER){ return docAsistencia(v,PER); }},
+    {k:'fmt_eval', n:'Evaluación de aprendizaje (individual)', opciones:function(){ var o=[]; Object.keys(CAP_DOC).filter(function(k){ return CAP_DOC[k].vf; }).forEach(function(k){ o.push({v:k, n:CAP_DOC[k].n}); o.push({v:k+'|pauta', n:CAP_DOC[k].n+' · pauta de corrección (relator)'}); }); return o; }, personas:'una', build:function(v,PER){ return /\|pauta$/.test(v||'')?docEvaluacion(v):porPersona(PER,function(t){ return docEvaluacion(v,t); }); }},
+    {k:'fmt_epp', n:'Entrega de elementos de protección personal', personas:'una', build:function(v,PER){ return porPersona(PER,function(t){ return docEPP(t); }); }},
+    {k:'fmt_odi', n:'Información de riesgos laborales (IRL)', personas:'una', build:function(v,PER){ return porPersona(PER,function(t){ return docODI(t); }); }},
     {k:'fmt_salida', n:'Registro de salida a atención médica', build:function(){ return docSalida({}); }}
   ];
   var EMP_Q='';
@@ -7674,7 +7681,7 @@
     c.querySelectorAll('.emp-gen').forEach(function(b){ b.addEventListener('click',function(ev){ ev.stopPropagation(); abrirPickDoc(b.dataset.gen); }); });
     c.querySelectorAll('.emp-pf').forEach(function(b){ b.addEventListener('click',function(ev){ ev.stopPropagation(); generarPTS(b.dataset.pts); }); });
     c.querySelectorAll('.emp-edpts').forEach(function(b){ b.addEventListener('click',function(ev){ ev.stopPropagation(); abrirEditorPTS(b.dataset.pts); }); });
-    c.querySelectorAll('.emp-fmt').forEach(function(el){ el.addEventListener('click',function(){ var f=EMP_FMT.filter(function(x){ return x.k===el.dataset.k; })[0]; if(f) abrirDocEmpresa({ nombre:f.n, opciones:f.opciones?f.opciones():null, build:f.build }); }); });
+    c.querySelectorAll('.emp-fmt').forEach(function(el){ el.addEventListener('click',function(){ var f=EMP_FMT.filter(function(x){ return x.k===el.dataset.k; })[0]; if(f) abrirDocEmpresa({ nombre:f.n, opciones:f.opciones?f.opciones():null, build:f.build, personas:f.personas }); }); });
     c.querySelectorAll('.emp-add').forEach(function(b){ b.addEventListener('click',function(){ abrirEmpDoc(null, '', false, b.dataset.c); }); });
   }
   // Firmas para los documentos (botón arriba a la derecha en Empresa): gerente (firma y timbre) y prevencionista.
@@ -7740,16 +7747,46 @@
   if($('emp-firmas-btn')) $('emp-firmas-btn').addEventListener('click',function(){ abrirFirmas(); });
 
   // Abre un documento de empresa en el generador: con opciones (selector) y, si tiene "tipo", se guarda como nueva versión.
+  // Un documento por trabajador (cada uno parte en una página nueva al imprimir o descargar). Sin selección: formato en blanco.
+  function porPersona(PER, f){ if(!PER||!PER.length) return f({nombre:'',rut:'',cargo:''});
+    return PER.map(function(t){ return '<div class="dg-una">'+f(t)+'</div>'; }).join(''); }
+  // Selector de trabajadores para los formatos por firmar
+  function elegirTrabajadores(sel, cb){
+    function abrir(){
+      var L=(TRAB||[]).filter(function(t){ return t.estado!=='inactivo' || sel.some(function(s){ return s.id===t.id; }); });
+      var marc={}; sel.forEach(function(s){ marc[s.id]=1; });
+      var m=document.createElement('div'); m.className='dgv-back';
+      m.innerHTML='<div class="dgv" role="dialog" aria-modal="true"><div class="dgv-h"><b>Trabajadores que firman</b><span>Se completan su nombre y RUT en el documento.</span></div>'+
+        '<div class="dgp-bar"><input type="search" placeholder="Buscar por nombre o RUT" autocomplete="off"><button type="button" class="btn ghost small" data-a="todos">Todos</button><button type="button" class="btn ghost small" data-a="nada">Ninguno</button></div>'+
+        '<div class="dgv-list dgp-list">'+(L.length?L.map(function(t){ return '<label class="dgp-it" data-q="'+enc(((t.nombre||'')+' '+(t.rut||'')).toLowerCase())+'"><input type="checkbox" value="'+enc(t.id)+'"'+(marc[t.id]?' checked':'')+'><span><b>'+esc(t.nombre||'')+'</b><small>'+esc(t.rut||'')+(t.cargo?' · '+esc(t.cargo):'')+'</small></span></label>'; }).join(''):'<p class="note" style="padding:12px">No hay trabajadores cargados.</p>')+'</div>'+
+        '<div class="dgv-acc"><span class="dgp-n"></span><button type="button" class="btn ghost small" data-a="x">Cancelar</button><button type="button" class="btn small" data-a="ok">Usar seleccionados</button></div></div>';
+      document.body.appendChild(m);
+      var q=m.querySelector('input[type=search]'), cnt=m.querySelector('.dgp-n');
+      function cuenta(){ var k=m.querySelectorAll('.dgp-it input:checked').length; cnt.textContent=k?k+' seleccionado'+(k===1?'':'s'):'Ninguno: formato en blanco'; }
+      function cerrar(){ document.removeEventListener('keydown',tecla); m.remove(); }
+      function tecla(e){ if(e.key==='Escape') cerrar(); }
+      document.addEventListener('keydown',tecla); cuenta();
+      q.addEventListener('input',function(){ var s=q.value.trim().toLowerCase(); m.querySelectorAll('.dgp-it').forEach(function(it){ it.style.display=(!s||it.dataset.q.indexOf(s)>=0)?'':'none'; }); });
+      m.addEventListener('change',cuenta);
+      m.addEventListener('click',function(e){ if(e.target===m){ cerrar(); return; } var b=e.target.closest('button[data-a]'); if(!b) return; var a=b.dataset.a;
+        if(a==='todos'||a==='nada'){ m.querySelectorAll('.dgp-it').forEach(function(it){ if(it.style.display!=='none') it.querySelector('input').checked=(a==='todos'); }); cuenta(); return; }
+        if(a==='x'){ cerrar(); return; }
+        var ids={}; m.querySelectorAll('.dgp-it input:checked').forEach(function(i){ ids[i.value]=1; });
+        var out=L.filter(function(t){ return ids[t.id]; }); cerrar(); cb(out); });
+      setTimeout(function(){ q.focus(); },50); }
+    if(TRAB&&TRAB.length) abrir(); else cargarTrab(abrir); }
   function abrirDocEmpresa(o){
-    var v=o.opciones?o.opciones[0].v:null;
+    var v=o.opciones?o.opciones[0].v:null, PER=[];
+    $('dg-pers').classList.toggle('hide', !o.personas); $('dg-pers-t').textContent='Trabajadores';
+    $('dg-pers').onclick=o.personas?function(){ elegirTrabajadores(PER,function(L){ PER=L; $('dg-pers-t').textContent=L.length?'Trabajadores ('+L.length+')':'Trabajadores'; pinta(v); }); }:null;
     function pinta(val){ v=val;
       $('dg-var').classList.toggle('hide', !o.opciones);
       if(o.opciones) $('dg-var').innerHTML=o.opciones.map(function(x){ return '<option value="'+x.v+'"'+(x.v===v?' selected':'')+'>'+esc(x.n)+'</option>'; }).join('');
-      dgSet(o.build(v));
+      dgSet(o.build(v,PER));
       $('dg-hint').textContent=o.nombre+(o.opciones?(' · '+(o.opciones.filter(function(x){ return x.v===v; })[0]||{}).n):'');
     }
     DG_QUEUE=[];
-    DG_CTX={ rebuild:pinta, guardable:!!o.tipo, save:function(){
+    DG_CTX={ rebuild:pinta, personas:!!o.personas, guardable:!!o.tipo, save:function(){
       busy(true,'Generando PDF…');
       pdfDesde($('dg-doc')).then(function(doc){
         var blob=doc.output('blob'), nombre=slug(o.nombre)+(v?'_'+slug(v):'')+'_'+todayISO()+'.pdf';
@@ -7777,13 +7814,13 @@
     Object.keys(PTS_INFO).forEach(function(s){ L.push({v:'pts:'+s, n:'Entrega de PTS · '+PTS_INFO[s].n}); });
     L.push({v:'libre', n:'Charla o tema libre'});
     return L; }
-  function docAsistencia(sel){
+  function docAsistencia(sel, PER){ PER=PER||[];
     sel=sel||'libre'; var p=String(sel).split(':'), tipo=p[0], id=p[1], I=null, C=null, tema='', sub='Capacitación · charla · instrucción', dur='';
     if(tipo==='pts' || PTS_INFO[sel]){ I=PTS_INFO[id||sel]; tema='PTS '+I.n; sub='Procedimiento de trabajo seguro · '+I.n; }
     else if(tipo==='cap'){ C=CAP_DOC[id]; tema=C.n; sub='Capacitación · '+C.n; dur=C.dur||''; }
     else if(tipo==='emp'){ var d=(EMP_D||[]).filter(function(x){ return x.tipo===id; })[0]; tema=d?(d.nombre||''):''; sub='Capacitación · '+tema; }
     var temario=I?I.t:(C?C.t:null), rows='';
-    for(var i=1;i<=10;i++) rows+='<tr><td class="n">'+i+'</td><td></td><td></td><td></td><td></td></tr>';
+    for(var i=1;i<=Math.max(10,PER.length);i++){ var w=PER[i-1]||{}; rows+='<tr><td class="n">'+i+'</td><td>'+esc(w.nombre||'')+'</td><td>'+esc(w.rut||'')+'</td><td>'+esc(w.cargo||'')+'</td><td></td></tr>'; }
     function tr(a,b){ return '<tr><td class="dg-k">'+a+'</td><td>'+b+'</td></tr>'; }
     function rel(k,def){ return '<span contenteditable data-ls="'+k+'">'+esc(lsGet(k)||def||'')+'</span>'; }
     var relNom=lsGet('dg_rel_nom')||EMP_PREV.nombre;
@@ -8713,7 +8750,8 @@
       if(!window.jspdf) throw new Error('jspdf');
       var doc=new window.jspdf.jsPDF({unit:'mm',format:'a4',compress:true}), A4W=210, A4H=297;
       return window.html2canvas(el,{scale:2,useCORS:true,backgroundColor:'#ffffff',logging:false}).then(function(cv){
-        var imgH=cv.height*A4W/cv.width;
+        var imgH=cv.height*A4W/cv.width, partes=el.querySelectorAll(':scope > .dg-una'), R0=el.getBoundingClientRect(), segs=[0];
+        Array.prototype.forEach.call(partes,function(p,i){ if(i>0) segs.push(Math.round((p.getBoundingClientRect().top-R0.top)*cv.height/R0.height)); }); segs.push(cv.height);
         if(imgH<=A4H){ doc.addImage(cv.toDataURL('image/jpeg',0.92),'JPEG',0,0,A4W,imgH); return doc; }
         var srcPageH=Math.floor(cv.width*A4H/A4W), y=0, first=true, ctx=cv.getContext('2d');
         // Corta la página en una franja blanca (sin texto) para no partir líneas por la mitad.
@@ -8733,8 +8771,9 @@
           }catch(_){}
           return hMax; }
         function soloBlanco(y0,hh){ try{ var dd=ctx.getImageData(0,y0,cv.width,hh).data; for(var i=0;i<dd.length;i+=4*7){ if(dd[i]<240||dd[i+1]<240||dd[i+2]<240) return false; } return true; }catch(_){ return false; } }
-        while(y<cv.height){
-          var h=Math.min(srcPageH,cv.height-y), resto=cv.height-y-srcPageH;
+        for(var sg=0;sg<segs.length-1;sg++){ y=segs[sg]; var fin=segs[sg+1];
+        while(y<fin){
+          var h=Math.min(srcPageH,fin-y), resto=fin-y-srcPageH;
           // si a la última página le quedaría muy poco (p. ej. solo el pie), se corta antes para equilibrar
           if(resto>0) h=corte(y, resto<srcPageH*0.12 ? Math.round(srcPageH*0.85) : srcPageH);
           if(!first && soloBlanco(y,h)) break;   // no agregar una última página vacía (solo margen)
@@ -8743,6 +8782,7 @@
           if(!first) doc.addPage(); first=false;
           doc.addImage(sl.toDataURL('image/jpeg',0.92),'JPEG',0,0,A4W,h*A4W/cv.width);
           y+=h;
+        }
         }
         return doc;
       });
@@ -8988,7 +9028,7 @@
     return dgHead('INFORMACIÓN DE RIESGOS LABORALES (IRL)','02')+
       '<p style="text-align:center;margin-top:-6px;color:#667;font-weight:700">D.S. N° 44 del Ministerio del Trabajo y Previsión Social · Ley N° 16.744</p>'+
       H('Datos del trabajador')+
-      '<table class="dg-tbl">'+tr('Nombre',ce(t.nombre))+tr('RUT',ce(t.rut))+tr('Cargo',ce(t.cargo||(oper?'Operario de servicios':'')))+tr('Faena / mandante',ce(''))+tr('Fecha',ce(fLarga(todayISO())))+'</table>'+
+      '<table class="dg-tbl">'+tr('Nombre',ce(t.nombre))+tr('RUT',ce(t.rut))+'</table>'+
       '<p>En cumplimiento del D.S. N° 44, que reemplazó la "obligación de informar" (ODI) del D.S. N° 40, '+EMP.rz+' informa al trabajador, antes de iniciar sus labores, las tareas de su puesto, sus condiciones, los peligros y riesgos a los que estará expuesto según la Matriz IPER (MAT-PREV-02), sus consecuencias, las medidas preventivas, los métodos de trabajo correctos y los elementos de protección personal que debe usar.</p>'+
       H('Tareas del puesto de trabajo')+
       '<table class="dg-tbl"><thead><tr><th style="width:4%">N°</th><th style="width:30%">Tarea</th><th style="width:30%">Lugar de trabajo</th><th>Equipos y herramientas</th></tr></thead><tbody>'+
@@ -9021,7 +9061,7 @@
       ulDg(['Avisar de inmediato a la jefatura directa, aunque la lesión parezca leve.','Atención en la Mutual de Seguridad (Rescate Mutual 1407 · Ambulancia 131). La empresa emite la DIAT según el procedimiento PR-PREV-03.','Seguir el plan de emergencia y las vías de evacuación de cada faena.'])+
       H('Declaración')+
       '<p>Declaro haber recibido por escrito y comprendido la información sobre las tareas de mi puesto, sus condiciones, los riesgos laborales a los que estoy expuesto, sus consecuencias, las medidas preventivas, los métodos de trabajo correctos y los elementos de protección que debo usar. Me comprometo a cumplirlos y a consultar a mi jefatura ante cualquier duda. Esta información se actualizará cuando cambien mis funciones, el lugar de trabajo, los procesos o la matriz de riesgos.</p>'+
-      '<div class="dg-firmas"><div>Firma del trabajador<br>'+esc(t.nombre||'')+'</div><div>'+firmaPrevHtml()+'Informado por<br>'+esc(EMP_PREV.nombre)+'<br>'+esc(EMP_PREV.cargo)+'</div></div>';
+      '<div class="dg-firmas"><div>Firma del trabajador<br>'+esc(t.nombre||'')+(t.rut?'<br>RUT '+esc(t.rut):'')+'</div><div>'+firmaPrevHtml()+'Informado por<br>'+esc(EMP_PREV.nombre)+'<br>'+esc(EMP_PREV.cargo)+'</div></div>';
   }
 
   // Plantilla: Ficha de datos del trabajador.
@@ -9614,7 +9654,7 @@
     cap_frigorifico:{'n':'Limpieza segura de cámaras frigoríficas','cod':'CAP-PREV-05','pts':'pts_frigorifico','aplica':'Personal de limpieza de cámaras frigoríficas','dur':'1,5 horas','obj':'Capacitar a los trabajadores en la limpieza segura de cámaras frigoríficas según el PTS-PREV-07: método de trabajo, trabajo en frío, ergonomía (sobreesfuerzo, trabajo repetitivo y posturas forzadas), productos químicos, electricidad y demás riesgos de la tarea.','alc':'Aplica a todo trabajador de Innovación y Servicios SpA que realice limpieza en cámaras frigoríficas, antes de hacerlo por primera vez y cada vez que se actualice el procedimiento.','t':['Método de trabajo del PTS-PREV-07: limpieza semi húmeda y secuencia de la tarea.','Trabajo en frío: ropa, pausas, síntomas de hipotermia y no quedar encerrado.','Ergonomía: sobreesfuerzo y manejo manual de carga (Ley N° 20.949), trabajo repetitivo, posturas forzadas y pausas activas.','Productos químicos: etiqueta, hoja de datos de seguridad, EPP y primeros auxilios.','Electricidad: uso seguro de la máquina abrillantadora y equipos.','Riesgos y medidas de control de la tarea y EPP obligatorios.','Práctica: revisión de EPP y equipos, técnica de levantamiento y pausas activas.'],'cont':[['Método de trabajo',['La limpieza se realiza en semi húmedo, sin aplicación directa de agua, para evitar que el agua se congele.','Antes de empezar: área ordenada y despejada, equipos desconectados y supervisor informado.','El método paso a paso está en el PTS-PREV-07, que se entrega junto con esta capacitación.']],['Trabajo en frío',['Usar ropa térmica por capas y mantenerla seca.','Hacer pausas de recuperación en una zona temperada.','Ante temblor intenso, torpeza, confusión o piel blanca o adormecida, avisar y salir de la cámara.','Antes de entrar, verificar que la puerta se pueda abrir desde el interior; nunca trabajar solo dentro de la cámara.']],['Ergonomía: sobreesfuerzo, trabajo repetitivo y posturas forzadas',['Técnica de levantamiento: pies separados, rodillas flectadas, espalda recta y la carga cerca del cuerpo; girar con los pies, no con la cintura.','Límites de la Ley N° 20.949: hasta 25 kg por persona; hasta 20 kg para mujeres y menores de 18 años. Sobre eso, usar carros o trabajar entre dos.','Hacer pausas activas y rotar tareas para prevenir lesiones por trabajo repetitivo (TMERT).','Usar mangos extensibles, alternar las manos y cambiar de postura en zonas bajas o altas.']],['Productos químicos',['Usar solo productos autorizados, con etiqueta y hoja de datos de seguridad (HDS) disponible.','No mezclar productos.','Usar guantes de nitrilo y lentes de seguridad; ante contacto con los ojos, lavar con agua durante 15 minutos y avisar.']],['Electricidad y equipos',['Revisar cables y enchufes de la máquina abrillantadora antes de usarla.','Mantener las conexiones secas y los cables fuera del piso húmedo.','Desconectar el equipo antes de intervenirlo o limpiarlo.']]],'prac':['Revisión de los EPP y de la máquina abrillantadora.','Ejercicio de técnica de levantamiento de carga.','Rutina de pausas activas para manos, brazos, espalda y cuello.'],'vf':[['La limpieza de las cámaras se hace en semi húmedo, sin aplicación directa de agua.',true],['Se pueden mezclar productos de limpieza para que limpien mejor.',false],['Ante temblor intenso, torpeza o piel adormecida por el frío se debe avisar y salir de la cámara.',true],['Las pausas activas ayudan a prevenir lesiones por trabajo repetitivo.',true],['Para levantar una carga se dobla la espalda y se mantienen las piernas rectas.',false],['La máquina abrillantadora puede intervenirse conectada si el interruptor está apagado.',false],['Los cables eléctricos deben mantenerse secos y fuera del piso húmedo.',true],['Se puede subir a los racks para limpiar las partes altas.',false],['Antes de entrar se verifica que la puerta se pueda abrir desde el interior.',true],['Según la ley, un hombre puede levantar manualmente hasta 50 kg.',false]]}
   };
   // Evaluación de aprendizaje individual de una capacitación del catálogo
-  function docEvaluacion(id){
+  function docEvaluacion(id, t){ t=t||{};
     var pauta=/\|pauta$/.test(id||''); id=(id||'').replace(/\|pauta$/,'');
     var C=CAP_DOC[id]||CAP_DOC.cap_herr, N=C.vf.length, min=Math.ceil(N*0.7);
     var caja='<span style="display:inline-block;width:15px;height:15px;border:1.5px solid #6b7390;border-radius:3px;vertical-align:middle"></span>';
@@ -9626,7 +9666,7 @@
     function tr(a,b){ return '<tr><td class="dg-k">'+a+'</td><td>'+b+'</td></tr>'; }
     return dgHead('EVALUACIÓN DE APRENDIZAJE','01')+
       '<div class="pts-tit">'+esc(C.n)+'</div>'+
-      '<table class="dg-tbl">'+tr('Nombre del trabajador',ce(''))+tr('RUT',ce(''))+tr('Cargo',ce(''))+tr('Fecha',ce(fLarga(todayISO())))+tr('Relator',ce(EMP_PREV.nombre))+'</table>'+
+      '<table class="dg-tbl">'+tr('Nombre del trabajador',ce(t.nombre||''))+tr('RUT',ce(t.rut||''))+tr('Cargo',ce(t.cargo||''))+tr('Fecha',ce(fLarga(todayISO())))+tr('Relator',ce(EMP_PREV.nombre))+'</table>'+
       '<h4 class="dg-h4">Verdadero o falso</h4><p style="margin:0 0 8px">Marque con una X la casilla <b>V</b> si la afirmación es verdadera o <b>F</b> si es falsa. Se aprueba con '+min+' o más respuestas correctas de '+N+'.</p>'+
       '<table class="dg-tbl pts-herr"><thead><tr><th style="width:30px">N°</th><th>Afirmación</th><th style="width:44px;text-align:center">V</th><th style="width:44px;text-align:center">F</th></tr></thead><tbody>'+
       C.vf.map(function(q,i){ return '<tr><td class="n">'+(i+1)+'</td><td>'+esc(q[0])+'</td><td class="pts-chk"><span></span></td><td class="pts-chk"><span></span></td></tr>'; }).join('')+'</tbody></table>'+
@@ -9991,6 +10031,8 @@
     if(!ids.length){ toast('Marca al menos un trabajador.'); return; }
     DG_QUEUE=ids; DG_QI=0; DG_QTIPO=DGP_TIPO; $('dg-pick').classList.add('hide'); generarDocNext();
   });
+  // El botón Trabajadores solo se ve en los formatos por firmar que lo admiten
+  new MutationObserver(function(){ if(!$('docgen').classList.contains('hide')) $('dg-pers').classList.toggle('hide', !(DG_CTX&&DG_CTX.personas)); }).observe($('docgen'),{attributes:true,attributeFilter:['class']});
   $('dg-close').addEventListener('click',function(){ $('docgen').classList.add('hide'); DG_QUEUE=[]; DG_QTIPO=null; });
   $('dg-var').addEventListener('change',function(){ if(DG_CTX&&DG_CTX.rebuild) DG_CTX.rebuild(this.value); else if(DG_CTX) generarDoc(DG_CTX.tid, DG_CTX.tipo, this.value); });
   // Quitar un bloque opcional (cláusula que no aplica).
