@@ -182,7 +182,6 @@
   .pg-tbl .pg-rm{border:none;background:none;color:var(--muted);cursor:pointer;width:100%;height:36px;display:flex;align-items:center;justify-content:center}
   .pg-tbl .pg-rm:hover{color:var(--bad)}
   .pg-tbl .pg-falta{color:var(--orange-2);font-weight:700}
-  .pg-tbl input.pg-talla-vacia{background:color-mix(in srgb,var(--orange) 9%,transparent)}
   .pg-add{display:inline-flex;align-items:center;gap:5px;margin-top:6px;border:1px dashed var(--line);background:var(--alt);border-radius:9px;padding:6px 11px;font:700 12px var(--font);color:var(--ink);cursor:pointer}
   .pg-tot{display:flex;align-items:center;gap:10px;margin-top:14px;font:600 12.5px var(--font);color:var(--body)}
   .pg-bar{flex:1;height:6px;border-radius:4px;background:var(--line);overflow:hidden}
@@ -3925,7 +3924,7 @@
   function pgIco(p){ return '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+p+'</svg>'; }
   var PG_SEC=[
     ['epp','EPP','<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>'],
-    ['ropa','Ropa de trabajo por persona','<path d="M20.4 6.6 16 4a4 4 0 0 1-8 0L3.6 6.6a1 1 0 0 0-.5 1.2l1.2 3.6a1 1 0 0 0 1.2.6L7 11.5V20a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-8.5l1.5.5a1 1 0 0 0 1.2-.6l1.2-3.6a1 1 0 0 0-.5-1.2z"/>'],
+    ['ropa','Ropa de trabajo','<path d="M20.4 6.6 16 4a4 4 0 0 1-8 0L3.6 6.6a1 1 0 0 0-.5 1.2l1.2 3.6a1 1 0 0 0 1.2.6L7 11.5V20a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-8.5l1.5.5a1 1 0 0 0 1.2-.6l1.2-3.6a1 1 0 0 0-.5-1.2z"/>'],
     ['herramienta','Herramientas','<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.8-3.8a6 6 0 0 1-7.9 7.9l-6.9 6.9a2.1 2.1 0 0 1-3-3l6.9-6.9a6 6 0 0 1 7.9-7.9z"/>'],
     ['maquinaria','Maquinaria','<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>']
   ];
@@ -3938,24 +3937,30 @@
     PG_SEC.forEach(function(s){
       var tp=s[0];
       if(tp==='ropa'){
+        // Totales por prenda y talla (como el EPP); el detalle por persona queda guardado en PREP
         var pers=PREP.filter(function(it){ return it.personal; }); if(!pers.length) return;
-        var nombres=[]; pers.forEach(function(it){ if(nombres.indexOf(it.persona)<0) nombres.push(it.persona); });
-        html+='<div class="pg-sec" data-sec="ropa"><div class="pg-head">'+pgIco(s[2])+s[1]+cnt(pers)+'</div>'+
-          '<table class="pg-tbl"><colgroup><col><col style="width:30px"><col style="width:58px"><col style="width:30px"><col style="width:58px"></colgroup>'+
-          '<thead><tr><th>Persona</th><th colspan="2">Overol</th><th colspan="2">Botas</th></tr></thead><tbody>';
-        nombres.forEach(function(nom){
-          var celdas='';
-          PRENDAS.forEach(function(p){
-            var it=PREP.filter(function(x){ return x.personal&&x.persona===nom&&x.prenda===p[0]; })[0]; if(!it){ celdas+='<td></td><td></td>'; return; }
-            var i=PREP.indexOf(it), tal=(ed&&!it.enFicha)
-              ? '<input type="text" class="pg-talla'+(it.talla?'':' pg-talla-vacia')+'" data-i="'+i+'" value="'+enc(it.talla||'')+'" placeholder="talla" title="Falta en la ficha del trabajador">'
-              : (it.talla?esc(it.talla):'<span class="pg-falta" title="Falta en la ficha del trabajador">?</span>');
-            celdas+='<td class="c"><input type="checkbox" class="pg-chk" data-i="'+i+'"'+(it.cargado?' checked':'')+'></td><td class="'+(ed&&!it.enFicha?'':'t c')+'">'+tal+'</td>';
-          });
-          html+='<tr><td class="t"><span class="pg-name">'+esc(nom)+'</span></td>'+celdas+'</tr>';
+        var grupos=[], gk={};
+        PRENDAS.forEach(function(p){ pers.filter(function(it){ return it.prenda===p[0]; }).forEach(function(it){
+          var k=p[0]+'|'+(it.talla||'').toUpperCase();
+          if(!gk[k]){ gk[k]={prenda:p[1], talla:it.talla||'', idx:[], nombres:[]}; grupos.push(gk[k]); }
+          gk[k].idx.push(PREP.indexOf(it)); gk[k].nombres.push(it.persona);
+        }); });
+        grupos.forEach(function(g){ g.ok=g.idx.every(function(i){ return PREP[i].cargado; }); });
+        // dentro de cada prenda: tallas ordenadas (números de menor a mayor), "sin talla" al final
+        grupos.sort(function(a,b){ if(a.prenda!==b.prenda) return a.prenda==='Overol'?-1:1; if(!a.talla) return 1; if(!b.talla) return -1;
+          var na=parseFloat(a.talla), nb=parseFloat(b.talla); return (!isNaN(na)&&!isNaN(nb))?na-nb:a.talla.localeCompare(b.talla); });
+        var hg=grupos.filter(function(g){ return g.ok; }).length;
+        html+='<div class="pg-sec" data-sec="ropa"><div class="pg-head">'+pgIco(s[2])+s[1]+'<span class="pg-cnt'+(hg===grupos.length?' full':'')+'">'+hg+'/'+grupos.length+' listos</span></div>'+
+          '<table class="pg-tbl"><colgroup><col style="width:34px"><col><col style="width:62px"></colgroup>'+
+          '<thead><tr><th></th><th>Prenda y talla</th><th style="text-align:center">Cant.</th></tr></thead><tbody>';
+        grupos.forEach(function(g){
+          var nom=g.talla ? esc(g.prenda+(g.prenda==='Botas'?' T':' ')+g.talla)
+                          : esc(g.prenda)+' <span class="pg-falta">sin talla</span><div class="note" style="margin:2px 0 0">'+esc(g.nombres.join(', '))+'</div>';
+          html+='<tr class="'+(g.ok?'ok':'')+'"><td class="c"><input type="checkbox" class="pg-chk-g" data-g="'+g.idx.join(',')+'"'+(g.ok?' checked':'')+'></td>'+
+            '<td class="t"><span class="pg-name">'+nom+'</span></td><td class="c pg-cant">'+g.idx.length+'</td></tr>';
         });
         html+='</tbody></table>';
-        if(pers.some(function(it){ return !it.enFicha; })) html+='<p class="note" style="margin:6px 0 0">Las tallas marcadas en naranjo faltan en la ficha del trabajador (RRHH).'+(ed?' Puedes escribirlas aquí para esta salida.':'')+'</p>';
+        if(grupos.some(function(g){ return !g.talla; })) html+='<p class="note" style="margin:6px 0 0">Completa las tallas que faltan en la ficha del trabajador (RRHH).</p>';
         html+='</div>';
         return;
       }
@@ -3984,11 +3989,11 @@
       var h=arr.filter(function(x){ return x.cargado; }).length, ce=sec&&sec.querySelector('.pg-cnt'); if(ce){ ce.textContent=h+'/'+arr.length+' listos'; ce.classList.toggle('full',h===arr.length); }
       var tot=PREP.filter(function(x){ return x.cargado; }).length, tb=cont.querySelector('.pg-tot b'), bar=cont.querySelector('.pg-bar i');
       if(tb) tb.textContent=tot+'/'+PREP.length; if(bar) bar.style.width=Math.round(tot*100/PREP.length)+'%'; }); });
+    cont.querySelectorAll('.pg-chk-g').forEach(function(c){ c.addEventListener('change',function(){ c.dataset.g.split(',').forEach(function(i){ if(PREP[+i]) PREP[+i].cargado=c.checked; }); renderPrep(); }); });
     cont.querySelectorAll('.pg-in').forEach(function(inp){ inp.addEventListener('input',function(){ var it=PREP[+inp.dataset.i]; if(!it) return; it[inp.dataset.f]=inp.value; if(inp.dataset.f==='cantidad') it.cantAuto=false; }); });
-    cont.querySelectorAll('.pg-talla').forEach(function(inp){ inp.addEventListener('input',function(){ var it=PREP[+inp.dataset.i]; if(!it) return; it.talla=inp.value.trim(); it.item=itemPersonal(it.prenda,it.talla,it.persona); inp.classList.toggle('pg-talla-vacia',!it.talla); }); });
     // Enter = baja a la misma columna de la fila siguiente (como planilla)
     cont.querySelectorAll('.pg-tbl input[type=text]').forEach(function(inp){ inp.addEventListener('keydown',function(ev){ if(ev.key!=='Enter') return; ev.preventDefault();
-      var cls=inp.classList.contains('pg-cant')?'.pg-cant':(inp.classList.contains('pg-talla')?'.pg-talla':'.pg-name'), todos=[].slice.call(inp.closest('table').querySelectorAll('input'+cls)), k=todos.indexOf(inp);
+      var cls=inp.classList.contains('pg-cant')?'.pg-cant':'.pg-name', todos=[].slice.call(inp.closest('table').querySelectorAll('input'+cls)), k=todos.indexOf(inp);
       if(todos[k+1]) todos[k+1].focus(); else { var b=inp.closest('.pg-sec').querySelector('.pg-add'); if(b&&inp.value.trim()) b.click(); } }); });
     cont.querySelectorAll('.pg-rm').forEach(function(b){ b.addEventListener('click',function(){ PREP.splice(+b.dataset.i,1); renderPrep(); }); });
     cont.querySelectorAll('.pg-add[data-tp]').forEach(function(b){ b.addEventListener('click',function(){ var tp=b.dataset.tp, nuevo={tipo:tp,item:'',cantidad:'',cargado:false};
