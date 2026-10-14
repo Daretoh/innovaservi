@@ -364,6 +364,12 @@
   .job.hoy{background:rgba(255,107,0,.06);border-radius:9px;}
 
   /* Toast + overlay */
+  #upd-aviso{position:fixed;left:50%;top:calc(12px + var(--safe-t));transform:translateX(-50%);z-index:10000;display:flex;align-items:center;gap:10px;background:var(--deep);color:#fff;padding:10px 10px 10px 14px;border-radius:14px;box-shadow:0 14px 40px -12px rgba(0,0,0,.5);width:max-content;max-width:calc(100vw - 24px);font:500 13px var(--font);animation:updIn .35s ease;}
+  #upd-aviso.hide{display:none;} @keyframes updIn{from{opacity:0;transform:translate(-50%,-12px);}to{opacity:1;transform:translate(-50%,0);}}
+  #upd-aviso .upd-ic{color:var(--orange);display:flex;} #upd-aviso .upd-ic svg{margin:0 !important;}
+  #upd-aviso .upd-tx{display:flex;flex-direction:column;line-height:1.3;} #upd-aviso .upd-tx span{font-size:11.5px;color:#c3c8dc;}
+  #upd-aviso .upd-go{border:none;background:var(--orange);color:#fff;font:700 12.5px var(--font);padding:8px 14px;border-radius:10px;cursor:pointer;white-space:nowrap;}
+  #upd-aviso .upd-x{border:none;background:transparent;color:#c3c8dc;cursor:pointer;display:flex;padding:4px;} #upd-aviso .upd-x svg{margin:0 !important;}
   #toast{position:fixed;left:50%;bottom:calc(84px + var(--safe-b));transform:translateX(-50%);background:var(--deep);color:#fff;
     padding:11px 18px;border-radius:12px;font:600 13.5px var(--font);z-index:90;opacity:0;pointer-events:none;transition:.25s;max-width:90vw;text-align:center;}
   #toast.show{opacity:1;}
@@ -10707,14 +10713,22 @@
   });
 
   // ====== Service worker (instalable) ======
+  function avisoVersion(){ var a=$('upd-aviso'); if(a){ a.classList.remove('hide'); return; }
+    a=document.createElement('div'); a.id='upd-aviso'; a.setAttribute('role','status');
+    a.innerHTML='<span class="upd-ic">'+svgI('<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>',18)+'</span><div class="upd-tx"><b>Hay una versión nueva</b><span>Guarda lo que estás haciendo y luego actualiza.</span></div><button type="button" class="upd-go">Actualizar</button><button type="button" class="upd-x" title="Más tarde" aria-label="Más tarde">'+svgI('<path d="M18 6 6 18M6 6l12 12"/>',16)+'</button>';
+    document.body.appendChild(a);
+    a.querySelector('.upd-go').addEventListener('click',function(){ window.location.reload(); });
+    a.querySelector('.upd-x').addEventListener('click',function(){ a.classList.add('hide'); setTimeout(function(){ a.classList.remove('hide'); }, 20*60*1000); }); }
   if('serviceWorker' in navigator){ window.addEventListener('load',function(){
     navigator.serviceWorker.register('sw.js').then(function(reg){
       // Auto-actualización: cuando el SW nuevo toma control, recarga una vez para tomar la última versión.
       if(reg){ reg.addEventListener('updatefound',function(){ var nw=reg.installing; if(!nw) return; nw.addEventListener('statechange',function(){ if(nw.state==='installed' && navigator.serviceWorker.controller){ /* hay versión nueva lista */ } }); });
         setInterval(function(){ reg.update().catch(function(){}); }, 60*1000); }
     }).catch(function(){});
-    var _hadCtrl=!!navigator.serviceWorker.controller, _reloaded=false;
-    navigator.serviceWorker.addEventListener('controllerchange',function(){ if(_reloaded||!_hadCtrl) return; _reloaded=true; window.location.reload(); });
+    // Versión nueva publicada: no se recarga sola (se perdería lo que se está haciendo); se avisa y la persona decide cuándo actualizar.
+    var _hadCtrl=!!navigator.serviceWorker.controller;
+    navigator.serviceWorker.addEventListener('controllerchange',function(){ if(_hadCtrl) avisoVersion(); });
+
   }); }
 })();
 </script>
