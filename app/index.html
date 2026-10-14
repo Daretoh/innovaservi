@@ -423,6 +423,15 @@
   .asis-tb td{height:31px;vertical-align:middle !important;} .asis-tb td.n{width:32px;font-weight:700;} .asis-tb tbody tr:nth-child(even) td{background:#f8f9fc;}
   .asis-tb td+td{border-left:1px solid #e3e5ee;}
   .dg-firmas.asis-fir{margin-top:56px;}
+  .mr-chip{display:inline-block;font:800 9.5px var(--font);padding:2px 6px;border-radius:999px;border:1px solid;white-space:nowrap;}
+  .mr-res{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 8px;}
+  .iper td,.prg td{font-size:10.5px;vertical-align:top;} .iper th,.prg th{font-size:10px;} .iper td.c{text-align:center;vertical-align:middle;} .iper td.n,.prg td.n{width:20px;}
+  .iper tr.iper-g td{background:#eef1f9;color:#1b1f4d;font:800 10px var(--font);text-transform:uppercase;letter-spacing:.05em;padding-top:5px;padding-bottom:5px;}
+  .iper-r{display:inline-block;font:800 8.5px var(--font);color:#8b93a7;border:1px solid #d9dce8;border-radius:4px;padding:0 4px;margin-left:3px;}
+  .prg tr.iper-g td{background:#eef1f9;color:#1b1f4d;font:800 10px var(--font);text-transform:uppercase;letter-spacing:.05em;}
+  .prg th.m{width:24px;text-align:center;padding:4px 1px;font-size:9px;} .prg th.m span{font-weight:400;opacity:.75;}
+  .prg td.m{text-align:center;vertical-align:middle;padding:2px 1px;} .prg td.m i{display:inline-block;width:9px;height:9px;border-radius:50%;background:#ff6b00;}
+  .prg .prg-f{display:block;font-size:9px;color:#8b93a7;margin-top:1px;}
   .mepp td{vertical-align:middle !important;font-size:11.5px;padding-top:4px !important;padding-bottom:4px !important;} .mepp td.mepp-i{text-align:center;padding:2px !important;} .mepp td.mepp-i svg{width:52px;height:40px;display:inline-block;}
   .mepp .mepp-z{display:block;font:800 8.5px var(--font);color:#ff6b00;text-transform:uppercase;letter-spacing:.06em;margin-bottom:1px;} .mepp td.mepp-c{text-align:center;}
   .mepp-si{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#22a06b;} .mepp-no{color:#b9bfd1;font-weight:700;}
@@ -9115,6 +9124,160 @@
       H('Después de la emergencia')+ulDg(['Informar de inmediato a la jefatura y a prevención de riesgos.','Todo accidente se atiende en la Mutual de Seguridad y se denuncia (DIAT) dentro de 24 horas, según el Procedimiento de emergencia y/o accidentes (PR-PREV-03).','Reponer los elementos usados del botiquín.'])+
       H('Registro')+'<p>La asistencia se registra en el formato <b>Registro de capacitación</b> y el aprendizaje se verifica con la <b>Evaluación de aprendizaje</b> (InnovaGestión → Empresa → Formatos para firmar).</p>';
   }
+  // ====== Gestión preventiva D.S. N° 44: Procedimiento IPER, Matriz IPER y Programa de trabajo preventivo ======
+  // Metodología: Guía Técnica del ISP. Magnitud del riesgo (MR) = Probabilidad (1, 2, 4) × Consecuencia (1, 2, 4).
+  var MR_NIV=[[16,'Intolerable','#fdecec','#b91c1c'],[8,'Importante','#ffe8d6','#c2410c'],[4,'Moderado','#fff6cc','#8a6d00'],[1,'Tolerable','#e7f6ee','#16794a']];
+  function mrNivel(v){ for(var i=0;i<MR_NIV.length;i++) if(v>=MR_NIV[i][0]) return MR_NIV[i]; return MR_NIV[3]; }
+  function mrChip(v){ var n=mrNivel(v); return '<span class="mr-chip" style="background:'+n[2]+';color:'+n[3]+';border-color:'+n[3]+'55">'+v+' · '+n[1]+'</span>'; }
+  function figMatrizMR(){ var P=[[4,'Alta'],[2,'Media'],[1,'Baja']], C=[[1,'Ligeramente dañino'],[2,'Dañino'],[4,'Extremadamente dañino']], s='';
+    s+='<text x="10" y="112" font-size="11" font-weight="bold" fill="'+FIG_N+'" transform="rotate(-90 10 112)" text-anchor="middle">PROBABILIDAD</text>';
+    P.forEach(function(p,i){ var y=14+i*44; s+='<text x="86" y="'+(y+26)+'" font-size="11" text-anchor="end" fill="'+FIG_N+'" font-weight="bold">'+p[1]+' ('+p[0]+')</text>';
+      C.forEach(function(c,j){ var v=p[0]*c[0], n=mrNivel(v), x=94+j*132; s+='<rect x="'+x+'" y="'+y+'" width="128" height="40" rx="6" fill="'+n[2]+'" stroke="'+n[3]+'" stroke-width="1.5"/><text x="'+(x+64)+'" y="'+(y+18)+'" text-anchor="middle" font-size="14" font-weight="bold" fill="'+n[3]+'">'+v+'</text><text x="'+(x+64)+'" y="'+(y+33)+'" text-anchor="middle" font-size="10.5" font-weight="bold" fill="'+n[3]+'">'+n[1]+'</text>'; }); });
+    C.forEach(function(c,j){ var x=94+j*132+64; s+='<text x="'+x+'" y="156" text-anchor="middle" font-size="10.5" font-weight="bold" fill="'+FIG_N+'">'+c[1]+' ('+c[0]+')</text>'; });
+    s+='<text x="292" y="174" text-anchor="middle" font-size="11" font-weight="bold" fill="'+FIG_N+'">CONSECUENCIA</text>';
+    return svgF('0 0 500 180', s); }
+  // Matriz IPER base de la empresa: [proceso, tarea / puesto, rutinaria, peligro, riesgo, P, C, medidas]
+  var IPER_FILAS=[
+    ['Limpieza y aseo industrial','Limpieza de pisos y superficies · Operario de servicios',1,'Pisos mojados, con residuos o desniveles','Caída al mismo nivel',2,2,'Orden y aseo; señalizar el área en limpieza; secar al terminar; calzado o botas antideslizantes.'],
+    ['Limpieza y aseo industrial','Uso de productos químicos de limpieza · Operario de servicios',1,'Productos químicos (detergentes, desengrasantes, sanitizantes)','Contacto e inhalación: irritación, dermatitis, quemaduras',2,2,'PTS-PREV-03; hoja de datos de seguridad disponible; rotulado; ventilación; guantes de nitrilo, lentes y respirador según HDS; capacitación.'],
+    ['Limpieza y aseo industrial','Dilución y trasvasije de químicos · Operario autorizado',1,'Mezcla de productos incompatibles','Intoxicación aguda por gases',1,4,'Prohibido mezclar productos; solo diluye personal autorizado; envases rotulados; lugar ventilado.'],
+    ['Limpieza y aseo industrial','Uso de abrillantadora, aspiradora e hidrolavadora',1,'Equipos eléctricos en ambientes húmedos','Contacto eléctrico',1,4,'Inspección de cables y enchufes; protección diferencial; no proyectar agua sobre tableros; equipo desconectado al intervenirlo.'],
+    ['Limpieza y aseo industrial','Hidrolavado',1,'Agua a alta presión','Proyección de partículas, inyección de agua en la piel',2,2,'Solo personal capacitado; no apuntar a personas; careta facial o lentes; seguro en el gatillo; revisión de mangueras.'],
+    ['Limpieza y aseo industrial','Uso de equipos ruidosos',1,'Ruido de equipos de limpieza','Pérdida auditiva (hipoacusia)',2,2,'Protección auditiva; rotación de tareas; evaluación de ruido (PREXOR) si corresponde.'],
+    ['Limpieza y aseo industrial','Traslado de bidones, sacos y materiales',1,'Manejo manual de carga','Sobreesfuerzo, lesiones musculoesqueléticas',2,2,'Ley N° 20.949: no superar 25 kg (20 kg en mujeres y menores); ayudas mecánicas; técnica de levantamiento; trabajo en equipo.'],
+    ['Limpieza y aseo industrial','Limpieza de superficies con movimientos repetitivos',1,'Movimientos repetitivos y posturas forzadas','Trastornos musculoesqueléticos de extremidades superiores (TMERT)',2,2,'Pausas activas; rotación de tareas; herramientas con mango adecuado; aplicación del protocolo TMERT.'],
+    ['Limpieza de estanques','Ingreso al estanque (espacio confinado) · Operario de servicios',1,'Atmósfera con deficiencia de oxígeno o gases tóxicos o inflamables','Asfixia, intoxicación, explosión',2,4,'PTS-PREV-05 y PTS-PREV-06; permiso de entrada; medición continua con detector multigás; ventilación forzada; vigía permanente; equipo de rescate; capacitación.'],
+    ['Limpieza de estanques','Acceso y trabajo dentro del estanque',1,'Escalas, lodo y superficies resbaladizas','Caída a distinto nivel',2,4,'Escala segura y fijada; arnés cuando corresponda; calzado antideslizante; iluminación.'],
+    ['Limpieza de estanques','Uso de herramientas manuales y eléctricas',1,'Herramientas cortantes, esmeril y taladro','Cortes, golpes, proyección de partículas',2,2,'PTS-PREV-06; inspección diaria de herramientas; guarda del esmeril; careta y lentes; guantes según tarea.'],
+    ['Limpieza de estanques','Trabajo en caliente (esmeril)',0,'Chispas en atmósfera potencialmente inflamable','Incendio o explosión',1,4,'Permiso de trabajo en caliente; medición de inflamables bajo 10% del LIE; extintor en el lugar.'],
+    ['Trabajos en altura','Uso de andamios, escaleras y alza hombre',1,'Trabajo sobre 1,8 m de altura','Caída a distinto nivel',2,4,'PTS-PREV-01 y PTS-PREV-02; examen de altura vigente; arnés anclado; inspección previa de equipos; delimitación del área.'],
+    ['Trabajos en altura','Trabajo en altura con herramientas',1,'Caída de herramientas y materiales','Golpes a personas bajo el área de trabajo',2,2,'Amarrar herramientas; delimitar y señalizar el área inferior; casco con barbiquejo.'],
+    ['Trabajos en altura','Operación de alza hombre',0,'Cercanía a líneas eléctricas','Contacto eléctrico',1,4,'Respetar distancias mínimas; inspección del área antes de elevar; operador capacitado y autorizado.'],
+    ['Cámaras frigoríficas','Limpieza de cámaras frigoríficas · Operario de servicios',1,'Bajas temperaturas','Hipotermia, estrés por frío',2,2,'PTS-PREV-07; ropa térmica; pausas de recuperación en zona templada; limpieza semi húmeda.'],
+    ['Cámaras frigoríficas','Tránsito dentro de la cámara',1,'Pisos con hielo o húmedos','Caída al mismo nivel',2,2,'Retirar el agua con barre agua; secar con paños; botas antideslizantes.'],
+    ['Cámaras frigoríficas','Permanencia dentro de la cámara',0,'Cierre accidental de la puerta','Encierro e hipotermia grave',1,4,'Verificar la apertura interior antes de ingresar; trabajar en pareja; aviso al supervisor al entrar y salir.'],
+    ['Trabajo al aire libre','Tareas en exteriores · Todos los puestos de terreno',1,'Radiación ultravioleta solar','Quemaduras, daño ocular y de la piel',2,2,'Protocolo de radiación UV (D.S. N° 594); bloqueador solar; legionario; lentes con filtro UV; hidratación.'],
+    ['Trabajo al aire libre','Tareas en días de calor extremo',0,'Altas temperaturas','Golpe de calor',1,4,'Hidratación frecuente; pausas a la sombra; reprogramar tareas pesadas en las horas de más calor.'],
+    ['Conducción de vehículos','Traslado de personal y materiales · Chofer',1,'Tránsito vehicular, fatiga y distracciones','Choque, colisión, volcamiento',2,4,'Licencia y documentos al día; mantención del vehículo; respeto a la Ley de Tránsito; prohibido usar el celular al conducir; descansos; programa de conducción segura.'],
+    ['Trabajo en plantas de clientes','Desplazamiento en instalaciones del mandante · Todos los puestos',1,'Tránsito de grúas horquilla y vehículos','Atropello',1,4,'Usar vías peatonales; chaleco reflectante; cumplir las reglas del mandante.'],
+    ['Trabajo administrativo','Trabajo de oficina con computador · Administración y prevención',1,'Uso prolongado de pantallas y posturas sedentarias','Molestias musculoesqueléticas y fatiga visual',2,1,'Puesto de trabajo ajustado; pausas activas; iluminación adecuada.'],
+    ['Trabajo administrativo','Desplazamiento en oficinas',1,'Escaleras, cables y objetos en el piso','Caída al mismo o distinto nivel',1,2,'Orden y aseo; cables canalizados; pasamanos.'],
+    ['Transversal (todos los puestos)','Organización del trabajo',1,'Factores de riesgo psicosocial (carga de trabajo, turnos)','Estrés y afectación de la salud mental',2,2,'Protocolo de vigilancia de riesgos psicosociales (cuestionario SUSESO); canales de comunicación; distribución de cargas.'],
+    ['Transversal (todos los puestos)','Relaciones laborales',1,'Acoso laboral, acoso sexual y violencia en el trabajo','Daño psicológico y físico',1,4,'Protocolo de prevención Ley N° 21.643 (Ley Karin); canal de denuncias; capacitación y difusión.'],
+    ['Transversal (todos los puestos)','Atención y contacto con terceros',1,'Violencia externa','Agresiones',1,2,'Instrucciones de actuación; aviso a la jefatura y al mandante; registro de incidentes.'],
+    ['Transversal (todos los puestos)','Emergencias en la faena',0,'Sismo, incendio o emergencia en la planta','Lesiones múltiples',1,4,'Procedimiento de emergencia y/o accidentes (PR-PREV-03); extintores; vías de evacuación; simulacros.'],
+    ['Transversal (todos los puestos)','Conducta en el trabajo',1,'Consumo de alcohol o drogas','Accidentes por pérdida de capacidades',1,4,'Prohibición en el RIOHS; programa de prevención del consumo de alcohol y drogas; supervisión.']
+  ];
+  function docProcIPER(){
+    var H=seccionador();
+    function tr(a,b){ return '<tr><td class="dg-k">'+a+'</td><td>'+b+'</td></tr>'; }
+    return dgHead('PROCEDIMIENTO','01')+
+      '<div class="pts-tit">Identificación de peligros y evaluación de riesgos (IPER)</div>'+
+      '<table class="dg-tbl pts-ctl"><tbody><tr><td><span class="sl">Código</span><b>PR-PREV-04</b></td><td><span class="sl">Versión</span><b>01</b></td><td><span class="sl">Fecha</span>'+ce(fFaena(todayISO()))+'</td><td><span class="sl">Aplica a</span><b>Todos los procesos</b></td></tr></tbody></table>'+
+      dgFirmasPTS()+
+      H('Objetivo')+'<p>Establecer la metodología para identificar los peligros y evaluar los riesgos laborales de los procesos, tareas y puestos de trabajo de Innovación y Servicios SpA, y definir las medidas de control, según el artículo 7° del D.S. N° 44.</p>'+
+      H('Alcance')+'<p>Aplica a todos los procesos, tareas y puestos de trabajo de la empresa, en sus dependencias y en las faenas de los clientes, incluidas las tareas rutinarias y no rutinarias.</p>'+
+      H('Normativa y referencias')+ulDg(['D.S. N° 44 del Ministerio del Trabajo y Previsión Social, artículos 7° (matriz), 8° (programa de trabajo preventivo) y 9° (prelación de las medidas).','Guía Técnica para la identificación y evaluación primaria de riesgos en los ambientes de trabajo, del Instituto de Salud Pública (ISP).','Ley N° 16.744 y Reglamento Interno de Orden, Higiene y Seguridad de la empresa.'])+
+      H('Definiciones')+'<table class="dg-tbl"><tbody>'+tr('Peligro','Fuente, situación o condición con potencial de causar lesiones o afectar la salud de las personas.')+tr('Riesgo','Posibilidad de que una persona sufra un daño a causa de un peligro.')+tr('Tarea rutinaria','Tarea que se realiza de forma habitual o programada.')+tr('Tarea no rutinaria','Tarea ocasional, de emergencia o fuera de lo habitual.')+tr('Magnitud del riesgo (MR)','Resultado de multiplicar la probabilidad por la consecuencia.')+tr('Persona trabajadora especialmente sensible','Persona que, por sus características personales o estado biológico, es más vulnerable a un riesgo.')+'</tbody></table>'+
+      H('Responsabilidades')+'<table class="dg-tbl"><tbody>'+tr('Gerencia','Aprobar la matriz, proveer los recursos para las medidas de control y aprobar el programa de trabajo preventivo.')+tr('Prevención de riesgos','Elaborar y actualizar la matriz, asesorar en la evaluación, difundirla y elaborar el programa de trabajo preventivo.')+tr('Supervisores','Participar en la identificación de peligros de sus tareas y velar por el cumplimiento de las medidas de control.')+tr('Trabajadores','Informar peligros y condiciones inseguras, participar en la identificación y cumplir las medidas de control.')+tr('Comité Paritario','Conocer la matriz, hacer observaciones y participar en su revisión.')+'</tbody></table>'+
+      H('Metodología')+
+        '<p style="margin:8px 0 4px"><b>Paso 1 · Identificar procesos, tareas y puestos.</b></p>'+ulDg(['Listar los procesos de la empresa y sus tareas, indicando si son rutinarias o no rutinarias y los puestos de trabajo que las realizan.'])+
+        '<p style="margin:8px 0 4px"><b>Paso 2 · Identificar los peligros.</b></p>'+ulDg(['Para cada tarea, identificar los peligros de seguridad, higiene (agentes físicos, químicos y biológicos), ergonómicos y psicosociales, y la violencia y el acoso en el trabajo.','Considerar los accidentes y enfermedades ocurridos, los programas de vigilancia ocupacional, el enfoque de género y a las personas trabajadoras especialmente sensibles.','La identificación se hace en terreno, con participación de los trabajadores y supervisores de la tarea.'])+
+        '<p style="margin:8px 0 4px"><b>Paso 3 · Evaluar el riesgo.</b> La magnitud del riesgo es el producto de la probabilidad por la consecuencia, considerando los controles existentes.</p>'+
+        '<table class="dg-tbl"><thead><tr><th style="width:24%">Probabilidad</th><th style="width:8%">Valor</th><th>Criterio</th></tr></thead><tbody>'+
+          '<tr><td><b>Baja</b></td><td>1</td><td>El daño ocurrirá raras veces.</td></tr><tr><td><b>Media</b></td><td>2</td><td>El daño ocurrirá en algunas ocasiones.</td></tr><tr><td><b>Alta</b></td><td>4</td><td>El daño ocurrirá siempre o casi siempre.</td></tr></tbody></table>'+
+        '<table class="dg-tbl"><thead><tr><th style="width:24%">Consecuencia</th><th style="width:8%">Valor</th><th>Criterio</th></tr></thead><tbody>'+
+          '<tr><td><b>Ligeramente dañino</b></td><td>1</td><td>Lesiones leves sin incapacidad, molestias o irritaciones.</td></tr><tr><td><b>Dañino</b></td><td>2</td><td>Lesiones con incapacidad temporal, como cortes, quemaduras o esguinces.</td></tr><tr><td><b>Extremadamente dañino</b></td><td>4</td><td>Lesiones graves, incapacidad permanente, enfermedad profesional grave o muerte.</td></tr></tbody></table>'+
+        '<div class="pts-figs"><figure class="pts-fig ancha">'+figMatrizMR()+'<figcaption>Magnitud del riesgo = probabilidad × consecuencia</figcaption></figure></div>'+
+        '<p style="margin:8px 0 4px"><b>Paso 4 · Definir la acción según el nivel.</b></p>'+
+        '<table class="dg-tbl"><thead><tr><th style="width:26%">Nivel</th><th>Acción y plazo</th></tr></thead><tbody>'+
+          '<tr><td>'+mrChip(1).replace('1 · ','1–2 · ')+'</td><td>Mantener los controles existentes y verificarlos periódicamente.</td></tr>'+
+          '<tr><td>'+mrChip(4)+'</td><td>Reforzar los controles y verificar su eficacia; las mejoras se programan en el programa de trabajo preventivo.</td></tr>'+
+          '<tr><td>'+mrChip(8)+'</td><td>No iniciar la tarea sin las medidas de control implementadas; requiere procedimiento de trabajo seguro, supervisión y capacitación específica.</td></tr>'+
+          '<tr><td>'+mrChip(16)+'</td><td>No iniciar o detener de inmediato la tarea hasta reducir el riesgo.</td></tr></tbody></table>'+
+        '<p style="margin:8px 0 4px"><b>Paso 5 · Definir las medidas de control en orden de prelación</b> (artículo 9°, D.S. N° 44):</p>'+ulDg(['1. Eliminar el riesgo.','2. Controlarlo en su fuente con medidas técnicas o de ingeniería.','3. Reducirlo con medidas administrativas: procedimientos, capacitación, señalización y rotación.','4. Proporcionar elementos de protección personal adecuados, como última medida.'])+
+        '<p style="margin:8px 0 4px"><b>Paso 6 · Registrar, difundir y planificar.</b></p>'+ulDg(['Registrar los resultados en la Matriz IPER (MAT-PREV-02).','Mantenerla disponible en los lugares de trabajo e informarla a los trabajadores, al Comité Paritario y a la línea de mando.','Elaborar o actualizar el programa de trabajo preventivo dentro de 30 días corridos desde la confección o actualización de la matriz.'])+
+      H('Revisión de la matriz')+ulDg(['Al menos una vez al año.','Cuando cambien las condiciones de trabajo y signifiquen un riesgo adicional.','Cuando ocurra un accidente del trabajo o se diagnostique una enfermedad profesional.','Cuando se genere una situación de riesgo grave e inminente.'])+
+      H('Registros')+ulDg(['Matriz IPER (MAT-PREV-02).','Programa de trabajo preventivo (PRG-PREV-01).','Registro de difusión de la matriz a los trabajadores.'])+
+      H('Control de cambios')+'<table class="dg-tbl"><thead><tr><th style="width:15%">Versión</th><th style="width:20%">Fecha</th><th>Descripción del cambio</th></tr></thead><tbody><tr><td>01</td><td>'+fFaena(todayISO())+'</td><td>Emisión original.</td></tr></tbody></table>';
+  }
+  function docMatrizIPER(){
+    var procs=[]; IPER_FILAS.forEach(function(f){ if(procs.indexOf(f[0])<0) procs.push(f[0]); });
+    var cnt={}; IPER_FILAS.forEach(function(f){ var k=mrNivel(f[5]*f[6])[1]; cnt[k]=(cnt[k]||0)+1; });
+    var n=0;
+    return dgHead('MATRIZ IPER','01')+
+      '<div class="pts-tit">Matriz de identificación de peligros y evaluación de riesgos</div>'+
+      '<table class="dg-tbl pts-ctl"><tbody><tr><td><span class="sl">Código</span><b>MAT-PREV-02</b></td><td><span class="sl">Versión</span><b>01</b></td><td><span class="sl">Fecha</span>'+ce(fFaena(todayISO()))+'</td><td><span class="sl">Metodología</span><b>Guía Técnica ISP · PR-PREV-04</b></td></tr></tbody></table>'+
+      dgFirmasPTS()+
+      '<p style="font-size:11.5px;margin:0 0 6px">Matriz de los procesos, tareas y puestos de trabajo de Innovación y Servicios SpA (artículo 7°, D.S. N° 44). La magnitud del riesgo (MR) se calcula como probabilidad (P) × consecuencia (C), con los controles indicados. R = tarea rutinaria; NR = no rutinaria. Se revisa al menos una vez al año y cada vez que cambien las condiciones, ocurra un accidente o se diagnostique una enfermedad profesional.</p>'+
+      '<div class="mr-res">'+MR_NIV.slice().reverse().map(function(x){ return '<span class="mr-chip" style="background:'+x[2]+';color:'+x[3]+';border-color:'+x[3]+'55">'+x[1]+': '+(cnt[x[1]]||0)+'</span>'; }).join('')+'</div>'+
+      '<table class="dg-tbl iper"><thead><tr><th style="width:22px">N°</th><th style="width:19%">Tarea / puesto</th><th style="width:15%">Peligro</th><th style="width:14%">Riesgo</th><th style="width:20px">P</th><th style="width:20px">C</th><th style="width:74px">MR</th><th>Medidas de control</th></tr></thead><tbody>'+
+        procs.map(function(p){ return '<tr class="iper-g"><td colspan="8">'+esc(p)+'</td></tr>'+IPER_FILAS.filter(function(f){ return f[0]===p; }).map(function(f){ n++; var v=f[5]*f[6];
+          return '<tr><td class="n">'+n+'</td><td>'+esc(f[1])+' <span class="iper-r">'+(f[2]?'R':'NR')+'</span></td><td>'+esc(f[3])+'</td><td>'+esc(f[4])+'</td><td class="c">'+f[5]+'</td><td class="c">'+f[6]+'</td><td class="c">'+mrChip(v)+'</td><td>'+esc(f[7])+'</td></tr>'; }).join(''); }).join('')+
+      '</tbody></table>'+
+      '<p style="font-size:11px;color:#55607a;margin:0">Las medidas se aplican en el orden de prelación del artículo 9° del D.S. N° 44 (eliminar, controlar en la fuente, medidas administrativas y EPP). Las mejoras se programan en el Programa de trabajo preventivo (PRG-PREV-01). Para personas trabajadoras especialmente sensibles se evalúan medidas adicionales caso a caso.</p>';
+  }
+  // Programa de trabajo preventivo (artículo 8°, D.S. N° 44): 12 meses desde el mes siguiente a su emisión.
+  // Actividad: [grupo, actividad, responsable, frecuencia, meses (1..12, 'todos' o función por mes calendario), verificación]
+  var PRG_ACT=[
+    ['Gestión del riesgo','Difundir la matriz IPER a los trabajadores, la línea de mando y el Comité Paritario','Prevención','Al inicio',[1],'Registro de difusión'],
+    ['Gestión del riesgo','Revisar y actualizar la matriz IPER (y ante accidentes o cambios)','Prevención','Anual',[12],'Matriz actualizada'],
+    ['Gestión del riesgo','Revisar los PTS según la matriz y elaborar los que falten','Prevención','Trimestral',[2,5,8,11],'PTS vigentes'],
+    ['Capacitación','Inducción e información de riesgos laborales (IRL) a trabajadores nuevos','Prevención','Al ingreso','todos','IRL firmada'],
+    ['Capacitación','Charlas de inicio de jornada (5 minutos)','Supervisores','Semanal','todos','Registro de charlas'],
+    ['Capacitación','Entrega e instrucción de los PTS de cada tarea','Prevención','Trimestral',[1,4,7,10],'Registro de entrega de PTS'],
+    ['Capacitación','Capacitación en espacios confinados y trabajos en altura','Prevención','Semestral',[2,8],'Registro y evaluación'],
+    ['Capacitación','Capacitación en primeros auxilios','Prevención','Semestral',[3,9],'Registro y evaluación'],
+    ['Capacitación','Uso y cuidado de EPP · uso de extintores','Prevención','Semestral',[4,10],'Registro de capacitación'],
+    ['Inspección y control','Inspección de faenas y observación de conductas','Prevención y supervisores','Mensual','todos','Informe de inspección'],
+    ['Inspección y control','Inspección de EPP, herramientas y equipos','Supervisores','Mensual','todos','Lista de verificación'],
+    ['Inspección y control','Revisión de botiquines y extintores','Supervisores','Mensual','todos','Lista de verificación'],
+    ['Emergencias','Simulacro de evacuación','Prevención','Semestral',[3,9],'Informe de simulacro'],
+    ['Emergencias','Simulacro de rescate en espacio confinado','Prevención','Semestral',[4,10],'Informe de simulacro'],
+    ['Emergencias','Mantención anual de extintores','Administración','Anual',[6],'Certificado de mantención'],
+    ['Salud ocupacional','Control de exámenes ocupacionales (altura y otros) según vencimiento','Prevención','Mensual','todos','Exámenes vigentes'],
+    ['Salud ocupacional','Protocolo de radiación UV: charla, bloqueador y protección','Prevención','Temporada (sep. a mar.)',function(m){ return [9,10,11,12,1,2,3].indexOf(m)>=0; },'Registro de entrega'],
+    ['Salud ocupacional','Prevención del consumo de alcohol y drogas','Prevención','Semestral',[2,8],'Registro de actividad'],
+    ['Salud ocupacional','Promoción de vida y alimentación saludable','Prevención','Trimestral',[3,6,9,12],'Registro de actividad'],
+    ['Salud ocupacional','Manejo manual de carga y protocolo TMERT','Prevención','Semestral',[5,11],'Registro de capacitación'],
+    ['Salud ocupacional','Evaluación de riesgos psicosociales (cuestionario SUSESO)','Gerencia y prevención','Según protocolo',[6],'Informe de resultados'],
+    ['Conducción','Conducción segura y revisión de licencias y documentos de vehículos','Prevención y administración','Semestral',[1,7],'Registro y documentos al día'],
+    ['Conducción','Revisión de mantención de vehículos','Administración','Mensual','todos','Registro de mantención'],
+    ['Participación','Comité Paritario: constitución y reuniones mensuales','Gerencia y Comité','Mensual','todos','Actas de reunión'],
+    ['Participación','Difusión del protocolo Ley Karin y del canal de denuncias','Gerencia y prevención','Anual',[2],'Registro de difusión'],
+    ['Seguimiento','Investigación de accidentes e incidentes (dentro de 24 h)','Prevención y jefatura','Cuando ocurra','todos','Informe de investigación'],
+    ['Seguimiento','Informe mensual de accidentabilidad','Prevención','Mensual','todos','Informe mensual'],
+    ['Seguimiento','Evaluación anual del cumplimiento y eficacia del programa','Gerencia y prevención','Anual',[12],'Informe de evaluación']
+  ];
+  function docProgramaPrev(){
+    var H=seccionador(), hoy=new Date(), M=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'], meses=[];
+    for(var i=1;i<=12;i++){ var d=new Date(hoy.getFullYear(), hoy.getMonth()+i, 1); meses.push({cal:d.getMonth()+1, lbl:M[d.getMonth()], an:d.getFullYear()}); }
+    var per=M[meses[0].cal-1].toLowerCase()+'. '+meses[0].an+' a '+M[meses[11].cal-1].toLowerCase()+'. '+meses[11].an;
+    function tr(a,b){ return '<tr><td class="dg-k">'+a+'</td><td>'+b+'</td></tr>'; }
+    function marca(a,k){ var m=a[4], c=meses[k].cal; return m==='todos' || (typeof m==='function'?m(c):m.indexOf(k+1)>=0); }
+    var grupos=[], nn=0; PRG_ACT.forEach(function(a){ if(grupos.indexOf(a[0])<0) grupos.push(a[0]); });
+    var gantt='<table class="dg-tbl prg"><thead><tr><th style="width:20px">N°</th><th>Actividad</th><th style="width:13%">Responsable</th>'+meses.map(function(m){ return '<th class="m">'+m.lbl+'<br><span>'+String(m.an).slice(2)+'</span></th>'; }).join('')+'</tr></thead><tbody>'+
+      grupos.map(function(g){ return '<tr class="iper-g"><td colspan="15">'+esc(g)+'</td></tr>'+PRG_ACT.filter(function(a){ return a[0]===g; }).map(function(a){ nn++;
+        return '<tr><td class="n">'+nn+'</td><td>'+esc(a[1])+'<span class="prg-f">'+esc(a[3])+' · '+esc(a[5])+'</span></td><td>'+esc(a[2])+'</td>'+meses.map(function(_,k){ return '<td class="m">'+(marca(a,k)?'<i></i>':'')+'</td>'; }).join('')+'</tr>'; }).join(''); }).join('')+'</tbody></table>';
+    return dgHead('PROGRAMA','01')+
+      '<div class="pts-tit">Programa de trabajo preventivo</div>'+
+      '<table class="dg-tbl pts-ctl"><tbody><tr><td><span class="sl">Código</span><b>PRG-PREV-01</b></td><td><span class="sl">Versión</span><b>01</b></td><td><span class="sl">Fecha de aprobación</span>'+ce(fFaena(todayISO()))+'</td><td><span class="sl">Período</span><b>'+per+'</b></td></tr></tbody></table>'+
+      dgFirmasPTS()+
+      H('Objetivo')+'<p>Planificar y ejecutar las medidas preventivas y correctivas que se desprenden de la matriz de identificación de peligros y evaluación de riesgos (MAT-PREV-02), con sus plazos y responsables, para mantener un entorno de trabajo seguro y saludable, según el artículo 8° del D.S. N° 44.</p>'+
+      H('Alcance')+'<p>Aplica a todos los trabajadores, procesos y faenas de Innovación y Servicios SpA durante el período indicado.</p>'+
+      H('Normativa')+ulDg(['D.S. N° 44, artículo 8°: el programa se elabora a partir de la matriz dentro de 30 días corridos, consta por escrito, lo aprueba el representante legal, se difunde a los trabajadores y se remite al Comité Paritario.','Ley N° 16.744 y Reglamento Interno de Orden, Higiene y Seguridad de la empresa.'])+
+      H('Metas')+'<table class="dg-tbl"><thead><tr><th>Meta</th><th style="width:30%">Indicador</th></tr></thead><tbody>'+
+        '<tr><td>Cero accidentes graves o fatales.</td><td>N° de accidentes graves y fatales</td></tr>'+
+        '<tr><td>Todo trabajador nuevo recibe inducción e IRL antes de iniciar sus labores.</td><td>Trabajadores con IRL ÷ ingresos × 100 = 100%</td></tr>'+
+        '<tr><td>Todo trabajador tiene entregados los PTS de las tareas que realiza.</td><td>PTS entregados ÷ PTS que aplican × 100 = 100%</td></tr>'+
+        '<tr><td>Cumplir las actividades programadas.</td><td>Actividades realizadas ÷ programadas × 100 ≥ 90%</td></tr>'+
+        '<tr><td>Investigar todos los accidentes e incidentes.</td><td>Investigados ÷ ocurridos × 100 = 100%</td></tr></tbody></table>'+
+      H('Responsabilidades')+'<table class="dg-tbl"><tbody>'+tr('Gerencia','Aprobar el programa, asignar los recursos y evaluar su cumplimiento.')+tr('Prevención de riesgos','Coordinar y ejecutar las actividades, registrar su cumplimiento y reportar a Gerencia.')+tr('Supervisores','Realizar las charlas e inspecciones a su cargo y hacer cumplir las medidas en terreno.')+tr('Trabajadores','Participar en las actividades y cumplir las medidas de seguridad.')+tr('Comité Paritario','Recibir el programa, hacer observaciones y colaborar en su ejecución.')+'</tbody></table>'+
+      H('Cronograma de actividades')+'<p style="font-size:11px;margin:0 0 6px">Cada punto indica el mes en que se ejecuta la actividad. Bajo cada actividad se indica su frecuencia y el medio de verificación.</p>'+gantt+
+      H('Control, seguimiento y evaluación')+ulDg(['El cumplimiento se controla mensualmente con los registros de cada actividad y se informa a Gerencia.','Al término del período se evalúa el cumplimiento y la eficacia de las medidas, considerando las mediciones y evaluaciones de riesgo, los accidentes y enfermedades ocurridos, las observaciones del Comité Paritario, las sugerencias de los trabajadores, los cambios en los procesos y las modificaciones legales.','Los resultados de la evaluación son la base del programa del período siguiente.'])+
+      H('Difusión')+ulDg(['Antes de su implementación, el programa se difunde a los trabajadores por avisos visibles en los lugares de trabajo o por correo electrónico.','Se remite un ejemplar al Comité Paritario.'])+
+      H('Control de cambios')+'<table class="dg-tbl"><thead><tr><th style="width:15%">Versión</th><th style="width:20%">Fecha</th><th>Descripción del cambio</th></tr></thead><tbody><tr><td>01</td><td>'+fFaena(todayISO())+'</td><td>Emisión original.</td></tr></tbody></table>';
+  }
   function docCapHerr(){
     var H=seccionador();
     function tr(a,b){ return '<tr><td class="dg-k">'+a+'</td><td>'+b+'</td></tr>'; }
@@ -9295,7 +9458,7 @@
         '<tr><td>01</td><td>01-11-2025</td><td>Emisión original (procedimiento en caso de accidente del trabajo o enfermedad profesional).</td></tr>'+
         '<tr><td>02</td><td>'+fFaena(todayISO())+'</td><td>Formato corporativo; se integra el procedimiento de emergencia (organigrama, situaciones, recursos, evacuación, rescate en espacios confinados, primeros auxilios y simulacros); se agregan accidente de trayecto y obligaciones ante accidentes graves y fatales; normativa vigente (D.S. N° 44); se corrige la definición de accidente fatal y se actualizan los contactos.</td></tr></tbody></table>';
   }
-  var EMP_GEN={ matriz_epp:{ build:docMatrizEPP }, cap_herr:{ build:docCapHerr }, cap_primeros:{ build:docCapPrimeros }, proc_acc:{ build:docEmergAcc } };
+  var EMP_GEN={ programa:{ build:docProgramaPrev }, iper:{ build:docMatrizIPER }, proc_iper:{ build:docProcIPER }, matriz_epp:{ build:docMatrizEPP }, cap_herr:{ build:docCapHerr }, cap_primeros:{ build:docCapPrimeros }, proc_acc:{ build:docEmergAcc } };
   function esPTS(s){ return s==='pts_funciones' || !!(typeof PTS_DOC!=='undefined'&&PTS_DOC[s]); }
   function nombrePTS(s){ var n=s; EMP_CARPETAS.forEach(function(c){ c.tipos.forEach(function(x){ if(x[0]===s) n=x[1]; }); }); return n; }
   function generarPTS(s){ var nom=nombrePTS(s);
