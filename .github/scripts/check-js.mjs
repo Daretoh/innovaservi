@@ -3,7 +3,7 @@
 import fs from 'node:fs';
 import vm from 'node:vm';
 
-const files = ['app/index.html', 'planificacion/index.html', 'index.html', 'ficha/index.html'];
+const files = ['app/index.html', 'planificacion/index.html', 'index.html', 'ficha/index.html', 'checklist/index.html'];
 let fail = false, revisados = 0;
 
 for (const f of files) {

@@ -1820,6 +1820,7 @@
         <label style="display:block;font:700 13px var(--font);color:var(--ink);margin-bottom:2px;">✅ Checklist de preparación</label>
         <p class="note" style="margin:0 0 10px">EPP, herramientas y maquinaria a cargar. Marca lo que ya está listo.</p>
         <div id="prep-list"></div>
+        <div id="prep-link" class="hide" style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line)"></div>
       </div>
 
       <button class="btn" id="c-save">Guardar preparación</button>
@@ -3983,13 +3984,13 @@
     html+='<div class="pg-tot"><span>Preparado <b>'+hechos+'/'+PREP.length+'</b></span><span class="pg-bar"><i style="width:'+Math.round(hechos*100/PREP.length)+'%"></i></span></div>';
     if(ed&&C_FAENA) html+='<button type="button" class="pg-add" id="pg-recargar" style="margin-top:10px">Volver a cargar ítems desde la matriz</button>';
     cont.innerHTML=html;
-    cont.querySelectorAll('.pg-chk').forEach(function(c){ c.addEventListener('change',function(){ var it=PREP[+c.dataset.i]; if(!it) return; it.cargado=c.checked;
+    cont.querySelectorAll('.pg-chk').forEach(function(c){ c.addEventListener('change',function(){ var it=PREP[+c.dataset.i]; if(!it) return; it.cargado=c.checked; it._tocado=true;
       var tr=c.closest('tr'); if(tr&&!it.personal) tr.classList.toggle('ok',c.checked);
       var sec=c.closest('.pg-sec'), tp=sec&&sec.dataset.sec, arr=PREP.filter(function(x){ return tp==='ropa'?x.personal:(!x.personal&&(x.tipo||'herramienta')===tp); });
       var h=arr.filter(function(x){ return x.cargado; }).length, ce=sec&&sec.querySelector('.pg-cnt'); if(ce){ ce.textContent=h+'/'+arr.length+' listos'; ce.classList.toggle('full',h===arr.length); }
       var tot=PREP.filter(function(x){ return x.cargado; }).length, tb=cont.querySelector('.pg-tot b'), bar=cont.querySelector('.pg-bar i');
       if(tb) tb.textContent=tot+'/'+PREP.length; if(bar) bar.style.width=Math.round(tot*100/PREP.length)+'%'; }); });
-    cont.querySelectorAll('.pg-chk-g').forEach(function(c){ c.addEventListener('change',function(){ c.dataset.g.split(',').forEach(function(i){ if(PREP[+i]) PREP[+i].cargado=c.checked; }); renderPrep(); }); });
+    cont.querySelectorAll('.pg-chk-g').forEach(function(c){ c.addEventListener('change',function(){ c.dataset.g.split(',').forEach(function(i){ if(PREP[+i]){ PREP[+i].cargado=c.checked; PREP[+i]._tocado=true; } }); renderPrep(); }); });
     cont.querySelectorAll('.pg-in').forEach(function(inp){ inp.addEventListener('input',function(){ var it=PREP[+inp.dataset.i]; if(!it) return; it[inp.dataset.f]=inp.value; if(inp.dataset.f==='cantidad') it.cantAuto=false; }); });
     // Enter = baja a la misma columna de la fila siguiente (como planilla)
     cont.querySelectorAll('.pg-tbl input[type=text]').forEach(function(inp){ inp.addEventListener('keydown',function(ev){ if(ev.key!=='Enter') return; ev.preventDefault();
@@ -4017,25 +4018,74 @@
     C_FAENA=prep.faena||''; renderFaenaSelect();
     PREP=(prep.items&&prep.items.length)?prep.items.map(function(it){ return normPersonal({tipo:it.tipo||'herramienta',item:it.item,cantidad:it.cantidad||'',cargado:!!it.cargado,personal:!!it.personal,persona:it.persona,prenda:it.prenda,talla:it.talla,cantAuto:!!it.cantAuto}); }):[];
     if(C_FAENA || PREP.length) armarPrep(PREP); else renderPrep();
+    renderPrepLink(reg);
   }
   $('c-job-clear').addEventListener('click',function(){ elegirJobCuadrilla(null); });
+
+  // ---- Link público del checklist (/checklist/?t=TOKEN): sin login, ve el resumen y solo marca ----
+  function linkChecklist(tok){ return new URL('../checklist/?t='+encodeURIComponent(tok), location.href).href; }
+  function nuevoToken(){ var a=new Uint8Array(18); crypto.getRandomValues(a); return Array.prototype.map.call(a,function(b){ return ('0'+b.toString(16)).slice(-2); }).join(''); }
+  function renderPrepLink(reg){
+    var box=$('prep-link'); if(!box) return;
+    if(!C_JOB||!puede('preparacion.asignar')){ box.classList.add('hide'); return; }
+    box.classList.remove('hide');
+    var LNK='<path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/>';
+    if(!reg){ box.innerHTML='<div class="note">Guarda la preparación para poder compartir el checklist con un link.</div>'; return; }
+    if(!reg.prep_token){
+      box.innerHTML='<button type="button" class="pg-add" id="pl-crear" style="margin-top:0">'+pgIco(LNK)+'Crear link para la cuadrilla</button>'+
+        '<p class="note" style="margin:6px 0 0">Quien tenga el link ve el resumen (cliente, faena, fecha, cuadrilla) y solo puede marcar el checklist. Sin iniciar sesión.</p>';
+      $('pl-crear').addEventListener('click',function(){ cambiarToken(reg, nuevoToken(), true); });
+      return;
+    }
+    var url=linkChecklist(reg.prep_token);
+    box.innerHTML='<div style="font:700 12.5px var(--font);color:var(--ink);margin-bottom:6px;display:flex;align-items:center;gap:6px">'+pgIco(LNK)+'Link para la cuadrilla</div>'+
+      '<input type="text" readonly id="pl-url" value="'+enc(url)+'" style="width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:9px;background:var(--alt);font:500 12.5px var(--font);color:var(--body)">'+
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">'+
+        '<button type="button" class="pg-add" id="pl-share" style="margin-top:0">Compartir / copiar</button>'+
+        '<button type="button" class="pg-add" id="pl-off" style="margin-top:0">Desactivar link</button></div>'+
+      '<p class="note" style="margin:6px 0 0">Solo ven el resumen y marcan el checklist. Lo que marquen aparece aquí al recargar.</p>';
+    $('pl-url').addEventListener('focus',function(){ this.select(); });
+    $('pl-share').addEventListener('click',function(){
+      var txt='Checklist de preparación · '+(C_JOB.ubicacion||'')+(C_FAENA?' · '+C_FAENA:'');
+      if(navigator.share){ navigator.share({title:txt,text:txt,url:url}).catch(function(){}); return; }
+      (navigator.clipboard?navigator.clipboard.writeText(url):Promise.reject()).then(function(){ toast('✓ Link copiado'); }, function(){ $('pl-url').focus(); toast('Copia el link de la casilla'); });
+    });
+    $('pl-off').addEventListener('click',function(){ if(confirm('¿Desactivar el link? Quien lo tenga ya no podrá abrir el checklist.')) cambiarToken(reg, null, false); });
+  }
+  function cambiarToken(reg, tok, copiar){
+    busy(true, tok?'Creando link…':'Desactivando…');
+    sb.from('registros').update({prep_token:tok}).eq('id',reg.id).then(function(r){ busy(false);
+      if(r.error){ toast(/prep_token/.test(r.error.message||'')?'Falta correr checklist-link.sql en Supabase.':('No se pudo: '+r.error.message)); return; }
+      reg.prep_token=tok; renderPrepLink(reg);
+      if(tok&&copiar&&navigator.clipboard) navigator.clipboard.writeText(linkChecklist(tok)).then(function(){ toast('✓ Link creado y copiado'); }, function(){ toast('✓ Link creado'); });
+      else toast(tok?'✓ Link creado':'Link desactivado');
+    });
+  }
 
   $('c-save').addEventListener('click',function(){
     if(!sb) return;
     if(!C_JOB){ toast('Elige un trabajo para preparar.'); return; }
     syncAsig();
     var asignacion=ASIG.filter(function(a){ return (a.nombre||'').trim(); }).map(function(a){ return { nombre:(a.nombre||'').trim(), epp:a.epp||[] }; });
-    var preparacion={ faena:C_FAENA, items:PREP.filter(function(it){ return (it.item||'').trim(); }).map(function(it){ var o={tipo:it.tipo,item:it.item.trim(),cantidad:(it.cantidad||'').trim(),cargado:!!it.cargado,personal:!!it.personal}; if(it.cantAuto) o.cantAuto=true; if(it.personal){ o.persona=it.persona; o.prenda=it.prenda; o.talla=it.talla||''; } return o; }) };
     busy(true,'Guardando preparación…');
     var reg=registroDe(C_JOB.id);
-    var payload = puede('preparacion.asignar') ? {asignacion:asignacion, preparacion:preparacion} : {preparacion:preparacion};
-    var q = reg ? sb.from('registros').update(payload).eq('id',reg.id)
-                : sb.from('registros').insert({ evento_id:C_JOB.id, empresa:(C_JOB.ubicacion||''), lugar:(C_JOB.titulo||''), fecha:(C_JOB.fecha||todayISO()), asignacion:asignacion, preparacion:preparacion, autor:userEmail });
-    q.then(function(r){ busy(false);
-      if(r.error){ toast('No se pudo guardar: '+r.error.message); return; }
-      toast('✓ Preparación guardada');
-      cargarRegistros(function(){ if(C_JOB) elegirJobCuadrilla(C_JOB); });
-    });
+    function guardar(remoto){
+      // Lo que la cuadrilla marcó por el link mientras esta pantalla estaba abierta no se pisa:
+      // solo manda la marca local en los ítems que se tocaron aquí.
+      var rem={}; (remoto||[]).forEach(function(it){ rem[(it.tipo||'')+'|'+(it.item||'')]=!!it.cargado; });
+      var preparacion={ faena:C_FAENA, items:PREP.filter(function(it){ return (it.item||'').trim(); }).map(function(it){ var k=(it.tipo||'')+'|'+it.item.trim();
+        var o={tipo:it.tipo,item:it.item.trim(),cantidad:(it.cantidad||'').trim(),cargado:(!it._tocado&&k in rem)?rem[k]:!!it.cargado,personal:!!it.personal}; if(it.cantAuto) o.cantAuto=true; if(it.personal){ o.persona=it.persona; o.prenda=it.prenda; o.talla=it.talla||''; } return o; }) };
+      var payload = puede('preparacion.asignar') ? {asignacion:asignacion, preparacion:preparacion} : {preparacion:preparacion};
+      var q = reg ? sb.from('registros').update(payload).eq('id',reg.id)
+                  : sb.from('registros').insert({ evento_id:C_JOB.id, empresa:(C_JOB.ubicacion||''), lugar:(C_JOB.titulo||''), fecha:(C_JOB.fecha||todayISO()), asignacion:asignacion, preparacion:preparacion, autor:userEmail });
+      q.then(function(r){ busy(false);
+        if(r.error){ toast('No se pudo guardar: '+r.error.message); return; }
+        toast('✓ Preparación guardada');
+        cargarRegistros(function(){ if(C_JOB) elegirJobCuadrilla(C_JOB); });
+      });
+    }
+    if(!reg){ guardar(null); return; }
+    sb.from('registros').select('preparacion').eq('id',reg.id).maybeSingle().then(function(r){ guardar(r&&r.data&&r.data.preparacion&&r.data.preparacion.items); }, function(){ guardar(null); });
   });
 
   // ====== MATRIZ DE TRABAJOS (CRUD de plantillas, solo admin) ======

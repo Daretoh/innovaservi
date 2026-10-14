@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="robots" content="noindex" />
+<title>Checklist de preparación · InnovaServi</title>
+<meta name="theme-color" content="#ff6b00" />
+<link rel="icon" type="image/png" href="../assets/images/favicon.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&display=swap" />
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{ --orange:#ff6b00; --orange-2:#c24e00; --navy:#1a1f6e; --ink:#1b1f4d; --body:#4a5270; --muted:#8b93a7; --line:#e6e8f2; --alt:#f5f6fb; --card:#fff; --ok:#22a06b; --bad:#dc2626; --font:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--alt);font-family:var(--font);color:var(--ink);-webkit-font-smoothing:antialiased}
+  .wrap{max-width:680px;margin:0 auto;padding:16px 16px calc(28px + env(safe-area-inset-bottom))}
+  .head{display:flex;align-items:center;gap:12px;margin:2px 2px 14px}
+  .head img{height:38px;width:auto}
+  .head b{display:block;font-weight:800;font-size:16px;color:var(--navy)}
+  .head span{font-size:12px;color:var(--muted)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:12px}
+  .res{display:grid;grid-template-columns:1fr 1fr;gap:12px 14px}
+  .res .w{grid-column:1/-1}
+  .res small{display:block;font:700 10.5px var(--font);text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-bottom:3px}
+  .res div{font-weight:700;font-size:14.5px;line-height:1.3}
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .chips span{background:var(--alt);border:1px solid var(--line);border-radius:999px;padding:5px 10px;font:600 12.5px var(--font)}
+  .tot{display:flex;align-items:center;gap:10px;font:600 13px var(--font);color:var(--body)}
+  .bar{flex:1;height:8px;border-radius:5px;background:var(--line);overflow:hidden}
+  .bar i{display:block;height:100%;background:var(--ok);transition:width .25s}
+  .sec{margin-top:16px}
+  .sec:first-child{margin-top:0}
+  .sh{display:flex;align-items:center;gap:7px;margin:0 0 7px;font:800 13px var(--font);color:var(--navy)}
+  .sh svg{color:var(--orange-2);flex-shrink:0}
+  .sh em{margin-left:auto;font:700 12px var(--font);font-style:normal;color:var(--muted)}
+  .sh em.full{color:var(--ok)}
+  .row{display:flex;align-items:center;gap:12px;width:100%;padding:12px;border:1px solid var(--line);border-top:none;background:var(--card);font:500 15px var(--font);color:var(--ink);text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .row:first-of-type{border-top:1px solid var(--line);border-radius:11px 11px 0 0}
+  .row:last-of-type{border-radius:0 0 11px 11px}
+  .row:only-of-type{border-radius:11px}
+  .box{width:24px;height:24px;flex-shrink:0;border:2px solid #c5cad8;border-radius:7px;display:flex;align-items:center;justify-content:center;color:#fff;background:#fff}
+  .row .n{flex:1;line-height:1.3;overflow-wrap:anywhere}
+  .row .n small{display:block;font-size:12px;color:var(--muted);margin-top:2px}
+  .row .c{font-weight:800;color:var(--orange-2);min-width:34px;text-align:right}
+  .row.ok{background:#eef8f3}
+  .row.ok .box{background:var(--ok);border-color:var(--ok)}
+  .row.ok .n{text-decoration:line-through;color:var(--muted)}
+  .row.busy{opacity:.55;pointer-events:none}
+  .falta{color:var(--orange-2);font-weight:700}
+  .msg{text-align:center;padding:34px 18px;color:var(--body)}
+  .msg b{display:block;font-size:17px;color:var(--ink);margin-bottom:6px}
+  .foot{text-align:center;color:var(--muted);font-size:11.5px;margin-top:14px;line-height:1.5}
+  .toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#1b1f4d;color:#fff;font:600 13px var(--font);padding:10px 16px;border-radius:10px;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw}
+  .toast.on{opacity:1}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <img src="../assets/images/InnovaLOGO.png" alt="" onerror="this.style.display='none'" />
+    <div><b>Checklist de preparación</b><span>Innovación y Servicios SpA</span></div>
+  </div>
+  <div id="app"><div class="card msg">Cargando…</div></div>
+  <p class="foot">Marca lo que ya está cargado. Los cambios se guardan solos y los ve todo el equipo.</p>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+  var SB_URL='https://oabtbzrfgwadnooexdwd.supabase.co';
+  var SB_KEY='sb_publishable_Uz01bxGvGArhB-h4KOvbqA_WtQg1zer';
+  var sb=null; try{ if(window.supabase) sb=window.supabase.createClient(SB_URL,SB_KEY); }catch(e){}
+  var TOKEN=''; try{ TOKEN=new URLSearchParams(location.search).get('t')||''; }catch(_){}
+  var D=null, ocupado=false;
+  var $=function(i){ return document.getElementById(i); };
+  function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function ico(p){ return '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+p+'</svg>'; }
+  var TICK='<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+  var SECS=[
+    ['epp','EPP','<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>'],
+    ['ropa','Ropa de trabajo','<path d="M20.4 6.6 16 4a4 4 0 0 1-8 0L3.6 6.6a1 1 0 0 0-.5 1.2l1.2 3.6a1 1 0 0 0 1.2.6L7 11.5V20a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-8.5l1.5.5a1 1 0 0 0 1.2-.6l1.2-3.6a1 1 0 0 0-.5-1.2z"/>'],
+    ['herramienta','Herramientas','<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.8-3.8a6 6 0 0 1-7.9 7.9l-6.9 6.9a2.1 2.1 0 0 1-3-3l6.9-6.9a6 6 0 0 1 7.9-7.9z"/>'],
+    ['maquinaria','Maquinaria','<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>']
+  ];
+  function toast(t){ var el=$('toast'); el.textContent=t; el.classList.add('on'); clearTimeout(toast._t); toast._t=setTimeout(function(){ el.classList.remove('on'); },2600); }
+  function fecha(f){ if(!f) return '—'; var p=String(f).slice(0,10).split('-'); if(p.length!==3) return f; var d=new Date(+p[0],+p[1]-1,+p[2]);
+    var dias=['dom','lun','mar','mié','jue','vie','sáb']; return dias[d.getDay()]+' '+p[2]+'-'+p[1]+'-'+p[0]; }
+  function aviso(t,s){ $('app').innerHTML='<div class="card msg"><b>'+esc(t)+'</b>'+esc(s||'')+'</div>'; }
+
+  // Filas a mostrar: cada ítem normal es una fila; la ropa personal se agrupa por prenda y talla.
+  function filas(){
+    var out={epp:[],ropa:[],herramienta:[],maquinaria:[]}, gk={};
+    (D.items||[]).forEach(function(it,i){
+      if(!(it.item||'').trim()) return;
+      if(it.personal){
+        var pr=it.prenda||(/^botas/i.test(it.item)?'botas':'overol'), k=pr+'|'+String(it.talla||'').toUpperCase();
+        if(!gk[k]){ gk[k]={prenda:pr, talla:it.talla||'', idx:[], items:[], nombres:[]}; out.ropa.push(gk[k]); }
+        gk[k].idx.push(i); gk[k].items.push(it.item); if(it.persona) gk[k].nombres.push(it.persona); return;
+      }
+      var tp=out[it.tipo]?it.tipo:'herramienta';
+      out[tp].push({nombre:it.item, cant:it.cantidad||'', idx:[i], items:[it.item]});
+    });
+    out.ropa.forEach(function(g){ g.nombre=(g.prenda==='botas'?'Botas':'Overol')+(g.talla?(g.prenda==='botas'?' T':' ')+g.talla:''); g.cant=String(g.idx.length); g.sinTalla=!g.talla; });
+    out.ropa.sort(function(a,b){ if(a.prenda!==b.prenda) return a.prenda==='overol'?-1:1; if(!a.talla) return 1; if(!b.talla) return -1;
+      var na=parseFloat(a.talla), nb=parseFloat(b.talla); return (!isNaN(na)&&!isNaN(nb))?na-nb:a.talla.localeCompare(b.talla); });
+    Object.keys(out).forEach(function(k){ out[k].forEach(function(f){ f.ok=f.idx.every(function(i){ return D.items[i].cargado; }); }); });
+    return out;
+  }
+
+  function render(){
+    var F=filas(), todas=[].concat(F.epp,F.ropa,F.herramienta,F.maquinaria), hechas=todas.filter(function(f){ return f.ok; }).length;
+    var html='<div class="card"><div class="res">'+
+      '<div><small>Cliente</small><div>'+esc(D.cliente||'—')+'</div></div>'+
+      '<div><small>Fecha</small><div>'+esc(fecha(D.fecha))+'</div></div>'+
+      '<div class="w"><small>Faena</small><div>'+esc(D.faena||D.trabajo||'—')+'</div></div>'+
+      (D.cuadrilla&&D.cuadrilla.length?'<div class="w"><small>Cuadrilla ('+D.cuadrilla.length+')</small><div class="chips">'+D.cuadrilla.map(function(n){ return '<span>'+esc(n)+'</span>'; }).join('')+'</div></div>':'')+
+      '</div></div>';
+    html+='<div class="card"><div class="tot"><span>Preparado <b>'+hechas+'/'+todas.length+'</b></span><span class="bar"><i style="width:'+(todas.length?Math.round(hechas*100/todas.length):0)+'%"></i></span></div></div>';
+    html+='<div class="card">';
+    if(!todas.length) html+='<div class="msg" style="padding:16px">Este checklist todavía no tiene ítems.</div>';
+    var n=0;
+    SECS.forEach(function(s){ var arr=F[s[0]]; if(!arr.length) return;
+      var h=arr.filter(function(f){ return f.ok; }).length;
+      html+='<div class="sec"><div class="sh">'+ico(s[2])+esc(s[1])+'<em class="'+(h===arr.length?'full':'')+'">'+h+'/'+arr.length+'</em></div>';
+      arr.forEach(function(f){ var id='f'+(n++); f.id=id;
+        html+='<button type="button" class="row'+(f.ok?' ok':'')+'" data-f="'+id+'"><span class="box">'+(f.ok?TICK:'')+'</span>'+
+          '<span class="n">'+esc(f.nombre)+(f.sinTalla?' <span class="falta">sin talla</span>':'')+(f.sinTalla&&f.nombres.length?'<small>'+esc(f.nombres.join(', '))+'</small>':'')+'</span>'+
+          '<span class="c">'+(f.cant?'×'+esc(f.cant):'')+'</span></button>';
+      });
+      html+='</div>';
+    });
+    html+='</div>';
+    $('app').innerHTML=html;
+    var mapa={}; todas.forEach(function(f){ mapa[f.id]=f; });
+    document.querySelectorAll('.row[data-f]').forEach(function(b){ b.addEventListener('click',function(){ marcar(mapa[b.dataset.f], b); }); });
+  }
+
+  function marcar(f,btn){
+    if(!f||ocupado) return; ocupado=true; btn.classList.add('busy');
+    var nuevo=!f.ok;
+    sb.rpc('prep_marcar',{p_token:TOKEN, p_idx:f.idx, p_items:f.items, p_cargado:nuevo}).then(function(r){
+      ocupado=false;
+      if(r.error||!r.data){ btn.classList.remove('busy'); toast(r.error?'No se pudo guardar. Revisa tu conexión.':'Este link ya no está activo.'); return; }
+      D=r.data; render();
+    }, function(){ ocupado=false; btn.classList.remove('busy'); toast('No se pudo guardar. Revisa tu conexión.'); });
+  }
+
+  function cargar(silencioso){
+    if(!sb){ aviso('No se pudo conectar','Revisa tu conexión a internet y vuelve a abrir el link.'); return; }
+    if(!TOKEN){ aviso('Link incompleto','Pide el link de nuevo a tu supervisor.'); return; }
+    sb.rpc('prep_publica',{p_token:TOKEN}).then(function(r){
+      if(r.error){ if(!silencioso) aviso('No se pudo cargar','Revisa tu conexión y vuelve a intentar.'); return; }
+      if(!r.data){ aviso('Link no válido','Este link fue desactivado o no existe. Pide uno nuevo a tu supervisor.'); return; }
+      if(ocupado) return;
+      D=r.data; render();
+    }, function(){ if(!silencioso) aviso('No se pudo cargar','Revisa tu conexión y vuelve a intentar.'); });
+  }
+  cargar(false);
+  // Ver lo que marcan los demás: refresca cada 20 s y al volver a la pestaña
+  setInterval(function(){ if(!document.hidden) cargar(true); },20000);
+  document.addEventListener('visibilitychange',function(){ if(!document.hidden) cargar(true); });
+</script>
+</body>
+</html>
