@@ -7824,7 +7824,7 @@
     function tr(a,b){ return '<tr><td class="dg-k">'+a+'</td><td>'+b+'</td></tr>'; }
     function rel(k,def){ return '<span contenteditable data-ls="'+k+'">'+esc(lsGet(k)||def||'')+'</span>'; }
     var relNom=lsGet('dg_rel_nom')||EMP_PREV.nombre;
-    return dgHead(I?'REGISTRO DE ENTREGA E INSTRUCCIÓN':'REGISTRO DE CAPACITACIÓN')+
+    return dgHead(I?'REGISTRO DE ENTREGA E INSTRUCCIÓN':'REGISTRO DE CAPACITACIÓN','01','10-10-2026')+   // fecha de la versión del formato
       '<p style="text-align:center;margin-top:-6px;color:#667;font-weight:700">'+esc(sub)+'</p>'+
       '<table class="dg-tbl pts-ctl asis-info"><tbody>'+
         '<tr><td colspan="3"><span class="sl">Tema</span>'+(tema?'<b>'+esc(tema)+'</b>':ce(''))+'</td></tr>'+
