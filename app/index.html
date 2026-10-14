@@ -8802,7 +8802,7 @@
   }
   // Datos de la empresa (una sola fuente; si cambia la razón social, se edita aquí).
   var EMP={ rz:'Innovación y Servicios SpA', rut:'77.647.955-1', dir:'Av. Nueva Providencia 1881, Providencia', rep:'Cristopher Andrés Ruiz Vidal', repRut:'17.240.763-3' };
-  function dgHead(titulo, ver){ return '<div class="dg-h"><div class="lg"><img src="../assets/images/InnovaServi-completo.png" onerror="this.style.display=\'none\'"></div><div class="t"><b>'+titulo+'</b><span>'+EMP.rz+' · RUT '+EMP.rut+'</span></div><div class="ver"><span>Versión <b>'+(ver||'01')+'</b></span><span>Fecha <b>'+fFaena(todayISO())+'</b></span></div></div><div class="dg-band"></div>'; }
+  function dgHead(titulo, ver, fecha){ return '<div class="dg-h"><div class="lg"><img src="../assets/images/InnovaServi-completo.png" onerror="this.style.display=\'none\'"></div><div class="t"><b>'+titulo+'</b><span>'+EMP.rz+' · RUT '+EMP.rut+'</span></div><div class="ver"><span>Versión <b>'+(ver||'01')+'</b></span><span>Fecha <b>'+(fecha||fFaena(todayISO()))+'</b></span></div></div><div class="dg-band"></div>'; }
   function dgFoot(){ return '<div class="dg-foot"><span>'+EMP.rz+' · RUT '+EMP.rut+' · Los Lirios 35, Mirasol, Puerto Montt</span><span>Documento generado con InnovaGestión</span></div>'; }
   function dgSet(html){ $('dg-doc').classList.remove('fa-mode'); $('dg-doc').innerHTML=html+dgFoot(); }
   function ce(v){ return '<span contenteditable>'+(v?esc(v):'')+'</span>'; }
@@ -9300,7 +9300,7 @@
   function figurasPTS(slug){ var L=PTS_FIG[slug]; if(!L) return '';
     return '<div class="pts-figs">'+L.map(function(f){ return '<figure class="pts-fig'+(f[2]?' ancha':'')+'">'+FIG[f[0]]+'<figcaption>'+esc(f[1])+'</figcaption></figure>'; }).join('')+'</div>'; }
   // ====== Documentos de empresa generados (procedimientos y capacitaciones con formato corporativo) ======
-  function tablaCtl(cod, aplica){ return '<table class="dg-tbl pts-ctl"><tbody><tr><td><span class="sl">Código</span><b>'+cod+'</b></td><td><span class="sl">Versión</span><b>01</b></td><td><span class="sl">Fecha</span>'+ce(fFaena(todayISO()))+'</td><td><span class="sl">Aplica a</span><b>'+esc(aplica)+'</b></td></tr></tbody></table>'; }
+  function tablaCtl(cod, aplica, fecha){ return '<table class="dg-tbl pts-ctl"><tbody><tr><td><span class="sl">Código</span><b>'+cod+'</b></td><td><span class="sl">Versión</span><b>01</b></td><td><span class="sl">Fecha</span>'+(fecha?'<b>'+fecha+'</b>':ce(fFaena(todayISO())))+'</td><td><span class="sl">Aplica a</span><b>'+esc(aplica)+'</b></td></tr></tbody></table>'; }
   function seccionador(){ var n=0; return function(t){ n++; return '<h4 class="dg-h4">'+n+'. '+t+'</h4>'; }; }
   // Organigrama de emergencia (SVG propio)
   function orgEmergencia(){
@@ -9375,9 +9375,9 @@
     figsAux(); var H=seccionador();
     function tr(a,b){ return '<tr><td class="dg-k">'+a+'</td><td>'+b+'</td></tr>'; }
     function fig(k,cap){ return '<div class="pts-figs"><figure class="pts-fig ancha">'+FIG[k]+'<figcaption>'+cap+'</figcaption></figure></div>'; }
-    return dgHead('CAPACITACIÓN','01')+
+    return dgHead('CAPACITACIÓN','01',CAP_FECHA)+
       '<div class="pts-tit">Primeros auxilios</div>'+
-      tablaCtl('CAP-PREV-02','Todo el personal')+
+      tablaCtl('CAP-PREV-02','Todo el personal',CAP_FECHA)+
       H('Objetivo')+'<p>Entregar a los trabajadores los conocimientos básicos para actuar ante una emergencia o accidente en la faena, proteger su vida y la de sus compañeros, avisar oportunamente y prestar la primera atención mientras llega la ayuda especializada.</p>'+
       H('Alcance')+'<p>Aplica a todo el personal de Innovación y Servicios SpA, con énfasis en las tareas de mayor riesgo de la empresa: espacios confinados y limpieza de estanques, cámaras frigoríficas, uso de productos químicos y trabajos en altura. Esta capacitación es una instrucción básica y no reemplaza un curso certificado de primeros auxilios.</p>'+
       H('Conducta PAS')+'<p style="margin:0 0 6px">Ante cualquier emergencia, actuar siempre en este orden:</p>'+fig('pas','Proteger · Avisar · Socorrer')+
@@ -9577,9 +9577,9 @@
       ['Llave Stilson','Golpes, atrapamiento.','Revisar las mordazas; usar sobre tuberías adecuadas; mantener la regulación correcta.'],
       ['Medidor de gases portátil','No detectar una atmósfera peligrosa.','Calibración vigente, batería cargada, sensores operativos y prueba funcional; encender antes del ingreso, medir desde el exterior, registrar lecturas, monitoreo continuo y suspender ante cualquier alarma.']];
     // Material de la capacitación (contenido). La asistencia se firma en "Registro de capacitación" y la evaluación es un formato aparte.
-    return dgHead('CAPACITACIÓN','01')+
+    return dgHead('CAPACITACIÓN','01',CAP_FECHA)+
       '<div class="pts-tit">Uso seguro de herramientas manuales y equipos de apoyo</div>'+
-      tablaCtl('CAP-PREV-01','Trabajadores que usan herramientas')+
+      tablaCtl('CAP-PREV-01','Trabajadores que usan herramientas',CAP_FECHA)+
       H('Objetivo')+'<p>Capacitar a los trabajadores en el uso seguro, inspección, manipulación, almacenamiento y control de riesgos de las herramientas manuales y equipos de apoyo utilizados en limpieza industrial, mantenimiento, trabajos mecánicos y espacios confinados.</p>'+
       H('Alcance')+'<p style="margin:0 0 4px">Aplica a todos los trabajadores que utilicen:</p><div class="dg-cols">'+ulDg(['Llave de cadena','Juego de dados','Llave de torque','Taladro de impacto','Pala blanca','Pala metálica','Carbonera'])+ulDg(['Palas olleras','Caja hidrolavadora','Cuchillo grande amarillo','Esmeril angular a batería','Llave regulable (caimán)','Llave Stilson','Medidor de gases portátil'])+'</div>'+
       H('Riesgos asociados')+'<table class="dg-tbl"><tbody>'+tr('Mecánicos','Golpes por manipulación incorrecta, cortes y laceraciones, proyección de partículas, atrapamiento de dedos y manos, caída de herramientas.')+tr('Ergonómicos','Sobreesfuerzo físico, movimientos repetitivos, posturas forzadas.')+tr('Espacios confinados','Deficiencia de oxígeno, gases tóxicos, atmósferas explosivas, ventilación insuficiente.')+'</tbody></table>'+
@@ -9596,8 +9596,8 @@
     if(typeof figsAux==='function') figsAux();
     var C=CAP_DOC[id], P=ptsDatos(C.pts), H=seccionador(), min=Math.ceil(C.vf.length*0.7);
     function tr(a,b){ return '<tr><td class="dg-k">'+a+'</td><td>'+b+'</td></tr>'; }
-    return dgHead('CAPACITACIÓN','01')+
-      '<div class="pts-tit">'+esc(C.n)+'</div>'+tablaCtl(C.cod,C.aplica)+
+    return dgHead('CAPACITACIÓN','01',CAP_FECHA)+
+      '<div class="pts-tit">'+esc(C.n)+'</div>'+tablaCtl(C.cod,C.aplica,CAP_FECHA)+
       H('Objetivo')+'<p>'+C.obj+'</p>'+
       H('Alcance')+'<p>'+C.alc+'</p>'+
       '<table class="dg-tbl"><tbody>'+tr('Procedimiento asociado',esc(P.cod+' · '+P.titulo))+tr('Duración sugerida',C.dur)+tr('Modalidad','Teórico-práctica, en la faena o en oficina.')+tr('Relator',esc(EMP_PREV.nombre)+' · '+esc(EMP_PREV.cargo))+'</tbody></table>'+
@@ -9613,6 +9613,7 @@
       (C.nota?'<p style="font-size:12px;margin-top:8px"><b>Importante:</b> '+C.nota+'</p>':'');
   }
   // Catálogo de capacitaciones: alimenta el Registro de capacitación (tema, temario, duración) y la Evaluación de aprendizaje.
+  var CAP_FECHA='10-10-2026';   // fecha de la versión vigente de las capacitaciones (encabezado y tabla de control)
   var CAP_DOC={
     cap_primeros:{ n:'Primeros auxilios', dur:'', t:[
       'Conducta PAS: proteger, avisar y socorrer; números de emergencia.',
