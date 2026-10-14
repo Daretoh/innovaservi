@@ -423,6 +423,19 @@
   .asis-tb td{height:31px;vertical-align:middle !important;} .asis-tb td.n{width:32px;font-weight:700;} .asis-tb tbody tr:nth-child(even) td{background:#f8f9fc;}
   .asis-tb td+td{border-left:1px solid #e3e5ee;}
   .dg-firmas.asis-fir{margin-top:56px;}
+  .ped-blo{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:10px;background:var(--card);}
+  .ped-t{font:800 12.5px var(--font);color:var(--ink);margin-bottom:6px;} .ped-n{font-size:.74rem;color:var(--muted);margin:-2px 0 6px;}
+  .ped-blo textarea,.ped-blo input[type=text]{width:100%;font:500 13px var(--font);padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);resize:none;overflow:hidden;line-height:1.4;}
+  .ped-blo textarea:focus,.ped-blo input:focus{outline:none;border-color:var(--orange);}
+  .ped-row{display:flex;gap:6px;align-items:flex-start;margin-bottom:5px;} .ped-row textarea{flex:1;}
+  .ped-tr,.ped-th{display:grid;gap:6px;} .ped-th{font:800 10px var(--font);color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;}
+  .ped-b{display:inline-flex;gap:2px;flex:none;} .ped-b button{width:26px;height:30px;border:1px solid var(--line);border-radius:7px;background:var(--card);color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;}
+  .ped-b button:hover{color:var(--orange-2);border-color:var(--orange);} .ped-b button[data-a=x]:hover{color:#dc2626;border-color:#f0c0c0;}
+  .ped-sec{border-left:3px solid var(--orange);padding:6px 0 4px 10px;margin:8px 0;background:var(--alt);border-radius:0 8px 8px 0;}
+  .ped-sh input{font-weight:700 !important;}
+  .ped-add{border:1px dashed var(--line);background:transparent;color:var(--orange-2);font:700 12px var(--font);padding:6px 10px;border-radius:8px;cursor:pointer;margin-top:2px;}
+  .ped-add:hover{border-color:var(--orange);}
+  .ped-acc{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:6px;} .ped-acc .btn{width:auto;}
   .mr-chip{display:inline-block;font:800 9.5px var(--font);padding:2px 6px;border-radius:999px;border:1px solid;white-space:nowrap;}
   .mr-res{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 8px;}
   .iper td,.prg td{font-size:10.5px;vertical-align:top;} .iper th,.prg th{font-size:10px;} .iper td.c{text-align:center;vertical-align:middle;} .iper td.n,.prg td.n{width:20px;}
@@ -7623,7 +7636,7 @@
       else if(u.vencimiento){ var n=diffDiasV(u.vencimiento); chip=n<0?'<span class="dchip venc">Vencido</span>':(n<=30?'<span class="dchip prox">Vence '+n+'d</span>':'<span class="dchip ok">Vigente</span>'); }
       else chip='<span class="dchip ok">Cargado</span>';
       var gen='';
-      if(tipo==='pts_funciones'||(typeof PTS_DOC!=='undefined'&&PTS_DOC[tipo])||(typeof EMP_GEN!=='undefined'&&EMP_GEN[tipo])) gen='<button class="rd-gen emp-pf" data-pts="'+enc(tipo)+'" title="Generar el documento con formato 2026">'+svgI(ICO.gen,15)+((typeof EMP_GEN!=='undefined'&&EMP_GEN[tipo])?'Generar documento':'Generar PTS')+'</button>';
+      if(tipo==='pts_funciones'||(typeof PTS_DOC!=='undefined'&&PTS_DOC[tipo])||(typeof EMP_GEN!=='undefined'&&EMP_GEN[tipo])) gen='<button class="rd-gen emp-pf" data-pts="'+enc(tipo)+'" title="Generar el documento con formato 2026">'+svgI(ICO.gen,15)+((typeof EMP_GEN!=='undefined'&&EMP_GEN[tipo])?'Generar documento':'Generar PTS')+'</button>'+((typeof PTS_DOC!=='undefined'&&PTS_DOC[tipo]&&puedeEditarPTS())?'<button class="rd-gen emp-edpts" data-pts="'+enc(tipo)+'" title="Editar el contenido del PTS (sube la versión)">'+svgI('<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>',15)+'Editar</button>':'');
       if(typeof DOC_GEN!=='undefined'&&DOC_GEN[tipo]) gen+='<button class="rd-gen emp-gen" data-gen="'+enc(tipo)+'" title="Generar el registro de entrega para varios trabajadores">'+svgI(ICO.gen,15)+'Registrar entrega</button>';
       var multi=esMulti(tipo,E.todos), vis=multi?E.todos.slice(0,4):(u?[u]:[]);
       var sub=!u?(vence?'Con vencimiento':'Toca para subir el archivo'):(multi?(E.n+(E.n===1?' documento':' documentos')+' · '+E.todos.map(function(d){ return d.titular||'sin nombre'; }).join(', ')):('Actualizado '+fechaCorta(u.fecha||String(u.created_at||'').slice(0,10))+(u.vencimiento?' · vence '+fechaCorta(u.vencimiento):'')+(E.n>1?' · '+E.n+' versiones':'')));
@@ -7653,6 +7666,7 @@
     c.querySelectorAll('.emp-row[data-tipo]').forEach(function(el){ el.addEventListener('click',function(){ abrirEmpDoc(el.dataset.tipo, el.dataset.nom, el.dataset.v==='1'); }); });
     c.querySelectorAll('.emp-gen').forEach(function(b){ b.addEventListener('click',function(ev){ ev.stopPropagation(); abrirPickDoc(b.dataset.gen); }); });
     c.querySelectorAll('.emp-pf').forEach(function(b){ b.addEventListener('click',function(ev){ ev.stopPropagation(); generarPTS(b.dataset.pts); }); });
+    c.querySelectorAll('.emp-edpts').forEach(function(b){ b.addEventListener('click',function(ev){ ev.stopPropagation(); abrirEditorPTS(b.dataset.pts); }); });
     c.querySelectorAll('.emp-fmt').forEach(function(el){ el.addEventListener('click',function(){ var f=EMP_FMT.filter(function(x){ return x.k===el.dataset.k; })[0]; if(f) abrirDocEmpresa({ nombre:f.n, opciones:f.opciones?f.opciones():null, build:f.build }); }); });
     c.querySelectorAll('.emp-add').forEach(function(b){ b.addEventListener('click',function(){ abrirEmpDoc(null, '', false, b.dataset.c); }); });
   }
@@ -8933,7 +8947,8 @@
         ['Alza hombre',['La operación del alza hombre solo está permitida a operadores capacitados y autorizados, y debe mantenerse el manual del equipo a su alcance.','No exceder la capacidad de carga indicada por el fabricante y distribuir la carga de forma uniforme.','No operar cerca de líneas eléctricas energizadas.','Todo el personal en la plataforma debe usar arnés anclado al punto designado y mantener la puerta cerrada.','Subir y bajar solo por la puerta con la plataforma completamente abajo; nunca caminar por la pluma.','No colocar escaleras, cajones u objetos sobre la plataforma para alcanzar mayor altura.']],
         ['Andamios',['Montar sobre una base firme y nivelada, con todas sus piezas, crucetas y barandas.','Asegurar el andamio a una estructura estable cuando su altura lo requiera.','Acceder por la escala del andamio, nunca trepando por los marcos.','Inspeccionar el andamio antes de cada jornada.']],
         ['Escaleras',['Usar solo escaleras tipo tijera en buen estado, inspeccionadas antes de su uso.','Apoyarlas sobre superficie firme, abiertas completamente y con el seguro puesto.','Mantener tres puntos de apoyo al subir y bajar; no usar los dos últimos peldaños.','No trasladar la escalera con una persona sobre ella.']]],
-      ries:[['Trabajo sobre plataforma, andamio o escalera','Caída de distinto nivel','Arnés de cuerpo completo anclado; barandas; examen de altura vigente; inspección previa.'],['Herramientas y materiales en altura','Golpeado por objetos que caen','Delimitar el área inferior; amarrar herramientas; casco con barbiquejo.'],['Operación del alza hombre','Volcamiento, atrapamiento, aplastamiento','Superficie firme y nivelada; respetar carga máxima; operador autorizado.'],['Superficies húmedas','Caída al mismo nivel','Calzado antideslizante; limpiar el piso de la plataforma.'],['Manipulación de equipos','Sobreesfuerzo','Técnica de levante; trabajo entre dos personas.']],
+      ries:[['Trabajo sobre plataforma, andamio o escalera a más de 1,8 m','Caída de altura (distinto nivel)','Examen de altura vigente; arnés de cuerpo completo con absorbedor de energía anclado a un punto resistente; barandas completas; inspección previa de equipos.'],['Subida y bajada de andamios, escaleras y plataformas','Caída de distinto nivel','Tres puntos de apoyo; acceder solo por la escala del andamio o la puerta de la plataforma; manos libres al subir; no trepar por los marcos.'],['Uso de escalera tijera','Caída de distinto nivel y al mismo nivel','Escalera abierta, con seguro y sobre superficie firme; no usar los dos últimos peldaños; no trasladarla con una persona encima.'],['Anclaje inadecuado o falla del arnés','Caída de altura','Anclar solo a puntos aprobados y resistentes; revisar arnés, cola y mosquetones antes de cada uso; retirar todo equipo dañado o que haya detenido una caída.'],['Trabajador suspendido del arnés tras una caída','Trauma por suspensión','Plan de rescate en altura; nunca trabajar solo; rescate en el menor tiempo posible.'],['Andamio mal montado, sin base firme o sin arriostrar','Colapso del andamio, caída de altura, aplastamiento','Montaje por personal competente; base firme y nivelada; crucetas y barandas completas; inspección antes de cada jornada.'],['Herramientas y materiales en altura','Golpeado por objetos que caen','Amarrar las herramientas; rodapiés; delimitar y señalizar el área inferior; casco con barbiquejo.'],['Operación del alza hombre','Volcamiento, atrapamiento, aplastamiento','Superficie firme y nivelada; respetar la carga máxima; operador capacitado y autorizado (PTS-PREV-02).'],['Cercanía a líneas eléctricas','Contacto eléctrico','Mantener la distancia de seguridad; trabajar solo con circuitos desenergizados; revisar el área antes de elevar.'],['Viento, lluvia o superficies húmedas','Caída de distinto y mismo nivel, pérdida de estabilidad','Suspender el trabajo con viento sobre 35 km/h o lluvia intensa; calzado antideslizante; mantener seca la superficie de trabajo.'],['Traslado y montaje de escaleras y piezas de andamio','Sobreesfuerzo','Técnica de levantamiento; trabajo entre dos personas; respetar los límites de la Ley N° 20.949.'],['Trabajo en exteriores','Exposición a radiación UV','Bloqueador solar, lentes con filtro UV e hidratación.']],
+      rescateTit:'Plan de rescate en altura', rescate:[['Antes de iniciar el trabajo',['Ningún trabajo en altura se inicia sin un plan de rescate definido para esa faena: cómo se llegará al trabajador, con qué equipos y quién lo hará.','Nunca trabajar solo en altura: al menos una persona capacitada permanece en el nivel inferior, atenta y con comunicación (radio o teléfono).','Tener disponible el equipo de rescate: alza hombre, plataforma o escalera para alcanzar al trabajador, kit de rescate y descenso cuando corresponda, y botiquín.','Conocer los números de emergencia (Ambulancia 131 · Rescate Mutual 1407) y el procedimiento de emergencia del mandante.']],['Si un trabajador queda suspendido del arnés',['Dar la alarma de inmediato, detener los trabajos y avisar al supervisor, al mandante y a los servicios de emergencia.','No dejar a la persona suspendida: el rescate se hace lo antes posible (idealmente en menos de 15 minutos) por el riesgo de trauma por suspensión.','Mientras llega la ayuda, hablarle, mantenerlo tranquilo y pedirle que mueva las piernas o se apoye en una estructura si puede.','Llegar al trabajador desde una posición segura (alza hombre, plataforma o escalera), con el rescatista siempre anclado: nadie se expone a una caída para rescatar.']],['Rescate y atención',['Bajar al trabajador de forma controlada hasta el suelo o una superficie segura.','Mantenerlo en reposo, vigilar su conciencia y respiración, prestar primeros auxilios y trasladarlo a evaluación médica aunque se vea bien.','Si no responde o no respira normalmente: llamar al 131 e iniciar RCP (capacitación de primeros auxilios CAP-PREV-02).']],['Después del rescate',['Retirar de uso el arnés y la cola que detuvieron la caída.','Informar el accidente, emitir la DIAT y realizar la investigación según el procedimiento PR-PREV-03.','Practicar este plan con un simulacro de rescate en altura al menos una vez al año.']]], cambios:[['03','14-10-2026','Observaciones del mandante: se amplía la evaluación de riesgos (caída de altura y de distinto nivel en cada situación, anclajes, trauma por suspensión, andamios, viento y sobreesfuerzo) y se agrega el plan de rescate en altura.']], f02:'oct. 2026',
       epp:['Casco con barbiquejo','Arnés de seguridad de cuerpo completo con cola y absorbedor de energía','Antiparras o lentes de seguridad','Guantes','Calzado de seguridad','Protección auditiva','Chaleco reflectante'] },
     pts_alzahombre:{ cod:'PTS-PREV-02', titulo:'Alza hombre / grúa Genie', orig:'2022',
       obj:'Establecer la metodología para la operación segura del alza hombre (grúa Genie) en las tareas de limpieza en altura, manteniendo controlados los riesgos para las personas y los equipos.',
@@ -8944,7 +8959,8 @@
         ['Antes de la operación',['Operar solo si está capacitado y autorizado; mantener el manual del equipo al alcance.','Inspeccionar controles, frenos, bocina, baterías o combustible, neumáticos y fugas hidráulicas.','No operar con viento sobre 35 km/h ni cerca de líneas eléctricas energizadas.','No exceder los límites de carga del fabricante.']],
         ['Conducción',['Estar atento a obstáculos alrededor y sobre la máquina.','Usar velocidad baja en pendientes, lugares estrechos y marcha atrás, y antes de detenerse.','Hacer sonar la bocina en zonas de visión obstruida.','Mantener a las personas ajenas a la operación a un mínimo de 2 metros de la máquina.','No conducir cerca de excavaciones, andenes de carga o desniveles, ni sobre superficies blandas o irregulares.']],
         ['Operación en la plataforma',['Usar arnés anclado a la plataforma y mantener la puerta cerrada en todo momento.','Subir y bajar solo por la puerta, con la plataforma completamente abajo.','No colocar escaleras ni objetos para lograr mayor alcance; ambos pies sobre el piso de la plataforma.','No fijar letreros u objetos que aumenten la superficie expuesta al viento.','Nunca usar la pluma como grúa ni empujar o tirar objetos con ella.','Si la máquina queda trabada, todo el personal debe bajar antes de intentar liberarla.','Delimitar el área de trabajo con vallas o conos.','La operación temeraria o imprudente está prohibida.']]],
-      ries:[['Trabajo en la plataforma','Caída de distinto nivel','Arnés anclado; puerta cerrada; no salir de la plataforma en altura.'],['Desplazamiento del equipo','Volcamiento, golpes, atropello','Terreno firme y nivelado; velocidad baja; distancia de 2 m de las personas.'],['Movimiento de la pluma','Atrapamiento, aplastamiento','Verificar espacio libre arriba, abajo y a los costados.'],['Cercanía a instalaciones eléctricas','Contacto eléctrico','Mantener distancia; trabajar solo con circuitos desenergizados.']],
+      ries:[['Trabajo en la plataforma elevada','Caída de altura (distinto nivel)','Arnés de cuerpo completo anclado al punto de la plataforma; puerta cerrada; ambos pies en el piso de la plataforma; no inclinarse sobre las barandas.'],['Subida y bajada de la plataforma','Caída de distinto nivel','Subir y bajar solo con la plataforma completamente abajo y por la puerta; tres puntos de apoyo.'],['Uso de escaleras u objetos sobre la plataforma','Caída de altura','Prohibido; si no se alcanza el punto de trabajo, reposicionar el equipo.'],['Desplazamiento y posicionamiento del equipo','Volcamiento, golpes, atropello','Terreno firme y nivelado, sin pendientes ni zanjas; velocidad baja; estabilizadores cuando corresponda; personas a 2 m de la máquina.'],['Movimiento de la pluma y elevación','Atrapamiento o aplastamiento contra estructuras','Verificar el espacio libre arriba, abajo y a los costados; movimientos lentos; atención a vigas y techos.'],['Cercanía a instalaciones eléctricas','Contacto eléctrico','Mantener la distancia de seguridad; trabajar solo con circuitos desenergizados.'],['Viento','Volcamiento, pérdida de estabilidad','No elevar con viento sobre 35 km/h; no fijar letreros u objetos que aumenten la superficie expuesta al viento.'],['Falla mecánica o hidráulica en altura','Trabajador atrapado en altura','Inspección previa; conocer los mandos de descenso de emergencia; Plan de rescate en altura.'],['Herramientas y materiales en la plataforma','Caída de objetos sobre personas','Amarrar las herramientas; delimitar el área bajo la plataforma; casco con barbiquejo.'],['Carga de baterías o combustible','Incendio, contacto con químicos','Cargar en un lugar ventilado y lejos de chispas; guantes y lentes de seguridad.']],
+      rescateTit:'Plan de rescate en altura', rescate:[['Antes de iniciar el trabajo',['Ningún trabajo en altura se inicia sin un plan de rescate definido para esa faena: cómo se llegará al trabajador, con qué equipos y quién lo hará.','Nunca trabajar solo en altura: al menos una persona capacitada permanece en el nivel inferior, atenta y con comunicación (radio o teléfono).','Tener disponible el equipo de rescate: alza hombre, plataforma o escalera para alcanzar al trabajador, kit de rescate y descenso cuando corresponda, y botiquín.','Conocer los números de emergencia (Ambulancia 131 · Rescate Mutual 1407) y el procedimiento de emergencia del mandante.','Conocer la ubicación y el uso de los mandos de descenso de emergencia en la base del equipo: si la plataforma falla en altura, se baja con esos mandos o con el mando auxiliar del fabricante.']],['Si un trabajador queda suspendido del arnés',['Dar la alarma de inmediato, detener los trabajos y avisar al supervisor, al mandante y a los servicios de emergencia.','No dejar a la persona suspendida: el rescate se hace lo antes posible (idealmente en menos de 15 minutos) por el riesgo de trauma por suspensión.','Mientras llega la ayuda, hablarle, mantenerlo tranquilo y pedirle que mueva las piernas o se apoye en una estructura si puede.','Llegar al trabajador desde una posición segura (alza hombre, plataforma o escalera), con el rescatista siempre anclado: nadie se expone a una caída para rescatar.','Si el equipo queda detenido en altura, el operador permanece en la plataforma, anclado, y espera el descenso de emergencia: nunca descolgarse ni trepar por la pluma.']],['Rescate y atención',['Bajar al trabajador de forma controlada hasta el suelo o una superficie segura.','Mantenerlo en reposo, vigilar su conciencia y respiración, prestar primeros auxilios y trasladarlo a evaluación médica aunque se vea bien.','Si no responde o no respira normalmente: llamar al 131 e iniciar RCP (capacitación de primeros auxilios CAP-PREV-02).']],['Después del rescate',['Retirar de uso el arnés y la cola que detuvieron la caída.','Informar el accidente, emitir la DIAT y realizar la investigación según el procedimiento PR-PREV-03.','Practicar este plan con un simulacro de rescate en altura al menos una vez al año.']]], cambios:[['03','14-10-2026','Observaciones del mandante: se amplía la evaluación de riesgos (caída de altura y de distinto nivel, aplastamiento contra estructuras, viento, falla del equipo en altura) y se agrega el plan de rescate en altura con el descenso de emergencia.']], f02:'oct. 2026',
       epp:['Casco con barbiquejo','Arnés de seguridad de cuerpo completo','Antiparras o lentes de seguridad','Guantes','Calzado de seguridad','Protección auditiva','Chaleco reflectante'] },
     pts_quimicos:{ cod:'PTS-PREV-03', titulo:'Uso y manipulación de productos químicos en aseo industrial', orig:'17-10-2022',
       obj:'Asegurar que todo el personal de Innovación y Servicios SpA que utiliza productos químicos industriales conozca sus obligaciones, los riesgos, las medidas preventivas y las buenas prácticas para su uso correcto.',
@@ -9044,7 +9060,9 @@
       ries:[['Limpieza de racks, estructuras y retiro de óxido','Contacto con objetos cortantes','Uso de guantes; revisar bordes y piezas oxidadas antes de limpiar; trabajar sin apuro.'],
         ['Uso de máquina abrillantadora y equipos eléctricos','Contacto con electricidad','Conexión eléctrica seca y sin cables en el piso; equipos desconectados al intervenirlos; bloqueo habilitado y señalizado cuando aplique.'],
         ['Permanencia en la cámara','Exposición a bajas temperaturas','Chaqueta térmica cuando se requiera; limpieza semi húmeda, sin aplicación directa de agua.'],
-        ['Pisos húmedos durante y al final de la limpieza','Caída al mismo nivel','Zona de trabajo despejada; retirar el agua con barre agua y secar con paños; botas de goma.']],
+        ['Pisos húmedos durante y al final de la limpieza','Caída al mismo nivel','Zona de trabajo despejada; retirar el agua con barre agua y secar con paños; botas de goma.'],
+        ['Traslado de la máquina abrillantadora, baldes y equipos','Sobreesfuerzo','Técnica de levantamiento; carros o ayudas mecánicas; trabajo entre dos personas; respetar los límites de la Ley N° 20.949.'],['Fregado de pisos y paredes y uso de telescópicas','Trabajo repetitivo, trastornos musculoesqueléticos de extremidades superiores (TMERT)','Pausas activas; rotación de tareas; mangos de largo adecuado; alternar las manos.'],['Limpieza de zócalos, zonas bajas y cielos','Posturas forzadas','Herramientas con mango extensible; alternar posturas; escala segura para las zonas altas.'],['Uso de detergentes y productos de limpieza','Contacto con químicos (irritación de piel y ojos)','Guantes de nitrilo; lentes de seguridad; hoja de datos de seguridad disponible (PTS-PREV-03).'],['Tránsito entre racks y estructuras','Golpes contra objetos','Iluminación adecuada; zona de trabajo despejada; casco.'],['Limpieza de racks con productos almacenados','Caída de objetos','Retirar o asegurar los productos antes de limpiar; no subir a los racks.']],
+      cambios:[['03','14-10-2026','Observaciones del mandante: se agregan los riesgos de sobreesfuerzo, trabajo repetitivo, posturas forzadas, contacto con químicos, golpes y caída de objetos.']], f02:'oct. 2026',
       epp:['Casco con barbiquejo','Guantes de nitrilo','Chaqueta térmica, si se requiere','Botas de goma con punta de acero'] }
   };
   // Ilustraciones de referencia de los PTS (SVG propio, colores corporativos; nítidas en el PDF).
@@ -9576,7 +9594,78 @@
   var EMP_GEN={ programa:{ build:docProgramaPrev }, iper:{ build:docMatrizIPER }, proc_iper:{ build:docProcIPER }, matriz_epp:{ build:docMatrizEPP }, cap_herr:{ build:docCapHerr }, cap_primeros:{ build:docCapPrimeros }, proc_acc:{ build:docEmergAcc } };
   function esPTS(s){ return s==='pts_funciones' || !!(typeof PTS_DOC!=='undefined'&&PTS_DOC[s]); }
   function nombrePTS(s){ var n=s; EMP_CARPETAS.forEach(function(c){ c.tipos.forEach(function(x){ if(x[0]===s) n=x[1]; }); }); return n; }
-  function generarPTS(s){ var nom=nombrePTS(s);
+  // ====== Edición de PTS desde la app ======
+  // Las ediciones se guardan en config (clave 'pts_edit:<tipo>', JSON) y reemplazan los campos del PTS base.
+  // Cada guardado sube la versión (03, 04…) y queda en el control de cambios.
+  var PTS_EDIT={}, PTS_EDIT_OK=false, PTS_F2026='oct. 2026';
+  function cargarPtsEdit(cb){ if(PTS_EDIT_OK||!sb){ if(cb) cb(); return; }
+    sb.from('config').select('clave,valor').like('clave','pts_edit:%').then(function(r){ PTS_EDIT_OK=true;
+      ((r&&r.data)||[]).forEach(function(x){ try{ PTS_EDIT[x.clave.slice(9)]=JSON.parse(x.valor); }catch(_){} }); if(cb) cb(); }, function(){ if(cb) cb(); }); }
+  function ptsDatos(slug, borrador){ var b=PTS_DOC[slug]||{}, e=borrador||PTS_EDIT[slug]||{}, o={}, k; for(k in b) o[k]=b[k]; for(k in e) o[k]=e[k]; return o; }
+  // Historial de versiones: [versión, fecha, descripción]
+  function ptsCambios(P){ var L=!P.orig?[['01',P.f01||(P.cambios&&P.cambios.length?PTS_F2026:fFaena(todayISO())),'Emisión original.']]:
+      [['01',esc(P.orig),'Emisión original.'],['02',P.f02||(P.cambios&&P.cambios.length?PTS_F2026:fFaena(todayISO())),'Actualización 2026: formato corporativo, normativa vigente (D.S. N° 44 reemplaza al D.S. N° 40), revisión del contenido y de las responsabilidades, tabla de riesgos y sección de emergencias.']];
+    return L.concat(P.cambios||[]); }
+  function puedeEditarPTS(){ return isAdmin || (typeof nivelMod==='function' && nivelMod('documentacion')>=2); }
+  function abrirEditorPTS(slug){ if(!puedeEditarPTS()){ toast('No tienes permiso para editar procedimientos.'); return; }
+    cargarPtsEdit(function(){
+    var P=ptsDatos(slug), C=ptsCambios(P), sig=String(+C[C.length-1][0]+1).padStart(2,'0');
+    var IC={up:'<path d="m18 15-6-6-6 6"/>',down:'<path d="m6 9 6 6 6-6"/>',x:'<path d="M18 6 6 18M6 6l12 12"/>'};
+    function btns(){ return '<span class="ped-b"><button type="button" data-a="up" title="Subir">'+svgI(IC.up,13)+'</button><button type="button" data-a="down" title="Bajar">'+svgI(IC.down,13)+'</button><button type="button" data-a="x" title="Quitar">'+svgI(IC.x,13)+'</button></span>'; }
+    function ta(v,ph){ return '<textarea rows="1" placeholder="'+enc(ph||'')+'">'+esc(v||'')+'</textarea>'; }
+    function lista(k,arr,ph){ return '<div class="ped-list"'+(k?' data-k="'+k+'"':'')+'>'+(arr||[]).map(function(x){ return '<div class="ped-row">'+ta(x,ph)+btns()+'</div>'; }).join('')+'</div><button type="button" class="ped-add" data-tpl="li" data-ph="'+enc(ph||'')+'">Agregar punto</button>'; }
+    function tabla(k,arr,cols){ return '<div class="ped-tbl" data-k="'+k+'" data-n="'+cols.length+'"><div class="ped-th" style="grid-template-columns:repeat('+cols.length+',1fr) 84px">'+cols.map(function(c){ return '<span>'+c+'</span>'; }).join('')+'<span></span></div>'+
+      (arr||[]).map(function(r){ return '<div class="ped-row ped-tr" style="grid-template-columns:repeat('+cols.length+',1fr) 84px">'+cols.map(function(_,i){ return ta(r[i],''); }).join('')+btns()+'</div>'; }).join('')+'</div><button type="button" class="ped-add" data-tpl="tr">Agregar fila</button>'; }
+    function seccion(t,items){ return '<div class="ped-sec"><div class="ped-row ped-sh"><input type="text" value="'+enc(t||'')+'" placeholder="Título del subtema">'+btns()+'</div>'+lista('',items,'Punto')+'</div>'; }
+    function secciones(k,arr){ return '<div class="ped-secs" data-k="'+k+'">'+(arr||[]).map(function(s){ return seccion(s[0],s[1]); }).join('')+'</div><button type="button" class="ped-add" data-tpl="sec">Agregar subtema</button>'; }
+    function blo(t,html,nota){ return '<div class="ped-blo"><div class="ped-t">'+t+'</div>'+(nota?'<p class="ped-n">'+nota+'</p>':'')+html+'</div>'; }
+    $('re-title').textContent='Editar '+P.cod+' · '+P.titulo;
+    $('re-body').innerHTML='<div class="card"><p class="note" style="margin:0 0 10px">Modifica el contenido y guarda: la versión pasa a la <b>'+sig+'</b> y el cambio queda en el control de cambios. El formato (membrete, firmas, emergencias) se mantiene solo.</p>'+
+      blo('Objetivo','<textarea id="ped-obj" rows="3">'+esc(P.obj||'')+'</textarea>')+
+      blo('Alcance','<textarea id="ped-alc" rows="3">'+esc(P.alc||'')+'</textarea>')+
+      blo('Normativa y referencias',lista('norm',P.norm,'Norma o referencia'))+
+      blo('Responsabilidades',tabla('resp',P.resp,['Cargo','Responsabilidad']))+
+      blo('Desarrollo',secciones('des',P.des),'Cada subtema tiene un título y sus puntos.')+
+      blo('Riesgos y medidas de control',tabla('ries',P.ries,['Actividad / peligro','Riesgo','Medidas de control']))+
+      blo('Elementos de protección personal',lista('epp',P.epp,'Elemento'))+
+      blo('Plan de rescate o sección adicional','<input type="text" id="ped-rest" value="'+enc(P.rescateTit||'')+'" placeholder="Título de la sección (ej: Plan de rescate en altura)" style="margin-bottom:6px">'+secciones('rescate',P.rescate),'Opcional. Se muestra después de los EPP.')+
+      blo('Registros',lista('registros',P.registros,'Registro adicional'),'El registro de entrega del PTS se agrega siempre.')+
+      blo('Descripción del cambio (versión '+sig+')','<textarea id="ped-cambio" rows="2" placeholder="Ej: Se amplía la evaluación de riesgos según observaciones del mandante."></textarea>')+
+      '<div class="ped-acc"><button id="ped-prev" type="button" class="btn ghost small">Vista previa</button>'+(PTS_EDIT[slug]?'<button id="ped-orig" type="button" class="btn ghost small">Volver al original</button>':'')+'<button id="ped-save" type="button" class="btn small">Guardar versión '+sig+'</button></div></div>';
+    var body=$('re-body');
+    function crecer(t){ t.style.height='auto'; t.style.height=(t.scrollHeight+2)+'px'; }
+    body.addEventListener('input',function(e){ if(e.target.tagName==='TEXTAREA') crecer(e.target); });
+    body.addEventListener('click',function(e){
+      var b=e.target.closest('button[data-a]');
+      if(b){ var row=b.closest('.ped-row'), el=row.classList.contains('ped-sh')?row.closest('.ped-sec'):row, a=b.dataset.a;
+        if(a==='x'){ el.remove(); return; }
+        var sib=a==='up'?el.previousElementSibling:el.nextElementSibling; if(!sib||sib.classList.contains('ped-th')) return;
+        if(a==='up') el.parentNode.insertBefore(el,sib); else el.parentNode.insertBefore(sib,el); return; }
+      var ad=e.target.closest('.ped-add'); if(!ad) return; var prev=ad.previousElementSibling, h='';
+      if(ad.dataset.tpl==='li') h='<div class="ped-row">'+ta('',ad.dataset.ph)+btns()+'</div>';
+      else if(ad.dataset.tpl==='tr'){ var nc=+prev.dataset.n; h='<div class="ped-row ped-tr" style="grid-template-columns:repeat('+nc+',1fr) 84px">'+Array.apply(null,{length:nc}).map(function(){ return ta('',''); }).join('')+btns()+'</div>'; }
+      else h=seccion('',['']);
+      prev.insertAdjacentHTML('beforeend',h); var f=prev.lastElementChild.querySelector('textarea,input'); if(f) f.focus(); });
+    function limpio(s){ return String(s||'').replace(/</g,'‹').replace(/>/g,'›').trim(); }
+    function leer(){ var d={ obj:limpio($('ped-obj').value), alc:limpio($('ped-alc').value) };
+      body.querySelectorAll('.ped-list[data-k]').forEach(function(l){ d[l.dataset.k]=Array.prototype.map.call(l.querySelectorAll(':scope > .ped-row textarea'),function(t){ return limpio(t.value); }).filter(Boolean); });
+      body.querySelectorAll('.ped-tbl[data-k]').forEach(function(t){ d[t.dataset.k]=Array.prototype.map.call(t.querySelectorAll('.ped-tr'),function(r){ return Array.prototype.map.call(r.querySelectorAll('textarea'),function(x){ return limpio(x.value); }); }).filter(function(r){ return r.some(Boolean); }); });
+      body.querySelectorAll('.ped-secs[data-k]').forEach(function(s){ d[s.dataset.k]=Array.prototype.map.call(s.querySelectorAll(':scope > .ped-sec'),function(sec){ return [limpio(sec.querySelector('.ped-sh input').value), Array.prototype.map.call(sec.querySelectorAll('.ped-list textarea'),function(t){ return limpio(t.value); }).filter(Boolean)]; }).filter(function(x){ return x[0]||x[1].length; }); });
+      d.rescateTit=limpio($('ped-rest').value); if(!d.rescate.length){ delete d.rescate; delete d.rescateTit; }
+      if(!d.registros.length) delete d.registros;
+      d.cambios=(P.cambios||[]).slice(); if(!P.orig) d.f01=P.f01||PTS_F2026; else d.f02=P.f02||PTS_F2026;
+      return d; }
+    $('ped-prev').addEventListener('click',function(){ var d=leer(); d.cambios.push([sig,fFaena(todayISO()),limpio($('ped-cambio').value)||'(borrador sin guardar)']);
+      abrirDocEmpresa({ nombre:nombrePTS(slug)+' · vista previa', tipo:slug, build:function(){ return docPTSDoc(slug,d); } }); });
+    if($('ped-orig')) $('ped-orig').addEventListener('click',function(){ if(!confirm('¿Volver al contenido original del PTS? Se pierden las ediciones guardadas.')) return;
+      sb.from('config').delete().eq('clave','pts_edit:'+slug).then(function(r){ if(r&&r.error){ toast('No se pudo: '+r.error.message); return; } delete PTS_EDIT[slug]; toast('PTS restaurado al original'); $('rrhh-edit').classList.add('hide'); }); });
+    $('ped-save').addEventListener('click',function(){ var cam=limpio($('ped-cambio').value); if(!cam){ toast('Describe el cambio para el control de cambios.'); $('ped-cambio').focus(); return; }
+      var d=leer(); d.cambios.push([sig,fFaena(todayISO()),cam]); busy(true,'Guardando…');
+      sb.from('config').upsert([{clave:'pts_edit:'+slug, valor:JSON.stringify(d)}],{onConflict:'clave'}).select('clave').then(function(r){ busy(false);
+        if(r&&r.error){ toast('No se guardó: '+r.error.message); return; } if(!r||!r.data||!r.data.length){ toast('No se guardó (sin permiso).'); return; }
+        PTS_EDIT[slug]=d; toast('Versión '+sig+' guardada'); $('rrhh-edit').classList.add('hide'); generarPTS(slug); }, function(){ busy(false); toast('No se pudo guardar. Revisa la conexión.'); }); });
+    $('rrhh-edit').classList.remove('hide'); $('rrhh-edit').scrollTop=0; body.querySelectorAll('textarea').forEach(crecer); }); }
+  function generarPTS(s){ if(!PTS_EDIT_OK && sb && PTS_DOC[s]){ cargarPtsEdit(function(){ generarPTS(s); }); return; } var nom=nombrePTS(s);
     if(typeof EMP_GEN!=='undefined'&&EMP_GEN[s]){ abrirDocEmpresa({ nombre:nom, tipo:s, build:EMP_GEN[s].build }); return; }
     if(s==='pts_funciones') abrirDocEmpresa({ nombre:nom, tipo:s, opciones:DG_VARS, build:docPTSFunciones });
     else abrirDocEmpresa({ nombre:nom, tipo:s, build:function(){ return docPTSDoc(s); } }); }
@@ -9593,13 +9682,13 @@
       else generarPTS(s);
     }, function(){ generarPTS(s); });
   }
-  function docPTSDoc(slug){
-    var P=PTS_DOC[slug], n=0, nuevo=!P.orig, ver=nuevo?'01':'02';   // PTS nuevo: versión 01, sin documento anterior
+  function docPTSDoc(slug, borrador){
+    var P=ptsDatos(slug,borrador), CAM=ptsCambios(P), n=0, nuevo=!P.orig, ver=CAM[CAM.length-1][0], ant=CAM.length>1?CAM[CAM.length-2]:null;   // versión según el historial (01 nuevo, 02 actualización 2026, 03+ ediciones)
     function H(t){ n++; return '<h4 class="dg-h4">'+n+'. '+t+'</h4>'; }
     function tr(a,b){ return '<tr><td class="dg-k">'+a+'</td><td>'+b+'</td></tr>'; }
     return dgHead('PROCEDIMIENTO DE TRABAJO SEGURO',ver)+
       '<div class="pts-tit">'+esc(P.titulo)+'</div>'+
-      '<table class="dg-tbl pts-ctl"><tbody><tr><td><span class="sl">Código</span><b>'+P.cod+'</b></td><td><span class="sl">Versión</span><b>'+ver+'</b></td><td><span class="sl">Fecha</span>'+ce(fFaena(todayISO()))+'</td><td><span class="sl">'+(nuevo?'Aplica a':'Reemplaza a')+'</span><b>'+(nuevo?esc(P.aplica||'Documento nuevo'):'Versión 01 ('+esc(P.orig)+')')+'</b></td></tr></tbody></table>'+
+      '<table class="dg-tbl pts-ctl"><tbody><tr><td><span class="sl">Código</span><b>'+P.cod+'</b></td><td><span class="sl">Versión</span><b>'+ver+'</b></td><td><span class="sl">Fecha</span>'+ce(fFaena(todayISO()))+'</td><td><span class="sl">'+(ant?'Reemplaza a':'Aplica a')+'</span><b>'+(ant?'Versión '+ant[0]+' ('+ant[1]+')':esc(P.aplica||'Documento nuevo'))+'</b></td></tr></tbody></table>'+
       dgFirmasPTS()+
       H('Objetivo')+'<p>'+P.obj+'</p>'+
       H('Alcance')+'<p>'+P.alc+'</p>'+
@@ -9613,12 +9702,11 @@
       (PTS_FIG[slug]?H('Ilustraciones de referencia')+figurasPTS(slug):'')+
       H('Riesgos y medidas de control')+'<table class="dg-tbl"><thead><tr><th style="width:30%">Actividad / peligro</th><th style="width:24%">Riesgo</th><th>Medidas de control</th></tr></thead><tbody>'+P.ries.map(function(r){ return '<tr><td>'+r[0]+'</td><td>'+r[1]+'</td><td>'+r[2]+'</td></tr>'; }).join('')+'</tbody></table>'+
       H('Elementos de protección personal')+ulDg(P.epp)+'<p style="font-size:12px">Los EPP deben usarse correctamente puestos, con ropa de trabajo adecuada y sin partes sueltas, colgantes, pulseras ni objetos que puedan quedar atrapados.</p>'+
+      (P.rescate&&P.rescate.length?H(esc(P.rescateTit||'Plan de rescate'))+P.rescate.map(function(d,i){ return '<p style="margin:10px 0 4px"><b>'+n+'.'+(i+1)+' '+d[0]+'</b></p>'+ulDg(d[1]); }).join(''):'')+
       H('Emergencias')+ulDg(['Detener el trabajo, dar aviso de inmediato a la jefatura directa y seguir el plan de emergencia de la faena.','Teléfonos: Ambulancia 131 · Bomberos 132 · Carabineros 133 · Mutual de Seguridad 1407.','Todo accidente, aunque parezca leve, se informa de inmediato para su atención y denuncia ante el organismo administrador de la Ley N° 16.744.'])+
       H('Registros')+ulDg(['Registro de entrega e instrucción de este procedimiento, firmado por cada trabajador (InnovaGestión → Empresa → Registrar entrega).'].concat(P.registros||(slug==='pts_confinados'?['Permiso de entrada y registro de entradas y salidas del espacio confinado.','Registro de mediciones de atmósfera.']:[])))+
       H('Control de cambios')+'<table class="dg-tbl"><thead><tr><th style="width:15%">Versión</th><th style="width:20%">Fecha</th><th>Descripción del cambio</th></tr></thead><tbody>'+
-        (nuevo?'<tr><td>01</td><td>'+fFaena(todayISO())+'</td><td>Emisión original.</td></tr>':
-        '<tr><td>01</td><td>'+esc(P.orig)+'</td><td>Emisión original.</td></tr>'+
-        '<tr><td>02</td><td>'+fFaena(todayISO())+'</td><td>Actualización 2026: formato corporativo, normativa vigente (D.S. N° 44 reemplaza al D.S. N° 40), revisión del contenido y de las responsabilidades, tabla de riesgos y sección de emergencias.</td></tr>')+'</tbody></table>';
+        CAM.map(function(c){ return '<tr><td>'+c[0]+'</td><td>'+c[1]+'</td><td>'+c[2]+'</td></tr>'; }).join('')+'</tbody></table>';
   }
   // Plantilla: Registro de entrega e instrucción de un PTS (temario según el procedimiento de la empresa).
   var PTS_INFO={
@@ -9645,6 +9733,7 @@
       'Operación segura del alza hombre: límites de carga, viento máximo 35 km/h y distancia a líneas eléctricas.',
       'Uso de arnés de cuerpo completo, línea de vida y punto de anclaje.',
       'Delimitación y señalización del área de trabajo.',
+      'Plan de rescate en altura y trauma por suspensión.',
       'Elementos de protección personal: casco con barbiquejo, arnés, calzado de seguridad y guantes.'] },
     pts_confinados:{ n:'Trabajo seguro en espacios confinados', t:[
       'Definición e identificación de un espacio confinado.',
@@ -9658,7 +9747,7 @@
       'Limpieza en semi húmedo, sin aplicación directa de agua, por las bajas temperaturas.',
       'Verificaciones antes de comenzar: personal autorizado, zona despejada, equipos desconectados y bloqueo cuando aplique.',
       'Método de trabajo: acción mecánica, plataforma y equipos de frío, pisos con máquina abrillantadora, zócalos, puertas y secado final.',
-      'Riesgos: objetos cortantes, contacto con electricidad, bajas temperaturas y caída al mismo nivel.',
+      'Riesgos: objetos cortantes, electricidad, bajas temperaturas, caídas, sobreesfuerzo, trabajo repetitivo, posturas forzadas, químicos, golpes y caída de objetos.',
       'Elementos de protección personal: casco con barbiquejo, guantes de nitrilo, chaqueta térmica y botas de goma con punta de acero.'] },
     pts_herramientas:{ n:'Uso de herramientas en faena de limpieza de estanques', t:[
       'Inspección diaria de herramientas y retiro de las que están en mal estado.',
