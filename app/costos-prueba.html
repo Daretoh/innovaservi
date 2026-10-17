@@ -96,6 +96,19 @@
   details{margin-top:10px;} summary{cursor:pointer;font-size:12px;color:var(--muted);}
   pre{white-space:pre-wrap;word-break:break-word;font-size:11px;background:var(--alt);padding:10px;border-radius:8px;margin-top:6px;color:var(--body);max-height:260px;overflow:auto;}
   a{color:var(--orange-2);}
+  .foto img{cursor:zoom-in;}
+  /* Visor de fotos a pantalla completa */
+  #visor{position:fixed;inset:0;z-index:50;background:rgba(8,10,28,.94);display:flex;flex-direction:column;}
+  #visor .vbar{display:flex;align-items:center;gap:8px;padding:10px 12px;color:#fff;font:600 13px var(--font);}
+  #visor .vbar span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  #visor .vbtn{width:40px;height:40px;border-radius:12px;border:none;background:rgba(255,255,255,.14);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none;}
+  #visor .vbtn svg{width:20px;height:20px;}
+  #visor .vbtn:disabled{opacity:.3;cursor:default;}
+  #vZona{flex:1;overflow:auto;display:flex;align-items:center;justify-content:center;-webkit-overflow-scrolling:touch;}
+  #vZona img{max-width:100%;max-height:100%;object-fit:contain;cursor:zoom-in;display:block;}
+  #vZona.zoom{display:block;}
+  #vZona.zoom img{max-width:none;max-height:none;width:250%;cursor:zoom-out;}
+  #visor .vhint{text-align:center;color:rgba(255,255,255,.6);font-size:12px;padding:8px 12px 14px;}
 </style>
 </head>
 <body>
@@ -185,6 +198,18 @@
     <p class="muted" id="resumen" style="margin-top:8px;"></p>
     <div class="row-end"><button class="btn sec" id="bCsv" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>Descargar CSV</button></div>
   </div>
+</div>
+
+<div id="visor" class="hide" role="dialog" aria-label="Vista previa de la foto">
+  <div class="vbar">
+    <button class="vbtn" id="vPrev" type="button" title="Anterior"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+    <button class="vbtn" id="vNext" type="button" title="Siguiente"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
+    <span id="vTit"></span>
+    <button class="vbtn" id="vZoom" type="button" title="Acercar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3M11 8v6M8 11h6"/></svg></button>
+    <button class="vbtn" id="vCerrar" type="button" title="Cerrar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+  </div>
+  <div id="vZona"><img id="vImg" alt="Foto del documento" /></div>
+  <div class="vhint">Toca la foto para acercar o alejar · desliza para moverte</div>
 </div>
 
 <script>
@@ -422,7 +447,47 @@
         '<button class="x" data-quitar="'+p.id+'" type="button" title="Quitar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>';
     }).join('');
   }
-  $('fotos').onclick = function(e){ var b = e.target.closest('[data-quitar]'); if (b) quitarParte(b.dataset.quitar); };
+  $('fotos').onclick = function(e){
+    var b = e.target.closest('[data-quitar]'); if (b) { quitarParte(b.dataset.quitar); return; }
+    var img = e.target.closest('.foto img'); if (!img) return;
+    var conFoto = partes.filter(function(p){ return p.thumb; });
+    abrirVisor(conFoto.map(function(p, i){ return {src:p.thumb, titulo:'Foto ' + (i+1) + ' de ' + conFoto.length + ' · ' + p.estado}; }),
+      conFoto.indexOf(partes.filter(function(p){ return p.thumb === img.getAttribute('src'); })[0]));
+  };
+
+  // ---------- visor de fotos ----------
+  var vFotos = [], vIdx = 0, vX = null;
+  function abrirVisor(lista, i){
+    if (!lista.length) return;
+    vFotos = lista; vIdx = Math.max(0, i || 0); $('visor').classList.remove('hide'); document.body.style.overflow = 'hidden'; verFoto();
+  }
+  function verFoto(){
+    var f = vFotos[vIdx]; $('vZona').classList.remove('zoom'); $('vImg').src = f.src; $('vTit').textContent = f.titulo || '';
+    $('vPrev').disabled = vIdx === 0; $('vNext').disabled = vIdx === vFotos.length - 1;
+    $('vPrev').classList.toggle('hide', vFotos.length < 2); $('vNext').classList.toggle('hide', vFotos.length < 2);
+  }
+  function cerrarVisor(){ $('visor').classList.add('hide'); document.body.style.overflow = ''; $('vImg').removeAttribute('src'); }
+  function moverVisor(d){ var n = vIdx + d; if (n >= 0 && n < vFotos.length) { vIdx = n; verFoto(); } }
+  // Acercar en el punto tocado: se agranda y se centra donde estaba el dedo
+  function zoomEn(ev){
+    var z = $('vZona'), img = $('vImg');
+    if (z.classList.contains('zoom')) { z.classList.remove('zoom'); return; }
+    var r = img.getBoundingClientRect(), px = ev && ev.clientX != null ? (ev.clientX - r.left) / r.width : .5, py = ev && ev.clientY != null ? (ev.clientY - r.top) / r.height : .5;
+    z.classList.add('zoom');
+    z.scrollLeft = img.offsetWidth * px - z.clientWidth / 2; z.scrollTop = img.offsetHeight * py - z.clientHeight / 2;
+  }
+  $('vImg').onclick = zoomEn;
+  $('vZoom').onclick = function(){ zoomEn(null); };
+  $('vCerrar').onclick = cerrarVisor;
+  $('vPrev').onclick = function(){ moverVisor(-1); };
+  $('vNext').onclick = function(){ moverVisor(1); };
+  $('vZona').onclick = function(e){ if (e.target === this && !this.classList.contains('zoom')) cerrarVisor(); };
+  $('vZona').addEventListener('touchstart', function(e){ vX = e.touches.length === 1 && !this.classList.contains('zoom') ? e.touches[0].clientX : null; }, {passive:true});
+  $('vZona').addEventListener('touchend', function(e){ if (vX == null) return; var dx = e.changedTouches[0].clientX - vX; vX = null; if (Math.abs(dx) > 60) moverVisor(dx < 0 ? 1 : -1); });
+  document.addEventListener('keydown', function(e){
+    if ($('visor').classList.contains('hide')) return;
+    if (e.key === 'Escape') cerrarVisor(); else if (e.key === 'ArrowLeft') moverVisor(-1); else if (e.key === 'ArrowRight') moverVisor(1);
+  });
 
   // PDF: se dibujan las primeras páginas como imagen
   var pdfjsCargado = null;
@@ -552,7 +617,7 @@
   function pintarLista(){
     $('lista').innerHTML = docs.map(function(x){
       var doc = (x.tipo_dte != null ? (TIPOS[x.tipo_dte]||('Tipo '+x.tipo_dte)).replace(' electrónica','') : 'Documento') + (x.folio ? ' N° '+x.folio : '');
-      var fotos = (x.fotos||[]).map(function(f, i){ return '<a href="'+esc(f.url)+'" target="_blank" rel="noopener">foto '+(i+1)+'</a>'; }).join(' · ');
+      var fotos = (x.fotos||[]).map(function(f, i){ var xml = /\.xml($|\?)/i.test(f.url); return '<a href="'+esc(f.url)+'" target="_blank" rel="noopener"'+(xml ? '' : ' data-ver="'+x.id+'" data-i="'+i+'"')+'>'+(xml ? 'XML' : 'foto '+(i+1))+'</a>'; }).join(' · ');
       var cuando = new Date(x.created_at).toLocaleString('es-CL',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
       return '<tr><td>'+esc(x.fecha ? x.fecha.split('-').reverse().join('-') : '')+'</td><td>'+esc(doc)+'<small>'+esc(x.razon_social || x.rut_emisor || '')+'</small><small>'+fotos+'</small></td>'+
         '<td>'+esc(x.faena || 'Sin faena')+'<small>'+esc([x.centro_costo, x.categoria].filter(Boolean).join(' · '))+'</small></td><td class="n">'+clp(x.total)+'</td>'+
@@ -563,6 +628,14 @@
     $('resumen').textContent = docs.length ? docs.length + ' documentos · total ' + clp(suma) : '';
   }
   $('lista').onclick = async function(e){
+    var v = e.target.closest('[data-ver]');
+    if (v) {
+      e.preventDefault();
+      var dv = docs.filter(function(d){ return d.id === v.dataset.ver; })[0], imgs = (dv.fotos||[]).filter(function(f){ return !/\.xml($|\?)/i.test(f.url); });
+      var tit = (dv.razon_social || dv.rut_emisor || 'Documento') + (dv.folio ? ' · N° ' + dv.folio : '');
+      abrirVisor(imgs.map(function(f, i){ return {src:f.url, titulo:tit + ' · foto ' + (i+1) + ' de ' + imgs.length}; }), imgs.indexOf(dv.fotos[+v.dataset.i]));
+      return;
+    }
     var b = e.target.closest('[data-del]'); if (!b) return;
     var x = docs.filter(function(d){ return d.id === b.dataset.del; })[0];
     if (!confirm('¿Eliminar este documento' + (x && x.folio ? ' (N° ' + x.folio + ')' : '') + '? Esta acción no se puede deshacer.')) return;
