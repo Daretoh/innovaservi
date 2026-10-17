@@ -7502,19 +7502,19 @@
       dato('Cargo',t.cargo||'',X+4,y+10); dato('Modalidad',fj?'Contrato fijo':'Spot (por trato)',X+80,y+10); dato('Valor hora',x.vh?fmtMoney(x.vh):'',X+132,y+10);
       y+=24;
       // Días trabajados
-      var C={f:X, fa:X+30, ho:X+104, h:X+138, vu:X+152, m:X+W};
+      var C={f:X, fa:X+30, ho:X+95, h:X+118, vu:X+130, m:X+W};
       var head=function(){ doc.setFillColor(NAVY[0],NAVY[1],NAVY[2]); doc.rect(X,y-4.2,W,6.5,'F'); doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(255,255,255);
         doc.text('Fecha',C.f+2,y); doc.text('Faena',C.fa,y); doc.text('Horario',C.ho,y); doc.text('Horas',C.h+10,y,{align:'right'}); doc.text('Vueltas',C.vu+14,y,{align:'right'}); doc.text('Monto',C.m-2,y,{align:'right'}); y+=6.5; doc.setTextColor(30,30,30); };
       var salto=function(h){ if(y+h>272){ doc.addPage(); y=18; head(); } };
       doc.setFont('helvetica','bold'); doc.setFontSize(10.5); doc.setTextColor(NAVY[0],NAVY[1],NAVY[2]); doc.text('Detalle de días trabajados',X,y); y+=5.5; head();
       if(!dias.length){ doc.setFont('helvetica','italic'); doc.setFontSize(8.5); doc.setTextColor(120,120,120); doc.text('Sin días registrados esta semana.',X+2,y); y+=6; }
-      dias.forEach(function(d,i){ var fa=doc.splitTextToSize(txt(d.fae),70).slice(0,2), extra=d.obs?1:0, rh=Math.max(fa.length,1)*3.6+2.2+extra*3.4; salto(rh+1);
+      dias.forEach(function(d,i){ var fa=doc.splitTextToSize(txt(d.fae),62).slice(0,2), ho=doc.splitTextToSize(txt(d.hor).replace(/, /g,' '),24).slice(0,3), extra=d.obs?1:0, nl=Math.max(fa.length,ho.length,1), rh=nl*3.6+2.2+extra*3.4; salto(rh+1);
         if(i%2){ doc.setFillColor(248,249,252); doc.rect(X,y-3.8,W,rh,'F'); }
         doc.setFont('helvetica','bold'); doc.setFontSize(8.3); doc.setTextColor(30,30,30); doc.text(txt(diaNom(d.f)+' '+fechaCorta(d.f)),C.f+2,y);
-        doc.setFont('helvetica','normal'); doc.text(fa,C.fa,y); doc.text(doc.splitTextToSize(txt(d.hor),32)[0]||'-',C.ho,y);
+        doc.setFont('helvetica','normal'); doc.text(fa,C.fa,y); doc.text(ho.length?ho:['-'],C.ho,y);
         doc.text(d.min?txt(hm(d.min)):'-',C.h+10,y,{align:'right'}); doc.text(d.vu?String(d.vu):'-',C.vu+14,y,{align:'right'});
         doc.setFont('helvetica','bold'); doc.text(M(d.cont),C.m-2,y,{align:'right'});
-        if(d.obs){ doc.setFont('helvetica','italic'); doc.setFontSize(7.2); doc.setTextColor(180,83,9); doc.text(txt('Ajustado (real '+fmtMoney(d.real)+'): '+d.obs),C.fa,y+Math.max(fa.length,1)*3.6); doc.setTextColor(30,30,30); }
+        if(d.obs){ doc.setFont('helvetica','italic'); doc.setFontSize(7.2); doc.setTextColor(180,83,9); doc.text(txt('Ajustado (real '+fmtMoney(d.real)+'): '+d.obs),C.fa,y+nl*3.6); doc.setTextColor(30,30,30); }
         y+=rh; });
       doc.setDrawColor(200,204,220); doc.line(X,y-2.5,X+W,y-2.5);
       doc.setFont('helvetica','bold'); doc.setFontSize(8.5); doc.text(nDias+' día'+(nDias===1?'':'s')+' con horas',C.f+2,y+1.5); doc.text(txt(hm(totMin)),C.h+10,y+1.5,{align:'right'}); doc.text(totVu?String(totVu):'-',C.vu+14,y+1.5,{align:'right'}); doc.text(M(totTrato),C.m-2,y+1.5,{align:'right'});
