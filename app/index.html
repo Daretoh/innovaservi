@@ -7538,17 +7538,9 @@
       doc.setFont('helvetica','bold'); doc.setFontSize(12); doc.setTextColor(194,65,12); doc.text('TOTAL A PAGAR',X+5,y+3); doc.setFontSize(15); doc.text(M(total),X+W-5,y+3.4,{align:'right'});
       y+=15;
       if(fj){ salto(8); doc.setFont('helvetica','italic'); doc.setFontSize(8); doc.setTextColor(90,90,90); doc.text(doc.splitTextToSize('Trabajador con contrato fijo: el sueldo base mensual se liquida aparte. Esta liquidación incluye solo las horas fuera de su jornada, fines de semana, feriados y otros montos de la semana.',W),X,y); y+=9; }
-      // Firmas
-      salto(32); y=Math.max(y+14,y); var fy=Math.min(Math.max(y+12,232),272);
-      if(fy>272){ doc.addPage(); fy=40; }
-      doc.setDrawColor(120,120,120); doc.line(X+8,fy,X+78,fy); doc.line(X+W-78,fy,X+W-8,fy);
-      doc.setFont('helvetica','bold'); doc.setFontSize(8.8); doc.setTextColor(30,30,30);
-      doc.text(txt(titleCase(t.nombre)),X+43,fy+4.5,{align:'center'}); doc.text('Innova Servi',X+W-43,fy+4.5,{align:'center'});
-      doc.setFont('helvetica','normal'); doc.setFontSize(7.8); doc.setTextColor(100,100,100);
-      doc.text(txt('Firma trabajador'+(t.rut?(' · RUT '+rutFmt(t.rut)):'')),X+43,fy+8.5,{align:'center'}); doc.text('Firma y timbre empleador',X+W-43,fy+8.5,{align:'center'});
       // Pie
       var n=doc.getNumberOfPages(); for(var i=1;i<=n;i++){ doc.setPage(i); doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(140,140,140);
-        doc.text(txt('Generado en InnovaGestión · Semana '+numSemana(D.lun)+' · '+titleCase(t.nombre)),X,289); doc.text('Página '+i+' de '+n,X+W,289,{align:'right'}); }
+        doc.text(txt('Documento informativo · Generado en InnovaGestión · Semana '+numSemana(D.lun)+' · '+titleCase(t.nombre)),X,289); doc.text('Página '+i+' de '+n,X+W,289,{align:'right'}); }
       var nom=(titleCase(t.nombre)||'trabajador').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Za-z0-9]+/g,'-').replace(/^-|-$/g,'');
       doc.save('liquidacion-sem'+numSemana(D.lun)+'-'+D.lun.slice(0,4)+'-'+nom+'.pdf');
     });
