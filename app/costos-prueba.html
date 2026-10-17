@@ -317,11 +317,78 @@
   }
   var nativo = null;
   (async function(){ try { if ('BarcodeDetector' in window && (await BarcodeDetector.getSupportedFormats()).indexOf('pdf417') >= 0) nativo = new BarcodeDetector({formats:['pdf417']}); } catch(e){} })();
+  // Lectura rápida (cámara en vivo): un intento por cuadro
   async function leerPDF417(fuente){
     if (nativo) { try { var src = fuente instanceof Blob ? await createImageBitmap(fuente) : fuente; var r = await nativo.detect(src); if (r.length && /<TED/.test(r[0].rawValue)) return r[0].rawValue; } catch(e){} }
-    try { var res = await ZXingWASM.readBarcodes(fuente, {formats:['PDF417'], tryHarder:true, maxNumberOfSymbols:1});
-      if (res.length && res[0].isValid !== false) return res[0].bytes && res[0].bytes.length ? latin1(res[0].bytes) : res[0].text; } catch(e){}
+    return zx(fuente);
+  }
+  async function zx(fuente){
+    try { var res = await ZXingWASM.readBarcodes(fuente, {formats:['PDF417'], tryHarder:true, tryDownscale:false, maxNumberOfSymbols:1});
+      if (res.length && res[0].isValid !== false) { var t = res[0].bytes && res[0].bytes.length ? latin1(res[0].bytes) : res[0].text; if (/<TED/.test(t)) return t; } } catch(e){}
     return null;
+  }
+  // Lectura a fondo de una foto: el lector falla si el timbre está inclinado más de ~1,5°, así que
+  // se ubica el timbre en la foto, se recorta y se prueba enderezándolo cada 3° (hasta ±15°).
+  async function leerTimbreFoto(fuente){
+    var bmp = fuente instanceof Blob ? await createImageBitmap(fuente) : fuente;
+    if (nativo) { try { var r = await nativo.detect(bmp); if (r.length && /<TED/.test(r[0].rawValue)) return r[0].rawValue; } catch(e){} }
+    var k = Math.min(1, 2400 / Math.max(bmp.width, bmp.height)), base = document.createElement('canvas');
+    base.width = Math.round(bmp.width*k); base.height = Math.round(bmp.height*k);
+    base.getContext('2d').drawImage(bmp, 0, 0, base.width, base.height);
+    var zonas = ubicarTimbre(base), angs = [0,-3,3,-6,6,-9,9,-12,12,-15,15];
+    for (var z = 0; z < zonas.length; z++) {
+      var giro = zonas[z].h > zonas[z].w ? 90 : 0;   // timbre de lado: la foto se sacó en horizontal
+      for (var a = 0; a < angs.length; a++) {
+        var t = await zx(recorteGirado(base, zonas[z], giro + angs[a]));
+        if (!t && giro) t = await zx(recorteGirado(base, zonas[z], angs[a]));
+        if (t) return t;
+      }
+    }
+    for (var b = 0; b < 3; b++) { var t2 = await zx(recorteGirado(base, {x:0, y:0, w:base.width, h:base.height}, [0,-3,3][b])); if (t2) return t2; }
+    return null;
+  }
+  // Busca las zonas con más "textura" (bordes muy juntos): el timbre es el bloque más denso de la boleta
+  function ubicarTimbre(base){
+    var W = 320, s = W / base.width, H = Math.max(1, Math.round(base.height * s)), c = document.createElement('canvas'); c.width = W; c.height = H;
+    var g = c.getContext('2d', {willReadFrequently:true}); g.drawImage(base, 0, 0, W, H);
+    var px = g.getImageData(0, 0, W, H).data, gris = new Float32Array(W*H), i, x, y;
+    for (i = 0; i < W*H; i++) gris[i] = 0.299*px[i*4] + 0.587*px[i*4+1] + 0.114*px[i*4+2];
+    var C = 6, cw = Math.floor(W / C), ch = Math.floor(H / C), en = new Float32Array(cw*ch);
+    for (y = 1; y < H-1; y++) for (x = 1; x < W-1; x++) {
+      var gx = Math.abs(gris[y*W+x+1] - gris[y*W+x-1]), gy = Math.abs(gris[(y+1)*W+x] - gris[(y-1)*W+x]), cx_ = Math.floor(x / C), cy_ = Math.floor(y / C);
+      if (cx_ < cw && cy_ < ch) en[cy_*cw+cx_] += gx + gy;
+    }
+    var media = 0, n = en.length; for (i = 0; i < n; i++) media += en[i]; media /= n;
+    var ds = 0; for (i = 0; i < n; i++) ds += (en[i]-media)*(en[i]-media); ds = Math.sqrt(ds / n);
+    var umbral = media + 0.8*ds, marca = new Uint8Array(n), visto = new Uint8Array(n), comps = [];
+    for (i = 0; i < n; i++) if (en[i] > umbral) marca[i] = 1;
+    for (i = 0; i < n; i++) {
+      if (!marca[i] || visto[i]) continue;
+      var pila = [i], x0 = 1e9, y0 = 1e9, x1 = -1, y1 = -1, suma = 0, cant = 0; visto[i] = 1;
+      while (pila.length) {
+        var q = pila.pop(), qx = q % cw, qy = (q / cw) | 0; suma += en[q]; cant++;
+        if (qx < x0) x0 = qx; if (qx > x1) x1 = qx; if (qy < y0) y0 = qy; if (qy > y1) y1 = qy;
+        for (var dy = -1; dy <= 1; dy++) for (var dx = -1; dx <= 1; dx++) {   // vecinos (une huecos de 1 celda)
+          var nx = qx+dx, ny = qy+dy; if (nx < 0 || ny < 0 || nx >= cw || ny >= ch) continue;
+          var v = ny*cw+nx; if (marca[v] && !visto[v]) { visto[v] = 1; pila.push(v); }
+        }
+      }
+      var area = (x1-x0+1)*(y1-y0+1); if (cant < 6) continue;
+      comps.push({score: suma * (cant / area), x0:x0, y0:y0, x1:x1, y1:y1});
+    }
+    comps.sort(function(a, b){ return b.score - a.score; });
+    return comps.slice(0, 3).map(function(o){
+      var f = C / s, bx = o.x0*f, by = o.y0*f, bw = (o.x1-o.x0+1)*f, bh = (o.y1-o.y0+1)*f, m = 0.15;
+      var X = Math.max(0, bx - bw*m), Y = Math.max(0, by - bh*m);
+      return {x:X, y:Y, w:Math.min(base.width - X, bw*(1+2*m)), h:Math.min(base.height - Y, bh*(1+2*m))};
+    });
+  }
+  function recorteGirado(base, z, grados){
+    var r = grados * Math.PI / 180, cs = Math.abs(Math.cos(r)), sn = Math.abs(Math.sin(r));
+    var c = document.createElement('canvas'); c.width = Math.round(z.w*cs + z.h*sn); c.height = Math.round(z.w*sn + z.h*cs);
+    var g = c.getContext('2d', {willReadFrequently:true}); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height);
+    g.translate(c.width/2, c.height/2); g.rotate(r); g.drawImage(base, z.x, z.y, z.w, z.h, -z.w/2, -z.h/2, z.w, z.h);
+    return g.getImageData(0, 0, c.width, c.height);
   }
 
   // ---------- XML del DTE ----------
@@ -427,7 +494,7 @@
         var imgs = p.esPdf ? await paginasPDF(p.blob) : [p.blob];
         if (p.esPdf && imgs.length) { p.foto = await aJPEG(imgs[0]); p.thumb = URL.createObjectURL(p.foto); }
         p.estado = 'Buscando timbre…'; pintarFotos();
-        for (var i = 0; i < imgs.length && !p.ted; i++) p.ted = parseTED(await leerPDF417(imgs[i]));
+        for (var i = 0; i < imgs.length && !p.ted; i++) p.ted = parseTED(await leerTimbreFoto(imgs[i]));
         p.estado = 'Leyendo texto…'; pintarFotos();
         var textos = [];
         avanceOCR = function(pc){ p.estado = 'Leyendo ' + pc + '%'; pintarFotos(); };
@@ -665,13 +732,16 @@
   $('bTorch').onclick = async function(){ torch = !torch; try { await stream.getVideoTracks()[0].applyConstraints({advanced:[{torch:torch}]}); } catch(e){} };
   $('bStop').onclick = function(){ cerrarCam(); estado(''); };
   function cerrarCam(){ vivo = false; if (stream) stream.getTracks().forEach(function(t){ t.stop(); }); stream = null; $('camBox').classList.add('hide'); }
-  var cv = document.createElement('canvas'), cx = cv.getContext('2d', {willReadFrequently:true});
+  var cv = document.createElement('canvas'), cx = cv.getContext('2d', {willReadFrequently:true}), ANG_VIVO = [0,-3,3,-6,6,-9,9], nCuadro = 0;
   async function bucle(){
     var v = $('vid');
     while (vivo) {
       if (v.videoWidth) {
         cv.width = v.videoWidth; cv.height = v.videoHeight; cx.drawImage(v, 0, 0);
-        var ted = parseTED(await leerPDF417(cx.getImageData(0, 0, cv.width, cv.height)));
+        // Cada cuadro se prueba con un ángulo distinto, porque el lector no tolera el timbre inclinado
+        var ang = ANG_VIVO[(nCuadro++) % ANG_VIVO.length], ted = null;
+        if (nativo && ang === 0) ted = parseTED(await leerPDF417(cv));
+        if (!ted) ted = parseTED(await zx(recorteGirado(cv, {x:0, y:0, w:cv.width, h:cv.height}, ang)));
         if (ted) {
           if (navigator.vibrate) navigator.vibrate(80);
           var blob = await new Promise(function(ok){ cv.toBlob(ok, 'image/jpeg', 0.85); });
@@ -687,7 +757,7 @@
   }
 
   // Solo para pruebas automáticas
-  window.__costos = {extraer:extraer, parseTED:parseTED, parseXML:parseXML, rutValido:rutValido};
+  window.__costos = {extraer:extraer, parseTED:parseTED, parseXML:parseXML, rutValido:rutValido, leerTimbreFoto:leerTimbreFoto, leerPDF417:leerPDF417};
 })();
 </script>
 </body>
