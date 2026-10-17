@@ -116,7 +116,9 @@
 
   <div class="card">
     <h2>1. Faena y fotos del documento</h2>
-    <div class="fld"><label for="faena">Faena</label><select id="faena"><option value="">Cargando faenas…</option></select></div>
+    <div class="fld"><label for="faena">Faena</label>
+      <input id="faenaQ" type="search" placeholder="Buscar faena: cliente, lugar o trabajo…" autocomplete="off" style="margin-bottom:6px;" />
+      <select id="faena"><option value="">Cargando faenas…</option></select></div>
     <div class="acts">
       <label class="act" for="fFoto">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
@@ -241,14 +243,44 @@
     var h = hoyISO();
     sb.from('eventos').select('id,fecha,fecha_fin,titulo,ubicacion,sitio').gte('fecha', masDias(h,-60)).lte('fecha', masDias(h,14)).order('fecha',{ascending:false}).limit(400).then(function(r){
       faenas = (r && r.data) || [];
+      pintarFaenas();
       var hoy = faenas.filter(function(e){ return e.fecha <= h && (e.fecha_fin||e.fecha) >= h; });
-      var opt = function(e){ return '<option value="'+e.id+'">'+esc(e.fecha.slice(8,10)+'/'+e.fecha.slice(5,7)+' · '+faenaStr(e))+'</option>'; };
-      $('faena').innerHTML = '<option value="">Sin faena (gasto general)</option>' +
-        (hoy.length ? '<optgroup label="En curso hoy">'+hoy.map(opt).join('')+'</optgroup>' : '') +
-        '<optgroup label="Últimos 60 días y próximas 2 semanas">'+faenas.filter(function(e){ return hoy.indexOf(e)<0; }).map(opt).join('')+'</optgroup>';
       if (hoy.length === 1) $('faena').value = hoy[0].id;
     }, function(){ $('faena').innerHTML = '<option value="">Sin faena (no se pudieron cargar)</option>'; });
   }
+  // Sin tildes ni mayúsculas, para que "cermaq portales" encuentre "CERMAQ · DIEGO PORTALES"
+  function plano(s){ return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''); }
+  function pintarFaenas(q){
+    var h = hoyISO(), sel = $('faena').value, palabras = plano(q).split(/\s+/).filter(Boolean);
+    var calza = function(e){ var t = plano(faenaStr(e) + ' ' + e.fecha.split('-').reverse().join('/')); return palabras.every(function(p){ return t.indexOf(p) >= 0; }); };
+    var desde = masDias(h,-60), lista = faenas.filter(function(e){ return palabras.length ? calza(e) : e.fecha >= desde; });
+    var opt = function(e){ return '<option value="'+e.id+'">'+esc(e.fecha.slice(8,10)+'/'+e.fecha.slice(5,7)+(e.fecha.slice(0,4)!==h.slice(0,4)?'/'+e.fecha.slice(2,4):'')+' · '+faenaStr(e))+'</option>'; };
+    var hoy = lista.filter(function(e){ return e.fecha <= h && (e.fecha_fin||e.fecha) >= h; });
+    var resto = lista.filter(function(e){ return hoy.indexOf(e) < 0; });
+    $('faena').innerHTML = (palabras.length ? '' : '<option value="">Sin faena (gasto general)</option>') +
+      (hoy.length ? '<optgroup label="En curso hoy">'+hoy.map(opt).join('')+'</optgroup>' : '') +
+      (resto.length ? '<optgroup label="'+(palabras.length ? 'Resultados (' + lista.length + ')' : 'Últimos 60 días y próximas 2 semanas')+'">'+resto.map(opt).join('')+'</optgroup>' : '') +
+      (palabras.length && !lista.length ? '<option value="">No se encontró ninguna faena con “'+esc(q)+'”</option>' : '') +
+      (palabras.length ? '<option value="">Sin faena (gasto general)</option>' : '');
+    if (lista.some(function(e){ return e.id === sel; })) $('faena').value = sel;
+    else if (palabras.length && lista.length) $('faena').value = lista[0].id;
+  }
+  // Busca también fuera de los últimos 60 días (en la base), sin perder lo que ya estaba cargado
+  var tBusca = null;
+  $('faenaQ').addEventListener('input', function(){
+    var q = this.value.trim(); pintarFaenas(q); clearTimeout(tBusca);
+    if (q.length < 3) return;
+    tBusca = setTimeout(function(){
+      var p = q.replace(/[%,()]/g,' ').trim().split(/\s+/)[0];
+      sb.from('eventos').select('id,fecha,fecha_fin,titulo,ubicacion,sitio')
+        .or('titulo.ilike.%'+p+'%,ubicacion.ilike.%'+p+'%,sitio.ilike.%'+p+'%').order('fecha',{ascending:false}).limit(100).then(function(r){
+          var ids = {}; faenas.forEach(function(e){ ids[e.id] = 1; });
+          ((r && r.data) || []).forEach(function(e){ if (!ids[e.id]) faenas.push(e); });
+          faenas.sort(function(a, b){ return b.fecha.localeCompare(a.fecha); });
+          if ($('faenaQ').value.trim() === q) pintarFaenas(q);
+        });
+    }, 350);
+  });
 
   // ---------- timbre electrónico (PDF417) ----------
   function tag(xml, n){ var m = xml.match(new RegExp('<'+n+'(?:\\s[^>]*)?>([\\s\\S]*?)</'+n+'>')); return m ? m[1].trim() : null; }
