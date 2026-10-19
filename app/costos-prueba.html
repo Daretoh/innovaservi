@@ -161,7 +161,7 @@
   </div>
 
   <div class="card hide" id="formCard">
-    <h2>2. Revisar y guardar</h2>
+    <h2 id="tituloForm">2. Revisar y guardar</h2>
     <div class="grid">
       <div class="fld"><label>Tipo de documento <span class="tag" data-src="td"></span></label><select id="td"></select></div>
       <div class="fld"><label>Folio <span class="tag" data-src="folio"></span></label><input id="folio" inputmode="numeric" /></div>
@@ -635,15 +635,22 @@
     if (t != null && (n || i || e || o) && n + i + e + o !== t) av.push('Neto + IVA + exento + otros = ' + clp(n+i+e+o) + ', no cuadra con el total ' + clp(t) + '.');
     if (n && i && Math.abs(Math.round(n*0.19) - i) > 1) av.push('El IVA no es el 19 % del neto.');
     var f = $('folio').value.trim(), td = $('td').value;
-    if (r && f && td && docs.some(function(x){ return limpioRut(x.rut_emisor) === limpioRut(r) && String(x.folio) === f && String(x.tipo_dte) === td; }))
+    if (r && f && td && docs.some(function(x){ return x.id !== editId && limpioRut(x.rut_emisor) === limpioRut(r) && String(x.folio) === f && String(x.tipo_dte) === td; }))
       av.push('Este documento ya está cargado (mismo emisor, tipo y folio).');
     if (t == null && partes.length && !partes.some(leyendo)) av.push('No se encontró el total: escríbelo a mano.');
     $('cuadre').innerHTML = av.length ? '<div class="msg bad">' + av.map(esc).join('<br>') + '</div>' : (t != null ? '<div class="msg ok">Montos y RUT cuadran.</div>' : '');
     return av;
   }
 
+  var editId = null;   // id del documento que se está editando (null = documento nuevo)
+  function modoEdicion(id){
+    editId = id || null;
+    $('tituloForm').textContent = editId ? '2. Editar documento' : '2. Revisar y guardar';
+    $('bGuardar').lastChild.textContent = editId ? 'Guardar cambios' : 'Guardar documento';
+    $('bDescartar').textContent = editId ? 'Cancelar' : 'Descartar';
+  }
   function limpiar(){
-    partes = []; datos = null; editados = {}; pintarFotos();
+    partes = []; datos = null; editados = {}; modoEdicion(null); pintarFotos();
     CAMPOS.forEach(function(k){ $(k).value = ''; }); $('cc').value = ''; $('cat').value = ''; $('obs').value = '';
     $('formCard').classList.add('hide'); estado('');
   }
@@ -668,6 +675,7 @@
     try {
       var fotos = [];
       for (var i = 0; i < partes.length; i++) {
+        if (partes[i].existente) { fotos.push({url: partes[i].url, nombre: partes[i].nombre}); continue; }   // ya estaba subida
         var p = partes[i], blob = p.esXml ? p.blob : await aJPEG(p.foto || p.blob, 1800);
         fotos.push({url: await subir(blob, p.esXml ? p.nombre : (p.nombre||'foto').replace(/\.\w+$/,'') + '.jpg'), nombre: p.nombre});
       }
@@ -678,11 +686,13 @@
         folio: $('folio').value.trim() || null, fecha: $('fecha').value || null, rut_emisor: $('rut').value ? fmtRut($('rut').value) : null,
         razon_social: $('razon').value.trim(), neto: num($('neto').value), iva: num($('iva').value), exento: num($('exento').value), otros: num($('otros').value), total: total,
         centro_costo: $('cc').value, categoria: $('cat').value, observaciones: $('obs').value.trim(), origen: origen, items: (datos && datos.items) || [], fotos: fotos };
-      var r = await sb.from('costos_docs').insert(fila);
+      if (editId) { var prev = docs.filter(function(x){ return x.id === editId; })[0] || {}; if (!partes.some(function(p){ return !p.existente; }) && !editados.total) fila.origen = prev.origen || fila.origen; }
+      var eraEdicion = !!editId;
+      var r = editId ? await sb.from('costos_docs').update(fila).eq('id', editId) : await sb.from('costos_docs').insert(fila);
       if (r.error) throw new Error(r.error.code === '23505' ? 'Este documento ya estaba cargado (mismo emisor, tipo y folio).' : r.error.message);
       var imgs = fotos.filter(function(f){ return !/\.xml($|\?)/i.test(f.url); }), tit = (fila.razon_social || fila.rut_emisor || 'Documento') + (fila.folio ? ' · N° ' + fila.folio : '');
       ultimoDoc = imgs.map(function(f, i){ return {src:f.url, titulo:tit + ' · foto ' + (i+1) + ' de ' + imgs.length}; });
-      limpiar(); estado('Documento guardado.' + (imgs.length ? ' <button type="button" class="btn mini" style="margin-left:6px" data-verdoc="1">Ver documento</button>' : ''),'ok'); cargarDocs();
+      limpiar(); estado((eraEdicion ? 'Cambios guardados.' : 'Documento guardado.') + (imgs.length ? ' <button type="button" class="btn mini" style="margin-left:6px" data-verdoc="1">Ver documento</button>' : ''),'ok'); cargarDocs();
     } catch(e) { estado(esc(e.message),'bad'); }
     b.disabled = false;
   };
@@ -706,7 +716,7 @@
       return '<tr><td>'+esc(x.fecha ? x.fecha.split('-').reverse().join('-') : '')+'</td><td>'+esc(doc)+'<small>'+esc(x.razon_social || x.rut_emisor || '')+'</small><small>'+fotos+'</small></td>'+
         '<td>'+esc(x.faena || 'Sin faena')+'<small>'+esc([x.centro_costo, x.categoria].filter(Boolean).join(' · '))+'</small></td><td class="n">'+clp(x.total)+'</td>'+
         '<td>'+esc(nombreDe(x.subido_por))+'<small>'+esc(cuando)+'</small></td>'+
-        '<td><button class="btn sec mini" data-del="'+x.id+'" title="Eliminar" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button></td></tr>';
+        '<td style="white-space:nowrap"><button class="btn sec mini" data-edit="'+x.id+'" title="Editar" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button> <button class="btn sec mini" data-del="'+x.id+'" title="Eliminar" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button></td></tr>';
     }).join('') || '<tr><td colspan="6" class="muted">Aún no hay documentos.</td></tr>';
     var suma = docs.reduce(function(a, x){ return a + (x.total||0); }, 0);
     $('resumen').textContent = docs.length ? docs.length + ' documentos · total ' + clp(suma) : '';
@@ -720,6 +730,8 @@
       abrirVisor(imgs.map(function(f, i){ return {src:f.url, titulo:tit + ' · foto ' + (i+1) + ' de ' + imgs.length}; }), imgs.indexOf(dv.fotos[+v.dataset.i]));
       return;
     }
+    var ed = e.target.closest('[data-edit]');
+    if (ed) { var de = docs.filter(function(d){ return d.id === ed.dataset.edit; })[0]; if (de) editarDoc(de); return; }
     var b = e.target.closest('[data-del]'); if (!b) return;
     var x = docs.filter(function(d){ return d.id === b.dataset.del; })[0];
     if (!confirm('¿Eliminar este documento' + (x && x.folio ? ' (N° ' + x.folio + ')' : '') + '? Esta acción no se puede deshacer.')) return;
@@ -727,6 +739,25 @@
     if (r.error) { alert('No se pudo eliminar: ' + r.error.message); return; }
     cargarDocs();
   };
+  function editarDoc(x){
+    if (partes.some(leyendo)) { estado('Espera a que terminen de leerse las fotos.','bad'); return; }
+    limpiar(); modoEdicion(x.id);
+    partes = (x.fotos||[]).map(function(f){ var xml = /\.xml($|\?)/i.test(f.url);
+      return {id: Math.random().toString(36).slice(2), nombre: f.nombre || (xml ? 'documento.xml' : 'foto.jpg'), url: f.url, thumb: xml ? null : f.url, esXml: xml, existente: true, estado: 'Guardada', texto: ''}; });
+    var val = {td:x.tipo_dte, folio:x.folio, fecha:x.fecha, rut:x.rut_emisor, razon:x.razon_social, neto:x.neto, iva:x.iva, exento:x.exento, otros:x.otros, total:x.total};
+    CAMPOS.forEach(function(k){ editados[k] = true; $(k).value = val[k] == null ? '' : val[k]; });   // lo guardado manda: agregar fotos no lo pisa
+    $('cc').value = x.centro_costo || ''; $('cat').value = x.categoria || ''; $('obs').value = x.observaciones || '';
+    datos = {origen:{}, items:x.items || [], texto:''};
+    // Faena: si no está entre las cargadas (es antigua), se trae de la base
+    $('faenaQ').value = '';
+    var ponerFaena = function(){ pintarFaenas(); $('faena').value = x.evento_id || ''; };
+    if (x.evento_id && !faenas.some(function(e){ return e.id === x.evento_id; }))
+      sb.from('eventos').select('id,fecha,fecha_fin,titulo,ubicacion,sitio').eq('id', x.evento_id).single().then(function(r){ if (r && r.data) faenas.push(r.data); ponerFaena(); }, ponerFaena);
+    else ponerFaena();
+    pintarFotos(); $('formCard').classList.remove('hide'); mostrar();
+    estado('Editando el documento' + (x.folio ? ' N° ' + esc(x.folio) : '') + '. Cambia la faena u otros datos y presiona <b>Guardar cambios</b>. Puedes agregar o quitar fotos.','info');
+    window.scrollTo({top:0, behavior:'smooth'});
+  }
   $('bCsv').onclick = function(){
     var cols = [['fecha','Fecha'],['tipo_dte','Tipo'],['folio','Folio'],['rut_emisor','RUT emisor'],['razon_social','Razón social'],['neto','Neto'],['iva','IVA'],['exento','Exento'],['otros','Otros'],['total','Total'],['faena','Faena'],['centro_costo','Centro de costo'],['categoria','Categoría'],['observaciones','Observaciones'],['subido_por','Subido por'],['created_at','Cargado el']];
     var csv = '﻿' + cols.map(function(c){ return c[1]; }).join(';') + '\n' + docs.map(function(x){ return cols.map(function(c){ return '"' + String(x[c[0]]==null?'':x[c[0]]).replace(/"/g,'""') + '"'; }).join(';'); }).join('\n');
