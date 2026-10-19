@@ -680,10 +680,16 @@
         centro_costo: $('cc').value, categoria: $('cat').value, observaciones: $('obs').value.trim(), origen: origen, items: (datos && datos.items) || [], fotos: fotos };
       var r = await sb.from('costos_docs').insert(fila);
       if (r.error) throw new Error(r.error.code === '23505' ? 'Este documento ya estaba cargado (mismo emisor, tipo y folio).' : r.error.message);
-      limpiar(); estado('Documento guardado.','ok'); cargarDocs();
+      var imgs = fotos.filter(function(f){ return !/\.xml($|\?)/i.test(f.url); }), tit = (fila.razon_social || fila.rut_emisor || 'Documento') + (fila.folio ? ' · N° ' + fila.folio : '');
+      ultimoDoc = imgs.map(function(f, i){ return {src:f.url, titulo:tit + ' · foto ' + (i+1) + ' de ' + imgs.length}; });
+      limpiar(); estado('Documento guardado.' + (imgs.length ? ' <button type="button" class="btn mini" style="margin-left:6px" data-verdoc="1">Ver documento</button>' : ''),'ok'); cargarDocs();
     } catch(e) { estado(esc(e.message),'bad'); }
     b.disabled = false;
   };
+
+  // "Ver documento": abre en grande las fotos que se acaban de guardar
+  var ultimoDoc = null;
+  document.addEventListener('click', function(ev){ if (ev.target.closest('[data-verdoc]') && ultimoDoc && ultimoDoc.length) abrirVisor(ultimoDoc, 0); });
 
   // ---------- lista ----------
   function cargarDocs(){
