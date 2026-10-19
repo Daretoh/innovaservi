@@ -2200,6 +2200,7 @@
   <div class="report-actions">
     <button id="rep-close" class="btn ghost small" style="width:auto">✕ Cerrar</button>
     <span class="rep-hint">Toca una foto para incluir / quitar del reporte</span>
+    <button id="rep-save" class="btn ghost small" style="width:auto" title="Guarda lo editado sin confirmar el informe"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:4px"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>Guardar</button>
     <button id="rep-confirm" class="btn small" style="width:auto">✓ Confirmar y descargar</button>
     <button id="rep-reopen" class="btn ghost small hide" style="width:auto">🔓 Reabrir para regenerar</button>
     <button id="rep-download" class="btn small hide" style="width:auto">⬇️ Descargar PDF</button>
@@ -4472,7 +4473,7 @@
     $('r-empresa').value=''; $('r-lugar').value=''; $('r-notas').value=''; $('r-fecha').value=todayISO();
     HORAS=[{trabajador:'',entrada:'',salida:''}]; renderHoras();
     elegirJob(null); pintarThumbs(); aplicarModo();
-    REG_LOCKED=false; REG_PDF=''; reflejarBloqueo();
+    REG_LOCKED=false; REG_PDF=''; REG_INF=null; reflejarBloqueo();
     autoSeleccionarHoy();
   }
   function abrirEdicion(reg){
@@ -4491,7 +4492,7 @@
     renderHoras();
     (reg.media||[]).forEach(function(m){ R_MEDIA.push({ url:m.url, tipo:m.tipo||'image', cat:catStore(m.cat), fecha:m.fecha||reg.fecha, nombre:m.nombre||'', faena:(m.faena||''), existing:true }); });
     renderFotoFaenas(); aplicarModo();
-    REG_LOCKED=!!reg.confirmado; REG_PDF=reg.pdf_url||''; reflejarBloqueo();
+    REG_LOCKED=!!reg.confirmado; REG_PDF=reg.pdf_url||''; REG_INF=reg.informe||null; reflejarBloqueo();
     // Además de lo guardado en el reporte, trae las fotos que viven en cada faena (por si se agregaron en otro).
     R_JOBS.forEach(function(e){ cargarFotosFaena(e, function(){ renderFotoFaenas(); }); });
     irA('v-reporte'); window.scrollTo(0,0);
@@ -4516,6 +4517,8 @@
     var empresa=$('r-empresa').value.trim()||(R_JOB&&R_JOB.ubicacion)||'—';
     var lugar=$('r-lugar').value.trim(), fecha=$('r-fecha').value||todayISO(), notas=$('r-notas').value.trim();
     var fic=fichaCliente(empresa);   // razón social, RUT, dirección y solicitante recordados de este cliente
+    var ed=REG_INF||{};              // ediciones guardadas del informe (botón Guardar), mandan sobre lo calculado
+    if(ed.lugar!=null) lugar=ed.lugar;
     if(R_MEDIA.some(function(m){ return m.file; })) toast('Ojo: hay fotos sin guardar; guarda para incluirlas.');
     var media=R_MEDIA.filter(function(m){ return m.url && !m.file && m.tipo!=='video'; });
     var hdr='<div class="rep-hdr"><img src="../assets/images/InnovaLOGO.png" onerror="this.style.display=\'none\'"><span>INNOVA SERVI <span class="muted">— Informe de Trabajo</span></span></div>';
@@ -4529,30 +4532,31 @@
     var faenaLineas=R_JOBS.map(function(e){ return (e.titulo||e.ubicacion||'').trim(); }).filter(Boolean);
     var lineas=faenaLineas.concat((notas||'').split(/\r?\n/).map(function(s){ return s.replace(/^[-•\s]+/,'').trim(); }).filter(Boolean));
     var vis={}; lineas=lineas.filter(function(l){ var k=l.toLowerCase(); if(vis[k]) return false; vis[k]=1; return true; });
+    if(ed.trabajo&&ed.trabajo.length) lineas=ed.trabajo.slice();
     var bullets=lineas.length?lineas.map(function(l){ return '<li>'+esc(l)+'</li>'; }).join(''):'<li></li>';
     // Fecha del informe: si las faenas tienen varias fechas, se muestran todas; si no, la del campo Fecha.
-    var _ff=fechasFaenas(); var fechaTxt=(_ff.length>1)?_ff.join('  ·  '):esc(fFaena(fecha));
+    var _ff=fechasFaenas(); var fechaTxt=(ed.fecha!=null)?esc(ed.fecha):(_ff.length>1)?_ff.join('  ·  '):esc(fFaena(fecha));
     var datos='<div class="rep-page">'+hdr+
       '<div class="rep-h2">Datos del servicio</div><div class="rep-two">'+
         '<div class="rep-box orange"><div class="bt">EMPRESA CONTRATISTA</div>'+
           'Empresa: <b>INNOVA SERVI SpA</b><br>RUT: <b>77.647.955-1</b><br>'+
-          'Responsable faena: <b><span contenteditable data-ph="Nombre">Christopher Ruiz Vidal</span></b><br>'+
+          'Responsable faena: <b><span contenteditable data-rf="responsable" data-ph="Nombre">'+esc(ed.responsable!=null?ed.responsable:'Christopher Ruiz Vidal')+'</span></b><br>'+
           'Certificador desinfección SERNAPESCA: <b>N° registro 891</b><br>'+
           'Resolución extensa Innova Servi N°: <b>DN-00150/2023</b>'+
           '<span class="mini">Empresa aplicadora de desinfectantes y sanitizantes — Resolución N° 2310429700</span></div>'+
         '<div class="rep-box navy"><div class="bt">EMPRESA MANDANTE</div>'+
-          'Empresa: <b><span contenteditable data-cf="razon" data-ph="Cliente">'+esc(fic.razon||empresa)+'</span></b><br>'+
-          'RUT: <b><span contenteditable data-cf="rut" data-ph="RUT">'+esc(fic.rut||'')+'</span></b><br>'+
-          'Dirección: <b><span contenteditable data-cf="direccion" data-ph="Dirección">'+esc(lugar||fic.direccion||'')+'</span></b></div>'+
+          'Empresa: <b><span contenteditable data-cf="razon" data-rf="razon" data-ph="Cliente">'+esc(ed.razon!=null?ed.razon:(fic.razon||empresa))+'</span></b><br>'+
+          'RUT: <b><span contenteditable data-cf="rut" data-rf="rut" data-ph="RUT">'+esc(ed.rut!=null?ed.rut:(fic.rut||''))+'</span></b><br>'+
+          'Dirección: <b><span contenteditable data-cf="direccion" data-rf="direccion" data-ph="Dirección">'+esc(ed.direccion!=null?ed.direccion:(lugar||fic.direccion||''))+'</span></b></div>'+
       '</div>'+
       '<div class="rep-h2">Detalle del trabajo realizado</div>'+
       '<div class="rep-detail">'+
-        '<div><span class="lbl">SOLICITADO POR</span><div class="val"><span contenteditable data-cf="solicitante" data-ph="Nombre">'+esc(fic.solicitante||'')+'</span></div></div>'+
-        '<div><span class="lbl">FECHA FAENA</span><div class="val">'+fechaTxt+'</div></div>'+
-        '<div><span class="lbl">LUGAR</span><div class="val">'+esc(lugar||'—')+'</div></div>'+
+        '<div><span class="lbl">SOLICITADO POR</span><div class="val"><span contenteditable data-cf="solicitante" data-rf="solicitante" data-ph="Nombre">'+esc(ed.solicitante!=null?ed.solicitante:(fic.solicitante||''))+'</span></div></div>'+
+        '<div><span class="lbl">FECHA FAENA</span><div class="val"><span contenteditable data-rf="fecha" data-ph="Fecha">'+fechaTxt+'</span></div></div>'+
+        '<div><span class="lbl">LUGAR</span><div class="val"><span contenteditable data-rf="lugar" data-ph="Lugar">'+esc(lugar||'')+'</span></div></div>'+
       '</div>'+
-      '<div class="rep-work"><b>Trabajo realizado</b><ul contenteditable>'+bullets+'</ul></div>'+
-      '<div class="rep-obs"><span class="chk">✓</span><div><b>Observaciones:</b> <span contenteditable data-ph="Sin observaciones"></span></div></div>'+
+      '<div class="rep-work"><b>Trabajo realizado</b><ul contenteditable data-rf="trabajo">'+bullets+'</ul></div>'+
+      '<div class="rep-obs"><span class="chk">✓</span><div><b>Observaciones:</b> <span contenteditable data-rf="obs" data-ph="Sin observaciones">'+esc(ed.obs||'')+'</span></div></div>'+
     '</div>';
     // Registro fotográfico (una página por sección con fotos). Con 2+ faenas, se agrupa por faena.
     var multiF=R_JOBS.length>1;
@@ -4617,7 +4621,7 @@
   $('rep-close').addEventListener('click',function(){ $('report-view').classList.add('hide'); });
 
   // ====== Confirmar informe → PDF → descargar → guardar en el registro (definitivo) ======
-  var REG_LOCKED=false, REG_PDF='';
+  var REG_LOCKED=false, REG_PDF='', REG_INF=null;
   function cargarH2C(){ if(window.html2canvas) return Promise.resolve(); return new Promise(function(res,rej){ var s=document.createElement('script'); s.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js'; s.onload=function(){res();}; s.onerror=function(){rej();}; document.head.appendChild(s); }); }
   function nombrePdf(){ return 'Informe_'+slug($('r-empresa').value.trim()||'informe')+'_'+($('r-fecha').value||todayISO())+'.pdf'; }
   function descargarBlob(blob,nombre){ var a=document.createElement('a'), u=URL.createObjectURL(blob); a.href=u; a.download=nombre; document.body.appendChild(a); a.click(); setTimeout(function(){ try{ document.body.removeChild(a); }catch(_){}; URL.revokeObjectURL(u); },1500); }
@@ -4687,6 +4691,7 @@
   }
   // Muestra los botones del informe según esté bloqueado (definitivo) o no.
   function reflejarBotonesInforme(){
+    $('rep-save').classList.toggle('hide',REG_LOCKED);
     if(REG_LOCKED){ $('rep-confirm').classList.add('hide'); $('rep-download').classList.remove('hide'); $('rep-reopen').classList.remove('hide'); }
     else { $('rep-confirm').classList.remove('hide'); $('rep-download').classList.add('hide'); $('rep-reopen').classList.add('hide'); }
   }
@@ -4706,6 +4711,30 @@
     }, function(){ busy(false); toast('No se pudo reabrir el informe.'); });
   }
   $('rep-reopen').addEventListener('click',reabrirInforme);
+  // Lee del informe en pantalla lo editado a mano (responsable, fecha, lugar, trabajo, observaciones).
+  function leerEdicionInforme(){
+    var o={};
+    $('report-doc').querySelectorAll('[data-rf]').forEach(function(el){
+      var k=el.getAttribute('data-rf');
+      if(k==='trabajo'){ o.trabajo=Array.prototype.map.call(el.querySelectorAll('li'),function(li){ return (li.textContent||'').trim(); }).filter(Boolean); }
+      else o[k]=(el.textContent||'').replace(/\s+/g,' ').trim();
+    });
+    return o;
+  }
+  // Guardar sin confirmar: deja las ediciones en el registro para retomarlas y confirmar después.
+  function guardarInforme(){
+    if(!EDIT_ID){ toast('Guarda el registro antes de guardar su informe.'); return; }
+    var inf=leerEdicionInforme();
+    busy(true,'Guardando informe…');
+    sb.from('registros').update({ informe:inf }).eq('id',EDIT_ID).then(function(r){
+      busy(false);
+      if(r.error){ toast(/informe/.test(r.error.message||'')?'Falta correr registros-informe.sql en Supabase.':('No se pudo guardar: '+r.error.message)); return; }
+      REG_INF=inf;
+      REGISTROS.forEach(function(g){ if(String(g.id)===String(EDIT_ID)) g.informe=inf; });
+      toast('✓ Informe guardado (sin confirmar)');
+    }, function(){ busy(false); toast('No se pudo guardar el informe.'); });
+  }
+  $('rep-save').addEventListener('click',guardarInforme);
   $('rep-confirm').addEventListener('click',function(){
     if(!EDIT_ID){ toast('Guarda el registro antes de confirmar su informe.'); return; }
     if(!confirm('¿Confirmar el informe?\n\nSe generará el PDF, se descargará y quedará GUARDADO en el registro como DEFINITIVO (ya no editable).\nLas horas se siguen editando desde el apartado Horas.')) return;
@@ -4718,11 +4747,11 @@
       var pdfFile; try{ pdfFile=new File([blob], nombrePdf(), {type:'application/pdf'}); }catch(_){ pdfFile=blob; }
       subirArchivo(pdfFile, carpeta, nombrePdf()).then(function(res){
         if(!res){ busy(false); toast('El PDF se descargó, pero no se pudo subir al registro. Intenta otra vez.'); return; }
-        sb.from('registros').update({ pdf_url:res.url, confirmado:true, confirmado_at:new Date().toISOString() }).eq('id',EDIT_ID).then(function(r){
+        sb.from('registros').update({ pdf_url:res.url, confirmado:true, confirmado_at:new Date().toISOString(), informe:leerEdicionInforme() }).eq('id',EDIT_ID).then(function(r){
           busy(false);
           if(r.error){ toast(/pdf_url|confirmado/.test(r.error.message||'')?'Falta correr registros-pdf.sql en Supabase.':('No se marcó como definitivo: '+r.error.message)); return; }
           toast('✓ Informe confirmado y guardado');
-          REG_LOCKED=true; REG_PDF=res.url; reflejarBloqueo(); reflejarBotonesInforme();
+          REG_INF=leerEdicionInforme(); REG_LOCKED=true; REG_PDF=res.url; reflejarBloqueo(); reflejarBotonesInforme();
           $('report-doc').querySelectorAll('[contenteditable]').forEach(function(el){ el.setAttribute('contenteditable','false'); });
           cargarRegistros();
         }, function(){ busy(false); toast('No se pudo marcar como definitivo.'); });
