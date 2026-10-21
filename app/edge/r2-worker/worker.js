@@ -13,7 +13,7 @@
 //    - Binding R2:  Variable name = BUCKET   ->  tu bucket de InnovaServi
 //    - Variable    SUPABASE_URL   = https://oabtbzrfgwadnooexdwd.supabase.co
 //    - Variable    SUPABASE_ANON  = sb_publishable_Uz01bxGvGArhB-h4KOvbqA_WtQg1zer
-//    - Secreto     FIRMA_SECRET   = texto largo al azar (ver README)
+//    - Secreto     FIRMA_SECRET (o FIRMA_SECRETS) = texto largo al azar (ver README)
 //    - (Transición) Variable GET_PUBLICO = 1  -> el GET sin firma sigue
 //      funcionando como antes. Borrarla cuando la app nueva esté publicada.
 // ============================================================
@@ -55,6 +55,8 @@ function igual(a, b) {   // comparación en tiempo constante
   let r = 0; for (let i = 0; i < a.length; i++) r |= a.charCodeAt(i) ^ b.charCodeAt(i);
   return r === 0;
 }
+// Acepta FIRMA_SECRET o FIRMA_SECRETS (en Cloudflare quedó con S).
+function secreto(env) { return env.FIRMA_SECRET || env.FIRMA_SECRETS || ""; }
 function limpiarKey(k) { return String(k || "").replace(/^\/+/, "").split(/[?#]/)[0]; }
 
 export default {
@@ -69,8 +71,8 @@ export default {
       const exp = parseInt(url.searchParams.get("exp") || "0", 10);
       const sig = url.searchParams.get("sig") || "";
       let firmado = false;
-      if (sig && env.FIRMA_SECRET) {
-        const ok = igual(await hmac(env.FIRMA_SECRET, key + "\n" + exp), sig);
+      if (sig && secreto(env)) {
+        const ok = igual(await hmac(secreto(env), key + "\n" + exp), sig);
         if (ok && exp > Math.floor(Date.now() / 1000)) firmado = true;
         else return json({ error: "Enlace vencido o no válido" }, 403);
       }
@@ -97,7 +99,7 @@ export default {
 
     // ---- POST /firmar: URLs firmadas de corta duración ----
     if (url.pathname.replace(/\/+$/, "") === "/firmar") {
-      if (!env.FIRMA_SECRET) return json({ error: "Falta FIRMA_SECRET en el Worker" }, 500);
+      if (!secreto(env)) return json({ error: "Falta FIRMA_SECRET en el Worker" }, 500);
       let body = null; try { body = await request.json(); } catch (_) {}
       const keys = (body && Array.isArray(body.keys) ? body.keys : []).slice(0, MAX_KEYS);
       const ttl = Math.min(TTL_MAX, Math.max(60, parseInt((body && body.ttl) || TTL_DEF, 10) || TTL_DEF));
@@ -106,7 +108,7 @@ export default {
       const urls = {};
       for (const k0 of keys) {
         const k = limpiarKey(k0); if (!k) continue;
-        const sig = await hmac(env.FIRMA_SECRET, k + "\n" + exp);
+        const sig = await hmac(secreto(env), k + "\n" + exp);
         urls[k0] = base + "/" + k.split("/").map(encodeURIComponent).join("/") + "?exp=" + exp + "&sig=" + sig;
       }
       return json({ ok: true, exp, urls }, 200);
