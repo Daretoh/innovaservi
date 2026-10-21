@@ -122,6 +122,27 @@
     return out;
   }
 
+  // Fotos: el bucket es privado. Se muestran con un enlace firmado (1 h) que Storage entrega solo para
+  // la carpeta checklist/<sha256(token)>/ de este link (política checklist_link_read).
+  var FIRMA={}, FIRMA_EXP=0, firmando=false, GIF='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+  function rutaFoto(u){ var m=/\/storage\/v1\/object\/(?:public|sign|authenticated)\/reportes\/([^?#]+)/.exec(u||''); if(!m) return null; try{ return decodeURIComponent(m[1]); }catch(_){ return m[1]; } }
+  function ver(u){ return FIRMA[u]||GIF; }
+  function firmarFotos(){
+    if(firmando||!sb||!D) return;
+    if(FIRMA_EXP && Date.now()/1000>FIRMA_EXP-300){ FIRMA={}; FIRMA_EXP=0; }
+    var falta=(D.fotos||[]).map(function(f){ return f.url; }).filter(function(u){ return u && !FIRMA[u]; });
+    if(!falta.length) return;
+    var paths=[], porRuta={};
+    falta.forEach(function(u){ var r=rutaFoto(u); if(r){ paths.push(r); porRuta[r]=u; } else FIRMA[u]=u; });
+    function fin(){ paths.forEach(function(r){ if(!FIRMA[porRuta[r]]) FIRMA[porRuta[r]]=porRuta[r]; }); firmando=false; if(!ocupado) render(); }
+    if(!paths.length){ setTimeout(render,0); return; }
+    firmando=true;
+    sb.storage.from('reportes').createSignedUrls(paths,3600).then(function(res){
+      ((res&&res.data)||[]).forEach(function(x){ if(x&&x.path&&x.signedUrl&&!x.error&&porRuta[x.path]) FIRMA[porRuta[x.path]]=x.signedUrl; });
+      if(!FIRMA_EXP) FIRMA_EXP=Date.now()/1000+3600; fin();
+    }, fin);
+  }
+
   function render(){
     var F=filas(), todas=[].concat(F.epp,F.ropa,F.herramienta,F.maquinaria), hechas=todas.filter(function(f){ return f.ok; }).length;
     var html='<div class="card"><div class="res">'+
@@ -150,7 +171,7 @@
     // Paso final: foto(s) de la carga general
     html+='<div class="card"><div class="step"><b>2</b>Foto de la carga general<span>último paso</span></div>'+
       '<p class="foot" style="text-align:left;margin:-4px 0 12px">Saca una foto con todo cargado en el vehículo antes de salir.</p>';
-    if(fotos.length) html+='<div class="fotos">'+fotos.map(function(f){ return '<div class="foto"><a href="'+esc(f.url)+'" target="_blank" rel="noopener"><img src="'+esc(f.url)+'" alt="Foto de la carga" loading="lazy"></a><button type="button" data-q="'+esc(f.url)+'" aria-label="Quitar foto">'+ico('<path d="M18 6 6 18M6 6l12 12"/>')+'</button></div>'; }).join('')+'</div>';
+    if(fotos.length) html+='<div class="fotos">'+fotos.map(function(f){ return '<div class="foto"><a href="'+esc(ver(f.url))+'" target="_blank" rel="noopener"><img src="'+esc(ver(f.url))+'" alt="Foto de la carga" loading="lazy"></a><button type="button" data-q="'+esc(f.url)+'" aria-label="Quitar foto">'+ico('<path d="M18 6 6 18M6 6l12 12"/>')+'</button></div>'; }).join('')+'</div>';
     html+='<div class="btns"><button type="button" class="bt pri" id="b-cam"'+(subiendo?' disabled':'')+'>'+ico(CAM)+(subiendo?'Subiendo…':(fotos.length?'Otra foto':'Tomar foto'))+'</button>'+
       '<button type="button" class="bt" id="b-gal"'+(subiendo?' disabled':'')+'>'+ico(GAL)+'Galería</button></div>'+'</div>';
     $('app').innerHTML=html;
@@ -159,6 +180,7 @@
     $('b-cam').addEventListener('click',function(){ $('in-cam').click(); });
     $('b-gal').addEventListener('click',function(){ $('in-gal').click(); });
     document.querySelectorAll('.foto button[data-q]').forEach(function(b){ b.addEventListener('click',function(){ if(confirm('¿Quitar esta foto?')) quitarFoto(b.dataset.q); }); });
+    firmarFotos();
   }
 
   // ---- Fotos: se achican a 1600 px (JPEG) y se suben a checklist/<sha256(token)>/ ----
