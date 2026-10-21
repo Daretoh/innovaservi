@@ -14,7 +14,7 @@ Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
   if (req.method !== 'POST') return json({ error: 'Método no permitido' }, 405);
 
-  const path = (req.headers.get('x-path') || '').replace(/\/g, '/').replace(/[^a-zA-Z0-9._/-]/g, '_');
+  const path = (req.headers.get('x-path') || '').replace(/\\/g, '/').replace(/[^a-zA-Z0-9._/-]/g, '_');
   const ct = req.headers.get('content-type') || 'application/octet-stream';
   if (!/^ingreso\/[^/]+\/(frente|reverso|antecedentes)\.[a-zA-Z0-9]{1,10}$/.test(path) || path.includes('..')) return json({ error: 'Ruta inválida' }, 400);
   if (!/^(image\/|application\/pdf)/.test(ct)) return json({ error: 'Solo imágenes o PDF' }, 415);
