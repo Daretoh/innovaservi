@@ -231,6 +231,146 @@
   var datos = null;    // datos combinados del documento en curso
   var editados = {};   // campos que la persona corrigió a mano (no se pisan al agregar otra foto)
 
+  // (Copia del bloque ARCH de index.html: mantener ambos iguales.)
+  // ====== ARCHIVOS PRIVADOS: los enlaces guardados se firman al mostrarlos ======
+  // Las tablas siguen guardando la URL "de siempre" (pub-...r2.dev/<key>, .../object/public/reportes/<ruta>,
+  // .../object/authenticated/cedulas/<ruta>), pero los archivos ya no son públicos. Al pintarlos en pantalla,
+  // abrirlos (window.open) o descargarlos (fetch) se cambian por una URL firmada de corta duración:
+  // Supabase Storage con createSignedUrls; R2 con el Worker (POST /firmar, requiere sesión).
+  // Si no se puede firmar (sin sesión, Worker viejo), se usa la URL original tal cual.
+  var ARCH=(function(){
+    var TTL=3600, MARGEN=300, SB_OBJ=SB_URL.replace(/\/+$/,'')+'/storage/v1/object/';
+    var R2P=R2_PUBLIC?R2_PUBLIC.replace(/\/+$/,'')+'/':null, R2W=R2_UPLOAD?R2_UPLOAD.replace(/\/+$/,'')+'/':null;
+    var CACHE={}, PEND={}, FALLO={}, COLA=[], timer=null, FIRMADAS={};
+    var GIF='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+    var ORIG=(typeof WeakMap==='function')?new WeakMap():null;
+    function dec(s){ try{ return decodeURIComponent(s); }catch(_){ return s; } }
+    function ahora(){ return Date.now()/1000; }
+    // ¿Es un archivo nuestro? Devuelve {k:'r2',key} | {k:'sb',b,path} | null
+    function ref(u){
+      if(!u || typeof u!=='string' || FIRMADAS[u]) return null;
+      if(R2P && u.indexOf(R2P)===0){ var k1=u.slice(R2P.length).split(/[?#]/)[0]; return k1?{k:'r2', key:dec(k1)}:null; }
+      if(R2W && u.indexOf(R2W)===0 && !/[?&]sig=/.test(u)){ var k2=u.slice(R2W.length).split(/[?#]/)[0]; if(k2 && k2!=='firmar') return {k:'r2', key:dec(k2)}; return null; }
+      if(u.indexOf(SB_OBJ)===0){ var m=/^(public|sign|authenticated)\/(reportes|cedulas)\/([^?#]+)/.exec(u.slice(SB_OBJ.length));
+        if(m) return {k:'sb', b:m[2], path:dec(m[3])}; }
+      return null;
+    }
+    function id(r){ return r.k==='r2' ? 'r2:'+r.key : r.b+':'+r.path; }
+    function vigente(c){ return !!(c && c.exp-MARGEN > ahora()); }
+    function enCache(u){ var r=ref(u); if(!r) return null; var c=CACHE[id(r)]; return vigente(c)?c.url:null; }
+    function firmar(u){
+      var r=ref(u); if(!r) return Promise.resolve(null);
+      var i=id(r), c=CACHE[i]; if(vigente(c)) return Promise.resolve(c.url);
+      if(FALLO[i] && FALLO[i]>ahora()) return Promise.resolve(null);
+      if(PEND[i]) return PEND[i].p;
+      var d={r:r}; d.p=new Promise(function(res){ d.res=res; }); PEND[i]=d; COLA.push(i);
+      if(!timer) timer=setTimeout(vaciar,0);
+      return d.p;
+    }
+    function listo(i, url, exp){ var d=PEND[i]; delete PEND[i];
+      if(url){ CACHE[i]={url:url, exp:exp}; FIRMADAS[url]=1; try{ FIRMADAS[new URL(url).href]=1; }catch(_){} }
+      else FALLO[i]=ahora()+60;   // no reintentar en 1 minuto
+      if(d) d.res(url||null); }
+    function token(){ return sb?sb.auth.getSession().then(function(r){ return r&&r.data&&r.data.session&&r.data.session.access_token; }, function(){ return null; }):Promise.resolve(null); }
+    function vaciar(){
+      timer=null; var ids=COLA.splice(0), r2=[], porB={};
+      ids.forEach(function(i){ var d=PEND[i]; if(!d) return; if(d.r.k==='r2') r2.push(i); else (porB[d.r.b]=porB[d.r.b]||[]).push(i); });
+      Object.keys(porB).forEach(function(b){
+        for(var j=0;j<porB[b].length;j+=100) (function(lote){
+          var paths=lote.map(function(i){ return PEND[i].r.path; }), exp=ahora()+TTL;
+          (sb?sb.storage.from(b).createSignedUrls(paths,TTL):Promise.reject()).then(function(res){
+            var arr=(res&&res.data)||[], porPath={};
+            arr.forEach(function(x){ if(x && x.path && x.signedUrl && !x.error) porPath[x.path]=x.signedUrl; });
+            lote.forEach(function(i,n){ var x=arr[n]; listo(i, porPath[PEND[i].r.path] || (x&&!x.error&&x.signedUrl) || null, exp); });
+          }, function(){ lote.forEach(function(i){ listo(i,null); }); });
+        })(porB[b].slice(j,j+100));
+      });
+      if(r2.length){
+        if(!R2W){ r2.forEach(function(i){ listo(i,null); }); return; }
+        token().then(function(tok){
+          if(!tok) throw 0;
+          var keys=r2.map(function(i){ return PEND[i].r.key; });
+          return fetch(R2W+'firmar',{ method:'POST', headers:{'Authorization':'Bearer '+tok,'content-type':'application/json'}, body:JSON.stringify({keys:keys, ttl:TTL}) })
+            .then(function(r){ if(!r.ok) throw 0; return r.json(); })
+            .then(function(d){ var urls=(d&&d.urls)||{}, exp=(d&&d.exp)||ahora()+TTL; r2.forEach(function(i){ listo(i, urls[PEND[i].r.key]||null, exp); }); });
+        }).catch(function(){ r2.forEach(function(i){ if(PEND[i]) listo(i,null); }); });
+      }
+    }
+    // Referencia estable (sin token) a un archivo del bucket privado de cédulas.
+    function refCedula(path){ return path ? SB_OBJ+'authenticated/cedulas/'+String(path).split('/').map(encodeURIComponent).join('/') : null; }
+
+    // --- Pantalla: cambia src/href de los elementos que apuntan a archivos nuestros ---
+    var ATR={IMG:['src'],VIDEO:['src','poster'],AUDIO:['src'],SOURCE:['src'],A:['href'],IFRAME:['src'],EMBED:['src'],OBJECT:['data']};
+    function orig(el){ if(!ORIG) return {}; var o=ORIG.get(el); if(!o){ o={}; ORIG.set(el,o); } return o; }
+    function trasCambio(el){
+      if(el.classList){ el.classList.remove('imgerr'); var p=el.closest&&el.closest('.imgerr'); if(p) p.classList.remove('imgerr'); }
+      if(el.tagName==='SOURCE' && el.parentNode && typeof el.parentNode.load==='function'){ try{ el.parentNode.load(); }catch(_){} }
+    }
+    function aplicar(el){
+      var at=ATR[el.tagName]; if(!at) return;
+      at.forEach(function(a){
+        var v=el.getAttribute(a); if(!v || !ref(v)) return;
+        var o=orig(el); if(o['_'+a]===v) return;   // ya se intentó y quedó la original
+        o[a]=v;
+        var c=enCache(v); if(c){ el.setAttribute(a,c); trasCambio(el); return; }
+        if(el.tagName==='IMG' && a==='src') el.setAttribute('src',GIF);
+        firmar(v).then(function(s){
+          if(o[a]!==v) return;                      // la app ya puso otra cosa
+          var act=el.getAttribute(a); if(act!==v && act!==GIF) return;
+          if(!s) o['_'+a]=v;
+          el.setAttribute(a, s||v); trasCambio(el);
+        });
+      });
+    }
+    function barrer(n){ if(!n || n.nodeType!==1) return; aplicar(n);
+      if(n.querySelectorAll){ var l=n.querySelectorAll('img,video,audio,source,a,iframe,embed,object'); for(var i=0;i<l.length;i++) aplicar(l[i]); } }
+    try{
+      new MutationObserver(function(ms){ ms.forEach(function(m){
+        if(m.type==='attributes') aplicar(m.target);
+        else for(var i=0;i<m.addedNodes.length;i++) barrer(m.addedNodes[i]);
+      }); }).observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:['src','href','poster','data']});
+    }catch(_){}
+    // img.src = url (imágenes creadas por código, aunque no estén en la página)
+    try{
+      var dI=Object.getOwnPropertyDescriptor(HTMLImageElement.prototype,'src');
+      if(dI && dI.set) Object.defineProperty(HTMLImageElement.prototype,'src',{ configurable:true, enumerable:dI.enumerable, get:dI.get,
+        set:function(v){ var el=this;
+          if(typeof v!=='string' || !ref(v)) return dI.set.call(el,v);
+          var c=enCache(v), o=orig(el); o.src=v; if(c) return dI.set.call(el,c);
+          firmar(v).then(function(s){ if(o.src!==v) return; if(!s) o._src=v; dI.set.call(el, s||v); });
+        } });
+    }catch(_){}
+    // window.open(url) de un archivo: abre la ventana al tiro (para que no la bloquee el navegador) y luego firma.
+    var _open=window.open;
+    function abrir(u, target, feats){
+      var c=enCache(u); if(c) return _open.call(window,c,target,feats);
+      if(!target || target==='_self'){ firmar(u).then(function(s){ location.href=s||u; }); return null; }
+      var w=_open.call(window,'about:blank',target);
+      firmar(u).then(function(s){ var dest=s||u; if(w){ try{ w.opener=null; }catch(_){} try{ w.location.href=dest; }catch(_){ _open.call(window,dest,target); } } else _open.call(window,dest,target,feats); });
+      return w;
+    }
+    window.open=function(u,t,f){ if(typeof u==='string' && ref(u)) return abrir(u,t||'_blank',f); return _open.apply(window,arguments); };
+    // Clic en un enlace cuya firma venció (app abierta por horas): se vuelve a firmar.
+    document.addEventListener('click',function(e){
+      var a=e.target && e.target.closest && e.target.closest('a[href]'); if(!a || !ORIG) return;
+      var o=ORIG.get(a); if(!o || !o.href || o._href===o.href || !original(a,'href')) return;
+      var c=enCache(o.href); if(c && c===a.getAttribute('href')) return;
+      e.preventDefault(); abrir(o.href, a.getAttribute('target')||'_self');
+    },true);
+    // fetch(url) de un archivo (PDF, Excel, lector): firma antes de descargar. Solo GET.
+    var _fetch=window.fetch;
+    if(_fetch) window.fetch=function(input, init){
+      var m=(init && init.method || 'GET').toUpperCase();
+      if(typeof input==='string' && m==='GET' && ref(input)) return firmar(input).then(function(s){ return _fetch.call(window, s||input, init); });
+      return _fetch.apply(window, arguments);
+    };
+    // URL guardada (sin firmar) que tenía el elemento, o null.
+    // Solo si el elemento sigue mostrando ese archivo (la app no le puso otra cosa después).
+    function original(el,a){ var o=ORIG&&ORIG.get(el), v=o&&o[a]; if(!v) return null; var act=el.getAttribute(a);
+      return (act===v || act===GIF || FIRMADAS[act] || (act && FIRMADAS[el[a]])) ? v : null; }
+    return { ref:ref, firmar:firmar, enCache:enCache, refCedula:refCedula, original:original };
+  })();
+
   // ---------- acceso ----------
   function negar(t){ $('gateMsg').textContent = t; $('gateBtn').classList.remove('hide'); }
   try {
