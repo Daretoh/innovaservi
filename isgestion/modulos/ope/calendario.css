@@ -1,0 +1,174 @@
+/* Calendario de trabajos: mismo diseño que el de InnovaGestión (innovaservi.cl/planificacion), con los colores del tema
+   (acento = color de la empresa) para que funcione en cualquier tema y en modo oscuro. */
+.igcal { --ac: var(--empresa); --ac-2: color-mix(in srgb, var(--empresa) 78%, #000); --ac-suave: color-mix(in srgb, var(--empresa) 10%, var(--superficie)); }
+.igcal-bar { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-bottom: 18px; }
+.igcal-nav { display: flex; align-items: center; gap: 10px; }
+.igcal-nav button { border: 1px solid var(--borde); background: var(--superficie); width: 38px; height: 38px; border-radius: 10px; font-size: 18px; cursor: pointer; color: var(--texto); transition: .2s; }
+.igcal-nav button:hover { border-color: var(--ac); color: var(--ac); }
+.igcal-titulo { font-size: 1.5rem; font-weight: 800; color: var(--texto); text-transform: capitalize; min-width: 230px; text-align: center; margin: 0; }
+.igcal-acc { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.igcal-buscar { font: 500 13px inherit; padding: 9px 12px; border: 1px solid var(--borde); border-radius: 10px; background: var(--superficie); color: var(--texto); width: 200px; max-width: 42vw; }
+.igcal-buscar:focus { outline: none; border-color: var(--ac); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ac) 15%, transparent); }
+.igcal-seg { display: flex; background: var(--superficie); border: 1px solid var(--borde); border-radius: 10px; overflow: hidden; }
+.igcal-seg button { border: none; background: transparent; padding: 9px 16px; font-weight: 700; font-size: 13px; color: var(--texto-suave); cursor: pointer; }
+.igcal-seg button.on { background: var(--ac); color: #fff; }
+.igcal-hoy { border: 1px solid var(--borde); background: var(--superficie); padding: 9px 16px; border-radius: 10px; font-weight: 700; font-size: 13px; color: var(--texto); cursor: pointer; }
+.igcal-hoy:hover { border-color: var(--ac); color: var(--ac); }
+.igcal-add { background: var(--ac); color: #fff; border: none; padding: 10px 18px; border-radius: 10px; font-weight: 700; font-size: 13px; cursor: pointer; box-shadow: 0 10px 24px -10px color-mix(in srgb, var(--ac) 60%, transparent); }
+.igcal-add:hover { background: var(--ac-2); }
+.igcal-leyenda { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+.igcal-leyenda span { display: inline-flex; align-items: center; gap: 7px; font-size: .8rem; font-weight: 600; color: var(--texto-suave); }
+.igcal-leyenda i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+
+.igcal-cal { background: var(--superficie); border: 1px solid var(--borde); border-radius: 16px; overflow: hidden; box-shadow: 0 18px 50px -30px rgba(26, 31, 110, .35); }
+.igcal-dow { display: grid; grid-template-columns: 32px repeat(7, 1fr); background: var(--ac); color: #fff; }
+.igcal-dow div { padding: 12px 10px; font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; text-align: center; }
+.igcal-dow .wkh { padding: 12px 2px; font-size: .6rem; letter-spacing: .5px; opacity: .85; }
+.igcal-grid { display: grid; grid-template-columns: 32px repeat(7, 1fr); }
+.igcal-cell { min-height: 128px; border-right: 1px solid var(--borde); border-bottom: 1px solid var(--borde); padding: 8px; position: relative; transition: background .2s; overflow: hidden; cursor: pointer; min-width: 0; }
+.igcal-grid > .igcal-cell:nth-child(8n) { border-right: none; }
+.igcal-wk { display: flex; align-items: center; justify-content: center; background: var(--fondo-sutil); color: var(--texto-suave); font-weight: 800; font-size: 11px; border-right: 1px solid var(--borde); border-bottom: 1px solid var(--borde); }
+.igcal-cell.out { background: var(--fondo-sutil); }
+.igcal-cell.today { background: color-mix(in srgb, var(--ac) 5%, var(--superficie)); }
+.igcal-cell:hover { background: var(--fondo-sutil); }
+.igcal-dnum { font-size: .85rem; font-weight: 700; color: var(--texto); display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; margin-bottom: 4px; cursor: pointer; }
+.igcal-dnum:hover { background: var(--fondo-hundido); }
+.igcal-cell.out .igcal-dnum { color: var(--texto-suave); }
+.igcal-cell.today .igcal-dnum { background: var(--ac); color: #fff; }
+.igcal-grupo { border-left: 3px solid var(--texto-suave); background: var(--fondo-sutil); border-radius: 4px; padding: 2px 6px; margin-bottom: 3px; overflow: hidden; }
+.igcal-ghead { display: block; font: 800 10px/1.35 inherit; font-size: 10px; font-weight: 800; line-height: 1.35; color: var(--texto); text-transform: uppercase; letter-spacing: .01em; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.igcal-ghead.plain { font-weight: 600; text-transform: none; }
+.igcal-ghead:hover { filter: brightness(.85); }
+.igcal-gitem { display: block; font-size: 10px; font-weight: 500; line-height: 1.35; color: var(--texto-suave); cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.igcal-gitem:hover { color: var(--ac); }
+.igcal-md { color: var(--ac); font-weight: 800; margin-left: 3px; }
+.igcal-sit { font-size: 8.5px; font-weight: 600; text-transform: none; letter-spacing: 0; opacity: .75; }
+.igcal-mas { font-weight: 700; font-size: 11px; color: var(--ac-2); cursor: pointer; padding: 2px 4px; }
+.igcal-puntos { display: none; gap: 5px; flex-wrap: wrap; margin-top: 3px; }
+.igcal-puntos i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+.igcal-puntos .more { font-weight: 800; font-size: 9px; color: var(--texto-suave); line-height: 9px; }
+.igcal-cal.week .igcal-cell { min-height: 420px; }
+
+/* Agenda (Próximos y búsqueda) */
+.igcal-grid.agenda { display: block; padding: 14px 12px; max-width: 920px; margin: 0 auto; }
+.igcal-agd { margin-bottom: 22px; }
+.igcal-agh { font-size: .72rem; letter-spacing: .06em; text-transform: uppercase; color: var(--texto-suave); font-weight: 700; margin: 0 0 10px; padding-bottom: 7px; border-bottom: 2px solid var(--borde); }
+.igcal-agh b { color: var(--texto); font-size: 1.08rem; text-transform: none; letter-spacing: 0; font-weight: 800; }
+.igcal-agd.hoy .igcal-agh { border-bottom-color: var(--ac); }
+.igcal-badge { background: var(--ac); color: #fff; font-size: .62rem; padding: 2px 8px; border-radius: 999px; letter-spacing: .05em; margin-right: 4px; }
+.igcal-ucard { background: var(--superficie); border: 1px solid var(--borde); border-left: 4px solid var(--texto-suave); border-radius: 11px; padding: 11px 15px; margin-bottom: 9px; box-shadow: 0 1px 3px rgba(0, 0, 0, .05); }
+.igcal-uhead { font-weight: 800; font-size: .82rem; line-height: 1.2; text-transform: uppercase; letter-spacing: .02em; color: var(--texto); display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
+.igcal-udot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.igcal-cnt { background: var(--fondo-sutil); color: var(--texto-suave); font-size: .7rem; font-weight: 700; padding: 1px 8px; border-radius: 999px; }
+.igcal-aitem { padding: 6px 0 6px 18px; cursor: pointer; border-top: 1px dashed var(--borde); }
+.igcal-aitem:first-of-type { border-top: none; }
+.igcal-aitem:hover .igcal-att { color: var(--ac); }
+.igcal-att { font-weight: 600; font-size: .94rem; color: var(--texto); }
+.igcal-hora { color: var(--texto-suave); font-weight: 700; font-size: .8rem; margin-left: 4px; }
+.igcal-adesc { font-size: .83rem; color: var(--texto-suave); margin-top: 2px; white-space: pre-line; line-height: 1.5; }
+.igcal-vacio { padding: 40px; text-align: center; color: var(--texto-suave); }
+
+/* Ventanas (detalle, día, borrar) */
+.igcal-modal { position: fixed; inset: 0; z-index: 60; background: rgba(12, 15, 46, .55); display: flex; align-items: center; justify-content: center; padding: 20px; }
+.igcal-box { background: var(--superficie); border-radius: 16px; width: 100%; max-width: 440px; overflow: hidden; box-shadow: 0 30px 80px -20px rgba(0, 0, 0, .5); color: var(--texto); }
+.igcal-mhead { padding: 16px 20px; color: #fff; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.igcal-mhead h3 { font-size: 1.1rem; font-weight: 800; line-height: 1.3; margin: 0; color: #fff; }
+.igcal-mhead button { background: rgba(255, 255, 255, .2); border: none; color: #fff; width: 30px; height: 30px; border-radius: 8px; font-size: 18px; cursor: pointer; flex-shrink: 0; }
+.igcal-mbody { padding: 18px 20px; }
+.igcal-row { display: flex; gap: 10px; align-items: center; margin-bottom: 12px; color: var(--texto-suave); font-size: .92rem; }
+.igcal-row b { color: var(--texto); }
+.igcal-row.click { cursor: pointer; }
+.igcal-row.click:hover { color: var(--ac); }
+.igcal-chip { display: inline-block; padding: 4px 12px; border-radius: 999px; font-size: .78rem; font-weight: 700; color: #fff; }
+.igcal-desc { background: var(--fondo-sutil); border: 1px solid var(--borde); border-radius: 10px; padding: 12px 14px; font-size: .88rem; line-height: 1.6; color: var(--texto-suave); white-space: pre-line; margin-top: 6px; }
+.igcal-ico { width: 16px; height: 16px; fill: none; stroke: var(--texto-suave); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+.igcal-lbl { font-weight: 800; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--texto-suave); margin: 14px 0 2px; }
+.igcal-det-tareas { list-style: none; counter-reset: t; margin: 4px 0 0; padding: 0; }
+.igcal-det-tareas li { counter-increment: t; display: flex; gap: 8px; font-size: .88rem; color: var(--texto); padding: 5px 0; border-top: 1px dashed var(--borde); }
+.igcal-det-tareas li:first-child { border-top: none; }
+.igcal-det-tareas li::before { content: counter(t) '.'; font-weight: 800; color: var(--ac-2); min-width: 16px; }
+.igcal-btns { display: flex; justify-content: flex-end; gap: 10px; align-items: center; margin-top: 14px; flex-wrap: wrap; }
+.igcal-del { background: var(--superficie); border: 1px solid #f0c0c0; color: #dc2626; padding: 10px 18px; border-radius: 10px; font-weight: 700; font-size: 13px; cursor: pointer; }
+.igcal-del:hover { background: #dc2626; color: #fff; border-color: #dc2626; }
+
+/* Formulario nuevo/editar trabajo */
+.igcal-ffbox { max-width: 940px; display: flex; flex-direction: column; max-height: calc(100vh - 40px); }
+.igcal-ffhead { background: linear-gradient(135deg, var(--ac), var(--ac-2)); padding: 16px 22px; }
+.igcal-ffsub { font-size: .8rem; color: rgba(255, 255, 255, .88); margin: 3px 0 0; line-height: 1.45; }
+.igcal-ffbody { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); overflow-y: auto; flex: 1; }
+.igcal-ffcol { padding: 18px 22px; display: flex; flex-direction: column; gap: 18px; }
+.igcal-ffside { background: var(--fondo-sutil); border-left: 1px solid var(--borde); }
+.igcal-ffsec h4 { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 11.5px; text-transform: uppercase; letter-spacing: .08em; color: var(--texto); margin: 0 0 10px; }
+.igcal-ffsec h4 svg { width: 16px; height: 16px; fill: none; stroke: var(--ac); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+.igcal-fgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.igcal-fgrid label { display: flex; flex-direction: column; gap: 5px; font-weight: 600; font-size: 12px; color: var(--texto); }
+.igcal-fgrid .full { grid-column: 1 / -1; }
+.igcal-fgrid input, .igcal-fgrid textarea, .igcal-fgrid select { font: inherit; font-size: 14px; font-weight: 500; padding: 9px 11px; border: 1px solid var(--borde); border-radius: 9px; background: var(--fondo-sutil); color: var(--texto); width: 100%; box-sizing: border-box; }
+.igcal-ffside .igcal-fgrid input, .igcal-ffside select, .igcal-ffside .igcal-step input { background: var(--superficie); }
+.igcal-fgrid input:focus, .igcal-fgrid textarea:focus, .igcal-fgrid select:focus { outline: none; border-color: var(--ac); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ac) 15%, transparent); background: var(--superficie); }
+.igcal-fgrid textarea { resize: vertical; }
+.igcal-big { font-size: 16px !important; font-weight: 600 !important; padding: 11px 12px !important; }
+.igcal-req { color: var(--ac); font-style: normal; }
+.igcal-opt { color: var(--texto-suave); font-weight: 400; }
+.igcal-hint { display: block; color: var(--texto-suave); font-weight: 400; font-size: 11.5px; line-height: 1.5; margin-top: 4px; }
+.igcal-dur { font-weight: 600; font-size: 12px; color: var(--ac-2); }
+.igcal-dur:empty { display: none; }
+.igcal-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.igcal-chips:empty { display: none; }
+.igcal-chips button { border: 1px solid var(--borde); background: var(--superficie); color: var(--texto-suave); font-weight: 600; font-size: 12px; padding: 5px 10px; border-radius: 999px; cursor: pointer; }
+.igcal-chips button:hover, .igcal-chips button.on { border-color: var(--ac); color: var(--ac-2); background: var(--ac-suave); }
+.igcal-fcnt { background: var(--ac); color: #fff; border-radius: 999px; font-size: 10px; padding: 1px 7px; letter-spacing: 0; }
+.igcal-fcnt:empty { display: none; }
+.igcal-tareas { list-style: none; counter-reset: t; display: flex; flex-direction: column; gap: 6px; margin: 0 0 8px; padding: 0; }
+.igcal-tareas:empty { display: none; }
+.igcal-tareas li { counter-increment: t; display: flex; align-items: center; gap: 8px; background: var(--fondo-sutil); border: 1px solid var(--borde); border-radius: 9px; padding: 6px 6px 6px 10px; }
+.igcal-tareas li::before { content: counter(t); font-weight: 800; font-size: 11px; color: var(--ac-2); background: var(--superficie); border: 1px solid var(--borde); border-radius: 50%; width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.igcal-tareas li input { flex: 1; border: none; background: transparent; font-size: 13.5px; font-weight: 500; color: var(--texto); padding: 3px 2px; min-width: 0; }
+.igcal-tareas li input:focus { outline: none; background: var(--superficie); border-radius: 5px; }
+.igcal-tareas li button { border: none; background: transparent; color: var(--texto-suave); width: 26px; height: 26px; border-radius: 6px; cursor: pointer; font-size: 16px; line-height: 1; flex-shrink: 0; }
+.igcal-tareas li button:hover { background: #fde8e8; color: #dc2626; }
+.igcal-tadd { display: flex; gap: 8px; }
+.igcal-tadd input { flex: 1; font-size: 14px; font-weight: 500; padding: 9px 11px; border: 1px dashed var(--borde); border-radius: 9px; background: var(--superficie); color: var(--texto); min-width: 0; }
+.igcal-tadd input:focus { outline: none; border-style: solid; border-color: var(--ac); }
+.igcal-mini { border: 1px solid var(--borde); background: var(--superficie); color: var(--texto); font-weight: 700; font-size: 12.5px; padding: 0 14px; border-radius: 9px; cursor: pointer; }
+.igcal-mini:hover { border-color: var(--ac); color: var(--ac-2); }
+.igcal-roles { display: flex; flex-direction: column; gap: 7px; }
+.igcal-rol { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.igcal-rl { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; font-size: 13px; color: var(--texto); }
+.igcal-rl i { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
+.igcal-step { display: inline-flex; align-items: stretch; border: 1px solid var(--borde); border-radius: 10px; overflow: hidden; background: var(--superficie); }
+.igcal-step button { border: none; background: var(--superficie); width: 36px; font-weight: 700; font-size: 16px; color: var(--texto); cursor: pointer; }
+.igcal-step button:hover { background: var(--ac-suave); color: var(--ac-2); }
+.igcal-step input { width: 50px; border: none; border-left: 1px solid var(--borde); border-right: 1px solid var(--borde); text-align: center; font-weight: 800; font-size: 16px; color: var(--texto); padding: 6px 0; -moz-appearance: textfield; }
+.igcal-step input::-webkit-outer-spin-button, .igcal-step input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.igcal-rep { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.igcal-rep select { flex: 1; min-width: 140px; font: inherit; font-size: 14px; padding: 9px 11px; border: 1px solid var(--borde); border-radius: 9px; color: var(--texto); background: var(--superficie); }
+.igcal-inl { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: 12px; color: var(--texto-suave); }
+.igcal-inl input { width: 62px; font-size: 14px; font-weight: 600; padding: 8px; border: 1px solid var(--borde); border-radius: 9px; background: var(--superficie); color: var(--texto); }
+.igcal-fffoot { display: flex; align-items: center; gap: 10px; padding: 12px 22px; border-top: 1px solid var(--borde); background: var(--superficie); }
+.igcal-fffoot .igcal-hoy { margin-left: auto; }
+.igcal-kbd { color: var(--texto-suave); font-size: 11.5px; }
+
+@media (max-width: 760px) {
+  .igcal-ffbody { display: flex; flex-direction: column; }
+  .igcal-ffcol { display: contents; }
+  .igcal-ffsec { padding: 14px 16px 0; min-width: 0; }
+  .igcal-o1 { order: 1 } .igcal-o2 { order: 2 } .igcal-o3 { order: 3 } .igcal-o4 { order: 4 } .igcal-o5 { order: 5; padding-bottom: 16px; }
+  .igcal-kbd { display: none; }
+  .igcal-bar { gap: 8px; margin-bottom: 12px; }
+  .igcal-nav { flex: 1 1 100%; justify-content: space-between; gap: 8px; }
+  .igcal-titulo { font-size: 1.15rem; min-width: 0; flex: 1; }
+  .igcal-acc { flex: 1 1 100%; width: 100%; }
+  .igcal-seg { order: 1; flex: 1 1 100%; }
+  .igcal-seg button { flex: 1; text-align: center; padding: 10px 4px; }
+  .igcal-buscar { order: 2; flex: 1 1 auto; width: auto; max-width: none; }
+  .igcal-add { order: 3; flex: 1 1 100%; }
+  .igcal-leyenda { flex-wrap: nowrap; overflow-x: auto; gap: 14px; margin-bottom: 10px; }
+  .igcal-leyenda span { white-space: nowrap; font-size: .72rem; }
+  .igcal-cell { min-height: 62px; padding: 6px 5px; }
+  .igcal-cal.week .igcal-cell { min-height: 88px; }
+  .igcal-grupo, .igcal-mas { display: none; }
+  .igcal-puntos { display: flex; }
+  .igcal-dnum { width: 22px; height: 22px; font-size: .78rem; margin-bottom: 2px; }
+  .igcal-dow div { font-size: .6rem; padding: 9px 4px; letter-spacing: .5px; }
+}

@@ -7,10 +7,12 @@ export default {
   depende: ['nucleo', 'personas', 'terceros', 'asistencia'],
   rubros: ['servicios'],
   acciones: ['ver', 'crear', 'editar', 'eliminar', 'exportar'],
+  // El Calendario va como opción propia del menú (como en InnovaGestión), antes de Faenas y planificación
+  apartados: { calendario: { label: 'Calendario', icono: 'calendario' } },
   menu: [
+    { id: 'ope.calendario', label: 'Calendario', apartado: 'calendario', vista: () => import('./vistas/calendario.js') },
     { id: 'ope.planificacion', label: 'Planificación semanal', pestana: 'Planificación', vista: () => import('./vistas/planificacion.js') },
     { id: 'ope.plan', label: 'Planificar faena', oculto: true, padre: 'ope.planificacion', vista: () => import('./vistas/plan.js') },
-    { id: 'ope.calendario', label: 'Calendario de faenas', pestana: 'Calendario', vista: () => import('./vistas/calendario.js') },
     { id: 'ope.matrices', label: 'Matriz de trabajos', pestana: 'Matriz', vista: () => import('./vistas/matrices.js') },
     { id: 'ope.clientes', ajustes: true, label: 'Clientes y sitios', vista: () => import('./vistas/clientes.js') },
     { id: 'ope.roles', ajustes: true, label: 'Roles operativos', pestana: 'Roles', vista: () => import('./vistas/roles.js') },
