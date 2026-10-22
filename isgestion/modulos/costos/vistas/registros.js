@@ -1,4 +1,6 @@
-// Gastos e ingresos del mes, pendientes de pago o cobro (de todos los meses), resumen y CSV.
+// Gastos e ingresos: los recientes (últimos cargados, de cualquier mes), los del mes, pendientes de pago o cobro (de todos
+// los meses), resumen y Excel. "Editar como planilla" cambia la tabla por la planilla del OS (planilla.js). En el teléfono
+// las filas se ven como tarjetas.
 import { el } from '../../../core/ui/dom.js';
 import { icono } from '../../../core/ui/iconos.js';
 import { listado, boton } from '../../../core/ui/tabla.js';
@@ -6,17 +8,22 @@ import { abrirFormulario } from '../../../core/ui/modal.js';
 import { avisar } from '../../../core/ui/aviso.js';
 import { dinero, fechaLarga, hoyISO, nombreMes, moverMes, rangoMes } from '../../../core/ui/formato.js';
 import { cargarBase, nombreTercero, nombreDoc, nombreMedio, MEDIOS, traerComprasInventario } from '../datos.js';
+import { planilla } from '../planilla.js';
 
-const estado = { vista: 'todos', mes: hoyISO().slice(0, 7), categoria: '' };
-const VISTAS = [['todos', 'Todos'], ['gasto', 'Gastos'], ['ingreso', 'Ingresos'], ['pendientes', 'Por pagar y cobrar']];
+const estado = { vista: 'recientes', mes: hoyISO().slice(0, 7), categoria: '', editar: false };
+const RECIENTES = 15;
+const VISTAS = [['recientes', 'Recientes'], ['todos', 'Del mes'], ['gasto', 'Gastos'], ['ingreso', 'Ingresos'], ['pendientes', 'Por pagar y cobrar']];
 
 export default async function vista(ctx) {
   const e = ctx.empresa.id;
   const { desde, hasta } = rangoMes(estado.mes);
   const pendientes = estado.vista === 'pendientes';
-  let q = ctx.api.from('fin_registros').select('*, terceros(razon_social, nombre_fantasia)').eq('empresa_id', e).is('deleted_at', null)
-    .order('fecha', { ascending: !pendientes ? false : true }).order('created_at', { ascending: false });
-  q = pendientes ? q.eq('estado_pago', 'pendiente') : q.gte('fecha', desde).lte('fecha', hasta);
+  const recientes = estado.vista === 'recientes';
+  const sinMes = pendientes || recientes;
+  let q = ctx.api.from('fin_registros').select('*, terceros(razon_social, nombre_fantasia)').eq('empresa_id', e).is('deleted_at', null);
+  if (recientes) q = q.order('created_at', { ascending: false }).limit(RECIENTES);
+  else q = q.order('fecha', { ascending: pendientes }).order('created_at', { ascending: false });
+  if (pendientes) q = q.eq('estado_pago', 'pendiente'); else if (!recientes) q = q.gte('fecha', desde).lte('fecha', hasta);
   if (estado.vista === 'gasto' || estado.vista === 'ingreso') q = q.eq('tipo', estado.vista);
   if (estado.categoria) q = q.eq('categoria_id', estado.categoria);
   const [{ data, error }, base, pend] = await Promise.all([q, cargarBase(ctx),
@@ -24,7 +31,7 @@ export default async function vista(ctx) {
   if (error) throw error;
 
   const suma = (l, f) => l.reduce((s, r) => s + (f ? f(r) : r), 0);
-  const delMes = pendientes ? [] : data;
+  const delMes = sinMes ? [] : data;
   const gastosNeto = suma(delMes.filter((r) => r.tipo === 'gasto' && base.categoriaDe.get(r.categoria_id)?.clase !== 'inventario'), (r) => r.neto);
   const comprasInv = suma(delMes.filter((r) => base.categoriaDe.get(r.categoria_id)?.clase === 'inventario'), (r) => r.neto);
   const ingresosNeto = suma(delMes.filter((r) => r.tipo === 'ingreso'), (r) => r.neto);
@@ -56,22 +63,28 @@ export default async function vista(ctx) {
   };
 
   const segmento = el('div', { class: 'segmento', role: 'group', 'aria-label': 'Ver' },
-    VISTAS.map(([k, n]) => el('button', { type: 'button', 'aria-pressed': String(estado.vista === k), onclick: () => { estado.vista = k; ctx.refrescar(); } }, n)));
+    VISTAS.map(([k, n]) => el('button', { type: 'button', 'aria-pressed': String(estado.vista === k), onclick: async () => { await hoja?.terminar(); estado.vista = k; ctx.refrescar(); } }, n)));
   const selCat = el('select', { class: 'campo', 'aria-label': 'Categoría' }, el('option', { value: '' }, 'Todas las categorías'),
     base.categorias.map((c) => el('option', { value: c.id, selected: c.id === estado.categoria }, c.nombre)));
   selCat.addEventListener('change', () => { estado.categoria = selCat.value; ctx.refrescar(); });
   const mover = (n) => { estado.mes = moverMes(estado.mes, n); ctx.refrescar(); };
   const acciones = [segmento, selCat];
-  if (!pendientes) acciones.push(el('div', { class: 'nav-periodo' },
+  if (!sinMes) acciones.push(el('div', { class: 'nav-periodo' },
     el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Mes anterior', onclick: () => mover(-1) }, icono('volver')),
     el('strong', {}, nombreMes(estado.mes)),
     el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Mes siguiente', onclick: () => mover(1) }, icono('derecha'))));
   if (ctx.puede('costos', 'exportar') && data.length) acciones.push(boton('Excel', { icono: 'descargar', onclick: () => import('../../../core/excel.js').then(({ exportarExcel }) => exportarExcel(ctx, {
-    titulo: pendientes ? 'Gastos e ingresos pendientes' : `Gastos e ingresos · ${nombreMes(estado.mes)}`, nombre: `costos-${pendientes ? 'pendientes' : estado.mes}`,
+    titulo: pendientes ? 'Gastos e ingresos pendientes' : recientes ? 'Gastos e ingresos recientes' : `Gastos e ingresos · ${nombreMes(estado.mes)}`, nombre: `costos-${pendientes ? 'pendientes' : recientes ? 'recientes' : estado.mes}`,
     columnas: [{ t: 'Fecha', tipo: 'fecha' }, 'Tipo', 'Concepto', 'Categoría', 'Centro', 'Proveedor o cliente', 'Documento', 'N°', { t: 'Neto', tipo: 'dinero' }, { t: 'IVA', tipo: 'dinero' }, { t: 'Total', tipo: 'dinero' }, 'Estado', { t: 'Fecha de pago', tipo: 'fecha' }, 'Medio', 'Patente'],
     filas: data.map((r) => [r.fecha, r.tipo === 'gasto' ? 'Gasto' : 'Ingreso', r.concepto, base.categoriaDe.get(r.categoria_id)?.nombre ?? '', base.centroDe.get(r.centro_id)?.nombre ?? '', nombreTercero(r.terceros),
       nombreDoc[r.doc_tipo], r.doc_numero ?? '', r.neto, r.iva, r.total, r.estado_pago ? r.estado_pago[0].toUpperCase() + r.estado_pago.slice(1) : '', r.fecha_pago ?? '', r.medio_pago ? nombreMedio[r.medio_pago] : '', r.patente ?? '']),
   })).catch((e) => avisar(e.message, 'error')) }));
+  // Planilla: editar las celdas como en Excel (solo con permiso de edición)
+  let hoja = null;
+  if (ctx.puede('costos', 'editar') && data.length) acciones.push(boton(estado.editar ? 'Listo' : 'Editar como planilla', { icono: estado.editar ? 'check' : 'editar', tipo: estado.editar ? 'primario' : 'secundario', onclick: async () => {
+    if (estado.editar) { await hoja?.terminar(); avisar('Cambios guardados.'); }
+    estado.editar = !estado.editar; ctx.refrescar();
+  } }));
   if (ctx.puede('costos', 'crear')) {
     if (ctx.puede('inventario', 'ver')) acciones.push(boton('Traer compras de Inventario', { icono: 'caja', onclick: (ev) => traer(ev.currentTarget) }));
     acciones.push(boton('Ingreso', { icono: 'mas', onclick: () => { location.hash = ctx.ruta('costos.registro', { tipo: 'ingreso' }); } }));
@@ -92,7 +105,7 @@ export default async function vista(ctx) {
     titulo: 'Gastos e ingresos',
     filas: data,
     acciones,
-    vacio: pendientes ? 'No hay nada por pagar ni por cobrar.' : 'Sin registros en el mes.',
+    vacio: pendientes ? 'No hay nada por pagar ni por cobrar.' : recientes ? 'Aún no hay registros.' : 'Sin registros en el mes.',
     columnas: [
       { titulo: 'Fecha', valor: (r) => fechaLarga(r.fecha) },
       { titulo: 'Concepto', valor: (r) => el('div', {}, el('a', { href: ctx.ruta('costos.registro', { id: r.id }) }, el('strong', {}, r.concepto)),
@@ -115,11 +128,19 @@ export default async function vista(ctx) {
   const tarjeta = (titulo, valor, nota, clase = '') => el('div', { class: `ficha doc-grupo fin-tarjeta ${clase}` },
     el('span', { class: 'texto-suave texto-chico' }, titulo), el('strong', {}, dinero(valor)), nota ? el('span', { class: 'texto-suave texto-chico' }, nota) : null);
   const resumen = el('div', { class: 'fin-tarjetas' },
-    pendientes ? null : tarjeta(`Gastos de ${nombreMes(estado.mes)}`, gastosNeto, 'neto, sin compras de inventario'),
-    pendientes || !comprasInv ? null : tarjeta('Compras de inventario', comprasInv, 'neto, es stock: no va al resultado'),
-    pendientes ? null : tarjeta('Otros ingresos', ingresosNeto, 'neto'),
+    sinMes ? null : tarjeta(`Gastos de ${nombreMes(estado.mes)}`, gastosNeto, 'neto, sin compras de inventario'),
+    sinMes || !comprasInv ? null : tarjeta('Compras de inventario', comprasInv, 'neto, es stock: no va al resultado'),
+    sinMes ? null : tarjeta('Otros ingresos', ingresosNeto, 'neto'),
     tarjeta('Por pagar', porPagar, 'total, todos los meses', porPagar ? 'fin-alerta' : ''),
     tarjeta('Por cobrar', porCobrar, 'total, todos los meses'));
   tabla.querySelector('.listado-cabecera').after(resumen);
+  tabla.classList.add('fin-lista');
+  if (recientes) resumen.after(el('p', { class: 'texto-suave texto-chico' }, `Los ${RECIENTES} últimos cargados, de cualquier mes. Para ver un mes completo usa "Del mes".`));
+  if (estado.editar && data.length) {
+    hoja = planilla(ctx, data, base);
+    tabla.querySelector('.tabla-contenedor').replaceWith(hoja.nodo);
+    tabla.querySelector('.buscador')?.remove();
+    setTimeout(() => hoja.enfocar(0, 1));
+  }
   return tabla;
 }

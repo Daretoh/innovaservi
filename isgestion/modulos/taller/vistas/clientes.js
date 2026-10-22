@@ -159,7 +159,7 @@ export default async function vista(ctx) {
     const fDir = campo('dir', 'Dirección', t.direccion);
     const fCotizar = el('input', { type: 'checkbox', checked: !!t.por_cotizar });
     const soloEmpresa = el('div', { style: empresa ? '' : 'display:none' }, el('div', { class: 'rejilla-campos' }, fRep.nodo, fGiro.nodo),
-      el('label', { class: 'casilla' }, fCotizar, 'Siempre por cotizar (al agendar se marca el servicio a convenir y Factura, como las automotoras)'));
+      el('label', { class: 'casilla' }, fCotizar, 'Siempre por cotizar (al agendar se marca el servicio a convenir y Factura)'));
     fClase.addEventListener('change', () => { soloEmpresa.style.display = fClase.value === 'empresa' ? '' : 'none'; });
     const datos = el('div', {}, fNombre.nodo,
       el('div', { class: 'rejilla-campos' }, el('div', { class: 'form-fila' }, el('label', {}, 'Tipo de cliente'), fClase), fRut.nodo),
