@@ -8,7 +8,7 @@ import { abrirFormulario } from '../../../core/ui/modal.js';
 import { avisar } from '../../../core/ui/aviso.js';
 import { hhmm, nombreDia, fechaLarga, hoyISO, sumarDias } from '../../../core/ui/formato.js';
 import { seccionPreparacion } from './preparacion.js';
-import { cargarBase, cargarSemana, etiquetaFaena, horarioDe, dotacionDe, dotTotal, dotTexto, ocupacion, ROLES, nombreRol, nombreCompleto, partesDeRango, estadoParte } from '../datos.js';
+import { cargarBase, cargarSemana, etiquetaFaena, horarioDe, dotacionDe, dotTotal, dotTexto, ocupacion, ROLES, nombreRol, nombreCompleto, partesDeRango, estadoParte, pideInformeFaena } from '../datos.js';
 
 export default async function vista(ctx) {
   const { f: faenaId, d: fecha } = ctx.params;
@@ -212,8 +212,20 @@ function seccionParte(ctx, f, fecha, base, rep, partes) {
       location.hash = ctx.ruta('reportes.parte', { id: nuevo.id });
     } catch (err) { avisar(err.message, 'error'); b.disabled = false; }
   };
+  // Esta faena lleva informe (por omisión, lo del cliente). Si lleva y no tiene parte, se avisa en Partes de trabajo.
+  const porCliente = !!base.clientes.find((c) => c.id === f.tercero_id)?.pideInforme;
+  const lleva = el('input', { type: 'checkbox', class: 'interruptor', checked: pideInformeFaena(f, base), disabled: !ctx.puede('ope', 'editar') });
+  lleva.addEventListener('change', async () => {
+    const valor = lleva.checked === porCliente ? null : lleva.checked;   // igual que el cliente: vuelve a seguirlo
+    const { data, error } = await ctx.api.from('ope_faenas').update({ pide_informe: valor }).eq('id', f.id).select('id');
+    if (error || !data?.length) { lleva.checked = !lleva.checked; avisar(error?.message ?? 'Sin permiso para cambiar la faena.', 'error'); return; }
+    f.pide_informe = valor;
+    avisar(lleva.checked ? 'Esta faena lleva informe de trabajo.' : 'Esta faena no lleva informe.');
+  });
   return el('div', {},
     el('h2', {}, 'Parte de trabajo'),
+    el('label', { class: 'casilla', title: 'Si lleva informe y no tiene parte, se avisa en Partes de trabajo y en Planificación' }, lleva,
+      'Esta faena lleva informe', el('span', { class: 'texto-suave texto-chico' }, ` (el cliente, por omisión: ${porCliente ? 'sí' : 'no'})`)),
     el('div', { class: 'doc-fila' },
       el('div', { class: 'doc-nombre' }, rep ? el('span', { class: `chip ${rep.clase}` }, rep.texto) : el('span', { class: 'texto-suave' }, 'Sin parte')),
       parte

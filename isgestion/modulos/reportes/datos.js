@@ -21,7 +21,7 @@ export async function cargarParte(ctx, id) {
 // Faenas-día de un rango que todavía no están en un parte
 export async function faenasSinParte(ctx, desde, hasta) {
   const [faenas, usadas, clientes, sitios] = await Promise.all([
-    ctx.api.from('ope_faenas').select('id, titulo, tercero_id, sitio_id, fecha_inicio, fecha_fin, estado').eq('empresa_id', ctx.empresa.id)
+    ctx.api.from('ope_faenas').select('id, titulo, tercero_id, sitio_id, fecha_inicio, fecha_fin, estado, pide_informe').eq('empresa_id', ctx.empresa.id)
       .is('deleted_at', null).neq('estado', 'cancelada').lte('fecha_inicio', hasta).gte('fecha_fin', desde),
     ctx.api.from('rep_parte_faenas').select('faena_id, fecha').eq('empresa_id', ctx.empresa.id).gte('fecha', desde).lte('fecha', hasta),
     ctx.api.from('terceros').select('id, razon_social, nombre_fantasia').eq('empresa_id', ctx.empresa.id),

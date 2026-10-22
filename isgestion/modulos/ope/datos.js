@@ -73,12 +73,15 @@ export async function partesDeRango(ctx, desde, hasta) {
   return new Map(data.filter((x) => x.rep_partes && !x.rep_partes.deleted_at).map((x) => [`${x.faena_id}|${x.fecha}`, x.rep_partes]));
 }
 
+// ¿La faena lleva informe? Lo marcado en la faena; si no se marcó, lo del cliente (Clientes y sitios)
+export const pideInformeFaena = (f, base) => f.pide_informe ?? !!base.clientes.find((c) => c.id === f.tercero_id)?.pideInforme;
+
 // Chip con el estado del parte de una faena-día (null si no corresponde mostrar nada)
 export function estadoParte(partes, f, fecha, base, hoy) {
   if (!partes) return null;
   const parte = partes.get(`${f.id}|${fecha}`);
   if (parte) return parte.estado === 'confirmado' ? { clase: 'chip-ok', texto: 'Informe listo', parte } : { clase: 'chip-prox', texto: 'Parte en borrador', parte };
-  const pide = base.clientes.find((c) => c.id === f.tercero_id)?.pideInforme;
+  const pide = pideInformeFaena(f, base);
   return pide && fecha <= hoy ? { clase: 'chip-venc', texto: 'Sin parte', parte: null } : null;
 }
 

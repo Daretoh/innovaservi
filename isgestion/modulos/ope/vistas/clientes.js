@@ -21,13 +21,13 @@ export default async function vista(ctx) {
     // Con Reportes: el cliente pide informe → sus faenas sin parte se avisan en Partes de trabajo y en Planificación
     const pide = conReportes ? el('input', { type: 'checkbox', class: 'interruptor', checked: c.pideInforme, disabled: !editable }) : null;
     pide?.addEventListener('change', async () => {
-      if (await guardarCliente(ctx, c, { pide_informe: pide.checked })) avisar(pide.checked ? 'Este cliente pide informe.' : 'Este cliente ya no pide informe.');
+      if (await guardarCliente(ctx, c, { pide_informe: pide.checked })) avisar(pide.checked ? 'Sus faenas llevan informe por omisión.' : 'Sus faenas no llevan informe por omisión.');
       else pide.checked = !pide.checked;
     });
     return el('div', { class: 'ficha doc-grupo' },
       el('div', { class: 'listado-cabecera' },
         el('div', { class: 'caja-enlace-titulo' }, color, el('h2', {}, c.nombre)),
-        pide ? el('label', { class: 'casilla', title: 'Sus faenas sin parte se avisan en Partes de trabajo y Planificación' }, pide, 'Pide informe de trabajo') : null,
+        pide ? el('label', { class: 'casilla', title: 'Valor inicial de sus faenas; en cada faena se puede cambiar (Editor de la faena → Parte de trabajo)' }, pide, 'Pide informe por omisión') : null,
         el('div', { class: 'listado-acciones' },
           ctx.puede('terceros', 'editar') ? boton('Datos del cliente', { icono: 'editar', onclick: () => editarCliente(ctx, c) }) : null,
           editable ? boton('Agregar sitio', { icono: 'mas', onclick: () => sitio(ctx, c, null) }) : null)),
@@ -43,7 +43,7 @@ export default async function vista(ctx) {
     el('header', { class: 'listado-cabecera' },
       el('h1', {}, 'Clientes y sitios'),
       el('a', { class: 'boton boton-secundario', href: ctx.ruta('terceros.listado') }, 'Ir a Clientes y proveedores')),
-    el('p', { class: 'texto-suave' }, `Los clientes vienen de "Clientes y proveedores". Aquí se define su color en el calendario${conReportes ? ', si piden informe de trabajo' : ''} y sus sitios de faena.`),
+    el('p', { class: 'texto-suave' }, `Los clientes vienen de "Clientes y proveedores". Aquí se define su color en el calendario${conReportes ? ', si sus faenas llevan informe por omisión (cada faena se puede cambiar)' : ''} y sus sitios de faena.`),
     tarjetas.length ? tarjetas : el('p', { class: 'texto-suave' }, 'No hay clientes. Créalos en Clientes y proveedores (tipo Cliente).'));
 }
 

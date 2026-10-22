@@ -20,11 +20,10 @@ export default async function vista(ctx) {
   ]);
   if (partes.error) throw partes.error;
 
-  // Faenas ya hechas (últimos 30 días) de clientes que piden informe y que aún no tienen parte
+  // Faenas ya hechas (últimos 30 días) que llevan informe (marcado en la faena o, si no, por su cliente) y aún no tienen parte
   const clientesInforme = new Set((pideInforme.data ?? []).map((c) => c.tercero_id));
-  const pendientes = clientesInforme.size
-    ? (await faenasSinParte(ctx, sumarDias(hoyISO(), -30), hoyISO())).filter((f) => clientesInforme.has(f.tercero_id))
-    : [];
+  const pendientes = (await faenasSinParte(ctx, sumarDias(hoyISO(), -30), hoyISO()))
+    .filter((f) => f.pide_informe ?? clientesInforme.has(f.tercero_id));
 
   const segmento = el('div', { class: 'segmento', role: 'group', 'aria-label': 'Estado' },
     [['todos', 'Todos'], ['borrador', 'Borradores'], ['confirmado', 'Confirmados']].map(([v, t]) =>
@@ -48,7 +47,7 @@ export default async function vista(ctx) {
   });
   if (pendientes.length) {
     lista.insertBefore(el('div', { class: 'ficha doc-grupo' },
-      el('h2', {}, icono('alerta', { tam: 16 }), ` Faenas sin parte de clientes que piden informe (${pendientes.length})`),
+      el('h2', {}, icono('alerta', { tam: 16 }), ` Faenas que llevan informe y no tienen parte (${pendientes.length})`),
       pendientes.map((f) => el('div', { class: 'doc-fila' },
         el('span', { class: 'doc-nombre' }, f.etiqueta),
         ctx.puede('reportes', 'crear') ? boton('Crear parte', { onclick: () => nuevo(ctx, f) }) : null))), lista.children[1]);
