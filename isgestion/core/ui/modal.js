@@ -4,6 +4,9 @@
 // alGuardar(valores) puede lanzar un Error: su mensaje se muestra en el formulario.
 // accion (en un campo): { texto, icono?, alClic({ valores, poner(id, valor), estado(texto, clase) }) } agrega un botón
 // bajo el campo (ej.: "Leer vencimiento del documento"); valores trae lo que hay en el formulario, archivos incluidos.
+// sugerencias (en un campo de texto): lista que aparece al escribir (datalist).
+// alCambiar({ valor, valores, poner(id, valor), opciones(id, [[v, t]]) }) en un campo: se llama al cambiarlo (ej.: elegir un
+// cliente llena su teléfono y sus vehículos). poner en un campo 'checks' marca los valores dados.
 import { el } from './dom.js';
 import { icono } from './iconos.js';
 import { boton } from './tabla.js';
@@ -30,13 +33,15 @@ export function abrirFormulario({ titulo, mensaje, campos, textoGuardar = 'Guard
     const control = c.opciones
       ? el('select', { id: `f-${c.id}`, name: c.id, class: 'campo', required: c.requerido },
           c.opciones.map(([v, t]) => el('option', { value: v, selected: v === (c.valor ?? null) }, t)))
-      : el('input', { id: `f-${c.id}`, name: c.id, type: c.tipo ?? 'text', class: 'campo', required: c.requerido, value: c.valor, accept: aceptar(c.accept), multiple: varias(c) });
+      : el('input', { id: `f-${c.id}`, name: c.id, type: c.tipo ?? 'text', class: 'campo', required: c.requerido, value: c.valor, accept: aceptar(c.accept), multiple: varias(c), list: c.sugerencias ? `l-${c.id}` : null, autocomplete: c.sugerencias ? 'off' : null });
+    if (c.alCambiar) control.addEventListener('change', () => c.alCambiar({ valor: control.value, ...ayudantes() }));
     const escaner = varias(c) ? el('span', { class: 'texto-suave texto-chico campo-escaner', 'aria-live': 'polite' }, 'Puedes elegir varias fotos (ej.: cédula por ambos lados): se juntan en un PDF.') : null;
     if (escaner) control.addEventListener('change', () => {
       const n = control.files.length;
       escaner.textContent = n > 1 ? `${n} archivos: se juntan en un PDF de ${n} páginas.` : 'Puedes elegir varias fotos (ej.: cédula por ambos lados): se juntan en un PDF.';
     });
     return el('div', { class: 'form-fila' }, el('label', { for: `f-${c.id}` }, c.etiqueta), control,
+      c.sugerencias ? el('datalist', { id: `l-${c.id}` }, c.sugerencias.map((t) => el('option', { value: t }))) : null,
       c.ayuda ? el('span', { class: 'texto-suave texto-chico' }, c.ayuda) : null, escaner,
       c.accion ? accionCampo(c.accion, () => form) : null);
   });
@@ -52,6 +57,19 @@ export function abrirFormulario({ titulo, mensaje, campos, textoGuardar = 'Guard
     form);
 
   function cerrar() { dialogo.close(); dialogo.remove(); }
+  function ayudantes() {
+    const fd = new FormData(form);
+    const valores = Object.fromEntries(fd);
+    for (const c of campos) if (c.tipo === 'checks') valores[c.id] = fd.getAll(c.id);
+    const poner = (id, v) => {
+      if (v == null) return;
+      const c = form.elements[id];
+      if (c instanceof RadioNodeList || c?.type === 'checkbox') { const l = c instanceof RadioNodeList ? [...c] : [c]; l.forEach((x) => { if ([].concat(v).includes(x.value)) x.checked = true; }); return; }
+      if (c) { c.value = v; c.dispatchEvent(new Event('input', { bubbles: true })); }
+    };
+    const opciones = (id, lista) => { const c = form.elements[id]; if (c?.tagName === 'SELECT') c.replaceChildren(...lista.map(([v, t]) => el('option', { value: v }, t))); };
+    return { valores, poner, opciones };
+  }
 
   form.addEventListener('submit', async (ev) => {
     ev.preventDefault();

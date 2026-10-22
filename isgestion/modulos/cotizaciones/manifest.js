@@ -14,5 +14,5 @@ export default {
     { id: 'cotizaciones.config', ajustes: true, label: 'Diseño de la cotización', pestana: 'Diseño', vista: () => import('./vistas/config.js') },
   ],
   config: {},
-  migraciones: ['db/001_cotizaciones.sql', 'db/002_mover_lineas.sql'],
+  migraciones: ['db/001_cotizaciones.sql', 'db/002_mover_lineas.sql', 'db/003_editado.sql'],
 };

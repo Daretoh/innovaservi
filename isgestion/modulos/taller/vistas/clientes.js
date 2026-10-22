@@ -30,7 +30,7 @@ export default async function vista(ctx) {
   const e = ctx.empresa.id;
   const conCot = ctx.puede('cotizaciones', 'ver');
   const [ter, ord, veh, cot, con] = await Promise.all([
-    ctx.api.from('terceros').select('id, rut, razon_social, nombre_fantasia, giro, direccion, contacto, email, telefono, clase, representante')
+    ctx.api.from('terceros').select('id, rut, razon_social, nombre_fantasia, giro, direccion, contacto, email, telefono, clase, representante, por_cotizar')
       .eq('empresa_id', e).is('deleted_at', null).contains('tipo', ['cliente']).order('razon_social'),
     ctx.api.from('tal_ordenes').select('id, numero, tercero_id, vehiculo_id, estado, cobrado, fecha_cita, ingreso_at, created_at, descuento, doc_tipo, tipo_venta, abono, tal_orden_servicios(nombre, precio)')
       .eq('empresa_id', e).neq('estado', 'anulada'),
@@ -157,7 +157,9 @@ export default async function vista(ctx) {
     const fTel = campo('tel', 'Teléfono', t.telefono, { type: 'tel', placeholder: '+569…' });
     const fEmail = campo('email', 'Correo (boleta o factura)', t.email, { type: 'email' });
     const fDir = campo('dir', 'Dirección', t.direccion);
-    const soloEmpresa = el('div', { style: empresa ? '' : 'display:none' }, el('div', { class: 'rejilla-campos' }, fRep.nodo, fGiro.nodo));
+    const fCotizar = el('input', { type: 'checkbox', checked: !!t.por_cotizar });
+    const soloEmpresa = el('div', { style: empresa ? '' : 'display:none' }, el('div', { class: 'rejilla-campos' }, fRep.nodo, fGiro.nodo),
+      el('label', { class: 'casilla' }, fCotizar, 'Siempre por cotizar (al agendar se marca el servicio a convenir y Factura, como las automotoras)'));
     fClase.addEventListener('change', () => { soloEmpresa.style.display = fClase.value === 'empresa' ? '' : 'none'; });
     const datos = el('div', {}, fNombre.nodo,
       el('div', { class: 'rejilla-campos' }, el('div', { class: 'form-fila' }, el('label', {}, 'Tipo de cliente'), fClase), fRut.nodo),
@@ -168,7 +170,7 @@ export default async function vista(ctx) {
         const rut = limpio(fRut); const r = rut ? rut.replace(/[^0-9kK]/g, '').toUpperCase() : null;
         const { error } = await ctx.api.from('terceros').update({
           nombre_fantasia: limpio(fNombre), clase: fClase.value, rut: r ? `${r.slice(0, -1)}-${r.slice(-1)}` : null, razon_social: limpio(fRazon) ?? nombreDe(t),
-          representante: fClase.value === 'empresa' ? limpio(fRep) : null, giro: limpio(fGiro), telefono: limpio(fTel), email: limpio(fEmail), direccion: limpio(fDir),
+          representante: fClase.value === 'empresa' ? limpio(fRep) : null, por_cotizar: fClase.value === 'empresa' && fCotizar.checked, giro: limpio(fGiro), telefono: limpio(fTel), email: limpio(fEmail), direccion: limpio(fDir),
         }).eq('id', t.id);
         b.disabled = false;
         if (error) { avisar(error.code === '23505' ? 'Ya hay otro cliente con ese RUT: usa Unir si son el mismo.' : error.code === '23514' ? 'El RUT no es válido.' : error.message, 'error'); return; }

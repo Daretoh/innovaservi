@@ -13,6 +13,8 @@ import {
   cargarCotizacion, cargarCatalogo, datosCliente,
 } from '../datos.js';
 import { duplicar, dividir, pasarAOrden } from '../acciones.js';
+import { avance } from '../../taller/seguimiento.js';
+import { nombreEstado as estadoOrden } from '../../taller/datos.js';
 
 // Celda a enfocar después de recargar (ej.: la línea recién creada)
 let foco = null;
@@ -38,6 +40,24 @@ export default async function vista(ctx) {
   const conTaller = ctx.puede('taller', 'ver');
   const grupos = c.cot_grupos;
   const lineas = c.cot_lineas;
+
+  // Avance desde el taller (como el OS): la orden ligada a cada grupo y el ítem en verde si su trabajo está hecho
+  const idsOrden = grupos.map((g) => g.orden_id).filter(Boolean);
+  const [ords, svs] = conTaller && idsOrden.length ? await Promise.all([
+    ctx.api.from('tal_ordenes').select('id, numero, estado, tareas').in('id', idsOrden),
+    ctx.api.from('tal_servicios').select('nombre, tareas').eq('empresa_id', ctx.empresa.id),
+  ]) : [{ data: [] }, { data: [] }];
+  const ordenDe = new Map((ords.data ?? []).map((o) => [o.id, o]));
+  const tareasDe = new Map((svs.data ?? []).map((x) => [x.nombre.trim().toLowerCase(), x.tareas ?? []]));
+  const hecho = (g, l) => {
+    const o = ordenDe.get(g.orden_id); if (!o || l.tipo === 'seccion') return false;
+    if (['terminado', 'entregado'].includes(o.estado)) return true;
+    const suyas = tareasDe.get((l.descripcion ?? '').trim().toLowerCase()) ?? [];
+    return o.estado === 'proceso' && suyas.length > 0 && suyas.every((t) => o.tareas.some((x) => x.t === t && x.ok));
+  };
+  const ligadas = [...ordenDe.values()];
+  const avanceTotal = ligadas.length ? Math.round(ligadas.reduce((a, o) => a + avance(o), 0) / ligadas.length) : null;
+  const barraAvance = (p, texto) => el('div', { class: 'cot-avance' }, el('span', { class: 'seg-barra' }, el('i', { style: `width:${p}%` })), el('span', { class: 'texto-chico' }, texto));
 
   // ---- Totales (se actualizan en pantalla sin recargar)
   const caja = {};
@@ -74,6 +94,19 @@ export default async function vista(ctx) {
     });
     if (tipo === 'checkbox') return el('label', { class: 'casilla' }, ctl, etiqueta);
     return el('div', { class: 'form-fila' }, el('label', { for: `c-${id}` }, etiqueta), ctl);
+  };
+
+  // Validez con atajos de 7, 15 y 30 días (como el OS)
+  const campoValidez = () => {
+    const nodo = campoCot('validez_dias', 'Validez (días)', { tipo: 'number' });
+    const ctl = nodo.querySelector('input');
+    if (editable) nodo.append(el('div', { class: 'segmento segmento-chico', role: 'group', 'aria-label': 'Vigencia' }, [7, 15, 30].map((d) => el('button', {
+      type: 'button', 'aria-pressed': String(Number(c.validez_dias) === d), onclick: async (ev) => {
+        const b = ev.currentTarget;
+        if (!(await guardarCot({ validez_dias: d }))) return;
+        ctl.value = d; b.parentElement.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+      } }, `${d} días`))));
+    return nodo;
   };
 
   // ---- Cliente
@@ -138,7 +171,7 @@ export default async function vista(ctx) {
   });
   let arrastre = null;   // { g, l } mientras se arrastra una fila
   const filaLinea = (g, l) => {
-    const fila = el('div', { class: `cot-fila${l.tipo === 'seccion' ? ' cot-fila-seccion' : ''}`, 'data-linea': l.id });
+    const fila = el('div', { class: `cot-fila${l.tipo === 'seccion' ? ' cot-fila-seccion' : ''}${hecho(g, l) ? ' cot-hecho' : ''}`, 'data-linea': l.id, title: hecho(g, l) ? 'Trabajo hecho en el taller' : null });
     const asa = el('button', { type: 'button', class: 'boton-icono cot-asa', title: l.tipo === 'seccion' ? 'Arrastrar la sección con sus líneas' : 'Arrastrar', 'aria-label': 'Arrastrar' }, icono('arrastrar', { tam: 14 }));
     asa.addEventListener('mousedown', () => { fila.draggable = true; });
     asa.addEventListener('mouseup', () => { fila.draggable = false; });
@@ -318,7 +351,9 @@ export default async function vista(ctx) {
           const { error } = await ctx.api.from('cot_grupos').delete().eq('id', g.id);
           if (error) avisar(error.message, 'error'); else ctx.refrescar();
         } }, icono('basura', { tam: 16 })) : null),
-      g.orden_id ? el('p', { class: 'texto-chico' }, icono('check', { tam: 14 }), ' Ligado a una ', el('a', { href: ctx.ruta('taller.orden', { id: g.orden_id }) }, 'orden de trabajo')) : null,
+      g.orden_id ? (ordenDe.get(g.orden_id)
+        ? barraAvance(avance(ordenDe.get(g.orden_id)), el('a', { href: ctx.ruta('taller.orden', { id: g.orden_id }) }, `Orden N° ${ordenDe.get(g.orden_id).numero} · ${estadoOrden[ordenDe.get(g.orden_id).estado]} · ${avance(ordenDe.get(g.orden_id))}%`))
+        : el('p', { class: 'texto-chico' }, icono('check', { tam: 14 }), ' Ligado a una ', el('a', { href: ctx.ruta('taller.orden', { id: g.orden_id }) }, 'orden de trabajo'))) : null,
       el('div', { class: 'cot-fila cot-fila-cab' }, el('span', {}, 'Descripción'), el('span', {}, 'Cant.'), el('span', {}, 'Precio'), el('span', {}, 'Desc. %'), el('span', {}, 'Total'), el('span', {}, 'Costo'), el('span')),
       hoja,
       el('div', { class: 'listado-cabecera' },
@@ -376,11 +411,12 @@ export default async function vista(ctx) {
       el('div', { class: 'ficha doc-grupo' },
         el('h2', {}, 'Datos'),
         el('div', { class: 'rejilla-campos' }, campoCot('fecha', 'Fecha', { tipo: 'date' }), campoCot('fecha_hasta', 'Hasta (si es un período)', { tipo: 'date' })),
-        el('div', { class: 'rejilla-campos' }, campoCot('validez_dias', 'Validez (días)', { tipo: 'number' }), campoCot('desc_adic_pct', 'Descuento adicional %', { tipo: 'number' })),
+        el('div', { class: 'rejilla-campos' }, campoValidez(), campoCot('desc_adic_pct', 'Descuento adicional %', { tipo: 'number' })),
         campoCot('con_iva', 'Con IVA (19 %)', { tipo: 'checkbox' }),
         campoCot('mostrar_valores', 'Mostrar el valor de cada ítem en el PDF', { tipo: 'checkbox' }),
         campoCot('notas', 'Notas internas (no salen en el PDF)', { tipo: 'textarea' }),
         resumen)),
+    avanceTotal != null ? el('div', { class: 'ficha doc-grupo' }, el('strong', {}, 'Avance en el taller'), barraAvance(avanceTotal, `${avanceTotal}% · ${ligadas.length} orden(es) de trabajo · los ítems hechos quedan en verde`)) : null,
     grupos.map((g, i) => tarjetaGrupo(g, i + 1)),
     editable ? boton(conTaller ? 'Agregar vehículo' : 'Agregar grupo', { icono: 'mas', onclick: async () => {
       const { error } = await ctx.api.from('cot_grupos').insert({ cotizacion_id: c.id, empresa_id: ctx.empresa.id, orden: Math.max(0, ...grupos.map((g) => g.orden)) + 1 });

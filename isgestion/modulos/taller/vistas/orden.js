@@ -162,14 +162,36 @@ export default async function vista(ctx) {
   const tarjetaMedia = (m) => el('div', { class: 'media-tarjeta' },
     m.tipo === 'foto'
       ? el('a', { href: urls.get(m.ruta), target: '_blank', rel: 'noopener' }, el('img', { src: urls.get(m.ruta), alt: m.nombre ?? 'Foto', loading: 'lazy' }))
-      : el('a', { class: 'media-video', href: urls.get(m.ruta), target: '_blank', rel: 'noopener' }, icono(m.tipo === 'video' ? 'video' : 'carpeta', { tam: 30 }), el('span', { class: 'texto-chico' }, m.nombre ?? m.tipo)),
+      : m.tipo === 'video'
+        ? el('video', { class: 'media-previa', src: urls.get(m.ruta), controls: true, preload: 'metadata', playsinline: true })
+        : el('a', { class: 'media-video', href: urls.get(m.ruta), target: '_blank', rel: 'noopener' }, icono('carpeta', { tam: 30 }), el('span', { class: 'texto-chico' }, m.nombre ?? m.tipo)),
+    el('span', { class: 'texto-chico media-nombre', title: m.nombre ?? '' }, m.nombre ?? ''),
     el('span', { class: 'texto-chico texto-suave' }, CATEGORIAS_MEDIA.find((c) => c[0] === m.categoria)?.[1]),
-    editableTrabajo ? el('div', { class: 'media-acciones' }, el('button', { type: 'button', class: 'boton-icono', title: 'Eliminar', 'aria-label': 'Eliminar archivo', onclick: async () => {
+    editableTrabajo ? el('div', { class: 'media-acciones' }, el('button', { type: 'button', class: 'boton-icono', title: 'Renombrar o cambiar la categoría', 'aria-label': 'Renombrar archivo', onclick: () => abrirFormulario({
+      titulo: 'Renombrar archivo',
+      campos: [{ id: 'nombre', etiqueta: 'Nombre', valor: m.nombre ?? '', requerido: true }, { id: 'categoria', etiqueta: 'Categoría', opciones: CATEGORIAS_MEDIA, valor: m.categoria }],
+      alGuardar: async (x) => {
+        const { error: e } = await ctx.api.from('tal_media').update({ nombre: x.nombre.trim().slice(0, 120), categoria: x.categoria }).eq('id', m.id);
+        if (e) throw new Error(e.message);
+        avisar('Archivo actualizado.'); ctx.refrescar();
+      },
+    }) }, icono('editar', { tam: 15 })), el('button', { type: 'button', class: 'boton-icono', title: 'Eliminar', 'aria-label': 'Eliminar archivo', onclick: async () => {
       const { error: e } = await ctx.api.from('tal_media').delete().eq('id', m.id);
       if (e) { avisar(e.message, 'error'); return; }
       await eliminarArchivo(ctx.api, m.ruta).catch(() => {});
       ctx.refrescar();
     } }, icono('basura', { tam: 15 }))) : null);
+
+  // Filtro de la galería por categoría (solo las que tienen archivos)
+  const galeria = el('div', { class: 'galeria' }, (media.data ?? []).map((m) => { const n = tarjetaMedia(m); n.dataset.cat = m.categoria; return n; }));
+  const conArchivos = CATEGORIAS_MEDIA.filter(([k]) => (media.data ?? []).some((m) => m.categoria === k));
+  let filtroCat = '';
+  const filtroMedia = el('div', { class: 'segmento', role: 'group', 'aria-label': 'Filtrar por categoría' },
+    [['', 'Todas'], ...conArchivos].map(([k, n]) => el('button', { type: 'button', 'aria-pressed': String(k === filtroCat), onclick: (ev) => {
+      filtroCat = k;
+      ev.currentTarget.parentElement.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b === ev.currentTarget)));
+      galeria.querySelectorAll('.media-tarjeta').forEach((t) => { t.hidden = !!k && t.dataset.cat !== k; });
+    } }, `${n} (${k ? (media.data ?? []).filter((m) => m.categoria === k).length : media.data?.length ?? 0})`)));
 
   // ---- Cobro
   const cobrar = () => abrirFormulario({
@@ -294,7 +316,8 @@ export default async function vista(ctx) {
       el('div', { class: 'listado-cabecera' },
         el('h2', {}, `Fotos y documentos (${media.data?.length ?? 0})`),
         editableTrabajo ? el('div', { class: 'listado-acciones' }, selCat, boton('Subir', { icono: 'camara', tipo: 'primario', onclick: () => entrada.click() }), entrada) : null),
-      media.data?.length ? el('div', { class: 'galeria' }, media.data.map(tarjetaMedia)) : el('p', { class: 'texto-suave' }, 'Fotos del vehículo al ingresar y al entregar, boleta o voucher.'),
+      media.data?.length ? filtroMedia : null,
+      media.data?.length ? galeria : el('p', { class: 'texto-suave' }, 'Fotos del vehículo al ingresar y al entregar, boleta o voucher.'),
       zona),
   );
 }

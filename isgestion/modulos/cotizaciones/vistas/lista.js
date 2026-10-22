@@ -1,8 +1,9 @@
-// Cotizaciones: listado con filtro por estado y búsqueda; nueva cotización.
+// Cotizaciones: listado con filtro por estado y búsqueda; nueva cotización. Cada fila dice quién la creó y quién la
+// editó por última vez (como el OS; updated_by lo pone la base).
 import { el } from '../../../core/ui/dom.js';
 import { listado, boton } from '../../../core/ui/tabla.js';
 import { abrirFormulario } from '../../../core/ui/modal.js';
-import { dinero, fechaLarga, hoyISO } from '../../../core/ui/formato.js';
+import { dinero, fechaLarga, fechaCorta, hoyISO, diaLocal } from '../../../core/ui/formato.js';
 import { ESTADOS, nombreEstado, CHIP_ESTADO, SELECT_COT, totales, numeroTexto, nombreTercero, verPatente, siguienteNumero, cargarConfig, datosCliente } from '../datos.js';
 
 const filtro = { estado: 'todas', buscar: '' };
@@ -10,8 +11,9 @@ const filtro = { estado: 'todas', buscar: '' };
 export default async function vista(ctx) {
   let q = ctx.api.from('cot_cotizaciones').select(SELECT_COT).eq('empresa_id', ctx.empresa.id).is('deleted_at', null).order('numero', { ascending: false }).limit(500);
   if (filtro.estado !== 'todas') q = q.eq('estado', filtro.estado);
-  const { data, error } = await q;
+  const [{ data, error }, us] = await Promise.all([q, ctx.api.rpc('cot_usuarios', { p_empresa: ctx.empresa.id })]);
   if (error) throw error;
+  const quien = new Map((us.data ?? []).map((u) => [u.user_id, u.nombre]));
   const b = filtro.buscar.trim().toLowerCase();
   const filas = data.map((c) => ({ ...c, t: totales(c, c.cot_grupos, c.cot_lineas) }))
     .filter((c) => !b || [String(c.numero), c.cliente_nombre, ...c.cot_grupos.map((g) => `${g.titulo ?? ''} ${g.patente ?? ''}`)].join(' ').toLowerCase().includes(b));
@@ -35,6 +37,10 @@ export default async function vista(ctx) {
       { titulo: 'Detalle', valor: (c) => c.cot_grupos.map((g) => [g.titulo, verPatente(g.patente)].filter(Boolean).join(' · ')).join(', ') },
       { titulo: 'Estado', valor: (c) => el('span', { class: `chip ${CHIP_ESTADO[c.estado]}` }, nombreEstado[c.estado]) },
       { titulo: 'Total', valor: (c) => el('strong', {}, dinero(c.t.total)) },
+      { titulo: 'Registro', valor: (c) => el('span', { class: 'texto-chico texto-suave' },
+        c.created_by ? `Creó ${quien.get(c.created_by) ?? '—'}` : '',
+        c.updated_by && (c.updated_by !== c.created_by || diaLocal(c.updated_at) !== diaLocal(c.created_at)) ? el('br') : null,
+        c.updated_by && (c.updated_by !== c.created_by || diaLocal(c.updated_at) !== diaLocal(c.created_at)) ? `Editó ${quien.get(c.updated_by) ?? '—'} · ${fechaCorta(diaLocal(c.updated_at))}` : null) },
     ],
   });
   if (filas.length) {
