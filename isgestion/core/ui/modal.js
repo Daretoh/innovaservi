@@ -42,7 +42,7 @@ export function abrirFormulario({ titulo, mensaje, campos, textoGuardar = 'Guard
   });
 
   const guardar = boton(textoGuardar, { tipo: 'primario', type: 'submit' });
-  const form = el('form', { class: 'modal-cuerpo' }, mensaje ? el('p', {}, mensaje) : null, entradas, error,
+  const form = el('form', { class: 'modal-cuerpo' }, mensaje ? el('p', { class: 'modal-mensaje' }, mensaje) : null, entradas, error,
     el('div', { class: 'modal-pie' }, boton('Cancelar', { onclick: () => cerrar() }), guardar));
 
   const dialogo = el('dialog', { class: 'modal', 'aria-label': titulo },

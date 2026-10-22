@@ -1501,3 +1501,57 @@ html[data-modo="oscuro"] img { color-scheme: light; }
 .remu-grupo-titulo { font-size: 1.05rem; margin: 0; color: var(--texto); }
 .remu-grupo .tabla td, .remu-grupo .tabla th { white-space: nowrap; }
 .remu-grupo .tabla td:first-child { white-space: normal; min-width: 200px; }
+
+/* Taller · Clientes (CRM): lista a la izquierda y ficha a la derecha (modulos/taller/vistas/clientes.js) */
+.crm-grid { display: grid; grid-template-columns: minmax(240px, 320px) minmax(0, 1fr); gap: 16px; align-items: start; }
+.crm-col { display: flex; flex-direction: column; gap: 8px; position: sticky; top: 8px; }
+.crm-lista { display: flex; flex-direction: column; gap: 4px; max-height: calc(100vh - 220px); overflow-y: auto; }
+.crm-item { display: flex; flex-direction: column; gap: 3px; text-align: left; padding: 9px 11px; border: 1px solid var(--borde); border-radius: var(--radio-control, 8px); background: var(--superficie); color: var(--texto); cursor: pointer; font: inherit; }
+.crm-item:hover { background: var(--hover); }
+.crm-item.sel { border-color: var(--empresa); box-shadow: inset 3px 0 0 var(--empresa); }
+.crm-item-pie { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.crm-ficha { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.crm-sec > summary { cursor: pointer; list-style: revert; }
+.crm-sec[open] > summary { margin-bottom: 10px; }
+.crm-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.crm-dups { display: flex; flex-direction: column; gap: 6px; align-items: stretch; }
+.crm-dup { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.crm-registro { grid-template-columns: 150px 170px minmax(0, 1fr) auto; align-items: end; }
+.crm-contacto { border-left: 3px solid var(--borde); padding: 4px 0 4px 10px; margin: 8px 0; }
+@media (max-width: 860px) {
+  .crm-grid { grid-template-columns: 1fr; }
+  .crm-col { position: static; }
+  .crm-lista { max-height: 260px; }
+  .crm-registro { grid-template-columns: 1fr; }
+}
+
+/* Taller · Calendario del mes (modulos/taller/vistas/calendario.js), como el del OS de IS Performance */
+.tcal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); border: 1px solid var(--borde); border-radius: var(--radio, 10px); overflow: hidden; background: var(--superficie); }
+.tcal-cab { padding: 8px; font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; text-align: center; background: var(--empresa); color: var(--sobre-empresa, #fff); }
+.tcal-cel { min-height: 118px; padding: 6px; border-right: 1px solid var(--borde); border-bottom: 1px solid var(--borde); display: flex; flex-direction: column; gap: 2px; cursor: pointer; min-width: 0; }
+.tcal-cel:nth-child(7n) { border-right: none; }
+.tcal-cel:hover { background: var(--hover); }
+.tcal-cel.out { background: var(--fondo-sutil); }
+.tcal-cel.out .tcal-dn { color: var(--texto-suave); }
+.tcal-cel.today .tcal-dn { background: var(--empresa); color: var(--sobre-empresa, #fff); }
+.tcal-dn { font-weight: 700; font-size: .82rem; width: 24px; height: 24px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; }
+.tcal-ev { display: block; width: 100%; text-align: left; border: none; border-left: 3px solid var(--borde); border-radius: 4px; padding: 2px 5px; font: inherit; font-size: 10.5px; font-weight: 600; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; background: var(--fondo-sutil); color: var(--texto); }
+.tcal-ev:hover { filter: brightness(.95); }
+.tcal-ev.agendado { color: var(--texto-suave); }
+.tcal-ev.espera { background: color-mix(in srgb, var(--empresa) 14%, var(--superficie)); border-left-color: var(--empresa); }
+.tcal-ev.proc { background: var(--prox-fondo); color: var(--prox); border-left-color: var(--prox); }
+.tcal-ev.term { background: color-mix(in srgb, #2563eb 12%, var(--superficie)); color: #2563eb; border-left-color: #2563eb; }
+.tcal-ev.entreg { background: var(--ok-fondo); color: var(--ok); border-left-color: var(--ok); }
+.tcal-ev.cotizar { background: color-mix(in srgb, #8b3ff0 14%, var(--superficie)); color: #7a2fd0; border-left-color: #8b3ff0; }
+.tcal-ev.tarea { background: color-mix(in srgb, var(--empresa) 10%, var(--superficie)); border-left-color: var(--empresa); }
+.tcal-ev.tarea.hecha { opacity: .55; text-decoration: line-through; }
+.tcal-h { font-weight: 800; margin-right: 3px; }
+.tcal-pc { display: inline-block; font-size: 8px; font-weight: 800; letter-spacing: .02em; color: #fff; background: #8b3ff0; border-radius: 4px; padding: 2px 3px; margin-right: 4px; vertical-align: middle; }
+.tcal-pc.ec-cot { background: #2f63d6; } .tcal-pc.ec-pago { background: #1e9e6a; }
+.tcal-mas { border: none; background: none; text-align: left; font-size: 10px; font-weight: 700; color: var(--texto-suave); cursor: pointer; padding: 1px 4px; }
+.tcal-leyenda { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; align-items: center; }
+.tcal-leyenda .tcal-ev { width: auto; display: inline-block; cursor: default; }
+@media (max-width: 760px) { .tcal-cel { min-height: 70px; padding: 4px; } .tcal-ev { font-size: 9.5px; } }
+
+/* Mensaje del modal: respeta los saltos de línea */
+.modal-mensaje { white-space: pre-line; }
