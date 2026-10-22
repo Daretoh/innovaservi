@@ -14,6 +14,13 @@ const SUAVE = [247, 248, 250];
 const pesos = (n) => `$${Math.round(n).toLocaleString('es-CL')}`;
 const fecha = (iso) => (iso ? iso.split('-').reverse().join('/') : '');
 
+// Abonos asignados a esta cotización en Cierres y cuentas (si la empresa usa ese módulo y el usuario lo ve)
+async function abonosDe(ctx, c) {
+  if (!ctx.puede('cierres', 'ver')) return 0;
+  const { data, error } = await ctx.api.from('cie_abonos').select('monto').eq('cotizacion_id', c.id).is('deleted_at', null);
+  return error ? 0 : (data ?? []).reduce((s, a) => s + Number(a.monto || 0), 0);
+}
+
 export async function pdfCotizacion(ctx, c) {
   const [jsPDF, cfg] = await Promise.all([cargarJsPdf(), cargarConfig(ctx)]);
   const e = ctx.empresa;
@@ -53,10 +60,13 @@ export async function pdfCotizacion(ctx, c) {
   cajaDatos(M, 'Cliente', [['Empresa', c.cliente_nombre], ['RUT', c.cliente_rut], ['Giro', c.cliente_giro]]);
   cajaDatos(M + ancho + 6, 'Contacto', [['Persona', c.cliente_contacto], ['Correo', c.cliente_correo], ['Teléfono', c.cliente_telefono]]);
 
-  // ---- Tabla por grupo
+  // ---- Tabla por grupo (como el OS, 2026-10-22): sin columna c/IVA por ítem (el IVA va solo en el total) y, si hay
+  // descuentos por ítem, las columnas Neto · Desc. · Neto c/desc
   const conIva = c.con_iva;
   const mostrar = c.mostrar_valores;
-  const cols = conIva ? 4 : 3;
+  const conDesc = mostrar && c.cot_lineas.some((l) => l.tipo !== 'seccion' && Number(l.desc_pct) > 0);
+  const bruto = (l) => Math.round(Number(l.cantidad || 0) * Number(l.precio || 0));
+  const cols = conDesc ? 5 : 3;
   const body = [];
   c.cot_grupos.forEach((g, n) => {
     const ls = c.cot_lineas.filter((l) => l.grupo_id === g.id);
@@ -69,25 +79,27 @@ export async function pdfCotizacion(ctx, c) {
         continue;
       }
       const v = totalLinea(l);
-      const fila = [{ content: l.descripcion + (Number(l.desc_pct) ? `  (desc. ${Number(l.desc_pct)} %)` : ''), styles: { cellPadding: { top: 1.8, bottom: 1.8, left: 6, right: 2 } } },
-        String(Number(l.cantidad)), mostrar ? pesos(v) : ''];
-      if (conIva) fila.push(mostrar ? pesos(v * (1 + IVA)) : '');
+      const dp = Number(l.desc_pct) || 0;
+      const fila = [{ content: l.descripcion, styles: { cellPadding: { top: 1.8, bottom: 1.8, left: 6, right: 2 } } }, String(Number(l.cantidad))];
+      if (conDesc) fila.push(pesos(bruto(l)), dp ? `${dp.toLocaleString('es-CL')} %` : '—', pesos(v));
+      else fila.push(mostrar ? pesos(v) : '');
       body.push(fila);
     }
     const sg = t.porGrupo.get(g.id) ?? 0;
-    const sub = [{ content: `Subtotal ${g.titulo || ''}`.trim(), colSpan: 2, styles: { halign: 'right', fontStyle: 'bold', textColor: GRIS } }, { content: pesos(sg), styles: { fontStyle: 'bold' } }];
-    if (conIva) sub.push({ content: pesos(sg * (1 + IVA)), styles: { fontStyle: 'bold' } });
+    const sub = [{ content: `Subtotal ${g.titulo || ''}`.trim(), colSpan: 2, styles: { halign: 'right', fontStyle: 'bold', textColor: GRIS } }];
+    if (conDesc) sub.push({ content: pesos(ls.reduce((s2, l) => s2 + (l.tipo === 'seccion' ? 0 : bruto(l)), 0)), styles: { fontStyle: 'bold' } }, '', { content: pesos(sg), styles: { fontStyle: 'bold' } });
+    else sub.push({ content: mostrar ? pesos(sg) : '', styles: { fontStyle: 'bold' } });
     body.push(sub);
   });
   doc.autoTable({
     startY: 80,
-    head: [['Descripción del servicio', 'Cant.', conIva ? 'Valor neto' : 'Valor', ...(conIva ? ['Valor c/IVA'] : [])]],
+    head: [['Descripción del servicio', 'Cant.', ...(conDesc ? ['Neto', 'Desc.', 'Neto c/desc'] : [conIva ? 'Valor neto' : 'Valor'])]],
     body,
     margin: { left: M, right: M, bottom: 24 },
     theme: 'grid',
     styles: { font: 'helvetica', fontSize: 8.8, cellPadding: 1.8, textColor: TEXTO, lineColor: LINEA, lineWidth: 0.2 },
     headStyles: { fillColor: color, textColor: 255, fontStyle: 'bold' },
-    columnStyles: conIva ? { 1: { cellWidth: 16, halign: 'center' }, 2: { cellWidth: 30, halign: 'right' }, 3: { cellWidth: 30, halign: 'right' } }
+    columnStyles: conDesc ? { 1: { cellWidth: 14, halign: 'center' }, 2: { cellWidth: 28, halign: 'right' }, 3: { cellWidth: 18, halign: 'center' }, 4: { cellWidth: 30, halign: 'right' } }
       : { 1: { cellWidth: 18, halign: 'center' }, 2: { cellWidth: 34, halign: 'right' } },
   });
   let y = doc.lastAutoTable.finalY + 8;
@@ -100,9 +112,13 @@ export async function pdfCotizacion(ctx, c) {
     doc.setFont('helvetica', 'normal').setFontSize(8.5).setTextColor(...TEXTO);
     pago.forEach((p, i) => doc.text(p, M, y + 9.5 + i * 4.6));
   }
+  // Totales (como el OS): Subtotal / Desc. adicional / IVA 19 % / Total c/IVA / − Abonos / Total a pagar
   const filas = [['Subtotal', pesos(t.sub)]];
   if (t.desc) filas.push([`Descuento adicional ${Number(c.desc_adic_pct)} %`, `- ${pesos(t.desc)}`]);
-  if (conIva) filas.push(['Neto', pesos(t.neto)], ['IVA 19 %', pesos(t.iva)]);
+  if (conIva) filas.push(['IVA 19 %', pesos(t.iva)], ['Total c/IVA', pesos(t.total)]);
+  const abonos = await abonosDe(ctx, c);
+  if (abonos) filas.push(['− Abonos', `- ${pesos(abonos)}`]);
+  const aPagar = Math.max(0, (conIva ? t.total : t.neto) - abonos);
   const xT = W - M - 75;
   doc.setFillColor(...SUAVE).setDrawColor(...LINEA).roundedRect(xT, y, 75, 8 + filas.length * 5.5 + 9, 2, 2, 'FD');
   filas.forEach(([k, v], i) => {
@@ -111,7 +127,7 @@ export async function pdfCotizacion(ctx, c) {
   });
   const yTot = y + 8.5 + filas.length * 5.5;
   doc.setFillColor(...color).rect(xT, yTot - 4.6, 75, 7.6, 'F');
-  doc.setFont('helvetica', 'bold').setFontSize(10.5).setTextColor(255, 255, 255).text('TOTAL', xT + 4, yTot + 0.5).text(pesos(t.total), xT + 71, yTot + 0.5, { align: 'right' });
+  doc.setFont('helvetica', 'bold').setFontSize(10.5).setTextColor(255, 255, 255).text('TOTAL A PAGAR', xT + 4, yTot + 0.5).text(pesos(aPagar), xT + 71, yTot + 0.5, { align: 'right' });
   y = Math.max(y + 10 + pago.length * 4.6, yTot + 10);
 
   // ---- Firma y nota

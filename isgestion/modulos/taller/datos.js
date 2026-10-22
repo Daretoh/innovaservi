@@ -27,6 +27,10 @@ export const verPatente = (p) => (p && p.length === 6 ? `${p.slice(0, 4)}-${p.sl
 export const nombreVehiculo = (v) => [v?.marca, v?.modelo].filter(Boolean).join(' ') || 'Vehículo';
 export const precioTalla = (s, talla) => s?.[`precio_${(talla || 'M').toLowerCase()}`] ?? null;
 
+// ¿El cliente es empresa? (RUT de 50.000.000 o más, como las sociedades en Chile). A una empresa se le hace factura:
+// al agendar, la orden queda con Factura y el cobro suma el IVA (como el OS de IS Performance, 2026-10-22).
+export const esEmpresa = (t) => { const n = Number(String(t?.rut ?? '').replace(/[^0-9kK]/g, '').slice(0, -1)); return n >= 50000000; };
+
 // Totales de una orden: neto (servicios − descuento), IVA si es factura, total, abono y saldo.
 // Venta no normal (regalo, sorteo, cortesía, garantía): no se cobra; el ingreso es solo el abono.
 export function totales(o, servicios) {

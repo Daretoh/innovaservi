@@ -16,6 +16,7 @@ import {
 } from '../datos.js';
 import { mover } from '../acciones.js';
 import { seccionInsumos } from '../insumos.js';
+import { seccionCostosPatente } from '../costos.js';
 
 const MAX_VIDEO = 25 * 1024 * 1024;
 let categoriaSubida = 'exterior';
@@ -273,9 +274,9 @@ export default async function vista(ctx) {
         el('div', { class: 'cobro-resumen' },
           el('div', {}, el('span', {}, 'Servicios'), el('span', {}, dinero(t.bruto))),
           t.bruto !== t.neto ? el('div', {}, el('span', {}, 'Descuento'), el('span', {}, `− ${dinero(t.bruto - t.neto)}`)) : null,
-          el('div', {}, el('span', {}, 'Neto'), el('span', {}, dinero(t.neto))),
-          t.iva ? el('div', {}, el('span', {}, 'IVA 19 %'), el('span', {}, dinero(t.iva))) : null,
-          el('div', {}, el('strong', {}, 'Total'), el('strong', {}, dinero(t.total))),
+          el('div', {}, el('span', {}, 'Precio neto'), el('span', {}, dinero(t.neto))),
+          t.iva ? el('div', {}, el('span', {}, 'IVA 19 % (factura)'), el('span', {}, dinero(t.iva))) : null,
+          el('div', {}, el('strong', {}, t.iva ? 'Total c/IVA' : 'Total'), el('strong', {}, dinero(t.total))),
           t.abono ? el('div', {}, el('span', {}, 'Abono'), el('span', {}, dinero(t.abono))) : null,
           el('div', { class: 'cobro-saldo' }, el('strong', {}, 'Saldo'), el('strong', {}, dinero(t.saldo))),
           o.tipo_venta !== 'normal' ? el('p', { class: 'texto-suave texto-chico' }, 'Venta sin cobro: el ingreso es solo el abono.') : null),
@@ -288,6 +289,7 @@ export default async function vista(ctx) {
             : boton('Registrar cobro', { icono: 'check', tipo: 'primario', onclick: cobrar }))
           : null)),
     await seccionInsumos(ctx, o, anulada),
+    await seccionCostosPatente(ctx, o, v),
     el('div', { class: 'ficha doc-grupo' },
       el('div', { class: 'listado-cabecera' },
         el('h2', {}, `Fotos y documentos (${media.data?.length ?? 0})`),

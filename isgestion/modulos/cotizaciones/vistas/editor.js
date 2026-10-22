@@ -330,6 +330,8 @@ export default async function vista(ctx) {
 
   // ---- Acciones según estado
   const acciones = [boton('Ver PDF', { icono: 'ojo', onclick: (ev) => pdf(ctx, c, ev.currentTarget) })];
+  // Como el OS (2026-10-22): siempre queda claro que se está editando esta cotización, y se puede empezar una nueva
+  if (ctx.puede('cotizaciones', 'crear')) acciones.push(boton('Nueva cotización', { icono: 'mas', onclick: async () => { const { nueva } = await import('./lista.js'); nueva(ctx); } }));
   const puedeEditar = ctx.puede('cotizaciones', 'editar');
   if (puedeEditar && c.estado === 'borrador') acciones.push(boton('Marcar enviada', { icono: 'check', tipo: 'primario', onclick: () => abrirFormulario({
     titulo: `Enviar cotización N° ${numeroTexto(c.numero)}`, mensaje: 'Queda bloqueada para cambios. Si hay que corregirla, se reabre.', campos: [], textoGuardar: 'Marcar enviada',
@@ -361,7 +363,8 @@ export default async function vista(ctx) {
       el('div', {}, el('h1', {}, `Cotización N° ${numeroTexto(c.numero)}`),
         el('p', { class: 'texto-suave' }, [c.cliente_nombre, fechaLarga(c.fecha), c.origen_id ? 'copia de otra cotización' : null].filter(Boolean).join(' · '))),
       el('div', { class: 'listado-acciones' }, el('span', { class: `chip ${CHIP_ESTADO[c.estado]}` }, nombreEstado[c.estado]), acciones)),
-    c.estado !== 'borrador' ? el('p', { class: 'aviso-bandeja' }, icono('alerta', { tam: 16 }), `${nombreEstado[c.estado]}: bloqueada para cambios. Para corregirla, reábrela.`) : null,
+    c.estado !== 'borrador' ? el('p', { class: 'aviso-bandeja' }, icono('alerta', { tam: 16 }), `${nombreEstado[c.estado]}: bloqueada para cambios. Para corregirla, reábrela.`)
+      : el('p', { class: 'aviso-bandeja cot-editando' }, icono('editar', { tam: 16 }), el('strong', {}, `Editando N° ${numeroTexto(c.numero)}`), ' · los cambios se guardan en esta cotización al escribir. Para otra, usa "Nueva cotización".'),
     el('div', { class: 'plan-editor' },
       el('div', { class: 'ficha doc-grupo' },
         el('h2', {}, 'Cliente'),

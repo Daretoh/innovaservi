@@ -145,7 +145,7 @@ export async function pdfCuenta(ctx, k, items, abonos, t, cliente) {
     ...estilosTabla(p.color),
     columnStyles: { 1: { halign: 'right' }, 5: { halign: 'right' } },
   });
-  cierrePdf(p, [['Total aprobado', pesos(t.total)], ['Total abonado', pesos(t.abonado)]], ['SALDO PENDIENTE', pesos(t.saldo)],
+  cierrePdf(p, [['Total aprobado', pesos(t.total)], ['− Abonos', `- ${pesos(t.abonado)}`]], t.saldo < 0 ? ['SALDO A FAVOR', pesos(-t.saldo)] : ['TOTAL A PAGAR', pesos(t.saldo)],
     'Estado de cuenta de los trabajos aprobados. Los montos incluyen IVA cuando la cotización lo indica.');
   return sellar(p.doc, { autor: p.e.razon_social, titulo: `Estado de cuenta ${k.nombre}` });
 }

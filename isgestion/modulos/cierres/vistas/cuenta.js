@@ -187,7 +187,8 @@ export default async function vista(ctx) {
         boton('Historial', { icono: 'reloj', onclick: () => verHistorial(ctx, k.id, k.nombre) }),
         ctx.puede('cierres', 'editar') ? boton(abierta ? 'Cerrar cuenta' : 'Reabrir', { icono: abierta ? 'check' : 'editar', onclick: cerrar }) : null)),
     el('div', { class: 'fin-tarjetas' },
-      tarjeta('Total aprobado', dinero(t.total)), tarjeta('Abonado', dinero(t.abonado), 'fin-bien'), tarjeta('Saldo', dinero(t.saldo), t.saldo > 0 ? 'fin-alerta' : '')),
+      tarjeta('Total aprobado', dinero(t.total)), tarjeta('− Abonos', dinero(t.abonado), 'fin-bien'),
+      t.saldo < 0 ? tarjeta('Saldo a favor', dinero(-t.saldo), 'fin-bien') : tarjeta('Total a pagar', dinero(t.saldo), t.saldo > 0 ? 'fin-alerta' : '')),
     el('div', { class: 'cie-barra', title: `${pct}% pagado` }, el('i', { style: `width:${pct}%` })),
     el('div', { class: 'ficha doc-grupo' },
       el('div', { class: 'listado-cabecera' }, el('h2', {}, `Cotizaciones (${items.length})`), editar ? boton('Agregar cotización', { icono: 'mas', onclick: agregarCot }) : null),
@@ -218,7 +219,7 @@ function textoCorreo(ctx, k, items, t) {
     const det = (c?.cot_grupos ?? []).map((g) => [g.titulo, verPatente(g.patente)].filter(Boolean).join(' ')).join(', ');
     L.push(`- Cotización N° ${numeroTexto(c?.numero)}${det ? ` (${det})` : ''}: total ${dinero(x.total)}, abonado ${dinero(x.abonado)}, saldo ${dinero(x.saldo)}`);
   }
-  L.push('', `Total aprobado: ${dinero(t.total)}`, `Total abonado: ${dinero(t.abonado)}`, `Saldo pendiente: ${dinero(t.saldo)}`, '',
+  L.push('', `Total aprobado: ${dinero(t.total)}`, `Abonos: -${dinero(t.abonado)}`, t.saldo < 0 ? `Saldo a favor: ${dinero(-t.saldo)}` : `Total a pagar: ${dinero(t.saldo)}`, '',
     'Adjuntamos el estado de cuenta en PDF.', '', 'Saludos,', ctx.usuario?.nombre || ctx.empresa.nombre_fantasia || ctx.empresa.razon_social);
   return L.join('\n');
 }

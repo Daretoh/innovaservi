@@ -79,6 +79,15 @@ export default async function vista(ctx) {
     acciones.push(boton('Gasto', { icono: 'mas', tipo: 'primario', onclick: () => { location.hash = ctx.ruta('costos.registro', { tipo: 'gasto' }); } }));
   }
 
+  // Patente → vehículo del taller (como el OS: la patente abre el vehículo y su cobro)
+  let vehDe = new Map();
+  const patentes = [...new Set(data.map((r) => r.patente).filter(Boolean))];
+  if (patentes.length && ctx.puede('taller', 'ver')) {
+    const { data: vs } = await ctx.api.from('tal_vehiculos').select('id, patente').eq('empresa_id', ctx.empresa.id).in('patente', patentes).is('deleted_at', null);
+    vehDe = new Map((vs ?? []).map((v) => [v.patente, v.id]));
+  }
+  const patenteNodo = (p) => (vehDe.has(p) ? el('a', { href: ctx.ruta('taller.vehiculo', { id: vehDe.get(p) }), title: 'Ver el vehículo y sus órdenes' }, p.length === 6 ? `${p.slice(0, 4)}-${p.slice(4)}` : p) : p);
+
   const tabla = listado({
     titulo: 'Gastos e ingresos',
     filas: data,
@@ -87,7 +96,7 @@ export default async function vista(ctx) {
     columnas: [
       { titulo: 'Fecha', valor: (r) => fechaLarga(r.fecha) },
       { titulo: 'Concepto', valor: (r) => el('div', {}, el('a', { href: ctx.ruta('costos.registro', { id: r.id }) }, el('strong', {}, r.concepto)),
-        el('div', { class: 'texto-suave texto-chico' }, [nombreTercero(r.terceros), r.patente, r.recurrente_id ? 'recurrente' : null, r.documento_id ? 'de Inventario' : null].filter(Boolean).join(' · '))) },
+        el('div', { class: 'texto-suave texto-chico' }, [nombreTercero(r.terceros), r.patente ? patenteNodo(r.patente) : null, r.recurrente_id ? 'recurrente' : null, r.documento_id ? 'de Inventario' : null].filter(Boolean).flatMap((x, i) => (i ? [' · ', x] : [x])))) },
       { titulo: 'Categoría', valor: (r) => {
         const c = base.categoriaDe.get(r.categoria_id);
         return el('div', {}, el('span', { class: `chip ${r.tipo === 'ingreso' ? 'chip-ok' : c?.clase === 'inventario' ? 'chip-pend' : 'chip-prox'}` }, c?.nombre ?? ''),

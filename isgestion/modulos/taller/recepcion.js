@@ -2,18 +2,18 @@
 import { abrirFormulario } from '../../core/ui/modal.js';
 import { avisar } from '../../core/ui/aviso.js';
 import { hoyISO } from '../../core/ui/formato.js';
-import { PRIORIDADES, TALLAS, normalizarPatente, verPatente, nombreTercero, precioTalla, cargarServicios, cargarTrabajadores, siguienteNumero } from './datos.js';
+import { PRIORIDADES, TALLAS, normalizarPatente, verPatente, nombreTercero, precioTalla, cargarServicios, cargarTrabajadores, siguienteNumero, esEmpresa } from './datos.js';
 
 export async function recepcion(ctx, { fecha = hoyISO(), vehiculo = null } = {}) {
   const [servicios, trabajadores, clientes] = await Promise.all([
     cargarServicios(ctx),
     cargarTrabajadores(ctx),
-    ctx.api.from('terceros').select('id, razon_social, nombre_fantasia, telefono').eq('empresa_id', ctx.empresa.id).is('deleted_at', null).contains('tipo', ['cliente']).order('razon_social'),
+    ctx.api.from('terceros').select('id, razon_social, nombre_fantasia, telefono, rut').eq('empresa_id', ctx.empresa.id).is('deleted_at', null).contains('tipo', ['cliente']).order('razon_social'),
   ]);
   const v = vehiculo;
   abrirFormulario({
     titulo: v ? `Agendar · ${verPatente(v.patente) || 'vehículo'}` : 'Agendar vehículo',
-    mensaje: v ? null : 'Si la patente ya está registrada se usan sus datos y su historial.',
+    mensaje: v ? 'Si el cliente es empresa, la orden queda con Factura (el cobro suma el IVA).' : 'Si la patente ya está registrada se usan sus datos y su historial. Si el cliente es empresa, la orden queda con Factura (el cobro suma el IVA).',
     campos: [
       ...(v ? [] : [
         { id: 'patente', etiqueta: 'Patente', ayuda: 'Déjala vacía si aún no la sabes.' },
@@ -64,10 +64,15 @@ export async function recepcion(ctx, { fecha = hoyISO(), vehiculo = null } = {})
         veh.terceroOrden = terceroId ?? veh.tercero_id;
       }
       const elegidos = servicios.filter((s) => x.servicios.includes(s.id));
+      // Cliente empresa → factura automática
+      const terceroOrden = veh.terceroOrden ?? veh.tercero_id ?? null;
+      let cliente = (clientes.data ?? []).find((c) => c.id === terceroOrden);
+      if (terceroOrden && !cliente) cliente = (await ctx.api.from('terceros').select('rut').eq('id', terceroOrden).maybeSingle()).data;
       const numero = await siguienteNumero(ctx);
       const llego = x.llego === 'si';
       const { data: orden, error } = await ctx.api.from('tal_ordenes').insert({
-        empresa_id: ctx.empresa.id, numero, vehiculo_id: veh.id, tercero_id: veh.terceroOrden ?? veh.tercero_id ?? null, contacto: x.contacto.trim() || null,
+        empresa_id: ctx.empresa.id, numero, vehiculo_id: veh.id, tercero_id: terceroOrden, contacto: x.contacto.trim() || null,
+        doc_tipo: esEmpresa(cliente) ? 'factura' : 'boleta',
         estado: llego ? 'espera' : 'agendado', prioridad: x.prioridad, trabajador_id: x.trabajador_id || null,
         fecha_cita: x.fecha_cita, hora_cita: x.hora_cita || null, ingreso_at: llego ? new Date().toISOString() : null, notas: x.notas.trim() || null,
         tareas: elegidos.flatMap((s) => s.tareas.map((t) => ({ t, ok: false }))),
@@ -79,7 +84,7 @@ export async function recepcion(ctx, { fecha = hoyISO(), vehiculo = null } = {})
         })));
         if (e2) throw new Error(e2.message);
       }
-      avisar(`Orden N° ${numero} creada.`);
+      avisar(`Orden N° ${numero} creada${esEmpresa(cliente) ? ' con Factura (cliente empresa)' : ''}.`);
       location.hash = ctx.ruta('taller.orden', { id: orden.id });
     },
   });
