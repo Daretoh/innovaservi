@@ -36,14 +36,20 @@ export async function cargarLogo(api, ruta) {
   }
 }
 
+// Datos de contacto de la empresa en una línea (dirección, teléfono, correo y web; Administración → Empresa)
+export const contactoEmpresa = (e, { direccion = true } = {}) =>
+  [direccion && e?.direccion, e?.telefono && `Tel. ${e.telefono}`, e?.email, e?.web].filter(Boolean).join(' · ');
+
 // Sello discreto de ISgestión al pie de cada página: un pequeño isotipo "IS" y "Generado con ISgestión"
 // con la fecha y hora. Va en todos los documentos de todas las empresas (07 Decisiones, 2026-10-18).
+// Con empresa, antes del sello van sus datos de contacto (dirección, teléfono, correo y web).
 // claras: números de página con fondo de color (portadas), donde el sello va en blanco.
-export function sellar(doc, { autor = '', titulo = '', claras = [] } = {}) {
+export function sellar(doc, { autor = '', titulo = '', claras = [], empresa = null } = {}) {
   doc.setProperties({ title: titulo, author: autor, creator: 'ISgestión' });
   const d = new Date(); const dos = (n) => String(n).padStart(2, '0');
   const cuando = `${dos(d.getDate())}-${dos(d.getMonth() + 1)}-${d.getFullYear()} ${dos(d.getHours())}:${dos(d.getMinutes())}`;
-  const texto = `Generado con ISgestión · ${cuando}`;
+  const contacto = contactoEmpresa(empresa);
+  const texto = `${contacto ? `${contacto}   ·   ` : ''}Generado con ISgestión · ${cuando}`;
   const W = doc.internal.pageSize.getWidth();
   const H = doc.internal.pageSize.getHeight();
   const n = doc.getNumberOfPages();
@@ -93,7 +99,7 @@ export async function nuevoPdf(ctx, { titulo, subtitulo = '', horizontal = false
   doc.setFont('helvetica', 'bold').setFontSize(10).setTextColor(28, 35, 48);
   doc.text(e.razon_social, derecha, 13, { align: 'right' });
   doc.setFont('helvetica', 'normal').setFontSize(8.5).setTextColor(...GRIS);
-  const lineas = [`RUT ${e.rut}`, e.giro, e.direccion].filter(Boolean);
+  const lineas = [[`RUT ${e.rut}`, e.giro].filter(Boolean).join(' · '), e.direccion, contactoEmpresa(e, { direccion: false })].filter(Boolean);
   lineas.forEach((t, i) => doc.text(String(t), derecha, 18 + i * 4, { align: 'right' }));
   doc.setDrawColor(...color).setLineWidth(0.8).line(MARGEN, 30, derecha, 30);
 

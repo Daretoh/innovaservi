@@ -109,7 +109,7 @@ export async function generarInforme(ctx, { parte, faenas, media, config }) {
     return { x, titulo, lineas, alto: 14 + lineas.length * 4.6 };
   };
   const cajas = [
-    caja(M, 'CONTRATISTA', [['', e.razon_social], ['RUT', e.rut], ['Responsable', parte.responsable], ...(config.lineas ?? []).map((l) => ['', l])]),
+    caja(M, 'CONTRATISTA', [['', e.razon_social], ['RUT', e.rut], ['Teléfono', e.telefono], ['Correo', e.email], ['Responsable', parte.responsable], ...(config.lineas ?? []).map((l) => ['', l])]),
     caja(M + anchoCaja + 6, 'MANDANTE', [['', parte.terceros?.razon_social ?? 'Interno'], ['RUT', parte.terceros?.rut], ['Dirección', parte.ope_sitios?.direccion || parte.terceros?.direccion]]),
   ];
   const altoCajas = Math.max(...cajas.map((c) => c.alto));
@@ -216,5 +216,5 @@ export async function generarInforme(ctx, { parte, faenas, media, config }) {
     doc.text(`Página ${i + 1} de ${interiores.length}`, W - M, H - 8, { align: 'right' });
   });
   // Portada y contraportada tienen fondo de color: ahí el sello va en blanco
-  return sellar(doc, { autor: e.razon_social, titulo: `Informe de trabajo · ${cliente}`, claras: [1, doc.getNumberOfPages()] });
+  return sellar(doc, { autor: e.razon_social, empresa: e, titulo: `Informe de trabajo · ${cliente}`, claras: [1, doc.getNumberOfPages()] });
 }

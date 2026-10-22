@@ -8,7 +8,7 @@
 // Tipos de columna: 'texto' (por omisión), 'dinero', 'numero', 'decimal', 'horas' (minutos → h:mm), 'fecha' (ISO), 'pct' (0 a 1).
 // Varias tablas van una debajo de otra en la misma hoja; { hoja: 'Otra' } abre otra hoja con su membrete.
 // ExcelJS 4.4.0 (cdnjs, versión fija; 08 Seguridad §5) se carga solo al exportar.
-import { cargarLogo } from './pdf.js';
+import { cargarLogo, contactoEmpresa } from './pdf.js';
 import { nombreEmpresa } from './empresas.js';
 
 const EXCELJS = 'https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js';
@@ -66,7 +66,7 @@ export async function nuevoExcel(ctx, { titulo, subtitulo = '' }) {
     const der = (r, texto, fuente) => { ws.mergeCells(r, 2, r, n); const c = ws.getCell(r, 2); c.value = texto; c.font = fuente; c.alignment = { horizontal: 'right', vertical: 'middle' }; };
     der(1, e.razon_social, { bold: true, size: 11, color: { argb: TINTA } });
     der(2, [`RUT ${e.rut}`, e.giro].filter(Boolean).join(' · '), { size: 9, color: { argb: GRIS } });
-    der(3, e.direccion ?? '', { size: 9, color: { argb: GRIS } });
+    der(3, contactoEmpresa(e), { size: 9, color: { argb: GRIS } });
     ws.getRow(4).height = 4;
     for (let c = 1; c <= n; c++) ws.getCell(4, c).fill = relleno(COLOR);
     ws.mergeCells(6, 1, 6, n); ws.mergeCells(7, 1, 7, n);

@@ -131,7 +131,7 @@ export async function liquidacionPdf(ctx, { f, persona, cargo, lunes, domingo, c
     doc.text(`Documento informativo · Semana ${numSemana(lunes)}`, X, 289);
     doc.text(`Página ${i} de ${n}`, X + W, 289, { align: 'right' });
   }
-  sellar(doc, { autor: e.razon_social, titulo: `Liquidación semana ${numSemana(lunes)} · ${nombre}` });
+  sellar(doc, { autor: e.razon_social, empresa: e, titulo: `Liquidación semana ${numSemana(lunes)} · ${nombre}` });
   const archivo = nombre.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '');
   doc.save(`liquidacion-sem${numSemana(lunes)}-${lunes.slice(0, 4)}-${archivo}.pdf`);
 }

@@ -11,6 +11,9 @@ const CAMPOS = [
   { id: 'nombre_fantasia', etiqueta: 'Nombre de fantasía (se muestra en el selector)' },
   { id: 'giro', etiqueta: 'Giro' },
   { id: 'direccion', etiqueta: 'Dirección' },
+  { id: 'telefono', etiqueta: 'Teléfono', tipo: 'tel' },
+  { id: 'email', etiqueta: 'Correo de contacto', tipo: 'email' },
+  { id: 'web', etiqueta: 'Sitio web' },
 ];
 
 // Temas visuales (core/ui/estilos.css, atributo data-tema): se guardan en empresas.config.tema
@@ -18,7 +21,7 @@ const TEMAS = [['innova', 'Innova (barra azul marino y naranja, como InnovaGesti
 
 export default async function vista(ctx) {
   const { data: e, error } = await ctx.api.from('empresas')
-    .select('id, rut, razon_social, nombre_fantasia, giro, direccion, color, logo_url, config')
+    .select('id, rut, razon_social, nombre_fantasia, giro, direccion, telefono, email, web, color, logo_url, config')
     .eq('id', ctx.empresa.id).single();
   if (error) throw error;
 
@@ -30,7 +33,8 @@ export default async function vista(ctx) {
   const form = el('form', { class: 'ficha' },
     fila('rut', 'RUT', el('input', { id: 'emp-rut', class: 'campo', value: e.rut, disabled: true })),
     CAMPOS.map((c) => fila(c.id, c.etiqueta,
-      el('input', { id: `emp-${c.id}`, name: c.id, class: 'campo', value: e[c.id] ?? '', required: c.requerido, disabled: !editable }))),
+      el('input', { id: `emp-${c.id}`, name: c.id, type: c.tipo ?? 'text', class: 'campo', value: e[c.id] ?? '', required: c.requerido, disabled: !editable }))),
+    el('p', { class: 'texto-suave texto-chico' }, 'Dirección, teléfono, correo y web salen en el membrete y al pie de los PDF y en los Excel.'),
     fila('color', 'Color de la empresa (franja superior y botones)',
       el('input', { id: 'emp-color', name: 'color', type: 'color', class: 'campo campo-color', value: e.color || '#1f4e8c', disabled: !editable })),
     fila('tema', 'Tema visual',
@@ -50,6 +54,9 @@ export default async function vista(ctx) {
       nombre_fantasia: v.nombre_fantasia.trim() || null,
       giro: v.giro.trim() || null,
       direccion: v.direccion.trim() || null,
+      telefono: v.telefono.trim() || null,
+      email: v.email.trim() || null,
+      web: v.web.trim().replace(/^https?:\/\//, '').replace(/\/+$/, '') || null,
       color: v.color,
       config: { ...(e.config ?? {}), tema: v.tema },
     };

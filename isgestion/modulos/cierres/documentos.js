@@ -110,7 +110,7 @@ export async function pdfCierre(ctx, c, lineas, cliente, nota) {
   });
   const filas = c.afecto_iva ? [['Neto', pesos(t.neto)], ['IVA 19 %', pesos(t.iva)]] : [['Neto', pesos(t.neto)]];
   cierrePdf(p, filas, ['TOTAL A PAGAR', pesos(t.total)], nota || 'Cierre mensual de servicios. Los valores corresponden a los servicios realizados en el período indicado.');
-  return sellar(p.doc, { autor: p.e.razon_social, titulo: `Cierre ${nombreMesLargo(c.mes)}${c.numero ? ` N° ${numeroTexto(c.numero)}` : ''}` });
+  return sellar(p.doc, { autor: p.e.razon_social, empresa: p.e, titulo: `Cierre ${nombreMesLargo(c.mes)}${c.numero ? ` N° ${numeroTexto(c.numero)}` : ''}` });
 }
 
 // ---- Estado de cuenta (cuenta corriente)
@@ -147,7 +147,7 @@ export async function pdfCuenta(ctx, k, items, abonos, t, cliente) {
   });
   cierrePdf(p, [['Total aprobado', pesos(t.total)], ['Total abonado', pesos(t.abonado)]], ['SALDO PENDIENTE', pesos(t.saldo)],
     'Estado de cuenta de los trabajos aprobados. Los montos incluyen IVA cuando la cotización lo indica.');
-  return sellar(p.doc, { autor: p.e.razon_social, titulo: `Estado de cuenta ${k.nombre}` });
+  return sellar(p.doc, { autor: p.e.razon_social, empresa: p.e, titulo: `Estado de cuenta ${k.nombre}` });
 }
 
 // Cotización: total para mostrar

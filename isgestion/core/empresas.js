@@ -6,7 +6,7 @@ const CLAVE = 'isg.empresa';
 export async function cargarEmpresas() {
   const { data, error } = await db()
     .from('empresas')
-    .select('id, rut, razon_social, nombre_fantasia, giro, direccion, color, logo_url, config')
+    .select('id, rut, razon_social, nombre_fantasia, giro, direccion, telefono, email, web, color, logo_url, config')
     .order('razon_social');
   if (error) throw error;
   return data;

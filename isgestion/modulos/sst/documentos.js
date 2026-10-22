@@ -1,7 +1,7 @@
 // Documentos PDF de Prevención SST con el membrete de la empresa: salida a atención médica,
 // formulario de investigación de accidentes (informe mensual) y registro de entrega para firmar.
 // Formatos tomados de InnovaGestión; los datos de la empresa salen de la empresa y de sst_config.
-import { cargarJsPdf, cargarLogo, rgb, sellar } from '../../core/pdf.js';
+import { cargarJsPdf, cargarLogo, rgb, sellar, contactoEmpresa } from '../../core/pdf.js';
 import { nombreEmpresa } from '../../core/empresas.js';
 import { fechaLarga, hhmm } from '../../core/ui/formato.js';
 import { SINTOMAS, TIPOS_ACC, GRAVEDAD, mesTexto, nombreDe } from './datos.js';
@@ -31,7 +31,7 @@ async function nuevoDoc(ctx, titulo, subtitulo = '') {
     }
     doc.setFont('helvetica', 'bold').setFontSize(9).setTextColor(...TEXTO).text(e.razon_social, W - M, 12, { align: 'right' });
     doc.setFont('helvetica', 'normal').setFontSize(8).setTextColor(...GRIS);
-    [`RUT ${e.rut}`, e.direccion].filter(Boolean).forEach((t, i) => doc.text(String(t), W - M, 16 + i * 3.8, { align: 'right' }));
+    [`RUT ${e.rut}`, e.direccion, contactoEmpresa(e, { direccion: false })].filter(Boolean).forEach((t, i) => doc.text(String(t), W - M, 16 + i * 3.8, { align: 'right' }));
     doc.setDrawColor(...color).setLineWidth(0.7).line(M, 26, W - M, 26);
     return 33;
   };
@@ -134,7 +134,7 @@ async function nuevoDoc(ctx, titulo, subtitulo = '') {
         doc.text(`${nombreEmpresa(e)} · ${titulo}`, M, H - 8);
         doc.text(`Página ${p} de ${n}`, W - M, H - 8, { align: 'right' });
       }
-      return sellar(doc, { autor: e.razon_social, titulo });
+      return sellar(doc, { autor: e.razon_social, empresa: e, titulo });
     },
   };
   return u;
