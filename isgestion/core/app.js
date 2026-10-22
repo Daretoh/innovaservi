@@ -13,10 +13,10 @@ const COLOR_BASE = '#1f4e8c';
 const CLAVE_MINIMA = 10;   // 08 Seguridad §4
 const raiz = document.getElementById('app');
 
-// Modo claro u oscuro (preferencia de este navegador, isg.modo: claro | oscuro | sistema). Se aplica como
+// Modo claro u oscuro (preferencia de este navegador, isg.modo: claro | oscuro | sistema; por omisión claro, para que se vea el tema de la empresa). Se aplica como
 // data-modo en <html>; el modo oscuro solo cambia las variables de color (core/ui/estilos.css), sobre cualquier tema.
 const MODOS = { sistema: ['Modo: como el sistema', 'pantalla'], claro: ['Modo claro', 'sol'], oscuro: ['Modo oscuro', 'luna'] };
-const modoGuardado = () => { try { return localStorage.getItem('isg.modo') || 'sistema'; } catch { return 'sistema'; } };
+const modoGuardado = () => { try { return localStorage.getItem('isg.modo') || 'claro'; } catch { return 'claro'; } };
 function aplicarModo() {
   const m = modoGuardado();
   const oscuro = m === 'oscuro' || (m === 'sistema' && matchMedia('(prefers-color-scheme: dark)').matches);
