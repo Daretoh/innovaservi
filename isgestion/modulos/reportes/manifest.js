@@ -13,5 +13,5 @@ export default {
     { id: 'reportes.config', ajustes: true, label: 'Diseño del informe', vista: () => import('./vistas/config.js') },
   ],
   config: {},
-  migraciones: ['db/001_reportes.sql', 'db/002_recordar_cliente.sql'],
+  migraciones: ['db/001_reportes.sql', 'db/002_recordar_cliente.sql', 'db/003_portada.sql'],
 };

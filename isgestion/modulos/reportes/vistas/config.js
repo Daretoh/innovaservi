@@ -1,8 +1,10 @@
-// Diseño del informe: textos de la caja "Contratista", lema de la portada y contactos de la contraportada.
-// El logo y el color salen de los datos de la empresa.
+// Diseño del informe: textos de la caja "Contratista", lema de la portada, contactos de la contraportada, colores de
+// las franjas laterales y logo grande de portada y contraportada (como InnovaGestión). El logo chico y el color salen
+// de los datos de la empresa; teléfono, correo, web y dirección de la empresa también van a la contraportada.
 import { el } from '../../../core/ui/dom.js';
 import { boton } from '../../../core/ui/tabla.js';
 import { avisar } from '../../../core/ui/aviso.js';
+import { subirArchivo, urlFirmada } from '../../../core/adjuntos.js';
 
 const lineas = (t) => t.split('\n').map((x) => x.trim()).filter(Boolean);
 
@@ -23,8 +25,24 @@ export default async function vista(ctx) {
     lineas: fila('lineas', 'Líneas de la caja "Contratista"', (c.lineas ?? []).join('\n'), { largo: true, ayuda: 'Una por línea: registros, resoluciones sanitarias, certificaciones.' }),
     lema: fila('lema', 'Lema de la portada', c.lema),
     web: fila('web', 'Sitio web', c.web),
-    contactos: fila('contactos', 'Contactos de la contraportada', (c.contactos ?? []).join('\n'), { largo: true, ayuda: 'Una por línea: teléfono, correo, dirección.' }),
+    contactos: fila('contactos', 'Contactos adicionales de la contraportada', (c.contactos ?? []).join('\n'), { largo: true, ayuda: 'Una por línea: otros teléfonos, correos o direcciones. Los de la empresa (Administración → Empresa) ya van.' }),
+    franjas: fila('franjas', 'Colores de las franjas laterales', (c.franjas ?? []).join(', '), { ayuda: 'Hasta 5 colores en hex, separados por coma (ej.: #f2a71b, #ed4620, #1f28b0). Vacío: el color de la empresa.' }),
   };
+  let logoPortada = c.logo_portada ?? null;
+  const vistaLogo = el('div', { class: 'logo-vacio texto-suave' }, 'Sin logo grande: se usa el logo de la empresa');
+  const pintarLogo = async () => {
+    if (!logoPortada) return;
+    vistaLogo.replaceChildren(el('img', { class: 'logo-vista', alt: 'Logo de portada', src: await urlFirmada(ctx.api, logoPortada, 300).catch(() => '') }));
+  };
+  pintarLogo();
+  const entradaLogo = el('input', { type: 'file', accept: 'image/png,image/jpeg', class: 'campo', 'aria-label': 'Logo grande de portada', disabled: !editable });
+  entradaLogo.addEventListener('change', async () => {
+    const archivo = entradaLogo.files[0]; if (!archivo) return;
+    try {
+      const { ruta } = await subirArchivo(ctx.api, { empresaId: ctx.empresa.id, modulo: 'reportes', archivo, tabla: 'rep_config', registroId: ctx.empresa.id, tipos: ['image/png', 'image/jpeg'], maxBytes: 2 * 1024 * 1024 });
+      logoPortada = ruta; await pintarLogo(); avisar('Logo cargado: guarda para usarlo.');
+    } catch (e) { avisar(e.message, 'error'); }
+  });
 
   const guardar = async (ev) => {
     const b = ev.currentTarget; b.disabled = true;
@@ -34,6 +52,8 @@ export default async function vista(ctx) {
       lema: f.lema.control.value.trim() || null,
       web: f.web.control.value.trim() || null,
       contactos: lineas(f.contactos.control.value),
+      franjas: f.franjas.control.value.split(/[,\s]+/).map((x) => x.trim().toLowerCase()).filter((x) => /^#[0-9a-f]{6}$/.test(x)).slice(0, 5),
+      logo_portada: logoPortada,
     };
     // Actualizar o crear (la empresa del registro no se puede cambiar, por eso no se usa upsert)
     const u = await ctx.api.from('rep_config').update(v).eq('empresa_id', ctx.empresa.id).select('empresa_id');
@@ -49,5 +69,7 @@ export default async function vista(ctx) {
       editable ? el('div', { class: 'listado-acciones' }, boton('Guardar', { icono: 'check', tipo: 'primario', onclick: guardar })) : null),
     el('div', { class: 'plan-editor' },
       el('div', { class: 'ficha doc-grupo' }, el('h2', {}, 'Portada y contratista'), f.responsable.nodo, f.lineas.nodo, f.lema.nodo),
-      el('div', { class: 'ficha doc-grupo' }, el('h2', {}, 'Contraportada'), f.web.nodo, f.contactos.nodo)));
+      el('div', { class: 'ficha doc-grupo' }, el('h2', {}, 'Contraportada'), f.web.nodo, f.contactos.nodo),
+      el('div', { class: 'ficha doc-grupo' }, el('h2', {}, 'Marca'), f.franjas.nodo,
+        el('div', { class: 'form-fila' }, el('label', {}, 'Logo grande (portada y contraportada)'), vistaLogo, editable ? entradaLogo : null))));
 }

@@ -1,5 +1,6 @@
-// Informe de trabajo en PDF (diseño heredado de InnovaGestión): portada, datos del servicio,
-// trabajo realizado, observaciones, fotos por etapa (12 por página) y contraportada.
+// Informe de trabajo en PDF (diseño de InnovaGestión): portada y contraportada en crema con franjas laterales de los
+// colores de la marca (Reportes → Diseño del informe) y el logo grande, datos del servicio, trabajo realizado,
+// observaciones, fotos por etapa (12 por página) y contraportada con teléfonos, correos, web y dirección con iconos.
 // Las fotos "sin ordenar" y los videos no van al informe.
 import { cargarJsPdf, cargarLogo, rgb, sellar } from '../../core/pdf.js';
 import { nombreEmpresa } from '../../core/empresas.js';
@@ -12,6 +13,27 @@ const GRIS = [91, 101, 118];
 const LINEA = [221, 225, 231];
 const ORDEN_ETAPAS = ['antes', 'proceso', 'despues', 'doc'];
 const COLS = 3; const FILAS = 4;
+const CREMA = [239, 236, 230]; const TINTA = [20, 17, 14]; const SUAVE = [106, 103, 95]; const AZUL = [31, 40, 176];
+const hexRgb = (h) => [1, 3, 5].map((i) => parseInt(String(h).slice(i, i + 2), 16));
+
+// Icono SVG (trazo) a PNG para jsPDF: teléfono, correo, web y ubicación (mismos de InnovaGestión)
+const ICONOS = {
+  tel: '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/>',
+  mail: '<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 6-10 7L2 6"/>',
+  web: '<circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>',
+  pin: '<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/>',
+};
+async function iconoPng(nombre, colorHex) {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="96" height="96" fill="none" stroke="${colorHex}" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${ICONOS[nombre]}</svg>`;
+  try {
+    const img = new Image();
+    img.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+    await img.decode();
+    const c = document.createElement('canvas'); c.width = 96; c.height = 96;
+    c.getContext('2d').drawImage(img, 0, 0, 96, 96);
+    return c.toDataURL('image/png');
+  } catch { return null; }
+}
 
 // Foto a JPEG en data URL con sus medidas (corrige formatos que jsPDF no lee)
 async function cargarFoto(url) {
@@ -39,6 +61,9 @@ export async function generarInforme(ctx, { parte, faenas, media, config }) {
   const W = doc.internal.pageSize.getWidth();
   const H = doc.internal.pageSize.getHeight();
   const logo = await cargarLogo(ctx.api, e.logo_url);
+  const logoGrande = (config.logo_portada ? await cargarLogo(ctx.api, config.logo_portada) : null) ?? logo;
+  const franjas = (config.franjas ?? []).filter((x) => /^#[0-9a-f]{6}$/i.test(x)).map(hexRgb);
+  const web = config.web || e.web || '';
   const cliente = parte.terceros?.razon_social || nombreTercero(parte.terceros);
   const lugar = parte.lugar || parte.ope_sitios?.nombre || '';
   const fechas = [...new Set(faenas.map((f) => f.fecha))].sort();
@@ -52,30 +77,48 @@ export async function generarInforme(ctx, { parte, faenas, media, config }) {
     return true;
   };
 
+  // Fondo crema con franjas laterales (negro con los colores de la marca, como InnovaGestión)
+  const fondoMarca = () => {
+    doc.setFillColor(...CREMA).rect(0, 0, W, H, 'F');
+    const ancho = 14.8; const colores = franjas.length ? franjas : [color];
+    const desde = 0.42; const hasta = 0.70; const paso = (hasta - desde) / colores.length;
+    [[0, 1], [W - ancho, -1]].forEach(([x0, dir]) => {
+      doc.setFillColor(...TINTA).rect(x0, 0, ancho, H, 'F');
+      colores.forEach((c, i) => {
+        const a = ancho * (desde + i * paso); const w = ancho * paso;
+        doc.setFillColor(...c).rect(dir === 1 ? x0 + a : x0 + ancho - a - w, 0, w, H, 'F');
+      });
+    });
+  };
+  const logoCentrado = (y, maxAncho, maxAlto) => {
+    if (!logoGrande) return 0;
+    const k = Math.min(maxAncho / logoGrande.ancho, maxAlto / logoGrande.alto);
+    const w = logoGrande.ancho * k; const h = logoGrande.alto * k;
+    doc.addImage(logoGrande.dataUrl, logoGrande.formato, W / 2 - w / 2, y, w, h);
+    return h;
+  };
+
   // ---------- Portada
-  doc.setFillColor(...color).rect(0, 0, W, 150, 'F');
-  if (logo) {
-    doc.setFillColor(255, 255, 255).roundedRect(W / 2 - 40, 30, 80, 44, 3, 3, 'F');
-    ponerLogo(W / 2, 34, 72, 36, true);
-  } else {
-    doc.setFont('helvetica', 'bold').setFontSize(24).setTextColor(255, 255, 255);
-    doc.text(nombreEmpresa(e), W / 2, 58, { align: 'center' });
+  fondoMarca();
+  if (web) {
+    doc.setFont('helvetica', 'bold').setFontSize(10).setTextColor(...TINTA);
+    doc.text(web.replace(/^https?:\/\//, ''), W / 2, 22, { align: 'center', charSpace: 0.6 });
   }
-  doc.setFont('helvetica', 'bold').setFontSize(26).setTextColor(255, 255, 255);
-  doc.text('INFORME DE TRABAJO', W / 2, 108, { align: 'center' });
-  doc.setFont('helvetica', 'normal').setFontSize(13);
-  doc.text(doc.splitTextToSize([cliente, lugar].filter(Boolean).join(' · '), W - 2 * M), W / 2, 120, { align: 'center' });
-  doc.setFontSize(11).setTextColor(...TEXTO);
-  doc.text(doc.splitTextToSize(textoFechas, W - 2 * M), W / 2, 172, { align: 'center' });
+  let yP = 92;
+  const hLogo = logoCentrado(yP, 80, 62);
+  if (hLogo) yP += hLogo + 14;
+  else { doc.setFont('helvetica', 'bold').setFontSize(26).setTextColor(...TINTA); doc.text(nombreEmpresa(e), W / 2, yP + 20, { align: 'center' }); yP += 36; }
+  doc.setFont('helvetica', 'bold').setFontSize(26).setTextColor(...TINTA);
+  doc.text('INFORME DE TRABAJO', W / 2, yP, { align: 'center', charSpace: 0.4 });
+  doc.setFont('helvetica', 'bold').setFontSize(11).setTextColor(...SUAVE);
+  doc.text(doc.splitTextToSize([cliente, lugar].filter(Boolean).join(' · ').toUpperCase(), W - 70), W / 2, yP + 10, { align: 'center', charSpace: 0.8 });
+  doc.setFont('helvetica', 'normal').setFontSize(9.5);
+  doc.text(doc.splitTextToSize(textoFechas, W - 70), W / 2, yP + 18, { align: 'center' });
   if (config.lema) {
-    doc.setFont('helvetica', 'italic').setFontSize(11).setTextColor(...GRIS);
-    doc.text(doc.splitTextToSize(config.lema, W - 2 * M), W / 2, H - 40, { align: 'center' });
+    doc.setFont('helvetica', 'bolditalic').setFontSize(11.5).setTextColor(...TINTA);
+    const lema = config.lema.trim();
+    doc.text(doc.splitTextToSize(/^["“]/.test(lema) ? lema : `"${lema}"`, W - 70), W / 2, H - 22, { align: 'center' });
   }
-  if (config.web) {
-    doc.setFont('helvetica', 'bold').setFontSize(10).setTextColor(...color);
-    doc.text(config.web, W / 2, H - 28, { align: 'center' });
-  }
-  doc.setFillColor(...color).rect(0, H - 12, W, 12, 'F');
 
   // ---------- Páginas interiores
   const interiores = [];
@@ -191,21 +234,32 @@ export async function generarInforme(ctx, { parte, faenas, media, config }) {
     }
   }
 
-  // ---------- Contraportada
+  // ---------- Contraportada: teléfonos, correos, web y dirección con iconos, y el logo grande
   doc.addPage();
-  doc.setFillColor(...color).rect(0, 0, W, H, 'F');
-  if (logo) {
-    doc.setFillColor(255, 255, 255).roundedRect(W / 2 - 40, 80, 80, 44, 3, 3, 'F');
-    ponerLogo(W / 2, 84, 72, 36, true);
-  } else {
-    doc.setFont('helvetica', 'bold').setFontSize(24).setTextColor(255, 255, 255);
-    doc.text(nombreEmpresa(e), W / 2, 105, { align: 'center' });
-  }
-  doc.setFont('helvetica', 'normal').setFontSize(11).setTextColor(255, 255, 255);
-  (config.contactos ?? []).forEach((c, i) => doc.text(c, W / 2, 150 + i * 7, { align: 'center' }));
-  if (config.web) {
-    doc.setFont('helvetica', 'bold').setFontSize(12);
-    doc.text(config.web, W / 2, 158 + (config.contactos?.length ?? 0) * 7, { align: 'center' });
+  fondoMarca();
+  const extra = config.contactos ?? [];
+  const esCorreo = (t) => /@/.test(t); const esTel = (t) => /^\+?[\d\s().-]{7,}$/.test(t);
+  const contactosAtras = [
+    ['tel', unicos([e.telefono, ...extra.filter(esTel)].filter(Boolean))],
+    ['mail', unicos([e.email, ...extra.filter(esCorreo)].filter(Boolean))],
+    ['web', unicos([web].filter(Boolean))],
+    ['pin', unicos([e.direccion, ...extra.filter((t) => !esCorreo(t) && !esTel(t))].filter(Boolean))],
+  ].filter(([, l]) => l.length);
+  const azul = franjas.length ? franjas[franjas.length - 1] : AZUL;
+  const azulHex = `#${azul.map((n) => n.toString(16).padStart(2, '0')).join('')}`;
+  const iconos = Object.fromEntries(await Promise.all(contactosAtras.map(async ([k]) => [k, await iconoPng(k, azulHex)])));
+  const altoGrupos = contactosAtras.reduce((t, [, l]) => t + 10 + l.length * 5.6 + 7, 0);
+  let yC = Math.max(50, (H - altoGrupos - 70) / 2);
+  contactosAtras.forEach(([k, l]) => {
+    if (iconos[k]) doc.addImage(iconos[k], 'PNG', W / 2 - 3.6, yC, 7.2, 7.2);
+    yC += 13;
+    doc.setFont('helvetica', 'bold').setFontSize(11.5).setTextColor(42, 42, 42);
+    l.forEach((t) => { doc.text(t, W / 2, yC, { align: 'center' }); yC += 5.6; });
+    yC += 7;
+  });
+  if (!logoCentrado(yC + 6, 76, 60)) {
+    doc.setFont('helvetica', 'bold').setFontSize(22).setTextColor(...TINTA);
+    doc.text(nombreEmpresa(e), W / 2, yC + 26, { align: 'center' });
   }
 
   // ---------- Pie en páginas interiores
@@ -215,6 +269,5 @@ export async function generarInforme(ctx, { parte, faenas, media, config }) {
     doc.text(`${nombreEmpresa(e)} · Informe de trabajo · ${cliente}`, M, H - 8);
     doc.text(`Página ${i + 1} de ${interiores.length}`, W - M, H - 8, { align: 'right' });
   });
-  // Portada y contraportada tienen fondo de color: ahí el sello va en blanco
-  return sellar(doc, { autor: e.razon_social, empresa: e, titulo: `Informe de trabajo · ${cliente}`, claras: [1, doc.getNumberOfPages()] });
+  return sellar(doc, { autor: e.razon_social, empresa: e, titulo: `Informe de trabajo · ${cliente}` });
 }
