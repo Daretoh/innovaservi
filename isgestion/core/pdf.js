@@ -42,14 +42,12 @@ export const contactoEmpresa = (e, { direccion = true } = {}) =>
 
 // Sello discreto de ISgestión al pie de cada página: un pequeño isotipo "IS" y "Generado con ISgestión"
 // con la fecha y hora. Va en todos los documentos de todas las empresas (07 Decisiones, 2026-10-18).
-// Con empresa, antes del sello van sus datos de contacto (dirección, teléfono, correo y web).
 // claras: números de página con fondo de color (portadas), donde el sello va en blanco.
-export function sellar(doc, { autor = '', titulo = '', claras = [], empresa = null } = {}) {
+export function sellar(doc, { autor = '', titulo = '', claras = [] } = {}) {
   doc.setProperties({ title: titulo, author: autor, creator: 'ISgestión' });
   const d = new Date(); const dos = (n) => String(n).padStart(2, '0');
   const cuando = `${dos(d.getDate())}-${dos(d.getMonth() + 1)}-${d.getFullYear()} ${dos(d.getHours())}:${dos(d.getMinutes())}`;
-  const contacto = contactoEmpresa(empresa);
-  const texto = `${contacto ? `${contacto}   ·   ` : ''}Generado con ISgestión · ${cuando}`;
+  const texto = `Generado con ISgestión · ${cuando}`;
   const W = doc.internal.pageSize.getWidth();
   const H = doc.internal.pageSize.getHeight();
   const n = doc.getNumberOfPages();

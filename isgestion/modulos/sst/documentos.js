@@ -134,7 +134,7 @@ async function nuevoDoc(ctx, titulo, subtitulo = '') {
         doc.text(`${nombreEmpresa(e)} · ${titulo}`, M, H - 8);
         doc.text(`Página ${p} de ${n}`, W - M, H - 8, { align: 'right' });
       }
-      return sellar(doc, { autor: e.razon_social, empresa: e, titulo });
+      return sellar(doc, { autor: e.razon_social, titulo });
     },
   };
   return u;

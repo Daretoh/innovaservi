@@ -12,7 +12,9 @@ const TEXTO = [28, 35, 48];
 const GRIS = [91, 101, 118];
 const LINEA = [221, 225, 231];
 const ORDEN_ETAPAS = ['antes', 'proceso', 'despues', 'doc'];
-const COLS = 3; const FILAS = 4;
+const COLS = 2; const FILAS = 6;
+const NAVY = [27, 31, 77]; const SUAVE_AZUL = [107, 115, 144];
+const rutConPuntos = (r) => { const m = /^(\d+)-?([\dkK])$/.exec(String(r ?? '').replace(/\./g, '').trim()); return m ? `${m[1].replace(/\B(?=(\d{3})+(?!\d))/g, '.')}-${m[2].toUpperCase()}` : (r ?? ''); };
 const CREMA = [239, 236, 230]; const TINTA = [20, 17, 14]; const SUAVE = [106, 103, 95]; const AZUL = [31, 40, 176];
 const hexRgb = (h) => [1, 3, 5].map((i) => parseInt(String(h).slice(i, i + 2), 16));
 
@@ -35,14 +37,19 @@ async function iconoPng(nombre, colorHex) {
   } catch { return null; }
 }
 
-// Foto a JPEG en data URL con sus medidas (corrige formatos que jsPDF no lee)
-async function cargarFoto(url) {
+// Foto a JPEG en data URL, recortada al centro con la proporción de la celda (como InnovaGestión: llena el cuadro)
+async function cargarFoto(url, proporcion = null) {
   try {
     const bmp = await createImageBitmap(await (await fetch(url)).blob());
+    let sx = 0; let sy = 0; let sw = bmp.width; let sh = bmp.height;
+    if (proporcion) {
+      if (sw / sh > proporcion) { sw = sh * proporcion; sx = (bmp.width - sw) / 2; } else { sh = sw / proporcion; sy = (bmp.height - sh) / 2; }
+    }
+    const escala = Math.min(1, 1400 / sw);
     const c = document.createElement('canvas');
-    c.width = bmp.width; c.height = bmp.height;
-    c.getContext('2d').drawImage(bmp, 0, 0);
-    return { dataUrl: c.toDataURL('image/jpeg', 0.85), ancho: bmp.width, alto: bmp.height };
+    c.width = Math.round(sw * escala); c.height = Math.round(sh * escala);
+    c.getContext('2d').drawImage(bmp, sx, sy, sw, sh, 0, 0, c.width, c.height);
+    return { dataUrl: c.toDataURL('image/jpeg', 0.85), ancho: c.width, alto: c.height };
   } catch {
     return null;
   }
@@ -90,6 +97,13 @@ export async function generarInforme(ctx, { parte, faenas, media, config }) {
       });
     });
   };
+  const centrado = (texto, y, esp = 0) => {
+    const lineas = Array.isArray(texto) ? texto : [texto];
+    lineas.forEach((t, i) => {
+      const w = doc.getTextWidth(t) + esp * Math.max(0, t.length - 1);
+      doc.text(t, W / 2 - w / 2, y + i * doc.getLineHeight() / doc.internal.scaleFactor, { charSpace: esp });
+    });
+  };
   const logoCentrado = (y, maxAncho, maxAlto) => {
     if (!logoGrande) return 0;
     const k = Math.min(maxAncho / logoGrande.ancho, maxAlto / logoGrande.alto);
@@ -102,134 +116,186 @@ export async function generarInforme(ctx, { parte, faenas, media, config }) {
   fondoMarca();
   if (web) {
     doc.setFont('helvetica', 'bold').setFontSize(10).setTextColor(...TINTA);
-    doc.text(web.replace(/^https?:\/\//, ''), W / 2, 22, { align: 'center', charSpace: 0.6 });
+    centrado(web.replace(/^https?:\/\//, ''), 22, 0.6);
   }
   let yP = 92;
   const hLogo = logoCentrado(yP, 80, 62);
   if (hLogo) yP += hLogo + 14;
   else { doc.setFont('helvetica', 'bold').setFontSize(26).setTextColor(...TINTA); doc.text(nombreEmpresa(e), W / 2, yP + 20, { align: 'center' }); yP += 36; }
   doc.setFont('helvetica', 'bold').setFontSize(26).setTextColor(...TINTA);
-  doc.text('INFORME DE TRABAJO', W / 2, yP, { align: 'center', charSpace: 0.4 });
+  centrado('INFORME DE TRABAJO', yP, 0.3);
   doc.setFont('helvetica', 'bold').setFontSize(11).setTextColor(...SUAVE);
-  doc.text(doc.splitTextToSize([cliente, lugar].filter(Boolean).join(' · ').toUpperCase(), W - 70), W / 2, yP + 10, { align: 'center', charSpace: 0.8 });
+  centrado(doc.splitTextToSize([cliente, lugar].filter(Boolean).join(' · ').toUpperCase(), W - 80), yP + 10, 0.8);
   doc.setFont('helvetica', 'normal').setFontSize(9.5);
-  doc.text(doc.splitTextToSize(textoFechas, W - 70), W / 2, yP + 18, { align: 'center' });
+  centrado(doc.splitTextToSize(textoFechas, W - 70), yP + 18);
   if (config.lema) {
     doc.setFont('helvetica', 'bolditalic').setFontSize(11.5).setTextColor(...TINTA);
     const lema = config.lema.trim();
     doc.text(doc.splitTextToSize(/^["“]/.test(lema) ? lema : `"${lema}"`, W - 70), W / 2, H - 22, { align: 'center' });
   }
 
-  // ---------- Páginas interiores
+  // ---------- Páginas interiores (diseño de InnovaGestión)
   const interiores = [];
+  const ETIQUETA = { antes: 'ESTADO INICIAL', proceso: 'EN PROCESO', despues: 'ESTADO FINAL', doc: 'REGISTRO DOCUMENTAL' };
   const nuevaPagina = () => {
     doc.addPage();
     interiores.push(doc.getNumberOfPages());
-    if (!ponerLogo(M, 8, 34, 11)) {
-      doc.setFont('helvetica', 'bold').setFontSize(11).setTextColor(...color);
-      doc.text(nombreEmpresa(e), M, 15);
-    }
-    doc.setFont('helvetica', 'normal').setFontSize(8.5).setTextColor(...GRIS);
-    doc.text(`${nombreEmpresa(e)} — Informe de trabajo`, W - M, 12, { align: 'right' });
-    doc.text(cliente, W - M, 16.5, { align: 'right' });
-    doc.setDrawColor(...color).setLineWidth(0.7).line(M, 22, W - M, 22);
-    return 30;
+    const conLogo = ponerLogo(M, 9, 12, 9);
+    const x = conLogo ? M + 15 : M;
+    doc.setFont('helvetica', 'bold').setFontSize(11).setTextColor(...NAVY);
+    const marca = nombreEmpresa(e).toUpperCase();
+    doc.text(marca, x, 15.5);
+    const anchoMarca = doc.getTextWidth(marca);
+    doc.setFont('helvetica', 'normal').setTextColor(...SUAVE_AZUL);
+    doc.text(' — Informe de Trabajo', x + anchoMarca + 0.8, 15.5);
+    doc.setDrawColor(...color).setLineWidth(0.5).line(M, 21, W - M, 21);
+    return 32;
   };
   const tituloSeccion = (texto, y) => {
-    doc.setFillColor(...color).rect(M, y - 4.5, 2, 6, 'F');
-    doc.setFont('helvetica', 'bold').setFontSize(12).setTextColor(...TEXTO);
-    doc.text(texto, M + 5, y);
-    return y + 7;
+    doc.setFont('helvetica', 'bold').setFontSize(15).setTextColor(...NAVY);
+    doc.text(texto, M, y);
+    doc.setDrawColor(...color).setLineWidth(0.5).line(M, y + 3.5, W - M, y + 3.5);
+    return y + 11;
+  };
+  // "Etiqueta: valor" con el valor en negrita; devuelve las líneas para medir el alto
+  const filaDato = (x, y, ancho, etiqueta, valor, { tam = 10.5 } = {}) => {
+    doc.setFontSize(tam);
+    if (!etiqueta) {
+      doc.setFont('helvetica', 'bold').setTextColor(...NAVY);
+      const ls = doc.splitTextToSize(String(valor), ancho); doc.text(ls, x, y); return ls.length;
+    }
+    doc.setFont('helvetica', 'normal').setTextColor(...NAVY);
+    const et = `${etiqueta}: `; const wEt = doc.getTextWidth(et);
+    doc.setFont('helvetica', 'bold');
+    if (wEt + doc.getTextWidth(String(valor)) <= ancho) {
+      doc.setFont('helvetica', 'normal').text(et, x, y);
+      doc.setFont('helvetica', 'bold').text(String(valor), x + wEt, y);
+      return 1;
+    }
+    doc.setFont('helvetica', 'normal').text(doc.splitTextToSize(et.trim(), ancho), x, y);
+    const ls = doc.setFont('helvetica', 'bold').splitTextToSize(String(valor), ancho);
+    doc.text(ls, x, y + 5.6);
+    return 1 + ls.length;
   };
 
   let y = nuevaPagina();
   y = tituloSeccion('Datos del servicio', y);
 
-  // Dos cajas: contratista y mandante
-  const anchoCaja = (W - 2 * M - 6) / 2;
-  const caja = (x, titulo, filas) => {
-    const lineas = filas.filter(([, v]) => v).flatMap(([k, v]) => doc.splitTextToSize(k ? `${k}: ${v}` : String(v), anchoCaja - 8));
-    return { x, titulo, lineas, alto: 14 + lineas.length * 4.6 };
-  };
-  const cajas = [
-    caja(M, 'CONTRATISTA', [['', e.razon_social], ['RUT', e.rut], ['Teléfono', e.telefono], ['Correo', e.email], ['Responsable', parte.responsable], ...(config.lineas ?? []).map((l) => ['', l])]),
-    caja(M + anchoCaja + 6, 'MANDANTE', [['', parte.terceros?.razon_social ?? 'Interno'], ['RUT', parte.terceros?.rut], ['Dirección', parte.ope_sitios?.direccion || parte.terceros?.direccion]]),
-  ];
-  const altoCajas = Math.max(...cajas.map((c) => c.alto));
-  for (const c of cajas) {
-    doc.setDrawColor(...LINEA).setLineWidth(0.3).roundedRect(c.x, y, anchoCaja, altoCajas, 2, 2, 'S');
-    doc.setFillColor(...color).roundedRect(c.x, y, anchoCaja, 8, 2, 2, 'F').rect(c.x, y + 4, anchoCaja, 4, 'F');
-    doc.setFont('helvetica', 'bold').setFontSize(9).setTextColor(255, 255, 255);
-    doc.text(c.titulo, c.x + 4, y + 5.5);
-    doc.setFont('helvetica', 'normal').setFontSize(9).setTextColor(...TEXTO);
-    c.lineas.forEach((l, i) => doc.text(l, c.x + 4, y + 13.5 + i * 4.6));
-  }
-  y += altoCajas + 8;
-
-  y = tituloSeccion('Detalle', y);
-  doc.autoTable({
-    startY: y,
-    body: [['Solicitado por', parte.solicitado_por || '—'], ['Fecha', textoFechas], ['Lugar', lugar || '—']],
-    margin: { left: M, right: M },
-    theme: 'grid',
-    styles: { font: 'helvetica', fontSize: 9, cellPadding: 2.2, textColor: TEXTO, lineColor: LINEA, lineWidth: 0.2 },
-    columnStyles: { 0: { cellWidth: 40, fontStyle: 'bold', fillColor: [247, 248, 250] } },
+  // Dos cajas: empresa contratista (franja del color de la empresa) y empresa mandante (azul)
+  const anchoCaja = (W - 2 * M - 7) / 2; const pad = 6; const paso = 5.6;
+  const lineasCfg = (config.lineas ?? []).map((l) => {
+    const i = l.indexOf(':');
+    return i > 0 ? [l.slice(0, i).trim(), l.slice(i + 1).trim()] : [null, l];
   });
-  y = doc.lastAutoTable.finalY + 10;
-
-  // Bloque de texto que salta de página si no cabe
-  const parrafos = (lineas, conViñeta) => {
-    doc.setFont('helvetica', 'normal').setFontSize(10).setTextColor(...TEXTO);
-    for (const t of lineas) {
-      const partes = doc.splitTextToSize(t, W - 2 * M - (conViñeta ? 6 : 0));
-      if (y + partes.length * 5 > H - 20) y = nuevaPagina();
-      if (conViñeta) { doc.setFillColor(...color).circle(M + 1.5, y - 1.3, 0.9, 'F'); }
-      doc.text(partes, M + (conViñeta ? 6 : 0), y);
-      y += partes.length * 5 + 1.5;
+  const datosContratista = [['Empresa', e.razon_social], ['RUT', rutConPuntos(e.rut)], ['Responsable faena', parte.responsable], ...lineasCfg.filter(([k]) => k)];
+  const notasContratista = lineasCfg.filter(([k]) => !k).map(([, v]) => v);
+  const t = parte.terceros;
+  const datosMandante = [['Empresa', t?.razon_social || nombreTercero(t)], ['RUT', t?.rut ? rutConPuntos(t.rut) : null], ['Dirección', parte.ope_sitios?.direccion || t?.direccion || lugar]];
+  const medir = (filas, notas) => {
+    let n = 0;
+    filas.filter(([, v]) => v).forEach(([k, v]) => {
+      doc.setFont('helvetica', 'normal').setFontSize(10.5); const wEt = doc.getTextWidth(`${k}: `);
+      doc.setFont('helvetica', 'bold');
+      n += wEt + doc.getTextWidth(String(v)) <= anchoCaja - 2 * pad ? 1 : 1 + doc.splitTextToSize(String(v), anchoCaja - 2 * pad).length;
+    });
+    doc.setFont('helvetica', 'normal').setFontSize(9.5);
+    const nn = notas.reduce((s, v) => s + doc.splitTextToSize(v, anchoCaja - 2 * pad).length, 0);
+    return 16 + n * paso + (nn ? 3 + nn * 4.6 : 0) + 4;
+  };
+  const altoCajas = Math.max(medir(datosContratista, notasContratista), medir(datosMandante, []), 40);
+  const pintarCaja = (x, titulo, acento, filas, notas) => {
+    doc.setDrawColor(...LINEA).setLineWidth(0.3).roundedRect(x, y, anchoCaja, altoCajas, 3, 3, 'S');
+    doc.setFillColor(...acento).roundedRect(x, y, anchoCaja, 3, 1.5, 1.5, 'F');
+    doc.setFillColor(255, 255, 255).rect(x + 0.2, y + 1.2, anchoCaja - 0.4, 2, 'F');
+    doc.setFont('helvetica', 'bold').setFontSize(9.5).setTextColor(...acento);
+    doc.text(titulo, x + pad, y + 11, { charSpace: 0.2 });
+    let yy = y + 18.5;
+    filas.filter(([, v]) => v).forEach(([k, v]) => { yy += filaDato(x + pad, yy, anchoCaja - 2 * pad, k, v) * paso; });
+    if (notas.length) {
+      yy += 1.5;
+      doc.setFont('helvetica', 'normal').setFontSize(9.5).setTextColor(...SUAVE_AZUL);
+      notas.forEach((v) => { const ls = doc.splitTextToSize(v, anchoCaja - 2 * pad); doc.text(ls, x + pad, yy); yy += ls.length * 4.6; });
     }
   };
+  pintarCaja(M, 'EMPRESA CONTRATISTA', color, datosContratista, notasContratista);
+  pintarCaja(M + anchoCaja + 7, 'EMPRESA MANDANTE', NAVY, datosMandante, []);
+  y += altoCajas + 14;
 
-  const trabajos = unicos([...faenas.map((f) => f.ope_faenas?.titulo ?? ''), ...(parte.trabajo ?? '').split('\n')]);
-  if (y > H - 50) y = nuevaPagina();
-  y = tituloSeccion('Trabajo realizado', y);
-  parrafos(trabajos.length ? trabajos : ['—'], true);
-  y += 5;
-  if (parte.observaciones) {
-    if (y > H - 40) y = nuevaPagina();
-    y = tituloSeccion('Observaciones', y);
-    parrafos(parte.observaciones.split('\n').filter((t) => t.trim()), false);
+  // Detalle del trabajo: solicitado por, fecha y lugar en tres columnas
+  y = tituloSeccion('Detalle del trabajo realizado', y);
+  const col = (W - 2 * M) / 3;
+  [['SOLICITADO POR', parte.solicitado_por || '—'], ['FECHA FAENA', textoFechas], ['LUGAR', lugar || '—']].forEach(([k, v], i) => {
+    const x = M + i * col;
+    doc.setFont('helvetica', 'bold').setFontSize(8.5).setTextColor(...SUAVE_AZUL).text(k, x, y, { charSpace: 0.15 });
+    doc.setFont('helvetica', 'bold').setFontSize(11.5).setTextColor(...NAVY);
+    const ls = doc.splitTextToSize(String(v), col - 4); doc.text(ls, x, y + 6.5);
+    doc.setDrawColor(...LINEA).setLineDashPattern([0.8, 0.8], 0).setLineWidth(0.3).line(x, y + 8.5 + (ls.length - 1) * 5, x + Math.min(col - 4, doc.getTextWidth(ls[0])), y + 8.5 + (ls.length - 1) * 5);
+    doc.setLineDashPattern([], 0);
+  });
+  y += 17;
+
+  // Trabajo realizado (caja con viñetas)
+  const trabajos = unicos([...faenas.map((f) => f.ope_faenas?.titulo ?? ''), ...(parte.trabajo ?? '').split('\n').map((s) => s.replace(/^[-•\s]+/, ''))]);
+  doc.setFont('helvetica', 'normal').setFontSize(10.5);
+  const itemLs = (trabajos.length ? trabajos : ['—']).map((tx) => doc.splitTextToSize(tx, W - 2 * M - 2 * pad - 5));
+  const altoTrabajo = 16 + itemLs.reduce((s, ls) => s + ls.length * 5, 0) + 4;
+  if (y + altoTrabajo > H - 25) y = nuevaPagina();
+  doc.setDrawColor(...LINEA).setLineWidth(0.3).roundedRect(M, y, W - 2 * M, altoTrabajo, 3, 3, 'S');
+  doc.setFont('helvetica', 'bold').setFontSize(11.5).setTextColor(...NAVY).text('Trabajo realizado', M + pad, y + 9);
+  let yt = y + 16;
+  doc.setFont('helvetica', 'normal').setFontSize(10.5);
+  itemLs.forEach((ls) => { doc.setFillColor(...NAVY).circle(M + pad + 1, yt - 1.3, 0.8, 'F'); doc.text(ls, M + pad + 4, yt); yt += ls.length * 5; });
+  y += altoTrabajo + 6;
+
+  // Observaciones (fondo suave con visto verde)
+  if (parte.observaciones?.trim()) {
+    doc.setFont('helvetica', 'normal').setFontSize(10.5);
+    const obs = doc.splitTextToSize(parte.observaciones.trim(), W - 2 * M - 30);
+    const altoObs = Math.max(22, 13 + obs.length * 5 + 4);
+    if (y + altoObs > H - 25) y = nuevaPagina();
+    doc.setFillColor(243, 244, 250).setDrawColor(...LINEA).roundedRect(M, y, W - 2 * M, altoObs, 3, 3, 'FD');
+    doc.setFillColor(34, 160, 107).circle(M + 11, y + altoObs / 2, 5, 'F');
+    doc.setDrawColor(255, 255, 255).setLineWidth(0.9).lines([[1.6, 1.8], [3.2, -4]], M + 8.6, y + altoObs / 2 + 0.2);
+    doc.setFont('helvetica', 'bold').setFontSize(11).setTextColor(...NAVY).text('Observaciones:', M + 21, y + 9);
+    doc.setFont('helvetica', 'normal').setFontSize(10.5).text(obs, M + 21, y + 15);
+    y += altoObs + 6;
   }
 
-  // ---------- Registro fotográfico: por etapa y, si hay varias faenas, por faena
+  // ---------- Registro fotográfico: por etapa (y por faena si hay varias), 2 columnas × 6 filas por página
   const fotos = media.filter((m) => m.tipo === 'foto' && ORDEN_ETAPAS.includes(m.etapa));
   const urls = await urlsFirmadas(ctx.api, fotos.map((m) => m.ruta));
-  const cargadas = new Map(await Promise.all(fotos.map(async (m) => [m.id, await cargarFoto(urls.get(m.ruta))])));
+  const anchoCelda = (W - 2 * M - 5) / COLS;
+  const altoCelda = (H - 58 - 22 - (FILAS - 1) * 4) / FILAS;
+  const cargadas = new Map(await Promise.all(fotos.map(async (m) => [m.id, await cargarFoto(urls.get(m.ruta), anchoCelda / altoCelda)])));
   const distintas = faenasDistintas(faenas);
   const varias = distintas.length > 1;
   const grupos = [];
   for (const etapa of ORDEN_ETAPAS) {
     const deEtapa = fotos.filter((m) => m.etapa === etapa && cargadas.get(m.id));
     if (!deEtapa.length) continue;
-    if (!varias) { grupos.push({ titulo: nombreEtapa[etapa], fotos: deEtapa }); continue; }
+    if (!varias) { grupos.push({ etapa, faena: null, fotos: deEtapa }); continue; }
     for (const f of [...distintas, { faena_id: null }]) {
       const deFaena = deEtapa.filter((m) => (m.faena_id ?? null) === f.faena_id);
-      if (deFaena.length) grupos.push({ titulo: `${nombreEtapa[etapa]} · ${f.faena_id ? f.ope_faenas?.titulo : 'General'}`, fotos: deFaena });
+      if (deFaena.length) grupos.push({ etapa, faena: f.faena_id ? f.ope_faenas?.titulo : 'General', fotos: deFaena });
     }
   }
-  const anchoCelda = (W - 2 * M - (COLS - 1) * 4) / COLS;
-  const altoCelda = (H - 30 - 10 - 20 - (FILAS - 1) * 4) / FILAS;
   for (const g of grupos) {
-    for (let i = 0; i < g.fotos.length; i += COLS * FILAS) {
+    const total = Math.ceil(g.fotos.length / (COLS * FILAS));
+    for (let i = 0, n = 1; i < g.fotos.length; i += COLS * FILAS, n += 1) {
       y = nuevaPagina();
-      y = tituloSeccion(`Registro fotográfico — ${g.titulo}${i ? ' (continuación)' : ''}`, y);
+      y = tituloSeccion(`Registro fotográfico${g.faena ? ` — ${g.faena}` : ''}`, y);
+      const chip = `${ETIQUETA[g.etapa] ?? nombreEtapa[g.etapa].toUpperCase()}${total > 1 ? ` ${n}-${total}` : ''}`;
+      doc.setFont('helvetica', 'bold').setFontSize(10);
+      const wChip = doc.getTextWidth(chip) + 10;
+      doc.setFillColor(...color).roundedRect(M, y, wChip, 7.5, 2, 2, 'F');
+      doc.setTextColor(255, 255, 255).text(chip, M + 5, y + 5.2, { charSpace: 0.3 });
+      y += 12;
       g.fotos.slice(i, i + COLS * FILAS).forEach((m, j) => {
         const foto = cargadas.get(m.id);
-        const x0 = M + (j % COLS) * (anchoCelda + 4);
+        const x0 = M + (j % COLS) * (anchoCelda + 5);
         const y0 = y + Math.floor(j / COLS) * (altoCelda + 4);
-        doc.setFillColor(247, 248, 250).rect(x0, y0, anchoCelda, altoCelda, 'F');
-        const k = Math.min(anchoCelda / foto.ancho, altoCelda / foto.alto);
-        const w = foto.ancho * k; const h = foto.alto * k;
-        doc.addImage(foto.dataUrl, 'JPEG', x0 + (anchoCelda - w) / 2, y0 + (altoCelda - h) / 2, w, h);
+        doc.addImage(foto.dataUrl, 'JPEG', x0, y0, anchoCelda, altoCelda);
+        doc.setDrawColor(...LINEA).setLineWidth(0.4).roundedRect(x0, y0, anchoCelda, altoCelda, 1.5, 1.5, 'S');
       });
     }
   }
@@ -262,12 +328,13 @@ export async function generarInforme(ctx, { parte, faenas, media, config }) {
     doc.text(nombreEmpresa(e), W / 2, yC + 26, { align: 'center' });
   }
 
-  // ---------- Pie en páginas interiores
+  // ---------- Pie en páginas interiores (como InnovaGestión: empresa · web a la izquierda, fecha y página a la derecha)
   interiores.forEach((p, i) => {
     doc.setPage(p);
-    doc.setFont('helvetica', 'normal').setFontSize(7.5).setTextColor(...GRIS);
-    doc.text(`${nombreEmpresa(e)} · Informe de trabajo · ${cliente}`, M, H - 8);
-    doc.text(`Página ${i + 1} de ${interiores.length}`, W - M, H - 8, { align: 'right' });
+    doc.setDrawColor(230, 227, 220).setLineWidth(0.3).line(M, H - 12.5, W - M, H - 12.5);
+    doc.setFont('helvetica', 'bold').setFontSize(7.5).setTextColor(154, 150, 142);
+    doc.text([nombreEmpresa(e), web.replace(/^https?:\/\//, '').replace(/^www\./, '')].filter(Boolean).join(' · '), M, H - 9);
+    doc.text(`${fechaLarga(fechas[0] ?? parte.fecha)} · Pág. ${i + 1} de ${interiores.length}`, W - M, H - 9, { align: 'right' });
   });
-  return sellar(doc, { autor: e.razon_social, empresa: e, titulo: `Informe de trabajo · ${cliente}` });
+  return sellar(doc, { autor: e.razon_social, titulo: `Informe de trabajo · ${cliente}` });
 }

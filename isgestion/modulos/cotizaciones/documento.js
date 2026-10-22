@@ -132,5 +132,5 @@ export async function pdfCotizacion(ctx, c) {
     if (pie) doc.text(pie, W / 2, H - 9.5, { align: 'center' });
     if (n > 1) doc.text(`Página ${p} de ${n}`, W - M, H - 9.5, { align: 'right' });
   }
-  return sellar(doc, { autor: e.razon_social, empresa: e, titulo: `Cotización N° ${numeroTexto(c.numero)}` });
+  return sellar(doc, { autor: e.razon_social, titulo: `Cotización N° ${numeroTexto(c.numero)}` });
 }
