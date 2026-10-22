@@ -5,6 +5,7 @@ import { boton } from '../../../core/ui/tabla.js';
 import { abrirFormulario } from '../../../core/ui/modal.js';
 import { avisar } from '../../../core/ui/aviso.js';
 import { cargarBase } from '../datos.js';
+import { fichaTercero } from '../../terceros/formulario.js';
 
 export default async function vista(ctx) {
   const base = await cargarBase(ctx);
@@ -27,7 +28,9 @@ export default async function vista(ctx) {
       el('div', { class: 'listado-cabecera' },
         el('div', { class: 'caja-enlace-titulo' }, color, el('h2', {}, c.nombre)),
         pide ? el('label', { class: 'casilla', title: 'Sus faenas sin parte se avisan en Partes de trabajo y Planificación' }, pide, 'Pide informe de trabajo') : null,
-        editable ? boton('Agregar sitio', { icono: 'mas', onclick: () => sitio(ctx, c, null) }) : null),
+        el('div', { class: 'listado-acciones' },
+          ctx.puede('terceros', 'editar') ? boton('Datos del cliente', { icono: 'editar', onclick: () => editarCliente(ctx, c) }) : null,
+          editable ? boton('Agregar sitio', { icono: 'mas', onclick: () => sitio(ctx, c, null) }) : null)),
       sitios.length
         ? sitios.map((s) => el('div', { class: 'doc-fila' },
             el('div', { class: 'doc-nombre' }, el('strong', {}, s.nombre), s.direccion ? el('span', { class: 'texto-suave' }, s.direccion) : null,
@@ -52,6 +55,13 @@ async function guardarCliente(ctx, c, datos) {
   if (error) { avisar(error.message, 'error'); return false; }
   Object.assign(c, datos.pide_informe === undefined ? {} : { pideInforme: datos.pide_informe });
   return true;
+}
+
+// Razón social, RUT, dirección, etc. (maestro de Clientes y proveedores)
+async function editarCliente(ctx, c) {
+  const { data, error } = await ctx.api.from('terceros').select('id, rut, razon_social, nombre_fantasia, giro, direccion, tipo, contacto, email, telefono').eq('id', c.id).single();
+  if (error) { avisar(error.message, 'error'); return; }
+  fichaTercero(ctx, data);
 }
 
 function sitio(ctx, c, s) {
