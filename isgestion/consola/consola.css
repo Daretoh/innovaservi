@@ -1,0 +1,27 @@
+/* Consola de la plataforma: tema Moderno con acento azul ISgestión */
+.consola-etiqueta {
+  padding: 2px 10px; border-radius: 999px; font-size: .72rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--empresa); background: color-mix(in srgb, var(--empresa) 12%, transparent);
+}
+.con-estado-piloto { color: var(--prox); background: var(--prox-fondo); }
+.con-estado-activo { color: var(--ok); background: var(--ok-fondo); }
+.con-estado-suspendido { color: var(--venc); background: var(--venc-fondo); }
+.con-estado-baja { color: var(--texto-suave); background: var(--pend-fondo); }
+.con-matriz th:first-child, .con-matriz td:first-child { position: sticky; left: 0; background: var(--superficie); z-index: 1; }
+.con-matriz td { text-align: center; }
+.con-matriz th.vertical { writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap; padding: 10px 6px; text-align: left; }
+.con-matriz input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
+.con-cifra { font-size: 1.4rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.con-col-empresa { display: flex; align-items: center; gap: 8px; text-transform: none; letter-spacing: 0; font-size: .85rem; color: var(--texto); }
+.con-col-empresa > span:nth-child(2) { display: grid; text-align: left; }
+.con-grupo td { background: var(--fondo-sutil); font-size: .7rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--texto-suave); text-align: left !important; }
+.con-matriz td:first-child { text-align: left; }
+.con-matriz .resaltada { background: color-mix(in srgb, var(--empresa) 7%, var(--superficie)); }
+.con-uf { display: flex; align-items: center; gap: 8px; }
+.con-uf .campo { width: 130px; }
+.fin-tarjeta .boton { align-self: flex-start; margin-top: 8px; }
+
+/* Pantallas por empresa (Empresas y módulos) */
+.con-celda { display: flex; align-items: center; gap: 6px; }
+.con-pantallas { font-size: .78rem; padding: 2px 6px; }
+.con-pantallas-parcial { background: color-mix(in srgb, var(--empresa) 12%, transparent); font-weight: 600; }

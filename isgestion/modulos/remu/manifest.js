@@ -1,0 +1,23 @@
+export default {
+  id: 'remu',
+  nombre: 'Remuneraciones',
+  version: '1.0.0',
+  icono: 'dinero',
+  categoria: 'Personas',
+  depende: ['nucleo', 'personas', 'asistencia'],
+  rubros: ['todos'],
+  acciones: ['ver', 'crear', 'editar', 'eliminar', 'exportar'],
+  menu: [
+    { id: 'remu.semana', label: 'Pago semanal', vista: () => import('./vistas/semana.js') },
+    { id: 'remu.detalle', label: 'Detalle de pago', oculto: true, compartida: true, padre: 'remu.semana', vista: () => import('./vistas/detalle.js') },
+    { id: 'remu.dia', label: 'Detalle del día', oculto: true, compartida: true, padre: 'remu.semana', vista: () => import('./vistas/dia.js') },
+    { id: 'remu.pagomes', label: 'Pago mensual', vista: () => import('./vistas/pagomes.js') },
+    { id: 'remu.mes', label: 'Resumen mensual', pestana: 'Resumen', vista: () => import('./vistas/mes.js') },
+    { id: 'remu.costos', label: 'Costos de mano de obra', pestana: 'Mano de obra', icono: 'grafico', vista: () => import('./vistas/costos.js') },
+    { id: 'remu.condiciones', ajustes: true, label: 'Condiciones de pago', pestana: 'Condiciones', vista: () => import('./vistas/condiciones.js') },
+    { id: 'remu.cargos', ajustes: true, label: 'Cargos y tratos', vista: () => import('./vistas/cargos.js') },
+    { id: 'remu.config', ajustes: true, label: 'Parámetros y feriados', pestana: 'Parámetros', vista: () => import('./vistas/config.js') },
+  ],
+  config: {},
+  migraciones: ['db/001_remu.sql', 'db/002_mensual.sql', 'db/003_contable.sql', 'db/004_aguinaldo_anticipo.sql', 'db/005_tope_bono.sql'],
+};

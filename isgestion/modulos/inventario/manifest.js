@@ -1,0 +1,21 @@
+export default {
+  id: 'inventario',
+  nombre: 'Inventario',
+  version: '1.1.0',
+  icono: 'caja',
+  categoria: 'Recursos',
+  depende: ['nucleo', 'terceros'],
+  rubros: ['todos'],
+  acciones: ['ver', 'crear', 'editar', 'eliminar', 'exportar'],
+  menu: [
+    { id: 'inventario.stock', label: 'Stock', vista: () => import('./vistas/stock.js') },
+    { id: 'inventario.producto', label: 'Producto', oculto: true, padre: 'inventario.stock', vista: () => import('./vistas/producto.js') },
+    { id: 'inventario.movimientos', label: 'Movimientos', vista: () => import('./vistas/documentos.js') },
+    { id: 'inventario.documento', label: 'Documento', oculto: true, padre: 'inventario.movimientos', vista: () => import('./vistas/documento.js') },
+    { id: 'inventario.conteo', label: 'Conteo físico', pestana: 'Conteo', vista: () => import('./vistas/conteo.js') },
+    { id: 'inventario.solicitudes', label: 'Solicitudes de pedido', pestana: 'Solicitudes', vista: () => import('./vistas/solicitudes.js') },
+    { id: 'inventario.config', ajustes: true, label: 'Almacenes y tipos', pestana: 'Almacenes', vista: () => import('./vistas/config.js') },
+  ],
+  config: {},
+  migraciones: ['db/001_inventario.sql'],
+};

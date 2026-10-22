@@ -1,0 +1,22 @@
+.cl-dato { margin: 2px 0; }
+.cl-progreso { height: 10px; border-radius: 999px; background: #e6e9ee; overflow: hidden; }
+.cl-progreso span { display: block; height: 100%; background: var(--ok); transition: width .2s; }
+.cl-item { display: flex; align-items: center; gap: 12px; padding: 12px 4px; border-top: 1px solid var(--borde); cursor: pointer; font-size: 1rem; }
+.cl-item input { width: 26px; height: 26px; accent-color: var(--ok); flex: none; }
+.cl-item.listo .cl-texto { text-decoration: line-through; color: var(--texto-suave); }
+.cl-texto { flex: 1; }
+.cl-cant { font-weight: 600; color: var(--texto-suave); }
+.cl-quien { display: block; font-size: .8rem; color: var(--texto-suave); text-decoration: none; }
+.cl-fotos { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
+.cl-fotos img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 8px; border: 1px solid var(--borde); }
+.cl-subir { width: 100%; justify-content: center; padding: 12px; }
+.cl-etapas { display: flex; flex-wrap: wrap; margin-bottom: 10px; }
+.cl-etapas button { flex: 1 1 40%; padding: 10px 8px; }
+.cl-etapa-titulo { font-size: .9rem; margin: 10px 0 6px; }
+/* Botón para subir fotos siempre a mano en el celular */
+.cl-subir { position: sticky; bottom: 12px; z-index: 2; box-shadow: 0 6px 18px rgba(26, 31, 110, .25); }
+.cl-progreso { height: 12px; background: #eef1f9; }
+.cl-progreso span { border-radius: 999px; transition: width 500ms ease-out; }
+.cl-item { border-radius: 10px; padding: 14px 6px; transition: background 160ms; }
+.cl-item:active { background: #f5f6fb; }
+.cl-fotos img { border-radius: 10px; }
