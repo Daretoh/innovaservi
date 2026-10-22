@@ -478,6 +478,9 @@
   .dgp-n{margin-right:auto;font-size:.8rem;color:var(--muted);align-self:center;}
   .iper-pc{display:block;font:800 9.5px var(--font);color:#3a4260;margin-bottom:2px;} .mr-res{margin-bottom:4px;}
   .ries-g td{background:#eef1f9 !important;color:#1b1f4d;font:800 10.5px var(--font);text-transform:uppercase;letter-spacing:.04em;}
+  .ed-vinfo{display:block;margin-top:4px;font-size:.78rem;color:var(--muted);line-height:1.4;} .ed-vinfo b{color:var(--orange-2);font-weight:800;}
+  .ed-vdesc{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;color:var(--body);margin-top:2px;}
+  .ed-vtag{display:inline-block;margin-left:6px;font:800 10px var(--font);padding:1px 7px;border-radius:999px;vertical-align:1px;} .ed-vtag.vig{background:#e7f6ee;color:#16794a;} .ed-vtag.ant{background:#fff1e4;color:#c2410c;} .ed-vtag.otro{margin-left:0;background:var(--chip);color:var(--muted);}
   .mr-chip{display:inline-block;font:800 9.5px var(--font);padding:2px 6px;border-radius:999px;border:1px solid;white-space:nowrap;}
   .mr-res{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 8px;}
   .iper td,.prg td{font-size:10.5px;vertical-align:top;} .iper th,.prg th{font-size:10px;} .iper td.c{text-align:center;vertical-align:middle;} .iper td.n,.prg td.n{width:20px;}
@@ -8071,6 +8074,17 @@
       if(ult){ o.fecha=ult[2]; o.desc=ult[3].replace(/<[^>]+>/g,'').trim(); } }
     if(!o.fecha){ var fh=/Fecha <b>([^<]+)<\/b>/.exec(html||''); if(fh && fh[1]!==fFaena(todayISO())) o.fecha=fh[1]; }
     return o; }
+  var EMP_VFILAS={}, EMP_PDFVER={};
+  function empVerFilas(tipo){ if(tipo in EMP_VFILAS) return EMP_VFILAS[tipo]; var html=null, o={};
+    try{ if(typeof PTS_DOC!=='undefined'&&PTS_DOC[tipo]) html=docPTSDoc(tipo); else if(typeof EMP_GEN!=='undefined'&&EMP_GEN[tipo]) html=EMP_GEN[tipo].build(); else if(tipo==='pts_funciones') html=docPTSFunciones('oper'); }catch(_){}
+    if(html){ var i=String(html).search(/Control de cambios/i); if(i>=0){ var re=/<tr><td>([^<]*)<\/td><td>([^<]*)<\/td><td>([\s\S]*?)<\/td><\/tr>/g, r, s=String(html).slice(i); while((r=re.exec(s))) o[r[1].trim()]=[r[2], r[3].replace(/<[^>]+>/g,'').trim()]; } }
+    return (EMP_VFILAS[tipo]=o); }
+  // Versión de un PDF guardado: de la nota ("v02") o, si no está, leyendo la primera página del PDF.
+  function versionGuardada(d){ var m=/\bv(\d+)\b/.exec(d.nota||''); if(m) return Promise.resolve(m[1]);
+    if(!d.url || !/\.pdf(\?|$)/i.test(d.url)) return Promise.resolve(null);
+    if(d.url in EMP_PDFVER) return Promise.resolve(EMP_PDFVER[d.url]);
+    return abrirPdfJs(d.url).then(function(p){ return p.getPage(1); }).then(function(pg){ return pg.getTextContent(); }).then(function(tc){
+      var t=tc.items.map(function(x){ return x.str; }).join(' '), r=/Versi[oó]n\s*(\d{1,2})\b/i.exec(t); return (EMP_PDFVER[d.url]=r?(r[1].length<2?'0'+r[1]:r[1]):null); }, function(){ return (EMP_PDFVER[d.url]=null); }); }
   function empVer(tipo){ if(tipo in EMP_VER) return EMP_VER[tipo]; var html=null;
     try{ if(typeof PTS_DOC!=='undefined'&&PTS_DOC[tipo]) html=docPTSDoc(tipo); else if(typeof EMP_GEN!=='undefined'&&EMP_GEN[tipo]) html=EMP_GEN[tipo].build(); else if(tipo==='pts_funciones') html=docPTSFunciones('oper'); }catch(_){ html=null; }
     return (EMP_VER[tipo]=html?verDeHtml(html):null); }
@@ -8094,9 +8108,8 @@
       var V=gen?empVer(tipo):null, verL='';
       if(V){ var gv=u&&/\bv(\d+)\b/.exec(u.nota||''), fv=fechaVerIso(V.fecha), gf=u?(u.fecha||String(u.created_at||'').slice(0,10)):null;
         var atras=u&&!multi&&(gv?(+gv[1]<+V.ver):(fv&&gf&&gf<fv));
-        if(u&&!multi&&gv) sub+=' · guardada v'+gv[1];
         if(atras) chip='<span class="dchip prox" title="Lo guardado es anterior a la versión '+V.ver+'. Genera el documento y guárdalo.">Por actualizar</span>';
-        verL='<span class="emp-ver" title="'+enc(V.desc)+'"><b>Versión '+V.ver+(V.fecha?' · '+esc(V.fecha):'')+'</b>'+(V.desc?' — '+esc(V.desc):'')+'</span>'; }
+      }
       return '<div class="emp-row" data-tipo="'+enc(tipo)+'" data-nom="'+enc(nombre)+'" data-v="'+(vence?1:0)+'">'+(minis?'<div class="emp-minis">'+minis+'</div>':'')+'<div class="en"><b>'+esc(nombre)+'</b><span>'+esc(sub)+'</span>'+verL+'</div>'+chip+
         ((u&&u.url&&!multi)?'<a href="'+esc(u.url)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:var(--orange-2);font-weight:700;font-size:.8rem">descargar</a>':'')+gen+'</div>'; }
     function propios(k){ var vistos={}, out=[]; EMP_D.forEach(function(d){ if(conocidos[d.tipo]||vistos[d.tipo]) return; if((d.carpeta||'otros')!==k) return; vistos[d.tipo]=1; out.push([d.tipo, d.nombre||d.tipo, false]); }); return out; }
@@ -8373,7 +8386,7 @@
     var docs=E.todos.map(function(d){ var f=fechaCorta(d.fecha||String(d.created_at||'').slice(0,10));
       return '<div class="ed-doc"><div class="ed-th" data-mini="'+esc(d.url||'')+'" data-url="'+esc(d.url||'')+'" data-t="'+enc(d.titular||nombre||'')+'" title="Ver"></div>'+
         '<div class="ed-inf"><input class="ed-tit" data-id="'+d.id+'" value="'+enc(d.titular||'')+'" placeholder="'+(multi?'¿A quién corresponde? (ej: Empresa, socio…)':'Nombre o detalle (opcional)')+'">'+
-        '<span class="note" style="margin:2px 0 0">'+esc(f)+(d.vencimiento?' · vence '+esc(fechaCorta(d.vencimiento)):'')+(d.nota?' · '+esc(d.nota):'')+'</span>'+
+        '<span class="note" style="margin:2px 0 0">'+esc(f)+(d.vencimiento?' · vence '+esc(fechaCorta(d.vencimiento)):'')+(d.nota&&!/^v\d+$/.test(d.nota)?' · '+esc(d.nota.replace(/ · v\d+$/,'')):'')+'</span>'+(!multi&&tipo?'<span class="ed-vinfo" data-id="'+d.id+'"></span>':'')+
         '<div class="ed-acc">'+(d.url?'<button type="button" class="ed-ver" data-url="'+esc(d.url)+'" data-t="'+enc(d.titular||nombre||'')+'">Ver</button><a href="'+esc(d.url)+'" target="_blank" rel="noopener">Descargar</a>':'')+'<button type="button" class="ed-del" data-id="'+d.id+'">Eliminar</button></div></div></div>'; }).join('');
     $('re-body').innerHTML='<div class="card">'+
       (docs?'<div class="rd-grp" style="margin-top:0">'+(multi?'Documentos ('+E.n+')':'Versiones · la más reciente es la vigente')+'</div><div class="ed-docs">'+docs+'</div><div class="rd-grp">'+(multi?'Agregar otro':'Subir nueva versión')+'</div>':'')+
@@ -8385,6 +8398,14 @@
       '<button id="ed-save" class="btn" style="width:100%;margin-top:8px">'+svgI(ICO.save)+'Guardar</button>'+
     '</div>';
     pintarMinis($('re-body'));
+    if(!multi && tipo && (typeof PTS_DOC!=='undefined'&&PTS_DOC[tipo] || typeof EMP_GEN!=='undefined'&&EMP_GEN[tipo] || tipo==='pts_funciones')){
+      var VF=empVerFilas(tipo), vig=(empVer(tipo)||{}).ver;
+      E.todos.forEach(function(d){ var sp=$('re-body').querySelector('.ed-vinfo[data-id="'+d.id+'"]'); if(!sp) return; sp.textContent='Leyendo versión…';
+        versionGuardada(d).then(function(v){ if(!sp.isConnected) return;
+          if(!v){ sp.innerHTML='<span class="ed-vtag otro">Versión no indicada</span>'; return; }
+          var row=VF[v], est=vig&&v===vig?'<span class="ed-vtag vig">Vigente</span>':(vig&&+v<+vig?'<span class="ed-vtag ant">Anterior</span>':'');
+          sp.innerHTML='<b>Versión '+esc(v)+(row&&row[0]?' · '+esc(row[0]):'')+'</b>'+est+(row&&row[1]?'<span class="ed-vdesc">'+esc(row[1])+'</span>':'');
+          if(sb && !/\bv\d+\b/.test(d.nota||'')){ var nn=(d.nota?d.nota+' · ':'')+'v'+v; sb.from('empresa_docs').update({nota:nn}).eq('id',d.id).then(function(r){ if(!(r&&r.error)){ d.nota=nn; pintarEmp(); } }); } }); }); }
     // sin nombre todavía: se sugiere desde el documento (e-RUT → usuario autorizado) y se guarda; se puede editar
     if(multi && sb) E.todos.forEach(function(d){ if(d.titular||!d.url) return; sugerirTitular(d.url).then(function(t){ if(!t) return;
       var inp=$('re-body').querySelector('.ed-tit[data-id="'+d.id+'"]'); if(inp&&!inp.value){ inp.value=t; }
