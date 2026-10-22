@@ -1555,3 +1555,38 @@ html[data-modo="oscuro"] img { color-scheme: light; }
 
 /* Mensaje del modal: respeta los saltos de línea */
 .modal-mensaje { white-space: pre-line; }
+
+/* Taller: Seguimiento (resumen con arrastre y detalle a pantalla completa) */
+.seg-resumen summary { cursor: pointer; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.seg-resumen .fin-tarjetas { margin: 12px 0 8px; }
+.seg-lista { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
+.seg-fila { display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto minmax(60px, 160px) 40px; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; background: var(--fondo-sutil); }
+.seg-fila.arrastrando { opacity: .5; outline: 2px dashed var(--empresa); }
+.seg-asa { cursor: grab; color: var(--texto-suave); display: inline-flex; touch-action: none; }
+.seg-punto { width: 10px; height: 10px; border-radius: 50%; }
+.seg-nombre { background: none; border: 0; padding: 0; text-align: left; color: inherit; font: inherit; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.seg-nombre i { font-style: normal; color: var(--texto-suave); font-size: 12px; }
+.seg-cron { font-variant-numeric: tabular-nums; font-size: 13px; color: var(--texto-suave); }
+.seg-barra { display: block; height: 6px; border-radius: 6px; background: var(--fondo-hundido); overflow: hidden; }
+.seg-barra i { display: block; height: 100%; border-radius: 6px; background: var(--empresa); transition: width 400ms ease-out; }
+.seg-pct { font-size: 12px; font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
+.seg-prio-urgente strong { color: var(--venc); } .seg-prio-prioridad strong { color: var(--prox); }
+.seg-modal { position: fixed; inset: 0; z-index: 900; background: rgb(0 0 0 / .45); display: flex; align-items: stretch; justify-content: center; padding: 16px; }
+.seg-caja { background: var(--superficie); color: var(--texto); border-radius: 14px; width: min(900px, 100%); overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 14px; }
+.seg-cab { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+.seg-cab h2 { margin: 0; font-size: 26px; }
+.seg-reloj { display: flex; flex-direction: column; align-items: center; padding: 16px; border-radius: 12px; background: var(--fondo-sutil); }
+.seg-reloj-grande { font-size: clamp(40px, 9vw, 72px); font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.seg-avance { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 10px; }
+.seg-avance .seg-barra { height: 12px; }
+.seg-caja h3 { margin: 4px 0 0; font-size: 16px; }
+.seg-tareas { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px; }
+.seg-tarea { display: flex; gap: 10px; align-items: center; padding: 12px; border-radius: 10px; background: var(--fondo-sutil); font-size: 16px; cursor: pointer; }
+.seg-tarea input { width: 22px; height: 22px; accent-color: var(--empresa); }
+.seg-acciones { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-top: auto; padding-top: 8px; }
+.seg-acciones .boton { min-height: 48px; font-size: 16px; }
+@media (max-width: 640px) {
+  .seg-fila { grid-template-columns: auto auto minmax(0, 1fr) 40px; }
+  .seg-fila .seg-cron, .seg-fila .seg-barra { display: none; }
+  .seg-modal { padding: 0; } .seg-caja { border-radius: 0; }
+}

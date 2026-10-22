@@ -22,5 +22,5 @@ export default {
     // VB del jefe de taller (flujo comercial y taller): el operador llega hasta Terminado; Entregado solo con VB y PIN
     vb_entrega: { tipo: 'bool', etiqueta: 'Entregar solo con VB del jefe de taller (permiso aprobar y PIN)', default: false },
   },
-  migraciones: ['db/001_taller.sql', 'db/002_vb.sql', 'db/003_clientes.sql'],
+  migraciones: ['db/001_taller.sql', 'db/002_vb.sql', 'db/003_clientes.sql', 'db/004_prioridad_manual.sql'],
 };

@@ -1,6 +1,7 @@
 // Tablero del taller: órdenes por estado (agendado → en espera → en proceso → terminado → entregado).
 // Toda la tarjeta abre la orden; buscador por patente, vehículo o cliente; la tarjeta recién movida queda
-// resaltada; se actualiza solo cada 2 minutos (pensado para la tablet del taller).
+// resaltada; se actualiza solo cada 2 minutos (pensado para la tablet del taller). Arriba, el resumen del Seguimiento
+// del OS (avance y arrastrar para priorizar); el botón de pantalla completa abre el detalle para la tablet.
 import { el } from '../../../core/ui/dom.js';
 import { icono } from '../../../core/ui/iconos.js';
 import { boton } from '../../../core/ui/tabla.js';
@@ -8,8 +9,8 @@ import { fechaCorta, hhmm, hoyISO } from '../../../core/ui/formato.js';
 import { ESTADOS, PRIORIDADES, CHIP_PRIORIDAD, SELECT_ORDEN, verPatente, nombreVehiculo, nombreTercero, minutosTrabajo, textoMinutos, hora, cargarTrabajadores } from '../datos.js';
 import { mover } from '../acciones.js';
 import { recepcion } from '../recepcion.js';
+import { avance, ordenarActivos, marcaCotizar, resumenTaller, detalleVehiculo } from '../seguimiento.js';
 
-const ORDEN_PRIO = { urgente: 0, prioridad: 1, normal: 2, programado: 3 };
 const MAX_ENTREGADOS = 6;
 const ESPERA_LARGA = 60;   // minutos en espera para avisar
 const estado = { buscar: '', movida: null, timer: null };
@@ -17,12 +18,14 @@ const estado = { buscar: '', movida: null, timer: null };
 export default async function vista(ctx) {
   const inicioMes = `${hoyISO().slice(0, 7)}-01`;
   // En curso, y terminados o entregados del mes (o aún sin cobrar)
-  const base = () => ctx.api.from('tal_ordenes').select(SELECT_ORDEN).eq('empresa_id', ctx.empresa.id).order('fecha_cita', { nullsFirst: false }).order('hora_cita', { nullsFirst: false });
-  const [enCurso, cerradas, trabajadores] = await Promise.all([
+  const base = () => ctx.api.from('tal_ordenes').select(SELECT_ORDEN.replace('orden)', 'orden, tal_servicios(variable))')).eq('empresa_id', ctx.empresa.id).order('fecha_cita', { nullsFirst: false }).order('hora_cita', { nullsFirst: false });
+  const [enCurso, cerradas, trabajadores, cot] = await Promise.all([
     base().in('estado', ['agendado', 'espera', 'proceso']),
     base().in('estado', ['terminado', 'entregado']).or(`termino_at.gte.${inicioMes},cobrado.eq.false`),
     cargarTrabajadores(ctx),
+    ctx.puede('cotizaciones', 'ver') ? ctx.api.from('cot_grupos').select('orden_id').eq('empresa_id', ctx.empresa.id).not('orden_id', 'is', null) : Promise.resolve({ data: [] }),
   ]);
+  const cotizadas = new Set((cot.data ?? []).map((g) => g.orden_id));
   if (enCurso.error) throw enCurso.error;
   if (cerradas.error) throw cerradas.error;
   const data = [...enCurso.data, ...cerradas.data];
@@ -52,15 +55,17 @@ export default async function vista(ctx) {
     const espera = ci === 1 ? minutosDesde(o.ingreso_at) : null;
     const nodo = el('div', { class: `tal-tarjeta prio-${o.prioridad}${o.id === movida ? ' tal-movida' : ''}`, 'data-buscar': [v?.patente, verPatente(v?.patente), nombreVehiculo(v), o.terceros ? nombreTercero(o.terceros) : '', `n° ${o.numero}`].join(' ').toLowerCase() },
       el('div', { class: 'plan-fila' },
-        el('span', { class: 'texto-chico texto-suave' }, `N° ${o.numero}`),
-        el('span', { class: `chip ${CHIP_PRIORIDAD[o.prioridad]}` }, PRIORIDADES.find((p) => p[0] === o.prioridad)[1])),
+        el('span', { class: 'texto-chico texto-suave' }, marcaCotizar(o, cotizadas), `N° ${o.numero}`),
+        el('span', { class: 'plan-fila' },
+          el('span', { class: `chip ${CHIP_PRIORIDAD[o.prioridad]}` }, PRIORIDADES.find((p) => p[0] === o.prioridad)[1]),
+          ci < 4 ? el('button', { type: 'button', class: 'boton-icono boton-chico', title: 'Pantalla completa', 'aria-label': 'Abrir en pantalla completa', onclick: () => detalleVehiculo(ctx, o, { alCambiar: () => ctx.refrescar() }) }, icono('expandir', { tam: 14 })) : null)),
       el('a', { class: 'tal-vehiculo', href: ctx.ruta('taller.orden', { id: o.id }) }, nombreVehiculo(v)),
       el('span', { class: 'tal-placa' }, verPatente(v?.patente) || 'Sin patente'),
       o.terceros ? el('span', { class: 'texto-chico' }, nombreTercero(o.terceros)) : null,
       o.tal_orden_servicios.length ? el('span', { class: 'texto-suave texto-chico' }, o.tal_orden_servicios.sort((a, b) => a.orden - b.orden).map((s) => s.nombre).join(' + ')) : null,
       o.tareas.length ? el('div', { class: 'tal-progreso', title: pend ? `Faltan ${pend} de ${o.tareas.length} tareas` : 'Tareas listas' },
         el('span', { class: 'tal-progreso-barra' }, el('i', { style: `width:${Math.round(((o.tareas.length - pend) / o.tareas.length) * 100)}%` })),
-        el('span', { class: 'texto-chico texto-suave' }, `${o.tareas.length - pend}/${o.tareas.length} tareas`)) : null,
+        el('span', { class: 'texto-chico texto-suave' }, `${o.tareas.length - pend}/${o.tareas.length} tareas · ${avance(o)}%`)) : null,
       tiempos ? el('span', { class: 'texto-suave texto-chico' }, tiempos) : null,
       espera != null ? el('span', { class: `chip ${espera >= ESPERA_LARGA ? 'chip-prox' : 'chip-pend'}` }, icono('reloj', { tam: 12 }), ` Esperando ${largo(espera)}`) : null,
       dur != null ? el('span', { class: 'texto-chico' }, icono('reloj', { tam: 12 }), ` ${ci === 2 ? 'Lleva' : 'Demoró'} ${textoMinutos(dur)}`) : null,
@@ -75,7 +80,7 @@ export default async function vista(ctx) {
   };
 
   const columnas = ESTADOS.map(([k, nombre], ci) => {
-    let items = data.filter((o) => o.estado === k).sort((a, b) => ORDEN_PRIO[a.prioridad] - ORDEN_PRIO[b.prioridad]);
+    let items = ordenarActivos(data.filter((o) => o.estado === k));
     let ocultos = 0;
     if (k === 'entregado') {
       items = items.sort((a, b) => (b.entregado_at ?? '').localeCompare(a.entregado_at ?? ''));
@@ -108,6 +113,7 @@ export default async function vista(ctx) {
     activos.length ? el('div', { class: 'resumen-chips' },
       PRIORIDADES.map(([p, n]) => { const c = activos.filter((o) => o.prioridad === p).length; return c ? el('span', { class: `chip ${CHIP_PRIORIDAD[p]}` }, `${c} ${n.toLowerCase()}`) : null; }),
       el('span', { class: 'texto-suave' }, `${activos.length} en curso · terminados y entregados del mes · se actualiza cada 2 minutos`)) : null,
+    resumenTaller(ctx, data, { alAbrir: (o) => detalleVehiculo(ctx, o, { alCambiar: () => ctx.refrescar() }) }),
     sinResultados,
     tablero);
 }
