@@ -1121,6 +1121,7 @@
   #dp-body canvas,#dp-body>img{max-width:100%;background:var(--card);box-shadow:0 6px 24px rgba(0,0,0,.35);}
   .emp-row{display:flex;align-items:center;gap:8px;padding:10px 4px;border-bottom:1px solid var(--line);cursor:pointer;}
   .emp-row:hover{background:var(--alt);}
+  .emp-row .en .emp-ver{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:.72rem;color:var(--body);margin-top:2px;line-height:1.35;} .emp-row .en .emp-ver b{display:inline;font:700 .72rem var(--font);color:var(--orange-2);}
   .emp-row .en{flex:1;min-width:0;} .emp-row .en b{display:block;font:700 14px var(--font);color:var(--ink);} .emp-row .en span{font-size:.75rem;color:var(--muted);}
   .zt-box{--zt:#1aa6c4;--zt-bg:#e5f6fa;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;}
   .zt-head{display:flex;align-items:center;gap:14px;padding:16px 18px;background:var(--zt-bg);border-bottom:3px solid var(--zt);}
@@ -8063,7 +8064,19 @@
     {k:'fmt_salida', n:'Registro de salida a atención médica', build:function(){ return docSalida({}); }}
   ];
   var EMP_Q='';
+  // Versión vigente de los documentos que genera la app: se lee del documento (versión del encabezado y última fila del control de cambios).
+  var EMP_VER={};
+  function verDeHtml(html){ var m=/Versión <b>(\d+)<\/b>/.exec(html||''); if(!m) return null; var o={ver:m[1], fecha:'', desc:''};
+    var i=String(html).search(/Control de cambios/i); if(i>=0){ var re=/<tr><td>([^<]*)<\/td><td>([^<]*)<\/td><td>([\s\S]*?)<\/td><\/tr>/g, r, ult=null; re.lastIndex=0; var s=String(html).slice(i); while((r=re.exec(s))) ult=r;
+      if(ult){ o.fecha=ult[2]; o.desc=ult[3].replace(/<[^>]+>/g,'').trim(); } }
+    if(!o.fecha){ var fh=/Fecha <b>([^<]+)<\/b>/.exec(html||''); if(fh && fh[1]!==fFaena(todayISO())) o.fecha=fh[1]; }
+    return o; }
+  function empVer(tipo){ if(tipo in EMP_VER) return EMP_VER[tipo]; var html=null;
+    try{ if(typeof PTS_DOC!=='undefined'&&PTS_DOC[tipo]) html=docPTSDoc(tipo); else if(typeof EMP_GEN!=='undefined'&&EMP_GEN[tipo]) html=EMP_GEN[tipo].build(); else if(tipo==='pts_funciones') html=docPTSFunciones('oper'); }catch(_){ html=null; }
+    return (EMP_VER[tipo]=html?verDeHtml(html):null); }
+  function fechaVerIso(f){ var m=/(\d{2})-(\d{2})-(\d{4})/.exec(f||''); return m?m[3]+'-'+m[2]+'-'+m[1]:null; }
   function pintarEmp(){
+    if(typeof PTS_EDIT_OK!=='undefined' && !PTS_EDIT_OK && sb){ cargarPtsEdit(function(){ EMP_VER={}; pintarEmp(); }); return; }
     var c=$('emp-list'); if(!c) return;
     var q=nrmQ(EMP_Q), conocidos={};
     EMP_CARPETAS.forEach(function(cp){ cp.tipos.forEach(function(x){ conocidos[x[0]]=1; }); });
@@ -8078,7 +8091,13 @@
       var multi=esMulti(tipo,E.todos), vis=multi?E.todos.slice(0,4):(u?[u]:[]);
       var sub=!u?(vence?'Con vencimiento':'Toca para subir el archivo'):(multi?(E.n+(E.n===1?' documento':' documentos')+' · '+E.todos.map(function(d){ return d.titular||'sin nombre'; }).join(', ')):('Actualizado '+fechaCorta(u.fecha||String(u.created_at||'').slice(0,10))+(u.vencimiento?' · vence '+fechaCorta(u.vencimiento):'')+(E.n>1?' · '+E.n+' versiones':'')));
       var minis=vis.filter(function(d){ return d.url; }).map(function(d){ return '<span class="mini" data-mini="'+esc(d.url)+'" data-url="'+esc(d.url)+'" data-t="'+enc(nombre+(d.titular?' · '+d.titular:''))+'" title="Vista previa'+(d.titular?': '+enc(d.titular):'')+'"></span>'; }).join('');
-      return '<div class="emp-row" data-tipo="'+enc(tipo)+'" data-nom="'+enc(nombre)+'" data-v="'+(vence?1:0)+'">'+(minis?'<div class="emp-minis">'+minis+'</div>':'')+'<div class="en"><b>'+esc(nombre)+'</b><span>'+esc(sub)+'</span></div>'+chip+
+      var V=gen?empVer(tipo):null, verL='';
+      if(V){ var gv=u&&/\bv(\d+)\b/.exec(u.nota||''), fv=fechaVerIso(V.fecha), gf=u?(u.fecha||String(u.created_at||'').slice(0,10)):null;
+        var atras=u&&!multi&&(gv?(+gv[1]<+V.ver):(fv&&gf&&gf<fv));
+        if(u&&!multi&&gv) sub+=' · guardada v'+gv[1];
+        if(atras) chip='<span class="dchip prox" title="Lo guardado es anterior a la versión '+V.ver+'. Genera el documento y guárdalo.">Por actualizar</span>';
+        verL='<span class="emp-ver" title="'+enc(V.desc)+'"><b>Versión '+V.ver+(V.fecha?' · '+esc(V.fecha):'')+'</b>'+(V.desc?' — '+esc(V.desc):'')+'</span>'; }
+      return '<div class="emp-row" data-tipo="'+enc(tipo)+'" data-nom="'+enc(nombre)+'" data-v="'+(vence?1:0)+'">'+(minis?'<div class="emp-minis">'+minis+'</div>':'')+'<div class="en"><b>'+esc(nombre)+'</b><span>'+esc(sub)+'</span>'+verL+'</div>'+chip+
         ((u&&u.url&&!multi)?'<a href="'+esc(u.url)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:var(--orange-2);font-weight:700;font-size:.8rem">descargar</a>':'')+gen+'</div>'; }
     function propios(k){ var vistos={}, out=[]; EMP_D.forEach(function(d){ if(conocidos[d.tipo]||vistos[d.tipo]) return; if((d.carpeta||'otros')!==k) return; vistos[d.tipo]=1; out.push([d.tipo, d.nombre||d.tipo, false]); }); return out; }
     function card(k, n, filas, addLbl){ var vis=filas.filter(function(x){ return pasa(x[1]); });
@@ -8221,7 +8240,7 @@
           if(!res||!res.url){ busy(false); toast('No se pudo guardar la versión. Revisa la conexión.'); $('docgen').classList.add('hide'); return; }
           var lbl=(o.opciones&&(o.opciones.filter(function(x){ return x.v===v; })[0]||{}).n)||'';
           var cpG=EMP_CARPETAS.filter(function(cx){ return cx.tipos.some(function(x){ return x[0]===o.tipo; }); })[0];
-          sb.from('empresa_docs').insert({ carpeta:(cpG?cpG.k:'pts'), tipo:o.tipo, nombre:o.nombre, fecha:todayISO(), url:res.url, nota:lbl||null, autor:userEmail }).then(function(){ busy(false); toast('✓ Guardado como versión vigente'); $('docgen').classList.add('hide'); renderEmp(); }, function(){ busy(false); $('docgen').classList.add('hide'); });
+          sb.from('empresa_docs').insert({ carpeta:(cpG?cpG.k:'pts'), tipo:o.tipo, nombre:o.nombre, fecha:todayISO(), url:res.url, nota:((lbl?lbl+' · ':'')+(function(){ var x=verDeHtml($('dg-doc').innerHTML); return x?'v'+x.ver:''; })())||null, autor:userEmail }).then(function(){ busy(false); toast('✓ Guardado como versión vigente'); $('docgen').classList.add('hide'); renderEmp(); }, function(){ busy(false); $('docgen').classList.add('hide'); });
         });
       }).catch(function(){ busy(false); toast('No se pudo generar el PDF.'); });
     } };
@@ -8284,7 +8303,7 @@
       ['Carga de trabajo y atención de público','Riesgo psicosocial','Planificación de tareas; pausas; aplicar el protocolo de la Ley Karin ante conductas de acoso o violencia.']
     ];
     function tr(a,b){ return '<tr><td class="dg-k">'+a+'</td><td>'+b+'</td></tr>'; }
-    return dgHead('PROCEDIMIENTO DE TRABAJO SEGURO')+
+    return dgHead('PROCEDIMIENTO DE TRABAJO SEGURO','02')+
       '<p style="text-align:center;margin-top:-6px;color:#667;font-weight:700">Acorde a sus funciones · '+esc(cargo)+'</p>'+
       '<table class="dg-tbl pts-ctl"><tbody><tr><td><span class="sl">Código</span><b>PTS-FUN-'+(oper?'01':(adm?'03':'02'))+'</b></td><td><span class="sl">Versión</span><b>02</b></td><td><span class="sl">Fecha</span>'+ce(fFaena(todayISO()))+'</td><td><span class="sl">Cargo</span><b>'+esc(cargo)+'</b></td></tr></tbody></table>'+dgFirmasPTS()+
       '<h4 class="dg-h4">1. Objetivo</h4><p>Establecer la forma segura de ejecutar las funciones propias del cargo de '+esc(cargo.toLowerCase())+', identificando sus riesgos y las medidas de control, para prevenir accidentes del trabajo y enfermedades profesionales.</p>'+
@@ -9967,7 +9986,7 @@
         '<p style="margin:8px 0 4px"><b>Paso 6 · Registrar, difundir y planificar.</b></p>'+ulDg(['Registrar los resultados en la Matriz IPER (MAT-PREV-02).','Mantenerla disponible en los lugares de trabajo e informarla a los trabajadores, al Comité Paritario y a la línea de mando.','Elaborar o actualizar el programa de trabajo preventivo dentro de 30 días corridos desde la confección o actualización de la matriz.'])+
       H('Revisión de la matriz')+ulDg(['Al menos una vez al año.','Cuando cambien las condiciones de trabajo y signifiquen un riesgo adicional.','Cuando ocurra un accidente del trabajo o se diagnostique una enfermedad profesional.','Cuando se genere una situación de riesgo grave e inminente.'])+
       H('Registros')+ulDg(['Matriz IPER (MAT-PREV-02).','Programa de trabajo preventivo (PRG-PREV-01).','Registro de difusión de la matriz a los trabajadores.'])+
-      H('Control de cambios')+'<table class="dg-tbl"><thead><tr><th style="width:15%">Versión</th><th style="width:20%">Fecha</th><th>Descripción del cambio</th></tr></thead><tbody><tr><td>01</td><td>'+fFaena(todayISO())+'</td><td>Emisión original.</td></tr></tbody></table>';
+      H('Control de cambios')+'<table class="dg-tbl"><thead><tr><th style="width:15%">Versión</th><th style="width:20%">Fecha</th><th>Descripción del cambio</th></tr></thead><tbody><tr><td>01</td><td>14-10-2026</td><td>Emisión original.</td></tr></tbody></table>';
   }
   // Matriz IPER v02: medidas separadas por jerarquía de control y riesgo residual (observaciones del mandante).
   // Clave = inicio de la "tarea" de IPER_FILAS. f = eliminación / ingeniería (control en la fuente), a = administrativas,
@@ -10045,7 +10064,7 @@
       '<table class="dg-tbl iper"><thead><tr><th style="width:12%">Agente</th><th style="width:18%">Tareas expuestas</th><th style="width:18%">Normativa / protocolo</th><th>Evaluación cualitativa</th><th style="width:24%">Estado o resultado</th></tr></thead><tbody>'+
         IPER_HIG.map(function(g){ return '<tr><td><b>'+g[0]+'</b></td><td>'+g[1]+'</td><td>'+g[2]+'</td><td>'+g[3]+'</td><td>'+ce(g[4])+'</td></tr>'; }).join('')+'</tbody></table>'+
       '<p style="font-size:11px;color:#55607a;margin:0">Las mejoras y evaluaciones pendientes se programan en el Programa de trabajo preventivo (PRG-PREV-01). Para personas trabajadoras especialmente sensibles se evalúan medidas adicionales caso a caso. La matriz se revisa al menos una vez al año y cada vez que cambien las condiciones, ocurra un accidente o se diagnostique una enfermedad profesional.</p>'+
-      H('Control de cambios')+'<table class="dg-tbl"><thead><tr><th style="width:15%">Versión</th><th style="width:20%">Fecha</th><th>Descripción del cambio</th></tr></thead><tbody><tr><td>01</td><td>oct. 2026</td><td>Emisión original.</td></tr><tr><td>02</td><td>'+fFaena(todayISO())+'</td><td>Observaciones del mandante: se agrega el riesgo residual (P, C y MR después de las medidas), se separan las medidas en control en la fuente, administrativas y EPP, se definen controles adicionales, responsables y verificación para los riesgos importantes, y se incorpora la evaluación de riesgos higiénicos y ergonómicos.</td></tr></tbody></table>';
+      H('Control de cambios')+'<table class="dg-tbl"><thead><tr><th style="width:15%">Versión</th><th style="width:20%">Fecha</th><th>Descripción del cambio</th></tr></thead><tbody><tr><td>01</td><td>14-10-2026</td><td>Emisión original.</td></tr><tr><td>02</td><td>14-10-2026</td><td>Observaciones del mandante: se agrega el riesgo residual (P, C y MR después de las medidas), se separan las medidas en control en la fuente, administrativas y EPP, se definen controles adicionales, responsables y verificación para los riesgos importantes, y se incorpora la evaluación de riesgos higiénicos y ergonómicos.</td></tr></tbody></table>';
   }
   // ====== Protocolo de prevención del acoso sexual, laboral y violencia en el trabajo (Ley N° 21.643, Ley Karin) ======
   // Base: protocolo de la empresa (20-07-2024, carpeta 05- Ley Karin), anexo del RIOHS 2026 (art. 238) y procedimiento de investigación.
@@ -10096,7 +10115,7 @@
       H('Resguardo de la privacidad y la honra')+'<p>Se mantiene reserva de los hechos denunciados y de su investigación, y se prohíben las acciones que intimiden a los involucrados (denunciantes, denunciados, víctimas y testigos) o pongan en riesgo su integridad física o psíquica.</p>'+
       H('Seguimiento y evaluación')+'<p>Una vez al año, la Gerencia General, con Prevención de riesgos, evalúa el cumplimiento y la eficacia de las medidas, considerando los resultados del CEAL-SM, las DIEP por acoso o violencia, las solicitudes de intervención y las denuncias del período. Con los resultados se elabora un informe, disponible para las personas trabajadoras, y se actualizan la matriz de riesgos y el programa preventivo.</p>'+
       H('Difusión')+'<p>El protocolo se da a conocer a las personas trabajadoras al ingreso y cada vez que se actualiza, mediante su entrega con registro firmado, capacitaciones, charlas de inducción, afiches, trípticos y correos. Forma parte del Reglamento Interno (RIOHS 2026) y de la información de riesgos laborales (IRL).</p>'+
-      H('Control de cambios')+'<table class="dg-tbl"><thead><tr><th style="width:15%">Versión</th><th style="width:20%">Fecha</th><th>Descripción del cambio</th></tr></thead><tbody><tr><td>01</td><td>20-07-2024</td><td>Emisión original.</td></tr><tr><td>02</td><td>'+fFaena(todayISO())+'</td><td>Formato corporativo; responsables y canales de denuncia actualizados según el RIOHS 2026; se agregan el marco normativo, la tabla de medidas con responsables y frecuencia, y el resumen del procedimiento de denuncia e investigación con sus plazos.</td></tr></tbody></table>';
+      H('Control de cambios')+'<table class="dg-tbl"><thead><tr><th style="width:15%">Versión</th><th style="width:20%">Fecha</th><th>Descripción del cambio</th></tr></thead><tbody><tr><td>01</td><td>20-07-2024</td><td>Emisión original.</td></tr><tr><td>02</td><td>14-10-2026</td><td>Formato corporativo; responsables y canales de denuncia actualizados según el RIOHS 2026; se agregan el marco normativo, la tabla de medidas con responsables y frecuencia, y el resumen del procedimiento de denuncia e investigación con sus plazos.</td></tr></tbody></table>';
   }
   // Programa de trabajo preventivo (artículo 8°, D.S. N° 44): 12 meses desde el mes siguiente a su emisión.
   // Actividad: [grupo, actividad, responsable, frecuencia, meses (1..12, 'todos' o función por mes calendario), verificación]
@@ -10161,7 +10180,7 @@
       H('Cronograma de actividades')+'<p style="font-size:11px;margin:0 0 6px">Cada punto indica el mes en que se ejecuta la actividad. Bajo cada actividad se indica su frecuencia y el medio de verificación.</p>'+gantt+
       H('Control, seguimiento y evaluación')+ulDg(['El cumplimiento se controla mensualmente con los registros de cada actividad y se informa a Gerencia.','Al término del período se evalúa el cumplimiento y la eficacia de las medidas, considerando las mediciones y evaluaciones de riesgo, los accidentes y enfermedades ocurridos, las observaciones del Comité Paritario, las sugerencias de los trabajadores, los cambios en los procesos y las modificaciones legales.','Los resultados de la evaluación son la base del programa del período siguiente.'])+
       H('Difusión')+ulDg(['Antes de su implementación, el programa se difunde a los trabajadores por avisos visibles en los lugares de trabajo o por correo electrónico.','Se remite un ejemplar al Comité Paritario.'])+
-      H('Control de cambios')+'<table class="dg-tbl"><thead><tr><th style="width:15%">Versión</th><th style="width:20%">Fecha</th><th>Descripción del cambio</th></tr></thead><tbody><tr><td>01</td><td>oct. 2026</td><td>Emisión original.</td></tr><tr><td>02</td><td>'+fFaena(todayISO())+'</td><td>Observaciones del mandante: se agregan la verificación mensual de los controles de los riesgos importantes de la matriz IPER v02, las evaluaciones con la Mutual (ruido, frío, químicos, TMERT y manejo manual de carga) y la capacitación y evaluación anual del protocolo Ley Karin (PROT-PREV-01).</td></tr></tbody></table>';
+      H('Control de cambios')+'<table class="dg-tbl"><thead><tr><th style="width:15%">Versión</th><th style="width:20%">Fecha</th><th>Descripción del cambio</th></tr></thead><tbody><tr><td>01</td><td>14-10-2026</td><td>Emisión original.</td></tr><tr><td>02</td><td>14-10-2026</td><td>Observaciones del mandante: se agregan la verificación mensual de los controles de los riesgos importantes de la matriz IPER v02, las evaluaciones con la Mutual (ruido, frío, químicos, TMERT y manejo manual de carga) y la capacitación y evaluación anual del protocolo Ley Karin (PROT-PREV-01).</td></tr></tbody></table>';
   }
   function docCapHerr(){
     var H=seccionador();
@@ -10367,7 +10386,7 @@
       H('Registros')+ulDg(['DIAT / DIEP presentada.','Informe de investigación del accidente o emergencia.','Registro de simulacros.','Informe mensual de accidentabilidad (InnovaGestión).','Registro de entrega de este procedimiento firmado por cada trabajador.'])+
       H('Control de cambios')+'<table class="dg-tbl"><thead><tr><th style="width:15%">Versión</th><th style="width:20%">Fecha</th><th>Descripción del cambio</th></tr></thead><tbody>'+
         '<tr><td>01</td><td>01-11-2025</td><td>Emisión original (procedimiento en caso de accidente del trabajo o enfermedad profesional).</td></tr>'+
-        '<tr><td>02</td><td>'+fFaena(todayISO())+'</td><td>Formato corporativo; se integra el procedimiento de emergencia (organigrama, situaciones, recursos, evacuación, rescate en espacios confinados, primeros auxilios y simulacros); se agregan accidente de trayecto y obligaciones ante accidentes graves y fatales; normativa vigente (D.S. N° 44); se corrige la definición de accidente fatal y se actualizan los contactos.</td></tr></tbody></table>';
+        '<tr><td>02</td><td>09-10-2026</td><td>Formato corporativo; se integra el procedimiento de emergencia (organigrama, situaciones, recursos, evacuación, rescate en espacios confinados, primeros auxilios y simulacros); se agregan accidente de trayecto y obligaciones ante accidentes graves y fatales; normativa vigente (D.S. N° 44); se corrige la definición de accidente fatal y se actualizan los contactos.</td></tr></tbody></table>';
   }
   var EMP_GEN={ programa:{ build:docProgramaPrev }, iper:{ build:docMatrizIPER }, proc_iper:{ build:docProcIPER }, matriz_epp:{ build:docMatrizEPP }, karin:{ build:docProtKarin }, cap_herr:{ build:docCapHerr }, cap_primeros:{ build:docCapPrimeros }, cap_altura:{ build:function(){ return docCapPTS('cap_altura'); } }, cap_alzahombre:{ build:function(){ return docCapPTS('cap_alzahombre'); } }, cap_frigorifico:{ build:function(){ return docCapPTS('cap_frigorifico'); } }, proc_acc:{ build:docEmergAcc } };
   function esPTS(s){ return s==='pts_funciones' || !!(typeof PTS_DOC!=='undefined'&&PTS_DOC[s]); }
@@ -10381,8 +10400,8 @@
       ((r&&r.data)||[]).forEach(function(x){ try{ PTS_EDIT[x.clave.slice(9)]=JSON.parse(x.valor); }catch(_){} }); if(cb) cb(); }, function(){ if(cb) cb(); }); }
   function ptsDatos(slug, borrador){ var b=PTS_DOC[slug]||{}, e=borrador||PTS_EDIT[slug]||{}, o={}, k; for(k in b) o[k]=b[k]; for(k in e) o[k]=e[k]; return o; }
   // Historial de versiones: [versión, fecha, descripción]
-  function ptsCambios(P){ var L=!P.orig?[['01',P.f01||(P.cambios&&P.cambios.length?PTS_F2026:fFaena(todayISO())),'Emisión original.']]:
-      [['01',esc(P.orig),'Emisión original.'],['02',P.f02||(P.cambios&&P.cambios.length?PTS_F2026:fFaena(todayISO())),P.d02||'Actualización 2026: formato corporativo, normativa vigente (D.S. N° 44 reemplaza al D.S. N° 40), revisión del contenido y de las responsabilidades, tabla de riesgos y sección de emergencias.']];
+  function ptsCambios(P){ var L=!P.orig?[['01',P.f01||'06-10-2026','Emisión original.']]:
+      [['01',esc(P.orig),'Emisión original.'],['02',P.f02||'06-10-2026',P.d02||'Actualización 2026: formato corporativo, normativa vigente (D.S. N° 44 reemplaza al D.S. N° 40), revisión del contenido y de las responsabilidades, tabla de riesgos y sección de emergencias.']];
     return L.concat(P.cambios||[]); }
   function puedeEditarPTS(){ return isAdmin || (typeof nivelMod==='function' && nivelMod('documentacion')>=2); }
   function abrirEditorPTS(slug){ if(!puedeEditarPTS()){ toast('No tienes permiso para editar procedimientos.'); return; }
@@ -10441,7 +10460,7 @@
       var d=leer(); d.cambios.push([sig,fFaena(todayISO()),cam]); busy(true,'Guardando…');
       sb.from('config').upsert([{clave:'pts_edit:'+slug, valor:JSON.stringify(d)}],{onConflict:'clave'}).select('clave').then(function(r){ busy(false);
         if(r&&r.error){ toast('No se guardó: '+r.error.message); return; } if(!r||!r.data||!r.data.length){ toast('No se guardó (sin permiso).'); return; }
-        PTS_EDIT[slug]=d; toast('Versión '+sig+' guardada'); $('rrhh-edit').classList.add('hide'); generarPTS(slug); }, function(){ busy(false); toast('No se pudo guardar. Revisa la conexión.'); }); });
+        PTS_EDIT[slug]=d; delete EMP_VER[slug]; toast('Versión '+sig+' guardada'); $('rrhh-edit').classList.add('hide'); generarPTS(slug); }, function(){ busy(false); toast('No se pudo guardar. Revisa la conexión.'); }); });
     $('rrhh-edit').classList.remove('hide'); $('rrhh-edit').scrollTop=0; body.querySelectorAll('textarea').forEach(crecer); }); }
   function generarPTS(s){ if(!PTS_EDIT_OK && sb && PTS_DOC[s]){ cargarPtsEdit(function(){ generarPTS(s); }); return; } var nom=nombrePTS(s);
     if(typeof EMP_GEN!=='undefined'&&EMP_GEN[s]){ abrirDocEmpresa({ nombre:nom, tipo:s, build:EMP_GEN[s].build }); return; }
