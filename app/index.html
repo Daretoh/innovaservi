@@ -781,6 +781,13 @@
   .pw-pool .pw-w{padding:5px 11px;font-size:12px;background:var(--card);}
   .pw-wch{margin-left:5px;font:700 8px var(--font);color:var(--orange-2,#c2410c);text-transform:uppercase;letter-spacing:.03em;}
   .pw-fae.pick{border-color:var(--orange);cursor:copy;}
+  .pw-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 12px;}
+  .pw-tab{border:1px solid var(--line);background:var(--card);color:var(--body);border-radius:999px;padding:7px 14px;font:800 12.5px var(--font);cursor:pointer;display:inline-flex;align-items:center;gap:6px;}
+  .pw-tab:hover{border-color:var(--orange);}
+  .pw-tab.on{background:var(--navy);border-color:var(--navy);color:#fff;}
+  .pw-tab .n{background:rgba(0,0,0,.12);border-radius:999px;font-size:10px;font-weight:800;padding:0 6px;min-width:16px;text-align:center;}
+  .pw-tab.on .n{background:rgba(255,255,255,.26);}
+  .pw-tab.hoy{box-shadow:0 0 0 2px var(--orange) inset;}
   .pw-xls{display:flex;gap:18px;overflow-x:auto;padding-bottom:10px;align-items:flex-start;}
   .pw-day{flex:none;position:relative;padding-right:18px;}
   /* Pestaña del borde derecho para plegar/mostrar el día */
@@ -1074,6 +1081,49 @@
   .in-tar .in-tar-list{list-style:none;margin:0;padding:0;}
   .in-tar .in-tar-list li{padding:6px 0;border-bottom:1px solid var(--line);font:700 13.5px var(--font);color:var(--ink);}
   .in-tar .in-tar-list li:last-child{border-bottom:none;}
+  /* Reuniones (seguimiento de acuerdos) */
+  .reu-tabs{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px;}
+  .reu-tab{border:1px solid var(--line);background:var(--card);color:var(--body);border-radius:999px;padding:7px 13px;font:700 12.5px var(--font);cursor:pointer;display:inline-flex;align-items:center;gap:6px;}
+  .reu-tab.on{background:var(--ink);color:var(--card);border-color:var(--ink);}
+  .reu-tab .reu-n{font:800 10.5px var(--font);background:var(--chip);color:var(--ink);border-radius:999px;padding:1px 7px;}
+  .reu-tab.on .reu-n{background:var(--orange);color:#fff;}
+  .reu-info{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;font:600 12.5px var(--font);color:var(--muted);margin:0 0 12px;}
+  .reu-info b{color:var(--ink);}
+  .reu-pt{background:var(--card);border:1px solid var(--line);border-left:4px solid #e0a100;border-radius:12px;padding:11px 13px;margin-bottom:8px;}
+  .reu-pt.st-hecho{border-left-color:#1e9a4a;} .reu-pt.st-atrasado{border-left-color:#d7262e;}
+  .reu-pt-top{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:3px;}
+  .reu-cod{font:800 11px var(--font);background:var(--chip);color:var(--ink);border-radius:6px;padding:2px 7px;}
+  .reu-st{font:800 10.5px var(--font);border-radius:999px;padding:2px 8px;}
+  .reu-st.en_curso{background:#fdf3d8;color:#9a6b00;} .reu-st.hecho{background:#e6f5ec;color:#1e7a3e;} .reu-st.atrasado{background:#fde8e8;color:#b42318;}
+  .reu-esc{font:800 10.5px var(--font);background:#b42318;color:#fff;border-radius:999px;padding:2px 8px;text-transform:uppercase;letter-spacing:.03em;}
+  .reu-desc{font:700 14.5px/1.3 var(--font);color:var(--ink);}
+  .reu-meta{font:600 11.5px var(--font);color:var(--muted);margin-top:5px;display:flex;flex-wrap:wrap;gap:4px 12px;}
+  .reu-meta .bad{color:#b42318;}
+  .reu-mot{font:500 12.5px var(--font);color:var(--body);margin-top:4px;font-style:italic;}
+  .reu-acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
+  .reu-mini{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:5px 10px;font:700 12px var(--font);cursor:pointer;}
+  .reu-mini.on{border-color:var(--orange);background:#fff4ec;color:var(--orange-2);}
+  .reu-log{margin-top:8px;border-top:1px dashed var(--line);padding-top:6px;font:500 12px var(--font);color:var(--body);}
+  .reu-log div{padding:2px 0;}
+  .reu-edit{margin-top:8px;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;align-items:end;}
+  .reu-edit input,.reu-edit select{width:100%;font:500 14px var(--font);padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink);}
+  .reu-h3{font:800 12px var(--font);color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:18px 0 8px;display:flex;align-items:center;gap:8px;}
+  .reu-acta{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 13px;margin-bottom:7px;cursor:pointer;}
+  .reu-acta b{font:800 13.5px var(--font);color:var(--ink);}
+  .reu-acta .reu-notas{white-space:pre-wrap;font:500 13px var(--font);color:var(--body);margin-top:6px;}
+  .reu-wiz{border:1px solid var(--orange);}
+  .reu-steps{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;}
+  .reu-step{font:700 11.5px var(--font);color:var(--muted);background:var(--chip);border-radius:999px;padding:4px 10px;}
+  .reu-step.on{background:var(--orange);color:#fff;}
+  .reu-step.ok{background:#e6f5ec;color:#1e7a3e;}
+  .reu-pick{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0;}
+  .reu-pick button{border:1.5px solid var(--line);background:var(--card);border-radius:11px;padding:10px 6px;font:800 13px var(--font);color:var(--ink);cursor:pointer;}
+  .reu-pick button.on.hecho{border-color:#1e9a4a;background:#e6f5ec;} .reu-pick button.on.en_curso{border-color:#e0a100;background:#fdf3d8;} .reu-pick button.on.atrasado{border-color:#d7262e;background:#fde8e8;}
+  .reu-chk{display:flex;flex-wrap:wrap;gap:8px;}
+  .reu-chk label{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:6px 12px;font:700 13px var(--font);color:var(--ink);cursor:pointer;background:var(--card);}
+  .reu-new{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-items:end;margin-bottom:8px;}
+  @media(max-width:640px){ .reu-new{grid-template-columns:1fr 1fr;} .reu-new .reu-new-d{grid-column:1/-1;} }
+  .reu-pers{font:800 13px var(--font);color:var(--ink);margin:16px 0 6px;display:flex;align-items:center;gap:8px;}
   .in-ksub{font-size:.76rem;color:var(--muted);}
   .in-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:14px;}
   @media(max-width:560px){ .in-grid{grid-template-columns:1fr;} .in-kpis{grid-template-columns:1fr 1fr;gap:10px;} .in-kpi{padding:12px;column-gap:8px;} .in-kico{width:32px;height:32px;} .in-klbl{font-size:10px;} .in-kval{font-size:24px;} }
@@ -1641,6 +1691,7 @@
       <button class="sb-item sb-admin" data-v="v-inicio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h5v-6h4v6h5V9.5"/></svg>Inicio</button>
       <button class="sb-item sb-admin" data-v="v-alertas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>Alertas<span class="al-num hide" id="sb-al-num"></span></button>
       <button class="sb-item" data-v="v-tareas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/></svg>Tareas<span class="al-num hide" id="sb-tar-num"></span></button>
+      <button class="sb-item sb-reu hide" data-v="v-reuniones"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 9h8M8 13h5"/></svg>Reuniones<span class="al-num hide" id="sb-reu-num"></span></button>
       <div class="sbar-grp">Operaciones</div>
       <button class="sb-item sb-admin on" data-v="v-reporte"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><circle cx="10" cy="13" r="2"/><path d="m20 17-1.5-1.5L14 20"/></svg>Informe (editor)</button>
       <button class="sb-item" data-v="v-hist"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>Reportes</button>
@@ -2038,6 +2089,13 @@
       <div class="seg" id="tar-filtro" style="margin:4px 0 8px"><button class="seg-b on" data-f="pendiente" type="button">Pendientes</button><button class="seg-b" data-f="hecha" type="button">Hechas</button><button class="seg-b" data-f="todas" type="button">Todas</button></div>
       <div class="seg" id="tar-scope" style="margin:0 0 10px;display:none"><button class="seg-b on" data-s="todas" type="button">Todas</button><button class="seg-b" data-s="mias" type="button">Mías</button></div>
       <div id="tar-list"></div>
+    </section>
+
+    <!-- ---- REUNIONES: actas y seguimiento de acuerdos (beta) ---- -->
+    <section class="view" id="v-reuniones">
+      <div class="h-row"><h2>Reuniones <span class="cnt" id="reu-cnt"></span></h2></div>
+      <div class="reu-tabs" id="reu-tabs"></div>
+      <div id="reu-body"></div>
     </section>
 
     <section class="view" id="v-alertas">
@@ -2937,9 +2995,10 @@
     document.body.classList.toggle('no-elim-media', !puede('multimedia.eliminar'));
     if($('who')) $('who').textContent=sesNombre();
     if(!isAdmin) aplicarSecciones();   // muestra solo los apartados permitidos
+    document.querySelectorAll('.sb-reu').forEach(function(x){ x.classList.toggle('hide', !reuVer()); });   // Reuniones (beta): solo Enzo por ahora
   }
   // Apartado (módulo de permisos) de cada vista / botón del menú.
-  var MOD_DE_V={ 'v-alertas':'alertas','v-reporte':'informe','v-hist':'reportes','v-horas':'registro','v-asist':'asistencia','v-fotos':'multimedia','v-cuadrilla':'preparacion','v-veh':'vehiculos','v-clientes':'clientes','v-planif':'planificacion','v-plan':'calendario','v-matriz':'matriz','v-remu':'remu','v-costos':'costos','v-acc':'accesos' };
+  var MOD_DE_V={ 'v-alertas':'alertas','v-reporte':'informe','v-hist':'reportes','v-horas':'registro','v-asist':'asistencia','v-fotos':'multimedia','v-cuadrilla':'preparacion','v-veh':'vehiculos','v-clientes':'clientes','v-planif':'planificacion','v-plan':'calendario','v-matriz':'matriz','v-remu':'remu','v-costos':'costos','v-acc':'accesos','v-reuniones':'reuniones' };
   var RRHH_MODS=['trabajadores','documentacion','salidas'];
   function verRrhh(){ return RRHH_MODS.some(verMod); }
   function modDeNav(el){ var v=el.dataset.v; if(v==='v-rrhh') return el.dataset.seg?SEG_MOD[el.dataset.seg]:null; return MOD_DE_V[v]||null; }
@@ -2992,6 +3051,7 @@
     if(isAdmin){ cargarTrab(actualizarDatalist); cargarClientes(); cargarCargos(); cargarAlertas(); }
     else if(verMod('alertas')){ cargarAlertas(); }
     cargarTareas();   // carga el contador de tareas pendientes (badge en el menú)
+    if(reuVer()) cargarReuniones();   // contador de acuerdos vencidos (beta)
     ofrecerBorrador();
     // Restaura la última pestaña usada (si sigue siendo visible/permitida para este usuario).
     var _did=false;
@@ -3068,6 +3128,7 @@
     if(v==='v-planif'){ cargarPlanif(); }
     if(v==='v-alertas'){ pintarAlertas(); cargarAlertas(); }
     if(v==='v-tareas'){ if(isAdmin && !(TRAB||[]).length) cargarTrab(function(){ cargarTareas(); }); else cargarTareas(); }
+    if(v==='v-reuniones'){ cargarReuniones(); }
     if(v==='v-asist'){ cargarAsistencia(); }
     if(v==='v-fotos'){ cargarFotos(); }
     window.scrollTo(0,0);
@@ -3415,6 +3476,7 @@
   }
   // ---- Resumen semanal: los 7 días lado a lado (faenas por turno, personas numeradas, matriz/preparación y disponibles) ----
   var PLANIF_MODO=(function(){ try{ return localStorage.getItem('iserv-planif-modo')||'semana'; }catch(_){ return 'semana'; } })(), PW_PICK=null, PW_Q='', PW_FOCUS=null;
+  var PW_SEL=(function(){ try{ return localStorage.getItem('iserv-planif-dia')||''; }catch(_){ return ''; } })();   // día elegido en Planificación ('' = auto, 'todos' = ver todos)
   function planModoUI(){ document.querySelectorAll('#planif-modo .seg-b').forEach(function(b){ b.classList.toggle('on', b.dataset.m===PLANIF_MODO); });
     if($('planif-copy')) $('planif-copy').classList.toggle('hide', PLANIF_MODO!=='semana');
     if($('planif-note')) $('planif-note').classList.add('hide'); }
@@ -3461,8 +3523,11 @@
   function pwTareas(e){ var ts=tareasDe(e); if(!ts.length) return '';
     return '<details class="pw-tar"><summary>'+svgI(ICO_TAREAS,11)+ts.length+' tarea'+(ts.length===1?'':'s')+'</summary><ol>'+ts.map(function(t){ return '<li>'+esc(t)+'</li>'; }).join('')+'</ol></details>'; }
   function renderPlanSemana(c){
-    var hoy=todayISO(), DIAS=['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'], trabs=planTrabs(), cols='', faeSet={};
+    var hoy=todayISO(), DIAS=['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'], DIAS3=['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'], trabs=planTrabs(), cols='', faeSet={};
     var T={nec:0, asg:0, falt:0, sinMat:0, env:0};
+    // Días de la semana que tienen faenas (para el selector) y día elegido por defecto (hoy, o el primero).
+    var diasFa=[]; for(var dj=0; dj<7; dj++){ var ff=sumarDias(PLANIF_LUNES,dj); if(faenasDelDia(ff).length) diasFa.push({f:ff,di:dj}); }
+    if(PW_SEL!=='todos' && !diasFa.some(function(d){ return d.f===PW_SEL; })){ PW_SEL=diasFa.some(function(d){ return d.f===hoy; })?hoy:((diasFa[0]&&diasFa[0].f)||'todos'); }
     for(var di=0; di<7; di++){
       var f=sumarDias(PLANIF_LUNES,di), dd=new Date(f+'T12:00:00'), fs=faenasDelDia(f), cnt=pwConteo(fs,f), dNec=0, dAsg=0, falt=0, body='';
       fs.forEach(function(e){ var p=PLAN_MAP[planKey(e,f)]||{}, nec=personasNecesarias(e,f)||0, asg=(p.personas||[]).length; dNec+=nec; dAsg+=asg; falt+=Math.max(0,nec-asg);
@@ -3473,6 +3538,7 @@
         var na=((PLAN_MAP[planKey(a,f)]||{}).personas||[]).length, nb=((PLAN_MAP[planKey(b,f)]||{}).personas||[]).length; if(nb!==na) return nb-na;
         return (planHora(a,f)||'99').localeCompare(planHora(b,f)||'99'); });
       if(!fs.length) continue;   // en la rejilla tipo Excel solo salen los días con faenas
+      if(PW_SEL!=='todos' && f!==PW_SEL) continue;   // solo el día elegido en el selector
       body=ord.map(function(e){ return pwCard(e,f,cnt); }).join('');
       var fold=!!PW_FOLD[f];
       cols+='<div class="pw-day'+(f===hoy?' hoy':'')+(fold?' fold':'')+'" data-f="'+f+'"'+(fold?' title="Mostrar '+DIAS[di]+' '+dd.getDate()+'"':'')+'><div class="pw-dh"><span class="pw-dn">'+DIAS[di]+' '+dd.getDate()+'</span>'+
@@ -3490,11 +3556,14 @@
     while(sc){ if(sc.scrollTop) keep.y.push([sc, sc.scrollTop]); sc=sc.parentElement; }
     var se=document.scrollingElement||document.documentElement, wy=se.scrollTop;
     c.querySelectorAll('details[open]').forEach(function(d){ var fa=d.closest('.pw-fae'); if(fa) keep.open.push(fa.dataset.e+'|'+fa.dataset.f+'|'+d.className); });
-    c.innerHTML=cols?('<div class="pw-xls">'+cols+'</div>'):'<div class="empty" style="padding:30px"><div class="big">📋</div>No hay faenas esta semana.<br><span style="font-size:.82rem">Agéndalas en Calendario.</span></div>';
+    var tabs=diasFa.length?('<div class="pw-tabs"><button type="button" class="pw-tab'+(PW_SEL==='todos'?' on':'')+'" data-d="todos">Todos</button>'+
+      diasFa.map(function(d){ var dd=new Date(d.f+'T12:00:00'); return '<button type="button" class="pw-tab'+(d.f===PW_SEL?' on':'')+(d.f===hoy?' hoy':'')+'" data-d="'+d.f+'">'+DIAS3[d.di]+' '+dd.getDate()+'<span class="n">'+faenasDelDia(d.f).length+'</span></button>'; }).join('')+'</div>'):'';
+    c.innerHTML=tabs+(cols?('<div class="pw-xls">'+cols+'</div>'):'<div class="empty" style="padding:30px"><div class="big">📋</div>No hay faenas esta semana.<br><span style="font-size:.82rem">Agéndalas en Calendario.</span></div>');
     keep.open.forEach(function(k){ var p=k.split('|'); var d=c.querySelector('.pw-fae[data-e="'+p[0]+'"][data-f="'+p[1]+'"] details.'+p[2].split(' ')[0]); if(d) d.open=true; });
     var nx=c.querySelector('.pw-xls'); if(nx) nx.scrollLeft=keep.x;
     keep.y.forEach(function(it){ it[0].scrollTop=it[1]; }); se.scrollTop=wy;
     pwWire(c);
+    c.querySelectorAll('.pw-tab').forEach(function(b){ b.addEventListener('click',function(){ PW_SEL=b.dataset.d; try{ localStorage.setItem('iserv-planif-dia',PW_SEL); }catch(_){} renderPlanSemana(c); }); });
     if(PW_FOCUS){ var fi=c.querySelector('.pw-add[data-k="'+PW_FOCUS+'"]'); PW_FOCUS=null; if(fi){ try{ fi.focus({preventScroll:true}); }catch(_){} } }
   }
   // Días plegados (se recuerdan en este equipo)
@@ -8976,6 +9045,252 @@
   document.querySelectorAll('#tar-filtro .seg-b').forEach(function(b){ b.addEventListener('click',function(){ TAR_FILTRO=b.dataset.f; renderTareas(); }); });
   document.querySelectorAll('#tar-scope .seg-b').forEach(function(b){ b.addEventListener('click',function(){ TAR_SCOPE=b.dataset.s; document.querySelectorAll('#tar-scope .seg-b').forEach(function(x){ x.classList.toggle('on',x===b); }); renderTareas(); }); });
 
+  // ====== Reuniones: actas y seguimiento de acuerdos (beta: solo Enzo por ahora) ======
+  // Tablas: reuniones_tipo, reuniones, reunion_puntos, reunion_puntos_log (ver supabase/migrations/20261022000000_reuniones.sql).
+  // Estados: en_curso 🟡 · hecho 🟢 · atrasado 🔴. Lo vencido pasa solo a 🔴 (reuniones_refrescar); 14 días en 🔴 = Escalar.
+  var BETA_REUNIONES=['enzo.castro@innovaservi.com','enzo.castro@innovaservi.cl'];
+  function reuBeta(){ return BETA_REUNIONES.indexOf(miEmail())>=0; }
+  function reuVer(){ return reuBeta() && verMod('reuniones'); }
+  function reuEdita(){ return isAdmin || puede('reuniones.editar') || nivelMod('reuniones')>=2; }
+  var REU={ tipos:[], puntos:[], actas:[], log:{}, tab:'', abierto:{}, editando:'', verLog:{}, persona:'', wiz:null, cargado:false };
+  var REU_ST={ en_curso:['🟡','En curso'], hecho:['🟢','Hecho'], atrasado:['🔴','Atrasado'] };
+  var REU_DIAS=['','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+  function reuDiasDesde(iso){ if(!iso) return 0; var a=new Date(iso+'T12:00:00'), b=new Date(todayISO()+'T12:00:00'); return Math.round((b-a)/86400000); }
+  function reuEscalar(p){ return p.estado==='atrasado' && p.atrasado_desde && reuDiasDesde(p.atrasado_desde)>=14; }
+  function reuTipo(k){ return REU.tipos.filter(function(t){ return t.clave===k; })[0]||{clave:k,nombre:k,prefijo:'?',participantes:[]}; }
+  function reuCod(p){ return reuTipo(p.tipo).prefijo+(p.numero||'?'); }
+  function reuAbiertos(tipo){ return REU.puntos.filter(function(p){ return p.estado!=='hecho' && (!tipo || p.tipo===tipo); })
+    .sort(function(a,b){ return (a.plazo||'').localeCompare(b.plazo||'') || (a.numero||0)-(b.numero||0); }); }
+  function reuVencidos(){ return REU.puntos.filter(function(p){ return p.estado==='atrasado'; }); }
+  function reuBadge(){ var n=reuVencidos().length, b=$('sb-reu-num'); if(b){ b.textContent=n>99?'99+':String(n); b.classList.toggle('hide', !n); } }
+  function reuPersonas(){ var seen={}, out=[];
+    REU.tipos.forEach(function(t){ (t.participantes||[]).forEach(function(x){ var n=(x.nombre||'').trim(); if(n && !seen[n.toLowerCase()]){ seen[n.toLowerCase()]=1; out.push(n); } }); });
+    REU.puntos.forEach(function(p){ var n=(p.responsable||'').trim(); if(n && !seen[n.toLowerCase()]){ seen[n.toLowerCase()]=1; out.push(n); } });
+    return out; }
+  function reuEmailDe(nombre){ var n=(nombre||'').trim().toLowerCase(), em=null;
+    REU.tipos.forEach(function(t){ (t.participantes||[]).forEach(function(x){ if((x.nombre||'').trim().toLowerCase()===n && x.email) em=x.email; }); });
+    return em; }
+  function reuMiNombre(){ var me=miEmail(), nom='';
+    REU.tipos.forEach(function(t){ (t.participantes||[]).forEach(function(x){ if((x.email||'').toLowerCase()===me) nom=x.nombre; }); });
+    return nom; }
+
+  function cargarReuniones(cb){ if(!sb || !reuVer()){ if(cb)cb(); return; }
+    var b=$('reu-body'); if(b && !REU.cargado) b.innerHTML='<div class="note" style="text-align:center;margin:30px 0">Cargando reuniones…</div>';
+    sb.rpc('reuniones_refrescar').then(function(){ return Promise.all([
+      sb.from('reuniones_tipo').select('*').eq('activo',true).order('orden'),
+      sb.from('reunion_puntos').select('*').order('numero').limit(2000),
+      sb.from('reuniones').select('*').order('fecha',{ascending:false}).limit(300)
+    ]); }).then(function(rs){
+      if(rs[0].error){ if(b) b.innerHTML='<div class="empty">No se pudo cargar: '+esc(rs[0].error.message)+'<br>¿Se corrió la migración de reuniones en Supabase?</div>'; if(cb)cb(); return; }
+      REU.tipos=rs[0].data||[]; REU.puntos=(rs[1]&&rs[1].data)||[]; REU.actas=(rs[2]&&rs[2].data)||[]; REU.cargado=true;
+      if(!REU.tab || (REU.tab!=='mis' && !REU.tipos.some(function(t){ return t.clave===REU.tab; }))) REU.tab=reuTabHoy();
+      renderReuniones(); reuBadge(); if(cb)cb();
+    }, function(e){ if(b) b.innerHTML='<div class="empty">No se pudo cargar las reuniones.</div>'; if(cb)cb(); }); }
+  // Pestaña por defecto: la reunión de hoy (si hay), si no la primera
+  function reuTabHoy(){ var d=new Date().getDay(); d=d===0?7:d; var t=REU.tipos.filter(function(x){ return x.dia_semana===d; })[0]; return t?t.clave:((REU.tipos[0]||{}).clave||'mis'); }
+  function reuLog(id, cb){ if(REU.log[id]){ cb(); return; }
+    sb.from('reunion_puntos_log').select('*').eq('punto_id',id).order('fecha').then(function(r){ REU.log[id]=(r&&r.data)||[]; cb(); }); }
+
+  function renderReuniones(){ var tabs=$('reu-tabs'), b=$('reu-body'); if(!tabs||!b) return;
+    var ab=reuAbiertos();
+    if($('reu-cnt')) $('reu-cnt').textContent=ab.length+(ab.length===1?' punto abierto':' puntos abiertos');
+    tabs.innerHTML=REU.tipos.map(function(t){ var n=reuAbiertos(t.clave).length;
+        return '<button type="button" class="reu-tab'+(REU.tab===t.clave?' on':'')+'" data-t="'+enc(t.clave)+'">'+(t.dia_semana?esc(REU_DIAS[t.dia_semana])+' · ':'')+esc(t.nombre)+'<span class="reu-n">'+n+'</span></button>'; }).join('')+
+      '<button type="button" class="reu-tab'+(REU.tab==='mis'?' on':'')+'" data-t="mis">👤 Mis pendientes</button>'+
+      (reuEdita()?'<button type="button" class="reu-tab'+(REU.tab==='nueva-tipo'?' on':'')+'" data-t="nueva-tipo">+ Otra reunión</button>':'');
+    tabs.querySelectorAll('.reu-tab').forEach(function(x){ x.addEventListener('click',function(){
+      if(REU.wiz && !confirm('Hay una reunión sin guardar. ¿Salir igual?')) return; REU.wiz=null; REU.tab=x.dataset.t; renderReuniones(); }); });
+    if(REU.wiz){ b.innerHTML=reuWizHtml(); reuWizBind(); return; }
+    if(REU.tab==='mis'){ b.innerHTML=reuMisHtml(); reuBindPuntos(b); var sel=$('reu-persona'); if(sel) sel.addEventListener('change',function(){ REU.persona=sel.value; renderReuniones(); }); return; }
+    if(REU.tab==='nueva-tipo'){ b.innerHTML=reuNuevoTipoHtml(); reuNuevoTipoBind(); return; }
+    var t=reuTipo(REU.tab), abiertos=reuAbiertos(t.clave), cerrados=REU.puntos.filter(function(p){ return p.tipo===t.clave && p.estado==='hecho'; }).sort(function(a,c){ return (c.cerrado_at||'').localeCompare(a.cerrado_at||''); });
+    var actas=REU.actas.filter(function(a){ return a.tipo===t.clave; });
+    var part=(t.participantes||[]).map(function(x){ return x.nombre; }).join(', ');
+    b.innerHTML='<div class="reu-info"><span>👥 <b>'+esc(part||'—')+'</b></span><span>Seguimiento: <b>'+esc(t.dueno||'—')+'</b></span>'+
+        (actas[0]?'<span>Última: <b>'+esc(fechaCorta(actas[0].fecha))+'</b></span>':'<span>Sin actas aún</span>')+
+        (reuEdita()?'<button type="button" class="btn small" id="reu-nueva" style="margin-left:auto">＋ Nueva reunión</button>':'')+'</div>'+
+      '<div class="reu-h3">Puntos abiertos <span class="cnt">'+abiertos.length+'</span></div>'+
+      (abiertos.length?abiertos.map(function(p){ return reuPuntoHtml(p); }).join(''):'<div class="empty" style="padding:20px">✓ Sin puntos abiertos.</div>')+
+      '<details'+(REU.abierto.cerr?' open':'')+' id="reu-det-cerr"><summary class="reu-h3" style="cursor:pointer">Cerrados <span class="cnt">'+cerrados.length+'</span></summary>'+
+        (cerrados.length?cerrados.map(function(p){ return reuPuntoHtml(p); }).join(''):'<p class="note">Nada cerrado todavía.</p>')+'</details>'+
+      '<details'+(REU.abierto.actas?' open':'')+' id="reu-det-actas"><summary class="reu-h3" style="cursor:pointer">Actas <span class="cnt">'+actas.length+'</span></summary>'+
+        (actas.length?actas.map(reuActaHtml).join(''):'<p class="note">Aún no hay actas. Se crean con «Nueva reunión».</p>')+'</details>';
+    var nb=$('reu-nueva'); if(nb) nb.addEventListener('click',function(){ reuWizIniciar(t.clave); });
+    [['reu-det-cerr','cerr'],['reu-det-actas','actas']].forEach(function(d){ var el=$(d[0]); if(el) el.addEventListener('toggle',function(){ REU.abierto[d[1]]=el.open; }); });
+    b.querySelectorAll('.reu-acta').forEach(function(a){ a.addEventListener('click',function(){ REU.abierto['a'+a.dataset.id]=!REU.abierto['a'+a.dataset.id]; renderReuniones(); }); });
+    reuBindPuntos(b); }
+
+  function reuPuntoHtml(p, conTipo){ var st=REU_ST[p.estado]||REU_ST.en_curso, dn=diffDiasV(p.plazo), venc=p.estado!=='hecho' && dn<0;
+    var h='<div class="reu-pt st-'+p.estado+'" data-id="'+p.id+'">'+
+      '<div class="reu-pt-top"><span class="reu-cod">'+esc(reuCod(p))+'</span><span class="reu-st '+p.estado+'">'+st[0]+' '+st[1]+'</span>'+
+        (reuEscalar(p)?'<span class="reu-esc" title="Lleva '+reuDiasDesde(p.atrasado_desde)+' días atrasado">⚠ Escalar</span>':'')+
+        (conTipo?'<span class="in-mut" style="font-size:11.5px">'+esc(reuTipo(p.tipo).nombre)+'</span>':'')+'</div>'+
+      '<div class="reu-desc">'+esc(p.descripcion)+'</div>'+
+      '<div class="reu-meta"><span>👤 '+esc(p.responsable)+'</span><span>Desde '+esc(fechaCorta(p.desde))+'</span>'+
+        '<span class="'+(venc?'bad':'')+'">Plazo '+esc(fechaCorta(p.plazo))+(p.estado!=='hecho'?(dn<0?' · venció hace '+(-dn)+' d':(dn===0?' · hoy':'')):'')+'</span>'+
+        (p.estado==='hecho'&&p.cerrado_at?'<span>Cerrado '+esc(fechaCorta(String(p.cerrado_at).slice(0,10)))+'</span>':'')+'</div>'+
+      (p.motivo?'<div class="reu-mot">'+esc(p.motivo)+'</div>':'')+
+      '<div class="reu-acts">'+(reuEdita()?'<button type="button" class="reu-mini reu-ed'+(REU.editando===p.id?' on':'')+'" data-id="'+p.id+'">Cambiar estado</button>':'')+
+        '<button type="button" class="reu-mini reu-hist'+(REU.verLog[p.id]?' on':'')+'" data-id="'+p.id+'">Historial</button></div>';
+    if(REU.editando===p.id) h+='<div class="reu-edit" data-id="'+p.id+'">'+
+        '<div><label class="seglbl">Estado</label><select class="reu-e-st">'+Object.keys(REU_ST).map(function(k){ return '<option value="'+k+'"'+(k===p.estado?' selected':'')+'>'+REU_ST[k][0]+' '+REU_ST[k][1]+'</option>'; }).join('')+'</select></div>'+
+        '<div><label class="seglbl">Plazo</label><input type="date" class="reu-e-pl" value="'+enc(p.plazo||'')+'"></div>'+
+        '<div style="grid-column:span 2"><label class="seglbl">Comentario / motivo</label><input type="text" class="reu-e-co" placeholder="Opcional (obligatorio si queda atrasado)" value="'+enc(p.motivo||'')+'"></div>'+
+        '<div><button type="button" class="btn small reu-e-ok" style="width:100%">Guardar</button></div></div>';
+    if(REU.verLog[p.id]) h+='<div class="reu-log">'+((REU.log[p.id]||[]).map(function(l){
+        var a=l.estado_ant?(REU_ST[l.estado_ant]||[''])[0]+' → ':'', n=(REU_ST[l.estado_nuevo]||[''])[0];
+        var pl=(l.plazo_nuevo && l.plazo_ant && l.plazo_nuevo!==l.plazo_ant)?' · plazo '+fechaCorta(l.plazo_ant)+' → '+fechaCorta(l.plazo_nuevo):'';
+        var d=new Date(l.fecha); var fs=d.getDate()+' '+MES[d.getMonth()]+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+        return '<div><b>'+esc(fs)+'</b> · '+esc(l.usuario==='sistema'?'Sistema':nomDeEmail(l.usuario))+' · '+a+n+esc(pl)+(l.comentario?' · <i>'+esc(l.comentario)+'</i>':'')+'</div>'; }).join('')||'Cargando…')+'</div>';
+    return h+'</div>'; }
+
+  function reuBindPuntos(root){
+    root.querySelectorAll('.reu-ed').forEach(function(x){ x.addEventListener('click',function(){ REU.editando=REU.editando===x.dataset.id?'':x.dataset.id; renderReuniones(); }); });
+    root.querySelectorAll('.reu-hist').forEach(function(x){ x.addEventListener('click',function(){ var id=x.dataset.id; REU.verLog[id]=!REU.verLog[id];
+      if(REU.verLog[id]){ delete REU.log[id]; reuLog(id, renderReuniones); } renderReuniones(); }); });
+    root.querySelectorAll('.reu-edit').forEach(function(f){ f.querySelector('.reu-e-ok').addEventListener('click',function(){
+      var st=f.querySelector('.reu-e-st').value, pl=f.querySelector('.reu-e-pl').value, co=(f.querySelector('.reu-e-co').value||'').trim();
+      if(!pl){ toast('Falta el plazo.'); return; }
+      if(st==='atrasado' && !co){ toast('Escribe el motivo del atraso.'); return; }
+      if(st==='en_curso' && pl<todayISO()){ toast('Si sigue en curso, el plazo nuevo debe ser hoy o después.'); return; }
+      reuGuardarPunto(f.dataset.id, {estado:st, plazo:pl, motivo:co, ult_comentario:co||null, ult_reunion:null}, function(){ REU.editando=''; delete REU.log[f.dataset.id]; renderReuniones(); reuBadge(); toast('✓ Punto actualizado'); }); }); }); }
+
+  function reuGuardarPunto(id, upd, cb){ sb.from('reunion_puntos').update(upd).eq('id',id).select().single().then(function(r){
+      if(r.error){ toast('No se pudo guardar: '+r.error.message); return; }
+      REU.puntos=REU.puntos.map(function(p){ return String(p.id)===String(id)?r.data:p; }); if(cb)cb(); }); }
+
+  function reuActaHtml(a){ var abierto=!!REU.abierto['a'+a.id];
+    var nuevos=REU.puntos.filter(function(p){ return p.reunion_origen===a.id; });
+    return '<div class="reu-acta" data-id="'+a.id+'"><b>'+esc(fLarga(a.fecha))+'</b> <span class="in-mut" style="font-size:12px">· '+esc((a.asistentes||[]).join(', '))+(nuevos.length?' · '+nuevos.length+' acuerdo'+(nuevos.length>1?'s':'')+' nuevo'+(nuevos.length>1?'s':''):'')+'</span>'+
+      (abierto?('<div class="reu-notas">'+(esc(a.notas||'')||'<i>Sin notas.</i>')+'</div>'+
+        (nuevos.length?'<div class="reu-meta" style="display:block">Acuerdos: '+nuevos.map(function(p){ return esc(reuCod(p)+' '+p.descripcion+' ('+p.responsable+')'); }).join(' · ')+'</div>':'')):'')+'</div>'; }
+
+  // ----- Mis pendientes (por responsable) -----
+  function reuMisHtml(){ var pers=reuPersonas(); if(REU.persona==='' ) REU.persona=reuMiNombre()||'__todos';
+    var sel='<div class="reu-info"><label class="seglbl" for="reu-persona">Responsable</label><select id="reu-persona" style="font:600 14px var(--font);padding:7px 10px;border:1px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink)">'+
+      '<option value="__todos"'+(REU.persona==='__todos'?' selected':'')+'>Todos (por persona)</option>'+pers.map(function(n){ return '<option value="'+enc(n)+'"'+(REU.persona===n?' selected':'')+'>'+esc(n)+'</option>'; }).join('')+'</select></div>';
+    var ab=reuAbiertos();
+    function deP(n){ var k=n.toLowerCase(); return ab.filter(function(p){ return (p.responsable||'').toLowerCase().split(/\s*(?:\+|,| y )\s*/).indexOf(k)>=0 || (p.responsable||'').toLowerCase()===k; }); }
+    if(REU.persona!=='__todos'){ var l=deP(REU.persona);
+      return sel+(l.length?l.map(function(p){ return reuPuntoHtml(p,true); }).join(''):'<div class="empty" style="padding:24px">✓ '+esc(REU.persona)+' no tiene puntos abiertos.</div>'); }
+    var grupos={}; ab.forEach(function(p){ var k=p.responsable||'Sin responsable'; (grupos[k]=grupos[k]||[]).push(p); });
+    var keys=Object.keys(grupos).sort(function(a,c){ return a.localeCompare(c); });
+    return sel+(keys.length?keys.map(function(k){ var g=grupos[k], venc=g.filter(function(p){ return p.estado==='atrasado'; }).length;
+      return '<div class="reu-pers">👤 '+esc(k)+' <span class="cnt">'+g.length+(venc?' · '+venc+' 🔴':'')+'</span></div>'+g.map(function(p){ return reuPuntoHtml(p,true); }).join(''); }).join(''):'<div class="empty" style="padding:24px">✓ No hay puntos abiertos.</div>'); }
+
+  // ----- Nueva reunión: 1) revisar abiertos uno por uno · 2) acta · 3) acuerdos nuevos -----
+  function reuWizIniciar(tipo){ var t=reuTipo(tipo);
+    REU.wiz={ tipo:tipo, paso:1, i:0, fecha:todayISO(), rev:{}, asistentes:(t.participantes||[]).map(function(x){ return x.nombre; }), notas:'', nuevos:[], guardando:false };
+    renderReuniones(); }
+  function reuWizHtml(){ var w=REU.wiz, t=reuTipo(w.tipo), ab=reuAbiertos(w.tipo);
+    var pasos=['1 · Revisar abiertos ('+Object.keys(w.rev).length+'/'+ab.length+')','2 · Acta','3 · Acuerdos nuevos'];
+    var h='<div class="card reu-wiz"><div class="h-row" style="margin-bottom:8px"><h2 style="font-size:17px">'+esc((t.dia_semana?REU_DIAS[t.dia_semana]+' · ':'')+t.nombre)+'</h2><input type="date" id="reu-w-fecha" value="'+enc(w.fecha)+'" style="width:auto;font:600 14px var(--font);padding:6px 9px;border:1px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink)"></div>'+
+      '<div class="reu-steps">'+pasos.map(function(s,i){ return '<span class="reu-step'+(w.paso===i+1?' on':(w.paso>i+1?' ok':''))+'">'+esc(s)+'</span>'; }).join('')+'</div>';
+    if(w.paso===1){
+      if(!ab.length) h+='<div class="empty" style="padding:18px">✓ No hay puntos abiertos de esta reunión. Sigue con el acta.</div>';
+      else { var p=ab[Math.min(w.i,ab.length-1)], r=w.rev[p.id]||{};
+        h+='<p class="note" style="margin:0 0 6px">Punto '+(Math.min(w.i,ab.length-1)+1)+' de '+ab.length+'</p>'+reuPuntoResumen(p)+
+          '<div class="reu-pick">'+['hecho','en_curso','atrasado'].map(function(k){ return '<button type="button" class="reu-w-st '+k+(r.estado===k?' on':'')+'" data-k="'+k+'">'+REU_ST[k][0]+' '+REU_ST[k][1]+'</button>'; }).join('')+'</div>'+
+          (r.estado==='en_curso'?'<div class="fld"><label>Nuevo plazo</label><input type="date" id="reu-w-plazo" value="'+enc(r.plazo||p.plazo||'')+'"></div>':'')+
+          (r.estado?'<div class="fld"><label>'+(r.estado==='atrasado'?'Motivo del atraso (obligatorio)':'Comentario (opcional)')+'</label><input type="text" id="reu-w-com" value="'+enc(r.motivo||'')+'"></div>':'')+
+          '<div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn ghost small" id="reu-w-prev"'+(w.i===0?' disabled':'')+'>‹ Anterior</button>'+
+          '<button type="button" class="btn ghost small" id="reu-w-next"'+(w.i>=ab.length-1?' disabled':'')+'>Siguiente ›</button></div>'+
+          '<p class="note" style="margin:10px 0 0">Revisados: '+ab.map(function(x,j){ var rr=w.rev[x.id]; return '<a href="#" class="reu-w-go" data-j="'+j+'" style="text-decoration:none">'+esc(reuCod(x))+(rr?REU_ST[rr.estado][0]:'⚪')+'</a>'; }).join(' ')+'</p>'; }
+    } else if(w.paso===2){
+      h+='<div class="fld"><label>Asistentes</label><div class="reu-chk">'+reuPersonas().concat(w.asistentes.filter(function(n){ return reuPersonas().indexOf(n)<0; })).map(function(n){ return '<label><input type="checkbox" class="reu-w-as" value="'+enc(n)+'"'+(w.asistentes.indexOf(n)>=0?' checked':'')+'> '+esc(n)+'</label>'; }).join('')+'</div></div>'+
+        '<div class="fld"><label>Notas del acta</label><textarea id="reu-w-notas" rows="6" placeholder="Temas tratados, decisiones, retro de la semana…">'+esc(w.notas)+'</textarea></div>';
+    } else {
+      h+='<p class="note" style="margin:0 0 8px">Un punto sin responsable ni plazo no es un acuerdo. Quedan 🟡 en curso hasta que se cierren.</p>'+
+        '<datalist id="reu-dl-pers">'+reuPersonas().map(function(n){ return '<option value="'+enc(n)+'">'; }).join('')+'</datalist>'+
+        '<div class="reu-new"><div class="fld reu-new-d" style="margin:0"><label>Acuerdo</label><input type="text" id="reu-n-desc" placeholder="Qué se hará"></div>'+
+        '<div class="fld" style="margin:0"><label>Responsable</label><input type="text" id="reu-n-resp" list="reu-dl-pers" placeholder="Nombre"></div>'+
+        '<div class="fld" style="margin:0"><label>Plazo</label><input type="date" id="reu-n-plazo"></div>'+
+        '<button type="button" class="btn small" id="reu-n-add" style="margin-bottom:2px">Agregar</button></div>'+
+        (w.nuevos.length?w.nuevos.map(function(n,j){ return '<div class="reu-pt"><div class="reu-pt-top"><span class="reu-cod">'+esc(t.prefijo)+'·nuevo</span><button type="button" class="tar-del reu-n-del" data-j="'+j+'" style="margin-left:auto;width:26px;height:26px">✕</button></div><div class="reu-desc">'+esc(n.descripcion)+'</div><div class="reu-meta"><span>👤 '+esc(n.responsable)+'</span><span>Plazo '+esc(fechaCorta(n.plazo))+'</span></div></div>'; }).join(''):'<p class="note">Sin acuerdos nuevos todavía.</p>');
+    }
+    h+='<div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:12px">'+
+      '<button type="button" class="btn ghost small" id="reu-w-cancel">Cancelar</button>'+
+      (w.paso>1?'<button type="button" class="btn ghost small" id="reu-w-back">‹ Paso anterior</button>':'')+
+      (w.paso<3?'<button type="button" class="btn small" id="reu-w-fwd" style="margin-left:auto">Continuar ›</button>'
+               :'<button type="button" class="btn small" id="reu-w-save" style="margin-left:auto"'+(w.guardando?' disabled':'')+'>'+(w.guardando?'Guardando…':'✓ Guardar reunión')+'</button>')+'</div></div>';
+    return h; }
+  function reuPuntoResumen(p){ var dn=diffDiasV(p.plazo), st=REU_ST[p.estado];
+    return '<div class="reu-pt st-'+p.estado+'"><div class="reu-pt-top"><span class="reu-cod">'+esc(reuCod(p))+'</span><span class="reu-st '+p.estado+'">'+st[0]+' '+st[1]+'</span>'+(reuEscalar(p)?'<span class="reu-esc">⚠ Escalar</span>':'')+'</div>'+
+      '<div class="reu-desc">'+esc(p.descripcion)+'</div><div class="reu-meta"><span>👤 '+esc(p.responsable)+'</span><span class="'+(dn<0?'bad':'')+'">Plazo '+esc(fechaCorta(p.plazo))+'</span></div>'+(p.motivo?'<div class="reu-mot">'+esc(p.motivo)+'</div>':'')+'</div>'; }
+  function reuWizLeer(){ var w=REU.wiz; if(!w) return; if($('reu-w-fecha')) w.fecha=$('reu-w-fecha').value||w.fecha;
+    var ab=reuAbiertos(w.tipo), p=ab[Math.min(w.i,ab.length-1)];
+    if(w.paso===1 && p && w.rev[p.id]){ if($('reu-w-plazo')) w.rev[p.id].plazo=$('reu-w-plazo').value; if($('reu-w-com')) w.rev[p.id].motivo=($('reu-w-com').value||'').trim(); }
+    if(w.paso===2){ w.asistentes=[].map.call(document.querySelectorAll('.reu-w-as:checked'),function(x){ return x.value; }); if($('reu-w-notas')) w.notas=$('reu-w-notas').value; } }
+  function reuWizValidar(){ var w=REU.wiz, ab=reuAbiertos(w.tipo), falta=[];
+    ab.forEach(function(p){ var r=w.rev[p.id]; if(!r){ falta.push(reuCod(p)+' sin revisar'); return; }
+      if(r.estado==='en_curso' && (!r.plazo || r.plazo<w.fecha)) falta.push(reuCod(p)+': plazo nuevo desde la fecha de la reunión');
+      if(r.estado==='atrasado' && !r.motivo) falta.push(reuCod(p)+': falta el motivo'); });
+    return falta; }
+  function reuWizBind(){ var w=REU.wiz, ab=reuAbiertos(w.tipo);
+    function re(){ renderReuniones(); }
+    document.querySelectorAll('.reu-w-st').forEach(function(x){ x.addEventListener('click',function(){ reuWizLeer(); var p=ab[Math.min(w.i,ab.length-1)];
+      var prev=w.rev[p.id]||{}; w.rev[p.id]={estado:x.dataset.k, plazo:prev.plazo||(x.dataset.k==='en_curso'&&p.plazo>=w.fecha?p.plazo:''), motivo:prev.motivo||(x.dataset.k==='atrasado'?(p.motivo||''):'')}; re(); }); });
+    if($('reu-w-prev')) $('reu-w-prev').addEventListener('click',function(){ reuWizLeer(); w.i=Math.max(0,w.i-1); re(); });
+    if($('reu-w-next')) $('reu-w-next').addEventListener('click',function(){ reuWizLeer(); w.i=Math.min(ab.length-1,w.i+1); re(); });
+    document.querySelectorAll('.reu-w-go').forEach(function(x){ x.addEventListener('click',function(e){ e.preventDefault(); reuWizLeer(); w.i=+x.dataset.j; re(); }); });
+    if($('reu-w-cancel')) $('reu-w-cancel').addEventListener('click',function(){ if(confirm('¿Descartar esta reunión? No se guarda nada.')){ REU.wiz=null; re(); } });
+    if($('reu-w-back')) $('reu-w-back').addEventListener('click',function(){ reuWizLeer(); w.paso--; re(); });
+    if($('reu-w-fwd')) $('reu-w-fwd').addEventListener('click',function(){ reuWizLeer();
+      if(w.paso===1){ var f=reuWizValidar(); if(f.length){ toast(f[0]+(f.length>1?' (y '+(f.length-1)+' más)':'')); return; } }
+      w.paso++; re(); });
+    if($('reu-n-add')) $('reu-n-add').addEventListener('click',function(){ var d=($('reu-n-desc').value||'').trim(), r=($('reu-n-resp').value||'').trim(), pl=$('reu-n-plazo').value;
+      if(!d||!r||!pl){ toast('Acuerdo, responsable y plazo son obligatorios.'); return; }
+      w.nuevos.push({descripcion:d, responsable:r, plazo:pl}); re(); setTimeout(function(){ if($('reu-n-desc')) $('reu-n-desc').focus(); },0); });
+    if($('reu-n-desc')) $('reu-n-desc').addEventListener('keydown',function(e){ if(e.key==='Enter'){ e.preventDefault(); $('reu-n-resp').focus(); } });
+    document.querySelectorAll('.reu-n-del').forEach(function(x){ x.addEventListener('click',function(){ w.nuevos.splice(+x.dataset.j,1); re(); }); });
+    if($('reu-w-save')) $('reu-w-save').addEventListener('click',reuWizGuardar); }
+  function reuWizGuardar(){ var w=REU.wiz; if(!w||w.guardando) return; reuWizLeer();
+    var f=reuWizValidar(); if(f.length){ w.paso=1; renderReuniones(); toast(f[0]); return; }
+    var pend=($('reu-n-desc')&&$('reu-n-desc').value||'').trim(); if(pend && !confirm('Hay un acuerdo escrito sin «Agregar». ¿Guardar sin él?')) return;
+    w.guardando=true; renderReuniones();
+    sb.from('reuniones').insert({ tipo:w.tipo, fecha:w.fecha, asistentes:w.asistentes, notas:w.notas, autor:miEmail() }).select().single().then(function(r){
+      if(r.error){ w.guardando=false; renderReuniones(); toast('No se pudo guardar el acta: '+r.error.message); return; }
+      var acta=r.data, ops=[];
+      Object.keys(w.rev).forEach(function(id){ var v=w.rev[id], p=REU.puntos.filter(function(x){ return String(x.id)===String(id); })[0]; if(!p) return;
+        var upd={ estado:v.estado, ult_reunion:acta.id, ult_comentario:v.motivo||('Revisado en reunión del '+fechaCorta(w.fecha)) };
+        if(v.estado==='en_curso') upd.plazo=v.plazo;
+        upd.motivo=v.motivo||(v.estado==='hecho'?'':p.motivo||'');
+        ops.push(sb.from('reunion_puntos').update(upd).eq('id',id)); });
+      if(w.nuevos.length) ops.push(sb.from('reunion_puntos').insert(w.nuevos.map(function(n){
+        return { tipo:w.tipo, descripcion:n.descripcion, responsable:n.responsable, responsable_email:reuEmailDe(n.responsable), desde:w.fecha, plazo:n.plazo, estado:'en_curso', reunion_origen:acta.id, ult_reunion:acta.id, autor:miEmail() }; })));
+      Promise.all(ops).then(function(rs){ var err=rs.filter(function(x){ return x&&x.error; })[0];
+        REU.wiz=null; REU.abierto.actas=true;
+        toast(err?('Acta guardada, pero falló un punto: '+err.error.message):'✓ Reunión guardada');
+        cargarReuniones(); }); }); }
+
+  // ----- Agregar otra reunión -----
+  function reuNuevoTipoHtml(){ return '<div class="card"><p class="note" style="margin:0 0 10px">Agrega otra reunión con seguimiento propio (por ejemplo, la quincenal con Ignacio).</p>'+
+    '<div class="grid2"><div class="fld"><label>Nombre</label><input id="reu-t-nom" type="text" placeholder="Ej: Supervisión Innova"></div>'+
+    '<div class="fld"><label>Letra de los puntos</label><input id="reu-t-pre" type="text" maxlength="3" placeholder="Ej: S"></div></div>'+
+    '<div class="grid2"><div class="fld"><label>Día</label><select id="reu-t-dia"><option value="">Sin día fijo</option>'+REU_DIAS.slice(1).map(function(d,i){ return '<option value="'+(i+1)+'">'+d+'</option>'; }).join('')+'</select></div>'+
+    '<div class="fld"><label>Dueño del seguimiento</label><input id="reu-t-due" type="text" value="'+enc(reuMiNombre()||'Enzo')+'"></div></div>'+
+    '<div class="fld"><label>Participantes (separados por coma)</label><input id="reu-t-par" type="text" placeholder="Enzo, Ignacio"></div>'+
+    '<button type="button" class="btn" id="reu-t-ok">Crear reunión</button></div>'; }
+  function reuNuevoTipoBind(){ $('reu-t-ok').addEventListener('click',function(){
+    var nom=($('reu-t-nom').value||'').trim(), pre=($('reu-t-pre').value||'').trim().toUpperCase();
+    if(!nom||!pre){ toast('Nombre y letra son obligatorios.'); return; }
+    if(REU.tipos.some(function(t){ return (t.prefijo||'').toUpperCase()===pre; })){ toast('Esa letra ya la usa otra reunión.'); return; }
+    var clave=nom.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||('reu-'+Date.now());
+    var par=($('reu-t-par').value||'').split(',').map(function(s){ return s.trim(); }).filter(Boolean).map(function(n){ var em=reuEmailDe(n); return em?{nombre:n,email:em}:{nombre:n}; });
+    sb.from('reuniones_tipo').insert({ clave:clave, nombre:nom, prefijo:pre, dia_semana:($('reu-t-dia').value?+$('reu-t-dia').value:null), participantes:par, dueno:($('reu-t-due').value||'').trim()||null, orden:100+REU.tipos.length }).then(function(r){
+      if(r.error){ toast('No se pudo crear: '+r.error.message); return; }
+      REU.tab=clave; toast('✓ Reunión creada'); cargarReuniones(); }); }); }
+
+  // ----- Tarjeta de Inicio: acuerdos vencidos -----
+  function reuInicioHtml(puntos, tipos){ if(!reuVer() || !puntos) return '';
+    var tp={}; (tipos||[]).forEach(function(t){ tp[t.clave]=t; });
+    var hoyI=todayISO(), venc=puntos.filter(function(p){ return p.estado==='atrasado' || (p.estado==='en_curso' && p.plazo<hoyI); }).sort(function(a,b){ return (a.plazo||'').localeCompare(b.plazo||''); });
+    var abiertos=puntos.filter(function(p){ return p.estado!=='hecho'; }).length, esc14=venc.filter(reuEscalar).length;
+    return '<div class="in-card in-tar" style="margin-bottom:14px'+(venc.length?';border-color:#d7262e':'')+'"><div class="in-ct"><b>Acuerdos de reuniones vencidos</b><button type="button" class="in-lnk" id="in-ver-reu">Ver reuniones</button></div>'+
+      (venc.length?('<ul class="in-tar-list">'+venc.slice(0,8).map(function(p){ var t=tp[p.tipo]||{}; return '<li>🔴 <span class="reu-cod">'+esc((t.prefijo||'')+p.numero)+'</span> '+esc(p.descripcion)+
+        '<span class="in-mut"> · '+esc(p.responsable)+' · venció '+esc(fechaCorta(p.plazo))+'</span>'+(reuEscalar(p)?' <span class="reu-esc">⚠ Escalar</span>':'')+'</li>'; }).join('')+'</ul>')
+        :'<p class="in-mut" style="margin:0">✓ Ningún acuerdo vencido.</p>')+
+      '<p class="in-mut" style="margin:8px 0 0">'+abiertos+' abiertos en total'+(esc14?' · '+esc14+' para escalar':'')+'.</p></div>'; }
   function cargarInicio(){
     var c=$('in-body'); if(!c) return;
     var hoy=todayISO(); $('in-fecha').textContent=fLarga(hoy);
@@ -8992,8 +9307,10 @@
       sb.from('vehiculo_gastos').select('vehiculo_id,categoria,vencimiento').not('vencimiento','is',null).limit(4000),
       sb.from('vehiculos').select('id,nombre,marca,modelo,patente,estado').limit(300),
       sb.from('salidas_medicas').select('id,fecha').gte('fecha',mes).limit(500),
-      sb.from('tareas').select('*').eq('estado','pendiente').limit(500)
-    ]).then(function(rs){ function D(i){ return (rs[i]&&!rs[i].error&&rs[i].data)||[]; } pintarInicio({ trabs:D(0), docs:D(1), ev:D(2), plan:D(3), cli:D(4), emp:D(5), vg:D(6), veh:D(7), sal:D(8), tar:D(9) }); },
+      sb.from('tareas').select('*').eq('estado','pendiente').limit(500),
+      reuVer()?sb.from('reunion_puntos').select('id,tipo,numero,descripcion,responsable,plazo,estado,atrasado_desde').neq('estado','hecho').limit(1000):Promise.resolve(null),
+      reuVer()?sb.from('reuniones_tipo').select('clave,prefijo').limit(100):Promise.resolve(null)
+    ]).then(function(rs){ function D(i){ return (rs[i]&&!rs[i].error&&rs[i].data)||[]; } pintarInicio({ trabs:D(0), docs:D(1), ev:D(2), plan:D(3), cli:D(4), emp:D(5), vg:D(6), veh:D(7), sal:D(8), tar:D(9), reu:(rs[10]&&!rs[10].error)?rs[10].data:null, reuTipos:D(11) }); },
       function(){ c.innerHTML='<div class="empty">No se pudo cargar el resumen.</div>'; });
   }
   function pintarInicio(X){
@@ -9045,7 +9362,7 @@
         ((isAdmin&&teamTar)?('<p class="in-mut" style="margin:8px 0 0">'+teamTar+' pendiente'+(teamTar>1?'s':'')+' en total (equipo).</p>'):'')+
       '</div>';
     }
-    var h=tarBlock+'<div class="in-kpis">'+
+    var h=reuInicioHtml(X.reu, X.reuTipos)+tarBlock+'<div class="in-kpis">'+
       kpi('trab','Trabajadores activos',act.length,(espera?espera+' en espera':'Ninguno en espera'),'trab')+
       kpi('doc','Documentación al día',pctProm+'%','Promedio de '+act.length+' activos','doc',pctProm>=80?'bien':(pctProm>=50?'medio':'mal'))+
       kpi('faena','Faenas hoy',hoyEv.length,personasHoy+' personas asignadas','planif')+
@@ -9098,6 +9415,7 @@
     c.querySelectorAll('[data-ir]').forEach(function(b){ b.addEventListener('click',function(){ ir(b.dataset.ir); }); });
     c.querySelectorAll('.in-rk[data-tid]').forEach(function(b){ b.addEventListener('click',function(){ ir('doc'); }); });
     var _vt=$('in-ver-tareas'); if(_vt) _vt.addEventListener('click',function(){ abrirVista('v-tareas'); });
+    var _vr=$('in-ver-reu'); if(_vr) _vr.addEventListener('click',function(){ abrirVista('v-reuniones'); });
   }
 
   // ====== Alertas (solo admin): documentación, vehículos, informe mensual, faenas que piden reporte ======
@@ -11162,7 +11480,8 @@
       ['clientes','Clientes','v-clientes',null,[]],
       ['planificacion','Planificación','v-planif',null,[]],
       ['calendario','Calendario','v-plan',null,[]],
-      ['matriz','Matriz PTS','v-matriz',null,[]]
+      ['matriz','Matriz PTS','v-matriz',null,[]],
+      ['reuniones','Reuniones (acuerdos)','v-reuniones',null,[['editar','Revisar puntos, tomar actas y crear acuerdos','editar']]]
     ]],
     ['RRHH',[
       ['trabajadores','Trabajadores','v-rrhh','trab',[['exportar','Exportar listado de trabajadores','total']]],
