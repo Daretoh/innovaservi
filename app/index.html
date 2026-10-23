@@ -1688,7 +1688,7 @@
     <div class="sbar-brand"><img src="../assets/images/InnovaLOGO.png" alt="" onerror="this.style.display='none'"><span>InnovaGestión</span></div>
     <div class="sbar-user" style="margin:2px 0 6px"><div class="sbar-av" id="sb-av"></div><span class="sbar-who" id="sb-who"></span></div>
     <nav class="sbar-nav">
-      <button class="sb-item sb-admin" data-v="v-inicio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h5v-6h4v6h5V9.5"/></svg>Inicio</button>
+      <button class="sb-item" data-v="v-inicio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h5v-6h4v6h5V9.5"/></svg>Inicio</button>
       <button class="sb-item sb-admin" data-v="v-alertas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>Alertas<span class="al-num hide" id="sb-al-num"></span></button>
       <button class="sb-item" data-v="v-tareas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/></svg>Tareas<span class="al-num hide" id="sb-tar-num"></span></button>
       <button class="sb-item sb-reu hide" data-v="v-reuniones"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 9h8M8 13h5"/></svg>Reuniones<span class="al-num hide" id="sb-reu-num"></span></button>
@@ -2998,7 +2998,7 @@
     document.querySelectorAll('.sb-reu').forEach(function(x){ x.classList.toggle('hide', !reuVer()); });   // Reuniones (beta): solo Enzo por ahora
   }
   // Apartado (módulo de permisos) de cada vista / botón del menú.
-  var MOD_DE_V={ 'v-alertas':'alertas','v-reporte':'informe','v-hist':'reportes','v-horas':'registro','v-asist':'asistencia','v-fotos':'multimedia','v-cuadrilla':'preparacion','v-veh':'vehiculos','v-clientes':'clientes','v-planif':'planificacion','v-plan':'calendario','v-matriz':'matriz','v-remu':'remu','v-costos':'costos','v-acc':'accesos','v-reuniones':'reuniones' };
+  var MOD_DE_V={ 'v-inicio':'inicio','v-alertas':'alertas','v-reporte':'informe','v-hist':'reportes','v-horas':'registro','v-asist':'asistencia','v-fotos':'multimedia','v-cuadrilla':'preparacion','v-veh':'vehiculos','v-clientes':'clientes','v-planif':'planificacion','v-plan':'calendario','v-matriz':'matriz','v-remu':'remu','v-costos':'costos','v-acc':'accesos','v-reuniones':'reuniones' };
   var RRHH_MODS=['trabajadores','documentacion','salidas'];
   function verRrhh(){ return RRHH_MODS.some(verMod); }
   function modDeNav(el){ var v=el.dataset.v; if(v==='v-rrhh') return el.dataset.seg?SEG_MOD[el.dataset.seg]:null; return MOD_DE_V[v]||null; }
@@ -11469,6 +11469,7 @@
   // [clave, nombre, vista, seg, acciones[[clave, texto, nivel mínimo por defecto]]]
   var PERM_GRUPOS=[
     ['Operaciones',[
+      ['inicio','Inicio (resumen)','v-inicio',null,[]],
       ['alertas','Alertas','v-alertas',null,[]],
       ['informe','Informe (editor)','v-reporte',null,[['editar','Editar datos del informe (cliente, lugar, fecha, notas)','editar'],['generar','Generar el informe / PDF para el cliente','editar'],['eliminar','Eliminar informes','total']]],
       ['reportes','Reportes','v-hist',null,[]],
