@@ -1691,7 +1691,6 @@
       <button class="sb-item" data-v="v-inicio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h5v-6h4v6h5V9.5"/></svg>Inicio</button>
       <button class="sb-item sb-admin" data-v="v-alertas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>Alertas<span class="al-num hide" id="sb-al-num"></span></button>
       <button class="sb-item" data-v="v-tareas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/></svg>Tareas<span class="al-num hide" id="sb-tar-num"></span></button>
-      <button class="sb-item sb-reu hide" data-v="v-reuniones"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 9h8M8 13h5"/></svg>Reuniones<span class="al-num hide" id="sb-reu-num"></span></button>
       <div class="sbar-grp">Operaciones</div>
       <button class="sb-item sb-admin on" data-v="v-reporte"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><circle cx="10" cy="13" r="2"/><path d="m20 17-1.5-1.5L14 20"/></svg>Informe (editor)</button>
       <button class="sb-item" data-v="v-hist"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>Reportes</button>
@@ -2092,12 +2091,6 @@
     </section>
 
     <!-- ---- REUNIONES: actas y seguimiento de acuerdos (beta) ---- -->
-    <section class="view" id="v-reuniones">
-      <div class="h-row"><h2>Reuniones <span class="cnt" id="reu-cnt"></span></h2></div>
-      <div class="reu-tabs" id="reu-tabs"></div>
-      <div id="reu-body"></div>
-    </section>
-
     <section class="view" id="v-alertas">
       <div class="h-row"><h2>Alertas</h2><span class="cnt" id="al-cnt"></span></div>
       <p class="note" style="margin:0 0 12px">Documentación vencida o por vencer, informes mensuales pendientes y faenas que piden reporte sin entregar.</p>
@@ -2995,10 +2988,9 @@
     document.body.classList.toggle('no-elim-media', !puede('multimedia.eliminar'));
     if($('who')) $('who').textContent=sesNombre();
     if(!isAdmin) aplicarSecciones();   // muestra solo los apartados permitidos
-    document.querySelectorAll('.sb-reu').forEach(function(x){ x.classList.toggle('hide', !reuVer()); });   // Reuniones (beta): solo Enzo por ahora
   }
   // Apartado (módulo de permisos) de cada vista / botón del menú.
-  var MOD_DE_V={ 'v-inicio':'inicio','v-alertas':'alertas','v-reporte':'informe','v-hist':'reportes','v-horas':'registro','v-asist':'asistencia','v-fotos':'multimedia','v-cuadrilla':'preparacion','v-veh':'vehiculos','v-clientes':'clientes','v-planif':'planificacion','v-plan':'calendario','v-matriz':'matriz','v-remu':'remu','v-costos':'costos','v-acc':'accesos','v-reuniones':'reuniones' };
+  var MOD_DE_V={ 'v-inicio':'inicio','v-alertas':'alertas','v-reporte':'informe','v-hist':'reportes','v-horas':'registro','v-asist':'asistencia','v-fotos':'multimedia','v-cuadrilla':'preparacion','v-veh':'vehiculos','v-clientes':'clientes','v-planif':'planificacion','v-plan':'calendario','v-matriz':'matriz','v-remu':'remu','v-costos':'costos','v-acc':'accesos' };
   var RRHH_MODS=['trabajadores','documentacion','salidas'];
   function verRrhh(){ return RRHH_MODS.some(verMod); }
   function modDeNav(el){ var v=el.dataset.v; if(v==='v-rrhh') return el.dataset.seg?SEG_MOD[el.dataset.seg]:null; return MOD_DE_V[v]||null; }
@@ -3051,7 +3043,6 @@
     if(isAdmin){ cargarTrab(actualizarDatalist); cargarClientes(); cargarCargos(); cargarAlertas(); }
     else if(verMod('alertas')){ cargarAlertas(); }
     cargarTareas();   // carga el contador de tareas pendientes (badge en el menú)
-    if(reuVer()) cargarReuniones();   // contador de acuerdos vencidos (beta)
     ofrecerBorrador();
     // Restaura la última pestaña usada (si sigue siendo visible/permitida para este usuario).
     var _did=false;
@@ -3128,7 +3119,6 @@
     if(v==='v-planif'){ cargarPlanif(); }
     if(v==='v-alertas'){ pintarAlertas(); cargarAlertas(); }
     if(v==='v-tareas'){ if(isAdmin && !(TRAB||[]).length) cargarTrab(function(){ cargarTareas(); }); else cargarTareas(); }
-    if(v==='v-reuniones'){ cargarReuniones(); }
     if(v==='v-asist'){ cargarAsistencia(); }
     if(v==='v-fotos'){ cargarFotos(); }
     window.scrollTo(0,0);
@@ -9050,7 +9040,7 @@
   // Estados: en_curso 🟡 · hecho 🟢 · atrasado 🔴. Lo vencido pasa solo a 🔴 (reuniones_refrescar); 14 días en 🔴 = Escalar.
   var BETA_REUNIONES=['enzo.castro@innovaservi.com','enzo.castro@innovaservi.cl'];
   function reuBeta(){ return BETA_REUNIONES.indexOf(miEmail())>=0; }
-  function reuVer(){ return reuBeta() && verMod('reuniones'); }
+  function reuVer(){ return false; }   // Reuniones retirado: ya no se ocupa
   function reuEdita(){ return isAdmin || puede('reuniones.editar') || nivelMod('reuniones')>=2; }
   var REU={ tipos:[], puntos:[], actas:[], log:{}, tab:'', abierto:{}, editando:'', verLog:{}, persona:'', wiz:null, cargado:false };
   var REU_ST={ en_curso:['🟡','En curso'], hecho:['🟢','Hecho'], atrasado:['🔴','Atrasado'] };
@@ -11481,8 +11471,7 @@
       ['clientes','Clientes','v-clientes',null,[]],
       ['planificacion','Planificación','v-planif',null,[]],
       ['calendario','Calendario','v-plan',null,[]],
-      ['matriz','Matriz PTS','v-matriz',null,[]],
-      ['reuniones','Reuniones (acuerdos)','v-reuniones',null,[['editar','Revisar puntos, tomar actas y crear acuerdos','editar']]]
+      ['matriz','Matriz PTS','v-matriz',null,[]]
     ]],
     ['RRHH',[
       ['trabajadores','Trabajadores','v-rrhh','trab',[['exportar','Exportar listado de trabajadores','total']]],
