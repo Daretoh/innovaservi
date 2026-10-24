@@ -1065,19 +1065,69 @@
   .in-klbl{font:700 11.5px var(--font);color:var(--muted);text-transform:uppercase;letter-spacing:.04em;}
   .in-kval{font:800 28px/1.15 var(--font);color:var(--ink);}
   /* Tareas */
-  .tar-card{display:flex;gap:10px;align-items:flex-start;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:9px;}
-  .tar-card.done{opacity:.62;}
-  .tar-card.done .tar-tit{text-decoration:line-through;}
-  .tar-main{flex:1;min-width:0;}
-  .tar-top{display:flex;align-items:center;gap:7px;margin-bottom:3px;flex-wrap:wrap;}
-  .tar-prio{font:800 9.5px var(--font);text-transform:uppercase;letter-spacing:.04em;border-radius:999px;padding:2px 8px;}
-  .tar-prio.p-alta{background:#fde8e8;color:#b42318;} .tar-prio.p-normal{background:var(--chip);color:var(--body);} .tar-prio.p-baja{background:var(--chip);color:var(--muted);}
-  .tar-venc{font:700 11px var(--font);color:var(--muted);} .tar-venc.bad{color:#b42318;}
-  .tar-tit{font:800 15px var(--font);color:var(--ink);line-height:1.25;}
-  .tar-det{font:500 13px var(--font);color:var(--body);margin-top:3px;white-space:pre-wrap;}
-  .tar-meta{font:600 11.5px var(--font);color:var(--muted);margin-top:6px;}
-  .tar-acts{display:flex;align-items:center;gap:6px;flex:0 0 auto;}
-  .tar-del{border:1px solid #f0c0c0;background:var(--card);color:#dc2626;border-radius:8px;width:30px;height:30px;font-size:14px;cursor:pointer;line-height:1;}
+  .tar-nueva{display:inline-flex;align-items:center;gap:6px;width:auto;}
+  .tar-tabs{display:flex;gap:6px;overflow-x:auto;margin:0 0 10px;padding-bottom:3px;scrollbar-width:thin;}
+  .tar-tab{flex:0 0 auto;border:1px solid var(--line);background:var(--card);color:var(--body);border-radius:999px;padding:7px 13px;font:700 12.5px var(--font);cursor:pointer;display:inline-flex;align-items:center;gap:6px;}
+  .tar-tab.on{background:var(--ink);color:var(--card);border-color:var(--ink);}
+  .tar-tab .tar-n{font:800 10.5px var(--font);background:var(--chip);color:var(--ink);border-radius:999px;padding:1px 7px;}
+  .tar-tab.on .tar-n{background:var(--orange);color:#fff;}
+  .tar-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 10px;}
+  .tar-bar .seg{max-width:100%;overflow-x:auto;}
+  .tar-bar input,.tar-bar select{font:600 13px var(--font);padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);}
+  .tar-bar input{flex:1;min-width:150px;}
+  .tar-wrap{container-type:inline-size;}
+  .tar-list{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;}
+  .tar-head,.tar-row{display:grid;grid-template-columns:24px minmax(0,1fr) 190px 92px 96px 66px 96px;gap:10px;align-items:center;padding:9px 12px;}
+  .tar-head{font:800 10.5px var(--font);text-transform:uppercase;letter-spacing:.04em;color:var(--muted);background:var(--alt);border-bottom:1px solid var(--line);}
+  .tar-row{border-bottom:1px solid var(--line);border-left:3px solid transparent;cursor:pointer;font:600 12.5px var(--font);color:var(--body);}
+  .tar-row:last-child{border-bottom:none;}
+  .tar-row:hover,.tar-row:focus-visible{background:var(--alt);outline:none;}
+  .tar-row.porvencer{border-left-color:#e0a100;} .tar-row.vencida{border-left-color:#d7262e;}
+  .tar-row.done .tar-tit{text-decoration:line-through;color:var(--muted);}
+  .tar-chk{width:22px;height:22px;border-radius:50%;border:2px solid var(--line);background:var(--card);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;}
+  .tar-chk:hover{border-color:#1e9a4a;} .tar-chk.en_proceso{border-color:#e0a100;background:#fdf3d8;} .tar-chk.hecha{background:#1e9a4a;border-color:#1e9a4a;}
+  .tar-main{min-width:0;}
+  .tar-tit{font:700 14px var(--font);color:var(--ink);line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .tar-sub{font:500 12px var(--font);color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .tar-sub:empty,.tar-msub{display:none;}
+  .tar-prio{display:inline-flex;align-items:center;gap:3px;font:800 9.5px var(--font);text-transform:uppercase;letter-spacing:.04em;border-radius:999px;padding:2px 8px;}
+  .tar-prio.p-alta{background:#fde8e8;color:#b42318;} .tar-prio.p-normal{background:#e8eefc;color:#2a4cad;} .tar-prio.p-baja{background:var(--chip);color:var(--muted);}
+  .tar-prio.sube{box-shadow:inset 0 0 0 1px currentColor;}
+  .tar-venc{font:700 12px var(--font);color:var(--body);} .tar-venc.warn{color:#9a6b00;} .tar-venc.bad{color:#b42318;}
+  .tar-st{font:800 10.5px var(--font);border-radius:999px;padding:2px 8px;background:var(--chip);color:var(--body);white-space:nowrap;}
+  .tar-st.en_proceso{background:#fdf3d8;color:#9a6b00;} .tar-st.hecha{background:#e6f5ec;color:#1e7a3e;}
+  .tar-mut{color:var(--muted);}
+  @container (max-width:720px){
+    .tar-head{display:none;}
+    .tar-row{grid-template-columns:24px minmax(0,1fr) auto;gap:9px;padding:10px 11px;}
+    .tar-row .c-resp,.tar-row .c-venc,.tar-row .c-dias,.tar-row .c-st{display:none;}
+    .tar-msub{display:block;font:600 11.5px var(--font);color:var(--muted);margin-top:3px;}
+    .tar-tit{white-space:normal;}
+  }
+  /* Tareas: detalle (hoja abajo en teléfono, ventana centrada en PC) */
+  .tar-sheet .panel{max-height:92vh;}
+  .tar-dh{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;}
+  .tar-dh h3{margin:0;}
+  .tar-x{border:none;background:var(--chip);color:var(--ink);width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+  .tar-sheet .tsb{overflow-y:auto;-webkit-overflow-scrolling:touch;padding:2px 1px 4px;}
+  .tar-sheet .fld{margin:0 0 9px;} .tar-sheet .grid2{gap:9px;}
+  .tar-sheet .fld input:disabled,.tar-sheet .fld select:disabled,.tar-sheet .fld textarea:disabled{opacity:1;color:var(--ink);background:var(--alt);}
+  .tar-stseg{margin:0 0 12px;}
+  .tar-auto{display:flex;align-items:center;gap:4px;font:700 11.5px var(--font);color:#b42318;margin-top:4px;}
+  .tar-fechas{font:600 12px var(--font);color:var(--muted);background:var(--alt);border-radius:10px;padding:8px 10px;margin:0 0 10px;line-height:1.5;}
+  .tar-fechas b{color:var(--ink);}
+  .tar-dacts{display:flex;gap:8px;flex-wrap:wrap;margin:2px 0 6px;}
+  .tar-dacts .btn{width:auto;}
+  .tar-borrar{color:#dc2626;border-color:#f0c0c0;}
+  .tar-h3{font:800 12px var(--font);color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:14px 0 8px;}
+  .tar-ob{border-left:3px solid var(--orange);background:var(--alt);border-radius:0 10px 10px 0;padding:7px 10px;margin-bottom:6px;font:500 13px/1.4 var(--font);color:var(--ink);white-space:pre-wrap;}
+  .tar-ob.sis{border-left-color:var(--line);background:none;color:var(--muted);font-size:12px;padding:3px 10px;}
+  .tar-ob-h{font:700 11px var(--font);color:var(--muted);margin-bottom:2px;white-space:normal;}
+  .tar-obs-new textarea{width:100%;min-height:64px;font:500 14px var(--font);padding:9px 11px;border:1px solid var(--line);border-radius:11px;background:var(--card);color:var(--ink);resize:vertical;}
+  @media(min-width:900px){
+    .tar-sheet .panel{left:50%;right:auto;top:50%;bottom:auto;width:min(660px,92vw);max-height:88vh;transform:translate(-50%,-50%);border-radius:18px;animation:none;padding:16px 18px 18px;}
+    .tar-sheet .grab{display:none;}
+  }
   .in-tar .in-tar-list{list-style:none;margin:0;padding:0;}
   .in-tar .in-tar-list li{padding:6px 0;border-bottom:1px solid var(--line);font:700 13.5px var(--font);color:var(--ink);}
   .in-tar .in-tar-list li:last-child{border-bottom:none;}
@@ -2078,16 +2128,14 @@
     </section>
 
     <section class="view" id="v-tareas">
-      <div class="h-row"><h2>Tareas <span class="cnt" id="tar-cnt"></span></h2></div>
-      <div class="card" id="tar-crear" style="display:none">
-        <div class="fld" style="margin:0 0 8px"><label>Tarea</label><input id="tar-titulo" type="text" placeholder="Ej: Entregar EPP a cuadrilla CPT" style="background:var(--card)"></div>
-        <div class="fld" style="margin:0 0 8px"><label>Detalle (opcional)</label><textarea id="tar-detalle" rows="2" placeholder="Instrucciones…" style="width:100%;font:500 14px var(--font);padding:9px 11px;border:1px solid var(--line);border-radius:11px;background:var(--card);color:var(--ink);resize:vertical"></textarea></div>
-        <div class="grid2"><div class="fld" style="margin:0"><label>Asignar a</label><select id="tar-asig" style="background:var(--card)"></select></div><div class="fld" style="margin:0"><label>Vence (opcional)</label><input id="tar-vence" type="date" style="background:var(--card)"></div></div>
-        <div class="grid2" style="margin-top:8px"><div class="fld" style="margin:0"><label>Prioridad</label><select id="tar-prio" style="background:var(--card)"><option value="alta">Alta</option><option value="normal" selected>Normal</option><option value="baja">Baja</option></select></div><div class="fld" style="margin:0;display:flex;align-items:flex-end"><button id="tar-crear-btn" class="btn" style="width:100%" type="button">Crear tarea</button></div></div>
+      <div class="h-row"><h2>Tareas <span class="cnt" id="tar-cnt"></span></h2><button id="tar-nueva" class="btn small tar-nueva" type="button" style="display:none"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Nueva tarea</button></div>
+      <div class="tar-tabs" id="tar-tabs"></div>
+      <div class="tar-bar">
+        <div class="seg" id="tar-filtro"><button class="seg-b on" data-f="abiertas" type="button">Abiertas</button><button class="seg-b" data-f="pendiente" type="button">Pendientes</button><button class="seg-b" data-f="en_proceso" type="button">En proceso</button><button class="seg-b" data-f="hecha" type="button">Terminadas</button><button class="seg-b" data-f="todas" type="button">Todas</button></div>
+        <input id="tar-q" type="search" placeholder="Buscar tarea…">
+        <select id="tar-orden" title="Ordenar"><option value="prio">Orden: prioridad</option><option value="vence">Orden: vencimiento</option><option value="antiguas">Orden: más antiguas</option><option value="recientes">Orden: más recientes</option></select>
       </div>
-      <div class="seg" id="tar-filtro" style="margin:4px 0 8px"><button class="seg-b on" data-f="pendiente" type="button">Pendientes</button><button class="seg-b" data-f="hecha" type="button">Hechas</button><button class="seg-b" data-f="todas" type="button">Todas</button></div>
-      <div class="seg" id="tar-scope" style="margin:0 0 10px;display:none"><button class="seg-b on" data-s="todas" type="button">Todas</button><button class="seg-b" data-s="mias" type="button">Mías</button></div>
-      <div id="tar-list"></div>
+      <div id="tar-list" class="tar-wrap"></div>
     </section>
 
     <!-- ---- REUNIONES: actas y seguimiento de acuerdos (beta) ---- -->
@@ -2238,6 +2286,12 @@
     <button data-v="v-matriz" id="tab-matriz" class="hide"><span class="em">🧰</span>Matriz</button>
     <button data-v="v-veh" id="tab-veh" class="hide"><span class="em">🚚</span>Vehículos</button>
   </nav>
+</div>
+
+<!-- Detalle / nueva tarea -->
+<div class="sheet tar-sheet" id="tar-sheet">
+  <div class="bg" id="tar-sheet-bg"></div>
+  <div class="panel"><div class="grab"></div><div id="tar-sheet-body" style="display:flex;flex-direction:column;min-height:0"></div></div>
 </div>
 
 <!-- Sheet selector de trabajo -->
@@ -2990,7 +3044,7 @@
     if(!isAdmin) aplicarSecciones();   // muestra solo los apartados permitidos
   }
   // Apartado (módulo de permisos) de cada vista / botón del menú.
-  var MOD_DE_V={ 'v-inicio':'inicio','v-alertas':'alertas','v-reporte':'informe','v-hist':'reportes','v-horas':'registro','v-asist':'asistencia','v-fotos':'multimedia','v-cuadrilla':'preparacion','v-veh':'vehiculos','v-clientes':'clientes','v-planif':'planificacion','v-plan':'calendario','v-matriz':'matriz','v-remu':'remu','v-costos':'costos','v-acc':'accesos' };
+  var MOD_DE_V={ 'v-inicio':'inicio','v-alertas':'alertas','v-reporte':'informe','v-hist':'reportes','v-horas':'registro','v-asist':'asistencia','v-fotos':'multimedia','v-cuadrilla':'preparacion','v-veh':'vehiculos','v-clientes':'clientes','v-planif':'planificacion','v-plan':'calendario','v-matriz':'matriz','v-remu':'remu','v-costos':'costos','v-acc':'accesos','v-tareas':'tareas' };
   var RRHH_MODS=['trabajadores','documentacion','salidas'];
   function verRrhh(){ return RRHH_MODS.some(verMod); }
   function modDeNav(el){ var v=el.dataset.v; if(v==='v-rrhh') return el.dataset.seg?SEG_MOD[el.dataset.seg]:null; return MOD_DE_V[v]||null; }
@@ -3042,7 +3096,7 @@
     cargarPlantillas();   // para saber qué faenas piden reporte (Matriz PTS)
     if(isAdmin){ cargarTrab(actualizarDatalist); cargarClientes(); cargarCargos(); cargarAlertas(); }
     else if(verMod('alertas')){ cargarAlertas(); }
-    cargarTareas();   // carga el contador de tareas pendientes (badge en el menú)
+    if(verMod('tareas')) cargarTareas();   // carga el contador de tareas abiertas (badge en el menú)
     ofrecerBorrador();
     // Restaura la última pestaña usada (si sigue siendo visible/permitida para este usuario).
     var _did=false;
@@ -3103,7 +3157,7 @@
     document.querySelectorAll('.sbar .sb-item[data-v]:not([data-seg])').forEach(function(x){ x.classList.toggle('on',x.dataset.v===v); });
     if(v!=='v-rrhh') document.querySelectorAll('.sbar .sb-item[data-seg]').forEach(function(x){ x.classList.remove('on'); });
     document.querySelectorAll('.view').forEach(function(x){ x.classList.toggle('on',x.id===v); });
-    var _main=document.querySelector('main'); if(_main){ _main.classList.toggle('wide', v==='v-inicio'||v==='v-remu'||v==='v-costos'||v==='v-horas'||v==='v-rrhh'||v==='v-planif'); _main.classList.toggle('planwide', v==='v-planif'); _main.classList.toggle('planview', v==='v-plan'); _main.classList.toggle('mesfull', v==='v-remu'&&REMU_MODO==='mes'); }  // vistas anchas / calendario full
+    var _main=document.querySelector('main'); if(_main){ _main.classList.toggle('wide', v==='v-inicio'||v==='v-tareas'||v==='v-remu'||v==='v-costos'||v==='v-horas'||v==='v-rrhh'||v==='v-planif'); _main.classList.toggle('planwide', v==='v-planif'); _main.classList.toggle('planview', v==='v-plan'); _main.classList.toggle('mesfull', v==='v-remu'&&REMU_MODO==='mes'); }  // vistas anchas / calendario full
     if(v==='v-inicio') cargarInicio();
     if(v==='v-hist') cargarRegistros(pintarRegistros);
     if(v==='v-horas') cargarHoras();
@@ -3118,7 +3172,7 @@
     if(v==='v-plan'){ var fr=$('plan-frame'); if(fr && !fr.getAttribute('src')) fr.setAttribute('src','../planificacion/?embed=1'); }
     if(v==='v-planif'){ cargarPlanif(); }
     if(v==='v-alertas'){ pintarAlertas(); cargarAlertas(); }
-    if(v==='v-tareas'){ if(isAdmin && !(TRAB||[]).length) cargarTrab(function(){ cargarTareas(); }); else cargarTareas(); }
+    if(v==='v-tareas') cargarTareas();
     if(v==='v-asist'){ cargarAsistencia(); }
     if(v==='v-fotos'){ cargarFotos(); }
     window.scrollTo(0,0);
@@ -8968,72 +9022,190 @@
     salud:'<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M12 8v8M8 12h8"/>'
   };
   function inIco(k){ return '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+IN_ICO[k]+'</svg>'; }
-  // ====== Tareas (asignar a personas; aparecen en Inicio como pendientes) ======
-  var TAREAS=[], TAR_FILTRO='pendiente', TAR_SCOPE='todas';
+  // ====== Tareas (equipo de administración: lista, seguimiento con observaciones, prioridad que sube sola) ======
+  // Tablas: tareas, tareas_obs; equipo vía rpc tareas_equipo() (ver supabase/migrations/20261023000000_tareas_v2.sql).
+  // Estado: pendiente | en_proceso | hecha. Acceso: módulo 'tareas' en Accesos (ver = mirar/seguir; editar = crear y editar).
+  var TAREAS=[], TAR_OBS={}, TAR_EQUIPO=[], TAR_FILTRO='abiertas', TAR_TAB='mias', TAR_ORDEN='prio', TAR_Q='', TAR_ABIERTA=null;
+  var TAR_ST={pendiente:'Pendiente', en_proceso:'En proceso', hecha:'Terminada'};
+  var TAR_PR=['baja','normal','alta'], TAR_PR_LBL={alta:'Alta',normal:'Normal',baja:'Baja'};
+  var TAR_ICO={ check:'<path d="M5 12l5 5L20 7"/>', up:'<path d="M12 19V5M6 11l6-6 6 6"/>', x:'<path d="M18 6 6 18M6 6l12 12"/>' };
+  function tarIco(k,s){ s=s||14; return '<svg viewBox="0 0 24 24" width="'+s+'" height="'+s+'" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">'+TAR_ICO[k]+'</svg>'; }
   function nomDeEmail(em){ var lp=(em||'').split('@')[0].replace(/[._\-]+/g,' ').replace(/[0-9]+/g,' ').trim().split(/\s+/).filter(Boolean);
     return lp.length?lp.slice(0,2).map(function(w){ return w.charAt(0).toUpperCase()+w.slice(1).toLowerCase(); }).join(' '):(em||''); }
   function miEmail(){ return (userEmail||'').trim().toLowerCase(); }
+  function tarLow(s){ return (s||'').trim().toLowerCase(); }
+  function tarEst(t){ return t.estado||'pendiente'; }
+  function tarAbierta(t){ return tarEst(t)!=='hecha'; }
+  function tarEsMia(t,em){ em=em||miEmail(); return tarLow(t.asignado_email)===em || tarLow(t.responsable2_email)===em || (t.menciones||[]).map(tarLow).indexOf(em)>=0; }
+  function tarPorId(id){ return TAREAS.filter(function(x){ return String(x.id)===String(id); })[0]||null; }
+  function tarPuedeCrear(){ return nivelMod('tareas')>=2; }
+  function tarEditable(t){ return tarPuedeCrear() || (t && tarLow(t.autor)===miEmail()); }
+  function tarPuedeBorrar(t){ return nivelMod('tareas')>=3 || (t && tarLow(t.autor)===miEmail()); }
+  // Días entre dos instantes (b = ahora si falta) y días hasta una fecha 'aaaa-mm-dd' (negativo = vencida).
+  function tarDias(a,b){ if(!a) return 0; return Math.max(0, Math.floor(((b?new Date(b):new Date())-new Date(a))/86400000)); }
+  function tarHasta(f){ return Math.round((new Date(f+'T12:00:00')-new Date(todayISO()+'T12:00:00'))/86400000); }
+  function tarFecha(iso){ if(!iso) return ''; var d=new Date(iso); return d.getDate()+' '+MES[d.getMonth()]+(d.getFullYear()!==new Date().getFullYear()?' '+d.getFullYear():''); }
+  function tarFechaHora(iso){ var d=new Date(iso); return tarFecha(iso)+' '+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2); }
+  // Nombre corto: "Yocelyn Paola Mansilla Reyes" → "Yocelyn Mansilla".
+  function tarCorto(nm){ var w=(nm||'').trim().split(/\s+/).filter(Boolean); if(w.length>=4) return w[0]+' '+w[2]; return w.slice(0,2).join(' '); }
   function tarAsignables(){ var seen={}, out=[];
-    (TRAB||[]).forEach(function(t){ var em=(t.email||'').trim().toLowerCase(); if(!em||seen[em]) return; seen[em]=1; out.push({email:em, nombre:titleCase(t.nombre||em)}); });
-    (ADMIN_EMAILS||[]).forEach(function(e){ e=(e||'').toLowerCase(); if(seen[e]) return; seen[e]=1; out.push({email:e, nombre:nomDeEmail(e)}); });
+    function add(em,nm){ em=tarLow(em); if(!em||seen[em]) return; seen[em]=1; out.push({email:em, nombre:nm||nomDeEmail(em)}); }
+    TAR_EQUIPO.forEach(function(p){ add(p.email, titleCase(p.nombre||'')); });
+    (ADMIN_EMAILS||[]).forEach(function(e){ var nm=nomDeEmail(e); if(out.some(function(p){ return tarCorto(p.nombre).toLowerCase()===nm.toLowerCase(); })) return; add(e,nm); });
     return out.sort(function(a,b){ return a.nombre.localeCompare(b.nombre); }); }
-  function renderTarAsig(){ var sel=$('tar-asig'); if(!sel) return; var cur=sel.value;
-    sel.innerHTML=tarAsignables().map(function(p){ return '<option value="'+enc(p.email)+'">'+esc(p.nombre)+'</option>'; }).join('');
-    if(cur){ sel.value=cur; } }
-  function tarBadge(){ var n=TAREAS.filter(function(t){ return (t.estado||'pendiente')==='pendiente' && (t.asignado_email||'').toLowerCase()===miEmail(); }).length;
+  function tarNom(em){ em=tarLow(em); if(!em) return ''; var p=tarAsignables().filter(function(x){ return x.email===em; })[0]; return p?p.nombre:nomDeEmail(em); }
+  // Personas para las pestañas: el equipo + quien tenga tareas abiertas asignadas.
+  function tarPersonas(){ var out=tarAsignables(), seen={}; out.forEach(function(p){ seen[p.email]=1; });
+    TAREAS.forEach(function(t){ if(!tarAbierta(t)) return; [[t.asignado_email,t.asignado_nombre],[t.responsable2_email,t.responsable2_nombre]].forEach(function(x){ var em=tarLow(x[0]); if(em&&!seen[em]){ seen[em]=1; out.push({email:em, nombre:x[1]||nomDeEmail(em)}); } }); });
+    return out; }
+  // Prioridad "inteligente": sube sola si la tarea está por vencer o lleva días sin movimiento.
+  //  - sin movimiento 7 días → sube un nivel; 14 días → dos niveles
+  //  - vence en 7 días o menos → sube un nivel; en 2 días, hoy o vencida → Alta
+  function tarPrio(t){ var base=Math.max(0,TAR_PR.indexOf(t.prioridad||'normal')), p=base, por='';
+    if(!tarAbierta(t)) return {p:TAR_PR[base], base:TAR_PR[base], sube:false, por:''};
+    var mov=[t.updated_at,t.prio_desde,t.created_at].filter(Boolean).sort().pop(), quieta=tarDias(mov);
+    var pasos=quieta>=14?2:(quieta>=7?1:0); if(pasos){ p=Math.min(2,base+pasos); if(p>base) por='Lleva '+quieta+' días sin movimiento'; }
+    if(t.vence){ var dn=tarHasta(t.vence), v=dn<=2?2:(dn<=7?Math.min(2,base+1):-1);
+      if(v>p){ p=v; por=dn<0?'Vencida':(dn===0?'Vence hoy':'Vence en '+dn+' día'+(dn>1?'s':'')); } }
+    return {p:TAR_PR[p], base:TAR_PR[base], sube:p>base, por:por}; }
+  function tarVenc(t){ if(!t.vence) return null; var dn=tarHasta(t.vence), ab=tarAbierta(t);
+    return {dn:dn, txt:dn<0?'Venció '+tarFecha(t.vence+'T12:00:00'):(dn===0?'Vence hoy':tarFecha(t.vence+'T12:00:00')), cls:!ab?'':(dn<0?'bad':(dn<=3?'warn':''))}; }
+  function tarBadge(){ var n=TAREAS.filter(function(t){ return tarAbierta(t) && (tarLow(t.asignado_email)===miEmail() || tarLow(t.responsable2_email)===miEmail()); }).length;
     var b=$('sb-tar-num'); if(b){ b.textContent=n>99?'99+':String(n); b.classList.toggle('hide', !n); } }
   function cargarTareas(cb){ if(!sb){ if(cb)cb(); return; }
-    sb.from('tareas').select('*').order('created_at',{ascending:false}).limit(1000).then(function(r){
-      TAREAS=(r&&!r.error&&r.data)||[]; renderTareas(); tarBadge(); if(cb)cb(); }, function(){ if(cb)cb(); }); }
-  function tarFiltroUI(){ document.querySelectorAll('#tar-filtro .seg-b').forEach(function(x){ x.classList.toggle('on', x.dataset.f===TAR_FILTRO); }); }
-  function tarCard(t){ var done=(t.estado||'pendiente')==='hecha', prio=t.prioridad||'normal';
-    var prLbl={alta:'Alta',normal:'Normal',baja:'Baja'}[prio]||prio;
-    var vencTxt='', vencBad=false;
-    if(t.vence){ var dn=diffDiasV(t.vence); vencTxt=(dn<0?'Venció '+fechaCorta(t.vence):(dn===0?'Vence hoy':'Vence '+fechaCorta(t.vence))); vencBad=(dn<0 && !done); }
-    var puedeBorrar=isAdmin || (t.autor||'').toLowerCase()===miEmail();
-    return '<div class="tar-card'+(done?' done':'')+'" data-id="'+t.id+'">'+
-      '<div class="tar-main">'+
-        '<div class="tar-top"><span class="tar-prio p-'+prio+'">'+prLbl+'</span>'+(t.vence?('<span class="tar-venc'+(vencBad?' bad':'')+'">'+esc(vencTxt)+'</span>'):'')+'</div>'+
-        '<div class="tar-tit">'+esc(t.titulo||'')+'</div>'+
-        (t.detalle?('<div class="tar-det">'+esc(t.detalle)+'</div>'):'')+
-        '<div class="tar-meta">Para <b>'+esc(t.asignado_nombre||nomDeEmail(t.asignado_email)||'—')+'</b>'+(t.autor?(' · de '+esc(nomDeEmail(t.autor))):'')+'</div>'+
-      '</div>'+
-      '<div class="tar-acts">'+
-        (done?'<button class="btn ghost small tar-reabrir" data-id="'+t.id+'" style="width:auto" type="button">Reabrir</button>'
-             :'<button class="btn small tar-hecha" data-id="'+t.id+'" style="width:auto" type="button">Marcar hecha</button>')+
-        (puedeBorrar?'<button class="tar-del" data-id="'+t.id+'" title="Eliminar" type="button">✕</button>':'')+
-      '</div></div>'; }
-  function renderTareas(){ var c=$('tar-list'); if(!c) return;
-    if($('tar-crear')) $('tar-crear').style.display=isAdmin?'':'none';
-    if($('tar-scope')) $('tar-scope').style.display=isAdmin?'':'none';
-    renderTarAsig(); tarFiltroUI();
-    var scope=isAdmin?TAR_SCOPE:'mias';
-    var list=TAREAS.filter(function(t){
-      if(TAR_FILTRO!=='todas' && (t.estado||'pendiente')!==TAR_FILTRO) return false;
-      if(scope==='mias' && (t.asignado_email||'').toLowerCase()!==miEmail()) return false;
+    function D(r){ return (r&&!r.error&&r.data)||[]; }
+    Promise.all([
+      sb.from('tareas').select('*').order('created_at',{ascending:false}).limit(1000),
+      sb.from('tareas_obs').select('id,tarea_id,autor,texto,tipo,created_at').order('created_at',{ascending:true}).limit(5000),
+      sb.rpc('tareas_equipo')
+    ]).then(function(rs){
+      TAREAS=D(rs[0]); TAR_OBS={}; D(rs[1]).forEach(function(o){ (TAR_OBS[o.tarea_id]=TAR_OBS[o.tarea_id]||[]).push(o); }); TAR_EQUIPO=D(rs[2]);
+      renderTareas(); tarBadge(); if(TAR_ABIERTA && TAR_ABIERTA!=='nueva') tarPintarDetalle(); if(cb)cb(); }, function(){ if(cb)cb(); }); }
+  function tarLista(){ var em=TAR_TAB.indexOf('p:')===0?TAR_TAB.slice(2):null, q=TAR_Q.trim().toLowerCase(), pr={alta:0,normal:1,baja:2};
+    var list=TAREAS.filter(function(t){ var st=tarEst(t);
+      if(TAR_FILTRO==='abiertas'){ if(st==='hecha') return false; }
+      else if(TAR_FILTRO!=='todas' && st!==TAR_FILTRO) return false;
+      if(TAR_TAB==='mias' && !tarEsMia(t)) return false;
+      if(em && !tarEsMia(t,em)) return false;
+      if(q && ((t.titulo||'')+' '+(t.detalle||'')+' '+(t.asignado_nombre||'')+' '+(t.responsable2_nombre||'')).toLowerCase().indexOf(q)<0) return false;
       return true; });
+    list.forEach(function(t){ t._p=tarPrio(t); });
+    list.sort(function(a,b){ var va=a.vence||'9999', vb=b.vence||'9999', ca=a.created_at||'', cb=b.created_at||'';
+      if(TAR_ORDEN==='recientes') return cb.localeCompare(ca);
+      if(TAR_ORDEN==='antiguas') return ca.localeCompare(cb);
+      if(TAR_ORDEN==='vence') return va.localeCompare(vb) || pr[a._p.p]-pr[b._p.p];
+      // por prioridad (predeterminado): abiertas primero, prioridad efectiva, vencimiento y antigüedad
+      return (tarAbierta(a)?0:1)-(tarAbierta(b)?0:1) || pr[a._p.p]-pr[b._p.p] || va.localeCompare(vb) || ca.localeCompare(cb); });
+    return list; }
+  function tarResp(t){ var a=tarCorto(t.asignado_nombre||tarNom(t.asignado_email))||'Sin responsable';
+    return t.responsable2_email?(a+' + '+tarCorto(t.responsable2_nombre||tarNom(t.responsable2_email))):a; }
+  function tarFila(t){ var st=tarEst(t), P=t._p||tarPrio(t), V=tarVenc(t), obs=(TAR_OBS[t.id]||[]).filter(function(o){ return o.tipo!=='estado'; }), ult=obs[obs.length-1];
+    var dias=st==='hecha'?(t.done_at?tarDias(t.created_at,t.done_at)+' d':'—'):(tarDias(t.created_at)===0?'Hoy':tarDias(t.created_at)+' d');
+    var cls='tar-row'+(st==='hecha'?' done':'')+(V&&V.cls==='bad'?' vencida':(V&&V.cls==='warn'?' porvencer':''));
+    var prio='<span class="tar-prio p-'+P.p+(P.sube?' sube':'')+'"'+(P.sube?' title="Subió desde '+TAR_PR_LBL[P.base]+': '+enc(P.por)+'"':'')+'>'+(P.sube?tarIco('up',10):'')+TAR_PR_LBL[P.p]+'</span>';
+    var venc=V?'<span class="tar-venc '+V.cls+'">'+esc(V.txt)+'</span>':'';
+    var sub=ult?('Obs: '+ult.texto):(t.detalle||'').split('\n')[0];
+    return '<div class="'+cls+'" data-id="'+t.id+'" role="button" tabindex="0">'+
+      '<button type="button" class="tar-chk '+st+'" data-id="'+t.id+'" title="'+(st==='hecha'?'Reabrir':'Marcar terminada')+'">'+(st==='hecha'?tarIco('check',13):'')+'</button>'+
+      '<div class="tar-main"><div class="tar-tit">'+esc(t.titulo||'')+'</div><div class="tar-sub">'+esc(sub)+'</div>'+
+        '<div class="tar-msub">'+esc(tarResp(t))+(venc?' · '+venc:'')+' · '+(st==='hecha'?'Terminada':esc(dias))+(st==='en_proceso'?' · En proceso':'')+'</div></div>'+
+      '<div class="c-resp">'+esc(tarResp(t))+'</div>'+
+      '<div class="c-prio">'+prio+'</div>'+
+      '<div class="c-venc">'+(venc||'<span class="tar-mut">—</span>')+'</div>'+
+      '<div class="c-dias">'+esc(dias)+'</div>'+
+      '<div class="c-st"><span class="tar-st '+st+'">'+TAR_ST[st]+'</span></div>'+
+    '</div>'; }
+  function renderTareas(){ var c=$('tar-list'); if(!c) return;
+    if($('tar-nueva')) $('tar-nueva').style.display=tarPuedeCrear()?'':'none';
+    // Pestañas: mis tareas (predeterminada), todas y una por persona; el número = abiertas
+    var ab=TAREAS.filter(tarAbierta); function n(f){ return ab.filter(f).length; }
+    var tabs=[['mias','Mis tareas',n(function(t){ return tarEsMia(t); })],['todas','Todas',ab.length]].concat(
+      tarPersonas().filter(function(p){ return p.email!==miEmail(); }).map(function(p){ return ['p:'+p.email, tarCorto(p.nombre), n(function(t){ return tarEsMia(t,p.email); })]; }));
+    if(!tabs.some(function(x){ return x[0]===TAR_TAB; })) TAR_TAB='mias';
+    $('tar-tabs').innerHTML=tabs.map(function(x){ return '<button type="button" class="tar-tab'+(x[0]===TAR_TAB?' on':'')+'" data-tab="'+enc(x[0])+'">'+esc(x[1])+'<span class="tar-n">'+x[2]+'</span></button>'; }).join('');
+    document.querySelectorAll('#tar-filtro .seg-b').forEach(function(x){ x.classList.toggle('on', x.dataset.f===TAR_FILTRO); });
+    if($('tar-orden')) $('tar-orden').value=TAR_ORDEN;
+    var list=tarLista();
     if($('tar-cnt')) $('tar-cnt').textContent=list.length+(list.length===1?' tarea':' tareas');
-    c.innerHTML=list.length?list.map(tarCard).join(''):'<div class="empty" style="padding:26px"><div class="big">✓</div>Sin tareas'+(TAR_FILTRO==='pendiente'?' pendientes':'')+'.</div>';
-    c.querySelectorAll('.tar-hecha').forEach(function(b){ b.addEventListener('click',function(){ tarEstado(b.dataset.id,'hecha'); }); });
-    c.querySelectorAll('.tar-reabrir').forEach(function(b){ b.addEventListener('click',function(){ tarEstado(b.dataset.id,'pendiente'); }); });
-    c.querySelectorAll('.tar-del').forEach(function(b){ b.addEventListener('click',function(){ if(confirm('¿Eliminar esta tarea?')) tarDel(b.dataset.id); }); }); }
-  function tarEstado(id, estado){ if(!sb) return; var upd={estado:estado, done_at:(estado==='hecha'?new Date().toISOString():null)};
+    c.innerHTML=list.length?('<div class="tar-list"><div class="tar-head"><span></span><span>Tarea</span><span>Responsable</span><span>Prioridad</span><span>Vence</span><span>Abierta</span><span>Estado</span></div>'+list.map(tarFila).join('')+'</div>')
+      :'<div class="empty" style="padding:26px">Sin tareas'+(TAR_FILTRO==='abiertas'?' abiertas':'')+(TAR_TAB==='mias'?' para ti':'')+'.</div>'; }
+  function tarLog(id, texto, tipo, cb){ if(!sb) return;
+    sb.from('tareas_obs').insert({tarea_id:id, autor:userEmail, texto:texto, tipo:tipo||'obs'}).select().single().then(function(r){
+      if(r.error){ if(tipo!=='estado') toast('No se pudo guardar la observación.'); return; }
+      (TAR_OBS[id]=TAR_OBS[id]||[]).push(r.data); renderTareas(); if(String(TAR_ABIERTA)===String(id)) tarPintarDetalle(); if(cb)cb(r.data); }); }
+  function tarSetEstado(id, estado){ var t=tarPorId(id); if(!t||!sb) return; var prev=tarEst(t); if(prev===estado) return;
+    var now=new Date().toISOString(), upd={estado:estado, done_at:(estado==='hecha'?now:null), updated_at:now};
     sb.from('tareas').update(upd).eq('id',id).then(function(r){ if(r&&r.error){ toast('No se pudo actualizar.'); return; }
-      var t=TAREAS.filter(function(x){ return String(x.id)===String(id); })[0]; if(t){ t.estado=estado; t.done_at=upd.done_at; }
-      renderTareas(); tarBadge(); }); }
-  function tarDel(id){ if(!sb) return; sb.from('tareas').delete().eq('id',id).then(function(r){ if(r&&r.error){ toast('No se pudo eliminar.'); return; }
-    TAREAS=TAREAS.filter(function(x){ return String(x.id)!==String(id); }); renderTareas(); tarBadge(); }); }
-  function crearTarea(){ if(!sb||!isAdmin) return; var tit=($('tar-titulo').value||'').trim(); if(!tit){ toast('Escribe la tarea.'); return; }
-    var sel=$('tar-asig'), em=(sel&&sel.value)||'', nm=(sel&&sel.options[sel.selectedIndex])?sel.options[sel.selectedIndex].textContent:'';
-    var row={ titulo:tit, detalle:($('tar-detalle').value||'').trim(), asignado_email:(em||'').toLowerCase()||null, asignado_nombre:nm||null,
-      prioridad:($('tar-prio').value||'normal'), estado:'pendiente', vence:($('tar-vence').value||null), autor:userEmail };
-    sb.from('tareas').insert(row).select().single().then(function(r){ if(r.error){ toast('No se pudo crear: '+r.error.message); return; }
-      TAREAS.unshift(r.data); $('tar-titulo').value=''; $('tar-detalle').value=''; $('tar-vence').value='';
-      TAR_FILTRO='pendiente'; renderTareas(); tarBadge(); toast('✓ Tarea creada'); }); }
-  if($('tar-crear-btn')) $('tar-crear-btn').addEventListener('click',crearTarea);
-  if($('tar-titulo')) $('tar-titulo').addEventListener('keydown',function(e){ if(e.key==='Enter'){ e.preventDefault(); crearTarea(); } });
-  document.querySelectorAll('#tar-filtro .seg-b').forEach(function(b){ b.addEventListener('click',function(){ TAR_FILTRO=b.dataset.f; renderTareas(); }); });
-  document.querySelectorAll('#tar-scope .seg-b').forEach(function(b){ b.addEventListener('click',function(){ TAR_SCOPE=b.dataset.s; document.querySelectorAll('#tar-scope .seg-b').forEach(function(x){ x.classList.toggle('on',x===b); }); renderTareas(); }); });
+      Object.assign(t,upd); tarBadge(); tarLog(id, TAR_ST[prev]+' → '+TAR_ST[estado], 'estado');
+      renderTareas(); if(String(TAR_ABIERTA)===String(id)) tarPintarDetalle(); }); }
+  function tarObs(id){ var ta=$('td-obs'), tx=(ta&&ta.value||'').trim(); if(!tx){ toast('Escribe la observación.'); return; }
+    tarLog(id, tx, 'obs', function(){ var t=tarPorId(id), now=new Date().toISOString(); if(t) t.updated_at=now; sb.from('tareas').update({updated_at:now}).eq('id',id).then(function(){}); }); }
+  function tarOpts(sel, vacio){ var L=tarAsignables(); sel=tarLow(sel);
+    if(sel && !L.some(function(p){ return p.email===sel; })) L.unshift({email:sel, nombre:tarNom(sel)});
+    return (vacio?'<option value="">Ninguno</option>':'')+L.map(function(p){ return '<option value="'+enc(p.email)+'"'+(p.email===sel?' selected':'')+'>'+esc(p.nombre)+'</option>'; }).join(''); }
+  function tarForm(){ function sv(id){ var s=$(id), o=s&&s.options[s.selectedIndex]; return {em:(s&&s.value)||'', nm:(o&&s.value)?o.textContent:''}; }
+    var a=sv('td-asig'), b=sv('td-asig2');
+    return { titulo:($('td-tit').value||'').trim(), detalle:($('td-det').value||'').trim(), asignado_email:a.em||null, asignado_nombre:a.nm||null,
+      responsable2_email:(b.em&&b.em!==a.em)?b.em:null, responsable2_nombre:(b.em&&b.em!==a.em)?b.nm:null, prioridad:$('td-prio').value||'normal', vence:$('td-vence').value||null }; }
+  function tarCrear(){ if(!sb||!tarPuedeCrear()) return; var d=tarForm(); if(!d.titulo){ toast('Escribe la tarea.'); return; }
+    var now=new Date().toISOString(); d.estado='pendiente'; d.autor=userEmail; d.prio_desde=now; d.updated_at=now;
+    sb.from('tareas').insert(d).select().single().then(function(r){ if(r.error){ toast('No se pudo crear: '+r.error.message); return; }
+      TAREAS.unshift(r.data); tarCerrar(); renderTareas(); tarBadge(); toast('Tarea creada'); }); }
+  function tarGuardar(id){ var t=tarPorId(id); if(!t||!sb) return; var d=tarForm(); if(!d.titulo){ toast('Escribe la tarea.'); return; }
+    var now=new Date().toISOString(), cam=[]; d.updated_at=now;
+    if(d.prioridad!==(t.prioridad||'normal')){ d.prio_desde=now; cam.push('prioridad '+TAR_PR_LBL[d.prioridad]); }
+    if(tarLow(d.asignado_email)!==tarLow(t.asignado_email)) cam.push('responsable '+(d.asignado_nombre||'ninguno'));
+    if(tarLow(d.responsable2_email)!==tarLow(t.responsable2_email)) cam.push('2do responsable '+(d.responsable2_nombre||'ninguno'));
+    if((d.vence||'')!==(t.vence||'')) cam.push('vence '+(d.vence?tarFecha(d.vence+'T12:00:00'):'sin fecha'));
+    sb.from('tareas').update(d).eq('id',id).then(function(r){ if(r&&r.error){ toast('No se pudo guardar: '+r.error.message); return; }
+      Object.assign(t,d); if(cam.length) tarLog(id, 'Cambió '+cam.join(', '), 'estado'); renderTareas(); tarBadge(); tarPintarDetalle(); toast('Cambios guardados'); }); }
+  function tarBorrar(id){ if(!sb||!confirm('¿Eliminar esta tarea y su seguimiento?')) return;
+    sb.from('tareas').delete().eq('id',id).then(function(r){ if(r&&r.error){ toast('No se pudo eliminar.'); return; }
+      TAREAS=TAREAS.filter(function(x){ return String(x.id)!==String(id); }); delete TAR_OBS[id]; tarCerrar(); renderTareas(); tarBadge(); }); }
+  function tarAbrir(id){ TAR_ABIERTA=id; tarPintarDetalle(); $('tar-sheet').classList.add('show'); }
+  function tarCerrar(){ TAR_ABIERTA=null; $('tar-sheet').classList.remove('show'); }
+  function tarPintarDetalle(){ var b=$('tar-sheet-body'); if(!b||!TAR_ABIERTA) return;
+    var nueva=TAR_ABIERTA==='nueva', t=nueva?{estado:'pendiente',prioridad:'normal'}:tarPorId(TAR_ABIERTA); if(!t){ tarCerrar(); return; }
+    var ed=nueva||tarEditable(t), dis=ed?'':' disabled', st=tarEst(t), P=tarPrio(t);
+    var h='<div class="tar-dh"><h3>'+(nueva?'Nueva tarea':'Tarea')+'</h3><button type="button" class="tar-x" id="td-x" title="Cerrar">'+tarIco('x',18)+'</button></div><div class="tsb">';
+    if(!nueva) h+='<div class="seg tar-stseg">'+['pendiente','en_proceso','hecha'].map(function(k){ return '<button type="button" class="seg-b'+(k===st?' on':'')+'" data-st="'+k+'">'+TAR_ST[k]+'</button>'; }).join('')+'</div>';
+    h+='<div class="fld"><label>Tarea</label><input id="td-tit" type="text" value="'+enc(t.titulo||'')+'" placeholder="Ej: Entregar EPP a cuadrilla CPT"'+dis+'></div>'+
+      '<div class="fld"><label>Detalle</label><textarea id="td-det" rows="3" placeholder="Instrucciones…"'+dis+'>'+esc(t.detalle||'')+'</textarea></div>'+
+      '<div class="grid2"><div class="fld"><label>Responsable</label><select id="td-asig"'+dis+'>'+tarOpts(t.asignado_email||(nueva?miEmail():''),false)+'</select></div>'+
+        '<div class="fld"><label>2do responsable</label><select id="td-asig2"'+dis+'>'+tarOpts(t.responsable2_email||'',true)+'</select></div></div>'+
+      '<div class="grid2"><div class="fld"><label>Prioridad</label><select id="td-prio"'+dis+'>'+['alta','normal','baja'].map(function(k){ return '<option value="'+k+'"'+((t.prioridad||'normal')===k?' selected':'')+'>'+TAR_PR_LBL[k]+'</option>'; }).join('')+'</select>'+
+        (P.sube?'<div class="tar-auto">'+tarIco('up',11)+'Ahora '+TAR_PR_LBL[P.p]+': '+esc(P.por)+'</div>':'')+'</div>'+
+        '<div class="fld"><label>Vence</label><input id="td-vence" type="date" value="'+enc(t.vence||'')+'"'+dis+'></div></div>';
+    if(!nueva){ var dA=tarDias(t.created_at);
+      h+='<div class="tar-fechas">Creada <b>'+esc(tarFecha(t.created_at))+'</b>'+(t.autor?' por '+esc(tarCorto(tarNom(t.autor))):'')+' · '+
+        (st==='hecha'?('Terminada <b>'+esc(tarFecha(t.done_at))+'</b> (en '+tarDias(t.created_at,t.done_at)+' días)'):('lleva <b>'+dA+' día'+(dA===1?'':'s')+'</b> abierta'))+
+        (t.updated_at?' · último movimiento '+esc(tarFecha(t.updated_at)):'')+'</div>'; }
+    if(ed) h+='<div class="tar-dacts">'+(nueva?'<button type="button" class="btn" id="td-crear">Crear tarea</button>':'<button type="button" class="btn" id="td-guardar">Guardar cambios</button>')+
+      (!nueva&&tarPuedeBorrar(t)?'<button type="button" class="btn ghost tar-borrar" id="td-borrar">Eliminar</button>':'')+'</div>';
+    if(!nueva){ var obs=TAR_OBS[t.id]||[];
+      h+='<div class="tar-h3">Seguimiento</div>'+(obs.length?obs.map(function(o){ return '<div class="tar-ob'+(o.tipo==='estado'?' sis':'')+'"><div class="tar-ob-h">'+esc(tarCorto(tarNom(o.autor)))+' · '+esc(tarFechaHora(o.created_at))+'</div>'+esc(o.texto)+'</div>'; }).join(''):'<p class="note" style="margin:0 0 8px">Aún sin observaciones.</p>')+
+        '<div class="tar-obs-new"><textarea id="td-obs" placeholder="Ej: Quedó pendiente porque falta la firma del cliente…"></textarea>'+
+        '<button type="button" class="btn small" id="td-obs-add" style="width:auto;margin-top:6px">Agregar observación</button></div>'; }
+    h+='</div>'; b.innerHTML=h;
+    $('td-x').addEventListener('click',tarCerrar);
+    b.querySelectorAll('.tar-stseg .seg-b').forEach(function(x){ x.addEventListener('click',function(){ tarSetEstado(t.id, x.dataset.st); }); });
+    if($('td-crear')) $('td-crear').addEventListener('click',tarCrear);
+    if($('td-guardar')) $('td-guardar').addEventListener('click',function(){ tarGuardar(t.id); });
+    if($('td-borrar')) $('td-borrar').addEventListener('click',function(){ tarBorrar(t.id); });
+    if($('td-obs-add')) $('td-obs-add').addEventListener('click',function(){ tarObs(t.id); }); }
+  (function(){ var L=$('tar-list'); if(!L) return;
+    L.addEventListener('click',function(e){ var ck=e.target.closest('.tar-chk');
+      if(ck){ e.stopPropagation(); var t=tarPorId(ck.dataset.id); if(t) tarSetEstado(t.id, tarEst(t)==='hecha'?'pendiente':'hecha'); return; }
+      var row=e.target.closest('.tar-row'); if(row) tarAbrir(row.dataset.id); });
+    L.addEventListener('keydown',function(e){ if(e.key!=='Enter') return; var row=e.target.closest('.tar-row'); if(row && e.target===row) tarAbrir(row.dataset.id); });
+    $('tar-tabs').addEventListener('click',function(e){ var b=e.target.closest('.tar-tab'); if(!b) return; TAR_TAB=b.dataset.tab; renderTareas(); });
+    document.querySelectorAll('#tar-filtro .seg-b').forEach(function(b){ b.addEventListener('click',function(){ TAR_FILTRO=b.dataset.f; renderTareas(); }); });
+    $('tar-orden').addEventListener('change',function(){ TAR_ORDEN=this.value; renderTareas(); });
+    $('tar-q').addEventListener('input',function(){ TAR_Q=this.value; renderTareas(); });
+    $('tar-nueva').addEventListener('click',function(){ tarAbrir('nueva'); setTimeout(function(){ if($('td-tit')) $('td-tit').focus(); },60); });
+    $('tar-sheet-bg').addEventListener('click',tarCerrar);
+    document.addEventListener('keydown',function(e){ if(e.key==='Escape' && TAR_ABIERTA) tarCerrar(); });
+  })();
 
   // ====== Reuniones: actas y seguimiento de acuerdos (beta: solo Enzo por ahora) ======
   // Tablas: reuniones_tipo, reuniones, reunion_puntos, reunion_puntos_log (ver supabase/migrations/20261022000000_reuniones.sql).
@@ -9297,7 +9469,7 @@
       sb.from('vehiculo_gastos').select('vehiculo_id,categoria,vencimiento').not('vencimiento','is',null).limit(4000),
       sb.from('vehiculos').select('id,nombre,marca,modelo,patente,estado').limit(300),
       sb.from('salidas_medicas').select('id,fecha').gte('fecha',mes).limit(500),
-      sb.from('tareas').select('*').eq('estado','pendiente').limit(500),
+      verMod('tareas')?sb.from('tareas').select('*').in('estado',['pendiente','en_proceso']).limit(500):Promise.resolve(null),
       reuVer()?sb.from('reunion_puntos').select('id,tipo,numero,descripcion,responsable,plazo,estado,atrasado_desde').neq('estado','hecho').limit(1000):Promise.resolve(null),
       reuVer()?sb.from('reuniones_tipo').select('clave,prefijo').limit(100):Promise.resolve(null)
     ]).then(function(rs){ function D(i){ return (rs[i]&&!rs[i].error&&rs[i].data)||[]; } pintarInicio({ trabs:D(0), docs:D(1), ev:D(2), plan:D(3), cli:D(4), emp:D(5), vg:D(6), veh:D(7), sal:D(8), tar:D(9), reu:(rs[10]&&!rs[10].error)?rs[10].data:null, reuTipos:D(11) }); },
@@ -9343,7 +9515,7 @@
     // ---------- Render ----------
     function kpi(ico,lbl,val,sub,ir,tono){ return '<button type="button" class="in-kpi'+(tono?' '+tono:'')+'" data-ir="'+ir+'"><span class="in-kico">'+inIco(ico)+'</span><span class="in-klbl">'+lbl+'</span><span class="in-kval">'+val+'</span><span class="in-ksub">'+sub+'</span></button>'; }
     // Tareas pendientes (del usuario; el admin ve además el total del equipo)
-    var misTar=(X.tar||[]).filter(function(t){ return (t.asignado_email||'').toLowerCase()===miEmail(); });
+    var misTar=(X.tar||[]).filter(function(t){ return tarEsMia(t); });
     var teamTar=(X.tar||[]).length, tarBlock='';
     if(misTar.length || (isAdmin && teamTar)){
       var tli=misTar.slice(0,6).map(function(t){ var v=t.vence?(diffDiasV(t.vence)<0?' · venció '+fechaCorta(t.vence):' · vence '+fechaCorta(t.vence)):''; return '<li>'+esc(t.titulo||'')+'<span class="in-mut">'+v+'</span></li>'; }).join('');
@@ -11477,6 +11649,9 @@
       ['trabajadores','Trabajadores','v-rrhh','trab',[['exportar','Exportar listado de trabajadores','total']]],
       ['documentacion','Documentación y Empresa','v-rrhh','empresa',[]],
       ['salidas','Salidas médicas','v-rrhh','salida',[]]
+    ]],
+    ['Administración',[
+      ['tareas','Tareas','v-tareas',null,[]]
     ]],
     ['Remuneraciones',[
       ['remu','Remuneraciones','v-remu',null,[]]
