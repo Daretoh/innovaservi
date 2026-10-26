@@ -1785,6 +1785,7 @@
   .fin-bar select{font:600 13px var(--font);padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);}
   .fin-sp{flex:1;}
   .fin-h{font:800 14px var(--font);color:var(--ink);margin:10px 0 0;}
+  .fin-kf{cursor:pointer;} .fin-kf:hover{border-color:var(--p);}
   .fin-chk{display:inline-flex;align-items:center;gap:6px;font:600 12.5px var(--font);color:var(--body);}
   .fin-chk input[type=number]{font:600 13px var(--font);padding:7px 9px;border:1px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink);}
   .fin-tbl td{text-align:right;vertical-align:top;}
@@ -10112,22 +10113,26 @@
     var suma=function(l){ return l.reduce(function(s,r){ return s+finTot(r); },0); };
     var vPag=porPag.filter(finVencido).length, vCob=porCob.filter(finVencido).length;
     var k='<div class="cos-kpis">'+
-      '<div class="cos-kpi'+(pend.length?' warn':'')+'"><div class="l">Pendientes de revisar</div><div class="v">'+pend.length+'</div><div class="s">cargados, falta categoría o centro</div></div>'+
-      '<div class="cos-kpi'+(sinCen.length?' warn':'')+'"><div class="l">Gastos sin centro</div><div class="v">'+sinCen.length+'</div><div class="s">meta: 0 al cierre</div></div>'+
-      '<div class="cos-kpi'+(sinCat.length?' warn':'')+'"><div class="l">Sin categoría</div><div class="v">'+sinCat.length+'</div><div class="s">no entran bien al resultado</div></div>'+
-      '<div class="cos-kpi"><div class="l">Por pagar</div><div class="v">'+(finRevisa()?fmtMoney(suma(porPag)):porPag.length)+'</div><div class="s">'+(finRevisa()?porPag.length+' documentos':'documentos sin pagar')+(vPag?' · <b class="neg">'+vPag+' vencidos</b>':'')+'</div></div>'+
-      (finRevisa()?(function(){ var pv=FIN.pagos.filter(function(p){ return p.estado==='por_validar'; }); return '<div class="cos-kpi'+(pv.length?' warn':'')+'"><div class="l">Pagos por validar</div><div class="v">'+pv.length+'</div><div class="s">comprobantes subidos (pestaña Pagos)</div></div>'; })():'')+'<div class="cos-kpi"><div class="l">Por cobrar</div><div class="v">'+(finRevisa()?fmtMoney(suma(porCob)):porCob.length)+'</div><div class="s">'+(finRevisa()?porCob.length+' facturas':'facturas sin cobrar')+(vCob?' · <b class="neg">'+vCob+' vencidas</b>':'')+'</div></div></div>';
+      '<div class="cos-kpi fin-kf'+(pend.length?' warn':'')+'" data-fk="pendiente" title="Ver en la lista (todos los meses)"><div class="l">Pendientes de revisar</div><div class="v">'+pend.length+'</div><div class="s">cargados, falta revisar · todos los meses</div></div>'+
+      '<div class="cos-kpi fin-kf'+(sinCen.length?' warn':'')+'" data-fk="sincentro" title="Ver en la lista (todos los meses)"><div class="l">Gastos sin centro</div><div class="v">'+sinCen.length+'</div><div class="s">meta: 0 al cierre</div></div>'+
+      '<div class="cos-kpi fin-kf'+(sinCat.length?' warn':'')+'" data-fk="sincat" title="Ver en la lista (todos los meses)"><div class="l">Sin categoría</div><div class="v">'+sinCat.length+'</div><div class="s">no entran bien al resultado</div></div>'+
+      '<div class="cos-kpi fin-kf" data-fk="porpagar" title="Ver en la lista"><div class="l">Por pagar</div><div class="v">'+(finRevisa()?fmtMoney(suma(porPag)):porPag.length)+'</div><div class="s">'+(finRevisa()?porPag.length+' documentos':'documentos sin pagar')+(vPag?' · <b class="neg">'+vPag+' vencidos</b>':'')+'</div></div>'+
+      (finRevisa()?(function(){ var pv=FIN.pagos.filter(function(p){ return p.estado==='por_validar'; }); return '<div class="cos-kpi'+(pv.length?' warn':'')+'"><div class="l">Pagos por validar</div><div class="v">'+pv.length+'</div><div class="s">comprobantes subidos (pestaña Pagos)</div></div>'; })():'')+'<div class="cos-kpi fin-kf" data-fk="porcobrar" title="Ver en la lista"><div class="l">Por cobrar</div><div class="v">'+(finRevisa()?fmtMoney(suma(porCob)):porCob.length)+'</div><div class="s">'+(finRevisa()?porCob.length+' facturas':'facturas sin cobrar')+(vCob?' · <b class="neg">'+vCob+' vencidas</b>':'')+'</div></div></div>';
     var F=FIN.f, q=(F.q||'').toLowerCase();
+    // Pendiente, sin centro y sin categoría son colas de trabajo: se buscan en todos los meses (igual que los contadores de arriba).
+    var cola=F.estado==='pendiente'||F.estado==='sincentro'||F.estado==='sincat', todosMeses=F.abiertos||cola;
     var lista=A.filter(function(r){
-      if(F.abiertos){ if(!finAbierto(r)) return false; } else if(r.fecha.slice(0,7)!==mes) return false;
+      if(F.abiertos && !finAbierto(r)) return false;
+      if(!todosMeses && r.fecha.slice(0,7)!==mes) return false;
       if(F.tipo!=='todos' && r.tipo!==F.tipo) return false;
-      if(F.estado==='sincentro'){ if(!(r.tipo==='gasto'&&!r.centro_id)) return false; } else if(F.estado && r.estado!==F.estado) return false;
+      if(F.estado==='sincentro'){ if(!(r.tipo==='gasto'&&!r.centro_id)) return false; } else if(F.estado==='sincat'){ if(r.categoria_id) return false; } else if(F.estado && r.estado!==F.estado) return false;
       if(q){ var c=finCat(r.categoria_id), ce=finCen(r.centro_id); if([r.concepto,r.tercero,r.faena,r.doc_numero,c&&c.nombre,ce&&ce.nombre].join(' ').toLowerCase().indexOf(q)<0) return false; }
       return true; });
     if(F.abiertos) lista.sort(function(a,b){ return finEsperada(a)<finEsperada(b)?-1:1; });
+    else if(cola) lista.sort(function(a,b){ return a.fecha<b.fecha?1:(a.fecha>b.fecha?-1:0); });
     var ing=lista.filter(function(r){ return r.tipo==='ingreso'; }), gas=lista.filter(function(r){ return r.tipo==='gasto'; });
     var bar='<div class="fin-bar"><div class="seg" id="fin-ftipo">'+[['todos','Todos'],['gasto','Gastos'],['ingreso','Ingresos']].map(function(t){ return '<button class="seg-b'+(F.tipo===t[0]?' on':'')+'" data-ft="'+t[0]+'" type="button">'+t[1]+'</button>'; }).join('')+'</div>'+
-      '<select id="fin-fest"><option value="">Todos los estados</option>'+[['pendiente','Pendiente'],['listo','Listo'],['pagado','Pagado'],['sincentro','Sin centro']].map(function(o){ return '<option value="'+o[0]+'"'+(F.estado===o[0]?' selected':'')+'>'+o[1]+'</option>'; }).join('')+'</select>'+
+      '<select id="fin-fest"><option value="">Todos los estados</option>'+[['pendiente','Pendiente (todos los meses)'],['listo','Listo'],['pagado','Pagado'],['sincentro','Sin centro (todos los meses)'],['sincat','Sin categoría (todos los meses)']].map(function(o){ return '<option value="'+o[0]+'"'+(F.estado===o[0]?' selected':'')+'>'+o[1]+'</option>'; }).join('')+'</select>'+
       '<label class="fin-chk"><input type="checkbox" id="fin-fab"'+(F.abiertos?' checked':'')+'> Solo por pagar / por cobrar (todos los meses)</label>'+
       '<input id="fin-fq" class="cos-q" placeholder="Buscar concepto, proveedor, faena…" value="'+enc(F.q||'')+'">'+
       '<span class="fin-sp"></span><button class="btn ghost small" type="button" data-fin="nuevo-gasto">+ Gasto</button><button class="btn ghost small" type="button" data-fin="sin-doc">+ Sin documento</button><button class="btn small" type="button" data-fin="nuevo-ingreso">+ Factura emitida</button></div>';
@@ -10135,7 +10140,7 @@
       var det=[c?c.nombre:'<em class="neg">sin categoría</em>', r.tipo==='gasto'?(ce?ce.nombre:'<em class="neg">sin centro</em>'):(ce?ce.nombre:''), r.faena?esc(r.faena):'', (FIN_DOCS.filter(function(d){ return d[0]===r.doc_tipo; })[0]||[,''])[1]+(r.doc_numero?' '+esc(r.doc_numero):''), r.recurrente_id?'gasto fijo':'', r.costos_doc_id?'lector':'', r.declarable===false?'sin documento':'', finAdjDe('registro_id',r.id).length?finAdjDe('registro_id',r.id).length+' archivo(s)':((r.tipo==='gasto'&&r.doc_tipo!=='sin'&&!r.recurrente_id)?'<em class="neg">sin respaldo</em>':'')].filter(Boolean).join(' · ');
       var pago=r.fecha_pago?('<small>'+(r.tipo==='ingreso'?'cobrada ':'pagado ')+fechaCorta(r.fecha_pago)+'</small>'):('<small class="'+(venc?'neg':'')+'">'+(venc?'venció ':'vence ')+fechaCorta(finEsperada(r))+'</small>');
       return '<tr class="fin-row" data-id="'+r.id+'"><td class="nm">'+finMini(r.id)+'<b>'+esc(r.concepto)+'</b><small>'+(r.tercero?esc(r.tercero)+' · ':'')+det+'</small></td><td>'+fechaCorta(r.fecha)+'</td><td class="'+(r.tipo==='ingreso'?'pos':'')+'">'+(r.tipo==='ingreso'?'+':'')+fmtMoney(finTot(r))+'</td><td>'+finEstadoCtl(r)+pago+'</td></tr>'; }).join('')
-      :'<tr><td colspan="4" class="empty" style="padding:30px">'+(F.abiertos?'No hay nada por pagar ni por cobrar.':'No hay registros en '+esc(finMesLbl(mes))+' con este filtro.')+'</td></tr>';
+      :'<tr><td colspan="4" class="empty" style="padding:30px">'+(F.abiertos?'No hay nada por pagar ni por cobrar con este filtro.':(cola?'No hay registros con este filtro en ningún mes.':'No hay registros en '+esc(finMesLbl(mes))+' con este filtro.'))+'</td></tr>';
     var pie=(lista.length&&finRevisa())?'<div class="fin-pie">'+lista.length+' registros · ingresos '+fmtMoney(ing.reduce(function(s,r){ return s+finTot(r); },0))+' · gastos '+fmtMoney(gas.reduce(function(s,r){ return s+finTot(r); },0))+' (montos con IVA)</div>':'';
     return k+bar+'<div class="cos-card" style="padding:0"><div class="cos-scroll"><table class="cos-tbl fin-tbl"><thead><tr><th>Concepto</th><th>Fecha</th><th>Total</th><th>Estado</th></tr></thead><tbody>'+filas+'</tbody></table></div></div>'+pie+
       '<p class="note">Las boletas del lector entran solas como <b>Pendiente</b>. Revisa cada una: con categoría y centro pasa a <b>Listo</b> (si ya estaba pagada, queda <b>Pagado</b>). Las facturas de proveedores quedan por pagar a 30 días si no tienen vencimiento.</p>';
@@ -10733,6 +10738,10 @@
     var b=$('fin-body'); if(!b) return;
     b.querySelectorAll('[data-ft]').forEach(function(x){ x.onclick=function(){ FIN.f.tipo=x.dataset.ft; pintarFin(); }; });
     var fe=$('fin-fest'); if(fe) fe.onchange=function(){ FIN.f.estado=fe.value; pintarFin(); };
+    b.querySelectorAll('[data-fk]').forEach(function(x){ x.onclick=function(){ var k=x.dataset.fk, F=FIN.f;
+      if(k==='porpagar'||k==='porcobrar'){ F.abiertos=true; F.estado=''; F.tipo=k==='porpagar'?'gasto':'ingreso'; }
+      else { F.abiertos=false; F.estado=k; F.tipo='todos'; }
+      F.q=''; pintarFin(); var t=b.querySelector('.fin-bar'); if(t) t.scrollIntoView({behavior:'smooth',block:'start'}); }; });
     var fa=$('fin-fab'); if(fa) fa.onchange=function(){ FIN.f.abiertos=fa.checked; pintarFin(); };
     var fq=$('fin-fq'); if(fq) fq.oninput=function(){ FIN.f.q=fq.value; clearTimeout(fq._t); fq._t=setTimeout(function(){ var pos=fq.selectionStart; pintarFin(); var n=$('fin-fq'); if(n){ n.focus(); try{ n.setSelectionRange(pos,pos); }catch(_){} } },250); };
     b.querySelectorAll('.fin-mini[data-adjver]').forEach(function(x){ x.onclick=function(ev){ ev.stopPropagation(); var a=FIN.adj.filter(function(y){ return y.id===x.dataset.adjver; })[0]; if(a) window.open(a.url,'_blank'); }; });
