@@ -1206,6 +1206,15 @@
   .in-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:14px;}
   @media(max-width:560px){ .in-grid{grid-template-columns:1fr;} .in-kpis{grid-template-columns:1fr 1fr;gap:10px;} .in-kpi{padding:12px;column-gap:8px;} .in-kico{width:32px;height:32px;} .in-klbl{font-size:10px;} .in-kval{font-size:24px;} }
   .in-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;min-width:0;}
+  .in-vars{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;}
+  .in-var{border:1px solid var(--line);border-radius:11px;padding:10px 12px;display:flex;flex-direction:column;gap:2px;}
+  .in-var b{font-size:18px;color:var(--ink);}
+  .in-var .in-mut{font-size:11.5px;}
+  .cli-dona{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:12px;display:flex;gap:18px;align-items:center;flex-wrap:wrap;}
+  .cli-dona svg{flex:none;}
+  .cli-dona-ley{flex:1;min-width:200px;display:flex;flex-direction:column;gap:6px;font-size:13.5px;}
+  .cli-dona-ley div{display:flex;align-items:center;gap:8px;}
+  .cli-dona-ley span.n{margin-left:auto;font-weight:600;}
   .in-ct{display:flex;align-items:center;gap:10px;margin-bottom:10px;} .in-ct b{font:800 15px var(--font);color:var(--ink);flex:1;}
   .in-lnk{background:none;border:none;color:var(--orange-2);font:700 12.5px var(--font);cursor:pointer;padding:0;}
   .in-sub{font:800 11px var(--font);color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:16px 0 8px;}
@@ -8197,7 +8206,7 @@
     {k:'prev', n:'Reglamento y gestión preventiva', tipos:[['riohs','Reglamento Interno de Orden, Higiene y Seguridad (RIOHS)',false],['programa','Programa de trabajo preventivo (PRG-PREV-01)',false],['iper','Matriz de riesgos (IPER)',false],['proc_iper','Procedimiento IPER',false],['proc_acc','Procedimiento de emergencia y/o accidentes',false],['matriz_epp','Matriz general de elementos de protección personal (EPP)',false],['karin','Protocolo de prevención del acoso sexual, laboral y violencia en el trabajo (Ley Karin)',false]]},
     {k:'pts', n:'Procedimientos de trabajo seguro (PTS)', tipos:[['pts_quimicos','PTS uso y manejo de químicos',false],['pts_extintores','PTS uso y manejo de extintores',false],['pts_altura','PTS trabajos en altura',false],['pts_confinados','PTS espacios confinados',false],['pts_alzahombre','PTS alza hombre / grúa Genie',false],['pts_herramientas','PTS uso de herramientas · limpieza de estanques',false],['pts_frigorifico','PTS limpieza de cámaras frigoríficas',false],['pts_disolvedores','PTS limpieza de salmuera en disolvedores de sal (SPL)',false],['pts_funciones','PTS acorde a sus funciones',false]]},
     {k:'cap', n:'Capacitaciones', tipos:[['cap_herr','Capacitación: uso seguro de herramientas manuales y equipos de apoyo',false],['cap_primeros','Capacitación: primeros auxilios',false],['cap_altura','Capacitación: trabajos en altura y plan de rescate',false],['cap_alzahombre','Capacitación: operación segura de alza hombre',false],['cap_frigorifico','Capacitación: limpieza segura de cámaras frigoríficas',false]]},
-    {k:'legal', n:'Legal y previsional', tipos:[['erut','e-RUT de la empresa',false],['escritura','Escritura / estatutos',false],['vigencia','Certificado de vigencia',true],['mutual','Certificado de adhesión a la mutual',false],['tasa','Certificado de tasa de cotización',true]]}
+    {k:'legal', n:'Legal y previsional', tipos:[['erut','e-RUT de la empresa',false],['escritura','Escritura / estatutos',false],['vigencia','Certificado de vigencia',true],['tasa','Certificado de tasa de cotización',true]]}
   ];
   var EMP_D=[];
   function empUlt(tipo){ var L=EMP_D.filter(function(d){ return d.tipo===tipo; }); L.sort(function(a,b){ return (b.fecha||b.created_at||'')<(a.fecha||a.created_at||'')?-1:1; }); return {ult:L[0]||null, n:L.length, todos:L}; }
@@ -8641,6 +8650,26 @@
     (CLIENTES||[]).forEach(function(x){ var k=_cliKey(x.nombre); if(!by[k]) by[k]={ nombre:x.nombre, faenaMax:'', faenaCount:0 }; by[k].ficha=x; });
     return Object.keys(by).map(function(k){ var o=by[k]; if(o.ficha&&o.ficha.nombre) o.nombre=o.ficha.nombre; return o; });
   }
+  // Gráfico circular: % de faenas de cada cliente sobre el total cargado en Planificación (sin visitas); 6 mayores + "Otros"
+  function cliDonaHtml(){
+    var by={}, tot=0, nom={};
+    (CLIENTES||[]).forEach(function(x){ nom[_cliKey(x.nombre)]=x.nombre; });
+    (typeof EVENTOS!=='undefined'?EVENTOS:[]).forEach(function(e){ var nm=(e.ubicacion||'').trim(); if(!nm || (e.categoria||'Trabajo')==='Visita') return;
+      var k=_cliKey(nm); if(!by[k]) by[k]={ nombre:nom[k]||nm, n:0 }; by[k].n++; tot++; });
+    if(!tot) return '';
+    var L=Object.keys(by).map(function(k){ return by[k]; }).sort(function(a,b){ return b.n-a.n; });
+    if(L.length>7){ var resto=L.slice(6).reduce(function(s,x){ return s+x.n; },0); L=L.slice(0,6).concat([{ nombre:'Otros', n:resto, otros:true }]); }
+    var act=(CLIENTES||[]).filter(function(x){ return x.estado!=='inactivo'; }).length;
+    var R=54, C=2*Math.PI*R, acc=0;
+    var arcos=L.map(function(x){ var largo=x.n/tot*C, col=x.otros?'#c3c8d6':colorEmpresa(x.nombre).border;
+      var s='<circle cx="70" cy="70" r="'+R+'" fill="none" stroke="'+col+'" stroke-width="24" stroke-dasharray="'+largo+' '+(C-largo)+'" stroke-dashoffset="'+(-acc)+'" transform="rotate(-90 70 70)"><title>'+esc(x.nombre)+': '+Math.round(x.n/tot*100)+'%</title></circle>';
+      acc+=largo; return s; }).join('');
+    var ley=L.map(function(x){ var col=x.otros?'#c3c8d6':colorEmpresa(x.nombre).border;
+      return '<div><span class="in-dot" style="background:'+col+'"></span><span>'+esc(x.nombre)+'</span><span class="n">'+Math.round(x.n/tot*100)+'%</span></div>'; }).join('');
+    return '<div class="cli-dona"><svg width="140" height="140" viewBox="0 0 140 140" role="img" aria-label="Porcentaje de faenas por cliente">'+arcos+
+      '<text x="70" y="68" text-anchor="middle" style="font:700 22px var(--font);fill:var(--ink)">'+tot+'</text><text x="70" y="86" text-anchor="middle" style="font:500 11px var(--font);fill:#6b7390">faenas</text></svg>'+
+      '<div class="cli-dona-ley"><b style="font-size:14px">Faenas por cliente</b>'+ley+'<span class="in-mut" style="font-size:12px">'+act+' cliente'+(act===1?'':'s')+' activo'+(act===1?'':'s')+' · según lo cargado en Planificación</span></div></div>';
+  }
   function pintarCli(){
     var c=$('cli-list'); if(!c) return; var q=CLI_Q.toLowerCase();
     var lista=clientesMerged().filter(function(o){ var f=o.ficha||{}; if(!q) return true;
@@ -8650,7 +8679,7 @@
       return (a.nombre||'').localeCompare(b.nombre||''); });
     $('cli-cnt').textContent=lista.length+(lista.length===1?' cliente':' clientes');
     if(!lista.length){ c.innerHTML='<div class="empty"><div class="big">🏢</div>Aún no hay clientes.<br><span style="font-size:.82rem">Aparecen desde Planificación, o toca “＋ Nuevo”.</span></div>'; return; }
-    c.innerHTML=lista.map(function(o,i){ var f=o.ficha||{}; var off=(f.estado==='inactivo'); var nd=(f.docs||[]).length;
+    c.innerHTML=(q?'':cliDonaHtml())+lista.map(function(o,i){ var f=o.ficha||{}; var off=(f.estado==='inactivo'); var nd=(f.docs||[]).length;
       var faenaTxt=o.faenaCount?('📍 '+o.faenaCount+' faena'+(o.faenaCount>1?'s':'')+' · '+fechaCorta(o.faenaMax)):'';
       return '<div class="trab'+(off?' off':'')+'" data-i="'+i+'"><div class="av">'+esc((o.nombre||'·').charAt(0).toUpperCase())+'</div>'+
         '<div class="tt"><div class="nm">'+esc(o.nombre||'—')+'</div>'+(f.razon?'<div class="cg">'+esc(f.razon)+'</div>':'')+
@@ -9567,6 +9596,21 @@
     ]).then(function(rs){ function D(i){ return (rs[i]&&!rs[i].error&&rs[i].data)||[]; } pintarInicio({ trabs:D(0), docs:D(1), ev:D(2), plan:D(3), cli:D(4), emp:D(5), vg:D(6), veh:D(7), sal:D(8), tar:D(9), reu:(rs[10]&&!rs[10].error)?rs[10].data:null, reuTipos:D(11), avisos:D(12) }); },
       function(){ c.innerHTML='<div class="empty">No se pudo cargar el resumen.</div>'; });
   }
+  // Valor UF, UTM y dólar del día desde mindicador.cl (datos del Banco Central); se guarda en el navegador por el día
+  function inVariables(){
+    var hoy=todayISO(), key='in_var_'+hoy, d=null;
+    function fmt(n,dec){ return '$'+Number(n).toLocaleString('es-CL',{minimumFractionDigits:dec,maximumFractionDigits:dec}); }
+    function pintar(d){ var el=$('in-var'); if(!el) return;
+      if(!d){ el.innerHTML='<p class="in-mut" style="margin:0">No se pudieron cargar los indicadores. Revisa la conexión.</p>'; return; }
+      var L=[['UF',d.uf,2],['UTM',d.utm,0],['Dólar observado',d.dolar,2]].filter(function(x){ return x[1]&&x[1].valor; });
+      el.innerHTML='<div class="in-vars">'+L.map(function(x){ return '<div class="in-var"><span class="in-mut">'+x[0]+'</span><b>'+fmt(x[1].valor,x[2])+'</b><span class="in-mut">'+esc(fechaCorta((x[1].fecha||'').slice(0,10)))+'</span></div>'; }).join('')+'</div>'; }
+    try{ d=JSON.parse(localStorage.getItem(key)||'null'); }catch(_){}
+    if(d){ pintar(d); return; }
+    fetch('https://mindicador.cl/api').then(function(r){ return r.json(); }).then(function(j){
+      var o={ uf:j.uf, utm:j.utm, dolar:j.dolar };
+      try{ Object.keys(localStorage).forEach(function(k){ if(k.indexOf('in_var_')===0) localStorage.removeItem(k); }); localStorage.setItem(key,JSON.stringify(o)); }catch(_){}
+      pintar(o); }).catch(function(){ pintar(null); });
+  }
   function pintarInicio(X){
     var c=$('in-body'), hoy=todayISO();
     // --- Documentación de trabajadores activos (lo que se controla en InnovaGestión; Buk no cuenta) ---
@@ -9587,11 +9631,6 @@
     var hoyEv=trabajo.filter(function(e){ return enDia(e,hoy); });
     var plan={}; X.plan.forEach(function(p){ plan[p.evento_id]=(p.personas||[]).length; });
     var personasHoy=hoyEv.reduce(function(s,e){ return s+(plan[e.id]||0); },0);
-    var dias=[]; for(var i=0;i<7;i++){ var f=isoMas(i); dias.push({f:f, n:trabajo.filter(function(e){ return enDia(e,f); }).length}); }
-    // Faenas por cliente, últimos 30 días
-    var desde=isoMas(-30), porCli={}; trabajo.forEach(function(e){ if((e.fecha_fin||e.fecha)<desde || e.fecha>hoy) return; var k=(e.ubicacion||'Sin cliente').trim(); porCli[k]=(porCli[k]||0)+1; });
-    var cliTop=Object.keys(porCli).map(function(k){ return {k:k,n:porCli[k]}; }).sort(function(a,b){ return b.n-a.n; }).slice(0,6);
-    var cliAct=X.cli.filter(function(x){ return x.estado!=='inactivo'; });
     // --- Vencimientos (trabajadores activos, vehículos, empresa) ---
     var ven=[], tById={}; X.trabs.forEach(function(t){ tById[t.id]=t; });
     X.docs.forEach(function(d){ var t=tById[d.trabajador_id]; if(!t||t.estado==='inactivo'||d.estado!=='entregado'||!d.vencimiento) return;
@@ -9599,10 +9638,9 @@
     var vb={}; X.veh.forEach(function(v){ if(v.estado!=='inactivo') vb[v.id]=v; }); var ult={};
     X.vg.forEach(function(g){ if(!vb[g.vehiculo_id]) return; var k=g.vehiculo_id+'|'+g.categoria; if(!ult[k]||g.vencimiento>ult[k].vencimiento) ult[k]=g; });
     Object.keys(ult).forEach(function(k){ var g=ult[k]; ven.push({q:vehLabel(vb[g.vehiculo_id]), que:(GASTO_CAT_LBL[g.categoria]||g.categoria), f:g.vencimiento, n:diffDiasV(g.vencimiento), ir:'veh'}); });
-    var eu={}; X.emp.forEach(function(d){ var k=d.tipo+'|'+(d.titular||''); if(!eu[k]||(d.fecha||d.created_at||'')>(eu[k].fecha||eu[k].created_at||'')) eu[k]=d; });
+    var eu={}; X.emp.forEach(function(d){ if(d.tipo==='mutual') return; var k=d.tipo+'|'+(d.titular||''); if(!eu[k]||(d.fecha||d.created_at||'')>(eu[k].fecha||eu[k].created_at||'')) eu[k]=d; });
     Object.keys(eu).forEach(function(k){ var d=eu[k]; if(d.vencimiento) ven.push({q:'Empresa', que:(d.nombre||d.tipo)+(d.titular?' · '+d.titular:''), f:d.vencimiento, n:diffDiasV(d.vencimiento), ir:'emp'}); });
     ven.sort(function(a,b){ return a.n-b.n; });
-    var venAlerta=ven.filter(function(v){ return v.n<=30; });
 
     // ---------- Render ----------
     function kpi(ico,lbl,val,sub,ir,tono){ return '<button type="button" class="in-kpi'+(tono?' '+tono:'')+'" data-ir="'+ir+'"><span class="in-kico">'+inIco(ico)+'</span><span class="in-klbl">'+lbl+'</span><span class="in-kval">'+val+'</span><span class="in-ksub">'+sub+'</span></button>'; }
@@ -9629,32 +9667,10 @@
       kpi('trab','Trabajadores activos',act.length,(espera?espera+' en espera':'Ninguno en espera'),'trab')+
       kpi('doc','Documentación al día',pctProm+'%','Promedio de '+act.length+' activos','doc',pctProm>=80?'bien':(pctProm>=50?'medio':'mal'))+
       kpi('faena','Faenas hoy',hoyEv.length,personasHoy+' personas asignadas','planif')+
-      kpi('cli','Clientes activos',cliAct.length,cliTop.length+' con faenas este mes','cli')+
-      kpi('alerta','Por vencer o vencidos',venAlerta.length,(venAlerta.filter(function(v){ return v.n<0; }).length)+' vencidos','alertas',venAlerta.some(function(v){ return v.n<0; })?'mal':(venAlerta.length?'medio':'bien'))+
       kpi('salud','Salidas médicas',X.sal.length,'Este mes','salida')+
     '</div>';
-    // Estado de la documentación: barra 100% apilada + leyenda con icono y cantidad
-    var seg=[['ok','Al día','✓'],['prox','Por vencer','!'],['venc','Vencido','×'],['pend','Pendiente','·']];
-    var barra=totN?seg.filter(function(s){ return tot[s[0]]; }).map(function(s){ var p=tot[s[0]]/totN*100; return '<span class="in-seg" style="width:'+p+'%;background:'+IN_C[s[0]]+'" title="'+s[1]+': '+tot[s[0]]+' ('+Math.round(p)+'%)"></span>'; }).join(''):'<span class="in-seg" style="width:100%;background:'+IN_C.pend+'"></span>';
-    var leyenda=seg.map(function(s){ return '<div class="in-ley"><span class="in-dot" style="background:'+IN_C[s[0]]+'"></span><span>'+s[1]+'</span><b>'+tot[s[0]]+'</b><span class="in-mut">'+(totN?Math.round(tot[s[0]]/totN*100):0)+'%</span></div>'; }).join('');
-    var bajos=porT.filter(function(x){ return x.n; }).sort(function(a,b){ return a.pct-b.pct; }).slice(0,6);
-    var cardDoc='<div class="in-card"><div class="in-ct"><b>Documentación de trabajadores</b><button type="button" class="in-lnk" data-ir="doc">Ver detalle</button></div>'+
-      '<p class="in-mut" style="margin:0 0 10px">'+totN+' documentos y cursos requeridos a '+act.length+' trabajadores activos (lo firmado en Buk no se cuenta).</p>'+
-      '<div class="in-stack">'+barra+'</div><div class="in-leys">'+leyenda+'</div>'+
-      '<div class="in-sub">Con más pendientes</div>'+
-      (bajos.length?bajos.map(function(x){ return '<div class="in-rk" data-tid="'+x.t.id+'"><span class="in-rkn">'+esc(titleCase(x.t.nombre||''))+'</span><span class="in-rkb"><i style="width:'+x.pct+'%;background:'+(x.pct>=80?IN_C.ok:(x.pct>=50?IN_C.prox:IN_C.venc))+'"></i></span><span class="in-rkp">'+x.pct+'%</span></div>'; }).join(''):'<p class="in-mut">Sin trabajadores activos.</p>')+
-    '</div>';
-    // Faenas próximos 7 días: barras (una sola serie, hoy resaltado)
-    var maxN=Math.max(1,Math.max.apply(null,dias.map(function(d){ return d.n; }))), W=520, H=170, bw=48, gap=(W-7*bw)/8;
-    var DS=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
-    var barras=dias.map(function(d,i){ var x=gap+i*(bw+gap), bh=Math.max(d.n?4:0, Math.round(d.n/maxN*(H-50))), y=H-26-bh, dt=new Date(d.f+'T12:00:00');
-      return '<g class="in-bar"><title>'+DS[dt.getDay()]+' '+dt.getDate()+': '+d.n+(d.n===1?' faena':' faenas')+'</title><rect x="'+x+'" y="18" width="'+bw+'" height="'+(H-44)+'" fill="transparent"/>'+
-        (bh?'<path d="M'+x+' '+(H-26)+' V'+(y+4)+' Q'+x+' '+y+' '+(x+4)+' '+y+' H'+(x+bw-4)+' Q'+(x+bw)+' '+y+' '+(x+bw)+' '+(y+4)+' V'+(H-26)+' Z" fill="'+(i===0?IN_C.hoy:IN_C.barra)+'"/>':'')+
-        '<text x="'+(x+bw/2)+'" y="'+(y-6)+'" text-anchor="middle" class="in-sv">'+d.n+'</text>'+
-        '<text x="'+(x+bw/2)+'" y="'+(H-8)+'" text-anchor="middle" class="in-sl'+(i===0?' hoy':'')+'">'+(i===0?'Hoy':DS[dt.getDay()]+' '+dt.getDate())+'</text></g>'; }).join('');
-    var cardFae='<div class="in-card"><div class="in-ct"><b>Faenas · próximos 7 días</b><button type="button" class="in-lnk" data-ir="planif">Planificación</button></div>'+
-      '<svg class="in-chart" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Faenas por día"><line x1="0" x2="'+W+'" y1="'+(H-26)+'" y2="'+(H-26)+'" stroke="#e3e5ee"/>'+barras+'</svg>'+
-      '<div class="in-sub">Hoy en terreno</div>'+
+    // Faenas de hoy en terreno
+    var cardFae='<div class="in-card"><div class="in-ct"><b>Faenas de hoy</b><button type="button" class="in-lnk" data-ir="planif">Planificación</button></div>'+
       (hoyEv.length?hoyEv.map(function(e){ var col=colorEmpresa(e.ubicacion||''), n=plan[e.id]||0, multi=e.fecha_fin&&e.fecha_fin!==e.fecha;
         return '<div class="in-fae"><span class="in-dot" style="background:'+col.border+'"></span><div class="in-fn"><b>'+esc(e.titulo||'Faena')+'</b><span>'+esc([e.ubicacion,e.sitio].filter(Boolean).join(' · '))+(multi?' · hasta '+esc(fechaCorta(e.fecha_fin)):'')+'</span></div><span class="in-pill">'+n+(n===1?' persona':' personas')+'</span></div>'; }).join(''):'<p class="in-mut">No hay faenas para hoy.</p>')+
     '</div>';
@@ -9664,19 +9680,15 @@
         return '<div class="in-ven" data-ir="'+v.ir+'"><div class="in-fn"><b>'+esc(v.que)+'</b><span>'+esc(v.q)+' · '+esc(fechaCorta(v.f))+'</span></div><span class="dchip '+cls+'">'+txt+'</span></div>'; }).join('')
         :'<p class="in-mut">Aún no hay fechas de vencimiento cargadas. Agrégalas al subir exámenes, cursos, documentos de vehículos o de empresa, y aparecerán aquí y en Alertas.</p>')+
     '</div>';
-    // Clientes: faenas por cliente (últimos 30 días) + chips de activos
-    var maxC=Math.max(1,(cliTop[0]||{}).n||1);
-    var cardCli='<div class="in-card"><div class="in-ct"><b>Clientes · faenas últimos 30 días</b><button type="button" class="in-lnk" data-ir="cli">Clientes</button></div>'+
-      (cliTop.length?cliTop.map(function(x){ var col=colorEmpresa(x.k); return '<div class="in-rk"><span class="in-rkn"><span class="in-dot" style="background:'+col.border+'"></span>'+esc(x.k)+'</span><span class="in-rkb"><i style="width:'+Math.round(x.n/maxC*100)+'%;background:'+IN_C.barra+'"></i></span><span class="in-rkp">'+x.n+'</span></div>'; }).join(''):'<p class="in-mut">Sin faenas en los últimos 30 días.</p>')+
-      '<div class="in-sub">Activos ('+cliAct.length+')</div><div class="in-chips">'+cliAct.map(function(x){ var col=colorEmpresa(x.nombre||''); return '<span class="in-chip" style="border-color:'+col.border+';color:'+col.border+'">'+esc(x.nombre||'')+'</span>'; }).join('')+'</div>'+
-    '</div>';
-    c.innerHTML=h+'<div class="in-grid">'+cardDoc+cardFae+cardVen+cardCli+'</div>';
+    // Indicadores del día (UF, UTM, dólar): se cargan aparte para no atrasar el resumen
+    var cardVar='<div class="in-card"><div class="in-ct"><b>Indicadores del día</b><span class="in-mut">Fuente: mindicador.cl</span></div><div id="in-var"><p class="in-mut" style="margin:0">Cargando…</p></div></div>';
+    c.innerHTML=h+'<div class="in-grid">'+cardFae+cardVen+cardVar+'</div>';
+    inVariables();
     // Navegación desde las tarjetas
     function ir(k){ if(k==='trab'){ abrirVista('v-rrhh'); rrhhSeg('trab'); } else if(k==='doc'){ abrirVista('v-rrhh'); rrhhSeg('doc'); } else if(k==='salida'){ abrirVista('v-rrhh'); rrhhSeg('salida'); }
       else if(k==='emp'){ abrirVista('v-rrhh'); rrhhSeg('empresa'); } else if(k==='planif'){ abrirVista('v-planif'); } else if(k==='cli'){ abrirVista('v-clientes'); }
       else if(k==='veh'){ abrirVista('v-veh'); } else if(k==='alertas'){ abrirVista('v-alertas'); } }
     c.querySelectorAll('[data-ir]').forEach(function(b){ b.addEventListener('click',function(){ ir(b.dataset.ir); }); });
-    c.querySelectorAll('.in-rk[data-tid]').forEach(function(b){ b.addEventListener('click',function(){ ir('doc'); }); });
     var _vt=$('in-ver-tareas'); if(_vt) _vt.addEventListener('click',function(){ abrirVista('v-tareas'); });
     c.querySelectorAll('.in-tli[data-tid]').forEach(function(li){ li.addEventListener('click',function(){ TAR_PEND=li.dataset.tid; TAR_TAB='mias'; abrirVista('v-tareas'); }); });
     var _vr=$('in-ver-reu'); if(_vr) _vr.addEventListener('click',function(){ abrirVista('v-reuniones'); });
