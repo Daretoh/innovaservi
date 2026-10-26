@@ -976,6 +976,23 @@
   .al-row .al-t{flex:1;min-width:0;} .al-row .al-t b{color:var(--ink);font-weight:700;} .al-row .al-t .note{margin:1px 0 0;font-size:.74rem;}
   .al-row button{flex:none;width:auto;}
   .al-ok{display:flex;align-items:center;gap:8px;color:var(--ok);font-weight:700;font-size:.86rem;padding:4px 0;}
+  /* Alertas: tablero en tarjetas */
+  .al-res{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px;}
+  .al-rs{font:600 12.5px var(--font);border-radius:999px;padding:5px 12px;background:var(--chip);color:var(--body);} .al-rs b{font-weight:800;margin-right:3px;}
+  .al-rs.venc{background:#fde8e8;color:#b42318;} .al-rs.sem{background:#fff4e5;color:#b45309;} .al-rs.mes{background:#fdf6d8;color:#8a6d00;}
+  .al-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px;align-items:start;}
+  @media(max-width:560px){ .al-grid{grid-template-columns:1fr;} }
+  .al-card{background:var(--card);border:1px solid var(--line);border-top:4px solid #1e9a4a;border-radius:14px;padding:12px 14px;min-width:0;}
+  .al-card.venc{border-top-color:#d7262e;} .al-card.sem{border-top-color:#e07b00;} .al-card.mes{border-top-color:#e0a100;}
+  .al-card.exp{grid-column:1/-1;}
+  .al-ch{display:flex;align-items:center;gap:8px;margin-bottom:4px;} .al-ch b{font:800 15px var(--font);color:var(--ink);flex:1;}
+  .al-ci{width:30px;height:30px;border-radius:9px;background:var(--chip);color:var(--ink);display:flex;align-items:center;justify-content:center;} .al-ci svg{margin:0 !important;}
+  .al-cn{font:800 12px var(--font);border-radius:999px;padding:2px 9px;background:var(--chip);color:var(--ink);}
+  .al-cn.venc{background:#d7262e;color:#fff;} .al-cn.sem{background:#e07b00;color:#fff;} .al-cn.mes{background:#e0a100;color:#fff;} .al-cn.ok{background:#e6f5ec;color:#1e7a3e;}
+  .al-dot{width:9px;height:9px;border-radius:50%;flex:none;} .al-dot.venc{background:#d7262e;} .al-dot.sem{background:#e07b00;} .al-dot.mes{background:#e0a100;}
+  .al-card .al-row{flex-wrap:wrap;} .al-card .al-row > .btn{margin-left:auto;} .al-card .al-t{flex:1 1 55%;min-width:160px;} .al-row.al-click{cursor:pointer;} .al-row.al-click:hover{background:var(--chip);}
+  .al-card .al-mas{margin-top:8px;}
+  .al-pie{margin-top:10px;padding-top:8px;border-top:1px dashed var(--line);font:500 12.5px var(--font);color:var(--body);}
   .al-num{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;border-radius:99px;background:#dc2626;color:#fff;font:800 10px var(--font);margin-left:6px;}
   .sb-item .al-num{margin-left:auto;}
   @media(min-width:900px){ .sbar:not(:hover) .sb-item .al-num{position:absolute;margin:0;transform:translate(10px,-9px);font-size:9px;min-width:15px;height:15px;} .sb-item{position:relative;} }
@@ -9650,14 +9667,14 @@
     misTar.sort(function(a,b){ return pr[a._p.p]-pr[b._p.p] || (a.vence||'9999').localeCompare(b.vence||'9999'); });
     var avs=X.avisos||[], nVen=misTar.filter(function(t){ return t._v&&t._v.cls==='bad'; }).length, nPor=misTar.filter(function(t){ return t._v&&t._v.cls==='warn'; }).length;
     var teamTar=(X.tar||[]).length, tarBlock='';
-    if(verMod('tareas') && (misTar.length || avs.length || (isAdmin && teamTar))){
+    if(verMod('tareas') && (misTar.length || avs.length || (isAdmin && teamTar) || tarPuedeCrear())){
       var res=['<b>'+misTar.length+'</b> abierta'+(misTar.length===1?'':'s')];
       if(nVen) res.push('<span class="bad">'+nVen+' vencida'+(nVen>1?'s':'')+'</span>'); if(nPor) res.push('<span class="warn">'+nPor+' por vencer</span>');
       if(avs.length) res.push('<span class="av">'+avs.length+' aviso'+(avs.length>1?'s':'')+' sin leer</span>');
       var tit={}; (X.tar||[]).forEach(function(t){ tit[t.id]=t.titulo; });
       var avH=avs.slice(0,3).map(function(a){ return '<li class="in-tli av" data-tid="'+a.tarea_id+'">'+tarIco(a.tipo==='recordatorio'?'bell':'at',13)+'<span class="in-tli-t"><b>'+esc(tarCorto(tarNom(a.autor))||'Alguien')+'</b> '+(a.tipo==='recordatorio'?'te recordó':'te mencionó en')+' '+esc(tit[a.tarea_id]||'una tarea')+'</span></li>'; }).join('');
       var tli=misTar.slice(0,8).map(function(t){ return '<li class="in-tli'+(t._v&&t._v.cls?' '+t._v.cls:'')+'" data-tid="'+t.id+'"><span class="tar-prio p-'+t._p.p+(t._p.sube?' sube':'')+'">'+(t._p.sube?tarIco('up',10):'')+TAR_PR_LBL[t._p.p]+'</span><span class="in-tli-t">'+esc(t.titulo||'')+'</span>'+(t._v?'<span class="tar-venc '+t._v.cls+'">'+esc(t._v.txt)+'</span>':'')+'</li>'; }).join('');
-      tarBlock='<div class="in-card in-tar" style="margin-bottom:14px'+(nVen?';border-color:#d7262e':'')+'"><div class="in-ct"><b>Mis tareas</b><button type="button" class="in-lnk" id="in-ver-tareas">Ver tareas</button></div>'+
+      tarBlock='<div class="in-card in-tar" style="margin-bottom:14px'+(nVen?';border-color:#d7262e':'')+'"><div class="in-ct"><b>Mis tareas</b>'+(tarPuedeCrear()?'<button type="button" class="btn small" id="in-nueva-tarea" style="padding:6px 11px;font-size:12.5px"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Nueva tarea</button>':'')+'<button type="button" class="in-lnk" id="in-ver-tareas">Ver tareas</button></div>'+
         '<p class="in-tres">'+res.join(' · ')+'</p>'+(avH?'<ul class="in-tar-list">'+avH+'</ul>':'')+
         (misTar.length?('<ul class="in-tar-list">'+tli+'</ul>'+(misTar.length>8?'<p class="in-mut" style="margin:6px 0 0">y '+(misTar.length-8)+' más.</p>':'')):'<p class="in-mut" style="margin:0">No tienes tareas abiertas.</p>')+
         ((isAdmin&&teamTar)?('<p class="in-mut" style="margin:8px 0 0">'+teamTar+' abierta'+(teamTar>1?'s':'')+' en total (equipo).</p>'):'')+
@@ -9690,6 +9707,7 @@
       else if(k==='veh'){ abrirVista('v-veh'); } else if(k==='alertas'){ abrirVista('v-alertas'); } }
     c.querySelectorAll('[data-ir]').forEach(function(b){ b.addEventListener('click',function(){ ir(b.dataset.ir); }); });
     var _vt=$('in-ver-tareas'); if(_vt) _vt.addEventListener('click',function(){ abrirVista('v-tareas'); });
+    var _nt=$('in-nueva-tarea'); if(_nt) _nt.addEventListener('click',function(){ abrirVista('v-tareas'); tarAbrir('nueva'); setTimeout(function(){ if($('td-tit')) $('td-tit').focus(); },60); });
     c.querySelectorAll('.in-tli[data-tid]').forEach(function(li){ li.addEventListener('click',function(){ TAR_PEND=li.dataset.tid; TAR_TAB='mias'; abrirVista('v-tareas'); }); });
     var _vr=$('in-ver-reu'); if(_vr) _vr.addEventListener('click',function(){ abrirVista('v-reuniones'); });
   }
@@ -9751,35 +9769,39 @@
       pintarAlertas();
     });
   }
+  // Tablero de alertas: una tarjeta por tipo (Personas, Vehículos, Empresa, Operación) con lo más urgente primero.
+  var AL_EXP='';   // tarjeta desplegada ("ver todas")
   function pintarAlertas(){
     var c=$('al-list'); if(!c||!AL) return;
     function chipN(n){ return n<0?'<span class="dchip venc">Venció hace '+(-n)+'d</span>':(n===0?'<span class="dchip venc">Vence hoy</span>':'<span class="dchip prox">Vence en '+n+'d</span>'); }
-    function sec(t,ico,n,rows,okTxt){ return '<div class="al-sec"><h3>'+svgI(ico,17)+t+(n?'<span class="al-num">'+n+'</span>':'')+'</h3>'+(rows||'<div class="al-ok">'+svgI(ICO.ok,15)+okTxt+'</div>')+'</div>'; }
-    var IDOC='<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>', IPER='<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>', IVEH='<path d="M1 3h15v13H1zM16 8h4l3 3v5h-7z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>', IACC='<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>';
-    var h='';
-    h+=sec('Informe mensual de accidentes · '+mesLbl(AL.prev), IACC, AL.infs.length,
-      AL.sinSql?'<p class="note" style="margin:0">Falta correr <b>informes-accidentes-alertas.sql</b> en Supabase.</p>':
-      AL.infs.map(function(n,i){ return '<div class="al-row"><div class="al-t"><b>'+esc(n)+'</b><div class="note">Pendiente de generar y subir a Zerty</div></div><button class="btn small al-inf" data-i="'+i+'">'+svgI(ICO.gen,14)+'Generar</button></div>'; }).join(''),
-      'Todos los informes de '+mesLbl(AL.prev)+' están generados.');
-    h+=sec('Faenas que piden reporte sin entregar', ICO.cam, AL.reps.length,
-      AL.reps.map(function(r,i){ var e=r.e; return '<div class="al-row"><div class="al-t"><b>'+esc(e.titulo||'Faena')+'</b><div class="note">'+esc(e.ubicacion||'')+(e.sitio?' · '+esc(e.sitio):'')+' · '+esc(fechaCorta(evFin(e)))+' · '+(r.reg?'registro sin confirmar':'sin registro')+'</div></div><button class="btn small al-rep" data-i="'+i+'">'+(r.reg?'Abrir':'Crear')+'</button></div>'; }).join(''),
-      'Sin reportes pendientes en los últimos 60 días.');
-    h+=sec('Documentos vencidos o por vencer', IDOC, AL.docs.length,
-      AL.docs.map(function(d,i){ return '<div class="al-row"><div class="al-t"><b>'+esc(d.nombre)+'</b><div class="note">'+esc(rrhhTipo(d.tipo).nombre)+' · '+esc(fechaCorta(d.venc))+'</div></div>'+chipN(d.n)+'<button class="btn ghost small al-doc" data-i="'+i+'">Abrir</button></div>'; }).join(''),
-      'Nada vencido ni por vencer en 30 días.');
-    h+=sec('Asignados a faenas próximas con documentación incompleta', IPER, AL.asig.filter(function(a){ return a.venc.length; }).length,
-      AL.asig.map(function(a,i){ return '<div class="al-row"><div class="al-t"><b>'+esc(a.nombre)+'</b><div class="note">'+esc(fechaCorta(a.fecha))+' · '+esc(a.faena)+'</div></div>'+(a.venc.length?'<span class="dchip venc">Vencido: '+esc(a.venc.join(', '))+'</span>':'')+(a.pend?'<span class="dchip prox">'+a.pend+' pendiente'+(a.pend>1?'s':'')+'</span>':'')+'<button class="btn ghost small al-per" data-i="'+i+'">Ver</button></div>'; }).join(''),
-      'Todos los asignados de los próximos 14 días tienen su documentación al día.');
-    h+=sec('Empresa: documentos vencidos o por vencer', IVEH, (AL.emps||[]).length,
-      (AL.emps||[]).map(function(x){ return '<div class="al-row al-emp" style="cursor:pointer"><div class="al-t"><b>'+esc(x.nombre)+'</b><div class="note">vence '+esc(fechaCorta(x.venc))+'</div></div>'+chipN(x.n)+'</div>'; }).join(''),
-      'Documentos de empresa al día.');
-    h+=sec('Vehículos: documentos vencidos o por vencer', IVEH, AL.vehs.length,
-      AL.vehs.map(function(v){ return '<div class="al-row al-veh" style="cursor:pointer"><div class="al-t"><b>'+esc(v.veh)+'</b><div class="note">'+esc(v.cat)+' · '+esc(fechaCorta(v.venc))+'</div></div>'+chipN(v.n)+'</div>'; }).join(''),
-      'Permisos, SOAP y revisiones al día.');
-    if(AL.faltanDocs) h+='<div class="al-sec" style="display:flex;align-items:center;gap:10px"><div style="flex:1"><b style="color:var(--ink)">Documentación incompleta</b><div class="note" style="margin:2px 0 0">'+AL.faltanDocs+' de '+AL.nTrabs+' trabajadores activos tienen documentos estándar pendientes.</div></div><button class="btn ghost small" id="al-verdocs" style="width:auto">Ver</button></div>';
+    function nivel(n){ return n<0?'venc':(n<=7?'sem':'mes'); }
+    var IDOC='<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>', IPER='<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>', IVEH='<path d="M1 3h15v13H1zM16 8h4l3 3v5h-7z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>', IEMP='<path d="M3 21h18M5 21V7l7-4 7 4v14M9 9h1M14 9h1M9 13h1M14 13h1M10 21v-4h4v4"/>', IOPE='<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>';
+    // Cada alerta: n = días al vencimiento (negativo = vencido), fila HTML con su acción
+    function fila(n, cls, tit, sub, der){ return {n:n, h:'<div class="al-row'+(cls?' '+cls:'')+'"><span class="al-dot '+nivel(n)+'"></span><div class="al-t"><b>'+tit+'</b><div class="note">'+sub+'</div></div>'+der+'</div>'}; }
+    var G={ per:[], veh:[], emp:[], ope:[] };
+    AL.docs.forEach(function(d,i){ G.per.push(fila(d.n,'',esc(d.nombre),esc(rrhhTipo(d.tipo).nombre)+' · '+esc(fechaCorta(d.venc)),chipN(d.n)+'<button class="btn ghost small al-doc" data-i="'+i+'">Abrir</button>')); });
+    AL.asig.forEach(function(a,i){ if(!a.venc.length && !a.pend) return;
+      G.per.push(fila(a.venc.length?-0.5:8,'',esc(a.nombre),'Antes de la faena · '+esc(fechaCorta(a.fecha))+' · '+esc(a.faena),
+        (a.venc.length?'<span class="dchip venc">Vencido: '+esc(a.venc.join(', '))+'</span>':'')+(a.pend?'<span class="dchip prox">'+a.pend+' pendiente'+(a.pend>1?'s':'')+'</span>':'')+'<button class="btn ghost small al-per" data-i="'+i+'">Ver</button>')); });
+    AL.vehs.forEach(function(v){ G.veh.push(fila(v.n,'al-veh al-click',esc(v.veh),esc(v.cat)+' · '+esc(fechaCorta(v.venc)),chipN(v.n))); });
+    (AL.emps||[]).forEach(function(x){ G.emp.push(fila(x.n,'al-emp al-click',esc(x.nombre),'vence '+esc(fechaCorta(x.venc)),chipN(x.n))); });
+    if(AL.sinSql) G.ope.push(fila(-1,'','Informe mensual de accidentes','Falta correr <b>informes-accidentes-alertas.sql</b> en Supabase',''));
+    AL.infs.forEach(function(n,i){ G.ope.push(fila(-1,'',esc(n),'Informe de accidentes · '+esc(mesLbl(AL.prev)),'<button class="btn small al-inf" data-i="'+i+'">'+svgI(ICO.gen,14)+'Generar</button>')); });
+    AL.reps.forEach(function(r,i){ var e=r.e, n=diasHasta(evFin(e)); G.ope.push(fila(n==null?-1:n,'',esc(e.titulo||'Faena'),'Reporte '+(r.reg?'sin confirmar':'sin registro')+' · '+esc(e.ubicacion||'')+(e.sitio?' · '+esc(e.sitio):'')+' · '+esc(fechaCorta(evFin(e))),'<button class="btn small al-rep" data-i="'+i+'">'+svgI(ICO.cam,14)+'Reporte</button>')); });
+    var CARDS=[['per','Personas',IPER,'Documentación de trabajadores al día.'],['veh','Vehículos',IVEH,'Permisos, SOAP y revisiones al día.'],['emp','Empresa',IEMP,'Documentos de empresa al día.'],['ope','Operación',IOPE,'Informes y reportes al día.']];
+    var tot={venc:0,sem:0,mes:0};
+    Object.keys(G).forEach(function(k){ G[k].sort(function(a,b){ return a.n-b.n; }); G[k].forEach(function(x){ tot[nivel(x.n)]++; }); });
+    var n=tot.venc+tot.sem+tot.mes;
+    var h='<div class="al-res"><span class="al-rs venc"><b>'+tot.venc+'</b> vencido'+(tot.venc===1?'':'s')+'</span><span class="al-rs sem"><b>'+tot.sem+'</b> esta semana</span><span class="al-rs mes"><b>'+tot.mes+'</b> este mes</span></div>';
+    h+='<div class="al-grid">'+CARDS.map(function(cd){ var L=G[cd[0]], exp=AL_EXP===cd[0], peor=L.length?nivel(L[0].n):'ok', ver=exp?L:L.slice(0,3);
+      return '<div class="al-card '+peor+(exp?' exp':'')+'"><div class="al-ch"><span class="al-ci">'+svgI(cd[2],18)+'</span><b>'+cd[1]+'</b>'+(L.length?'<span class="al-cn '+peor+'">'+L.length+'</span>':'<span class="al-cn ok">✓</span>')+'</div>'+
+        (L.length?ver.map(function(x){ return x.h; }).join(''):'<div class="al-ok">'+svgI(ICO.ok,15)+cd[3]+'</div>')+
+        (L.length>3?'<button type="button" class="in-lnk al-mas" data-k="'+cd[0]+'">'+(exp?'Ver menos':'Ver todas ('+L.length+') ›')+'</button>':'')+
+        ((cd[0]==='per'&&AL.faltanDocs)?'<div class="al-pie">'+AL.faltanDocs+' de '+AL.nTrabs+' trabajadores activos tienen documentos estándar pendientes. <button type="button" class="in-lnk" id="al-verdocs">Ver documentación</button></div>':'')+
+      '</div>'; }).join('')+'</div>';
     c.innerHTML=h;
-    var tot=AL.docs.length+AL.vehs.length+AL.infs.length+AL.reps.length+(AL.emps||[]).length+AL.asig.filter(function(a){ return a.venc.length; }).length;
-    $('al-cnt').textContent=tot?(tot+' pendiente'+(tot>1?'s':'')):'Todo al día';
+    $('al-cnt').textContent=n?(n+' pendiente'+(n>1?'s':'')):'Todo al día';
+    c.querySelectorAll('.al-mas').forEach(function(b){ b.addEventListener('click',function(){ AL_EXP=AL_EXP===b.dataset.k?'':b.dataset.k; pintarAlertas(); }); });
     c.querySelectorAll('.al-inf').forEach(function(b){ b.addEventListener('click',function(){ cargarClientes(function(){ abrirAccForm(AL.infs[+b.dataset.i], AL.prev, null); }); }); });
     c.querySelectorAll('.al-rep').forEach(function(b){ b.addEventListener('click',function(){ var r=AL.reps[+b.dataset.i]; if(!r) return;
       if(r.reg){ busy(true,'Abriendo…'); sb.from('registros').select('*').eq('id',r.reg.id).maybeSingle().then(function(q){ busy(false); if(q&&q.data) abrirEdicion(q.data); }); }
