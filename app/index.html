@@ -1171,6 +1171,8 @@
   .tar-foto .tar-adj-del{position:absolute;top:4px;right:4px;}
   .tar-doc .tar-adj-del{background:var(--chip);color:var(--body);}
   .tar-adj-btn{display:inline-flex;align-items:center;gap:6px;width:auto;cursor:pointer;margin-bottom:4px;} .tar-adj-btn input{display:none;}
+  .tar-adj-tip{font:500 12px var(--font);color:var(--muted);margin-left:8px;}
+  .tar-sheet.tar-drop .tar-sheet-body,.tar-sheet.tar-drop #tar-sheet-body{outline:2px dashed var(--orange);outline-offset:-6px;}
   .tar-clip{display:inline-flex;align-items:center;gap:2px;font:700 11px var(--font);color:var(--muted);margin-left:6px;vertical-align:1px;}
   .tar-h3{font:800 12px var(--font);color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:14px 0 8px;}
   .tar-ob{border-left:3px solid var(--orange);background:var(--alt);border-radius:0 10px 10px 0;padding:7px 10px;margin-bottom:6px;font:500 13px/1.4 var(--font);color:var(--ink);white-space:pre-wrap;}
@@ -9475,7 +9477,8 @@
       (fotos.length?'<div class="tar-fotos">'+fotos.map(function(a){ return '<div class="tar-foto"><img src="'+enc(a.url)+'" alt="'+enc(a.nombre)+'" loading="lazy" data-adj="'+a.id+'" title="'+enc(a.nombre+' · '+tarCorto(tarNom(a.autor)))+'">'+quita(a)+'</div>'; }).join('')+'</div>':'')+
       (otros.length?'<div class="tar-docs">'+otros.map(function(a){ return '<div class="tar-doc"><button type="button" class="tar-doc-a" data-adj="'+a.id+'">'+tarIco(a.tipo==='video'?'video':'file',15)+'<span>'+esc(a.nombre)+'</span></button><span class="tar-doc-m">'+esc(tarCorto(tarNom(a.autor)))+' · '+esc(tarFecha(a.created_at))+'</span>'+quita(a)+'</div>'; }).join('')+'</div>':'')+
       (P.length?'<div class="tar-docs">'+P.map(function(f,i){ return '<div class="tar-doc"><span class="tar-doc-a">'+tarIco('clip',15)+'<span>'+esc(f.name||'archivo')+'</span></span><span class="tar-doc-m">se sube al crear</span><button type="button" class="tar-adj-del tar-adj-q" data-i="'+i+'" title="Quitar">'+tarIco('x',12)+'</button></div>'; }).join('')+'</div>':'')+
-      '<label class="btn ghost small tar-adj-btn">'+tarIco('clip',14)+'Adjuntar foto o archivo<input type="file" id="td-adj" multiple accept="image/*,video/*,application/pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.ppt,.pptx,.zip"></label>'; }
+      '<label class="btn ghost small tar-adj-btn">'+tarIco('clip',14)+'Adjuntar foto o archivo<input type="file" id="td-adj" multiple accept="image/*,video/*,application/pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.ppt,.pptx,.zip"></label>'+
+      '<span class="tar-adj-tip">o pega un pantallazo con Ctrl+V, o arrastra archivos aquí</span>'; }
   // Repinta solo la caja de archivos (no pisa lo que se está escribiendo en el formulario)
   function tarAdjRefrescar(id){ var box=$('td-adj-box'); if(!box || String(TAR_ABIERTA)!==String(id||'nueva')) return; box.innerHTML=tarAdjHtml(id); tarAdjBind(id); }
   function tarAdjBind(id){ var box=$('td-adj-box'); if(!box) return;
@@ -9534,6 +9537,26 @@
     $('tar-q').addEventListener('input',function(){ TAR_Q=this.value; renderTareas(); });
     $('tar-nueva').addEventListener('click',function(){ tarAbrir('nueva'); setTimeout(function(){ if($('td-tit')) $('td-tit').focus(); },60); });
     $('tar-sheet-bg').addEventListener('click',tarCerrar);
+    // Pegar (Ctrl+V) o arrastrar pantallazos y archivos sobre la tarea abierta
+    function tarPegados(dt){ var L=[].slice.call((dt&&dt.files)||[]);
+      if(!L.length && dt && dt.items) [].forEach.call(dt.items,function(it){ if(it.kind==='file'){ var f=it.getAsFile(); if(f) L.push(f); } });
+      var d=new Date(), p2=function(n){ return String(n).padStart(2,'0'); }, sello=d.getFullYear()+p2(d.getMonth()+1)+p2(d.getDate())+'-'+p2(d.getHours())+p2(d.getMinutes())+p2(d.getSeconds());
+      return L.map(function(f,i){ if(f.name && !/^image\.\w+$/i.test(f.name)) return f;   // el portapapeles nombra "image.png" a los pantallazos
+        var ext=((f.type||'').split('/')[1]||'png').replace('jpeg','jpg');
+        try{ return new File([f],'pantallazo-'+sello+(L.length>1?'-'+(i+1):'')+'.'+ext,{type:f.type||'image/png'}); }catch(_){ return f; } }); }
+    function tarRecibir(L){ if(!L.length||!TAR_ABIERTA) return;
+      if(TAR_ABIERTA==='nueva'){ TAR_ADJ_PEND=TAR_ADJ_PEND.concat(L); tarAdjRefrescar(null); toast(L.length+' archivo'+(L.length>1?'s quedan':' queda')+' para adjuntar al crear'); }
+      else tarAdjSubir(TAR_ABIERTA, L); }
+    document.addEventListener('paste',function(e){ if(!TAR_ABIERTA || !$('tar-sheet').classList.contains('show')) return;
+      var L=tarPegados(e.clipboardData); if(!L.length) return;   // texto normal: se pega como siempre
+      e.preventDefault(); tarRecibir(L); });
+    (function(){ var sh=$('tar-sheet'), n=0;
+      function hayArchivos(e){ return e.dataTransfer && [].indexOf.call(e.dataTransfer.types||[],'Files')>=0; }
+      sh.addEventListener('dragenter',function(e){ if(TAR_ABIERTA && hayArchivos(e)){ n++; sh.classList.add('tar-drop'); } });
+      sh.addEventListener('dragover',function(e){ if(TAR_ABIERTA && hayArchivos(e)) e.preventDefault(); });
+      sh.addEventListener('dragleave',function(){ if(--n<=0){ n=0; sh.classList.remove('tar-drop'); } });
+      sh.addEventListener('drop',function(e){ n=0; sh.classList.remove('tar-drop'); if(!TAR_ABIERTA || !hayArchivos(e)) return; e.preventDefault(); tarRecibir(tarPegados(e.dataTransfer)); });
+    })();
     document.addEventListener('keydown',function(e){ if(e.key==='Escape' && TAR_ABIERTA) tarCerrar(); });
   })();
 
