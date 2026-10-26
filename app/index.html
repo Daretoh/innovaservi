@@ -1911,7 +1911,6 @@
 
       <div class="sbar-grp sb-admin">Costos</div>
       <button class="sb-item sb-admin" data-v="v-costos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6" rx=".5"/><rect x="12" y="8" width="3" height="10" rx=".5"/><rect x="17" y="5" width="3" height="13" rx=".5"/></svg>Mano de obra</button>
-      <button class="sb-item sb-beta hide" type="button" onclick="location.href='costos-prueba.html'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l3-2 3 2 3-2 3 2 3-2 1 .7V2l-1 .7-3-2-3 2-3-2-3 2-3-2z"/><path d="M8 7h8M8 11h8M8 15h5"/></svg>Lector de boletas <span style="font-size:9px;font-weight:800;letter-spacing:.05em;padding:1px 5px;border-radius:5px;background:var(--orange);color:#fff;margin-left:4px">BETA</span></button>
 
       <div class="sbar-grp sb-fin hide">Finanzas</div>
       <button class="sb-item sb-fin hide" data-v="v-fin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Finanzas <span style="font-size:9px;font-weight:800;letter-spacing:.05em;padding:1px 5px;border-radius:5px;background:var(--orange);color:#fff;margin-left:4px">BETA</span></button>
@@ -10003,7 +10002,7 @@
       card('sin-doc','Gasto sin ningún papel','Solo si no hay boleta, factura ni ticket: se perdió, pago informal, viático en efectivo.',I('<circle cx="12" cy="12" r="9"/><path d="M9 9h6M9 13h6M9 17h3"/>'))+
       card('nuevo-pago','Comprobante de pago','Transferencia o pago a un proveedor. Lo valida Enzo o Cristopher.',I('<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/>'))+
       card('nuevo-ingreso','Factura emitida (venta)','Factura de Innova a un cliente. Queda por cobrar.',I('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 15l2 2 4-4"/>'))+
-      '</div><div class="fin-bar"><a class="btn ghost small" href="costos-prueba.html">Leer con el lector de boletas (timbre SII)</a><small class="note" style="margin:0">El lector llena los datos solo; lo que guarda aparece aquí como Pendiente.</small></div>';
+      '</div><p class="note">Al agregar la foto, la IA lee el documento y llena los datos. Revísalos antes de guardar.</p>';
     h+='<div class="cos-kpis"><div class="cos-kpi'+(pend?' warn':'')+'"><div class="l">Por revisar</div><div class="v">'+pend+'</div><div class="s">documentos en Pendiente</div></div>'+
       '<div class="cos-kpi'+(porVal?' warn':'')+'"><div class="l">Pagos por validar</div><div class="v">'+porVal+'</div><div class="s">comprobantes subidos</div></div>'+
       '<div class="cos-kpi'+(sinResp?' warn':'')+'"><div class="l">Sin respaldo</div><div class="v">'+sinResp+'</div><div class="s">gastos sin foto ni PDF</div></div></div>';
