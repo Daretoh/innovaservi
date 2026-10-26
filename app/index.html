@@ -9537,9 +9537,9 @@
   // ====== Finanzas: subida de documentos, registros, pagos, proveedores, gastos fijos, Estado de resultados, flujo de caja y balance de gestión ======
   // Tablas fin_* (supabase/migrations/20261026120000_finanzas.sql y 20261026180000_finanzas_documentos.sql). Procedimiento: bóveda ISGROUP, "Procedimiento - Finanzas y control de costos".
   // Estados de un registro: pendiente (falta revisar) -> listo (con categoría y centro) -> pagado. Por pagar / por cobrar = sin fecha de pago.
-  // Roles (= fin_rol() en la base): revisa = Enzo y Cristopher (todo); carga = Yocelyn y Luisa (suben documentos y comprobantes; sin caja, flujo ni balance).
+  // Roles (= fin_rol() en la base): revisa = Enzo y Cristopher (todo); carga = Yocelyn, Luisa y Jorge (suben documentos y comprobantes; sin caja, flujo ni balance).
   var FIN_REVISA=['enzo.castro@innovaservi.com','enzo.castro@innovaservi.cl','cristopher.ruiz@innovaservi.com'];
-  var FIN_CARGA=['yocelyn.mansilla@innovaservi.cl','luisavelasquez1801@gmail.com'];
+  var FIN_CARGA=['yocelyn.mansilla@innovaservi.cl','luisavelasquez1801@gmail.com','jorge.castro@innovaservi.com'];
   function finRol(){ var e=miEmail(); return FIN_REVISA.indexOf(e)>=0?'revisa':(FIN_CARGA.indexOf(e)>=0?'carga':null); }
   function finBeta(){ return !!finRol(); }
   function finRevisa(){ return finRol()==='revisa'; }

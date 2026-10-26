@@ -281,3 +281,12 @@ cross join lateral jsonb_array_elements(case when jsonb_typeof(d.fotos) = 'array
 where coalesce(f->>'url','') <> '' and not exists (select 1 from public.fin_adjuntos a where a.registro_id = g.id and a.url = f->>'url');
 
 notify pgrst, 'reload schema';
+
+-- 2026-10-26: Jorge también carga documentos (lectura con IA para todos)
+create or replace function public.fin_rol() returns text
+language sql stable security definer set search_path = public as $$
+  select case
+    when lower(coalesce(auth.jwt()->>'email','')) = any (array['enzo.castro@innovaservi.com','enzo.castro@innovaservi.cl','cristopher.ruiz@innovaservi.com']) then 'revisa'
+    when lower(coalesce(auth.jwt()->>'email','')) = any (array['yocelyn.mansilla@innovaservi.cl','luisavelasquez1801@gmail.com','jorge.castro@innovaservi.com']) then 'carga'
+  end;
+$$;
