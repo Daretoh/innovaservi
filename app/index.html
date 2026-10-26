@@ -1792,6 +1792,24 @@
   .fin-ayuda{display:block;font:500 11px var(--font);color:var(--muted);margin-top:3px;}
   .fin-acc{display:flex;gap:8px;align-items:center;margin-top:6px;}
   .fin-del{color:#d7262e !important;}
+  .fin-chip.rej{background:rgba(215,38,46,.12);color:#b91c1c;} [data-theme=dark] .fin-chip.rej{color:#fca5a5;}
+  .fin-subir-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:10px;}
+  .fin-subir{display:flex;flex-direction:column;align-items:flex-start;gap:4px;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;cursor:pointer;color:var(--ink);font-family:var(--font);transition:.15s;}
+  .fin-subir:hover{border-color:var(--orange);box-shadow:0 6px 18px -10px rgba(255,107,0,.6);}
+  .fin-subir .ic{color:var(--orange);margin-bottom:4px;} .fin-subir b{font:800 14.5px var(--font);} .fin-subir small{font:500 12px var(--font);color:var(--muted);line-height:1.4;}
+  .fin-h3{font:800 12px var(--font);text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin:12px 0 6px;}
+  .fin-fotos{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px;}
+  .fin-foto{position:relative;width:84px;height:84px;border-radius:10px;overflow:hidden;border:1px solid var(--line);background:var(--alt);}
+  .fin-foto img{width:100%;height:100%;object-fit:cover;cursor:zoom-in;}
+  .fin-docs{display:flex;flex-direction:column;gap:4px;margin-bottom:6px;}
+  .fin-doc{display:flex;align-items:center;gap:6px;}
+  .fin-doc-a{flex:1;text-align:left;background:var(--alt);border:1px solid var(--line);border-radius:9px;padding:7px 10px;font:600 12.5px var(--font);color:var(--ink);cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .fin-doc-a small{color:var(--muted);font-weight:500;}
+  .fin-adj-x{border:none;background:rgba(12,15,46,.6);color:#fff;width:22px;height:22px;border-radius:99px;cursor:pointer;font:700 14px/1 var(--font);}
+  .fin-foto .fin-adj-x{position:absolute;top:4px;right:4px;}
+  .fin-adj-btn{position:relative;overflow:hidden;cursor:pointer;}
+  .fin-adj-btn input{position:absolute;inset:0;opacity:0;cursor:pointer;}
+  label.fin-chk.fin-mv{display:flex;padding-left:4px;cursor:pointer;}
   @media(max-width:640px){ .fin-sem summary,.fin-sem .sumh{grid-template-columns:1.3fr 1fr 1fr;} .fin-sem summary>span:nth-child(2),.fin-sem summary>span:nth-child(3),.fin-sem .sumh>span:nth-child(2),.fin-sem .sumh>span:nth-child(3){display:none;} .fin-er .fin-er-r{grid-template-columns:1fr auto;} .fin-er .fin-er-r em{display:none;} }
   .cos-tbl td.shr{min-width:110px;}
   .cos-shr{display:flex;align-items:center;gap:7px;justify-content:flex-end;}
@@ -2129,7 +2147,7 @@
 
     <!-- ---- FINANZAS (beta: solo Enzo) — registros, gastos fijos, estado de resultados, flujo de caja y balance ---- -->
     <section class="view" id="v-fin">
-      <div class="h-row"><h2>Finanzas <span class="cnt">Innovaservi · beta</span></h2></div>
+      <div class="h-row"><h2>Finanzas <span class="cnt">Innovaservi</span></h2></div>
       <div class="card cos-bar fin-top">
         <div class="seg fin-tabs" id="fin-tabs"></div>
         <div class="cos-nav" id="fin-nav">
@@ -9480,13 +9498,19 @@
     document.addEventListener('keydown',function(e){ if(e.key==='Escape' && TAR_ABIERTA) tarCerrar(); });
   })();
 
-  // ====== Finanzas (beta: solo Enzo): registros, gastos fijos, Estado de resultados, flujo de caja y balance de gestión ======
-  // Tablas fin_* (supabase/migrations/20261026120000_finanzas.sql). Procedimiento: bóveda ISGROUP, "Procedimiento - Finanzas y control de costos".
+  // ====== Finanzas: subida de documentos, registros, pagos, proveedores, gastos fijos, Estado de resultados, flujo de caja y balance de gestión ======
+  // Tablas fin_* (supabase/migrations/20261026120000_finanzas.sql y 20261026180000_finanzas_documentos.sql). Procedimiento: bóveda ISGROUP, "Procedimiento - Finanzas y control de costos".
   // Estados de un registro: pendiente (falta revisar) -> listo (con categoría y centro) -> pagado. Por pagar / por cobrar = sin fecha de pago.
-  var BETA_FIN=['enzo.castro@innovaservi.com','enzo.castro@innovaservi.cl'];   // = fin_beta() en la base
-  function finBeta(){ return BETA_FIN.indexOf(miEmail())>=0; }
-  var FIN={ tab:'reg', mes:null, cats:[], cens:[], regs:[], recs:[], cuentas:[], saldos:[], deudas:[], prest:[], cierres:{}, cfg:{}, mo:{},
+  // Roles (= fin_rol() en la base): revisa = Enzo y Cristopher (todo); carga = Yocelyn y Luisa (suben documentos y comprobantes; sin caja, flujo ni balance).
+  var FIN_REVISA=['enzo.castro@innovaservi.com','enzo.castro@innovaservi.cl','cristopher.ruiz@innovaservi.com'];
+  var FIN_CARGA=['yocelyn.mansilla@innovaservi.cl','luisavelasquez1801@gmail.com'];
+  function finRol(){ var e=miEmail(); return FIN_REVISA.indexOf(e)>=0?'revisa':(FIN_CARGA.indexOf(e)>=0?'carga':null); }
+  function finBeta(){ return !!finRol(); }
+  function finRevisa(){ return finRol()==='revisa'; }
+  var FIN={ tab:null, mes:null, cats:[], cens:[], regs:[], recs:[], cuentas:[], saldos:[], deudas:[], prest:[], cierres:{}, cfg:{}, mo:{},
+    provs:[], pagos:[], links:[], adj:[], pend:[],
     f:{tipo:'todos', estado:'', q:'', abiertos:false}, cargado:false, tok:0 };
+  var FIN_ADJ_MAX=25*1048576;
   var FIN_MESES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
   var FIN_EST={ pendiente:'Pendiente', listo:'Listo', pagado:'Pagado' };
   var FIN_EST_ING={ pendiente:'Por cobrar', listo:'Por cobrar', pagado:'Cobrada' };
@@ -9515,8 +9539,9 @@
     if(!sb || !finBeta()) return;
     if(!FIN.mes) FIN.mes=todayISO().slice(0,7);
     var tok=++FIN.tok;
+    if(!FIN.tab) FIN.tab=finRevisa()?'reg':'sub';
     if(!FIN.cargado) $('fin-body').innerHTML='<p class="note" style="text-align:center;padding:48px 0">Cargando finanzas…</p>';
-    sb.rpc('fin_generar_mes').then(function(){ return Promise.all([
+    (finRevisa()?sb.rpc('fin_generar_mes'):Promise.resolve()).then(function(){ return Promise.all([
       sb.from('fin_categorias').select('*').order('orden'),
       sb.from('fin_centros').select('*').order('orden'),
       traerTodo(function(){ return sb.from('fin_registros').select('*').is('deleted_at',null).order('fecha',{ascending:false}).order('id'); }),
@@ -9526,7 +9551,11 @@
       sb.from('fin_deudas').select('*').order('acreedor'),
       sb.from('fin_prestamos_grupo').select('*').is('deleted_at',null).order('fecha',{ascending:false}),
       sb.from('fin_cierres').select('*'),
-      sb.from('fin_config').select('*')
+      sb.from('fin_config').select('*'),
+      sb.from('fin_proveedores').select('*').order('nombre'),
+      traerTodo(function(){ return sb.from('fin_pagos').select('*').is('deleted_at',null).order('fecha',{ascending:false}).order('id'); }),
+      traerTodo(function(){ return sb.from('fin_pago_registros').select('*').order('pago_id'); }),
+      traerTodo(function(){ return sb.from('fin_adjuntos').select('*').order('created_at').order('id'); })
     ]); }).then(function(rs){
       if(tok!==FIN.tok) return;
       if(rs[0].error){ $('fin-body').innerHTML='<div class="empty">No se pudo cargar Finanzas: '+esc(rs[0].error.message)+'</div>'; return; }
@@ -9534,6 +9563,7 @@
       FIN.cuentas=rs[4].data||[]; FIN.saldos=rs[5].data||[]; FIN.deudas=rs[6].data||[]; FIN.prest=rs[7].data||[];
       FIN.cierres={}; (rs[8].data||[]).forEach(function(c){ FIN.cierres[c.periodo]=c; });
       FIN.cfg={}; (rs[9].data||[]).forEach(function(c){ FIN.cfg[c.clave]=c.valor; });
+      FIN.provs=(rs[10]&&rs[10].data)||[]; FIN.pagos=(rs[11]&&rs[11].data)||[]; FIN.links=(rs[12]&&rs[12].data)||[]; FIN.adj=(rs[13]&&rs[13].data)||[];
       FIN.cargado=true; pintarFin();
     }, function(e){ if(tok===FIN.tok) $('fin-body').innerHTML='<div class="empty">No se pudo cargar Finanzas: '+esc((e&&e.message)||String(e))+'</div>'; });
   }
@@ -9552,14 +9582,19 @@
   }
 
   function pintarFin(){
-    var tabs=[['reg','Registros'],['fij','Gastos fijos'],['res','Estado de resultados'],['flu','Flujo de caja'],['bal','Balance']];
+    var tabs=finRevisa()?[['sub','Subir'],['reg','Registros'],['pag','Pagos'],['pro','Proveedores'],['fij','Gastos fijos'],['res','Estado de resultados'],['flu','Flujo de caja'],['bal','Balance']]
+      :[['sub','Subir documento'],['reg','Registros'],['pag','Pagos']];
+    if(!tabs.some(function(t){ return t[0]===FIN.tab; })) FIN.tab=tabs[0][0];
     $('fin-tabs').innerHTML=tabs.map(function(t){ return '<button class="seg-b'+(FIN.tab===t[0]?' on':'')+'" data-t="'+t[0]+'" type="button">'+t[1]+'</button>'; }).join('');
     var conMes=(FIN.tab==='reg'||FIN.tab==='res'||FIN.tab==='bal');
     $('fin-nav').classList.toggle('hide', !conMes);
     $('fin-lbl').textContent=finMesLbl(FIN.mes)+(FIN.cierres[FIN.mes]?' · cerrado':'');
     $('fin-next').disabled=(FIN.mes>=todayISO().slice(0,7));
     var b=$('fin-body');
-    if(FIN.tab==='reg') b.innerHTML=finRegistrosHTML();
+    if(FIN.tab==='sub') b.innerHTML=finSubirHTML();
+    else if(FIN.tab==='pag') b.innerHTML=finPagosHTML();
+    else if(FIN.tab==='pro') b.innerHTML=finProveedoresHTML();
+    else if(FIN.tab==='reg') b.innerHTML=finRegistrosHTML();
     else if(FIN.tab==='fij') b.innerHTML=finFijosHTML();
     else if(FIN.tab==='res'){ b.innerHTML='<p class="note" style="text-align:center;padding:48px 0">Calculando el resultado de '+esc(finMesLbl(FIN.mes))+'…</p>'; var m=FIN.mes;
       finManoObra(m).then(function(mo){ if(FIN.tab==='res'&&FIN.mes===m){ b.innerHTML=finResultadoHTML(m,mo); finWire(); } }, function(e){ if(FIN.tab==='res') b.innerHTML=finResultadoHTML(m,null,(e&&e.message)||String(e)); finWire(); }); }
@@ -9583,8 +9618,8 @@
       '<div class="cos-kpi'+(pend.length?' warn':'')+'"><div class="l">Pendientes de revisar</div><div class="v">'+pend.length+'</div><div class="s">cargados, falta categoría o centro</div></div>'+
       '<div class="cos-kpi'+(sinCen.length?' warn':'')+'"><div class="l">Gastos sin centro</div><div class="v">'+sinCen.length+'</div><div class="s">meta: 0 al cierre</div></div>'+
       '<div class="cos-kpi'+(sinCat.length?' warn':'')+'"><div class="l">Sin categoría</div><div class="v">'+sinCat.length+'</div><div class="s">no entran bien al resultado</div></div>'+
-      '<div class="cos-kpi"><div class="l">Por pagar</div><div class="v">'+fmtMoney(suma(porPag))+'</div><div class="s">'+porPag.length+' documentos'+(vPag?' · <b class="neg">'+vPag+' vencidos</b>':'')+'</div></div>'+
-      '<div class="cos-kpi"><div class="l">Por cobrar</div><div class="v">'+fmtMoney(suma(porCob))+'</div><div class="s">'+porCob.length+' facturas'+(vCob?' · <b class="neg">'+vCob+' vencidas</b>':'')+'</div></div></div>';
+      '<div class="cos-kpi"><div class="l">Por pagar</div><div class="v">'+(finRevisa()?fmtMoney(suma(porPag)):porPag.length)+'</div><div class="s">'+(finRevisa()?porPag.length+' documentos':'documentos sin pagar')+(vPag?' · <b class="neg">'+vPag+' vencidos</b>':'')+'</div></div>'+
+      (finRevisa()?(function(){ var pv=FIN.pagos.filter(function(p){ return p.estado==='por_validar'; }); return '<div class="cos-kpi'+(pv.length?' warn':'')+'"><div class="l">Pagos por validar</div><div class="v">'+pv.length+'</div><div class="s">comprobantes subidos (pestaña Pagos)</div></div>'; })():'')+'<div class="cos-kpi"><div class="l">Por cobrar</div><div class="v">'+(finRevisa()?fmtMoney(suma(porCob)):porCob.length)+'</div><div class="s">'+(finRevisa()?porCob.length+' facturas':'facturas sin cobrar')+(vCob?' · <b class="neg">'+vCob+' vencidas</b>':'')+'</div></div></div>';
     var F=FIN.f, q=(F.q||'').toLowerCase();
     var lista=A.filter(function(r){
       if(F.abiertos){ if(!finAbierto(r)) return false; } else if(r.fecha.slice(0,7)!==mes) return false;
@@ -9598,19 +9633,19 @@
       '<select id="fin-fest"><option value="">Todos los estados</option>'+[['pendiente','Pendiente'],['listo','Listo'],['pagado','Pagado'],['sincentro','Sin centro']].map(function(o){ return '<option value="'+o[0]+'"'+(F.estado===o[0]?' selected':'')+'>'+o[1]+'</option>'; }).join('')+'</select>'+
       '<label class="fin-chk"><input type="checkbox" id="fin-fab"'+(F.abiertos?' checked':'')+'> Solo por pagar / por cobrar (todos los meses)</label>'+
       '<input id="fin-fq" class="cos-q" placeholder="Buscar concepto, proveedor, faena…" value="'+enc(F.q||'')+'">'+
-      '<span class="fin-sp"></span><button class="btn ghost small" type="button" data-fin="nuevo-gasto">+ Gasto</button><button class="btn small" type="button" data-fin="nuevo-ingreso">+ Factura emitida</button></div>';
+      '<span class="fin-sp"></span><button class="btn ghost small" type="button" data-fin="nuevo-gasto">+ Gasto</button><button class="btn ghost small" type="button" data-fin="sin-doc">+ Sin documento</button><button class="btn small" type="button" data-fin="nuevo-ingreso">+ Factura emitida</button></div>';
     var filas=lista.length?lista.map(function(r){ var c=finCat(r.categoria_id), ce=finCen(r.centro_id), venc=finVencido(r);
-      var det=[c?c.nombre:'<em class="neg">sin categoría</em>', r.tipo==='gasto'?(ce?ce.nombre:'<em class="neg">sin centro</em>'):(ce?ce.nombre:''), r.faena?esc(r.faena):'', (FIN_DOCS.filter(function(d){ return d[0]===r.doc_tipo; })[0]||[,''])[1]+(r.doc_numero?' '+esc(r.doc_numero):''), r.recurrente_id?'gasto fijo':'', r.costos_doc_id?'lector':''].filter(Boolean).join(' · ');
+      var det=[c?c.nombre:'<em class="neg">sin categoría</em>', r.tipo==='gasto'?(ce?ce.nombre:'<em class="neg">sin centro</em>'):(ce?ce.nombre:''), r.faena?esc(r.faena):'', (FIN_DOCS.filter(function(d){ return d[0]===r.doc_tipo; })[0]||[,''])[1]+(r.doc_numero?' '+esc(r.doc_numero):''), r.recurrente_id?'gasto fijo':'', r.costos_doc_id?'lector':'', r.declarable===false?'sin documento':'', finAdjDe('registro_id',r.id).length?finAdjDe('registro_id',r.id).length+' archivo(s)':((r.tipo==='gasto'&&r.doc_tipo!=='sin'&&!r.recurrente_id)?'<em class="neg">sin respaldo</em>':'')].filter(Boolean).join(' · ');
       var pago=r.fecha_pago?('<small>'+(r.tipo==='ingreso'?'cobrada ':'pagado ')+fechaCorta(r.fecha_pago)+'</small>'):('<small class="'+(venc?'neg':'')+'">'+(venc?'venció ':'vence ')+fechaCorta(finEsperada(r))+'</small>');
       return '<tr class="fin-row" data-id="'+r.id+'"><td class="nm"><b>'+esc(r.concepto)+'</b><small>'+(r.tercero?esc(r.tercero)+' · ':'')+det+'</small></td><td>'+fechaCorta(r.fecha)+'</td><td class="'+(r.tipo==='ingreso'?'pos':'')+'">'+(r.tipo==='ingreso'?'+':'')+fmtMoney(finTot(r))+'</td><td>'+finChip(r)+pago+'</td></tr>'; }).join('')
       :'<tr><td colspan="4" class="empty" style="padding:30px">'+(F.abiertos?'No hay nada por pagar ni por cobrar.':'No hay registros en '+esc(finMesLbl(mes))+' con este filtro.')+'</td></tr>';
-    var pie=lista.length?'<div class="fin-pie">'+lista.length+' registros · ingresos '+fmtMoney(ing.reduce(function(s,r){ return s+finTot(r); },0))+' · gastos '+fmtMoney(gas.reduce(function(s,r){ return s+finTot(r); },0))+' (montos con IVA)</div>':'';
+    var pie=(lista.length&&finRevisa())?'<div class="fin-pie">'+lista.length+' registros · ingresos '+fmtMoney(ing.reduce(function(s,r){ return s+finTot(r); },0))+' · gastos '+fmtMoney(gas.reduce(function(s,r){ return s+finTot(r); },0))+' (montos con IVA)</div>':'';
     return k+bar+'<div class="cos-card" style="padding:0"><div class="cos-scroll"><table class="cos-tbl fin-tbl"><thead><tr><th>Concepto</th><th>Fecha</th><th>Total</th><th>Estado</th></tr></thead><tbody>'+filas+'</tbody></table></div></div>'+pie+
       '<p class="note">Las boletas del lector entran solas como <b>Pendiente</b>. Revisa cada una: con categoría y centro pasa a <b>Listo</b> (si ya estaba pagada, queda <b>Pagado</b>). Las facturas de proveedores quedan por pagar a 30 días si no tienen vencimiento.</p>';
   }
 
   // Formulario genérico en hoja (sheet)
-  function finForm(titulo, campos, val, onSave, onDel, nota){
+  function finForm(titulo, campos, val, onSave, onDel, nota, extra){
     var h='<h3>'+esc(titulo)+'</h3><div class="tsb"><form id="fin-frm" autocomplete="off"><div class="grid2">'+campos.map(function(c){
       if(c.hide) return '';
       var v=val[c.k]; if(v==null) v=(c.def!=null?c.def:'');
@@ -9620,7 +9655,7 @@
       else if(c.t==='check') inp='<label class="fin-chk"><input type="checkbox" name="'+c.k+'"'+(v?' checked':'')+'> '+esc(c.l2||'')+'</label>';
       else inp='<input name="'+c.k+'" type="'+(c.t||'text')+'"'+(c.t==='number'?' step="1" inputmode="numeric"':'')+(c.req?' required':'')+(c.list?' list="'+c.list+'"':'')+(c.ph?' placeholder="'+enc(c.ph)+'"':'')+' value="'+enc(String(v))+'">';
       return '<div class="fld'+(c.full?' fin-full':'')+'"><label>'+esc(c.l)+'</label>'+inp+(c.ayuda?'<small class="fin-ayuda">'+c.ayuda+'</small>':'')+'</div>'; }).join('')+'</div>'+
-      (nota?'<p class="note">'+nota+'</p>':'')+
+      (nota?'<p class="note">'+nota+'</p>':'')+(extra||'')+
       '<div class="fin-acc">'+(onDel?'<button type="button" class="btn ghost small fin-del" id="fin-frm-del">Eliminar</button>':'')+'<span class="fin-sp"></span><button type="button" class="btn ghost small" id="fin-frm-x">Cancelar</button><button type="submit" class="btn small">Guardar</button></div></form></div>';
     $('fin-sheet-body').innerHTML=h; $('fin-sheet').classList.add('show');
     var f=$('fin-frm');
@@ -9632,7 +9667,64 @@
     if(onDel) $('fin-frm-del').addEventListener('click',onDel);
     return f;
   }
-  function finCerrarForm(){ $('fin-sheet').classList.remove('show'); }
+  function finCerrarForm(){ $('fin-sheet').classList.remove('show'); FIN.pend=[]; }
+
+  // ---------- Archivos adjuntos (privados: carpeta finanzas/<id>; se firman al mostrarlos) ----------
+  function finAdjDe(campo, id){ return FIN.adj.filter(function(a){ return a[campo]===id; }); }
+  function finAdjPreparar(file, cb){   // fotos a 1600 px (como Multimedia); PDF y otros tal cual
+    if((file.type||'').indexOf('image/')!==0 || /gif|svg/i.test(file.type)){ cb(file); return; }
+    decodeLienzo(file, function(ok, blob){ if(!ok||!blob){ cb(file); return; }
+      var n=(file.name||'foto').replace(/\.[^.]+$/,'')+'.jpg'; try{ cb(new File([blob], n, {type:'image/jpeg'})); }catch(_){ cb(blob); } }); }
+  function finAdjSubir(campo, id, files){
+    files=[].slice.call(files||[]); var ok=0, i=0;
+    if(!files.length) return Promise.resolve(0);
+    busy(true,'Subiendo '+files.length+' archivo'+(files.length>1?'s':'')+'…');
+    return new Promise(function(fin){ (function sig(){
+      if(i>=files.length){ busy(false); fin(ok); return; }
+      var f=files[i++];
+      finAdjPreparar(f, function(g){ subirArchivo(g, 'finanzas/'+id, g.name||f.name).then(function(res){
+        if(!res){ toast('No se pudo subir '+(f.name||'el archivo')); sig(); return; }
+        var row={url:res.url, nombre:f.name||res.nombre||'archivo', tipo:res.tipo||tipoArch(g), tamano:g.size||null, autor:miEmail()}; row[campo]=id;
+        sb.from('fin_adjuntos').insert(row).then(function(r){ if(r&&!r.error) ok++; else toast('No se pudo guardar '+(f.name||'el archivo')); sig(); });
+      }, function(){ sig(); }); });
+    })(); });
+  }
+  // Caja de archivos dentro del formulario: los ya subidos + los que se suben al guardar
+  function finAdjCaja(campo, id){
+    var L=id?finAdjDe(campo,id):[], fotos=L.filter(function(a){ return a.tipo==='image'; }), otros=L.filter(function(a){ return a.tipo!=='image'; });
+    var quita=function(a){ return (finRevisa()||a.autor===miEmail())?'<button type="button" class="fin-adj-x" data-adjdel="'+a.id+'" title="Quitar">×</button>':''; };
+    return '<div class="fin-h3">Respaldo (foto, PDF o comprobante)'+(L.length?' · '+L.length:'')+'</div>'+
+      (fotos.length?'<div class="fin-fotos">'+fotos.map(function(a){ return '<div class="fin-foto"><img src="'+enc(a.url)+'" alt="'+enc(a.nombre)+'" loading="lazy" data-adjver="'+a.id+'">'+quita(a)+'</div>'; }).join('')+'</div>':'')+
+      (otros.length?'<div class="fin-docs">'+otros.map(function(a){ return '<div class="fin-doc"><button type="button" class="fin-doc-a" data-adjver="'+a.id+'">'+esc(a.nombre)+'</button>'+quita(a)+'</div>'; }).join('')+'</div>':'')+
+      (FIN.pend.length?'<div class="fin-docs">'+FIN.pend.map(function(f,i){ return '<div class="fin-doc"><span class="fin-doc-a">'+esc(f.name||'archivo')+' <small>· se sube al guardar</small></span><button type="button" class="fin-adj-x" data-pendx="'+i+'">×</button></div>'; }).join('')+'</div>':'')+
+      '<label class="btn ghost small fin-adj-btn">+ Foto o archivo<input type="file" id="fin-adj-in" multiple accept="image/*,application/pdf,.xml,.xls,.xlsx,.doc,.docx"></label>';
+  }
+  function finAdjBind(campo, id){
+    var box=$('fin-adj-box'); if(!box) return;
+    var pinta=function(){ box.innerHTML=finAdjCaja(campo,id); finAdjBind(campo,id); };
+    var inp=$('fin-adj-in'); if(inp) inp.addEventListener('change',function(){ var fs=[].slice.call(this.files||[]); this.value='';
+      var gr=fs.filter(function(f){ return f.size>FIN_ADJ_MAX; }); if(gr.length) toast(gr.length+' archivo(s) pesan más de 25 MB y no se agregaron');
+      FIN.pend=FIN.pend.concat(fs.filter(function(f){ return f.size<=FIN_ADJ_MAX; })); pinta(); });
+    box.querySelectorAll('[data-pendx]').forEach(function(x){ x.onclick=function(){ FIN.pend.splice(+x.dataset.pendx,1); pinta(); }; });
+    box.querySelectorAll('[data-adjver]').forEach(function(x){ x.onclick=function(){ var a=FIN.adj.filter(function(y){ return y.id===x.dataset.adjver; })[0]; if(a) window.open(a.url,'_blank'); }; });
+    box.querySelectorAll('[data-adjdel]').forEach(function(x){ x.onclick=function(){ var a=FIN.adj.filter(function(y){ return y.id===x.dataset.adjdel; })[0]; if(!a||!confirm('¿Quitar «'+a.nombre+'»?')) return;
+      sb.from('fin_adjuntos').delete().eq('id',a.id).then(function(r){ if(r.error){ toast('No se pudo: '+r.error.message); return; } FIN.adj=FIN.adj.filter(function(y){ return y!==a; }); pinta(); }); }; });
+  }
+  // Inserta o actualiza, sube los archivos pendientes y recarga. Devuelve el id (o null si falló).
+  function finGuardarCon(tabla, id, row, campoAdj, msg, despues){
+    var q=id?sb.from(tabla).update(row).eq('id',id).select('id').single():sb.from(tabla).insert(row).select('id').single();
+    return q.then(function(r){
+      if(r.error){ toast('No se pudo guardar: '+r.error.message); return null; }
+      var nid=r.data.id, files=FIN.pend.slice();
+      return finAdjSubir(campoAdj, nid, files).then(function(){ return (despues?despues(nid):Promise.resolve()); }).then(function(){
+        finCerrarForm(); toast(msg||'Guardado'); FIN.mo={}; cargarFin(); return nid; });
+    });
+  }
+  function finProv(id){ return FIN.provs.filter(function(p){ return p.id===id; })[0]||null; }
+  function finProvPorNombre(n){ n=(n||'').trim().toLowerCase(); return n?FIN.provs.filter(function(p){ return (p.nombre||'').trim().toLowerCase()===n; })[0]||null:null; }
+  function finPagadoDe(regId, sinPago){ return FIN.links.filter(function(l){ if(l.registro_id!==regId||l.pago_id===sinPago) return false; var p=FIN.pagos.filter(function(x){ return x.id===l.pago_id; })[0]; return p&&p.estado!=='rechazado'; }).reduce(function(s,l){ return s+(+l.monto||0); },0); }
+  function finSaldoReg(r, sinPago){ return Math.max(0, Math.abs(finTot(r))-finPagadoDe(r.id, sinPago)); }
+  function finLinksPago(pid){ return FIN.links.filter(function(l){ return l.pago_id===pid; }); }
   function finGuardar(tabla, id, row, msg){
     var q=id?sb.from(tabla).update(row).eq('id',id):sb.from(tabla).insert(row);
     return q.then(function(r){ if(r.error){ toast('No se pudo guardar: '+r.error.message); return false; } finCerrarForm(); toast(msg||'Guardado'); FIN.mo={}; cargarFin(); return true; });
@@ -9642,48 +9734,229 @@
   function finOptsCen(){ return FIN.cens.filter(function(c){ return c.activo; }).map(function(c){ return [c.id,c.nombre]; }); }
   function finFaenasList(){ var s={}; FIN.regs.forEach(function(r){ if(r.faena) s[r.faena]=1; }); return Object.keys(s).sort(); }
   function finClientesList(){ var s={}; (CLIENTES||[]).forEach(function(c){ if(c.nombre) s[c.nombre]=1; }); FIN.regs.forEach(function(r){ if(r.tipo==='ingreso'&&r.tercero) s[r.tercero]=1; }); return Object.keys(s).sort(); }
-  function finDatalists(){ return '<datalist id="fin-dl-faena">'+finFaenasList().map(function(x){ return '<option value="'+enc(x)+'">'; }).join('')+'</datalist><datalist id="fin-dl-cli">'+finClientesList().map(function(x){ return '<option value="'+enc(x)+'">'; }).join('')+'</datalist>'; }
+  function finDatalists(){ return '<datalist id="fin-dl-prov">'+FIN.provs.filter(function(p){ return p.activo; }).map(function(p){ return '<option value="'+enc(p.nombre)+'">'; }).join('')+'</datalist><datalist id="fin-dl-faena">'+finFaenasList().map(function(x){ return '<option value="'+enc(x)+'">'; }).join('')+'</datalist><datalist id="fin-dl-cli">'+finClientesList().map(function(x){ return '<option value="'+enc(x)+'">'; }).join('')+'</datalist>'; }
 
   function finAbrirRegistro(id, tipoNuevo){
     var r=id?FIN.regs.filter(function(x){ return x.id===id; })[0]:null; if(id&&!r) return;
-    var tipo=r?r.tipo:tipoNuevo, ing=(tipo==='ingreso'), cerrado=r&&FIN.cierres[r.fecha.slice(0,7)];
+    var tipo=r?r.tipo:tipoNuevo, ing=(tipo==='ingreso'), cerrado=r&&FIN.cierres[r.fecha.slice(0,7)], rev=finRevisa();
+    var bloqueado=!rev && r && (r.estado!=='pendiente' || r.created_by!==miEmail());   // carga: solo corrige lo suyo mientras siga Pendiente
     var v=r?Object.assign({},r):{ fecha:todayISO(), estado:'pendiente', doc_tipo:ing?'factura':'boleta' };
-    v.monto_total=r?r.total:'';
+    v.monto_total=r?r.total:''; v.pago_c=(r&&r.fecha_pago)?'si':'no';
     var campos=[
       {k:'fecha',l:'Fecha del documento',t:'date',req:true},
       {k:'doc_tipo',l:'Documento',t:'select',o:ing?FIN_DOCS.filter(function(d){ return ['factura','boleta','nota_credito','otro'].indexOf(d[0])>=0; }):FIN_DOCS},
-      {k:'concepto',l:ing?'Detalle (servicio facturado)':'Concepto',req:true,full:true,ph:ing?'Ej: Apoyo frigorífico octubre':'Ej: Pintura y rodillos'},
-      {k:'tercero',l:ing?'Cliente':'Proveedor',list:ing?'fin-dl-cli':null},
+      {k:'concepto',l:ing?'Detalle (servicio facturado)':'Qué se compró',req:true,full:true,ph:ing?'Ej: Apoyo frigorífico octubre':'Ej: Pintura y rodillos'},
+      {k:'tercero',l:ing?'Cliente':'Proveedor',list:ing?'fin-dl-cli':'fin-dl-prov'},
       {k:'tercero_rut',l:'RUT',ph:'12345678-9'},
       {k:'doc_numero',l:'N° de documento'},
       {k:'monto_total',l:'Total del documento (con IVA)',t:'number',req:true,ayuda:ing?'Factura y boleta: el sistema separa el IVA (19 %).':'Factura: el sistema separa el IVA (19 %) y el costo queda neto.'},
-      {k:'categoria_id',l:'Categoría',t:'select',vacio:'Sin categoría (Pendiente)',o:finOptsCat(tipo)},
-      {k:'centro_id',l:'Centro de costo',t:'select',vacio:'Sin centro (Pendiente)',o:finOptsCen()},
+      {k:'categoria_id',l:'Categoría',t:'select',vacio:rev?'Sin categoría (Pendiente)':'No sé / la elige quien revisa',o:finOptsCat(tipo)},
+      {k:'centro_id',l:'Centro de costo',t:'select',vacio:rev?'Sin centro (Pendiente)':'No sé / lo elige quien revisa',o:finOptsCen()},
       {k:'faena',l:'Faena',list:'fin-dl-faena',ph:'Cliente · lugar',full:true},
-      {k:'estado',l:'Estado',t:'select',o:ing?[['pendiente','Por cobrar'],['pagado','Cobrada']]:[['pendiente','Pendiente (falta revisar)'],['listo','Listo (revisado)'],['pagado','Pagado']]},
-      {k:'vence',l:'Vence',t:'date',ayuda:'Si queda vacío: fecha + 30 días.'},
-      {k:'fecha_pago',l:ing?'Cobrada el':'Pagado el',t:'date',ayuda:ing?'':'Boleta pagada al comprar: pon la fecha aunque siga Pendiente de revisar.'},
-      {k:'cuenta_id',l:'Cuenta',t:'select',vacio:'—',o:FIN.cuentas.filter(function(c){ return c.activo; }).map(function(c){ return [c.id,c.nombre]; })},
+      {k:'pago_c',l:ing?'¿Está cobrada?':'¿Está pagado?',t:'select',o:ing?[['no','No, por cobrar'],['si','Sí, cobrada']]:[['no','No pagado (por pagar)'],['si','Pagado']],hide:rev},
+      {k:'estado',l:'Estado',t:'select',o:ing?[['pendiente','Por cobrar'],['pagado','Cobrada']]:[['pendiente','Pendiente (falta revisar)'],['listo','Listo (revisado)'],['pagado','Pagado']],hide:!rev},
+      {k:'vence',l:'Vence',t:'date',ayuda:'Si queda vacío: plazo del proveedor o 30 días.',hide:!rev&&!ing},
+      {k:'fecha_pago',l:ing?'Cobrada el':'Pagado el',t:'date',ayuda:rev?'':'Si está pagado y queda vacío: la fecha del documento.'},
+      {k:'cuenta_id',l:'Cuenta',t:'select',vacio:'—',o:FIN.cuentas.filter(function(c){ return c.activo; }).map(function(c){ return [c.id,c.nombre]; }),hide:!rev},
       {k:'notas',l:'Notas',t:'textarea',full:true}
     ];
-    var nota=(r&&r.costos_doc_id?'Viene del <b>lector de boletas</b>. ':'')+(r&&r.recurrente_id?'Generado desde un <b>gasto fijo</b> (cambiar el monto aquí no cambia el gasto fijo). ':'')+(cerrado?'<b>El mes está cerrado:</b> solo se puede cambiar el estado, el pago y las notas.':'');
-    finForm((r?'Editar ':'Nuevo ')+(ing?'ingreso (factura emitida)':'gasto'), campos, v, function(o){
+    var nota=(r&&r.costos_doc_id?'Viene del <b>lector de boletas</b>. ':'')+(r&&r.recurrente_id?'Generado desde un <b>gasto fijo</b>. ':'')+(r&&!r.declarable?'Gasto <b>sin documento</b> (no declarable). ':'')+
+      (cerrado?'<b>El mes está cerrado:</b> solo se puede cambiar el estado, el pago y las notas. ':'')+(bloqueado?'<b>Ya fue revisado:</b> si hay que corregirlo, avisa a Enzo o Cristopher.':'');
+    // Pagos (comprobantes) de este documento y, si el proveedor factura al mes, pagos sin factura para asociar
+    var extra='<div id="fin-adj-box">'+finAdjCaja('registro_id', r&&r.id)+'</div>';
+    if(r && !ing){
+      var ls=FIN.links.filter(function(l){ return l.registro_id===r.id; });
+      var sueltos=rev&&r.proveedor_id?FIN.pagos.filter(function(p){ return p.proveedor_id===r.proveedor_id && p.estado!=='rechazado' && !finLinksPago(p.id).length; }):[];
+      if(ls.length||sueltos.length) extra+='<div class="fin-h3">Pagos de este documento</div>'+
+        ls.map(function(l){ var p=FIN.pagos.filter(function(x){ return x.id===l.pago_id; })[0]; return p?'<div class="fin-mv"><span>'+fechaCorta(p.fecha)+' · '+esc(FIN_MEDIOS[p.medio]||p.medio)+' · '+finPagoChip(p)+'</span><b>'+fmtMoney(l.monto)+'</b></div>':''; }).join('')+
+        (sueltos.length?'<p class="note" style="margin:6px 0 4px">Pagos sin factura de este proveedor: marca los que cubre esta factura.</p>'+sueltos.map(function(p){ return '<label class="fin-chk fin-mv"><span><input type="checkbox" class="fin-asoc" value="'+p.id+'"> '+fechaCorta(p.fecha)+' · '+esc(FIN_MEDIOS[p.medio]||p.medio)+' · '+finPagoChip(p)+'</span><b>'+fmtMoney(p.monto)+'</b></label>'; }).join(''):'');
+    }
+    var f=finForm((r?(bloqueado?'Ver ':'Editar '):'Nuevo ')+(ing?'ingreso (factura emitida)':'gasto con documento'), campos, v, function(o){
+      if(bloqueado){ var pf=FIN.pend.slice(); if(pf.length) finAdjSubir('registro_id', r.id, pf).then(function(){ finCerrarForm(); toast('Respaldo agregado'); cargarFin(); }); else finCerrarForm(); return; }
       var tot=+o.monto_total||0; if(tot<=0){ toast('El total debe ser mayor a 0'); return; }
+      if(!r && !ing && !FIN.pend.length && !confirm('No adjuntaste la foto o el PDF del documento. ¿Guardar igual? (Sin respaldo no hay reembolso ni pago)')) return;
       var conIva=(o.doc_tipo==='factura'||o.doc_tipo==='nota_credito'||(ing&&o.doc_tipo==='boleta'));
       var neto=conIva?Math.round(tot/1.19):tot, iva=conIva?tot-neto:0;
       if(r && r.total===tot && (r.neto+r.iva+r.exento)===tot && r.doc_tipo===o.doc_tipo){ neto=r.neto; iva=r.iva; }   // respeta el desglose del lector
-      var row={ tipo:tipo, fecha:o.fecha, doc_tipo:o.doc_tipo, concepto:o.concepto, tercero:o.tercero, tercero_rut:o.tercero_rut, doc_numero:o.doc_numero,
-        neto:neto, iva:iva, exento:tot-neto-iva, total:tot, categoria_id:o.categoria_id, centro_id:o.centro_id, faena:o.faena,
-        estado:o.estado, vence:o.vence, fecha_pago:o.fecha_pago, cuenta_id:o.cuenta_id, notas:o.notas };
-      if(!ing && row.estado!=='pendiente' && (!row.categoria_id||!row.centro_id)){ toast('Para dejarlo Listo o Pagado necesita categoría y centro'); return; }
-      if(ing && row.estado!=='pendiente' && !row.categoria_id){ toast('Elige la categoría del ingreso'); return; }
-      if(ing && !row.centro_id && row.estado!=='pendiente'){ toast('Elige el centro (línea de servicio)'); return; }
+      var pv=ing?null:finProvPorNombre(o.tercero);
+      var row={ tipo:tipo, fecha:o.fecha, doc_tipo:o.doc_tipo, concepto:o.concepto, tercero:o.tercero, tercero_rut:o.tercero_rut||(pv&&pv.rut)||null, doc_numero:o.doc_numero,
+        neto:neto, iva:iva, exento:tot-neto-iva, total:tot, categoria_id:o.categoria_id, centro_id:o.centro_id, faena:o.faena, notas:o.notas };
+      if(pv) row.proveedor_id=pv.id;
+      if(rev){ row.estado=o.estado; row.vence=o.vence; row.fecha_pago=o.fecha_pago; row.cuenta_id=o.cuenta_id; }
+      else { row.estado='pendiente'; if(ing) row.vence=o.vence; }
+      if(!rev) row.fecha_pago=(o.pago_c==='si')?(o.fecha_pago||o.fecha):null;
+      if(!row.vence && !row.fecha_pago && o.doc_tipo==='factura' && pv && pv.plazo_dias!=null) row.vence=sumarDias(o.fecha, pv.plazo_dias);
+      if(rev && !ing && row.estado!=='pendiente' && (!row.categoria_id||!row.centro_id)){ toast('Para dejarlo Listo o Pagado necesita categoría y centro'); return; }
+      if(rev && ing && row.estado!=='pendiente' && (!row.categoria_id||!row.centro_id)){ toast('Elige categoría y centro (línea de servicio) del ingreso'); return; }
       if(row.estado==='pagado' && !row.fecha_pago) row.fecha_pago=todayISO();
-      finGuardar('fin_registros', r&&r.id, row, ing?'Ingreso guardado':'Gasto guardado');
-    }, r?function(){ if(!confirm('¿Eliminar este registro? Queda en el historial de la base, pero sale de Finanzas.')) return;
-      sb.from('fin_registros').update({deleted_at:new Date().toISOString()}).eq('id',r.id).then(function(x){ if(x.error){ toast('No se pudo: '+x.error.message); return; } finCerrarForm(); toast('Eliminado'); cargarFin(); }); }:null, nota);
+      var asoc=[].map.call(document.querySelectorAll('#fin-sheet .fin-asoc:checked'), function(x){ return x.value; });
+      finGuardarCon('fin_registros', r&&r.id, row, 'registro_id', ing?'Ingreso guardado':'Gasto guardado', asoc.length?function(nid){
+        var resto=tot-finPagadoDe(nid);
+        var filas=asoc.map(function(pid){ var p=FIN.pagos.filter(function(x){ return x.id===pid; })[0]; var m=Math.min(+p.monto||0, Math.max(resto,0)); resto-=m; return m>0?{pago_id:pid, registro_id:nid, monto:m}:null; }).filter(Boolean);
+        return filas.length?sb.from('fin_pago_registros').insert(filas).then(function(x){ if(x.error) toast('No se pudieron asociar los pagos: '+x.error.message); }):Promise.resolve();
+      }:null);
+    }, (r && !bloqueado)?function(){ if(!confirm('¿Eliminar este registro? Queda en el historial de la base, pero sale de Finanzas.')) return;
+      sb.from('fin_registros').update({deleted_at:new Date().toISOString()}).eq('id',r.id).then(function(x){ if(x.error){ toast('No se pudo: '+x.error.message); return; } finCerrarForm(); toast('Eliminado'); cargarFin(); }); }:null, nota, extra);
     $('fin-sheet-body').insertAdjacentHTML('beforeend', finDatalists());
+    finAdjBind('registro_id', r&&r.id);
+    if(bloqueado) f.querySelectorAll('input,select,textarea').forEach(function(x){ if(x.id!=='fin-adj-in') x.disabled=true; });
   }
+
+  // Gasto sin documento tributario (los "no declarados"): luz, agua, arriendo, viáticos, peajes, estacionamientos, colaciones
+  var FIN_SINDOC=[['Luz','Servicios básicos'],['Agua','Servicios básicos'],['Arriendo','Arriendo'],['Viático','Viáticos y colaciones'],['Colación','Viáticos y colaciones'],['Peaje','Combustible y peajes'],['Estacionamiento','Estacionamientos'],['Combustible','Combustible y peajes'],['Otro','']];
+  function finAbrirSinDoc(){
+    var rev=finRevisa();
+    finForm('Gasto sin documento', [
+      {k:'tipo_g',l:'Tipo de gasto',t:'select',req:true,o:FIN_SINDOC.map(function(x){ return [x[0],x[0]]; })},
+      {k:'fecha',l:'Fecha',t:'date',req:true},
+      {k:'detalle',l:'Detalle',full:true,ph:'Ej: Colación cuadrilla CERMAQ (4 personas)'},
+      {k:'monto',l:'Monto pagado',t:'number',req:true},
+      {k:'tercero',l:'A quién se le pagó',ph:'Ej: Don Papi, municipalidad…'},
+      {k:'faena',l:'Faena',list:'fin-dl-faena',ph:'Cliente · lugar',full:true},
+      {k:'centro_id',l:'Centro de costo',t:'select',vacio:rev?'Sin centro (Pendiente)':'No sé / lo elige quien revisa',o:finOptsCen()},
+      {k:'al_comprar',l:'Pago',t:'check',l2:'Ya está pagado'},
+      {k:'notas',l:'Por qué no hay documento',t:'textarea',full:true,req:true}
+    ], {fecha:todayISO(), al_comprar:true, tipo_g:'Colación'}, function(o){
+      if(!(o.monto>0)){ toast('El monto debe ser mayor a 0'); return; }
+      if(!o.notas){ toast('Anota por qué no hay documento'); return; }
+      var t=FIN_SINDOC.filter(function(x){ return x[0]===o.tipo_g; })[0]||['Otro',''], cat=FIN.cats.filter(function(c){ return c.nombre===t[1]; })[0];
+      var row={ tipo:'gasto', fecha:o.fecha, doc_tipo:'sin', declarable:false, concepto:t[0]+(o.detalle?' · '+o.detalle:''), tercero:o.tercero, faena:o.faena,
+        neto:o.monto, iva:0, exento:0, total:o.monto, categoria_id:cat?cat.id:null, centro_id:o.centro_id, notas:o.notas, estado:'pendiente', fecha_pago:o.al_comprar?o.fecha:null };
+      if(rev && row.categoria_id && row.centro_id) row.estado='listo';
+      finGuardarCon('fin_registros', null, row, 'registro_id', 'Gasto sin documento guardado');
+    }, null, 'Queda marcado como <b>no declarable</b>: es costo real, pero la contadora lo ve aparte. Si hay foto o vale, adjúntalo.', '<div id="fin-adj-box">'+finAdjCaja('registro_id', null)+'</div>');
+    $('fin-sheet-body').insertAdjacentHTML('beforeend', finDatalists());
+    finAdjBind('registro_id', null);
+  }
+
+  // ---------- Subir documento ----------
+  function finSubirHTML(){
+    var yo=miEmail(), mios=finActivos().filter(function(r){ return r.created_by===yo; }).sort(function(a,b){ return String(b.created_at).localeCompare(String(a.created_at)); }).slice(0,12);
+    var misPagos=FIN.pagos.filter(function(p){ return p.created_by===yo; }).slice(0,6);
+    var pend=finActivos().filter(function(r){ return r.estado==='pendiente'; }).length, porVal=FIN.pagos.filter(function(p){ return p.estado==='por_validar'; }).length;
+    var sinResp=finActivos().filter(function(r){ return r.tipo==='gasto' && r.doc_tipo!=='sin' && !r.recurrente_id && !finAdjDe('registro_id',r.id).length; }).length;
+    var card=function(acc,tit,sub,ico){ return '<button type="button" class="fin-subir" data-fin="'+acc+'"><span class="ic">'+ico+'</span><b>'+tit+'</b><small>'+sub+'</small></button>'; };
+    var I=function(d){ return '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+d+'</svg>'; };
+    var h='<div class="fin-subir-grid">'+
+      card('nuevo-gasto','Boleta o factura de compra','Foto o PDF del documento. Va a la revisión.',I('<path d="M4 2v20l3-2 3 2 3-2 3 2 3-2 1 .7V2l-1 .7-3-2-3 2-3-2-3 2-3-2z"/><path d="M8 7h8M8 11h8M8 15h5"/>'))+
+      card('sin-doc','Gasto sin documento','Luz, agua, viáticos, peajes, estacionamiento, colaciones sin factura.',I('<circle cx="12" cy="12" r="9"/><path d="M9 9h6M9 13h6M9 17h3"/>'))+
+      card('nuevo-pago','Comprobante de pago','Transferencia o pago a un proveedor. Lo valida Enzo o Cristopher.',I('<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/>'))+
+      card('nuevo-ingreso','Factura emitida (venta)','Factura de Innova a un cliente. Queda por cobrar.',I('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 15l2 2 4-4"/>'))+
+      '</div><div class="fin-bar"><a class="btn ghost small" href="costos-prueba.html">Leer con el lector de boletas (timbre SII)</a><small class="note" style="margin:0">El lector llena los datos solo; lo que guarda aparece aquí como Pendiente.</small></div>';
+    h+='<div class="cos-kpis"><div class="cos-kpi'+(pend?' warn':'')+'"><div class="l">Por revisar</div><div class="v">'+pend+'</div><div class="s">documentos en Pendiente</div></div>'+
+      '<div class="cos-kpi'+(porVal?' warn':'')+'"><div class="l">Pagos por validar</div><div class="v">'+porVal+'</div><div class="s">comprobantes subidos</div></div>'+
+      '<div class="cos-kpi'+(sinResp?' warn':'')+'"><div class="l">Sin respaldo</div><div class="v">'+sinResp+'</div><div class="s">gastos sin foto ni PDF</div></div></div>';
+    h+='<div class="cos-card" style="padding:0"><h3 style="padding:14px 16px 4px">Lo último que subí</h3><div class="cos-scroll"><table class="cos-tbl fin-tbl"><tbody>'+
+      (mios.length?mios.map(function(r){ var n=finAdjDe('registro_id',r.id).length; return '<tr class="fin-row" data-id="'+r.id+'"><td class="nm"><b>'+esc(r.concepto)+'</b><small>'+(r.tercero?esc(r.tercero)+' · ':'')+fechaCorta(r.fecha)+' · '+(n?n+' archivo'+(n>1?'s':''):'<em class="neg">sin respaldo</em>')+'</small></td><td>'+fmtMoney(finTot(r))+'</td><td>'+finChip(r)+'</td></tr>'; }).join('')
+        :'<tr><td class="empty" style="padding:22px">Todavía no has subido documentos.</td></tr>')+
+      misPagos.map(function(p){ return '<tr class="fin-row" data-pago="'+p.id+'"><td class="nm"><b>Pago · '+esc(finPagoA(p))+'</b><small>'+fechaCorta(p.fecha)+' · '+esc(FIN_MEDIOS[p.medio]||p.medio)+'</small></td><td>'+fmtMoney(p.monto)+'</td><td>'+finPagoChip(p)+'</td></tr>'; }).join('')+
+      '</tbody></table></div></div><p class="note">Regla: <b>si no está en el sistema, no existe</b>. Sin foto o PDF no hay reembolso ni pago. La boleta en papel igual va a la bandeja de la oficina.</p>';
+    return h;
+  }
+
+  // ---------- Pagos (comprobantes) ----------
+  var FIN_MEDIOS={transferencia:'Transferencia',efectivo:'Efectivo',debito:'Débito',credito:'Tarjeta de crédito',cheque:'Cheque',otro:'Otro'};
+  function finPagoA(p){ var pv=finProv(p.proveedor_id); return pv?pv.nombre:(p.tercero||'Sin proveedor'); }
+  function finPagoChip(p){ var c={por_validar:'pe',validado:'ok',rechazado:'rej'}[p.estado]||'pe'; return '<span class="fin-chip '+c+'">'+({por_validar:'Por validar',validado:'Validado',rechazado:'Rechazado'}[p.estado]||p.estado)+'</span>'; }
+  function finSinFactura(){   // pagos a proveedores sin documento asociado, por proveedor y mes
+    var g={}; FIN.pagos.forEach(function(p){ if(p.estado==='rechazado'||finLinksPago(p.id).length) return; var k=(p.proveedor_id||p.tercero||'?')+'|'+p.fecha.slice(0,7);
+      var o=g[k]||(g[k]={a:finPagoA(p), mes:p.fecha.slice(0,7), n:0, v:0, mensual:!!(finProv(p.proveedor_id)||{}).modalidad&&finProv(p.proveedor_id).modalidad==='mensual'}); o.n++; o.v+=+p.monto||0; });
+    return Object.keys(g).map(function(k){ return g[k]; }).sort(function(a,b){ return a.mes<b.mes?-1:1; });
+  }
+  function finPagosHTML(){
+    var P=FIN.pagos, porVal=P.filter(function(p){ return p.estado==='por_validar'; }), mes=todayISO().slice(0,7);
+    var valMes=P.filter(function(p){ return p.estado==='validado' && p.fecha.slice(0,7)===mes; }), sf=finSinFactura();
+    var k='<div class="cos-kpis"><div class="cos-kpi'+(porVal.length?' warn':'')+'"><div class="l">Por validar</div><div class="v">'+porVal.length+'</div><div class="s">'+fmtMoney(porVal.reduce(function(s,p){ return s+(+p.monto||0); },0))+'</div></div>'+
+      '<div class="cos-kpi"><div class="l">Validados en '+esc(FIN_MESES[+mes.slice(5,7)-1].toLowerCase())+'</div><div class="v">'+fmtMoney(valMes.reduce(function(s,p){ return s+(+p.monto||0); },0))+'</div><div class="s">'+valMes.length+' pagos</div></div>'+
+      '<div class="cos-kpi'+(sf.length?' warn':'')+'"><div class="l">Pagos sin factura</div><div class="v">'+fmtMoney(sf.reduce(function(s,x){ return s+x.v; },0))+'</div><div class="s">'+sf.reduce(function(s,x){ return s+x.n; },0)+' pagos sin documento asociado</div></div></div>';
+    var alertas=sf.length?'<div class="cos-card"><h3>Falta factura</h3>'+sf.map(function(x){ return '<div class="fin-mv"><span><b>'+esc(x.a)+'</b> · '+esc(finMesLbl(x.mes).toLowerCase())+' · '+x.n+' pago'+(x.n>1?'s':'')+(x.mensual?' · <em>factura mensual</em>':'')+'</span><b>'+fmtMoney(x.v)+'</b></div>'; }).join('')+
+      '<p class="note" style="margin:8px 0 0">Pide la factura del mes al proveedor. Cuando llegue, súbela como compra y, al revisarla, marca los pagos que cubre.</p></div>':'';
+    var orden=P.slice().sort(function(a,b){ var o={por_validar:0,validado:1,rechazado:2}; return (o[a.estado]-o[b.estado]) || String(b.fecha).localeCompare(String(a.fecha)); });
+    var filas=orden.length?orden.map(function(p){ var ls=finLinksPago(p.id), n=finAdjDe('pago_id',p.id).length;
+      return '<tr class="fin-row" data-pago="'+p.id+'"><td class="nm"><b>'+esc(finPagoA(p))+'</b><small>'+esc(FIN_MEDIOS[p.medio]||p.medio)+' · '+(ls.length?ls.length+' documento'+(ls.length>1?'s':''):'<em class="neg">sin factura asociada</em>')+' · '+(n?n+' archivo'+(n>1?'s':''):'<em class="neg">sin comprobante</em>')+' · subió '+esc((p.created_by||'').split('@')[0])+'</small></td><td>'+fechaCorta(p.fecha)+'</td><td>'+fmtMoney(p.monto)+'</td><td>'+finPagoChip(p)+'</td></tr>'; }).join('')
+      :'<tr><td colspan="4" class="empty" style="padding:30px">Aún no hay comprobantes de pago.</td></tr>';
+    return k+alertas+'<div class="fin-bar"><span class="fin-sp"></span><button class="btn small" type="button" data-fin="nuevo-pago">+ Comprobante de pago</button></div>'+
+      '<div class="cos-card" style="padding:0"><div class="cos-scroll"><table class="cos-tbl fin-tbl"><thead><tr><th>Proveedor</th><th>Fecha</th><th>Monto</th><th>Estado</th></tr></thead><tbody>'+filas+'</tbody></table></div></div>'+
+      '<p class="note">Al validar un comprobante, los gastos que cubre por completo pasan a <b>pagados</b>. Si se rechaza, vuelven a quedar por pagar.</p>';
+  }
+  function finAbrirPago(id){
+    var p=id?FIN.pagos.filter(function(x){ return x.id===id; })[0]:null; if(id&&!p) return;
+    var rev=finRevisa(), puedeEditar=!p || rev || (p.estado==='por_validar' && p.created_by===miEmail());
+    var ls=p?finLinksPago(p.id):[];
+    var v=p?Object.assign({},p):{fecha:todayISO(), medio:'transferencia'};
+    v.proveedor_txt=p?finPagoA(p):'';
+    var campos=[
+      {k:'fecha',l:'Fecha del pago',t:'date',req:true},
+      {k:'monto',l:'Monto pagado',t:'number',req:true},
+      {k:'medio',l:'Medio',t:'select',o:Object.keys(FIN_MEDIOS).map(function(k){ return [k,FIN_MEDIOS[k]]; })},
+      {k:'proveedor_txt',l:'Proveedor',list:'fin-dl-prov',req:true,ph:'Nombre del proveedor'},
+      {k:'cuenta_id',l:'Cuenta de donde salió',t:'select',vacio:'—',o:FIN.cuentas.filter(function(c){ return c.activo; }).map(function(c){ return [c.id,c.nombre]; }),hide:!rev},
+      {k:'notas',l:'Notas',t:'textarea',full:true}
+    ];
+    // Documentos por pagar que cubre este pago
+    var marcados={}; ls.forEach(function(l){ marcados[l.registro_id]=l.monto; });
+    var cand=finActivos().filter(function(r){ return r.tipo==='gasto' && (marcados[r.id] || (finAbierto(r) && finSaldoReg(r, p&&p.id)>0)); })
+      .sort(function(a,b){ return String(a.fecha).localeCompare(String(b.fecha)); });
+    var lista=function(provId){ var L=cand.filter(function(r){ return marcados[r.id] || !provId || r.proveedor_id===provId; }).slice(0,60);
+      return L.length?L.map(function(r){ return '<label class="fin-chk fin-mv"><span><input type="checkbox" class="fin-cubre" value="'+r.id+'"'+(marcados[r.id]?' checked':'')+(puedeEditar?'':' disabled')+'> '+fechaCorta(r.fecha)+' · '+esc(r.concepto)+(r.tercero?' · '+esc(r.tercero):'')+(r.doc_numero?' · N° '+esc(r.doc_numero):'')+'</span><b>'+fmtMoney(marcados[r.id]||finSaldoReg(r, p&&p.id))+'</b></label>'; }).join('')
+        :'<p class="note" style="margin:4px 0">No hay documentos por pagar'+(provId?' de este proveedor':'')+'. Si el proveedor factura al mes, guarda el pago igual: queda como <b>pago sin factura</b>.</p>'; };
+    var acc='';
+    if(p && rev){
+      acc='<div class="fin-bar" style="margin-top:8px">'+(p.estado!=='validado'?'<button type="button" class="btn small" id="fin-pago-ok">Validar pago</button>':'')+
+        (p.estado!=='rechazado'?'<button type="button" class="btn ghost small fin-del" id="fin-pago-no">Rechazar</button>':'')+
+        (p.estado!=='por_validar'?'<button type="button" class="btn ghost small" id="fin-pago-re">Volver a por validar</button>':'')+
+        '<small class="note" style="margin:0">'+(p.validado_por?'Validado por '+esc(p.validado_por)+' el '+fechaCorta(String(p.validado_en).slice(0,10)):'')+(p.motivo_rechazo?' Rechazo: '+esc(p.motivo_rechazo):'')+'</small></div>';
+    }
+    var extra='<div id="fin-adj-box">'+finAdjCaja('pago_id', p&&p.id)+'</div><div class="fin-h3">Documentos que paga</div><div id="fin-cubre">'+lista(p&&p.proveedor_id)+'</div>'+acc;
+    var f=finForm(p?'Comprobante de pago · '+finPagoA(p):'Nuevo comprobante de pago', campos, v, function(o){
+      if(!puedeEditar){ var pf=FIN.pend.slice(); if(pf.length) finAdjSubir('pago_id', p.id, pf).then(function(){ finCerrarForm(); toast('Comprobante agregado'); cargarFin(); }); else finCerrarForm(); return; }
+      if(!(o.monto>0)){ toast('El monto debe ser mayor a 0'); return; }
+      if(!p && !FIN.pend.length){ toast('Adjunta el comprobante (foto o PDF)'); return; }
+      var pv=finProvPorNombre(o.proveedor_txt);
+      var guardar=function(prov){
+        var row={fecha:o.fecha, monto:o.monto, medio:o.medio, proveedor_id:prov?prov.id:null, tercero:prov?null:o.proveedor_txt, notas:o.notas};
+        if(rev) row.cuenta_id=o.cuenta_id;
+        var sel=[].map.call(document.querySelectorAll('#fin-sheet .fin-cubre:checked'), function(x){ return x.value; });
+        finGuardarCon('fin_pagos', p&&p.id, row, 'pago_id', 'Comprobante guardado', function(pid){
+          var resto=o.monto, filas=sel.map(function(rid){ var r=FIN.regs.filter(function(x){ return x.id===rid; })[0]; if(!r) return null; var m=Math.min(finSaldoReg(r,pid), resto); resto-=m; return m>0?{pago_id:pid, registro_id:rid, monto:m}:null; }).filter(Boolean);
+          return sb.from('fin_pago_registros').delete().eq('pago_id',pid).then(function(){ return filas.length?sb.from('fin_pago_registros').insert(filas):null; }).then(function(x){ if(x&&x.error) toast('No se pudieron asociar los documentos: '+x.error.message); });
+        });
+      };
+      if(pv || !o.proveedor_txt) guardar(pv);
+      else if(confirm('«'+o.proveedor_txt+'» no está en Proveedores. ¿Agregarlo?')) sb.from('fin_proveedores').insert({nombre:o.proveedor_txt}).select().single().then(function(x){ if(x.error){ toast('No se pudo crear el proveedor: '+x.error.message); return; } FIN.provs.push(x.data); guardar(x.data); });
+      else guardar(null);
+    }, (p && rev)?function(){ if(!confirm('¿Eliminar este comprobante? Los documentos que pagaba vuelven a quedar por pagar.')) return;
+      sb.from('fin_pagos').update({deleted_at:new Date().toISOString()}).eq('id',p.id).then(function(x){ if(x.error){ toast('No se pudo: '+x.error.message); return; } finCerrarForm(); cargarFin(); }); }:null,
+      p?'':'Sube la foto o PDF del comprobante y marca las facturas que paga. Queda <b>por validar</b> hasta que Enzo o Cristopher lo revisen contra la cartola.', extra);
+    $('fin-sheet-body').insertAdjacentHTML('beforeend', finDatalists());
+    finAdjBind('pago_id', p&&p.id);
+    if(!puedeEditar) f.querySelectorAll('input,select,textarea').forEach(function(x){ if(x.id!=='fin-adj-in') x.disabled=true; });
+    var pt=f.elements.proveedor_txt; if(pt) pt.addEventListener('change',function(){ var pv=finProvPorNombre(pt.value); $('fin-cubre').innerHTML=lista(pv&&pv.id); });
+    var est=function(e, extraRow){ var row=Object.assign({estado:e}, extraRow||{}); if(e!=='rechazado') row.motivo_rechazo=null;
+      var c=f.elements.cuenta_id; if(c && c.value) row.cuenta_id=c.value;
+      sb.from('fin_pagos').update(row).eq('id',p.id).then(function(x){ if(x.error){ toast('No se pudo: '+x.error.message); return; } finCerrarForm(); toast(e==='validado'?'Pago validado':(e==='rechazado'?'Pago rechazado':'Pago por validar')); cargarFin(); }); };
+    if($('fin-pago-ok')) $('fin-pago-ok').onclick=function(){ if(!finAdjDe('pago_id',p.id).length && !confirm('Este pago no tiene comprobante adjunto. ¿Validar igual?')) return; est('validado'); };
+    if($('fin-pago-no')) $('fin-pago-no').onclick=function(){ var m=prompt('Motivo del rechazo (lo verá quien lo subió):',''); if(m===null) return; est('rechazado',{motivo_rechazo:m||'Sin motivo'}); };
+    if($('fin-pago-re')) $('fin-pago-re').onclick=function(){ est('por_validar'); };
+  }
+
+  // ---------- Proveedores ----------
+  function finProveedoresHTML(){
+    var A=finActivos(), sf=finSinFactura();
+    var filas=FIN.provs.length?FIN.provs.map(function(p){ var ab=A.filter(function(r){ return r.proveedor_id===p.id && r.tipo==='gasto' && finAbierto(r); });
+      var deuda=ab.reduce(function(s,r){ return s+finSaldoReg(r); },0), venc=ab.filter(finVencido).length;
+      var sinF=FIN.pagos.filter(function(x){ return x.proveedor_id===p.id && x.estado!=='rechazado' && !finLinksPago(x.id).length; }).reduce(function(s,x){ return s+(+x.monto||0); },0);
+      return '<tr class="fin-row'+(p.activo?'':' fin-off')+'" data-prov="'+p.id+'"><td class="nm"><b>'+esc(p.nombre)+'</b><small>'+(p.rut?esc(p.rut)+' · ':'')+(p.modalidad==='mensual'?'factura mensual':'factura por compra')+' · '+p.plazo_dias+' días</small></td><td>'+fmtMoney(deuda)+'<small>'+ab.length+' doc.'+(venc?' · <b class="neg">'+venc+' vencidos</b>':'')+'</small></td><td>'+(sinF?'<b class="neg">'+fmtMoney(sinF)+'</b>':'—')+'</td></tr>'; }).join('')
+      :'<tr><td colspan="3" class="empty" style="padding:30px">Sin proveedores. Se crean solos al subir documentos con RUT.</td></tr>';
+    return '<div class="fin-bar"><span class="fin-sp"></span><button class="btn small" type="button" data-fin="nuevo-prov">+ Proveedor</button></div>'+
+      '<div class="cos-card" style="padding:0"><div class="cos-scroll"><table class="cos-tbl fin-tbl"><thead><tr><th>Proveedor</th><th>Por pagar</th><th>Pagos sin factura</th></tr></thead><tbody>'+filas+'</tbody></table></div></div>'+
+      '<p class="note"><b>Factura mensual</b>: se le paga por pedido (ej.: colaciones) y emite una factura al mes. Los pagos quedan "sin factura" hasta asociarlos a esa factura. '+(sf.length?'Hoy hay '+sf.length+' grupo(s) de pagos sin factura (ver Pagos).':'')+'</p>';
+  }
+  function finAbrirProv(id){ var p=id?finProv(id):null;
+    finForm(p?'Editar proveedor':'Nuevo proveedor',[{k:'nombre',l:'Nombre',req:true,full:true},{k:'rut',l:'RUT',ph:'76123456-7'},{k:'modalidad',l:'Cómo factura',t:'select',o:[['por_compra','Factura en cada compra'],['mensual','Factura mensual (pago por pedido)']]},
+      {k:'plazo_dias',l:'Plazo de pago (días)',t:'number'},{k:'contacto',l:'Contacto',full:true,ph:'Nombre, teléfono o correo'},{k:'activo',l:'Activo',t:'check',l2:'Aparece en las listas'},{k:'notas',l:'Notas',t:'textarea',full:true}],
+      p||{modalidad:'por_compra',plazo_dias:30,activo:true}, function(o){ o.plazo_dias=o.plazo_dias==null?30:o.plazo_dias; if(o.rut) o.rut=o.rut.replace(/[^0-9kK-]/g,'').toUpperCase(); finGuardar('fin_proveedores', p&&p.id, o, 'Proveedor guardado'); },
+      p?function(){ if(!confirm('¿Eliminar el proveedor? Sus documentos quedan, sin proveedor asociado.')) return; sb.from('fin_proveedores').delete().eq('id',p.id).then(function(r){ if(r.error){ toast('No se pudo: '+r.error.message); return; } finCerrarForm(); cargarFin(); }); }:null); }
 
   // ---------- Gastos fijos ----------
   function finEquivMes(x){ return x.ciclo==='anual'?(+x.monto||0)/12:(x.ciclo==='semestral'?(+x.monto||0)/6:(+x.monto||0)); }
@@ -9881,11 +10154,16 @@
     b.querySelectorAll('tr[data-rec]').forEach(function(x){ x.onclick=function(){ finAbrirFijo(x.dataset.rec); }; });
     b.querySelectorAll('tr[data-cta]').forEach(function(x){ x.onclick=function(ev){ if(ev.target.closest('[data-saldo]')) return; finAbrirCuenta(x.dataset.cta); }; });
     b.querySelectorAll('[data-saldo]').forEach(function(x){ x.onclick=function(ev){ ev.stopPropagation(); finAbrirSaldo(x.dataset.saldo); }; });
+    b.querySelectorAll('tr[data-pago]').forEach(function(x){ x.onclick=function(){ finAbrirPago(x.dataset.pago); }; });
+    b.querySelectorAll('tr[data-prov]').forEach(function(x){ x.onclick=function(){ finAbrirProv(x.dataset.prov); }; });
     b.querySelectorAll('tr[data-deu]').forEach(function(x){ x.onclick=function(){ finAbrirDeuda(x.dataset.deu); }; });
     b.querySelectorAll('tr[data-pre]').forEach(function(x){ x.onclick=function(){ finAbrirPrestamo(x.dataset.pre); }; });
     var su=$('fin-sueldo'); if(su) su.onchange=function(){ var v=Math.max(0,Math.round(+su.value||0)); sb.from('fin_config').upsert({clave:'flujo_sueldos', valor:{monto:v}, updated_at:new Date().toISOString()}).then(function(r){ if(r.error){ toast('No se pudo: '+r.error.message); return; } FIN.cfg.flujo_sueldos={monto:v}; pintarFin(); }); };
     b.querySelectorAll('[data-fin]').forEach(function(x){ x.onclick=function(){ var a=x.dataset.fin;
       if(a==='nuevo-gasto') finAbrirRegistro(null,'gasto');
+      else if(a==='sin-doc') finAbrirSinDoc();
+      else if(a==='nuevo-pago') finAbrirPago(null);
+      else if(a==='nuevo-prov') finAbrirProv(null);
       else if(a==='nuevo-ingreso'){ if(!CLIENTES||!CLIENTES.length) cargarClientes(function(){ finAbrirRegistro(null,'ingreso'); }); else finAbrirRegistro(null,'ingreso'); }
       else if(a==='nuevo-fijo') finAbrirFijo(null);
       else if(a==='generar') sb.rpc('fin_generar_mes').then(function(r){ if(r.error){ toast('No se pudo: '+r.error.message); return; } toast(r.data?(r.data+' gastos fijos generados'):'Ya estaban generados'); cargarFin(); });
@@ -12365,7 +12643,7 @@
   var PERM_MOD={}; PERM_MODS.forEach(function(m){ PERM_MOD[m.k]=m; });
   var SEG_MOD={trab:'trabajadores',doc:'documentacion',salida:'salidas',empresa:'documentacion',zerty:'documentacion'};
   var SUPER_EMAIL='enzo.castro@innovaservi.com', SUPER_EMAILS=[SUPER_EMAIL,'enzo.castro@innovaservi.cl'];
-  var BETA_COSTOS=['enzo.castro@innovaservi.com','enzo.castro@innovaservi.cl','jorge.castro@innovaservi.com','cristopher.ruiz@innovaservi.com','luisavelasquez1801@gmail.com'];   // = costos_beta() en la base
+  var BETA_COSTOS=['enzo.castro@innovaservi.com','enzo.castro@innovaservi.cl','jorge.castro@innovaservi.com','cristopher.ruiz@innovaservi.com','luisavelasquez1801@gmail.com','yocelyn.mansilla@innovaservi.cl'];   // = costos_beta() en la base
   function esSuper(email){ return SUPER_EMAILS.indexOf((email||'').trim().toLowerCase())>=0; }
 
   // Roles base (si la tabla roles_perm aún no existe o está vacía). Valor: nivel, o [nivel, {accion:bool}] para ajustar.
