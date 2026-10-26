@@ -1930,6 +1930,7 @@
       <div class="sbar-grp sb-admin">RRHH</div>
       <button class="sb-item sb-admin" data-v="v-rrhh" data-seg="trab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>Trabajadores</button>
       <button class="sb-item sb-admin" data-v="v-rrhh" data-seg="salida"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M12 8v8M8 12h8"/></svg>Salidas médicas</button>
+      <button class="sb-item sb-admin" data-v="v-rrhh" data-seg="finiquito"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 15l2 2 4-4"/></svg>Finiquitos</button>
       <button class="sb-item sb-admin" data-v="v-rrhh" data-seg="empresa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 9h1M14 9h1M9 13h1M14 13h1M10 21v-4h4v4"/></svg>Empresa</button>
 
       <div class="sbar-grp sb-admin">Remuneraciones</div>
@@ -2227,6 +2228,7 @@
       <div class="rrhh-segbar" style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">
         <button class="btn ghost small rrhh-seg on" data-seg="trab" style="flex:1;min-width:120px">Trabajadores</button>
         <button class="btn ghost small rrhh-seg" data-seg="salida" style="flex:1;min-width:120px">Salidas médicas</button>
+        <button class="btn ghost small rrhh-seg" data-seg="finiquito" style="flex:1;min-width:120px">Finiquitos</button>
         <button class="btn ghost small rrhh-seg" data-seg="empresa" style="flex:1;min-width:120px">Empresa</button>
       </div>
       <div class="seg trab-modo" id="trab-modo"><button class="seg-b on" data-m="trab">Fichas</button><button class="seg-b" data-m="doc">Estado documental</button><button class="seg-b" data-m="zerty">Zerty · Cermaq</button>
@@ -8275,9 +8277,9 @@
     });
   }
   // RRHH: Trabajadores (Fichas | Estado documental) · Salidas médicas · Empresa (documentos de empresa | Zerty).
-  // 'capacit' y 'finiquito' quedan como alias (Finiquitos se lleva en Buk).
+  // 'capacit' queda como alias de Estado documental. Finiquitos: registro con el documento firmado.
   function rrhhSeg(seg){
-    if(seg==='capacit'||seg==='finiquito') seg='doc';
+    if(seg==='capacit') seg='doc';
     var top=(seg==='doc'||seg==='zerty')?'trab':seg;
     document.querySelectorAll('.rrhh-seg').forEach(function(x){ x.classList.toggle('on',x.dataset.seg===top); });
     document.querySelectorAll('.sbar .sb-item[data-seg]').forEach(function(x){ x.classList.toggle('on',x.dataset.seg===top); });
@@ -8285,7 +8287,7 @@
     $('trab-modo').querySelectorAll('.seg-b').forEach(function(b){ b.classList.toggle('on', b.dataset.m===seg); });
     $('rrhh-trab').classList.toggle('hide', seg!=='trab');
     $('rrhh-doc').classList.toggle('hide', seg!=='doc');
-    $('rrhh-fin').classList.add('hide');
+    $('rrhh-fin').classList.toggle('hide', seg!=='finiquito');
     $('rrhh-sal').classList.toggle('hide', seg!=='salida');
     $('rrhh-emp').classList.toggle('hide', seg!=='empresa');
     $('rrhh-zt').classList.toggle('hide', seg!=='zerty');
@@ -8293,19 +8295,20 @@
     else if(seg==='salida'){ renderSal(); }
     else if(seg==='empresa'){ EMP_ABIERTAS={}; renderEmp(); }
     else if(seg==='zerty'){ cargarZerty(); }
+    else if(seg==='finiquito'){ renderFin(); }
   }
   document.querySelectorAll('.rrhh-seg').forEach(function(b){ b.addEventListener('click',function(){ rrhhSeg(b.dataset.seg); }); });
   $('trab-modo').querySelectorAll('.seg-b').forEach(function(b){ b.addEventListener('click',function(){ rrhhSeg(b.dataset.m); }); });
 
   // ---- Finiquitos ----
-  var FIN=[];
-  function renderFin(){ if(!sb){ pintarFin(); return; } sb.from('finiquitos').select('*').order('fecha',{ascending:false}).limit(500).then(function(r){ FIN=(r&&r.data)||[]; pintarFin(); }, function(){ pintarFin(); }); }
+  var FINIQ=[];
+  function renderFin(){ if(!sb){ pintarFin(); return; } sb.from('finiquitos').select('*').order('fecha',{ascending:false}).limit(500).then(function(r){ FINIQ=(r&&r.data)||[]; pintarFin(); }, function(){ pintarFin(); }); }
   function pintarFin(){
-    $('fin-cnt').textContent=FIN.length+(FIN.length===1?' finiquito':' finiquitos');
+    $('fin-cnt').textContent=FINIQ.length+(FINIQ.length===1?' finiquito':' finiquitos');
     var c=$('fin-list');
-    if(!FIN.length){ c.innerHTML='<div class="empty"><div class="big">📄</div>Sin finiquitos registrados.<br><span style="font-size:.82rem">Toca “＋ Nuevo”.</span></div>'; return; }
-    c.innerHTML=FIN.map(function(f,i){ return '<div class="rrhh-doc" data-i="'+i+'" style="cursor:pointer"><div class="rd-top"><span class="rd-nm">'+esc(f.nombre||'—')+'</span>'+(f.monto?'<span class="dchip ok">'+fmtMoney(f.monto)+'</span>':'')+'</div><div class="note" style="margin:6px 0 0;font-size:.8rem">'+esc(fechaCorta(f.fecha||''))+(f.motivo?' · '+esc(f.motivo):'')+(f.url?' · <a href="'+esc(f.url)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:var(--orange-2);font-weight:700">ver PDF</a>':'')+'</div></div>'; }).join('');
-    c.querySelectorAll('[data-i]').forEach(function(el){ el.addEventListener('click',function(){ abrirFin(FIN[+el.dataset.i]); }); });
+    if(!FINIQ.length){ c.innerHTML='<div class="empty"><div class="big">📄</div>Sin finiquitos registrados.<br><span style="font-size:.82rem">Toca “＋ Nuevo”.</span></div>'; return; }
+    c.innerHTML=FINIQ.map(function(f,i){ return '<div class="rrhh-doc" data-i="'+i+'" style="cursor:pointer"><div class="rd-top"><span class="rd-nm">'+esc(f.nombre||'—')+'</span>'+(f.monto?'<span class="dchip ok">'+fmtMoney(f.monto)+'</span>':'')+'</div><div class="note" style="margin:6px 0 0;font-size:.8rem">'+esc(fechaCorta(f.fecha||''))+(f.motivo?' · '+esc(f.motivo):'')+(f.url?' · <a href="'+esc(f.url)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:var(--orange-2);font-weight:700">ver PDF</a>':'')+'</div></div>'; }).join('');
+    c.querySelectorAll('[data-i]').forEach(function(el){ el.addEventListener('click',function(){ abrirFin(FINIQ[+el.dataset.i]); }); });
   }
   function abrirFin(f){
     f=f||{};
@@ -13230,7 +13233,7 @@
   ];
   var PERM_MODS=[]; PERM_GRUPOS.forEach(function(g){ g[1].forEach(function(m){ PERM_MODS.push({k:m[0],nombre:m[1],v:m[2],seg:m[3],acc:m[4],grupo:g[0]}); }); });
   var PERM_MOD={}; PERM_MODS.forEach(function(m){ PERM_MOD[m.k]=m; });
-  var SEG_MOD={trab:'trabajadores',doc:'documentacion',salida:'salidas',empresa:'documentacion',zerty:'documentacion'};
+  var SEG_MOD={trab:'trabajadores',finiquito:'trabajadores',doc:'documentacion',salida:'salidas',empresa:'documentacion',zerty:'documentacion'};
   var SUPER_EMAIL='enzo.castro@innovaservi.com', SUPER_EMAILS=[SUPER_EMAIL,'enzo.castro@innovaservi.cl'];
   var BETA_COSTOS=['enzo.castro@innovaservi.com','enzo.castro@innovaservi.cl','jorge.castro@innovaservi.com','cristopher.ruiz@innovaservi.com','luisavelasquez1801@gmail.com','yocelyn.mansilla@innovaservi.cl'];   // = costos_beta() en la base
   function esSuper(email){ return SUPER_EMAILS.indexOf((email||'').trim().toLowerCase())>=0; }
