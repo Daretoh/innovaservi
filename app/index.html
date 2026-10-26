@@ -2521,6 +2521,10 @@
           <div class="fld" style="margin:0"><label>Estado</label><select id="fi-estado"><option value="espera">En espera</option><option value="activo">Activo</option><option value="inactivo">Inactivo</option></select></div>
           <div class="fld" style="margin:0"><label>Fecha ingreso</label><input id="fi-ingreso" type="date"></div>
         </div>
+        <div class="grid2" style="margin-top:10px">
+          <div class="fld" style="margin:0"><label>Vence contrato</label><input id="fi-contrato" type="date"></div>
+          <p class="note" style="margin:auto 0 4px">Se copia de Buk. Vacío = indefinido o spot. Avisa 30 días antes en Inicio y Alertas.</p>
+        </div>
       </div>
       <div class="card fi-secs">
         <details class="fi-sec" data-sec="contrato">
@@ -6133,7 +6137,7 @@
   function abrirFicha(t){
     FICHA_ID=t?t.id:null; FICHA_EST0=(t&&t.estado)||'espera';
     $('fi-nombre').value=t?(t.nombre||''):''; $('fi-rut').value=t?(t.rut||''):''; poblarSelectCargo($('fi-cargo'), t?(t.cargo||''):''); trHint();
-    $('fi-estado').value=(t&&t.estado)||'espera'; $('fi-ingreso').value=t?(t.fecha_ingreso||''):''; if($('fi-chofer')) $('fi-chofer').checked=!!(t&&t.chofer);
+    $('fi-estado').value=(t&&t.estado)||'espera'; $('fi-ingreso').value=t?(t.fecha_ingreso||''):''; if($('fi-contrato')) $('fi-contrato').value=t?(t.contrato_vence||''):''; if($('fi-chofer')) $('fi-chofer').checked=!!(t&&t.chofer);
     if($('fi-fijo')){ var esFijo=!!(t&&t.tipo_pago==='contrato'); $('fi-fijo').checked=esFijo; $('fi-jornada').value=(t&&t.jornada_horas)||''; if($('fi-jini')) $('fi-jini').value=(t&&t.jornada_ini)||''; if($('fi-jfin')) $('fi-jfin').value=(t&&t.jornada_fin)||''; if($('fi-sueldo')) $('fi-sueldo').value=(t&&t.sueldo_base)||''; if($('fi-sueldo-emp')) $('fi-sueldo-emp').value=(t&&t.sueldo_empresa)||''; if($('fi-sueldo-desde')) $('fi-sueldo-desde').value=(t&&t.sueldo_desde)?String(t.sueldo_desde).slice(0,7):''; $('fi-jornada-wrap').style.display=esFijo?'':'none'; }
     $('fi-tel').value=t?(t.telefono||''):''; $('fi-email').value=t?(t.email||''):'';
     $('fi-botas').value=t?(t.talla_botas||''):''; $('fi-ropa').value=t?(t.talla_ropa||''):'';
@@ -6168,6 +6172,7 @@
       ['cargo','Cargo','Principal',function(t){ return t.cargo||''; },'t',24],
       ['estado','Estado','Principal',function(t){ return EST[t.estado||'activo']||t.estado||''; },'e',11],
       ['ingreso','Fecha ingreso','Principal',function(t){ return D(t.fecha_ingreso); },'d',12],
+      ['contrato','Vence contrato','Principal',function(t){ return D(t.contrato_vence); },'d',12],
       ['buk','En Buk','Principal',function(t){ return t.buk?'Sí':'No'; },'t',8],
       ['tipo','Tipo de pago','Contrato y remuneración',function(t){ return t.tipo_pago==='contrato'?'Contrato fijo':'Por trato'; },'t',13],
       ['chofer','Chofer','Contrato y remuneración',function(t){ return t.chofer?'Sí':'No'; },'t',8],
@@ -6474,7 +6479,7 @@
     if(!sb) return; var nom=titleCase($('fi-nombre').value.trim()); if(!nom){ toast('El nombre es obligatorio.'); return; }
     var _fijo=!!($('fi-fijo')&&$('fi-fijo').checked);
     var row={ nombre:nom, rut:$('fi-rut').value.trim(), cargo:$('fi-cargo').value.trim(), estado:$('fi-estado').value, chofer:!!($('fi-chofer')&&$('fi-chofer').checked), tipo_pago:(_fijo?'contrato':'hora'), jornada_horas:(_fijo?(+$('fi-jornada').value||null):null), jornada_ini:(_fijo&&$('fi-jini')?($('fi-jini').value||null):null), jornada_fin:(_fijo&&$('fi-jfin')?($('fi-jfin').value||null):null), sueldo_base:(_fijo&&$('fi-sueldo')?(+$('fi-sueldo').value||null):null), sueldo_empresa:(_fijo&&$('fi-sueldo-emp')?($('fi-sueldo-emp').value||null):null), sueldo_desde:(_fijo&&$('fi-sueldo-desde')&&$('fi-sueldo-desde').value?($('fi-sueldo-desde').value+'-01'):null),
-      telefono:$('fi-tel').value.trim(), email:$('fi-email').value.trim(), fecha_ingreso:$('fi-ingreso').value||null,
+      telefono:$('fi-tel').value.trim(), email:$('fi-email').value.trim(), fecha_ingreso:$('fi-ingreso').value||null, contrato_vence:($('fi-contrato')?$('fi-contrato').value:'')||null,
       talla_botas:$('fi-botas').value.trim(), talla_ropa:$('fi-ropa').value.trim(), afp:$('fi-afp').value.trim(),
       salud:$('fi-salud').value.trim(), direccion:$('fi-dir').value.trim(), emergencia:$('fi-emerg').value.trim(),
       banco:($('fi-banco')?$('fi-banco').value.trim():'')||null, tipo_cuenta:($('fi-tipocta')?$('fi-tipocta').value:'')||null, num_cuenta:($('fi-numcta')?$('fi-numcta').value.trim():'')||null,
@@ -8150,7 +8155,7 @@
     {slug:'cap_funciones',nombre:'Acorde a sus funciones',corto:'Funciones'},{slug:'cap_karin',nombre:'Difusión Ley Karin',corto:'Ley Karin'}
   ];
   var DOC_TIPOS=RRHH_TIPOS.concat(CAP_TIPOS);   // lo que cuenta para el % al día
-  function rrhhTipo(s){ var L=DOC_TIPOS.concat(BUK_TIPOS); for(var i=0;i<L.length;i++) if(L[i].slug===s) return L[i]; return {slug:s,nombre:s,corto:s,vence:false}; }
+  function rrhhTipo(s){ if(s==='contrato_vence') return {slug:s,nombre:'Vencimiento de contrato',corto:'Contrato',vence:true}; var L=DOC_TIPOS.concat(BUK_TIPOS); for(var i=0;i<L.length;i++) if(L[i].slug===s) return L[i]; return {slug:s,nombre:s,corto:s,vence:false}; }
   // % al día = vigentes (entregado o por vencer) ÷ los que le aplican (se excluye "No aplica").
   function pctDe(tid, tipos){ var ok=0,n=0; (tipos||DOC_TIPOS).forEach(function(tp){ var e=estadoDoc(tid,tp.slug); if(e.k==='na') return; n++; if(e.k==='ok'||e.k==='prox') ok++; });
     return {ok:ok, n:n, pct:n?Math.round(ok/n*100):100}; }
@@ -10465,7 +10470,7 @@
     if(!c.innerHTML) c.innerHTML='<div class="note" style="text-align:center;margin:40px 0">Cargando resumen…</div>';
     var mes=hoy.slice(0,7)+'-01';
     Promise.all([
-      sb.from('trabajadores').select('id,nombre,estado,cargo').limit(1000),
+      sb.from('trabajadores').select('id,nombre,estado,cargo,contrato_vence').limit(1000),
       sb.from('rrhh_docs').select('trabajador_id,tipo,estado,vencimiento').limit(10000),
       sb.from('eventos').select('id,fecha,fecha_fin,dias,titulo,ubicacion,sitio,categoria').gte('fecha',isoMas(-40)).lte('fecha',isoMas(8)).limit(2000),
       sb.from('faena_plan').select('evento_id,fecha,personas').eq('fecha',hoy).limit(300),
@@ -10520,6 +10525,7 @@
     var ven=[], tById={}; X.trabs.forEach(function(t){ tById[t.id]=t; });
     X.docs.forEach(function(d){ var t=tById[d.trabajador_id]; if(!t||t.estado==='inactivo'||d.estado!=='entregado'||!d.vencimiento) return;
       ven.push({q:titleCase(t.nombre||''), que:rrhhTipo(d.tipo).nombre, f:d.vencimiento, n:diffDiasV(d.vencimiento), ir:'doc'}); });
+    X.trabs.forEach(function(t){ if(t.estado==='inactivo'||!t.contrato_vence) return; ven.push({q:titleCase(t.nombre||''), que:'Vencimiento de contrato', f:t.contrato_vence, n:diffDiasV(t.contrato_vence), ir:'trab'}); });
     var vb={}; X.veh.forEach(function(v){ if(v.estado!=='inactivo') vb[v.id]=v; }); var ult={};
     X.vg.forEach(function(g){ if(!vb[g.vehiculo_id]) return; var k=g.vehiculo_id+'|'+g.categoria; if(!ult[k]||g.vencimiento>ult[k].vencimiento) ult[k]=g; });
     Object.keys(ult).forEach(function(k){ var g=ult[k]; ven.push({q:vehLabel(vb[g.vehiculo_id]), que:(GASTO_CAT_LBL[g.categoria]||g.categoria), f:g.vencimiento, n:diffDiasV(g.vencimiento), ir:'veh'}); });
@@ -10587,7 +10593,7 @@
     if(!sb||!verMod('alertas')) return;
     var hoy=todayISO(), prev=mesPrevio(), en14=isoMas(14), hace60=isoMas(-60);
     Promise.all([
-      sb.from('trabajadores').select('id,nombre,estado').limit(800),
+      sb.from('trabajadores').select('id,nombre,estado,contrato_vence').limit(800),
       sb.from('rrhh_docs').select('trabajador_id,tipo,estado,vencimiento').limit(8000),
       sb.from('vehiculos').select('id,nombre,marca,modelo,patente,estado').limit(300),
       sb.from('vehiculo_gastos').select('vehiculo_id,categoria,vencimiento').not('vencimiento','is',null).limit(4000),
@@ -10607,6 +10613,8 @@
       D(1).forEach(function(d){ var t=tById[d.trabajador_id]; if(t&&d.estado==='na'){ entregado[d.trabajador_id+'|'+d.tipo]=1; return; } if(!t||d.estado!=='entregado') return; entregado[d.trabajador_id+'|'+d.tipo]=1;
         if(!d.vencimiento) return; var n=diasHasta(d.vencimiento); if(n==null||n>30) return;
         docs.push({tid:t.id, nombre:t.nombre, tipo:d.tipo, n:n, venc:d.vencimiento}); if(n<0){ (vencPorT[t.id]=vencPorT[t.id]||[]).push(rrhhTipo(d.tipo).corto); } });
+      // Contratos que vencen en 30 días o ya vencieron (fecha copiada de Buk en la ficha)
+      trabs.forEach(function(t){ if(!t.contrato_vence) return; var n=diasHasta(t.contrato_vence); if(n==null||n>30) return; docs.push({tid:t.id, nombre:t.nombre, tipo:'contrato_vence', n:n, venc:t.contrato_vence}); });
       docs.sort(function(a,b){ return a.n-b.n; });
       // 2) Asignados a faenas próximas (14 días) con documentos vencidos o pendientes
       var evById={}; D(8).forEach(function(e){ evById[e.id]=e; });
@@ -10675,6 +10683,7 @@
       if(r.reg){ busy(true,'Abriendo…'); sb.from('registros').select('*').eq('id',r.reg.id).maybeSingle().then(function(q){ busy(false); if(q&&q.data) abrirEdicion(q.data); }); }
       else { if(EDIT_ID) resetForm(); elegirJob(r.e); abrirVista('v-reporte'); } }); });
     c.querySelectorAll('.al-doc').forEach(function(b){ b.addEventListener('click',function(){ var d=AL.docs[+b.dataset.i]; if(!d) return;
+      if(d.tipo==='contrato_vence'){ var tf=(TRAB||[]).filter(function(t){ return t.id===d.tid; })[0]; if(tf) abrirFicha(tf); else abrirVista('v-rrhh'); return; }
       // trae el documento real antes de abrir (así no se pisa con uno vacío)
       busy(true,'Abriendo…'); sb.from('rrhh_docs').select('*').eq('trabajador_id',d.tid).then(function(q){ busy(false);
         ((q&&q.data)||[]).forEach(function(x){ RRHH_D[x.trabajador_id+'|'+x.tipo]=x; });
