@@ -395,6 +395,16 @@
   #upd-aviso.hide{display:none;} @keyframes updIn{from{opacity:0;transform:translate(-50%,-12px);}to{opacity:1;transform:translate(-50%,0);}}
   #upd-aviso .upd-ic{color:var(--orange);display:flex;} #upd-aviso .upd-ic svg{margin:0 !important;}
   #upd-aviso .upd-tx{display:flex;flex-direction:column;line-height:1.3;} #upd-aviso .upd-tx span{font-size:11.5px;color:#c3c8dc;}
+  /* Notificaciones push: franja fija y ventana de activación */
+  #push-franja{position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#fff4ec;border:1px solid var(--orange);color:var(--ink);border-radius:12px;padding:10px 12px;margin:0 0 12px;font:600 13px var(--font);}
+  #push-franja.bloq{background:#fde8e8;border-color:#d7262e;}
+  #push-franja .pf-ic{color:var(--orange-2);display:flex;} #push-franja.bloq .pf-ic{color:#b42318;}
+  #push-franja .pf-tx{flex:1;min-width:180px;line-height:1.35;} #push-franja .pf-tx span{display:block;font:500 12px var(--font);color:var(--body);}
+  #push-modal{position:fixed;inset:0;z-index:10001;background:rgba(10,14,40,.55);display:flex;align-items:center;justify-content:center;padding:16px;}
+  #push-modal .pm-card{background:var(--card);color:var(--ink);border-radius:16px;max-width:420px;width:100%;padding:20px;box-shadow:0 20px 60px -20px rgba(0,0,0,.6);}
+  #push-modal h3{margin:0 0 8px;font:800 18px var(--font);display:flex;align-items:center;gap:8px;}
+  #push-modal ul{margin:8px 0 14px;padding-left:20px;font:500 13.5px/1.5 var(--font);color:var(--body);}
+  #push-modal .pm-acts{display:flex;gap:8px;flex-wrap:wrap;} #push-modal .pm-est{font:600 12.5px var(--font);color:var(--muted);margin:0 0 12px;}
   #upd-aviso .upd-go{border:none;background:var(--orange);color:#fff;font:700 12.5px var(--font);padding:8px 14px;border-radius:10px;cursor:pointer;white-space:nowrap;}
   #upd-aviso .upd-x{border:none;background:transparent;color:#c3c8dc;cursor:pointer;display:flex;padding:4px;} #upd-aviso .upd-x svg{margin:0 !important;}
   #toast{position:fixed;left:50%;bottom:calc(84px + var(--safe-b));transform:translateX(-50%);background:var(--deep);color:#fff;
@@ -1788,12 +1798,14 @@
       <button class="sb-item sb-enzo" data-v="v-acc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Accesos</button>
     </nav>
     <div class="sbar-foot">
+      <button class="sb-out" id="sb-push" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>Notificaciones</button>
       <button class="sb-out theme-btn" id="sb-theme" title="Cambiar tema"><svg class="ic-moon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg><svg class="ic-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.5 4.5l1.4 1.4M18.1 18.1l1.4 1.4M2 12h2M20 12h2M4.5 19.5l1.4-1.4M18.1 5.9l1.4-1.4"/></svg>Tema</button>
       <button class="sb-out" id="sb-out"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>Salir</button>
     </div>
   </aside>
 
   <main>
+    <div id="push-franja" class="hide" role="status"></div>
     <!-- ---- REGISTRO (trabajo + horas + fotos) ---- -->
     <section class="view on" id="v-reporte">
       <div class="h-row"><h2 id="r-title">Multimedia</h2><button id="r-cancel" class="btn ghost small hide" style="width:auto">✕ Cancelar</button></div>
@@ -3101,7 +3113,7 @@
   }
   $('l-btn').addEventListener('click',login);
   $('l-pass').addEventListener('keydown',function(e){ if(e.key==='Enter') login(); });
-  $('out').addEventListener('click',function(){ if(sb)sb.auth.signOut(); });
+  $('out').addEventListener('click',function(){ if(!sb) return; pushOlvidar().then(function(){ sb.auth.signOut(); }); });
 
   // ====== Init tras login ======
   function init(){
@@ -3127,6 +3139,8 @@
     if(isAdmin){ abrirVista('v-inicio'); _did=true; }   // el administrador siempre parte en Inicio (resumen)
     // El editor de informe es solo para admin; cualquier otro parte en Multimedia (subida simple).
     if(!_did && !isAdmin){ var cur=(document.querySelector('.view.on')||{}).id||''; if((cur==='v-reporte' && !verMod('informe'))||cur===''){ var d=primeraVistaPermitida()||'v-fotos'; abrirVista(d); } }
+    pushIrDesdeUrl();   // si se entró tocando una notificación
+    pushRevisar();      // notificaciones: suscribe este dispositivo o muestra la franja para activarlas
   }
   function registroDe(eventoId){ if(!eventoId) return null; var id=String(eventoId);
     // Coincide por la faena principal (evento_id) O por cualquier faena dentro de un reporte consolidado.
@@ -12077,6 +12091,78 @@
   });
 
   // ====== Service worker (instalable) ======
+  // ====== Notificaciones push: se piden al entrar; si no están activas queda una franja fija ======
+  // Avisa: tarea asignada, menciones y recordatorios, tareas vencidas o que vencen hoy (08:00) y documentación por vencer (08:00).
+  // Envío: Edge Function "push" + cola push_salida (supabase/migrations/20261026000000_push.sql).
+  var PUSH_FN=SB_URL+'/functions/v1/push', PUSH_CLAVE=null;
+  var PUSH_ICO='<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>';
+  function pushSoportado(){ return ('serviceWorker' in navigator) && ('PushManager' in window) && ('Notification' in window); }
+  function pushEsIOS(){ return /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1); }
+  function pushInstalada(){ return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || navigator.standalone===true; }
+  function pushB64(s){ var p='='.repeat((4-s.length%4)%4), b=atob((s+p).replace(/-/g,'+').replace(/_/g,'/')), a=new Uint8Array(b.length); for(var i=0;i<b.length;i++) a[i]=b.charCodeAt(i); return a; }
+  function pushClave(){ if(PUSH_CLAVE) return Promise.resolve(PUSH_CLAVE);
+    return fetch(PUSH_FN).then(function(r){ return r.json(); }).then(function(j){ if(!j||!j.clave) throw new Error((j&&j.error)||'Sin clave'); PUSH_CLAVE=j.clave; return PUSH_CLAVE; }); }
+  function pushGuardar(sub){ var j=sub.toJSON();
+    return sb.from('push_suscripciones').upsert({ email:miEmail(), endpoint:j.endpoint, p256dh:j.keys.p256dh, auth:j.keys.auth, agente:navigator.userAgent.slice(0,200) },{ onConflict:'endpoint' })
+      .then(function(r){ if(r.error) throw r.error; return sub; }); }
+  // Suscribe este dispositivo (requiere permiso ya concedido). Si el dispositivo estaba a nombre de otra cuenta, se renueva.
+  function pushSuscribir(){ return navigator.serviceWorker.ready.then(function(reg){
+      return reg.pushManager.getSubscription().then(function(sub){
+        if(sub) return pushGuardar(sub).catch(function(){ return sub.unsubscribe().then(function(){ return null; }); });
+        return null; }).then(function(sub){ if(sub) return sub;
+        return pushClave().then(function(k){ return reg.pushManager.subscribe({ userVisibleOnly:true, applicationServerKey:pushB64(k) }); }).then(pushGuardar); }); }); }
+  function pushEstado(){ if(!pushSoportado()) return (pushEsIOS() && !pushInstalada())?'ios':'nosoporta';
+    return Notification.permission==='granted'?'ok':(Notification.permission==='denied'?'bloqueadas':'pendiente'); }
+  function pushFranja(est, err){ var f=$('push-franja'); if(!f) return;
+    var tx={ pendiente:['Activa las notificaciones','Te avisamos cuando te asignen o mencionen en una tarea, cuando algo venza y cuando haya documentación por vencer.'],
+      bloqueadas:['Las notificaciones están bloqueadas','Desbloquéalas en el navegador: toca el candado junto a la dirección → Notificaciones → Permitir, y recarga.'],
+      ios:['En iPhone, instala la app para recibir avisos','Toca Compartir → «Agregar a inicio» y abre InnovaGestión desde ese ícono. Ahí te pedirá activar las notificaciones.'],
+      error:['No se pudieron activar las notificaciones', err||'Revisa tu conexión e inténtalo de nuevo.'] }[est];
+    if(!tx){ f.classList.add('hide'); f.innerHTML=''; return; }
+    f.className=(est==='bloqueadas'||est==='error')?'bloq':'';
+    f.innerHTML='<span class="pf-ic">'+svgI(PUSH_ICO,20)+'</span><div class="pf-tx">'+esc(tx[0])+'<span>'+esc(tx[1])+'</span></div>'+
+      ((est==='pendiente'||est==='error')?'<button type="button" class="btn small" id="pf-activar">Activar</button>':'');
+    var b=$('pf-activar'); if(b) b.addEventListener('click',pushActivar); }
+  // Lo llama init() al entrar: si ya hay permiso suscribe en silencio; si no, franja fija + ventana una vez por sesión.
+  function pushRevisar(){ if(!sb||!authed) return; var est=pushEstado();
+    if(est==='nosoporta'){ pushFranja(''); return; }
+    if(est==='ok'){ pushSuscribir().then(function(){ pushFranja(''); }, function(e){ pushFranja('error', e&&e.message); }); return; }
+    pushFranja(est);
+    var visto=false; try{ visto=sessionStorage.getItem('push-modal')==='1'; }catch(_){}
+    if(!visto && (est==='pendiente'||est==='ios')){ try{ sessionStorage.setItem('push-modal','1'); }catch(_){} pushModal(); } }
+  function pushActivar(){ if(!pushSoportado()){ pushRevisar(); return; }
+    Notification.requestPermission().then(function(p){
+      if(p!=='granted'){ cerrarPushModal(); pushRevisar(); return; }
+      return pushSuscribir().then(function(){ cerrarPushModal(); pushFranja(''); toast('✓ Notificaciones activadas en este dispositivo'); },
+        function(e){ cerrarPushModal(); pushFranja('error', e&&e.message); }); }); }
+  function pushProbar(){ sb.from('push_salida').insert({ email:miEmail(), titulo:'Prueba de InnovaGestión', cuerpo:'Si ves esto, las notificaciones funcionan en tus dispositivos.', url:'./', etiqueta:'prueba' })
+    .then(function(r){ toast(r.error?'No se pudo enviar la prueba.':'Prueba enviada: debería llegar en unos segundos.'); }); }
+  function cerrarPushModal(){ var m=$('push-modal'); if(m) m.remove(); }
+  function pushModal(){ cerrarPushModal(); var est=pushEstado();
+    var estTx={ ok:'Activadas en este dispositivo.', pendiente:'Aún no activadas en este dispositivo.', bloqueadas:'Bloqueadas en este navegador.', ios:'En iPhone primero hay que instalar la app (Compartir → Agregar a inicio).', nosoporta:'Este navegador no permite notificaciones. Usa Chrome, Edge o Safari actualizado.' }[est];
+    var m=document.createElement('div'); m.id='push-modal'; m.setAttribute('role','dialog'); m.setAttribute('aria-modal','true');
+    m.innerHTML='<div class="pm-card"><h3>'+svgI(PUSH_ICO,20)+'Notificaciones</h3>'+
+      '<p class="pm-est">'+esc(estTx)+'</p>'+
+      '<div style="font:600 13.5px var(--font)">Te avisaremos cuando:</div><ul><li>Te asignen una tarea o te sumen como 2do responsable</li><li>Te mencionen con @ o te envíen un recordatorio</li><li>Tengas tareas vencidas o que vencen hoy (08:00)</li><li>Haya documentación por vencer (08:00, si ves Alertas)</li></ul>'+
+      '<div class="pm-acts">'+(est==='pendiente'?'<button type="button" class="btn small" id="pm-activar">Activar notificaciones</button>':'')+
+        (est==='ok'?'<button type="button" class="btn small" id="pm-probar">Enviar prueba</button>':'')+
+        '<button type="button" class="btn ghost small" id="pm-cerrar">'+(est==='pendiente'?'Ahora no':'Cerrar')+'</button></div></div>';
+    document.body.appendChild(m);
+    m.addEventListener('click',function(e){ if(e.target===m) cerrarPushModal(); });
+    if($('pm-activar')) $('pm-activar').addEventListener('click',pushActivar);
+    if($('pm-probar')) $('pm-probar').addEventListener('click',function(){ pushProbar(); cerrarPushModal(); });
+    $('pm-cerrar').addEventListener('click',cerrarPushModal); }
+  // Al salir, este dispositivo deja de recibir los avisos de esa cuenta
+  function pushOlvidar(){ if(!sb||!pushSoportado()) return Promise.resolve();
+    return navigator.serviceWorker.getRegistration().then(function(reg){ return reg&&reg.pushManager.getSubscription(); }).then(function(sub){
+      if(!sub) return; var ep=sub.endpoint; return sb.from('push_suscripciones').delete().eq('endpoint',ep).then(function(){ return sub.unsubscribe(); }); }).catch(function(){}); }
+  if($('sb-push')) $('sb-push').addEventListener('click',function(){ if(typeof drawerClose==='function') drawerClose(); pushModal(); });
+  // Enlaces que abren las notificaciones (?ir=tarea&id=… · ?ir=tareas · ?ir=alertas)
+  function pushIrDesdeUrl(){ try{ var q=new URLSearchParams(location.search), ir=q.get('ir'), id=q.get('id'); if(!ir) return;
+      history.replaceState(null,'',location.pathname);
+      if((ir==='tarea'||ir==='tareas') && verMod('tareas')){ abrirVista('v-tareas'); if(ir==='tarea' && id) cargarTareas(function(){ tarAbrir(id); }); }
+      else if(ir==='alertas' && verMod('alertas')) abrirVista('v-alertas');
+    }catch(_){} }
   function avisoVersion(){ var a=$('upd-aviso'); if(a){ a.classList.remove('hide'); return; }
     a=document.createElement('div'); a.id='upd-aviso'; a.setAttribute('role','status');
     a.innerHTML='<span class="upd-ic">'+svgI('<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>',18)+'</span><div class="upd-tx"><b>Hay una versión nueva</b><span>Guarda lo que estás haciendo y luego actualiza.</span></div><button type="button" class="upd-go">Actualizar</button><button type="button" class="upd-x" title="Más tarde" aria-label="Más tarde">'+svgI('<path d="M18 6 6 18M6 6l12 12"/>',16)+'</button>';
