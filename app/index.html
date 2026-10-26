@@ -9706,8 +9706,7 @@
   function finCerrarForm(){ $('fin-sheet').classList.remove('show'); FIN.pend=[]; FIN.ia=null; FIN.onFotos=null; }
 
   // ---------- Leer el documento con IA (beta: función leer-documento, Gemini en el servidor) ----------
-  var FIN_IA_BETA=['enzo.castro@innovaservi.com','enzo.castro@innovaservi.cl'];
-  function finIA(){ return FIN_IA_BETA.indexOf(miEmail())>=0; }
+  function finIA(){ return finBeta(); }   // todos los que usan Finanzas (carga y revisa)
   var FIN_TD_DOC={33:'factura',34:'factura',39:'boleta',41:'boleta',61:'nota_credito',52:'guia',0:'otro'};
   function finBlobB64(b){ return new Promise(function(ok,mal){ var fr=new FileReader(); fr.onload=function(){ ok(String(fr.result).split(',')[1]||''); }; fr.onerror=mal; fr.readAsDataURL(b); }); }
   function finRutOk(r){ var c=String(r||'').replace(/[^\dkK]/g,'').toUpperCase(); if(c.length<2) return false; var s=0,m=2; for(var i=c.length-2;i>=0;i--){ s+=+c[i]*m; m=m===7?2:m+1; } var d=11-(s%11); return (d===11?'0':d===10?'K':String(d))===c.slice(-1); }
@@ -9721,7 +9720,7 @@
   var FIN_IA_TIPOS=['Luz','Agua','Arriendo','Viático','Colación','Peaje','Estacionamiento','Combustible','Otro'];
   var FIN_IA_MEDIOS=['transferencia','efectivo','debito','credito','cheque','otro'];
   function finIANum(v){ v=String(v==null?'':v).replace(/[^\d-]/g,''); return v===''||v==='-'?null:parseInt(v,10); }
-  function finIACaja(){ return finIA()?'<div class="fin-ia" id="fin-ia"><div class="fin-ia-res" id="fin-ia-res">Al agregar la foto, la IA lee el documento y llena los datos <span class="fin-ia-tag">beta</span></div></div>':''; }
+  function finIACaja(){ return finIA()?'<div class="fin-ia" id="fin-ia"><div class="fin-ia-res" id="fin-ia-res">Al agregar la foto, la IA lee el documento y llena los datos </div></div>':''; }
   function finIAAuto(f, modo){
     if(!finIA()) return;
     var tok=0;
