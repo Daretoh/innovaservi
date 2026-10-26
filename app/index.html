@@ -1815,6 +1815,14 @@
   .fin-mini img{width:100%;height:100%;object-fit:cover;}
   .fin-mini i{position:absolute;right:1px;bottom:1px;font:800 9px/1 var(--font);font-style:normal;background:rgba(12,15,46,.75);color:#fff;border-radius:6px;padding:2px 3px;}
   .fin-mini.clip:hover{color:var(--orange);}
+  .fin-ia{display:flex;flex-direction:column;gap:8px;margin:10px 0 4px;padding:10px 12px;border:1px dashed var(--orange);border-radius:12px;background:rgba(255,107,0,.05);}
+  .fin-ia .btn{align-self:flex-start;}
+  .fin-ia-tag{font:800 9px var(--font);text-transform:uppercase;letter-spacing:.05em;background:rgba(255,255,255,.3);border-radius:5px;padding:1px 5px;margin-left:4px;}
+  .fin-ia-res{font:500 12.5px/1.5 var(--font);color:var(--body);}
+  .fin-ia-res.err{color:#d7262e;}
+  .fin-ia-res small{color:var(--muted);}
+  .fin-ia-chk{display:inline-block;font:700 10.5px var(--font);padding:1px 7px;border-radius:99px;border:1px solid currentColor;margin:2px 2px 0 0;}
+  .fin-ia-chk.ok{color:#15803d;} .fin-ia-chk.warn{color:#c2410c;} .fin-ia-chk.bad{color:#d7262e;}
   @media(max-width:640px){ .fin-sem summary,.fin-sem .sumh{grid-template-columns:1.3fr 1fr 1fr;} .fin-sem summary>span:nth-child(2),.fin-sem summary>span:nth-child(3),.fin-sem .sumh>span:nth-child(2),.fin-sem .sumh>span:nth-child(3){display:none;} .fin-er .fin-er-r{grid-template-columns:1fr auto;} .fin-er .fin-er-r em{display:none;} }
   .cos-tbl td.shr{min-width:110px;}
   .cos-shr{display:flex;align-items:center;gap:7px;justify-content:flex-end;}
@@ -9692,7 +9700,49 @@
     if(onDel) $('fin-frm-del').addEventListener('click',onDel);
     return f;
   }
-  function finCerrarForm(){ $('fin-sheet').classList.remove('show'); FIN.pend=[]; }
+  function finCerrarForm(){ $('fin-sheet').classList.remove('show'); FIN.pend=[]; FIN.ia=null; }
+
+  // ---------- Leer el documento con IA (beta: función leer-documento, Gemini en el servidor) ----------
+  var FIN_IA_BETA=['enzo.castro@innovaservi.com','enzo.castro@innovaservi.cl'];
+  function finIA(){ return FIN_IA_BETA.indexOf(miEmail())>=0; }
+  var FIN_TD_DOC={33:'factura',34:'factura',39:'boleta',41:'boleta',61:'nota_credito',52:'guia',0:'otro'};
+  function finBlobB64(b){ return new Promise(function(ok,mal){ var fr=new FileReader(); fr.onload=function(){ ok(String(fr.result).split(',')[1]||''); }; fr.onerror=mal; fr.readAsDataURL(b); }); }
+  function finRutOk(r){ var c=String(r||'').replace(/[^\dkK]/g,'').toUpperCase(); if(c.length<2) return false; var s=0,m=2; for(var i=c.length-2;i>=0;i--){ s+=+c[i]*m; m=m===7?2:m+1; } var d=11-(s%11); return (d===11?'0':d===10?'K':String(d))===c.slice(-1); }
+  // Fotos a leer: las que se van a subir + las ya guardadas del registro (se firman solas al descargarlas)
+  function finIAFotos(regId){
+    var L=FIN.pend.filter(function(f){ return /^image\//.test(f.type||''); }).map(function(f){ return Promise.resolve(f); });
+    if(regId) finAdjDe('registro_id',regId).filter(function(a){ return a.tipo==='image'; }).forEach(function(a){ L.push(fetch(a.url).then(function(r){ return r.ok?r.blob():null; }, function(){ return null; })); });
+    return Promise.all(L).then(function(bs){ return bs.filter(Boolean).slice(0,4); });
+  }
+  function finIALeer(f, regId){
+    var out=$('fin-ia-res'), btn=$('fin-ia-btn'); if(!out||!btn) return;
+    btn.disabled=true; out.className='fin-ia-res'; out.textContent='Preparando fotos…';
+    finIAFotos(regId).then(function(bs){
+      if(!bs.length){ throw new Error('Primero agrega la foto del documento (botón "+ Foto o archivo").'); }
+      out.textContent='Leyendo con IA… (unos segundos)';
+      return Promise.all(bs.map(function(b){ return new Promise(function(ok){ finAdjPreparar(b, ok); }).then(function(g){ return finBlobB64(g).then(function(d){ return {mime:(g.type&&/jpeg|png|webp/.test(g.type))?g.type:'image/jpeg', data:d}; }); }); }));
+    }).then(function(imgs){
+      return sb.functions.invoke('leer-documento',{body:{images:imgs}}).then(function(r){
+        if(r.error){ return (r.error.context&&r.error.context.json?r.error.context.json():Promise.resolve(null)).then(function(j){ throw new Error((j&&j.error)||r.error.message||'No se pudo leer'); }, function(){ throw new Error(r.error.message||'No se pudo leer'); }); }
+        return r.data;
+      });
+    }).then(function(res){
+      var d=(res&&res.datos)||{}, n=function(v){ v=String(v==null?'':v).replace(/[^\d-]/g,''); return v===''||v==='-'?null:parseInt(v,10); };
+      var tot=n(d.total), neto=n(d.neto), iva=n(d.iva), otros=n(d.otros)||0, el=f.elements, cambia=function(k,v){ if(el[k] && v!=null && v!=='') el[k].value=v; };
+      cambia('fecha', /^\d{4}-\d{2}-\d{2}$/.test(d.fecha||'')?d.fecha:null);
+      cambia('doc_tipo', FIN_TD_DOC[d.tipo]);
+      cambia('tercero', d.razon); cambia('tercero_rut', d.rut); cambia('doc_numero', d.folio); cambia('monto_total', tot);
+      var it=(Array.isArray(d.items)&&d.items[0]&&d.items[0].descripcion)||'';
+      if(el.concepto && !el.concepto.value.trim()) el.concepto.value=it?(it+(d.items.length>1?' y '+(d.items.length-1)+' más':'')):(d.razon||'');
+      FIN.ia=(tot!=null && neto!=null && iva!=null)?{total:tot, neto:neto, iva:iva, exento:tot-neto-iva}:null;
+      var chk=[]; if(d.rut) chk.push(finRutOk(d.rut)?['ok','RUT válido']:['bad','RUT con dígito malo']); else chk.push(['warn','Sin RUT']);
+      if(tot==null) chk.push(['bad','Sin total']); else if(neto!=null&&iva!=null) chk.push(Math.abs(neto+iva+otros-tot)<=2?['ok','Neto + IVA = total']:['bad','Neto + IVA no da el total']);
+      if(!d.folio && d.tipo!==0) chk.push(['warn','Sin folio']); if(!d.fecha) chk.push(['warn','Sin fecha']);
+      out.innerHTML='<b>Leído en '+Math.round(((res&&res.ms)||0)/100)/10+' s.</b> Revisa y corrige antes de guardar. '+chk.map(function(c){ return '<span class="fin-ia-chk '+c[0]+'">'+esc(c[1])+'</span>'; }).join(' ')+
+        (neto!=null?'<br><small>Neto '+fmtMoney(neto)+' · IVA '+fmtMoney(iva)+(otros?' · otros '+fmtMoney(otros):'')+' · total '+fmtMoney(tot)+'</small>':'')+(d.observaciones?'<br><small>'+esc(d.observaciones)+'</small>':'');
+    }).catch(function(e){ out.className='fin-ia-res err'; out.textContent=(e&&e.message)||'No se pudo leer.'; })
+      .then(function(){ btn.disabled=false; });
+  }
 
   // ---------- Archivos adjuntos (privados: carpeta finanzas/<id>; se firman al mostrarlos) ----------
   // Miniatura (foto) o clip con la cantidad, al inicio de cada fila; clic abre el archivo
@@ -9794,6 +9844,8 @@
       (cerrado?'<b>El mes está cerrado:</b> solo se puede cambiar el estado, el pago y las notas. ':'')+(bloqueado?'<b>Ya fue revisado:</b> si hay que corregirlo, avisa a Enzo o Cristopher.':'');
     // Pagos (comprobantes) de este documento y, si el proveedor factura al mes, pagos sin factura para asociar
     var extra='<div id="fin-adj-box">'+finAdjCaja('registro_id', r&&r.id)+'</div>';
+    FIN.ia=null;
+    if(!ing && !bloqueado && finIA()) extra+='<div class="fin-ia"><button type="button" class="btn small" id="fin-ia-btn">Leer con IA <span class="fin-ia-tag">beta</span></button><div class="fin-ia-res" id="fin-ia-res">Agrega la foto y toca <b>Leer con IA</b>: llena fecha, documento, proveedor, RUT, N° y total.</div></div>';
     if(r && !ing){
       var ls=FIN.links.filter(function(l){ return l.registro_id===r.id; });
       var sueltos=rev&&r.proveedor_id?FIN.pagos.filter(function(p){ return p.proveedor_id===r.proveedor_id && p.estado!=='rechazado' && !finLinksPago(p.id).length; }):[];
@@ -9807,7 +9859,8 @@
       if(!r && !ing && !FIN.pend.length && !confirm('No adjuntaste la foto o el PDF del documento. ¿Guardar igual? (Sin respaldo no hay reembolso ni pago)')) return;
       var conIva=(o.doc_tipo==='factura'||o.doc_tipo==='nota_credito'||(ing&&o.doc_tipo==='boleta'));
       var neto=conIva?Math.round(tot/1.19):tot, iva=conIva?tot-neto:0;
-      if(r && r.total===tot && (r.neto+r.iva+r.exento)===tot && r.doc_tipo===o.doc_tipo){ neto=r.neto; iva=r.iva; }   // respeta el desglose del lector
+      if(r && r.total===tot && (r.neto+r.iva+r.exento)===tot && r.doc_tipo===o.doc_tipo){ neto=r.neto; iva=r.iva; }
+      if(FIN.ia && FIN.ia.total===tot && conIva && FIN.ia.neto+FIN.ia.iva<=tot+2){ neto=FIN.ia.neto; iva=FIN.ia.iva; }   // desglose leído (ej.: bencina con impuesto específico)   // respeta el desglose del lector
       var pv=ing?null:finProvPorNombre(o.tercero);
       var row={ tipo:tipo, fecha:o.fecha, doc_tipo:o.doc_tipo, concepto:o.concepto, tercero:o.tercero, tercero_rut:o.tercero_rut||(pv&&pv.rut)||null, doc_numero:o.doc_numero,
         neto:neto, iva:iva, exento:tot-neto-iva, total:tot, categoria_id:o.categoria_id, centro_id:o.centro_id, faena:o.faena, notas:o.notas };
@@ -9831,6 +9884,7 @@
       sb.from('fin_registros').update({deleted_at:new Date().toISOString()}).eq('id',r.id).then(function(x){ if(x.error){ toast('No se pudo: '+x.error.message); return; } finCerrarForm(); toast('Eliminado'); cargarFin(); }); }:null, nota, extra);
     $('fin-sheet-body').insertAdjacentHTML('beforeend', finDatalists());
     finAdjBind('registro_id', r&&r.id);
+    if($('fin-ia-btn')) $('fin-ia-btn').onclick=function(){ finIALeer(f, r&&r.id); };
     if(bloqueado) f.querySelectorAll('input,select,textarea').forEach(function(x){ if(x.id!=='fin-adj-in') x.disabled=true; });
   }
 
