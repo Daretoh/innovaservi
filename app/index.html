@@ -1194,6 +1194,7 @@
   .tar-foto .tar-adj-del{position:absolute;top:4px;right:4px;}
   .tar-doc .tar-adj-del{background:var(--chip);color:var(--body);}
   .tar-adj-btn{display:inline-flex;align-items:center;gap:6px;width:auto;cursor:pointer;margin-bottom:4px;} .tar-adj-btn input{display:none;}
+  .fld .fi-indef{display:flex;align-items:center;gap:7px;margin:6px 0 0;font:600 13px var(--font);color:var(--ink);cursor:pointer;} .fld .fi-indef input{width:auto;margin:0;padding:0;}
   .tar-adj-tip{font:500 12px var(--font);color:var(--muted);margin-left:8px;}
   .tar-sheet.tar-drop .tar-sheet-body,.tar-sheet.tar-drop #tar-sheet-body{outline:2px dashed var(--orange);outline-offset:-6px;}
   .tar-clip{display:inline-flex;align-items:center;gap:2px;font:700 11px var(--font);color:var(--muted);margin-left:6px;vertical-align:1px;}
@@ -2563,8 +2564,9 @@
           <div class="fld" style="margin:0"><label>Fecha ingreso</label><input id="fi-ingreso" type="date"></div>
         </div>
         <div class="grid2" style="margin-top:10px">
-          <div class="fld" style="margin:0"><label>Vence contrato</label><input id="fi-contrato" type="date"></div>
-          <p class="note" style="margin:auto 0 4px">Se copia de Buk. Vacío = indefinido o spot. Avisa 30 días antes en Inicio y Alertas.</p>
+          <div class="fld" style="margin:0"><label>Vence contrato</label><input id="fi-contrato" type="date">
+            <label class="fi-indef"><input type="checkbox" id="fi-indef"> Indefinido (sin fecha de término)</label></div>
+          <p class="note" style="margin:auto 0 4px">Se copia de Buk. Plazo fijo: pon la fecha de término (avisa 30 días antes en Inicio y Alertas). Contrato indefinido: marca «Indefinido». Spot: déjalo vacío.</p>
         </div>
       </div>
       <div class="card fi-secs">
@@ -6195,7 +6197,7 @@
   function abrirFicha(t){
     FICHA_ID=t?t.id:null; FICHA_EST0=(t&&t.estado)||'espera';
     $('fi-nombre').value=t?(t.nombre||''):''; $('fi-rut').value=t?(t.rut||''):''; poblarSelectCargo($('fi-cargo'), t?(t.cargo||''):''); trHint();
-    $('fi-estado').value=(t&&t.estado)||'espera'; $('fi-ingreso').value=t?(t.fecha_ingreso||''):''; if($('fi-contrato')) $('fi-contrato').value=t?(t.contrato_vence||''):''; if($('fi-chofer')) $('fi-chofer').checked=!!(t&&t.chofer);
+    $('fi-estado').value=(t&&t.estado)||'espera'; $('fi-ingreso').value=t?(t.fecha_ingreso||''):''; if($('fi-contrato')) $('fi-contrato').value=t?(t.contrato_vence||''):''; if($('fi-indef')){ $('fi-indef').checked=!!(t&&t.contrato_indefinido); fiIndef(); } if($('fi-chofer')) $('fi-chofer').checked=!!(t&&t.chofer);
     if($('fi-fijo')){ var esFijo=!!(t&&t.tipo_pago==='contrato'); $('fi-fijo').checked=esFijo; $('fi-jornada').value=(t&&t.jornada_horas)||''; if($('fi-jini')) $('fi-jini').value=(t&&t.jornada_ini)||''; if($('fi-jfin')) $('fi-jfin').value=(t&&t.jornada_fin)||''; if($('fi-sueldo')) $('fi-sueldo').value=(t&&t.sueldo_base)||''; if($('fi-sueldo-emp')) $('fi-sueldo-emp').value=(t&&t.sueldo_empresa)||''; if($('fi-sueldo-desde')) $('fi-sueldo-desde').value=(t&&t.sueldo_desde)?String(t.sueldo_desde).slice(0,7):''; $('fi-jornada-wrap').style.display=esFijo?'':'none'; }
     $('fi-tel').value=t?(t.telefono||''):''; $('fi-email').value=t?(t.email||''):'';
     $('fi-botas').value=t?(t.talla_botas||''):''; $('fi-ropa').value=t?(t.talla_ropa||''):'';
@@ -6231,6 +6233,7 @@
       ['estado','Estado','Principal',function(t){ return EST[t.estado||'activo']||t.estado||''; },'e',11],
       ['ingreso','Fecha ingreso','Principal',function(t){ return D(t.fecha_ingreso); },'d',12],
       ['contrato','Vence contrato','Principal',function(t){ return D(t.contrato_vence); },'d',12],
+      ['contrato_tipo','Tipo de contrato','Principal',function(t){ return t.contrato_indefinido?'Indefinido':(t.contrato_vence?'Plazo fijo':''); },'t',12],
       ['buk','En Buk','Principal',function(t){ return t.buk?'Sí':'No'; },'t',8],
       ['tipo','Tipo de pago','Contrato y remuneración',function(t){ return t.tipo_pago==='contrato'?'Contrato fijo':'Por trato'; },'t',13],
       ['chofer','Chofer','Contrato y remuneración',function(t){ return t.chofer?'Sí':'No'; },'t',8],
@@ -6535,11 +6538,14 @@
     folder:function(){ return 'trabajadores/'+slug($('fi-nombre').value.trim()||'trabajador'); },
     nombreBase:function(){ return slug($('fi-nombre').value.trim()||'doc'); },
     onDoc:function(d){ FICHA_DOCS.push(d); renderDocs(); } });
+  // Contrato indefinido: sin fecha de término (la casilla bloquea y limpia la fecha)
+  function fiIndef(){ var c=$('fi-indef'), d=$('fi-contrato'); if(!c||!d) return; if(c.checked) d.value=''; d.disabled=c.checked; }
+  if($('fi-indef')) $('fi-indef').addEventListener('change',fiIndef);
   $('fi-save').addEventListener('click',function(){
     if(!sb) return; var nom=titleCase($('fi-nombre').value.trim()); if(!nom){ toast('El nombre es obligatorio.'); return; }
     var _fijo=!!($('fi-fijo')&&$('fi-fijo').checked);
     var row={ nombre:nom, rut:$('fi-rut').value.trim(), cargo:$('fi-cargo').value.trim(), estado:$('fi-estado').value, chofer:!!($('fi-chofer')&&$('fi-chofer').checked), tipo_pago:(_fijo?'contrato':'hora'), jornada_horas:(_fijo?(+$('fi-jornada').value||null):null), jornada_ini:(_fijo&&$('fi-jini')?($('fi-jini').value||null):null), jornada_fin:(_fijo&&$('fi-jfin')?($('fi-jfin').value||null):null), sueldo_base:(_fijo&&$('fi-sueldo')?(+$('fi-sueldo').value||null):null), sueldo_empresa:(_fijo&&$('fi-sueldo-emp')?($('fi-sueldo-emp').value||null):null), sueldo_desde:(_fijo&&$('fi-sueldo-desde')&&$('fi-sueldo-desde').value?($('fi-sueldo-desde').value+'-01'):null),
-      telefono:$('fi-tel').value.trim(), email:$('fi-email').value.trim(), fecha_ingreso:$('fi-ingreso').value||null, contrato_vence:($('fi-contrato')?$('fi-contrato').value:'')||null,
+      telefono:$('fi-tel').value.trim(), email:$('fi-email').value.trim(), fecha_ingreso:$('fi-ingreso').value||null, contrato_indefinido:!!($('fi-indef')&&$('fi-indef').checked), contrato_vence:(($('fi-indef')&&$('fi-indef').checked)?'':($('fi-contrato')?$('fi-contrato').value:''))||null,
       talla_botas:$('fi-botas').value.trim(), talla_ropa:$('fi-ropa').value.trim(), afp:$('fi-afp').value.trim(),
       salud:$('fi-salud').value.trim(), direccion:$('fi-dir').value.trim(), emergencia:$('fi-emerg').value.trim(),
       banco:($('fi-banco')?$('fi-banco').value.trim():'')||null, tipo_cuenta:($('fi-tipocta')?$('fi-tipocta').value:'')||null, num_cuenta:($('fi-numcta')?$('fi-numcta').value.trim():'')||null,
