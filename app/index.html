@@ -9933,7 +9933,7 @@
       {k:'faena',l:'Faena',list:'fin-dl-faena',ph:'Cliente · lugar',full:true},
       {k:'centro_id',l:'Centro de costo',t:'select',vacio:rev?'Sin centro (Pendiente)':'No sé / lo elige quien revisa',o:finOptsCen()},
       {k:'al_comprar',l:'Pago',t:'check',l2:'Ya está pagado'},
-      {k:'notas',l:'Por qué no hay documento',t:'textarea',full:true,req:true}
+      {k:'notas',l:'Por qué no hay boleta, factura ni ticket',t:'textarea',full:true,req:true,ph:'Ej: se perdió el ticket; colación pagada por transferencia sin boleta'}
     ], {fecha:todayISO(), al_comprar:true, tipo_g:'Colación'}, function(o){
       if(!(o.monto>0)){ toast('El monto debe ser mayor a 0'); return; }
       if(!o.notas){ toast('Anota por qué no hay documento'); return; }
@@ -9942,7 +9942,7 @@
         neto:o.monto, iva:0, exento:0, total:o.monto, categoria_id:cat?cat.id:null, centro_id:o.centro_id, notas:o.notas, estado:'pendiente', fecha_pago:o.al_comprar?o.fecha:null };
       if(rev && row.categoria_id && row.centro_id) row.estado='listo';
       finGuardarCon('fin_registros', null, row, 'registro_id', 'Gasto sin documento guardado');
-    }, null, 'Queda marcado como <b>no declarable</b>: es costo real, pero la contadora lo ve aparte. Si hay foto o vale, adjúntalo.', '<div id="fin-adj-box">'+finAdjCaja('registro_id', null)+'</div>'+finIACaja());
+    }, null, 'Úsalo solo cuando no hay ningún papel. Si hay boleta, factura o ticket (un peaje, un estacionamiento), súbelo en <b>Boleta, factura o comprobante</b>. Queda marcado como <b>no declarable</b>: es costo real, pero la contadora lo ve aparte.', '<div id="fin-adj-box">'+finAdjCaja('registro_id', null)+'</div>'+finIACaja());
     $('fin-sheet-body').insertAdjacentHTML('beforeend', finDatalists());
     finAdjBind('registro_id', null);
     finIAAuto($('fin-frm'), 'sindoc');
@@ -9957,8 +9957,8 @@
     var card=function(acc,tit,sub,ico){ return '<button type="button" class="fin-subir" data-fin="'+acc+'"><span class="ic">'+ico+'</span><b>'+tit+'</b><small>'+sub+'</small></button>'; };
     var I=function(d){ return '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+d+'</svg>'; };
     var h='<div class="fin-subir-grid">'+
-      card('nuevo-gasto','Boleta o factura de compra','Foto o PDF del documento. Va a la revisión.',I('<path d="M4 2v20l3-2 3 2 3-2 3 2 3-2 1 .7V2l-1 .7-3-2-3 2-3-2-3 2-3-2z"/><path d="M8 7h8M8 11h8M8 15h5"/>'))+
-      card('sin-doc','Gasto sin documento','Luz, agua, viáticos, peajes, estacionamiento, colaciones sin factura.',I('<circle cx="12" cy="12" r="9"/><path d="M9 9h6M9 13h6M9 17h3"/>'))+
+      card('nuevo-gasto','Boleta, factura o comprobante','Todo papel que respalde la compra: boleta, factura, ticket de peaje o estacionamiento, vale.',I('<path d="M4 2v20l3-2 3 2 3-2 3 2 3-2 1 .7V2l-1 .7-3-2-3 2-3-2-3 2-3-2z"/><path d="M8 7h8M8 11h8M8 15h5"/>'))+
+      card('sin-doc','Gasto sin ningún papel','Solo si no hay boleta, factura ni ticket: se perdió, pago informal, viático en efectivo.',I('<circle cx="12" cy="12" r="9"/><path d="M9 9h6M9 13h6M9 17h3"/>'))+
       card('nuevo-pago','Comprobante de pago','Transferencia o pago a un proveedor. Lo valida Enzo o Cristopher.',I('<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/>'))+
       card('nuevo-ingreso','Factura emitida (venta)','Factura de Innova a un cliente. Queda por cobrar.',I('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 15l2 2 4-4"/>'))+
       '</div><div class="fin-bar"><a class="btn ghost small" href="costos-prueba.html">Leer con el lector de boletas (timbre SII)</a><small class="note" style="margin:0">El lector llena los datos solo; lo que guarda aparece aquí como Pendiente.</small></div>';
