@@ -3277,20 +3277,23 @@
     sb.from('eventos').select(EV_COLS).gte('fecha',isoMas(-90)).lte('fecha',isoMas(180)).order('fecha',{ascending:true}).limit(600)
       .then(function(r){ EVENTOS=(r&&r.data)||[]; autoSeleccionarHoy(); });
   }
-  var EV_COLS='id,fecha,fecha_fin,hora,titulo,ubicacion,sitio,descripcion,personas_nec,tareas,dotacion';
+  var EV_COLS='id,fecha,fecha_fin,dias,hora,titulo,ubicacion,sitio,descripcion,personas_nec,tareas,dotacion';
   // El Calendario (iframe) avisa cuando guarda/borra: refrescamos trabajos y clientes, y Planificación si está abierta.
   window.addEventListener('message',function(ev){
     if(ev.origin!==location.origin || ev.data!=='iserv-eventos' || !sb) return;
     Promise.all([
       sb.from('eventos').select(EV_COLS).gte('fecha',isoMas(-90)).lte('fecha',isoMas(180)).order('fecha',{ascending:true}).limit(600),
-      sb.from('clientes').select('*').order('nombre',{ascending:true}).limit(500)
+      sb.from('clientes').select('*').order('nombre',{ascending:true}).limit(500),
+      new Promise(function(ok){ cargarObsFae(ok); })
     ]).then(function(rs){ if(rs[0]&&rs[0].data) EVENTOS=rs[0].data; if(rs[1]&&rs[1].data) CLIENTES=rs[1].data;
       var vp=$('v-planif'); if(vp && vp.classList.contains('on')) renderPlanif(); }, function(){});
   });
   function diffDias(f){ if(!f)return 99999; var d=new Date(f+'T00:00:00'), t=new Date(todayISO()+'T00:00:00'); return Math.round((d-t)/86400000); }
   function evFin(e){ return (e.fecha_fin && e.fecha_fin>=e.fecha)?e.fecha_fin:e.fecha; }      // fin del trabajo (o inicio si es de 1 día)
   function esMulti(e){ return !!(e.fecha_fin && e.fecha_fin>e.fecha); }
-  function activoHoy(e){ var t=todayISO(); return e.fecha<=t && t<=evFin(e); }                 // hoy cae dentro del trabajo (aunque dure varios días)
+  // ¿La faena trabaja el día f? Con días a elección (eventos.dias) solo esos días; si no, todo el rango inicio–fin.
+  function evEnDia(e,f){ if(!e||!f) return false; if(Array.isArray(e.dias) && e.dias.length) return e.dias.indexOf(f)>=0; return e.fecha<=f && f<=evFin(e); }
+  function activoHoy(e){ return evEnDia(e,todayISO()); }                 // hoy es uno de los días del trabajo (aunque dure varios días)
   function diffRango(e){ var di=diffDias(e.fecha), df=diffDias(evFin(e)); if(di<=0 && df>=0) return 0; return (Math.abs(di)<=Math.abs(df))?di:df; }
   function etiquetaDia(f){ var n=diffDias(f); if(n===0)return 'HOY'; if(n===1)return 'Mañana'; if(n===-1)return 'Ayer'; return fechaCorta(f); }
   function etiquetaTrabajo(e){ if(activoHoy(e)) return esMulti(e)?('HOY · hasta '+fechaCorta(evFin(e))):'HOY'; var l=etiquetaDia(e.fecha); if(esMulti(e)) l+=' → '+fechaCorta(evFin(e)); return l; }
@@ -3352,7 +3355,7 @@
       sb.from('eventos').select('*').gte('fecha',sumarDias(f,-10)).lte('fecha',f).limit(500),
       sb.from('horas').select('*').eq('fecha',f).limit(2000)
     ]).then(function(rs){
-      ASIST.eventos=((rs[0]&&rs[0].data)||[]).filter(function(e){ var fn=e.fecha_fin||e.fecha; return e.fecha<=f && fn>=f; }).sort(function(a,b){ return (a.hora||'').localeCompare(b.hora||''); });
+      ASIST.eventos=((rs[0]&&rs[0].data)||[]).filter(function(e){ return evEnDia(e,f); }).sort(function(a,b){ return (a.hora||'').localeCompare(b.hora||''); });
       ASIST.horas=(rs[1]&&rs[1].data)||[];
       if(ASIST.eventos.length){
         $('asist-faena').innerHTML=ASIST.eventos.map(function(e){ return '<option value="ev:'+e.id+'">'+esc(faenaStrDe(e))+(e.hora?(' · '+esc(e.hora)):'')+'</option>'; }).join('');
@@ -3432,7 +3435,7 @@
     pintarDaystrip('fot-days',FOT.fecha,function(f){ FOT.fecha=f; FOT.registro=null; FOT.media=[]; cargarFotos(); });
     var f=FOT.fecha; if($('fot-fecha')) $('fot-fecha').textContent=fechaDia(f);
     sb.from('eventos').select('*').gte('fecha',sumarDias(f,-10)).lte('fecha',f).limit(500).then(function(r){
-      FOT.eventos=((r&&r.data)||[]).filter(function(e){ var fn=e.fecha_fin||e.fecha; return e.fecha<=f && fn>=f; }).sort(function(a,b){ return (a.hora||'').localeCompare(b.hora||''); });
+      FOT.eventos=((r&&r.data)||[]).filter(function(e){ return evEnDia(e,f); }).sort(function(a,b){ return (a.hora||'').localeCompare(b.hora||''); });
       if(FOT.eventos.length){
         $('fot-faena').innerHTML=FOT.eventos.map(function(e){ return '<option value="ev:'+e.id+'">'+esc(faenaStrDe(e))+(e.hora?(' · '+esc(e.hora)):'')+'</option>'; }).join('');
         var def=FOT.eventos.filter(function(e){ return /frigo|apoyo/i.test((e.titulo||'')+(e.ubicacion||'')); })[0]||FOT.eventos[0];
@@ -3524,7 +3527,8 @@
       sb.from('eventos').select(EV_COLS).gte('fecha',isoMas(-90)).lte('fecha',isoMas(180)).order('fecha',{ascending:true}).limit(600),
       sb.from('clientes').select('*').order('nombre',{ascending:true}).limit(500),
       // los trabajadores deben estar cargados antes de dibujar (Disponibles, autocompletar, choferes)
-      new Promise(function(ok){ cargarTrab(function(){ try{ actualizarDatalist(); }catch(_){} ok(); }); })
+      new Promise(function(ok){ cargarTrab(function(){ try{ actualizarDatalist(); }catch(_){} ok(); }); }),
+      new Promise(function(ok){ cargarObsFae(ok); })
     ]).then(function(rs){ busy(false);
       PLAN_MAP={}; ((rs[0]&&rs[0].data)||[]).forEach(function(p){ PLAN_MAP[p.evento_id+'|'+(p.fecha||'')]=p; });
       if(rs[1]&&rs[1].data) VEH=rs[1].data; if(rs[2]&&rs[2].data) PLANT=rs[2].data;
@@ -3563,7 +3567,18 @@
   function dotAjustadaDia(e,f){ var pl=PLAN_MAP[planKey(e,f)]; return !!(pl && (pl.dotacion || pl.personas_nec!=null)); }
   function personasNecesarias(e,f){ return dotTotal(dotDe(e,f)); }   // si el día no tiene valor propio, usa el indicado en el Calendario
   // Tareas que se escribieron al crear el trabajo en el Calendario.
-  function tareasDe(e){ return ((e&&Array.isArray(e.tareas))?e.tareas:[]).map(function(t){ return String(t||'').trim(); }).filter(Boolean); }
+  // Tareas del Calendario: [{t, ok}] (las antiguas eran solo texto); las hechas llevan ✓
+  function tareasDe(e){ return ((e&&Array.isArray(e.tareas))?e.tareas:[]).map(function(t){ if(t&&typeof t==='object'){ var s=String(t.t||'').trim(); return (s&&t.ok)?('✓ '+s):s; } return String(t||'').trim(); }).filter(Boolean); }
+  // Observaciones de faenas (faena_obs), agrupadas por faena "Cliente · sitio — título": avisan al planificar una faena igual.
+  var OBS_FAE={};
+  function cargarObsFae(cb){ if(!sb){ cb&&cb(); return; }
+    sb.from('faena_obs').select('id,evento_id,texto,autor,created_at,eventos(ubicacion,sitio,titulo)').order('created_at',{ascending:false}).limit(3000).then(function(r){
+      var m={}; ((r&&r.data)||[]).forEach(function(o){ if(!o.eventos) return; var k=faKey(faLabel(o.eventos)); (m[k]||(m[k]=[])).push(o); }); OBS_FAE=m; cb&&cb(); }, function(){ cb&&cb(); }); }
+  function obsDe(e){ return (e&&OBS_FAE[faKey(faLabel(e))])||[]; }
+  function obsAutor(a){ a=a||''; return a.indexOf('@')>0?a.split('@')[0].replace(/[._]/g,' '):a; }
+  function obsItems(L){ return L.map(function(o){ return '<li><b>'+esc(obsAutor(o.autor))+' · '+esc(fechaCorta((o.created_at||'').slice(0,10)))+':</b> '+esc(o.texto)+'</li>'; }).join(''); }
+  function pwObs(e){ var L=obsDe(e); if(!L.length) return '';
+    return '<details class="pw-tar pw-obs" style="color:#b45309"><summary title="Esta faena tuvo observaciones antes">⚠ '+L.length+' obs. anterior'+(L.length===1?'':'es')+'</summary><ol style="white-space:pre-line">'+obsItems(L.slice(0,8))+'</ol>'+(L.length>8?'<small>…y '+(L.length-8)+' más (ver en el Calendario)</small>':'')+'</details>'; }
   var ICO_TAREAS='<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>';
   // Sugerencia (default de la Matriz por nombre de faena) — solo para pre-llenar el prompt, no se comparte.
   function personasSugeridas(e){ var pts=(typeof plantillasDeFaena==='function')?plantillasDeFaena(e.ubicacion||'', e.sitio||''):[]; var t=(e.titulo||'').trim().toLowerCase(); var m=pts.filter(function(p){ return (p.faena||'').trim().toLowerCase()===t && p.personas!=null; })[0] || pts.filter(function(p){ return p.personas!=null; })[0]; return (m&&m.personas!=null)?m.personas:0; }
@@ -3623,7 +3638,7 @@
     '</tr>';
   }
   function renderPlanWorkers(){ var el=$('pb-wlist'); if(!el) return; var q=(PLANIF_WQ||'').toLowerCase();
-    var asignados={}; (EVENTOS||[]).forEach(function(e){ var i=e.fecha, fn=e.fecha_fin||e.fecha; if(!(i<=PLANIF_DIA&&fn>=PLANIF_DIA))return; var p=PLAN_MAP[e.id]; if(p&&p.personas) p.personas.forEach(function(pp){ asignados[normName(pp.nombre)]=1; }); });
+    var asignados={}; (EVENTOS||[]).forEach(function(e){ if(!evEnDia(e,PLANIF_DIA))return; var p=PLAN_MAP[e.id]; if(p&&p.personas) p.personas.forEach(function(pp){ asignados[normName(pp.nombre)]=1; }); });
     el.innerHTML=planTrabs().filter(function(w){ return w.nombre.toLowerCase().indexOf(q)>=0; }).map(function(w){ var ya=asignados[normName(w.nombre)];
       return '<div class="pb-wrow'+(ya?' ya':'')+'" draggable="true" data-n="'+enc(w.nombre)+'"><span class="pb-wn">'+esc(w.nombre)+'<span class="pb-wr">'+esc(w.cargo||'Operario')+'</span></span>'+(w.chofer?'<span class="pb-wch">chofer</span>':(ya?'<span class="pb-wya">asignado</span>':''))+'</div>'; }).join('')||'<div class="note" style="margin:0">Sin trabajadores. Créalos en RRHH.</div>';
     el.querySelectorAll('.pb-wrow').forEach(function(r){
@@ -3645,10 +3660,10 @@
     if(!PLANIF_DIA || PLANIF_DIA<lo || PLANIF_DIA>hi) PLANIF_DIA=(hoy>=lo && hoy<=hi)?hoy:lo;
     var DIAS3=['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'], tabs='';
     for(var di=0; di<7; di++){ var f=sumarDias(PLANIF_LUNES,di), dd=new Date(f+'T12:00:00');
-      var nF=(EVENTOS||[]).filter(function(e){ var i=e.fecha, fn=e.fecha_fin||e.fecha; return i<=f&&fn>=f; }).length;
+      var nF=(EVENTOS||[]).filter(function(e){ return evEnDia(e,f); }).length;
       tabs+='<button class="pb-tab'+(f===PLANIF_DIA?' on':'')+(f===hoy?' hoy':'')+'" data-f="'+f+'">'+DIAS3[di]+' <b>'+dd.getDate()+'</b>'+(nF?'<span class="pb-n">'+nF+'</span>':'')+'</button>';
     }
-    var fs=(EVENTOS||[]).filter(function(e){ var i=e.fecha, fn=e.fecha_fin||e.fecha; return i<=PLANIF_DIA&&fn>=PLANIF_DIA; }).sort(function(a,b){ return (a.ubicacion||'').localeCompare(b.ubicacion||''); });
+    var fs=(EVENTOS||[]).filter(function(e){ return evEnDia(e,PLANIF_DIA); }).sort(function(a,b){ return (a.ubicacion||'').localeCompare(b.ubicacion||''); });
     if((PLANIF_SEL==null || !fs.some(function(e){return e.id===PLANIF_SEL;})) && fs.length) PLANIF_SEL=fs[0].id;
     var dl='<datalist id="pb-trablist">'+planTrabs().map(function(w){ return '<option value="'+enc(w.nombre)+'">'+esc(w.cargo||'')+'</option>'; }).join('')+'</datalist>';
     var rows=fs.length? fs.map(planFaeRow).join('') : '<tr><td colspan="5"><div class="empty" style="padding:26px"><div class="big">📋</div>No hay faenas este día.<br><span style="font-size:.82rem">Agéndalas en Calendario.</span></div></td></tr>';
@@ -3688,7 +3703,7 @@
   var PW_TURNOS=[['dia','Día'],['noche','Noche'],['','Sin hora']];
   function pwTurnoIco(t){ return t==='noche'?'<svg viewBox="0 0 24 24" width="10" height="10" fill="currentColor" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>'
     : (t==='dia'?'<svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2" fill="currentColor" stroke="none"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></svg>':''); }
-  function faenasDelDia(f){ return (EVENTOS||[]).filter(function(e){ var fn=e.fecha_fin||e.fecha; return e.fecha<=f && fn>=f; })
+  function faenasDelDia(f){ return (EVENTOS||[]).filter(function(e){ return evEnDia(e,f); })
     .sort(function(a,b){ var ha=horaIni(a.hora)||'99', hb=horaIni(b.hora)||'99'; return ha<hb?-1:(ha>hb?1:(a.ubicacion||'').localeCompare(b.ubicacion||'')); }); }
   function pwConteo(fs,f){ var cnt={}; fs.forEach(function(e){ var p=PLAN_MAP[planKey(e,f)]; ((p&&p.personas)||[]).forEach(function(pp){ var k=normName(pp.nombre); cnt[k]=(cnt[k]||0)+1; }); }); return cnt; }
   function pwCard(e,f,cnt){
@@ -3714,7 +3729,7 @@
     return '<div class="pw-fae'+(locked?' locked':'')+(frigo?' frigo':'')+'" data-e="'+e.id+'" data-f="'+f+'">'+
       head+
       '<div class="pw-body"><ol class="pw-ol">'+li+'</ol>'+
-        (locked?'':'<input class="pw-add" data-k="'+planKey(e,f)+'" placeholder="Escribe y Enter…" autocomplete="off" spellcheck="false">')+veh+pwTareas(e)+'</div>'+
+        (locked?'':'<input class="pw-add" data-k="'+planKey(e,f)+'" placeholder="Escribe y Enter…" autocomplete="off" spellcheck="false">')+veh+pwTareas(e)+pwObs(e)+'</div>'+
       rolPills+'<div class="pw-foot"><button type="button" class="pw-cnt '+cntCls+'" title="Asignadas/necesarias — toca para editar">'+cntTxt+'</button>'+
         (locked?'<span class="pw-s ok">'+svgI(ICO.ok,9)+'Enviada</span>':'')+
         '<button type="button" class="pw-open" style="margin-left:auto">Detalle ›</button></div></div>';
@@ -4005,11 +4020,11 @@
       matrices:(p.matrices||[]).slice(), maquinaria:(p.maquinaria||[]).map(function(x){ return {veh:x.veh||'',chofer:x.chofer||''}; }), notas:p.notas||'' };
     $('pe-title').textContent=faLabel(e); $('pe-notas').value=PE.notas; pePintar(); peLock(PE.estado==='enviada');
     // Lo que se indicó en el Calendario (solo lectura aquí; se edita en el Calendario)
-    var ts=tareasDe(e), need=personasNecesarias(e,f), desc=(e.descripcion||'').trim();
+    var ts=tareasDe(e), need=personasNecesarias(e,f), obs=obsDe(e);
     var dc=dotNorm(e.dotacion, e.personas_nec), dh=dotDe(e,f), tc=dotTotal(dc);
-    $('pe-cal').classList.toggle('hide', !ts.length && !desc && !tc);
+    $('pe-cal').classList.toggle('hide', !ts.length && !obs.length && !tc);
     $('pe-cal-body').innerHTML=(tc?'<p class="note" style="margin:0 0 6px"><b>'+tc+'</b> necesarias · '+esc(dotTexto(dc))+(dotTexto(dh)!==dotTexto(dc)?(' <span style="color:#b45309">(este día: '+esc(dotTexto(dh)||'0')+')</span>'):'')+'</p>':'')+
-      (desc?'<p class="note" style="margin:0 0 6px;white-space:pre-line;color:var(--ink)">'+esc(desc)+'</p>':'')+
+      (obs.length?'<p class="note" style="margin:0 0 4px;color:#b45309;font-weight:700">⚠ Observaciones de esta faena ('+obs.length+')</p><ul class="pe-tareas" style="white-space:pre-line;margin-bottom:8px">'+obsItems(obs.slice(0,15))+'</ul>':'')+
       (ts.length?'<ol class="pe-tareas">'+ts.map(function(t){ return '<li>'+esc(t)+'</li>'; }).join('')+'</ol>':'');
     $('planif-edit').classList.remove('hide'); $('planif-edit').scrollTop=0;
   }
@@ -5261,7 +5276,7 @@
   }, 700); }
   // Faenas de un día según Planificación (EVENTOS): etiqueta = "UBICACIÓN — título".
   function faLabel(e){ var u=(e.ubicacion||'').trim(), si=(e.sitio||'').trim(), t=(e.titulo||'').trim(); var emp=u+(si?(' · '+si):''); return (emp&&t)?(emp+' — '+t):(emp||t||'Faena'); }
-  function faenasDia(fecha){ if(!fecha) return []; return (typeof EVENTOS!=='undefined'?EVENTOS:[]).filter(function(e){ var ini=e.fecha, fin=e.fecha_fin||e.fecha; return ini && ini<=fecha && fecha<=fin; }).map(faLabel); }
+  function faenasDia(fecha){ if(!fecha) return []; return (typeof EVENTOS!=='undefined'?EVENTOS:[]).filter(function(e){ return e.fecha && evEnDia(e,fecha); }).map(faLabel); }
   // Clave tolerante para comparar faenas: ignora separadores (·, —, -) y mayúsculas,
   // así "CERMAQ CHINQUIHUE — X" (viejo) calza con "CERMAQ · Chinquihue — X" (nuevo).
   function faKey(s){ return (s||'').toString().toLowerCase().replace(/[·—\-]+/g,' ').replace(/\s+/g,' ').trim(); }
@@ -10439,7 +10454,7 @@
     Promise.all([
       sb.from('trabajadores').select('id,nombre,estado,cargo').limit(1000),
       sb.from('rrhh_docs').select('trabajador_id,tipo,estado,vencimiento').limit(10000),
-      sb.from('eventos').select('id,fecha,fecha_fin,titulo,ubicacion,sitio,categoria').gte('fecha',isoMas(-40)).lte('fecha',isoMas(8)).limit(2000),
+      sb.from('eventos').select('id,fecha,fecha_fin,dias,titulo,ubicacion,sitio,categoria').gte('fecha',isoMas(-40)).lte('fecha',isoMas(8)).limit(2000),
       sb.from('faena_plan').select('evento_id,fecha,personas').eq('fecha',hoy).limit(300),
       sb.from('clientes').select('nombre,estado,color').limit(500),
       sb.from('empresa_docs').select('tipo,nombre,titular,fecha,created_at,vencimiento').limit(2000),
@@ -10484,7 +10499,7 @@
     var totN=tot.ok+tot.prox+tot.venc+tot.pend, pctProm=porT.length?Math.round(porT.reduce(function(s,x){ return s+x.pct; },0)/porT.length):0;
     // --- Faenas ---
     var trabajo=X.ev.filter(function(e){ return (e.categoria||'Trabajo')!=='Visita'; });
-    function enDia(e,f){ return e.fecha<=f && (e.fecha_fin||e.fecha)>=f; }
+    function enDia(e,f){ return evEnDia(e,f); }
     var hoyEv=trabajo.filter(function(e){ return enDia(e,hoy); });
     var plan={}; X.plan.forEach(function(p){ plan[p.evento_id]=(p.personas||[]).length; });
     var personasHoy=hoyEv.reduce(function(s,e){ return s+(plan[e.id]||0); },0);
@@ -10567,7 +10582,7 @@
       sb.from('informes_accidentes').select('cliente').eq('periodo',prev).limit(500),
       sb.from('faena_plan').select('evento_id,fecha,personas').gte('fecha',hoy).lte('fecha',en14).limit(500),
       sb.from('registros').select('id,evento_id,faenas,confirmado').gte('fecha',isoMas(-75)).limit(1500),
-      sb.from('eventos').select('id,fecha,fecha_fin,titulo,ubicacion,sitio').gte('fecha',isoMas(-75)).lte('fecha',en14).limit(800),
+      sb.from('eventos').select('id,fecha,fecha_fin,dias,titulo,ubicacion,sitio').gte('fecha',isoMas(-75)).lte('fecha',en14).limit(800),
       sb.from('plantillas').select('*').limit(500),
       sb.from('empresa_docs').select('*').limit(2000)
     ]).then(function(rs){

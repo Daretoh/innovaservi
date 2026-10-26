@@ -214,6 +214,43 @@
   .det-tareas li:first-child{border-top:none;}
   .det-tareas li::before{content:counter(t)'.';font-weight:800;color:var(--orange-2);min-width:16px;}
   .det-lbl{font:800 11px var(--font);text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:14px 0 2px;}
+  /* Tareas con checkbox (formulario y detalle) */
+  .ff-tareas li input[type=checkbox],.det-tk input[type=checkbox]{flex:0 0 auto;width:18px;height:18px;accent-color:#16a34a;cursor:pointer;margin:0;}
+  .ff-tareas li.ok input[type=text]{text-decoration:line-through;color:var(--muted);}
+  .det-tk{list-style:none;margin-top:4px;}
+  .det-tk li{display:flex;align-items:flex-start;gap:9px;font-size:.88rem;color:var(--ink);padding:6px 0;border-top:1px dashed var(--line);}
+  .det-tk li:first-child{border-top:none;}
+  .det-tk li.ok span{text-decoration:line-through;color:var(--muted);}
+  .det-tk small{display:block;color:var(--muted);font-size:.72rem;text-decoration:none;}
+  .det-add{display:flex;gap:8px;margin-top:8px;}
+  .det-add input,.det-add textarea{flex:1;font:500 13.5px var(--font);padding:8px 10px;border:1px dashed #cfd3e3;border-radius:9px;background:#fff;color:var(--ink);min-width:0;resize:vertical;}
+  .det-add button{border:1px solid var(--line);background:#fff;color:var(--ink);font:700 12.5px var(--font);padding:0 12px;border-radius:9px;cursor:pointer;}
+  .det-add button:hover{border-color:var(--orange);color:var(--orange-2);}
+  /* Observaciones de la faena */
+  .obs-list{display:flex;flex-direction:column;gap:6px;margin-top:4px;}
+  .obs-list:empty{display:none;}
+  .obs-it{background:#fffbeb;border:1px solid #fde68a;border-radius:9px;padding:8px 10px;font-size:.86rem;line-height:1.5;color:var(--ink);white-space:pre-line;position:relative;}
+  .obs-it small{display:block;color:#92400e;font-size:.72rem;margin-bottom:2px;white-space:normal;}
+  .obs-it button{position:absolute;top:4px;right:4px;border:none;background:transparent;color:var(--muted);cursor:pointer;font-size:15px;width:22px;height:22px;border-radius:5px;}
+  .obs-it button:hover{background:#fde8e8;color:#dc2626;}
+  /* Días a elección */
+  .ff-modo{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:#fff;}
+  .ff-modo button{flex:1;border:none;background:#fff;font:700 12.5px var(--font);color:var(--body);padding:8px 6px;cursor:pointer;}
+  .ff-modo button.on{background:var(--orange);color:#fff;}
+  .dp{background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px;}
+  .dp-h{display:flex;align-items:center;justify-content:space-between;font:800 13px var(--font);color:var(--ink);margin-bottom:6px;text-transform:capitalize;}
+  .dp-h button{border:1px solid var(--line);background:#fff;border-radius:7px;width:30px;height:28px;cursor:pointer;font-size:16px;}
+  .dp-g{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
+  .dp-g .dw{font:700 10px var(--font);color:var(--muted);text-align:center;padding:2px 0;}
+  .dp-g label{display:flex;align-items:center;justify-content:center;gap:0;height:32px;border:1px solid var(--line);border-radius:7px;font:600 12.5px var(--font);color:var(--ink);cursor:pointer;user-select:none;background:#fff;}
+  .dp-g label input{position:absolute;opacity:0;pointer-events:none;}
+  .dp-g label.on{background:var(--orange);border-color:var(--orange);color:#fff;}
+  .dp-g label.hoy{box-shadow:inset 0 0 0 2px var(--navy);}
+  .dp-g .vacio{visibility:hidden;}
+  .unir-row{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--line);border-radius:9px;cursor:pointer;margin-bottom:6px;font-size:.88rem;}
+  .unir-row:hover{border-color:var(--orange);background:#fff5ee;}
+  .unir-row small{color:var(--muted);display:block;font-size:.75rem;}
+  body.solover #add{display:none;}
 
   @media (max-width:760px){
     .ff-body{display:flex;flex-direction:column;}
@@ -326,21 +363,29 @@
               <label><span>Ubicación / Sitio <i class="req">*</i></span><input type="text" id="f-sitio" list="f-sitio-list" placeholder="Ej: Chinquihue"></label>
               <datalist id="f-sitio-list"></datalist>
               <span class="full ff-hint" style="margin-top:-6px">Solo clientes registrados. ¿Falta uno? Agrégalo en Clientes. El sitio sugiere los ya usados por ese cliente.</span>
-              <label class="full">Descripción / observaciones<textarea id="f-desc" rows="3" placeholder="Detalle, materiales, accesos, contacto en sitio…"></textarea></label>
             </div>
           </section>
           <section class="ff-sec ff-o4">
             <h4><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Tareas <span class="ff-cnt" id="f-tareas-cnt"></span></h4>
             <ol class="ff-tareas" id="f-tareas"></ol>
             <div class="ff-tadd"><input type="text" id="f-tarea-in" placeholder="Escribe una tarea y presiona Enter…" autocomplete="off"><button type="button" id="f-tarea-btn" class="ff-mini">Agregar</button></div>
+            <span class="ff-hint">Marca las tareas hechas. Ignacio y Yocelyn también pueden marcarlas y agregar.</span>
+          </section>
+          <section class="ff-sec ff-o4">
+            <h4><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Observaciones <span class="ff-cnt" id="f-obs-cnt"></span></h4>
+            <div class="obs-list" id="f-obs-list"></div>
+            <div class="ff-tadd" style="margin-top:8px"><textarea id="f-obs-in" rows="2" placeholder="Retroalimentación u observación de la faena (accesos, problemas, qué mejorar)…" style="flex:1;font:500 14px var(--font);padding:9px 11px;border:1px dashed #cfd3e3;border-radius:9px;background:#fff;color:var(--ink);min-width:0;resize:vertical"></textarea></div>
+            <span class="ff-hint">Se guarda con tu nombre y la fecha. Al planificar una faena igual, se avisa que tuvo observaciones.</span>
           </section>
         </div>
         <div class="ff-col ff-side">
           <section class="ff-sec ff-o2">
             <h4><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Cuándo</h4>
             <div class="fgrid">
-              <label><span>Inicio <i class="req">*</i></span><input type="date" id="f-fecha"></label>
-              <label><span>Fin <span class="ff-opt">(si dura varios días)</span></span><input type="date" id="f-fin"></label>
+              <div class="full ff-modo" id="f-modo"><button type="button" data-m="rango" class="on">Días seguidos</button><button type="button" data-m="dias">Días a elección</button></div>
+              <div class="full" id="f-dp-w" style="display:none"><div class="dp" id="f-dp"></div><span class="ff-hint">Marca los días que tiene la faena (puedes cambiar de mes). Sigue siendo una sola faena.</span></div>
+              <label class="f-rango"><span>Inicio <i class="req">*</i></span><input type="date" id="f-fecha"></label>
+              <label class="f-rango"><span>Fin <span class="ff-opt">(si dura varios días)</span></span><input type="date" id="f-fin"></label>
               <div class="full ff-dur" id="f-dur"></div>
               <label class="full">Horario<input type="text" id="f-hora" placeholder="09:00 - 13:00 o Todo el día"></label>
               <div class="full ff-chips" id="f-hora-chips"></div>
@@ -410,7 +455,7 @@
     if(!sb){ if(cb)cb(); return; }
     var all=[], chunk=1000;
     function finish(){ if(_evCargados && window.parent!==window){ try{ window.parent.postMessage('iserv-eventos', location.origin); }catch(_){} } _evCargados=true;   // avisa a la app (Planificación) que hubo cambios
-      EVENTS=all.map(function(e){ return { id:e.id, fecha:e.fecha, fin:e.fecha_fin||'', serie:e.serie_id||'', hora:(/^all\s*day$/i.test(e.hora||'')?'Todo el día':(e.hora||'')), titulo:e.titulo||'', ubic:e.ubicacion||'', sitio:e.sitio||'', color:clienteColor(e.ubicacion), desc:e.descripcion||'', pers:(e.personas_nec!=null?e.personas_nec:null), dot:dotNorm(e.dotacion, e.personas_nec), tareas:(Array.isArray(e.tareas)?e.tareas:[]).map(function(t){ return String(t||'').trim(); }).filter(Boolean) }; }); if(cb)cb(); }
+      EVENTS=all.map(function(e){ return { id:e.id, fecha:e.fecha, fin:e.fecha_fin||'', serie:e.serie_id||'', hora:(/^all\s*day$/i.test(e.hora||'')?'Todo el día':(e.hora||'')), titulo:e.titulo||'', ubic:e.ubicacion||'', sitio:e.sitio||'', color:clienteColor(e.ubicacion), desc:e.descripcion||'', pers:(e.personas_nec!=null?e.personas_nec:null), dot:dotNorm(e.dotacion, e.personas_nec), dias:(Array.isArray(e.dias)&&e.dias.length)?e.dias.slice().sort():null, tareas:tareasNorm(e.tareas) }; }); if(cb)cb(); }
     function fetchFrom(off){
       sb.from('eventos').select('*').order('fecha',{ascending:true}).range(off, off+chunk-1).then(function(r){
         if(r.error){ console.warn('Supabase:',r.error.message); finish(); return; }
@@ -428,7 +473,17 @@
   function numSemanaISO(dt){ var d=new Date(Date.UTC(dt.getFullYear(),dt.getMonth(),dt.getDate())); var day=(d.getUTCDay()+6)%7; d.setUTCDate(d.getUTCDate()-day+3); var firstThu=d.getTime(); d.setUTCMonth(0,1); if(d.getUTCDay()!==4){ d.setUTCMonth(0,1+((4-d.getUTCDay())+7)%7); } return 1+Math.round((firstThu-d.getTime())/604800000); }
   function todayISO(){ return iso(new Date()); }
   function evFin(e){ return (e.fin && e.fin>=e.fecha)?e.fin:e.fecha; }
-  function evsDe(f){ return EVENTS.filter(function(e){ return e.fecha<=f && f<=evFin(e); }); }
+  // Una faena con días a elección ocurre solo esos días; si no, todo el rango inicio–fin.
+  function evEnDia(e,f){ if(e.dias) return e.dias.indexOf(f)>=0; return e.fecha<=f && f<=evFin(e); }
+  function evsDe(f){ return EVENTS.filter(function(e){ return evEnDia(e,f); }); }
+  function diaSig(f){ var d=new Date(f+'T12:00:00'); d.setDate(d.getDate()+1); return iso(d); }
+  function evDias(e){ if(e.dias) return e.dias.slice(); var out=[], cur=e.fecha, fin=evFin(e), g=0; while(cur<=fin && g<400){ out.push(cur); cur=diaSig(cur); g++; } return out; }
+  function evNDias(e){ return e.dias?e.dias.length:evDias(e).length; }
+  // La flecha ⟶ = la faena sigue al día siguiente
+  function sigue(e,f){ return evNDias(e)>1 && evEnDia(e,diaSig(f)); }
+  // Tareas: [{t, ok, por, at}] (las antiguas eran solo texto)
+  function tareasNorm(a){ return (Array.isArray(a)?a:[]).map(function(t){ if(t&&typeof t==='object') return { t:String(t.t||'').trim(), ok:!!t.ok, por:t.por||'', at:t.at||'' }; return { t:String(t||'').trim(), ok:false, por:'', at:'' }; }).filter(function(t){ return t.t; }); }
+  function tareasRow(a){ return a.map(function(t){ var o={ t:String(t.t||'').trim(), ok:!!t.ok }; if(t.ok){ o.por=t.por||userEmail; o.at=t.at||new Date().toISOString(); } return o; }).filter(function(t){ return t.t; }); }
 
   function render(){
     if(buscar){ renderBusqueda(); return; }
@@ -463,7 +518,7 @@
       var max=(vista==='semana')?60:6;
       var evHtml=order.slice(0,max).map(function(k){
         var g=groups[k], e0=g[0], ubic=(e0.ubic||'').trim(), sitio=(e0.sitio||'').trim(), col=e0.color;
-        function md(e){ return (e.fin&&e.fin>e.fecha)?'<span class="evg-md" title="Trabajo de varios días">⟶</span>':''; }
+        function md(e){ return sigue(e,f)?'<span class="evg-md" title="Sigue al día siguiente">⟶</span>':''; }
         var sitHead=sitio?(' <span class="evg-sit">· '+esc(sitio)+'</span>'):'';
         var head=ubic?(esc(ubic)+sitHead+(g.length>1?' <span class="evg-sit">· '+g.length+'</span>':'')):(esc(e0.titulo)+md(e0));
         var items=ubic?g.map(function(e){ return '<span class="evg-item" data-id="'+e.id+'" title="'+enc(e.titulo)+'">'+esc(e.titulo)+md(e)+'</span>'; }).join(''):'';
@@ -498,8 +553,8 @@
       var cards=order.map(function(kk){ var g=groups[kk], e0=g[0], ubic=(e0.ubic||'').trim(), sitio=(e0.sitio||'').trim();
         var sh=sitio?(' <span class="evg-sit">· '+esc(sitio)+'</span>'):'';
         var head=ubic?(esc(ubic)+sh+(g.length>1?' <span class="ag-cnt">'+g.length+'</span>':'')):esc(e0.titulo);
-        var items=g.map(function(e){ var md=(e.fin&&e.fin>e.fecha)?' <span class="evg-md">⟶</span>':'';
-          return '<div class="ag-item" data-goid="'+e.id+'"><div class="ag-item-tt">'+esc(e.titulo)+md+(e.hora?' <span class="ag-hora">'+esc(e.hora)+'</span>':'')+'</div>'+(e.desc?'<div class="ag-item-desc">'+esc(e.desc)+'</div>':'')+'</div>'; }).join('');
+        var items=g.map(function(e){ var md=sigue(e,e.fecha)?' <span class="evg-md">⟶</span>':'';
+          return '<div class="ag-item" data-goid="'+e.id+'"><div class="ag-item-tt">'+esc(e.titulo)+md+(e.hora?' <span class="ag-hora">'+esc(e.hora)+'</span>':'')+'</div>'+(e.tareas.length?'<div class="ag-item-desc">Tareas: '+e.tareas.filter(function(t){ return t.ok; }).length+'/'+e.tareas.length+' hechas</div>':'')+'</div>'; }).join('');
         return '<div class="ag-ucard" style="border-left-color:'+e0.color+';background:linear-gradient(100deg, color-mix(in srgb, '+e0.color+' 15%, #fff), #fff 60%)"><div class="ag-ucard-head" style="color:'+e0.color+'"><span class="ag-dot" style="background:'+e0.color+'"></span>'+head+'</div>'+items+'</div>';
       }).join('');
       return '<div class="ag-day'+(hoy?' hoy':'')+'"><div class="ag-dhead">'+(hoy?'<span class="ag-hoy-badge">HOY</span> ':'')+'<b>'+DIAS[d.getDay()]+' '+d.getDate()+'</b> de '+MES[d.getMonth()]+' '+d.getFullYear()+'</div>'+cards+'</div>';
@@ -515,7 +570,7 @@
     var out=[];
     EVENTS.forEach(function(e){ var fin=evFin(e), a=(e.fecha<desde?desde:e.fecha), b=(fin>hasta?hasta:fin); if(b<a) return;
       var d=new Date(a+'T12:00:00'), cur=a, guard=0;
-      while(cur<=b && guard<40){ var c={}; for(var k in e){ c[k]=e[k]; } c.fecha=cur; out.push(c); d.setDate(d.getDate()+1); cur=iso(d); guard++; }
+      while(cur<=b && guard<40){ if(evEnDia(e,cur)){ var c={}; for(var k in e){ c[k]=e[k]; } c.fecha=cur; out.push(c); } d.setDate(d.getDate()+1); cur=iso(d); guard++; }
     });
     out.sort(function(a,b){ return a.fecha<b.fecha?-1:(a.fecha>b.fecha?1:0); });
     if(!out.length){ var grid=document.getElementById('grid'); grid.classList.add('agenda'); document.querySelector('.cal-dow').style.display='none'; document.getElementById('cal').classList.remove('week'); grid.innerHTML='<div style="padding:40px;text-align:center;color:var(--muted)">Sin trabajos esta semana.</div>'; return; }
@@ -529,8 +584,8 @@
       var ini=(e.fecha>start)?e.fecha:start;                  // desde hoy o desde su inicio
       var d=new Date(ini+'T12:00:00'), cur=ini, guard=0;     // T12 evita el salto del horario de verano
       while(cur<=fin && guard<400){                           // una entrada por cada día del trabajo
-        var c={}; for(var k in e){ c[k]=e[k]; } c.fecha=cur;
-        out.push(c); d.setDate(d.getDate()+1); cur=iso(d); guard++;
+        if(evEnDia(e,cur)){ var c={}; for(var k in e){ c[k]=e[k]; } c.fecha=cur; out.push(c); }
+        d.setDate(d.getDate()+1); cur=iso(d); guard++;
       }
     });
     out.sort(function(a,b){ return a.fecha<b.fecha?-1:(a.fecha>b.fecha?1:0); });
@@ -547,23 +602,91 @@
     document.getElementById('modal-head').style.background='linear-gradient(135deg,'+e.color+',#0c0f2e)';
     document.getElementById('modal-title').textContent=e.titulo;
     document.getElementById('modal-body').innerHTML=
-      '<div class="row"><svg class="det-ico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg><b>'+(function(){ if(e.fin&&e.fin>e.fecha){ var d2=new Date(e.fin+'T00:00:00'); var n=Math.round((new Date(e.fin)-new Date(e.fecha))/86400000)+1; return 'Del '+d.getDate()+' '+MES[d.getMonth()].slice(0,3)+' al '+d2.getDate()+' '+MES[d2.getMonth()].slice(0,3)+' '+d2.getFullYear()+' · '+n+' días'; } return d.getDate()+' de '+MES[d.getMonth()]+' '+d.getFullYear(); })()+'</b>'+(e.hora?' · '+esc(e.hora):'')+'</div>'+
+      '<div class="row"><svg class="det-ico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg><b>'+(function(){ if(e.dias){ return e.dias.length+' día'+(e.dias.length===1?'':'s')+' a elección: '+e.dias.map(function(x){ var dx=new Date(x+'T12:00:00'); return DIAS[dx.getDay()].slice(0,3)+' '+dx.getDate()+' '+MES[dx.getMonth()].slice(0,3); }).join(', '); } if(e.fin&&e.fin>e.fecha){ var d2=new Date(e.fin+'T00:00:00'); var n=Math.round((new Date(e.fin)-new Date(e.fecha))/86400000)+1; return 'Del '+d.getDate()+' '+MES[d.getMonth()].slice(0,3)+' al '+d2.getDate()+' '+MES[d2.getMonth()].slice(0,3)+' '+d2.getFullYear()+' · '+n+' días'; } return d.getDate()+' de '+MES[d.getMonth()]+' '+d.getFullYear(); })()+'</b>'+(e.hora?' · '+esc(e.hora):'')+'</div>'+
       (e.ubic?'<div class="row"><svg class="det-ico" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>Cliente:<span class="cat-chip" style="background:'+e.color+'">'+esc(e.ubic)+'</span>'+(e.sitio?' <span style="color:#5a5e70;font-weight:600">· '+esc(e.sitio)+'</span>':'')+'</div>':'')+
       (dotTotal(e.dot)?'<div class="row"><svg class="det-ico" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg><span><b>'+dotTotal(e.dot)+'</b> necesarias · '+esc(dotTexto(e.dot))+'</span></div>':'')+
-      (e.desc?'<div class="pl-desc">'+esc(e.desc)+'</div>':'')+
-      ((e.tareas&&e.tareas.length)?'<div class="det-lbl">Tareas ('+e.tareas.length+')</div><ol class="det-tareas">'+e.tareas.map(function(t){ return '<li>'+esc(t)+'</li>'; }).join('')+'</ol>':'')+
-      (authed?'<div class="fbtns" style="margin-top:14px"><button class="pl-del-btn" id="det-del">Eliminar</button><button class="pl-add" id="det-edit">✎ Editar</button></div>':'');
+      '<div id="det-tk"></div><div class="det-lbl">Observaciones</div><div class="obs-list" id="det-obs"><span class="ff-hint">Cargando…</span></div>'+
+      (puedeNotas?'<div class="det-add"><textarea id="det-obs-in" rows="2" placeholder="Agregar observación o retroalimentación…"></textarea><button type="button" id="det-obs-btn">Agregar</button></div>':'')+
+      (puedeEditar?'<div class="fbtns" style="margin-top:14px"><button class="pl-del-btn" id="det-del">Eliminar</button><button class="pl-today" id="det-unir" title="Junta otra faena (duplicada) dentro de esta">Unir con otra faena</button><button class="pl-add" id="det-edit">✎ Editar</button></div>':'');
     modal.classList.add('show');
-    if(authed){
+    pintarTareasDet(e);
+    pintarObs(e.id, document.getElementById('det-obs'));
+    var ob=document.getElementById('det-obs-btn'); if(ob) ob.addEventListener('click',function(){ var ta=document.getElementById('det-obs-in'), v=ta.value.trim(); if(!v) return; ob.disabled=true;
+      guardarObs(e.id, v, function(ok){ ob.disabled=false; if(ok){ ta.value=''; pintarObs(e.id, document.getElementById('det-obs')); } }); });
+    if(puedeEditar){
       var de=document.getElementById('det-edit'); if(de) de.addEventListener('click',function(){ modal.classList.remove('show'); abrirForm(e); });
       var dd=document.getElementById('det-del'); if(dd) dd.addEventListener('click',function(){ modal.classList.remove('show'); abrirBorrado(e); });
+      var du=document.getElementById('det-unir'); if(du) du.addEventListener('click',function(){ abrirUnir(e); });
     }
   }
+  // ---- Tareas en el detalle: se marcan y agregan (también quien solo ve el Calendario) ----
+  function pintarTareasDet(e){
+    var box=document.getElementById('det-tk'); if(!box) return; var ts=e.tareas||[];
+    if(!ts.length && !puedeNotas){ box.innerHTML=''; return; }
+    var hechas=ts.filter(function(t){ return t.ok; }).length;
+    box.innerHTML='<div class="det-lbl">Tareas'+(ts.length?' ('+hechas+'/'+ts.length+' hechas)':'')+'</div><ul class="det-tk">'+ts.map(function(t,i){
+        var quien=t.ok&&(t.por||t.at)?'<small>'+esc(nombreCorto(t.por))+(t.at?' · '+esc(fechaHora(t.at)):'')+'</small>':'';
+        return '<li class="'+(t.ok?'ok':'')+'"><input type="checkbox" data-i="'+i+'"'+(t.ok?' checked':'')+(puedeNotas?'':' disabled')+' aria-label="Hecha"><span>'+esc(t.t)+quien+'</span></li>'; }).join('')+'</ul>'+
+      (puedeNotas?'<div class="det-add"><input type="text" id="det-tk-in" placeholder="Agregar tarea…" autocomplete="off"><button type="button" id="det-tk-btn">Agregar</button></div>':'');
+    box.querySelectorAll('input[type=checkbox]').forEach(function(c){ c.addEventListener('change',function(){ var t=e.tareas[+c.dataset.i]; t.ok=c.checked; t.por=c.checked?userEmail:''; t.at=c.checked?new Date().toISOString():''; guardarTareas(e); }); });
+    var inp=document.getElementById('det-tk-in'), btn=document.getElementById('det-tk-btn');
+    function add(){ var v=inp.value.trim(); if(!v) return; e.tareas.push({t:v,ok:false,por:'',at:''}); guardarTareas(e); }
+    if(btn){ btn.addEventListener('click',add); inp.addEventListener('keydown',function(ev){ if(ev.key==='Enter'){ ev.preventDefault(); add(); } }); }
+  }
+  function guardarTareas(e){
+    sb.rpc('evento_tareas_set',{ p_id:e.id, p_tareas:tareasRow(e.tareas) }).then(function(r){
+      if(r.error){ alert('No se guardaron las tareas: '+r.error.message); return; }
+      avisarApp(); pintarTareasDet(e);
+    }, function(){ alert('No se guardaron las tareas.'); });
+  }
+  function nombreCorto(em){ em=(em||'').split('@')[0]; return em?em.replace(/[._]/g,' '):''; }
+  function fechaHora(s){ var d=new Date(s); if(isNaN(d)) return ''; return d.getDate()+' '+MES[d.getMonth()].slice(0,3)+(d.getFullYear()!==new Date().getFullYear()?' '+d.getFullYear():'')+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }
+  // ---- Observaciones de la faena (tabla faena_obs) ----
+  function pintarObs(id, el, alCargar){ if(!el||!sb) return;
+    sb.from('faena_obs').select('*').eq('evento_id',id).order('created_at',{ascending:false}).limit(200).then(function(r){
+      var L=(r&&r.data)||[]; if(alCargar) alCargar(L.length);
+      if(r&&r.error){ el.innerHTML='<span class="ff-hint">No se pudieron cargar las observaciones.</span>'; return; }
+      el.innerHTML=L.length?L.map(function(o){ var mia=(o.autor||'').toLowerCase()===userEmail.toLowerCase();
+        return '<div class="obs-it"><small>'+esc(o.autor&&o.autor.indexOf('@')>0?nombreCorto(o.autor):(o.autor||''))+' · '+esc(fechaHora(o.created_at))+'</small>'+esc(o.texto)+((puedeEditar||mia)?'<button type="button" data-id="'+o.id+'" title="Borrar observación">×</button>':'')+'</div>'; }).join(''):'<span class="ff-hint">Sin observaciones.</span>';
+      el.querySelectorAll('button[data-id]').forEach(function(b){ b.addEventListener('click',function(){ if(!confirm('¿Borrar esta observación?')) return;
+        sb.from('faena_obs').delete().eq('id',b.dataset.id).then(function(r2){ if(r2.error){ alert('No se pudo borrar: '+r2.error.message); return; } pintarObs(id, el, alCargar); avisarApp(); }); }); });
+    }, function(){ el.innerHTML='<span class="ff-hint">No se pudieron cargar las observaciones.</span>'; });
+  }
+  function guardarObs(id, texto, cb){
+    sb.from('faena_obs').insert({ evento_id:id, fecha:todayISO(), texto:texto, autor:userEmail }).then(function(r){
+      if(r.error){ alert('No se guardó la observación: '+r.error.message); cb&&cb(false); return; } avisarApp(); cb&&cb(true);
+    }, function(){ alert('No se guardó la observación.'); cb&&cb(false); });
+  }
+  function avisarApp(){ if(window.parent!==window){ try{ window.parent.postMessage('iserv-eventos', location.origin); }catch(_){} } }
+  // ---- Unir con otra faena (duplicada): junta los días y traspasa todo a esta ----
+  function abrirUnir(e){
+    var U=(e.ubic||'').trim().toUpperCase(), T=(e.titulo||'').trim().toUpperCase(), a=new Date(e.fecha+'T12:00:00');
+    function cerca(x){ var b=new Date(x.fecha+'T12:00:00'); return Math.abs((b-a)/86400000)<=90; }
+    var cand=EVENTS.filter(function(x){ return String(x.id)!==String(e.id) && (x.ubic||'').trim().toUpperCase()===U && cerca(x); })
+      .sort(function(p,q){ var ip=(p.titulo||'').trim().toUpperCase()===T?0:1, iq=(q.titulo||'').trim().toUpperCase()===T?0:1; if(ip!==iq) return ip-iq; return Math.abs(new Date(p.fecha)-a)-Math.abs(new Date(q.fecha)-a); }).slice(0,40);
+    document.getElementById('modal-title').textContent='Unir con '+e.titulo;
+    document.getElementById('modal-body').innerHTML='<p style="color:#4a5270;font-size:.88rem;line-height:1.55;margin-bottom:12px">Elige la faena repetida. Sus días pasan a <b>'+esc(e.titulo)+'</b>, junto con planificación, informes, horas, boletas, fotos y observaciones; después se borra la repetida.</p>'+
+      (cand.length?cand.map(function(x){ var n=evNDias(x); return '<div class="unir-row" data-id="'+x.id+'"><span class="cat-chip" style="background:'+x.color+'">&nbsp;</span><div><b>'+esc(x.titulo)+'</b>'+(x.sitio?' · '+esc(x.sitio):'')+'<small>'+esc(rangoTxt(x))+' · '+n+' día'+(n===1?'':'s')+'</small></div></div>'; }).join(''):'<p class="ff-hint">No hay otras faenas de este cliente cerca de estas fechas.</p>')+
+      '<div class="fbtns" style="margin-top:10px"><button class="pl-today" id="unir-volver">Volver</button></div>';
+    document.getElementById('unir-volver').addEventListener('click',function(){ abrir(e.id); });
+    modal.querySelectorAll('.unir-row').forEach(function(r){ r.addEventListener('click',function(){
+      var x=EVENTS.filter(function(y){ return String(y.id)===r.dataset.id; })[0]; if(!x) return;
+      if(!confirm('¿Unir "'+x.titulo+'" ('+rangoTxt(x)+') dentro de "'+e.titulo+'"?\n\nQueda una sola faena con los días de ambas. La repetida se borra.')) return;
+      sb.rpc('eventos_unir',{ p_dest:e.id, p_orig:x.id }).then(function(res){
+        if(res.error){ alert('No se pudo unir: '+res.error.message); return; }
+        var d=res.data||{}; var extra=d.plan_descartados?('\n'+d.plan_descartados+' día(s) planificados en ambas: se dejó la planificación de esta faena.'):'';
+        cargarEventos(function(){ render(); abrir(e.id); if(extra) alert('Faenas unidas.'+extra); });
+      }, function(){ alert('No se pudo unir.'); });
+    }); });
+  }
+  function rangoTxt(x){ var ds=evDias(x), f=function(s){ var d=new Date(s+'T12:00:00'); return d.getDate()+' '+MES[d.getMonth()].slice(0,3)+' '+d.getFullYear(); };
+    if(x.dias) return ds.length+' días a elección, del '+f(ds[0])+' al '+f(ds[ds.length-1]);
+    return ds.length>1?('del '+f(ds[0])+' al '+f(ds[ds.length-1])):f(ds[0]); }
   function abrirDia(f){
     var evs=evsDe(f); if(!evs.length){ nuevoEn(f); return; } var d=new Date(f+'T00:00:00');
     document.getElementById('modal-head').style.background='linear-gradient(135deg,var(--navy),#0c0f2e)';
     document.getElementById('modal-title').textContent='Todo el '+d.getDate()+' de '+MES[d.getMonth()];
-    document.getElementById('modal-body').innerHTML=evs.map(function(e){ return '<div class="row" style="cursor:pointer" data-goid="'+e.id+'"><span class="cat-chip" style="background:'+e.color+'">&nbsp;</span> '+esc(e.titulo)+(e.ubic?(' · '+esc(e.ubic)):'')+(e.sitio?(' · '+esc(e.sitio)):'')+'</div>'; }).join('')+(authed?'<div class="fbtns" style="margin-top:12px"><button class="pl-add" id="dia-add">＋ Agregar aquí</button></div>':'');
+    document.getElementById('modal-body').innerHTML=evs.map(function(e){ return '<div class="row" style="cursor:pointer" data-goid="'+e.id+'"><span class="cat-chip" style="background:'+e.color+'">&nbsp;</span> '+esc(e.titulo)+(e.ubic?(' · '+esc(e.ubic)):'')+(e.sitio?(' · '+esc(e.sitio)):'')+'</div>'; }).join('')+(puedeEditar?'<div class="fbtns" style="margin-top:12px"><button class="pl-add" id="dia-add">＋ Agregar aquí</button></div>':'');
     modal.querySelectorAll('[data-goid]').forEach(function(r){ r.addEventListener('click',function(){ abrir(r.dataset.goid); }); });
     var da=document.getElementById('dia-add'); if(da) da.addEventListener('click',function(){ nuevoEn(f); });
     modal.classList.add('show');
@@ -574,12 +697,12 @@
     var d=new Date(f+'T00:00:00'); var lbl=ubic+((sitio||'').trim()?(' · '+sitio):'');
     document.getElementById('modal-head').style.background='linear-gradient(135deg,'+evs[0].color+',#0c0f2e)';
     document.getElementById('modal-title').textContent=lbl+' · '+d.getDate()+' '+MES[d.getMonth()].slice(0,3);
-    document.getElementById('modal-body').innerHTML=evs.map(function(e){ return '<div class="row" style="cursor:pointer" data-goid="'+e.id+'"><span class="cat-chip" style="background:'+e.color+'">&nbsp;</span> '+esc(e.titulo)+(e.hora?(' · '+esc(e.hora)):'')+'</div>'; }).join('')+(authed?'<div class="fbtns" style="margin-top:12px"><button class="pl-add" id="diau-add">＋ Agregar a '+esc(lbl)+'</button></div>':'');
+    document.getElementById('modal-body').innerHTML=evs.map(function(e){ return '<div class="row" style="cursor:pointer" data-goid="'+e.id+'"><span class="cat-chip" style="background:'+e.color+'">&nbsp;</span> '+esc(e.titulo)+(e.hora?(' · '+esc(e.hora)):'')+'</div>'; }).join('')+(puedeEditar?'<div class="fbtns" style="margin-top:12px"><button class="pl-add" id="diau-add">＋ Agregar a '+esc(lbl)+'</button></div>':'');
     modal.querySelectorAll('[data-goid]').forEach(function(r){ r.addEventListener('click',function(){ abrir(r.dataset.goid); }); });
     var da=document.getElementById('diau-add'); if(da) da.addEventListener('click',function(){ nuevoEn(f, ubic, sitio); });
     modal.classList.add('show');
   }
-  function nuevoEn(f, ubic, sitio){ if(!authed) return; modal.classList.remove('show'); abrirForm(null); if(f) document.getElementById('f-fecha').value=f; if(ubic){ document.getElementById('f-ubic').value=ubic; poblarSitios(ubic); } if(sitio) document.getElementById('f-sitio').value=sitio; }
+  function nuevoEn(f, ubic, sitio){ if(!puedeEditar) return; modal.classList.remove('show'); abrirForm(null); if(f) document.getElementById('f-fecha').value=f; if(ubic){ document.getElementById('f-ubic').value=ubic; poblarSitios(ubic); } if(sitio) document.getElementById('f-sitio').value=sitio; }
   document.getElementById('modal-close').addEventListener('click',function(){ modal.classList.remove('show'); });
   modal.addEventListener('click',function(ev){ if(ev.target===modal) modal.classList.remove('show'); });
 
@@ -612,8 +735,18 @@
     var b=document.getElementById('na-out'); if(b) b.addEventListener('click',function(){ if(sb) sb.auth.signOut().then(function(){ location.reload(); }); else location.reload(); });
   }
   var loaded=false;
+  // Nivel en el módulo Calendario (permisos de la app): 2+ edita todo; 1 (ver) solo marca/agrega tareas y observaciones.
+  var puedeEditar=false, puedeNotas=false, NIVEL=null, _nivelDe='';
   function applyLock(){
-    if(authed && isAdmin(userEmail)){
+    if(authed && NIVEL===null && !isAdmin(userEmail)){
+      if(_nivelDe===userEmail) return; _nivelDe=userEmail;
+      sb.rpc('ig_nivel',{modulo:'calendario'}).then(function(r){ NIVEL=(r&&!r.error)?(+r.data||0):0; applyLock(); }, function(){ NIVEL=0; applyLock(); });
+      return;
+    }
+    var nv=isAdmin(userEmail)?3:(NIVEL||0);
+    puedeEditar=authed && nv>=2; puedeNotas=authed && nv>=1;
+    document.body.classList.toggle('solover', authed && !puedeEditar);
+    if(authed && nv>=1){
       document.body.classList.remove('locked');
       if(!loaded){ loaded=true; render(); cargarColoresClientes(function(){ cargarEventos(render); }); }
     } else if(authed){
@@ -624,7 +757,7 @@
       document.body.classList.add('locked');
     }
   }
-  function setAuth(session){ authed=!!session; userEmail=(session&&session.user&&session.user.email)||''; updateAuthUI(); applyLock(); }
+  function setAuth(session){ var em=(session&&session.user&&session.user.email)||''; if(em!==userEmail){ NIVEL=null; _nivelDe=''; } authed=!!session; userEmail=em; updateAuthUI(); applyLock(); }
   if(sb && sb.auth){
     sb.auth.getSession().then(function(r){ setAuth(r&&r.data&&r.data.session); });
     sb.auth.onAuthStateChange(function(_e,session){ setAuth(session); });
@@ -677,12 +810,15 @@
     document.getElementById('f-titulo').value=e?e.titulo:'';
     poblarSitios(e?(e.ubic||''):'');
     document.getElementById('f-sitio').value=e?(e.sitio||''):'';
-    document.getElementById('f-desc').value=e?(e.desc||''):'';
     var _d=e?e.dot:{op:0,sup:0,prev:0}; ['op','sup','prev'].forEach(function(k){ document.getElementById('f-d-'+k).value=_d[k]||''; }); totPers();
-    F_TAREAS=e?(e.tareas||[]).slice():[]; pintarTareas(); document.getElementById('f-tarea-in').value='';
+    F_TAREAS=e?(e.tareas||[]).map(function(t){ return {t:t.t,ok:t.ok,por:t.por,at:t.at}; }):[]; pintarTareas(); document.getElementById('f-tarea-in').value='';
+    document.getElementById('f-obs-in').value='';
+    var ol=document.getElementById('f-obs-list'), oc=document.getElementById('f-obs-cnt'); ol.innerHTML=''; oc.textContent='';
+    if(e) pintarObs(e.id, ol, function(n){ oc.textContent=n||''; });
+    F_DIAS=(e&&e.dias)?e.dias.slice():[]; DP_REF=new Date(((e&&e.dias)?e.dias[0]:(e?e.fecha:todayISO()))+'T12:00:00');
+    setModo((e&&e.dias)?'dias':'rango', true);
     pintarChipsHora(); actualizarDur();
     document.getElementById('f-del').style.display=e?'':'none';
-    document.getElementById('f-rep-row').style.display='';
     document.getElementById('f-repetir').value='no';
     document.getElementById('f-cada').value='1'; document.getElementById('f-cada-w').style.display='none';
     document.getElementById('f-veces-w').style.display='none';
@@ -696,23 +832,56 @@
     if(ev.key==='Escape'){ formModal.classList.remove('show'); }
     else if(ev.key==='Enter' && (ev.ctrlKey||ev.metaKey)){ ev.preventDefault(); document.getElementById('f-save').click(); }
   });
-  // ---- Tareas del trabajo (lista simple; se ven en Planificación) ----
+  // ---- Días a elección (checkboxes en un mini calendario) ----
+  var F_DIAS=[], DP_REF=new Date(), F_MODO='rango';
+  function setModo(m, inicial){
+    if(!inicial && m===F_MODO) return;
+    var fi=document.getElementById('f-fecha'), ff=document.getElementById('f-fin');
+    if(!inicial && m==='dias'){   // de rango a días: parte con los días del rango
+      var a=fi.value||todayISO(), b=(ff.value&&ff.value>=a)?ff.value:a; F_DIAS=[]; var c=a, g=0; while(c<=b && g<90){ F_DIAS.push(c); c=diaSig(c); g++; }
+      DP_REF=new Date(a+'T12:00:00');
+    }
+    if(!inicial && m==='rango' && F_DIAS.length){ fi.value=F_DIAS[0]; ff.value=F_DIAS.length>1?F_DIAS[F_DIAS.length-1]:''; }
+    F_MODO=m;
+    document.querySelectorAll('#f-modo button').forEach(function(x){ x.classList.toggle('on', x.dataset.m===m); });
+    document.querySelectorAll('.f-rango').forEach(function(x){ x.style.display=(m==='rango')?'':'none'; });
+    document.getElementById('f-dp-w').style.display=(m==='dias')?'':'none';
+    document.getElementById('f-rep-row').style.display=(m==='dias')?'none':'';
+    if(m==='dias'){ document.getElementById('f-repetir').value='no'; pintarDP(); }
+    actualizarDur();
+  }
+  document.querySelectorAll('#f-modo button').forEach(function(b){ b.addEventListener('click',function(){ setModo(b.dataset.m); }); });
+  function pintarDP(){
+    var el=document.getElementById('f-dp'), y=DP_REF.getFullYear(), m=DP_REF.getMonth(), first=new Date(y,m,1), off=(first.getDay()+6)%7, dim=new Date(y,m+1,0).getDate(), t=todayISO();
+    var h='<div class="dp-h"><button type="button" data-n="-1" aria-label="Mes anterior">‹</button><span>'+MES[m]+' '+y+'</span><button type="button" data-n="1" aria-label="Mes siguiente">›</button></div><div class="dp-g">'+
+      ['L','M','M','J','V','S','D'].map(function(x){ return '<span class="dw">'+x+'</span>'; }).join('');
+    for(var i=0;i<off;i++) h+='<span class="vacio"></span>';
+    for(var d=1;d<=dim;d++){ var f=iso(new Date(y,m,d)), on=F_DIAS.indexOf(f)>=0;
+      h+='<label class="'+(on?'on':'')+(f===t?' hoy':'')+'"><input type="checkbox" data-f="'+f+'"'+(on?' checked':'')+'>'+d+'</label>'; }
+    el.innerHTML=h+'</div>';
+    el.querySelectorAll('button[data-n]').forEach(function(b){ b.addEventListener('click',function(){ DP_REF=new Date(y,m+(+b.dataset.n),1,12); pintarDP(); }); });
+    el.querySelectorAll('input[data-f]').forEach(function(c){ c.addEventListener('change',function(){ var f=c.dataset.f, i=F_DIAS.indexOf(f);
+      if(c.checked && i<0) F_DIAS.push(f); if(!c.checked && i>=0) F_DIAS.splice(i,1); F_DIAS.sort(); c.parentNode.classList.toggle('on',c.checked); actualizarDur(); }); });
+  }
+  // ---- Tareas del trabajo (checkbox para marcar hecha; se ven en Planificación) ----
   var F_TAREAS=[];
   function pintarTareas(){
     var ol=document.getElementById('f-tareas');
-    ol.innerHTML=F_TAREAS.map(function(t,i){ return '<li><input value="'+enc(esc(t))+'" data-i="'+i+'" aria-label="Tarea '+(i+1)+'"><button type="button" data-i="'+i+'" title="Quitar tarea" aria-label="Quitar">×</button></li>'; }).join('');
-    document.getElementById('f-tareas-cnt').textContent=F_TAREAS.length?F_TAREAS.length:'';
-    ol.querySelectorAll('input').forEach(function(inp){ inp.addEventListener('input',function(){ F_TAREAS[+inp.dataset.i]=inp.value; });
+    ol.innerHTML=F_TAREAS.map(function(t,i){ return '<li class="'+(t.ok?'ok':'')+'"><input type="checkbox" data-i="'+i+'"'+(t.ok?' checked':'')+' aria-label="Hecha"><input type="text" value="'+enc(esc(t.t))+'" data-i="'+i+'" aria-label="Tarea '+(i+1)+'"><button type="button" data-i="'+i+'" title="Quitar tarea" aria-label="Quitar">×</button></li>'; }).join('');
+    var hechas=F_TAREAS.filter(function(t){ return t.ok; }).length;
+    document.getElementById('f-tareas-cnt').textContent=F_TAREAS.length?(hechas?hechas+'/'+F_TAREAS.length:F_TAREAS.length):'';
+    ol.querySelectorAll('input[type=checkbox]').forEach(function(c){ c.addEventListener('change',function(){ var t=F_TAREAS[+c.dataset.i]; t.ok=c.checked; t.por=c.checked?userEmail:''; t.at=c.checked?new Date().toISOString():''; pintarTareas(); }); });
+    ol.querySelectorAll('input[type=text]').forEach(function(inp){ inp.addEventListener('input',function(){ F_TAREAS[+inp.dataset.i].t=inp.value; });
       inp.addEventListener('keydown',function(ev){ if(ev.key==='Enter' && !ev.ctrlKey){ ev.preventDefault(); document.getElementById('f-tarea-in').focus(); } }); });
     ol.querySelectorAll('button').forEach(function(b){ b.addEventListener('click',function(){ F_TAREAS.splice(+b.dataset.i,1); pintarTareas(); }); });
   }
   function agregarTarea(){ var inp=document.getElementById('f-tarea-in'), v=inp.value.trim(); if(!v) return;
-    F_TAREAS.push(v); inp.value=''; pintarTareas(); inp.focus(); }
+    F_TAREAS.push({t:v,ok:false,por:'',at:''}); inp.value=''; pintarTareas(); inp.focus(); }
   document.getElementById('f-tarea-btn').addEventListener('click',agregarTarea);
   document.getElementById('f-tarea-in').addEventListener('keydown',function(ev){ if(ev.key==='Enter' && !ev.ctrlKey){ ev.preventDefault(); agregarTarea(); } });
   // Pegar una lista (varias líneas) crea una tarea por línea
   document.getElementById('f-tarea-in').addEventListener('paste',function(ev){ var t=(ev.clipboardData||window.clipboardData); t=t?t.getData('text'):''; if(t.indexOf('\n')<0) return; ev.preventDefault();
-    t.split(/\r?\n+/).map(function(x){ return x.replace(/^\s*(?:[-*•]|\d+[.)])\s*/,'').trim(); }).filter(Boolean).forEach(function(x){ F_TAREAS.push(x); }); pintarTareas(); });
+    t.split(/\r?\n+/).map(function(x){ return x.replace(/^\s*(?:[-*•]|\d+[.)])\s*/,'').trim(); }).filter(Boolean).forEach(function(x){ F_TAREAS.push({t:x,ok:false,por:'',at:''}); }); pintarTareas(); });
   // ---- Personas necesarias (stepper) ----
   document.querySelectorAll('.ff-step button').forEach(function(b){ b.addEventListener('click',function(){ var inp=b.parentNode.querySelector('input'); var n=(parseInt(inp.value,10)||0)+(+b.dataset.d); inp.value=n<=0?'':Math.min(n,99); totPers(); }); });
   document.querySelectorAll('.ff-roles input').forEach(function(i){ i.addEventListener('input',totPers); });
@@ -731,6 +900,7 @@
   // ---- Duración (texto bajo las fechas) ----
   function actualizarDur(){
     var fi=document.getElementById('f-fecha').value, ff=document.getElementById('f-fin').value, el=document.getElementById('f-dur');
+    if(F_MODO==='dias'){ el.textContent=F_DIAS.length?(F_DIAS.length+' día'+(F_DIAS.length===1?'':'s')+': '+F_DIAS.slice(0,10).map(function(x){ var d=new Date(x+'T12:00:00'); return DIAS[d.getDay()].slice(0,3)+' '+d.getDate()+' '+MES[d.getMonth()].slice(0,3); }).join(', ')+(F_DIAS.length>10?' …':'')):'Marca al menos un día.'; return; }
     if(!fi){ el.textContent=''; return; }
     var a=new Date(fi+'T00:00:00');
     if(ff && ff<fi){ el.textContent='La fecha de fin es anterior al inicio; se guardará como trabajo de un día.'; return; }
@@ -741,16 +911,25 @@
   // El formulario no se cierra al tocar fuera (evita perder lo escrito); se cierra con ×, Cancelar o Esc.
   document.getElementById('f-save').addEventListener('click',function(){
     if(!sb) return;
-    var _fi=document.getElementById('f-fecha').value, _ff=document.getElementById('f-fin').value;
-    var row={ fecha:_fi, fecha_fin:(_ff && _ff>=_fi)?_ff:null, hora:document.getElementById('f-hora').value.trim(),
+    var _fi=document.getElementById('f-fecha').value, _ff=document.getElementById('f-fin').value, _dias=null;
+    if(F_MODO==='dias'){
+      if(!F_DIAS.length){ alert('Marca al menos un día de la faena.'); return; }
+      _dias=F_DIAS.slice().sort(); _fi=_dias[0]; _ff=_dias.length>1?_dias[_dias.length-1]:'';
+    }
+    var row={ fecha:_fi, fecha_fin:(_ff && _ff>_fi)?_ff:null, dias:_dias, hora:document.getElementById('f-hora').value.trim(),
       titulo:document.getElementById('f-titulo').value.trim(), ubicacion:document.getElementById('f-ubic').value.trim(),
       sitio:document.getElementById('f-sitio').value.trim(),
-      categoria:'Trabajo', descripcion:document.getElementById('f-desc').value,
+      categoria:'Trabajo',
       dotacion:(function(){ var d=dotForm(); return dotTotal(d)?d:null; })(),
       personas_nec:(function(){ var t=dotTotal(dotForm()); return t>0?t:null; })(),
-      tareas:F_TAREAS.map(function(t){ return String(t||'').trim(); }).filter(Boolean) };
+      tareas:tareasRow(F_TAREAS) };
     // una tarea escrita pero sin presionar Enter también se guarda
-    var _tPend=document.getElementById('f-tarea-in').value.trim(); if(_tPend) row.tareas.push(_tPend);
+    var _tPend=document.getElementById('f-tarea-in').value.trim(); if(_tPend) row.tareas.push({t:_tPend,ok:false});
+    var _obsPend=document.getElementById('f-obs-in').value.trim();
+    // guarda la observación nueva (si hay) y cierra
+    function cerrarYObs(ids){ var hecho=function(){ formModal.classList.remove('show'); cargarEventos(render); };
+      if(!_obsPend || !ids || !ids.length){ hecho(); return; }
+      sb.from('faena_obs').insert(ids.map(function(id){ return { evento_id:id, fecha:todayISO(), texto:_obsPend, autor:userEmail }; })).then(function(r){ if(r.error) alert('Se guardó la faena, pero no la observación: '+r.error.message); hecho(); }, hecho); }
     if(!row.fecha||!row.titulo){ alert('Fecha y título son obligatorios.'); return; }
     if(!row.ubicacion){ alert('Elige la empresa / cliente (de la lista).'); return; }
     if(!row.sitio){ alert('Indica la ubicación / sitio.'); document.getElementById('f-sitio').focus(); return; }
@@ -762,33 +941,34 @@
       var dur=row.fecha_fin?Math.round((new Date(row.fecha_fin+'T00:00:00')-base)/86400000):0;
       fechasSerie(_fi, repetir, cada, veces).forEach(function(fd){
         var fe=new Date(fd); if(dur) fe.setDate(fe.getDate()+dur);
-        rows.push({ fecha:iso(fd), fecha_fin:dur?iso(fe):null, hora:row.hora, titulo:row.titulo, ubicacion:row.ubicacion, sitio:row.sitio, categoria:'Trabajo', descripcion:row.descripcion, personas_nec:row.personas_nec, dotacion:row.dotacion, tareas:row.tareas, serie_id:serie });
+        rows.push({ fecha:iso(fd), fecha_fin:dur?iso(fe):null, hora:row.hora, titulo:row.titulo, ubicacion:row.ubicacion, sitio:row.sitio, categoria:'Trabajo', personas_nec:row.personas_nec, dotacion:row.dotacion, tareas:row.tareas, serie_id:serie });
       });
       if(editId){
         // Al editar con repetición: este trabajo pasa a ser el 1º de la nueva serie y se agregan los demás
         var first=rows.shift(); first.serie_id=serie;
         sb.from('eventos').update(first).eq('id',editId).then(function(r){
           if(r.error){ alert('No se pudo guardar: '+r.error.message); return; }
-          if(!rows.length){ formModal.classList.remove('show'); cargarEventos(render); return; }
-          sb.from('eventos').insert(rows).then(function(r2){ if(r2.error){ alert('Se guardó el trabajo, pero no las repeticiones: '+r2.error.message); } formModal.classList.remove('show'); cargarEventos(render); });
+          if(!rows.length){ cerrarYObs([editId]); return; }
+          sb.from('eventos').insert(rows).then(function(r2){ if(r2.error){ alert('Se guardó el trabajo, pero no las repeticiones: '+r2.error.message); } cerrarYObs([editId]); });
         });
         return;
       }
-      sb.from('eventos').insert(rows).then(function(r){ if(r.error){ alert('No se pudo guardar la serie: '+r.error.message); return; } formModal.classList.remove('show'); cargarEventos(render); });
+      sb.from('eventos').insert(rows).select('id').then(function(r){ if(r.error){ alert('No se pudo guardar la serie: '+r.error.message); return; } cerrarYObs(((r.data||[]).slice(0,1)).map(function(x){ return x.id; })); });
       return;
     }
-    var q = editId ? sb.from('eventos').update(row).eq('id',editId) : sb.from('eventos').insert(row);
+    var q = editId ? sb.from('eventos').update(row).eq('id',editId) : sb.from('eventos').insert(row).select('id');
     q.then(function(r){ if(r.error){ alert('No se pudo guardar: '+r.error.message); return; }
+      var _ids=editId?[editId]:((r.data||[]).map(function(x){ return x.id; }));
       // Si renombraste el cliente al editar, ofrece aplicarlo a TODOS sus trabajos.
       var oldU=(editUbicPrev||'').trim(), newU=(row.ubicacion||'').trim();
       if(editId && oldU && newU && oldU.toUpperCase()!==newU.toUpperCase()){
         var otros=EVENTS.filter(function(e){ return String(e.id)!==String(editId) && (e.ubic||'').trim().toUpperCase()===oldU.toUpperCase(); }).length;
         if(otros>0 && confirm('Cambiaste el cliente de "'+oldU+'" a "'+newU+'".\n\n¿Aplicar el nuevo nombre a los otros '+otros+' trabajo(s) de "'+oldU+'" también?')){
-          sb.from('eventos').update({ubicacion:newU}).ilike('ubicacion',oldU).then(function(r2){ if(r2.error){ alert('Se guardó este, pero no se pudieron actualizar los demás: '+r2.error.message); } formModal.classList.remove('show'); cargarEventos(render); });
+          sb.from('eventos').update({ubicacion:newU}).ilike('ubicacion',oldU).then(function(r2){ if(r2.error){ alert('Se guardó este, pero no se pudieron actualizar los demás: '+r2.error.message); } cerrarYObs(_ids); });
           return;
         }
       }
-      formModal.classList.remove('show'); cargarEventos(render);
+      cerrarYObs(_ids);
     });
   });
   // Calcula las fechas de una serie según tipo, separación (cada) y nº de veces
@@ -852,7 +1032,7 @@
   function eliminarSerie(serie){ if(!sb) return; sb.from('eventos').delete().eq('serie_id',serie).then(function(r){ if(r.error){ alert('No se pudo eliminar la serie.'); return; } formModal.classList.remove('show'); modal.classList.remove('show'); cargarEventos(render); }); }
 
   document.getElementById('add').addEventListener('click',function(){
-    if(!authed){ return; }
+    if(!puedeEditar){ return; }
     abrirForm(null);
   });
 
