@@ -1823,6 +1823,9 @@
   .fin-ia-res small{color:var(--muted);}
   .fin-ia-chk{display:inline-block;font:700 10.5px var(--font);padding:1px 7px;border-radius:99px;border:1px solid currentColor;margin:2px 2px 0 0;}
   .fin-ia-chk.ok{color:#15803d;} .fin-ia-chk.warn{color:#c2410c;} .fin-ia-chk.bad{color:#d7262e;}
+  .fin-ia-spin{display:inline-block;width:12px;height:12px;border:2px solid var(--orange);border-right-color:transparent;border-radius:99px;margin-right:7px;vertical-align:-1px;animation:fin-gira .8s linear infinite;}
+  @keyframes fin-gira{to{transform:rotate(360deg);}}
+  @media (prefers-reduced-motion: reduce){ .fin-ia-spin{animation:none;} }
   @media(max-width:640px){ .fin-sem summary,.fin-sem .sumh{grid-template-columns:1.3fr 1fr 1fr;} .fin-sem summary>span:nth-child(2),.fin-sem summary>span:nth-child(3),.fin-sem .sumh>span:nth-child(2),.fin-sem .sumh>span:nth-child(3){display:none;} .fin-er .fin-er-r{grid-template-columns:1fr auto;} .fin-er .fin-er-r em{display:none;} }
   .cos-tbl td.shr{min-width:110px;}
   .cos-shr{display:flex;align-items:center;gap:7px;justify-content:flex-end;}
@@ -9700,7 +9703,7 @@
     if(onDel) $('fin-frm-del').addEventListener('click',onDel);
     return f;
   }
-  function finCerrarForm(){ $('fin-sheet').classList.remove('show'); FIN.pend=[]; FIN.ia=null; }
+  function finCerrarForm(){ $('fin-sheet').classList.remove('show'); FIN.pend=[]; FIN.ia=null; FIN.onFotos=null; }
 
   // ---------- Leer el documento con IA (beta: función leer-documento, Gemini en el servidor) ----------
   var FIN_IA_BETA=['enzo.castro@innovaservi.com','enzo.castro@innovaservi.cl'];
@@ -9714,34 +9717,64 @@
     if(regId) finAdjDe('registro_id',regId).filter(function(a){ return a.tipo==='image'; }).forEach(function(a){ L.push(fetch(a.url).then(function(r){ return r.ok?r.blob():null; }, function(){ return null; })); });
     return Promise.all(L).then(function(bs){ return bs.filter(Boolean).slice(0,4); });
   }
-  function finIALeer(f, regId){
-    var out=$('fin-ia-res'), btn=$('fin-ia-btn'); if(!out||!btn) return;
-    btn.disabled=true; out.className='fin-ia-res'; out.textContent='Preparando fotos…';
-    finIAFotos(regId).then(function(bs){
-      if(!bs.length){ throw new Error('Primero agrega la foto del documento (botón "+ Foto o archivo").'); }
-      out.textContent='Leyendo con IA… (unos segundos)';
+  // Lee el documento al agregar la foto (sin botón). modo: compra · venta · pago · sindoc. aplicar(datos, form) llena los campos y devuelve el resumen.
+  var FIN_IA_TIPOS=['Luz','Agua','Arriendo','Viático','Colación','Peaje','Estacionamiento','Combustible','Otro'];
+  var FIN_IA_MEDIOS=['transferencia','efectivo','debito','credito','cheque','otro'];
+  function finIANum(v){ v=String(v==null?'':v).replace(/[^\d-]/g,''); return v===''||v==='-'?null:parseInt(v,10); }
+  function finIACaja(){ return finIA()?'<div class="fin-ia" id="fin-ia"><div class="fin-ia-res" id="fin-ia-res">Al agregar la foto, la IA lee el documento y llena los datos <span class="fin-ia-tag">beta</span></div></div>':''; }
+  function finIAAuto(f, modo){
+    if(!finIA()) return;
+    var tok=0;
+    FIN.onFotos=function(){ if(!FIN.pend.some(function(x){ return /^image\//.test(x.type||''); })) return; var t=++tok; finIALeer(f, modo, function(){ return t===tok; }); };
+  }
+  function finIALeer(f, modo, vigente){
+    var out=$('fin-ia-res'); if(!out) return;
+    out.className='fin-ia-res'; out.innerHTML='<span class="fin-ia-spin"></span>Leyendo el documento con IA…';
+    var t0=Date.now();
+    finIAFotos(null).then(function(bs){
       return Promise.all(bs.map(function(b){ return new Promise(function(ok){ finAdjPreparar(b, ok); }).then(function(g){ return finBlobB64(g).then(function(d){ return {mime:(g.type&&/jpeg|png|webp/.test(g.type))?g.type:'image/jpeg', data:d}; }); }); }));
     }).then(function(imgs){
-      return sb.functions.invoke('leer-documento',{body:{images:imgs}}).then(function(r){
+      return sb.functions.invoke('leer-documento',{body:{modo:modo, images:imgs}}).then(function(r){
         if(r.error){ return (r.error.context&&r.error.context.json?r.error.context.json():Promise.resolve(null)).then(function(j){ throw new Error((j&&j.error)||r.error.message||'No se pudo leer'); }, function(){ throw new Error(r.error.message||'No se pudo leer'); }); }
         return r.data;
       });
     }).then(function(res){
-      var d=(res&&res.datos)||{}, n=function(v){ v=String(v==null?'':v).replace(/[^\d-]/g,''); return v===''||v==='-'?null:parseInt(v,10); };
-      var tot=n(d.total), neto=n(d.neto), iva=n(d.iva), otros=n(d.otros)||0, el=f.elements, cambia=function(k,v){ if(el[k] && v!=null && v!=='') el[k].value=v; };
-      cambia('fecha', /^\d{4}-\d{2}-\d{2}$/.test(d.fecha||'')?d.fecha:null);
-      cambia('doc_tipo', FIN_TD_DOC[d.tipo]);
-      cambia('tercero', d.razon); cambia('tercero_rut', d.rut); cambia('doc_numero', d.folio); cambia('monto_total', tot);
+      if(vigente && !vigente()) return;   // llegó otra foto mientras leía: vale la lectura más nueva
+      if(!f.isConnected) return;          // se cerró el formulario
+      var d=(res&&res.datos)||{}, resumen=finIAAplicar(modo, d, f.elements);
+      out.innerHTML='<b>Leído en '+Math.round((Date.now()-t0)/100)/10+' s.</b> Revisa y corrige antes de guardar. '+resumen+(d.observaciones?'<br><small>'+esc(d.observaciones)+'</small>':'');
+    }).catch(function(e){ if(vigente && !vigente()) return; out.className='fin-ia-res err'; out.textContent=((e&&e.message)||'No se pudo leer')+'. Completa los datos a mano.'; });
+  }
+  function finIAAplicar(modo, d, el){
+    var pon=function(k,v){ if(el[k] && v!=null && v!=='') el[k].value=v; }, chk=[], tag=function(c){ return '<span class="fin-ia-chk '+c[0]+'">'+esc(c[1])+'</span>'; };
+    var fecha=/^\d{4}-\d{2}-\d{2}$/.test(d.fecha||'')?d.fecha:null;
+    pon('fecha', fecha); if(!fecha) chk.push(['warn','Sin fecha']);
+    if(modo==='compra'||modo==='venta'){
+      var tot=finIANum(d.total), neto=finIANum(d.neto), iva=finIANum(d.iva), otros=finIANum(d.otros)||0;
+      pon('doc_tipo', FIN_TD_DOC[d.tipo]); pon('tercero', d.razon); pon('tercero_rut', d.rut); pon('doc_numero', d.folio); pon('monto_total', tot);
       var it=(Array.isArray(d.items)&&d.items[0]&&d.items[0].descripcion)||'';
       if(el.concepto && !el.concepto.value.trim()) el.concepto.value=it?(it+(d.items.length>1?' y '+(d.items.length-1)+' más':'')):(d.razon||'');
-      FIN.ia=(tot!=null && neto!=null && iva!=null)?{total:tot, neto:neto, iva:iva, exento:tot-neto-iva}:null;
-      var chk=[]; if(d.rut) chk.push(finRutOk(d.rut)?['ok','RUT válido']:['bad','RUT con dígito malo']); else chk.push(['warn','Sin RUT']);
+      FIN.ia=(tot!=null && neto!=null && iva!=null)?{total:tot, neto:neto, iva:iva}:null;
+      if(d.rut) chk.push(finRutOk(d.rut)?['ok','RUT válido']:['bad','RUT con dígito malo']); else chk.push(['warn','Sin RUT']);
       if(tot==null) chk.push(['bad','Sin total']); else if(neto!=null&&iva!=null) chk.push(Math.abs(neto+iva+otros-tot)<=2?['ok','Neto + IVA = total']:['bad','Neto + IVA no da el total']);
-      if(!d.folio && d.tipo!==0) chk.push(['warn','Sin folio']); if(!d.fecha) chk.push(['warn','Sin fecha']);
-      out.innerHTML='<b>Leído en '+Math.round(((res&&res.ms)||0)/100)/10+' s.</b> Revisa y corrige antes de guardar. '+chk.map(function(c){ return '<span class="fin-ia-chk '+c[0]+'">'+esc(c[1])+'</span>'; }).join(' ')+
-        (neto!=null?'<br><small>Neto '+fmtMoney(neto)+' · IVA '+fmtMoney(iva)+(otros?' · otros '+fmtMoney(otros):'')+' · total '+fmtMoney(tot)+'</small>':'')+(d.observaciones?'<br><small>'+esc(d.observaciones)+'</small>':'');
-    }).catch(function(e){ out.className='fin-ia-res err'; out.textContent=(e&&e.message)||'No se pudo leer.'; })
-      .then(function(){ btn.disabled=false; });
+      if(!d.folio && d.tipo!==0) chk.push(['warn','Sin N° de documento']);
+      return chk.map(tag).join(' ')+(neto!=null?'<br><small>Neto '+fmtMoney(neto)+' · IVA '+fmtMoney(iva)+(otros?' · otros '+fmtMoney(otros):'')+' · total '+fmtMoney(tot)+'</small>':'');
+    }
+    if(modo==='pago'){
+      var m=finIANum(d.monto); pon('monto', m); if(m==null) chk.push(['bad','Sin monto']);
+      var med=String(d.medio||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''); if(FIN_IA_MEDIOS.indexOf(med)>=0) pon('medio', med);
+      var rn=function(x){ return String(x||'').replace(/[^\dkK]/g,'').toUpperCase(); }, pv=d.rut_destinatario?FIN.provs.filter(function(p){ return rn(p.rut)===rn(d.rut_destinatario); })[0]:null;
+      var nom=pv?pv.nombre:(d.destinatario||''); if(nom && el.proveedor_txt){ el.proveedor_txt.value=nom; el.proveedor_txt.dispatchEvent(new Event('change')); }
+      if(!nom) chk.push(['warn','Sin destinatario']); else chk.push(pv?['ok','Proveedor reconocido']:['warn','Proveedor nuevo: revisa el nombre']);
+      var extra=[d.banco?('Banco '+d.banco):'', d.operacion?('Op. N° '+d.operacion):'', d.glosa||''].filter(Boolean).join(' · ');
+      if(extra && el.notas && !el.notas.value.trim()) el.notas.value=extra;
+      return chk.map(tag).join(' ');
+    }
+    // sindoc
+    var mm=finIANum(d.monto); pon('monto', mm); if(mm==null) chk.push(['bad','Sin monto']);
+    pon('tercero', d.a_quien); pon('detalle', d.detalle);
+    if(FIN_IA_TIPOS.indexOf(d.tipo_gasto)>=0) pon('tipo_g', d.tipo_gasto);
+    return chk.map(tag).join(' ');
   }
 
   // ---------- Archivos adjuntos (privados: carpeta finanzas/<id>; se firman al mostrarlos) ----------
@@ -9784,7 +9817,7 @@
     var pinta=function(){ box.innerHTML=finAdjCaja(campo,id); finAdjBind(campo,id); };
     var inp=$('fin-adj-in'); if(inp) inp.addEventListener('change',function(){ var fs=[].slice.call(this.files||[]); this.value='';
       var gr=fs.filter(function(f){ return f.size>FIN_ADJ_MAX; }); if(gr.length) toast(gr.length+' archivo(s) pesan más de 25 MB y no se agregaron');
-      FIN.pend=FIN.pend.concat(fs.filter(function(f){ return f.size<=FIN_ADJ_MAX; })); pinta(); });
+      FIN.pend=FIN.pend.concat(fs.filter(function(f){ return f.size<=FIN_ADJ_MAX; })); pinta(); if(FIN.onFotos) FIN.onFotos(); });
     box.querySelectorAll('[data-pendx]').forEach(function(x){ x.onclick=function(){ FIN.pend.splice(+x.dataset.pendx,1); pinta(); }; });
     box.querySelectorAll('[data-adjver]').forEach(function(x){ x.onclick=function(){ var a=FIN.adj.filter(function(y){ return y.id===x.dataset.adjver; })[0]; if(a) window.open(a.url,'_blank'); }; });
     box.querySelectorAll('[data-adjdel]').forEach(function(x){ x.onclick=function(){ var a=FIN.adj.filter(function(y){ return y.id===x.dataset.adjdel; })[0]; if(!a||!confirm('¿Quitar «'+a.nombre+'»?')) return;
@@ -9845,7 +9878,7 @@
     // Pagos (comprobantes) de este documento y, si el proveedor factura al mes, pagos sin factura para asociar
     var extra='<div id="fin-adj-box">'+finAdjCaja('registro_id', r&&r.id)+'</div>';
     FIN.ia=null;
-    if(!ing && !bloqueado && finIA()) extra+='<div class="fin-ia"><button type="button" class="btn small" id="fin-ia-btn">Leer con IA <span class="fin-ia-tag">beta</span></button><div class="fin-ia-res" id="fin-ia-res">Agrega la foto y toca <b>Leer con IA</b>: llena fecha, documento, proveedor, RUT, N° y total.</div></div>';
+    if(!bloqueado && finIA()) extra+=finIACaja();
     if(r && !ing){
       var ls=FIN.links.filter(function(l){ return l.registro_id===r.id; });
       var sueltos=rev&&r.proveedor_id?FIN.pagos.filter(function(p){ return p.proveedor_id===r.proveedor_id && p.estado!=='rechazado' && !finLinksPago(p.id).length; }):[];
@@ -9884,7 +9917,7 @@
       sb.from('fin_registros').update({deleted_at:new Date().toISOString()}).eq('id',r.id).then(function(x){ if(x.error){ toast('No se pudo: '+x.error.message); return; } finCerrarForm(); toast('Eliminado'); cargarFin(); }); }:null, nota, extra);
     $('fin-sheet-body').insertAdjacentHTML('beforeend', finDatalists());
     finAdjBind('registro_id', r&&r.id);
-    if($('fin-ia-btn')) $('fin-ia-btn').onclick=function(){ finIALeer(f, r&&r.id); };
+    if(!bloqueado) finIAAuto(f, ing?'venta':'compra');
     if(bloqueado) f.querySelectorAll('input,select,textarea').forEach(function(x){ if(x.id!=='fin-adj-in') x.disabled=true; });
   }
 
@@ -9910,9 +9943,10 @@
         neto:o.monto, iva:0, exento:0, total:o.monto, categoria_id:cat?cat.id:null, centro_id:o.centro_id, notas:o.notas, estado:'pendiente', fecha_pago:o.al_comprar?o.fecha:null };
       if(rev && row.categoria_id && row.centro_id) row.estado='listo';
       finGuardarCon('fin_registros', null, row, 'registro_id', 'Gasto sin documento guardado');
-    }, null, 'Queda marcado como <b>no declarable</b>: es costo real, pero la contadora lo ve aparte. Si hay foto o vale, adjúntalo.', '<div id="fin-adj-box">'+finAdjCaja('registro_id', null)+'</div>');
+    }, null, 'Queda marcado como <b>no declarable</b>: es costo real, pero la contadora lo ve aparte. Si hay foto o vale, adjúntalo.', '<div id="fin-adj-box">'+finAdjCaja('registro_id', null)+'</div>'+finIACaja());
     $('fin-sheet-body').insertAdjacentHTML('beforeend', finDatalists());
     finAdjBind('registro_id', null);
+    finIAAuto($('fin-frm'), 'sindoc');
   }
 
   // ---------- Subir documento ----------
@@ -9993,7 +10027,7 @@
         (p.estado!=='por_validar'?'<button type="button" class="btn ghost small" id="fin-pago-re">Volver a por validar</button>':'')+
         '<small class="note" style="margin:0">'+(p.validado_por?'Validado por '+esc(p.validado_por)+' el '+fechaCorta(String(p.validado_en).slice(0,10)):'')+(p.motivo_rechazo?' Rechazo: '+esc(p.motivo_rechazo):'')+'</small></div>';
     }
-    var extra='<div id="fin-adj-box">'+finAdjCaja('pago_id', p&&p.id)+'</div><div class="fin-h3">Documentos que paga</div><div id="fin-cubre">'+lista(p&&p.proveedor_id)+'</div>'+acc;
+    var extra='<div id="fin-adj-box">'+finAdjCaja('pago_id', p&&p.id)+'</div>'+(puedeEditar?finIACaja():'')+'<div class="fin-h3">Documentos que paga</div><div id="fin-cubre">'+lista(p&&p.proveedor_id)+'</div>'+acc;
     var f=finForm(p?'Comprobante de pago · '+finPagoA(p):'Nuevo comprobante de pago', campos, v, function(o){
       if(!puedeEditar){ var pf=FIN.pend.slice(); if(pf.length) finAdjSubir('pago_id', p.id, pf).then(function(){ finCerrarForm(); toast('Comprobante agregado'); cargarFin(); }); else finCerrarForm(); return; }
       if(!(o.monto>0)){ toast('El monto debe ser mayor a 0'); return; }
@@ -10016,6 +10050,7 @@
       p?'':'Sube la foto o PDF del comprobante y marca las facturas que paga. Queda <b>por validar</b> hasta que Enzo o Cristopher lo revisen contra la cartola.', extra);
     $('fin-sheet-body').insertAdjacentHTML('beforeend', finDatalists());
     finAdjBind('pago_id', p&&p.id);
+    if(puedeEditar) finIAAuto(f, 'pago');
     if(!puedeEditar) f.querySelectorAll('input,select,textarea').forEach(function(x){ if(x.id!=='fin-adj-in') x.disabled=true; });
     var pt=f.elements.proveedor_txt; if(pt) pt.addEventListener('change',function(){ var pv=finProvPorNombre(pt.value); $('fin-cubre').innerHTML=lista(pv&&pv.id); });
     var est=function(e, extraRow){ var row=Object.assign({estado:e}, extraRow||{}); if(e!=='rechazado') row.motivo_rechazo=null;

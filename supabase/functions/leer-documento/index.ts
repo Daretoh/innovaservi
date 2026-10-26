@@ -1,7 +1,8 @@
 // Lee una boleta o factura con IA (Gemini) y devuelve sus datos en JSON.
 // Solo para quien tiene acceso a Finanzas (fin_carga()). La clave va como secreto GEMINI_API_KEY
 // (Supabase → Edge Functions → Secrets); nunca en el navegador. Modelo: GEMINI_MODEL (opcional).
-// Entrada: { images: [{ mime: 'image/jpeg', data: '<base64>' }] } — 1 a 4 fotos del MISMO documento.
+// Entrada: { modo, images: [{ mime: 'image/jpeg', data: '<base64>' }] } — 1 a 4 fotos del MISMO documento.
+// modo: compra (boleta o factura de un proveedor) · venta (factura que emite Innova) · pago (comprobante de transferencia o pago) · sindoc (vale, ticket o papel sin documento tributario).
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, apikey, content-type, x-client-info',
@@ -10,6 +11,12 @@ const CORS = {
 function json(obj: unknown, status = 200) {
   return new Response(JSON.stringify(obj), { status, headers: { ...CORS, 'content-type': 'application/json' } });
 }
+const COMUN = 'Eres el lector de documentos de una empresa chilena (INNOVACION Y SERVICIOS SPA, RUT 77.647.955-1). Las imágenes son fotos de UN solo documento, a veces en varias partes. Lee solo lo que se ve: si un dato no aparece o no se lee con seguridad, ponlo en null y dilo en "observaciones". No inventes. Montos en pesos chilenos como enteros, sin puntos. Fechas AAAA-MM-DD. Responde SOLO un objeto JSON.';
+const PROMPTS: Record<string, string> = {
+  venta: COMUN + ' Es una factura o boleta EMITIDA por Innova: "razon" y "rut" son del CLIENTE (receptor, campo Señor(es)), nunca de Innova. Forma: {"tipo":33,"folio":"123","fecha":"AAAA-MM-DD","rut":"76.123.456-7","razon":"Cliente S.A.","neto":1000,"iva":190,"otros":0,"total":1190,"items":[{"descripcion":"…","cantidad":1,"total":1000}],"observaciones":"…"} (tipo: 33 factura, 34 exenta, 39 boleta, 61 nota de crédito).',
+  pago: COMUN + ' Es un COMPROBANTE DE PAGO (transferencia, depósito, voucher de tarjeta o recibo). Forma: {"fecha":"AAAA-MM-DD","monto":10000,"medio":"transferencia|efectivo|debito|credito|cheque|otro","destinatario":"nombre de quien recibe el pago","rut_destinatario":"76.123.456-7","banco":"…","operacion":"N° de operación","glosa":"mensaje o asunto","observaciones":"…"}.',
+  sindoc: COMUN + ' Es un papel SIN documento tributario (vale, ticket, recibo simple, cuenta de luz o agua, peaje sin boleta). Forma: {"fecha":"AAAA-MM-DD","monto":10000,"a_quien":"a quién se le pagó","detalle":"qué se pagó, corto","tipo_gasto":"Luz|Agua|Arriendo|Viático|Colación|Peaje|Estacionamiento|Combustible|Otro","observaciones":"…"}.',
+};
 const PROMPT = [
   'Eres el lector de documentos tributarios de una empresa chilena (INNOVACION Y SERVICIOS SPA, RUT 77.647.955-1, es el RECEPTOR: nunca es el emisor).',
   'Las imágenes son fotos de UN solo documento (boleta, factura, nota de crédito, guía o comprobante de peaje/estacionamiento), a veces en varias partes.',
@@ -35,7 +42,7 @@ Deno.serve(async (req: Request) => {
   if (!KEY) return json({ error: 'Falta configurar la clave de Gemini (secreto GEMINI_API_KEY en Supabase)' }, 503);
   const MODEL = Deno.env.get('GEMINI_MODEL') || 'gemini-3.8-flash';
 
-  let body: { images?: { mime?: string; data?: string }[] };
+  let body: { modo?: string; images?: { mime?: string; data?: string }[] };
   try { body = await req.json(); } catch { return json({ error: 'Datos inválidos' }, 400); }
   const imgs = (body.images || []).filter((x) => x && typeof x.data === 'string' && /^image\/(jpeg|png|webp)$/.test(x.mime || ''));
   if (!imgs.length) return json({ error: 'Envía al menos una foto (JPG, PNG o WebP)' }, 400);
@@ -48,7 +55,7 @@ Deno.serve(async (req: Request) => {
     method: 'POST',
     headers: { 'content-type': 'application/json', 'x-goog-api-key': KEY },
     body: JSON.stringify({
-      contents: [{ role: 'user', parts: [{ text: PROMPT }, ...imgs.map((x) => ({ inline_data: { mime_type: x.mime, data: x.data } }))] }],
+      contents: [{ role: 'user', parts: [{ text: PROMPTS[body.modo || ''] || PROMPT }, ...imgs.map((x) => ({ inline_data: { mime_type: x.mime, data: x.data } }))] }],
       generationConfig: { responseMimeType: 'application/json', temperature: 0 },
     }),
   });
