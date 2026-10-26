@@ -1810,6 +1810,11 @@
   .fin-adj-btn{position:relative;overflow:hidden;cursor:pointer;}
   .fin-adj-btn input{position:absolute;inset:0;opacity:0;cursor:pointer;}
   label.fin-chk.fin-mv{display:flex;padding-left:4px;cursor:pointer;}
+  .fin-tbl td.nm:has(.fin-mini){position:relative;padding-left:60px !important;min-height:52px;}
+  .fin-mini{position:absolute;left:16px;top:9px;width:34px;height:34px;border-radius:8px;overflow:hidden;border:1px solid var(--line);background:var(--alt);display:flex;align-items:center;justify-content:center;color:var(--muted);cursor:zoom-in;}
+  .fin-mini img{width:100%;height:100%;object-fit:cover;}
+  .fin-mini i{position:absolute;right:1px;bottom:1px;font:800 9px/1 var(--font);font-style:normal;background:rgba(12,15,46,.75);color:#fff;border-radius:6px;padding:2px 3px;}
+  .fin-mini.clip:hover{color:var(--orange);}
   @media(max-width:640px){ .fin-sem summary,.fin-sem .sumh{grid-template-columns:1.3fr 1fr 1fr;} .fin-sem summary>span:nth-child(2),.fin-sem summary>span:nth-child(3),.fin-sem .sumh>span:nth-child(2),.fin-sem .sumh>span:nth-child(3){display:none;} .fin-er .fin-er-r{grid-template-columns:1fr auto;} .fin-er .fin-er-r em{display:none;} }
   .cos-tbl td.shr{min-width:110px;}
   .cos-shr{display:flex;align-items:center;gap:7px;justify-content:flex-end;}
@@ -9637,7 +9642,7 @@
     var filas=lista.length?lista.map(function(r){ var c=finCat(r.categoria_id), ce=finCen(r.centro_id), venc=finVencido(r);
       var det=[c?c.nombre:'<em class="neg">sin categoría</em>', r.tipo==='gasto'?(ce?ce.nombre:'<em class="neg">sin centro</em>'):(ce?ce.nombre:''), r.faena?esc(r.faena):'', (FIN_DOCS.filter(function(d){ return d[0]===r.doc_tipo; })[0]||[,''])[1]+(r.doc_numero?' '+esc(r.doc_numero):''), r.recurrente_id?'gasto fijo':'', r.costos_doc_id?'lector':'', r.declarable===false?'sin documento':'', finAdjDe('registro_id',r.id).length?finAdjDe('registro_id',r.id).length+' archivo(s)':((r.tipo==='gasto'&&r.doc_tipo!=='sin'&&!r.recurrente_id)?'<em class="neg">sin respaldo</em>':'')].filter(Boolean).join(' · ');
       var pago=r.fecha_pago?('<small>'+(r.tipo==='ingreso'?'cobrada ':'pagado ')+fechaCorta(r.fecha_pago)+'</small>'):('<small class="'+(venc?'neg':'')+'">'+(venc?'venció ':'vence ')+fechaCorta(finEsperada(r))+'</small>');
-      return '<tr class="fin-row" data-id="'+r.id+'"><td class="nm"><b>'+esc(r.concepto)+'</b><small>'+(r.tercero?esc(r.tercero)+' · ':'')+det+'</small></td><td>'+fechaCorta(r.fecha)+'</td><td class="'+(r.tipo==='ingreso'?'pos':'')+'">'+(r.tipo==='ingreso'?'+':'')+fmtMoney(finTot(r))+'</td><td>'+finChip(r)+pago+'</td></tr>'; }).join('')
+      return '<tr class="fin-row" data-id="'+r.id+'"><td class="nm">'+finMini(r.id)+'<b>'+esc(r.concepto)+'</b><small>'+(r.tercero?esc(r.tercero)+' · ':'')+det+'</small></td><td>'+fechaCorta(r.fecha)+'</td><td class="'+(r.tipo==='ingreso'?'pos':'')+'">'+(r.tipo==='ingreso'?'+':'')+fmtMoney(finTot(r))+'</td><td>'+finChip(r)+pago+'</td></tr>'; }).join('')
       :'<tr><td colspan="4" class="empty" style="padding:30px">'+(F.abiertos?'No hay nada por pagar ni por cobrar.':'No hay registros en '+esc(finMesLbl(mes))+' con este filtro.')+'</td></tr>';
     var pie=(lista.length&&finRevisa())?'<div class="fin-pie">'+lista.length+' registros · ingresos '+fmtMoney(ing.reduce(function(s,r){ return s+finTot(r); },0))+' · gastos '+fmtMoney(gas.reduce(function(s,r){ return s+finTot(r); },0))+' (montos con IVA)</div>':'';
     return k+bar+'<div class="cos-card" style="padding:0"><div class="cos-scroll"><table class="cos-tbl fin-tbl"><thead><tr><th>Concepto</th><th>Fecha</th><th>Total</th><th>Estado</th></tr></thead><tbody>'+filas+'</tbody></table></div></div>'+pie+
@@ -9670,6 +9675,11 @@
   function finCerrarForm(){ $('fin-sheet').classList.remove('show'); FIN.pend=[]; }
 
   // ---------- Archivos adjuntos (privados: carpeta finanzas/<id>; se firman al mostrarlos) ----------
+  // Miniatura (foto) o clip con la cantidad, al inicio de cada fila; clic abre el archivo
+  function finMini(regId){ var L=finAdjDe('registro_id',regId); if(!L.length) return '';
+    var f=L.filter(function(a){ return a.tipo==='image'; })[0], n=L.length>1?'<i>'+L.length+'</i>':'';
+    return f?'<span class="fin-mini" data-adjver="'+f.id+'" title="Ver respaldo"><img src="'+enc(f.url)+'" alt="" loading="lazy">'+n+'</span>'
+      :'<span class="fin-mini clip" data-adjver="'+L[0].id+'" title="Ver respaldo"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>'+n+'</span>'; }
   function finAdjDe(campo, id){ return FIN.adj.filter(function(a){ return a[campo]===id; }); }
   function finAdjPreparar(file, cb){   // fotos a 1600 px (como Multimedia); PDF y otros tal cual
     if((file.type||'').indexOf('image/')!==0 || /gif|svg/i.test(file.type)){ cb(file); return; }
@@ -9782,6 +9792,8 @@
       var row={ tipo:tipo, fecha:o.fecha, doc_tipo:o.doc_tipo, concepto:o.concepto, tercero:o.tercero, tercero_rut:o.tercero_rut||(pv&&pv.rut)||null, doc_numero:o.doc_numero,
         neto:neto, iva:iva, exento:tot-neto-iva, total:tot, categoria_id:o.categoria_id, centro_id:o.centro_id, faena:o.faena, notas:o.notas };
       if(pv) row.proveedor_id=pv.id;
+      if(!r){ var rn=function(x){ return String(x||'').replace(/[^0-9kK]/g,'').toUpperCase(); }, dup=finActivos().filter(function(x){ return x.tipo===tipo && ((row.doc_numero && x.doc_numero && String(x.doc_numero).trim()===String(row.doc_numero).trim() && (!row.tercero_rut || !x.tercero_rut || rn(x.tercero_rut)===rn(row.tercero_rut))) || ((x.tercero||'').trim().toLowerCase()===(row.tercero||'').trim().toLowerCase() && +x.total===tot && x.fecha===row.fecha)); })[0];
+        if(dup && !confirm('Ya existe un documento parecido: '+(dup.tercero||dup.concepto)+' · '+fmtMoney(dup.total)+' · '+fechaCorta(dup.fecha)+(dup.doc_numero?' · N° '+dup.doc_numero:'')+'. ¿Guardar igual?')) return; }
       if(rev){ row.estado=o.estado; row.vence=o.vence; row.fecha_pago=o.fecha_pago; row.cuenta_id=o.cuenta_id; }
       else { row.estado='pendiente'; if(ing) row.vence=o.vence; }
       if(!rev) row.fecha_pago=(o.pago_c==='si')?(o.fecha_pago||o.fecha):null;
@@ -9847,7 +9859,7 @@
       '<div class="cos-kpi'+(porVal?' warn':'')+'"><div class="l">Pagos por validar</div><div class="v">'+porVal+'</div><div class="s">comprobantes subidos</div></div>'+
       '<div class="cos-kpi'+(sinResp?' warn':'')+'"><div class="l">Sin respaldo</div><div class="v">'+sinResp+'</div><div class="s">gastos sin foto ni PDF</div></div></div>';
     h+='<div class="cos-card" style="padding:0"><h3 style="padding:14px 16px 4px">Lo último que subí</h3><div class="cos-scroll"><table class="cos-tbl fin-tbl"><tbody>'+
-      (mios.length?mios.map(function(r){ var n=finAdjDe('registro_id',r.id).length; return '<tr class="fin-row" data-id="'+r.id+'"><td class="nm"><b>'+esc(r.concepto)+'</b><small>'+(r.tercero?esc(r.tercero)+' · ':'')+fechaCorta(r.fecha)+' · '+(n?n+' archivo'+(n>1?'s':''):'<em class="neg">sin respaldo</em>')+'</small></td><td>'+fmtMoney(finTot(r))+'</td><td>'+finChip(r)+'</td></tr>'; }).join('')
+      (mios.length?mios.map(function(r){ var n=finAdjDe('registro_id',r.id).length; return '<tr class="fin-row" data-id="'+r.id+'"><td class="nm">'+finMini(r.id)+'<b>'+esc(r.concepto)+'</b><small>'+(r.tercero?esc(r.tercero)+' · ':'')+fechaCorta(r.fecha)+' · '+(n?n+' archivo'+(n>1?'s':''):'<em class="neg">sin respaldo</em>')+'</small></td><td>'+fmtMoney(finTot(r))+'</td><td>'+finChip(r)+'</td></tr>'; }).join('')
         :'<tr><td class="empty" style="padding:22px">Todavía no has subido documentos.</td></tr>')+
       misPagos.map(function(p){ return '<tr class="fin-row" data-pago="'+p.id+'"><td class="nm"><b>Pago · '+esc(finPagoA(p))+'</b><small>'+fechaCorta(p.fecha)+' · '+esc(FIN_MEDIOS[p.medio]||p.medio)+'</small></td><td>'+fmtMoney(p.monto)+'</td><td>'+finPagoChip(p)+'</td></tr>'; }).join('')+
       '</tbody></table></div></div><p class="note">Regla: <b>si no está en el sistema, no existe</b>. Sin foto o PDF no hay reembolso ni pago. La boleta en papel igual va a la bandeja de la oficina.</p>';
@@ -10150,6 +10162,7 @@
     var fe=$('fin-fest'); if(fe) fe.onchange=function(){ FIN.f.estado=fe.value; pintarFin(); };
     var fa=$('fin-fab'); if(fa) fa.onchange=function(){ FIN.f.abiertos=fa.checked; pintarFin(); };
     var fq=$('fin-fq'); if(fq) fq.oninput=function(){ FIN.f.q=fq.value; clearTimeout(fq._t); fq._t=setTimeout(function(){ var pos=fq.selectionStart; pintarFin(); var n=$('fin-fq'); if(n){ n.focus(); try{ n.setSelectionRange(pos,pos); }catch(_){} } },250); };
+    b.querySelectorAll('.fin-mini[data-adjver]').forEach(function(x){ x.onclick=function(ev){ ev.stopPropagation(); var a=FIN.adj.filter(function(y){ return y.id===x.dataset.adjver; })[0]; if(a) window.open(a.url,'_blank'); }; });
     b.querySelectorAll('tr[data-id]').forEach(function(x){ x.onclick=function(){ finAbrirRegistro(x.dataset.id); }; });
     b.querySelectorAll('tr[data-rec]').forEach(function(x){ x.onclick=function(){ finAbrirFijo(x.dataset.rec); }; });
     b.querySelectorAll('tr[data-cta]').forEach(function(x){ x.onclick=function(ev){ if(ev.target.closest('[data-saldo]')) return; finAbrirCuenta(x.dataset.cta); }; });
