@@ -51,18 +51,56 @@ Deno.serve(async (req: Request) => {
   if (bytes > 12 * 1024 * 1024) return json({ error: 'Las fotos pesan demasiado (máx. 12 MB en total)' }, 413);
 
   const t0 = Date.now();
-  const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(MODEL)}:generateContent`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json', 'x-goog-api-key': KEY },
-    body: JSON.stringify({
-      contents: [{ role: 'user', parts: [{ text: PROMPTS[body.modo || ''] || PROMPT }, ...imgs.map((x) => ({ inline_data: { mime_type: x.mime, data: x.data } }))] }],
-      generationConfig: { responseMimeType: 'application/json', temperature: 0 },
-    }),
-  });
-  const txt = await r.text();
-  if (!r.ok) {
-    const lim = r.status === 429;
-    return json({ error: lim ? 'Se alcanzó el límite gratis de Gemini por ahora. Prueba en un rato.' : 'Gemini no respondió (' + r.status + ')', detalle: txt.slice(0, 300) }, lim ? 429 : 502);
+  const parts = [{ text: PROMPTS[body.modo || ''] || PROMPT }, ...imgs.map((x) => ({ inline_data: { mime_type: x.mime, data: x.data } }))];
+  // Una llamada a un modelo. Gemini 3 piensa a fondo por defecto (más de 2 min con fotos): leer un documento no lo necesita.
+  // Cada intento tiene un tope de 40 s, para responder antes de que la plataforma corte la función (150 s).
+  async function llamar(modelo: string, conThinking: boolean): Promise<{ status: number; txt: string }> {
+    const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 40000);
+    try {
+      const gc: Record<string, unknown> = { responseMimeType: 'application/json', temperature: 0 };
+      if (conThinking) gc.thinkingConfig = { thinkingLevel: Deno.env.get('GEMINI_THINKING') || 'low' };
+      const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelo)}:generateContent`, {
+        method: 'POST', signal: ctl.signal,
+        headers: { 'content-type': 'application/json', 'x-goog-api-key': KEY! },
+        body: JSON.stringify({ contents: [{ role: 'user', parts }], generationConfig: gc }),
+      });
+      return { status: r.status, txt: await r.text() };
+    } catch (_e) { return { status: 504, txt: 'tiempo agotado' }; } finally { clearTimeout(timer); }
+  }
+  // Respaldo cuando el modelo está saturado (503/429/504): otros modelos Flash que acepte la clave, del más nuevo al más antiguo
+  async function respaldos(): Promise<string[]> {
+    try {
+      const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=200', { headers: { 'x-goog-api-key': KEY! } });
+      const d = await r.json();
+      return (d.models || [])
+        .filter((m: { name: string; supportedGenerationMethods?: string[] }) => (m.supportedGenerationMethods || []).includes('generateContent'))
+        .map((m: { name: string }) => m.name.replace(/^models\//, ''))
+        // solo los Flash estables (gemini-2.5-flash, gemini-3-flash-lite…): los "preview"/"omni" no tienen cuota gratis
+        .filter((n: string) => n !== MODEL && /^gemini-\d+(\.\d+)?-flash(-lite)?$/.test(n))
+        .sort((a: string, b: string) => b.localeCompare(a, undefined, { numeric: true }))
+        .slice(0, 3);
+    } catch { return []; }
+  }
+  let usado = MODEL, res = await llamar(MODEL, true);
+  if (res.status === 400 && /thinking/i.test(res.txt)) res = await llamar(MODEL, false);   // modelo sin nivel de razonamiento
+  console.log('gemini', MODEL, res.status, Date.now() - t0, 'ms', imgs.length, 'fotos');
+  if ([429, 500, 503, 504].includes(res.status)) {
+    for (const alt of await respaldos()) {
+      if (Date.now() - t0 > 95000) break;
+      let r2 = await llamar(alt, true);
+      if (r2.status === 400 && /thinking/i.test(r2.txt)) r2 = await llamar(alt, false);
+      console.log('gemini respaldo', alt, r2.status, Date.now() - t0, 'ms');
+      if (r2.status === 200) { res = r2; usado = alt; break; }
+    }
+  }
+  const txt = res.txt;
+  if (res.status !== 200) {
+    console.log('gemini error', txt.slice(0, 400));
+    const msg = res.status === 429 ? 'Se alcanzó el límite gratis de Gemini por ahora. Prueba en un rato.'
+      : res.status === 503 ? 'Gemini está saturado en este momento. Prueba en un rato o completa a mano.'
+      : res.status === 504 ? 'Gemini se demoró demasiado. Intenta de nuevo o completa a mano.'
+      : 'Gemini no respondió (' + res.status + ')';
+    return json({ error: msg, detalle: txt.slice(0, 300) }, res.status === 429 ? 429 : 502);
   }
   let out: unknown = null;
   try {
@@ -72,5 +110,5 @@ Deno.serve(async (req: Request) => {
     const m = s.match(/\{[\s\S]*\}/);
     out = JSON.parse(m ? m[0] : s);
   } catch { return json({ error: 'La IA no devolvió datos legibles. Intenta de nuevo.' }, 502); }
-  return json({ ok: true, modelo: MODEL, ms: Date.now() - t0, datos: out });
+  return json({ ok: true, modelo: usado, ms: Date.now() - t0, datos: out });
 });

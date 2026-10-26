@@ -9742,7 +9742,7 @@
       if(vigente && !vigente()) return;   // llegó otra foto mientras leía: vale la lectura más nueva
       if(!f.isConnected) return;          // se cerró el formulario
       var d=(res&&res.datos)||{}, resumen=finIAAplicar(modo, d, f.elements);
-      out.innerHTML='<b>Leído en '+Math.round((Date.now()-t0)/100)/10+' s.</b> Revisa y corrige antes de guardar. '+resumen+(d.observaciones?'<br><small>'+esc(d.observaciones)+'</small>':'');
+      out.innerHTML='<b>Leído por '+esc(/gemini/i.test((res&&res.modelo)||'')?'Gemini ('+res.modelo+')':((res&&res.modelo)||'IA'))+' en '+Math.round((Date.now()-t0)/100)/10+' s.</b> Revisa y corrige antes de guardar. '+resumen+(d.observaciones?'<br><small>'+esc(d.observaciones)+'</small>':'');
     }).catch(function(e){ if(vigente && !vigente()) return; out.className='fin-ia-res err'; out.textContent=((e&&e.message)||'No se pudo leer')+'. Completa los datos a mano.'; });
   }
   function finIAAplicar(modo, d, el){
