@@ -1738,6 +1738,47 @@
   .cos-tbl td.nm b{display:block;color:var(--ink);font-weight:700;}
   .cos-tbl td.nm small{display:inline-flex;align-items:center;gap:5px;font:600 11px var(--font);color:var(--muted);margin-top:2px;}
   .cos-tbl td.cost{color:var(--ink);font-weight:800;}
+  /* Finanzas */
+  .fin-top{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;}
+  .fin-tabs{flex-wrap:wrap;}
+  .fin-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:4px 0 10px;}
+  .fin-bar select{font:600 13px var(--font);padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);}
+  .fin-sp{flex:1;}
+  .fin-h{font:800 14px var(--font);color:var(--ink);margin:10px 0 0;}
+  .fin-chk{display:inline-flex;align-items:center;gap:6px;font:600 12.5px var(--font);color:var(--body);}
+  .fin-chk input[type=number]{font:600 13px var(--font);padding:7px 9px;border:1px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink);}
+  .fin-tbl td{text-align:right;vertical-align:top;}
+  .fin-tbl td small{display:block;font:600 11px var(--font);color:var(--muted);margin-top:2px;white-space:nowrap;}
+  .fin-tbl td.nm small{white-space:normal;}
+  .fin-row{cursor:pointer;} .fin-row:hover td{background:var(--alt);}
+  .fin-off td{opacity:.5;}
+  .fin-chip{display:inline-block;font:800 10.5px var(--font);padding:2px 8px;border-radius:99px;text-transform:uppercase;letter-spacing:.03em;}
+  .fin-chip.pe{background:rgba(255,107,0,.14);color:#c2410c;} .fin-chip.li{background:rgba(37,99,235,.13);color:#1d4ed8;} .fin-chip.ok{background:rgba(22,163,74,.14);color:#15803d;}
+  [data-theme=dark] .fin-chip.pe{color:#fdba74;} [data-theme=dark] .fin-chip.li{color:#93c5fd;} [data-theme=dark] .fin-chip.ok{color:#86efac;}
+  .neg{color:#d7262e !important;} .pos{color:#15803d;} [data-theme=dark] .pos{color:#4ade80;}
+  .cos-kpi.warn{border-color:rgba(255,107,0,.55);background:rgba(255,107,0,.05);}
+  .fin-pie{font:600 12px var(--font);color:var(--muted);margin:6px 4px 10px;}
+  .fin-aviso{background:rgba(255,107,0,.08);border:1px solid rgba(255,107,0,.35);color:var(--ink);border-radius:12px;padding:9px 12px;font:600 12.5px var(--font);margin-bottom:8px;}
+  .fin-er .fin-er-r{display:grid;grid-template-columns:1fr auto 54px;gap:10px;align-items:baseline;padding:7px 2px;border-bottom:1px solid var(--line);font:600 13px var(--font);color:var(--body);}
+  .fin-er .fin-er-r small{display:block;font:500 11px var(--font);color:var(--muted);}
+  .fin-er .fin-er-r b{font-variant-numeric:tabular-nums;color:var(--ink);text-align:right;}
+  .fin-er .fin-er-r em{font:600 11px var(--font);color:var(--muted);font-style:normal;text-align:right;}
+  .fin-er .fin-er-r.sub{padding-left:14px;font-weight:500;} .fin-er .fin-er-r.sub b{font-weight:600;}
+  .fin-er .fin-er-r.tot{font-weight:800;color:var(--ink);} .fin-er .fin-er-r.big b{font-size:17px;}
+  .fin-er .fin-er-r.big.neg b{color:#d7262e;} .fin-er .fin-er-r.warn span{color:#c2410c;}
+  .fin-sem{border-bottom:1px solid var(--line);}
+  .fin-sem summary,.fin-sem .sumh{display:grid;grid-template-columns:minmax(120px,1.4fr) repeat(4,minmax(0,1fr));gap:8px;align-items:center;padding:10px 16px;cursor:pointer;list-style:none;font:600 13px var(--font);color:var(--body);text-align:right;font-variant-numeric:tabular-nums;}
+  .fin-sem summary::-webkit-details-marker{display:none;}
+  .fin-sem .w{text-align:left;color:var(--ink);font-weight:800;} .fin-sem .w small{display:block;font:600 11px var(--font);color:var(--muted);}
+  .fin-sem.cab .sumh{cursor:default;font:800 10.5px var(--font);text-transform:uppercase;letter-spacing:.04em;color:var(--muted);}
+  .fin-sem b{color:var(--ink);} .fin-sem.neg b{color:#d7262e;}
+  .fin-mv{display:flex;justify-content:space-between;gap:10px;padding:5px 16px 5px 28px;font:500 12.5px var(--font);color:var(--body);}
+  .fin-mv:last-child{padding-bottom:12px;}
+  .fin-full{grid-column:1/-1;}
+  .fin-ayuda{display:block;font:500 11px var(--font);color:var(--muted);margin-top:3px;}
+  .fin-acc{display:flex;gap:8px;align-items:center;margin-top:6px;}
+  .fin-del{color:#d7262e !important;}
+  @media(max-width:640px){ .fin-sem summary,.fin-sem .sumh{grid-template-columns:1.3fr 1fr 1fr;} .fin-sem summary>span:nth-child(2),.fin-sem summary>span:nth-child(3),.fin-sem .sumh>span:nth-child(2),.fin-sem .sumh>span:nth-child(3){display:none;} .fin-er .fin-er-r{grid-template-columns:1fr auto;} .fin-er .fin-er-r em{display:none;} }
   .cos-tbl td.shr{min-width:110px;}
   .cos-shr{display:flex;align-items:center;gap:7px;justify-content:flex-end;}
   .cos-shr i{display:block;height:6px;border-radius:3px;background:var(--orange);opacity:.85;}
@@ -1819,6 +1860,9 @@
       <div class="sbar-grp sb-admin">Costos</div>
       <button class="sb-item sb-admin" data-v="v-costos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6" rx=".5"/><rect x="12" y="8" width="3" height="10" rx=".5"/><rect x="17" y="5" width="3" height="13" rx=".5"/></svg>Mano de obra</button>
       <button class="sb-item sb-beta hide" type="button" onclick="location.href='costos-prueba.html'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l3-2 3 2 3-2 3 2 3-2 1 .7V2l-1 .7-3-2-3 2-3-2-3 2-3-2z"/><path d="M8 7h8M8 11h8M8 15h5"/></svg>Lector de boletas <span style="font-size:9px;font-weight:800;letter-spacing:.05em;padding:1px 5px;border-radius:5px;background:var(--orange);color:#fff;margin-left:4px">BETA</span></button>
+
+      <div class="sbar-grp sb-fin hide">Finanzas</div>
+      <button class="sb-item sb-fin hide" data-v="v-fin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Finanzas <span style="font-size:9px;font-weight:800;letter-spacing:.05em;padding:1px 5px;border-radius:5px;background:var(--orange);color:#fff;margin-left:4px">BETA</span></button>
 
       <div class="sbar-grp sb-enzo">Sistema</div>
       <button class="sb-item sb-enzo" data-v="v-acc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Accesos</button>
@@ -2067,6 +2111,21 @@
         <p class="note" style="margin:0 0 10px">Por hora: se pagan todas las horas. Contrato: solo las horas <b>fuera de la jornada</b> (el sueldo del contrato se paga aparte).</p>
         <div id="remu-cfg-list"></div>
       </div>
+    </section>
+
+    <!-- ---- FINANZAS (beta: solo Enzo) — registros, gastos fijos, estado de resultados, flujo de caja y balance ---- -->
+    <section class="view" id="v-fin">
+      <div class="h-row"><h2>Finanzas <span class="cnt">Innovaservi · beta</span></h2></div>
+      <div class="card cos-bar fin-top">
+        <div class="seg fin-tabs" id="fin-tabs"></div>
+        <div class="cos-nav" id="fin-nav">
+          <button id="fin-prev" class="btn ghost small" style="width:auto" type="button" aria-label="Mes anterior">‹</button>
+          <div class="cos-lbl"><small>Mes</small><b id="fin-lbl"></b></div>
+          <button id="fin-hoy" class="btn ghost small" style="width:auto" type="button">Actual</button>
+          <button id="fin-next" class="btn ghost small" style="width:auto" type="button" aria-label="Mes siguiente">›</button>
+        </div>
+      </div>
+      <div id="fin-body"></div>
     </section>
 
     <!-- ---- COSTOS · Mano de obra (solo admin / permiso "costos") ---- -->
@@ -2345,6 +2404,10 @@
 </div>
 
 <!-- Detalle / nueva tarea -->
+<div class="sheet tar-sheet" id="fin-sheet">
+  <div class="bg" id="fin-sheet-bg"></div>
+  <div class="panel"><div class="grab"></div><div id="fin-sheet-body" style="display:flex;flex-direction:column;min-height:0"></div></div>
+</div>
 <div class="sheet tar-sheet" id="tar-sheet">
   <div class="bg" id="tar-sheet-bg"></div>
   <div class="panel"><div class="grab"></div><div id="tar-sheet-body" style="display:flex;flex-direction:column;min-height:0"></div></div>
@@ -3081,6 +3144,7 @@
     document.querySelectorAll('.sb-admin').forEach(function(x){ x.classList.toggle('hide', op); });   // sidebar: items admin (luego aplicarSecciones afina por permiso)
     document.querySelectorAll('.sb-enzo').forEach(function(x){ x.classList.toggle('hide', !puedeGestionar()); });
     document.querySelectorAll('.sb-beta').forEach(function(x){ x.classList.toggle('hide', BETA_COSTOS.indexOf((userEmail||'').trim().toLowerCase())<0); });   // Lector de boletas (beta): Enzo, Jorge y Cristopher
+    document.querySelectorAll('.sb-fin').forEach(function(x){ x.classList.toggle('hide', !finBeta()); });   // Finanzas (beta): solo Enzo
     if(isAdmin){ ['v-asist','v-fotos'].forEach(function(vv){ var b=document.querySelector('.sbar .sb-item[data-v="'+vv+'"]'); if(b) b.classList.add('hide'); }); }   // Asistencia y Fotos son de terreno: fuera del menu de los duenos
     $('tab-veh').classList.remove('hide');                // Vehículos: visible para todos (chofer registra vueltas)
     if($('veh-admin')) $('veh-admin').classList.toggle('hide', !puede('vehiculos.flota'));   // flota completa
@@ -3104,7 +3168,7 @@
   var RRHH_MODS=['trabajadores','documentacion','salidas'];
   function verRrhh(){ return RRHH_MODS.some(verMod); }
   function modDeNav(el){ var v=el.dataset.v; if(v==='v-rrhh') return el.dataset.seg?SEG_MOD[el.dataset.seg]:null; return MOD_DE_V[v]||null; }
-  function verVista(v){ if(v==='v-rrhh') return verRrhh(); if(v==='v-acc') return puedeGestionar(); var m=MOD_DE_V[v]; return m?verMod(m):true; }
+  function verVista(v){ if(v==='v-rrhh') return verRrhh(); if(v==='v-acc') return puedeGestionar(); if(v==='v-fin') return finBeta(); var m=MOD_DE_V[v]; return m?verMod(m):true; }
   function primeraVistaPermitida(){ for(var i=0;i<PERM_MODS.length;i++){ var m=PERM_MODS[i]; if(m.k!=='accesos' && verMod(m.k)) return m.v; } return null; }
   function primerSegRrhh(){ var segs=['trab','salida','empresa']; for(var i=0;i<segs.length;i++){ if(verMod(SEG_MOD[segs[i]])) return segs[i]; } return 'trab'; }
   function aplicarSecciones(){
@@ -3215,7 +3279,7 @@
     document.querySelectorAll('.sbar .sb-item[data-v]:not([data-seg])').forEach(function(x){ x.classList.toggle('on',x.dataset.v===v); });
     if(v!=='v-rrhh') document.querySelectorAll('.sbar .sb-item[data-seg]').forEach(function(x){ x.classList.remove('on'); });
     document.querySelectorAll('.view').forEach(function(x){ x.classList.toggle('on',x.id===v); });
-    var _main=document.querySelector('main'); if(_main){ _main.classList.toggle('wide', v==='v-inicio'||v==='v-tareas'||v==='v-remu'||v==='v-costos'||v==='v-horas'||v==='v-rrhh'||v==='v-planif'); _main.classList.toggle('planwide', v==='v-planif'); _main.classList.toggle('planview', v==='v-plan'); _main.classList.toggle('mesfull', v==='v-remu'&&REMU_MODO==='mes'); }  // vistas anchas / calendario full
+    var _main=document.querySelector('main'); if(_main){ _main.classList.toggle('wide', v==='v-inicio'||v==='v-tareas'||v==='v-remu'||v==='v-costos'||v==='v-fin'||v==='v-horas'||v==='v-rrhh'||v==='v-planif'); _main.classList.toggle('planwide', v==='v-planif'); _main.classList.toggle('planview', v==='v-plan'); _main.classList.toggle('mesfull', v==='v-remu'&&REMU_MODO==='mes'); }  // vistas anchas / calendario full
     if(v==='v-inicio') cargarInicio();
     if(v==='v-hist') cargarRegistros(pintarRegistros);
     if(v==='v-horas') cargarHoras();
@@ -3224,6 +3288,7 @@
     if(v==='v-veh'){ if(puede('vehiculos.flota')){ cargarVeh(pintarVehList); } else { cargarChoferForm(); } }
     if(v==='v-remu'){ cargarRemu(); }
     if(v==='v-costos'){ cargarCostos(); }
+    if(v==='v-fin'){ cargarFin(); }
     if(v==='v-rrhh'){ cargarRrhh(); if(!isAdmin && typeof rrhhSeg==='function'){ var _on=document.querySelector('.rrhh-seg.on'); if(!_on || !verMod(SEG_MOD[_on.dataset.seg])) rrhhSeg(primerSegRrhh()); } }
     if(v==='v-clientes'){ cargarClientes(pintarCli); }
     if(v==='v-acc'){ cargarPermisos(); }
@@ -7347,8 +7412,23 @@
     $('cos-next').disabled=(Rg.fin>=todayISO());
     if(!sb) return;
     $('cos-body').innerHTML='<p class="note" style="text-align:center;padding:48px 0">Calculando costos de '+esc(Rg.lbl)+'…</p>';
-    var a=Rg.pini, b=Rg.fin;
-    Promise.all([
+    cosTraerBase(Rg.pini, Rg.fin).then(function(B){
+      if(tok!==COS.tok) return;   // cambió el período mientras cargaba
+      var L=[]; COS_CLI={};
+      Rg.prev.concat(Rg.meses).forEach(function(mes){ L=L.concat(cosLibroMes(mes,B)); });
+      L.forEach(function(r){ r.cli=cosCliente(r.fa); });
+      COS.L=L; COS.W=B.W; COS.Rg=Rg;
+      // clientes del período en el filtro
+      var cs={}; L.forEach(function(r){ if(r.f>=Rg.ini && r.cli) cs[r.cli]=(cs[r.cli]||0)+r.m; });
+      if(COS.cli && !(COS.cli in cs)) cs[COS.cli]=0;
+      $('cos-cli').innerHTML='<option value="">Todos los clientes</option>'+Object.keys(cs).sort(function(p,q){ return cs[q]-cs[p]; }).map(function(c){ return '<option value="'+enc(c)+'"'+(c===COS.cli?' selected':'')+'>'+esc(c)+'</option>'; }).join('');
+      pintarCostos();
+    }, function(e){ if(tok===COS.tok) $('cos-body').innerHTML='<p class="note">'+esc((e&&e.message)||String(e))+'</p>'; });
+  }
+
+  // Trae lo necesario para calcular la mano de obra entre a y b (lo usan Costos y Finanzas).
+  function cosTraerBase(a, b){
+    return Promise.all([
       sb.from('trabajadores').select('*').order('nombre',{ascending:true}).limit(1000),
       traerTodo(function(){ return sb.from('horas').select('fecha,trabajador,empresa,lugar,faena,entrada,salida,vueltas').gte('fecha',a).lte('fecha',b).order('id'); }),
       traerTodo(function(){ return sb.from('vehiculo_gastos').select('categoria,fecha,monto,cantidad,chofer').in('categoria',['vuelta','peaje']).gte('fecha',a).lte('fecha',b).order('id'); }),
@@ -7359,23 +7439,13 @@
       new Promise(function(res){ if(CLIENTES&&CLIENTES.length) res(); else cargarClientes(res); }),
       new Promise(function(res){ if(CARGOS&&CARGOS.length) res(); else if(typeof cargarCargos==='function') cargarCargos(res); else res(); })
     ]).then(function(rs){
-      if(tok!==COS.tok) return;   // cambió el período mientras cargaba
-      if(rs[1].error){ $('cos-body').innerHTML='<p class="note">No se pudieron cargar las horas: '+esc(rs[1].error.message||'')+'</p>'; return; }
+      if(rs[1].error) throw new Error('No se pudieron cargar las horas: '+(rs[1].error.message||''));
       var cfg={}; ((rs[4]&&rs[4].data)||[]).forEach(function(c){ cfg[c.clave]=+c.valor||0; });
       var ajDia={}; (rs[5].data||[]).forEach(function(x){ ajDia[x.trabajador_id+'|'+x.fecha]={monto:(+x.monto||0), obs:x.obs||''}; });
       var ajFae={}; (rs[6].data||[]).forEach(function(x){ ajFae[x.trabajador_id+'|'+x.fecha+'|'+(x.faena||'')]={monto:(+x.monto||0), obs:x.obs||''}; });
-      var B={ trab:(rs[0]&&rs[0].data)||[], regs:rs[1].data||[], vg:rs[2].data||[], items:rs[3].data||[], ajDia:ajDia, ajFae:ajFae,
+      return { trab:(rs[0]&&rs[0].data)||[], regs:rs[1].data||[], vg:rs[2].data||[], items:rs[3].data||[], ajDia:ajDia, ajFae:ajFae,
         valorVuelta:cfg.valor_vuelta||0, valorHora:cfg.valor_hora||0, W:{} };
-      var L=[]; COS_CLI={};
-      Rg.prev.concat(Rg.meses).forEach(function(mes){ L=L.concat(cosLibroMes(mes,B)); });
-      L.forEach(function(r){ r.cli=cosCliente(r.fa); });
-      COS.L=L; COS.W=B.W; COS.Rg=Rg;
-      // clientes del período en el filtro
-      var cs={}; L.forEach(function(r){ if(r.f>=Rg.ini && r.cli) cs[r.cli]=(cs[r.cli]||0)+r.m; });
-      if(COS.cli && !(COS.cli in cs)) cs[COS.cli]=0;
-      $('cos-cli').innerHTML='<option value="">Todos los clientes</option>'+Object.keys(cs).sort(function(p,q){ return cs[q]-cs[p]; }).map(function(c){ return '<option value="'+enc(c)+'"'+(c===COS.cli?' selected':'')+'>'+esc(c)+'</option>'; }).join('');
-      pintarCostos();
-    }, function(e){ if(tok===COS.tok) $('cos-body').innerHTML='<p class="note">Error al calcular: '+esc((e&&e.message)||String(e))+'</p>'; });
+    }, function(e){ throw new Error('Error al calcular: '+((e&&e.message)||String(e))); });
   }
 
   // Suma un conjunto de movimientos.
@@ -9342,6 +9412,432 @@
     $('tar-nueva').addEventListener('click',function(){ tarAbrir('nueva'); setTimeout(function(){ if($('td-tit')) $('td-tit').focus(); },60); });
     $('tar-sheet-bg').addEventListener('click',tarCerrar);
     document.addEventListener('keydown',function(e){ if(e.key==='Escape' && TAR_ABIERTA) tarCerrar(); });
+  })();
+
+  // ====== Finanzas (beta: solo Enzo): registros, gastos fijos, Estado de resultados, flujo de caja y balance de gestión ======
+  // Tablas fin_* (supabase/migrations/20261026120000_finanzas.sql). Procedimiento: bóveda ISGROUP, "Procedimiento - Finanzas y control de costos".
+  // Estados de un registro: pendiente (falta revisar) -> listo (con categoría y centro) -> pagado. Por pagar / por cobrar = sin fecha de pago.
+  var BETA_FIN=['enzo.castro@innovaservi.com','enzo.castro@innovaservi.cl'];   // = fin_beta() en la base
+  function finBeta(){ return BETA_FIN.indexOf(miEmail())>=0; }
+  var FIN={ tab:'reg', mes:null, cats:[], cens:[], regs:[], recs:[], cuentas:[], saldos:[], deudas:[], prest:[], cierres:{}, cfg:{}, mo:{},
+    f:{tipo:'todos', estado:'', q:'', abiertos:false}, cargado:false, tok:0 };
+  var FIN_MESES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  var FIN_EST={ pendiente:'Pendiente', listo:'Listo', pagado:'Pagado' };
+  var FIN_EST_ING={ pendiente:'Por cobrar', listo:'Por cobrar', pagado:'Cobrada' };
+  var FIN_CLASES=[['costo_directo','Costo directo'],['operacion','Gastos de operación'],['administracion','Gastos de administración'],['financiero','Financiero'],['ingreso','Ingresos']];
+  var FIN_DOCS=[['factura','Factura'],['boleta','Boleta'],['guia','Guía'],['nota_credito','Nota de crédito'],['otro','Comprobante / otro'],['sin','Sin documento']];
+
+  function finMesLbl(m){ return FIN_MESES[+m.slice(5,7)-1]+' '+m.slice(0,4); }
+  function finMesAdd(m,n){ var d=new Date(+m.slice(0,4), +m.slice(5,7)-1+n, 1); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
+  function finFinMes(m){ var d=new Date(+m.slice(0,4), +m.slice(5,7), 0); return isoD(d); }
+  function finUltHabil(m){ var d=new Date(+m.slice(0,4), +m.slice(5,7), 0); while(d.getDay()===0||d.getDay()===6) d.setDate(d.getDate()-1); return isoD(d); }
+  function finDiaMes(m,dia){ var ult=+finFinMes(m).slice(8,10); return m+'-'+String(Math.min(dia||1,ult)).padStart(2,'0'); }
+  function finCat(id){ return FIN.cats.filter(function(c){ return c.id===id; })[0]||null; }
+  function finCen(id){ return FIN.cens.filter(function(c){ return c.id===id; })[0]||null; }
+  // Monto que va al resultado: neto si es factura (el IVA se recupera); si no, el total. Ingresos siempre neto. Nota de crédito resta.
+  function finMonto(r){ var v=(r.tipo==='ingreso'||r.doc_tipo==='factura'||r.doc_tipo==='nota_credito')?(+r.neto||0)+(+r.exento||0):(+r.total||0); return r.doc_tipo==='nota_credito'?-v:v; }
+  function finTot(r){ return (r.doc_tipo==='nota_credito'?-1:1)*(+r.total||0); }   // lo que se paga o cobra
+  function finEsperada(r){ return r.vence || sumarDias(r.fecha,30); }                  // fecha esperada de pago o cobro
+  function finAbierto(r){ return !r.fecha_pago; }
+  function finVencido(r){ return finAbierto(r) && finEsperada(r)<todayISO(); }
+  function finActivos(){ return FIN.regs.filter(function(r){ return !r.deleted_at; }); }
+  function finEstLbl(r){ return (r.tipo==='ingreso'?FIN_EST_ING:FIN_EST)[r.estado]||r.estado; }
+  function finChip(r){ var c=r.tipo==='ingreso'?(r.fecha_pago?'ok':'pe'):({pendiente:'pe',listo:'li',pagado:'ok'}[r.estado]||'pe'); return '<span class="fin-chip '+c+'">'+esc(finEstLbl(r))+'</span>'; }
+  function finAviso(t){ return '<div class="fin-aviso">'+t+'</div>'; }
+
+  function cargarFin(){
+    if(!sb || !finBeta()) return;
+    if(!FIN.mes) FIN.mes=todayISO().slice(0,7);
+    var tok=++FIN.tok;
+    if(!FIN.cargado) $('fin-body').innerHTML='<p class="note" style="text-align:center;padding:48px 0">Cargando finanzas…</p>';
+    sb.rpc('fin_generar_mes').then(function(){ return Promise.all([
+      sb.from('fin_categorias').select('*').order('orden'),
+      sb.from('fin_centros').select('*').order('orden'),
+      traerTodo(function(){ return sb.from('fin_registros').select('*').is('deleted_at',null).order('fecha',{ascending:false}).order('id'); }),
+      sb.from('fin_recurrentes').select('*').order('orden').order('concepto'),
+      sb.from('fin_cuentas').select('*').order('orden').order('nombre'),
+      sb.from('fin_saldos').select('*').order('fecha',{ascending:false}).limit(2000),
+      sb.from('fin_deudas').select('*').order('acreedor'),
+      sb.from('fin_prestamos_grupo').select('*').is('deleted_at',null).order('fecha',{ascending:false}),
+      sb.from('fin_cierres').select('*'),
+      sb.from('fin_config').select('*')
+    ]); }).then(function(rs){
+      if(tok!==FIN.tok) return;
+      if(rs[0].error){ $('fin-body').innerHTML='<div class="empty">No se pudo cargar Finanzas: '+esc(rs[0].error.message)+'</div>'; return; }
+      FIN.cats=rs[0].data||[]; FIN.cens=rs[1].data||[]; FIN.regs=rs[2].data||[]; FIN.recs=rs[3].data||[];
+      FIN.cuentas=rs[4].data||[]; FIN.saldos=rs[5].data||[]; FIN.deudas=rs[6].data||[]; FIN.prest=rs[7].data||[];
+      FIN.cierres={}; (rs[8].data||[]).forEach(function(c){ FIN.cierres[c.periodo]=c; });
+      FIN.cfg={}; (rs[9].data||[]).forEach(function(c){ FIN.cfg[c.clave]=c.valor; });
+      FIN.cargado=true; pintarFin();
+    }, function(e){ if(tok===FIN.tok) $('fin-body').innerHTML='<div class="empty">No se pudo cargar Finanzas: '+esc((e&&e.message)||String(e))+'</div>'; });
+  }
+
+  // Mano de obra del mes (de horas y remuneraciones, igual que Costos · Mano de obra). Cerrado: la foto del cierre.
+  function finManoObra(mes){
+    if(FIN.cierres[mes] && FIN.cierres[mes].resultado && FIN.cierres[mes].resultado.personal!=null){
+      var k=FIN.cierres[mes].resultado; return Promise.resolve({total:+k.personal||0, porCli:k.personal_cli||{}, cerrado:true}); }
+    if(FIN.mo[mes]) return Promise.resolve(FIN.mo[mes]);
+    var ini=mes+'-01', fin=finFinMes(mes);
+    return cosTraerBase(ini, fin).then(function(B){
+      var L=cosLibroMes(mes,B), porCli={}, tot=0;
+      L.forEach(function(r){ if(r.f<ini||r.f>fin) return; tot+=r.m; var c=cosCliente(r.fa)||'Sin faena'; porCli[c]=(porCli[c]||0)+r.m; });
+      FIN.mo[mes]={total:Math.round(tot), porCli:porCli, cerrado:false}; return FIN.mo[mes];
+    });
+  }
+
+  function pintarFin(){
+    var tabs=[['reg','Registros'],['fij','Gastos fijos'],['res','Estado de resultados'],['flu','Flujo de caja'],['bal','Balance']];
+    $('fin-tabs').innerHTML=tabs.map(function(t){ return '<button class="seg-b'+(FIN.tab===t[0]?' on':'')+'" data-t="'+t[0]+'" type="button">'+t[1]+'</button>'; }).join('');
+    var conMes=(FIN.tab==='reg'||FIN.tab==='res'||FIN.tab==='bal');
+    $('fin-nav').classList.toggle('hide', !conMes);
+    $('fin-lbl').textContent=finMesLbl(FIN.mes)+(FIN.cierres[FIN.mes]?' · cerrado':'');
+    $('fin-next').disabled=(FIN.mes>=todayISO().slice(0,7));
+    var b=$('fin-body');
+    if(FIN.tab==='reg') b.innerHTML=finRegistrosHTML();
+    else if(FIN.tab==='fij') b.innerHTML=finFijosHTML();
+    else if(FIN.tab==='res'){ b.innerHTML='<p class="note" style="text-align:center;padding:48px 0">Calculando el resultado de '+esc(finMesLbl(FIN.mes))+'…</p>'; var m=FIN.mes;
+      finManoObra(m).then(function(mo){ if(FIN.tab==='res'&&FIN.mes===m){ b.innerHTML=finResultadoHTML(m,mo); finWire(); } }, function(e){ if(FIN.tab==='res') b.innerHTML=finResultadoHTML(m,null,(e&&e.message)||String(e)); finWire(); }); }
+    else if(FIN.tab==='flu'){ b.innerHTML='<p class="note" style="text-align:center;padding:48px 0">Proyectando caja…</p>'; var ant=finMesAdd(todayISO().slice(0,7),-1);
+      var est=FIN.cfg.flujo_sueldos&&FIN.cfg.flujo_sueldos.monto!=null?Promise.resolve(null):finManoObra(ant).then(null,function(){ return null; });
+      est.then(function(mo){ if(FIN.tab==='flu'){ b.innerHTML=finFlujoHTML(mo); finWire(); } }); }
+    else if(FIN.tab==='bal'){ var mb=FIN.mes, actual=(mb===todayISO().slice(0,7));
+      b.innerHTML=finBalanceHTML(mb,null,actual); finWire();
+      if(actual) finManoObra(mb).then(function(mo){ if(FIN.tab==='bal'&&FIN.mes===mb){ b.innerHTML=finBalanceHTML(mb,mo,true); finWire(); } }, function(){}); }
+    finWire();
+  }
+
+  // ---------- Registros ----------
+  function finRegistrosHTML(){
+    var A=finActivos(), hoy=todayISO(), mes=FIN.mes;
+    var pend=A.filter(function(r){ return r.estado==='pendiente'; }), sinCen=A.filter(function(r){ return r.tipo==='gasto'&&!r.centro_id; }), sinCat=A.filter(function(r){ return !r.categoria_id; });
+    var porPag=A.filter(function(r){ return r.tipo==='gasto'&&finAbierto(r); }), porCob=A.filter(function(r){ return r.tipo==='ingreso'&&finAbierto(r); });
+    var suma=function(l){ return l.reduce(function(s,r){ return s+finTot(r); },0); };
+    var vPag=porPag.filter(finVencido).length, vCob=porCob.filter(finVencido).length;
+    var k='<div class="cos-kpis">'+
+      '<div class="cos-kpi'+(pend.length?' warn':'')+'"><div class="l">Pendientes de revisar</div><div class="v">'+pend.length+'</div><div class="s">cargados, falta categoría o centro</div></div>'+
+      '<div class="cos-kpi'+(sinCen.length?' warn':'')+'"><div class="l">Gastos sin centro</div><div class="v">'+sinCen.length+'</div><div class="s">meta: 0 al cierre</div></div>'+
+      '<div class="cos-kpi'+(sinCat.length?' warn':'')+'"><div class="l">Sin categoría</div><div class="v">'+sinCat.length+'</div><div class="s">no entran bien al resultado</div></div>'+
+      '<div class="cos-kpi"><div class="l">Por pagar</div><div class="v">'+fmtMoney(suma(porPag))+'</div><div class="s">'+porPag.length+' documentos'+(vPag?' · <b class="neg">'+vPag+' vencidos</b>':'')+'</div></div>'+
+      '<div class="cos-kpi"><div class="l">Por cobrar</div><div class="v">'+fmtMoney(suma(porCob))+'</div><div class="s">'+porCob.length+' facturas'+(vCob?' · <b class="neg">'+vCob+' vencidas</b>':'')+'</div></div></div>';
+    var F=FIN.f, q=(F.q||'').toLowerCase();
+    var lista=A.filter(function(r){
+      if(F.abiertos){ if(!finAbierto(r)) return false; } else if(r.fecha.slice(0,7)!==mes) return false;
+      if(F.tipo!=='todos' && r.tipo!==F.tipo) return false;
+      if(F.estado==='sincentro'){ if(!(r.tipo==='gasto'&&!r.centro_id)) return false; } else if(F.estado && r.estado!==F.estado) return false;
+      if(q){ var c=finCat(r.categoria_id), ce=finCen(r.centro_id); if([r.concepto,r.tercero,r.faena,r.doc_numero,c&&c.nombre,ce&&ce.nombre].join(' ').toLowerCase().indexOf(q)<0) return false; }
+      return true; });
+    if(F.abiertos) lista.sort(function(a,b){ return finEsperada(a)<finEsperada(b)?-1:1; });
+    var ing=lista.filter(function(r){ return r.tipo==='ingreso'; }), gas=lista.filter(function(r){ return r.tipo==='gasto'; });
+    var bar='<div class="fin-bar"><div class="seg" id="fin-ftipo">'+[['todos','Todos'],['gasto','Gastos'],['ingreso','Ingresos']].map(function(t){ return '<button class="seg-b'+(F.tipo===t[0]?' on':'')+'" data-ft="'+t[0]+'" type="button">'+t[1]+'</button>'; }).join('')+'</div>'+
+      '<select id="fin-fest"><option value="">Todos los estados</option>'+[['pendiente','Pendiente'],['listo','Listo'],['pagado','Pagado'],['sincentro','Sin centro']].map(function(o){ return '<option value="'+o[0]+'"'+(F.estado===o[0]?' selected':'')+'>'+o[1]+'</option>'; }).join('')+'</select>'+
+      '<label class="fin-chk"><input type="checkbox" id="fin-fab"'+(F.abiertos?' checked':'')+'> Solo por pagar / por cobrar (todos los meses)</label>'+
+      '<input id="fin-fq" class="cos-q" placeholder="Buscar concepto, proveedor, faena…" value="'+enc(F.q||'')+'">'+
+      '<span class="fin-sp"></span><button class="btn ghost small" type="button" data-fin="nuevo-gasto">+ Gasto</button><button class="btn small" type="button" data-fin="nuevo-ingreso">+ Factura emitida</button></div>';
+    var filas=lista.length?lista.map(function(r){ var c=finCat(r.categoria_id), ce=finCen(r.centro_id), venc=finVencido(r);
+      var det=[c?c.nombre:'<em class="neg">sin categoría</em>', r.tipo==='gasto'?(ce?ce.nombre:'<em class="neg">sin centro</em>'):(ce?ce.nombre:''), r.faena?esc(r.faena):'', (FIN_DOCS.filter(function(d){ return d[0]===r.doc_tipo; })[0]||[,''])[1]+(r.doc_numero?' '+esc(r.doc_numero):''), r.recurrente_id?'gasto fijo':'', r.costos_doc_id?'lector':''].filter(Boolean).join(' · ');
+      var pago=r.fecha_pago?('<small>'+(r.tipo==='ingreso'?'cobrada ':'pagado ')+fechaCorta(r.fecha_pago)+'</small>'):('<small class="'+(venc?'neg':'')+'">'+(venc?'venció ':'vence ')+fechaCorta(finEsperada(r))+'</small>');
+      return '<tr class="fin-row" data-id="'+r.id+'"><td class="nm"><b>'+esc(r.concepto)+'</b><small>'+(r.tercero?esc(r.tercero)+' · ':'')+det+'</small></td><td>'+fechaCorta(r.fecha)+'</td><td class="'+(r.tipo==='ingreso'?'pos':'')+'">'+(r.tipo==='ingreso'?'+':'')+fmtMoney(finTot(r))+'</td><td>'+finChip(r)+pago+'</td></tr>'; }).join('')
+      :'<tr><td colspan="4" class="empty" style="padding:30px">'+(F.abiertos?'No hay nada por pagar ni por cobrar.':'No hay registros en '+esc(finMesLbl(mes))+' con este filtro.')+'</td></tr>';
+    var pie=lista.length?'<div class="fin-pie">'+lista.length+' registros · ingresos '+fmtMoney(ing.reduce(function(s,r){ return s+finTot(r); },0))+' · gastos '+fmtMoney(gas.reduce(function(s,r){ return s+finTot(r); },0))+' (montos con IVA)</div>':'';
+    return k+bar+'<div class="cos-card" style="padding:0"><div class="cos-scroll"><table class="cos-tbl fin-tbl"><thead><tr><th>Concepto</th><th>Fecha</th><th>Total</th><th>Estado</th></tr></thead><tbody>'+filas+'</tbody></table></div></div>'+pie+
+      '<p class="note">Las boletas del lector entran solas como <b>Pendiente</b>. Revisa cada una: con categoría y centro pasa a <b>Listo</b> (si ya estaba pagada, queda <b>Pagado</b>). Las facturas de proveedores quedan por pagar a 30 días si no tienen vencimiento.</p>';
+  }
+
+  // Formulario genérico en hoja (sheet)
+  function finForm(titulo, campos, val, onSave, onDel, nota){
+    var h='<h3>'+esc(titulo)+'</h3><div class="tsb"><form id="fin-frm" autocomplete="off"><div class="grid2">'+campos.map(function(c){
+      if(c.hide) return '';
+      var v=val[c.k]; if(v==null) v=(c.def!=null?c.def:'');
+      var inp;
+      if(c.t==='select') inp='<select name="'+c.k+'"'+(c.req?' required':'')+'>'+(c.vacio!=null?'<option value="">'+esc(c.vacio)+'</option>':'')+c.o.map(function(o){ return '<option value="'+enc(String(o[0]))+'"'+(String(o[0])===String(v)?' selected':'')+'>'+esc(o[1])+'</option>'; }).join('')+'</select>';
+      else if(c.t==='textarea') inp='<textarea name="'+c.k+'" rows="2">'+esc(String(v))+'</textarea>';
+      else if(c.t==='check') inp='<label class="fin-chk"><input type="checkbox" name="'+c.k+'"'+(v?' checked':'')+'> '+esc(c.l2||'')+'</label>';
+      else inp='<input name="'+c.k+'" type="'+(c.t||'text')+'"'+(c.t==='number'?' step="1" inputmode="numeric"':'')+(c.req?' required':'')+(c.list?' list="'+c.list+'"':'')+(c.ph?' placeholder="'+enc(c.ph)+'"':'')+' value="'+enc(String(v))+'">';
+      return '<div class="fld'+(c.full?' fin-full':'')+'"><label>'+esc(c.l)+'</label>'+inp+(c.ayuda?'<small class="fin-ayuda">'+c.ayuda+'</small>':'')+'</div>'; }).join('')+'</div>'+
+      (nota?'<p class="note">'+nota+'</p>':'')+
+      '<div class="fin-acc">'+(onDel?'<button type="button" class="btn ghost small fin-del" id="fin-frm-del">Eliminar</button>':'')+'<span class="fin-sp"></span><button type="button" class="btn ghost small" id="fin-frm-x">Cancelar</button><button type="submit" class="btn small">Guardar</button></div></form></div>';
+    $('fin-sheet-body').innerHTML=h; $('fin-sheet').classList.add('show');
+    var f=$('fin-frm');
+    f.addEventListener('submit',function(ev){ ev.preventDefault(); var o={};
+      campos.forEach(function(c){ if(c.hide) return; var el=f.elements[c.k]; if(!el) return;
+        if(c.t==='check') o[c.k]=!!el.checked; else if(c.t==='number') o[c.k]=(el.value===''?null:Math.round(+el.value)); else o[c.k]=(el.value===''?null:el.value.trim()); });
+      onSave(o); });
+    $('fin-frm-x').addEventListener('click',finCerrarForm);
+    if(onDel) $('fin-frm-del').addEventListener('click',onDel);
+    return f;
+  }
+  function finCerrarForm(){ $('fin-sheet').classList.remove('show'); }
+  function finGuardar(tabla, id, row, msg){
+    var q=id?sb.from(tabla).update(row).eq('id',id):sb.from(tabla).insert(row);
+    return q.then(function(r){ if(r.error){ toast('No se pudo guardar: '+r.error.message); return false; } finCerrarForm(); toast(msg||'Guardado'); FIN.mo={}; cargarFin(); return true; });
+  }
+
+  function finOptsCat(tipo){ return FIN.cats.filter(function(c){ return c.activo && (tipo==='ingreso'?c.clase==='ingreso':c.clase!=='ingreso'); }).map(function(c){ var cl=(FIN_CLASES.filter(function(x){ return x[0]===c.clase; })[0]||[])[1]||''; return [c.id, c.nombre+(tipo==='ingreso'?'':' ('+cl.toLowerCase()+')')]; }); }
+  function finOptsCen(){ return FIN.cens.filter(function(c){ return c.activo; }).map(function(c){ return [c.id,c.nombre]; }); }
+  function finFaenasList(){ var s={}; FIN.regs.forEach(function(r){ if(r.faena) s[r.faena]=1; }); return Object.keys(s).sort(); }
+  function finClientesList(){ var s={}; (CLIENTES||[]).forEach(function(c){ if(c.nombre) s[c.nombre]=1; }); FIN.regs.forEach(function(r){ if(r.tipo==='ingreso'&&r.tercero) s[r.tercero]=1; }); return Object.keys(s).sort(); }
+  function finDatalists(){ return '<datalist id="fin-dl-faena">'+finFaenasList().map(function(x){ return '<option value="'+enc(x)+'">'; }).join('')+'</datalist><datalist id="fin-dl-cli">'+finClientesList().map(function(x){ return '<option value="'+enc(x)+'">'; }).join('')+'</datalist>'; }
+
+  function finAbrirRegistro(id, tipoNuevo){
+    var r=id?FIN.regs.filter(function(x){ return x.id===id; })[0]:null; if(id&&!r) return;
+    var tipo=r?r.tipo:tipoNuevo, ing=(tipo==='ingreso'), cerrado=r&&FIN.cierres[r.fecha.slice(0,7)];
+    var v=r?Object.assign({},r):{ fecha:todayISO(), estado:'pendiente', doc_tipo:ing?'factura':'boleta' };
+    v.monto_total=r?r.total:'';
+    var campos=[
+      {k:'fecha',l:'Fecha del documento',t:'date',req:true},
+      {k:'doc_tipo',l:'Documento',t:'select',o:ing?FIN_DOCS.filter(function(d){ return ['factura','boleta','nota_credito','otro'].indexOf(d[0])>=0; }):FIN_DOCS},
+      {k:'concepto',l:ing?'Detalle (servicio facturado)':'Concepto',req:true,full:true,ph:ing?'Ej: Apoyo frigorífico octubre':'Ej: Pintura y rodillos'},
+      {k:'tercero',l:ing?'Cliente':'Proveedor',list:ing?'fin-dl-cli':null},
+      {k:'tercero_rut',l:'RUT',ph:'12345678-9'},
+      {k:'doc_numero',l:'N° de documento'},
+      {k:'monto_total',l:'Total del documento (con IVA)',t:'number',req:true,ayuda:ing?'Factura y boleta: el sistema separa el IVA (19 %).':'Factura: el sistema separa el IVA (19 %) y el costo queda neto.'},
+      {k:'categoria_id',l:'Categoría',t:'select',vacio:'Sin categoría (Pendiente)',o:finOptsCat(tipo)},
+      {k:'centro_id',l:'Centro de costo',t:'select',vacio:'Sin centro (Pendiente)',o:finOptsCen()},
+      {k:'faena',l:'Faena',list:'fin-dl-faena',ph:'Cliente · lugar',full:true},
+      {k:'estado',l:'Estado',t:'select',o:ing?[['pendiente','Por cobrar'],['pagado','Cobrada']]:[['pendiente','Pendiente (falta revisar)'],['listo','Listo (revisado)'],['pagado','Pagado']]},
+      {k:'vence',l:'Vence',t:'date',ayuda:'Si queda vacío: fecha + 30 días.'},
+      {k:'fecha_pago',l:ing?'Cobrada el':'Pagado el',t:'date',ayuda:ing?'':'Boleta pagada al comprar: pon la fecha aunque siga Pendiente de revisar.'},
+      {k:'cuenta_id',l:'Cuenta',t:'select',vacio:'—',o:FIN.cuentas.filter(function(c){ return c.activo; }).map(function(c){ return [c.id,c.nombre]; })},
+      {k:'notas',l:'Notas',t:'textarea',full:true}
+    ];
+    var nota=(r&&r.costos_doc_id?'Viene del <b>lector de boletas</b>. ':'')+(r&&r.recurrente_id?'Generado desde un <b>gasto fijo</b> (cambiar el monto aquí no cambia el gasto fijo). ':'')+(cerrado?'<b>El mes está cerrado:</b> solo se puede cambiar el estado, el pago y las notas.':'');
+    finForm((r?'Editar ':'Nuevo ')+(ing?'ingreso (factura emitida)':'gasto'), campos, v, function(o){
+      var tot=+o.monto_total||0; if(tot<=0){ toast('El total debe ser mayor a 0'); return; }
+      var conIva=(o.doc_tipo==='factura'||o.doc_tipo==='nota_credito'||(ing&&o.doc_tipo==='boleta'));
+      var neto=conIva?Math.round(tot/1.19):tot, iva=conIva?tot-neto:0;
+      if(r && r.total===tot && (r.neto+r.iva+r.exento)===tot && r.doc_tipo===o.doc_tipo){ neto=r.neto; iva=r.iva; }   // respeta el desglose del lector
+      var row={ tipo:tipo, fecha:o.fecha, doc_tipo:o.doc_tipo, concepto:o.concepto, tercero:o.tercero, tercero_rut:o.tercero_rut, doc_numero:o.doc_numero,
+        neto:neto, iva:iva, exento:tot-neto-iva, total:tot, categoria_id:o.categoria_id, centro_id:o.centro_id, faena:o.faena,
+        estado:o.estado, vence:o.vence, fecha_pago:o.fecha_pago, cuenta_id:o.cuenta_id, notas:o.notas };
+      if(!ing && row.estado!=='pendiente' && (!row.categoria_id||!row.centro_id)){ toast('Para dejarlo Listo o Pagado necesita categoría y centro'); return; }
+      if(ing && row.estado!=='pendiente' && !row.categoria_id){ toast('Elige la categoría del ingreso'); return; }
+      if(ing && !row.centro_id && row.estado!=='pendiente'){ toast('Elige el centro (línea de servicio)'); return; }
+      if(row.estado==='pagado' && !row.fecha_pago) row.fecha_pago=todayISO();
+      finGuardar('fin_registros', r&&r.id, row, ing?'Ingreso guardado':'Gasto guardado');
+    }, r?function(){ if(!confirm('¿Eliminar este registro? Queda en el historial de la base, pero sale de Finanzas.')) return;
+      sb.from('fin_registros').update({deleted_at:new Date().toISOString()}).eq('id',r.id).then(function(x){ if(x.error){ toast('No se pudo: '+x.error.message); return; } finCerrarForm(); toast('Eliminado'); cargarFin(); }); }:null, nota);
+    $('fin-sheet-body').insertAdjacentHTML('beforeend', finDatalists());
+  }
+
+  // ---------- Gastos fijos ----------
+  function finEquivMes(x){ return x.ciclo==='anual'?(+x.monto||0)/12:(x.ciclo==='semestral'?(+x.monto||0)/6:(+x.monto||0)); }
+  function finFijosHTML(){
+    var act=FIN.recs.filter(function(x){ return x.activo; }), tot=act.reduce(function(s,x){ return s+finEquivMes(x); },0);
+    var mesAct=todayISO().slice(0,7), gen=finActivos().filter(function(r){ return r.periodo===mesAct; });
+    var k='<div class="cos-kpis"><div class="cos-kpi main"><div class="l">Gastos fijos al mes</div><div class="v">'+fmtMoney(tot)+'</div><div class="s">'+act.length+' activos · anuales y semestrales prorrateados</div></div>'+
+      '<div class="cos-kpi"><div class="l">Generados en '+esc(finMesLbl(mesAct))+'</div><div class="v">'+gen.length+'</div><div class="s">'+fmtMoney(gen.reduce(function(s,r){ return s+finTot(r); },0))+' por pagar o pagados</div></div></div>';
+    var filas=FIN.recs.length?FIN.recs.map(function(x){ var c=finCat(x.categoria_id), ce=finCen(x.centro_id);
+      var cic=x.ciclo==='mensual'?'Mensual':(x.ciclo==='anual'?'Anual ('+FIN_MESES[(x.mes_pago||1)-1].toLowerCase()+')':'Semestral ('+FIN_MESES[(x.mes_pago||1)-1].toLowerCase()+' y '+FIN_MESES[((x.mes_pago||1)+5)%12].toLowerCase()+')');
+      return '<tr class="fin-row'+(x.activo?'':' fin-off')+'" data-rec="'+x.id+'"><td class="nm"><b>'+esc(x.concepto)+'</b><small>'+[c?c.nombre:'',ce?ce.nombre:'<em class="neg">sin centro (queda Pendiente)</em>',x.proveedor?esc(x.proveedor):''].filter(Boolean).join(' · ')+'</small></td><td>'+cic+(x.dia?'<small>día '+x.dia+'</small>':'')+'</td><td>'+fmtMoney(x.monto)+'</td><td>'+(x.activo?'<span class="fin-chip ok">Activo</span>':'<span class="fin-chip pe">Inactivo</span>')+'<small>desde '+esc(x.desde)+(x.hasta?' hasta '+esc(x.hasta):'')+'</small></td></tr>'; }).join('')
+      :'<tr><td colspan="4" class="empty" style="padding:30px">Aún no hay gastos fijos. Agrega arriendo, servicios básicos, software, contabilidad, seguros…</td></tr>';
+    return k+'<div class="fin-bar"><span class="fin-sp"></span><button class="btn ghost small" type="button" data-fin="generar">Generar '+esc(finMesLbl(mesAct).toLowerCase())+' ahora</button><button class="btn small" type="button" data-fin="nuevo-fijo">+ Gasto fijo</button></div>'+
+      '<div class="cos-card" style="padding:0"><div class="cos-scroll"><table class="cos-tbl fin-tbl"><thead><tr><th>Concepto</th><th>Frecuencia</th><th>Monto</th><th>Estado</th></tr></thead><tbody>'+filas+'</tbody></table></div></div>'+
+      '<p class="note">El día 1 de cada mes (y cada vez que se abre Finanzas) se crea un gasto por pagar por cada gasto fijo activo, con el monto de ese momento. Si cambias un monto, los meses ya generados no cambian. No se generan meses anteriores a octubre 2026.</p>';
+  }
+  function finAbrirFijo(id){
+    var x=id?FIN.recs.filter(function(y){ return y.id===id; })[0]:null;
+    var v=x?Object.assign({},x):{ ciclo:'mensual', doc_tipo:'factura', activo:true, desde:todayISO().slice(0,7), dia:5 };
+    finForm(x?'Editar gasto fijo':'Nuevo gasto fijo', [
+      {k:'concepto',l:'Concepto',req:true,full:true,ph:'Ej: Arriendo oficina'},
+      {k:'categoria_id',l:'Categoría',t:'select',req:true,o:finOptsCat('gasto')},
+      {k:'centro_id',l:'Centro de costo',t:'select',vacio:'Sin centro',o:finOptsCen()},
+      {k:'monto',l:'Monto (total del documento)',t:'number',req:true},
+      {k:'doc_tipo',l:'Documento',t:'select',o:[['factura','Factura (con IVA)'],['boleta','Boleta'],['otro','Otro'],['sin','Sin documento']]},
+      {k:'ciclo',l:'Frecuencia',t:'select',o:[['mensual','Mensual'],['semestral','Semestral'],['anual','Anual']]},
+      {k:'mes_pago',l:'Mes de pago (anual / semestral)',t:'select',vacio:'—',o:FIN_MESES.map(function(m,i){ return [i+1,m]; })},
+      {k:'dia',l:'Día de pago',t:'number'},
+      {k:'proveedor',l:'Proveedor'},
+      {k:'desde',l:'Desde (mes)',t:'month',req:true},
+      {k:'hasta',l:'Hasta (mes, opcional)',t:'month'},
+      {k:'activo',l:'Activo',t:'check',l2:'Se genera cada mes'},
+      {k:'notas',l:'Notas',t:'textarea',full:true}
+    ], v, function(o){
+      if(o.ciclo!=='mensual' && !o.mes_pago){ toast('Elige el mes de pago'); return; }
+      if(o.dia!=null && (o.dia<1||o.dia>31)){ toast('Día entre 1 y 31'); return; }
+      o.mes_pago=o.mes_pago?+o.mes_pago:null; o.monto=o.monto||0;
+      finGuardar('fin_recurrentes', x&&x.id, o, 'Gasto fijo guardado');
+    }, x?function(){ if(!confirm('¿Eliminar este gasto fijo? Los meses ya generados se mantienen.')) return;
+      sb.from('fin_recurrentes').delete().eq('id',x.id).then(function(r){ if(r.error){ toast('No se pudo: '+r.error.message); return; } finCerrarForm(); cargarFin(); }); }:null,
+      'Para dejar de pagarlo, desactívalo o pon el mes "Hasta": así queda el historial.');
+  }
+
+  // ---------- Estado de resultados ----------
+  function finResultadoCalc(mes, mo){
+    var R=finActivos().filter(function(r){ return r.fecha.slice(0,7)===mes; });
+    var L={ ventas:0, otrosIng:0, personal:mo?mo.total:0, cd:{}, op:{}, adm:{}, fin:{}, sinCat:0, nSinCat:0, cli:{} };
+    var addCli=function(c,k,v){ c=c||'Sin cliente'; var o=L.cli[c]||(L.cli[c]={v:0,p:0,o:0}); o[k]+=v; };
+    R.forEach(function(r){ var c=finCat(r.categoria_id), m=finMonto(r);
+      if(r.tipo==='ingreso'){ if(c&&c.nombre==='Otros ingresos') L.otrosIng+=m; else { L.ventas+=m; addCli(r.tercero||cosCliente(r.faena),'v',m); } return; }
+      if(!c){ L.sinCat+=m; L.nSinCat++; return; }
+      var g=c.clase==='costo_directo'?L.cd:(c.clase==='operacion'?L.op:(c.clase==='administracion'?L.adm:(c.clase==='financiero'?L.fin:null)));
+      if(g){ g[c.nombre]=(g[c.nombre]||0)+m; if(c.clase==='costo_directo' && r.faena) addCli(cosCliente(r.faena),'o',m); } });
+    if(mo) Object.keys(mo.porCli||{}).forEach(function(c){ addCli(c==='Sin faena'?'Sin cliente':c,'p',mo.porCli[c]); });
+    var s=function(o){ return Object.keys(o).reduce(function(a,k){ return a+o[k]; },0); };
+    L.tCd=L.personal+s(L.cd); L.margen=L.ventas-L.tCd; L.pMargen=L.ventas?L.margen/L.ventas:null;
+    L.tOp=s(L.op); L.tAdm=s(L.adm); L.fijos=L.tOp+L.tAdm+L.sinCat; L.rOp=L.margen+L.otrosIng-L.fijos; L.tFin=s(L.fin); L.res=L.rOp-L.tFin;
+    L.equilibrio=(L.pMargen&&L.pMargen>0)?L.fijos/L.pMargen:null; L.n=R.length; L.pend=R.filter(function(r){ return r.estado==='pendiente'; }).length;
+    return L;
+  }
+  function finResultadoHTML(mes, mo, err){
+    var L=finResultadoCalc(mes, mo), ci=FIN.cierres[mes], pct=function(v){ return L.ventas?Math.round(v/L.ventas*1000)/10+'%':''; };
+    var fila=function(t,v,cls,sub){ return '<div class="fin-er-r '+(cls||'')+'"><span>'+t+(sub?'<small>'+sub+'</small>':'')+'</span><b>'+fmtMoney(v)+'</b><em>'+pct(v)+'</em></div>'; };
+    var det=function(o,signo){ return Object.keys(o).sort(function(a,b){ return o[b]-o[a]; }).map(function(k){ return fila(signo+' '+esc(k),o[k],'sub'); }).join(''); };
+    var avisos='';
+    if(err) avisos+=finAviso('No se pudo calcular la mano de obra: '+esc(err)+'. El resultado no incluye personal.');
+    if(L.pend) avisos+=finAviso(L.pend+' registros del mes siguen <b>Pendientes</b> de revisar: el resultado puede cambiar.');
+    if(L.nSinCat) avisos+=finAviso(L.nSinCat+' gastos sin categoría ('+fmtMoney(L.sinCat)+') se cuentan como gasto sin clasificar.');
+    if(!L.ventas) avisos+=finAviso('No hay ventas cargadas en '+esc(finMesLbl(mes))+'. Carga las facturas emitidas en <b>Registros → + Factura emitida</b>.');
+    var k='<div class="cos-kpis"><div class="cos-kpi main"><div class="l">Resultado del mes</div><div class="v">'+fmtMoney(L.res)+'</div><div class="s">'+(L.ventas?pct(L.res)+' de las ventas':'sin ventas cargadas')+'</div></div>'+
+      '<div class="cos-kpi"><div class="l">Ventas netas</div><div class="v">'+fmtMoney(L.ventas)+'</div><div class="s">sin IVA</div></div>'+
+      '<div class="cos-kpi"><div class="l">Margen bruto</div><div class="v">'+(L.pMargen==null?'—':Math.round(L.pMargen*1000)/10+'%')+'</div><div class="s">'+fmtMoney(L.margen)+'</div></div>'+
+      '<div class="cos-kpi"><div class="l">Punto de equilibrio</div><div class="v">'+(L.equilibrio==null?'—':fmtMoney(L.equilibrio))+'</div><div class="s">ventas al mes para no perder (fijos '+fmtMoney(L.fijos)+' ÷ margen %)</div></div></div>';
+    var er='<div class="cos-card fin-er"><h3>Estado de resultados · '+esc(finMesLbl(mes))+(ci?' <span class="fin-chip ok">Cerrado</span>':'')+'</h3>'+
+      fila('Ventas',L.ventas,'tot')+
+      fila('− Personal de faena',L.personal,'sub',mo?(mo.cerrado?'foto del cierre':'de horas y remuneraciones (Costos · Mano de obra)'):'no calculado')+det(L.cd,'−')+
+      fila('= Margen bruto',L.margen,'tot')+
+      (L.otrosIng?fila('+ Otros ingresos',L.otrosIng,'sub'):'')+
+      (L.tOp?fila('− Gastos de operación',L.tOp,'')+det(L.op,'·'):'')+
+      fila('− Gastos de administración',L.tAdm,'')+det(L.adm,'·')+
+      (L.sinCat?fila('− Gastos sin clasificar',L.sinCat,'warn'):'')+
+      fila('= Resultado operacional',L.rOp,'tot')+
+      (L.tFin?fila('− Financiero',L.tFin,'')+det(L.fin,'·'):'')+
+      fila('= Resultado del mes',L.res,'tot big '+(L.res<0?'neg':'pos'))+
+      '<p class="note" style="margin-top:10px">Montos netos (sin IVA) de las facturas; boletas por su total. No incluye préstamos entre empresas. Es el resultado de <b>gestión</b>: el oficial lo hace la contadora.</p></div>';
+    var cl=Object.keys(L.cli).map(function(c){ var o=L.cli[c]; return {c:c,v:o.v,p:o.p,o:o.o,m:o.v-o.p-o.o}; }).sort(function(a,b){ return b.v-a.v||b.p-a.p; });
+    var cli=cl.length?'<div class="cos-card" style="padding:0"><h3 style="padding:14px 16px 4px">Por cliente</h3><div class="cos-scroll"><table class="cos-tbl"><thead><tr><th>Cliente</th><th>Ventas</th><th>Personal</th><th>Otros directos</th><th>Margen</th></tr></thead><tbody>'+
+      cl.map(function(x){ return '<tr><td class="nm"><b>'+esc(x.c)+'</b></td><td>'+fmtMoney(x.v)+'</td><td>'+fmtMoney(x.p)+'</td><td>'+fmtMoney(x.o)+'</td><td class="'+(x.m<0?'neg':'pos')+'">'+fmtMoney(x.m)+(x.v?'<small>'+Math.round(x.m/x.v*100)+'%</small>':'')+'</td></tr>'; }).join('')+'</tbody></table></div></div>':'';
+    var acc='<div class="fin-bar"><span class="fin-sp"></span>'+(ci?'<small class="note" style="margin:0">Cerrado por '+esc(ci.cerrado_por||'')+' el '+fechaCorta(String(ci.cerrado_en).slice(0,10))+'</small><button class="btn ghost small" type="button" data-fin="reabrir">Reabrir mes</button>':'<button class="btn small" type="button" data-fin="cerrar"'+(err?' disabled':'')+'>Cerrar '+esc(finMesLbl(mes).toLowerCase())+'</button>')+'</div>';
+    FIN._ultRes={mes:mes, L:L, mo:mo};
+    return avisos+k+'<div class="cos-grid g21">'+er+'<div>'+cli+'<p class="note">El punto de equilibrio es lo que hay que vender en el mes para cubrir los gastos fijos (operación + administración) con el margen bruto de este mes.</p></div></div>'+acc;
+  }
+  function finCerrarMes(){
+    var u=FIN._ultRes; if(!u||!u.mo) return; var L=u.L;
+    if(L.pend && !confirm('Quedan '+L.pend+' registros Pendientes en el mes. ¿Cerrar igual?')) return;
+    if(!confirm('Cerrar '+finMesLbl(u.mes)+': los montos del mes quedan fijos (se puede reabrir). ¿Seguir?')) return;
+    var foto={ ventas:L.ventas, personal:L.personal, personal_cli:u.mo.porCli||{}, costo_directo:L.tCd, margen:L.margen, fijos:L.fijos, financiero:L.tFin, resultado:L.res, pendientes:L.pend };
+    sb.from('fin_cierres').upsert({ periodo:u.mes, resultado:foto, cerrado_por:miEmail(), cerrado_en:new Date().toISOString() }).then(function(r){ if(r.error){ toast('No se pudo cerrar: '+r.error.message); return; } toast('Mes cerrado'); cargarFin(); });
+  }
+
+  // ---------- Flujo de caja (8 semanas) ----------
+  function finCajaHoy(fecha){
+    var por={}; FIN.saldos.forEach(function(s){ if(fecha && s.fecha>fecha) return; var p=por[s.cuenta_id]; if(!p||s.fecha>p.fecha) por[s.cuenta_id]=s; });
+    var caja=0, tarj=0, ult=null, sin=0;
+    FIN.cuentas.filter(function(c){ return c.activo; }).forEach(function(c){ var s=por[c.id]; if(!s){ sin++; return; } if(c.tipo==='tarjeta') tarj+=+s.saldo||0; else caja+=+s.saldo||0; if(!ult||s.fecha<ult) ult=s.fecha; });
+    return {caja:caja, tarjetas:tarj, desde:ult, sinSaldo:sin, por:por};
+  }
+  function finFlujoHTML(moAnt){
+    var hoy=todayISO(), lun=sumarDias(hoy, 1-isoDow(hoy)), fin=sumarDias(lun, 55), C=finCajaHoy();
+    var cfgS=FIN.cfg.flujo_sueldos||{}, sueldo=(cfgS.monto!=null)?+cfgS.monto:(moAnt?moAnt.total:0);
+    var mov=[]; // {f, tipo:'in'|'out', t, v, atr}
+    finActivos().forEach(function(r){ if(!finAbierto(r)) return; var f=finEsperada(r), atr=f<lun; if(f>fin) return;
+      mov.push({ f:atr?lun:f, tipo:r.tipo==='ingreso'?'in':'out', t:(r.tercero?r.tercero+' · ':'')+r.concepto, v:Math.abs(finTot(r)), atr:atr }); });
+    // Gastos fijos de meses que aún no se generan
+    var generados={}; finActivos().forEach(function(r){ if(r.recurrente_id) generados[r.recurrente_id+'|'+r.periodo]=1; });
+    for(var m=hoy.slice(0,7); m<=fin.slice(0,7); m=finMesAdd(m,1)){
+      var mm=+m.slice(5,7);
+      FIN.recs.forEach(function(x){ if(!x.activo||!(+x.monto)||x.desde>m||(x.hasta&&x.hasta<m)||generados[x.id+'|'+m]) return;
+        if(x.ciclo==='anual'&&x.mes_pago!==mm) return; if(x.ciclo==='semestral'&&x.mes_pago!==mm&&((x.mes_pago+5)%12)+1!==mm) return;
+        var f=finDiaMes(m,x.dia); if(f<hoy||f>fin) return; mov.push({f:f,tipo:'out',t:'Gasto fijo · '+x.concepto,v:+x.monto}); });
+      var fs=finUltHabil(m); if(sueldo>0 && fs>=hoy && fs<=fin) mov.push({f:fs,tipo:'out',t:'Sueldos (estimado)',v:sueldo});
+      FIN.deudas.forEach(function(d){ if(!d.activo||!(+d.cuota)) return; var f=finDiaMes(m,d.dia); if(f<hoy||f>fin||(d.hasta&&f>d.hasta)) return; mov.push({f:f,tipo:'out',t:'Cuota · '+d.acreedor,v:+d.cuota}); });
+    }
+    var sem=[], saldo=C.caja, minS=null;
+    for(var i=0;i<8;i++){ var a=sumarDias(lun,i*7), b=sumarDias(a,6), M=mov.filter(function(x){ return x.f>=a&&x.f<=b; }).sort(function(p,q){ return p.f<q.f?-1:1; });
+      var ins=M.filter(function(x){ return x.tipo==='in'; }).reduce(function(s,x){ return s+x.v; },0), out=M.filter(function(x){ return x.tipo==='out'; }).reduce(function(s,x){ return s+x.v; },0);
+      var ini=saldo; saldo=saldo+ins-out; if(minS==null||saldo<minS.v) minS={v:saldo,a:a};
+      sem.push({a:a,b:b,ini:ini,ins:ins,out:out,fin:saldo,M:M}); }
+    var totIn=sem.reduce(function(s,x){ return s+x.ins; },0), totOut=sem.reduce(function(s,x){ return s+x.out; },0);
+    var avisos=(!FIN.cuentas.length?finAviso('Para partir con la caja real, agrega las cuentas y su saldo en <b>Balance → Cuentas</b>. Mientras tanto se parte de $0.'):'')+
+      (C.sinSaldo?finAviso(C.sinSaldo+' cuenta(s) sin saldo anotado.'):'')+(C.desde&&C.desde<sumarDias(hoy,-7)?finAviso('El saldo más antiguo es del '+fechaCorta(C.desde)+': actualízalo para que el flujo sea real.'):'');
+    var k='<div class="cos-kpis"><div class="cos-kpi main"><div class="l">Caja hoy</div><div class="v">'+fmtMoney(C.caja)+'</div><div class="s">bancos y caja'+(C.desde?' · saldo al '+fechaCorta(C.desde):'')+'</div></div>'+
+      '<div class="cos-kpi"><div class="l">Cobros esperados</div><div class="v">'+fmtMoney(totIn)+'</div><div class="s">8 semanas, según vencimiento</div></div>'+
+      '<div class="cos-kpi"><div class="l">Pagos comprometidos</div><div class="v">'+fmtMoney(totOut)+'</div><div class="s">por pagar, fijos, sueldos y cuotas</div></div>'+
+      '<div class="cos-kpi'+(minS&&minS.v<0?' warn':'')+'"><div class="l">Saldo más bajo</div><div class="v'+(minS&&minS.v<0?' neg':'')+'">'+fmtMoney(minS?minS.v:0)+'</div><div class="s">semana del '+(minS?fechaCorta(minS.a):'')+'</div></div></div>';
+    var filas=sem.map(function(s,i){ var det=s.M.length?s.M.map(function(x){ return '<div class="fin-mv"><span>'+fechaCorta(x.f)+' · '+esc(x.t)+(x.atr?' <em class="neg">atrasado</em>':'')+'</span><b class="'+(x.tipo==='in'?'pos':'')+'">'+(x.tipo==='in'?'+':'−')+fmtMoney(x.v)+'</b></div>'; }).join(''):'<div class="fin-mv"><span>Sin movimientos</span></div>';
+      return '<details class="fin-sem'+(s.fin<0?' neg':'')+'"><summary><span class="w">'+(i===0?'Esta semana':'Semana '+(i+1))+'<small>'+fechaCorta(s.a)+' – '+fechaCorta(s.b)+'</small></span><span>'+fmtMoney(s.ini)+'</span><span class="pos">+'+fmtMoney(s.ins)+'</span><span>−'+fmtMoney(s.out)+'</span><b>'+fmtMoney(s.fin)+'</b></summary>'+det+'</details>'; }).join('');
+    var cab='<div class="fin-sem cab"><div class="sumh"><span class="w">Semana</span><span>Saldo inicial</span><span>Cobros</span><span>Pagos</span><b>Saldo final</b></div></div>';
+    var sue='<div class="fin-bar"><label class="fin-chk">Sueldos al mes (estimado): <input id="fin-sueldo" type="number" step="1000" value="'+(sueldo||0)+'" style="width:140px"></label><small class="note" style="margin:0">'+(cfgS.monto!=null?'valor fijado a mano':'mano de obra del mes anterior')+' · se paga el último día hábil del mes</small><span class="fin-sp"></span>'+(cfgS.monto!=null?'<button class="btn ghost small" type="button" data-fin="sueldo-auto">Usar el calculado</button>':'')+'</div>';
+    return avisos+k+sue+'<div class="cos-card" style="padding:6px 0">'+cab+filas+'</div><p class="note">Lo vencido sin pagar o sin cobrar aparece en esta semana como <b>atrasado</b>. Las facturas sin vencimiento se esperan a 30 días de su fecha. Caja, cobros y préstamos son información de Cristopher: esta vista no se muestra al equipo.</p>';
+  }
+
+  // ---------- Balance de gestión ----------
+  function finPrestSaldo(fecha){ return FIN.prest.reduce(function(s,p){ if(fecha&&p.fecha>fecha) return s; return s+(p.sentido==='innova_a_isp'?1:-1)*(+p.monto||0); },0); }
+  function finBalanceHTML(mes, mo, actual){
+    var corte=actual?todayISO():finFinMes(mes), C=finCajaHoy(corte);
+    var abiertoAl=function(r){ return r.fecha<=corte && (!r.fecha_pago || r.fecha_pago>corte); };
+    var A=finActivos(), porCob=A.filter(function(r){ return r.tipo==='ingreso'&&abiertoAl(r); }).reduce(function(s,r){ return s+finTot(r); },0);
+    var porPag=A.filter(function(r){ return r.tipo==='gasto'&&abiertoAl(r); }).reduce(function(s,r){ return s+finTot(r); },0);
+    var deudas=FIN.deudas.filter(function(d){ return d.activo; }).reduce(function(s,d){ return s+(+d.saldo||0); },0);
+    var pr=finPrestSaldo(corte), sueldos=actual&&mo?mo.total:0;
+    var act=C.caja+porCob+Math.max(pr,0), pas=porPag+C.tarjetas+deudas+Math.max(-pr,0)+sueldos, pat=act-pas;
+    var l=function(t,v,sub,cls){ return '<div class="fin-er-r '+(cls||'')+'"><span>'+t+(sub?'<small>'+sub+'</small>':'')+'</span><b>'+fmtMoney(v)+'</b></div>'; };
+    var bal='<div class="cos-grid g11"><div class="cos-card fin-er"><h3>Activos</h3>'+l('Caja y bancos',C.caja,C.desde?'último saldo anotado al '+fechaCorta(C.desde):'sin saldos anotados')+l('Por cobrar',porCob,'facturas emitidas sin cobrar')+(pr>0?l('Préstamo a IS Performance',pr,'ISP le debe a Innova'):'')+l('Total activos',act,'','tot')+'</div>'+
+      '<div class="cos-card fin-er"><h3>Pasivos</h3>'+l('Por pagar',porPag,'proveedores y gastos sin pagar')+(C.tarjetas?l('Tarjetas de crédito',C.tarjetas):'')+(deudas?l('Préstamos y leasing',deudas):'')+(pr<0?l('Préstamo de IS Performance',-pr,'Innova le debe a ISP'):'')+(actual?l('Sueldos devengados del mes',sueldos,mo?'mano de obra a la fecha':'calculando…'):'')+l('Total pasivos',pas,'','tot')+'</div></div>'+
+      '<div class="cos-card fin-er">'+l('= Patrimonio de gestión',pat,'activos − pasivos'+(actual?' · hoy':' · al '+fechaCorta(corte)),'tot big '+(pat<0?'neg':'pos'))+'<p class="note" style="margin-top:8px">Balance de <b>gestión</b>: una foto para decidir. No incluye activo fijo (vehículos, equipos) ni impuestos por pagar; el balance oficial lo hace la contadora.</p></div>';
+    // Cuentas
+    var ctas=FIN.cuentas.length?FIN.cuentas.map(function(c){ var s=C.por[c.id]; return '<tr class="fin-row'+(c.activo?'':' fin-off')+'" data-cta="'+c.id+'"><td class="nm"><b>'+esc(c.nombre)+'</b><small>'+({banco:'Banco',tarjeta:'Tarjeta de crédito (saldo = deuda)',caja:'Caja',otro:'Otro'}[c.tipo])+'</small></td><td>'+(s?fmtMoney(s.saldo)+'<small>al '+fechaCorta(s.fecha)+'</small>':'<em class="neg">sin saldo</em>')+'</td><td><button class="btn ghost small" type="button" data-saldo="'+c.id+'">Anotar saldo</button></td></tr>'; }).join('')
+      :'<tr><td colspan="3" class="empty" style="padding:22px">Agrega las cuentas corrientes, tarjetas y caja de Innova.</td></tr>';
+    var dds=FIN.deudas.length?FIN.deudas.map(function(d){ return '<tr class="fin-row'+(d.activo?'':' fin-off')+'" data-deu="'+d.id+'"><td class="nm"><b>'+esc(d.acreedor)+'</b><small>'+({prestamo:'Préstamo',leasing:'Leasing',linea:'Línea de crédito',otro:'Otro'}[d.tipo])+(d.hasta?' · hasta '+fechaCorta(d.hasta):'')+'</small></td><td>'+fmtMoney(d.saldo)+'<small>al '+fechaCorta(d.fecha_saldo)+'</small></td><td>'+(+d.cuota?fmtMoney(d.cuota)+'<small>día '+(d.dia||1)+'</small>':'—')+'</td></tr>'; }).join('')
+      :'<tr><td colspan="3" class="empty" style="padding:22px">Sin deudas anotadas.</td></tr>';
+    var prs=FIN.prest.length?FIN.prest.slice(0,30).map(function(p){ return '<tr class="fin-row" data-pre="'+p.id+'"><td class="nm"><b>'+esc(p.concepto)+'</b><small>'+(p.sentido==='innova_a_isp'?'Innova → ISP':'ISP → Innova')+'</small></td><td>'+fechaCorta(p.fecha)+'</td><td>'+fmtMoney(p.monto)+'</td></tr>'; }).join('')
+      :'<tr><td colspan="3" class="empty" style="padding:22px">Sin movimientos entre empresas.</td></tr>';
+    var prT=finPrestSaldo();
+    return bal+
+      '<div class="fin-bar"><h3 class="fin-h">Cuentas</h3><span class="fin-sp"></span><button class="btn small" type="button" data-fin="nueva-cuenta">+ Cuenta</button></div><div class="cos-card" style="padding:0"><div class="cos-scroll"><table class="cos-tbl fin-tbl"><thead><tr><th>Cuenta</th><th>Saldo</th><th></th></tr></thead><tbody>'+ctas+'</tbody></table></div></div>'+
+      '<div class="fin-bar"><h3 class="fin-h">Préstamos y leasing</h3><span class="fin-sp"></span><button class="btn small" type="button" data-fin="nueva-deuda">+ Deuda</button></div><div class="cos-card" style="padding:0"><div class="cos-scroll"><table class="cos-tbl fin-tbl"><thead><tr><th>Acreedor</th><th>Saldo</th><th>Cuota</th></tr></thead><tbody>'+dds+'</tbody></table></div></div>'+
+      '<div class="fin-bar"><h3 class="fin-h">Préstamos entre empresas · saldo '+(prT>=0?'ISP debe a Innova ':'Innova debe a ISP ')+fmtMoney(Math.abs(prT))+'</h3><span class="fin-sp"></span><button class="btn small" type="button" data-fin="nuevo-prestamo">+ Movimiento</button></div><div class="cos-card" style="padding:0"><div class="cos-scroll"><table class="cos-tbl fin-tbl"><thead><tr><th>Concepto</th><th>Fecha</th><th>Monto</th></tr></thead><tbody>'+prs+'</tbody></table></div></div>'+
+      '<p class="note">Todo apoyo de Innova a ISP (o al revés) se anota aquí como préstamo, con fecha y monto. No es gasto ni ingreso.</p>';
+  }
+  function finAbrirCuenta(id){ var c=id?FIN.cuentas.filter(function(x){ return x.id===id; })[0]:null;
+    finForm(c?'Editar cuenta':'Nueva cuenta',[{k:'nombre',l:'Nombre',req:true,full:true,ph:'Ej: Banco Estado cta. cte.'},{k:'tipo',l:'Tipo',t:'select',o:[['banco','Banco'],['tarjeta','Tarjeta de crédito'],['caja','Caja'],['otro','Otro']]},{k:'activo',l:'Activa',t:'check',l2:'Se suma a la caja'}],
+      c||{tipo:'banco',activo:true}, function(o){ finGuardar('fin_cuentas', c&&c.id, o, 'Cuenta guardada'); },
+      c?function(){ if(!confirm('¿Eliminar la cuenta y sus saldos?')) return; sb.from('fin_cuentas').delete().eq('id',c.id).then(function(r){ if(r.error){ toast('No se pudo: '+r.error.message); return; } finCerrarForm(); cargarFin(); }); }:null); }
+  function finAbrirSaldo(cid){ var c=FIN.cuentas.filter(function(x){ return x.id===cid; })[0]; if(!c) return;
+    finForm('Saldo · '+c.nombre,[{k:'fecha',l:'Fecha',t:'date',req:true},{k:'saldo',l:c.tipo==='tarjeta'?'Monto adeudado':'Saldo según cartola',t:'number',req:true}],{fecha:todayISO()},
+      function(o){ sb.from('fin_saldos').upsert({cuenta_id:cid, fecha:o.fecha, saldo:o.saldo||0},{onConflict:'cuenta_id,fecha'}).then(function(r){ if(r.error){ toast('No se pudo: '+r.error.message); return; } finCerrarForm(); toast('Saldo anotado'); cargarFin(); }); }); }
+  function finAbrirDeuda(id){ var d=id?FIN.deudas.filter(function(x){ return x.id===id; })[0]:null;
+    finForm(d?'Editar deuda':'Nueva deuda',[{k:'acreedor',l:'Acreedor',req:true,full:true,ph:'Ej: Banco Estado'},{k:'tipo',l:'Tipo',t:'select',o:[['prestamo','Préstamo'],['leasing','Leasing'],['linea','Línea de crédito'],['otro','Otro']]},{k:'saldo',l:'Saldo adeudado',t:'number',req:true},{k:'fecha_saldo',l:'Saldo al',t:'date',req:true},{k:'cuota',l:'Cuota mensual',t:'number'},{k:'dia',l:'Día de pago',t:'number'},{k:'hasta',l:'Última cuota',t:'date'},{k:'activo',l:'Vigente',t:'check',l2:'Se cuenta en el balance y el flujo'},{k:'notas',l:'Notas',t:'textarea',full:true}],
+      d||{tipo:'prestamo',fecha_saldo:todayISO(),activo:true}, function(o){ o.saldo=o.saldo||0; o.cuota=o.cuota||0; finGuardar('fin_deudas', d&&d.id, o, 'Deuda guardada'); },
+      d?function(){ if(!confirm('¿Eliminar esta deuda?')) return; sb.from('fin_deudas').delete().eq('id',d.id).then(function(r){ if(r.error){ toast('No se pudo: '+r.error.message); return; } finCerrarForm(); cargarFin(); }); }:null); }
+  function finAbrirPrestamo(id){ var p=id?FIN.prest.filter(function(x){ return x.id===id; })[0]:null;
+    finForm(p?'Editar movimiento':'Préstamo entre empresas',[{k:'fecha',l:'Fecha',t:'date',req:true},{k:'sentido',l:'Sentido',t:'select',o:[['innova_a_isp','Innova presta / paga por ISP'],['isp_a_innova','ISP devuelve / paga por Innova']]},{k:'monto',l:'Monto',t:'number',req:true},{k:'concepto',l:'Concepto',req:true,full:true,ph:'Ej: Pago arriendo taller ISP'},{k:'notas',l:'Notas',t:'textarea',full:true}],
+      p||{fecha:todayISO(),sentido:'innova_a_isp'}, function(o){ if(!(o.monto>0)){ toast('Monto mayor a 0'); return; } finGuardar('fin_prestamos_grupo', p&&p.id, o, 'Movimiento guardado'); },
+      p?function(){ if(!confirm('¿Eliminar este movimiento?')) return; sb.from('fin_prestamos_grupo').update({deleted_at:new Date().toISOString()}).eq('id',p.id).then(function(r){ if(r.error){ toast('No se pudo: '+r.error.message); return; } finCerrarForm(); cargarFin(); }); }:null); }
+
+  // ---------- Eventos ----------
+  function finWire(){
+    var b=$('fin-body'); if(!b) return;
+    b.querySelectorAll('[data-ft]').forEach(function(x){ x.onclick=function(){ FIN.f.tipo=x.dataset.ft; pintarFin(); }; });
+    var fe=$('fin-fest'); if(fe) fe.onchange=function(){ FIN.f.estado=fe.value; pintarFin(); };
+    var fa=$('fin-fab'); if(fa) fa.onchange=function(){ FIN.f.abiertos=fa.checked; pintarFin(); };
+    var fq=$('fin-fq'); if(fq) fq.oninput=function(){ FIN.f.q=fq.value; clearTimeout(fq._t); fq._t=setTimeout(function(){ var pos=fq.selectionStart; pintarFin(); var n=$('fin-fq'); if(n){ n.focus(); try{ n.setSelectionRange(pos,pos); }catch(_){} } },250); };
+    b.querySelectorAll('tr[data-id]').forEach(function(x){ x.onclick=function(){ finAbrirRegistro(x.dataset.id); }; });
+    b.querySelectorAll('tr[data-rec]').forEach(function(x){ x.onclick=function(){ finAbrirFijo(x.dataset.rec); }; });
+    b.querySelectorAll('tr[data-cta]').forEach(function(x){ x.onclick=function(ev){ if(ev.target.closest('[data-saldo]')) return; finAbrirCuenta(x.dataset.cta); }; });
+    b.querySelectorAll('[data-saldo]').forEach(function(x){ x.onclick=function(ev){ ev.stopPropagation(); finAbrirSaldo(x.dataset.saldo); }; });
+    b.querySelectorAll('tr[data-deu]').forEach(function(x){ x.onclick=function(){ finAbrirDeuda(x.dataset.deu); }; });
+    b.querySelectorAll('tr[data-pre]').forEach(function(x){ x.onclick=function(){ finAbrirPrestamo(x.dataset.pre); }; });
+    var su=$('fin-sueldo'); if(su) su.onchange=function(){ var v=Math.max(0,Math.round(+su.value||0)); sb.from('fin_config').upsert({clave:'flujo_sueldos', valor:{monto:v}, updated_at:new Date().toISOString()}).then(function(r){ if(r.error){ toast('No se pudo: '+r.error.message); return; } FIN.cfg.flujo_sueldos={monto:v}; pintarFin(); }); };
+    b.querySelectorAll('[data-fin]').forEach(function(x){ x.onclick=function(){ var a=x.dataset.fin;
+      if(a==='nuevo-gasto') finAbrirRegistro(null,'gasto');
+      else if(a==='nuevo-ingreso'){ if(!CLIENTES||!CLIENTES.length) cargarClientes(function(){ finAbrirRegistro(null,'ingreso'); }); else finAbrirRegistro(null,'ingreso'); }
+      else if(a==='nuevo-fijo') finAbrirFijo(null);
+      else if(a==='generar') sb.rpc('fin_generar_mes').then(function(r){ if(r.error){ toast('No se pudo: '+r.error.message); return; } toast(r.data?(r.data+' gastos fijos generados'):'Ya estaban generados'); cargarFin(); });
+      else if(a==='cerrar') finCerrarMes();
+      else if(a==='reabrir'){ if(confirm('¿Reabrir '+finMesLbl(FIN.mes)+'? Se podrán cambiar sus montos; al cerrarlo de nuevo se toma otra foto.')) sb.from('fin_cierres').delete().eq('periodo',FIN.mes).then(function(r){ if(r.error){ toast('No se pudo: '+r.error.message); return; } delete FIN.mo[FIN.mes]; toast('Mes reabierto'); cargarFin(); }); }
+      else if(a==='nueva-cuenta') finAbrirCuenta(null);
+      else if(a==='nueva-deuda') finAbrirDeuda(null);
+      else if(a==='nuevo-prestamo') finAbrirPrestamo(null);
+      else if(a==='sueldo-auto') sb.from('fin_config').delete().eq('clave','flujo_sueldos').then(function(){ delete FIN.cfg.flujo_sueldos; pintarFin(); });
+    }; });
+  }
+  (function(){   // controles fijos de la vista (pestañas, mes, hoja)
+    var t=$('fin-tabs'); if(!t) return;
+    t.addEventListener('click',function(ev){ var x=ev.target.closest('[data-t]'); if(!x) return; FIN.tab=x.dataset.t; pintarFin(); });
+    $('fin-prev').addEventListener('click',function(){ FIN.mes=finMesAdd(FIN.mes,-1); pintarFin(); });
+    $('fin-next').addEventListener('click',function(){ if(FIN.mes<todayISO().slice(0,7)){ FIN.mes=finMesAdd(FIN.mes,1); pintarFin(); } });
+    $('fin-hoy').addEventListener('click',function(){ FIN.mes=todayISO().slice(0,7); pintarFin(); });
+    $('fin-sheet-bg').addEventListener('click',finCerrarForm);
   })();
 
   // ====== Reuniones: actas y seguimiento de acuerdos (beta: solo Enzo por ahora) ======
