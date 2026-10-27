@@ -13,7 +13,7 @@ import { avance, ordenarActivos, marcaCotizar, resumenTaller, detalleVehiculo } 
 
 const MAX_ENTREGADOS = 6;
 const ESPERA_LARGA = 60;   // minutos en espera para avisar
-const estado = { buscar: '', movida: null, timer: null };
+const estado = { buscar: '', movida: null, timer: null, scroll: 0 };
 
 export default async function vista(ctx) {
   const inicioMes = `${hoyISO().slice(0, 7)}-01`;
@@ -94,6 +94,14 @@ export default async function vista(ctx) {
 
   // Buscador: filtra las tarjetas sin recargar
   const tablero = el('div', { class: 'plan-tablero tal-tablero' }, columnas);
+  // Al refrescar (cada 2 minutos o al mover un auto) el tablero no vuelve a la primera columna: se mantiene donde
+  // estaba y, si se movió un auto, se muestra su tarjeta en la columna nueva (en el teléfono se ve una columna a la vez)
+  tablero.addEventListener('scroll', () => { estado.scroll = tablero.scrollLeft; }, { passive: true });
+  requestAnimationFrame(() => {
+    const nueva = movida ? tablero.querySelector('.tal-movida') : null;
+    if (nueva) nueva.scrollIntoView({ block: 'nearest', inline: 'center' });
+    else if (estado.scroll) tablero.scrollLeft = estado.scroll;
+  });
   const sinResultados = el('p', { class: 'texto-suave', hidden: true }, 'Ningún vehículo coincide con la búsqueda.');
   const filtrar = () => {
     const q = estado.buscar.trim().toLowerCase();

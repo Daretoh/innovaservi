@@ -13,11 +13,12 @@ export async function cargarManifiestos() {
 
 // Manifiestos visibles: módulo activo en la empresa + permiso 'ver', sin las pantallas que el equipo ocultó
 // para esta empresa en la Consola (y sin sus vistas hijas, ej.: la ficha de una lista oculta, salvo las que usan
-// varias pantallas: `compartida: true` en el ítem, ej.: el detalle de pago de Remuneraciones).
+// varias pantallas: `compartida: true` en el ítem, ej.: el detalle de pago de Remuneraciones). Un ítem con `requiere: 'editar'`
+// (u otra acción) solo se muestra a quien tiene ese permiso en el módulo (ej.: Cobros del taller, no para el operador).
 export function modulosVisibles(lista, modulosEmpresa, puede) {
   const ocultas = modulosEmpresa.ocultas ?? new Set();
   return lista.filter((m) => modulosEmpresa.has(m.id) && puede(m.id, 'ver'))
-    .map((m) => ({ ...m, menu: m.menu.filter((it) => !ocultas.has(it.id) && (it.compartida || !ocultas.has(it.padre))) }))
+    .map((m) => ({ ...m, menu: m.menu.filter((it) => !ocultas.has(it.id) && (it.compartida || !ocultas.has(it.padre)) && (!it.requiere || puede(m.id, it.requiere))) }))
     .filter((m) => m.menu.some((it) => !it.oculto));
 }
 
