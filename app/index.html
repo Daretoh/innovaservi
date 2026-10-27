@@ -1398,6 +1398,9 @@
   .dg-rep{position:relative;}
   .dg-rep .rs-sig{position:absolute;left:32%;bottom:100%;transform:translateX(-50%);height:var(--firma-h);width:auto;max-width:60%;object-fit:contain;margin-bottom:-16px;}
   .dg-rep .rs-tim{position:absolute;right:-8px;bottom:100%;margin-bottom:-24px;max-height:125px;max-width:48%;}
+  /* En la carta la firma va más grande (el tamaño "1,9 cm" estándar se ve chico en este formato) */
+  .carta-emp .dg-rep .rs-sig{height:calc(var(--firma-h) * 1.8);max-width:92%;}
+  .carta-emp .dg-rep .rs-tim{max-height:175px;max-width:62%;}
   .af-sec{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line);}
   .af-sec b{flex:1;font-weight:600;font-size:.9rem;}
   .af-sec select{flex:0 0 116px;}
