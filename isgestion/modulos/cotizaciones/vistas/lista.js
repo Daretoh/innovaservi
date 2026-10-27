@@ -14,6 +14,10 @@ export default async function vista(ctx) {
   const [{ data, error }, us] = await Promise.all([q, ctx.api.rpc('cot_usuarios', { p_empresa: ctx.empresa.id })]);
   if (error) throw error;
   const quien = new Map((us.data ?? []).map((u) => [u.user_id, u.nombre]));
+  // N° de la cotización de la que nace (copiada o dividida); si no está en la página, se busca
+  const numeroDe = new Map(data.map((c) => [c.id, numeroTexto(c.numero)]));
+  const faltan = [...new Set(data.map((c) => c.origen_id).filter((id) => id && !numeroDe.has(id)))];
+  if (faltan.length) for (const o of (await ctx.api.from('cot_cotizaciones').select('id, numero').in('id', faltan)).data ?? []) numeroDe.set(o.id, numeroTexto(o.numero));
   const b = filtro.buscar.trim().toLowerCase();
   const filas = data.map((c) => ({ ...c, t: totales(c, c.cot_grupos, c.cot_lineas) }))
     .filter((c) => !b || [String(c.numero), c.cliente_nombre, ...c.cot_grupos.map((g) => `${g.titulo ?? ''} ${g.patente ?? ''}`)].join(' ').toLowerCase().includes(b));
@@ -34,7 +38,8 @@ export default async function vista(ctx) {
       { titulo: 'N°', valor: (c) => el('a', { href: ctx.ruta('cotizaciones.editor', { id: c.id }) }, el('strong', {}, numeroTexto(c.numero))) },
       { titulo: 'Fecha', valor: (c) => fechaLarga(c.fecha) },
       { titulo: 'Cliente', valor: (c) => c.cliente_nombre ?? '' },
-      { titulo: 'Detalle', valor: (c) => c.cot_grupos.map((g) => [g.titulo, verPatente(g.patente)].filter(Boolean).join(' · ')).join(', ') },
+      { titulo: 'Detalle', valor: (c) => el('span', {}, c.cot_grupos.map((g) => [g.titulo, verPatente(g.patente)].filter(Boolean).join(' · ')).join(', '),
+        c.origen_id ? el('span', { class: 'texto-chico texto-suave' }, el('br'), `Nace de la N° ${numeroDe.get(c.origen_id) ?? '…'}`) : null) },
       { titulo: 'Estado', valor: (c) => el('span', { class: `chip ${CHIP_ESTADO[c.estado]}` }, nombreEstado[c.estado]) },
       { titulo: 'Total', valor: (c) => el('strong', {}, dinero(c.t.total)) },
       { titulo: 'Registro', valor: (c) => el('span', { class: 'texto-chico texto-suave' },

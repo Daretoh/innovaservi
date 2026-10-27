@@ -23,11 +23,17 @@ export default async function vista(ctx) {
     firma: fila('firma', 'Nombre bajo la firma', cfg.firma, { ayuda: 'Ej.: Área comercial. Si se deja vacío no se muestra.' }),
     contactos: fila('contactos', 'Contactos del pie (uno por línea)', (cfg.contactos ?? []).join('\n'), { largo: true, ayuda: 'Teléfono, sitio web, correo.' }),
   };
+  // Agrupar secciones (como el OS): cada sección en una línea con su total; "Extras" se detalla
+  const agrupar = el('input', { type: 'checkbox', class: 'interruptor', id: 'k-agrupar', checked: !!cfg.agrupar_secciones, disabled: !editable });
+  const filaAgrupar = el('div', { class: 'form-fila' },
+    el('label', { class: 'casilla' }, agrupar, 'Agrupar las secciones en el PDF'),
+    el('span', { class: 'texto-suave texto-chico' }, 'Cada sección sale en una sola línea con su total, sin sus ítems; la sección "Extras" se detalla. Con un cliente "siempre por cotizar" no se muestra el valor de cada línea, solo el total de cada vehículo.'));
   const guardar = async (ev) => {
     const b = ev.currentTarget; b.disabled = true;
     const v = {
       validez_dias: Math.min(365, Math.max(1, Number(f.validez_dias.c.value) || 7)),
       pago: lineas(f.pago.c.value), nota: f.nota.c.value.trim() || null, firma: f.firma.c.value.trim() || null, contactos: lineas(f.contactos.c.value),
+      agrupar_secciones: agrupar.checked,
     };
     // Actualizar o crear (la empresa del registro no se puede cambiar, por eso no se usa upsert)
     const u = await ctx.api.from('cot_config').update(v).eq('empresa_id', ctx.empresa.id).select('empresa_id');
@@ -41,5 +47,5 @@ export default async function vista(ctx) {
       editable ? el('div', { class: 'listado-acciones' }, boton('Guardar', { icono: 'check', tipo: 'primario', onclick: guardar })) : null),
     el('div', { class: 'plan-editor' },
       el('div', { class: 'ficha doc-grupo' }, f.validez_dias.nodo, f.pago.nodo, f.firma.nodo),
-      el('div', { class: 'ficha doc-grupo' }, f.nota.nodo, f.contactos.nodo)));
+      el('div', { class: 'ficha doc-grupo' }, f.nota.nodo, f.contactos.nodo, filaAgrupar)));
 }

@@ -392,11 +392,14 @@ export default async function vista(ctx) {
     el('div', { class: 'texto-suave texto-chico' }, el('span', {}, 'Costo interno'), (caja.costo = el('span'))),
     el('div', { class: 'texto-suave texto-chico' }, el('span', {}, 'Margen'), (caja.margen = el('span'))));
 
+  // De qué cotización nace (copiada o dividida), con enlace
+  const origen = c.origen_id ? (await ctx.api.from('cot_cotizaciones').select('id, numero').eq('id', c.origen_id).maybeSingle()).data : null;
   const vista = el('section', { class: 'listado' },
     volver, datalist,
     el('header', { class: 'listado-cabecera' },
       el('div', {}, el('h1', {}, `Cotización N° ${numeroTexto(c.numero)}`),
-        el('p', { class: 'texto-suave' }, [c.cliente_nombre, fechaLarga(c.fecha), c.origen_id ? 'copia de otra cotización' : null].filter(Boolean).join(' · '))),
+        el('p', { class: 'texto-suave' }, [c.cliente_nombre, fechaLarga(c.fecha)].filter(Boolean).join(' · '),
+          origen ? el('span', {}, ' · nace de la ', el('a', { href: ctx.ruta('cotizaciones.editor', { id: origen.id }) }, `N° ${numeroTexto(origen.numero)}`)) : null)),
       el('div', { class: 'listado-acciones' }, el('span', { class: `chip ${CHIP_ESTADO[c.estado]}` }, nombreEstado[c.estado]), acciones)),
     c.estado !== 'borrador' ? el('p', { class: 'aviso-bandeja' }, icono('alerta', { tam: 16 }), `${nombreEstado[c.estado]}: bloqueada para cambios. Para corregirla, reábrela.`)
       : el('p', { class: 'aviso-bandeja cot-editando' }, icono('editar', { tam: 16 }), el('strong', {}, `Editando N° ${numeroTexto(c.numero)}`), ' · los cambios se guardan en esta cotización al escribir. Para otra, usa "Nueva cotización".'),
@@ -422,6 +425,8 @@ export default async function vista(ctx) {
       const { error } = await ctx.api.from('cot_grupos').insert({ cotizacion_id: c.id, empresa_id: ctx.empresa.id, orden: Math.max(0, ...grupos.map((g) => g.orden)) + 1 });
       if (error) avisar(error.message, 'error'); else ctx.refrescar();
     } }) : null,
+    // Traer los autos que el cliente tuvo en el taller en un mes (como "Traer de Cierre GM" del OS)
+    editable && conTaller && c.tercero_id ? boton('Traer autos del mes', { icono: 'llave', onclick: async () => { const { traerMes } = await import('../traer-mes.js'); traerMes(ctx, c, grupos); } }) : null,
     catalogo.tieneLista ? el('p', { class: 'texto-suave texto-chico' }, 'Este cliente tiene lista de precios: al escribir un servicio se usa su precio especial.') : null,
     editable ? el('p', { class: 'texto-suave texto-chico' }, 'Planilla: Enter baja de fila (en la última crea una línea), Mayús+Enter sube, flechas para moverse; se puede pegar un rango copiado de Excel (Descripción, Cant., Precio, Desc. %) y arrastrar filas o secciones desde el asa (también a otro vehículo).') : null,
   );

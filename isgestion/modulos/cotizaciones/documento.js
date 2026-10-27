@@ -63,32 +63,49 @@ export async function pdfCotizacion(ctx, c) {
   // ---- Tabla por grupo (como el OS, 2026-10-22): sin columna c/IVA por ítem (el IVA va solo en el total) y, si hay
   // descuentos por ítem, las columnas Neto · Desc. · Neto c/desc
   const conIva = c.con_iva;
-  const mostrar = c.mostrar_valores;
-  const conDesc = mostrar && c.cot_lineas.some((l) => l.tipo !== 'seccion' && Number(l.desc_pct) > 0);
+  // Agrupar secciones (Diseño, como el OS): cada sección en una línea con su total; "Extras" y las líneas sin sección se
+  // detallan. Con un cliente "siempre por cotizar" (GM en el OS) no se muestra el valor de cada línea, solo el total
+  // de cada vehículo.
+  const agrupar = !!cfg.agrupar_secciones;
+  const porCotizar = agrupar && c.tercero_id
+    ? !!(await ctx.api.from('terceros').select('por_cotizar').eq('id', c.tercero_id).maybeSingle()).data?.por_cotizar : false;
+  const mostrar = c.mostrar_valores && !porCotizar;
+  const conDesc = mostrar && !agrupar && c.cot_lineas.some((l) => l.tipo !== 'seccion' && Number(l.desc_pct) > 0);
   const bruto = (l) => Math.round(Number(l.cantidad || 0) * Number(l.precio || 0));
   const cols = conDesc ? 5 : 3;
+  const esExtras = (s) => /^\s*extras?\s*$/i.test(s ?? '');
+  const sangria = { cellPadding: { top: 1.8, bottom: 1.8, left: 6, right: 2 } };
   const body = [];
   c.cot_grupos.forEach((g, n) => {
     const ls = c.cot_lineas.filter((l) => l.grupo_id === g.id);
     if (!ls.length && !g.titulo) return;
     const cab = [`${n + 1}. ${g.titulo || 'Detalle'}`, verPatente(g.patente), g.anio, g.talla ? `Talla ${g.talla}` : null].filter(Boolean).join('  ·  ');
     body.push([{ content: cab, colSpan: cols, styles: { fillColor: claro, fontStyle: 'bold', textColor: TEXTO } }]);
+    let seccion = null;   // sección agrupada en curso: { fila, total }
     for (const l of ls) {
       if (l.tipo === 'seccion') {
+        seccion = null;
+        if (agrupar && l.descripcion && !esExtras(l.descripcion)) {
+          seccion = { total: 0, fila: [{ content: l.descripcion, styles: sangria }, '', ''] };
+          body.push(seccion.fila);
+          continue;
+        }
         if (l.descripcion) body.push([{ content: l.descripcion.toUpperCase(), colSpan: cols, styles: { fontStyle: 'bold', fontSize: 8, textColor: color, cellPadding: { top: 2.2, bottom: 1.2, left: 6, right: 2 } } }]);
         continue;
       }
       const v = totalLinea(l);
+      if (seccion) { seccion.total += v; seccion.fila[2] = mostrar ? pesos(seccion.total) : ''; continue; }
       const dp = Number(l.desc_pct) || 0;
-      const fila = [{ content: l.descripcion, styles: { cellPadding: { top: 1.8, bottom: 1.8, left: 6, right: 2 } } }, String(Number(l.cantidad))];
+      const fila = [{ content: l.descripcion, styles: sangria }, String(Number(l.cantidad))];
       if (conDesc) fila.push(pesos(bruto(l)), dp ? `${dp.toLocaleString('es-CL')} %` : '—', pesos(v));
       else fila.push(mostrar ? pesos(v) : '');
       body.push(fila);
     }
     const sg = t.porGrupo.get(g.id) ?? 0;
-    const sub = [{ content: `Subtotal ${g.titulo || ''}`.trim(), colSpan: 2, styles: { halign: 'right', fontStyle: 'bold', textColor: GRIS } }];
+    // Con un cliente "siempre por cotizar" el total del vehículo se muestra siempre (es el único valor)
+    const sub = [{ content: `${porCotizar ? 'Total' : 'Subtotal'} ${g.titulo || ''}`.trim(), colSpan: 2, styles: { halign: 'right', fontStyle: 'bold', textColor: GRIS } }];
     if (conDesc) sub.push({ content: pesos(ls.reduce((s2, l) => s2 + (l.tipo === 'seccion' ? 0 : bruto(l)), 0)), styles: { fontStyle: 'bold' } }, '', { content: pesos(sg), styles: { fontStyle: 'bold' } });
-    else sub.push({ content: mostrar ? pesos(sg) : '', styles: { fontStyle: 'bold' } });
+    else sub.push({ content: mostrar || porCotizar ? pesos(sg) : '', styles: { fontStyle: 'bold' } });
     body.push(sub);
   });
   doc.autoTable({
