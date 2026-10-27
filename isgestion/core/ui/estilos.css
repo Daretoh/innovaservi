@@ -1204,7 +1204,12 @@ a.ind-barra-fila:hover .ind-nombre { color: var(--empresa); }
 }
 .apartado > .pestanas-apartado a:hover { color: var(--texto); border-bottom-color: var(--borde); }
 .apartado > .pestanas-apartado a[aria-current="page"] { color: var(--empresa); border-bottom-color: var(--empresa); font-weight: 600; }
-@media (max-width: 760px) { .pestanas-apartado a { padding: 10px 12px; } }
+@media (max-width: 760px) {
+  /* En el teléfono las pestañas y los filtros pasan a varias líneas: se ven todas sin deslizar (pedido de Enzo) */
+  .pestanas-apartado, .pestanas { flex-wrap: wrap; overflow: visible; }
+  .apartado > .pestanas-apartado a { padding: 8px 10px; }
+  .segmento { flex-wrap: wrap; max-width: 100%; }
+}
 
 /* ---------- Cargador (tres barras que crecen por turno). Color de la empresa; reutilizable: <span class="cargador"> ---------- */
 .cargador {

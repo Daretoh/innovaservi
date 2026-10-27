@@ -12,12 +12,14 @@ function saludo(d) {
   return h < 6 ? 'Buenas noches' : h < 12 ? 'Buenos días' : h < 20 ? 'Buenas tardes' : 'Buenas noches';
 }
 
-// Nombre corto del usuario para el saludo: su ficha (nombre y apellido) o la parte del correo antes de la @
+// Nombre del usuario para el saludo: el de su ficha de trabajador (Administración → Usuarios → Ficha). Si no tiene
+// ficha, sin nombre (la parte del correo, ej. "emc2", no es un nombre).
 async function nombreUsuario(ctx) {
   const { data } = await ctx.api.rpc('nombres_usuarios', { p_empresa: ctx.empresa.id });
-  const n = (data ?? []).find((x) => x.user_id === ctx.usuario.id)?.nombre ?? ctx.usuario.email.split('@')[0];
-  const primero = n.includes(' ') ? n.split(' ')[0] : n.split(/[._-]/)[0];
-  return primero ? primero[0].toUpperCase() + primero.slice(1).toLowerCase() : '';
+  const n = (data ?? []).find((x) => x.user_id === ctx.usuario.id)?.nombre ?? '';
+  if (!n || n === ctx.usuario.email.split('@')[0]) return '';
+  const primero = n.split(' ')[0];
+  return primero[0].toUpperCase() + primero.slice(1).toLowerCase();
 }
 
 // Resumen del taller (como pide Enzo para la tablet): cuántos autos hay y en qué etapa; lleva al tablero
