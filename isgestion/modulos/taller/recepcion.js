@@ -111,7 +111,7 @@ export async function recepcion(ctx, { fecha = hoyISO(), vehiculo = null } = {})
         doc_tipo: esEmpresa(cliente) || porCotizarDe(terceroOrden) ? 'factura' : 'boleta',
         estado: llego ? 'espera' : 'agendado', prioridad: x.prioridad, trabajador_id: x.trabajador_id || null,
         fecha_cita: x.fecha_cita, hora_cita: x.hora_cita || null, ingreso_at: llego ? new Date().toISOString() : null, notas: x.notas.trim() || null,
-        tareas: elegidos.flatMap((s) => s.tareas.map((t) => ({ t, ok: false }))),
+        tareas: [...new Set(elegidos.flatMap((s) => s.tareas))].map((t) => ({ t, ok: false })),   // sin repetir tareas comunes
       }).select('id').single();
       if (error) throw new Error(error.message);
       if (elegidos.length) {

@@ -477,8 +477,11 @@ button.dia-tarjeta { cursor: pointer; }
 .checks { border: 0; padding: 0; margin: 0; }
 .checks legend { font-size: .85rem; color: var(--texto-suave); padding: 0; margin-bottom: 4px; }
 .checks-lista { display: grid; gap: 6px; max-height: 220px; overflow-y: auto; padding: 8px; border: 1px solid var(--borde); border-radius: 6px; }
+.lista-campo { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; max-height: 320px; overflow-y: auto; }
+.lista-fila { display: flex; align-items: center; gap: 4px; }
+.lista-fila .campo { flex: 1; min-width: 0; }
 .aviso {
-  position: fixed; right: 16px; bottom: 16px; z-index: 20; display: flex; align-items: center; gap: 8px;
+  position: fixed; right: 16px; bottom: 16px; z-index: 900; display: flex; align-items: center; gap: 8px;
   padding: 10px 14px; border-radius: 8px; color: #fff; background: var(--ok); box-shadow: var(--sombra);
 }
 .aviso-error { background: var(--error); }
@@ -1559,6 +1562,7 @@ html[data-modo="oscuro"] img { color-scheme: light; }
 /* Taller: Seguimiento (resumen con arrastre y detalle a pantalla completa) */
 .seg-resumen summary { cursor: pointer; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
 .seg-resumen .fin-tarjetas { margin: 12px 0 8px; }
+@media (max-width: 700px) { .seg-resumen .fin-tarjetas { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; } .seg-resumen .fin-tarjeta { padding: 10px; } .seg-resumen .total-grande { font-size: 22px; } }
 .seg-lista { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
 .seg-fila { display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto minmax(60px, 160px) 40px; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; background: var(--fondo-sutil); }
 .seg-fila.arrastrando { opacity: .5; outline: 2px dashed var(--empresa); }
@@ -1653,6 +1657,9 @@ html[data-modo="oscuro"] img { color-scheme: light; }
 .franja-push { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 800; display: flex; align-items: center; gap: 10px; max-width: calc(100% - 32px);
   padding: 10px 14px; border-radius: 12px; background: var(--superficie); color: var(--texto); border: 1px solid var(--borde); box-shadow: 0 6px 24px rgb(0 0 0 / .18); font-size: 14px; }
 .franja-push[hidden] { display: none; }
+/* Con la franja abierta, los avisos salen sobre ella (no debajo); la franja se puede cerrar */
+body:has(.franja-push:not([hidden])) .aviso { bottom: calc(16px + 76px); }
+.franja-push .boton-icono { flex: none; }
 .franja-push > svg { color: var(--empresa); flex: none; }
 /* Inicio: alertas como tablero e indicadores del día */
 .ind-cab-acciones { display: flex; gap: 10px; align-items: center; }

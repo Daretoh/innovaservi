@@ -9,10 +9,11 @@ import { SERVICIOS } from '../sugeridos.js';
 
 export default async function vista(ctx) {
   const servicios = await cargarServicios(ctx, { todos: true });
-  const editable = ctx.puede('taller', 'editar');
+  // El catálogo lo cambia solo quien aprueba en Taller (Administrador, Jefe de taller): Taller 006
+  const editable = ctx.puede('taller', 'aprobar');
   const acciones = [];
-  if (ctx.puede('taller', 'crear')) acciones.push(boton('Nuevo servicio', { icono: 'mas', tipo: 'primario', onclick: () => formulario(ctx, null) }));
-  if (ctx.puede('taller', 'crear') && !servicios.length) acciones.push(boton('Cargar servicios sugeridos', { icono: 'mas', onclick: (ev) => sugeridos(ctx, ev.currentTarget) }));
+  if (editable) acciones.push(boton('Nuevo servicio', { icono: 'mas', tipo: 'primario', onclick: () => formulario(ctx, null) }));
+  if (editable && !servicios.length) acciones.push(boton('Cargar servicios sugeridos', { icono: 'mas', onclick: (ev) => sugeridos(ctx, ev.currentTarget) }));
 
   const lista = listado({
     titulo: 'Servicios y precios',
@@ -39,7 +40,8 @@ function formulario(ctx, s) {
       { id: 'variable', etiqueta: 'Precio', opciones: [['no', 'Por talla'], ['si', 'A convenir (se escribe en la orden)']], valor: s?.variable ? 'si' : 'no' },
       ...TALLAS.map((t) => ({ id: `precio_${t.toLowerCase()}`, etiqueta: `Precio talla ${t}`, tipo: 'number', valor: s?.[`precio_${t.toLowerCase()}`] != null ? String(s[`precio_${t.toLowerCase()}`]) : '' })),
       { id: 'duracion', etiqueta: 'Duración', valor: s?.duracion ?? '', ayuda: 'Ej.: 2-3 horas, 1-2 días.' },
-      { id: 'tareas', etiqueta: 'Tareas que incluye (una por línea)', tipo: 'textarea', valor: (s?.tareas ?? []).join('\n') },
+      { id: 'tareas', etiqueta: 'Tareas que incluye', tipo: 'lista', valor: s?.tareas ?? [], textoAgregar: 'Agregar tarea', placeholder: 'Ej.: Lavado exterior con espuma',
+        ayuda: 'Son el checklist de la orden: al agregar este servicio a un auto, sus tareas aparecen en el Seguimiento para ir marcándolas. Enter agrega otra.' },
       { id: 'orden', etiqueta: 'Orden en la lista', tipo: 'number', valor: String(s?.orden ?? 0) },
       ...(s ? [{ id: 'activo', etiqueta: 'Estado', opciones: [['true', 'Activo'], ['false', 'Inactivo (no se ofrece)']], valor: String(s.activo) }] : []),
     ],
@@ -48,7 +50,7 @@ function formulario(ctx, s) {
       const precio = (t) => (variable || v[`precio_${t}`] === '' ? null : Math.max(0, Math.round(Number(v[`precio_${t}`]))));
       const datos = {
         nombre: v.nombre.trim(), categoria: v.categoria.trim() || null, variable, precio_s: precio('s'), precio_m: precio('m'), precio_l: precio('l'), precio_xl: precio('xl'),
-        duracion: v.duracion.trim() || null, tareas: v.tareas.split('\n').map((t) => t.trim()).filter(Boolean), orden: Number(v.orden) || 0,
+        duracion: v.duracion.trim() || null, tareas: v.tareas, orden: Number(v.orden) || 0,
         ...(s ? { activo: v.activo === 'true' } : {}),
       };
       const r = s ? await ctx.api.from('tal_servicios').update(datos).eq('id', s.id) : await ctx.api.from('tal_servicios').insert({ ...datos, empresa_id: ctx.empresa.id });

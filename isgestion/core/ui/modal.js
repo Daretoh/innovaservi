@@ -25,6 +25,24 @@ export function abrirFormulario({ titulo, mensaje, campos, textoGuardar = 'Guard
         el('div', { class: 'checks-lista' }, c.opciones.map(([v, t]) => el('label', { class: 'casilla' },
           el('input', { type: 'checkbox', name: c.id, value: v, checked: (c.valor ?? []).includes(v) }), t))));
     }
+    if (c.tipo === 'lista') {   // lista editable de textos (ej.: tareas de un servicio): una fila por elemento
+      const filas = el('div', { class: 'lista-campo' });
+      const fila = (v = '') => {
+        const entrada = el('input', { class: 'campo', name: c.id, value: v, placeholder: c.placeholder ?? '' });
+        const mover = (d) => { const f = entrada.parentElement; const o = d < 0 ? f.previousElementSibling : f.nextElementSibling; if (o) { if (d < 0) filas.insertBefore(f, o); else filas.insertBefore(o, f); entrada.focus(); } };
+        const r = el('div', { class: 'lista-fila' }, entrada,
+          el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Subir', title: 'Subir', onclick: () => mover(-1) }, icono('arriba', { tam: 16 })),
+          el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Bajar', title: 'Bajar', onclick: () => mover(1) }, icono('abajo', { tam: 16 })),
+          el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Quitar', title: 'Quitar', onclick: () => r.remove() }, icono('basura', { tam: 16 })));
+        // Enter agrega una fila debajo (como una lista)
+        entrada.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); const n = fila(); r.after(n); n.querySelector('input').focus(); } });
+        return r;
+      };
+      filas.append(...(c.valor ?? []).map((v) => fila(v)));
+      const agregar = boton(c.textoAgregar ?? 'Agregar', { icono: 'mas', onclick: () => { const n = fila(); filas.append(n); n.querySelector('input').focus(); } });
+      return el('fieldset', { class: 'form-fila checks' }, el('legend', {}, c.etiqueta), filas, agregar,
+        c.ayuda ? el('span', { class: 'texto-suave texto-chico' }, c.ayuda) : null);
+    }
     if (c.tipo === 'textarea') {
       return el('div', { class: 'form-fila' }, el('label', { for: `f-${c.id}` }, c.etiqueta),
         Object.assign(el('textarea', { id: `f-${c.id}`, name: c.id, class: 'campo', rows: c.filas ?? 3, required: c.requerido }), { value: c.valor ?? '' }),
@@ -61,6 +79,7 @@ export function abrirFormulario({ titulo, mensaje, campos, textoGuardar = 'Guard
     const fd = new FormData(form);
     const valores = Object.fromEntries(fd);
     for (const c of campos) if (c.tipo === 'checks') valores[c.id] = fd.getAll(c.id);
+    for (const c of campos) if (c.tipo === 'lista') valores[c.id] = fd.getAll(c.id).map((x) => String(x).trim()).filter(Boolean);
     const poner = (id, v) => {
       if (v == null) return;
       const c = form.elements[id];
@@ -78,6 +97,7 @@ export function abrirFormulario({ titulo, mensaje, campos, textoGuardar = 'Guard
     const fd = new FormData(form);
     const valores = Object.fromEntries(fd);
     for (const c of campos) if (c.tipo === 'checks') valores[c.id] = fd.getAll(c.id);
+    for (const c of campos) if (c.tipo === 'lista') valores[c.id] = fd.getAll(c.id).map((x) => String(x).trim()).filter(Boolean);
     try {
       // Archivos: foto de iPhone (HEIC) → JPEG; varias fotos → un PDF (escáner)
       for (const c of campos) {

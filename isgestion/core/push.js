@@ -79,9 +79,13 @@ export function franja() {
       b.disabled = true;
       try { await activar(); nodo.hidden = true; avisar('Notificaciones activadas en este dispositivo.'); } catch (e) { avisar(e.message, 'error'); b.disabled = false; }
     });
-    nodo.replaceChildren(icono('campana', { tam: 16 }),
+    // Se puede cerrar (vuelve en la próxima sesión del navegador)
+    try { if (sessionStorage.getItem('isg.push.cerrada')) return; } catch { /* sin almacenamiento */ }
+    const cerrar = el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Cerrar', title: 'Ahora no' }, icono('cerrar', { tam: 16 }));
+    cerrar.addEventListener('click', () => { nodo.hidden = true; try { sessionStorage.setItem('isg.push.cerrada', '1'); } catch { /* sin almacenamiento */ } });
+    nodo.replaceChildren(...[icono('campana', { tam: 16 }),
       el('span', {}, iphoneSinInstalar() ? 'Para recibir avisos en el iPhone, instala la app: Compartir → Agregar a inicio.' : 'Activa las notificaciones para recibir tus tareas y avisos en este dispositivo.'),
-      iphoneSinInstalar() ? null : b);
+      iphoneSinInstalar() ? null : b, cerrar].filter(Boolean));
     nodo.hidden = false;
   })().catch(() => {});
   return nodo;

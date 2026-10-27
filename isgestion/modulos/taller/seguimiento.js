@@ -98,7 +98,8 @@ export function resumenTaller(ctx, data, { alAbrir }) {
     lista.addEventListener('pointerup', soltar);
     lista.addEventListener('pointercancel', soltar);
   }
-  return el('details', { class: 'ficha doc-grupo seg-resumen', open: true },
+  // En el teléfono parte cerrado: lo primero que se ve es el tablero (pedido de Enzo)
+  return el('details', { class: 'ficha doc-grupo seg-resumen', open: !matchMedia('(max-width: 700px)').matches },
     el('summary', {}, el('strong', {}, 'Resumen del taller'), el('span', { class: 'texto-suave texto-chico' }, ` ${activos.length} activos · ${prom}% de avance${puede ? ' · arrastra para priorizar' : ''}`)),
     el('div', { class: 'fin-tarjetas' },
       kpi('En proceso', String(data.filter((o) => o.estado === 'proceso').length), 'activos ahora'),

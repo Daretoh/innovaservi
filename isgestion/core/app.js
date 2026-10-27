@@ -253,15 +253,22 @@ const ICONO_VISTA = [
 ];
 const iconoVista = (it) => it.icono ?? ICONO_VISTA.find(([re]) => re.test(it.label))?.[1] ?? it.modulo.icono;
 
+// Con pocas pantallas (p. ej. alguien que solo tiene Taller), el menú muestra cada pantalla en vez de un apartado con
+// pestañas: así un operador ve Tablero, Calendario, Agenda… directo en la columna (pedido de Enzo, 2026-10-27).
+const MAX_MENU_EXPANDIDO = 10;
+
 function pintarMenu() {
   const enlace = (href, ic, texto) => el('a', { href, title: texto }, icono(ic), el('span', { class: 'menu-texto' }, texto));
+  const total = [...estado.apartados.grupos.values()].flat().reduce((s, ap) => s + ap.items.length, 0);
+  estado.menuExpandido = total <= MAX_MENU_EXPANDIDO;
   const grupos = [...estado.apartados.grupos].map(([categoria, apartados]) =>
     el('div', { class: 'menu-grupo' },
       el('h3', {}, categoria),
-      apartados.map((ap) => {
+      apartados.flatMap((ap) => {
+        if (estado.menuExpandido) return ap.items.map((it) => { const a = enlace(`#/${it.id}`, iconoVista(it), it.label); a.dataset.vista = it.id; return a; });
         const a = enlace(`#/${ap.items[0].id}`, ap.items.length > 1 ? ap.icono : iconoVista(ap.items[0]), ap.items.length > 1 ? ap.label : ap.items[0].label);
         a.dataset.apartado = ap.id;
-        return a;
+        return [a];
       })));
   estado.menu.replaceChildren(el('div', { class: 'menu-grupo' }, enlace('#/', 'inicio', 'Inicio')), ...grupos);
 }
@@ -341,7 +348,8 @@ async function navegar() {
   // Si la pantalla padre está oculta para la empresa (vista compartida), se marca el apartado de su módulo
   const apartado = estado.apartadoDe?.get(resaltar) ?? [...(estado.apartadoDe?.values() ?? [])].find((ap) => ap.items.some((it) => it.id.split('.')[0] === id.split('.')[0]));
   for (const a of estado.menu.querySelectorAll('a')) {
-    const marcado = apartado ? a.dataset.apartado === apartado.id : a.getAttribute('href') === `#/${resaltar}`;
+    const marcado = a.dataset.vista ? a.dataset.vista === resaltar
+      : apartado ? a.dataset.apartado === apartado.id : a.getAttribute('href') === `#/${resaltar}`;
     a.toggleAttribute('aria-current', marcado);
     if (marcado) a.setAttribute('aria-current', 'page');
   }
@@ -378,7 +386,7 @@ async function navegar() {
     const h1 = nodo.querySelector?.(':scope > .listado-cabecera > h1, :scope > header > h1, :scope > .listado-cabecera > div > h1');
     if (h1 && !h1.querySelector('.titulo-icono')) h1.prepend(el('span', { class: 'titulo-icono' }, icono(iconoVista({ ...(actual.item.padre ? estado.rutas.get(actual.item.padre)?.item ?? actual.item : actual.item), modulo: actual.modulo }), { tam: 20 })));
     // Pestañas del apartado (si tiene más de una pantalla), sobre la vista; no en las vistas ocultas (fichas)
-    const ap = !actual.item.oculto ? estado.apartadoDe.get(id) : null;
+    const ap = !actual.item.oculto && !estado.menuExpandido ? estado.apartadoDe.get(id) : null;   // con el menú expandido las pestañas ya están en él
     const contenido = ap && ap.items.length > 1
       ? el('div', { class: `apartado${nueva ? ' vista-entra' : ''}` },
         el('nav', { class: 'pestanas pestanas-apartado', 'aria-label': ap.label },
