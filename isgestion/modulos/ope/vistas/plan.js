@@ -147,10 +147,13 @@ export default async function vista(ctx) {
   }
 
   // Días de la misma faena (si dura más de un día)
-  const irDia = (n) => { const d = sumarDias(fecha, n); return d >= f.fecha_inicio && d <= f.fecha_fin ? ctx.ruta('ope.plan', { f: f.id, d }) : null; };
-  const navDia = f.fecha_inicio !== f.fecha_fin ? el('div', { class: 'nav-periodo faena-dias' },
+  // Días a elección: solo esos; si no, todo el rango
+  const diasFaena = f.dias?.length ? [...f.dias].sort() : (() => { const l = []; for (let d = f.fecha_inicio; d <= f.fecha_fin; d = sumarDias(d, 1)) l.push(d); return l; })();
+  const iDia = diasFaena.indexOf(fecha);
+  const irDia = (n) => { const d = diasFaena[iDia + n]; return iDia >= 0 && d ? ctx.ruta('ope.plan', { f: f.id, d }) : null; };
+  const navDia = diasFaena.length > 1 ? el('div', { class: 'nav-periodo faena-dias' },
     irDia(-1) ? el('a', { class: 'boton-icono', href: irDia(-1), 'aria-label': 'Día anterior de la faena' }, icono('volver')) : el('span', { class: 'boton-icono' }),
-    el('span', { class: 'texto-chico texto-suave' }, `Día ${Math.round((new Date(fecha) - new Date(f.fecha_inicio)) / 864e5) + 1} de ${Math.round((new Date(f.fecha_fin) - new Date(f.fecha_inicio)) / 864e5) + 1}`),
+    el('span', { class: 'texto-chico texto-suave' }, `Día ${iDia + 1} de ${diasFaena.length}${f.dias?.length ? ' (días a elección)' : ''}`),
     irDia(1) ? el('a', { class: 'boton-icono', href: irDia(1), 'aria-label': 'Día siguiente de la faena' }, icono('derecha')) : el('span', { class: 'boton-icono' })) : null;
   const nec = dotTotal(dot);
   const barra = el('div', { class: 'faena-dotacion', title: `${asignados.length} de ${nec || '?'} asignados` },
@@ -186,9 +189,9 @@ export default async function vista(ctx) {
         el('h2', {}, 'Notas'), notas),
       el('div', { class: 'ficha doc-grupo' },
         el('h2', {}, 'Lo que pide la faena'),
-        f.descripcion ? el('p', {}, f.descripcion) : null,
-        f.tareas?.length ? el('ol', {}, f.tareas.map((t) => el('li', {}, t))) : el('p', { class: 'texto-suave' }, 'Sin tareas.'),
-        el('p', { class: 'texto-suave texto-chico' }, f.fecha_inicio !== f.fecha_fin ? `Faena del ${fechaLarga(f.fecha_inicio)} al ${fechaLarga(f.fecha_fin)}: cada día se planifica por separado.` : ''),
+        f.tareas?.length ? el('ol', {}, f.tareas.map((t) => { const ok = (f.tareas_check ?? []).some((x) => x.ok && String(x.t).trim().toLowerCase() === t.trim().toLowerCase()); return el('li', { class: ok ? 'tarea-ok' : '' }, t); })) : el('p', { class: 'texto-suave' }, 'Sin tareas.'),
+        await observaciones(ctx, f),
+        el('p', { class: 'texto-suave texto-chico' }, diasFaena.length > 1 ? (f.dias?.length ? `Faena de ${diasFaena.length} días a elección (${diasFaena.map((d) => fechaLarga(d)).join(', ')}): cada día se planifica por separado.` : `Faena del ${fechaLarga(f.fecha_inicio)} al ${fechaLarga(f.fecha_fin)}: cada día se planifica por separado.`) : ''),
         partes ? seccionParte(ctx, f, fecha, base, estadoParte(partes, f, fecha, base, hoyISO()), partes) : null)),
     await seccionPreparacion(ctx, { f, p, base, asegurarPlan }),
   );
@@ -355,3 +358,30 @@ function generarHoras(ctx, f, p, e, base) {
   });
 }
 
+
+// Observaciones de la faena (con autor y fecha) y las de faenas iguales anteriores (mismo cliente, sitio y título)
+async function observaciones(ctx, f) {
+  const [{ data: propias }, { data: iguales }, us] = await Promise.all([
+    ctx.api.from('ope_faena_obs').select('*').eq('faena_id', f.id).order('created_at'),
+    ctx.api.from('ope_faenas').select('id, fecha_inicio').eq('empresa_id', ctx.empresa.id).is('deleted_at', null).neq('id', f.id).lt('fecha_inicio', f.fecha_inicio)
+      .ilike('titulo', f.titulo.replace(/[%_]/g, '')).order('fecha_inicio', { ascending: false }).limit(10)
+      .filter('tercero_id', f.tercero_id ? 'eq' : 'is', f.tercero_id ?? null).filter('sitio_id', f.sitio_id ? 'eq' : 'is', f.sitio_id ?? null),
+    ctx.api.rpc('nombres_usuarios', { p_empresa: ctx.empresa.id }),
+  ]);
+  const quien = new Map((us.data ?? []).map((u) => [u.user_id, u.nombre]));
+  const ids = (iguales ?? []).map((x) => x.id);
+  const anteriores = ids.length ? (await ctx.api.from('ope_faena_obs').select('*').in('faena_id', ids).order('created_at', { ascending: false }).limit(10)).data ?? [] : [];
+  const fila = (o) => el('div', { class: 'faena-obs' }, el('span', { class: 'texto-chico texto-suave' }, `${quien.get(o.autor) ?? 'Sin autor'} · ${fechaLarga(o.created_at.slice(0, 10))}`), el('span', {}, o.texto));
+  const lista = el('div', { class: 'faena-obs-lista' }, (propias ?? []).length ? (propias ?? []).map(fila) : el('p', { class: 'texto-suave texto-chico sin-obs' }, 'Sin observaciones.'));
+  const nueva = el('textarea', { class: 'campo', rows: 2, placeholder: 'Agregar observación (queda con tu nombre y la fecha)' });
+  return el('div', {},
+    el('h3', { class: 'ind-sub' }, 'Observaciones'),
+    anteriores.length ? el('details', { class: 'aviso-bandeja' }, el('summary', {}, icono('alerta', { tam: 14 }), ` Observaciones anteriores (${anteriores.length}) de faenas iguales`), anteriores.map(fila)) : null,
+    lista,
+    ctx.puede('ope', 'ver') ? el('div', { class: 'faena-obs-nueva' }, nueva, boton('Agregar', { icono: 'mas', onclick: async () => {
+      if (!nueva.value.trim()) return;
+      const { data, error } = await ctx.api.from('ope_faena_obs').insert({ empresa_id: ctx.empresa.id, faena_id: f.id, texto: nueva.value.trim() }).select('*').single();
+      if (error) { avisar(error.message, 'error'); return; }
+      lista.querySelector('.sin-obs')?.remove(); lista.append(fila(data)); nueva.value = '';
+    } })) : null);
+}

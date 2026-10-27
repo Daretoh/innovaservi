@@ -13,7 +13,7 @@ export function pdfDesde(el, jsPDF){
         var MT=10, MB=8, srcPageH=Math.floor(cv.width*(A4H-MB)/A4W), srcPageH2=Math.floor(cv.width*(A4H-MT-MB)/A4W), y=0, first=true, ctx=cv.getContext('2d');
         // Bloques que no se pueden partir (filas, párrafos, títulos, firmas…), en px del canvas: el corte de página se hace entre ellos.
         var kpx=cv.height/R0.height, bloques=[];
-        Array.prototype.forEach.call(el.querySelectorAll('tr,p,li,.dg-h4,.dg-h,.pts-tit,.pts-fig,.pts-figs,.dg-firmas,.dg-sig,.dg-box,.mr-res,figure,.dg-foot,.dg-cols'),function(b){ var r=b.getBoundingClientRect(); if(r.height>0) bloques.push([(r.top-R0.top)*kpx,(r.bottom-R0.top)*kpx,b.classList.contains('dg-h4')]); });
+        Array.prototype.forEach.call(el.querySelectorAll('tr,p,li,.dg-h4,.dg-h,.pts-tit,.pts-fig,.pts-figs,.dg-firmas,.dg-sig,.dg-box,.mr-res,figure,.dg-foot,.dg-cols'),function(b){ var r=b.getBoundingClientRect(); if(r.height>0) bloques.push([(r.top-R0.top)*kpx,(r.bottom-R0.top)*kpx,b.classList.contains('dg-h4')||b.classList.contains('ries-g')||b.classList.contains('iper-g')||b.classList.contains('irl-g')]); });
         function corteDom(y0,hMax){ var c=y0+hMax, mov=true, k=0;
           while(mov && k++<60){ mov=false;
             for(var i=0;i<bloques.length;i++){ var b=bloques[i]; if(b[1]-b[0]>=hMax*0.9 || b[0]<=y0+2) continue;

@@ -17,6 +17,7 @@ export default {
     { id: 'rrhh.documentos', label: 'Estado documental', vista: () => import('./vistas/documentos.js') },
     { id: 'rrhh.proximas', label: 'Asignados a faenas próximas', oculto: true, padre: 'rrhh.documentos', vista: () => import('./vistas/proximas.js') },
     { id: 'rrhh.lectura', label: 'Leer vencimientos de cédulas', oculto: true, padre: 'rrhh.documentos', vista: () => import('./vistas/lectura.js') },
+    { id: 'rrhh.finiquitos', label: 'Finiquitos', pestana: 'Finiquitos', icono: 'documento', vista: () => import('./vistas/finiquitos.js') },
     { id: 'rrhh.nomina', label: 'Nómina para clientes', pestana: 'Nómina para clientes', icono: 'correo', vista: () => import('./vistas/nomina.js') },
     { id: 'rrhh.tipos', ajustes: true, label: 'Tipos de documento', vista: () => import('./vistas/tipos.js') },
   ],
@@ -24,5 +25,5 @@ export default {
     // Integración con Buk (InnovaServi la usa para generar documentos legales). Apagada por defecto.
     usa_buk: { tipo: 'bool', etiqueta: 'Usa Buk (marca por trabajador y exportación Datos para Buk)', default: false },
   },
-  migraciones: ['db/001_rrhh.sql', 'db/002_fichas_ingreso.sql', 'db/003_actividad.sql'],
+  migraciones: ['db/001_rrhh.sql', 'db/002_fichas_ingreso.sql', 'db/003_actividad.sql', 'db/004_contrato_finiquitos.sql'],
 };

@@ -12,12 +12,34 @@ import { cargarBase, cargarSemana, faenasDelDia, etiquetaFaena, horarioDe, dotac
 
 const estado = { lunes: lunesDe(hoyISO()), sel: null };   // sel: { persona_id, fecha } elegido para asignar tocando
 const PLEGADOS = 'isg.plan.plegados';
+// Selector de día (como InnovaGestión): se ve un día (hoy, o el primero con faenas) o todos; se recuerda la elección
+const DIA = 'isg.plan.dia';
+const leerDia = () => { try { return localStorage.getItem(DIA); } catch { return null; } };
+const guardarDia = (v) => { try { localStorage.setItem(DIA, v); } catch { /* sin almacenamiento */ } };
+const claveFaena = (f) => `${f.tercero_id ?? ''}|${f.sitio_id ?? ''}|${f.titulo.trim().toLowerCase()}`;
 const leerPlegados = () => { try { return new Set(JSON.parse(localStorage.getItem(PLEGADOS) ?? '[]')); } catch { return new Set(); } };
 
 export default async function vista(ctx) {
   const lunes = estado.lunes;
   const domingo = sumarDias(lunes, 6);
-  const [base, semana, partes] = await Promise.all([cargarBase(ctx), cargarSemana(ctx, lunes, domingo), partesDeRango(ctx, lunes, domingo)]);
+  const [base, semana, partes, obsAnt] = await Promise.all([cargarBase(ctx), cargarSemana(ctx, lunes, domingo), partesDeRango(ctx, lunes, domingo),
+    ctx.api.from('ope_faena_obs').select('faena_id, ope_faenas(tercero_id, sitio_id, titulo, fecha_inicio)').eq('empresa_id', ctx.empresa.id).lt('created_at', `${domingo}T23:59:59`).limit(3000)]);
+  // Acreditación: asignados sin validar en el cliente de la faena (si el cliente pide documentos a los trabajadores)
+  const acr = ctx.puede('acreditacion', 'ver') && ctx.puede('rrhh', 'ver')
+    ? await import('../../acreditacion/trabajadores.js').then(async (m) => ({ m, d: await m.cargarAcreditacion(ctx) })).catch(() => null) : null;
+  const sinValidar = (f, p) => (acr && f.tercero_id && acr.d.req.some((r) => r.tercero_id === f.tercero_id)
+    ? (p?.ope_plan_personas ?? []).filter((x) => !['validado', 'por_vencer'].includes(acr.m.estadoTrabajador(acr.d, f.tercero_id, f.sitio_id, x.persona_id).k)).length : 0);
+  // Faenas iguales (cliente + sitio + título) con observaciones en fechas anteriores
+  const obsPorClave = new Map();
+  for (const o of obsAnt.data ?? []) if (o.ope_faenas) { const k = claveFaena(o.ope_faenas); const prev = obsPorClave.get(k); obsPorClave.set(k, [...(prev ?? []), { id: o.faena_id, ini: o.ope_faenas.fecha_inicio }]); }
+  const conObsAnteriores = (f) => (obsPorClave.get(claveFaena(f)) ?? []).some((x) => x.id !== f.id && x.ini < f.fecha_inicio);
+  // Día visible
+  const diasSemana = [0, 1, 2, 3, 4, 5, 6].map((i) => sumarDias(lunes, i));
+  let diaVer = leerDia();
+  if (diaVer !== 'todos' && !diasSemana.includes(diaVer)) {
+    const hoy = hoyISO();
+    diaVer = diasSemana.includes(hoy) && faenasDelDia(semana.faenas, hoy).length ? hoy : diasSemana.find((d) => faenasDelDia(semana.faenas, d).length) ?? (diasSemana.includes(hoy) ? hoy : diasSemana[0]);
+  }
 
   const editable = ctx.puede('ope', 'editar') && ctx.puede('ope', 'crear');
   const plegados = leerPlegados();
@@ -75,7 +97,9 @@ export default async function vista(ctx) {
         el('div', { class: 'plan-fila' },
           el('span', { class: `chip ${asg >= nec && nec ? 'chip-ok' : asg ? 'chip-prox' : 'chip-pend'}` }, `${asg}/${nec || '?'}`),
           repetidos ? el('span', { class: 'chip chip-venc', title: 'Personas asignadas a dos faenas el mismo día' }, `${repetidos} en 2 faenas`) : null,
-          rep ? el('span', { class: `chip ${rep.clase}`, title: 'Parte de trabajo' }, rep.texto) : null),
+          rep ? el('span', { class: `chip ${rep.clase}`, title: 'Parte de trabajo' }, rep.texto) : null,
+          sinValidar(f, p) ? el('span', { class: 'chip chip-venc', title: 'Asignados que aún no están validados en este cliente (Acreditación)' }, `${sinValidar(f, p)} sin validar`) : null,
+          conObsAnteriores(f) ? el('span', { class: 'chip chip-prox', title: 'Faenas iguales anteriores tienen observaciones: revísalas al abrir la faena' }, icono('alerta', { tam: 11 }), ' obs. anteriores') : null),
         asg ? el('div', { class: 'plan-asignados' }, (p.ope_plan_personas).map((x) => {
           const v = base.personas.get(x.persona_id);
           const ficha = el('span', { class: `plan-persona rol-${x.rol}`, draggable: editable && !bloqueada ? 'true' : 'false', title: editable && !bloqueada ? 'Arrástrala a Disponibles para quitarla' : '' }, v ? nombreCorto(v.personas) : '?');
@@ -121,10 +145,15 @@ export default async function vista(ctx) {
         fs.length ? disponibles : null]);
   });
 
-  const tablero = el('div', { class: 'plan-tablero ope-semana' }, columnas);
+  const visibles = diaVer === 'todos' ? columnas : columnas.filter((_, i) => diasSemana[i] === diaVer);
+  const tablero = el('div', { class: `plan-tablero ope-semana${diaVer === 'todos' ? '' : ' plan-un-dia'}` }, visibles);
+  const selectorDia = el('div', { class: 'segmento plan-selector-dia', role: 'group', 'aria-label': 'Día' },
+    diasSemana.map((d) => { const n = faenasDelDia(semana.faenas, d).length; return el('button', { type: 'button', 'aria-pressed': String(diaVer === d), onclick: () => { guardarDia(d); ctx.refrescar(); } },
+      `${nombreDia(d).slice(0, 3)} ${Number(d.slice(8))}`, n ? el('span', { class: 'plan-dia-n' }, String(n)) : null); }),
+    el('button', { type: 'button', 'aria-pressed': String(diaVer === 'todos'), onclick: () => { guardarDia('todos'); ctx.refrescar(); } }, 'Todos'));
   // En tablet o teléfono: mostrar el día de hoy al abrir
   setTimeout(() => { const d = tablero.querySelector('.hoy'); if (d && tablero.scrollWidth > tablero.clientWidth) tablero.scrollTo({ left: d.offsetLeft - tablero.offsetLeft - 4, behavior: 'smooth' }); }, 50);
-  const mover = (n) => { estado.lunes = sumarDias(estado.lunes, n * 7); ctx.refrescar(); };
+  const mover = (n) => { estado.lunes = sumarDias(estado.lunes, n * 7); if (leerDia() !== 'todos') guardarDia(''); ctx.refrescar(); };
   const acciones = [];
   if (semana.faenas.length) acciones.push(boton('Resumen para WhatsApp', { icono: 'copiar', onclick: () => copiarResumen(resumenWhatsApp(lunes, semana, base)) }));
   if (ctx.puede('ope', 'crear')) acciones.push(el('a', { class: 'boton boton-secundario', href: ctx.ruta('ope.calendario') }, icono('mas', { tam: 16 }), 'Nueva faena'));
@@ -135,7 +164,7 @@ export default async function vista(ctx) {
       el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Semana anterior', onclick: () => mover(-1) }, icono('volver')),
       el('strong', {}, `Semana ${numSemana(lunes)} · ${fechaCorta(lunes)} – ${fechaCorta(domingo)}`),
       el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Semana siguiente', onclick: () => mover(1) }, icono('derecha')),
-      boton('Hoy', { onclick: () => { estado.lunes = lunesDe(hoyISO()); ctx.refrescar(); } })),
+      boton('Hoy', { onclick: () => { estado.lunes = lunesDe(hoyISO()); if (leerDia() !== 'todos') guardarDia(hoyISO()); ctx.refrescar(); } })),
     tot.n ? el('div', { class: 'resumen-chips' },
       el('span', { class: 'chip chip-pend' }, `${tot.nec} necesarias`),
       el('span', { class: 'chip chip-ok' }, `${tot.asg} asignadas`),
@@ -143,6 +172,7 @@ export default async function vista(ctx) {
       el('span', { class: 'texto-suave' }, `${tot.env} de ${tot.n} faena-días enviadas`)) : null,
     estado.sel ? el('p', { class: 'aviso-bandeja' }, icono('users', { tam: 16 }), ` ${nombreCorto(base.personas.get(estado.sel.persona_id)?.personas ?? {})}: toca la faena del ${nombreDia(estado.sel.fecha)} donde va. `,
       el('button', { type: 'button', class: 'boton-enlace', onclick: () => { estado.sel = null; ctx.refrescar(); } }, 'Cancelar')) : null,
+    selectorDia,
     tablero,
     editable ? el('p', { class: 'texto-suave texto-chico' }, 'Arrastra a una persona de Disponibles a una faena (o tócala y luego toca la faena); arrastra a un asignado de vuelta a Disponibles para quitarlo. El botón de copiar de cada día replica su planificación en otros días.') : null,
   );

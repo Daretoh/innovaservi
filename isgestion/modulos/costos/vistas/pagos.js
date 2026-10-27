@@ -1,0 +1,99 @@
+// Pagos: comprobantes de pago por validar, validados y rechazados. Validar (permiso costos.aprobar) deja pagados los
+// documentos que cubre por completo. Aviso "Falta factura" para proveedores de factura mensual: pagos o compras del
+// mes sin una factura de ese proveedor.
+import { el } from '../../../core/ui/dom.js';
+import { icono } from '../../../core/ui/iconos.js';
+import { listado, boton } from '../../../core/ui/tabla.js';
+import { abrirFormulario } from '../../../core/ui/modal.js';
+import { avisar } from '../../../core/ui/aviso.js';
+import { urlFirmada } from '../../../core/adjuntos.js';
+import { dinero, fechaLarga, hoyISO, rangoMes, moverMes, nombreMes, diaLocal } from '../../../core/ui/formato.js';
+import { nombreTercero, nombreMedio } from '../datos.js';
+import { comprobante } from './subir.js';
+
+const filtro = { estado: 'por_validar' };
+const ESTADOS = [['por_validar', 'Por validar'], ['validado', 'Validados'], ['rechazado', 'Rechazados']];
+const CHIP = { por_validar: 'chip-prox', validado: 'chip-ok', rechazado: 'chip-venc' };
+
+export default async function vista(ctx) {
+  const e = ctx.empresa.id;
+  const mes = hoyISO().slice(0, 7);
+  const { desde } = rangoMes(moverMes(mes, -1));
+  const [pagos, nPor, us, mensuales, delMes] = await Promise.all([
+    ctx.api.from('fin_pagos').select('*, terceros(razon_social, nombre_fantasia), fin_pago_registros(monto, fin_registros(id, concepto, doc_numero, total, estado_pago))')
+      .eq('empresa_id', e).is('deleted_at', null).eq('estado', filtro.estado).order('fecha', { ascending: false }).limit(200),
+    ctx.api.from('fin_pagos').select('id', { count: 'exact', head: true }).eq('empresa_id', e).is('deleted_at', null).eq('estado', 'por_validar'),
+    ctx.api.rpc('nombres_usuarios', { p_empresa: e }),
+    ctx.api.from('fin_proveedores').select('tercero_id, terceros(razon_social, nombre_fantasia)').eq('empresa_id', e).eq('modalidad', 'mensual'),
+    ctx.api.from('fin_registros').select('tercero_id, fecha, doc_tipo, total').eq('empresa_id', e).eq('tipo', 'gasto').is('deleted_at', null).gte('fecha', desde),
+  ]);
+  if (pagos.error) throw pagos.error;
+  const quien = new Map((us.data ?? []).map((u) => [u.user_id, u.nombre]));
+  const aprueba = ctx.puede('costos', 'aprobar');
+
+  // Falta factura: proveedores mensuales con compras o pagos del mes anterior o de este, sin factura en ese mes
+  const faltan = [];
+  for (const p of mensuales.data ?? []) {
+    for (const m of [moverMes(mes, -1), mes]) {
+      const regs = (delMes.data ?? []).filter((r) => r.tercero_id === p.tercero_id && r.fecha.startsWith(m));
+      if (regs.some((r) => r.doc_tipo !== 'factura') && !regs.some((r) => r.doc_tipo === 'factura')) {
+        faltan.push(`${nombreTercero(p.terceros)} · ${nombreMes(m)} (${dinero(regs.filter((r) => r.doc_tipo !== 'factura').reduce((s, r) => s + r.total, 0))} sin factura)`);
+      }
+    }
+  }
+
+  const cambiar = (p, estado, motivo = null) => ctx.api.from('fin_pagos').update({ estado, motivo_rechazo: motivo }).eq('id', p.id);
+  const validar = async (p) => {
+    const { error } = await cambiar(p, 'validado');
+    if (error) { avisar(error.message, 'error'); return; }
+    avisar('Comprobante validado: los documentos cubiertos quedaron pagados.'); ctx.refrescar();
+  };
+  const rechazar = (p) => abrirFormulario({
+    titulo: 'Rechazar comprobante', campos: [{ id: 'motivo', etiqueta: 'Motivo', requerido: true, tipo: 'textarea' }], textoGuardar: 'Rechazar',
+    alGuardar: async (x) => { const { error } = await cambiar(p, 'rechazado', x.motivo.trim()); if (error) throw new Error(error.message); avisar('Rechazado.'); ctx.refrescar(); },
+  });
+  const volver = async (p) => { const { error } = await cambiar(p, 'por_validar'); if (error) avisar(error.message, 'error'); else ctx.refrescar(); };
+  const eliminar = (p) => abrirFormulario({
+    titulo: 'Eliminar comprobante', mensaje: `${dinero(p.monto)} del ${fechaLarga(p.fecha)}. Si estaba validado, los documentos que cubría vuelven a por pagar.`, campos: [], textoGuardar: 'Eliminar',
+    alGuardar: async () => { const { error } = await ctx.api.from('fin_pagos').update({ deleted_at: new Date().toISOString() }).eq('id', p.id); if (error) throw new Error(error.message); ctx.refrescar(); },
+  });
+  const ver = async (ruta) => { try { window.open(await urlFirmada(ctx.api, ruta, 300), '_blank', 'noopener'); } catch (err) { avisar(err.message, 'error'); } };
+
+  const segmento = el('div', { class: 'segmento', role: 'group', 'aria-label': 'Estado' },
+    ESTADOS.map(([k, n]) => el('button', { type: 'button', 'aria-pressed': String(filtro.estado === k), onclick: () => { filtro.estado = k; ctx.refrescar(); } },
+      k === 'por_validar' && nPor.count ? `${n} (${nPor.count})` : n)));
+  const acciones = [segmento];
+  if (ctx.puede('costos', 'crear')) acciones.push(boton('Subir comprobante', { icono: 'mas', tipo: 'primario', onclick: () => comprobante(ctx) }));
+
+  const lista = listado({
+    titulo: 'Pagos',
+    filas: pagos.data,
+    acciones,
+    vacio: filtro.estado === 'por_validar' ? 'No hay comprobantes por validar.' : 'Sin comprobantes.',
+    columnas: [
+      { titulo: 'Fecha', valor: (p) => fechaLarga(p.fecha) },
+      { titulo: 'Proveedor', valor: (p) => el('div', {}, el('strong', {}, p.terceros ? nombreTercero(p.terceros) : 'Sin proveedor'), p.notas ? el('div', { class: 'texto-suave texto-chico' }, p.notas) : null) },
+      { titulo: 'Paga', valor: (p) => (p.fin_pago_registros.length
+        ? el('div', { class: 'texto-chico' }, p.fin_pago_registros.map((l) => el('div', {}, el('a', { href: ctx.ruta('costos.registro', { id: l.fin_registros.id }) }, l.fin_registros.concepto),
+          l.fin_registros.doc_numero ? ` N° ${l.fin_registros.doc_numero}` : '', ` · ${dinero(l.monto)}`, l.fin_registros.estado_pago === 'pagado' ? el('span', { class: 'chip chip-ok', style: 'margin-left:4px' }, 'pagado') : null)))
+        : el('span', { class: 'texto-suave texto-chico' }, 'Sin documentos ligados')) },
+      { titulo: 'Monto', valor: (p) => el('div', {}, el('strong', {}, dinero(p.monto)), el('div', { class: 'texto-suave texto-chico' }, nombreMedio[p.medio])) },
+      { titulo: 'Estado', valor: (p) => el('div', {}, el('span', { class: `chip ${CHIP[p.estado]}` }, ESTADOS.find((x) => x[0] === p.estado)[1].replace(/s$/, '')),
+        p.estado === 'validado' && p.validado_por ? el('div', { class: 'texto-suave texto-chico' }, `${quien.get(p.validado_por) ?? ''} · ${fechaLarga(diaLocal(p.validado_at))}`) : null,
+        p.motivo_rechazo ? el('div', { class: 'texto-error texto-chico' }, p.motivo_rechazo) : null) },
+      { titulo: 'Subió', valor: (p) => el('span', { class: 'texto-chico texto-suave' }, quien.get(p.created_by) ?? '—', el('br'), fechaLarga(diaLocal(p.created_at))) },
+      { titulo: '', valor: (p) => el('div', { class: 'acciones-fila' },
+        p.archivo ? el('button', { type: 'button', class: 'boton-icono', title: 'Ver comprobante', 'aria-label': 'Ver comprobante', onclick: () => ver(p.archivo) }, icono('ojo', { tam: 16 })) : null,
+        aprueba && p.estado === 'por_validar' ? boton('Validar', { icono: 'check', tipo: 'primario', onclick: () => validar(p) }) : null,
+        aprueba && p.estado === 'por_validar' ? boton('Rechazar', { onclick: () => rechazar(p) }) : null,
+        aprueba && p.estado !== 'por_validar' ? boton('Volver a por validar', { onclick: () => volver(p) }) : null,
+        ctx.puede('costos', 'eliminar') ? el('button', { type: 'button', class: 'boton-icono', title: 'Eliminar', 'aria-label': 'Eliminar comprobante', onclick: () => eliminar(p) }, icono('basura', { tam: 16 })) : null) },
+    ],
+  });
+  if (faltan.length) {
+    lista.querySelector('.listado-cabecera').after(el('div', { class: 'aviso-bandeja' }, icono('alerta', { tam: 16 }),
+      el('div', {}, el('strong', {}, 'Falta factura'), el('div', { class: 'texto-chico' }, 'Proveedores de factura mensual con compras o pagos sin factura: ', faltan.join(' · ')))));
+  }
+  if (!aprueba) lista.querySelector('.listado-cabecera').after(el('p', { class: 'texto-suave texto-chico' }, 'Validar o rechazar comprobantes lo hace quien tiene el permiso "aprobar" en Costos.'));
+  return lista;
+}

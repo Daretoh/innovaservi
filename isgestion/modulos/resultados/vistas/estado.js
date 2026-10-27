@@ -1,10 +1,12 @@
 // Estado de resultados de la empresa: mes (con el mes anterior y tendencia de 6 meses) o año (12 meses),
-// punto de equilibrio, PDF y CSV. Todo en neto (sin IVA).
+// punto de equilibrio, PDF y CSV. Todo en neto (sin IVA). Cerrar / Reabrir mes (como InnovaGestión): el cierre guarda la
+// foto del resultado y bloquea en Costos los cambios de montos, fechas y categorías de ese mes (fin_cierres).
 import { el } from '../../../core/ui/dom.js';
 import { icono } from '../../../core/ui/iconos.js';
 import { boton } from '../../../core/ui/tabla.js';
 import { avisar } from '../../../core/ui/aviso.js';
-import { dinero, hoyISO, nombreMes, moverMes } from '../../../core/ui/formato.js';
+import { dinero, hoyISO, nombreMes, moverMes, fechaLarga, diaLocal } from '../../../core/ui/formato.js';
+import { abrirFormulario } from '../../../core/ui/modal.js';
 import { GRUPOS, mesesEntre, cargarEstado, sumarTotales, puntoEquilibrio, pct } from '../datos.js';
 
 const estado = { modo: 'mes', mes: hoyISO().slice(0, 7), anio: Number(hoyISO().slice(0, 4)) };
@@ -48,6 +50,23 @@ export default async function vista(ctx) {
     el('strong', {}, anual ? String(estado.anio) : nombreMes(mes)),
     el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Siguiente', onclick: () => mover(1) }, icono('derecha')));
   const acciones = [segmento, nav];
+  // Cierre del mes (si la empresa usa Costos)
+  const conCostos = ctx.puede('costos', 'ver');
+  const cierre = conCostos && !anual ? (await ctx.api.from('fin_cierres').select('*').eq('empresa_id', ctx.empresa.id).eq('periodo', mes).maybeSingle()).data : null;
+  const puedeCerrar = conCostos && ctx.puede('costos', 'aprobar') && !anual && mes < hoyISO().slice(0, 7);
+  if (cierre) acciones.push(el('span', { class: 'chip chip-ok', title: `Cerrado el ${fechaLarga(diaLocal(cierre.cerrado_at))}` }, icono('candado', { tam: 12 }), ' Mes cerrado'));
+  if (puedeCerrar) acciones.push(boton(cierre ? 'Reabrir mes' : 'Cerrar mes', { icono: cierre ? 'editar' : 'candado', onclick: () => abrirFormulario({
+    titulo: cierre ? `Reabrir ${nombreMes(mes)}` : `Cerrar ${nombreMes(mes)}`,
+    mensaje: cierre ? 'Se podrán volver a cambiar montos, fechas y categorías de los gastos e ingresos del mes. El cierre anterior se borra.'
+      : `Resultado: ${dinero(t.resultado)}. Desde ahora los gastos e ingresos del mes no cambian de monto, fecha ni categoría (pagar sí se puede). Lo nuevo va al mes siguiente.`,
+    campos: [], textoGuardar: cierre ? 'Reabrir' : 'Cerrar el mes',
+    alGuardar: async () => {
+      const r = cierre ? await ctx.api.from('fin_cierres').delete().eq('id', cierre.id)
+        : await ctx.api.from('fin_cierres').insert({ empresa_id: ctx.empresa.id, periodo: mes, resultado: { ...t, puntoEquilibrio: pe, lineas: filas.map((f) => [f.tipo, f.label, f.valor(mes)]) } });
+      if (r.error) throw new Error(r.error.message);
+      avisar(cierre ? 'Mes reabierto.' : 'Mes cerrado.'); ctx.refrescar();
+    },
+  }) }));
   if (ctx.puede('resultados', 'exportar')) {
     acciones.push(boton('Excel', { icono: 'descargar', onclick: () => exportarExcel(ctx, filas, anual ? meses : [mes, anterior]).catch((e) => avisar(e.message, 'error')) }));
     acciones.push(boton('PDF', { icono: 'descargar', onclick: (ev) => exportarPdf(ctx, filas, anual, anual ? meses : [mes, anterior], t, pe, ev.currentTarget) }));

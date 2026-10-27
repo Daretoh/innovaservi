@@ -14,12 +14,15 @@ const DEL_TRABAJADOR = ['contrato', 'perfil', 'datos', 'epp', 'odi'];
 
 export default async function vista(ctx) {
   const e = ctx.empresa.id;
-  const [{ P, faltan }, vinc, sueldos] = await Promise.all([
+  const [{ P, faltan }, vinc, sueldos, guardados] = await Promise.all([
     cargarPlantillas(ctx),
     ctx.api.from('persona_empresa').select('id, persona_id, cargo, fecha_ingreso, estado, personas(nombres, apellido_paterno, apellido_materno, rut, direccion, numero, poblacion, comuna, nacionalidad, estado_civil, fecha_nacimiento, email, telefono, afp, salud)')
       .eq('empresa_id', e).is('deleted_at', null),
     sueldosBase(ctx),
+    // Versión guardada de cada documento de la empresa (Prevención SST), para avisar "Por actualizar"
+    ctx.puede('sst', 'ver') ? ctx.api.from('sst_documentos').select('codigo, sst_documento_versiones(version, fecha)').eq('empresa_id', e) : Promise.resolve({ data: [] }),
   ]);
+  const guardadaDe = new Map((guardados.data ?? []).map((d) => [d.codigo, [...(d.sst_documento_versiones ?? [])].sort((a, b) => (Number(b.version) || 0) - (Number(a.version) || 0))[0]]));
   if (vinc.error) throw vinc.error;
   const todos = vinc.data.map((v) => ({ v, t: trabajador(v, { sueldo_base: sueldos.get(v.id) ?? null }) })).sort((a, b) => a.t.nombre.localeCompare(b.t.nombre));
   const activos = todos.filter((x) => x.v.estado === 'activo');
@@ -85,11 +88,37 @@ export default async function vista(ctx) {
       } } : null,
     });
   };
+  const verDeHtml = (html) => {
+    const m = /Versión <b>(\d+)<\/b>/.exec(html || ''); if (!m) return null;
+    const o = { ver: m[1], fecha: '', desc: '' };
+    const i = String(html).search(/Control de cambios/i);
+    if (i >= 0) { const filas = [...String(html).slice(i).matchAll(/<tr><td>([^<]*)<\/td><td>([^<]*)<\/td><td>([\s\S]*?)<\/td><\/tr>/g)]; const u = filas.at(-1); if (u) { o.fecha = u[2]; o.desc = u[3].replace(/<[^>]+>/g, '').trim(); } }
+    return o;
+  };
+  const vigente = (slug) => {
+    try {
+      if (P.PTS_DOC[slug]) { const c = P.ptsCambios(P.ptsDatos(slug)).at(-1); return { ver: c[0], fecha: c[1], desc: String(c[2]).replace(/<[^>]+>/g, '') }; }
+      if (P.EMP_GEN[slug]) return verDeHtml(P.EMP_GEN[slug].build());
+      if (slug === 'pts_funciones') return verDeHtml(P.docPTSFunciones('oper'));
+    } catch { /* sin versión */ }
+    return null;
+  };
+  const codigoDe = (slug) => (P.PTS_DOC[slug] ? P.ptsDatos(slug).cod : null) ?? P.CAP_DOC[slug]?.cod ?? slug.toUpperCase().replace(/_/g, '-');
+  const lineaVersion = (slug) => {
+    const V = vigente(slug); if (!V) return null;
+    const g = guardadaDe.get(codigoDe(slug));
+    const atras = g && (Number(g.version) || 0) < (Number(V.ver) || 0);
+    return el('span', { class: 'texto-chico doc-ver', title: V.desc },
+      el('strong', {}, `Versión ${V.ver}${V.fecha ? ` · ${V.fecha}` : ''}`), V.desc ? ` — ${V.desc.slice(0, 140)}${V.desc.length > 140 ? '…' : ''}` : '',
+      g ? el('span', { class: 'texto-suave' }, ` · guardada v${g.version}`) : null,
+      atras ? el('span', { class: 'chip chip-prox', title: `Lo guardado en Prevención SST es anterior a la versión ${V.ver}. Ábrelo y guárdalo.`, style: 'margin-left:6px' }, 'Por actualizar') : null);
+  };
+
   const carpetas = P.EMP_CARPETAS.filter((c) => c.k !== 'legal').map((c) => el('div', { class: 'ficha doc-grupo' },
     el('h2', {}, c.n),
     c.tipos.filter(([slug]) => P.EMP_GEN[slug] || P.PTS_DOC[slug] || slug === 'pts_funciones').map(([slug, nombre]) => {
       const editable = P.PTS_DOC[slug] && ctx.puede('documentos', 'editar');
-      return tarjetaDoc(nombre, P.PTS_DOC[slug] ? `Versión ${P.ptsCambios(P.ptsDatos(slug)).at(-1)[0]}` : null, () => docEmpresa(slug, nombre),
+      return tarjetaDoc(nombre, lineaVersion(slug), () => docEmpresa(slug, nombre),
         editable ? boton('Editar', { icono: 'editar', onclick: () => { location.hash = ctx.ruta('documentos.pts', { s: slug }); } }) : null);
     })));
 

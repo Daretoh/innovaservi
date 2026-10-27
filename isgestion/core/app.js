@@ -8,6 +8,7 @@ import { el } from './ui/dom.js';
 import { icono } from './ui/iconos.js';
 import { boton } from './ui/tabla.js';
 import inicio from './vistas/inicio.js';
+import { franja, botonNotificaciones, desactivar } from './push.js';
 
 const COLOR_BASE = '#1f4e8c';
 const CLAVE_MINIMA = 10;   // 08 Seguridad §4
@@ -25,6 +26,9 @@ function aplicarModo() {
 }
 aplicarModo();
 matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', aplicarModo);
+// Salir: este dispositivo deja de recibir notificaciones de la cuenta
+async function salir() { await desactivar(); await cerrarSesion(); }
+
 function botonModo() {
   const b = el('button', { type: 'button', class: 'boton-icono' });
   const pintar = () => { const [t, ic] = MODOS[modoGuardado()] ?? MODOS.sistema; b.title = `${t} (toca para cambiar)`; b.setAttribute('aria-label', b.title); b.replaceChildren(icono(ic)); };
@@ -164,7 +168,7 @@ async function arrancarSesion(sesion) {
     pantalla(
       el('h1', {}, 'Sin acceso'),
       el('p', { class: 'texto-suave' }, `${estado.usuario.email} no tiene empresas asignadas. Pide acceso al administrador.`),
-      el('div', {}, boton('Cerrar sesión', { icono: 'salir', onclick: () => cerrarSesion() })),
+      el('div', {}, boton('Cerrar sesión', { icono: 'salir', onclick: () => salir() })),
     );
     return;
   }
@@ -226,8 +230,10 @@ function pintarApp() {
         el('div', { class: 'usuario' },
           (estado.consola = el('a', { class: 'boton boton-secundario boton-chico', href: 'consola/', hidden: true, title: 'Consola de la plataforma (equipo ISgestión)' }, icono('ajustes', { tam: 14 }), 'Consola')),
           el('span', { class: 'correo' }, estado.usuario.email),
+          botonNotificaciones(estado.usuario.id, () => estado.empresa?.id),
           botonModo(),
-          el('button', { type: 'button', class: 'boton-icono', title: 'Cerrar sesión', 'aria-label': 'Cerrar sesión', onclick: () => cerrarSesion() }, icono('salir')))),
+          el('button', { type: 'button', class: 'boton-icono', title: 'Cerrar sesión', 'aria-label': 'Cerrar sesión', onclick: () => salir() }, icono('salir')))),
+      franja(),
       el('div', { class: 'cuerpo' }, estado.menu, el('div', { class: 'menu-velo', onclick: () => alternarMenu(false) }), estado.contenido),
     ),
   );

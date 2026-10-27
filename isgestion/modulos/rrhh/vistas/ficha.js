@@ -221,6 +221,14 @@ function datosPersonales(ctx, v) {
     : el('input', { id: `fd-${nombre}`, name: nombre, class: 'campo', type: op.tipo ?? 'text', value: valor ?? '', required: op.requerido, disabled: !editable, min: op.tipo === 'number' ? 0 : null }));
   const fila = (nombre, etiqueta, valor, op) => el('div', { class: 'form-fila' }, el('label', { for: `fd-${nombre}` }, etiqueta), control(nombre, valor, op));
 
+  // Vence contrato + casilla Indefinido (al marcarla se limpia y bloquea la fecha)
+  function filaContrato() {
+    const fechaC = el('input', { id: 'fd-v.contrato_vence', name: 'v.contrato_vence', class: 'campo', type: 'date', value: v.contrato_indefinido ? '' : v.contrato_vence ?? '', disabled: !editable || v.contrato_indefinido });
+    const indef = el('input', { type: 'checkbox', name: 'v.contrato_indefinido', checked: !!v.contrato_indefinido, disabled: !editable });
+    indef.addEventListener('change', () => { if (indef.checked) fechaC.value = ''; fechaC.disabled = !editable || indef.checked; });
+    return el('div', { class: 'form-fila' }, el('label', { for: 'fd-v.contrato_vence' }, 'Vence contrato'), fechaC, el('label', { class: 'casilla' }, indef, 'Indefinido (sin fecha de término)'));
+  }
+
   const form = el('form', { class: 'ficha-datos' },
     el('div', { class: 'ficha' },
       el('h2', {}, 'Vínculo con esta empresa'),
@@ -230,7 +238,9 @@ function datosPersonales(ctx, v) {
         fila('v.jornada', 'Jornada', v.jornada),
         fila('v.estado', 'Estado', v.estado, { opciones: ESTADOS_VINCULO }),
         fila('v.fecha_ingreso', 'Fecha de ingreso', v.fecha_ingreso, { tipo: 'date' }),
-        fila('v.fecha_termino', 'Fecha de término', v.fecha_termino, { tipo: 'date' }))),
+        fila('v.fecha_termino', 'Fecha de término', v.fecha_termino, { tipo: 'date' }),
+        filaContrato()),
+      el('p', { class: 'texto-suave texto-chico' }, 'Vence contrato: fecha de término del contrato a plazo fijo (se copia de Buk). Indefinido: sin fecha de término. Vacío y sin marcar: spot. Aparece en Inicio y Alertas 30 días antes.')),
     SECCIONES.map(([titulo, campos]) => el('div', { class: 'ficha' },
       el('h2', {}, titulo),
       el('div', { class: 'rejilla-campos' },
@@ -260,6 +270,7 @@ function datosPersonales(ctx, v) {
     const vinculo = {
       cargo: f['v.cargo'].trim() || null, tipo_vinculo: f['v.tipo_vinculo'], jornada: f['v.jornada'].trim() || null,
       estado: f['v.estado'], fecha_ingreso: f['v.fecha_ingreso'] || null, fecha_termino: f['v.fecha_termino'] || null,
+      contrato_indefinido: f['v.contrato_indefinido'] === 'on', contrato_vence: f['v.contrato_indefinido'] === 'on' ? null : f['v.contrato_vence'] || null,
     };
     const [r1, r2] = await Promise.all([
       ctx.api.from('personas').update(persona).eq('id', p.id).select('id'),

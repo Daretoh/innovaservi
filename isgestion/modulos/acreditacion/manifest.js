@@ -14,5 +14,5 @@ export default {
     { id: 'acreditacion.mandante', label: 'Mandante', oculto: true, padre: 'acreditacion.mandantes', vista: () => import('./vistas/mandante.js') },
   ],
   config: {},
-  migraciones: ['db/001_acreditacion.sql', 'db/002_nomina.sql'],
+  migraciones: ['db/001_acreditacion.sql', 'db/002_nomina.sql', 'db/003_trabajadores.sql'],
 };

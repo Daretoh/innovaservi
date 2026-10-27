@@ -11,6 +11,7 @@ import { cargarDocumentos, cumplimientoMandante, nombreTercero, mesActual, CHIP,
 import { REQUISITOS } from '../sugeridos.js';
 import { abrir } from './documentos.js';
 import { esNomina, generarNomina } from '../nomina.js';
+import { seccionTrabajadores } from '../trabajadores.js';
 
 const ARCHIVOS = ['application/pdf', 'image/jpeg', 'image/png',
   'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
@@ -94,7 +95,8 @@ export default async function vista(ctx) {
     tablaMensual,
     unicos.length ? el('div', { class: 'ficha doc-grupo' }, el('h2', {}, 'Requisitos únicos'), unicos.map(filaUnica)) : null,
     !req.data.length ? el('p', { class: 'texto-suave' }, 'Agrega lo que pide este mandante (F30-1, Previred, nómina, etc.) o carga los sugeridos.') : null,
-    el('p', { class: 'texto-suave texto-chico' }, 'Un mes se exige desde el mes siguiente (el pendiente en rojo es lo que ya debería estar subido). Los requisitos únicos ligados a un documento de empresa se cumplen con su versión vigente.'));
+    el('p', { class: 'texto-suave texto-chico' }, 'Un mes se exige desde el mes siguiente (el pendiente en rojo es lo que ya debería estar subido). Los requisitos únicos ligados a un documento de empresa se cumplen con su versión vigente.'),
+    ctx.puede('rrhh', 'ver') ? await seccionTrabajadores(ctx, c).catch((err) => el('p', { class: 'texto-error' }, `Acreditación de trabajadores: ${err.message}`)) : null);
 }
 
 // Marcar un mes (o el requisito único): subido con archivo opcional, o no aplica; o quitar la marca

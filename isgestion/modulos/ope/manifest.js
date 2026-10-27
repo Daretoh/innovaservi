@@ -18,5 +18,5 @@ export default {
     { id: 'ope.roles', ajustes: true, label: 'Roles operativos', pestana: 'Roles', vista: () => import('./vistas/roles.js') },
   ],
   config: {},
-  migraciones: ['db/001_ope.sql'],
+  migraciones: ['db/001_ope.sql', 'db/002_matriz_preparacion.sql', 'db/003_planificacion.sql', 'db/004_dias_obs.sql'],
 };

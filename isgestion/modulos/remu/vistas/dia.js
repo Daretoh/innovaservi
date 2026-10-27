@@ -15,7 +15,7 @@ export default async function vista(ctx) {
   const [R, faenasPlan] = await Promise.all([
     calcularRango(ctx, base, { desde: lunes, hasta: sumarDias(lunes, 6) }),
     ctx.puede('ope', 'ver')
-      ? ctx.api.from('ope_faenas').select('id, titulo, hora_inicio, hora_fin, terceros(nombre_fantasia, razon_social)').eq('empresa_id', ctx.empresa.id).is('deleted_at', null)
+      ? ctx.api.from('ope_faenas').select('id, titulo, hora_inicio, hora_fin, dias, terceros(nombre_fantasia, razon_social)').eq('empresa_id', ctx.empresa.id).is('deleted_at', null)
         .lte('fecha_inicio', fecha).or(`fecha_fin.gte.${fecha},and(fecha_fin.is.null,fecha_inicio.eq.${fecha})`).order('hora_inicio', { nullsFirst: false })
       : Promise.resolve({ data: null }),
   ]);
@@ -66,7 +66,7 @@ export default async function vista(ctx) {
       el('a', { class: 'boton-icono', href: ctx.ruta('remu.dia', { f: sumarDias(fecha, 1) }), 'aria-label': 'Día siguiente' }, icono('derecha'))),
     faenasPlan.data ? el('div', { class: 'ficha' },
       el('h2', {}, 'Faenas del día (Planificación)'),
-      faenasPlan.data.length
+      (faenasPlan.data = faenasPlan.data.filter((x) => !x.dias?.length || x.dias.includes(fecha))).length
         ? el('div', { class: 'chips-fila' }, faenasPlan.data.map((x) => el('span', { class: 'chip chip-na' }, icono('calendario', { tam: 12 }),
           ` ${x.titulo || 'Faena'}${clienteDe(x) ? ` · ${clienteDe(x)}` : ''}${x.hora_inicio ? ` · ${hhmm(x.hora_inicio)}` : ''}`)))
         : el('p', { class: 'texto-suave' }, 'Sin faenas en Planificación para este día.')) : null,

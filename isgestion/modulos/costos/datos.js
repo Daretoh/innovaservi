@@ -7,6 +7,14 @@ export const DOCS = [['factura', 'Factura'], ['boleta', 'Boleta'], ['guia', 'Gu�
 export const nombreDoc = Object.fromEntries(DOCS);
 export const MEDIOS = [['transferencia', 'Transferencia'], ['efectivo', 'Efectivo'], ['debito', 'Débito'], ['credito', 'Crédito'], ['cheque', 'Cheque'], ['otro', 'Otro']];
 export const nombreMedio = Object.fromEntries(MEDIOS);
+// Estados (como Finanzas de InnovaGestión): por revisar → listo (por pagar o cobrar) → pagado
+export const ESTADOS_GASTO = [['pendiente', 'Por revisar'], ['listo', 'Listo por pagar'], ['pagado', 'Pagado']];
+export const ESTADOS_INGRESO = [['pendiente', 'Por revisar'], ['listo', 'Por cobrar'], ['pagado', 'Cobrado']];
+export const estadosDe = (tipo) => (tipo === 'ingreso' ? ESTADOS_INGRESO : ESTADOS_GASTO);
+export const nombreEstado = (r) => Object.fromEntries(estadosDe(r.tipo))[r.estado_pago] ?? r.estado_pago;
+export const CHIP_ESTADO = { pendiente: 'chip-pend', listo: 'chip-prox', pagado: 'chip-ok' };
+// Al comprar: boleta, ticket o comprobante quedan pagados; la factura queda por pagar. Un ingreso queda por cobrar.
+export const estadoInicial = (tipo, doc) => (tipo === 'ingreso' || doc === 'factura' ? 'listo' : 'pagado');
 export const IVA = 0.19;
 
 export const nombreTercero = (t) => t?.nombre_fantasia || t?.razon_social || '';
@@ -85,12 +93,27 @@ export async function generarMes(ctx, recurrentes, mes, tipoCambio) {
       doc_tipo: r.doc_tipo, total, ...netoDe(total, r.doc_tipo), moneda: r.moneda, monto_origen: usd ? r.monto : null, tipo_cambio: usd ? tipoCambio : null,
       recurrente_id: r.id, periodo: mes,
       // Pago automático: queda pagado en su fecha
-      estado_pago: r.autopago ? 'pagado' : 'pendiente', fecha_pago: r.autopago ? fecha : null, medio_pago: r.autopago ? 'credito' : null,
+      estado_pago: r.autopago ? 'pagado' : 'listo', fecha_pago: r.autopago ? fecha : null, medio_pago: r.autopago ? 'credito' : null, vence: fecha,
     };
   });
   const { error: e2 } = await ctx.api.from('fin_registros').insert(filas);
   if (e2) throw new Error(e2.message);
   return filas.length;
+}
+
+// Gastos fijos del mes que se generan solos al abrir Costos (como InnovaGestión), una vez por sesión y mes.
+// Los en dólares usan el dólar observado del día (mindicador.cl); si no se puede obtener, esos esperan al botón.
+export async function generarAutomatico(ctx) {
+  const mes = hoyISO().slice(0, 7);
+  const clave = `isg.costos.auto.${ctx.empresa.id}.${mes}`;
+  try { if (sessionStorage.getItem(clave)) return 0; sessionStorage.setItem(clave, '1'); } catch { /* sin almacenamiento */ }
+  if (!ctx.puede('costos', 'crear')) return 0;
+  const { data, error } = await ctx.api.from('fin_recurrentes').select('*').eq('empresa_id', ctx.empresa.id).eq('activo', true);
+  if (error || !data.length) return 0;
+  const { dolarDelDia } = await import('../../core/economia.js');
+  const tc = data.some((r) => r.moneda === 'USD') ? await dolarDelDia() : null;
+  const usables = tc ? data : data.filter((r) => r.moneda !== 'USD');
+  try { return await generarMes(ctx, usables, mes, tc); } catch { return 0; }
 }
 
 // ---- Compras de Inventario → gastos por pagar (sin duplicar). Costo de la entrada = neto si es factura.
@@ -110,7 +133,7 @@ export async function traerComprasInventario(ctx, categoriaId) {
     const total = doc === 'factura' ? Math.round(neto * (1 + IVA)) : neto;
     return {
       empresa_id: e, tipo: 'gasto', fecha: d.fecha, concepto: `Compra de inventario (entrada N° ${d.numero})`, categoria_id: categoriaId,
-      tercero_id: d.tercero_id, doc_tipo: doc, doc_numero: d.doc_numero, total, neto, iva: total - neto, documento_id: d.id,
+      tercero_id: d.tercero_id, doc_tipo: doc, doc_numero: d.doc_numero, total, neto, iva: total - neto, documento_id: d.id, estado_pago: 'listo',
     };
   }).filter((f) => f.total > 0);
   if (!filas.length) return 0;

@@ -1,0 +1,10 @@
+{
+  "name": "ISgestión",
+  "short_name": "ISgestión",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f6f6f3",
+  "theme_color": "#1f3b63",
+  "icons": [{ "src": "core/ui/icono.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}

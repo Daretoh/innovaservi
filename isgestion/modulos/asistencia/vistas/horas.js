@@ -32,7 +32,7 @@ export default async function vista(ctx) {
       .order('fecha').order('entrada'),
     ctx.api.from('persona_empresa').select('persona_id, cargo, estado, personas(nombres, apellido_paterno, apellido_materno)')
       .eq('empresa_id', ctx.empresa.id).is('deleted_at', null),
-    verOpe ? ctx.api.from('ope_faenas').select('id, titulo, tercero_id, fecha_inicio, fecha_fin, terceros(nombre_fantasia, razon_social), ope_sitios(nombre)')
+    verOpe ? ctx.api.from('ope_faenas').select('id, titulo, tercero_id, fecha_inicio, fecha_fin, dias, terceros(nombre_fantasia, razon_social), ope_sitios(nombre)')
       .eq('empresa_id', ctx.empresa.id).is('deleted_at', null).eq('estado', 'programada').lte('fecha_inicio', hasta).gte('fecha_fin', desde) : { data: [] },
     verOpe ? ctx.api.from('ope_clientes').select('tercero_id, color').eq('empresa_id', ctx.empresa.id) : { data: [] },
     verOpe ? ctx.api.from('ope_plan').select('id, faena_id, fecha, ope_plan_vehiculos(vehiculo, personas(nombres, apellido_paterno))').eq('empresa_id', ctx.empresa.id).eq('fecha', estado.dia) : { data: [] },
@@ -48,7 +48,7 @@ export default async function vista(ctx) {
   // Faenas (texto como lo escriben Planificación y el marcaje) y su color de cliente
   const colorDe = new Map((colores.data ?? []).map((c) => [c.tercero_id, c.color]));
   const textoFaena = (f) => [f.terceros?.nombre_fantasia || f.terceros?.razon_social || 'Interno', f.ope_sitios?.nombre, f.titulo].filter(Boolean).join(' · ');
-  const faenasDia = (faenas.data ?? []).filter((f) => f.fecha_inicio <= estado.dia && f.fecha_fin >= estado.dia)
+  const faenasDia = (faenas.data ?? []).filter((f) => f.fecha_inicio <= estado.dia && f.fecha_fin >= estado.dia && (!f.dias?.length || f.dias.includes(estado.dia)))
     .map((f) => ({ id: f.id, texto: textoFaena(f), color: colorDe.get(f.tercero_id) ?? null }));
   const colorFaena = (texto) => {
     const k = clave(texto); if (!k) return null;

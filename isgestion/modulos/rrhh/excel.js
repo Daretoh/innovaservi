@@ -48,6 +48,8 @@ export async function exportarExcel(ctx, datos) {
     ['vinculo', 'Vínculo', 'Contrato y remuneración', (v) => nombreVinculo[v.tipo_vinculo] ?? v.tipo_vinculo, 't', 13],
     ['jornada', 'Jornada', 'Contrato y remuneración', (v) => v.jornada, 't', 14],
     ['termino', 'Fecha término', 'Contrato y remuneración', (v) => fecha(v.fecha_termino), 'd', 12],
+    ['tipo_contrato', 'Tipo de contrato', 'Contrato y remuneración', (v) => (v.contrato_indefinido ? 'Indefinido' : v.contrato_vence ? 'Plazo fijo' : 'Spot / sin fecha'), 't', 14],
+    ['contrato_vence', 'Vence contrato', 'Contrato y remuneración', (v) => fecha(v.contrato_vence), 'd', 12],
     ...(ctx.puede('remu', 'ver') ? [
       ['modo', 'Tipo de pago', 'Contrato y remuneración', (v) => ((cond(v)?.modo ?? (v.tipo_vinculo === 'contrato' ? 'fijo' : 'hora')) === 'fijo' ? 'Contrato fijo' : 'Por hora'), 't', 13],
       ['sueldo', 'Sueldo base', 'Contrato y remuneración', (v) => cond(v)?.sueldo_base ?? null, '$', 13],

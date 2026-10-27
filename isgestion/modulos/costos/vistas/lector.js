@@ -105,6 +105,8 @@ export default async function vista(ctx) {
     (faenas.data ?? []).map((f) => el('option', { value: f.id, selected: f.fecha_inicio <= hoy && f.fecha_fin >= hoy && (faenas.data ?? []).filter((x) => x.fecha_inicio <= hoy && x.fecha_fin >= hoy).length === 1 }, `${fechaLarga(f.fecha_inicio)} · ${f.titulo}`)));
   const concepto = el('input', { class: 'campo', id: 'lec-con', placeholder: 'Se completa con el proveedor y el documento' });
   const pagado = el('input', { type: 'checkbox', id: 'lec-pag' });
+  let pagadoTocado = false;
+  pagado.addEventListener('change', () => { pagadoTocado = true; });
   // Descuento a un trabajador (compra a su cuenta)
   const descontar = el('input', { type: 'checkbox', class: 'interruptor', id: 'lec-desc' });
   const trabajador = el('select', { class: 'campo', id: 'lec-trab', disabled: true }, el('option', { value: '' }, 'Elige el trabajador…'),
@@ -190,7 +192,8 @@ export default async function vista(ctx) {
       const { data, error } = await ctx.api.from('fin_registros').insert({
         empresa_id: e, tipo: 'gasto', fecha: v.fecha || hoyISO(), concepto: concepto.value.trim(), categoria_id: categoria.value, centro_id: centro.value || null,
         tercero_id: tercero?.id ?? null, doc_tipo: doc, doc_numero: v.folio, total: v.total, neto: v.total - iva, iva,
-        estado_pago: pagado.checked ? 'pagado' : 'pendiente', archivo: subidas[0] ?? null, adjuntos: subidas.slice(1), faena_id: faena.value || null,
+        // Boleta o ticket: pagado al comprar (salvo que se desmarque a mano); factura: por pagar
+        ...(!ctx.puede('costos', 'editar') ? { estado_pago: 'pendiente' } : (pagadoTocado ? pagado.checked : pagado.checked || doc !== 'factura') ? { estado_pago: 'pagado', fecha_pago: v.fecha || hoyISO() } : { estado_pago: 'listo' }), archivo: subidas[0] ?? null, adjuntos: subidas.slice(1), faena_id: faena.value || null,
         dte: { ...v, rut: v.rut ? fmtRut(v.rut) : null, td: v.td == null ? null : String(v.td), items: datos.items ?? [], origen },
       }).select('id').single();
       if (error) throw new Error(error.code === '23505' ? 'Este documento ya estaba registrado (mismo emisor, tipo y folio).' : error.message);
@@ -224,7 +227,7 @@ export default async function vista(ctx) {
     cuadre,
     el('div', { class: 'rejilla-campos' }, fila('Categoría', categoria), fila('Centro de costo', centro), conFaenas ? fila('Faena', faena) : null),
     fila('Concepto', concepto),
-    el('label', { class: 'casilla' }, pagado, 'Ya está pagado'),
+    el('label', { class: 'casilla' }, pagado, 'Ya está pagado (boletas y tickets quedan pagados solos; la factura queda por pagar)'),
     conDescuento ? el('div', { class: 'lec-descuento' },
       el('label', { class: 'casilla' }, descontar, 'Descontar a un trabajador (compra a su cuenta)'),
       el('div', { class: 'form-fila' }, trabajador),

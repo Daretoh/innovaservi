@@ -13,7 +13,7 @@ export const iniciales = (p) => `${p.nombres?.[0] ?? ''}${p.apellido_paterno?.[0
 // que comparten todas las empresas del grupo.
 export async function cargarRrhh(ctx, { personaId = null } = {}) {
   let q = ctx.api.from('persona_empresa')
-    .select('id, persona_id, cargo, tipo_vinculo, jornada, fecha_ingreso, fecha_termino, estado, buk, buk_at, personas(*)')
+    .select('id, persona_id, cargo, tipo_vinculo, jornada, fecha_ingreso, fecha_termino, contrato_vence, contrato_indefinido, estado, buk, buk_at, personas(*)')
     .eq('empresa_id', ctx.empresa.id).is('deleted_at', null)
     .order('estado', { ascending: true });   // 'activo' antes que 'inactivo'
   if (personaId) q = q.eq('persona_id', personaId);
@@ -72,7 +72,8 @@ export function cumplimiento(datos, personaId) {
     const d = datos.doc(personaId, t.slug);
     const e = estadoDoc(t, d);
     if (d?.estado === 'entregado') entregados += 1;
-    if (!t.cuenta) continue;
+    // Buk (se guarda allá) y los propios de un cliente no cuentan en el % base
+    if (!t.cuenta || t.fuente === 'buk' || t.tercero_id) continue;
     cuenta[e.k] += 1;
     if (e.k === 'na') continue;
     n += 1;
@@ -81,6 +82,9 @@ export function cumplimiento(datos, personaId) {
   // ok = vigentes (al día + por vencer); cuenta.ok solo los "al día", por eso va primero y se sobrescribe.
   return { ...cuenta, ok, n, pct: n ? Math.round((ok / n) * 100) : 100, entregados };
 }
+
+// Contrato: plazo fijo (vence), indefinido o spot (sin fecha)
+export const tipoContrato = (v) => (v.contrato_indefinido ? 'Indefinido' : v.contrato_vence ? 'Plazo fijo' : 'Spot / sin fecha');
 
 export const nivel = (pct) => (pct >= 80 ? 'bien' : pct >= 50 ? 'medio' : 'mal');
 

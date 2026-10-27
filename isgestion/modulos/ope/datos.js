@@ -85,7 +85,9 @@ export function estadoParte(partes, f, fecha, base, hoy) {
   return pide && fecha <= hoy ? { clase: 'chip-venc', texto: 'Sin parte', parte: null } : null;
 }
 
-export const faenasDelDia = (faenas, fecha) => faenas.filter((f) => f.fecha_inicio <= fecha && f.fecha_fin >= fecha);
+// ¿La faena ocurre ese día? (rango, o solo los días elegidos si tiene días a elección)
+export const enDiaFaena = (f, fecha) => f.fecha_inicio <= fecha && f.fecha_fin >= fecha && (!f.dias?.length || f.dias.includes(fecha));
+export const faenasDelDia = (faenas, fecha) => faenas.filter((f) => enDiaFaena(f, fecha));
 
 export function etiquetaFaena(f, base) {
   const cli = base.clientes.find((c) => c.id === f.tercero_id);

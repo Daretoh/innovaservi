@@ -40,7 +40,7 @@ export default async function vista(ctx) {
 
   const detalle = (x) => {
     if (x.t) {
-      abrirFormulario({ titulo: 'Tarea', mensaje: [x.t.titulo, x.t.fecha ? `${fechaLarga(x.t.fecha)}${x.hora ? ` ${x.hora}` : ''}` : null, `Prioridad: ${x.t.prioridad}`, `Estado: ${x.t.estado}`, x.t.detalle].filter(Boolean).join('\n'),
+      abrirFormulario({ titulo: 'Tarea', mensaje: [x.t.titulo, x.t.fecha ? `${fechaLarga(x.t.fecha)}${x.hora ? ` ${x.hora}` : ''}` : null, `Prioridad: ${x.t.prioridad}`, `Estado: ${x.t.estado.replace('_', ' ')}`, x.t.detalle].filter(Boolean).join('\n'),
         campos: [], textoGuardar: 'Ver tareas', alGuardar: () => { location.hash = ctx.ruta('tareas.lista'); } });
       return;
     }

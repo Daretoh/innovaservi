@@ -14,10 +14,10 @@ export async function seccionCostosPatente(ctx, o, v) {
   const estaVisita = (r) => r.orden_id === o.id || (r.fecha >= desde && r.fecha <= hasta);
   const visita = data.filter(estaVisita); const otras = data.filter((r) => !estaVisita(r));
   const suma = (l) => l.reduce((s, r) => s + Number(r.total || 0), 0);
-  const porPagar = suma(data.filter((r) => r.estado_pago === 'pendiente'));
+  const porPagar = suma(data.filter((r) => r.estado_pago !== 'pagado'));
   const fila = (r) => el('a', { class: 'doc-fila', href: ctx.ruta('costos.registro', { id: r.id }) },
     el('span', { class: 'doc-nombre' }, el('strong', {}, r.concepto), el('span', { class: 'texto-suave texto-chico' }, fechaLarga(r.fecha))),
-    el('span', {}, dinero(r.total), r.estado_pago === 'pendiente' ? el('span', { class: 'chip chip-prox', style: 'margin-left:6px' }, 'Por pagar') : null));
+    el('span', {}, dinero(r.total), r.estado_pago !== 'pagado' ? el('span', { class: 'chip chip-prox', style: 'margin-left:6px' }, 'Por pagar') : null));
   return el('div', { class: 'ficha doc-grupo' },
     el('h2', {}, 'Costos con la patente'),
     el('div', { class: 'cobro-resumen' },

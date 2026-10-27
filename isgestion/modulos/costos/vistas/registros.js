@@ -6,8 +6,8 @@ import { icono } from '../../../core/ui/iconos.js';
 import { listado, boton } from '../../../core/ui/tabla.js';
 import { abrirFormulario } from '../../../core/ui/modal.js';
 import { avisar } from '../../../core/ui/aviso.js';
-import { dinero, fechaLarga, hoyISO, nombreMes, moverMes, rangoMes } from '../../../core/ui/formato.js';
-import { cargarBase, nombreTercero, nombreDoc, nombreMedio, MEDIOS, traerComprasInventario } from '../datos.js';
+import { dinero, fechaLarga, hoyISO, nombreMes, moverMes, rangoMes, diaLocal } from '../../../core/ui/formato.js';
+import { cargarBase, nombreTercero, nombreDoc, nombreMedio, MEDIOS, traerComprasInventario, estadosDe, nombreEstado, CHIP_ESTADO, generarAutomatico } from '../datos.js';
 import { planilla } from '../planilla.js';
 
 const estado = { vista: 'recientes', mes: hoyISO().slice(0, 7), categoria: '', editar: false };
@@ -16,19 +16,35 @@ const VISTAS = [['recientes', 'Recientes'], ['todos', 'Del mes'], ['gasto', 'Gas
 
 export default async function vista(ctx) {
   const e = ctx.empresa.id;
+  // Gastos fijos del mes: se generan solos (una vez por sesión)
+  const generados = await generarAutomatico(ctx);
+  if (generados) avisar(`Se generaron ${generados} gasto${generados === 1 ? '' : 's'} fijo${generados === 1 ? '' : 's'} del mes.`);
   const { desde, hasta } = rangoMes(estado.mes);
   const pendientes = estado.vista === 'pendientes';
   const recientes = estado.vista === 'recientes';
-  const sinMes = pendientes || recientes;
+  const revisar = estado.vista === 'revisar';
+  const sinCentro = estado.vista === 'sincentro';
+  const sinMes = pendientes || recientes || revisar || sinCentro;
   let q = ctx.api.from('fin_registros').select('*, terceros(razon_social, nombre_fantasia)').eq('empresa_id', e).is('deleted_at', null);
   if (recientes) q = q.order('created_at', { ascending: false }).limit(RECIENTES);
   else q = q.order('fecha', { ascending: pendientes }).order('created_at', { ascending: false });
-  if (pendientes) q = q.eq('estado_pago', 'pendiente'); else if (!recientes) q = q.gte('fecha', desde).lte('fecha', hasta);
+  if (pendientes) q = q.neq('estado_pago', 'pagado');
+  else if (revisar) q = q.eq('estado_pago', 'pendiente');
+  else if (sinCentro) q = q.is('centro_id', null);
+  else if (!recientes) q = q.gte('fecha', desde).lte('fecha', hasta);
   if (estado.vista === 'gasto' || estado.vista === 'ingreso') q = q.eq('tipo', estado.vista);
   if (estado.categoria) q = q.eq('categoria_id', estado.categoria);
-  const [{ data, error }, base, pend] = await Promise.all([q, cargarBase(ctx),
-    ctx.api.from('fin_registros').select('tipo, total').eq('empresa_id', e).is('deleted_at', null).eq('estado_pago', 'pendiente')]);
+  const [{ data, error }, base, pend, nRevisar, nSinCentro, us] = await Promise.all([q, cargarBase(ctx),
+    ctx.api.from('fin_registros').select('tipo, total').eq('empresa_id', e).is('deleted_at', null).neq('estado_pago', 'pagado'),
+    ctx.api.from('fin_registros').select('id', { count: 'exact', head: true }).eq('empresa_id', e).is('deleted_at', null).eq('estado_pago', 'pendiente'),
+    ctx.api.from('fin_registros').select('id', { count: 'exact', head: true }).eq('empresa_id', e).is('deleted_at', null).is('centro_id', null),
+    ctx.api.rpc('nombres_usuarios', { p_empresa: e })]);
   if (error) throw error;
+  const quien = new Map((us.data ?? []).map((u) => [u.user_id, u.nombre]));
+  // Faenas de los registros (para mostrar su nombre)
+  const idsFaena = [...new Set(data.map((r) => r.faena_id).filter(Boolean))];
+  const faenaDe = new Map(idsFaena.length && ctx.puede('ope', 'ver')
+    ? ((await ctx.api.from('ope_faenas').select('id, titulo').in('id', idsFaena)).data ?? []).map((f) => [f.id, f.titulo]) : []);
 
   const suma = (l, f) => l.reduce((s, r) => s + (f ? f(r) : r), 0);
   const delMes = sinMes ? [] : data;
@@ -38,6 +54,12 @@ export default async function vista(ctx) {
   const porPagar = suma((pend.data ?? []).filter((r) => r.tipo === 'gasto'), (r) => r.total);
   const porCobrar = suma((pend.data ?? []).filter((r) => r.tipo === 'ingreso'), (r) => r.total);
 
+  const cambiarEstado = async (r, sel) => {
+    if (sel.value === 'pagado') { sel.value = r.estado_pago; marcarPagado(r); return; }
+    const { error: er } = await ctx.api.from('fin_registros').update({ estado_pago: sel.value }).eq('id', r.id);
+    if (er) { avisar(er.message, 'error'); sel.value = r.estado_pago; return; }
+    avisar(`${r.concepto}: ${Object.fromEntries(estadosDe(r.tipo))[sel.value].toLowerCase()}.`); ctx.refrescar();
+  };
   const marcarPagado = (r) => abrirFormulario({
     titulo: `${r.tipo === 'ingreso' ? 'Cobrado' : 'Pagado'}: ${r.concepto}`,
     mensaje: `${dinero(r.total)}${r.doc_numero ? ` · ${nombreDoc[r.doc_tipo]} ${r.doc_numero}` : ''}`,
@@ -62,6 +84,12 @@ export default async function vista(ctx) {
     } catch (err) { avisar(err.message, 'error'); } finally { b.disabled = false; }
   };
 
+  // Contadores que filtran (todos los meses), como Finanzas de InnovaGestión
+  const contador = (k, n, texto, clase) => el('button', { type: 'button', class: `chip ${clase} chip-boton`, 'aria-pressed': String(estado.vista === k), onclick: () => { estado.vista = estado.vista === k ? 'recientes' : k; ctx.refrescar(); } }, `${texto} `, el('strong', {}, String(n ?? 0)));
+  const contadores = el('div', { class: 'resumen-chips' },
+    contador('revisar', nRevisar.count, 'Por revisar', nRevisar.count ? 'chip-pend' : 'chip-ok'),
+    contador('sincentro', nSinCentro.count, 'Sin centro de costo', nSinCentro.count ? 'chip-prox' : 'chip-ok'),
+    revisar || sinCentro ? el('span', { class: 'texto-suave texto-chico' }, 'Todos los meses · toca de nuevo para quitar el filtro') : null);
   const segmento = el('div', { class: 'segmento', role: 'group', 'aria-label': 'Ver' },
     VISTAS.map(([k, n]) => el('button', { type: 'button', 'aria-pressed': String(estado.vista === k), onclick: async () => { await hoja?.terminar(); estado.vista = k; ctx.refrescar(); } }, n)));
   const selCat = el('select', { class: 'campo', 'aria-label': 'Categoría' }, el('option', { value: '' }, 'Todas las categorías'),
@@ -74,10 +102,10 @@ export default async function vista(ctx) {
     el('strong', {}, nombreMes(estado.mes)),
     el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Mes siguiente', onclick: () => mover(1) }, icono('derecha'))));
   if (ctx.puede('costos', 'exportar') && data.length) acciones.push(boton('Excel', { icono: 'descargar', onclick: () => import('../../../core/excel.js').then(({ exportarExcel }) => exportarExcel(ctx, {
-    titulo: pendientes ? 'Gastos e ingresos pendientes' : recientes ? 'Gastos e ingresos recientes' : `Gastos e ingresos · ${nombreMes(estado.mes)}`, nombre: `costos-${pendientes ? 'pendientes' : recientes ? 'recientes' : estado.mes}`,
+    titulo: pendientes ? 'Gastos e ingresos pendientes' : revisar ? 'Gastos e ingresos por revisar' : sinCentro ? 'Gastos e ingresos sin centro de costo' : recientes ? 'Gastos e ingresos recientes' : `Gastos e ingresos · ${nombreMes(estado.mes)}`, nombre: `costos-${pendientes ? 'pendientes' : recientes ? 'recientes' : estado.mes}`,
     columnas: [{ t: 'Fecha', tipo: 'fecha' }, 'Tipo', 'Concepto', 'Categoría', 'Centro', 'Proveedor o cliente', 'Documento', 'N°', { t: 'Neto', tipo: 'dinero' }, { t: 'IVA', tipo: 'dinero' }, { t: 'Total', tipo: 'dinero' }, 'Estado', { t: 'Fecha de pago', tipo: 'fecha' }, 'Medio', 'Patente'],
     filas: data.map((r) => [r.fecha, r.tipo === 'gasto' ? 'Gasto' : 'Ingreso', r.concepto, base.categoriaDe.get(r.categoria_id)?.nombre ?? '', base.centroDe.get(r.centro_id)?.nombre ?? '', nombreTercero(r.terceros),
-      nombreDoc[r.doc_tipo], r.doc_numero ?? '', r.neto, r.iva, r.total, r.estado_pago ? r.estado_pago[0].toUpperCase() + r.estado_pago.slice(1) : '', r.fecha_pago ?? '', r.medio_pago ? nombreMedio[r.medio_pago] : '', r.patente ?? '']),
+      nombreDoc[r.doc_tipo], r.doc_numero ?? '', r.neto, r.iva, r.total, nombreEstado(r), r.fecha_pago ?? '', r.medio_pago ? nombreMedio[r.medio_pago] : '', r.patente ?? '']),
   })).catch((e) => avisar(e.message, 'error')) }));
   // Planilla: editar las celdas como en Excel (solo con permiso de edición)
   let hoja = null;
@@ -105,11 +133,11 @@ export default async function vista(ctx) {
     titulo: 'Gastos e ingresos',
     filas: data,
     acciones,
-    vacio: pendientes ? 'No hay nada por pagar ni por cobrar.' : recientes ? 'Aún no hay registros.' : 'Sin registros en el mes.',
+    vacio: pendientes ? 'No hay nada por pagar ni por cobrar.' : revisar ? 'No hay nada por revisar.' : sinCentro ? 'Todo tiene centro de costo.' : recientes ? 'Aún no hay registros.' : 'Sin registros en el mes.',
     columnas: [
       { titulo: 'Fecha', valor: (r) => fechaLarga(r.fecha) },
       { titulo: 'Concepto', valor: (r) => el('div', {}, el('a', { href: ctx.ruta('costos.registro', { id: r.id }) }, el('strong', {}, r.concepto)),
-        el('div', { class: 'texto-suave texto-chico' }, [nombreTercero(r.terceros), r.patente ? patenteNodo(r.patente) : null, r.recurrente_id ? 'recurrente' : null, r.documento_id ? 'de Inventario' : null].filter(Boolean).flatMap((x, i) => (i ? [' · ', x] : [x])))) },
+        el('div', { class: 'texto-suave texto-chico' }, [nombreTercero(r.terceros), r.faena_id ? faenaDe.get(r.faena_id) ?? 'faena' : null, r.patente ? patenteNodo(r.patente) : null, r.recurrente_id ? 'recurrente' : null, r.documento_id ? 'de Inventario' : null].filter(Boolean).flatMap((x, i) => (i ? [' · ', x] : [x])))) },
       { titulo: 'Categoría', valor: (r) => {
         const c = base.categoriaDe.get(r.categoria_id);
         return el('div', {}, el('span', { class: `chip ${r.tipo === 'ingreso' ? 'chip-ok' : c?.clase === 'inventario' ? 'chip-pend' : 'chip-prox'}` }, c?.nombre ?? ''),
@@ -118,11 +146,16 @@ export default async function vista(ctx) {
       { titulo: 'Documento', valor: (r) => `${nombreDoc[r.doc_tipo]}${r.doc_numero ? ` ${r.doc_numero}` : ''}` },
       { titulo: 'Neto', valor: (r) => dinero(r.neto) },
       { titulo: 'Total', valor: (r) => el('strong', {}, `${r.tipo === 'ingreso' ? '+' : ''}${dinero(r.total)}`) },
-      { titulo: 'Estado', valor: (r) => (r.estado_pago === 'pagado'
-        ? el('span', { class: 'chip chip-ok', title: r.medio_pago ? nombreMedio[r.medio_pago] : '' }, `${r.tipo === 'ingreso' ? 'Cobrado' : 'Pagado'} ${fechaLarga(r.fecha_pago)}`)
-        : ctx.puede('costos', 'editar')
-          ? boton(r.tipo === 'ingreso' ? 'Por cobrar' : 'Por pagar', { icono: 'check', title: 'Marcar como pagado o cobrado', onclick: () => marcarPagado(r) })
-          : el('span', { class: 'chip chip-venc' }, r.tipo === 'ingreso' ? 'Por cobrar' : 'Por pagar')) },
+      { titulo: 'Estado', valor: (r) => {
+        if (!ctx.puede('costos', 'editar')) return el('span', { class: `chip ${CHIP_ESTADO[r.estado_pago]}` }, nombreEstado(r));
+        const sel = el('select', { class: `campo campo-estado estado-${r.estado_pago}`, 'aria-label': 'Estado', title: r.estado_pago === 'pagado' && r.medio_pago ? nombreMedio[r.medio_pago] : '' },
+          estadosDe(r.tipo).map(([k, n]) => el('option', { value: k, selected: k === r.estado_pago }, k === 'pagado' && r.estado_pago === 'pagado' ? `${n} ${fechaLarga(r.fecha_pago)}` : n)));
+        sel.addEventListener('change', () => cambiarEstado(r, sel));
+        return el('div', {}, sel, r.estado_pago !== 'pagado' && r.vence ? el('div', { class: `texto-chico ${r.vence < hoyISO() ? 'texto-error' : 'texto-suave'}` }, `Vence ${fechaLarga(r.vence)}`) : null);
+      } },
+      { titulo: 'Cargó', valor: (r) => el('span', { class: 'texto-chico texto-suave' },
+        r.recurrente_id ? 'Sistema (gasto fijo)' : r.documento_id ? 'Inventario' : quien.get(r.created_by) ?? '—', el('br'), fechaLarga(diaLocal(r.created_at)),
+        r.updated_by && r.updated_by !== r.created_by ? el('span', {}, el('br'), `Editó ${quien.get(r.updated_by) ?? '—'}`) : null) },
     ],
   });
   const tarjeta = (titulo, valor, nota, clase = '') => el('div', { class: `ficha doc-grupo fin-tarjeta ${clase}` },
@@ -133,7 +166,8 @@ export default async function vista(ctx) {
     sinMes ? null : tarjeta('Otros ingresos', ingresosNeto, 'neto'),
     tarjeta('Por pagar', porPagar, 'total, todos los meses', porPagar ? 'fin-alerta' : ''),
     tarjeta('Por cobrar', porCobrar, 'total, todos los meses'));
-  tabla.querySelector('.listado-cabecera').after(resumen);
+  // Quien solo carga (sin "aprobar") ve cantidades, no los montos totales
+  tabla.querySelector('.listado-cabecera').after(contadores, ...(ctx.puede('costos', 'aprobar') ? [resumen] : []));
   tabla.classList.add('fin-lista');
   if (recientes) resumen.after(el('p', { class: 'texto-suave texto-chico' }, `Los ${RECIENTES} últimos cargados, de cualquier mes. Para ver un mes completo usa "Del mes".`));
   if (estado.editar && data.length) {

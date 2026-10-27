@@ -172,3 +172,26 @@
   .igcal-dnum { width: 22px; height: 22px; font-size: .78rem; margin-bottom: 2px; }
   .igcal-dow div { font-size: .6rem; padding: 9px 4px; letter-spacing: .5px; }
 }
+
+/* Días a elección, tareas con casilla y observaciones (2026-10-27) */
+.igcal [hidden] { display: none !important; }
+.igcal-modo { display: inline-flex; gap: 2px; padding: 3px; border-radius: 10px; background: var(--fondo-hundido); }
+.igcal-modo button { border: 0; background: transparent; padding: 6px 12px; border-radius: 8px; font: inherit; font-size: 13px; color: var(--texto-suave); cursor: pointer; }
+.igcal-modo button.on { background: var(--superficie); color: var(--texto); font-weight: 600; box-shadow: 0 1px 3px rgb(0 0 0 / .14); }
+.igcal-mini-cal { display: flex; flex-direction: column; gap: 6px; }
+.igcal-mini-nav { display: flex; align-items: center; justify-content: space-between; }
+.igcal-mini-nav button { border: 1px solid var(--borde); background: var(--superficie); color: var(--texto); border-radius: 6px; width: 28px; height: 28px; cursor: pointer; }
+.igcal-mini-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+.igcal-mini-grid .dow { text-align: center; font-size: 11px; color: var(--texto-suave); }
+.igcal-mini-grid label { display: flex; align-items: center; justify-content: center; height: 30px; border-radius: 6px; border: 1px solid var(--borde); font-size: 13px; cursor: pointer; user-select: none; }
+.igcal-mini-grid label input { display: none; }
+.igcal-mini-grid label.on { background: var(--empresa); color: var(--sobre-empresa); border-color: var(--empresa); font-weight: 700; }
+.igcal-tchk, .igcal-obs { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+.igcal-tline { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px; align-items: center; }
+.igcal-tline input { width: 18px; height: 18px; accent-color: var(--empresa); }
+.igcal-tline input:checked + span { text-decoration: line-through; color: var(--texto-suave); }
+.igcal-tline small, .igcal-obsi small { color: var(--texto-suave); font-size: 11px; }
+.igcal-obsi { display: flex; flex-direction: column; gap: 2px; padding: 6px 8px; border-radius: 8px; background: var(--fondo-sutil); white-space: pre-line; }
+.igcal-oadd { display: flex; gap: 6px; align-items: flex-end; }
+.igcal-oadd textarea { flex: 1; font: inherit; padding: 6px 8px; border: 1px solid var(--borde); border-radius: 8px; background: var(--superficie); color: var(--texto); }
+.igcal-tchk .igcal-tadd input { width: 100%; font: inherit; padding: 6px 8px; border: 1px solid var(--borde); border-radius: 8px; background: var(--superficie); color: var(--texto); }

@@ -1,7 +1,7 @@
 export default {
   id: 'tareas',
   nombre: 'Tareas',
-  version: '1.0.0',
+  version: '2.0.0',
   icono: 'check',
   categoria: 'Gestión',
   depende: ['nucleo'],
@@ -11,5 +11,5 @@ export default {
     { id: 'tareas.lista', label: 'Tareas', vista: () => import('./vistas/lista.js') },
   ],
   config: {},
-  migraciones: ['db/001_tareas.sql'],
+  migraciones: ['db/001_tareas.sql', 'db/002_v2.sql'],
 };

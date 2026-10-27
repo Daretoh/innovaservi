@@ -1,14 +1,17 @@
-// Clientes (del maestro de Clientes y proveedores) con su color en el calendario y sus sitios de faena.
+// Clientes (del maestro de Clientes y proveedores) con su color en el calendario y sus sitios de faena. Arriba, como
+// InnovaGestión, un gráfico circular con el % de faenas por cliente en los últimos 12 meses (6 mayores + Otros).
 import { el } from '../../../core/ui/dom.js';
 import { icono } from '../../../core/ui/iconos.js';
 import { boton } from '../../../core/ui/tabla.js';
 import { abrirFormulario } from '../../../core/ui/modal.js';
 import { avisar } from '../../../core/ui/aviso.js';
 import { cargarBase } from '../datos.js';
+import { hoyISO, sumarDias } from '../../../core/ui/formato.js';
 import { fichaTercero } from '../../terceros/formulario.js';
 
 export default async function vista(ctx) {
-  const base = await cargarBase(ctx);
+  const [base, fae] = await Promise.all([cargarBase(ctx),
+    ctx.api.from('ope_faenas').select('tercero_id').eq('empresa_id', ctx.empresa.id).is('deleted_at', null).neq('estado', 'cancelada').gte('fecha_inicio', sumarDias(hoyISO(), -365))]);
   const editable = ctx.puede('ope', 'editar') && ctx.puede('ope', 'crear');
   const conReportes = ctx.puede('reportes', 'ver');
 
@@ -44,7 +47,36 @@ export default async function vista(ctx) {
       el('h1', {}, 'Clientes y sitios'),
       el('a', { class: 'boton boton-secundario', href: ctx.ruta('terceros.listado') }, 'Ir a Clientes y proveedores')),
     el('p', { class: 'texto-suave' }, `Los clientes vienen de "Clientes y proveedores". Aquí se define su color en el calendario${conReportes ? ', si sus faenas llevan informe por omisión (cada faena se puede cambiar)' : ''} y sus sitios de faena.`),
+    torta(base, fae.data ?? []),
     tarjetas.length ? tarjetas : el('p', { class: 'texto-suave' }, 'No hay clientes. Créalos en Clientes y proveedores (tipo Cliente).'));
+}
+
+// % de faenas por cliente: torta SVG con los 6 mayores y "Otros"
+function torta(base, faenas) {
+  const conteo = new Map();
+  for (const f of faenas) if (f.tercero_id) conteo.set(f.tercero_id, (conteo.get(f.tercero_id) ?? 0) + 1);
+  const total = [...conteo.values()].reduce((a, b) => a + b, 0);
+  if (!total) return null;
+  const orden = [...conteo].sort((a, b) => b[1] - a[1]);
+  const trozos = orden.slice(0, 6).map(([id, n]) => { const c = base.clientes.find((x) => x.id === id); return { nombre: c?.nombre ?? 'Cliente', color: c?.color ?? 'var(--texto-suave)', n }; });
+  const otros = orden.slice(6).reduce((a, [, n]) => a + n, 0);
+  if (otros) trozos.push({ nombre: 'Otros', color: 'var(--borde)', n: otros });
+  const NS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('viewBox', '0 0 42 42'); svg.setAttribute('class', 'torta'); svg.setAttribute('role', 'img'); svg.setAttribute('aria-label', 'Faenas por cliente');
+  let acumulado = 0;
+  for (const t of trozos) {
+    const c = document.createElementNS(NS, 'circle');
+    const p = (t.n / total) * 100;
+    Object.entries({ cx: 21, cy: 21, r: 15.915, fill: 'transparent', 'stroke-width': 8, 'stroke-dasharray': `${p} ${100 - p}`, 'stroke-dashoffset': 25 - acumulado }).forEach(([k, v]) => c.setAttribute(k, v));
+    c.style.stroke = t.color;
+    const titulo = document.createElementNS(NS, 'title'); titulo.textContent = `${t.nombre}: ${t.n} (${Math.round(p)}%)`; c.append(titulo);
+    svg.append(c); acumulado += p;
+  }
+  return el('div', { class: 'ficha doc-grupo torta-caja' },
+    el('div', {}, el('h2', {}, 'Faenas por cliente'), el('p', { class: 'texto-suave texto-chico' }, `${total} faenas en los últimos 12 meses · ${conteo.size} clientes`)),
+    el('div', { class: 'torta-fila' }, svg,
+      el('div', { class: 'torta-leyenda' }, trozos.map((t) => el('div', {}, el('i', { style: `background:${t.color}` }), el('span', {}, t.nombre), el('strong', {}, `${Math.round((t.n / total) * 100)}%`))))));
 }
 
 // Actualizar o crear la fila del cliente (la empresa del registro no se puede cambiar, por eso no se usa upsert)

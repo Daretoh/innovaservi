@@ -5,6 +5,7 @@
 // Los datos son las faenas (ope_faenas): lo que se pone aquí aparece en Planificación al armar la faena.
 import { el } from '../../../core/ui/dom.js';
 import { avisar } from '../../../core/ui/aviso.js';
+import { abrirFormulario } from '../../../core/ui/modal.js';
 import { hhmm } from '../../../core/ui/formato.js';
 import { cargarBase } from '../datos.js';
 
@@ -56,7 +57,7 @@ async function cargarFaenas(ctx) {
   const todas = [];
   for (let desde = 0; ; desde += 1000) {
     const { data, error } = await ctx.api.from('ope_faenas')
-      .select('id, titulo, tercero_id, sitio_id, fecha_inicio, fecha_fin, hora_inicio, hora_fin, descripcion, tareas, dotacion, serie_id')
+      .select('id, titulo, tercero_id, sitio_id, fecha_inicio, fecha_fin, dias, hora_inicio, hora_fin, descripcion, tareas, tareas_check, dotacion, serie_id')
       .eq('empresa_id', ctx.empresa.id).is('deleted_at', null).neq('estado', 'cancelada')
       .order('fecha_inicio').range(desde, desde + 999);
     if (error) throw error;
@@ -81,13 +82,14 @@ export default async function vista(ctx) {
         id: f.id, fecha: f.fecha_inicio, fin: f.fecha_fin > f.fecha_inicio ? f.fecha_fin : '', serie: f.serie_id, hora: textoHora(f),
         titulo: f.titulo, ubic: c?.nombre ?? '', terceroId: f.tercero_id, sitio: sitio.get(f.sitio_id)?.nombre ?? '', sitioId: f.sitio_id,
         color: c?.color ?? '#8b93a7', desc: f.descripcion ?? '', dot: { op: +f.dotacion?.op || 0, sup: +f.dotacion?.sup || 0, prev: +f.dotacion?.prev || 0 },
-        tareas: f.tareas ?? [], raw: f,
+        tareas: f.tareas ?? [], tchk: f.tareas_check ?? [], dias: f.dias?.length ? f.dias : null, raw: f,
       };
     });
   };
   mapear(faenas);
   const evFin = (e) => (e.fin && e.fin >= e.fecha ? e.fin : e.fecha);
-  const evsDe = (f) => EVENTS.filter((e) => e.fecha <= f && f <= evFin(e));
+  const enDia = (e, f) => e.fecha <= f && f <= evFin(e) && (!e.dias || e.dias.includes(f));   // días a elección
+  const evsDe = (f) => EVENTS.filter((e) => enDia(e, f));
   const recargar = async () => { mapear(await cargarFaenas(ctx)); render(); };
 
   // ---------- Estructura
@@ -126,7 +128,7 @@ export default async function vista(ctx) {
     evs.forEach((e) => { const k = e.ubic ? `${e.ubic.toUpperCase()}${e.sitio.toUpperCase()}` : `#${e.id}`; if (!grupos.has(k)) grupos.set(k, []); grupos.get(k).push(e); });
     return [...grupos.values()];
   }
-  const md = (e) => (e.fin && e.fin > e.fecha ? '<span class="igcal-md" title="Trabajo de varios días">⟶</span>' : '');
+  const md = (e, f = e.fecha) => { const sig = iso(new Date(fecha(f).getTime() + 864e5)); return e.fin && e.fin > e.fecha && enDia(e, sig) ? '<span class="igcal-md" title="Sigue al día siguiente">⟶</span>' : ''; };
 
   // ---------- Mes y semana
   function render() {
@@ -157,8 +159,8 @@ export default async function vista(ctx) {
       let ev = grupos.slice(0, max).map((g) => {
         const e0 = g[0]; const col = esc(e0.color);
         const sit = e0.sitio ? ` <span class="igcal-sit">· ${esc(e0.sitio)}</span>` : '';
-        const head = e0.ubic ? `${esc(e0.ubic)}${sit}${g.length > 1 ? ` <span class="igcal-sit">· ${g.length}</span>` : ''}` : `${esc(e0.titulo)}${md(e0)}`;
-        const items = e0.ubic ? g.map((e) => `<span class="igcal-gitem" data-id="${e.id}" title="${esc(e.titulo)}">${esc(e.titulo)}${md(e)}</span>`).join('') : '';
+        const head = e0.ubic ? `${esc(e0.ubic)}${sit}${g.length > 1 ? ` <span class="igcal-sit">· ${g.length}</span>` : ''}` : `${esc(e0.titulo)}${md(e0, f)}`;
+        const items = e0.ubic ? g.map((e) => `<span class="igcal-gitem" data-id="${e.id}" title="${esc(e.titulo)}">${esc(e.titulo)}${md(e, f)}</span>`).join('') : '';
         const datos = e0.ubic ? `data-ubic="${esc(e0.ubic)}" data-sitio="${esc(e0.sitio)}" data-f="${f}"` : `data-id="${e0.id}"`;
         return `<div class="igcal-grupo" style="border-left-color:${col}"><span class="igcal-ghead${e0.ubic ? '' : ' plain'}" style="color:${col}" ${datos}>${head}</span>${items}</div>`;
       }).join('');
@@ -204,7 +206,7 @@ export default async function vista(ctx) {
     const out = [];
     EVENTS.forEach((e) => {
       const a = e.fecha < desde ? desde : e.fecha; const b = evFin(e) > hasta ? hasta : evFin(e);
-      for (let d = fecha(a), g = 0; iso(d) <= b && g < 400; d.setDate(d.getDate() + 1), g++) out.push({ ...e, fecha: iso(d) });
+      for (let d = fecha(a), g = 0; iso(d) <= b && g < 400; d.setDate(d.getDate() + 1), g++) if (enDia(e, iso(d))) out.push({ ...e, fecha: iso(d) });
     });
     return out.sort((x, y) => x.fecha.localeCompare(y.fecha));
   };
@@ -235,6 +237,7 @@ export default async function vista(ctx) {
   }
   function rangoTexto(e) {
     const d = fecha(e.fecha);
+    if (e.dias) return `${e.dias.length} días: ${e.dias.map((x) => { const y = fecha(x); return `${y.getDate()} ${MES[y.getMonth()].slice(0, 3)}`; }).join(', ')}`;
     if (e.fin && e.fin > e.fecha) {
       const d2 = fecha(e.fin); const n = Math.round((d2 - d) / 86400000) + 1;
       return `Del ${d.getDate()} ${MES[d.getMonth()].slice(0, 3)} al ${d2.getDate()} ${MES[d2.getMonth()].slice(0, 3)} ${d2.getFullYear()} · ${n} días`;
@@ -248,13 +251,77 @@ export default async function vista(ctx) {
       cuerpo: `<div class="igcal-row">${SVG.cal}<b>${rangoTexto(e)}</b>${e.hora ? ` · ${esc(e.hora)}` : ''}</div>`
         + (e.ubic ? `<div class="igcal-row">${SVG.pin}Cliente:<span class="igcal-chip" style="background:${esc(e.color)}">${esc(e.ubic)}</span>${e.sitio ? ` <span style="font-weight:600">· ${esc(e.sitio)}</span>` : ''}</div>` : '')
         + (dotTotal(e.dot) ? `<div class="igcal-row">${SVG.pers}<span><b>${dotTotal(e.dot)}</b> necesarias · ${esc(dotTexto(e.dot))}</span></div>` : '')
-        + (e.desc ? `<div class="igcal-desc">${esc(e.desc)}</div>` : '')
-        + (e.tareas.length ? `<div class="igcal-lbl">Tareas (${e.tareas.length})</div><ol class="igcal-det-tareas">${e.tareas.map((x) => `<li>${esc(x)}</li>`).join('')}</ol>` : '')
-        + `<div class="igcal-btns"><a class="igcal-hoy" style="text-decoration:none" href="${ctx.ruta('ope.plan', { f: e.id, d: e.fecha })}">Planificar</a>${puedeEliminar ? '<button type="button" class="igcal-del" data-a="del">Eliminar</button>' : ''}${puedeEditar ? '<button type="button" class="igcal-add" data-a="edit">✎ Editar</button>' : ''}</div>`,
+        + '<div class="igcal-lbl">Tareas</div><div class="igcal-tchk"></div>'
+        + '<div class="igcal-lbl">Observaciones</div><div class="igcal-obs"></div>'
+        + `<div class="igcal-btns"><a class="igcal-hoy" style="text-decoration:none" href="${ctx.ruta('ope.plan', { f: e.id, d: e.fecha })}">Planificar</a>${puedeEliminar ? '<button type="button" class="igcal-del" data-a="del">Eliminar</button>' : ''}${puedeEditar && puedeEliminar ? '<button type="button" class="igcal-hoy" data-a="unir" title="Juntar con otra faena duplicada">Unir con otra</button>' : ''}${puedeEditar ? '<button type="button" class="igcal-add" data-a="edit">✎ Editar</button>' : ''}</div>`,
     });
     v.box.querySelector('[data-a="edit"]')?.addEventListener('click', () => { v.cerrar(); abrirForm(e); });
+    v.box.querySelector('[data-a="unir"]')?.addEventListener('click', () => { v.cerrar(); unir(e); });
+    detalleExtra(v.box, e);
     v.box.querySelector('[data-a="del"]')?.addEventListener('click', () => { v.cerrar(); abrirBorrado(e); });
     v.box.querySelector('a.igcal-hoy')?.addEventListener('click', () => v.cerrar());
+  }
+  // Tareas con casilla (quién y cuándo) y observaciones con autor y fecha: basta con ver Faenas
+  async function detalleExtra(box, e) {
+    const cajaT = box.querySelector('.igcal-tchk'); const cajaO = box.querySelector('.igcal-obs');
+    const [{ data: obs }, us] = await Promise.all([
+      ctx.api.from('ope_faena_obs').select('*').eq('faena_id', e.id).order('created_at'),
+      ctx.api.rpc('nombres_usuarios', { p_empresa: ctx.empresa.id }),
+    ]);
+    const quien = new Map((us.data ?? []).map((u) => [u.user_id, u.nombre]));
+    // Lista de tareas: las del trabajo + las agregadas al marcar
+    let lista = [...e.tareas.map((t) => ({ t, ok: false })), ...e.tchk.filter((x) => !e.tareas.some((t) => t.trim().toLowerCase() === String(x.t).trim().toLowerCase()))];
+    lista = lista.map((x) => ({ ...x, ...(e.tchk.find((y) => String(y.t).trim().toLowerCase() === String(x.t).trim().toLowerCase()) ?? {}) }));
+    const guardarT = async () => {
+      const { error } = await ctx.api.rpc('ope_tareas_set', { p_faena: e.id, p_tareas: lista });
+      if (error) { avisar(error.message, 'error'); return false; }
+      e.tchk = lista; e.raw.tareas_check = lista; return true;
+    };
+    const pintarT = () => {
+      cajaT.replaceChildren(...lista.map((x, i) => {
+        const cb = el('input', { type: 'checkbox', checked: !!x.ok });
+        cb.addEventListener('change', async () => {
+          lista[i] = { ...x, ok: cb.checked, por: cb.checked ? ctx.usuario?.id ?? null : null, at: cb.checked ? new Date().toISOString() : null };
+          if (!(await guardarT())) cb.checked = !cb.checked; else pintarT();
+        });
+        return el('label', { class: 'igcal-tline' }, cb, el('span', {}, x.t), x.ok && x.at ? el('small', {}, `${quien.get(x.por) ?? ''} · ${new Date(x.at).toLocaleDateString('es-CL')}`) : null);
+      }), (() => {
+        const i = el('input', { type: 'text', placeholder: 'Agregar tarea y Enter…' });
+        i.addEventListener('keydown', async (ev) => { if (ev.key !== 'Enter' || !i.value.trim()) return; lista.push({ t: i.value.trim(), ok: false }); if (await guardarT()) pintarT(); });
+        return el('div', { class: 'igcal-tadd' }, i);
+      })());
+    };
+    pintarT();
+    const pintarO = (l) => {
+      const t = el('textarea', { rows: 2, placeholder: 'Agregar observación (queda con tu nombre y la fecha)…' });
+      const b = el('button', { type: 'button', class: 'igcal-mini' }, 'Agregar');
+      b.addEventListener('click', async () => {
+        if (!t.value.trim()) return;
+        const { data, error } = await ctx.api.from('ope_faena_obs').insert({ empresa_id: ctx.empresa.id, faena_id: e.id, texto: t.value.trim() }).select('*').single();
+        if (error) { avisar(error.message, 'error'); return; }
+        pintarO([...l, data]);
+      });
+      cajaO.replaceChildren(...(l.length ? l.map((o) => el('div', { class: 'igcal-obsi' }, el('small', {}, `${quien.get(o.autor) ?? 'Sin autor'} · ${new Date(o.created_at).toLocaleDateString('es-CL')}`), el('span', {}, o.texto)))
+        : [el('small', { class: 'igcal-hint' }, 'Sin observaciones.')]), el('div', { class: 'igcal-oadd' }, t, b));
+    };
+    pintarO(obs ?? []);
+  }
+  // Unir con otra faena del mismo cliente (la elegida se junta dentro de esta)
+  function unir(e) {
+    const candidatas = EVENTS.filter((x) => x.id !== e.id && x.terceroId === e.terceroId).sort((a, b) => Math.abs(fecha(a.fecha) - fecha(e.fecha)) - Math.abs(fecha(b.fecha) - fecha(e.fecha))).slice(0, 40);
+    if (!candidatas.length) { avisar('No hay otra faena de este cliente para unir.', 'error'); return; }
+    abrirFormulario({
+      titulo: `Unir con "${e.titulo}"`,
+      mensaje: 'La faena elegida se junta dentro de esta: se suman sus días y pasan su planificación, partes y fotos, marcajes, gastos y observaciones. La elegida queda eliminada.',
+      campos: [{ id: 'otra', etiqueta: 'Faena a unir', opciones: candidatas.map((x) => [x.id, `${rangoTexto(x)} · ${x.titulo}${x.sitio ? ` · ${x.sitio}` : ''}`]) }],
+      textoGuardar: 'Unir',
+      alGuardar: async (v) => {
+        const { data, error } = await ctx.api.rpc('ope_unir', { p_dest: e.id, p_orig: v.otra });
+        if (error) throw new Error(error.message);
+        avisar(`Unidas: ${data.dias} días${data.plan_descartados ? ` (${data.plan_descartados} día(s) de planificación repetidos quedaron en la eliminada)` : ''}.`);
+        recargar();
+      },
+    });
   }
   function abrirDia(f) {
     const evs = evsDe(f); if (!evs.length) { nuevoEn(f); return; }
@@ -320,7 +387,7 @@ export default async function vista(ctx) {
               <label><span>Ubicación / Sitio <i class="igcal-req">*</i></span><input type="text" name="sitio" list="igcal-sitios" placeholder="Ej: Chinquihue"></label>
               <datalist id="igcal-sitios"></datalist>
               <span class="full igcal-hint" style="margin-top:-6px">Solo clientes registrados. ¿Falta uno? Agrégalo en Clientes y proveedores. El sitio sugiere los ya usados por ese cliente.</span>
-              <label class="full">Descripción / observaciones<textarea name="desc" rows="3" placeholder="Detalle, materiales, accesos, contacto en sitio…"></textarea></label>
+              <label class="full">${e ? 'Nueva observación' : 'Observación'} <span class="igcal-opt">(queda con tu nombre y la fecha; las anteriores se ven en el detalle)</span><textarea name="desc" rows="3" placeholder="Detalle, materiales, accesos, contacto en sitio…"></textarea></label>
             </div></section>
           <section class="igcal-ffsec igcal-o4"><h4><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Tareas <span class="igcal-fcnt" data-a="tcnt"></span></h4>
             <ol class="igcal-tareas"></ol>
@@ -329,8 +396,10 @@ export default async function vista(ctx) {
         <div class="igcal-ffcol igcal-ffside">
           <section class="igcal-ffsec igcal-o2"><h4><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Cuándo</h4>
             <div class="igcal-fgrid">
-              <label><span>Inicio <i class="igcal-req">*</i></span><input type="date" name="fecha"></label>
-              <label><span>Fin <span class="igcal-opt">(si dura varios días)</span></span><input type="date" name="fin"></label>
+              <div class="full igcal-modo"><button type="button" data-modo="seguidos">Días seguidos</button><button type="button" data-modo="eleccion">Días a elección</button></div>
+              <label data-seg><span>Inicio <i class="igcal-req">*</i></span><input type="date" name="fecha"></label>
+              <label data-seg><span>Fin <span class="igcal-opt">(si dura varios días)</span></span><input type="date" name="fin"></label>
+              <div class="full igcal-mini-cal" hidden></div>
               <div class="full igcal-dur"></div>
               <label class="full">Horario<input type="text" name="hora" placeholder="09:00 - 13:00 o Todo el día"></label>
               <div class="full igcal-chips"></div>
@@ -361,7 +430,6 @@ export default async function vista(ctx) {
     campo('titulo').value = e?.titulo ?? '';
     campo('cliente').value = e?.terceroId ?? pre.terceroId ?? '';
     campo('sitio').value = e?.sitio ?? pre.sitio ?? '';
-    campo('desc').value = e?.desc ?? '';
     campo('fecha').value = e?.fecha ?? pre.fecha ?? hoy();
     campo('fin').value = e?.fin ?? '';
     campo('hora').value = e?.hora ?? '';
@@ -427,6 +495,31 @@ export default async function vista(ctx) {
     };
     campo('fin').addEventListener('change', actualizarDur); actualizarDur();
 
+    // Días a elección: mini calendario con casillas (la faena sigue siendo una sola)
+    let modo = e?.dias ? 'eleccion' : 'seguidos';
+    const elegidos = new Set(e?.dias ?? []);
+    let mesMini = (e?.fecha ?? pre.fecha ?? hoy()).slice(0, 7);
+    const pintarMini = () => {
+      const [y, m] = mesMini.split('-').map(Number);
+      const ini = (new Date(y, m - 1, 1).getDay() + 6) % 7; const dim = new Date(y, m, 0).getDate();
+      const celdas = [...Array(ini).fill(''), ...Array.from({ length: dim }, (_, i) => `${mesMini}-${String(i + 1).padStart(2, '0')}`)];
+      const caja = $('.igcal-mini-cal');
+      caja.innerHTML = `<div class="igcal-mini-nav"><button type="button" data-m="-1" aria-label="Mes anterior">‹</button><b>${MES[m - 1]} ${y}</b><button type="button" data-m="1" aria-label="Mes siguiente">›</button></div>`
+        + `<div class="igcal-mini-grid">${['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((d) => `<span class="dow">${d}</span>`).join('')}${celdas.map((d) => (d ? `<label class="${elegidos.has(d) ? 'on' : ''}"><input type="checkbox" data-d="${d}" ${elegidos.has(d) ? 'checked' : ''}>${Number(d.slice(8))}</label>` : '<span></span>')).join('')}</div>`
+        + `<span class="igcal-hint">${elegidos.size ? `${elegidos.size} día${elegidos.size === 1 ? '' : 's'} elegido${elegidos.size === 1 ? '' : 's'}: ${[...elegidos].sort().map((d) => { const x = fecha(d); return `${x.getDate()} ${MES[x.getMonth()].slice(0, 3)}`; }).join(', ')}` : 'Marca los días en que se trabaja.'}</span>`;
+      caja.querySelectorAll('[data-m]').forEach((b) => b.addEventListener('click', () => { const [yy, mm] = mesMini.split('-').map(Number); const d = new Date(yy, mm - 1 + Number(b.dataset.m), 1); mesMini = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; pintarMini(); }));
+      caja.querySelectorAll('[data-d]').forEach((c) => c.addEventListener('change', () => { if (c.checked) elegidos.add(c.dataset.d); else elegidos.delete(c.dataset.d); pintarMini(); }));
+    };
+    const pintarModo = () => {
+      box.querySelectorAll('[data-modo]').forEach((b) => b.classList.toggle('on', b.dataset.modo === modo));
+      box.querySelectorAll('[data-seg]').forEach((x) => { x.hidden = modo === 'eleccion'; });
+      $('.igcal-dur').hidden = modo === 'eleccion';
+      $('.igcal-mini-cal').hidden = modo !== 'eleccion';
+      if (modo === 'eleccion') { if (!elegidos.size && campo('fecha').value) elegidos.add(campo('fecha').value); pintarMini(); }
+    };
+    box.querySelectorAll('[data-modo]').forEach((b) => b.addEventListener('click', () => { modo = b.dataset.modo; pintarModo(); }));
+    pintarModo();
+
     // Repetir
     const fechasSerie = (baseIso, rep, cada, veces) => {
       const b = fecha(baseIso); const out = []; cada = Math.max(1, cada || 1);
@@ -458,7 +551,10 @@ export default async function vista(ctx) {
     // Guardar
     const btnGuardar = $('[data-a="save"]');
     async function guardar() {
-      const fi = campo('fecha').value; const ff = campo('fin').value;
+      const dias = modo === 'eleccion' ? [...elegidos].sort() : null;
+      const fi = dias ? dias[0] : campo('fecha').value; const ff = dias ? dias[dias.length - 1] : campo('fin').value;
+      if (dias && !dias.length) { avisar('Marca al menos un día.', 'error'); return; }
+      if (dias && campo('repetir').value !== 'no') { avisar('Con días a elección no se puede repetir: elige los días en el calendario.', 'error'); return; }
       const tituloT = campo('titulo').value.trim(); const cli = campo('cliente').value; const sitioT = campo('sitio').value.trim();
       if (!fi || !tituloT) { avisar('Fecha y título son obligatorios.', 'error'); return; }
       if (!cli) { avisar('Elige la empresa / cliente (de la lista).', 'error'); return; }
@@ -476,7 +572,7 @@ export default async function vista(ctx) {
         const pendiente = campo('tarea').value.trim();   // una tarea escrita sin Enter también se guarda
         const fila = {
           titulo: tituloT, tercero_id: cli, sitio_id: s.id, fecha_inicio: fi, fecha_fin: ff && ff >= fi ? ff : fi,
-          hora_inicio: h.ini, hora_fin: h.ini ? h.fin : null, descripcion: campo('desc').value.trim() || null,
+          hora_inicio: h.ini, hora_fin: h.ini ? h.fin : null, dias: dias && dias.length > 1 ? dias : null,
           tareas: [...tareas, ...(pendiente ? [pendiente] : [])].map((t) => String(t ?? '').trim()).filter(Boolean),
           dotacion: dotForm(),
         };
@@ -504,6 +600,11 @@ export default async function vista(ctx) {
             : await ctx.api.from('ope_faenas').insert({ ...fila, empresa_id: ctx.empresa.id }).select('id');
           if (error) throw new Error(error.message);
           if (!data?.length) throw new Error('No tienes permiso para guardar.');
+          const obs = campo('desc').value.trim();
+          if (obs) {
+            const { error: e3 } = await ctx.api.from('ope_faena_obs').insert({ empresa_id: ctx.empresa.id, faena_id: data[0].id, texto: obs });
+            if (e3) avisar(`El trabajo quedó guardado, pero no la observación: ${e3.message}`, 'error');
+          }
           avisar(e ? 'Trabajo actualizado.' : 'Trabajo creado.');
         }
         cerrar(); recargar();

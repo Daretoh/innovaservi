@@ -61,6 +61,11 @@ export async function cargarAlertas(ctx) {
     const c = contar(ultimos(data ?? [], (r) => `${r.persona_id}|${r.tipo_slug}`), hoy);
     agregar('RRHH', 'documentos de trabajadores vencidos', c.vencidos, 'venc', ctx.ruta('rrhh.documentos'));
     agregar('RRHH', `documentos de trabajadores que vencen en ${DIAS_AVISO} días`, c.porVencer, 'prox', ctx.ruta('rrhh.documentos'));
+    // Contratos a plazo fijo: vencidos o que vencen en 30 días
+    const { data: con } = await ctx.api.from('persona_empresa').select('contrato_vence').eq('empresa_id', e).eq('estado', 'activo').is('deleted_at', null).eq('contrato_indefinido', false).not('contrato_vence', 'is', null);
+    const en30 = new Date(Date.now() + 30 * 864e5).toLocaleDateString('sv');
+    agregar('RRHH', 'contratos a plazo fijo vencidos', (con ?? []).filter((x) => x.contrato_vence < hoy).length, 'venc', ctx.ruta('rrhh.trabajadores'));
+    agregar('RRHH', 'contratos que vencen en 30 días', (con ?? []).filter((x) => x.contrato_vence >= hoy && x.contrato_vence <= en30).length, 'prox', ctx.ruta('rrhh.trabajadores'));
     // Asignados a faenas de los próximos 14 días con documentos vencidos o pendientes (necesita ver Faenas)
     const { asignadosConPendientes, DIAS_PROXIMAS } = await import('../rrhh/proximas.js');
     const asig = await asignadosConPendientes(ctx);
@@ -80,7 +85,7 @@ export async function cargarAlertas(ctx) {
   });
   si('costos', async () => {
     const [g, r, h] = await Promise.all([
-      ctx.api.from('fin_registros').select('id', { count: 'exact', head: true }).eq('empresa_id', e).eq('tipo', 'gasto').eq('estado_pago', 'pendiente').is('deleted_at', null).lt('fecha', sumarDias(hoy, -30)),
+      ctx.api.from('fin_registros').select('id', { count: 'exact', head: true }).eq('empresa_id', e).eq('tipo', 'gasto').neq('estado_pago', 'pagado').is('deleted_at', null).lt('fecha', sumarDias(hoy, -30)),
       ctx.api.from('fin_recurrentes').select('*').eq('empresa_id', e).eq('activo', true),
       ctx.api.from('fin_registros').select('recurrente_id').eq('empresa_id', e).eq('periodo', mes).is('deleted_at', null),
     ]);
@@ -113,7 +118,7 @@ export async function cargarAlertas(ctx) {
   });
 
   si('tareas', async () => {
-    const { count } = await ctx.api.from('tar_tareas').select('id', { count: 'exact', head: true }).eq('empresa_id', e).eq('estado', 'pendiente').is('deleted_at', null).lt('fecha', hoy);
+    const { count } = await ctx.api.from('tar_tareas').select('id', { count: 'exact', head: true }).eq('empresa_id', e).neq('estado', 'hecha').is('deleted_at', null).lt('fecha', hoy);
     agregar('Tareas', 'tareas vencidas sin hacer', count ?? 0, 'venc', ctx.ruta('tareas.lista'));
   });
 

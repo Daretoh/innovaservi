@@ -1621,3 +1621,99 @@ html[data-modo="oscuro"] img { color-scheme: light; }
   .fin-lista .tabla:not(.planilla) td:nth-child(6) { text-align: right; }
   .fin-lista .tabla:not(.planilla) td.tabla-vacia { grid-column: 1 / -1; }
 }
+
+/* Costos: estado editable en la lista y contadores que filtran */
+.campo-estado { width: auto; min-width: 130px; font-size: 13px; padding: 4px 8px; font-weight: 600; }
+.campo-estado.estado-pendiente { color: var(--texto-suave); }
+.campo-estado.estado-listo { color: var(--prox); background: var(--prox-fondo); }
+.campo-estado.estado-pagado { color: var(--ok); background: var(--ok-fondo); }
+.chip-boton { border: 0; cursor: pointer; font: inherit; font-size: 13px; }
+.chip-boton[aria-pressed="true"] { outline: 2px solid currentColor; }
+/* Costos: Subir documentos */
+.subir-tipos { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
+.subir-tipo { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; text-align: left; cursor: pointer; font: inherit; color: var(--texto); border: 1px solid var(--borde); }
+.subir-tipo:hover:not(:disabled) { border-color: var(--empresa); }
+.subir-icono { display: inline-flex; padding: 10px; border-radius: 10px; color: var(--empresa); background: var(--fondo-sutil); }
+.cli-part { display: grid; grid-template-columns: minmax(60px, 120px) auto; gap: 8px; align-items: center; }
+/* Costos: flujo de caja y balance */
+.flujo-cab, .flujo-semana summary { display: grid; grid-template-columns: minmax(0, 1.6fr) 1fr 1fr 1fr; gap: 8px; align-items: center; padding: 8px 4px; }
+.flujo-cab > :not(:first-child), .flujo-semana summary > :not(:first-child) { text-align: right; }
+.flujo-semana { border-top: 1px solid var(--borde); }
+.flujo-semana summary { cursor: pointer; list-style: none; }
+.flujo-semana summary::-webkit-details-marker { display: none; }
+.flujo-detalle { padding: 4px 4px 12px; display: flex; flex-direction: column; gap: 4px; }
+.flujo-mov { display: grid; grid-template-columns: 90px minmax(0, 1fr) auto; gap: 8px; font-size: 13px; align-items: baseline; }
+.flujo-entra { color: var(--ok); } .flujo-sale { color: var(--venc); }
+.bal-columnas { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 12px; }
+.bal-linea { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--borde); align-items: center; flex-wrap: wrap; }
+.bal-linea .boton-chico { margin-left: 6px; }
+.bal-total { border-bottom: 0; font-size: 16px; }
+@media (max-width: 640px) { .flujo-mov { grid-template-columns: 1fr auto; } .flujo-mov > :first-child { grid-column: 1 / -1; } }
+/* Franja para activar las notificaciones (fija abajo hasta activarlas) */
+.franja-push { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 800; display: flex; align-items: center; gap: 10px; max-width: calc(100% - 32px);
+  padding: 10px 14px; border-radius: 12px; background: var(--superficie); color: var(--texto); border: 1px solid var(--borde); box-shadow: 0 6px 24px rgb(0 0 0 / .18); font-size: 14px; }
+.franja-push[hidden] { display: none; }
+.franja-push > svg { color: var(--empresa); flex: none; }
+/* Inicio: alertas como tablero e indicadores del día */
+.ind-cab-acciones { display: flex; gap: 10px; align-items: center; }
+.alertas-contadores { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 8px 0 12px; }
+.alertas-contador { display: flex; flex-direction: column; align-items: center; padding: 10px; border-radius: 10px; background: var(--fondo-sutil); }
+.alertas-contador strong { font-size: 26px; line-height: 1.1; }
+.ac-venc strong { color: var(--venc); } .ac-prox strong { color: var(--prox); }
+.alertas-tarjetas { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
+.alertas-area { border: 1px solid var(--borde); border-left: 4px solid var(--borde); border-radius: 10px; padding: 10px 12px; }
+.alertas-area.aa-venc { border-left-color: var(--venc); } .alertas-area.aa-prox { border-left-color: var(--prox); }
+.alertas-area h3 { margin: 0 0 6px; font-size: 15px; }
+.eco-valores { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.eco-valores > div { display: flex; flex-direction: column; }
+.eco-valores strong { font-size: 18px; font-variant-numeric: tabular-nums; }
+/* Clientes y sitios: torta de faenas por cliente */
+.torta-fila { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
+.torta { width: 150px; height: 150px; transform: rotate(0deg); }
+.torta-leyenda { display: flex; flex-direction: column; gap: 6px; min-width: 200px; }
+.torta-leyenda > div { display: grid; grid-template-columns: 12px minmax(0, 1fr) auto; gap: 8px; align-items: center; font-size: 14px; }
+.torta-leyenda i { width: 12px; height: 12px; border-radius: 3px; }
+.ind-cab-acciones a.boton-primario { color: var(--sobre-empresa); text-decoration: none; }
+/* Tareas v2: lista, avisos y detalle */
+.tar2-filtros { margin: 4px 0; }
+.tar2-lista { padding: 4px; }
+.tar2-fila, .tar2-aviso { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: center; width: 100%; padding: 10px 12px; border: 0; border-bottom: 1px solid var(--borde); background: none; color: var(--texto); font: inherit; text-align: left; cursor: pointer; border-left: 3px solid transparent; }
+.tar2-fila:hover, .tar2-aviso:hover { background: var(--hover); }
+.tar2-fila.tar2-alta { border-left-color: var(--venc); } .tar2-fila.tar2-media { border-left-color: var(--prox); }
+.tar2-titulo { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.tar2-titulo strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tar2-meta { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+.tar2-pronto { color: var(--prox); font-weight: 600; }
+.tar2-aviso.sin-leer strong { color: var(--empresa); }
+.tar2-aviso.sin-leer { background: var(--fondo-sutil); }
+.tar2-barra { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.tar2-acciones { margin-left: auto; display: flex; gap: 6px; align-items: center; }
+.tar2-detalle { white-space: pre-line; margin: 0; padding: 10px 12px; border-radius: 8px; background: var(--fondo-sutil); }
+.tar2-adjuntos { display: flex; flex-wrap: wrap; gap: 10px; }
+.tar2-adj { width: 120px; display: flex; flex-direction: column; gap: 2px; position: relative; }
+.tar2-adj .boton-icono { position: absolute; top: 4px; right: 4px; background: var(--superficie); }
+.tar2-mini { width: 120px; height: 90px; border-radius: 8px; overflow: hidden; border: 1px solid var(--borde); background: var(--fondo-sutil); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 0; cursor: pointer; color: var(--texto-suave); font: inherit; }
+.tar2-mini img { width: 100%; height: 100%; object-fit: cover; }
+.tar2-subir { border-style: dashed; }
+.tar2-adj-nombre { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tar2-obs { display: flex; flex-direction: column; gap: 8px; }
+.tar2-o { display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border-radius: 8px; background: var(--fondo-sutil); white-space: pre-line; }
+.tar2-o.tar2-cambio { background: none; border-left: 2px solid var(--borde); padding: 2px 10px; font-size: 13px; color: var(--texto-suave); }
+.tar2-comentar { display: flex; flex-direction: column; gap: 6px; }
+.tar2-sug { display: flex; gap: 6px; flex-wrap: wrap; }
+.tar2-sug[hidden] { display: none; }
+.tar2-caja.tar2-soltar { outline: 3px dashed var(--empresa); outline-offset: -8px; }
+@media (max-width: 640px) { .tar2-fila, .tar2-aviso { grid-template-columns: minmax(0, 1fr) auto; } .tar2-fila > .chip:first-child { display: none; } }
+/* Faenas: observaciones y tareas marcadas */
+.faena-obs-lista { display: flex; flex-direction: column; gap: 6px; }
+.faena-obs { display: flex; flex-direction: column; gap: 2px; padding: 6px 10px; border-radius: 8px; background: var(--fondo-sutil); white-space: pre-line; }
+.faena-obs-nueva { display: flex; gap: 8px; align-items: flex-end; margin-top: 6px; }
+.faena-obs-nueva textarea { flex: 1; }
+li.tarea-ok { text-decoration: line-through; color: var(--texto-suave); }
+/* Planificación: selector de día */
+.plan-selector-dia { flex-wrap: wrap; margin: 6px 0; }
+.plan-dia-n { display: inline-block; margin-left: 6px; min-width: 18px; padding: 0 5px; border-radius: 9px; font-size: 11px; background: var(--empresa); color: var(--sobre-empresa); }
+.plan-tablero.plan-un-dia { grid-template-columns: minmax(0, 1fr) !important; }
+.plan-tablero.plan-un-dia .plan-columna { max-width: none; }
+.plan-un-dia .plan-columna > .plan-tarjeta { max-width: 640px; }
+@media (max-width: 760px) { .ope-semana.plan-un-dia .tal-dia { flex: 1 1 100%; } }
