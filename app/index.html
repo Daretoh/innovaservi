@@ -1401,6 +1401,9 @@
   /* En la carta la firma va más grande (el tamaño "1,9 cm" estándar se ve chico en este formato) */
   .carta-emp .dg-rep .rs-sig{height:calc(var(--firma-h) * 1.8);max-width:92%;}
   .carta-emp .dg-rep .rs-tim{max-height:175px;max-width:62%;}
+  /* Firma/timbre: se pueden arrastrar y redimensionar al editar (proporción fija) */
+  .fmov{cursor:move;touch-action:none;}
+  #dg-doc .fmov:hover{outline:2px dashed rgba(255,107,0,.7);outline-offset:3px;}
   .af-sec{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line);}
   .af-sec b{flex:1;font-weight:600;font-size:.9rem;}
   .af-sec select{flex:0 0 116px;}
@@ -8659,8 +8662,8 @@
         });
       }).catch(function(){ busy(false); toast('No se pudo generar el PDF.'); });
     } };
-    if(IA_FIRMA===null){ cargarFirma(function(){ pinta(v); $('docgen').classList.remove('hide'); $('docgen').scrollTop=0; }); return; }
-    pinta(v); $('docgen').classList.remove('hide'); $('docgen').scrollTop=0;
+    if(IA_FIRMA===null){ cargarFirma(function(){ pinta(v); $('docgen').classList.remove('hide'); $('docgen').scrollTop=0; firmaMovible($('dg-doc')); }); return; }
+    pinta(v); $('docgen').classList.remove('hide'); $('docgen').scrollTop=0; firmaMovible($('dg-doc'));
   }
 
   // Carta con membrete: todo el texto es editable en pantalla antes de imprimir o descargar.
@@ -9410,6 +9413,21 @@
   }
   // Bloque de firma del representante (firma centrada sobre "Atentamente" y timbre a la derecha).
   function firmaRepHtml(){ return (FIRMA_SIG?'<img class="rs-sig" src="'+FIRMA_SIG+'" alt="">':'')+(FIRMA_TIM?'<img class="rs-tim" src="'+esc(FIRMA_TIM)+'" alt="">':''); }
+  // Firma/timbre editables en el documento: arrastrar para mover, rueda del mouse para agrandar/achicar (proporción fija, sin deformar).
+  function firmaMovible(root){ if(!root) return; var hubo=false;
+    root.querySelectorAll('img.rs-sig,img.rs-tim,img.rs-prev').forEach(function(el){
+      if(el._mov) return; el._mov=1; hubo=true; el.classList.add('fmov'); el.setAttribute('title','Arrastra para mover · rueda del mouse para agrandar o achicar');
+      var h0=0, sc=1, mlx=0, mly=0, drag=null;
+      function base(){ if(h0) return; h0=el.getBoundingClientRect().height||el.naturalHeight||80; el.style.maxWidth='none'; el.style.maxHeight='none'; el.style.width='auto'; }
+      function apply(){ el.style.height=(h0*sc)+'px'; el.style.marginLeft=mlx+'px'; el.style.marginTop=mly+'px'; }
+      el.addEventListener('pointerdown', function(e){ base(); e.preventDefault(); try{ el.setPointerCapture(e.pointerId); }catch(_){} drag={x:e.clientX,y:e.clientY,mlx:mlx,mly:mly}; });
+      el.addEventListener('pointermove', function(e){ if(!drag) return; mlx=drag.mlx+(e.clientX-drag.x); mly=drag.mly+(e.clientY-drag.y); apply(); });
+      function fin(e){ drag=null; try{ el.releasePointerCapture(e.pointerId); }catch(_){} }
+      el.addEventListener('pointerup', fin); el.addEventListener('pointercancel', fin);
+      el.addEventListener('wheel', function(e){ base(); e.preventDefault(); sc=Math.max(0.4, Math.min(4, sc*(e.deltaY<0?1.08:0.92))); apply(); }, {passive:false});
+    });
+    if(hubo && !firmaMovible._avisado){ firmaMovible._avisado=true; toast('Tip: arrastra la firma para moverla y usa la rueda del mouse para agrandarla'); }
+  }
   function mesPrevio(){ var d=new Date(); d.setDate(1); d.setMonth(d.getMonth()-1); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
   function mesMas(p,n){ var a=p.split('-'), d=new Date(+a[0], +a[1]-1+n, 1); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
   function mesTxt(p){ var a=(p||'').split('-'); return MESES_L[(+a[1]||1)-1]+' del '+a[0]; }
