@@ -1198,6 +1198,10 @@
   .tar-adj-tip{font:500 12px var(--font);color:var(--muted);margin-left:8px;}
   .tar-sheet.tar-drop .tar-sheet-body,.tar-sheet.tar-drop #tar-sheet-body{outline:2px dashed var(--orange);outline-offset:-6px;}
   .tar-clip{display:inline-flex;align-items:center;gap:2px;font:700 11px var(--font);color:var(--muted);margin-left:6px;vertical-align:1px;}
+  .tar-cat{display:inline-flex;align-items:center;font:800 9px var(--font);text-transform:uppercase;letter-spacing:.03em;border-radius:999px;padding:2px 7px;margin-right:7px;vertical-align:1px;background:var(--chip);color:var(--muted);flex:0 0 auto;}
+  .tar-cat.cat-cotizaciones{background:#e8f0ff;color:#1d4ed8;} .tar-cat.cat-facturas{background:#fdecec;color:#b42318;}
+  .tar-cat.cat-operaciones{background:#e6f5ec;color:#1e7a3e;} .tar-cat.cat-administracion{background:#f1ecfb;color:#6b2fb3;}
+  .tar-cat.cat-pagos{background:#fff2d8;color:#9a6b00;} .tar-cat.cat-reportes{background:#e6f6f8;color:#0e7490;}
   .tar-h3{font:800 12px var(--font);color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:14px 0 8px;}
   .tar-ob{border-left:3px solid var(--orange);background:var(--alt);border-radius:0 10px 10px 0;padding:7px 10px;margin-bottom:6px;font:500 13px/1.4 var(--font);color:var(--ink);white-space:pre-wrap;}
   .tar-ob.sis{border-left-color:var(--line);background:none;color:var(--muted);font-size:12px;padding:3px 10px;}
@@ -2330,6 +2334,7 @@
       <div class="tar-bar">
         <div class="seg" id="tar-filtro"><button class="seg-b on" data-f="abiertas" type="button">Abiertas</button><button class="seg-b" data-f="pendiente" type="button">Pendientes</button><button class="seg-b" data-f="en_proceso" type="button">En proceso</button><button class="seg-b" data-f="hecha" type="button">Terminadas</button><button class="seg-b" data-f="todas" type="button">Todas</button></div>
         <input id="tar-q" type="search" placeholder="Buscar tarea…">
+        <select id="tar-cat-f" title="Filtrar por categoría"><option value="todas">Todas las categorías</option><option value="cotizaciones">Cotizaciones</option><option value="facturas">Facturas</option><option value="operaciones">Operaciones</option><option value="administracion">Administración</option><option value="pagos">Pagos</option><option value="reportes">Reportes</option><option value="general">General</option></select>
         <select id="tar-orden" title="Ordenar"><option value="prio">Orden: prioridad</option><option value="vence">Orden: vencimiento</option><option value="antiguas">Orden: más antiguas</option><option value="recientes">Orden: más recientes</option></select>
       </div>
       <div id="tar-list" class="tar-wrap"></div>
@@ -9649,9 +9654,21 @@
   // ====== Tareas (equipo de administración: lista, seguimiento con observaciones, prioridad que sube sola) ======
   // Tablas: tareas, tareas_obs; equipo vía rpc tareas_equipo() (ver supabase/migrations/20261023000000_tareas_v2.sql).
   // Estado: pendiente | en_proceso | hecha. Acceso: módulo 'tareas' en Accesos (ver = mirar/seguir; editar = crear y editar).
-  var TAREAS=[], TAR_OBS={}, TAR_EQUIPO=[], TAR_AVISOS=[], TAR_FILTRO='abiertas', TAR_TAB='mias', TAR_ORDEN='prio', TAR_Q='', TAR_ABIERTA=null, TAR_PEND=null;
+  var TAREAS=[], TAR_OBS={}, TAR_EQUIPO=[], TAR_AVISOS=[], TAR_FILTRO='abiertas', TAR_TAB='mias', TAR_ORDEN='prio', TAR_Q='', TAR_ABIERTA=null, TAR_PEND=null, TAR_CAT='todas';
   var TAR_ST={pendiente:'Pendiente', en_proceso:'En proceso', hecha:'Terminada'};
   var TAR_PR=['baja','normal','alta'], TAR_PR_LBL={alta:'Alta',normal:'Normal',baja:'Baja'};
+  var TAR_CATS=[['general','General'],['cotizaciones','Cotizaciones'],['facturas','Facturas'],['operaciones','Operaciones'],['administracion','Administración'],['pagos','Pagos'],['reportes','Reportes']];
+  function tarCatLbl(k){ for(var i=0;i<TAR_CATS.length;i++){ if(TAR_CATS[i][0]===k) return TAR_CATS[i][1]; } return 'General'; }
+  // Detecta la categoría por el título (se puede cambiar a mano en el formulario).
+  function tarCatAuto(txt){ txt=(txt||'').toLowerCase();
+    function h(){ for(var i=0;i<arguments.length;i++){ if(txt.indexOf(arguments[i])>=0) return true; } return false; }
+    if(h('cotiz','presupuesto')) return 'cotizaciones';
+    if(h('factura','boleta',' dte','nota de cr','nota de d')) return 'facturas';
+    if(h('pago','pagar','transferenc','abono','deposito','depósito','sueldo','remuneraci','finiquito','anticipo')) return 'pagos';
+    if(h('reporte','informe','acta','minuta')) return 'reportes';
+    if(h('faena','terreno','cuadrilla','epp','turno','operaci','planific','vehicul','vehícul','chofer','maquina','bodega')) return 'operaciones';
+    if(h('contrato','firma','document','rrhh','tramite','trámite','certificad','anexo','carpeta','permiso','acredita')) return 'administracion';
+    return 'general'; }
   var TAR_ICO={ check:'<path d="M5 12l5 5L20 7"/>', up:'<path d="M12 19V5M6 11l6-6 6 6"/>', x:'<path d="M18 6 6 18M6 6l12 12"/>', at:'<circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-4 8"/>', bell:'<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0"/>' };
   function tarIco(k,s){ s=s||14; return '<svg viewBox="0 0 24 24" width="'+s+'" height="'+s+'" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">'+TAR_ICO[k]+'</svg>'; }
   function nomDeEmail(em){ var lp=(em||'').split('@')[0].replace(/[._\-]+/g,' ').replace(/[0-9]+/g,' ').trim().split(/\s+/).filter(Boolean);
@@ -9715,6 +9732,7 @@
       else if(TAR_FILTRO!=='todas' && st!==TAR_FILTRO) return false;
       if(TAR_TAB==='mias' && !tarEsMia(t)) return false;
       if(em && !tarEsMia(t,em)) return false;
+      if(TAR_CAT!=='todas' && (t.categoria||'general')!==TAR_CAT) return false;
       if(q && ((t.titulo||'')+' '+(t.detalle||'')+' '+(t.asignado_nombre||'')+' '+(t.responsable2_nombre||'')).toLowerCase().indexOf(q)<0) return false;
       return true; });
     list.forEach(function(t){ t._p=tarPrio(t); });
@@ -9735,7 +9753,7 @@
     var sub=ult?('Obs: '+ult.texto):(t.detalle||'').split('\n')[0];
     return '<div class="'+cls+'" data-id="'+t.id+'" role="button" tabindex="0">'+
       '<button type="button" class="tar-chk '+st+'" data-id="'+t.id+'" title="'+(st==='hecha'?'Reabrir':'Marcar terminada')+'">'+(st==='hecha'?tarIco('check',13):'')+'</button>'+
-      '<div class="tar-main"><div class="tar-tit">'+esc(t.titulo||'')+((TAR_ADJ[t.id]||[]).length?'<span class="tar-clip" title="Archivos adjuntos">'+tarIco('clip',11)+(TAR_ADJ[t.id]||[]).length+'</span>':'')+'</div><div class="tar-sub">'+esc(sub)+'</div>'+
+      '<div class="tar-main"><div class="tar-tit"><span class="tar-cat cat-'+(t.categoria||'general')+'">'+tarCatLbl(t.categoria||'general')+'</span>'+esc(t.titulo||'')+((TAR_ADJ[t.id]||[]).length?'<span class="tar-clip" title="Archivos adjuntos">'+tarIco('clip',11)+(TAR_ADJ[t.id]||[]).length+'</span>':'')+'</div><div class="tar-sub">'+esc(sub)+'</div>'+
         '<div class="tar-msub">'+esc(tarResp(t))+(venc?' · '+venc:'')+' · '+(st==='hecha'?'Terminada':esc(dias))+(st==='en_proceso'?' · En proceso':'')+'</div></div>'+
       '<div class="c-resp">'+esc(tarResp(t))+'</div>'+
       '<div class="c-prio">'+prio+'</div>'+
@@ -9755,6 +9773,7 @@
     if(TAR_TAB==='avisos'){ tarBandeja(c); return; }
     document.querySelectorAll('#tar-filtro .seg-b').forEach(function(x){ x.classList.toggle('on', x.dataset.f===TAR_FILTRO); });
     if($('tar-orden')) $('tar-orden').value=TAR_ORDEN;
+    if($('tar-cat-f')) $('tar-cat-f').value=TAR_CAT;
     var list=tarLista();
     if($('tar-cnt')) $('tar-cnt').textContent=list.length+(list.length===1?' tarea':' tareas');
     c.innerHTML=list.length?('<div class="tar-list"><div class="tar-head"><span></span><span>Tarea</span><span>Responsable</span><span>Prioridad</span><span>Vence</span><span>Abierta</span><span>Estado</span></div>'+list.map(tarFila).join('')+'</div>')
@@ -9825,7 +9844,8 @@
   function tarForm(){ function sv(id){ var s=$(id), o=s&&s.options[s.selectedIndex]; return {em:(s&&s.value)||'', nm:(o&&s.value)?o.textContent:''}; }
     var a=sv('td-asig'), b=sv('td-asig2');
     return { titulo:($('td-tit').value||'').trim(), detalle:($('td-det').value||'').trim(), asignado_email:a.em||null, asignado_nombre:a.nm||null,
-      responsable2_email:(b.em&&b.em!==a.em)?b.em:null, responsable2_nombre:(b.em&&b.em!==a.em)?b.nm:null, prioridad:$('td-prio').value||'normal', vence:$('td-vence').value||null }; }
+      responsable2_email:(b.em&&b.em!==a.em)?b.em:null, responsable2_nombre:(b.em&&b.em!==a.em)?b.nm:null, prioridad:$('td-prio').value||'normal', vence:$('td-vence').value||null,
+      categoria:($('td-cat')&&$('td-cat').value)||'general' }; }
   function tarCrear(){ if(!sb||!tarPuedeCrear()) return; var d=tarForm(); if(!d.titulo){ toast('Escribe la tarea.'); return; }
     var now=new Date().toISOString(); d.estado='pendiente'; d.autor=userEmail; d.prio_desde=now; d.updated_at=now;
     sb.from('tareas').insert(d).select().single().then(function(r){ if(r.error){ toast('No se pudo crear: '+r.error.message); return; }
@@ -9904,7 +9924,8 @@
         '<div class="fld"><label>2do responsable</label><select id="td-asig2"'+dis+'>'+tarOpts(t.responsable2_email||'',true)+'</select></div></div>'+
       '<div class="grid2"><div class="fld"><label>Prioridad</label><select id="td-prio"'+dis+'>'+['alta','normal','baja'].map(function(k){ return '<option value="'+k+'"'+((t.prioridad||'normal')===k?' selected':'')+'>'+TAR_PR_LBL[k]+'</option>'; }).join('')+'</select>'+
         (P.sube?'<div class="tar-auto">'+tarIco('up',11)+'Ahora '+TAR_PR_LBL[P.p]+': '+esc(P.por)+'</div>':'')+'</div>'+
-        '<div class="fld"><label>Vence</label><input id="td-vence" type="date" value="'+enc(t.vence||'')+'"'+dis+'></div></div>';
+        '<div class="fld"><label>Vence</label><input id="td-vence" type="date" value="'+enc(t.vence||'')+'"'+dis+'></div></div>'+
+      '<div class="fld"><label>Categoría</label><select id="td-cat"'+dis+'>'+TAR_CATS.map(function(c){ var sel=(t.categoria||(nueva?tarCatAuto(t.titulo):'general'))===c[0]; return '<option value="'+c[0]+'"'+(sel?' selected':'')+'>'+c[1]+'</option>'; }).join('')+'</select></div>';
     if(!nueva){ var dA=tarDias(t.created_at);
       h+='<div class="tar-fechas">Creada <b>'+esc(tarFecha(t.created_at))+'</b>'+(t.autor?' por '+esc(tarCorto(tarNom(t.autor))):'')+' · '+
         (st==='hecha'?('Terminada <b>'+esc(tarFecha(t.done_at))+'</b> (en '+tarDias(t.created_at,t.done_at)+' días)'):('lleva <b>'+dA+' día'+(dA===1?'':'s')+'</b> abierta'))+
@@ -9921,6 +9942,8 @@
     h+='</div>'; b.innerHTML=h;
     $('td-x').addEventListener('click',tarCerrar);
     b.querySelectorAll('.tar-stseg .seg-b').forEach(function(x){ x.addEventListener('click',function(){ tarSetEstado(t.id, x.dataset.st); }); });
+    if($('td-cat')) $('td-cat').addEventListener('change',function(){ this.dataset.touched='1'; });
+    if($('td-tit') && $('td-cat') && nueva) $('td-tit').addEventListener('input',function(){ if($('td-cat').dataset.touched) return; $('td-cat').value=tarCatAuto(this.value); });
     if($('td-crear')) $('td-crear').addEventListener('click',tarCrear);
     if($('td-guardar')) $('td-guardar').addEventListener('click',function(){ tarGuardar(t.id); });
     if($('td-borrar')) $('td-borrar').addEventListener('click',function(){ tarBorrar(t.id); });
@@ -9937,6 +9960,7 @@
     $('tar-tabs').addEventListener('click',function(e){ var b=e.target.closest('.tar-tab'); if(!b) return; TAR_TAB=b.dataset.tab; renderTareas(); });
     document.querySelectorAll('#tar-filtro .seg-b').forEach(function(b){ b.addEventListener('click',function(){ TAR_FILTRO=b.dataset.f; renderTareas(); }); });
     $('tar-orden').addEventListener('change',function(){ TAR_ORDEN=this.value; renderTareas(); });
+    if($('tar-cat-f')) $('tar-cat-f').addEventListener('change',function(){ TAR_CAT=this.value; renderTareas(); });
     $('tar-q').addEventListener('input',function(){ TAR_Q=this.value; renderTareas(); });
     $('tar-nueva').addEventListener('click',function(){ tarAbrir('nueva'); setTimeout(function(){ if($('td-tit')) $('td-tit').focus(); },60); });
     $('tar-sheet-bg').addEventListener('click',tarCerrar);
