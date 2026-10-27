@@ -501,6 +501,7 @@
   .carta-desp{margin-top:18px !important;}
   .carta-firmas{display:flex;gap:30px;flex-wrap:wrap;margin-top:70px;text-align:center;font-size:12px;} .carta-firmas div{flex:1;min-width:180px;border-top:1px solid #333;padding-top:6px;}
   .dg-firmas.carta-emp{justify-content:flex-start;} .dg-firmas.carta-emp div{flex:0 0 46%;}
+  .acr-carg{font:500 11.5px var(--font);color:var(--muted);white-space:nowrap;}
   .mr-chip{display:inline-block;font:800 9.5px var(--font);padding:2px 6px;border-radius:999px;border:1px solid;white-space:nowrap;}
   .mr-res{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 8px;}
   .iper td,.prg td{font-size:10.5px;vertical-align:top;} .iper th,.prg th{font-size:10px;} .iper td.c{text-align:center;vertical-align:middle;} .iper td.n,.prg td.n{width:20px;}
@@ -9048,7 +9049,7 @@
   // Validación que vale en ese lugar: la del lugar o, si no hay, la general del cliente.
   function acrVal(cid, tid, sitio){ var L=ACR.val.filter(function(v){ return v.cliente_id===cid && v.trabajador_id===tid; });
     return (sitio && L.filter(function(v){ return v.sitio && acrSitioEq(v.sitio,sitio); })[0]) || L.filter(function(v){ return !v.sitio; })[0] || null; }
-  function acrEmpNombre(tipo){ var n=null; EMP_CARPETAS.forEach(function(cp){ cp.tipos.forEach(function(x){ if(x[0]===tipo) n=x[1]; }); }); if(n) return n;
+  function acrEmpNombre(tipo){ var rq=ACR.req.filter(function(r){ return r.ambito==='empresa' && r.tipo===tipo && r.nota; })[0]; if(rq) return rq.nota; var n=null; EMP_CARPETAS.forEach(function(cp){ cp.tipos.forEach(function(x){ if(x[0]===tipo) n=x[1]; }); }); if(n) return n;
     var d=EMP_D.filter(function(x){ return x.tipo===tipo; })[0]; return d?(d.nombre||tipo):tipo; }
   function acrEmpEstado(tipo){ var u=empUlt(tipo).ult; if(!u||!u.url) return {k:'pend',txt:'Falta'};
     if(u.vencimiento){ var n=diffDiasV(u.vencimiento); if(n<0) return {k:'venc',txt:'Vencido',doc:u}; if(n<=30) return {k:'prox',txt:'Vence '+n+'d',doc:u}; }
@@ -9057,7 +9058,7 @@
     EMP_CARPETAS.forEach(function(cp){ h+='<optgroup label="'+enc(cp.n)+'">'+cp.tipos.map(function(x){ vistos[x[0]]=1; return '<option value="'+enc(x[0])+'">'+esc(x[1])+'</option>'; }).join('')+'</optgroup>'; });
     var prop=[]; EMP_D.forEach(function(d){ if(!vistos[d.tipo]){ vistos[d.tipo]=1; prop.push(d); } });
     if(prop.length) h+='<optgroup label="Otros documentos de empresa">'+prop.map(function(d){ return '<option value="'+enc(d.tipo)+'">'+esc(d.nombre||d.tipo)+'</option>'; }).join('')+'</optgroup>';
-    return h; }
+    return h+'<option value="__nuevoemp">＋ Nuevo documento de empresa para este cliente (ej.: contrato u OC)…</option>'; }
   function acrTrabOpts(cid){ function g(lbl, L){ return L.length?'<optgroup label="'+enc(lbl)+'">'+L.map(function(tp){ return '<option value="'+enc(tp.slug)+'">'+esc(tp.nombre)+'</option>'; }).join('')+'</optgroup>':''; }
     return g('Set base · documentos', RRHH_TIPOS)+g('Set base · capacitaciones', CAP_TIPOS)+g('Otros documentos', EXTRA_TIPOS)+
       g('Propios de este cliente', CLI_TIPOS.filter(function(tp){ return tp.cliente_id===cid; }))+g('Se llevan en Buk', BUK_TIPOS)+
@@ -9110,7 +9111,7 @@
     function tagSitio(r){ return r.sitio?' <span class="note" style="margin:0;font-size:.72rem">· solo '+esc(r.sitio)+'</span>':''; }
     function quitar(r){ return '<button type="button" class="x acr-rm" data-id="'+r.id+'" title="Quitar">✕</button>'; }
     var hE=reqE.map(function(r){ var e=acrEmpEstado(r.tipo);
-      return '<div class="acr-req"><span class="dchip '+DCLS[e.k]+'"'+(e.doc&&e.doc.url?' data-url="'+enc(e.doc.url)+'" style="cursor:pointer"':'')+'>'+icoDoc(e.k)+' '+esc(e.txt)+'</span><span style="flex:1;font:600 13px var(--font)">'+esc(acrEmpNombre(r.tipo))+tagSitio(r)+'</span>'+quitar(r)+'</div>'; }).join('');
+      return '<div class="acr-req"><span class="dchip '+DCLS[e.k]+'"'+(e.doc&&e.doc.url?' data-url="'+enc(e.doc.url)+'" style="cursor:pointer"':'')+'>'+icoDoc(e.k)+' '+esc(e.txt)+'</span><span class="acr-emp-ab" data-t="'+enc(r.tipo)+'" title="Subir o ver versiones" style="flex:1;font:600 13px var(--font);cursor:pointer">'+esc(acrEmpNombre(r.tipo))+tagSitio(r)+acrCargado(e.doc)+'</span>'+quitar(r)+'</div>'; }).join('');
     var hT=reqT.map(function(r){ var tp=rrhhTipo(r.tipo), tag=tp.fuente==='buk'?'<span class="dchip na">Buk</span>':(tp.cliente_id?'<span class="dchip prox">del cliente</span>':(tp.vence?'<span class="dchip pend">vence</span>':''));
       return '<div class="acr-req">'+tag+'<span style="flex:1;font:600 13px var(--font)">'+esc(tp.nombre)+tagSitio(r)+'</span>'+quitar(r)+'</div>'; }).join('');
     // Trabajadores activos con su estado
@@ -9144,7 +9145,8 @@
     w.querySelectorAll('.dchip[data-url]').forEach(function(el){ el.onclick=function(){ window.open(el.dataset.url,'_blank'); }; });
     w.querySelectorAll('.acr-rm').forEach(function(b){ b.onclick=function(){ if(!confirm('¿Quitar este requisito?')) return;
       sb.from('cliente_requisitos').delete().eq('id',+b.dataset.id).then(function(r){ if(r.error){ toast('No se pudo: '+r.error.message); return; } ACR.req=ACR.req.filter(function(q){ return q.id!==+b.dataset.id; }); acrPintar(); }); }; });
-    $('acr-add-emp-b').onclick=function(){ acrAddReq('empresa', [$('acr-add-emp').value]); };
+    $('acr-add-emp-b').onclick=function(){ var v=$('acr-add-emp').value; if(v==='__nuevoemp') acrNuevoTipoEmp(); else acrAddReq('empresa', [v]); };
+    w.querySelectorAll('.acr-emp-ab').forEach(function(el){ el.onclick=function(){ var tp=el.dataset.t; abrirEmpDoc(tp, acrEmpNombre(tp), false, 'otros'); acrAlCerrarEmp(); }; });
     $('acr-add-tr-b').onclick=function(){ var v=$('acr-add-tr').value; if(v==='__nuevo') acrNuevoTipoCli(); else acrAddReq('trabajador', [v]); };
     $('acr-add-base').onclick=function(){ acrAddReq('trabajador', DOC_TIPOS.map(function(tp){ return tp.slug; })); };
     w.querySelectorAll('.acr-f').forEach(function(b){ b.onclick=function(){ ACR_FIL=b.dataset.f; acrPintar(); }; });
@@ -9165,6 +9167,20 @@
     busy(true,'Guardando…');
     sb.from('cliente_requisitos').insert(rows).select().then(function(r){ busy(false);
       if(r.error){ toast('No se pudo: '+r.error.message); return; } ACR.req=ACR.req.concat(r.data||[]); acrPintar(); }); }
+  // Fecha en que se cargó un documento (empresa_docs o rrhh_docs)
+  function acrCargado(d){ var f=d&&(d.created_at||d.fecha); return f?' <span class="acr-carg">· cargado '+esc(fechaCorta(String(f).slice(0,10)))+'</span>':''; }
+  // Documento de empresa propio de un cliente (ej.: contrato u OC): el nombre queda en la nota del requisito
+  function acrNuevoTipoEmp(){ var x=ACR_CLI; if(!x||!sb) return;
+    var nom=prompt('Nombre del documento de empresa que pide '+x.nombre+'\n(ej.: Contrato u OC, Póliza de seguro)'); if(!nom||!nom.trim()) return; nom=nom.trim();
+    var tipo=('cli'+x.id+'_'+nrmQ(nom).replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'')).slice(0,48);
+    if(acrReqs(x.id, ACR_SITIO, 'empresa').some(function(r){ return r.tipo===tipo; })){ toast('Ya está en la lista.'); return; }
+    busy(true,'Guardando…');
+    sb.from('cliente_requisitos').insert([{cliente_id:x.id, sitio:ACR_SITIO||null, ambito:'empresa', tipo:tipo, nota:nom, orden:ACR.req.length, autor:userEmail}]).select().then(function(r){ busy(false);
+      if(r.error){ toast('No se pudo: '+r.error.message); return; } ACR.req=ACR.req.concat(r.data||[]); acrPintar(); toast('Agregado. Toca el nombre para subir el documento.'); }); }
+  // Al cerrar la ventana del documento de empresa, recargar y repintar la acreditación
+  function acrAlCerrarEmp(){ var m=$('rrhh-edit'); if(!m) return; var ob=new MutationObserver(function(){ if(m.classList.contains('hide')){ ob.disconnect();
+      sb.from('empresa_docs').select('*').order('created_at',{ascending:false}).limit(2000).then(function(r){ if(r&&!r.error) EMP_D=r.data||[]; acrPintar(); }); } });
+    ob.observe(m,{attributes:true,attributeFilter:['class']}); }
   function acrSlug(s, pre){ var b=(pre||'')+nrmQ(s).replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'').slice(0,40); if(!/^[a-z]/.test(b)) b='d_'+b;
     var x=b, i=2; while(ACR.tipos.some(function(t){ return t.slug===x; })) x=b+'_'+(i++); return x; }
   function acrNuevoTipoCli(){ var x=ACR_CLI; if(!x) return;
@@ -9183,8 +9199,8 @@
     $('acr-body').innerHTML='<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b style="font:800 14px var(--font)">Estado</b><span class="acr-st '+(e.k==='rech'?'falta':e.k)+'">'+ACR_LBL[e.k]+'</span></div>'+
         (e.nota?'<p class="note" style="margin:4px 0 0">'+esc(e.nota)+'</p>':'')+
         '<p class="note" style="margin:10px 0 4px">Documentos que pide '+esc(x.nombre)+' (toca uno para subirlo o actualizarlo):</p>'+
-        '<div class="rrhh-chips">'+(reqT.filter(function(r){ return rrhhTipo(r.tipo).fuente!=='buk'; }).map(function(r){ var tp=rrhhTipo(r.tipo), s=estadoDoc(t.id, r.tipo);
-          return '<span class="dchip '+DCLS[s.k]+' acr-doc" data-s="'+enc(r.tipo)+'" style="cursor:pointer" title="'+enc(tp.nombre+' · '+s.txt)+'">'+esc(tp.corto||tp.nombre)+' '+icoDoc(s.k)+'</span>'; }).join('')||'<span class="note" style="margin:0">Sin documentos por trabajador definidos.</span>')+'</div>'+
+        '<div>'+(reqT.filter(function(r){ return rrhhTipo(r.tipo).fuente!=='buk'; }).map(function(r){ var tp=rrhhTipo(r.tipo), s=estadoDoc(t.id, r.tipo);
+          return '<div class="acr-req acr-doc" data-s="'+enc(r.tipo)+'" style="cursor:pointer" title="'+enc(tp.nombre+' · '+s.txt)+'"><span class="dchip '+DCLS[s.k]+'">'+icoDoc(s.k)+' '+esc(s.txt)+'</span><span style="flex:1;font:600 13px var(--font)">'+esc(tp.nombre)+acrCargado(s.doc)+'</span></div>'; }).join('')||'<span class="note" style="margin:0">Sin documentos por trabajador definidos.</span>')+'</div>'+
         (e.buk.length?'<p class="note" style="margin:8px 0 0">Se envían desde Buk: '+esc(e.buk.join(', '))+'.</p>':'')+'</div>'+
       '<div class="card"><b style="font:800 14px var(--font)">Validación del cliente'+(ACR_SITIO?' en '+esc(ACR_SITIO):' (todos los lugares)')+'</b>'+
         '<div class="fld" style="margin-top:8px"><label>Estado</label><select id="acr-v-est"><option value="">Sin enviar</option>'+
