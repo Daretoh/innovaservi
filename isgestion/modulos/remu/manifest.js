@@ -3,7 +3,7 @@ export default {
   nombre: 'Remuneraciones',
   version: '1.0.0',
   icono: 'dinero',
-  categoria: 'Personas',
+  categoria: 'Finanzas',
   depende: ['nucleo', 'personas', 'asistencia'],
   rubros: ['todos'],
   acciones: ['ver', 'crear', 'editar', 'eliminar', 'exportar'],

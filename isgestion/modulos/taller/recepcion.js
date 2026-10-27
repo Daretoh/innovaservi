@@ -3,7 +3,7 @@
 // el vehículo y su dueño; un cliente "siempre por cotizar" (terceros.por_cotizar) agrega el servicio a convenir y Factura.
 import { abrirFormulario } from '../../core/ui/modal.js';
 import { avisar } from '../../core/ui/aviso.js';
-import { hoyISO } from '../../core/ui/formato.js';
+import { hoyISO, telefono } from '../../core/ui/formato.js';
 import { PRIORIDADES, TALLAS, normalizarPatente, verPatente, nombreTercero, precioTalla, cargarServicios, cargarTrabajadores, siguienteNumero, esEmpresa } from './datos.js';
 
 export async function recepcion(ctx, { fecha = hoyISO(), vehiculo = null } = {}) {
@@ -81,7 +81,7 @@ export async function recepcion(ctx, { fecha = hoyISO(), vehiculo = null } = {})
         }
         let terceroId = x.tercero_id || null;
         if (!terceroId && x.cliente_nuevo.trim()) {
-          const { data, error } = await ctx.api.from('terceros').insert({ empresa_id: ctx.empresa.id, razon_social: x.cliente_nuevo.trim(), tipo: ['cliente'], telefono: x.contacto.trim() || null }).select('id').single();
+          const { data, error } = await ctx.api.from('terceros').insert({ empresa_id: ctx.empresa.id, razon_social: x.cliente_nuevo.trim(), tipo: ['cliente'], telefono: telefono(x.contacto) }).select('id').single();
           if (error) throw new Error(`No se pudo crear el cliente: ${error.message}`);
           terceroId = data.id;
         }
@@ -107,7 +107,7 @@ export async function recepcion(ctx, { fecha = hoyISO(), vehiculo = null } = {})
       const numero = await siguienteNumero(ctx);
       const llego = x.llego === 'si';
       const { data: orden, error } = await ctx.api.from('tal_ordenes').insert({
-        empresa_id: ctx.empresa.id, numero, vehiculo_id: veh.id, tercero_id: terceroOrden, contacto: x.contacto.trim() || null,
+        empresa_id: ctx.empresa.id, numero, vehiculo_id: veh.id, tercero_id: terceroOrden, contacto: telefono(x.contacto),
         doc_tipo: esEmpresa(cliente) || porCotizarDe(terceroOrden) ? 'factura' : 'boleta',
         estado: llego ? 'espera' : 'agendado', prioridad: x.prioridad, trabajador_id: x.trabajador_id || null,
         fecha_cita: x.fecha_cita, hora_cita: x.hora_cita || null, ingreso_at: llego ? new Date().toISOString() : null, notas: x.notas.trim() || null,

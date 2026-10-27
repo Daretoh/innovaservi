@@ -49,3 +49,17 @@ export function numSemana(iso) {
 // 'HH:MM' o 'HH:MM:SS' → minutos del día
 export const aMin = (t) => { const [h, m] = String(t || '0:0').split(':').map(Number); return h * 60 + (m || 0); };
 export const hhmm = (t) => String(t || '').slice(0, 5);
+
+// Teléfono chileno con formato único: celular → '+56 9 1234 5678' (acepta 912345678, 56912345678, +56 9 1234-5678…);
+// fijo → '+56 2 2345 6789' (Santiago) o '+56 XX XXX XXXX'. Si no es un número chileno reconocible, queda tal cual (sin
+// basura de importaciones). Vacío → null.
+export function telefono(t) {
+  const limpio = String(t ?? '').replace(/System\.[A-Za-z.]+/g, '').trim();
+  if (!limpio) return null;
+  let d = limpio.replace(/\D/g, '');
+  if (d.length === 11 && d.startsWith('56')) d = d.slice(2);
+  if (d.length === 9 && d.startsWith('9')) return `+56 9 ${d.slice(1, 5)} ${d.slice(5)}`;
+  if (d.length === 9 && d.startsWith('2')) return `+56 2 ${d.slice(1, 5)} ${d.slice(5)}`;
+  if (d.length === 9) return `+56 ${d.slice(0, 2)} ${d.slice(2, 5)} ${d.slice(5)}`;
+  return limpio;
+}

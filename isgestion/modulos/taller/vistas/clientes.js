@@ -7,7 +7,7 @@ import { el } from '../../../core/ui/dom.js';
 import { icono } from '../../../core/ui/iconos.js';
 import { boton } from '../../../core/ui/tabla.js';
 import { avisar } from '../../../core/ui/aviso.js';
-import { dinero, fechaLarga, hoyISO, diaLocal } from '../../../core/ui/formato.js';
+import { dinero, fechaLarga, hoyISO, diaLocal, telefono } from '../../../core/ui/formato.js';
 import { nombreEmpresa } from '../../../core/empresas.js';
 import { nombreEstado, verPatente, nombreVehiculo, totales, esEmpresa } from '../datos.js';
 
@@ -170,7 +170,7 @@ export default async function vista(ctx) {
         const rut = limpio(fRut); const r = rut ? rut.replace(/[^0-9kK]/g, '').toUpperCase() : null;
         const { error } = await ctx.api.from('terceros').update({
           nombre_fantasia: limpio(fNombre), clase: fClase.value, rut: r ? `${r.slice(0, -1)}-${r.slice(-1)}` : null, razon_social: limpio(fRazon) ?? nombreDe(t),
-          representante: fClase.value === 'empresa' ? limpio(fRep) : null, por_cotizar: fClase.value === 'empresa' && fCotizar.checked, giro: limpio(fGiro), telefono: limpio(fTel), email: limpio(fEmail), direccion: limpio(fDir),
+          representante: fClase.value === 'empresa' ? limpio(fRep) : null, por_cotizar: fClase.value === 'empresa' && fCotizar.checked, giro: limpio(fGiro), telefono: telefono(fTel.i.value), email: limpio(fEmail), direccion: limpio(fDir),
         }).eq('id', t.id);
         b.disabled = false;
         if (error) { avisar(error.code === '23505' ? 'Ya hay otro cliente con ese RUT: usa Unir si son el mismo.' : error.code === '23514' ? 'El RUT no es válido.' : error.message, 'error'); return; }

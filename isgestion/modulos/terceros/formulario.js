@@ -2,6 +2,7 @@
 // Sus datos salen en los documentos: razón social, RUT y dirección en el informe de trabajo, cotizaciones y cierres.
 import { abrirFormulario } from '../../core/ui/modal.js';
 import { avisar } from '../../core/ui/aviso.js';
+import { telefono } from '../../core/ui/formato.js';
 
 export const TIPOS = [['cliente', 'Cliente'], ['proveedor', 'Proveedor'], ['ambos', 'Cliente y proveedor']];
 
@@ -39,7 +40,7 @@ export function fichaTercero(ctx, t = null, { alGuardar } = {}) {
         tipo: v.tipo === 'ambos' ? ['cliente', 'proveedor'] : [v.tipo],
         contacto: v.contacto.trim() || null,
         email: v.email.trim() || null,
-        telefono: v.telefono.trim() || null,
+        telefono: telefono(v.telefono),
       };
       const { data, error } = t
         ? await ctx.api.from('terceros').update(datos).eq('id', t.id).select('id')
