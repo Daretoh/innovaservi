@@ -1785,6 +1785,7 @@
   .fin-bar select{font:600 13px var(--font);padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);}
   .fin-sp{flex:1;}
   .fin-h{font:800 14px var(--font);color:var(--ink);margin:10px 0 0;}
+  .fin-tbl td.nm .fin-quien b{display:inline;font-weight:700;color:var(--ink);}
   .fin-kf{cursor:pointer;} .fin-kf:hover{border-color:var(--p);}
   .fin-chk{display:inline-flex;align-items:center;gap:6px;font:600 12.5px var(--font);color:var(--body);}
   .fin-chk input[type=number]{font:600 13px var(--font);padding:7px 9px;border:1px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink);}
@@ -9993,6 +9994,9 @@
   function finTot(r){ return (r.doc_tipo==='nota_credito'?-1:1)*(+r.total||0); }   // lo que se paga o cobra
   function finEsperada(r){ return r.vence || sumarDias(r.fecha,30); }                  // fecha esperada de pago o cobro
   function finAbierto(r){ return !r.fecha_pago; }
+  // Quién lo cargó (y cuándo). Los gastos fijos los genera el sistema.
+  function finQuien(r){ if(!r.created_by || r.created_by.indexOf('@')<0) return (r.recurrente_id||r.created_by)?'cargado por el sistema':'';
+    return '<span class="fin-quien">subió <b>'+esc(tarCorto(tarNom(r.created_by))||r.created_by)+'</b>'+(r.created_at?' el '+esc(fechaCorta(String(r.created_at).slice(0,10))):'')+'</span>'; }
   function finVencido(r){ return finAbierto(r) && finEsperada(r)<todayISO(); }
   function finActivos(){ return FIN.regs.filter(function(r){ return !r.deleted_at; }); }
   function finEstLbl(r){ return (r.tipo==='ingreso'?FIN_EST_ING:FIN_EST)[r.estado]||r.estado; }
@@ -10126,7 +10130,7 @@
       if(!todosMeses && r.fecha.slice(0,7)!==mes) return false;
       if(F.tipo!=='todos' && r.tipo!==F.tipo) return false;
       if(F.estado==='sincentro'){ if(!(r.tipo==='gasto'&&!r.centro_id)) return false; } else if(F.estado==='sincat'){ if(r.categoria_id) return false; } else if(F.estado && r.estado!==F.estado) return false;
-      if(q){ var c=finCat(r.categoria_id), ce=finCen(r.centro_id); if([r.concepto,r.tercero,r.faena,r.doc_numero,c&&c.nombre,ce&&ce.nombre].join(' ').toLowerCase().indexOf(q)<0) return false; }
+      if(q){ var c=finCat(r.categoria_id), ce=finCen(r.centro_id); if([r.concepto,r.tercero,r.faena,r.doc_numero,c&&c.nombre,ce&&ce.nombre,r.created_by&&tarNom(r.created_by)].join(' ').toLowerCase().indexOf(q)<0) return false; }
       return true; });
     if(F.abiertos) lista.sort(function(a,b){ return finEsperada(a)<finEsperada(b)?-1:1; });
     else if(cola) lista.sort(function(a,b){ return a.fecha<b.fecha?1:(a.fecha>b.fecha?-1:0); });
@@ -10137,7 +10141,7 @@
       '<input id="fin-fq" class="cos-q" placeholder="Buscar concepto, proveedor, faena…" value="'+enc(F.q||'')+'">'+
       '<span class="fin-sp"></span><button class="btn ghost small" type="button" data-fin="nuevo-gasto">+ Gasto</button><button class="btn ghost small" type="button" data-fin="sin-doc">+ Sin documento</button><button class="btn small" type="button" data-fin="nuevo-ingreso">+ Factura emitida</button></div>';
     var filas=lista.length?lista.map(function(r){ var c=finCat(r.categoria_id), ce=finCen(r.centro_id), venc=finVencido(r);
-      var det=[c?c.nombre:'<em class="neg">sin categoría</em>', r.tipo==='gasto'?(ce?ce.nombre:'<em class="neg">sin centro</em>'):(ce?ce.nombre:''), r.faena?esc(r.faena):'', (FIN_DOCS.filter(function(d){ return d[0]===r.doc_tipo; })[0]||[,''])[1]+(r.doc_numero?' '+esc(r.doc_numero):''), r.recurrente_id?'gasto fijo':'', r.costos_doc_id?'lector':'', r.declarable===false?'sin documento':'', finAdjDe('registro_id',r.id).length?finAdjDe('registro_id',r.id).length+' archivo(s)':((r.tipo==='gasto'&&r.doc_tipo!=='sin'&&!r.recurrente_id)?'<em class="neg">sin respaldo</em>':'')].filter(Boolean).join(' · ');
+      var det=[c?c.nombre:'<em class="neg">sin categoría</em>', r.tipo==='gasto'?(ce?ce.nombre:'<em class="neg">sin centro</em>'):(ce?ce.nombre:''), r.faena?esc(r.faena):'', (FIN_DOCS.filter(function(d){ return d[0]===r.doc_tipo; })[0]||[,''])[1]+(r.doc_numero?' '+esc(r.doc_numero):''), r.recurrente_id?'gasto fijo':'', r.costos_doc_id?'lector':'', r.declarable===false?'sin documento':'', finAdjDe('registro_id',r.id).length?finAdjDe('registro_id',r.id).length+' archivo(s)':((r.tipo==='gasto'&&r.doc_tipo!=='sin'&&!r.recurrente_id)?'<em class="neg">sin respaldo</em>':''), finQuien(r)].filter(Boolean).join(' · ');
       var pago=r.fecha_pago?('<small>'+(r.tipo==='ingreso'?'cobrada ':'pagado ')+fechaCorta(r.fecha_pago)+'</small>'):('<small class="'+(venc?'neg':'')+'">'+(venc?'venció ':'vence ')+fechaCorta(finEsperada(r))+'</small>');
       return '<tr class="fin-row" data-id="'+r.id+'"><td class="nm">'+finMini(r.id)+'<b>'+esc(r.concepto)+'</b><small>'+(r.tercero?esc(r.tercero)+' · ':'')+det+'</small></td><td>'+fechaCorta(r.fecha)+'</td><td class="'+(r.tipo==='ingreso'?'pos':'')+'">'+(r.tipo==='ingreso'?'+':'')+fmtMoney(finTot(r))+'</td><td>'+finEstadoCtl(r)+pago+'</td></tr>'; }).join('')
       :'<tr><td colspan="4" class="empty" style="padding:30px">'+(F.abiertos?'No hay nada por pagar ni por cobrar con este filtro.':(cola?'No hay registros con este filtro en ningún mes.':'No hay registros en '+esc(finMesLbl(mes))+' con este filtro.'))+'</td></tr>';
