@@ -491,6 +491,16 @@
   .ed-vinfo{display:block;margin-top:4px;font-size:.78rem;color:var(--muted);line-height:1.4;} .ed-vinfo b{color:var(--orange-2);font-weight:800;}
   .ed-vdesc{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;color:var(--body);margin-top:2px;}
   .ed-vtag{display:inline-block;margin-left:6px;font:800 10px var(--font);padding:1px 7px;border-radius:999px;vertical-align:1px;} .ed-vtag.vig{background:#e7f6ee;color:#16794a;} .ed-vtag.ant{background:#fff1e4;color:#c2410c;} .ed-vtag.otro{margin-left:0;background:var(--chip);color:var(--muted);}
+  .carta-hdr{text-align:center;border-bottom:3px solid var(--orange);padding-bottom:10px;margin-bottom:18px;} .carta-hdr img{height:92px;width:auto;}
+  .carta-tit{text-align:center;font:800 20px var(--font);color:var(--ink);letter-spacing:.03em;margin:10px 0 22px;}
+  #dg-doc p.carta-fecha{text-align:right;margin:0 0 18px;} #dg-doc p.carta-dest{line-height:1.7;margin:0 0 16px;} #dg-doc p.carta-pres{margin:0 0 14px;}
+  #dg-doc .carta-p[contenteditable]{display:block;text-align:justify;line-height:1.6;margin:0 0 12px;font-size:13px;font-weight:400;min-height:1.6em;min-width:0;padding:0;outline:none;border-bottom:1px dashed #e3e5ee;}
+  #dg-doc .carta-tit[contenteditable]{display:block;border-bottom:none;padding:0;}
+  #docgen #dg-doc .carta-p:hover,#docgen #dg-doc .carta-p:focus{border-bottom-color:#b9bfd1;background:#fffdf5;}
+  .carta-ol{margin:4px 0 14px 28px;line-height:1.7;font-size:13px;}
+  .carta-desp{margin-top:18px !important;}
+  .carta-firmas{display:flex;gap:30px;flex-wrap:wrap;margin-top:70px;text-align:center;font-size:12px;} .carta-firmas div{flex:1;min-width:180px;border-top:1px solid #333;padding-top:6px;}
+  .dg-firmas.carta-emp{justify-content:flex-start;} .dg-firmas.carta-emp div{flex:0 0 46%;}
   .mr-chip{display:inline-block;font:800 9.5px var(--font);padding:2px 6px;border-radius:999px;border:1px solid;white-space:nowrap;}
   .mr-res{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 8px;}
   .iper td,.prg td{font-size:10.5px;vertical-align:top;} .iper th,.prg th{font-size:10px;} .iper td.c{text-align:center;vertical-align:middle;} .iper td.n,.prg td.n{width:20px;}
@@ -8451,7 +8461,8 @@
     {k:'fmt_eval', n:'Evaluación de aprendizaje (individual)', opciones:function(){ var o=[]; Object.keys(CAP_DOC).filter(function(k){ return CAP_DOC[k].vf; }).forEach(function(k){ o.push({v:k, n:CAP_DOC[k].n}); o.push({v:k+'|pauta', n:CAP_DOC[k].n+' · pauta de corrección (relator)'}); }); return o; }, personas:'una', build:function(v,PER){ return /\|pauta$/.test(v||'')?docEvaluacion(v):porPersona(PER,function(t){ return docEvaluacion(v,t); }); }},
     {k:'fmt_epp', n:'Entrega de elementos de protección personal', personas:'una', build:function(v,PER){ return porPersona(PER,function(t){ return docEPP(t); }); }},
     {k:'fmt_odi', n:'Información de riesgos laborales (IRL)', personas:'una', build:function(v,PER){ return porPersona(PER,function(t){ return docODI(t); }); }},
-    {k:'fmt_salida', n:'Registro de salida a atención médica', build:function(){ return docSalida({}); }}
+    {k:'fmt_salida', n:'Registro de salida a atención médica', build:function(){ return docSalida({}); }},
+    {k:'fmt_carta', n:'Carta (formato editable)', opciones:function(){ return [{v:'libre',n:'Carta en blanco'},{v:'compromiso',n:'Carta de compromiso · sin examen de altura / espacios confinados'}]; }, personas:'lista', build:function(v,PER){ return docCarta(v,PER); }}
   ];
   var EMP_Q='';
   // Versión vigente de los documentos que genera la app: se lee del documento (versión del encabezado y última fila del control de cambios).
@@ -8648,6 +8659,28 @@
     pinta(v); $('docgen').classList.remove('hide'); $('docgen').scrollTop=0;
   }
 
+  // Carta con membrete: todo el texto es editable en pantalla antes de imprimir o descargar.
+  // "Trabajadores" agrega la lista de personas (nombre y RUT) y, en la carta de compromiso, la firma de cada una.
+  function docCarta(v, PER){ PER=PER||[]; var comp=(v==='compromiso');
+    function ed(t,cls){ return '<div class="carta-p'+(cls?' '+cls:'')+'" contenteditable>'+t+'</div>'; }
+    var lista=PER.length?'<ol class="carta-ol">'+PER.map(function(t){ return '<li><b>'+esc((t.nombre||'').toUpperCase())+'</b> · RUT '+esc(t.rut||'')+'</li>'; }).join('')+'</ol>':
+      (comp?'<ol class="carta-ol"><li>'+ce('')+' · RUT '+ce('')+'</li></ol>':'');
+    var cuerpo=comp?
+      ed('Extendemos esta carta de compromiso para indicar que '+(PER.length>1?'los siguientes trabajadores no cuentan':'el siguiente trabajador no cuenta')+' con examen ocupacional de altura física y/o espacios confinados:')+lista+
+      ed('De igual forma, nos comprometemos a que '+(PER.length>1?'los trabajadores no realizarán':'el trabajador no realizará')+' labores que requieran trabajar en altura ni en espacios confinados mientras no cuente'+(PER.length>1?'n':'')+' con el examen ocupacional vigente.')+
+      ed('La empresa coordina la solicitud del examen ocupacional para el mes de [mes y año].'):
+      ed('[Escriba aquí el motivo de la carta. Puede usar uno o más párrafos.]')+lista+ed('[Párrafo final: compromiso, solicitud o información adicional.]');
+    var firmasTrab=(comp&&PER.length)?'<div class="carta-firmas">'+PER.map(function(t){ return '<div>Firma del trabajador<br><b>'+esc(t.nombre||'')+'</b><br>RUT '+esc(t.rut||'')+'</div>'; }).join('')+'</div>':'';
+    return '<div class="carta-hdr"><img src="../assets/images/InnovaServi-completo.png" onerror="this.style.display=\'none\'"></div>'+
+      '<div class="carta-tit" contenteditable>'+(comp?'CARTA DE COMPROMISO':'[TÍTULO DE LA CARTA]')+'</div>'+
+      '<p class="carta-fecha">Puerto Montt, '+ce(fLarga(todayISO()))+'</p>'+
+      '<p class="carta-dest">Señor(a): <b>'+ce(comp?'Cermaq Chile S.A.':'')+'</b><br>Cargo / institución: '+ce('')+'<br>RUT: <b>'+ce(comp?'79.784.980-4':'')+'</b></p>'+
+      '<p class="carta-pres"><b><u>PRESENTE</u></b></p>'+
+      '<p>Estimado(a) '+ce(comp?'Cermaq Chile S.A.':'')+':</p>'+cuerpo+
+      ed('Sin otro particular, le saluda atentamente,','carta-desp')+
+      firmasTrab+
+      '<div class="dg-firmas con-rep carta-emp"><div class="dg-rep">'+firmaRepHtml()+'<b>'+esc(EMP.rep)+'</b><br>Representante legal<br>'+EMP.rz+'<br>RUT '+EMP.rut+'</div></div>';
+  }
   // Formato: lista de asistencia a capacitación / charla. Con slug de PTS = registro de entrega grupal de ese PTS.
   // Opciones del Registro de capacitación: capacitaciones del catálogo, capacitaciones subidas en Empresa, PTS y tema libre
   function opcionesRegistro(){
