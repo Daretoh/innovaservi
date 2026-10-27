@@ -2601,6 +2601,7 @@
           <div class="fi-sb">
             <div class="fi-trato"><span>Valores del cargo (trato y hora extra)</span><b id="fi-trato-h"></b></div>
             <label class="fi-chk"><input id="fi-chofer" type="checkbox">Es chofer (puede registrar vueltas)</label>
+            <label class="fi-chk"><input id="fi-socio" type="checkbox">Socio de la empresa (no aparece en Remuneraciones)</label>
             <label class="fi-chk"><input id="fi-fijo" type="checkbox">Contrato fijo (renta fija, no por trato)</label>
             <div id="fi-jornada-wrap" style="display:none">
               <div class="fld"><label>Jornada normal (horas/día, incl. colación)</label><input id="fi-jornada" type="number" min="0" step="0.5" placeholder="Ej: 9"></div>
@@ -6223,7 +6224,7 @@
   function abrirFicha(t){
     FICHA_ID=t?t.id:null; FICHA_EST0=(t&&t.estado)||'espera';
     $('fi-nombre').value=t?(t.nombre||''):''; $('fi-rut').value=t?(t.rut||''):''; poblarSelectCargo($('fi-cargo'), t?(t.cargo||''):''); trHint();
-    $('fi-estado').value=(t&&t.estado)||'espera'; $('fi-ingreso').value=t?(t.fecha_ingreso||''):''; if($('fi-contrato')) $('fi-contrato').value=t?(t.contrato_vence||''):''; if($('fi-indef')){ $('fi-indef').checked=!!(t&&t.contrato_indefinido); fiIndef(); } if($('fi-chofer')) $('fi-chofer').checked=!!(t&&t.chofer);
+    $('fi-estado').value=(t&&t.estado)||'espera'; $('fi-ingreso').value=t?(t.fecha_ingreso||''):''; if($('fi-contrato')) $('fi-contrato').value=t?(t.contrato_vence||''):''; if($('fi-indef')){ $('fi-indef').checked=!!(t&&t.contrato_indefinido); fiIndef(); } if($('fi-socio')) $('fi-socio').checked=!!(t&&t.socio); if($('fi-chofer')) $('fi-chofer').checked=!!(t&&t.chofer);
     if($('fi-fijo')){ var esFijo=!!(t&&t.tipo_pago==='contrato'); $('fi-fijo').checked=esFijo; $('fi-jornada').value=(t&&t.jornada_horas)||''; if($('fi-jini')) $('fi-jini').value=(t&&t.jornada_ini)||''; if($('fi-jfin')) $('fi-jfin').value=(t&&t.jornada_fin)||''; if($('fi-sueldo')) $('fi-sueldo').value=(t&&t.sueldo_base)||''; if($('fi-sueldo-emp')) $('fi-sueldo-emp').value=(t&&t.sueldo_empresa)||''; if($('fi-sueldo-desde')) $('fi-sueldo-desde').value=(t&&t.sueldo_desde)?String(t.sueldo_desde).slice(0,7):''; $('fi-jornada-wrap').style.display=esFijo?'':'none'; }
     $('fi-tel').value=t?(t.telefono||''):''; $('fi-email').value=t?(t.email||''):'';
     $('fi-botas').value=t?(t.talla_botas||''):''; $('fi-ropa').value=t?(t.talla_ropa||''):'';
@@ -6570,7 +6571,7 @@
   $('fi-save').addEventListener('click',function(){
     if(!sb) return; var nom=titleCase($('fi-nombre').value.trim()); if(!nom){ toast('El nombre es obligatorio.'); return; }
     var _fijo=!!($('fi-fijo')&&$('fi-fijo').checked);
-    var row={ nombre:nom, rut:$('fi-rut').value.trim(), cargo:$('fi-cargo').value.trim(), estado:$('fi-estado').value, chofer:!!($('fi-chofer')&&$('fi-chofer').checked), tipo_pago:(_fijo?'contrato':'hora'), jornada_horas:(_fijo?(+$('fi-jornada').value||null):null), jornada_ini:(_fijo&&$('fi-jini')?($('fi-jini').value||null):null), jornada_fin:(_fijo&&$('fi-jfin')?($('fi-jfin').value||null):null), sueldo_base:(_fijo&&$('fi-sueldo')?(+$('fi-sueldo').value||null):null), sueldo_empresa:(_fijo&&$('fi-sueldo-emp')?($('fi-sueldo-emp').value||null):null), sueldo_desde:(_fijo&&$('fi-sueldo-desde')&&$('fi-sueldo-desde').value?($('fi-sueldo-desde').value+'-01'):null),
+    var row={ nombre:nom, rut:$('fi-rut').value.trim(), cargo:$('fi-cargo').value.trim(), estado:$('fi-estado').value, chofer:!!($('fi-chofer')&&$('fi-chofer').checked), socio:!!($('fi-socio')&&$('fi-socio').checked), tipo_pago:(_fijo?'contrato':'hora'), jornada_horas:(_fijo?(+$('fi-jornada').value||null):null), jornada_ini:(_fijo&&$('fi-jini')?($('fi-jini').value||null):null), jornada_fin:(_fijo&&$('fi-jfin')?($('fi-jfin').value||null):null), sueldo_base:(_fijo&&$('fi-sueldo')?(+$('fi-sueldo').value||null):null), sueldo_empresa:(_fijo&&$('fi-sueldo-emp')?($('fi-sueldo-emp').value||null):null), sueldo_desde:(_fijo&&$('fi-sueldo-desde')&&$('fi-sueldo-desde').value?($('fi-sueldo-desde').value+'-01'):null),
       telefono:$('fi-tel').value.trim(), email:$('fi-email').value.trim(), fecha_ingreso:$('fi-ingreso').value||null, contrato_indefinido:!!($('fi-indef')&&$('fi-indef').checked), contrato_vence:(($('fi-indef')&&$('fi-indef').checked)?'':($('fi-contrato')?$('fi-contrato').value:''))||null,
       talla_botas:$('fi-botas').value.trim(), talla_ropa:$('fi-ropa').value.trim(), afp:$('fi-afp').value.trim(),
       salud:$('fi-salud').value.trim(), direccion:$('fi-dir').value.trim(), emergencia:$('fi-emerg').value.trim(),
@@ -6891,6 +6892,7 @@
       var nm=norm(t.nombre);
       if(consumido[nm]) return;   // ficha repetida (mismo nombre): no contar sus horas dos veces
       var H=horasT[nm]; consumido[nm]=1;
+      if(t.socio) return;   // socios de la empresa: no aparecen en Remuneraciones (sus horas siguen registradas)
       var tv=(vueltasT[nm]||0)+((H&&H.vueltas)||0), tp=peajesT[nm]||0, bo=bonoT[t.id]||0, de=descT[t.id]||0;
       if(t.estado==='inactivo' && !H && !tv && !tp && !bo && !de) return;   // inactivo sin actividad: se oculta; con horas igual se muestra
       var totMin=H?H.totalMin:0, dias=H?Object.keys(H.porDia).length:0;
@@ -7030,7 +7032,7 @@
   }
   function rmEsFijo(x){ return x.tipo==='contrato'; }
   function rmAgregarFijos(D){ var ya={}; D.R.filas.forEach(function(x){ ya[norm(x.t.nombre)]=1; });
-    D.trab.forEach(function(t){ var nm=norm(t.nombre); if(t.tipo_pago!=='contrato' || t.estado!=='activo' || ya[nm]) return; ya[nm]=1;
+    D.trab.forEach(function(t){ var nm=norm(t.nombre); if(t.tipo_pago!=='contrato' || t.estado!=='activo' || t.socio || ya[nm]) return; ya[nm]=1;
       D.R.filas.push({t:t,tipo:'contrato',dias:0,diasH:0,totMin:0,base:0,baseCont:0,baseMin:0,vh:0,jor:+t.jornada_horas||0,vueltas:0,vv:0,vueltasMonto:0,peajes:0,bono:0,desc:0,total:0,real:0,aj:false,contable:0,H:null,diaMonto:{},vuDia:{},sinReg:true}); });
     D.R.filas.sort(function(a,b){ var af=rmEsFijo(a)?1:0, bf=rmEsFijo(b)?1:0; if(af!==bf) return af-bf; return (a.t.nombre||'').localeCompare(b.t.nombre||''); }); }
   // Cómo se calcula el extra de un fijo: por turno (hora inicio–fin) o por horas/día. Sin nada configurado, TODAS sus horas cuentan como trato.
@@ -7162,7 +7164,7 @@
       '<div class="rm-kpi"><div class="l">Días trabajados</div><div class="v">'+T.dias+'</div><div class="s">'+hm(T.min)+' en total</div></div>'+
       (sinFicha?'<div class="rm-kpi warn"><div class="l">Sin ficha</div><div class="v">'+sinFicha+'</div><div class="s">nombres en horas que no están en Trabajadores</div></div>':'');
     if(!todas.length){ $('rm-list').innerHTML='<div class="empty">Sin horas ni pagos registrados en '+esc(D.lbl)+'.</div>'; return; }
-    var fechas=rmFechas(), hoy=todayISO(), nCol=fechas.length+16;
+    var fechas=[], hoy=todayISO(), nCol=16;   // sin grilla de días: el día a día se ve al tocar el nombre
     var head='<tr><th class="rm-n">N°</th><th class="rm-nm">Trabajador</th><th class="rm-tp">Tipo</th>'+
       fechas.map(function(f){ var dd=new Date(f+'T12:00:00'); return '<th class="rm-d'+(esTratoDia(f)?' we':'')+(f===hoy?' hoy':'')+'">'+DIA_INI[dd.getDay()]+'<small>'+dd.getDate()+'</small></th>'; }).join('')+
       '<th>Días</th><th title="Solo spot: total del mes ÷ valor del día de trato. Días equivalentes para la liquidación; no cambia ningún pago.">Días liq.</th><th>Horas</th><th>Sueldo base</th><th>Tratos</th><th>Vueltas</th><th>Peajes</th><th>Extras</th><th>Desc.</th><th title="Solo fijos">Aguinaldo</th><th>Total</th><th title="Solo fijos: ya pagado, se resta de lo que queda por pagar">Anticipo</th><th>A pagar</th></tr>';
@@ -7171,7 +7173,7 @@
     function extIdx(x){ return ext.indexOf(x); }
     function fila(x){ idx++; var fj=rmEsFijo(x), ri=inn.indexOf(x), rk=rutCuerpo(x.t.rut);
       var celdas;
-      if(x.ext) celdas='<td class="rm-extd" colspan="'+fechas.length+'">'+x.dias+' día'+(x.dias===1?'':'s')+' · el detalle por día está en IS Performance</td>';
+      if(x.ext) celdas='';
       else celdas=fechas.map(function(f){ var min=rmMinDia(x,f), vu=rmVuDia(x,f), we=esTratoDia(f)?' we':'';
         if(min==null && !vu) return '<td class="rm-d'+we+'"></td>';
         var fae={}; ((x.H&&x.H.detalle)||[]).forEach(function(d){ if(d.fecha===f && d.faena) fae[d.faena]=1; });
@@ -7182,17 +7184,18 @@
         else { cls='rm-c rm-err'; tip=fechaDia(f)+' · registro con 0 horas y sin vueltas: revisa el horario'+faTxt; txt='!'; }
         return '<td class="rm-d'+we+'"><button type="button" class="'+cls+'" data-i="'+ri+'" data-f="'+f+'" title="'+enc(tip)+'" aria-label="'+enc(tip)+'">'+txt+'</button></td>'; }).join('');
       var soloVu=rmSoloVu(x);
-      if(x.sinReg) celdas='<td class="rm-extd rm-sinreg" colspan="'+fechas.length+'">Sin registros de horas este mes · solo sueldo base</td>';
+      if(x.sinReg) celdas='';
+      var nota=x.sinReg?'<div class="rt-sub" style="color:var(--muted);font-style:italic">Sin registros de horas este mes · solo sueldo base</div>':(x.ext?'<div class="rt-sub" style="color:#0e7490;font-style:italic">Detalle por día en IS Performance</div>':'');
       var ambas=rk && (x.ext?cruce.inn[rk]:cruce.ext[rk]);
       var badge=(!x.ext&&!x.t.id)?'<span class="rm-warn" title="No está registrado como trabajador">Sin ficha</span> ':'';
       var extra=x.ext?('<td class="rt-ok"'+(x.bonoAutos?' title="Bono autos '+fmtMoney(x.bonoAutos)+(x.extras?(' + extras '+fmtMoney(x.extras)):'')+'"':'')+'>'+m(x.bono)+(x.bonoAutos?'<div class="rt-sub">incl. bono autos</div>':'')+'</td>'):('<td class="rt-ok">'+m(x.bono)+'</td>');
       return '<tr'+(x.ext?' class="rm-isrow"':'')+'><td class="rm-n">'+idx+'</td><td class="rm-nm rm-open" data-k="'+(x.ext?('e'+extIdx(x)):('i'+ri))+'" title="Ver todos sus trabajos del mes"><b>'+badge+esc(titleCase(x.t.nombre)||'')+'</b><div class="rt-sub">'+(x.t.rut?esc(x.t.rut):'')+(x.t.rut&&x.t.cargo?' · ':'')+esc(x.t.cargo||'')+'</div>'+
         (rmEsFijo(x)&&!x.ext?(rmJornadaTxt(x)?'<div class="rm-jor">'+esc(rmJornadaTxt(x))+'</div>':'<div class="rm-jor bad" title="Configura la jornada en la ficha del trabajador: sin ella todas sus horas se pagan como trato">Sin jornada configurada: todas sus horas cuentan como trato</div>'):'')+
-        (ambas?'<span class="rm-both" title="Mismo RUT en las dos empresas">También en '+(x.ext?'Innova Servi':'IS Performance')+'</span>':'')+'</td>'+
+        nota+(ambas?'<span class="rm-both" title="Mismo RUT en las dos empresas">También en '+(x.ext?'Innova Servi':'IS Performance')+'</span>':'')+'</td>'+
         '<td class="rm-tp"><span class="rm-chip '+(fj?'fj':'sp')+'">'+(fj?'Fijo':'Spot')+'</span></td>'+celdas+
         '<td><b>'+rmDias(x)+'</b>'+(soloVu?'<div class="rt-sub" style="color:#0e7490">+'+soloVu+' solo vueltas</div>':'')+'</td><td>'+(rmDiasEq(x)!=null?'<b style="color:var(--navy)">'+rmDec(rmDiasEq(x))+'</b>':'<span class="rt-z">—</span>')+'</td><td>'+hm(x.totMin)+'</td><td>'+(rmSueldoOtra(x)?'<span class="rt-z" style="color:var(--muted)">'+fmtMoney(rmSueldo(x))+'</span><div class="rt-sub">lo paga '+esc(rmSueldoOtra(x))+'</div>':(rmEsFijo(x)&&!x.ext&&!rmSueldo(x)?(rmSueldoAntes(x)&&+x.t.sueldo_base?'<span class="rt-z">—</span><div class="rt-sub">rige desde '+esc(fechaCorta(String(x.t.sueldo_desde).slice(0,10)).replace(/^\d+ /,''))+'</div>':'<span class="rt-z">sin sueldo</span>'):m(rmSueldo(x))))+'</td><td>'+m(x.baseCont)+(rmEsFijo(x)&&!x.ext&&x.baseMin?'<div class="rt-sub">'+hm(x.baseMin)+' extra</div>':'')+'</td><td>'+m(x.vueltasMonto)+(x.vueltas&&!x.ext?'<div class="rt-sub">'+x.vueltas+' vuelta'+(x.vueltas>1?'s':'')+'</div>':'')+'</td><td>'+m(x.peajes)+'</td>'+
         extra+'<td class="rt-bad">'+m(x.desc,true)+'</td><td class="rt-ok">'+m(rmAg(x))+'</td><td class="rt-tot">'+fmtMoney(rmTotal(x))+'</td><td class="rt-bad">'+m(rmAn(x),true)+'</td><td class="rt-tot">'+fmtMoney(rmPagar(x))+'</td></tr>'; }
-    function totFila(cls,lbl,s){ return '<tr class="'+cls+'"><td class="rm-n"></td><td class="rm-nm">'+lbl+'</td><td class="rm-tp"></td><td colspan="'+fechas.length+'"></td>'+
+    function totFila(cls,lbl,s){ return '<tr class="'+cls+'"><td class="rm-n"></td><td class="rm-nm">'+lbl+'</td><td class="rm-tp"></td>'+
       '<td>'+s.dias+'</td><td>'+(s.diasEq?rmDec(s.diasEq):'—')+'</td><td>'+hm(s.min)+'</td><td>'+fmtMoney(s.sueldo)+'</td><td>'+fmtMoney(s.tratos)+'</td><td>'+fmtMoney(s.vueltas)+'</td><td>'+fmtMoney(s.peajes)+'</td><td>'+fmtMoney(s.bono)+'</td><td>'+(s.desc?'−'+fmtMoney(s.desc):'$0')+'</td><td>'+fmtMoney(s.ag)+'</td><td>'+fmtMoney(s.total)+'</td><td>'+(s.an?'−'+fmtMoney(s.an):'$0')+'</td><td>'+fmtMoney(s.pagar)+'</td></tr>'; }
     var G=rmGrupos(RM_FILT), body='', vis=[];
     G.forEach(function(g){ vis=vis.concat(g.L);
@@ -7533,7 +7536,7 @@
     if(!D.regs.length) return out;   // mes sin ningún registro de horas (antes de usar el sistema): no se inventan sueldos
     var filas=calcRemu(D).filas, ya={};
     filas.forEach(function(x){ ya[norm(x.t.nombre)]=1; });
-    B.trab.forEach(function(t){ var nm=norm(t.nombre); if(t.tipo_pago!=='contrato' || t.estado!=='activo' || ya[nm]) return; ya[nm]=1;   // fijos sin horas: igual cuesta su sueldo
+    B.trab.forEach(function(t){ var nm=norm(t.nombre); if(t.tipo_pago!=='contrato' || t.estado!=='activo' || t.socio || ya[nm]) return; ya[nm]=1;   // fijos sin horas: igual cuesta su sueldo
       filas.push({t:t,tipo:'contrato',vueltas:0,vv:0,vueltasMonto:0,peajes:0,bono:0,desc:0,H:null,diaMonto:{}}); });
     var diasMes=[]; for(var f=ini; f<=fin && f<=hoy; f=sumarDias(f,1)) diasMes.push(f);
     var devengo=diasMes.length/R.nd;   // mes en curso: sueldo base devengado a la fecha (mes cerrado = 1)
