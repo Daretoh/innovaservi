@@ -3184,7 +3184,7 @@
   function fechaDia(f){ if(!f)return''; return diaNom(f)+' '+fechaCorta(f); }   // "Lun 14 sep 2026"
   // Fines de semana y feriados: para contrato fijo, esas horas se pagan como TRATO (no jornada normal).
   var FERIADOS_MMDD=['01-01','05-01','05-21','06-20','06-29','07-16','08-15','09-18','09-19','10-12','10-31','11-01','12-08','12-25'];
-  var FERIADOS_ISO=[];  // feriados movibles (ej. Viernes Santo): agrega fechas 'aaaa-mm-dd' aquí.
+  var FERIADOS_ISO=['2026-04-03','2026-04-04','2026-06-21','2027-03-26','2027-03-27'];  // feriados movibles (Viernes y Sábado Santo, Pueblos Indígenas): agrega fechas 'aaaa-mm-dd' aquí cada año.
   function esFinde(f){ var d=new Date(f+'T12:00:00').getDay(); return d===0||d===6; }
   function esFeriado(f){ return FERIADOS_MMDD.indexOf((f||'').slice(5))>=0 || FERIADOS_ISO.indexOf(f)>=0; }
   function esTratoDia(f){ return esFinde(f)||esFeriado(f); }
