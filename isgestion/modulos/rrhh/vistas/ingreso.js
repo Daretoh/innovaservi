@@ -1,13 +1,13 @@
 // Revisión de una ficha de ingreso: incorporar (crea o completa la persona y su vínculo,
 // y pasa la cédula a sus documentos personales) o descartar (borra la cédula).
 // Ruta: #/rrhh.ingreso?f=<ficha_id>
-import { el } from '../../../core/ui/dom.js?v=cb36eb2';
-import { icono } from '../../../core/ui/iconos.js?v=cb36eb2';
-import { boton } from '../../../core/ui/tabla.js?v=cb36eb2';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=cb36eb2';
-import { avisar } from '../../../core/ui/aviso.js?v=cb36eb2';
-import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=cb36eb2';
-import { VINCULOS } from '../datos.js?v=cb36eb2';
+import { el } from '../../../core/ui/dom.js?v=b8da9fc';
+import { icono } from '../../../core/ui/iconos.js?v=b8da9fc';
+import { boton } from '../../../core/ui/tabla.js?v=b8da9fc';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=b8da9fc';
+import { avisar } from '../../../core/ui/aviso.js?v=b8da9fc';
+import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=b8da9fc';
+import { VINCULOS } from '../datos.js?v=b8da9fc';
 
 const GRUPOS = [
   ['Datos', [['fecha_nacimiento', 'Nacimiento'], ['sexo', 'Sexo'], ['nacionalidad', 'Nacionalidad'], ['estado_civil', 'Estado civil'], ['cargo_postula', 'Cargo al que postula']]],

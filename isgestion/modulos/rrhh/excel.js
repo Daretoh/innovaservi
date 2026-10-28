@@ -1,10 +1,10 @@
 // Exportar trabajadores a Excel (como en InnovaGestión): hoja Resumen (totales, por cargo, documentación de activos y
 // vencimientos de los próximos 60 días) y hoja Trabajadores con grupos de columnas plegables (+ / −), filtros,
 // estados con color y la primera fila y columnas fijas. ExcelJS se carga con core/excel.js solo al exportar.
-import { cargarLogo } from '../../core/pdf.js?v=cb36eb2';
-import { cargarExcelJS, argb } from '../../core/excel.js?v=cb36eb2';
-import { nombreEmpresa } from '../../core/empresas.js?v=cb36eb2';
-import { cumplimiento, estadoDoc, nombreCompleto, nombreVinculo } from './datos.js?v=cb36eb2';
+import { cargarLogo } from '../../core/pdf.js?v=b8da9fc';
+import { cargarExcelJS, argb } from '../../core/excel.js?v=b8da9fc';
+import { nombreEmpresa } from '../../core/empresas.js?v=b8da9fc';
+import { cumplimiento, estadoDoc, nombreCompleto, nombreVinculo } from './datos.js?v=b8da9fc';
 
 const fecha = (v) => (v ? new Date(`${String(v).slice(0, 10)}T12:00:00`) : null);
 const edad = (n) => { if (!n) return null; const d = new Date(`${n}T12:00:00`); const h = new Date(); let e = h.getFullYear() - d.getFullYear(); if (h < new Date(h.getFullYear(), d.getMonth(), d.getDate())) e -= 1; return Number.isNaN(e) ? null : e; };

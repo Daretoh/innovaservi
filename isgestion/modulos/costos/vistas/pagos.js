@@ -1,15 +1,15 @@
 // Pagos: comprobantes de pago por validar, validados y rechazados. Validar (permiso costos.aprobar) deja pagados los
 // documentos que cubre por completo. Aviso "Falta factura" para proveedores de factura mensual: pagos o compras del
 // mes sin una factura de ese proveedor.
-import { el } from '../../../core/ui/dom.js?v=cb36eb2';
-import { icono } from '../../../core/ui/iconos.js?v=cb36eb2';
-import { listado, boton } from '../../../core/ui/tabla.js?v=cb36eb2';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=cb36eb2';
-import { avisar } from '../../../core/ui/aviso.js?v=cb36eb2';
-import { urlFirmada } from '../../../core/adjuntos.js?v=cb36eb2';
-import { dinero, fechaLarga, hoyISO, rangoMes, moverMes, nombreMes, diaLocal } from '../../../core/ui/formato.js?v=cb36eb2';
-import { nombreTercero, nombreMedio } from '../datos.js?v=cb36eb2';
-import { comprobante } from './subir.js?v=cb36eb2';
+import { el } from '../../../core/ui/dom.js?v=b8da9fc';
+import { icono } from '../../../core/ui/iconos.js?v=b8da9fc';
+import { listado, boton } from '../../../core/ui/tabla.js?v=b8da9fc';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=b8da9fc';
+import { avisar } from '../../../core/ui/aviso.js?v=b8da9fc';
+import { urlFirmada } from '../../../core/adjuntos.js?v=b8da9fc';
+import { dinero, fechaLarga, hoyISO, rangoMes, moverMes, nombreMes, diaLocal } from '../../../core/ui/formato.js?v=b8da9fc';
+import { nombreTercero, nombreMedio } from '../datos.js?v=b8da9fc';
+import { comprobante } from './subir.js?v=b8da9fc';
 
 const filtro = { estado: 'por_validar' };
 const ESTADOS = [['por_validar', 'Por validar'], ['validado', 'Validados'], ['rechazado', 'Rechazados']];

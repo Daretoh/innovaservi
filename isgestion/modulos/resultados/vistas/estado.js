@@ -1,13 +1,13 @@
 // Estado de resultados de la empresa: mes (con el mes anterior y tendencia de 6 meses) o año (12 meses),
 // punto de equilibrio, PDF y CSV. Todo en neto (sin IVA). Cerrar / Reabrir mes (como InnovaGestión): el cierre guarda la
 // foto del resultado y bloquea en Costos los cambios de montos, fechas y categorías de ese mes (fin_cierres).
-import { el } from '../../../core/ui/dom.js?v=cb36eb2';
-import { icono } from '../../../core/ui/iconos.js?v=cb36eb2';
-import { boton } from '../../../core/ui/tabla.js?v=cb36eb2';
-import { avisar } from '../../../core/ui/aviso.js?v=cb36eb2';
-import { dinero, hoyISO, nombreMes, moverMes, fechaLarga, diaLocal } from '../../../core/ui/formato.js?v=cb36eb2';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=cb36eb2';
-import { GRUPOS, mesesEntre, cargarEstado, sumarTotales, puntoEquilibrio, pct } from '../datos.js?v=cb36eb2';
+import { el } from '../../../core/ui/dom.js?v=b8da9fc';
+import { icono } from '../../../core/ui/iconos.js?v=b8da9fc';
+import { boton } from '../../../core/ui/tabla.js?v=b8da9fc';
+import { avisar } from '../../../core/ui/aviso.js?v=b8da9fc';
+import { dinero, hoyISO, nombreMes, moverMes, fechaLarga, diaLocal } from '../../../core/ui/formato.js?v=b8da9fc';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=b8da9fc';
+import { GRUPOS, mesesEntre, cargarEstado, sumarTotales, puntoEquilibrio, pct } from '../datos.js?v=b8da9fc';
 
 const estado = { modo: 'mes', mes: hoyISO().slice(0, 7), anio: Number(hoyISO().slice(0, 4)) };
 const MES_CORTO = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
@@ -120,7 +120,7 @@ export default async function vista(ctx) {
 }
 
 async function exportarExcel(ctx, filas, meses) {
-  const { exportarExcel: excel } = await import('../../../core/excel.js?v=cb36eb2');
+  const { exportarExcel: excel } = await import('../../../core/excel.js?v=b8da9fc');
   await excel(ctx, { titulo: 'Estado de resultados', subtitulo: `${nombreMes(meses[0])}${meses.length > 1 ? ` a ${nombreMes(meses[meses.length - 1])}` : ''} · montos netos, sin IVA`,
     nombre: `estado-resultados-${meses[0]}${meses.length > 2 ? `-${meses[meses.length - 1]}` : ''}`,
     columnas: ['Concepto', ...meses.map((m) => ({ t: nombreMes(m), tipo: 'dinero' }))],
@@ -130,7 +130,7 @@ async function exportarExcel(ctx, filas, meses) {
 async function exportarPdf(ctx, filas, anual, meses, t, pe, b) {
   b.disabled = true;
   try {
-    const { nuevoPdf } = await import('../../../core/pdf.js?v=cb36eb2');
+    const { nuevoPdf } = await import('../../../core/pdf.js?v=b8da9fc');
     const titulo = `Estado de resultados · ${anual ? meses[0].slice(0, 4) : nombreMes(meses[0])}`;
     const pdf = await nuevoPdf(ctx, { titulo, subtitulo: `Montos netos, sin IVA · Emitido el ${new Date().toLocaleDateString('es-CL')}`, horizontal: anual });
     const cab = anual ? ['Concepto', ...meses.map((m) => MES_CORTO[Number(m.slice(5, 7)) - 1]), 'Total'] : ['Concepto', nombreMes(meses[0]), '% ingresos', nombreMes(meses[1])];

@@ -1,7 +1,7 @@
 // Listado estándar: barra con búsqueda y acciones + tabla.
 // columnas: [{ titulo, valor: (fila) => texto }]
-import { el } from './dom.js?v=cb36eb2';
-import { icono } from './iconos.js?v=cb36eb2';
+import { el } from './dom.js?v=b8da9fc';
+import { icono } from './iconos.js?v=b8da9fc';
 
 // alFila(fila): opcional, la fila se puede tocar (abre su ficha).
 export function listado({ titulo, columnas, filas, acciones = [], vacio = 'No hay registros.', alFila = null }) {

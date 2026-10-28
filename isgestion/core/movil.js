@@ -6,10 +6,10 @@
 //   accesos: [{ id: 'taller.tablero', label: 'Taller', icono: 'auto' }, …]   pestañas de la barra (si la ruta existe)
 //   accion:  { label, icono, requiere: 'crear', abrir: (ctx) => … }           el botón "+" del centro
 // Sin accesos declarados, la barra usa los primeros apartados del menú. Siempre: Inicio al principio y Más al final.
-import { el } from './ui/dom.js?v=cb36eb2';
-import { icono } from './ui/iconos.js?v=cb36eb2';
-import { urlFirmada } from './adjuntos.js?v=cb36eb2';
-import { nombreEmpresa } from './empresas.js?v=cb36eb2';
+import { el } from './ui/dom.js?v=b8da9fc';
+import { icono } from './ui/iconos.js?v=b8da9fc';
+import { urlFirmada } from './adjuntos.js?v=b8da9fc';
+import { nombreEmpresa } from './empresas.js?v=b8da9fc';
 
 const MAX_ACCESOS = 2;
 
@@ -94,12 +94,20 @@ export function marcaGuardada(empresaId) {
 // para la próxima bienvenida. Solo datos de la marca, nada privado.
 export async function recordarMarca(api, empresa) {
   let logo = null;
-  try {
-    if (empresa.logo_url) {
-      const url = await urlFirmada(api, empresa.logo_url, 120);
-      const blob = await (await fetch(url)).blob();
-      if (blob.size <= 150 * 1024) logo = await new Promise((ok, mal) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = mal; r.readAsDataURL(blob); });
-    }
-  } catch { /* sin logo: se muestra el nombre */ }
+  try { if (empresa.logo_url) logo = await logoChico(await urlFirmada(api, empresa.logo_url, 120)); } catch { /* sin logo: se muestra el nombre */ }
   try { localStorage.setItem(CLAVE_MARCA, JSON.stringify({ id: empresa.id, nombre: nombreEmpresa(empresa), color: empresa.color || null, logo })); } catch { /* sin almacenamiento */ }
+  return logo;
+}
+
+// El logo achicado (máx. 360 px de ancho, PNG con transparencia) como imagen incrustada: los logos subidos suelen pesar
+// cientos de KB y no cabrían en el almacenamiento del navegador. Se dibuja desde una imagen incrustada (no ensucia el canvas).
+async function logoChico(url) {
+  const blob = await (await fetch(url)).blob();
+  const original = await new Promise((ok, mal) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = mal; r.readAsDataURL(blob); });
+  const img = await new Promise((ok, mal) => { const i = new Image(); i.onload = () => ok(i); i.onerror = mal; i.src = original; });
+  const escala = Math.min(1, 360 / (img.naturalWidth || 360));
+  const lienzo = Object.assign(document.createElement('canvas'), { width: Math.round(img.naturalWidth * escala), height: Math.round(img.naturalHeight * escala) });
+  lienzo.getContext('2d').drawImage(img, 0, 0, lienzo.width, lienzo.height);
+  const chico = lienzo.toDataURL('image/png');
+  return chico.length < original.length ? chico : original;
 }

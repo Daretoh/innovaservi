@@ -1,14 +1,14 @@
 // Balance de gestión (como Finanzas de InnovaGestión): cuentas (banco, caja, tarjetas) con su último saldo, por cobrar,
 // por pagar, deudas y préstamos con otras empresas del grupo. No es el balance tributario: sirve para saber cuánto se
 // tiene y cuánto se debe hoy. Solo con costos.aprobar.
-import { el } from '../../../core/ui/dom.js?v=cb36eb2';
-import { icono } from '../../../core/ui/iconos.js?v=cb36eb2';
-import { boton } from '../../../core/ui/tabla.js?v=cb36eb2';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=cb36eb2';
-import { avisar } from '../../../core/ui/aviso.js?v=cb36eb2';
-import { dinero, fechaLarga, hoyISO } from '../../../core/ui/formato.js?v=cb36eb2';
-import { cargarCuentas, cargarPendientes, cargarDeudas } from '../tesoreria.js?v=cb36eb2';
-import { sinPermiso } from './flujo.js?v=cb36eb2';
+import { el } from '../../../core/ui/dom.js?v=b8da9fc';
+import { icono } from '../../../core/ui/iconos.js?v=b8da9fc';
+import { boton } from '../../../core/ui/tabla.js?v=b8da9fc';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=b8da9fc';
+import { avisar } from '../../../core/ui/aviso.js?v=b8da9fc';
+import { dinero, fechaLarga, hoyISO } from '../../../core/ui/formato.js?v=b8da9fc';
+import { cargarCuentas, cargarPendientes, cargarDeudas } from '../tesoreria.js?v=b8da9fc';
+import { sinPermiso } from './flujo.js?v=b8da9fc';
 
 const TIPOS_CUENTA = [['banco', 'Banco'], ['caja', 'Caja'], ['tarjeta', 'Tarjeta de crédito'], ['otro', 'Otra']];
 const TIPOS_DEUDA = [['prestamo', 'Préstamo'], ['leasing', 'Leasing'], ['linea', 'Línea de crédito'], ['otro', 'Otra']];
