@@ -1,14 +1,14 @@
 // Gasto u otro ingreso.
 // - Nuevo:  #/costos.registro?tipo=gasto|ingreso
 // - Ver y editar: #/costos.registro?id=<id>
-import { el } from '../../../core/ui/dom.js?v=384ede1';
-import { icono } from '../../../core/ui/iconos.js?v=384ede1';
-import { boton } from '../../../core/ui/tabla.js?v=384ede1';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=384ede1';
-import { avisar } from '../../../core/ui/aviso.js?v=384ede1';
-import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=384ede1';
-import { dinero, hoyISO, fechaLarga, sumarDias } from '../../../core/ui/formato.js?v=384ede1';
-import { cargarBase, nombreTercero, DOCS, MEDIOS, netoDe, estadosDe, estadoInicial, nombreEstado } from '../datos.js?v=384ede1';
+import { el } from '../../../core/ui/dom.js?v=a4abe71';
+import { icono } from '../../../core/ui/iconos.js?v=a4abe71';
+import { boton } from '../../../core/ui/tabla.js?v=a4abe71';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=a4abe71';
+import { avisar } from '../../../core/ui/aviso.js?v=a4abe71';
+import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=a4abe71';
+import { dinero, hoyISO, fechaLarga, sumarDias } from '../../../core/ui/formato.js?v=a4abe71';
+import { cargarBase, nombreTercero, DOCS, MEDIOS, netoDe, estadosDe, estadoInicial, nombreEstado, opcionesACuenta } from '../datos.js?v=a4abe71';
 
 
 const ARCHIVOS = ['application/pdf', 'image/jpeg', 'image/png'];
@@ -57,6 +57,8 @@ export default async function vista(ctx) {
   };
   total.addEventListener('input', pintarDesglose); doc.addEventListener('change', pintarDesglose); pintarDesglose();
   const patente = campo('patente', { placeholder: 'Opcional, para la utilidad por vehículo' }, r?.patente);
+  // Compra por cuenta de un tercero (no es gasto de la empresa: se le descuenta de su pago)
+  const aCuenta = esIngreso ? null : select('acuenta', opcionesACuenta(base, r?.a_cuenta_de), r?.a_cuenta_de);
   const orden = conTaller && !esIngreso ? select('orden', [['', 'Sin orden'], ...(ordenes.data ?? []).map((o) => [o.id,
     `N° ${o.numero} · ${[o.tal_vehiculos?.patente, o.tal_vehiculos?.marca, o.tal_vehiculos?.modelo].filter(Boolean).join(' ')}`])], r?.orden_id) : null;
   // Faena (Innova) para el costo por faena
@@ -93,7 +95,7 @@ export default async function vista(ctx) {
       const datos = {
         fecha: fecha.value, concepto: concepto.value.trim(), categoria_id: categoria.value, centro_id: centro.value || null, tercero_id: tercero.value || null,
         doc_tipo: doc.value, doc_numero: docNum.value.trim() || null, total: Math.round(Number(total.value)), patente: patente.value.trim() || null,
-        orden_id: orden ? orden.value || null : r?.orden_id ?? null,
+        orden_id: orden ? orden.value || null : r?.orden_id ?? null, ...(aCuenta ? { a_cuenta_de: aCuenta.value || null } : {}),
         estado_pago: estado.value, fecha_pago: estado.value === 'pagado' ? fechaPago.value || fecha.value || hoyISO() : null, medio_pago: estado.value === 'pagado' ? medio.value : null,
         vence: estado.value === 'pagado' ? r?.vence ?? null : vence.value || null, ...(faena ? { faena_id: faena.value || null } : {}),
         notas: notas.value.trim() || null, ...(ruta ? { archivo: ruta } : {}),
@@ -164,6 +166,7 @@ export default async function vista(ctx) {
       el('div', { class: 'rejilla-campos' }, fila('Categoría', categoria), fila('Centro de costo', centro), fila(esIngreso ? 'Cliente' : 'Proveedor', tercero)),
       el('div', { class: 'rejilla-campos' }, fila('Documento', doc), fila('N° de documento', docNum), fila('Total (con IVA si lo tiene)', total, desglose)),
       esIngreso ? (faena ? el('div', { class: 'rejilla-campos' }, fila('Faena', faena)) : null) : el('div', { class: 'rejilla-campos' }, faena ? fila('Faena', faena) : null, fila('Patente', patente), orden ? fila('Orden de trabajo', orden) : null),
+      aCuenta ? el('div', { class: 'rejilla-campos' }, fila('¿Compra por cuenta de un tercero?', aCuenta, el('span', { class: 'texto-suave texto-chico' }, 'Ej.: materiales del pintor: se paga al local, no es gasto de la empresa y se descuenta de lo que se le paga.'))) : null,
       el('div', { class: 'rejilla-campos' }, fila('Estado', estado, el('span', { class: 'texto-suave texto-chico' }, 'Boleta o ticket: pagado al comprar. Factura: por pagar.'))),
       filaPago,
       fila(r?.archivo ? 'Reemplazar respaldo (factura, boleta o comprobante)' : 'Respaldo (factura, boleta o comprobante)', archivo),

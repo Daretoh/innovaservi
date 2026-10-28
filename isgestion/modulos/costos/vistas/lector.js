@@ -5,14 +5,14 @@
 // trabajador": además del gasto queda un descuento en Remuneraciones (semana o mes según la empresa), ligado al
 // documento (remu_items.origen_id). Requiere poder crear en Remuneraciones.
 // Ruta: #/costos.lector
-import { el } from '../../../core/ui/dom.js?v=384ede1';
-import { icono } from '../../../core/ui/iconos.js?v=384ede1';
-import { boton } from '../../../core/ui/tabla.js?v=384ede1';
-import { avisar } from '../../../core/ui/aviso.js?v=384ede1';
-import { subirArchivo, almacen } from '../../../core/adjuntos.js?v=384ede1';
-import { dinero, hoyISO, sumarDias, fechaLarga, lunesDe } from '../../../core/ui/formato.js?v=384ede1';
-import { TIPOS_DTE, docTipoDe, CAMPOS_DTE, leerParte, combinar, validar, escanearCamara, aJPEG, fmtRut, limpioRut, rutValido, num } from '../../../core/lector-dte.js?v=384ede1';
-import { cargarBase, nombreTercero } from '../datos.js?v=384ede1';
+import { el } from '../../../core/ui/dom.js?v=a4abe71';
+import { icono } from '../../../core/ui/iconos.js?v=a4abe71';
+import { boton } from '../../../core/ui/tabla.js?v=a4abe71';
+import { avisar } from '../../../core/ui/aviso.js?v=a4abe71';
+import { subirArchivo, almacen } from '../../../core/adjuntos.js?v=a4abe71';
+import { dinero, hoyISO, sumarDias, fechaLarga, lunesDe } from '../../../core/ui/formato.js?v=a4abe71';
+import { TIPOS_DTE, docTipoDe, CAMPOS_DTE, leerParte, combinar, validar, escanearCamara, aJPEG, fmtRut, limpioRut, rutValido, num } from '../../../core/lector-dte.js?v=a4abe71';
+import { cargarBase, nombreTercero, opcionesACuenta } from '../datos.js?v=a4abe71';
 
 const ETIQUETA = { timbre: ['Timbre SII', 'chip-ok'], xml: ['XML', 'chip-ok'], ocr: ['Revisar', 'chip-prox'], calc: ['Calculado', 'chip-pend'] };
 
@@ -101,6 +101,7 @@ export default async function vista(ctx) {
   const categoria = el('select', { class: 'campo', id: 'lec-cat' }, categorias.map((c) => el('option', { value: c.id }, c.nombre)));
   const centro = el('select', { class: 'campo', id: 'lec-cen' }, el('option', { value: '' }, 'Sin centro de costo'), base.centros.filter((c) => c.activo).map((c) => el('option', { value: c.id }, c.nombre)));
   const hoy = hoyISO();
+  const aCuenta = el('select', { class: 'campo', id: 'lec-acu' }, opcionesACuenta(base).map(([v, t]) => el('option', { value: v }, t)));
   const faena = el('select', { class: 'campo', id: 'lec-fae' }, el('option', { value: '' }, 'Sin faena (gasto general)'),
     (faenas.data ?? []).map((f) => el('option', { value: f.id, selected: f.fecha_inicio <= hoy && f.fecha_fin >= hoy && (faenas.data ?? []).filter((x) => x.fecha_inicio <= hoy && x.fecha_fin >= hoy).length === 1 }, `${fechaLarga(f.fecha_inicio)} · ${f.titulo}`)));
   const concepto = el('input', { class: 'campo', id: 'lec-con', placeholder: 'Se completa con el proveedor y el documento' });
@@ -193,7 +194,7 @@ export default async function vista(ctx) {
         empresa_id: e, tipo: 'gasto', fecha: v.fecha || hoyISO(), concepto: concepto.value.trim(), categoria_id: categoria.value, centro_id: centro.value || null,
         tercero_id: tercero?.id ?? null, doc_tipo: doc, doc_numero: v.folio, total: v.total, neto: v.total - iva, iva,
         // Boleta o ticket: pagado al comprar (salvo que se desmarque a mano); factura: por pagar
-        ...(!ctx.puede('costos', 'editar') ? { estado_pago: 'pendiente' } : (pagadoTocado ? pagado.checked : pagado.checked || doc !== 'factura') ? { estado_pago: 'pagado', fecha_pago: v.fecha || hoyISO() } : { estado_pago: 'listo' }), archivo: subidas[0] ?? null, adjuntos: subidas.slice(1), faena_id: faena.value || null,
+        ...(!ctx.puede('costos', 'editar') ? { estado_pago: 'pendiente' } : (pagadoTocado ? pagado.checked : pagado.checked || doc !== 'factura') ? { estado_pago: 'pagado', fecha_pago: v.fecha || hoyISO() } : { estado_pago: 'listo' }), archivo: subidas[0] ?? null, adjuntos: subidas.slice(1), faena_id: faena.value || null, a_cuenta_de: aCuenta.value || null,
         dte: { ...v, rut: v.rut ? fmtRut(v.rut) : null, td: v.td == null ? null : String(v.td), items: datos.items ?? [], origen },
       }).select('id').single();
       if (error) throw new Error(error.code === '23505' ? 'Este documento ya estaba registrado (mismo emisor, tipo y folio).' : error.message);
@@ -226,6 +227,7 @@ export default async function vista(ctx) {
     el('div', { class: 'rejilla-campos lec-montos' }, ctl('neto', 'Neto', { num: true }), ctl('iva', 'IVA', { num: true }), ctl('exento', 'Exento', { num: true }), ctl('otros', 'Otros impuestos', { num: true }), ctl('total', 'Total', { num: true })),
     cuadre,
     el('div', { class: 'rejilla-campos' }, fila('Categoría', categoria), fila('Centro de costo', centro), conFaenas ? fila('Faena', faena) : null),
+    el('div', { class: 'rejilla-campos' }, fila('¿Por cuenta de un tercero?', aCuenta)),
     fila('Concepto', concepto),
     el('label', { class: 'casilla' }, pagado, 'Ya está pagado (boletas y tickets quedan pagados solos; la factura queda por pagar)'),
     conDescuento ? el('div', { class: 'lec-descuento' },

@@ -1,5 +1,5 @@
 // Datos compartidos de Costos y gastos.
-import { hoyISO, rangoMes } from '../../core/ui/formato.js?v=384ede1';
+import { hoyISO, rangoMes } from '../../core/ui/formato.js?v=a4abe71';
 
 export const CLASES = [['gasto', 'Gasto (va al resultado)'], ['personal', 'Personal (va a la línea Personal)'], ['inventario', 'Compra de inventario (es stock: no va al resultado)'], ['ingreso', 'Otro ingreso']];
 export const nombreClase = { gasto: 'Gasto', personal: 'Personal', inventario: 'Compra de inventario', ingreso: 'Ingreso' };
@@ -7,6 +7,10 @@ export const DOCS = [['factura', 'Factura'], ['boleta', 'Boleta'], ['guia', 'Gu�
 export const nombreDoc = Object.fromEntries(DOCS);
 export const MEDIOS = [['transferencia', 'Transferencia'], ['efectivo', 'Efectivo'], ['debito', 'Débito'], ['credito', 'Crédito'], ['cheque', 'Cheque'], ['otro', 'Otro']];
 export const nombreMedio = Object.fromEntries(MEDIOS);
+// "A cuenta de": compra que la empresa paga por un tercero (ej.: el pintor) y que se le descuenta de su pago
+export const opcionesACuenta = (base, actual = null) => [['', 'No: es gasto de la empresa'],
+  ...base.terceros.filter((t) => t.tipo?.includes('proveedor') || t.id === actual).map((t) => [t.id, `Sí, de ${nombreTercero(t)} (se le descuenta)`])];
+
 // Estados (como Finanzas de InnovaGestión): por revisar → listo (por pagar o cobrar) → pagado
 export const ESTADOS_GASTO = [['pendiente', 'Por revisar'], ['listo', 'Listo por pagar'], ['pagado', 'Pagado']];
 export const ESTADOS_INGRESO = [['pendiente', 'Por revisar'], ['listo', 'Por cobrar'], ['pagado', 'Cobrado']];
@@ -110,7 +114,7 @@ export async function generarAutomatico(ctx) {
   if (!ctx.puede('costos', 'crear')) return 0;
   const { data, error } = await ctx.api.from('fin_recurrentes').select('*').eq('empresa_id', ctx.empresa.id).eq('activo', true);
   if (error || !data.length) return 0;
-  const { dolarDelDia } = await import('../../core/economia.js?v=384ede1');
+  const { dolarDelDia } = await import('../../core/economia.js?v=a4abe71');
   const tc = data.some((r) => r.moneda === 'USD') ? await dolarDelDia() : null;
   const usables = tc ? data : data.filter((r) => r.moneda !== 'USD');
   try { return await generarMes(ctx, usables, mes, tc); } catch { return 0; }

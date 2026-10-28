@@ -1,7 +1,7 @@
 // Acciones sobre una cotización: duplicar, dividir por grupo y pasar a orden de trabajo (Taller).
-import { avisar } from '../../core/ui/aviso.js?v=384ede1';
-import { hoyISO } from '../../core/ui/formato.js?v=384ede1';
-import { totalLinea, numeroTexto, siguienteNumero } from './datos.js?v=384ede1';
+import { avisar } from '../../core/ui/aviso.js?v=a4abe71';
+import { hoyISO } from '../../core/ui/formato.js?v=a4abe71';
+import { totalLinea, numeroTexto, siguienteNumero } from './datos.js?v=a4abe71';
 
 const CAMPOS_COT = ['fecha_hasta', 'validez_dias', 'tercero_id', 'cliente_nombre', 'cliente_rut', 'cliente_giro', 'cliente_contacto', 'cliente_correo', 'cliente_telefono', 'con_iva', 'desc_adic_pct', 'mostrar_valores'];
 const CAMPOS_GRUPO = ['titulo', 'patente', 'anio', 'talla', 'vehiculo_id'];

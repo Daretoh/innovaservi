@@ -1,15 +1,16 @@
 // Pagos: comprobantes de pago por validar, validados y rechazados. Validar (permiso costos.aprobar) deja pagados los
 // documentos que cubre por completo. Aviso "Falta factura" para proveedores de factura mensual: pagos o compras del
-// mes sin una factura de ese proveedor.
-import { el } from '../../../core/ui/dom.js?v=384ede1';
-import { icono } from '../../../core/ui/iconos.js?v=384ede1';
-import { listado, boton } from '../../../core/ui/tabla.js?v=384ede1';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=384ede1';
-import { avisar } from '../../../core/ui/aviso.js?v=384ede1';
-import { urlFirmada } from '../../../core/adjuntos.js?v=384ede1';
-import { dinero, fechaLarga, hoyISO, rangoMes, moverMes, nombreMes, diaLocal } from '../../../core/ui/formato.js?v=384ede1';
-import { nombreTercero, nombreMedio } from '../datos.js?v=384ede1';
-import { comprobante } from './subir.js?v=384ede1';
+// mes sin una factura de ese proveedor. Cuentas con contratistas (2026-10-28): saldo de cada tercero con cuenta corriente
+// (trabajos − compras hechas por su cuenta − abonos); la tarjeta abre su cuenta (costos.cuenta).
+import { el } from '../../../core/ui/dom.js?v=a4abe71';
+import { icono } from '../../../core/ui/iconos.js?v=a4abe71';
+import { listado, boton } from '../../../core/ui/tabla.js?v=a4abe71';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=a4abe71';
+import { avisar } from '../../../core/ui/aviso.js?v=a4abe71';
+import { urlFirmada } from '../../../core/adjuntos.js?v=a4abe71';
+import { dinero, fechaLarga, hoyISO, rangoMes, moverMes, nombreMes, diaLocal } from '../../../core/ui/formato.js?v=a4abe71';
+import { nombreTercero, nombreMedio } from '../datos.js?v=a4abe71';
+import { comprobante } from './subir.js?v=a4abe71';
 
 const filtro = { estado: 'por_validar' };
 const ESTADOS = [['por_validar', 'Por validar'], ['validado', 'Validados'], ['rechazado', 'Rechazados']];
@@ -29,6 +30,19 @@ export default async function vista(ctx) {
   ]);
   if (pagos.error) throw pagos.error;
   const quien = new Map((us.data ?? []).map((u) => [u.user_id, u.nombre]));
+  // Contratistas con cuenta corriente: modalidad "cuenta" o con compras hechas por su cuenta
+  const [cuentasCfg, conCompras] = await Promise.all([
+    ctx.api.from('fin_proveedores').select('tercero_id, terceros(razon_social, nombre_fantasia)').eq('empresa_id', e).eq('modalidad', 'cuenta'),
+    ctx.api.from('fin_registros').select('a_cuenta_de, cuenta:terceros!fin_registros_a_cuenta_de_fkey(razon_social, nombre_fantasia)').eq('empresa_id', e).not('a_cuenta_de', 'is', null).is('deleted_at', null).limit(1000),
+  ]);
+  const contratistas = new Map();
+  for (const c of cuentasCfg.data ?? []) contratistas.set(c.tercero_id, c.terceros);
+  for (const c of conCompras.data ?? []) if (!contratistas.has(c.a_cuenta_de)) contratistas.set(c.a_cuenta_de, c.cuenta);
+  const saldos = await Promise.all([...contratistas].map(async ([id, t]) => {
+    const { data: m } = await ctx.api.rpc('fin_cuenta_tercero', { p_empresa: e, p_tercero: id });
+    const s = (k) => (m ?? []).filter((x) => x.tipo === k).reduce((a, x) => a + Number(x.monto), 0);
+    return { id, t, saldo: s('trabajo') - s('compra') - s('abono'), compras: s('compra') };
+  }));
   const aprueba = ctx.puede('costos', 'aprobar');
 
   // Falta factura: proveedores mensuales con compras o pagos del mes anterior o de este, sin factura en ese mes
@@ -90,6 +104,13 @@ export default async function vista(ctx) {
         ctx.puede('costos', 'eliminar') ? el('button', { type: 'button', class: 'boton-icono', title: 'Eliminar', 'aria-label': 'Eliminar comprobante', onclick: () => eliminar(p) }, icono('basura', { tam: 16 })) : null) },
     ],
   });
+  if (saldos.length) {
+    lista.querySelector('.listado-cabecera').after(el('div', { class: 'ficha doc-grupo' },
+      el('h2', {}, 'Cuentas con contratistas'),
+      el('div', { class: 'fin-tarjetas' }, saldos.map((c) => el('a', { class: `ficha doc-grupo fin-tarjeta tarjeta-enlace ${c.saldo > 0 ? 'fin-alerta' : ''}`, href: ctx.ruta('costos.cuenta', { t: c.id }) },
+        el('span', { class: 'texto-suave texto-chico' }, nombreTercero(c.t)), el('strong', {}, dinero(Math.abs(c.saldo))),
+        el('span', { class: 'texto-suave texto-chico' }, c.saldo > 0 ? 'por pagarle' : c.saldo < 0 ? 'a favor de la empresa' : 'al día'))))));
+  }
   if (faltan.length) {
     lista.querySelector('.listado-cabecera').after(el('div', { class: 'aviso-bandeja' }, icono('alerta', { tam: 16 }),
       el('div', {}, el('strong', {}, 'Falta factura'), el('div', { class: 'texto-chico' }, 'Proveedores de factura mensual con compras o pagos sin factura: ', faltan.join(' · ')))));
