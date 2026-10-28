@@ -1734,3 +1734,86 @@ li.tarea-ok { text-decoration: line-through; color: var(--texto-suave); }
 .plan-tablero.plan-un-dia .plan-columna { max-width: none; }
 .plan-un-dia .plan-columna > .plan-tarjeta { max-width: 640px; }
 @media (max-width: 760px) { .ope-semana.plan-un-dia .tal-dia { flex: 1 1 100%; } }
+
+/* ---------- Teléfono como app (core/movil.js, dirección B aprobada por Enzo el 2026-10-27) ---------- */
+.barra-movil { display: none; }
+@media (max-width: 760px) {
+  .solo-escritorio, .menu-boton, .menu, .menu-velo { display: none !important; }
+  .contenido { padding-bottom: calc(104px + env(safe-area-inset-bottom)); }
+  .barra-movil {
+    display: grid; grid-template-columns: repeat(var(--bm-columnas, 5), minmax(0, 1fr)); align-items: center;
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 700; box-sizing: border-box;
+    height: calc(74px + env(safe-area-inset-bottom)); padding: 0 4px env(safe-area-inset-bottom);
+    background: var(--superficie); border-top: 1px solid var(--borde); box-shadow: 0 -6px 24px rgb(0 0 0 / .06);
+  }
+  .bm-item {
+    min-height: 56px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+    color: var(--texto-suave); font-size: 12px; font-weight: 600; text-decoration: none; -webkit-tap-highlight-color: transparent;
+    transition: color 180ms ease, transform 120ms ease;
+  }
+  .bm-item:active { transform: scale(.94); }
+  .bm-item[aria-current] { color: color-mix(in srgb, var(--empresa) 78%, var(--texto)); font-weight: 800; }
+  .bm-item[aria-current] svg { stroke-width: 2.2; }
+  .bm-accion {
+    justify-self: center; margin-top: -30px; width: 62px; height: 62px; border-radius: 22px; border: 0; cursor: pointer;
+    display: grid; place-items: center; background: var(--empresa); color: var(--sobre-empresa);
+    box-shadow: 0 8px 24px color-mix(in srgb, var(--empresa) 40%, transparent); transition: transform 120ms ease;
+  }
+  .bm-accion:active { transform: scale(.94); }
+  .franja-push { bottom: calc(90px + env(safe-area-inset-bottom)); }
+  body:has(.barra-movil) .aviso { bottom: calc(92px + env(safe-area-inset-bottom)); }
+  body:has(.franja-push:not([hidden])):has(.barra-movil) .aviso { bottom: calc(168px + env(safe-area-inset-bottom)); }
+}
+/* El taller usa texto oscuro sobre el naranja (contraste) */
+[data-tema="taller"] { --sobre-empresa: #17191c; }
+
+/* Bienvenida al abrir: logo de la empresa */
+.bienvenida {
+  position: fixed; inset: 0; z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px;
+  background: var(--barra-fondo, #101113); animation: bienvenida-sale 380ms ease 1.9s forwards;
+}
+.bienvenida-logo { width: min(168px, 50vw); max-height: 40vh; object-fit: contain; animation: bienvenida-logo 900ms cubic-bezier(.2, .8, .2, 1) both; }
+.bienvenida-nombre { font-size: 30px; font-weight: 800; color: #fff; animation: bienvenida-logo 900ms cubic-bezier(.2, .8, .2, 1) both; }
+.bienvenida-pista { width: 120px; height: 4px; border-radius: 999px; background: rgb(255 255 255 / .14); overflow: hidden; display: flex; }
+.bienvenida-barra { flex: 1; border-radius: 999px; background: var(--empresa); transform-origin: left; animation: bienvenida-barra 1.5s cubic-bezier(.4, 0, .2, 1) .25s both; }
+.bienvenida-pie { position: absolute; bottom: calc(40px + env(safe-area-inset-bottom)); font-size: 12px; font-weight: 600; letter-spacing: .04em; color: rgb(255 255 255 / .62); animation: bienvenida-texto 400ms ease .6s both; }
+@keyframes bienvenida-logo { 0% { opacity: 0; transform: scale(.72) translateY(12px); } 55% { opacity: 1; transform: scale(1.06); } 75% { transform: scale(.98); } 100% { opacity: 1; transform: none; } }
+@keyframes bienvenida-barra { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes bienvenida-texto { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes bienvenida-sale { to { opacity: 0; visibility: hidden; } }
+@media (prefers-reduced-motion: reduce) {
+  .bienvenida-logo, .bienvenida-nombre, .bienvenida-barra, .bienvenida-pie { animation: none; }
+  .bienvenida { animation: bienvenida-sale 200ms ease .8s forwards; }
+}
+
+/* Más (core/vistas/mas.js) */
+.mas { display: flex; flex-direction: column; gap: 18px; }
+.mas-cuenta { display: flex; align-items: center; gap: 12px; }
+.mas-avatar { flex: none; width: 48px; height: 48px; border-radius: 16px; display: grid; place-items: center; background: var(--empresa); color: var(--sobre-empresa); font-weight: 800; }
+.mas-cuenta-texto { display: flex; flex-direction: column; min-width: 0; }
+.mas-cuenta-texto .texto-chico { overflow-wrap: anywhere; }
+.mas-seccion { display: flex; flex-direction: column; gap: 10px; }
+.mas-seccion > h2 { margin: 0; font-size: 15px; color: var(--texto-suave); }
+.mas-modulos { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 8px; }
+.mas-modulo {
+  min-height: 84px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 8px 4px;
+  border-radius: var(--radio); background: var(--superficie); border: 1px solid var(--borde); color: var(--texto); text-decoration: none;
+  font-size: 12px; font-weight: 700; text-align: center; transition: transform 120ms ease;
+}
+.mas-modulo:active { transform: scale(.96); }
+.mas-modulo-icono { width: 36px; height: 36px; border-radius: 12px; display: grid; place-items: center; background: color-mix(in srgb, var(--empresa) 14%, transparent); color: color-mix(in srgb, var(--empresa) 78%, var(--texto)); }
+.mas-temas { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 4px; border-radius: calc(var(--radio) + 4px); background: var(--superficie); border: 1px solid var(--borde); }
+.mas-temas button {
+  min-height: 44px; display: flex; align-items: center; justify-content: center; gap: 6px; border: 0; border-radius: var(--radio); cursor: pointer;
+  background: transparent; color: var(--texto-suave); font: inherit; font-weight: 700; transition: background-color 200ms ease, color 200ms ease;
+}
+.mas-temas button[aria-checked="true"] { background: var(--empresa); color: var(--sobre-empresa); }
+.mas-lista { padding: 0; overflow: hidden; display: flex; flex-direction: column; }
+.mas-fila {
+  min-height: 52px; display: flex; align-items: center; gap: 12px; padding: 0 16px; border: 0; border-bottom: 1px solid var(--borde);
+  background: transparent; color: var(--texto); font: inherit; font-weight: 600; text-align: left; cursor: pointer;
+}
+.mas-fila:last-child { border-bottom: 0; }
+.mas-fila-texto { flex: 1; }
+.mas-salir { color: var(--error); }
+html { transition: background-color 220ms ease; }

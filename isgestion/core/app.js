@@ -8,7 +8,9 @@ import { el } from './ui/dom.js';
 import { icono } from './ui/iconos.js';
 import { boton } from './ui/tabla.js';
 import inicio from './vistas/inicio.js';
+import mas from './vistas/mas.js';
 import { franja, botonNotificaciones, desactivar } from './push.js';
+import { barraMovil, marcarBarraMovil, bienvenida } from './movil.js';
 
 const COLOR_BASE = '#1f4e8c';
 const CLAVE_MINIMA = 10;   // 08 Seguridad §4
@@ -26,11 +28,15 @@ function aplicarModo() {
 }
 aplicarModo();
 matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', aplicarModo);
+function cambiarModo(sig) {
+  try { localStorage.setItem('isg.modo', sig); } catch { /* sin almacenamiento: dura hasta recargar */ document.documentElement.dataset.modo = sig === 'oscuro' ? 'oscuro' : 'claro'; return; }
+  aplicarModo();
+}
 // Salir: este dispositivo deja de recibir notificaciones de la cuenta
 async function salir() { await desactivar(); await cerrarSesion(); }
 
 function botonModo() {
-  const b = el('button', { type: 'button', class: 'boton-icono' });
+  const b = el('button', { type: 'button', class: 'boton-icono solo-escritorio' });
   const pintar = () => { const [t, ic] = MODOS[modoGuardado()] ?? MODOS.sistema; b.title = `${t} (toca para cambiar)`; b.setAttribute('aria-label', b.title); b.replaceChildren(icono(ic)); };
   b.addEventListener('click', () => {
     const orden = ['sistema', 'claro', 'oscuro'];
@@ -194,6 +200,7 @@ async function activarEmpresa(empresa) {
   const tema = empresa.config?.tema;
   if (tema && tema !== 'clasico') document.documentElement.dataset.tema = tema; else delete document.documentElement.dataset.tema;
   document.title = `${nombreEmpresa(empresa)} · ISgestión`;
+  bienvenida(db(), empresa);   // logo de la empresa animado, una vez por sesión del navegador
   pintarApp();
   navegar();
 }
@@ -228,13 +235,15 @@ function pintarApp() {
         estado.selector,
         el('div', { class: 'barra-espacio' }),
         el('div', { class: 'usuario' },
-          (estado.consola = el('a', { class: 'boton boton-secundario boton-chico', href: 'consola/', hidden: true, title: 'Consola de la plataforma (equipo ISgestión)' }, icono('ajustes', { tam: 14 }), 'Consola')),
-          el('span', { class: 'correo' }, estado.usuario.email),
-          botonNotificaciones(estado.usuario.id, () => estado.empresa?.id),
+          (estado.consola = el('a', { class: 'boton boton-secundario boton-chico solo-escritorio', href: 'consola/', hidden: true, title: 'Consola de la plataforma (equipo ISgestión)' }, icono('ajustes', { tam: 14 }), 'Consola')),
+          el('span', { class: 'correo solo-escritorio' }, estado.usuario.email),
+          (estado.botonNotif = botonNotificaciones(estado.usuario.id, () => estado.empresa?.id)),
           botonModo(),
-          el('button', { type: 'button', class: 'boton-icono', title: 'Cerrar sesión', 'aria-label': 'Cerrar sesión', onclick: () => salir() }, icono('salir')))),
+          el('button', { type: 'button', class: 'boton-icono solo-escritorio', title: 'Cerrar sesión', 'aria-label': 'Cerrar sesión', onclick: () => salir() }, icono('salir')))),
       franja(),
       el('div', { class: 'cuerpo' }, estado.menu, el('div', { class: 'menu-velo', onclick: () => alternarMenu(false) }), estado.contenido),
+      // Teléfono: barra de navegación abajo (core/movil.js; oculta en pantallas grandes)
+      (estado.barraMovil = barraMovil({ visibles: estado.visibles, apartados: estado.apartados, rutas: estado.rutas, puede: estado.puede, ctx: contexto })),
     ),
   );
 }
@@ -339,6 +348,19 @@ export function ruta(id, params = {}) {
   return `#/${id}${q ? `?${q}` : ''}`;
 }
 
+// Contexto que reciben las vistas (y la acción del "+" de la barra del teléfono)
+function contexto(query = decodeURIComponent(location.hash.replace(/^#\/?/, '')).split('?')[1] ?? '') {
+  return {
+    empresa: estado.empresa,
+    usuario: estado.usuario,
+    puede: estado.puede,
+    api: db(),
+    params: Object.fromEntries(new URLSearchParams(query)),
+    ruta,
+    refrescar: navegar,
+  };
+}
+
 async function navegar() {
   if (!estado.contenido) return;
   const [id, query = ''] = decodeURIComponent(location.hash.replace(/^#\/?/, '')).split('?');
@@ -353,16 +375,18 @@ async function navegar() {
     a.toggleAttribute('aria-current', marcado);
     if (marcado) a.setAttribute('aria-current', 'page');
   }
+  marcarBarraMovil(estado.barraMovil, id, actual?.item.padre);
   const turno = ++estado.render;
-  const ctx = {
-    empresa: estado.empresa,
-    usuario: estado.usuario,
-    puede: estado.puede,
-    api: db(),
-    params: Object.fromEntries(new URLSearchParams(query)),
-    ruta,
-    refrescar: navegar,
-  };
+  const ctx = contexto(query);
+
+  if (id === 'mas') {
+    const nodo = mas(ctx, {
+      empresas: estado.empresas, cambiarEmpresa: (e) => { location.hash = '#/'; activarEmpresa(e); }, apartados: estado.apartados,
+      modo: modoGuardado, cambiarModo, abrirNotificaciones: () => estado.botonNotif?.click(), salir, iconoDe: (it) => iconoVista({ ...it, modulo: estado.rutas.get(it.id)?.modulo ?? {} }),
+    });
+    if (estado.vistaActual !== location.hash) nodo.classList.add('vista-entra');
+    estado.contenido.replaceChildren(nodo); estado.vistaActual = location.hash; return;
+  }
 
   if (!id) {
     const nodo = inicio(ctx, estado.visibles);

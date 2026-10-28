@@ -2,11 +2,16 @@ export default {
   id: 'taller',
   nombre: 'Taller',
   version: '1.0.0',
-  icono: 'llave',
+  icono: 'auto',
   categoria: 'Operaciones',
   depende: ['nucleo', 'personas', 'terceros'],
   rubros: ['automotriz'],
   acciones: ['ver', 'crear', 'editar', 'eliminar', 'aprobar', 'exportar'],
+  // Teléfono (core/movil.js): Taller y Agenda en la barra de abajo; el "+" del centro agenda un vehículo (recepción)
+  movil: {
+    accesos: [{ id: 'taller.tablero', label: 'Taller', icono: 'auto' }, { id: 'taller.agenda', label: 'Agenda', icono: 'calendario' }],
+    accion: { label: 'Agendar vehículo', icono: 'mas', requiere: 'crear', abrir: (ctx) => import('./recepcion.js').then((m) => m.recepcion(ctx)) },
+  },
   menu: [
     { id: 'taller.tablero', label: 'Tablero del taller', pestana: 'Tablero', vista: () => import('./vistas/tablero.js') },
     { id: 'taller.orden', label: 'Orden de trabajo', oculto: true, padre: 'taller.tablero', vista: () => import('./vistas/orden.js') },
