@@ -1,11 +1,11 @@
 // Agenda del taller: citas de la semana por día, con su estado. Hoy destacado; en tablet las columnas se
 // deslizan y parte mostrando el día de hoy; "+" para agendar en un día (aparece al pasar el mouse).
-import { el } from '../../../core/ui/dom.js';
-import { icono } from '../../../core/ui/iconos.js';
-import { boton } from '../../../core/ui/tabla.js';
-import { hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, hhmm, esFinde } from '../../../core/ui/formato.js';
-import { SELECT_ORDEN, CHIP_PRIORIDAD, nombreEstado, verPatente, nombreVehiculo, nombreTercero } from '../datos.js';
-import { recepcion } from '../recepcion.js';
+import { el } from '../../../core/ui/dom.js?v=faa3077';
+import { icono } from '../../../core/ui/iconos.js?v=faa3077';
+import { boton } from '../../../core/ui/tabla.js?v=faa3077';
+import { hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, hhmm, esFinde } from '../../../core/ui/formato.js?v=faa3077';
+import { SELECT_ORDEN, CHIP_PRIORIDAD, nombreEstado, verPatente, nombreVehiculo, nombreTercero } from '../datos.js?v=faa3077';
+import { recepcion } from '../recepcion.js?v=faa3077';
 
 const estado = { lunes: lunesDe(hoyISO()) };
 

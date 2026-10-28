@@ -1,15 +1,15 @@
 // Un documento de empresa: versiones (la vigente arriba), subir una nueva y ajustes del documento.
 // Ruta: #/acreditacion.tipo?id=<tipo>
-import { el } from '../../../core/ui/dom.js';
-import { icono } from '../../../core/ui/iconos.js';
-import { boton } from '../../../core/ui/tabla.js';
-import { abrirFormulario } from '../../../core/ui/modal.js';
-import { leerVence } from '../../../core/ui/leer-vence.js';
-import { avisar } from '../../../core/ui/aviso.js';
-import { subirArchivo, eliminarArchivo } from '../../../core/adjuntos.js';
-import { fechaLarga, hoyISO } from '../../../core/ui/formato.js';
-import { cargarDocumentos, estadoVersion, vigentes, CHIP, textoEstado } from '../datos.js';
-import { abrir } from './documentos.js';
+import { el } from '../../../core/ui/dom.js?v=faa3077';
+import { icono } from '../../../core/ui/iconos.js?v=faa3077';
+import { boton } from '../../../core/ui/tabla.js?v=faa3077';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=faa3077';
+import { leerVence } from '../../../core/ui/leer-vence.js?v=faa3077';
+import { avisar } from '../../../core/ui/aviso.js?v=faa3077';
+import { subirArchivo, eliminarArchivo } from '../../../core/adjuntos.js?v=faa3077';
+import { fechaLarga, hoyISO } from '../../../core/ui/formato.js?v=faa3077';
+import { cargarDocumentos, estadoVersion, vigentes, CHIP, textoEstado } from '../datos.js?v=faa3077';
+import { abrir } from './documentos.js?v=faa3077';
 
 const ARCHIVOS = ['application/pdf', 'image/jpeg', 'image/png',
   'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',

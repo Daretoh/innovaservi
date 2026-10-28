@@ -1,8 +1,8 @@
 // Inicio: saludo con la fecha, lo que requiere atención (alertas de los módulos que el usuario puede ver)
 // indicadores de los módulos (core/vistas/indicadores.js) y accesos a los módulos agrupados por área. Las alertas llegan después, sin bloquear la pantalla.
-import { el } from '../ui/dom.js';
-import { icono } from '../ui/iconos.js';
-import { nombreEmpresa } from '../empresas.js';
+import { el } from '../ui/dom.js?v=faa3077';
+import { icono } from '../ui/iconos.js?v=faa3077';
+import { nombreEmpresa } from '../empresas.js?v=faa3077';
 
 const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
@@ -61,12 +61,12 @@ export default function inicio(ctx, visibles) {
   // Indicadores (tarjetas y paneles): llegan después, sin bloquear la pantalla
   const indicadores = el('div', { class: 'cargando-bloque', 'aria-busy': 'true', 'aria-label': 'Cargando indicadores' }, el('span', { class: 'cargador', 'aria-hidden': 'true' }));
   if (visibles.length && !tablet) {
-    import('./indicadores.js')
+    import('./indicadores.js?v=faa3077')
       .then(async ({ cargarIndicadores, panelIndicadores }) => { const p = panelIndicadores(ctx, await cargarIndicadores(ctx)); if (p) indicadores.replaceWith(p); else indicadores.remove(); })
       .catch(() => indicadores.remove());
   } else indicadores.remove();
   if (visibles.length && !tablet) {
-    import('../../modulos/gerencia/alertas.js')
+    import('../../modulos/gerencia/alertas.js?v=faa3077')
       .then(({ cargarAlertas }) => cargarAlertas(ctx))
       .then((alertas) => {
         atencion.replaceChildren(el('h2', {}, alertas.length ? `Requiere atención (${alertas.length})` : 'Requiere atención'),

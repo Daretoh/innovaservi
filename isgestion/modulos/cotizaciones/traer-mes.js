@@ -2,10 +2,10 @@
 // cotización tuvo en el taller ese mes; cada uno entra como un grupo (vehículo, patente, talla, orden ligada) con sus
 // servicios de la orden: los normales en una sección (GM: "Preparación de Venta y Pulido / Realce de Brillo") y los
 // extras en "Extras". Así se arma la cotización del mes de un cliente de flota y se ve qué autos tuvo.
-import { abrirFormulario } from '../../core/ui/modal.js';
-import { avisar } from '../../core/ui/aviso.js';
-import { diaLocal, hoyISO } from '../../core/ui/formato.js';
-import { numeroTexto, verPatente } from './datos.js';
+import { abrirFormulario } from '../../core/ui/modal.js?v=faa3077';
+import { avisar } from '../../core/ui/aviso.js?v=faa3077';
+import { diaLocal, hoyISO } from '../../core/ui/formato.js?v=faa3077';
+import { numeroTexto, verPatente } from './datos.js?v=faa3077';
 
 const SECCION_FLOTA = 'Preparación de Venta y Pulido / Realce de Brillo';
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];

@@ -1,16 +1,16 @@
 // Arranque de ISgestión: sesión → empresas y permisos → barra con selector → menú → vista.
-import { iniciarApi, db } from './api.js';
-import { sesionActual, iniciarSesion, cerrarSesion, alCambiarSesion } from './auth.js';
-import { cargarPermisos, crearPuede } from './permisos.js';
-import { cargarEmpresas, cargarModulosEmpresa, elegirEmpresa, recordarEmpresa, nombreEmpresa } from './empresas.js';
-import { cargarManifiestos, modulosVisibles, apartadosPorCategoria, configModulo } from './modulos.js';
-import { el } from './ui/dom.js';
-import { icono } from './ui/iconos.js';
-import { boton } from './ui/tabla.js';
-import inicio from './vistas/inicio.js';
-import mas from './vistas/mas.js';
-import { franja, botonNotificaciones, desactivar } from './push.js';
-import { barraMovil, marcarBarraMovil, bienvenida } from './movil.js';
+import { iniciarApi, db } from './api.js?v=faa3077';
+import { sesionActual, iniciarSesion, cerrarSesion, alCambiarSesion } from './auth.js?v=faa3077';
+import { cargarPermisos, crearPuede } from './permisos.js?v=faa3077';
+import { cargarEmpresas, cargarModulosEmpresa, elegirEmpresa, recordarEmpresa, nombreEmpresa } from './empresas.js?v=faa3077';
+import { cargarManifiestos, modulosVisibles, apartadosPorCategoria, configModulo } from './modulos.js?v=faa3077';
+import { el } from './ui/dom.js?v=faa3077';
+import { icono } from './ui/iconos.js?v=faa3077';
+import { boton } from './ui/tabla.js?v=faa3077';
+import inicio from './vistas/inicio.js?v=faa3077';
+import mas from './vistas/mas.js?v=faa3077';
+import { franja, botonNotificaciones, desactivar } from './push.js?v=faa3077';
+import { barraMovil, marcarBarraMovil, bienvenidaInicial, recordarMarca } from './movil.js?v=faa3077';
 
 const COLOR_BASE = '#1f4e8c';
 const CLAVE_MINIMA = 10;   // 08 Seguridad §4
@@ -168,18 +168,24 @@ function pantallaClave(sesion) {
 
 async function arrancarSesion(sesion) {
   estado.usuario = { id: sesion.user.id, email: sesion.user.email };
-  pantalla(el('div', { class: 'arranque', 'aria-busy': 'true', 'aria-label': 'Cargando' }, el('span', { class: 'marca' }, 'ISgestión'), el('span', { class: 'cargador', 'aria-hidden': 'true' })));
-  const [empresas] = await Promise.all([cargarEmpresas(), cargarPermisos()]);
-  if (!empresas.length) {
-    pantalla(
-      el('h1', {}, 'Sin acceso'),
-      el('p', { class: 'texto-suave' }, `${estado.usuario.email} no tiene empresas asignadas. Pide acceso al administrador.`),
-      el('div', {}, boton('Cerrar sesión', { icono: 'salir', onclick: () => salir() })),
-    );
-    return;
+  // Bienvenida con el logo de la última empresa usada mientras carga (core/movil.js); reemplaza la pantalla de carga
+  const splash = bienvenidaInicial();
+  pantalla(el('div', { class: 'arranque', 'aria-busy': 'true', 'aria-label': 'Cargando' }));
+  try {
+    const [empresas] = await Promise.all([cargarEmpresas(), cargarPermisos()]);
+    if (!empresas.length) {
+      pantalla(
+        el('h1', {}, 'Sin acceso'),
+        el('p', { class: 'texto-suave' }, `${estado.usuario.email} no tiene empresas asignadas. Pide acceso al administrador.`),
+        el('div', {}, boton('Cerrar sesión', { icono: 'salir', onclick: () => salir() })),
+      );
+      return;
+    }
+    estado.empresas = empresas;
+    await activarEmpresa(elegirEmpresa(empresas));
+  } finally {
+    splash.cerrar();
   }
-  estado.empresas = empresas;
-  await activarEmpresa(elegirEmpresa(empresas));
 }
 
 async function activarEmpresa(empresa) {
@@ -200,7 +206,7 @@ async function activarEmpresa(empresa) {
   const tema = empresa.config?.tema;
   if (tema && tema !== 'clasico') document.documentElement.dataset.tema = tema; else delete document.documentElement.dataset.tema;
   document.title = `${nombreEmpresa(empresa)} · ISgestión`;
-  bienvenida(db(), empresa);   // logo de la empresa animado, una vez por sesión del navegador
+  recordarMarca(db(), empresa);   // logo y color para la próxima bienvenida (core/movil.js)
   pintarApp();
   navegar();
 }

@@ -1,11 +1,11 @@
 // Condiciones de pago de cada trabajador en la empresa: modo, cargo/trato, jornada o turno, sueldo y vuelta.
-import { el } from '../../../core/ui/dom.js';
-import { icono } from '../../../core/ui/iconos.js';
-import { listado } from '../../../core/ui/tabla.js';
-import { abrirFormulario } from '../../../core/ui/modal.js';
-import { avisar } from '../../../core/ui/aviso.js';
-import { dinero, hhmm, fechaLarga } from '../../../core/ui/formato.js';
-import { cargarBase, nombreCompleto } from '../datos.js';
+import { el } from '../../../core/ui/dom.js?v=faa3077';
+import { icono } from '../../../core/ui/iconos.js?v=faa3077';
+import { listado } from '../../../core/ui/tabla.js?v=faa3077';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=faa3077';
+import { avisar } from '../../../core/ui/aviso.js?v=faa3077';
+import { dinero, hhmm, fechaLarga } from '../../../core/ui/formato.js?v=faa3077';
+import { cargarBase, nombreCompleto } from '../datos.js?v=faa3077';
 
 export default async function vista(ctx) {
   const base = await cargarBase(ctx);

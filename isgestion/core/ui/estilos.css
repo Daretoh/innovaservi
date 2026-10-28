@@ -1770,7 +1770,9 @@ li.tarea-ok { text-decoration: line-through; color: var(--texto-suave); }
 /* Bienvenida al abrir: logo de la empresa */
 .bienvenida {
   position: fixed; inset: 0; z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px;
-  background: var(--barra-fondo, #101113); animation: bienvenida-sale 380ms ease 1.9s forwards;
+  background: var(--bienvenida-fondo, #101113);   /* siempre oscura: el logo de la marca resalta */
+}
+.bienvenida.sale { animation: bienvenida-sale 380ms ease forwards; pointer-events: none;
 }
 .bienvenida-logo { width: min(168px, 50vw); max-height: 40vh; object-fit: contain; animation: bienvenida-logo 900ms cubic-bezier(.2, .8, .2, 1) both; }
 .bienvenida-nombre { font-size: 30px; font-weight: 800; color: #fff; animation: bienvenida-logo 900ms cubic-bezier(.2, .8, .2, 1) both; }
@@ -1783,7 +1785,7 @@ li.tarea-ok { text-decoration: line-through; color: var(--texto-suave); }
 @keyframes bienvenida-sale { to { opacity: 0; visibility: hidden; } }
 @media (prefers-reduced-motion: reduce) {
   .bienvenida-logo, .bienvenida-nombre, .bienvenida-barra, .bienvenida-pie { animation: none; }
-  .bienvenida { animation: bienvenida-sale 200ms ease .8s forwards; }
+  .bienvenida.sale { animation: bienvenida-sale 150ms ease forwards; }
 }
 
 /* Más (core/vistas/mas.js) */

@@ -10,12 +10,12 @@ export default {
   // El Calendario va como opción propia del menú (como en InnovaGestión), antes de Faenas y planificación
   apartados: { calendario: { label: 'Calendario', icono: 'calendario' } },
   menu: [
-    { id: 'ope.calendario', label: 'Calendario', apartado: 'calendario', vista: () => import('./vistas/calendario.js') },
-    { id: 'ope.planificacion', label: 'Planificación semanal', pestana: 'Planificación', vista: () => import('./vistas/planificacion.js') },
-    { id: 'ope.plan', label: 'Planificar faena', oculto: true, padre: 'ope.planificacion', vista: () => import('./vistas/plan.js') },
-    { id: 'ope.matrices', label: 'Matriz de trabajos', pestana: 'Matriz', vista: () => import('./vistas/matrices.js') },
-    { id: 'ope.clientes', ajustes: true, label: 'Clientes y sitios', vista: () => import('./vistas/clientes.js') },
-    { id: 'ope.roles', ajustes: true, label: 'Roles operativos', pestana: 'Roles', vista: () => import('./vistas/roles.js') },
+    { id: 'ope.calendario', label: 'Calendario', apartado: 'calendario', vista: () => import('./vistas/calendario.js?v=faa3077') },
+    { id: 'ope.planificacion', label: 'Planificación semanal', pestana: 'Planificación', vista: () => import('./vistas/planificacion.js?v=faa3077') },
+    { id: 'ope.plan', label: 'Planificar faena', oculto: true, padre: 'ope.planificacion', vista: () => import('./vistas/plan.js?v=faa3077') },
+    { id: 'ope.matrices', label: 'Matriz de trabajos', pestana: 'Matriz', vista: () => import('./vistas/matrices.js?v=faa3077') },
+    { id: 'ope.clientes', ajustes: true, label: 'Clientes y sitios', vista: () => import('./vistas/clientes.js?v=faa3077') },
+    { id: 'ope.roles', ajustes: true, label: 'Roles operativos', pestana: 'Roles', vista: () => import('./vistas/roles.js?v=faa3077') },
   ],
   config: {},
   migraciones: ['db/001_ope.sql', 'db/002_matriz_preparacion.sql', 'db/003_planificacion.sql', 'db/004_dias_obs.sql'],

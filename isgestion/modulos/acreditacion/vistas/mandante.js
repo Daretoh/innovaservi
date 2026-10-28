@@ -1,17 +1,17 @@
 // Requisitos de un mandante: tabla de requisitos mensuales por mes, requisitos únicos y su configuración.
 // Ruta: #/acreditacion.mandante?id=<tercero>
-import { el } from '../../../core/ui/dom.js';
-import { icono } from '../../../core/ui/iconos.js';
-import { boton } from '../../../core/ui/tabla.js';
-import { abrirFormulario } from '../../../core/ui/modal.js';
-import { avisar } from '../../../core/ui/aviso.js';
-import { subirArchivo, eliminarArchivo } from '../../../core/adjuntos.js';
-import { fechaLarga, hoyISO, moverMes, nombreMes } from '../../../core/ui/formato.js';
-import { cargarDocumentos, cumplimientoMandante, nombreTercero, mesActual, CHIP, textoEstado } from '../datos.js';
-import { REQUISITOS } from '../sugeridos.js';
-import { abrir } from './documentos.js';
-import { esNomina, generarNomina } from '../nomina.js';
-import { seccionTrabajadores } from '../trabajadores.js';
+import { el } from '../../../core/ui/dom.js?v=faa3077';
+import { icono } from '../../../core/ui/iconos.js?v=faa3077';
+import { boton } from '../../../core/ui/tabla.js?v=faa3077';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=faa3077';
+import { avisar } from '../../../core/ui/aviso.js?v=faa3077';
+import { subirArchivo, eliminarArchivo } from '../../../core/adjuntos.js?v=faa3077';
+import { fechaLarga, hoyISO, moverMes, nombreMes } from '../../../core/ui/formato.js?v=faa3077';
+import { cargarDocumentos, cumplimientoMandante, nombreTercero, mesActual, CHIP, textoEstado } from '../datos.js?v=faa3077';
+import { REQUISITOS } from '../sugeridos.js?v=faa3077';
+import { abrir } from './documentos.js?v=faa3077';
+import { esNomina, generarNomina } from '../nomina.js?v=faa3077';
+import { seccionTrabajadores } from '../trabajadores.js?v=faa3077';
 
 const ARCHIVOS = ['application/pdf', 'image/jpeg', 'image/png',
   'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];

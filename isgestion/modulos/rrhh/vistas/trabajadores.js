@@ -1,13 +1,13 @@
 // Trabajadores de la empresa activa en tarjetas: % de documentación, actividad de los últimos 30 días (como en
 // InnovaGestión), Buk y estado (se cambia desde la tarjeta).
-import { el } from '../../../core/ui/dom.js';
-import { icono } from '../../../core/ui/iconos.js';
-import { boton } from '../../../core/ui/tabla.js';
-import { abrirFormulario } from '../../../core/ui/modal.js';
-import { avisar } from '../../../core/ui/aviso.js';
-import { cargarActividad, resumen, lineaTarjeta } from '../actividad.js';
-import { hoyISO } from '../../../core/ui/formato.js';
-import { cargarRrhh, cumplimiento, nombreCompleto, avatar, nivel, VINCULOS, nombreVinculo } from '../datos.js';
+import { el } from '../../../core/ui/dom.js?v=faa3077';
+import { icono } from '../../../core/ui/iconos.js?v=faa3077';
+import { boton } from '../../../core/ui/tabla.js?v=faa3077';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=faa3077';
+import { avisar } from '../../../core/ui/aviso.js?v=faa3077';
+import { cargarActividad, resumen, lineaTarjeta } from '../actividad.js?v=faa3077';
+import { hoyISO } from '../../../core/ui/formato.js?v=faa3077';
+import { cargarRrhh, cumplimiento, nombreCompleto, avatar, nivel, VINCULOS, nombreVinculo } from '../datos.js?v=faa3077';
 
 const filtro = { estado: 'activo', texto: '', orden: 'nombre' };   // se mantiene al refrescar
 
@@ -57,7 +57,7 @@ export default async function vista(ctx) {
   const acciones = [];
   if (ctx.puede('rrhh', 'exportar')) acciones.push(boton('Excel', { icono: 'descargar', title: 'Resumen y planilla de trabajadores con grupos de columnas', onclick: async (ev) => {
     const b = ev.currentTarget; b.classList.add('cargando');
-    try { const { exportarExcel } = await import('../excel.js'); await exportarExcel(ctx, datos); avisar('Excel descargado.'); } catch (e) { avisar(e.message, 'error'); } finally { b.classList.remove('cargando'); }
+    try { const { exportarExcel } = await import('../excel.js?v=faa3077'); await exportarExcel(ctx, datos); avisar('Excel descargado.'); } catch (e) { avisar(e.message, 'error'); } finally { b.classList.remove('cargando'); }
   } }));
   if (ctx.config.usa_buk && ctx.puede('rrhh', 'exportar')) acciones.push(boton('Datos para Buk', { icono: 'descargar', onclick: () => exportarBuk(ctx, datos, puedeEditar) }));
   if (ctx.puede('personas', 'crear')) acciones.push(boton('Nueva persona', { icono: 'mas', tipo: 'primario', onclick: () => nueva(ctx) }));
@@ -136,7 +136,7 @@ function exportarBuk(ctx, datos, puedeMarcar) {
     alGuardar: async (v) => {
       const lista = v.alcance === 'sin' ? sinBuk : activos;
       if (!lista.length) throw new Error('No hay personas para exportar.');
-      const { csvBuk, descargar } = await import('../buk.js');
+      const { csvBuk, descargar } = await import('../buk.js?v=faa3077');
       descargar(csvBuk(lista), `datos-buk-${ctx.empresa.rut}-${new Date().toISOString().slice(0, 10)}.csv`);
       if (v.marcar === 'si') {
         const { error } = await ctx.api.from('persona_empresa')

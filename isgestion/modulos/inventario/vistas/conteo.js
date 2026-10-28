@@ -1,13 +1,13 @@
 // Conteo físico: se cuenta un almacén y se registra un solo ajuste con las diferencias.
 // Solo cuentan los productos con cantidad escrita. La diferencia se calcula con el stock al momento de
 // registrar (por si hubo movimientos mientras se contaba). El borrador del conteo se guarda en este navegador.
-import { el } from '../../../core/ui/dom.js';
-import { icono } from '../../../core/ui/iconos.js';
-import { boton } from '../../../core/ui/tabla.js';
-import { abrirFormulario } from '../../../core/ui/modal.js';
-import { avisar } from '../../../core/ui/aviso.js';
-import { dinero, hoyISO, fechaLarga } from '../../../core/ui/formato.js';
-import { cargarBase, cargarProductos, cargarStock, registrar, cant } from '../datos.js';
+import { el } from '../../../core/ui/dom.js?v=faa3077';
+import { icono } from '../../../core/ui/iconos.js?v=faa3077';
+import { boton } from '../../../core/ui/tabla.js?v=faa3077';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=faa3077';
+import { avisar } from '../../../core/ui/aviso.js?v=faa3077';
+import { dinero, hoyISO, fechaLarga } from '../../../core/ui/formato.js?v=faa3077';
+import { cargarBase, cargarProductos, cargarStock, registrar, cant } from '../datos.js?v=faa3077';
 
 const estado = { almacen: null, buscar: '' };
 const clave = (e, a) => `isg.conteo.${e}.${a}`;

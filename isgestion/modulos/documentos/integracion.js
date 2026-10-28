@@ -1,7 +1,7 @@
 // Para otros módulos: generar un documento de un trabajador desde su ficha (RRHH), como en InnovaGestión.
-import { avisar } from '../../core/ui/aviso.js';
-import { cargarPlantillas, trabajador, abrirDocumento, sueldosBase } from './editor.js';
-import { guardarEnRrhh, puedeGuardarRrhh } from './acciones.js';
+import { avisar } from '../../core/ui/aviso.js?v=faa3077';
+import { cargarPlantillas, trabajador, abrirDocumento, sueldosBase } from './editor.js?v=faa3077';
+import { guardarEnRrhh, puedeGuardarRrhh } from './acciones.js?v=faa3077';
 
 // Plantillas por slug de documento de RRHH (contrato, perfil, datos, epp, odi y registros de entrega de PTS)
 export const SLUGS_TRABAJADOR = ['contrato', 'perfil', 'datos', 'epp', 'odi', 'pts_quimicos', 'pts_extintores', 'pts_altura', 'pts_confinados',

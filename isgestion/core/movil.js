@@ -6,10 +6,10 @@
 //   accesos: [{ id: 'taller.tablero', label: 'Taller', icono: 'auto' }, …]   pestañas de la barra (si la ruta existe)
 //   accion:  { label, icono, requiere: 'crear', abrir: (ctx) => … }           el botón "+" del centro
 // Sin accesos declarados, la barra usa los primeros apartados del menú. Siempre: Inicio al principio y Más al final.
-import { el } from './ui/dom.js';
-import { icono } from './ui/iconos.js';
-import { urlFirmada } from './adjuntos.js';
-import { nombreEmpresa } from './empresas.js';
+import { el } from './ui/dom.js?v=faa3077';
+import { icono } from './ui/iconos.js?v=faa3077';
+import { urlFirmada } from './adjuntos.js?v=faa3077';
+import { nombreEmpresa } from './empresas.js?v=faa3077';
 
 const MAX_ACCESOS = 2;
 
@@ -50,17 +50,46 @@ export function marcarBarraMovil(nav, id, padre) {
   actual?.setAttribute('aria-current', 'page');
 }
 
-// Bienvenida al abrir la app: el logo de la empresa con una animación corta (una vez por sesión del navegador).
-// Mientras tanto la app carga detrás; se va sola. Respeta "reducir movimiento" (CSS).
-export async function bienvenida(api, empresa) {
-  try { if (sessionStorage.getItem('isg.bienvenida')) return; sessionStorage.setItem('isg.bienvenida', '1'); } catch { /* sin almacenamiento: se muestra */ }
-  const logo = empresa.logo_url ? await urlFirmada(api, empresa.logo_url, 120).catch(() => null) : null;
-  const nombre = nombreEmpresa(empresa);
+// Bienvenida al abrir la app (en vez de la pantalla de carga): el logo de la última empresa usada, guardado en este
+// navegador para mostrarlo desde el primer instante. Se queda mientras la app carga (mínimo MIN_BIENVENIDA, para que
+// se vea la animación) y se desvanece. Sin empresa guardada (primera vez en el equipo), sale ISgestión.
+// Respeta "reducir movimiento" (CSS).
+const CLAVE_MARCA = 'isg.marca';
+const MIN_BIENVENIDA = 1600;
+export function bienvenidaInicial() {
+  let marca = null;
+  try { marca = JSON.parse(localStorage.getItem(CLAVE_MARCA) || 'null'); } catch { /* sin almacenamiento */ }
+  const nombre = marca?.nombre ?? 'ISgestión';
+  if (marca?.color) document.documentElement.style.setProperty('--empresa', marca.color);
   const capa = el('div', { class: 'bienvenida', role: 'status', 'aria-label': `Abriendo ${nombre}` },
-    logo ? el('img', { class: 'bienvenida-logo', src: logo, alt: nombre }) : el('span', { class: 'bienvenida-nombre' }, nombre),
+    marca?.logo ? el('img', { class: 'bienvenida-logo', src: marca.logo, alt: nombre }) : el('span', { class: 'bienvenida-nombre' }, nombre),
     el('span', { class: 'bienvenida-pista', 'aria-hidden': 'true' }, el('span', { class: 'bienvenida-barra' })),
-    el('span', { class: 'bienvenida-pie' }, 'con ISgestión'));
+    marca ? el('span', { class: 'bienvenida-pie' }, 'con ISgestión') : null);
   document.body.append(capa);
-  capa.addEventListener('animationend', (ev) => { if (ev.animationName === 'bienvenida-sale') capa.remove(); });
-  setTimeout(() => capa.remove(), 4000);   // por si la animación no corre
+  const desde = Date.now();
+  let cerrada = false;
+  const cerrar = () => {
+    if (cerrada) return; cerrada = true;
+    setTimeout(() => {
+      capa.classList.add('sale');
+      capa.addEventListener('animationend', () => capa.remove(), { once: true });
+      setTimeout(() => capa.remove(), 800);   // por si la animación no corre
+    }, Math.max(0, MIN_BIENVENIDA - (Date.now() - desde)));
+  };
+  setTimeout(cerrar, 15000);   // nunca se queda pegada
+  return { cerrar };
+}
+
+// Guarda en este navegador el nombre, color y logo (como imagen incrustada, si es liviano) de la empresa activa,
+// para la próxima bienvenida. Solo datos de la marca, nada privado.
+export async function recordarMarca(api, empresa) {
+  let logo = null;
+  try {
+    if (empresa.logo_url) {
+      const url = await urlFirmada(api, empresa.logo_url, 120);
+      const blob = await (await fetch(url)).blob();
+      if (blob.size <= 150 * 1024) logo = await new Promise((ok, mal) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = mal; r.readAsDataURL(blob); });
+    }
+  } catch { /* sin logo: se muestra el nombre */ }
+  try { localStorage.setItem(CLAVE_MARCA, JSON.stringify({ id: empresa.id, nombre: nombreEmpresa(empresa), color: empresa.color || null, logo })); } catch { /* sin almacenamiento */ }
 }
