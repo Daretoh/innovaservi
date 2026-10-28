@@ -6,10 +6,10 @@
 //   accesos: [{ id: 'taller.tablero', label: 'Taller', icono: 'auto' }, …]   pestañas de la barra (si la ruta existe)
 //   accion:  { label, icono, requiere: 'crear', abrir: (ctx) => … }           el botón "+" del centro
 // Sin accesos declarados, la barra usa los primeros apartados del menú. Siempre: Inicio al principio y Más al final.
-import { el } from './ui/dom.js?v=3a264c0';
-import { icono } from './ui/iconos.js?v=3a264c0';
-import { urlFirmada } from './adjuntos.js?v=3a264c0';
-import { nombreEmpresa } from './empresas.js?v=3a264c0';
+import { el } from './ui/dom.js?v=384ede1';
+import { icono } from './ui/iconos.js?v=384ede1';
+import { urlFirmada } from './adjuntos.js?v=384ede1';
+import { nombreEmpresa } from './empresas.js?v=384ede1';
 
 const MAX_ACCESOS = 2;
 
@@ -60,50 +60,74 @@ function moverIndicador(nav, item, animar = true) {
   const ind = nav?.querySelector('.bm-indicador');
   if (!ind) return;
   if (!item || !item.offsetWidth) { ind.style.opacity = '0'; return; }
+  ponerIndicador(ind, item.offsetLeft + item.offsetWidth / 2, animar);
+}
+// Centro del indicador en x (px desde el borde de la barra)
+function ponerIndicador(ind, centro, animar) {
   ind.classList.toggle('sin-animar', !animar);
   ind.style.opacity = '1';
-  ind.style.transform = `translateX(${item.offsetLeft + item.offsetWidth / 2 - ind.offsetWidth / 2}px)`;
+  ind.style.transform = `translateX(${centro - ind.offsetWidth / 2}px)`;
 }
 
-// Mantener presionado y arrastrar el dedo por la barra: el indicador sigue al dedo (con una vibración corta al pasar de
-// pestaña, donde el teléfono lo permite) y al soltar se abre la pestaña donde quedó. Un toque normal funciona como siempre.
+// Mantener y arrastrar por la barra (como la barra de iOS): el indicador va pegado al dedo en todo momento, la pestaña
+// que queda bajo el dedo se marca al instante (con una vibración corta donde el teléfono lo permite) y al soltar el
+// indicador se acomoda en ella con un rebote y se abre. Un toque normal funciona como siempre.
 function arrastrable(nav) {
-  let a = null;   // { desde, sobre, x, movio }
-  const itemEn = (x) => [...nav.querySelectorAll('.bm-item')].find((it) => { const r = it.getBoundingClientRect(); return x >= r.left && x <= r.right; });
+  let a = null;   // { sobre, x, movio, cuadro }
+  const items = () => [...nav.querySelectorAll('.bm-item')];
+  // Pestaña bajo el dedo: la más cercana a x (el "+" del centro no cuenta)
+  const itemEn = (x) => items().reduce((mejor, it) => {
+    const r = it.getBoundingClientRect(); const d = Math.abs(x - (r.left + r.width / 2));
+    return !mejor || d < mejor.d ? { it, d } : mejor;
+  }, null)?.it;
+  const marcarSobre = (it) => {
+    if (!a || it === a.sobre) return;
+    a.sobre = it;
+    items().forEach((x) => x.classList.toggle('bm-sobre', x === it));
+    try { navigator.vibrate?.(6); } catch { /* sin vibración */ }
+  };
   nav.addEventListener('pointerdown', (ev) => {
     const it = ev.target.closest('.bm-item');
     if (!it || ev.button > 0) return;
-    a = { desde: it, sobre: it, x: ev.clientX, movio: false };
+    a = { sobre: null, x: ev.clientX, movio: false, cuadro: 0 };
+    try { nav.setPointerCapture(ev.pointerId); } catch { /* sin captura */ }
     nav.classList.add('presionando');
+    marcarSobre(it);
     moverIndicador(nav, it);
   });
   nav.addEventListener('pointermove', (ev) => {
     if (!a) return;
-    if (!a.movio && Math.abs(ev.clientX - a.x) < 10) return;
-    a.movio = true;
-    nav.classList.add('arrastrando');
-    const it = itemEn(ev.clientX);
-    if (it && it !== a.sobre) {
-      a.sobre = it;
-      moverIndicador(nav, it);
-      nav.querySelectorAll('.bm-item').forEach((x) => x.classList.toggle('bm-sobre', x === it));
-      try { navigator.vibrate?.(8); } catch { /* sin vibración */ }
-    }
+    if (!a.movio && Math.abs(ev.clientX - a.x) < 4) return;
+    if (!a.movio) { a.movio = true; nav.classList.add('arrastrando'); }
+    const x = ev.clientX;
+    marcarSobre(itemEn(x));   // la pestaña bajo el dedo, al instante
+    cancelAnimationFrame(a.cuadro);
+    a.cuadro = requestAnimationFrame(() => {   // el indicador, pegado al dedo (una vez por cuadro)
+      if (!a) return;
+      const ind = nav.querySelector('.bm-indicador');
+      const r = nav.getBoundingClientRect();
+      const medio = ind.offsetWidth / 2;
+      ponerIndicador(ind, Math.min(r.width - medio, Math.max(medio, x - r.left)), false);
+    });
   });
   const soltar = (ev) => {
     if (!a) return;
-    const { sobre, movio } = a;
+    if (a.movio && ev.type === 'pointerup') marcarSobre(itemEn(ev.clientX));
+    const { sobre, cuadro } = a;
+    cancelAnimationFrame(cuadro);
     a = null;
     nav.classList.remove('presionando', 'arrastrando');
-    nav.querySelectorAll('.bm-sobre').forEach((x) => x.classList.remove('bm-sobre'));
-    if (ev.type === 'pointercancel' || !movio) { if (ev.type === 'pointercancel') moverIndicador(nav, nav.querySelector('.bm-item[aria-current]')); return; }
-    // Se arrastró: abrir donde quedó el dedo y no dejar pasar el toque al enlace de origen
-    // (si el navegador no lanza ese toque, el bloqueo se quita solo para no tragarse el siguiente)
+    items().forEach((x) => x.classList.remove('bm-sobre'));
+    if (ev.type === 'pointercancel') { moverIndicador(nav, nav.querySelector('.bm-item[aria-current]')); return; }
+    moverIndicador(nav, sobre);   // se acomoda en la pestaña con rebote (CSS)
+    if (!sobre) return;
+    // Toque o arrastre: se abre aquí mismo la pestaña donde quedó el dedo (con la captura del puntero el toque no llega
+    // al enlace) y se bloquea el toque que viene; si el navegador no lo lanza, el bloqueo se quita solo
     const bloquear = (e) => e.preventDefault();
     nav.addEventListener('click', bloquear, { capture: true, once: true });
     setTimeout(() => nav.removeEventListener('click', bloquear, { capture: true }), 350);
+    items().forEach((x) => x.toggleAttribute('aria-current', x === sobre));   // la pestaña cambia al instante
     if (location.hash !== sobre.getAttribute('href')) location.hash = sobre.getAttribute('href');
-    else moverIndicador(nav, sobre);
   };
   nav.addEventListener('pointerup', soltar);
   nav.addEventListener('pointercancel', soltar);

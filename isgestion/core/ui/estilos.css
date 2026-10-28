@@ -2024,7 +2024,6 @@ html { transition: background-color 220ms ease; }
   }
   .bm-indicador.sin-animar { transition: none; }
   .barra-movil.presionando .bm-indicador { scale: 1.08; background: color-mix(in srgb, var(--empresa) 24%, transparent); }
-  .barra-movil.arrastrando .bm-indicador { transition: transform 180ms cubic-bezier(.2, .8, .2, 1), scale 160ms ease; }
   .barra-movil.arrastrando .bm-item[aria-current]:not(.bm-sobre) { color: var(--texto-suave); font-weight: 600; }
   .bm-item.bm-sobre { color: var(--acento-texto); font-weight: 800; transform: translateY(-2px); }
   .bm-item svg { transition: transform 220ms cubic-bezier(.3, 1.4, .5, 1); }
@@ -2160,3 +2159,18 @@ html { transition: background-color 220ms ease; }
   .bm-accion, .bm-accion svg { transition: none; }
 }
 .agh [hidden] { display: none !important; }
+
+/* Indicador que sigue al dedo (2026-10-28): al arrastrar va pegado al dedo y crece como una lupa; al soltar se acomoda con rebote */
+@media (max-width: 760px) {
+  .bm-indicador { transition: transform 420ms cubic-bezier(.34, 1.56, .64, 1), opacity 200ms ease, scale 220ms cubic-bezier(.34, 1.56, .64, 1), box-shadow 220ms ease; }
+  .bm-indicador.sin-animar { transition: opacity 200ms ease, scale 220ms cubic-bezier(.34, 1.56, .64, 1), box-shadow 220ms ease; }
+  .barra-movil.presionando .bm-indicador { scale: 1.06; }
+  .barra-movil.arrastrando .bm-indicador {
+    scale: 1.18 1.1; background: color-mix(in srgb, var(--empresa) 20%, var(--superficie));
+    box-shadow: 0 6px 18px rgb(0 0 0 / .14), inset 0 0 0 1px color-mix(in srgb, var(--empresa) 30%, transparent);
+  }
+  .bm-item { transition: color 120ms ease, transform 200ms cubic-bezier(.34, 1.56, .64, 1); }
+  .barra-movil.presionando .bm-item[aria-current]:not(.bm-sobre) { color: var(--texto-suave); font-weight: 600; }
+  .barra-movil.presionando .bm-item[aria-current]:not(.bm-sobre) svg { transform: none; }
+  .bm-item.bm-sobre { color: var(--acento-texto); font-weight: 800; transform: translateY(-2px) scale(1.06); }
+}

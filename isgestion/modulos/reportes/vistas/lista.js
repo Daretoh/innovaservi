@@ -1,11 +1,11 @@
 // Partes de trabajo: listado, pendientes de clientes que piden informe y creación desde las faenas.
-import { el } from '../../../core/ui/dom.js?v=3a264c0';
-import { icono } from '../../../core/ui/iconos.js?v=3a264c0';
-import { listado, boton } from '../../../core/ui/tabla.js?v=3a264c0';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=3a264c0';
-import { avisar } from '../../../core/ui/aviso.js?v=3a264c0';
-import { hoyISO, sumarDias, fechaLarga } from '../../../core/ui/formato.js?v=3a264c0';
-import { faenasSinParte, nombreTercero } from '../datos.js?v=3a264c0';
+import { el } from '../../../core/ui/dom.js?v=384ede1';
+import { icono } from '../../../core/ui/iconos.js?v=384ede1';
+import { listado, boton } from '../../../core/ui/tabla.js?v=384ede1';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=384ede1';
+import { avisar } from '../../../core/ui/aviso.js?v=384ede1';
+import { hoyISO, sumarDias, fechaLarga } from '../../../core/ui/formato.js?v=384ede1';
+import { faenasSinParte, nombreTercero } from '../datos.js?v=384ede1';
 
 let estado = 'todos';
 
