@@ -2,13 +2,13 @@
 // (cita, o ingreso si no tiene cita), color según el estado, marca + modelo + patente y servicios, y el flujo de los
 // "por cotizar": P.C (servicio a convenir) → COTIZADO (tiene cotización) → PAGADO (cobrado). También las tareas del
 // equipo con fecha. Hasta 4 por día ("+N más" abre el día); tocar uno abre su detalle. Clic en un día vacío: agendar.
-import { el } from '../../../core/ui/dom.js?v=b8da9fc';
-import { icono } from '../../../core/ui/iconos.js?v=b8da9fc';
-import { boton } from '../../../core/ui/tabla.js?v=b8da9fc';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=b8da9fc';
-import { dinero, hoyISO, rangoMes, moverMes, nombreMes, sumarDias, lunesDe, diaLocal, hhmm, fechaLarga } from '../../../core/ui/formato.js?v=b8da9fc';
-import { nombreEstado, verPatente, nombreVehiculo, nombreTercero, totales } from '../datos.js?v=b8da9fc';
-import { recepcion } from '../recepcion.js?v=b8da9fc';
+import { el } from '../../../core/ui/dom.js?v=dab9182';
+import { icono } from '../../../core/ui/iconos.js?v=dab9182';
+import { boton } from '../../../core/ui/tabla.js?v=dab9182';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=dab9182';
+import { dinero, hoyISO, rangoMes, moverMes, nombreMes, sumarDias, lunesDe, diaLocal, hhmm, fechaLarga } from '../../../core/ui/formato.js?v=dab9182';
+import { nombreEstado, verPatente, nombreVehiculo, nombreTercero, totales } from '../datos.js?v=dab9182';
+import { recepcion } from '../recepcion.js?v=dab9182';
 
 const estado = { mes: hoyISO().slice(0, 7) };
 const CLASE = { agendado: 'agendado', espera: 'espera', proceso: 'proc', terminado: 'term', entregado: 'entreg' };

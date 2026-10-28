@@ -6,12 +6,12 @@
 //  · Índice de gravedad       = días perdidos × 1.000.000 ÷ horas hombre
 // Dotación del mes: personas con horas en el Registro de horas (si no hay horas, los vínculos vigentes del mes).
 // Trayecto e incidentes se muestran aparte (no entran en las tasas). Datos: sst_estadistica (base).
-import { el } from '../../../core/ui/dom.js?v=b8da9fc';
-import { icono } from '../../../core/ui/iconos.js?v=b8da9fc';
-import { boton } from '../../../core/ui/tabla.js?v=b8da9fc';
-import { avisar } from '../../../core/ui/aviso.js?v=b8da9fc';
-import { hoyISO, moverMes, nombreMes, rangoMes } from '../../../core/ui/formato.js?v=b8da9fc';
-import { cargarClientes } from '../datos.js?v=b8da9fc';
+import { el } from '../../../core/ui/dom.js?v=dab9182';
+import { icono } from '../../../core/ui/iconos.js?v=dab9182';
+import { boton } from '../../../core/ui/tabla.js?v=dab9182';
+import { avisar } from '../../../core/ui/aviso.js?v=dab9182';
+import { hoyISO, moverMes, nombreMes, rangoMes } from '../../../core/ui/formato.js?v=dab9182';
+import { cargarClientes } from '../datos.js?v=dab9182';
 
 const estado = { modo: 'anio', anio: Number(hoyISO().slice(0, 4)), tercero: '' };
 const num = (n, d = 2) => (n == null || !Number.isFinite(n) ? '—' : n.toLocaleString('es-CL', { minimumFractionDigits: d, maximumFractionDigits: d }));
@@ -75,7 +75,7 @@ export default async function vista(ctx) {
     ['Total', num(T.prom, 1), Math.round(T.hh), T.ctp, T.stp, T.trayecto, T.enfermedades, T.incidentes, T.dias, num(T.accidentabilidad), num(T.siniestralidad), num(T.frecuencia), num(T.gravedad, 1)]];
   const titulo = `Estadística de accidentabilidad${mandante ? ` · ${mandante}` : ''}`;
   const pdf = async () => {
-    const { nuevoPdf } = await import('../../../core/pdf.js?v=b8da9fc');
+    const { nuevoPdf } = await import('../../../core/pdf.js?v=dab9182');
     const p = await nuevoPdf(ctx, { titulo, subtitulo: `${periodo} · emitido el ${new Date().toLocaleDateString('es-CL')}`, horizontal: true });
     p.tabla({ columnas, filas: filasExport() });
     p.tabla({ columnas: ['Indicador', 'Fórmula'], filas: [
@@ -86,7 +86,7 @@ export default async function vista(ctx) {
     p.guardar(`estadistica-accidentabilidad-${estado.modo === 'anio' ? estado.anio : 'movil'}`);
   };
   const excel = async () => {
-    const { exportarExcel } = await import('../../../core/excel.js?v=b8da9fc');
+    const { exportarExcel } = await import('../../../core/excel.js?v=dab9182');
     const L = filasExport();
     await exportarExcel(ctx, { titulo, subtitulo: periodo, columnas: columnas.map((c, i) => (i ? { t: c, tipo: i <= 8 ? 'numero' : 'texto' } : c)),
       filas: L.slice(0, -1), total: L[L.length - 1], nombre: `estadistica-accidentabilidad-${estado.modo === 'anio' ? estado.anio : 'movil'}` });
