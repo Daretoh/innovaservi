@@ -2038,3 +2038,125 @@ html { transition: background-color 220ms ease; }
   .bm-indicador, .bm-item svg { transition: none; }
   html[data-nav-lado] .vista-entra { animation: none; }
 }
+
+/* Barra flotante (2026-10-28, pedido de Enzo: cápsula con bordes redondeados, como la propuesta A) y el "+" animado */
+@media (max-width: 760px) {
+  .barra-movil {
+    left: 12px; right: 12px; bottom: calc(10px + env(safe-area-inset-bottom)); height: 66px; padding: 0 6px; border-radius: 24px;
+    border: 1px solid var(--borde); background: color-mix(in srgb, var(--superficie) 86%, transparent);
+    -webkit-backdrop-filter: blur(18px) saturate(1.5); backdrop-filter: blur(18px) saturate(1.5);
+    box-shadow: 0 14px 34px rgb(0 0 0 / .16), 0 2px 6px rgb(0 0 0 / .06);
+  }
+  .bm-item { min-height: 54px; }
+  .bm-indicador { top: 5px; width: 58px; height: 54px; border-radius: 18px; background: color-mix(in srgb, var(--empresa) 14%, transparent); }
+  .barra-movil.presionando .bm-indicador { background: color-mix(in srgb, var(--empresa) 22%, transparent); }
+  .bm-accion {
+    position: relative; margin-top: -30px; width: 62px; height: 62px; border-radius: 22px; border: 4px solid var(--fondo);
+    transition: transform 260ms cubic-bezier(.3, 1.5, .5, 1), box-shadow 260ms ease, border-radius 260ms ease;
+  }
+  .bm-accion svg { position: relative; transition: transform 380ms cubic-bezier(.3, 1.5, .5, 1); }
+  .bm-accion:active { transform: scale(.88); }
+  .bm-accion.abierta { transform: translateY(-4px); border-radius: 50%; box-shadow: 0 14px 30px color-mix(in srgb, var(--empresa) 55%, transparent); }
+  .bm-accion.abierta svg { transform: rotate(135deg); }
+  .bm-onda { position: absolute; inset: -4px; border-radius: inherit; background: var(--empresa); opacity: 0; pointer-events: none; }
+  .bm-accion.abierta .bm-onda { animation: bm-onda 600ms cubic-bezier(.2, .8, .2, 1); }
+  .contenido { padding-bottom: calc(112px + env(safe-area-inset-bottom)); }
+  .om-pie { left: 12px; right: 12px; bottom: calc(86px + env(safe-area-inset-bottom)); border: 1px solid var(--borde); border-radius: 22px; box-shadow: var(--sombra-suave); }
+  .orden-movil:has(.om-pie) { padding-bottom: 96px; }
+  .franja-push { bottom: calc(86px + env(safe-area-inset-bottom)); }
+}
+@keyframes bm-onda { from { opacity: .5; transform: scale(1); } to { opacity: 0; transform: scale(2.1); } }
+
+/* Hoja de Agendar (modulos/taller/recepcion.js): ventana al centro en pantalla grande, hoja desde abajo en el teléfono */
+.agh {
+  border: 0; padding: 0; width: min(560px, calc(100vw - 32px)); max-height: min(88vh, 860px); border-radius: 24px; overflow: hidden;
+  background: var(--fondo); color: var(--texto); box-shadow: var(--sombra);
+}
+.agh[open] { display: flex; flex-direction: column; animation: agh-entra 300ms cubic-bezier(.2, .9, .3, 1.05); }
+.agh::backdrop { background: var(--velo); animation: isg-velo 250ms ease-out; }
+.agh.sale { animation: agh-sale 220ms ease-in forwards; }
+.agh.sale::backdrop { opacity: 0; transition: opacity 220ms ease; }
+@keyframes agh-entra { from { opacity: 0; transform: translateY(18px) scale(.97); } to { opacity: 1; transform: none; } }
+@keyframes agh-sale { to { opacity: 0; transform: translateY(18px) scale(.97); } }
+.agh-cabecera { padding: 16px 20px 6px; }
+.agh-asa { display: none; }
+.agh-titulo { display: flex; align-items: center; gap: 10px; }
+.agh-titulo h2 { flex: 1; font-size: 22px; font-weight: 800; letter-spacing: -.01em; }
+.agh-cerrar { flex: none; width: 44px; height: 44px; border-radius: 14px; border: 1px solid var(--borde); background: var(--superficie); color: var(--texto); display: grid; place-items: center; cursor: pointer; }
+.agh-form { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.agh-cuerpo { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 8px 20px 18px; display: flex; flex-direction: column; gap: 20px; }
+.agh-seccion { display: flex; flex-direction: column; gap: 10px; animation: tm-entra 260ms cubic-bezier(.2, .8, .2, 1) both; }
+.agh-seccion h3 { margin: 0; font-size: 12px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; color: var(--texto-suave); }
+.agh-segmento { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 4px; padding: 4px; border-radius: 16px; background: var(--fondo-hundido); }
+.agh-segmento button {
+  min-height: 48px; padding: 6px 4px; border: 0; border-radius: 12px; background: transparent; color: var(--texto-suave); cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; font: inherit; font-weight: 700; text-align: center;
+  transition: background-color 200ms ease, color 200ms ease, box-shadow 200ms ease;
+}
+.agh-segmento button small { font-size: 11px; font-weight: 600; opacity: .85; }
+.agh-segmento button[aria-checked="true"] { background: var(--superficie); color: var(--texto); box-shadow: 0 1px 4px rgb(0 0 0 / .12); }
+.agh-segmento button[aria-checked="true"] > span { color: var(--acento-texto); }
+.agh-campo { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.agh-campo > span { font-size: 13px; font-weight: 700; color: var(--texto-suave); }
+.agh-campo > small { font-size: 12px; }
+.agh .campo { min-height: 48px; border-radius: 14px; font-size: 16px; width: 100%; }
+.agh textarea.campo { min-height: 72px; }
+.agh-fila { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; }
+.agh-fila-placa { grid-template-columns: auto minmax(0, 1fr); align-items: center; }
+.agh-placa-vista .placa { min-width: 132px; }
+.agh-patente { font-family: "Roboto Mono", ui-monospace, Consolas, monospace; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.agh-buscar { height: 50px; display: flex; align-items: center; gap: 8px; padding: 0 14px; border-radius: 14px; background: var(--superficie); border: 1px solid var(--borde); color: var(--texto-suave); }
+.agh-buscar:focus-within { border-color: var(--empresa); }
+.agh-buscar input { flex: 1; min-width: 0; border: 0; background: transparent; color: var(--texto); font: inherit; font-size: 16px; font-weight: 600; outline: none; }
+.agh-resultados { display: flex; flex-direction: column; gap: 6px; }
+.agh-resultado {
+  display: flex; flex-direction: column; gap: 2px; padding: 10px 14px; border-radius: 14px; border: 1px solid var(--borde); background: var(--superficie);
+  color: var(--texto); font: inherit; text-align: left; cursor: pointer; animation: tm-entra 200ms ease-out both; transition: transform 120ms ease;
+}
+.agh-resultado:active, .agh-suyo:active, .agh-chip:active { transform: scale(.97); }
+.agh-resultado small, .agh-elegido small, .agh-vehiculo small, .agh-suyo small { font-size: 13px; color: var(--texto-suave); }
+.agh-elegido, .agh-vehiculo { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 16px; background: var(--superficie); border: 1px solid var(--borde); animation: tm-entra 240ms ease-out both; }
+.agh-elegido > div, .agh-vehiculo > div { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.agh-avatar { flex: none; width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: color-mix(in srgb, var(--empresa) 16%, transparent); color: var(--acento-texto); }
+.agh-cambiar { flex: none; min-height: 40px; padding: 0 8px; border: 0; background: transparent; color: var(--acento-texto); font: inherit; font-weight: 800; cursor: pointer; }
+.agh-nada { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 6px 6px 14px; border: 1px dashed var(--borde); border-radius: 14px; color: var(--texto-suave); }
+.agh-conocido { display: flex; align-items: center; gap: 10px; padding: 8px 8px 8px 14px; border-radius: 16px; background: var(--ok-fondo); color: var(--ok); font-size: 14px; font-weight: 700; animation: tm-entra 220ms ease-out both; }
+.agh-conocido > span { flex: 1; min-width: 0; }
+.agh-suyos { display: flex; flex-direction: column; gap: 6px; }
+.agh-suyos > div { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
+.agh-suyo { flex: none; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 10px; border-radius: 14px; border: 1px solid var(--borde); background: var(--superficie); color: var(--texto); font: inherit; cursor: pointer; transition: transform 120ms ease; }
+.agh-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.agh-chip {
+  min-height: 48px; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 1px; padding: 6px 14px; border-radius: 14px;
+  border: 1px solid var(--borde); background: var(--superficie); color: var(--texto); font: inherit; font-weight: 700; text-align: left; cursor: pointer;
+  transition: background-color 180ms ease, border-color 180ms ease, transform 120ms ease;
+}
+.agh-chip small { font-size: 12px; font-weight: 600; color: var(--texto-suave); }
+.agh-chip[aria-pressed="true"] { background: color-mix(in srgb, var(--empresa) 14%, var(--superficie)); border-color: var(--empresa); }
+.agh-chip[aria-pressed="true"] small { color: var(--acento-texto); }
+.agh-mas summary { min-height: 40px; display: flex; align-items: center; cursor: pointer; color: var(--acento-texto); font-weight: 700; }
+.agh-mas[open] { display: flex; flex-direction: column; gap: 10px; }
+.agh-pie { display: flex; flex-direction: column; gap: 10px; padding: 12px 20px calc(14px + env(safe-area-inset-bottom)); border-top: 1px solid var(--borde); background: var(--fondo); }
+.agh-pie .texto-error:empty { display: none; }
+.agh-total { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; font-weight: 700; color: var(--texto-suave); }
+.agh-total strong { font-size: 20px; font-weight: 800; color: var(--texto); font-variant-numeric: tabular-nums; }
+.agh-guardar {
+  height: 56px; border: 0; border-radius: 18px; background: var(--empresa); color: var(--sobre-empresa); cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 8px; font: inherit; font-size: 16px; font-weight: 800; transition: transform 120ms ease, opacity 200ms ease;
+}
+.agh-guardar:active { transform: scale(.98); }
+.agh-guardar:disabled { opacity: .5; cursor: default; }
+@media (max-width: 760px) {
+  .agh { width: 100vw; max-width: 100vw; max-height: 94dvh; margin: auto 0 0; border-radius: 28px 28px 0 0; transition: transform 200ms ease; }
+  .agh[open] { animation: agh-sube 380ms cubic-bezier(.2, .9, .25, 1); }
+  .agh.sale { animation: agh-baja 240ms cubic-bezier(.4, 0, 1, 1) forwards; }
+  .agh-cabecera { padding-top: 8px; touch-action: none; }
+  .agh-asa { display: block; width: 40px; height: 5px; margin: 0 auto 10px; border-radius: 999px; background: var(--borde); }
+}
+@keyframes agh-sube { from { transform: translateY(100%); } to { transform: none; } }
+@keyframes agh-baja { to { transform: translateY(100%); } }
+@media (prefers-reduced-motion: reduce) {
+  .agh[open], .agh.sale, .agh-seccion, .agh-resultado, .bm-accion.abierta .bm-onda { animation: none; }
+  .bm-accion, .bm-accion svg { transition: none; }
+}
+.agh [hidden] { display: none !important; }

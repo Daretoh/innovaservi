@@ -3,13 +3,13 @@
 // 2. Gasto sin ningún papel → registro sin documento, no declarable, pagado.
 // 3. Comprobante de pago (transferencia, depósito…) → fin_pagos "por validar"; cubre facturas por pagar del proveedor.
 // 4. Factura emitida (a un cliente) → ingreso por cobrar.
-import { el } from '../../../core/ui/dom.js?v=30360b8';
-import { icono } from '../../../core/ui/iconos.js?v=30360b8';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=30360b8';
-import { avisar } from '../../../core/ui/aviso.js?v=30360b8';
-import { subirArchivo, eliminarArchivo } from '../../../core/adjuntos.js?v=30360b8';
-import { dinero, hoyISO, fechaLarga, sumarDias } from '../../../core/ui/formato.js?v=30360b8';
-import { cargarBase, nombreTercero, MEDIOS } from '../datos.js?v=30360b8';
+import { el } from '../../../core/ui/dom.js?v=3a264c0';
+import { icono } from '../../../core/ui/iconos.js?v=3a264c0';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=3a264c0';
+import { avisar } from '../../../core/ui/aviso.js?v=3a264c0';
+import { subirArchivo, eliminarArchivo } from '../../../core/adjuntos.js?v=3a264c0';
+import { dinero, hoyISO, fechaLarga, sumarDias } from '../../../core/ui/formato.js?v=3a264c0';
+import { cargarBase, nombreTercero, MEDIOS } from '../datos.js?v=3a264c0';
 
 export default async function vista(ctx) {
   const e = ctx.empresa.id;

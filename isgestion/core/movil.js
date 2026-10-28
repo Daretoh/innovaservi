@@ -6,10 +6,10 @@
 //   accesos: [{ id: 'taller.tablero', label: 'Taller', icono: 'auto' }, …]   pestañas de la barra (si la ruta existe)
 //   accion:  { label, icono, requiere: 'crear', abrir: (ctx) => … }           el botón "+" del centro
 // Sin accesos declarados, la barra usa los primeros apartados del menú. Siempre: Inicio al principio y Más al final.
-import { el } from './ui/dom.js?v=30360b8';
-import { icono } from './ui/iconos.js?v=30360b8';
-import { urlFirmada } from './adjuntos.js?v=30360b8';
-import { nombreEmpresa } from './empresas.js?v=30360b8';
+import { el } from './ui/dom.js?v=3a264c0';
+import { icono } from './ui/iconos.js?v=3a264c0';
+import { urlFirmada } from './adjuntos.js?v=3a264c0';
+import { nombreEmpresa } from './empresas.js?v=3a264c0';
 
 const MAX_ACCESOS = 2;
 
@@ -36,8 +36,15 @@ export function barraMovil({ visibles, apartados, rutas, puede, ctx }) {
   const items = [pestana('#/', 'inicio', 'Inicio', ''), ...accesos.map((x) => pestana(`#/${x.id}`, x.icono, x.label, x.id)), pestana('#/mas', 'menu', 'Más', 'mas')];
   // El "+" va al centro de la barra
   if (accion) {
-    items.splice(Math.ceil(items.length / 2), 0, el('button', { type: 'button', class: 'bm-accion', 'aria-label': accion.label, title: accion.label,
-      onclick: () => accion.abrir(ctx()) }, icono(accion.icono ?? 'mas', { tam: 28 })));
+    // Al tocarlo: se hunde, el "+" gira a "×" y sale una onda; vuelve cuando se cierra lo que abrió (si devuelve una promesa)
+    const boton = el('button', { type: 'button', class: 'bm-accion', 'aria-label': accion.label, title: accion.label, 'aria-expanded': 'false',
+      onclick: () => {
+        if (boton.classList.contains('abierta')) return;
+        boton.classList.add('abierta'); boton.setAttribute('aria-expanded', 'true');
+        try { navigator.vibrate?.(10); } catch { /* sin vibración */ }
+        Promise.resolve(accion.abrir(ctx())).catch(() => {}).finally(() => { boton.classList.remove('abierta'); boton.setAttribute('aria-expanded', 'false'); });
+      } }, el('span', { class: 'bm-onda', 'aria-hidden': 'true' }), icono(accion.icono ?? 'mas', { tam: 28 }));
+    items.splice(Math.ceil(items.length / 2), 0, boton);
   }
   const indicador = el('span', { class: 'bm-indicador', 'aria-hidden': 'true' });
   const nav = el('nav', { class: 'barra-movil', 'aria-label': 'Navegación principal' }, indicador, items);

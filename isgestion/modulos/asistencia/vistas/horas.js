@@ -3,12 +3,12 @@
 // (persona con búsqueda por teclado, faena, entrada, salida, vueltas), "+ persona en esta faena", aviso en rojo de
 // horas que se pisan y, abajo, los vehículos y la preparación del día (desde Planificación).
 // Las horas del marcaje (tablet o terreno) se corrigen en Marcajes. "Agregar horas" carga el mismo horario a varios.
-import { el } from '../../../core/ui/dom.js?v=30360b8';
-import { icono } from '../../../core/ui/iconos.js?v=30360b8';
-import { boton } from '../../../core/ui/tabla.js?v=30360b8';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=30360b8';
-import { avisar } from '../../../core/ui/aviso.js?v=30360b8';
-import { hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, horas, aMin, hhmm } from '../../../core/ui/formato.js?v=30360b8';
+import { el } from '../../../core/ui/dom.js?v=3a264c0';
+import { icono } from '../../../core/ui/iconos.js?v=3a264c0';
+import { boton } from '../../../core/ui/tabla.js?v=3a264c0';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=3a264c0';
+import { avisar } from '../../../core/ui/aviso.js?v=3a264c0';
+import { hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, horas, aMin, hhmm } from '../../../core/ui/formato.js?v=3a264c0';
 
 const estado = { lunes: lunesDe(hoyISO()), dia: hoyISO(), nuevas: [] };   // nuevas: filas en blanco aún sin guardar
 
