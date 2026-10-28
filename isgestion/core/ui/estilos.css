@@ -2011,3 +2011,30 @@ html { transition: background-color 220ms ease; }
   .tm-auto, .ag-cita, .im-cifra { animation: none; }
   .tm-indicador { transition: none; }
 }
+
+/* Barra de abajo: indicador que se desliza, mantener y arrastrar entre pestañas, y la vista entra desde el lado al que se va */
+@media (max-width: 760px) {
+  .barra-movil { touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+  .contenido { overflow-x: clip; }
+  .bm-item { position: relative; z-index: 1; -webkit-touch-callout: none; }
+  .bm-indicador {
+    position: absolute; left: 0; top: 12px; width: 60px; height: 32px; border-radius: 999px; pointer-events: none; opacity: 0;
+    background: color-mix(in srgb, var(--empresa) 16%, transparent);
+    transition: transform 320ms cubic-bezier(.3, 1.3, .5, 1), opacity 200ms ease, scale 160ms ease;
+  }
+  .bm-indicador.sin-animar { transition: none; }
+  .barra-movil.presionando .bm-indicador { scale: 1.08; background: color-mix(in srgb, var(--empresa) 24%, transparent); }
+  .barra-movil.arrastrando .bm-indicador { transition: transform 180ms cubic-bezier(.2, .8, .2, 1), scale 160ms ease; }
+  .barra-movil.arrastrando .bm-item[aria-current]:not(.bm-sobre) { color: var(--texto-suave); font-weight: 600; }
+  .bm-item.bm-sobre { color: var(--acento-texto); font-weight: 800; transform: translateY(-2px); }
+  .bm-item svg { transition: transform 220ms cubic-bezier(.3, 1.4, .5, 1); }
+  .bm-item[aria-current] svg { transform: translateY(-1px) scale(1.08); }
+  html[data-nav-lado="der"] .vista-entra { animation: bm-desde-der 260ms cubic-bezier(.2, .8, .2, 1); }
+  html[data-nav-lado="izq"] .vista-entra { animation: bm-desde-izq 260ms cubic-bezier(.2, .8, .2, 1); }
+}
+@keyframes bm-desde-der { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: none; } }
+@keyframes bm-desde-izq { from { opacity: 0; transform: translateX(-28px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .bm-indicador, .bm-item svg { transition: none; }
+  html[data-nav-lado] .vista-entra { animation: none; }
+}

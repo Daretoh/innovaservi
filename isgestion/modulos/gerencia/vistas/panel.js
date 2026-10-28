@@ -1,11 +1,11 @@
 // Panel de gerencia de la empresa: indicadores del mes (con el mes anterior), tendencia de 6 meses,
 // por cobrar y por pagar, taller (autos, ticket, servicios más vendidos) y alertas de todos los módulos.
-import { el } from '../../../core/ui/dom.js?v=dab9182';
-import { icono } from '../../../core/ui/iconos.js?v=dab9182';
-import { boton } from '../../../core/ui/tabla.js?v=dab9182';
-import { dinero, hoyISO, nombreMes, moverMes, rangoMes } from '../../../core/ui/formato.js?v=dab9182';
-import { mesesEntre, cargarEstado, sumarTotales, puntoEquilibrio, pct } from '../../resultados/datos.js?v=dab9182';
-import { cargarAlertas } from '../alertas.js?v=dab9182';
+import { el } from '../../../core/ui/dom.js?v=30360b8';
+import { icono } from '../../../core/ui/iconos.js?v=30360b8';
+import { boton } from '../../../core/ui/tabla.js?v=30360b8';
+import { dinero, hoyISO, nombreMes, moverMes, rangoMes } from '../../../core/ui/formato.js?v=30360b8';
+import { mesesEntre, cargarEstado, sumarTotales, puntoEquilibrio, pct } from '../../resultados/datos.js?v=30360b8';
+import { cargarAlertas } from '../alertas.js?v=30360b8';
 
 const estado = { mes: hoyISO().slice(0, 7) };
 const MES_CORTO = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];

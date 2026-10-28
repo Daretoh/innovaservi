@@ -5,14 +5,14 @@
 // trabajador": además del gasto queda un descuento en Remuneraciones (semana o mes según la empresa), ligado al
 // documento (remu_items.origen_id). Requiere poder crear en Remuneraciones.
 // Ruta: #/costos.lector
-import { el } from '../../../core/ui/dom.js?v=dab9182';
-import { icono } from '../../../core/ui/iconos.js?v=dab9182';
-import { boton } from '../../../core/ui/tabla.js?v=dab9182';
-import { avisar } from '../../../core/ui/aviso.js?v=dab9182';
-import { subirArchivo, almacen } from '../../../core/adjuntos.js?v=dab9182';
-import { dinero, hoyISO, sumarDias, fechaLarga, lunesDe } from '../../../core/ui/formato.js?v=dab9182';
-import { TIPOS_DTE, docTipoDe, CAMPOS_DTE, leerParte, combinar, validar, escanearCamara, aJPEG, fmtRut, limpioRut, rutValido, num } from '../../../core/lector-dte.js?v=dab9182';
-import { cargarBase, nombreTercero } from '../datos.js?v=dab9182';
+import { el } from '../../../core/ui/dom.js?v=30360b8';
+import { icono } from '../../../core/ui/iconos.js?v=30360b8';
+import { boton } from '../../../core/ui/tabla.js?v=30360b8';
+import { avisar } from '../../../core/ui/aviso.js?v=30360b8';
+import { subirArchivo, almacen } from '../../../core/adjuntos.js?v=30360b8';
+import { dinero, hoyISO, sumarDias, fechaLarga, lunesDe } from '../../../core/ui/formato.js?v=30360b8';
+import { TIPOS_DTE, docTipoDe, CAMPOS_DTE, leerParte, combinar, validar, escanearCamara, aJPEG, fmtRut, limpioRut, rutValido, num } from '../../../core/lector-dte.js?v=30360b8';
+import { cargarBase, nombreTercero } from '../datos.js?v=30360b8';
 
 const ETIQUETA = { timbre: ['Timbre SII', 'chip-ok'], xml: ['XML', 'chip-ok'], ocr: ['Revisar', 'chip-prox'], calc: ['Calculado', 'chip-pend'] };
 

@@ -1,10 +1,10 @@
 // Recepción: agendar un vehículo (nuevo o ya conocido por su patente) y crear su orden de trabajo.
 // Como el OS: el cliente se busca por nombre o teléfono y trae su teléfono y sus vehículos; la patente conocida trae
 // el vehículo y su dueño; un cliente "siempre por cotizar" (terceros.por_cotizar) agrega el servicio a convenir y Factura.
-import { abrirFormulario } from '../../core/ui/modal.js?v=dab9182';
-import { avisar } from '../../core/ui/aviso.js?v=dab9182';
-import { hoyISO, telefono } from '../../core/ui/formato.js?v=dab9182';
-import { PRIORIDADES, TALLAS, normalizarPatente, verPatente, nombreTercero, precioTalla, cargarServicios, cargarTrabajadores, siguienteNumero, esEmpresa } from './datos.js?v=dab9182';
+import { abrirFormulario } from '../../core/ui/modal.js?v=30360b8';
+import { avisar } from '../../core/ui/aviso.js?v=30360b8';
+import { hoyISO, telefono } from '../../core/ui/formato.js?v=30360b8';
+import { PRIORIDADES, TALLAS, normalizarPatente, verPatente, nombreTercero, precioTalla, cargarServicios, cargarTrabajadores, siguienteNumero, esEmpresa } from './datos.js?v=30360b8';
 
 export async function recepcion(ctx, { fecha = hoyISO(), vehiculo = null } = {}) {
   const [servicios, trabajadores, clientes, vehiculos] = await Promise.all([

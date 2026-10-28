@@ -54,7 +54,7 @@ export async function comprimirFoto(archivo, lado = 1600) {
 // Escáner (como en InnovaGestión): varias fotos → un PDF, una foto por página (carta, centrada). Las fotos se
 // achican antes; las que no se pueden leer se omiten. Devuelve un File application/pdf.
 export async function fotosAPdf(fotos, nombre = 'documento') {
-  const { cargarJsPdf } = await import('./pdf.js?v=dab9182');
+  const { cargarJsPdf } = await import('./pdf.js?v=30360b8');
   const jsPDF = await cargarJsPdf();
   const doc = new jsPDF({ unit: 'pt', format: 'letter' });
   let paginas = 0;

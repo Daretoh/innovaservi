@@ -1,6 +1,6 @@
 // Placa patente chilena (blanca, borde negro, "CHILE" abajo), como en la maqueta B del teléfono. Los colores son los de
 // una placa real, no del tema: se ve igual en claro y oscuro. tam: 'chica' | 'normal' | 'grande'.
-import { el } from './dom.js?v=dab9182';
+import { el } from './dom.js?v=30360b8';
 
 export const textoPlaca = (p) => {
   const t = (p ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '');

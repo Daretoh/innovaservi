@@ -6,10 +6,10 @@
 //   accesos: [{ id: 'taller.tablero', label: 'Taller', icono: 'auto' }, …]   pestañas de la barra (si la ruta existe)
 //   accion:  { label, icono, requiere: 'crear', abrir: (ctx) => … }           el botón "+" del centro
 // Sin accesos declarados, la barra usa los primeros apartados del menú. Siempre: Inicio al principio y Más al final.
-import { el } from './ui/dom.js?v=dab9182';
-import { icono } from './ui/iconos.js?v=dab9182';
-import { urlFirmada } from './adjuntos.js?v=dab9182';
-import { nombreEmpresa } from './empresas.js?v=dab9182';
+import { el } from './ui/dom.js?v=30360b8';
+import { icono } from './ui/iconos.js?v=30360b8';
+import { urlFirmada } from './adjuntos.js?v=30360b8';
+import { nombreEmpresa } from './empresas.js?v=30360b8';
 
 const MAX_ACCESOS = 2;
 
@@ -39,12 +39,73 @@ export function barraMovil({ visibles, apartados, rutas, puede, ctx }) {
     items.splice(Math.ceil(items.length / 2), 0, el('button', { type: 'button', class: 'bm-accion', 'aria-label': accion.label, title: accion.label,
       onclick: () => accion.abrir(ctx()) }, icono(accion.icono ?? 'mas', { tam: 28 })));
   }
-  const nav = el('nav', { class: 'barra-movil', 'aria-label': 'Navegación principal' }, items);
+  const indicador = el('span', { class: 'bm-indicador', 'aria-hidden': 'true' });
+  const nav = el('nav', { class: 'barra-movil', 'aria-label': 'Navegación principal' }, indicador, items);
   nav.style.setProperty('--bm-columnas', String(items.length));
+  arrastrable(nav);
+  // Si cambia el ancho (girar el teléfono), el indicador vuelve a su pestaña
+  new ResizeObserver(() => moverIndicador(nav, nav.querySelector('.bm-item[aria-current]'), false)).observe(nav);
   return nav;
 }
 
-// Marca la pestaña de la vista actual (o Más si la vista no está en la barra)
+// Indicador (pastilla detrás del icono) que se desliza a la pestaña indicada
+function moverIndicador(nav, item, animar = true) {
+  const ind = nav?.querySelector('.bm-indicador');
+  if (!ind) return;
+  if (!item || !item.offsetWidth) { ind.style.opacity = '0'; return; }
+  ind.classList.toggle('sin-animar', !animar);
+  ind.style.opacity = '1';
+  ind.style.transform = `translateX(${item.offsetLeft + item.offsetWidth / 2 - ind.offsetWidth / 2}px)`;
+}
+
+// Mantener presionado y arrastrar el dedo por la barra: el indicador sigue al dedo (con una vibración corta al pasar de
+// pestaña, donde el teléfono lo permite) y al soltar se abre la pestaña donde quedó. Un toque normal funciona como siempre.
+function arrastrable(nav) {
+  let a = null;   // { desde, sobre, x, movio }
+  const itemEn = (x) => [...nav.querySelectorAll('.bm-item')].find((it) => { const r = it.getBoundingClientRect(); return x >= r.left && x <= r.right; });
+  nav.addEventListener('pointerdown', (ev) => {
+    const it = ev.target.closest('.bm-item');
+    if (!it || ev.button > 0) return;
+    a = { desde: it, sobre: it, x: ev.clientX, movio: false };
+    nav.classList.add('presionando');
+    moverIndicador(nav, it);
+  });
+  nav.addEventListener('pointermove', (ev) => {
+    if (!a) return;
+    if (!a.movio && Math.abs(ev.clientX - a.x) < 10) return;
+    a.movio = true;
+    nav.classList.add('arrastrando');
+    const it = itemEn(ev.clientX);
+    if (it && it !== a.sobre) {
+      a.sobre = it;
+      moverIndicador(nav, it);
+      nav.querySelectorAll('.bm-item').forEach((x) => x.classList.toggle('bm-sobre', x === it));
+      try { navigator.vibrate?.(8); } catch { /* sin vibración */ }
+    }
+  });
+  const soltar = (ev) => {
+    if (!a) return;
+    const { sobre, movio } = a;
+    a = null;
+    nav.classList.remove('presionando', 'arrastrando');
+    nav.querySelectorAll('.bm-sobre').forEach((x) => x.classList.remove('bm-sobre'));
+    if (ev.type === 'pointercancel' || !movio) { if (ev.type === 'pointercancel') moverIndicador(nav, nav.querySelector('.bm-item[aria-current]')); return; }
+    // Se arrastró: abrir donde quedó el dedo y no dejar pasar el toque al enlace de origen
+    // (si el navegador no lanza ese toque, el bloqueo se quita solo para no tragarse el siguiente)
+    const bloquear = (e) => e.preventDefault();
+    nav.addEventListener('click', bloquear, { capture: true, once: true });
+    setTimeout(() => nav.removeEventListener('click', bloquear, { capture: true }), 350);
+    if (location.hash !== sobre.getAttribute('href')) location.hash = sobre.getAttribute('href');
+    else moverIndicador(nav, sobre);
+  };
+  nav.addEventListener('pointerup', soltar);
+  nav.addEventListener('pointercancel', soltar);
+  nav.addEventListener('contextmenu', (ev) => ev.preventDefault());   // mantener presionado no abre el menú del enlace
+}
+
+// Marca la pestaña de la vista actual (o Más si la vista no está en la barra), desliza el indicador hasta ella y anota
+// hacia qué lado se fue (la vista nueva entra desde ese lado)
+let ultimaPos = null;
 export function marcarBarraMovil(nav, id, padre) {
   if (!nav) return;
   const enlaces = [...nav.querySelectorAll('.bm-item')];
@@ -53,6 +114,12 @@ export function marcarBarraMovil(nav, id, padre) {
     ?? (id ? enlaces.find((a) => a.dataset.vista === 'mas') : enlaces[0]);
   for (const a of enlaces) a.toggleAttribute('aria-current', a === actual);
   actual?.setAttribute('aria-current', 'page');
+  const pos = enlaces.indexOf(actual);
+  const raiz = document.documentElement;
+  if (ultimaPos != null && pos !== ultimaPos && pos >= 0) raiz.dataset.navLado = pos > ultimaPos ? 'der' : 'izq';
+  else delete raiz.dataset.navLado;
+  ultimaPos = pos;
+  requestAnimationFrame(() => moverIndicador(nav, actual, nav.querySelector('.bm-indicador')?.style.opacity === '1'));
 }
 
 // Bienvenida al abrir la app (en vez de la pantalla de carga): el logo de la última empresa usada, guardado en este
