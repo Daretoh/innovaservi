@@ -1,13 +1,15 @@
 // Agenda del taller: citas de la semana por día, con su estado. Hoy destacado; en tablet las columnas se
 // deslizan y parte mostrando el día de hoy; "+" para agendar en un día (aparece al pasar el mouse).
-import { el } from '../../../core/ui/dom.js?v=faa3077';
-import { icono } from '../../../core/ui/iconos.js?v=faa3077';
-import { boton } from '../../../core/ui/tabla.js?v=faa3077';
-import { hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, hhmm, esFinde } from '../../../core/ui/formato.js?v=faa3077';
-import { SELECT_ORDEN, CHIP_PRIORIDAD, nombreEstado, verPatente, nombreVehiculo, nombreTercero } from '../datos.js?v=faa3077';
-import { recepcion } from '../recepcion.js?v=faa3077';
+import { el } from '../../../core/ui/dom.js?v=cb36eb2';
+import { icono } from '../../../core/ui/iconos.js?v=cb36eb2';
+import { boton } from '../../../core/ui/tabla.js?v=cb36eb2';
+import { hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, hhmm, esFinde, nombreMes } from '../../../core/ui/formato.js?v=cb36eb2';
+import { placa } from '../../../core/ui/placa.js?v=cb36eb2';
+import { esTelefono } from '../../../core/movil.js?v=cb36eb2';
+import { SELECT_ORDEN, CHIP_PRIORIDAD, nombreEstado, verPatente, nombreVehiculo, nombreTercero } from '../datos.js?v=cb36eb2';
+import { recepcion } from '../recepcion.js?v=cb36eb2';
 
-const estado = { lunes: lunesDe(hoyISO()) };
+const estado = { lunes: lunesDe(hoyISO()), dia: null };
 
 export default async function vista(ctx) {
   const lunes = estado.lunes;
@@ -17,6 +19,7 @@ export default async function vista(ctx) {
     .neq('estado', 'anulada').gte('fecha_cita', lunes).lte('fecha_cita', domingo).order('hora_cita', { nullsFirst: false });
   if (error) throw error;
   const crear = ctx.puede('taller', 'crear');
+  if (esTelefono()) return agendaMovil(ctx, data, { lunes, hoy, crear });
 
   const chipEstado = (o) => (o.estado === 'agendado' ? CHIP_PRIORIDAD[o.prioridad] : o.estado === 'entregado' ? 'chip-ok' : 'chip-prox');
   const columnas = [0, 1, 2, 3, 4, 5, 6].map((i) => {
@@ -60,4 +63,53 @@ export default async function vista(ctx) {
         crear ? boton('Agendar vehículo', { icono: 'mas', tipo: 'primario', onclick: () => recepcion(ctx) }) : null)),
     el('p', { class: 'texto-suave' }, total ? `${total} ${total === 1 ? 'cita' : 'citas'} esta semana` : 'Sin citas esta semana.'),
     tablero);
+}
+
+// Teléfono (dirección B): franja con los 7 días (punto si hay citas) y la línea de tiempo del día elegido; flechas o
+// deslizar para cambiar de semana. Día vacío: "Agendar este día".
+const DIAS_LARGOS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+function agendaMovil(ctx, data, { lunes, hoy, crear }) {
+  const dias = [0, 1, 2, 3, 4, 5, 6].map((i) => sumarDias(lunes, i));
+  if (!dias.includes(estado.dia)) estado.dia = dias.includes(hoy) ? hoy : lunes;
+  const chip = { agendado: 'chip-pend', espera: 'chip-prox', proceso: 'chip-prox', terminado: 'chip-ok', entregado: 'chip-ok' };
+
+  const titulo = el('h2', { class: 'ag-titulo' });
+  const lista = el('div', { class: 'ag-lista' });
+  const botones = dias.map((f, i) => el('button', { type: 'button', role: 'tab', class: `ag-dia${f === hoy ? ' hoy' : ''}`, onclick: () => { estado.dia = f; pintar(); } },
+    el('span', {}, nombreDia(f)), el('strong', {}, String(Number(f.slice(8)))),
+    el('i', { class: data.some((o) => o.fecha_cita === f) ? 'con-citas' : '', 'aria-hidden': 'true' }),
+    el('span', { class: 'sr-solo' }, `${DIAS_LARGOS[i]}, ${data.filter((o) => o.fecha_cita === f).length} citas`)));
+  const pintar = () => {
+    botones.forEach((b, i) => b.setAttribute('aria-selected', String(dias[i] === estado.dia)));
+    const del = data.filter((o) => o.fecha_cita === estado.dia);
+    const i = dias.indexOf(estado.dia);
+    titulo.textContent = `${estado.dia === hoy ? `Hoy, ${DIAS_LARGOS[i].toLowerCase()}` : DIAS_LARGOS[i]} ${Number(estado.dia.slice(8))} · ${del.length} ${del.length === 1 ? 'cita' : 'citas'}`;
+    lista.replaceChildren(...(del.length ? del.map((o, j) => el('a', { class: 'ag-cita', href: ctx.ruta('taller.orden', { id: o.id }), style: `animation-delay:${j * 60}ms` },
+      el('div', { class: 'ag-hora' }, el('strong', {}, o.hora_cita ? hhmm(o.hora_cita) : '—'), el('i', { 'aria-hidden': 'true' })),
+      el('div', { class: 'ag-tarjeta' },
+        el('div', { class: 'ag-tarjeta-cab' }, placa(o.tal_vehiculos?.patente, { tam: 'chica' }), el('span', { class: `chip ${chip[o.estado] ?? 'chip-pend'}` }, nombreEstado[o.estado])),
+        el('strong', {}, nombreVehiculo(o.tal_vehiculos)),
+        el('span', { class: 'texto-suave' }, [o.tal_orden_servicios.map((s) => s.nombre).join(' + '), o.terceros ? nombreTercero(o.terceros) : ''].filter(Boolean).join(' · ') || 'Sin servicios'))))
+      : [el('div', { class: 'tm-vacio' }, el('span', {}, estado.dia < hoy ? 'Sin citas este día.' : 'Día libre: sin citas.'),
+        crear && estado.dia >= hoy ? boton('Agendar este día', { icono: 'mas', tipo: 'primario', onclick: () => recepcion(ctx, { fecha: estado.dia }) }) : null)]));
+  };
+  pintar();
+
+  const mover = (n) => { estado.lunes = sumarDias(estado.lunes, n * 7); estado.dia = null; ctx.refrescar(); };
+  const franja = el('div', { class: 'ag-franja', role: 'tablist', 'aria-label': 'Días de la semana' }, botones);
+  let x0 = null;
+  franja.addEventListener('touchstart', (ev) => { x0 = ev.touches[0].clientX; }, { passive: true });
+  franja.addEventListener('touchend', (ev) => { if (x0 == null) return; const dx = ev.changedTouches[0].clientX - x0; x0 = null; if (Math.abs(dx) >= 60) mover(dx < 0 ? 1 : -1); }, { passive: true });
+  return el('section', { class: 'listado tm ag' },
+    el('header', { class: 'tm-cab ag-cab' },
+      el('div', { class: 'tm-cab-fila' },
+        el('h1', {}, 'Agenda'),
+        el('div', { class: 'ag-semana' },
+          el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Semana anterior', onclick: () => mover(-1) }, icono('volver')),
+          el('span', {}, nombreMes(lunes.slice(0, 7)).split(' ')[0]),
+          el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Semana siguiente', onclick: () => mover(1) }, icono('derecha')))),
+      franja,
+      lunes !== lunesDe(hoy) ? el('button', { type: 'button', class: 'ag-hoy', onclick: () => { estado.lunes = lunesDe(hoy); estado.dia = hoy; ctx.refrescar(); } }, 'Volver a hoy') : null),
+    titulo,
+    lista);
 }

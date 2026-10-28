@@ -1819,3 +1819,195 @@ li.tarea-ok { text-decoration: line-through; color: var(--texto-suave); }
 .mas-fila-texto { flex: 1; }
 .mas-salir { color: var(--error); }
 html { transition: background-color 220ms ease; }
+
+/* ---------- Teléfono, dirección B (core/movil.js, modulos/taller/movil.js) ---------- */
+.sr-solo { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+:root { --acento-texto: color-mix(in srgb, var(--empresa) 72%, var(--texto)); }
+@keyframes tm-entra { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+
+/* Placa patente: colores de una placa real (fijos a propósito: se ve igual en claro y oscuro) */
+.placa {
+  flex: none; display: inline-flex; flex-direction: column; align-items: center; padding: 4px 10px 3px; border-radius: 8px;
+  background: #fff; color: #111; border: 2px solid #111; box-shadow: inset 0 0 0 2px #fff; text-decoration: none; line-height: 1;
+}
+.placa-num { font: 700 20px/22px "Roboto Mono", ui-monospace, "SFMono-Regular", Consolas, monospace; letter-spacing: .06em; white-space: nowrap; }
+.placa-pais { font-size: 7px; font-weight: 700; letter-spacing: .3em; margin-top: 1px; }
+.placa-chica { padding: 3px 8px 2px; border-radius: 6px; }
+.placa-chica .placa-num { font-size: 16px; line-height: 18px; }
+.placa-chica .placa-pais { font-size: 6px; }
+.placa-grande { padding: 6px 14px 4px; border-radius: 10px; border-width: 3px; }
+.placa-grande .placa-num { font-size: 28px; line-height: 30px; }
+.placa-grande .placa-pais { font-size: 8px; letter-spacing: .35em; }
+
+/* Etapas (4 barras) */
+.tm-pasos { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
+.tm-pasos li { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.tm-paso-barra { height: 6px; border-radius: 999px; background: var(--borde); transition: background-color 300ms ease; }
+.tm-pasos li.hecho .tm-paso-barra { background: var(--ok); }
+.tm-pasos li.actual .tm-paso-barra { background: var(--empresa); }
+.tm-paso-nombre { font-size: 11px; line-height: 13px; font-weight: 600; color: var(--texto-suave); }
+.tm-pasos li.actual .tm-paso-nombre { font-weight: 800; color: var(--acento-texto); }
+.tm-paso-hora { font-size: 11px; font-weight: 600; color: var(--texto-suave); font-variant-numeric: tabular-nums; }
+
+/* Tarjeta de auto */
+.tm-auto {
+  position: relative; display: flex; flex-direction: column; gap: 12px; padding: 14px; border-radius: 20px;
+  background: var(--superficie); border: 1px solid var(--borde); color: var(--texto);
+  animation: tm-entra 320ms cubic-bezier(.2, .8, .2, 1) both; transition: transform 120ms ease;
+}
+.tm-auto:active { transform: scale(.98); }
+.tm-auto.tal-movida { border-color: var(--empresa); box-shadow: 0 0 0 2px color-mix(in srgb, var(--empresa) 35%, transparent); }
+.tm-auto-cab { display: flex; align-items: flex-start; gap: 12px; }
+.tm-auto-texto { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.tm-enlace { font-size: 16px; line-height: 20px; font-weight: 800; color: inherit; text-decoration: none; overflow-wrap: anywhere; }
+.tm-enlace::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }   /* toda la tarjeta abre la orden */
+.tm-enlace:focus-visible { outline: none; }
+.tm-enlace:focus-visible::after { outline: 2px solid var(--empresa); outline-offset: 2px; }
+.tm-auto-texto > span { font-size: 13px; line-height: 18px; font-weight: 600; color: var(--texto-suave); }
+.tm-auto-pct { font-size: 18px; font-weight: 800; color: var(--acento-texto); font-variant-numeric: tabular-nums; }
+.tm-barra { height: 8px; border-radius: 999px; background: var(--borde); display: flex; overflow: hidden; }
+.tm-barra i { background: var(--empresa); border-radius: 999px; transition: width 400ms ease; }
+.tm-auto-pie { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--texto-suave); }
+.tm-auto-pie > span:first-child { flex: 1; min-width: 0; }
+.tm-prio { font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 999px; background: var(--fondo-hundido); color: var(--texto-suave); white-space: nowrap; }
+.tm-prio-urgente { background: var(--venc-fondo); color: var(--venc); }
+.tm-prio-prioridad { background: var(--prox-fondo); color: var(--prox); }
+.tm-prio-programado { background: var(--pend-fondo); color: var(--pend); }
+.tm-mover {
+  position: relative; z-index: 1; min-height: 40px; display: inline-flex; align-items: center; gap: 4px; padding: 0 12px; border: 0; border-radius: 12px; cursor: pointer;
+  background: var(--empresa); color: var(--sobre-empresa); font: inherit; font-weight: 800; font-size: 13px; transition: transform 120ms ease;
+}
+.tm-mover:active { transform: scale(.95); }
+.tm-vacio {
+  display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 28px 16px; border-radius: 20px;
+  border: 1px dashed var(--borde); color: var(--texto-suave); font-weight: 600; text-align: center;
+}
+
+/* Tablero y Agenda: cabecera con pestañas */
+.tm-cab { display: flex; flex-direction: column; gap: 14px; }
+.tm-cab-fila { display: flex; align-items: center; gap: 10px; }
+.tm-cab-fila h1 { flex: 1; font-size: 28px; line-height: 34px; font-weight: 800; letter-spacing: -.02em; }
+.tm-buscar {
+  flex: 0 1 170px; height: 44px; display: flex; align-items: center; gap: 8px; padding: 0 12px; border-radius: 14px;
+  background: var(--superficie); border: 1px solid var(--borde); color: var(--texto-suave);
+}
+.tm-buscar input { width: 100%; min-width: 0; border: 0; background: transparent; color: var(--texto); font: inherit; font-weight: 600; font-size: 16px; outline: none; }
+.tm-buscar:focus-within { border-color: var(--empresa); }
+.tm-pestanas { position: relative; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-bottom: 1px solid var(--borde); }
+.tm-pestana {
+  min-height: 48px; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 4px; border: 0; background: transparent; cursor: pointer;
+  color: var(--texto-suave); font: inherit; font-size: 13px; font-weight: 700; transition: color 200ms ease; padding: 0;
+}
+.tm-pestana[aria-selected="true"] { color: var(--texto); font-weight: 800; }
+.tm-cuenta {
+  min-width: 20px; height: 20px; padding: 0 5px; border-radius: 999px; display: inline-grid; place-items: center;
+  font-size: 11px; font-weight: 800; background: var(--fondo-hundido); color: var(--texto-suave); transition: background-color 200ms ease, color 200ms ease;
+}
+.tm-pestana[aria-selected="true"] .tm-cuenta { background: var(--empresa); color: var(--sobre-empresa); }
+.tm-indicador {
+  position: absolute; left: 0; bottom: -1px; width: 25%; height: 3px; border-radius: 3px 3px 0 0; background: var(--empresa);
+  transition: transform 280ms cubic-bezier(.2, .8, .2, 1);
+}
+.tm-lista, .im-atencion { display: flex; flex-direction: column; gap: 12px; }
+
+/* Agenda */
+.ag-semana { display: flex; align-items: center; gap: 2px; font-weight: 700; color: var(--texto-suave); }
+.ag-franja { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.ag-dia {
+  min-height: 66px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; padding: 0;
+  border-radius: 16px; cursor: pointer; border: 1px solid var(--borde); background: var(--superficie); color: var(--texto); font: inherit;
+  transition: background-color 200ms ease, color 200ms ease, border-color 200ms ease;
+}
+.ag-dia > span:first-child { font-size: 11px; font-weight: 700; }
+.ag-dia strong { font-size: 19px; line-height: 22px; font-weight: 800; }
+.ag-dia > i { width: 5px; height: 5px; border-radius: 999px; }
+.ag-dia > i.con-citas { background: var(--empresa); }
+.ag-dia.hoy:not([aria-selected="true"]) { border-color: var(--empresa); }
+.ag-dia[aria-selected="true"] { background: var(--empresa); border-color: var(--empresa); color: var(--sobre-empresa); }
+.ag-dia[aria-selected="true"] > i.con-citas { background: var(--sobre-empresa); }
+.ag-hoy { align-self: center; border: 0; background: transparent; color: var(--acento-texto); font: inherit; font-weight: 700; cursor: pointer; min-height: 32px; }
+.ag-titulo { font-size: 17px; font-weight: 800; }
+.ag-lista { display: flex; flex-direction: column; gap: 12px; }
+.ag-cita { display: flex; gap: 12px; color: var(--texto); text-decoration: none; animation: tm-entra 320ms cubic-bezier(.2, .8, .2, 1) both; }
+.ag-cita:active .ag-tarjeta { transform: scale(.98); }
+.ag-hora { flex: none; width: 52px; display: flex; flex-direction: column; align-items: center; gap: 6px; padding-top: 14px; }
+.ag-hora strong { font-size: 16px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.ag-hora i { flex: 1; width: 2px; border-radius: 2px; background: var(--borde); }
+.ag-tarjeta {
+  flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; padding: 14px; border-radius: 20px;
+  background: var(--superficie); border: 1px solid var(--borde); transition: transform 120ms ease;
+}
+.ag-tarjeta > strong { font-size: 16px; line-height: 20px; font-weight: 800; margin-top: 4px; }
+.ag-tarjeta > .texto-suave { font-size: 13px; font-weight: 600; }
+.ag-tarjeta-cab { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+
+/* Orden */
+.om-barra { display: flex; align-items: center; gap: 8px; min-height: 48px; margin: -8px -8px 0; }
+.om-barra > span:nth-child(2) { flex: 1; font-weight: 700; color: var(--texto-suave); }
+.om-volver { width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; color: var(--texto); }
+.om-heroe { display: flex; align-items: center; gap: 14px; }
+.om-heroe-texto { min-width: 0; display: flex; flex-direction: column; }
+.om-heroe-texto h1 { font-size: 20px; line-height: 24px; font-weight: 800; overflow-wrap: anywhere; }
+.om-heroe-texto > span { font-size: 14px; font-weight: 600; color: var(--texto-suave); }
+.om-etapa { display: flex; flex-direction: column; gap: 12px; padding: 14px; border-radius: 20px; background: var(--superficie); border: 1px solid var(--borde); }
+.om-etapa .tm-paso-nombre { font-size: 12px; line-height: 14px; }
+.om-etapa-pie { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; font-size: 14px; font-weight: 600; color: var(--texto-suave); }
+.om-etapa-pie strong { font-size: 22px; font-weight: 800; color: var(--acento-texto); }
+.om-acciones { display: flex; flex-wrap: wrap; gap: 8px; }
+.orden-movil .om-tareas { max-width: none; border-radius: 20px; }
+.orden-movil .om-tareas .orden-tarea { min-height: 48px; padding: 0 6px 0 14px; border-radius: 14px; border: 1px solid var(--borde); background: var(--superficie); transition: background-color 220ms ease, color 220ms ease; }
+.orden-movil .om-tareas .orden-tarea .casilla { flex: 1; min-height: 46px; font-size: 15px; font-weight: 600; }
+.orden-movil .om-tareas .orden-tarea.hecha { background: color-mix(in srgb, var(--ok) 12%, var(--superficie)); border-color: transparent; color: var(--texto-suave); }
+.orden-movil .om-tareas .orden-tarea.hecha .casilla span { text-decoration: line-through; }
+.om-pie {
+  position: fixed; left: 0; right: 0; bottom: calc(74px + env(safe-area-inset-bottom)); z-index: 650; display: flex; gap: 10px; padding: 10px 16px;
+  background: color-mix(in srgb, var(--fondo) 92%, transparent); backdrop-filter: blur(8px); border-top: 1px solid var(--borde);
+}
+.om-fotos, .om-siguiente {
+  height: 54px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border-radius: 18px; cursor: pointer; font: inherit; font-weight: 800; font-size: 15px;
+  transition: transform 120ms ease;
+}
+.om-fotos { flex: none; padding: 0 18px; border: 1px solid var(--borde); background: var(--superficie); color: var(--texto); }
+.om-siguiente { flex: 1; border: 0; background: var(--empresa); color: var(--sobre-empresa); font-size: 16px; }
+.om-fotos:active, .om-siguiente:active { transform: scale(.97); }
+.orden-movil:has(.om-pie) { padding-bottom: 80px; }
+
+/* Inicio */
+.im-cab {
+  margin: calc(-16px - env(safe-area-inset-top)) -16px 0; padding: calc(18px + env(safe-area-inset-top)) 20px 22px; border-radius: 0 0 28px 28px;
+  background: var(--empresa); color: var(--sobre-empresa); display: flex; flex-direction: column; gap: 14px;
+}
+.im-cab-fila { display: flex; align-items: center; gap: 10px; }
+.im-marca {
+  margin-right: auto; display: inline-flex; align-items: center; gap: 8px; min-height: 38px; padding: 4px 12px 4px 8px; border-radius: 14px;
+  background: #17191c; color: #fff; font-size: 13px; font-weight: 800; max-width: 100%;
+}
+.im-marca img { height: 30px; width: auto; max-width: 56px; object-fit: contain; }
+.im-campana {
+  flex: none; width: 44px; height: 44px; border-radius: 14px; border: 0; cursor: pointer; display: grid; place-items: center;
+  background: color-mix(in srgb, var(--sobre-empresa) 12%, transparent); color: inherit;
+}
+.im-saludo { display: flex; flex-direction: column; gap: 2px; }
+.im-saludo > span { font-size: 14px; font-weight: 600; }
+.im-saludo h1 { font-size: 30px; line-height: 36px; font-weight: 800; letter-spacing: -.02em; }
+.im-cifras { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.im-cifra {
+  display: flex; flex-direction: column; padding: 10px 12px; border-radius: 16px; color: inherit; text-decoration: none;
+  background: color-mix(in srgb, var(--sobre-empresa) 12%, transparent); animation: tm-entra 320ms cubic-bezier(.2, .8, .2, 1) both;
+}
+.im-cifra strong { font-size: 26px; line-height: 30px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.im-cifra span { font-size: 12px; font-weight: 600; }
+.im-cifra.destacada { background: #17191c; color: #fff; }
+.im-titulo { display: flex; align-items: baseline; justify-content: space-between; }
+.im-titulo h2 { font-size: 18px; font-weight: 800; }
+.im-titulo a { font-weight: 700; color: var(--acento-texto); text-decoration: none; }
+
+@media (max-width: 760px) {
+  /* En el teléfono la barra de arriba sobra: empresa, notificaciones, modo y salir están en Más */
+  body:has(.barra-movil) .barra { display: none; }
+  .contenido { padding-top: calc(16px + env(safe-area-inset-top)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tm-auto, .ag-cita, .im-cifra { animation: none; }
+  .tm-indicador { transition: none; }
+}

@@ -1,8 +1,9 @@
 // Inicio: saludo con la fecha, lo que requiere atención (alertas de los módulos que el usuario puede ver)
 // indicadores de los módulos (core/vistas/indicadores.js) y accesos a los módulos agrupados por área. Las alertas llegan después, sin bloquear la pantalla.
-import { el } from '../ui/dom.js?v=faa3077';
-import { icono } from '../ui/iconos.js?v=faa3077';
-import { nombreEmpresa } from '../empresas.js?v=faa3077';
+import { el } from '../ui/dom.js?v=cb36eb2';
+import { icono } from '../ui/iconos.js?v=cb36eb2';
+import { nombreEmpresa } from '../empresas.js?v=cb36eb2';
+import { esTelefono, marcaGuardada } from '../movil.js?v=cb36eb2';
 
 const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
@@ -44,15 +45,59 @@ function resumenTaller(ctx) {
   return nodo;
 }
 
-export default function inicio(ctx, visibles) {
+// Teléfono (dirección B): cabecera con el color de la empresa (logo, campana, fecha, saludo y, con Taller, los números
+// del día) y "Necesitan atención" con los autos del taller. Debajo, lo mismo que en pantalla grande.
+function cabeceraMovil(ctx, { fecha, titulo, abrirNotificaciones, conTaller }) {
+  const marca = marcaGuardada(ctx.empresa.id);
+  const cifras = el('div', { class: 'im-cifras', hidden: true });
+  if (conTaller) {
+    ctx.api.from('tal_ordenes').select('estado').eq('empresa_id', ctx.empresa.id).in('estado', ['espera', 'proceso', 'terminado']).then(({ data }) => {
+      const n = (e) => (data ?? []).filter((o) => o.estado === e).length;
+      cifras.replaceChildren(...[[n('espera') + n('proceso') + n('terminado'), 'en el taller'], [n('proceso'), 'en proceso'], [n('terminado'), 'para entregar']]
+        .map(([c, t], i) => el('a', { class: `im-cifra${i === 2 && c ? ' destacada' : ''}`, href: '#/taller.tablero' }, el('strong', {}, String(c)), el('span', {}, t))));
+      cifras.hidden = false;
+    });
+  }
+  return el('header', { class: 'im-cab' },
+    el('div', { class: 'im-cab-fila' },
+      el('span', { class: 'im-marca' }, marca?.logo ? el('img', { src: marca.logo, alt: '' }) : null, nombreEmpresa(ctx.empresa)),
+      abrirNotificaciones ? el('button', { type: 'button', class: 'im-campana', 'aria-label': 'Notificaciones', onclick: abrirNotificaciones }, icono('campana', { tam: 22 })) : null),
+    el('div', { class: 'im-saludo' }, el('span', {}, fecha[0].toUpperCase() + fecha.slice(1)), titulo),
+    cifras);
+}
+
+// Autos del taller que necesitan atención: listos sin entregar, esperas largas, los que llevan más en proceso y las citas de hoy
+function atencionTaller(ctx) {
+  const nodo = el('section', { class: 'im-atencion', hidden: true });
+  (async () => {
+    const [{ SELECT_ORDEN, minutosTrabajo }, m] = await Promise.all([import('../../modulos/taller/datos.js?v=cb36eb2'), import('../../modulos/taller/movil.js?v=cb36eb2')]);
+    const { data, error } = await ctx.api.from('tal_ordenes').select(SELECT_ORDEN).eq('empresa_id', ctx.empresa.id).in('estado', ['agendado', 'espera', 'proceso', 'terminado']);
+    if (error) throw error;
+    // Primero por tipo de motivo; dentro de cada uno, el que lleva más tiempo
+    const espera = (o) => minutosTrabajo(o) ?? m.minutosDesde(o.termino_at ?? o.ingreso_at) ?? 0;
+    const autos = (data ?? []).map((o) => ({ o, mot: m.motivoAtencion(o) })).filter((x) => x.mot)
+      .sort((a, b) => a.mot.orden - b.mot.orden || espera(b.o) - espera(a.o))
+      .slice(0, 4);
+    nodo.replaceChildren(
+      el('div', { class: 'im-titulo' }, el('h2', {}, 'Necesitan atención'), el('a', { href: '#/taller.tablero' }, 'Ver todo')),
+      ...(autos.length ? autos.map(({ o, mot }, i) => m.tarjetaAuto(ctx, o, { texto: mot.texto, pie: 'pasos', retraso: 60 + i * 60 }))
+        : [el('div', { class: 'inicio-al-dia' }, icono('check', { tam: 20 }), el('span', {}, 'Nada pendiente en el taller.'))]));
+    nodo.hidden = false;
+  })().catch(() => nodo.remove());
+  return nodo;
+}
+
+export default function inicio(ctx, visibles, { abrirNotificaciones } = {}) {
   const hoy = new Date();
   const fecha = `${DIAS[hoy.getDay()]} ${hoy.getDate()} de ${MESES[hoy.getMonth()]}`;
+  const telefono = esTelefono();
   // Roles de tablet (Operador de taller, Tablet de marcaje): solo ven el taller; su Inicio es el saludo, el resumen del
   // taller y sus accesos, sin indicadores ni alertas de gestión
   const tablet = visibles.some((m) => m.id === 'taller') && !ctx.puede('taller', 'crear')
     && visibles.every((m) => ['taller', 'terceros', 'marcaje', 'asistencia'].includes(m.id));
-  const titulo = el('h1', {}, saludo(hoy));
-  nombreUsuario(ctx).then((n) => { if (n) titulo.textContent = `${saludo(hoy)}, ${n}`; }).catch(() => {});
+  const titulo = el('h1', {}, telefono ? 'Hola' : saludo(hoy));
+  nombreUsuario(ctx).then((n) => { if (n) titulo.textContent = telefono ? `Hola, ${n}` : `${saludo(hoy)}, ${n}`; }).catch(() => {});
+  const conTaller = visibles.some((m) => m.id === 'taller');
 
   // Requiere atención: se llena cuando llegan las alertas
   const atencion = el('div', { class: 'ficha doc-grupo inicio-atencion' },
@@ -61,12 +106,12 @@ export default function inicio(ctx, visibles) {
   // Indicadores (tarjetas y paneles): llegan después, sin bloquear la pantalla
   const indicadores = el('div', { class: 'cargando-bloque', 'aria-busy': 'true', 'aria-label': 'Cargando indicadores' }, el('span', { class: 'cargador', 'aria-hidden': 'true' }));
   if (visibles.length && !tablet) {
-    import('./indicadores.js?v=faa3077')
+    import('./indicadores.js?v=cb36eb2')
       .then(async ({ cargarIndicadores, panelIndicadores }) => { const p = panelIndicadores(ctx, await cargarIndicadores(ctx)); if (p) indicadores.replaceWith(p); else indicadores.remove(); })
       .catch(() => indicadores.remove());
   } else indicadores.remove();
   if (visibles.length && !tablet) {
-    import('../../modulos/gerencia/alertas.js?v=faa3077')
+    import('../../modulos/gerencia/alertas.js?v=cb36eb2')
       .then(({ cargarAlertas }) => cargarAlertas(ctx))
       .then((alertas) => {
         atencion.replaceChildren(el('h2', {}, alertas.length ? `Requiere atención (${alertas.length})` : 'Requiere atención'),
@@ -84,12 +129,13 @@ export default function inicio(ctx, visibles) {
   // Un acceso por módulo (a su primera vista), agrupados por área
   const grupos = new Map();
   for (const m of visibles) { if (!grupos.has(m.categoria)) grupos.set(m.categoria, []); grupos.get(m.categoria).push(m); }
-  return el('section', { class: 'listado inicio' },
-    el('header', { class: 'inicio-cabecera' },
-      el('p', { class: 'texto-suave inicio-fecha' }, fecha[0].toUpperCase() + fecha.slice(1)),
-      titulo,
-      el('p', { class: 'texto-suave' }, nombreEmpresa(ctx.empresa))),
-    visibles.some((m) => m.id === 'taller') ? resumenTaller(ctx) : null,
+  return el('section', { class: `listado inicio${telefono ? ' inicio-movil' : ''}` },
+    telefono ? cabeceraMovil(ctx, { fecha, titulo, abrirNotificaciones, conTaller })
+      : el('header', { class: 'inicio-cabecera' },
+        el('p', { class: 'texto-suave inicio-fecha' }, fecha[0].toUpperCase() + fecha.slice(1)),
+        titulo,
+        el('p', { class: 'texto-suave' }, nombreEmpresa(ctx.empresa))),
+    conTaller ? (telefono ? atencionTaller(ctx) : resumenTaller(ctx)) : null,
     visibles.length && !tablet ? indicadores : null,
     !visibles.length ? el('p', { class: 'aviso-bandeja' }, icono('alerta', { tam: 16 }), 'Tu rol no tiene módulos habilitados en esta empresa. Pide acceso al administrador.') : !tablet ? atencion : null,
     [...grupos].map(([categoria, mods]) => el('div', { class: 'inicio-grupo' },

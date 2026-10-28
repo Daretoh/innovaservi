@@ -1,8 +1,8 @@
 // Costos con la patente (como el OS, 2026-10-22): en la orden del taller, los gastos de Costos y gastos registrados con
 // la patente del vehículo: los de esta visita (entre el ingreso y la entrega, o ligados a la orden), los de otras
 // visitas y lo que queda por pagar. Cada uno abre su registro. Requiere permiso de ver Costos.
-import { el } from '../../core/ui/dom.js?v=faa3077';
-import { dinero, fechaLarga, diaLocal, hoyISO } from '../../core/ui/formato.js?v=faa3077';
+import { el } from '../../core/ui/dom.js?v=cb36eb2';
+import { dinero, fechaLarga, diaLocal, hoyISO } from '../../core/ui/formato.js?v=cb36eb2';
 
 export async function seccionCostosPatente(ctx, o, v) {
   if (!v?.patente || !ctx.puede('costos', 'ver')) return null;

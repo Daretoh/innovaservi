@@ -1,16 +1,16 @@
 // Arranque de ISgestión: sesión → empresas y permisos → barra con selector → menú → vista.
-import { iniciarApi, db } from './api.js?v=faa3077';
-import { sesionActual, iniciarSesion, cerrarSesion, alCambiarSesion } from './auth.js?v=faa3077';
-import { cargarPermisos, crearPuede } from './permisos.js?v=faa3077';
-import { cargarEmpresas, cargarModulosEmpresa, elegirEmpresa, recordarEmpresa, nombreEmpresa } from './empresas.js?v=faa3077';
-import { cargarManifiestos, modulosVisibles, apartadosPorCategoria, configModulo } from './modulos.js?v=faa3077';
-import { el } from './ui/dom.js?v=faa3077';
-import { icono } from './ui/iconos.js?v=faa3077';
-import { boton } from './ui/tabla.js?v=faa3077';
-import inicio from './vistas/inicio.js?v=faa3077';
-import mas from './vistas/mas.js?v=faa3077';
-import { franja, botonNotificaciones, desactivar } from './push.js?v=faa3077';
-import { barraMovil, marcarBarraMovil, bienvenidaInicial, recordarMarca } from './movil.js?v=faa3077';
+import { iniciarApi, db } from './api.js?v=cb36eb2';
+import { sesionActual, iniciarSesion, cerrarSesion, alCambiarSesion } from './auth.js?v=cb36eb2';
+import { cargarPermisos, crearPuede } from './permisos.js?v=cb36eb2';
+import { cargarEmpresas, cargarModulosEmpresa, elegirEmpresa, recordarEmpresa, nombreEmpresa } from './empresas.js?v=cb36eb2';
+import { cargarManifiestos, modulosVisibles, apartadosPorCategoria, configModulo } from './modulos.js?v=cb36eb2';
+import { el } from './ui/dom.js?v=cb36eb2';
+import { icono } from './ui/iconos.js?v=cb36eb2';
+import { boton } from './ui/tabla.js?v=cb36eb2';
+import inicio from './vistas/inicio.js?v=cb36eb2';
+import mas from './vistas/mas.js?v=cb36eb2';
+import { franja, botonNotificaciones, desactivar } from './push.js?v=cb36eb2';
+import { barraMovil, marcarBarraMovil, bienvenidaInicial, recordarMarca, CORTE_TELEFONO } from './movil.js?v=cb36eb2';
 
 const COLOR_BASE = '#1f4e8c';
 const CLAVE_MINIMA = 10;   // 08 Seguridad §4
@@ -395,7 +395,7 @@ async function navegar() {
   }
 
   if (!id) {
-    const nodo = inicio(ctx, estado.visibles);
+    const nodo = inicio(ctx, estado.visibles, { abrirNotificaciones: () => estado.botonNotif?.click() });
     if (estado.vistaActual !== '') nodo.classList.add('vista-entra');
     estado.contenido.replaceChildren(nodo); estado.vistaActual = ''; return;
   }
@@ -432,6 +432,8 @@ async function navegar() {
   }
 }
 window.addEventListener('hashchange', navegar);
+// Inicio, Tablero, Orden y Agenda tienen versión de teléfono: al cruzar el corte (girar la tablet, achicar la ventana) se repintan
+matchMedia(CORTE_TELEFONO).addEventListener('change', () => { if (estado.contenido?.isConnected) navegar(); });
 
 // Pantalla vacía o de error: icono, título, texto y acceso a Inicio (o reintentar)
 function estadoVacio(ic, titulo, texto, reintentar = false) {

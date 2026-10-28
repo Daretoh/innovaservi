@@ -6,12 +6,17 @@
 //   accesos: [{ id: 'taller.tablero', label: 'Taller', icono: 'auto' }, …]   pestañas de la barra (si la ruta existe)
 //   accion:  { label, icono, requiere: 'crear', abrir: (ctx) => … }           el botón "+" del centro
 // Sin accesos declarados, la barra usa los primeros apartados del menú. Siempre: Inicio al principio y Más al final.
-import { el } from './ui/dom.js?v=faa3077';
-import { icono } from './ui/iconos.js?v=faa3077';
-import { urlFirmada } from './adjuntos.js?v=faa3077';
-import { nombreEmpresa } from './empresas.js?v=faa3077';
+import { el } from './ui/dom.js?v=cb36eb2';
+import { icono } from './ui/iconos.js?v=cb36eb2';
+import { urlFirmada } from './adjuntos.js?v=cb36eb2';
+import { nombreEmpresa } from './empresas.js?v=cb36eb2';
 
 const MAX_ACCESOS = 2;
+
+// ¿Pantalla de teléfono? (mismo corte que el CSS). Las vistas con versión de teléfono (Inicio, Tablero, Orden, Agenda)
+// la eligen al pintarse; core/app.js vuelve a pintar la vista si se cruza el corte (girar la tablet, achicar la ventana).
+export const CORTE_TELEFONO = '(max-width: 760px)';
+export const esTelefono = () => matchMedia(CORTE_TELEFONO).matches;
 
 // Barra de abajo. `ctx()` entrega el contexto actual (para abrir la acción del "+").
 export function barraMovil({ visibles, apartados, rutas, puede, ctx }) {
@@ -78,6 +83,11 @@ export function bienvenidaInicial() {
   };
   setTimeout(cerrar, 15000);   // nunca se queda pegada
   return { cerrar };
+}
+
+// Marca guardada de la empresa (nombre, color y logo incrustado) si es la indicada; null si no hay
+export function marcaGuardada(empresaId) {
+  try { const m = JSON.parse(localStorage.getItem(CLAVE_MARCA) || 'null'); return m && (!empresaId || m.id === empresaId) ? m : null; } catch { return null; }
 }
 
 // Guarda en este navegador el nombre, color y logo (como imagen incrustada, si es liviano) de la empresa activa,

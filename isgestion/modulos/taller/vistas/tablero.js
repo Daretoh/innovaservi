@@ -2,18 +2,20 @@
 // Toda la tarjeta abre la orden; buscador por patente, vehículo o cliente; la tarjeta recién movida queda
 // resaltada; se actualiza solo cada 2 minutos (pensado para la tablet del taller). Arriba, el resumen del Seguimiento
 // del OS (avance y arrastrar para priorizar); el botón de pantalla completa abre el detalle para la tablet.
-import { el } from '../../../core/ui/dom.js?v=faa3077';
-import { icono } from '../../../core/ui/iconos.js?v=faa3077';
-import { boton } from '../../../core/ui/tabla.js?v=faa3077';
-import { fechaCorta, hhmm, hoyISO } from '../../../core/ui/formato.js?v=faa3077';
-import { ESTADOS, PRIORIDADES, CHIP_PRIORIDAD, SELECT_ORDEN, verPatente, nombreVehiculo, nombreTercero, minutosTrabajo, textoMinutos, hora, cargarTrabajadores } from '../datos.js?v=faa3077';
-import { mover } from '../acciones.js?v=faa3077';
-import { recepcion } from '../recepcion.js?v=faa3077';
-import { avance, ordenarActivos, marcaCotizar, resumenTaller, detalleVehiculo } from '../seguimiento.js?v=faa3077';
+import { el } from '../../../core/ui/dom.js?v=cb36eb2';
+import { icono } from '../../../core/ui/iconos.js?v=cb36eb2';
+import { boton } from '../../../core/ui/tabla.js?v=cb36eb2';
+import { fechaCorta, hhmm, hoyISO } from '../../../core/ui/formato.js?v=cb36eb2';
+import { ESTADOS, PRIORIDADES, CHIP_PRIORIDAD, SELECT_ORDEN, verPatente, nombreVehiculo, nombreTercero, minutosTrabajo, textoMinutos, hora, cargarTrabajadores } from '../datos.js?v=cb36eb2';
+import { mover } from '../acciones.js?v=cb36eb2';
+import { recepcion } from '../recepcion.js?v=cb36eb2';
+import { avance, ordenarActivos, marcaCotizar, resumenTaller, detalleVehiculo } from '../seguimiento.js?v=cb36eb2';
+import { ETAPAS, tarjetaAuto } from '../movil.js?v=cb36eb2';
+import { esTelefono } from '../../../core/movil.js?v=cb36eb2';
 
 const MAX_ENTREGADOS = 6;
 const ESPERA_LARGA = 60;   // minutos en espera para avisar
-const estado = { buscar: '', movida: null, timer: null, scroll: 0 };
+const estado = { buscar: '', movida: null, timer: null, scroll: 0, etapa: null };
 
 export default async function vista(ctx) {
   const inicioMes = `${hoyISO().slice(0, 7)}-01`;
@@ -39,6 +41,8 @@ export default async function vista(ctx) {
     if (location.hash !== ruta) { clearInterval(estado.timer); return; }
     if (document.visibilityState === 'visible' && !document.querySelector('dialog[open]') && !document.activeElement?.matches('input, textarea, select')) ctx.refrescar();
   }, 120000);
+
+  if (esTelefono()) return tableroMovil(ctx, data.filter((o) => o.estado !== 'entregado'), { puedeMover, movida });
 
   const largo = (m) => (m >= 1440 ? `${Math.floor(m / 1440)} d ${Math.floor((m % 1440) / 60)} h` : textoMinutos(m));
   const minutosDesde = (ts) => (ts ? Math.max(0, Math.round((Date.now() - new Date(ts)) / 60000)) : null);
@@ -124,4 +128,56 @@ export default async function vista(ctx) {
     resumenTaller(ctx, data, { alAbrir: (o) => detalleVehiculo(ctx, o, { alCambiar: () => ctx.refrescar() }) }),
     sinResultados,
     tablero);
+}
+
+// Teléfono (dirección B): pestañas por etapa con contador e indicador que se desliza, y la lista de autos de esa etapa
+// con su placa, avance y prioridad. Al cambiar de etapa las tarjetas entran escalonadas (sin recargar).
+function tableroMovil(ctx, data, { puedeMover, movida }) {
+  const nombres = { agendado: 'Agendado', espera: 'Espera', proceso: 'Proceso', terminado: 'Listos' };
+  const de = (k) => ordenarActivos(data.filter((o) => o.estado === k));
+  // Etapa al abrir: la que se miraba, la del auto recién movido o la primera con autos (En proceso si tiene)
+  const deMovida = movida ? data.find((o) => o.id === movida)?.estado : null;
+  if (deMovida) estado.etapa = deMovida;
+  if (!estado.etapa) estado.etapa = de('proceso').length ? 'proceso' : ETAPAS.find(([k]) => de(k).length)?.[0] ?? 'agendado';
+
+  const lista = el('div', { class: 'tm-lista', role: 'tabpanel' });
+  const indicador = el('span', { class: 'tm-indicador', 'aria-hidden': 'true' });
+  const pestanas = ETAPAS.map(([k]) => el('button', { type: 'button', role: 'tab', class: 'tm-pestana', onclick: () => elegir(k) },
+    nombres[k], el('span', { class: 'tm-cuenta' }, String(de(k).length))));
+  const vacio = (k) => el('div', { class: 'tm-vacio' }, icono('auto', { tam: 28 }), el('span', {}, `Sin vehículos ${k === 'terminado' ? 'listos para entregar' : `en ${nombres[k].toLowerCase()}`}.`),
+    k === 'agendado' && ctx.puede('taller', 'crear') ? boton('Agendar vehículo', { icono: 'mas', tipo: 'primario', onclick: () => recepcion(ctx) }) : null);
+  const pintar = () => {
+    const pos = ETAPAS.findIndex(([k]) => k === estado.etapa);
+    indicador.style.transform = `translateX(${pos * 100}%)`;
+    pestanas.forEach((b, i) => b.setAttribute('aria-selected', String(i === pos)));
+    const q = estado.buscar.trim().toLowerCase();
+    const autos = de(estado.etapa).filter((o) => !q || [o.tal_vehiculos?.patente, verPatente(o.tal_vehiculos?.patente), nombreVehiculo(o.tal_vehiculos), o.terceros ? nombreTercero(o.terceros) : ''].join(' ').toLowerCase().includes(q));
+    lista.replaceChildren(...(autos.length ? autos.map((o, i) => {
+      const ci = ESTADOS.findIndex(([k]) => k === o.estado);
+      const accion = puedeMover && ESTADOS[ci][2] ? el('button', { type: 'button', class: 'tm-mover', onclick: async () => { if (await mover(ctx, o, 1)) { estado.movida = o.id; ctx.refrescar(); } } }, ESTADOS[ci][2], icono('derecha', { tam: 14 })) : null;
+      const t = tarjetaAuto(ctx, o, { pie: 'avance', retraso: i * 50, accion });
+      if (o.id === movida) t.classList.add('tal-movida');
+      return t;
+    }) : [q ? el('p', { class: 'texto-suave' }, 'Ningún vehículo coincide con la búsqueda.') : vacio(estado.etapa)]));
+  };
+  const elegir = (k) => { if (k === estado.etapa) return; estado.etapa = k; pintar(); };
+  // Deslizar a los lados cambia de etapa
+  let x0 = null;
+  lista.addEventListener('touchstart', (ev) => { x0 = ev.touches[0].clientX; }, { passive: true });
+  lista.addEventListener('touchend', (ev) => {
+    if (x0 == null) return;
+    const dx = ev.changedTouches[0].clientX - x0; x0 = null;
+    if (Math.abs(dx) < 70) return;
+    const pos = ETAPAS.findIndex(([k]) => k === estado.etapa) + (dx < 0 ? 1 : -1);
+    if (ETAPAS[pos]) elegir(ETAPAS[pos][0]);
+  }, { passive: true });
+
+  const buscador = el('input', { type: 'search', placeholder: 'Patente', value: estado.buscar, 'aria-label': 'Buscar por patente, vehículo o cliente' });
+  buscador.addEventListener('input', () => { estado.buscar = buscador.value; pintar(); });
+  pintar();
+  return el('section', { class: 'listado tm' },
+    el('header', { class: 'tm-cab' },
+      el('div', { class: 'tm-cab-fila' }, el('h1', {}, 'Taller'), el('label', { class: 'tm-buscar' }, icono('buscar', { tam: 18 }), buscador)),
+      el('div', { class: 'tm-pestanas', role: 'tablist', 'aria-label': 'Etapas' }, indicador, pestanas)),
+    lista);
 }

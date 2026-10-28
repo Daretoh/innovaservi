@@ -2,21 +2,25 @@
 // Cabecera con placa y línea de avance por estado (con la hora de cada paso); checklist táctil con avance;
 // fotos con zona para arrastrar y soltar.
 // Ruta: #/taller.orden?id=<id>
-import { el } from '../../../core/ui/dom.js?v=faa3077';
-import { icono } from '../../../core/ui/iconos.js?v=faa3077';
-import { boton } from '../../../core/ui/tabla.js?v=faa3077';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=faa3077';
-import { avisar } from '../../../core/ui/aviso.js?v=faa3077';
-import { subirArchivo, eliminarArchivo, urlsFirmadas } from '../../../core/adjuntos.js?v=faa3077';
-import { comprimirFoto } from '../../../core/imagenes.js?v=faa3077';
-import { dinero, fechaLarga, fechaCorta, hhmm, diaLocal } from '../../../core/ui/formato.js?v=faa3077';
+import { el } from '../../../core/ui/dom.js?v=cb36eb2';
+import { icono } from '../../../core/ui/iconos.js?v=cb36eb2';
+import { boton } from '../../../core/ui/tabla.js?v=cb36eb2';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=cb36eb2';
+import { avisar } from '../../../core/ui/aviso.js?v=cb36eb2';
+import { subirArchivo, eliminarArchivo, urlsFirmadas } from '../../../core/adjuntos.js?v=cb36eb2';
+import { comprimirFoto } from '../../../core/imagenes.js?v=cb36eb2';
+import { dinero, fechaLarga, fechaCorta, hhmm, diaLocal } from '../../../core/ui/formato.js?v=cb36eb2';
 import {
   ESTADOS, nombreEstado, PRIORIDADES, TIPOS_VENTA, MODOS_PAGO, CATEGORIAS_MEDIA, SELECT_ORDEN,
   verPatente, nombreVehiculo, nombreTercero, precioTalla, totales, minutosTrabajo, textoMinutos, cargarServicios, cargarTrabajadores, hora,
-} from '../datos.js?v=faa3077';
-import { mover } from '../acciones.js?v=faa3077';
-import { seccionInsumos } from '../insumos.js?v=faa3077';
-import { seccionCostosPatente } from '../costos.js?v=faa3077';
+} from '../datos.js?v=cb36eb2';
+import { mover } from '../acciones.js?v=cb36eb2';
+import { seccionInsumos } from '../insumos.js?v=cb36eb2';
+import { seccionCostosPatente } from '../costos.js?v=cb36eb2';
+import { pasosEtapa, tiempoOrden } from '../movil.js?v=cb36eb2';
+import { avance as avanceOrden } from '../seguimiento.js?v=cb36eb2';
+import { placa } from '../../../core/ui/placa.js?v=cb36eb2';
+import { esTelefono } from '../../../core/movil.js?v=cb36eb2';
 
 const MAX_VIDEO = 25 * 1024 * 1024;
 let categoriaSubida = 'exterior';
@@ -45,7 +49,7 @@ export default async function vista(ctx) {
     // Lista de precios del cliente (Cotizaciones): manda sobre el precio del catálogo
     o.tercero_id && ctx.puede('cotizaciones', 'ver') ? ctx.api.from('cot_precios').select('*').eq('tercero_id', o.tercero_id) : Promise.resolve({ data: [] }),
     // ¿Se cobra en un cierre mensual o una cuenta corriente?
-    ctx.puede('cierres', 'ver') ? import('../../cierres/taller.js?v=faa3077').then((m) => m.cobroExterno(ctx, o)) : Promise.resolve(null),
+    ctx.puede('cierres', 'ver') ? import('../../cierres/taller.js?v=cb36eb2').then((m) => m.cobroExterno(ctx, o)) : Promise.resolve(null),
   ]);
   const precioLista = new Map((lista.data ?? []).map((p) => [p.descripcion.trim().toLowerCase(), p]));
   const precioDe = (s) => {
@@ -207,10 +211,16 @@ export default async function vista(ctx) {
 
   // ---- Estado
   const i = ESTADOS.findIndex(([k]) => k === o.estado);
+  const telefono = esTelefono();
   const acciones = [];
+  let siguiente = null;   // en el teléfono, el paso siguiente va en el pie fijo
   if (!anulada && ctx.puede('taller', 'editar')) {
     if (i > 0) acciones.push(boton('Volver', { icono: 'volver', onclick: async () => { if (await mover(ctx, o, -1)) ctx.refrescar(); } }));
-    if (ESTADOS[i]?.[2]) acciones.push(boton(ESTADOS[i][2], { icono: 'derecha', tipo: 'primario', onclick: async () => { if (await mover(ctx, o, 1)) ctx.refrescar(); } }));
+    if (ESTADOS[i]?.[2]) {
+      const avanzar = async () => { if (await mover(ctx, o, 1)) ctx.refrescar(); };
+      if (telefono) siguiente = el('button', { type: 'button', class: 'om-siguiente', onclick: avanzar }, ESTADOS[i][2], icono('derecha', { tam: 20 }));
+      else acciones.push(boton(ESTADOS[i][2], { icono: 'derecha', tipo: 'primario', onclick: avanzar }));
+    }
     if (!o.cobrado && o.estado !== 'entregado') acciones.push(boton('Anular', { icono: 'cerrar', onclick: () => abrirFormulario({
       titulo: `Anular orden N° ${o.numero}`, mensaje: 'La orden queda anulada (no se borra). Se puede reactivar después.', campos: [{ id: 'motivo', etiqueta: 'Motivo', requerido: true }], textoGuardar: 'Anular',
       alGuardar: async (x) => { if (!(await guardar({ estado: 'anulada', notas: [o.notas, `Anulada: ${x.motivo.trim()}`].filter(Boolean).join('\n') }, 'Orden anulada.'))) throw new Error('No se pudo anular.'); ctx.refrescar(); },
@@ -232,10 +242,44 @@ export default async function vista(ctx) {
     zona.addEventListener('dragleave', () => zona.classList.remove('activa'));
     zona.addEventListener('drop', (ev) => { ev.preventDefault(); zona.classList.remove('activa'); if (ev.dataTransfer.files.length) subir([...ev.dataTransfer.files]); });
   }
+  const bloqueTareas = [
+    el('h2', {}, `Tareas${o.tareas.length ? ` (${o.tareas.filter((x) => x.ok).length}/${o.tareas.length})` : ''}`),
+    o.tareas.length ? el('span', { class: 'tal-progreso-barra orden-barra' }, el('i', { style: `width:${Math.round((o.tareas.filter((x) => x.ok).length / o.tareas.length) * 100)}%` })) : null,
+    o.tareas.length ? o.tareas.map(filaTarea) : el('p', { class: 'texto-suave' }, 'Sin tareas. Se agregan con los servicios o a mano.'),
+    editableTrabajo && !o.cobrado ? nuevaTarea : null];
+  const fotos = el('div', { class: 'ficha doc-grupo', id: 'orden-fotos' },
+    el('div', { class: 'listado-cabecera' },
+      el('h2', {}, `Fotos y documentos (${media.data?.length ?? 0})`),
+      editableTrabajo ? el('div', { class: 'listado-acciones' }, selCat, boton('Subir', { icono: 'camara', tipo: 'primario', onclick: () => entrada.click() }), entrada) : null),
+    media.data?.length ? filtroMedia : null,
+    media.data?.length ? galeria : el('p', { class: 'texto-suave' }, 'Fotos del vehículo al ingresar y al entregar, boleta o voucher.'),
+    zona);
+  // Teléfono (dirección B): barra con volver y N°, la placa grande, la línea de etapas con horas y avance, las tareas
+  // primero y un pie fijo con Fotos y el paso siguiente. Debajo, los datos, servicios, tiempos y cobro de siempre.
+  const cabMovil = telefono ? [
+    el('header', { class: 'om-barra' },
+      el('a', { class: 'boton-icono om-volver', href: ctx.ruta('taller.tablero'), 'aria-label': 'Volver al taller' }, icono('volver', { tam: 22 })),
+      el('span', {}, `Orden N° ${o.numero}`),
+      el('span', { class: `chip ${anulada ? 'chip-na' : o.estado === 'entregado' ? 'chip-ok' : 'chip-prox'}` }, nombreEstado[o.estado]),
+      o.cobrado ? el('span', { class: 'chip chip-ok' }, 'Cobrado') : null),
+    el('section', { class: 'om-heroe' },
+      placa(v.patente, { tam: 'grande', href: ctx.ruta('taller.vehiculo', { id: v.id }), titulo: 'Ver el vehículo' }),
+      el('div', { class: 'om-heroe-texto' },
+        el('h1', {}, nombreVehiculo(v)),
+        el('span', {}, [`Talla ${v.talla}`, o.terceros ? nombreTercero(o.terceros) : ''].filter(Boolean).join(' · ')))),
+    anulada ? null : el('section', { class: 'om-etapa' },
+      pasosEtapa(o, { horas: true }),
+      el('div', { class: 'om-etapa-pie' }, el('span', {}, tiempoOrden(o)), el('strong', {}, `${avanceOrden(o)}%`))),
+    acciones.length ? el('div', { class: 'om-acciones' }, acciones) : null,
+    el('section', { class: 'ficha doc-grupo om-tareas' }, bloqueTareas),
+  ] : null;
+  const pieMovil = telefono && (editableTrabajo || siguiente) ? el('footer', { class: 'om-pie' },
+    el('button', { type: 'button', class: 'om-fotos', onclick: () => (editableTrabajo ? entrada.click() : fotos.scrollIntoView({ behavior: 'smooth' })) }, icono('camara', { tam: 20 }), `Fotos${media.data?.length ? ` (${media.data.length})` : ''}`),
+    siguiente) : null;
   // Desde Cobros: ir directo a la sección de cobro
   if (ctx.params.ir === 'cobro') setTimeout(() => document.getElementById('orden-cobro')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
-  return el('section', { class: 'listado' },
-    volver,
+  return el('section', { class: `listado${telefono ? ' orden-movil' : ''}` },
+    telefono ? cabMovil : [volver,
     el('header', { class: 'listado-cabecera orden-cabecera' },
       el('div', { class: 'orden-titulo' },
         el('span', { class: 'texto-suave texto-chico' }, `Orden de trabajo N° ${o.numero}`),
@@ -247,7 +291,7 @@ export default async function vista(ctx) {
       el('div', { class: 'listado-acciones' },
         el('span', { class: `chip ${anulada ? 'chip-na' : o.estado === 'entregado' ? 'chip-ok' : 'chip-prox'}` }, nombreEstado[o.estado]),
         o.cobrado ? el('span', { class: 'chip chip-ok' }, 'Cobrado') : null, acciones)),
-    avance,
+    avance],
     (cotizaciones.data ?? []).filter((x) => x.cot_cotizaciones && !x.cot_cotizaciones.deleted_at).length
       ? el('p', { class: 'texto-chico' }, icono('documento', { tam: 14 }), ' Cotización: ', (cotizaciones.data ?? []).filter((x) => x.cot_cotizaciones && !x.cot_cotizaciones.deleted_at)
         .flatMap((x, i) => [i ? ', ' : '', el('a', { href: ctx.ruta('cotizaciones.editor', { id: x.cot_cotizaciones.id }) }, `N° ${String(x.cot_cotizaciones.numero).padStart(6, '0')} (${x.cot_cotizaciones.estado})`)]))
@@ -269,10 +313,7 @@ export default async function vista(ctx) {
         el('h2', {}, `Servicios · ${dinero(t.bruto)}`),
         lineas.length ? lineas.map(filaServicio) : el('p', { class: 'texto-suave' }, 'Sin servicios.'),
         editable ? agregarServicio : null,
-        el('h2', {}, `Tareas${o.tareas.length ? ` (${o.tareas.filter((x) => x.ok).length}/${o.tareas.length})` : ''}`),
-        o.tareas.length ? el('span', { class: 'tal-progreso-barra orden-barra' }, el('i', { style: `width:${Math.round((o.tareas.filter((x) => x.ok).length / o.tareas.length) * 100)}%` })) : null,
-        o.tareas.length ? o.tareas.map(filaTarea) : el('p', { class: 'texto-suave' }, 'Sin tareas. Se agregan con los servicios o a mano.'),
-        editableTrabajo && !o.cobrado ? nuevaTarea : null)),
+        telefono ? null : bloqueTareas)),
     el('div', { class: 'plan-editor' },
       el('div', { class: 'ficha doc-grupo' },
         el('h2', {}, 'Tiempos'),
@@ -312,13 +353,8 @@ export default async function vista(ctx) {
           : null)),
     await seccionInsumos(ctx, o, anulada),
     await seccionCostosPatente(ctx, o, v),
-    el('div', { class: 'ficha doc-grupo' },
-      el('div', { class: 'listado-cabecera' },
-        el('h2', {}, `Fotos y documentos (${media.data?.length ?? 0})`),
-        editableTrabajo ? el('div', { class: 'listado-acciones' }, selCat, boton('Subir', { icono: 'camara', tipo: 'primario', onclick: () => entrada.click() }), entrada) : null),
-      media.data?.length ? filtroMedia : null,
-      media.data?.length ? galeria : el('p', { class: 'texto-suave' }, 'Fotos del vehículo al ingresar y al entregar, boleta o voucher.'),
-      zona),
+    fotos,
+    pieMovil,
   );
 }
 
@@ -326,7 +362,7 @@ export default async function vista(ctx) {
 async function cotizar(ctx, o, lineas, b) {
   b.disabled = true;
   try {
-    const { nueva } = await import('../../cotizaciones/vistas/lista.js?v=faa3077');
+    const { nueva } = await import('../../cotizaciones/vistas/lista.js?v=cb36eb2');
     const { data: t } = o.tercero_id ? await ctx.api.from('terceros').select('*').eq('id', o.tercero_id).maybeSingle() : { data: null };
     const v = o.tal_vehiculos;
     await nueva(ctx, {
