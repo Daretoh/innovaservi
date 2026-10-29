@@ -2174,3 +2174,10 @@ html { transition: background-color 220ms ease; }
   .barra-movil.presionando .bm-item[aria-current]:not(.bm-sobre) svg { transform: none; }
   .bm-item.bm-sobre { color: var(--acento-texto); font-weight: 800; transform: translateY(-2px) scale(1.06); }
 }
+/* Datos de la patente (Agendar): buscando, encontrados o no encontrados */
+.agh-patente-info { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 16px; font-size: 14px; font-weight: 700; animation: tm-entra 220ms ease-out both; }
+.agh-patente-info > span:last-child { flex: 1; min-width: 0; }
+.agh-patente-info.buscando { background: var(--fondo-hundido); color: var(--texto-suave); }
+.agh-patente-info.buscando .cargador { transform: scale(.4); margin: -14px; }
+.agh-patente-info.ok { background: var(--ok-fondo); color: var(--ok); }
+.agh-patente-info.mal { background: var(--prox-fondo); color: var(--prox); }

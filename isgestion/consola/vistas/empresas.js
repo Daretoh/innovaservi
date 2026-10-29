@@ -2,13 +2,13 @@
 // una empresa (con_empresa_activa). En un módulo activo, "Pantallas" elige cuáles de sus pantallas (pestañas) ve la
 // empresa (con_pantallas): por ejemplo, de Asistencia solo el Registro de horas. Al activar un módulo se activan
 // también los que necesita; no se desactiva uno del que dependen otros activos. Los del núcleo siempre quedan activos. Ruta: #/empresas (?e= resalta una).
-import { el } from '../../core/ui/dom.js?v=7c7795a';
-import { icono } from '../../core/ui/iconos.js?v=7c7795a';
-import { boton } from '../../core/ui/tabla.js?v=7c7795a';
-import { abrirFormulario } from '../../core/ui/modal.js?v=7c7795a';
-import { avisar } from '../../core/ui/aviso.js?v=7c7795a';
-import { cargarTodo } from './datos.js?v=7c7795a';
-import { cargarManifiestos } from '../../core/modulos.js?v=7c7795a';
+import { el } from '../../core/ui/dom.js?v=6f62ff2';
+import { icono } from '../../core/ui/iconos.js?v=6f62ff2';
+import { boton } from '../../core/ui/tabla.js?v=6f62ff2';
+import { abrirFormulario } from '../../core/ui/modal.js?v=6f62ff2';
+import { avisar } from '../../core/ui/aviso.js?v=6f62ff2';
+import { cargarTodo } from './datos.js?v=6f62ff2';
+import { cargarManifiestos } from '../../core/modulos.js?v=6f62ff2';
 
 export default async function vista(ctx) {
   const [d, mods, pant, manifiestos] = await Promise.all([cargarTodo(ctx), ctx.api.rpc('con_modulos'), ctx.api.rpc('con_pantallas_todas'), cargarManifiestos()]);

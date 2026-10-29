@@ -4,12 +4,12 @@
 // vehículos; si es primera vez se escribe nombre y teléfono. La patente conocida trae el vehículo, su dueño y cuántas
 // veces vino. Un cliente "siempre por cotizar" (terceros.por_cotizar) marca el servicio a convenir y queda con Factura.
 // Devuelve una promesa que se cumple al cerrar la hoja (la barra del teléfono anima el "+" mientras está abierta).
-import { el } from '../../core/ui/dom.js?v=7c7795a';
-import { icono } from '../../core/ui/iconos.js?v=7c7795a';
-import { avisar } from '../../core/ui/aviso.js?v=7c7795a';
-import { placa } from '../../core/ui/placa.js?v=7c7795a';
-import { hoyISO, telefono, dinero } from '../../core/ui/formato.js?v=7c7795a';
-import { PRIORIDADES, TALLAS, normalizarPatente, verPatente, nombreTercero, precioTalla, cargarServicios, cargarTrabajadores, siguienteNumero, esEmpresa } from './datos.js?v=7c7795a';
+import { el } from '../../core/ui/dom.js?v=6f62ff2';
+import { icono } from '../../core/ui/iconos.js?v=6f62ff2';
+import { avisar } from '../../core/ui/aviso.js?v=6f62ff2';
+import { placa } from '../../core/ui/placa.js?v=6f62ff2';
+import { hoyISO, telefono, dinero } from '../../core/ui/formato.js?v=6f62ff2';
+import { PRIORIDADES, TALLAS, normalizarPatente, verPatente, nombreTercero, precioTalla, cargarServicios, cargarTrabajadores, siguienteNumero, esEmpresa } from './datos.js?v=6f62ff2';
 
 const AYUDA_TALLA = { S: 'City car', M: 'Sedán o hatchback', L: 'SUV', XL: 'Camioneta o van' };
 const soloDigitos = (t) => (t ?? '').replace(/\D/g, '');
@@ -147,6 +147,46 @@ export async function recepcion(ctx, { fecha = hoyISO(), vehiculo = null } = {})
     };
 
     // ---- Vehículo
+    // Datos de una patente nueva (Edge Function "patente" con GetAPI): marca, modelo, año y talla sugerida. Una consulta
+    // por patente; llena solo lo que está vacío o lo que llenó una consulta anterior, nunca lo que escribió la persona.
+    const consultadas = new Map();
+    let espera = null;
+    const VALIDA = /^([A-Z]{4}\d{2}|[A-Z]{2}\d{4}|[A-Z]{3}\d{2,3})$/;
+    const consultarPatente = (p) => {
+      clearTimeout(espera);
+      if (!p || !VALIDA.test(p)) { if (e.info) { e.info = null; refrescarVehiculo(); } return; }
+      espera = setTimeout(async () => {
+        if (!consultadas.has(p)) {
+          e.info = { clase: 'buscando', texto: 'Buscando los datos de la patente…' }; refrescarVehiculo();
+          consultadas.set(p, ctx.api.functions.invoke('patente', { body: { empresa_id: ctx.empresa.id, patente: p } })
+            .then(async ({ data, error }) => {
+              if (error) { const cuerpo = await error.context?.json?.().catch(() => null); return { error: cuerpo?.error || error.message, sinClave: cuerpo?.sinClave }; }
+              return data;
+            }).catch((x) => ({ error: x.message })));
+        }
+        const r = await consultadas.get(p);
+        if (normalizarPatente(e.nuevo.patente) !== p || e.vehiculo) return;   // ya escribió otra o eligió un vehículo
+        if (r?.sinClave) e.info = null;
+        else if (r?.error) e.info = { clase: 'mal', texto: `No se pudo buscar la patente: ${r.error}. Escribe los datos a mano.` };
+        else if (!r?.encontrado) e.info = { clase: 'mal', texto: 'No encontramos esa patente: escribe los datos a mano.' };
+        else {
+          const auto = e.auto ?? {};
+          const poner = (k, v) => { if (v != null && v !== '' && (!e.nuevo[k] || e.nuevo[k] === auto[k])) { e.nuevo[k] = String(v); auto[k] = String(v); } };
+          poner('marca', r.marca); poner('modelo', r.modelo); poner('anio', r.anio);
+          if (r.talla && (!e.tallaTocada)) { e.nuevo.talla = r.talla; }
+          e.auto = auto;
+          e.info = { clase: 'ok', texto: [[r.marca, r.modelo].filter(Boolean).join(' '), r.anio, r.color, r.tipo, r.talla ? `talla ${r.talla} sugerida` : null].filter(Boolean).join(' · ') };
+        }
+        refrescarVehiculo();
+      }, 450);
+    };
+    // Repinta la hoja sin perder el cursor en la patente
+    const refrescarVehiculo = () => {
+      const foco = document.activeElement?.classList.contains('agh-patente');
+      pintar();
+      if (foco) { const i = cuerpo.querySelector('.agh-patente'); i?.focus(); i?.setSelectionRange(i.value.length, i.value.length); }
+    };
+
     const parteVehiculo = () => {
       if (e.primera === null && !fijo) return null;
       if (e.vehiculo) {
@@ -158,6 +198,7 @@ export async function recepcion(ctx, { fecha = hoyISO(), vehiculo = null } = {})
       }
       const suyos = e.cliente ? listaVeh.filter((x) => x.tercero_id === e.cliente.id) : [];
       const aviso = el('div', { class: 'agh-conocido', hidden: true });
+      const info = el('div', { class: `agh-patente-info${e.info ? ` ${e.info.clase}` : ''}`, 'aria-live': 'polite', hidden: !e.info }, e.info ? [e.info.clase === 'buscando' ? el('span', { class: 'cargador', 'aria-hidden': 'true' }) : icono(e.info.clase === 'ok' ? 'check' : 'alerta', { tam: 18 }), el('span', {}, e.info.texto)] : null);
       const vista = el('div', { class: 'agh-placa-vista' }, placa(e.nuevo.patente || ''));
       const patente = entrada(e.nuevo.patente, (t) => {
         e.nuevo.patente = t.toUpperCase();
@@ -165,6 +206,7 @@ export async function recepcion(ctx, { fecha = hoyISO(), vehiculo = null } = {})
         const p = normalizarPatente(t);
         const x = p && p.length >= 5 && listaVeh.find((y) => y.patente === p);
         aviso.hidden = !x;
+        if (!x) consultarPatente(p);
         if (x) {
           const dueno = clienteDe(x.tercero_id); const veces = vecesDe(x.id);
           aviso.replaceChildren(icono('check', { tam: 18 }), el('span', {}, [nombreAuto(x), veces ? `ya vino ${veces} ${veces === 1 ? 'vez' : 'veces'}` : null, dueno ? `cliente ${nombreTercero(dueno)}` : null].filter(Boolean).join(' · ')),
@@ -174,14 +216,15 @@ export async function recepcion(ctx, { fecha = hoyISO(), vehiculo = null } = {})
       return seccion('Vehículo',
         suyos.length ? el('div', { class: 'agh-suyos' }, el('span', { class: 'texto-suave texto-chico' }, 'Elige uno de sus vehículos o escribe uno nuevo'),
           el('div', {}, suyos.map((x) => el('button', { type: 'button', class: 'agh-suyo', onclick: () => { e.vehiculo = x; pintar(); } }, placa(x.patente, { tam: 'chica' }), el('small', {}, nombreAuto(x)))))) : null,
-        el('div', { class: 'agh-fila agh-fila-placa' }, vista, campo('Patente', patente, 'Vacía si aún no la sabes')),
+        el('div', { class: 'agh-fila agh-fila-placa' }, vista, campo('Patente', patente, 'Si es nueva, se buscan sus datos solos')),
         aviso,
+        info,
         el('div', { class: 'agh-fila' },
           campo('Marca', entrada(e.nuevo.marca, (t) => { e.nuevo.marca = t; }, { autocomplete: 'off', autocapitalize: 'words' })),
           campo('Modelo', entrada(e.nuevo.modelo, (t) => { e.nuevo.modelo = t; }, { autocomplete: 'off', autocapitalize: 'words' })),
           campo('Año', entrada(e.nuevo.anio, (t) => { e.nuevo.anio = t; }, { type: 'number', inputmode: 'numeric', min: 1950, max: 2100 }))),
         el('div', { class: 'agh-campo' }, el('span', {}, 'Talla'),
-          segmento(TALLAS.map((t) => [t, t, AYUDA_TALLA[t]]), e.nuevo.talla, (t) => { e.nuevo.talla = t; pintar(); }, 'Talla')));
+          segmento(TALLAS.map((t) => [t, t, AYUDA_TALLA[t]]), e.nuevo.talla, (t) => { e.nuevo.talla = t; e.tallaTocada = true; pintar(); }, 'Talla')));
     };
 
     // ---- Servicios (con el precio de la talla) y total
