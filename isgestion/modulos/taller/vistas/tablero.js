@@ -2,16 +2,16 @@
 // Toda la tarjeta abre la orden; buscador por patente, vehículo o cliente; la tarjeta recién movida queda
 // resaltada; se actualiza solo cada 2 minutos (pensado para la tablet del taller). Arriba, el resumen del Seguimiento
 // del OS (avance y arrastrar para priorizar); el botón de pantalla completa abre el detalle para la tablet.
-import { el } from '../../../core/ui/dom.js?v=a4abe71';
-import { icono } from '../../../core/ui/iconos.js?v=a4abe71';
-import { boton } from '../../../core/ui/tabla.js?v=a4abe71';
-import { fechaCorta, hhmm, hoyISO } from '../../../core/ui/formato.js?v=a4abe71';
-import { ESTADOS, PRIORIDADES, CHIP_PRIORIDAD, SELECT_ORDEN, verPatente, nombreVehiculo, nombreTercero, minutosTrabajo, textoMinutos, hora, cargarTrabajadores } from '../datos.js?v=a4abe71';
-import { mover } from '../acciones.js?v=a4abe71';
-import { recepcion } from '../recepcion.js?v=a4abe71';
-import { avance, ordenarActivos, marcaCotizar, resumenTaller, detalleVehiculo } from '../seguimiento.js?v=a4abe71';
-import { ETAPAS, tarjetaAuto } from '../movil.js?v=a4abe71';
-import { esTelefono } from '../../../core/movil.js?v=a4abe71';
+import { el } from '../../../core/ui/dom.js?v=08113ef';
+import { icono } from '../../../core/ui/iconos.js?v=08113ef';
+import { boton } from '../../../core/ui/tabla.js?v=08113ef';
+import { fechaCorta, hhmm, hoyISO } from '../../../core/ui/formato.js?v=08113ef';
+import { ESTADOS, PRIORIDADES, CHIP_PRIORIDAD, SELECT_ORDEN, verPatente, nombreVehiculo, nombreTercero, minutosTrabajo, textoMinutos, hora, cargarTrabajadores } from '../datos.js?v=08113ef';
+import { mover } from '../acciones.js?v=08113ef';
+import { recepcion } from '../recepcion.js?v=08113ef';
+import { avance, ordenarActivos, marcaCotizar, resumenTaller, detalleVehiculo } from '../seguimiento.js?v=08113ef';
+import { ETAPAS, tarjetaAuto } from '../movil.js?v=08113ef';
+import { esTelefono } from '../../../core/movil.js?v=08113ef';
 
 const MAX_ENTREGADOS = 6;
 const ESPERA_LARGA = 60;   // minutos en espera para avisar

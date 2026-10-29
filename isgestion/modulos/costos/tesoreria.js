@@ -1,5 +1,5 @@
 // Datos comunes del flujo de caja y el balance: saldos de las cuentas, por cobrar y por pagar, deudas y ajustes.
-import { hoyISO, sumarDias } from '../../core/ui/formato.js?v=a4abe71';
+import { hoyISO, sumarDias } from '../../core/ui/formato.js?v=08113ef';
 
 // Último saldo de cada cuenta activa
 export async function cargarCuentas(ctx) {
@@ -18,7 +18,7 @@ export async function cargarCuentas(ctx) {
 export async function cargarPendientes(ctx) {
   const e = ctx.empresa.id;
   const [regs, prov, res] = await Promise.all([
-    ctx.api.from('fin_registros').select('id, tipo, fecha, vence, concepto, total, tercero_id, terceros(razon_social, nombre_fantasia)').eq('empresa_id', e).is('deleted_at', null).neq('estado_pago', 'pagado'),
+    ctx.api.from('fin_registros').select('id, tipo, fecha, vence, concepto, total, tercero_id, terceros!fin_registros_tercero_id_fkey(razon_social, nombre_fantasia)').eq('empresa_id', e).is('deleted_at', null).neq('estado_pago', 'pagado'),
     ctx.api.from('fin_proveedores').select('tercero_id, plazo_dias').eq('empresa_id', e),
     ctx.puede('resultados', 'ver') ? ctx.api.rpc('res_pendientes', { p_empresa: e }) : Promise.resolve({ data: [] }),
   ]);

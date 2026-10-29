@@ -2,19 +2,19 @@
 // totales y acciones (PDF, enviar, aceptar, rechazar, reabrir, duplicar, dividir, pasar a orden de trabajo).
 // Las líneas se editan como planilla: Enter y flechas, pegar desde Excel y arrastrar filas o secciones.
 // Ruta: #/cotizaciones.editor?id=<id>
-import { el } from '../../../core/ui/dom.js?v=a4abe71';
-import { icono } from '../../../core/ui/iconos.js?v=a4abe71';
-import { boton } from '../../../core/ui/tabla.js?v=a4abe71';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=a4abe71';
-import { avisar } from '../../../core/ui/aviso.js?v=a4abe71';
-import { dinero, fechaLarga } from '../../../core/ui/formato.js?v=a4abe71';
+import { el } from '../../../core/ui/dom.js?v=08113ef';
+import { icono } from '../../../core/ui/iconos.js?v=08113ef';
+import { boton } from '../../../core/ui/tabla.js?v=08113ef';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=08113ef';
+import { avisar } from '../../../core/ui/aviso.js?v=08113ef';
+import { dinero, fechaLarga } from '../../../core/ui/formato.js?v=08113ef';
 import {
   nombreEstado, CHIP_ESTADO, TALLAS, totales, totalLinea, costoLinea, numeroTexto, nombreTercero, verPatente, normalizarPatente,
   cargarCotizacion, cargarCatalogo, datosCliente,
-} from '../datos.js?v=a4abe71';
-import { duplicar, dividir, pasarAOrden } from '../acciones.js?v=a4abe71';
-import { avance } from '../../taller/seguimiento.js?v=a4abe71';
-import { nombreEstado as estadoOrden } from '../../taller/datos.js?v=a4abe71';
+} from '../datos.js?v=08113ef';
+import { duplicar, dividir, pasarAOrden } from '../acciones.js?v=08113ef';
+import { avance } from '../../taller/seguimiento.js?v=08113ef';
+import { nombreEstado as estadoOrden } from '../../taller/datos.js?v=08113ef';
 
 // Celda a enfocar después de recargar (ej.: la línea recién creada)
 let foco = null;
@@ -366,7 +366,7 @@ export default async function vista(ctx) {
   // ---- Acciones según estado
   const acciones = [boton('Ver PDF', { icono: 'ojo', onclick: (ev) => pdf(ctx, c, ev.currentTarget) })];
   // Como el OS (2026-10-22): siempre queda claro que se está editando esta cotización, y se puede empezar una nueva
-  if (ctx.puede('cotizaciones', 'crear')) acciones.push(boton('Nueva cotización', { icono: 'mas', onclick: async () => { const { nueva } = await import('./lista.js?v=a4abe71'); nueva(ctx); } }));
+  if (ctx.puede('cotizaciones', 'crear')) acciones.push(boton('Nueva cotización', { icono: 'mas', onclick: async () => { const { nueva } = await import('./lista.js?v=08113ef'); nueva(ctx); } }));
   const puedeEditar = ctx.puede('cotizaciones', 'editar');
   if (puedeEditar && c.estado === 'borrador') acciones.push(boton('Marcar enviada', { icono: 'check', tipo: 'primario', onclick: () => abrirFormulario({
     titulo: `Enviar cotización N° ${numeroTexto(c.numero)}`, mensaje: 'Queda bloqueada para cambios. Si hay que corregirla, se reabre.', campos: [], textoGuardar: 'Marcar enviada',
@@ -426,7 +426,7 @@ export default async function vista(ctx) {
       if (error) avisar(error.message, 'error'); else ctx.refrescar();
     } }) : null,
     // Traer los autos que el cliente tuvo en el taller en un mes (como "Traer de Cierre GM" del OS)
-    editable && conTaller && c.tercero_id ? boton('Traer autos del mes', { icono: 'llave', onclick: async () => { const { traerMes } = await import('../traer-mes.js?v=a4abe71'); traerMes(ctx, c, grupos); } }) : null,
+    editable && conTaller && c.tercero_id ? boton('Traer autos del mes', { icono: 'llave', onclick: async () => { const { traerMes } = await import('../traer-mes.js?v=08113ef'); traerMes(ctx, c, grupos); } }) : null,
     catalogo.tieneLista ? el('p', { class: 'texto-suave texto-chico' }, 'Este cliente tiene lista de precios: al escribir un servicio se usa su precio especial.') : null,
     editable ? el('p', { class: 'texto-suave texto-chico' }, 'Planilla: Enter baja de fila (en la última crea una línea), Mayús+Enter sube, flechas para moverse; se puede pegar un rango copiado de Excel (Descripción, Cant., Precio, Desc. %) y arrastrar filas o secciones desde el asa (también a otro vehículo).') : null,
   );
@@ -443,7 +443,7 @@ export default async function vista(ctx) {
 async function pdf(ctx, c, b) {
   b.disabled = true;
   try {
-    const { pdfCotizacion } = await import('../documento.js?v=a4abe71');
+    const { pdfCotizacion } = await import('../documento.js?v=08113ef');
     const doc = await pdfCotizacion(ctx, c);
     window.open(doc.output('bloburl'), '_blank', 'noopener');
   } catch (e) { avisar(`No se pudo generar: ${e.message}`, 'error'); } finally { b.disabled = false; }
