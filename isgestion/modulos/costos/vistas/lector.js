@@ -7,16 +7,16 @@
 // trabajador": además del gasto queda un descuento en Remuneraciones (semana o mes según la empresa), ligado al
 // documento (remu_items.origen_id). Requiere poder crear en Remuneraciones.
 // Ruta: #/costos.lector
-import { el } from '../../../core/ui/dom.js?v=14e2347';
-import { icono } from '../../../core/ui/iconos.js?v=14e2347';
-import { boton } from '../../../core/ui/tabla.js?v=14e2347';
-import { avisar } from '../../../core/ui/aviso.js?v=14e2347';
-import { subirArchivo, almacen } from '../../../core/adjuntos.js?v=14e2347';
-import { dinero, hoyISO, sumarDias, fechaLarga, lunesDe } from '../../../core/ui/formato.js?v=14e2347';
-import { TIPOS_DTE, docTipoDe, CAMPOS_DTE, leerParte, combinar, validar, escanearCamara, aJPEG, fmtRut, limpioRut, rutValido, num } from '../../../core/lector-dte.js?v=14e2347';
-import { cargarBase, nombreTercero, opcionesACuenta } from '../datos.js?v=14e2347';
-import { leerConIA, iaDisponible, numIA, fechaIA, pagadoAlComprar, textoModelo } from '../../../core/lector-ia.js?v=14e2347';
-import { esImagen } from '../../../core/imagenes.js?v=14e2347';
+import { el } from '../../../core/ui/dom.js?v=7c7795a';
+import { icono } from '../../../core/ui/iconos.js?v=7c7795a';
+import { boton } from '../../../core/ui/tabla.js?v=7c7795a';
+import { avisar } from '../../../core/ui/aviso.js?v=7c7795a';
+import { subirArchivo, almacen } from '../../../core/adjuntos.js?v=7c7795a';
+import { dinero, hoyISO, sumarDias, fechaLarga, lunesDe } from '../../../core/ui/formato.js?v=7c7795a';
+import { TIPOS_DTE, docTipoDe, CAMPOS_DTE, leerParte, combinar, validar, escanearCamara, aJPEG, fmtRut, limpioRut, rutValido, num } from '../../../core/lector-dte.js?v=7c7795a';
+import { cargarBase, nombreTercero, opcionesACuenta } from '../datos.js?v=7c7795a';
+import { leerConIA, iaDisponible, numIA, fechaIA, pagadoAlComprar, textoModelo } from '../../../core/lector-ia.js?v=7c7795a';
+import { esImagen } from '../../../core/imagenes.js?v=7c7795a';
 
 const ETIQUETA = { timbre: ['Timbre SII', 'chip-ok'], xml: ['XML', 'chip-ok'], ia: ['IA', 'chip-ok'], ocr: ['Revisar', 'chip-prox'], calc: ['Calculado', 'chip-pend'] };
 
@@ -203,7 +203,7 @@ export default async function vista(ctx) {
       // Proveedor por RUT (si no existe y se puede, se crea)
       let tercero = v.rut ? terceroPorRut.get(limpioRut(v.rut)) ?? null : null;
       if (!tercero && v.rut && rutValido(v.rut) && ctx.puede('terceros', 'crear')) {
-        const { data, error } = await ctx.api.from('terceros').insert({ empresa_id: e, rut: fmtRut(v.rut), razon_social: v.razon || fmtRut(v.rut), tipo: ['proveedor'] }).select('id, rut, razon_social, nombre_fantasia, tipo').single();
+        const { data, error } = await ctx.api.from('terceros').insert({ empresa_id: e, rut: `${limpioRut(v.rut).slice(0, -1)}-${limpioRut(v.rut).slice(-1)}`, razon_social: v.razon || fmtRut(v.rut), tipo: ['proveedor'] }).select('id, rut, razon_social, nombre_fantasia, tipo').single();
         if (error) throw new Error(`No se pudo crear el proveedor: ${error.message}`);
         tercero = data; terceroPorRut.set(limpioRut(v.rut), data);
       }
