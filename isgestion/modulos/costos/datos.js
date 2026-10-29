@@ -1,5 +1,5 @@
 // Datos compartidos de Costos y gastos.
-import { hoyISO, rangoMes } from '../../core/ui/formato.js?v=08113ef';
+import { hoyISO, rangoMes } from '../../core/ui/formato.js?v=14e2347';
 
 export const CLASES = [['gasto', 'Gasto (va al resultado)'], ['personal', 'Personal (va a la línea Personal)'], ['inventario', 'Compra de inventario (es stock: no va al resultado)'], ['ingreso', 'Otro ingreso']];
 export const nombreClase = { gasto: 'Gasto', personal: 'Personal', inventario: 'Compra de inventario', ingreso: 'Ingreso' };
@@ -36,7 +36,7 @@ export async function cargarBase(ctx) {
   const [cat, cen, ter] = await Promise.all([
     ctx.api.from('fin_categorias').select('*').eq('empresa_id', e).order('orden').order('nombre'),
     ctx.api.from('fin_centros').select('*').eq('empresa_id', e).order('orden').order('nombre'),
-    ctx.api.from('terceros').select('id, razon_social, nombre_fantasia, tipo').eq('empresa_id', e).is('deleted_at', null).order('razon_social'),
+    ctx.api.from('terceros').select('id, razon_social, nombre_fantasia, tipo, rut').eq('empresa_id', e).is('deleted_at', null).order('razon_social'),
   ]);
   for (const r of [cat, cen, ter]) if (r.error) throw r.error;
   return {
@@ -114,7 +114,7 @@ export async function generarAutomatico(ctx) {
   if (!ctx.puede('costos', 'crear')) return 0;
   const { data, error } = await ctx.api.from('fin_recurrentes').select('*').eq('empresa_id', ctx.empresa.id).eq('activo', true);
   if (error || !data.length) return 0;
-  const { dolarDelDia } = await import('../../core/economia.js?v=08113ef');
+  const { dolarDelDia } = await import('../../core/economia.js?v=14e2347');
   const tc = data.some((r) => r.moneda === 'USD') ? await dolarDelDia() : null;
   const usables = tc ? data : data.filter((r) => r.moneda !== 'USD');
   try { return await generarMes(ctx, usables, mes, tc); } catch { return 0; }

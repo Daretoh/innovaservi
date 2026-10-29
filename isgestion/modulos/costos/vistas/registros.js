@@ -1,14 +1,14 @@
 // Gastos e ingresos: los recientes (últimos cargados, de cualquier mes), los del mes, pendientes de pago o cobro (de todos
 // los meses), resumen y Excel. "Editar como planilla" cambia la tabla por la planilla del OS (planilla.js). En el teléfono
 // las filas se ven como tarjetas.
-import { el } from '../../../core/ui/dom.js?v=08113ef';
-import { icono } from '../../../core/ui/iconos.js?v=08113ef';
-import { listado, boton } from '../../../core/ui/tabla.js?v=08113ef';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=08113ef';
-import { avisar } from '../../../core/ui/aviso.js?v=08113ef';
-import { dinero, fechaLarga, hoyISO, nombreMes, moverMes, rangoMes, diaLocal } from '../../../core/ui/formato.js?v=08113ef';
-import { cargarBase, nombreTercero, nombreDoc, nombreMedio, MEDIOS, traerComprasInventario, estadosDe, nombreEstado, CHIP_ESTADO, generarAutomatico } from '../datos.js?v=08113ef';
-import { planilla } from '../planilla.js?v=08113ef';
+import { el } from '../../../core/ui/dom.js?v=14e2347';
+import { icono } from '../../../core/ui/iconos.js?v=14e2347';
+import { listado, boton } from '../../../core/ui/tabla.js?v=14e2347';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=14e2347';
+import { avisar } from '../../../core/ui/aviso.js?v=14e2347';
+import { dinero, fechaLarga, hoyISO, nombreMes, moverMes, rangoMes, diaLocal } from '../../../core/ui/formato.js?v=14e2347';
+import { cargarBase, nombreTercero, nombreDoc, nombreMedio, MEDIOS, traerComprasInventario, estadosDe, nombreEstado, CHIP_ESTADO, generarAutomatico } from '../datos.js?v=14e2347';
+import { planilla } from '../planilla.js?v=14e2347';
 
 const estado = { vista: 'recientes', mes: hoyISO().slice(0, 7), categoria: '', editar: false };
 const RECIENTES = 15;
@@ -101,7 +101,7 @@ export default async function vista(ctx) {
     el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Mes anterior', onclick: () => mover(-1) }, icono('volver')),
     el('strong', {}, nombreMes(estado.mes)),
     el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Mes siguiente', onclick: () => mover(1) }, icono('derecha'))));
-  if (ctx.puede('costos', 'exportar') && data.length) acciones.push(boton('Excel', { icono: 'descargar', onclick: () => import('../../../core/excel.js?v=08113ef').then(({ exportarExcel }) => exportarExcel(ctx, {
+  if (ctx.puede('costos', 'exportar') && data.length) acciones.push(boton('Excel', { icono: 'descargar', onclick: () => import('../../../core/excel.js?v=14e2347').then(({ exportarExcel }) => exportarExcel(ctx, {
     titulo: pendientes ? 'Gastos e ingresos pendientes' : revisar ? 'Gastos e ingresos por revisar' : sinCentro ? 'Gastos e ingresos sin centro de costo' : recientes ? 'Gastos e ingresos recientes' : `Gastos e ingresos · ${nombreMes(estado.mes)}`, nombre: `costos-${pendientes ? 'pendientes' : recientes ? 'recientes' : estado.mes}`,
     columnas: [{ t: 'Fecha', tipo: 'fecha' }, 'Tipo', 'Concepto', 'Categoría', 'Centro', 'Proveedor o cliente', 'Documento', 'N°', { t: 'Neto', tipo: 'dinero' }, { t: 'IVA', tipo: 'dinero' }, { t: 'Total', tipo: 'dinero' }, 'Estado', { t: 'Fecha de pago', tipo: 'fecha' }, 'Medio', 'Patente'],
     filas: data.map((r) => [r.fecha, r.tipo === 'gasto' ? 'Gasto' : 'Ingreso', r.concepto, base.categoriaDe.get(r.categoria_id)?.nombre ?? '', base.centroDe.get(r.centro_id)?.nombre ?? '', nombreTercero(r.terceros),
@@ -115,9 +115,8 @@ export default async function vista(ctx) {
   } }));
   if (ctx.puede('costos', 'crear')) {
     if (ctx.puede('inventario', 'ver')) acciones.push(boton('Traer compras de Inventario', { icono: 'caja', onclick: (ev) => traer(ev.currentTarget) }));
-    acciones.push(boton('Ingreso', { icono: 'mas', onclick: () => { location.hash = ctx.ruta('costos.registro', { tipo: 'ingreso' }); } }));
-    acciones.push(boton('Leer boleta o factura', { icono: 'camara', onclick: () => { location.hash = ctx.ruta('costos.lector'); } }));
-    acciones.push(boton('Gasto', { icono: 'mas', tipo: 'primario', onclick: () => { location.hash = ctx.ruta('costos.registro', { tipo: 'gasto' }); } }));
+    // Una sola entrada (como InnovaGestión): Subir documento, con la IA que lee al agregar la foto; ahí también se registra a mano
+    acciones.push(boton('Subir documento', { icono: 'camara', tipo: 'primario', onclick: () => { location.hash = ctx.ruta('costos.subir'); } }));
   }
 
   // Patente → vehículo del taller (como el OS: la patente abre el vehículo y su cobro)

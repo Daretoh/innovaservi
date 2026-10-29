@@ -1,14 +1,15 @@
 // Gasto u otro ingreso.
 // - Nuevo:  #/costos.registro?tipo=gasto|ingreso
 // - Ver y editar: #/costos.registro?id=<id>
-import { el } from '../../../core/ui/dom.js?v=08113ef';
-import { icono } from '../../../core/ui/iconos.js?v=08113ef';
-import { boton } from '../../../core/ui/tabla.js?v=08113ef';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=08113ef';
-import { avisar } from '../../../core/ui/aviso.js?v=08113ef';
-import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=08113ef';
-import { dinero, hoyISO, fechaLarga, sumarDias } from '../../../core/ui/formato.js?v=08113ef';
-import { cargarBase, nombreTercero, DOCS, MEDIOS, netoDe, estadosDe, estadoInicial, nombreEstado, opcionesACuenta } from '../datos.js?v=08113ef';
+import { el } from '../../../core/ui/dom.js?v=14e2347';
+import { icono } from '../../../core/ui/iconos.js?v=14e2347';
+import { boton } from '../../../core/ui/tabla.js?v=14e2347';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=14e2347';
+import { avisar } from '../../../core/ui/aviso.js?v=14e2347';
+import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=14e2347';
+import { dinero, hoyISO, fechaLarga, sumarDias } from '../../../core/ui/formato.js?v=14e2347';
+import { leerConIA, iaDisponible, numIA, fechaIA, pagadoAlComprar, textoModelo } from '../../../core/lector-ia.js?v=14e2347';
+import { cargarBase, nombreTercero, DOCS, MEDIOS, netoDe, estadosDe, estadoInicial, nombreEstado, opcionesACuenta } from '../datos.js?v=14e2347';
 
 
 const ARCHIVOS = ['application/pdf', 'image/jpeg', 'image/png'];
@@ -78,6 +79,29 @@ export default async function vista(ctx) {
   const filaPago = el('div', { class: 'rejilla-campos' });
   const pintarPago = () => filaPago.replaceChildren(...(estado.value === 'pagado' ? [fila(esIngreso ? 'Fecha de cobro' : 'Fecha de pago', fechaPago), fila('Medio', medio)] : [fila(esIngreso ? 'Vence el cobro' : 'Vence el pago', vence)]));
   const archivo = el('input', { class: 'campo', id: 'r-archivo', type: 'file', accept: ARCHIVOS.join(',') });
+  // Al elegir la foto, la IA lee el documento y llena los datos (como InnovaGestión)
+  const iaEstado = el('span', { class: 'texto-chico campo-accion-estado', 'aria-live': 'polite' });
+  archivo.addEventListener('change', async () => {
+    const f = archivo.files[0];
+    if (!f || !f.type.startsWith('image/') || !iaDisponible()) return;
+    iaEstado.textContent = 'Leyendo el documento con IA…'; iaEstado.className = 'texto-chico campo-accion-estado';
+    try {
+      const res = await leerConIA(ctx.api, { empresaId: ctx.empresa.id, modo: esIngreso ? 'venta' : 'compra', archivos: [f] });
+      const d = res.datos ?? {};
+      const pon = (c, v) => { if (v != null && v !== '') { c.value = v; c.dispatchEvent(new Event('change')); } };
+      pon(fecha, fechaIA(d.fecha));
+      pon(doc, { 33: 'factura', 34: 'factura', 39: 'boleta', 41: 'boleta', 52: 'guia', 61: 'otro', 0: 'otro' }[d.tipo]);
+      pon(docNum, d.folio ? String(d.folio) : null); pon(total, numIA(d.total)); pintarDesglose();
+      const rn = (x) => String(x ?? '').replace(/[^\dkK]/g, '').toUpperCase();
+      const t = d.rut ? base.terceros.find((x) => rn(x.rut) === rn(d.rut)) : null;
+      if (t && [...tercero.options].some((o) => o.value === t.id)) pon(tercero, t.id);
+      const it = Array.isArray(d.items) && d.items[0]?.descripcion;
+      if (!concepto.value.trim()) concepto.value = it ? `${it}${d.items.length > 1 ? ` y ${d.items.length - 1} más` : ''}` : d.razon || '';
+      if (!esIngreso && !r && !soloCarga && pagadoAlComprar(d)) { estado.value = 'pagado'; estadoTocado = true; pintarPago(); }
+      iaEstado.textContent = `${textoModelo(res)}. Revisa antes de guardar.${t ? '' : d.razon ? ` ${esIngreso ? 'Cliente' : 'Proveedor'}: ${d.razon}${d.rut ? ` (${d.rut})` : ''}, no está en el maestro.` : ''}${d.observaciones ? ` ${d.observaciones}` : ''}`;
+      iaEstado.className = 'texto-chico campo-accion-estado estado-ok';
+    } catch (err) { iaEstado.textContent = `${err.message}. Completa los datos a mano.`; iaEstado.className = 'texto-chico campo-accion-estado estado-mal'; }
+  });
   const notas = Object.assign(el('textarea', { class: 'campo', id: 'r-notas', rows: 2 }), { value: r?.notas ?? '' });
   function fila(label, ctl, ayuda) { return el('div', { class: 'form-fila' }, el('label', { for: ctl.id }, label), ctl, ayuda ?? null); }
   pintarPago();
@@ -169,7 +193,7 @@ export default async function vista(ctx) {
       aCuenta ? el('div', { class: 'rejilla-campos' }, fila('¿Compra por cuenta de un tercero?', aCuenta, el('span', { class: 'texto-suave texto-chico' }, 'Ej.: materiales del pintor: se paga al local, no es gasto de la empresa y se descuenta de lo que se le paga.'))) : null,
       el('div', { class: 'rejilla-campos' }, fila('Estado', estado, el('span', { class: 'texto-suave texto-chico' }, 'Boleta o ticket: pagado al comprar. Factura: por pagar.'))),
       filaPago,
-      fila(r?.archivo ? 'Reemplazar respaldo (factura, boleta o comprobante)' : 'Respaldo (factura, boleta o comprobante)', archivo),
+      fila(r?.archivo ? 'Reemplazar respaldo (factura, boleta o comprobante)' : 'Respaldo (factura, boleta o comprobante): con una foto, la IA llena los datos', archivo, iaEstado),
       fila('Notas', notas),
       puedeGuardar ? el('div', {}, boton(r ? 'Guardar cambios' : 'Registrar', { icono: 'check', tipo: 'primario', onclick: guardar })) : null));
 }

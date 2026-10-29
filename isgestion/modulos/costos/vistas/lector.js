@@ -1,20 +1,24 @@
 // Leer boleta o factura (migrado del lector beta de InnovaGestión): el timbre electrónico con la cámara o
 // desde fotos, PDF o XML; se revisan los datos y se registra el gasto (proveedor por RUT, documento, neto e IVA,
-// faena, fotos). Cada dato muestra de dónde salió: Timbre SII, XML, Revisar (texto de la foto) o Calculado.
+// faena, fotos). Cada dato muestra de dónde salió: Timbre SII, XML, IA, Revisar (texto de la foto) o Calculado.
+// IA (como InnovaGestión, 2026-10-29): al agregar fotos, Gemini las lee en el servidor (core/lector-ia.js) y sus datos
+// mandan sobre el texto de la foto; el timbre y el XML siguen mandando. Si la IA no está o falla, queda el lector local.
 // Si el documento es un gasto a cuenta de un trabajador (compra que se le descuenta), se marca "Descontar a un
 // trabajador": además del gasto queda un descuento en Remuneraciones (semana o mes según la empresa), ligado al
 // documento (remu_items.origen_id). Requiere poder crear en Remuneraciones.
 // Ruta: #/costos.lector
-import { el } from '../../../core/ui/dom.js?v=08113ef';
-import { icono } from '../../../core/ui/iconos.js?v=08113ef';
-import { boton } from '../../../core/ui/tabla.js?v=08113ef';
-import { avisar } from '../../../core/ui/aviso.js?v=08113ef';
-import { subirArchivo, almacen } from '../../../core/adjuntos.js?v=08113ef';
-import { dinero, hoyISO, sumarDias, fechaLarga, lunesDe } from '../../../core/ui/formato.js?v=08113ef';
-import { TIPOS_DTE, docTipoDe, CAMPOS_DTE, leerParte, combinar, validar, escanearCamara, aJPEG, fmtRut, limpioRut, rutValido, num } from '../../../core/lector-dte.js?v=08113ef';
-import { cargarBase, nombreTercero, opcionesACuenta } from '../datos.js?v=08113ef';
+import { el } from '../../../core/ui/dom.js?v=14e2347';
+import { icono } from '../../../core/ui/iconos.js?v=14e2347';
+import { boton } from '../../../core/ui/tabla.js?v=14e2347';
+import { avisar } from '../../../core/ui/aviso.js?v=14e2347';
+import { subirArchivo, almacen } from '../../../core/adjuntos.js?v=14e2347';
+import { dinero, hoyISO, sumarDias, fechaLarga, lunesDe } from '../../../core/ui/formato.js?v=14e2347';
+import { TIPOS_DTE, docTipoDe, CAMPOS_DTE, leerParte, combinar, validar, escanearCamara, aJPEG, fmtRut, limpioRut, rutValido, num } from '../../../core/lector-dte.js?v=14e2347';
+import { cargarBase, nombreTercero, opcionesACuenta } from '../datos.js?v=14e2347';
+import { leerConIA, iaDisponible, numIA, fechaIA, pagadoAlComprar, textoModelo } from '../../../core/lector-ia.js?v=14e2347';
+import { esImagen } from '../../../core/imagenes.js?v=14e2347';
 
-const ETIQUETA = { timbre: ['Timbre SII', 'chip-ok'], xml: ['XML', 'chip-ok'], ocr: ['Revisar', 'chip-prox'], calc: ['Calculado', 'chip-pend'] };
+const ETIQUETA = { timbre: ['Timbre SII', 'chip-ok'], xml: ['XML', 'chip-ok'], ia: ['IA', 'chip-ok'], ocr: ['Revisar', 'chip-prox'], calc: ['Calculado', 'chip-pend'] };
 
 export default async function vista(ctx) {
   const e = ctx.empresa.id;
@@ -43,11 +47,25 @@ export default async function vista(ctx) {
   // ---- 1. Documento: cámara, fotos o archivos
   const fotos = el('div', { class: 'lec-fotos' });
   const estado = el('div', {});
+  const iaEstado = el('p', { class: 'texto-chico lec-ia', hidden: true });
+  let ia = null; let tokIA = 0;
+  const leerIA = async () => {
+    const imgs = partes.filter((p) => p.archivo && esImagen(p.archivo)).map((p) => p.archivo);
+    ia = null;
+    if (!imgs.length || !iaDisponible()) { iaEstado.hidden = true; return; }
+    const t = ++tokIA; iaEstado.hidden = false; iaEstado.textContent = 'Leyendo el documento con IA…';
+    try {
+      const r = await leerConIA(ctx.api, { empresaId: e, modo: 'compra', archivos: imgs });
+      if (t !== tokIA) return;
+      ia = r; iaEstado.textContent = `${textoModelo(r)}. Revisa y corrige antes de guardar.${r.datos?.observaciones ? ` ${r.datos.observaciones}` : ''}`;
+      recombinar();
+    } catch (err) { if (t === tokIA) iaEstado.textContent = `${err.message}. Se usan los datos del timbre o del texto de la foto.`; }
+  };
   const aviso = (txt, tipo = 'pend') => estado.replaceChildren(txt ? el('p', { class: `aviso-bandeja lec-${tipo}` }, txt) : '');
   const pintarFotos = () => fotos.replaceChildren(...partes.map((p) => el('div', { class: 'lec-foto' },
     p.thumb ? el('img', { src: p.thumb, alt: p.nombre }) : el('span', { class: 'lec-doc' }, p.xml || /xml/i.test(p.nombre) ? 'XML' : 'PDF'),
     el('span', { class: 'lec-estado' }, p.estado),
-    el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Quitar', onclick: () => { partes.splice(partes.indexOf(p), 1); pintarFotos(); recombinar(); } }, icono('cerrar', { tam: 14 })))));
+    el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Quitar', onclick: () => { partes.splice(partes.indexOf(p), 1); pintarFotos(); recombinar(); leerIA(); } }, icono('cerrar', { tam: 14 })))));
   let cola = Promise.resolve();
   const agregar = (archivos) => {
     for (const a of archivos) {
@@ -66,6 +84,7 @@ export default async function vista(ctx) {
     }
     pintarFotos(); formulario.hidden = false;
     aviso('Leyendo… la primera vez tarda un poco más (se descargan los lectores).');
+    leerIA();
   };
   const inFoto = el('input', { type: 'file', accept: 'image/*', capture: 'environment', multiple: true, hidden: true });
   const inArch = el('input', { type: 'file', accept: 'image/*,application/pdf,.xml,text/xml,application/xml', multiple: true, hidden: true });
@@ -120,6 +139,15 @@ export default async function vista(ctx) {
 
   const recombinar = () => {
     datos = combinar(partes, propios);
+    // IA: manda sobre el texto de la foto (no sobre el timbre ni el XML)
+    if (ia?.datos) {
+      const d = ia.datos;
+      const m = { td: d.tipo == null ? null : Number(d.tipo), folio: d.folio ? String(d.folio) : null, fecha: fechaIA(d.fecha), rut: d.rut ? limpioRut(d.rut) : null, razon: d.razon || null,
+        neto: numIA(d.neto), iva: numIA(d.iva), otros: numIA(d.otros), total: numIA(d.total) };
+      for (const [k, v] of Object.entries(m)) if (v != null && v !== '' && !['timbre', 'xml'].includes(datos.origen[k])) { datos[k] = v; datos.origen[k] = 'ia'; }
+      if (!datos.items?.length && Array.isArray(d.items)) datos.items = d.items.map((i) => ({ nombre: i.descripcion, cant: i.cantidad, monto: numIA(i.total) }));
+      if (!pagadoTocado && pagadoAlComprar(d)) pagado.checked = true;
+    }
     for (const k of CAMPOS_DTE) {
       if (!editados.has(k)) { const v = datos[k]; campos[k].value = v == null ? '' : k === 'rut' ? fmtRut(v) : String(v); }
       const o = editados.has(k) ? null : datos.origen[k];
@@ -187,7 +215,7 @@ export default async function vista(ctx) {
         subidas.push((await subirArchivo(ctx.api, { empresaId: e, modulo: 'costos', archivo, tabla: 'fin_registros' })).ruta);
       }
       const o = datos.origen.total;
-      const origen = editados.has('total') ? 'manual' : o === 'timbre' ? 'timbre' : o === 'xml' ? 'xml' : o === 'ocr' ? 'ocr' : 'manual';
+      const origen = editados.has('total') ? 'manual' : o === 'timbre' ? 'timbre' : o === 'xml' ? 'xml' : o === 'ocr' ? 'ocr' : o === 'ia' ? 'ia' : 'manual';
       const doc = docTipoDe(v.td);
       const iva = doc === 'factura' ? v.iva ?? 0 : 0;
       const { data, error } = await ctx.api.from('fin_registros').insert({
@@ -220,7 +248,7 @@ export default async function vista(ctx) {
   const fila = (etq, c) => el('div', { class: 'form-fila' }, el('label', { for: c.id }, etq), c);
   const formulario = el('div', { class: 'ficha doc-grupo lec-form', hidden: true },
     el('h2', {}, '2. Revisar y guardar'),
-    estado,
+    estado, iaEstado,
     el('div', { class: 'rejilla-campos' }, filaTipos, ctl('folio', 'Folio', { num: true }), ctl('fecha', 'Fecha', { tipo: 'date' })),
     el('div', { class: 'rejilla-campos' }, ctl('rut', 'RUT del emisor'), ctl('razon', 'Razón social')),
     proveedor,

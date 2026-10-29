@@ -7,10 +7,10 @@
 // sugerencias (en un campo de texto): lista que aparece al escribir (datalist).
 // alCambiar({ valor, valores, poner(id, valor), opciones(id, [[v, t]]) }) en un campo: se llama al cambiarlo (ej.: elegir un
 // cliente llena su teléfono y sus vehículos). poner en un campo 'checks' marca los valores dados.
-import { el } from './dom.js?v=08113ef';
-import { icono } from './iconos.js?v=08113ef';
-import { boton } from './tabla.js?v=08113ef';
-import { prepararArchivos } from '../imagenes.js?v=08113ef';
+import { el } from './dom.js?v=14e2347';
+import { icono } from './iconos.js?v=14e2347';
+import { boton } from './tabla.js?v=14e2347';
+import { prepararArchivos } from '../imagenes.js?v=14e2347';
 
 // Si acepta JPEG, también fotos de iPhone (HEIC): se convierten a JPEG al guardar
 const aceptar = (a) => (a && /image\/(jpeg|\*)/.test(a) ? `${a},.heic,.heif,image/heic,image/heif` : a);
@@ -52,7 +52,9 @@ export function abrirFormulario({ titulo, mensaje, campos, textoGuardar = 'Guard
       ? el('select', { id: `f-${c.id}`, name: c.id, class: 'campo', required: c.requerido },
           c.opciones.map(([v, t]) => el('option', { value: v, selected: v === (c.valor ?? null) }, t)))
       : el('input', { id: `f-${c.id}`, name: c.id, type: c.tipo ?? 'text', class: 'campo', required: c.requerido, value: c.valor, accept: aceptar(c.accept), multiple: varias(c), list: c.sugerencias ? `l-${c.id}` : null, autocomplete: c.sugerencias ? 'off' : null });
-    if (c.alCambiar) control.addEventListener('change', () => c.alCambiar({ valor: control.value, ...ayudantes() }));
+    // alCambiar: en un campo de archivo recibe también archivos y estado(texto) para mostrar un mensaje bajo el campo
+    const estadoCampo = c.alCambiar ? el('span', { class: 'texto-chico campo-accion-estado', 'aria-live': 'polite' }) : null;
+    if (c.alCambiar) control.addEventListener('change', () => c.alCambiar({ valor: control.value, archivos: control.files ? [...control.files] : null, estado: (t, clase = '') => { estadoCampo.textContent = t; estadoCampo.className = `texto-chico campo-accion-estado ${clase ? `estado-${clase}` : ''}`; }, ...ayudantes() }));
     const escaner = varias(c) ? el('span', { class: 'texto-suave texto-chico campo-escaner', 'aria-live': 'polite' }, 'Puedes elegir varias fotos (ej.: cédula por ambos lados): se juntan en un PDF.') : null;
     if (escaner) control.addEventListener('change', () => {
       const n = control.files.length;
@@ -60,7 +62,7 @@ export function abrirFormulario({ titulo, mensaje, campos, textoGuardar = 'Guard
     });
     return el('div', { class: 'form-fila' }, el('label', { for: `f-${c.id}` }, c.etiqueta), control,
       c.sugerencias ? el('datalist', { id: `l-${c.id}` }, c.sugerencias.map((t) => el('option', { value: t }))) : null,
-      c.ayuda ? el('span', { class: 'texto-suave texto-chico' }, c.ayuda) : null, escaner,
+      c.ayuda ? el('span', { class: 'texto-suave texto-chico' }, c.ayuda) : null, escaner, estadoCampo,
       c.accion ? accionCampo(c.accion, () => form) : null);
   });
 

@@ -3,13 +3,25 @@
 // 2. Gasto sin ningún papel → registro sin documento, no declarable, pagado.
 // 3. Comprobante de pago (transferencia, depósito…) → fin_pagos "por validar"; cubre facturas por pagar del proveedor.
 // 4. Factura emitida (a un cliente) → ingreso por cobrar.
-import { el } from '../../../core/ui/dom.js?v=08113ef';
-import { icono } from '../../../core/ui/iconos.js?v=08113ef';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=08113ef';
-import { avisar } from '../../../core/ui/aviso.js?v=08113ef';
-import { subirArchivo, eliminarArchivo } from '../../../core/adjuntos.js?v=08113ef';
-import { dinero, hoyISO, fechaLarga, sumarDias } from '../../../core/ui/formato.js?v=08113ef';
-import { cargarBase, nombreTercero, MEDIOS } from '../datos.js?v=08113ef';
+import { el } from '../../../core/ui/dom.js?v=14e2347';
+import { icono } from '../../../core/ui/iconos.js?v=14e2347';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=14e2347';
+import { avisar } from '../../../core/ui/aviso.js?v=14e2347';
+import { subirArchivo, eliminarArchivo } from '../../../core/adjuntos.js?v=14e2347';
+import { dinero, hoyISO, fechaLarga, sumarDias } from '../../../core/ui/formato.js?v=14e2347';
+import { cargarBase, nombreTercero, MEDIOS } from '../datos.js?v=14e2347';
+import { leerConIA, iaDisponible, numIA, fechaIA, medioIA, textoModelo } from '../../../core/lector-ia.js?v=14e2347';
+
+// Lee con IA al elegir la foto (como InnovaGestión) y llena el formulario con aplicar(datos, poner)
+export const leerAlElegir = (ctx, modo, aplicar) => async ({ archivos, estado, poner, opciones }) => {
+  if (!archivos?.length || !iaDisponible()) return;
+  estado('Leyendo el documento con IA…');
+  try {
+    const r = await leerConIA(ctx.api, { empresaId: ctx.empresa.id, modo, archivos });
+    const nota = aplicar(r.datos ?? {}, poner, opciones);
+    estado(`${textoModelo(r)}. Revisa antes de guardar.${nota ? ` ${nota}` : ''}${r.datos?.observaciones ? ` ${r.datos.observaciones}` : ''}`, 'ok');
+  } catch (err) { estado(`${err.message}. Completa los datos a mano.`, 'mal'); }
+};
 
 export default async function vista(ctx) {
   const e = ctx.empresa.id;
@@ -20,11 +32,13 @@ export default async function vista(ctx) {
     el('header', { class: 'listado-cabecera' }, el('h1', {}, 'Subir documentos')),
     el('p', { class: 'texto-suave' }, 'Elige qué vas a subir. Sin documento no hay reembolso ni pago: la boleta va a la bandeja "Por cargar" antes de 48 horas.'),
     el('div', { class: 'subir-tipos' },
-      tarjeta('camara', 'Boleta, factura o ticket de compra', 'Incluye tickets de peaje y estacionamiento. Se lee el timbre del documento; la boleta queda pagada y la factura por pagar.', () => { location.hash = ctx.ruta('costos.lector'); }),
+      tarjeta('camara', 'Boleta, factura o ticket de compra', 'Incluye tickets de peaje y estacionamiento. La IA lee la foto (y el timbre o el XML si los hay); la boleta queda pagada y la factura por pagar.', () => { location.hash = ctx.ruta('costos.lector'); }),
       tarjeta('dinero', 'Gasto sin ningún papel', 'Solo cuando no hay boleta, factura ni ticket (ej.: propina, feria). No es gasto declarable.', () => sinDocumento(ctx)),
       tarjeta('check', 'Comprobante de pago', 'Transferencia, depósito o pago con tarjeta a un proveedor. Queda por validar; al validarlo, las facturas que cubre quedan pagadas.', () => comprobante(ctx)),
       tarjeta('documento', 'Factura emitida', 'Factura a un cliente: queda como ingreso por cobrar.', () => { location.hash = ctx.ruta('costos.registro', { tipo: 'ingreso' }); })),
-    el('p', { class: 'texto-suave texto-chico' }, 'Los comprobantes subidos se revisan en ', el('a', { href: ctx.ruta('costos.pagos') }, 'Pagos'), '.'));
+    el('p', { class: 'texto-suave texto-chico' }, 'Al agregar la foto, la IA lee el documento y llena los datos (revísalos antes de guardar). Sin foto: ',
+      el('a', { href: ctx.ruta('costos.registro', { tipo: 'gasto' }) }, 'registrar un gasto a mano'), ' o ', el('a', { href: ctx.ruta('costos.registro', { tipo: 'ingreso' }) }, 'un ingreso a mano'),
+      '. Los comprobantes subidos se revisan en ', el('a', { href: ctx.ruta('costos.pagos') }, 'Pagos'), '.'));
 
   // ---- Gasto sin documento
   async function sinDocumento(ctxx) {
@@ -45,7 +59,12 @@ export default async function vista(ctx) {
         ...(faenas.length ? [{ id: 'faena_id', etiqueta: 'Faena', opciones: [['', 'Sin faena'], ...faenas.map((f) => [f.id, `${fechaLarga(f.fecha_inicio)} · ${f.titulo}`])] }] : []),
         { id: 'patente', etiqueta: 'Patente (opcional)' },
         { id: 'medio', etiqueta: 'Medio de pago', opciones: MEDIOS, valor: 'efectivo' },
-        { id: 'foto', etiqueta: 'Foto de respaldo (opcional)', tipo: 'file', accept: 'image/*,application/pdf' },
+        { id: 'foto', etiqueta: 'Foto del papel (opcional: la IA lo lee y llena los datos)', tipo: 'file', accept: 'image/*,application/pdf',
+          alCambiar: leerAlElegir(ctx, 'sindoc', (d, poner) => {
+            poner('fecha', fechaIA(d.fecha)); poner('total', numIA(d.monto)); poner('a_quien', d.a_quien); poner('concepto', d.detalle);
+            const c = d.tipo_gasto && cats.find((x) => x.nombre.toLowerCase().includes(String(d.tipo_gasto).toLowerCase())); if (c) poner('categoria_id', c.id);
+            return numIA(d.monto) == null ? 'No se leyó el monto.' : '';
+          }) },
       ],
       textoGuardar: 'Registrar gasto',
       alGuardar: async (x) => {
@@ -69,7 +88,7 @@ export default async function vista(ctx) {
 export async function comprobante(ctx, { terceroId = '' } = {}) {
   const e = ctx.empresa.id;
   const [ter, porPagar] = await Promise.all([
-    ctx.api.from('terceros').select('id, razon_social, nombre_fantasia, tipo').eq('empresa_id', e).is('deleted_at', null).order('razon_social'),
+    ctx.api.from('terceros').select('id, razon_social, nombre_fantasia, tipo, rut').eq('empresa_id', e).is('deleted_at', null).order('razon_social'),
     ctx.api.from('fin_registros').select('id, fecha, concepto, total, doc_tipo, doc_numero, tercero_id, vence').eq('empresa_id', e).eq('tipo', 'gasto')
       .neq('estado_pago', 'pagado').is('deleted_at', null).order('fecha'),
   ]);
@@ -86,7 +105,16 @@ export async function comprobante(ctx, { terceroId = '' } = {}) {
       { id: 'monto', etiqueta: 'Monto pagado', tipo: 'number', requerido: true },
       { id: 'medio', etiqueta: 'Medio', opciones: MEDIOS, valor: 'transferencia' },
       { id: 'registros', etiqueta: 'Facturas o documentos que paga', tipo: 'checks', opciones: opcionesDe(terceroId) },
-      { id: 'archivo', etiqueta: 'Comprobante (foto o PDF)', tipo: 'file', accept: 'image/*,application/pdf', requerido: true },
+      { id: 'archivo', etiqueta: 'Comprobante (foto o PDF; la IA lo lee y llena los datos)', tipo: 'file', accept: 'image/*,application/pdf', requerido: true,
+        alCambiar: leerAlElegir(ctx, 'pago', (d, poner) => {
+          poner('fecha', fechaIA(d.fecha)); poner('monto', numIA(d.monto)); poner('medio', medioIA(d.medio));
+          const rn = (x) => String(x ?? '').replace(/[^\dkK]/g, '').toUpperCase();
+          const t = d.rut_destinatario ? (ter.data ?? []).find((x) => rn(x.rut) === rn(d.rut_destinatario)) : null;
+          if (t) { poner('tercero_id', t.id); const l = document.querySelector('dialog[open] .checks-lista'); if (l) pintarChecks(l, opcionesDe(t.id)); }
+          const extra = [d.banco ? `Banco ${d.banco}` : '', d.operacion ? `Op. N° ${d.operacion}` : '', d.glosa || ''].filter(Boolean).join(' · ');
+          if (extra) poner('notas', extra);
+          return t ? `Proveedor reconocido: ${nombreTercero(t)}.` : d.destinatario ? `Destinatario: ${d.destinatario} (elige el proveedor).` : '';
+        }) },
       { id: 'notas', etiqueta: 'Notas (banco, N° de operación)', tipo: 'textarea' },
     ],
     textoGuardar: 'Subir comprobante',
