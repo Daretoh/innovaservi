@@ -2,10 +2,10 @@
 // colores de la marca (Reportes → Diseño del informe) y el logo grande, datos del servicio, trabajo realizado,
 // observaciones, fotos por etapa (12 por página) y contraportada con teléfonos, correos, web y dirección con iconos.
 // Las fotos "sin ordenar" y los videos no van al informe.
-import { cargarJsPdf, cargarLogo, rgb, sellar } from '../../core/pdf.js?v=462b5ff';
-import { nombreEmpresa } from '../../core/empresas.js?v=462b5ff';
-import { fechaLarga } from '../../core/ui/formato.js?v=462b5ff';
-import { nombreEtapa, nombreTercero, urlsFirmadas, faenasDistintas } from './datos.js?v=462b5ff';
+import { cargarJsPdf, cargarLogo, rgb, sellar } from '../../core/pdf.js?v=81adf5e';
+import { nombreEmpresa } from '../../core/empresas.js?v=81adf5e';
+import { fechaLarga } from '../../core/ui/formato.js?v=81adf5e';
+import { nombreEtapa, nombreTercero, urlsFirmadas, faenasDistintas } from './datos.js?v=81adf5e';
 
 const M = 15;                 // margen
 const TEXTO = [28, 35, 48];
@@ -270,7 +270,21 @@ export async function generarInforme(ctx, { parte, faenas, media, config }) {
   const distintas = faenasDistintas(faenas);
   const varias = distintas.length > 1;
   const grupos = [];
-  for (const etapa of ORDEN_ETAPAS) {
+  // Con secciones (ej.: Cámara 1 / Cámara 2): un bloque por sección (y faena si hay varias) con sus etapas; las fotos
+  // sin sección van al final
+  const secciones = [...new Set(fotos.map((m) => m.seccion).filter(Boolean))];
+  if (secciones.length) {
+    for (const f of varias ? [...distintas, { faena_id: null }] : [null]) {
+      for (const sec of [...secciones, null]) {
+        for (const etapa of ORDEN_ETAPAS) {
+          const g = fotos.filter((m) => m.etapa === etapa && cargadas.get(m.id) && (m.seccion ?? null) === sec && (!f || (m.faena_id ?? null) === f.faena_id));
+          const faena = f ? (f.faena_id ? f.ope_faenas?.titulo : 'General') : null;
+          if (g.length) grupos.push({ etapa, faena: [faena, sec].filter(Boolean).join(' — ') || null, fotos: g });
+        }
+      }
+    }
+  }
+  for (const etapa of secciones.length ? [] : ORDEN_ETAPAS) {
     const deEtapa = fotos.filter((m) => m.etapa === etapa && cargadas.get(m.id));
     if (!deEtapa.length) continue;
     if (!varias) { grupos.push({ etapa, faena: null, fotos: deEtapa }); continue; }

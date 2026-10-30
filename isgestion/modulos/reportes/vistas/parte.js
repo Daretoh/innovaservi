@@ -1,13 +1,13 @@
 // Parte de trabajo: datos del informe, fotos y videos por etapa, vista previa, confirmar y reabrir.
 // Ruta: #/reportes.parte?id=<parte_id>
-import { el } from '../../../core/ui/dom.js?v=462b5ff';
-import { icono } from '../../../core/ui/iconos.js?v=462b5ff';
-import { boton } from '../../../core/ui/tabla.js?v=462b5ff';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=462b5ff';
-import { avisar } from '../../../core/ui/aviso.js?v=462b5ff';
-import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=462b5ff';
-import { fechaLarga, nombreDia, fechaCorta } from '../../../core/ui/formato.js?v=462b5ff';
-import { cargarParte, ETAPAS, nombreTercero, comprimirFoto, urlsFirmadas, faenasDistintas } from '../datos.js?v=462b5ff';
+import { el } from '../../../core/ui/dom.js?v=81adf5e';
+import { icono } from '../../../core/ui/iconos.js?v=81adf5e';
+import { boton } from '../../../core/ui/tabla.js?v=81adf5e';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=81adf5e';
+import { avisar } from '../../../core/ui/aviso.js?v=81adf5e';
+import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=81adf5e';
+import { fechaLarga, nombreDia, fechaCorta } from '../../../core/ui/formato.js?v=81adf5e';
+import { cargarParte, ETAPAS, nombreTercero, comprimirFoto, urlsFirmadas, faenasDistintas } from '../datos.js?v=81adf5e';
 
 const MAX_VIDEO = 25 * 1024 * 1024;
 let etapaSubida = 'antes';
@@ -74,6 +74,13 @@ export default async function vista(ctx) {
     if (r1.error || r2.error) avisar((r1.error ?? r2.error).message, 'error');
     ctx.refrescar();
   };
+  // Secciones dentro del parte (ej.: Cámara 1 / Cámara 2): las que ya tienen las fotos, en orden de aparición
+  const secciones = [...new Set(media.map((m) => m.seccion).filter(Boolean))];
+  const ponerSeccion = async (m, valor) => {
+    const { error } = await ctx.api.from('rep_media').update({ seccion: valor || null }).eq('id', m.id);
+    if (error) avisar(error.message, 'error');
+    ctx.refrescar();
+  };
   const tarjeta = (m, lista) => {
     const url = urls.get(m.ruta);
     const selector = el('select', { class: 'campo', disabled: !editable, 'aria-label': 'Etapa' }, ETAPAS.map(([k, t]) => el('option', { value: k, selected: m.etapa === k }, t)));
@@ -81,11 +88,20 @@ export default async function vista(ctx) {
     const selFaena = varias ? el('select', { class: 'campo', disabled: !editable, 'aria-label': 'Faena' },
       el('option', { value: '' }, 'Sin faena'), distintas.map((f) => el('option', { value: f.faena_id, selected: m.faena_id === f.faena_id }, f.ope_faenas?.titulo ?? 'Faena'))) : null;
     selFaena?.addEventListener('change', async () => { const { error } = await ctx.api.from('rep_media').update({ faena_id: selFaena.value || null }).eq('id', m.id); if (error) avisar(error.message, 'error'); ctx.refrescar(); });
+    const selSeccion = editable || m.seccion ? el('select', { class: 'campo', disabled: !editable, 'aria-label': 'Sección', title: 'Sección del informe (ej.: Cámara 1 / Cámara 2)' },
+      el('option', { value: '' }, 'Sin sección'), secciones.map((x) => el('option', { value: x, selected: m.seccion === x }, x)), el('option', { value: '__nueva' }, 'Nueva sección…')) : null;
+    selSeccion?.addEventListener('change', () => {
+      if (selSeccion.value !== '__nueva') { ponerSeccion(m, selSeccion.value); return; }
+      selSeccion.value = m.seccion ?? '';
+      abrirFormulario({ titulo: 'Nueva sección', mensaje: 'Para separar en el informe dos trabajos de una misma faena (ej.: Cámara 1 y Cámara 2).',
+        campos: [{ id: 'nombre', etiqueta: 'Nombre de la sección', requerido: true }], textoGuardar: 'Crear',
+        alGuardar: async (v) => ponerSeccion(m, v.nombre.trim().slice(0, 60)) });
+    });
     return el('div', { class: 'media-tarjeta' },
       m.tipo === 'video'
         ? el('a', { class: 'media-video', href: url, target: '_blank', rel: 'noopener' }, icono('video', { tam: 32 }), el('span', { class: 'texto-chico' }, 'Video'))
         : el('a', { href: url, target: '_blank', rel: 'noopener' }, el('img', { src: url, alt: m.nombre ?? 'Foto', loading: 'lazy' })),
-      selector, selFaena,
+      selector, selFaena, selSeccion,
       editable ? el('div', { class: 'media-acciones' },
         el('button', { type: 'button', class: 'boton-icono', title: 'Mover antes', 'aria-label': 'Mover antes', onclick: () => mover(m, lista, -1) }, icono('volver', { tam: 15 })),
         el('button', { type: 'button', class: 'boton-icono', title: 'Mover después', 'aria-label': 'Mover después', onclick: () => mover(m, lista, 1) }, icono('derecha', { tam: 15 })),
@@ -145,7 +161,7 @@ export default async function vista(ctx) {
 async function previa(ctx, datos, b) {
   b.disabled = true;
   try {
-    const { generarInforme } = await import('../informe.js?v=462b5ff');
+    const { generarInforme } = await import('../informe.js?v=81adf5e');
     const doc = await generarInforme(ctx, datos);
     window.open(doc.output('bloburl'), '_blank', 'noopener');
   } catch (e) { avisar(`No se pudo generar: ${e.message}`, 'error'); } finally { b.disabled = false; }
@@ -159,7 +175,7 @@ function confirmar(ctx, datos) {
     campos: [],
     textoGuardar: 'Confirmar',
     alGuardar: async () => {
-      const { generarInforme } = await import('../informe.js?v=462b5ff');
+      const { generarInforme } = await import('../informe.js?v=81adf5e');
       const doc = await generarInforme(ctx, datos);
       const archivo = new File([doc.output('blob')], `informe-${datos.parte.fecha}.pdf`, { type: 'application/pdf' });
       const { ruta } = await subirArchivo(ctx.api, { empresaId: ctx.empresa.id, modulo: 'reportes', archivo, tabla: 'rep_partes', registroId: datos.parte.id });

@@ -2,15 +2,16 @@
 // cada trabajador (general o por lugar), estado de cada uno (Validado, Por vencer, Listo para enviar, Enviado, Faltan
 // documentos), marca de validación con vigencia, "a quién validar" (faenas de los próximos 14 días y validaciones por
 // vencer) y ZIP con lo que pide el cliente (LEEME con faltantes y lo que va desde Buk; fotos achicadas; partes de 20 MB).
-import { el } from '../../core/ui/dom.js?v=462b5ff';
-import { icono } from '../../core/ui/iconos.js?v=462b5ff';
-import { boton } from '../../core/ui/tabla.js?v=462b5ff';
-import { abrirFormulario } from '../../core/ui/modal.js?v=462b5ff';
-import { avisar } from '../../core/ui/aviso.js?v=462b5ff';
-import { urlsFirmadas } from '../../core/adjuntos.js?v=462b5ff';
-import { comprimirFoto } from '../../core/imagenes.js?v=462b5ff';
-import { fechaLarga, hoyISO, sumarDias } from '../../core/ui/formato.js?v=462b5ff';
+import { el } from '../../core/ui/dom.js?v=81adf5e';
+import { icono } from '../../core/ui/iconos.js?v=81adf5e';
+import { boton } from '../../core/ui/tabla.js?v=81adf5e';
+import { abrirFormulario } from '../../core/ui/modal.js?v=81adf5e';
+import { avisar } from '../../core/ui/aviso.js?v=81adf5e';
+import { urlsFirmadas } from '../../core/adjuntos.js?v=81adf5e';
+import { comprimirFoto } from '../../core/imagenes.js?v=81adf5e';
+import { fechaLarga, fechaCorta, hoyISO, sumarDias, diaLocal } from '../../core/ui/formato.js?v=81adf5e';
 
+const CHIP_DOC = { ok: 'chip-ok', prox: 'chip-prox', venc: 'chip-venc', pend: 'chip-venc', na: 'chip-na' };
 export const ESTADOS = { validado: ['Validado', 'chip-ok'], por_vencer: ['Por vencer', 'chip-prox'], listo: ['Listo para enviar', 'chip-pend'], enviado: ['Enviado', 'chip-pend'], rechazado: ['Rechazado', 'chip-venc'], faltan: ['Faltan documentos', 'chip-venc'] };
 const CERO = '00000000-0000-0000-0000-000000000000';
 const AVISO_DIAS = 15;
@@ -19,7 +20,7 @@ const MAX_PARTE = 20 * 1024 * 1024;
 // Datos de acreditación de trabajadores de la empresa (todos los clientes)
 export async function cargarAcreditacion(ctx) {
   const e = ctx.empresa.id;
-  const m = await import('../rrhh/datos.js?v=462b5ff');
+  const m = await import('../rrhh/datos.js?v=81adf5e');
   const [rrhh, req, val, sit] = await Promise.all([
     m.cargarRrhh(ctx),
     ctx.api.from('acr_req_trabajador').select('*').eq('empresa_id', e).order('orden'),
@@ -123,7 +124,16 @@ export async function seccionTrabajadores(ctx, cliente) {
         el('span', { class: 'texto-suave texto-chico' }, [v.cargo,
           est.faltan.length ? `Falta: ${est.faltan.map((t) => t.corto || t.nombre).join(', ')}` : null,
           est.proximos.length ? `Por vencer: ${est.proximos.map((t) => t.corto || t.nombre).join(', ')}` : null,
-          est.v?.hasta ? `validado hasta ${fechaLarga(est.v.hasta)}` : null].filter(Boolean).join(' · '))),
+          est.v?.hasta ? `validado hasta ${fechaLarga(est.v.hasta)}` : null].filter(Boolean).join(' · ')),
+        // Cada documento que pide el cliente, con su estado y la fecha en que se cargó (como InnovaGestión)
+        el('div', { class: 'resumen-chips' }, est.reqs.map((r) => {
+          const t = d.rrhh.tipos.find((x) => x.slug === r.tipo_slug);
+          if (!t || t.fuente === 'buk') return null;
+          const doc = d.rrhh.doc(v.persona_id, t.slug); const e = d.m.estadoDoc(t, doc);
+          const cargado = doc?.estado === 'entregado' ? diaLocal(doc.created_at) : null;
+          return el('span', { class: `chip ${CHIP_DOC[e.k] ?? 'chip-na'}`, title: `${t.nombre} · ${e.texto}${cargado ? ` · cargado el ${fechaLarga(cargado)}` : ''}` },
+            `${t.corto || t.nombre}${cargado ? ` · ${fechaCorta(cargado)}` : ''}`);
+        }))),
       el('span', { class: `chip ${est.clase}` }, est.texto),
       el('div', { class: 'doc-acciones' },
         editable ? el('button', { type: 'button', class: 'boton boton-secundario boton-chico', onclick: () => marcar(v, est) }, est.v ? 'Cambiar' : 'Marcar') : null,

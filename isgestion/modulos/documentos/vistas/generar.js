@@ -2,12 +2,12 @@
 // datos, entrega de EPP, IRL y registros de entrega de PTS), formatos para firmar (registro de capacitación,
 // evaluación de aprendizaje, entrega de EPP e IRL en blanco) y documentos de la empresa (PTS, matriz e instructivo
 // IPER, programa preventivo, Ley Karin, emergencias y accidentes, matriz de EPP y capacitaciones).
-import { el } from '../../../core/ui/dom.js?v=462b5ff';
-import { icono } from '../../../core/ui/iconos.js?v=462b5ff';
-import { boton } from '../../../core/ui/tabla.js?v=462b5ff';
-import { avisar } from '../../../core/ui/aviso.js?v=462b5ff';
-import { cargarPlantillas, trabajador, abrirDocumento, sueldosBase } from '../editor.js?v=462b5ff';
-import { guardarEnRrhh, guardarEnSst, puedeGuardarRrhh, puedeGuardarSst } from '../acciones.js?v=462b5ff';
+import { el } from '../../../core/ui/dom.js?v=81adf5e';
+import { icono } from '../../../core/ui/iconos.js?v=81adf5e';
+import { boton } from '../../../core/ui/tabla.js?v=81adf5e';
+import { avisar } from '../../../core/ui/aviso.js?v=81adf5e';
+import { cargarPlantillas, trabajador, abrirDocumento, sueldosBase } from '../editor.js?v=81adf5e';
+import { guardarEnRrhh, guardarEnSst, puedeGuardarRrhh, puedeGuardarSst } from '../acciones.js?v=81adf5e';
 
 const estado = { persona: '' };
 const DEL_TRABAJADOR = ['contrato', 'perfil', 'datos', 'epp', 'odi'];
@@ -70,7 +70,9 @@ export default async function vista(ctx) {
     evaluaciones.length ? tarjetaDoc('Evaluación de aprendizaje (individual)', 'Una por trabajador, o la pauta de corrección del relator', () => formato('Evaluación de aprendizaje', {
       variantes: evaluaciones, personas: 'lista', construir: (v, PER) => (/\|pauta$/.test(v || '') ? P.docEvaluacion(v) : P.porPersona(PER, (t) => P.docEvaluacion(v, t))) })) : null,
     tarjetaDoc('Entrega de elementos de protección personal', null, () => formato('Entrega de EPP', { personas: 'lista', construir: (v, PER) => P.porPersona(PER, (t) => P.docEPP(t)) })),
-    tarjetaDoc('Información de riesgos laborales (IRL)', null, () => formato('IRL', { personas: 'lista', construir: (v, PER) => P.porPersona(PER, (t) => P.docODI(t)) })));
+    tarjetaDoc('Información de riesgos laborales (IRL)', null, () => formato('IRL', { personas: 'lista', construir: (v, PER) => P.porPersona(PER, (t) => P.docODI(t)) })),
+    tarjetaDoc('Carta (formato editable)', 'En blanco o carta de compromiso (sin examen de altura / espacios confinados), con la lista de trabajadores y la firma del representante legal',
+      () => formato('Carta', { variantes: P.opcionesCarta(), personas: 'lista', construir: (v, PER) => P.docCarta(v, PER) })));
 
   // ---- Documentos de la empresa
   const docEmpresa = (slug, nombre) => {

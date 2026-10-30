@@ -1,5 +1,5 @@
 // Datos y reglas comunes de Tareas (v2, como InnovaGestión).
-import { hoyISO, diaLocal } from '../../core/ui/formato.js?v=462b5ff';
+import { hoyISO, diaLocal } from '../../core/ui/formato.js?v=81adf5e';
 
 export const PRIORIDADES = [['baja', 'Baja'], ['media', 'Media'], ['alta', 'Alta']];
 export const NIVELES = PRIORIDADES.map(([k]) => k);
@@ -42,4 +42,21 @@ export const ordenar = (lista) => [...lista].sort((a, b) =>
 export function mencionados(texto, usuarios) {
   const t = ` ${texto.toLowerCase()}`;
   return usuarios.filter((u) => t.includes(`@${u.nombre.toLowerCase()}`));
+}
+
+// Categorías (como InnovaGestión): se sugiere por el título y se puede cambiar a mano
+export const CATEGORIAS = [['general', 'General'], ['cotizaciones', 'Cotizaciones'], ['facturas', 'Facturas'], ['operaciones', 'Operaciones'],
+  ['administracion', 'Administración'], ['pagos', 'Pagos'], ['reportes', 'Reportes']];
+export const nombreCategoria = Object.fromEntries(CATEGORIAS);
+export function categoriaAuto(titulo) {
+  const t = String(titulo ?? '').toLowerCase();
+  const h = (...p) => p.some((x) => t.includes(x));
+  if (h('cotiz', 'presupuesto')) return 'cotizaciones';
+  if (h('factura', 'boleta', ' dte', 'nota de cr', 'nota de d')) return 'facturas';
+  if (h('pago', 'pagar', 'transferenc', 'abono', 'deposito', 'depósito', 'sueldo', 'remuneraci', 'finiquito', 'anticipo', 'previred', 'dinero', 'cobr', 'deuda', 'gasto')) return 'pagos';
+  if (h('reporte', 'informe', 'acta', 'minuta', 'resumen')) return 'reportes';
+  if (h('faena', 'terreno', 'cuadrilla', 'epp', 'turno', 'operaci', 'planific', 'vehicul', 'vehícul', 'chofer', 'maquina', 'bodega', 'prevenci', 'mantenimiento', 'botiqu', 'hormig', 'moldaje', 'obra')) return 'operaciones';
+  if (h('contrato', 'firma', 'document', 'rrhh', 'tramite', 'trámite', 'certificad', 'certificaci', 'capacitaci', 'anexo', 'carpeta', 'permiso', 'acredita', 'administraci',
+    'procedimiento', 'proveedor', 'solicitud', 'resoluci', 'carta', 'declaraci', 'sanitaria', 'portuaria', 'sernapesca', 'armada')) return 'administracion';
+  return 'general';
 }

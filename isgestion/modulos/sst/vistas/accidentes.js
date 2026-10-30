@@ -1,10 +1,10 @@
 // Accidentes, enfermedades profesionales e incidentes: listado por año con indicadores simples.
-import { el } from '../../../core/ui/dom.js?v=462b5ff';
-import { icono } from '../../../core/ui/iconos.js?v=462b5ff';
-import { listado, boton } from '../../../core/ui/tabla.js?v=462b5ff';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=462b5ff';
-import { fechaLarga, hoyISO } from '../../../core/ui/formato.js?v=462b5ff';
-import { TIPOS_ACC, GRAVEDAD, nombreDe, cargarPersonas, cargarClientes } from '../datos.js?v=462b5ff';
+import { el } from '../../../core/ui/dom.js?v=81adf5e';
+import { icono } from '../../../core/ui/iconos.js?v=81adf5e';
+import { listado, boton } from '../../../core/ui/tabla.js?v=81adf5e';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=81adf5e';
+import { fechaLarga, hoyISO } from '../../../core/ui/formato.js?v=81adf5e';
+import { TIPOS_ACC, GRAVEDAD, nombreDe, cargarPersonas, cargarClientes } from '../datos.js?v=81adf5e';
 
 const estado = { anio: new Date().getFullYear() };
 const tipo = nombreDe(TIPOS_ACC);

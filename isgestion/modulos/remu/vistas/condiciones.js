@@ -1,22 +1,23 @@
 // Condiciones de pago de cada trabajador en la empresa: modo, cargo/trato, jornada o turno, sueldo y vuelta.
-import { el } from '../../../core/ui/dom.js?v=462b5ff';
-import { icono } from '../../../core/ui/iconos.js?v=462b5ff';
-import { listado } from '../../../core/ui/tabla.js?v=462b5ff';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=462b5ff';
-import { avisar } from '../../../core/ui/aviso.js?v=462b5ff';
-import { dinero, hhmm, fechaLarga } from '../../../core/ui/formato.js?v=462b5ff';
-import { cargarBase, nombreCompleto } from '../datos.js?v=462b5ff';
+import { el } from '../../../core/ui/dom.js?v=81adf5e';
+import { icono } from '../../../core/ui/iconos.js?v=81adf5e';
+import { listado } from '../../../core/ui/tabla.js?v=81adf5e';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=81adf5e';
+import { avisar } from '../../../core/ui/aviso.js?v=81adf5e';
+import { dinero, hhmm, fechaLarga } from '../../../core/ui/formato.js?v=81adf5e';
+import { cargarBase, nombreCompleto } from '../datos.js?v=81adf5e';
 
 export default async function vista(ctx) {
   const base = await cargarBase(ctx);
-  const activos = base.vinculos.filter((v) => v.estado === 'activo')
+  const activos = base.todos.filter((v) => v.estado === 'activo')
     .sort((a, b) => nombreCompleto(a.personas).localeCompare(nombreCompleto(b.personas)));
   const editable = ctx.puede('remu', 'editar') && ctx.puede('remu', 'crear');
   const ht = Number(base.config.horas_trato ?? 8);
 
   const modoDe = (v) => v.condicion?.modo ?? (v.tipo_vinculo === 'contrato' ? 'fijo' : 'hora');
   const columnas = [
-    { titulo: 'Trabajador', valor: (v) => el('span', {}, nombreCompleto(v.personas), !v.condicion ? el('span', { class: 'etiqueta etiqueta-apagada', title: 'Usa los valores generales' }, 'Sin configurar') : null) },
+    { titulo: 'Trabajador', valor: (v) => el('span', {}, nombreCompleto(v.personas), !v.condicion ? el('span', { class: 'etiqueta etiqueta-apagada', title: 'Usa los valores generales' }, 'Sin configurar') : null,
+      v.condicion?.socio ? el('span', { class: 'chip chip-na', title: 'No aparece en los pagos ni en el resumen mensual' }, 'Socio') : null) },
     { titulo: 'Modo', valor: (v) => (modoDe(v) === 'fijo' ? `Fijo${v.condicion?.fijo_desde ? ` desde ${fechaLarga(v.condicion.fijo_desde)}` : ''}` : 'Por hora') },
     { titulo: 'Cargo', valor: (v) => { const c = v.condicion?.cargo_id ? base.cargos.get(v.condicion.cargo_id) : null; return c ? c.nombre : '—'; } },
     { titulo: 'Valor hora', valor: (v) => { const c = v.condicion?.cargo_id ? base.cargos.get(v.condicion.cargo_id) : null; const vh = c?.trato ? Math.round(c.trato / ht) : (v.condicion?.valor_hora || base.config.valor_hora); return vh ? dinero(vh) : el('span', { class: 'pct-mal' }, 'Sin valor'); } },
@@ -55,6 +56,7 @@ function editar(ctx, v, base) {
       { id: 'sueldo_base', etiqueta: 'Sueldo base mensual', tipo: 'number', valor: c.sueldo_base != null ? String(c.sueldo_base) : '' },
       { id: 'sueldo_desde', etiqueta: 'Sueldo rige desde', tipo: 'date', valor: c.sueldo_desde ?? '' },
       { id: 'valor_vuelta', etiqueta: 'Valor por vuelta propio (vacío = el general)', tipo: 'number', valor: c.valor_vuelta != null ? String(c.valor_vuelta) : '' },
+      { id: 'socio', etiqueta: 'Socio de la empresa', opciones: [['no', 'No'], ['si', 'Sí: no aparece en Remuneraciones (sus horas siguen registradas)']], valor: c.socio ? 'si' : 'no' },
     ],
     alGuardar: async (f) => {
       const num = (x) => (x === '' || x == null ? null : Number(x));
@@ -66,7 +68,7 @@ function editar(ctx, v, base) {
         modo: f.modo, cargo_id: f.cargo_id || null, valor_hora: num(f.valor_hora),
         jornada_ini: f.jornada_ini || null, jornada_fin: f.jornada_fin || null, jornada_horas: num(f.jornada_horas),
         sueldo_base: num(f.sueldo_base), sueldo_desde: f.sueldo_desde || null, valor_vuelta: num(f.valor_vuelta), fijo_desde: f.fijo_desde || null,
-        salida_viernes: f.salida_viernes || null, art22: f.art22 === 'si', asistencia_desde: f.asistencia_desde || null,
+        salida_viernes: f.salida_viernes || null, art22: f.art22 === 'si', asistencia_desde: f.asistencia_desde || null, socio: f.socio === 'si',
       };
       const r = v.condicion
         ? await ctx.api.from('remu_condiciones').update(datos).eq('vinculo_id', v.id).select('vinculo_id')

@@ -2,19 +2,20 @@
 // a pantalla completa (como en InnovaGestión): los campos subrayados se escriben ahí mismo, los bloques opcionales se
 // quitan con la ×, se elige el formato (variante) y los trabajadores que firman; luego se imprime, se descarga en PDF
 // o se guarda donde corresponde (RRHH o Prevención SST), según lo que pase quien abre el documento.
-import { el } from '../../core/ui/dom.js?v=462b5ff';
-import { icono } from '../../core/ui/iconos.js?v=462b5ff';
-import { boton } from '../../core/ui/tabla.js?v=462b5ff';
-import { avisar } from '../../core/ui/aviso.js?v=462b5ff';
-import { cargarJsPdf, cargarLogo, sellar } from '../../core/pdf.js?v=462b5ff';
-import { crearPlantillas } from './plantillas.js?v=462b5ff';
-import { pdfDesde } from './pdf.js?v=462b5ff';
+import { el } from '../../core/ui/dom.js?v=81adf5e';
+import { icono } from '../../core/ui/iconos.js?v=81adf5e';
+import { boton } from '../../core/ui/tabla.js?v=81adf5e';
+import { avisar } from '../../core/ui/aviso.js?v=81adf5e';
+import { cargarJsPdf, cargarLogo, sellar } from '../../core/pdf.js?v=81adf5e';
+import { crearPlantillas } from './plantillas.js?v=81adf5e';
+import { pdfDesde } from './pdf.js?v=81adf5e';
+import { fmtRut } from '../../core/lector-dte.js?v=81adf5e';
 
 let estilos = null;
 function cargarEstilos() {
   estilos ??= new Promise((ok) => {
     const l = document.createElement('link');
-    l.rel = 'stylesheet'; l.href = new URL('./documentos.css?v=462b5ff', import.meta.url).href;
+    l.rel = 'stylesheet'; l.href = new URL('./documentos.css?v=81adf5e', import.meta.url).href;
     l.onload = ok; l.onerror = ok;
     document.head.append(l);
   });
@@ -50,7 +51,7 @@ export async function cargarPlantillas(ctx) {
   const h = (x) => escaparTodo(x);
   const D = {
     EMP: {
-      ...h({ rz: e.razon_social, rut: e.rut, dir: [c.direccion, c.ciudad].filter(Boolean).join(', '), rep: representante, repRut: c.rep_rut || '',
+      ...h({ rz: e.razon_social, rut: fmtRut(e.rut), dir: [c.direccion, c.ciudad].filter(Boolean).join(', '), rep: representante, repRut: c.rep_rut || '',
         ciudad: c.ciudad || '', direccion: c.direccion || '', region: c.region || '', mutual: c.mutual || 'Mutual de Seguridad' }),
       logo: logo?.dataUrl || '',
     },
@@ -95,6 +96,7 @@ export async function abrirDocumento(o) {
     hoja.innerHTML = o.construir(variante, personas);   // plantillas: todo dato pasa por esc()/ce()
     for (const img of hoja.querySelectorAll('img[onerror]')) img.removeAttribute('onerror');
     for (const img of hoja.querySelectorAll('img')) if (!img.getAttribute('src')) img.remove();
+    firmaMovible(hoja);
   };
   // Quitar bloques opcionales; recordar lo escrito en campos con data-ls (relator, horario…)
   hoja.addEventListener('click', (ev) => { const x = ev.target.closest('.dg-x'); if (x) x.closest('.dg-opt')?.remove(); });
@@ -180,4 +182,23 @@ function elegirPersonas(o, actuales, listo) {
         } }))));
   document.body.append(dialogo);
   dialogo.showModal();
+}
+
+// Firma y timbre editables en el documento (como InnovaGestión): arrastrar para mover, rueda del mouse para agrandar o
+// achicar (proporción fija, sin deformar). Se aplica al imprimir o descargar el PDF.
+let avisoFirma = false;
+function firmaMovible(raiz) {
+  let hubo = false;
+  for (const img of raiz.querySelectorAll('img.rs-sig, img.rs-tim, img.rs-prev')) {
+    hubo = true; img.classList.add('fmov'); img.title = 'Arrastra para mover · rueda del mouse para agrandar o achicar';
+    let h0 = 0; let sc = 1; let dx = 0; let dy = 0; let arrastre = null;
+    const base = () => { if (h0) return; h0 = img.getBoundingClientRect().height || img.naturalHeight || 80; img.style.maxWidth = 'none'; img.style.maxHeight = 'none'; img.style.width = 'auto'; };
+    const aplicar = () => { img.style.height = `${h0 * sc}px`; img.style.marginLeft = `${dx}px`; img.style.marginTop = `${dy}px`; };
+    img.addEventListener('pointerdown', (ev) => { base(); ev.preventDefault(); try { img.setPointerCapture(ev.pointerId); } catch { /* */ } arrastre = { x: ev.clientX, y: ev.clientY, dx, dy }; });
+    img.addEventListener('pointermove', (ev) => { if (!arrastre) return; dx = arrastre.dx + (ev.clientX - arrastre.x); dy = arrastre.dy + (ev.clientY - arrastre.y); aplicar(); });
+    const fin = (ev) => { arrastre = null; try { img.releasePointerCapture(ev.pointerId); } catch { /* */ } };
+    img.addEventListener('pointerup', fin); img.addEventListener('pointercancel', fin);
+    img.addEventListener('wheel', (ev) => { base(); ev.preventDefault(); sc = Math.max(0.4, Math.min(4, sc * (ev.deltaY < 0 ? 1.08 : 0.92))); aplicar(); }, { passive: false });
+  }
+  if (hubo && !avisoFirma) { avisoFirma = true; avisar('Puedes arrastrar la firma para moverla y usar la rueda del mouse para agrandarla.'); }
 }

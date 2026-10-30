@@ -1,10 +1,10 @@
 // Diseño del informe: textos de la caja "Contratista", lema de la portada, contactos de la contraportada, colores de
 // las franjas laterales y logo grande de portada y contraportada (como InnovaGestión). El logo chico y el color salen
 // de los datos de la empresa; teléfono, correo, web y dirección de la empresa también van a la contraportada.
-import { el } from '../../../core/ui/dom.js?v=462b5ff';
-import { boton } from '../../../core/ui/tabla.js?v=462b5ff';
-import { avisar } from '../../../core/ui/aviso.js?v=462b5ff';
-import { subirArchivo, urlFirmada } from '../../../core/adjuntos.js?v=462b5ff';
+import { el } from '../../../core/ui/dom.js?v=81adf5e';
+import { boton } from '../../../core/ui/tabla.js?v=81adf5e';
+import { avisar } from '../../../core/ui/aviso.js?v=81adf5e';
+import { subirArchivo, urlFirmada } from '../../../core/adjuntos.js?v=81adf5e';
 
 const lineas = (t) => t.split('\n').map((x) => x.trim()).filter(Boolean);
 

@@ -1375,6 +1375,29 @@ export function crearPlantillas(D) {
       '<div class="dg-firmas"><div>Firma del trabajador<br>'+esc(t.nombre||'')+'</div><div>'+(((lsGet('dg_rel_nom')||EMP_PREV.nombre)===EMP_PREV.nombre)?firmaPrevHtml():'')+'Firma del relator<br>'+esc(lsGet('dg_rel_nom')||EMP_PREV.nombre)+'</div></div>';
   }; }
   // Lo que se escribe en el relator / horario se recuerda para el siguiente registro (útil al generar en lote).
+  // ---- Carta con membrete (InnovaGestión, 27-oct): todo el texto se edita en pantalla. "Trabajadores" agrega la
+  // lista de personas (nombre y RUT) y, en la carta de compromiso, la firma de cada una.
+  function opcionesCarta(){ return [{v:'libre',n:'Carta en blanco'},{v:'compromiso',n:'Carta de compromiso · sin examen de altura / espacios confinados'}]; }
+  function docCarta(v, PER){ PER=PER||[]; var comp=(v==='compromiso'), varios=PER.length>1;
+    function ed(t,cls){ return '<div class="carta-p'+(cls?' '+cls:'')+'" contenteditable>'+t+'</div>'; }
+    var lista=PER.length?'<ol class="carta-ol">'+PER.map(function(t){ return '<li><b>'+esc((t.nombre||'').toUpperCase())+'</b> · RUT '+esc(t.rut||'')+'</li>'; }).join('')+'</ol>':
+      (comp?'<ol class="carta-ol"><li>'+ce('')+' · RUT '+ce('')+'</li></ol>':'');
+    var cuerpo=comp?
+      ed('Extendemos esta carta de compromiso para indicar que '+(varios?'los siguientes trabajadores no cuentan':'el siguiente trabajador no cuenta')+' con examen ocupacional de altura física y/o espacios confinados:')+lista+
+      ed('De igual forma, nos comprometemos a que '+(varios?'los trabajadores no realizarán':'el trabajador no realizará')+' labores que requieran trabajar en altura ni en espacios confinados mientras no cuente'+(varios?'n':'')+' con el examen ocupacional vigente.')+
+      ed('La empresa coordina la solicitud del examen ocupacional para el mes de [mes y año].'):
+      ed('[Escriba aquí el motivo de la carta. Puede usar uno o más párrafos.]')+lista+ed('[Párrafo final: compromiso, solicitud o información adicional.]');
+    var firmasTrab=(comp&&PER.length)?'<div class="carta-firmas">'+PER.map(function(t){ return '<div>Firma del trabajador<br><b>'+esc(t.nombre||'')+'</b><br>RUT '+esc(t.rut||'')+'</div>'; }).join('')+'</div>':'';
+    return '<div class="carta-hdr"><img src="'+(EMP.logo||'')+'"></div>'+
+      '<div class="carta-tit" contenteditable>'+(comp?'CARTA DE COMPROMISO':'[TÍTULO DE LA CARTA]')+'</div>'+
+      '<p class="carta-fecha">'+esc(EMP.ciudad||'')+', '+ce(fLarga(todayISO()))+'</p>'+
+      '<p class="carta-dest">Señor(a): <b>'+ce('')+'</b><br>Cargo / institución: '+ce('')+'<br>RUT: <b>'+ce('')+'</b></p>'+
+      '<p class="carta-pres"><b><u>PRESENTE</u></b></p>'+
+      '<p>Estimado(a) '+ce('')+':</p>'+cuerpo+
+      ed('Sin otro particular, le saluda atentamente,','carta-desp')+
+      firmasTrab+
+      '<div class="dg-firmas con-rep carta-emp"><div class="dg-rep">'+firmaRepHtml()+'<b>'+esc(EMP.rep)+'</b><br>Representante legal<br>'+EMP.rz+'<br>RUT '+EMP.rut+'</div></div>';
+  }
   // ---- DOC_GEN (ISgestión, líneas 10519–10533)
   var DOC_GEN={
     contrato:{ nombre:'Contrato de trabajo', build:docContrato, variantes:true },
@@ -1393,6 +1416,6 @@ export function crearPlantillas(D) {
     odi:{ nombre:'IRL (riesgos laborales)', build:docODI }
   };
   return { DOC_GEN, EMP_GEN, EMP_CARPETAS, PTS_DOC, PTS_INFO, CAP_DOC, DG_VARS, docAsistencia, opcionesRegistro, docEvaluacion,
-    docEPP, docODI, docDatos, docContrato, docPerfil, porPersona, docPTSDoc, docPTSFunciones, varDefault, ptsDatos, ptsCambios,
+    docEPP, docODI, docDatos, docContrato, docPerfil, docCarta, opcionesCarta, porPersona, docPTSDoc, docPTSFunciones, varDefault, ptsDatos, ptsCambios,
     nombrePTS, esPTS, dgFoot, esc };
 }

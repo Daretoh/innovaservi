@@ -1,17 +1,17 @@
 // Requisitos de un mandante: tabla de requisitos mensuales por mes, requisitos únicos y su configuración.
 // Ruta: #/acreditacion.mandante?id=<tercero>
-import { el } from '../../../core/ui/dom.js?v=462b5ff';
-import { icono } from '../../../core/ui/iconos.js?v=462b5ff';
-import { boton } from '../../../core/ui/tabla.js?v=462b5ff';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=462b5ff';
-import { avisar } from '../../../core/ui/aviso.js?v=462b5ff';
-import { subirArchivo, eliminarArchivo } from '../../../core/adjuntos.js?v=462b5ff';
-import { fechaLarga, hoyISO, moverMes, nombreMes } from '../../../core/ui/formato.js?v=462b5ff';
-import { cargarDocumentos, cumplimientoMandante, nombreTercero, mesActual, CHIP, textoEstado } from '../datos.js?v=462b5ff';
-import { REQUISITOS } from '../sugeridos.js?v=462b5ff';
-import { abrir } from './documentos.js?v=462b5ff';
-import { esNomina, generarNomina } from '../nomina.js?v=462b5ff';
-import { seccionTrabajadores } from '../trabajadores.js?v=462b5ff';
+import { el } from '../../../core/ui/dom.js?v=81adf5e';
+import { icono } from '../../../core/ui/iconos.js?v=81adf5e';
+import { boton } from '../../../core/ui/tabla.js?v=81adf5e';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=81adf5e';
+import { avisar } from '../../../core/ui/aviso.js?v=81adf5e';
+import { subirArchivo, eliminarArchivo } from '../../../core/adjuntos.js?v=81adf5e';
+import { fechaLarga, hoyISO, moverMes, nombreMes } from '../../../core/ui/formato.js?v=81adf5e';
+import { cargarDocumentos, cumplimientoMandante, nombreTercero, mesActual, CHIP, textoEstado } from '../datos.js?v=81adf5e';
+import { REQUISITOS } from '../sugeridos.js?v=81adf5e';
+import { abrir } from './documentos.js?v=81adf5e';
+import { esNomina, generarNomina } from '../nomina.js?v=81adf5e';
+import { seccionTrabajadores } from '../trabajadores.js?v=81adf5e';
 
 const ARCHIVOS = ['application/pdf', 'image/jpeg', 'image/png',
   'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
@@ -50,6 +50,7 @@ export default async function vista(ctx) {
       puede.editar || puede.crear
         ? el('button', { type: 'button', class: 'celda-boton', title: x ? `${x.estado === 'subido' ? 'Subido' : 'No aplica'} el ${fechaLarga(x.fecha)}${x.nota ? ` · ${x.nota}` : ''}` : 'Marcar', onclick: () => marcar(ctx, r, p, x) }, chip)
         : chip,
+      p === 'unica' && x ? el('span', { class: 'texto-suave texto-chico' }, `cargado ${fechaLarga(x.fecha)}`) : null,
       x?.archivo ? el('button', { type: 'button', class: 'boton-icono', title: 'Ver archivo', 'aria-label': 'Ver archivo', onclick: () => abrir(ctx, x.archivo) }, icono('ojo', { tam: 14 })) : null,
       // Nómina de trabajadores: se genera con quienes tuvieron horas en este mandante ese mes
       p !== 'unica' && esNomina(r) && puede.crear && (puede.editar || !x)
@@ -135,7 +136,7 @@ function requisito(ctx, c, r, tipos) {
   abrirFormulario({
     titulo: r ? 'Requisito' : `Nuevo requisito · ${nombreTercero(c)}`,
     campos: [
-      { id: 'nombre', etiqueta: 'Nombre', requerido: true, valor: r?.nombre ?? '', ayuda: 'Ej.: Certificado F30-1, Planillas Previred, Nómina de trabajadores.' },
+      { id: 'nombre', etiqueta: 'Nombre', requerido: true, valor: r?.nombre ?? '', ayuda: 'Ej.: Certificado F30-1, Planillas Previred, Nómina de trabajadores, o un documento propio del cliente como el contrato o la OC (único, se sube al marcarlo).' },
       { id: 'periodicidad', etiqueta: 'Periodicidad', opciones: [['mensual', 'Mensual'], ['unica', 'Una vez (o según su vencimiento)']], valor: r?.periodicidad ?? 'mensual' },
       { id: 'tipo_id', etiqueta: 'Si es único: documento de empresa que lo cumple', opciones: [['', 'Ninguno (se marca a mano)'], ...tipos.filter((t) => t.activo).map((t) => [t.id, t.nombre])], valor: r?.tipo_id ?? '' },
       { id: 'desde', etiqueta: 'Se exige desde el mes', tipo: 'month', requerido: true, valor: r?.desde ?? mesActual() },

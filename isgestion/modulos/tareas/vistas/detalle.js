@@ -1,15 +1,15 @@
 // Detalle de una tarea (como InnovaGestión): datos editables, estado (pendiente / en proceso / terminada), prioridad
 // inteligente, seguimiento con observaciones y cambios, @menciones que avisan a la persona, botón Recordar a los
 // responsables, y archivos y fotos (elegir, pegar un pantallazo con Ctrl+V o arrastrar sobre la tarea).
-import { el } from '../../../core/ui/dom.js?v=462b5ff';
-import { icono } from '../../../core/ui/iconos.js?v=462b5ff';
-import { boton } from '../../../core/ui/tabla.js?v=462b5ff';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=462b5ff';
-import { avisar } from '../../../core/ui/aviso.js?v=462b5ff';
-import { subirArchivo, eliminarArchivo, urlsFirmadas, urlFirmada } from '../../../core/adjuntos.js?v=462b5ff';
-import { comprimirFoto, esImagen } from '../../../core/imagenes.js?v=462b5ff';
-import { fechaLarga, diaLocal } from '../../../core/ui/formato.js?v=462b5ff';
-import { PRIORIDADES, nombrePrioridad, ESTADOS, REPETIR, prioridad, diasAbierta, mencionados } from '../datos.js?v=462b5ff';
+import { el } from '../../../core/ui/dom.js?v=81adf5e';
+import { icono } from '../../../core/ui/iconos.js?v=81adf5e';
+import { boton } from '../../../core/ui/tabla.js?v=81adf5e';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=81adf5e';
+import { avisar } from '../../../core/ui/aviso.js?v=81adf5e';
+import { subirArchivo, eliminarArchivo, urlsFirmadas, urlFirmada } from '../../../core/adjuntos.js?v=81adf5e';
+import { comprimirFoto, esImagen } from '../../../core/imagenes.js?v=81adf5e';
+import { fechaLarga, diaLocal } from '../../../core/ui/formato.js?v=81adf5e';
+import { PRIORIDADES, nombrePrioridad, ESTADOS, REPETIR, CATEGORIAS, nombreCategoria, prioridad, diasAbierta, mencionados } from '../datos.js?v=81adf5e';
 
 const MAX = 25 * 1024 * 1024;
 const hora = (ts) => new Date(ts).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
@@ -94,11 +94,12 @@ export async function abrirDetalle(ctx, t, { usuarios, alCambiar }) {
         { id: 'responsable', etiqueta: 'Responsable', opciones: [['', 'Sin asignar'], ...usuarios.map((u) => [u.user_id, u.nombre])], valor: t.responsable_id ?? '' },
         { id: 'responsable2', etiqueta: '2.º responsable', opciones: [['', 'Ninguno'], ...usuarios.map((u) => [u.user_id, u.nombre])], valor: t.responsable2_id ?? '' },
         { id: 'repetir', etiqueta: 'Repetir', opciones: REPETIR, valor: t.repetir },
+        { id: 'categoria', etiqueta: 'Categoría', opciones: CATEGORIAS, valor: t.categoria ?? 'general' },
       ],
       alGuardar: async (v) => {
         if (v.repetir !== 'no' && !v.fecha) throw new Error('Una tarea que se repite necesita fecha.');
         const { error } = await ctx.api.from('tar_tareas').update({ titulo: v.titulo.trim(), detalle: v.detalle.trim() || null, fecha: v.fecha || null, prioridad: v.prioridad,
-          responsable_id: v.responsable || null, responsable2_id: v.responsable2 && v.responsable2 !== v.responsable ? v.responsable2 : null, repetir: v.repetir }).eq('id', t.id);
+          responsable_id: v.responsable || null, responsable2_id: v.responsable2 && v.responsable2 !== v.responsable ? v.responsable2 : null, repetir: v.repetir, categoria: v.categoria }).eq('id', t.id);
         if (error) throw new Error(error.message);
         cambio = true; pintar();
       },
@@ -121,7 +122,7 @@ export async function abrirDetalle(ctx, t, { usuarios, alCambiar }) {
     caja.replaceChildren(
       el('div', { class: 'seg-cab' },
         el('div', {}, el('h2', {}, t.titulo),
-          el('p', { class: 'texto-suave' }, [`Responsable: ${nombre.get(t.responsable_id) ?? 'sin asignar'}`, t.responsable2_id ? `2.º: ${nombre.get(t.responsable2_id) ?? ''}` : null,
+          el('p', { class: 'texto-suave' }, [nombreCategoria[t.categoria ?? 'general'], `Responsable: ${nombre.get(t.responsable_id) ?? 'sin asignar'}`, t.responsable2_id ? `2.º: ${nombre.get(t.responsable2_id) ?? ''}` : null,
             t.fecha ? `vence ${fechaLarga(t.fecha)}` : 'sin fecha', `${diasAbierta(t)} d abierta`, t.created_by ? `creó ${nombre.get(t.created_by) ?? '—'}` : null].filter(Boolean).join(' · '))),
         el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Cerrar', onclick: cerrar }, icono('cerrar'))),
       el('div', { class: 'tar2-barra' }, estados,

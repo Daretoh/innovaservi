@@ -1,6 +1,6 @@
 // Carga lo necesario para calcular pagos de la empresa activa en un rango.
-import { calcular, sueldoDelMes, semanaEnMes } from './calculo.js?v=462b5ff';
-import { sumarDias, rangoMes, lunesDe } from '../../core/ui/formato.js?v=462b5ff';
+import { calcular, sueldoDelMes, semanaEnMes } from './calculo.js?v=81adf5e';
+import { sumarDias, rangoMes, lunesDe } from '../../core/ui/formato.js?v=81adf5e';
 
 export const nombreCompleto = (p) => [p.nombres, p.apellido_paterno, p.apellido_materno].filter(Boolean).join(' ');
 
@@ -20,8 +20,11 @@ export async function cargarBase(ctx) {
   for (const v of [...vinculos.data].sort((a, b) => (a.estado === 'activo' ? -1 : 1) - (b.estado === 'activo' ? -1 : 1))) {
     if (!vistos.has(v.persona_id)) vistos.set(v.persona_id, { ...v, condicion: porVinculo.get(v.id) ?? null });
   }
+  // Socios de la empresa (remu_condiciones.socio): fuera de los pagos; Condiciones los muestra en `todos`
+  const todos = [...vistos.values()];
   return {
-    vinculos: [...vistos.values()],
+    vinculos: todos.filter((v) => !v.condicion?.socio),
+    todos,
     cargos: new Map(cargos.data.map((c) => [c.id, c])),
     listaCargos: cargos.data,
     config: config.data ?? { valor_vuelta: 0, valor_hora: 0, horas_trato: 8 },

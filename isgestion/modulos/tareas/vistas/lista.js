@@ -1,16 +1,16 @@
 // Tareas (v2, como InnovaGestión): pestañas Mis tareas / Todas / por persona / Avisos, filtros (abiertas, en proceso,
 // terminadas), búsqueda y orden; cada fila con prioridad inteligente, estado, responsables, vencimiento con color, días
 // abierta y clip con los archivos. Clic abre el detalle (detalle.js). ?nueva=1 abre "Nueva tarea"; ?id= abre una.
-import { el } from '../../../core/ui/dom.js?v=462b5ff';
-import { icono } from '../../../core/ui/iconos.js?v=462b5ff';
-import { boton } from '../../../core/ui/tabla.js?v=462b5ff';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=462b5ff';
-import { avisar } from '../../../core/ui/aviso.js?v=462b5ff';
-import { fechaLarga, fechaCorta, diaLocal } from '../../../core/ui/formato.js?v=462b5ff';
-import { PRIORIDADES, nombrePrioridad, nombreEstado, CHIP_ESTADO, REPETIR, prioridad, ordenar, diasHasta, diasAbierta } from '../datos.js?v=462b5ff';
-import { abrirDetalle } from './detalle.js?v=462b5ff';
+import { el } from '../../../core/ui/dom.js?v=81adf5e';
+import { icono } from '../../../core/ui/iconos.js?v=81adf5e';
+import { boton } from '../../../core/ui/tabla.js?v=81adf5e';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=81adf5e';
+import { avisar } from '../../../core/ui/aviso.js?v=81adf5e';
+import { fechaLarga, fechaCorta, diaLocal } from '../../../core/ui/formato.js?v=81adf5e';
+import { PRIORIDADES, nombrePrioridad, nombreEstado, CHIP_ESTADO, REPETIR, CATEGORIAS, nombreCategoria, categoriaAuto, prioridad, ordenar, diasHasta, diasAbierta } from '../datos.js?v=81adf5e';
+import { abrirDetalle } from './detalle.js?v=81adf5e';
 
-const estado = { ver: 'mias', persona: '', filtro: 'abiertas', buscar: '', orden: 'prioridad' };
+const estado = { ver: 'mias', persona: '', filtro: 'abiertas', buscar: '', orden: 'prioridad', categoria: '' };
 const CHIP_PRIO = { alta: 'chip-venc', media: 'chip-prox', baja: 'chip-pend' };
 
 export default async function vista(ctx) {
@@ -41,6 +41,7 @@ export default async function vista(ctx) {
       { id: 'responsable', etiqueta: 'Responsable', opciones: [['', 'Sin asignar'], ...usuarios.map((u) => [u.user_id, u.nombre])], valor: estado.ver === 'persona' && estado.persona ? estado.persona : yo },
       { id: 'responsable2', etiqueta: '2.º responsable (opcional)', opciones: [['', 'Ninguno'], ...usuarios.map((u) => [u.user_id, u.nombre])] },
       { id: 'repetir', etiqueta: 'Repetir', opciones: REPETIR, valor: 'no' },
+      { id: 'categoria', etiqueta: 'Categoría', opciones: [['', 'Según el título'], ...CATEGORIAS], valor: '' },
     ],
     textoGuardar: 'Crear tarea',
     alGuardar: async (v) => {
@@ -48,6 +49,7 @@ export default async function vista(ctx) {
       const { data: t, error: er } = await ctx.api.from('tar_tareas').insert({
         empresa_id: e, titulo: v.titulo.trim(), detalle: v.detalle.trim() || null, fecha: v.fecha || null, prioridad: v.prioridad,
         responsable_id: v.responsable || null, responsable2_id: v.responsable2 && v.responsable2 !== v.responsable ? v.responsable2 : null, repetir: v.repetir,
+        categoria: v.categoria || categoriaAuto(v.titulo),
       }).select('*, tar_adjuntos(id), tar_obs(id)').single();
       if (er) throw new Error(er.message);
       avisar('Tarea creada.'); ctx.refrescar();
@@ -59,6 +61,7 @@ export default async function vista(ctx) {
   const q2 = estado.buscar.trim().toLowerCase();
   let filas = data.filter((t) => (estado.ver === 'mias' ? t.responsable_id === yo || t.responsable2_id === yo
     : estado.ver === 'persona' ? !estado.persona || t.responsable_id === estado.persona || t.responsable2_id === estado.persona : true))
+    .filter((t) => !estado.categoria || (t.categoria ?? 'general') === estado.categoria)
     .filter((t) => !q2 || [t.titulo, t.detalle, nombre.get(t.responsable_id), nombre.get(t.responsable2_id)].join(' ').toLowerCase().includes(q2));
   filas = estado.orden === 'vence' ? [...filas].sort((a, b) => (a.fecha ?? '9999').localeCompare(b.fecha ?? '9999'))
     : estado.orden === 'nuevas' ? [...filas].sort((a, b) => b.created_at.localeCompare(a.created_at)) : ordenar(filas);
@@ -69,7 +72,7 @@ export default async function vista(ctx) {
     return el('button', { type: 'button', class: `tar2-fila tar2-${pr.p}`, onclick: () => abrir(t) },
       el('span', { class: `chip ${CHIP_PRIO[pr.p]}`, title: pr.sube ? `Sube de ${nombrePrioridad[t.prioridad].toLowerCase()}: ${pr.por}` : 'Prioridad' }, nombrePrioridad[pr.p], pr.sube ? ' ↑' : ''),
       el('span', { class: 'tar2-titulo' }, el('strong', {}, t.titulo),
-        el('span', { class: 'texto-suave texto-chico' }, [nombre.get(t.responsable_id) ?? 'Sin asignar', t.responsable2_id ? `+ ${nombre.get(t.responsable2_id) ?? ''}` : null,
+        el('span', { class: 'texto-suave texto-chico' }, [nombreCategoria[t.categoria ?? 'general'], nombre.get(t.responsable_id) ?? 'Sin asignar', t.responsable2_id ? `+ ${nombre.get(t.responsable2_id) ?? ''}` : null,
           t.estado !== 'hecha' ? `${diasAbierta(t)} d abierta` : `terminada ${fechaLarga(diaLocal(t.hecha_at))}`, t.repetir !== 'no' ? (t.repetir === 'semanal' ? 'cada semana' : 'cada mes') : null].filter(Boolean).join(' · '))),
       el('span', { class: 'tar2-meta' },
         t.tar_adjuntos?.length ? el('span', { class: 'texto-suave texto-chico', title: 'Archivos' }, icono('carpeta', { tam: 13 }), ` ${t.tar_adjuntos.length}`) : null,
@@ -101,6 +104,8 @@ export default async function vista(ctx) {
   persona.addEventListener('change', () => { estado.persona = persona.value; ctx.refrescar(); });
   const filtro = el('select', { class: 'campo', 'aria-label': 'Estado' }, [['abiertas', 'Abiertas'], ['en_proceso', 'En proceso'], ['hechas', 'Terminadas (60 días)']].map(([k, n]) => el('option', { value: k, selected: k === estado.filtro }, n)));
   filtro.addEventListener('change', () => { estado.filtro = filtro.value; ctx.refrescar(); });
+  const categoria = el('select', { class: 'campo', 'aria-label': 'Categoría' }, el('option', { value: '' }, 'Todas las categorías'), CATEGORIAS.map(([k, n]) => el('option', { value: k, selected: k === estado.categoria }, n)));
+  categoria.addEventListener('change', () => { estado.categoria = categoria.value; ctx.refrescar(); });
   const orden = el('select', { class: 'campo', 'aria-label': 'Orden' }, [['prioridad', 'Por prioridad'], ['vence', 'Por vencimiento'], ['nuevas', 'Más nuevas']].map(([k, n]) => el('option', { value: k, selected: k === estado.orden }, n)));
   orden.addEventListener('change', () => { estado.orden = orden.value; ctx.refrescar(); });
   const buscador = el('input', { type: 'search', class: 'campo', placeholder: 'Buscar tarea o persona…', value: estado.buscar, 'aria-label': 'Buscar' });
@@ -111,7 +116,7 @@ export default async function vista(ctx) {
     el('header', { class: 'listado-cabecera' }, el('h1', {}, 'Tareas'),
       el('div', { class: 'listado-acciones' }, segmento, crear ? boton('Nueva tarea', { icono: 'mas', tipo: 'primario', onclick: nueva }) : null)),
     estado.ver === 'avisos' ? bandeja() : [
-      el('div', { class: 'listado-acciones tar2-filtros' }, estado.ver === 'persona' ? persona : null, filtro, orden, el('label', { class: 'buscador' }, icono('buscar', { tam: 16 }), buscador)),
+      el('div', { class: 'listado-acciones tar2-filtros' }, estado.ver === 'persona' ? persona : null, filtro, categoria, orden, el('label', { class: 'buscador' }, icono('buscar', { tam: 16 }), buscador)),
       el('p', { class: 'texto-suave texto-chico' }, `${filas.length} tarea${filas.length === 1 ? '' : 's'}${vencidas ? ` · ${vencidas} vencida${vencidas === 1 ? '' : 's'}` : ''} · la prioridad sube sola si la tarea lleva días sin movimiento o está por vencer (↑)`),
       filas.length ? el('div', { class: 'ficha doc-grupo tar2-lista' }, filas.map(fila))
         : el('p', { class: 'texto-suave' }, icono('check', { tam: 14 }), estado.ver === 'mias' ? ' No tienes tareas en esta vista.' : ' No hay tareas en esta vista.')]);

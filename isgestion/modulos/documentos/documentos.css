@@ -72,3 +72,23 @@
 .dg-rep .rs-sig{position:absolute;left:32%;bottom:100%;transform:translateX(-50%);height:var(--firma-h);width:auto;max-width:60%;object-fit:contain;margin-bottom:-16px;}
 .dg-rep .rs-tim{position:absolute;right:-8px;bottom:100%;margin-bottom:-24px;max-height:125px;max-width:48%;}
 .ries-g td { background: #eef1f9 !important; color: #1b1f4d; font: 800 10.5px var(--doc-fuente); text-transform: uppercase; letter-spacing: .04em; }
+
+/* Carta con membrete (formato editable) */
+.carta-hdr{text-align:center;border-bottom:3px solid var(--doc-color);padding-bottom:10px;margin-bottom:18px;} .carta-hdr img{height:92px;width:auto;}
+.carta-tit{text-align:center;font:800 20px var(--doc-fuente);color:var(--doc-tinta);letter-spacing:.03em;margin:10px 0 22px;}
+.dg-doc p.carta-fecha{text-align:right;margin:0 0 18px;} .dg-doc p.carta-dest{line-height:1.7;margin:0 0 16px;} .dg-doc p.carta-pres{margin:0 0 14px;}
+.dg-doc .carta-p[contenteditable]{display:block;text-align:justify;line-height:1.6;margin:0 0 12px;font-size:13px;font-weight:400;min-height:1.6em;min-width:0;padding:0;outline:none;border-bottom:1px dashed #e3e5ee;}
+.dg-doc .carta-tit[contenteditable]{display:block;border-bottom:none;padding:0;}
+.dg-doc .carta-p:hover,.dg-doc .carta-p:focus{border-bottom-color:#b9bfd1;background:#fffdf5;}
+.dg-capturando .carta-p[contenteditable]{border-bottom-color:transparent;background:none;}
+.carta-ol{margin:4px 0 14px 28px;line-height:1.7;font-size:13px;}
+.dg-doc .carta-desp{margin-top:18px;}
+.carta-firmas{display:flex;gap:30px;flex-wrap:wrap;margin-top:70px;text-align:center;font-size:12px;} .carta-firmas div{flex:1;min-width:180px;border-top:1px solid #333;padding-top:6px;}
+.dg-firmas.carta-emp{justify-content:flex-start;} .dg-firmas.carta-emp div{flex:0 0 46%;}
+/* En la carta la firma va más grande */
+.carta-emp .dg-rep .rs-sig{height:calc(var(--firma-h) * 1.8);max-width:92%;}
+.carta-emp .dg-rep .rs-tim{max-height:175px;max-width:62%;}
+/* Firma y timbre: se arrastran para moverlos y se agrandan con la rueda del mouse (proporción fija) */
+.fmov{cursor:move;touch-action:none;}
+.dg-doc .fmov:hover{outline:2px dashed var(--doc-color);outline-offset:3px;}
+.dg-capturando .fmov:hover{outline:none;}
