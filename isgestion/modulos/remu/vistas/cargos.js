@@ -1,10 +1,11 @@
-// Cargos y tratos (trato = pago de un día completo; valor hora = trato ÷ horas por trato).
-import { el } from '../../../core/ui/dom.js?v=605af68';
-import { icono } from '../../../core/ui/iconos.js?v=605af68';
-import { listado, boton } from '../../../core/ui/tabla.js?v=605af68';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=605af68';
-import { avisar } from '../../../core/ui/aviso.js?v=605af68';
-import { dinero } from '../../../core/ui/formato.js?v=605af68';
+// Cargos y tratos: cada cargo se define por su valor hora (2026-10-30, pedido de Enzo; los fijos ya tienen su turno).
+// Se guarda como trato (pago de un día completo) = valor hora × horas por trato, que es lo que usa el cálculo.
+import { el } from '../../../core/ui/dom.js?v=462b5ff';
+import { icono } from '../../../core/ui/iconos.js?v=462b5ff';
+import { listado, boton } from '../../../core/ui/tabla.js?v=462b5ff';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=462b5ff';
+import { avisar } from '../../../core/ui/aviso.js?v=462b5ff';
+import { dinero } from '../../../core/ui/formato.js?v=462b5ff';
 
 export default async function vista(ctx) {
   const [cargos, config] = await Promise.all([
@@ -17,35 +18,37 @@ export default async function vista(ctx) {
 
   const columnas = [
     { titulo: 'Cargo', valor: (c) => c.nombre },
-    { titulo: 'Trato (día)', valor: (c) => (c.trato ? dinero(c.trato) : el('span', { class: 'texto-suave' }, 'Sin trato')) },
-    { titulo: 'Valor hora', valor: (c) => (c.trato ? dinero(Math.round(c.trato / ht)) : '—') },
+    { titulo: 'Valor hora', valor: (c) => (c.trato ? el('strong', {}, dinero(Math.round(c.trato / ht))) : el('span', { class: 'texto-suave' }, 'Sin valor')) },
+    { titulo: `Día de ${ht} h`, valor: (c) => (c.trato ? dinero(c.trato) : '—') },
     { titulo: 'Estado', valor: (c) => el('span', { class: `chip ${c.activo ? 'chip-ok' : 'chip-na'}` }, c.activo ? 'Activo' : 'Inactivo') },
   ];
   if (editable) {
-    columnas.push({ titulo: '', valor: (c) => el('button', { type: 'button', class: 'boton-icono', title: 'Editar', 'aria-label': `Editar ${c.nombre}`, onclick: () => editar(ctx, c, cargos.data) }, icono('editar', { tam: 16 })) });
+    columnas.push({ titulo: '', valor: (c) => el('button', { type: 'button', class: 'boton-icono', title: 'Editar', 'aria-label': `Editar ${c.nombre}`, onclick: () => editar(ctx, c, cargos.data, ht) }, icono('editar', { tam: 16 })) });
   }
   const lista = listado({
     titulo: 'Cargos y tratos',
     filas: cargos.data,
     columnas,
-    acciones: ctx.puede('remu', 'crear') ? [boton('Nuevo cargo', { icono: 'mas', tipo: 'primario', onclick: () => editar(ctx, null, cargos.data) })] : [],
+    acciones: ctx.puede('remu', 'crear') ? [boton('Nuevo cargo', { icono: 'mas', tipo: 'primario', onclick: () => editar(ctx, null, cargos.data, ht) })] : [],
     vacio: 'Aún no hay cargos.',
   });
-  lista.append(el('p', { class: 'texto-suave texto-chico' }, `Valor hora = trato ÷ ${ht} (se cambia en Parámetros). Un cargo sin trato usa el valor hora propio de la persona o el general.`));
+  lista.append(el('p', { class: 'texto-suave texto-chico' }, `Un día completo (trato) = valor hora × ${ht} h (se cambia en Parámetros). Un cargo sin valor hora usa el valor hora propio de la persona o el general.`));
   return lista;
 }
 
-function editar(ctx, c, todos) {
+function editar(ctx, c, todos, ht) {
+  const vhActual = c?.trato ? Math.round(c.trato / ht) : 0;
   abrirFormulario({
     titulo: c ? `Editar ${c.nombre}` : 'Nuevo cargo',
     campos: [
       { id: 'nombre', etiqueta: 'Nombre', requerido: true, valor: c?.nombre },
-      { id: 'trato', etiqueta: 'Trato por día ($)', tipo: 'number', valor: String(c?.trato ?? 0) },
+      { id: 'valor_hora', etiqueta: 'Valor hora ($)', tipo: 'number', valor: String(vhActual), ayuda: `Vacío o 0: sin valor propio del cargo (usa el de la persona o el general).` },
       { id: 'orden', etiqueta: 'Orden', tipo: 'number', valor: String(c?.orden ?? todos.length + 1) },
       ...(c ? [{ id: 'activo', etiqueta: 'Estado', opciones: [['true', 'Activo'], ['false', 'Inactivo']], valor: String(c.activo) }] : []),
     ],
     alGuardar: async (v) => {
-      const datos = { nombre: v.nombre.trim(), trato: Math.max(0, Number(v.trato) || 0), orden: Number(v.orden) || 0, ...(c ? { activo: v.activo === 'true' } : {}) };
+      const vh = Math.max(0, Math.round(Number(v.valor_hora) || 0));
+      const datos = { nombre: v.nombre.trim(), trato: vh === vhActual ? (c?.trato ?? 0) : vh * ht, orden: Number(v.orden) || 0, ...(c ? { activo: v.activo === 'true' } : {}) };
       const r = c
         ? await ctx.api.from('remu_cargos').update(datos).eq('id', c.id).select('id')
         : await ctx.api.from('remu_cargos').insert({ ...datos, empresa_id: ctx.empresa.id }).select('id');

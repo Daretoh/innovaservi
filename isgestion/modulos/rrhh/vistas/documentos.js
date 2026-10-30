@@ -1,8 +1,8 @@
 // Estado documental: matriz persona × tipo de documento, con resumen y filtros.
-import { el } from '../../../core/ui/dom.js?v=605af68';
-import { icono } from '../../../core/ui/iconos.js?v=605af68';
-import { asignadosConPendientes, DIAS_PROXIMAS } from '../proximas.js?v=605af68';
-import { cargarRrhh, cumplimiento, estadoDoc, iconoEstado, nombreCompleto, nivel } from '../datos.js?v=605af68';
+import { el } from '../../../core/ui/dom.js?v=462b5ff';
+import { icono } from '../../../core/ui/iconos.js?v=462b5ff';
+import { asignadosConPendientes, DIAS_PROXIMAS } from '../proximas.js?v=462b5ff';
+import { cargarRrhh, cumplimiento, estadoDoc, iconoEstado, nombreCompleto, nivel } from '../datos.js?v=462b5ff';
 
 const filtro = { categoria: '', problemas: false };
 

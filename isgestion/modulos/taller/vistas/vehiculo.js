@@ -1,12 +1,12 @@
 // Vehículo de un cliente: datos (se guardan al salir del campo) e historial de órdenes.
 // Ruta: #/taller.vehiculo?id=<id>
-import { el } from '../../../core/ui/dom.js?v=605af68';
-import { icono } from '../../../core/ui/iconos.js?v=605af68';
-import { boton } from '../../../core/ui/tabla.js?v=605af68';
-import { avisar } from '../../../core/ui/aviso.js?v=605af68';
-import { dinero, fechaLarga } from '../../../core/ui/formato.js?v=605af68';
-import { TALLAS, verPatente, normalizarPatente, nombreVehiculo, nombreTercero, nombreEstado, totales } from '../datos.js?v=605af68';
-import { recepcion } from '../recepcion.js?v=605af68';
+import { el } from '../../../core/ui/dom.js?v=462b5ff';
+import { icono } from '../../../core/ui/iconos.js?v=462b5ff';
+import { boton } from '../../../core/ui/tabla.js?v=462b5ff';
+import { avisar } from '../../../core/ui/aviso.js?v=462b5ff';
+import { dinero, fechaLarga } from '../../../core/ui/formato.js?v=462b5ff';
+import { TALLAS, verPatente, normalizarPatente, nombreVehiculo, nombreTercero, nombreEstado, totales } from '../datos.js?v=462b5ff';
+import { recepcion } from '../recepcion.js?v=462b5ff';
 
 export default async function vista(ctx) {
   const [{ data: v, error }, ords, clientes] = await Promise.all([
