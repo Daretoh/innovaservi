@@ -3,14 +3,14 @@
 // tiene varias y la suma cuadra) y se guardan al salir del campo; extras y descuentos se editan en la lista.
 // El ajuste contable (real vs. contable) es una opción de la empresa (Parámetros); apagada, se paga lo calculado.
 // Rutas: #/remu.detalle?p=<persona_id>&s=<lunes> (semanal) · #/remu.detalle?p=<persona_id>&m=<aaaa-mm> (mensual)
-import { el } from '../../../core/ui/dom.js?v=ca87e0a';
-import { icono } from '../../../core/ui/iconos.js?v=ca87e0a';
-import { boton } from '../../../core/ui/tabla.js?v=ca87e0a';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=ca87e0a';
-import { avisar } from '../../../core/ui/aviso.js?v=ca87e0a';
-import { dinero, horas, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, hhmm, hoyISO, rangoMes, moverMes, nombreMes } from '../../../core/ui/formato.js?v=ca87e0a';
-import { cargarBase, calcularRango, pagoMensual, nombreCompleto } from '../datos.js?v=ca87e0a';
-import { sueldoDelMes, semanaEnMes } from '../calculo.js?v=ca87e0a';
+import { el } from '../../../core/ui/dom.js?v=245d3ab';
+import { icono } from '../../../core/ui/iconos.js?v=245d3ab';
+import { boton } from '../../../core/ui/tabla.js?v=245d3ab';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=245d3ab';
+import { avisar } from '../../../core/ui/aviso.js?v=245d3ab';
+import { dinero, horas, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, hhmm, hoyISO, rangoMes, moverMes, nombreMes } from '../../../core/ui/formato.js?v=245d3ab';
+import { cargarBase, calcularRango, pagoMensual, nombreCompleto } from '../datos.js?v=245d3ab';
+import { sueldoDelMes, semanaEnMes } from '../calculo.js?v=245d3ab';
 
 export default async function vista(ctx) {
   const personaId = ctx.params.p;
@@ -22,7 +22,9 @@ export default async function vista(ctx) {
   // Mes de una persona: en empresas de pago mensual, el pago del mes (con bono por autos y extras del mes); en las de pago
   // semanal, todos sus trabajos del mes (como "ver todos sus trabajos del mes" de InnovaGestión) con las semanas que le tocan.
   const mensualEmpresa = base.config.periodo === 'mensual';
-  const volver = mes ? el('a', { class: 'volver', href: ctx.ruta(mensualEmpresa ? 'remu.pagomes' : 'remu.mes') }, icono('volver', { tam: 16 }), mensualEmpresa ? 'Pago mensual' : 'Resumen mensual')
+  // Vuelve a Pago mensual solo si la empresa lo ve (Performance e Innova usan el Resumen mensual)
+  const aPagoMes = mensualEmpresa && ctx.hayVista?.('remu.pagomes');
+  const volver = mes ? el('a', { class: 'volver', href: ctx.ruta(aPagoMes ? 'remu.pagomes' : 'remu.mes') }, icono('volver', { tam: 16 }), aPagoMes ? 'Pago mensual' : 'Resumen mensual')
     : el('a', { class: 'volver', href: ctx.ruta('remu.semana', { s: lunes }) }, icono('volver', { tam: 16 }), 'Pago semanal');
   if (!v) return el('section', { class: 'listado' }, volver, el('h1', {}, 'Persona no encontrada'));
 
@@ -139,7 +141,7 @@ export default async function vista(ctx) {
         !mes && f ? boton('Liquidación PDF', { icono: 'descargar', title: 'Descargar la liquidación de la semana en PDF', onclick: async (ev) => {
           const b = ev.currentTarget; b.classList.add('cargando');
           try {
-            const { liquidacionPdf } = await import('../liquidacion.js?v=ca87e0a');
+            const { liquidacionPdf } = await import('../liquidacion.js?v=245d3ab');
             await liquidacionPdf(ctx, { f, persona: v.personas, cargo: cargo?.nombre ?? v.cargo, lunes, domingo, contable });
           } catch (e) { avisar(`No se pudo generar el PDF: ${e.message}`, 'error'); } finally { b.classList.remove('cargando'); }
         } }) : null,

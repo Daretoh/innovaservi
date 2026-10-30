@@ -2,13 +2,13 @@
 // Como InnovaGestión: "Disponibles" de cada día se arrastran a una faena (o se toca la persona y luego la faena);
 // un asignado arrastrado a Disponibles se quita; "Copiar día" replica el personal, vehículos, horario y preparador
 // a otros días; los días se pueden plegar (se recuerda en este equipo).
-import { el } from '../../../core/ui/dom.js?v=ca87e0a';
-import { icono } from '../../../core/ui/iconos.js?v=ca87e0a';
-import { boton } from '../../../core/ui/tabla.js?v=ca87e0a';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=ca87e0a';
-import { avisar } from '../../../core/ui/aviso.js?v=ca87e0a';
-import { hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, hhmm, esFinde } from '../../../core/ui/formato.js?v=ca87e0a';
-import { cargarBase, cargarSemana, faenasDelDia, etiquetaFaena, horarioDe, dotacionDe, dotTotal, turno, ocupacion, resumenWhatsApp, nombreCorto, partesDeRango, estadoParte } from '../datos.js?v=ca87e0a';
+import { el } from '../../../core/ui/dom.js?v=245d3ab';
+import { icono } from '../../../core/ui/iconos.js?v=245d3ab';
+import { boton } from '../../../core/ui/tabla.js?v=245d3ab';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=245d3ab';
+import { avisar } from '../../../core/ui/aviso.js?v=245d3ab';
+import { hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, hhmm, esFinde } from '../../../core/ui/formato.js?v=245d3ab';
+import { cargarBase, cargarSemana, faenasDelDia, etiquetaFaena, horarioDe, dotacionDe, dotTotal, turno, ocupacion, resumenWhatsApp, nombreCorto, partesDeRango, estadoParte } from '../datos.js?v=245d3ab';
 
 const estado = { lunes: lunesDe(hoyISO()), sel: null };   // sel: { persona_id, fecha } elegido para asignar tocando
 const PLEGADOS = 'isg.plan.plegados';
@@ -26,7 +26,7 @@ export default async function vista(ctx) {
     ctx.api.from('ope_faena_obs').select('faena_id, ope_faenas(tercero_id, sitio_id, titulo, fecha_inicio)').eq('empresa_id', ctx.empresa.id).lt('created_at', `${domingo}T23:59:59`).limit(3000)]);
   // Acreditación: asignados sin validar en el cliente de la faena (si el cliente pide documentos a los trabajadores)
   const acr = ctx.puede('acreditacion', 'ver') && ctx.puede('rrhh', 'ver')
-    ? await import('../../acreditacion/trabajadores.js?v=ca87e0a').then(async (m) => ({ m, d: await m.cargarAcreditacion(ctx) })).catch(() => null) : null;
+    ? await import('../../acreditacion/trabajadores.js?v=245d3ab').then(async (m) => ({ m, d: await m.cargarAcreditacion(ctx) })).catch(() => null) : null;
   const sinValidar = (f, p) => (acr && f.tercero_id && acr.d.req.some((r) => r.tercero_id === f.tercero_id)
     ? (p?.ope_plan_personas ?? []).filter((x) => !['validado', 'por_vencer'].includes(acr.m.estadoTrabajador(acr.d, f.tercero_id, f.sitio_id, x.persona_id).k)).length : 0);
   // Faenas iguales (cliente + sitio + título) con observaciones en fechas anteriores

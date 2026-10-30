@@ -6,8 +6,8 @@
 //  · sueldo base de los fijos (su), vueltas del chofer en Vehículos, extras y bono por autos (ex) y descuentos (de)
 //    → según las horas de la persona en el mes; si no trabajó horas, a "Sin faena asignada" en los días del mes.
 // Mes en curso: el sueldo base se cuenta devengado a hoy (días transcurridos del mes). Sin leyes sociales.
-import { hoyISO, rangoMes, moverMes, sumarDias, lunesDe } from '../../core/ui/formato.js?v=ca87e0a';
-import { resumenMes } from './datos.js?v=ca87e0a';
+import { hoyISO, rangoMes, moverMes, sumarDias, lunesDe } from '../../core/ui/formato.js?v=245d3ab';
+import { resumenMes } from './datos.js?v=245d3ab';
 
 export const COMPONENTES = [
   ['tr', 'Horas trabajadas', 'tratos y valor hora'],

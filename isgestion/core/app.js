@@ -1,16 +1,16 @@
 // Arranque de ISgestión: sesión → empresas y permisos → barra con selector → menú → vista.
-import { iniciarApi, db } from './api.js?v=ca87e0a';
-import { sesionActual, iniciarSesion, cerrarSesion, alCambiarSesion } from './auth.js?v=ca87e0a';
-import { cargarPermisos, crearPuede } from './permisos.js?v=ca87e0a';
-import { cargarEmpresas, cargarModulosEmpresa, elegirEmpresa, recordarEmpresa, nombreEmpresa } from './empresas.js?v=ca87e0a';
-import { cargarManifiestos, modulosVisibles, apartadosPorCategoria, configModulo } from './modulos.js?v=ca87e0a';
-import { el } from './ui/dom.js?v=ca87e0a';
-import { icono } from './ui/iconos.js?v=ca87e0a';
-import { boton } from './ui/tabla.js?v=ca87e0a';
-import inicio from './vistas/inicio.js?v=ca87e0a';
-import mas from './vistas/mas.js?v=ca87e0a';
-import { franja, botonNotificaciones, desactivar } from './push.js?v=ca87e0a';
-import { barraMovil, marcarBarraMovil, bienvenidaInicial, recordarMarca, CORTE_TELEFONO } from './movil.js?v=ca87e0a';
+import { iniciarApi, db } from './api.js?v=245d3ab';
+import { sesionActual, iniciarSesion, cerrarSesion, alCambiarSesion } from './auth.js?v=245d3ab';
+import { cargarPermisos, crearPuede } from './permisos.js?v=245d3ab';
+import { cargarEmpresas, cargarModulosEmpresa, elegirEmpresa, recordarEmpresa, nombreEmpresa } from './empresas.js?v=245d3ab';
+import { cargarManifiestos, modulosVisibles, apartadosPorCategoria, configModulo } from './modulos.js?v=245d3ab';
+import { el } from './ui/dom.js?v=245d3ab';
+import { icono } from './ui/iconos.js?v=245d3ab';
+import { boton } from './ui/tabla.js?v=245d3ab';
+import inicio from './vistas/inicio.js?v=245d3ab';
+import mas from './vistas/mas.js?v=245d3ab';
+import { franja, botonNotificaciones, desactivar } from './push.js?v=245d3ab';
+import { barraMovil, marcarBarraMovil, bienvenidaInicial, recordarMarca, CORTE_TELEFONO } from './movil.js?v=245d3ab';
 
 const COLOR_BASE = '#1f4e8c';
 const CLAVE_MINIMA = 10;   // 08 Seguridad §4
@@ -363,6 +363,7 @@ function contexto(query = decodeURIComponent(location.hash.replace(/^#\/?/, ''))
     api: db(),
     params: Object.fromEntries(new URLSearchParams(query)),
     ruta,
+    hayVista: (id) => estado.rutas.has(id),   // la pantalla existe para esta empresa y rol (no oculta)
     refrescar: navegar,
   };
 }
