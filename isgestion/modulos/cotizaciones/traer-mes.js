@@ -2,10 +2,11 @@
 // cotización tuvo en el taller ese mes; cada uno entra como un grupo (vehículo, patente, talla, orden ligada) con sus
 // servicios de la orden: los normales en una sección (GM: "Preparación de Venta y Pulido / Realce de Brillo") y los
 // extras en "Extras". Así se arma la cotización del mes de un cliente de flota y se ve qué autos tuvo.
-import { abrirFormulario } from '../../core/ui/modal.js?v=af5b0f2';
-import { avisar } from '../../core/ui/aviso.js?v=af5b0f2';
-import { diaLocal, hoyISO } from '../../core/ui/formato.js?v=af5b0f2';
-import { numeroTexto, verPatente } from './datos.js?v=af5b0f2';
+import { abrirFormulario } from '../../core/ui/modal.js?v=9d0da9e';
+import { avisar } from '../../core/ui/aviso.js?v=9d0da9e';
+import { diaLocal, hoyISO } from '../../core/ui/formato.js?v=9d0da9e';
+import { numeroTexto, verPatente } from './datos.js?v=9d0da9e';
+import { costosDeOrdenes, lineasCosto } from './costos-orden.js?v=9d0da9e';
 
 const SECCION_FLOTA = 'Preparación de Venta y Pulido / Realce de Brillo';
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
@@ -16,7 +17,7 @@ const diaDe = (o) => o.fecha_cita || diaLocal(o.ingreso_at) || diaLocal(o.create
 export async function traerMes(ctx, c, grupos) {
   if (!c.tercero_id) { avisar('Elige primero el cliente de la cotización.', 'error'); return; }
   const { data: ords, error } = await ctx.api.from('tal_ordenes')
-    .select('id, numero, estado, fecha_cita, ingreso_at, created_at, descuento, tal_vehiculos(id, marca, modelo, patente, talla), tal_orden_servicios(nombre, precio, orden)')
+    .select('id, numero, estado, fecha_cita, ingreso_at, entregado_at, created_at, descuento, tal_vehiculos(id, marca, modelo, patente, talla), tal_orden_servicios(nombre, precio, orden)')
     .eq('empresa_id', ctx.empresa.id).eq('tercero_id', c.tercero_id).neq('estado', 'anulada');
   if (error) { avisar(error.message, 'error'); return; }
   const meses = [...new Set((ords ?? []).map((o) => diaDe(o)?.slice(0, 7)).filter(Boolean))].sort().reverse();
@@ -56,6 +57,8 @@ async function elegirAutos(ctx, c, grupos, delMes, mes) {
       const vacios = grupos.filter((g) => !g.titulo && !g.patente && !g.orden_id && !c.cot_lineas.some((l) => l.grupo_id === g.id));
       if (vacios.length) await ctx.api.from('cot_grupos').delete().in('id', vacios.map((g) => g.id));
       let pos = Math.max(0, ...grupos.filter((g) => !vacios.includes(g)).map((g) => g.orden));
+      // Costos de cada orden (trabajo de terceros, compras con la patente, insumos): ítems con costo y precio 0
+      const costos = await costosDeOrdenes(ctx, delMes.filter((o) => ordenes.includes(o.id)).map((o) => ({ ...o, patente: o.tal_vehiculos?.patente })));
       for (const id of ordenes) {
         const o = delMes.find((x) => x.id === id); const v = o.tal_vehiculos ?? {};
         const { data: g, error } = await ctx.api.from('cot_grupos').insert({
@@ -68,6 +71,7 @@ async function elegirAutos(ctx, c, grupos, delMes, mes) {
         const lineas = [];
         if (normales.length) lineas.push({ tipo: 'seccion', descripcion: SECCION_FLOTA }, ...normales.map((s) => ({ tipo: 'item', descripcion: s.nombre, cantidad: 1, precio: s.precio })));
         if (extras.length) lineas.push({ tipo: 'seccion', descripcion: 'Extras' }, ...extras.map((s) => ({ tipo: 'item', descripcion: s.nombre.replace(/^\s*extras?\s*:?\s*/i, '') || 'Extra', cantidad: 1, precio: s.precio })));
+        lineas.push(...lineasCosto(costos.get(o.id) ?? []));
         if (Number(o.descuento) > 0) avisar(`La orden N° ${o.numero} tiene un descuento de $${Number(o.descuento).toLocaleString('es-CL')}: aplícalo en la cotización.`);
         if (lineas.length) {
           const { error: e2 } = await ctx.api.from('cot_lineas').insert(lineas.map((l, i) => ({ cantidad: 1, precio: 0, desc_pct: 0, ...l, grupo_id: g.id, cotizacion_id: c.id, empresa_id: ctx.empresa.id, orden: i + 1 })));

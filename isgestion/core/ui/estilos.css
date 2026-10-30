@@ -538,6 +538,9 @@ button.dia-tarjeta { cursor: pointer; }
 .cot-total { text-align: right; font-weight: 600; }
 .cot-acc { display: flex; gap: 0; justify-content: flex-end; }
 .cot-con-costo { color: var(--ok); border-color: var(--ok); }
+/* Ítem solo costo (precio 0 con costos internos, ej. traído de la orden): no sale en el PDF */
+.cot-solo-costo { background: var(--fondo-sutil); }
+.cot-solo-costo .cot-total { color: var(--texto-suave); font-style: italic; }
 .cot-asa { cursor: grab; }
 .cot-arrastrando { opacity: .45; }
 .cot-soltar-antes { box-shadow: inset 0 2px 0 var(--empresa); }
