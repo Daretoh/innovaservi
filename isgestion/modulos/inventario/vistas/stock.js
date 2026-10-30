@@ -1,10 +1,10 @@
 // Stock: productos con su stock por almacén (calculado de los movimientos), mínimo y valorización.
-import { el } from '../../../core/ui/dom.js?v=a665921';
-import { listado, boton } from '../../../core/ui/tabla.js?v=a665921';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=a665921';
-import { avisar } from '../../../core/ui/aviso.js?v=a665921';
-import { dinero } from '../../../core/ui/formato.js?v=a665921';
-import { cargarBase, cargarProductos, cargarStock, CATEGORIAS, cant } from '../datos.js?v=a665921';
+import { el } from '../../../core/ui/dom.js?v=b52224b';
+import { listado, boton } from '../../../core/ui/tabla.js?v=b52224b';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=b52224b';
+import { avisar } from '../../../core/ui/aviso.js?v=b52224b';
+import { dinero } from '../../../core/ui/formato.js?v=b52224b';
+import { cargarBase, cargarProductos, cargarStock, CATEGORIAS, cant } from '../datos.js?v=b52224b';
 
 const filtro = { categoria: 'todas', buscar: '', bajo: false };
 
@@ -81,7 +81,7 @@ export function nuevoProducto(ctx, base) {
 }
 
 async function exportar(ctx, filas, almacenes, de, base) {
-  const { exportarExcel } = await import('../../../core/excel.js?v=a665921');
+  const { exportarExcel } = await import('../../../core/excel.js?v=b52224b');
   await exportarExcel(ctx, { titulo: 'Stock', subtitulo: `Al ${new Date().toLocaleDateString('es-CL')}`, nombre: 'stock',
     columnas: ['SKU', 'Producto', 'Categoría', 'Tipo', 'Marca', 'Unidad', ...almacenes.map((a) => ({ t: a.nombre, tipo: 'numero' })), { t: 'Total', tipo: 'numero' }, { t: 'Mínimo', tipo: 'numero' }, { t: 'Costo', tipo: 'dinero' }, { t: 'Precio', tipo: 'dinero' }],
     filas: filas.map((p) => [p.sku, p.nombre, p.categoria === 'venta' ? 'En venta' : 'Insumo', base.tipoDe.get(p.tipo_id)?.nombre ?? '', p.marca ?? '', p.udm,

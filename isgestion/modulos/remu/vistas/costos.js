@@ -3,13 +3,13 @@
 // tramo). Indicadores, evolución por día/semana/mes con su composición, por cliente (toca para filtrar) y por
 // cargo, tabla de faenas o trabajadores ordenable con detalle, y Excel (CSV) con cada movimiento.
 // El reparto está en ../manoobra.js; el total de cada mes cuadra con Remuneraciones.
-import { el } from '../../../core/ui/dom.js?v=a665921';
-import { icono } from '../../../core/ui/iconos.js?v=a665921';
-import { boton } from '../../../core/ui/tabla.js?v=a665921';
-import { avisar } from '../../../core/ui/aviso.js?v=a665921';
-import { dinero, horas, hoyISO, rangoMes, sumarDias, lunesDe, numSemana, nombreDia, fechaCorta, fechaLarga, moverMes, nombreMes } from '../../../core/ui/formato.js?v=a665921';
-import { cargarBase, nombreCompleto } from '../datos.js?v=a665921';
-import { COMPONENTES, SIN_FAENA, periodo, libroPeriodo, sumar, agrupar } from '../manoobra.js?v=a665921';
+import { el } from '../../../core/ui/dom.js?v=b52224b';
+import { icono } from '../../../core/ui/iconos.js?v=b52224b';
+import { boton } from '../../../core/ui/tabla.js?v=b52224b';
+import { avisar } from '../../../core/ui/aviso.js?v=b52224b';
+import { dinero, horas, hoyISO, rangoMes, sumarDias, lunesDe, numSemana, nombreDia, fechaCorta, fechaLarga, moverMes, nombreMes } from '../../../core/ui/formato.js?v=b52224b';
+import { cargarBase, nombreCompleto } from '../datos.js?v=b52224b';
+import { COMPONENTES, SIN_FAENA, periodo, libroPeriodo, sumar, agrupar } from '../manoobra.js?v=b52224b';
 
 const estado = { per: 'mes', ref: hoyISO().slice(0, 7), cliente: '', tabla: 'faenas', q: '', orden: { faenas: ['m', -1], personas: ['m', -1] }, abierto: null };
 const MES3 = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
@@ -238,7 +238,7 @@ function panelDetalle(modo, g, P, S, persona) {
 
 // Excel: cada movimiento del período (filtro de cliente incluido) y el resumen por componente
 async function exportar(ctx, rows, P, persona) {
-  const { nuevoExcel } = await import('../../../core/excel.js?v=a665921');
+  const { nuevoExcel } = await import('../../../core/excel.js?v=b52224b');
   const nombres = Object.fromEntries([...COMPONENTES.map(([k, t]) => [k, t]), ['de', 'Descuentos']]);
   const S = sumar(rows);
   const x = await nuevoExcel(ctx, { titulo: 'Costos de mano de obra', subtitulo: P.etiqueta });

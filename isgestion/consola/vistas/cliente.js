@@ -1,12 +1,12 @@
 // Ficha de un cliente: datos (se guardan al salir del campo), estado, plan, proyecto y dominios,
 // empresas del cliente (asociar o quitar) y cobro estimado. Ruta: #/cliente?id=
-import { el } from '../../core/ui/dom.js?v=a665921';
-import { icono } from '../../core/ui/iconos.js?v=a665921';
-import { boton } from '../../core/ui/tabla.js?v=a665921';
-import { abrirFormulario } from '../../core/ui/modal.js?v=a665921';
-import { avisar } from '../../core/ui/aviso.js?v=a665921';
-import { dinero } from '../../core/ui/formato.js?v=a665921';
-import { cargarTodo, ESTADOS, nombreEstado, cobroUF, leerUF, uf } from './datos.js?v=a665921';
+import { el } from '../../core/ui/dom.js?v=b52224b';
+import { icono } from '../../core/ui/iconos.js?v=b52224b';
+import { boton } from '../../core/ui/tabla.js?v=b52224b';
+import { abrirFormulario } from '../../core/ui/modal.js?v=b52224b';
+import { avisar } from '../../core/ui/aviso.js?v=b52224b';
+import { dinero } from '../../core/ui/formato.js?v=b52224b';
+import { cargarTodo, ESTADOS, nombreEstado, cobroUF, leerUF, uf } from './datos.js?v=b52224b';
 
 export default async function vista(ctx) {
   const d = await cargarTodo(ctx);

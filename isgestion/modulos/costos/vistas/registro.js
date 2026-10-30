@@ -1,15 +1,15 @@
 // Gasto u otro ingreso.
 // - Nuevo:  #/costos.registro?tipo=gasto|ingreso
 // - Ver y editar: #/costos.registro?id=<id>
-import { el } from '../../../core/ui/dom.js?v=a665921';
-import { icono } from '../../../core/ui/iconos.js?v=a665921';
-import { boton } from '../../../core/ui/tabla.js?v=a665921';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=a665921';
-import { avisar } from '../../../core/ui/aviso.js?v=a665921';
-import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=a665921';
-import { dinero, hoyISO, fechaLarga, sumarDias } from '../../../core/ui/formato.js?v=a665921';
-import { leerConIA, iaDisponible, numIA, fechaIA, pagadoAlComprar, textoModelo } from '../../../core/lector-ia.js?v=a665921';
-import { cargarBase, nombreTercero, DOCS, MEDIOS, netoDe, estadosDe, estadoInicial, nombreEstado, opcionesACuenta } from '../datos.js?v=a665921';
+import { el } from '../../../core/ui/dom.js?v=b52224b';
+import { icono } from '../../../core/ui/iconos.js?v=b52224b';
+import { boton } from '../../../core/ui/tabla.js?v=b52224b';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=b52224b';
+import { avisar } from '../../../core/ui/aviso.js?v=b52224b';
+import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=b52224b';
+import { dinero, hoyISO, fechaLarga, sumarDias } from '../../../core/ui/formato.js?v=b52224b';
+import { leerConIA, iaDisponible, numIA, fechaIA, pagadoAlComprar, textoModelo } from '../../../core/lector-ia.js?v=b52224b';
+import { cargarBase, nombreTercero, DOCS, MEDIOS, netoDe, estadosDe, estadoInicial, nombreEstado, opcionesACuenta } from '../datos.js?v=b52224b';
 
 
 const ARCHIVOS = ['application/pdf', 'image/jpeg', 'image/png'];
@@ -172,7 +172,9 @@ export default async function vista(ctx) {
   });
 
   const acciones = [];
-  if (r?.archivo) acciones.push(boton('Ver respaldo', { icono: 'ojo', onclick: async () => { try { window.open(await urlFirmada(ctx.api, r.archivo, 300), '_blank', 'noopener'); } catch (e) { avisar(e.message, 'error'); } } }));
+  // Respaldo: el archivo principal y los adjuntos (fotos extra del lector o de la migración)
+  const respaldos = [r?.archivo, ...(r?.adjuntos ?? [])].filter(Boolean);
+  respaldos.forEach((ruta, i) => acciones.push(boton(respaldos.length > 1 ? `Respaldo ${i + 1}` : 'Ver respaldo', { icono: 'ojo', onclick: async () => { try { window.open(await urlFirmada(ctx.api, ruta, 300), '_blank', 'noopener'); } catch (e) { avisar(e.message, 'error'); } } })));
   if (r && ctx.puede('costos', 'eliminar')) acciones.push(boton('Eliminar', { icono: 'basura', onclick: eliminar }));
   const origen = [r?.fin_recurrentes ? `Generado del recurrente "${r.fin_recurrentes.concepto}" (${r.periodo})` : null,
     r?.documento_id ? 'Compra traída de Inventario' : null,
@@ -193,7 +195,7 @@ export default async function vista(ctx) {
       aCuenta ? el('div', { class: 'rejilla-campos' }, fila('¿Compra por cuenta de un tercero?', aCuenta, el('span', { class: 'texto-suave texto-chico' }, 'Ej.: materiales del pintor: se paga al local, no es gasto de la empresa y se descuenta de lo que se le paga.'))) : null,
       el('div', { class: 'rejilla-campos' }, fila('Estado', estado, el('span', { class: 'texto-suave texto-chico' }, 'Boleta o ticket: pagado al comprar. Factura: por pagar.'))),
       filaPago,
-      fila(r?.archivo ? 'Reemplazar respaldo (factura, boleta o comprobante)' : 'Respaldo (factura, boleta o comprobante): con una foto, la IA llena los datos', archivo, iaEstado),
+      fila(respaldos.length ? 'Reemplazar respaldo (factura, boleta o comprobante)' : 'Respaldo (factura, boleta o comprobante): con una foto, la IA llena los datos', archivo, iaEstado),
       fila('Notas', notas),
       puedeGuardar ? el('div', {}, boton(r ? 'Guardar cambios' : 'Registrar', { icono: 'check', tipo: 'primario', onclick: guardar })) : null));
 }
