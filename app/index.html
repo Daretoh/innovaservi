@@ -141,6 +141,7 @@
   .foto-faenas .ff.on .ffn{background:rgba(255,255,255,.28);}
   .fbadge{position:absolute;top:4px;left:4px;z-index:2;background:var(--navy);color:#fff;font:800 10px var(--font);padding:2px 6px;border-radius:7px;letter-spacing:.02em;box-shadow:0 1px 3px rgba(0,0,0,.3);}
   .fbadge.gen{background:var(--orange);}
+  .sbadge{position:absolute;left:4px;bottom:4px;z-index:2;max-width:calc(100% - 44px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:var(--orange);color:#fff;font:800 9.5px var(--font);padding:2px 6px;border-radius:6px;box-shadow:0 1px 3px rgba(0,0,0,.3);}
   .thumb img.imgerr{visibility:hidden;}
   .thumb:has(img.imgerr):after,.rphoto.imgerr:after{content:"⚠ no cargó";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#f3f0ea;color:#b45309;font:700 11px var(--font);text-align:center;border-radius:inherit;}
   .sel-bar .sb-sep{width:1px;align-self:stretch;background:rgba(255,255,255,.35);margin:0 2px;}
@@ -3156,6 +3157,7 @@
   var R_MEDIA=[];               // archivos del registro actual [{file?,url,tipo,cat,fecha,nombre,existing?}]
   var R_JOB=null;               // faena principal (primera de R_JOBS)
   var R_JOBS=[];                // faenas del calendario incluidas en el reporte (puede ser más de una)
+  var R_SECS=[];                // secciones creadas en este reporte (además de las que ya traen las fotos)
   var FOTO_FAENA='';            // faena activa para subir/ver fotos (id) o '' = General; solo aplica con 2+ faenas
   var HORAS=[];                 // horas por trabajador [{trabajador,entrada,salida}]
   var ASIG=[];                  // cuadrilla + EPP de salida [{nombre,epp:[]}]
@@ -4792,7 +4794,7 @@
       var c=catStore(m.cat); cnt[c]++; if(!buckets[c]) return;
       var canDel=puede('multimedia.eliminar')||!!m.file, ord=puede('multimedia.ordenar');
       var div=document.createElement('div'); div.className='thumb'+(m._sel?' sel':''); div.dataset.i=i;
-      div.innerHTML=thumbInner(m)+faenaBadgeHtml(m)+(ord?'<span class="selck">'+(m._sel?'✓':'')+'</span>':'')+(canDel?'<button class="rm" data-i="'+i+'">✕</button>':'');
+      div.innerHTML=thumbInner(m)+faenaBadgeHtml(m)+(m.sec?'<span class="sbadge">'+esc(m.sec)+'</span>':'')+(ord?'<span class="selck">'+(m._sel?'✓':'')+'</span>':'')+(canDel?'<button class="rm" data-i="'+i+'">✕</button>':'');
       if(ord) div.setAttribute('draggable','true');
       buckets[c].appendChild(div);
     });
@@ -4824,13 +4826,21 @@
     // Con 2+ faenas, botones para asignar las fotos seleccionadas a una faena (F1/F2…) o dejarlas Sin faena.
     var faenaBtns='';
     if(R_JOBS.length>1){ faenaBtns='<span class="sb-sep"></span>'+R_JOBS.map(function(e,ix){ return '<button data-mf="'+esc(jobKey(e))+'">→ F'+(ix+1)+'</button>'; }).join('')+'<button data-mf="">→ Sin faena</button>'; }
-    bar.innerHTML='<b>'+n+' selec.</b><button data-mv="antes">→ Antes</button><button data-mv="proceso">→ Proceso</button><button data-mv="despues">→ Después</button><button data-mv="doc">→ Documental</button>'+faenaBtns+'<button class="del" data-del="1">🗑</button><button class="clr" data-clr="1">✕</button>';
+    // Secciones dentro del reporte (ej.: Cámara 1 / Cámara 2 cuando dos trabajos quedaron en una sola faena).
+    var secs=seccionesRep();
+    var secBtns='<span class="sb-sep"></span>'+secs.map(function(s){ return '<button data-ms="'+esc(s)+'">→ '+esc(s)+'</button>'; }).join('')+'<button data-ns="1">＋ Sección</button>'+(secs.length?'<button data-ms="">→ Sin sección</button>':'');
+    bar.innerHTML='<b>'+n+' selec.</b><button data-mv="antes">→ Antes</button><button data-mv="proceso">→ Proceso</button><button data-mv="despues">→ Después</button><button data-mv="doc">→ Documental</button>'+faenaBtns+secBtns+'<button class="del" data-del="1">🗑</button><button class="clr" data-clr="1">✕</button>';
     bar.querySelectorAll('[data-mv]').forEach(function(b){ b.addEventListener('click',function(){ moverSel(b.dataset.mv); }); });
     bar.querySelectorAll('[data-mf]').forEach(function(b){ b.addEventListener('click',function(){ moverFaena(b.dataset.mf); }); });
+    bar.querySelectorAll('[data-ms]').forEach(function(b){ b.addEventListener('click',function(){ moverSeccion(b.dataset.ms); }); });
+    bar.querySelector('[data-ns]').addEventListener('click',function(){ var s=prompt('Nombre de la sección (ej.: Cámara 1, Cámara 2)'); if(!s||!s.trim()) return; s=s.trim(); if(R_SECS.indexOf(s)<0) R_SECS.push(s); moverSeccion(s); });
     bar.querySelector('[data-del]').addEventListener('click',eliminarSel);
     bar.querySelector('[data-clr]').addEventListener('click',function(){ R_MEDIA.forEach(function(m){ m._sel=false; }); pintarThumbs(); });
   }
   function moverSel(cat){ R_MEDIA.forEach(function(m){ if(m._sel){ m.cat=cat; m._sel=false; } }); pintarThumbs(); }
+  // Secciones: las creadas en este reporte más las que ya traen las fotos, en orden de aparición.
+  function seccionesRep(){ var out=R_SECS.slice(); R_MEDIA.forEach(function(m){ if(m.sec && out.indexOf(m.sec)<0) out.push(m.sec); }); return out; }
+  function moverSeccion(s){ R_MEDIA.forEach(function(m){ if(m._sel){ m.sec=s||''; m._sel=false; } }); pintarThumbs(); }
   function moverFaena(fid){ R_MEDIA.forEach(function(m){ if(m._sel){ m.faena=fid; m._sel=false; } }); renderFotoFaenas(); }
   function eliminarSel(){ if(!confirm('¿Eliminar las fotos seleccionadas?')) return; R_MEDIA=R_MEDIA.filter(function(m){ if(m._sel){ if(m.file){ try{ URL.revokeObjectURL(m.url); }catch(_){}} return false; } return true; }); pintarThumbs(); }
 
@@ -4920,7 +4930,7 @@
       // Reporte de UNA sola faena: todas las fotos son de esa faena (aunque no las hayas etiquetado).
       if(R_JOBS.length===1){ var only=String(R_JOBS[0].id); R_MEDIA.forEach(function(m){ if(!(m.faena||'')) m.faena=only; }); }
       var media=R_MEDIA.filter(function(m){ return m.url && !m.file && !m._fail; })
-        .map(function(m){ return { url:m.url, tipo:m.tipo, nombre:m.nombre||'', cat:catStore(m.cat), fecha:m.fecha||fecha, faena:(m.faena||'') }; });
+        .map(function(m){ var o={ url:m.url, tipo:m.tipo, nombre:m.nombre||'', cat:catStore(m.cat), fecha:m.fecha||fecha, faena:(m.faena||'') }; if(m.sec) o.sec=m.sec; return o; });
       // Faenas incluidas en este reporte (para no perder las que van más allá de la principal).
       var faenas=R_JOBS.map(function(e){ return { id:e.id, ubicacion:e.ubicacion||'', titulo:e.titulo||'', fecha:e.fecha||'' }; });
       recordarDireccion(emp, lugar);   // recuerda la dirección de este cliente para la próxima vez
@@ -4990,7 +5000,7 @@
   document.addEventListener('visibilitychange',function(){ if(document.hidden) guardarBorrador(); });
 
   function resetForm(){
-    R_MEDIA.forEach(function(m){ if(m.file){ try{ URL.revokeObjectURL(m.url); }catch(_){}} }); R_MEDIA=[];
+    R_MEDIA.forEach(function(m){ if(m.file){ try{ URL.revokeObjectURL(m.url); }catch(_){}} }); R_MEDIA=[]; R_SECS=[];
     EDIT_ID=null;
     $('r-empresa').value=''; $('r-lugar').value=''; $('r-notas').value=''; $('r-fecha').value=todayISO();
     HORAS=[{trabajador:'',entrada:'',salida:''}]; renderHoras();
@@ -5000,7 +5010,7 @@
   }
   function abrirEdicion(reg){
     if(!reg) return;
-    R_MEDIA.forEach(function(m){ if(m.file){ try{ URL.revokeObjectURL(m.url); }catch(_){}} }); R_MEDIA=[];
+    R_MEDIA.forEach(function(m){ if(m.file){ try{ URL.revokeObjectURL(m.url); }catch(_){}} }); R_MEDIA=[]; R_SECS=[];
     EDIT_ID=reg.id;
     R_JOB = reg.evento_id ? (EVENTOS.filter(function(e){ return String(e.id)===String(reg.evento_id); })[0] || {id:reg.evento_id, ubicacion:reg.empresa||'', titulo:reg.lugar||'', fecha:reg.fecha, _sint:true}) : null;
     // Recupera TODAS las faenas guardadas (columna "faenas"); si no hay, cae a la principal.
@@ -5012,7 +5022,7 @@
     $('r-empresa').value=reg.empresa||''; $('r-lugar').value=reg.lugar||''; $('r-fecha').value=reg.fecha||todayISO(); $('r-notas').value=reg.notas||'';
     HORAS = (reg.horas&&reg.horas.length) ? reg.horas.map(function(h){ return { trabajador:h.trabajador||'', entrada:h.entrada||'', salida:h.salida||'', fecha:h.fecha||reg.fecha||todayISO() }; }) : [{trabajador:'',entrada:'',salida:'',fecha:reg.fecha||todayISO()}];
     renderHoras();
-    (reg.media||[]).forEach(function(m){ R_MEDIA.push({ url:m.url, tipo:m.tipo||'image', cat:catStore(m.cat), fecha:m.fecha||reg.fecha, nombre:m.nombre||'', faena:(m.faena||''), existing:true }); });
+    (reg.media||[]).forEach(function(m){ R_MEDIA.push({ url:m.url, tipo:m.tipo||'image', cat:catStore(m.cat), fecha:m.fecha||reg.fecha, nombre:m.nombre||'', faena:(m.faena||''), sec:(m.sec||''), existing:true }); });
     renderFotoFaenas(); aplicarModo();
     REG_LOCKED=!!reg.confirmado; REG_PDF=reg.pdf_url||''; REG_INF=reg.informe||null; reflejarBloqueo();
     // Además de lo guardado en el reporte, trae las fotos que viven en cada faena (por si se agregaron en otro).
@@ -5086,8 +5096,8 @@
     // se reparte en varias páginas, repitiendo título (faena) + etapa + "N-Total".
     // Nunca se mezclan dos faenas ni dos etapas en la misma hoja.
     var FOTOS_X_PAG=12;
-    function fotoPage(cat, fid, flabel){
-      var items=media.filter(function(m){ return catStore(m.cat)===cat && (!multiF || (m.faena||'')===(fid||'')); });
+    function fotoPage(cat, fid, flabel, sec){
+      var items=media.filter(function(m){ return catStore(m.cat)===cat && (!multiF || (m.faena||'')===(fid||'')) && (sec==null || (m.sec||'')===sec); });
       if(!items.length) return '';
       var titulo='Registro fotográfico'+(flabel?' — '+esc(flabel):'');
       var total=Math.ceil(items.length/FOTOS_X_PAG), out='';
@@ -5099,7 +5109,14 @@
       }
       return out;
     }
-    function fotosDe(fid, flabel){ return fotoPage('antes',fid,flabel)+fotoPage('proceso',fid,flabel)+fotoPage('despues',fid,flabel)+fotoPage('doc',fid,flabel); }
+    function fotosSec(fid, flabel, sec){ return fotoPage('antes',fid,flabel,sec)+fotoPage('proceso',fid,flabel,sec)+fotoPage('despues',fid,flabel,sec)+fotoPage('doc',fid,flabel,sec); }
+    // Con secciones (ej.: Cámara 1 / Cámara 2), cada una va en su propio bloque; las fotos sin sección van al final.
+    function fotosDe(fid, flabel){
+      var deF=media.filter(function(m){ return !multiF || (m.faena||'')===(fid||''); }), secs=[];
+      deF.forEach(function(m){ if(m.sec && secs.indexOf(m.sec)<0) secs.push(m.sec); });
+      if(!secs.length) return fotosSec(fid, flabel, null);
+      return secs.map(function(s){ return fotosSec(fid, (flabel?flabel+' — ':'')+s, s); }).join('')+fotosSec(fid, flabel, '');
+    }
     var fotos='';
     if(multiF){
       R_JOBS.forEach(function(e){ fotos+=fotosDe(jobKey(e), (e.titulo||e.ubicacion||'Faena')); });
