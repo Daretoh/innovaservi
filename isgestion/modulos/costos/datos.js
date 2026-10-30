@@ -1,5 +1,5 @@
 // Datos compartidos de Costos y gastos.
-import { hoyISO, rangoMes } from '../../core/ui/formato.js?v=9d0da9e';
+import { hoyISO, rangoMes } from '../../core/ui/formato.js?v=fd59ab0';
 
 export const CLASES = [['gasto', 'Gasto (va al resultado)'], ['personal', 'Personal (va a la línea Personal)'], ['inventario', 'Compra de inventario (es stock: no va al resultado)'], ['ingreso', 'Otro ingreso']];
 export const nombreClase = { gasto: 'Gasto', personal: 'Personal', inventario: 'Compra de inventario', ingreso: 'Ingreso' };
@@ -114,7 +114,7 @@ export async function generarAutomatico(ctx) {
   if (!ctx.puede('costos', 'crear')) return 0;
   const { data, error } = await ctx.api.from('fin_recurrentes').select('*').eq('empresa_id', ctx.empresa.id).eq('activo', true);
   if (error || !data.length) return 0;
-  const { dolarDelDia } = await import('../../core/economia.js?v=9d0da9e');
+  const { dolarDelDia } = await import('../../core/economia.js?v=fd59ab0');
   const tc = data.some((r) => r.moneda === 'USD') ? await dolarDelDia() : null;
   const usables = tc ? data : data.filter((r) => r.moneda !== 'USD');
   try { return await generarMes(ctx, usables, mes, tc); } catch { return 0; }

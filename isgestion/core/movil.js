@@ -6,10 +6,10 @@
 //   accesos: [{ id: 'taller.tablero', label: 'Taller', icono: 'auto' }, …]   pestañas de la barra (si la ruta existe)
 //   accion:  { label, icono, requiere: 'crear', abrir: (ctx) => … }           el botón "+" del centro
 // Sin accesos declarados, la barra usa los primeros apartados del menú. Siempre: Inicio al principio y Más al final.
-import { el } from './ui/dom.js?v=9d0da9e';
-import { icono } from './ui/iconos.js?v=9d0da9e';
-import { urlFirmada } from './adjuntos.js?v=9d0da9e';
-import { nombreEmpresa } from './empresas.js?v=9d0da9e';
+import { el } from './ui/dom.js?v=fd59ab0';
+import { icono } from './ui/iconos.js?v=fd59ab0';
+import { urlFirmada } from './adjuntos.js?v=fd59ab0';
+import { nombreEmpresa } from './empresas.js?v=fd59ab0';
 
 const MAX_ACCESOS = 2;
 
