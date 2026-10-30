@@ -1,10 +1,10 @@
 // Registros de entrega (capacitación, charla, EPP, PTS): se arma la lista, se imprime para firmar y
 // se sube el escaneo; al subirlo, cada persona queda con el documento de RRHH entregado.
-import { el } from '../../../core/ui/dom.js?v=89cd423';
-import { listado, boton } from '../../../core/ui/tabla.js?v=89cd423';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=89cd423';
-import { fechaLarga, hoyISO } from '../../../core/ui/formato.js?v=89cd423';
-import { TIPOS_ENTREGA, nombreDe, cargarPersonas } from '../datos.js?v=89cd423';
+import { el } from '../../../core/ui/dom.js?v=ca87e0a';
+import { listado, boton } from '../../../core/ui/tabla.js?v=ca87e0a';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=ca87e0a';
+import { fechaLarga, hoyISO } from '../../../core/ui/formato.js?v=ca87e0a';
+import { TIPOS_ENTREGA, nombreDe, cargarPersonas } from '../datos.js?v=ca87e0a';
 
 let filtro = 'todos';
 const nombreTipo = nombreDe(TIPOS_ENTREGA);

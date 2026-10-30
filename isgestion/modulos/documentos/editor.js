@@ -2,20 +2,20 @@
 // a pantalla completa (como en InnovaGestión): los campos subrayados se escriben ahí mismo, los bloques opcionales se
 // quitan con la ×, se elige el formato (variante) y los trabajadores que firman; luego se imprime, se descarga en PDF
 // o se guarda donde corresponde (RRHH o Prevención SST), según lo que pase quien abre el documento.
-import { el } from '../../core/ui/dom.js?v=89cd423';
-import { icono } from '../../core/ui/iconos.js?v=89cd423';
-import { boton } from '../../core/ui/tabla.js?v=89cd423';
-import { avisar } from '../../core/ui/aviso.js?v=89cd423';
-import { cargarJsPdf, cargarLogo, sellar } from '../../core/pdf.js?v=89cd423';
-import { crearPlantillas } from './plantillas.js?v=89cd423';
-import { pdfDesde } from './pdf.js?v=89cd423';
-import { fmtRut } from '../../core/lector-dte.js?v=89cd423';
+import { el } from '../../core/ui/dom.js?v=ca87e0a';
+import { icono } from '../../core/ui/iconos.js?v=ca87e0a';
+import { boton } from '../../core/ui/tabla.js?v=ca87e0a';
+import { avisar } from '../../core/ui/aviso.js?v=ca87e0a';
+import { cargarJsPdf, cargarLogo, sellar } from '../../core/pdf.js?v=ca87e0a';
+import { crearPlantillas } from './plantillas.js?v=ca87e0a';
+import { pdfDesde } from './pdf.js?v=ca87e0a';
+import { fmtRut } from '../../core/lector-dte.js?v=ca87e0a';
 
 let estilos = null;
 function cargarEstilos() {
   estilos ??= new Promise((ok) => {
     const l = document.createElement('link');
-    l.rel = 'stylesheet'; l.href = new URL('./documentos.css?v=89cd423', import.meta.url).href;
+    l.rel = 'stylesheet'; l.href = new URL('./documentos.css?v=ca87e0a', import.meta.url).href;
     l.onload = ok; l.onerror = ok;
     document.head.append(l);
   });

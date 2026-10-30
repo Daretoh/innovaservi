@@ -1,16 +1,16 @@
 // Arranque de ISgestión: sesión → empresas y permisos → barra con selector → menú → vista.
-import { iniciarApi, db } from './api.js?v=89cd423';
-import { sesionActual, iniciarSesion, cerrarSesion, alCambiarSesion } from './auth.js?v=89cd423';
-import { cargarPermisos, crearPuede } from './permisos.js?v=89cd423';
-import { cargarEmpresas, cargarModulosEmpresa, elegirEmpresa, recordarEmpresa, nombreEmpresa } from './empresas.js?v=89cd423';
-import { cargarManifiestos, modulosVisibles, apartadosPorCategoria, configModulo } from './modulos.js?v=89cd423';
-import { el } from './ui/dom.js?v=89cd423';
-import { icono } from './ui/iconos.js?v=89cd423';
-import { boton } from './ui/tabla.js?v=89cd423';
-import inicio from './vistas/inicio.js?v=89cd423';
-import mas from './vistas/mas.js?v=89cd423';
-import { franja, botonNotificaciones, desactivar } from './push.js?v=89cd423';
-import { barraMovil, marcarBarraMovil, bienvenidaInicial, recordarMarca, CORTE_TELEFONO } from './movil.js?v=89cd423';
+import { iniciarApi, db } from './api.js?v=ca87e0a';
+import { sesionActual, iniciarSesion, cerrarSesion, alCambiarSesion } from './auth.js?v=ca87e0a';
+import { cargarPermisos, crearPuede } from './permisos.js?v=ca87e0a';
+import { cargarEmpresas, cargarModulosEmpresa, elegirEmpresa, recordarEmpresa, nombreEmpresa } from './empresas.js?v=ca87e0a';
+import { cargarManifiestos, modulosVisibles, apartadosPorCategoria, configModulo } from './modulos.js?v=ca87e0a';
+import { el } from './ui/dom.js?v=ca87e0a';
+import { icono } from './ui/iconos.js?v=ca87e0a';
+import { boton } from './ui/tabla.js?v=ca87e0a';
+import inicio from './vistas/inicio.js?v=ca87e0a';
+import mas from './vistas/mas.js?v=ca87e0a';
+import { franja, botonNotificaciones, desactivar } from './push.js?v=ca87e0a';
+import { barraMovil, marcarBarraMovil, bienvenidaInicial, recordarMarca, CORTE_TELEFONO } from './movil.js?v=ca87e0a';
 
 const COLOR_BASE = '#1f4e8c';
 const CLAVE_MINIMA = 10;   // 08 Seguridad §4

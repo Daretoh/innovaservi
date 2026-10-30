@@ -1,10 +1,10 @@
 // Documentos PDF de Prevención SST con el membrete de la empresa: salida a atención médica,
 // formulario de investigación de accidentes (informe mensual) y registro de entrega para firmar.
 // Formatos tomados de InnovaGestión; los datos de la empresa salen de la empresa y de sst_config.
-import { cargarJsPdf, cargarLogo, rgb, sellar, contactoEmpresa } from '../../core/pdf.js?v=89cd423';
-import { nombreEmpresa } from '../../core/empresas.js?v=89cd423';
-import { fechaLarga, hhmm } from '../../core/ui/formato.js?v=89cd423';
-import { SINTOMAS, TIPOS_ACC, GRAVEDAD, mesTexto, nombreDe } from './datos.js?v=89cd423';
+import { cargarJsPdf, cargarLogo, rgb, sellar, contactoEmpresa } from '../../core/pdf.js?v=ca87e0a';
+import { nombreEmpresa } from '../../core/empresas.js?v=ca87e0a';
+import { fechaLarga, hhmm } from '../../core/ui/formato.js?v=ca87e0a';
+import { SINTOMAS, TIPOS_ACC, GRAVEDAD, mesTexto, nombreDe } from './datos.js?v=ca87e0a';
 
 const M = 15;
 const TEXTO = [28, 35, 48];

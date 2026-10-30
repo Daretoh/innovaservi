@@ -1,6 +1,6 @@
 // Auditoría: quién cambió qué y cuándo en la empresa activa.
-import { el } from '../../../core/ui/dom.js?v=89cd423';
-import { listado } from '../../../core/ui/tabla.js?v=89cd423';
+import { el } from '../../../core/ui/dom.js?v=ca87e0a';
+import { listado } from '../../../core/ui/tabla.js?v=ca87e0a';
 
 const TABLAS = {
   empresas: 'Empresa',
