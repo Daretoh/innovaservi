@@ -1,6 +1,6 @@
 // Alertas para el Panel de gerencia: lo que requiere atención en cada módulo que el usuario puede ver.
 // Cada alerta: { modulo, texto, cantidad, nivel ('venc' | 'prox'), ruta }. Si una consulta falla, se omite.
-import { hoyISO, sumarDias } from '../../core/ui/formato.js?v=fd59ab0';
+import { hoyISO, sumarDias } from '../../core/ui/formato.js?v=89cd423';
 
 const DIAS_AVISO = 30;
 
@@ -37,7 +37,7 @@ export async function cargarAlertas(ctx) {
       ctx.api.from('flo_mantenciones').select('*').eq('empresa_id', e).eq('activo', true),
       ctx.api.from('flo_vehiculos').select('id, km').eq('empresa_id', e).is('deleted_at', null),
     ]);
-    const { estadoMantencion } = await import('../flota/datos.js?v=fd59ab0');
+    const { estadoMantencion } = await import('../flota/datos.js?v=89cd423');
     const km = new Map((v.data ?? []).map((x) => [x.id, x.km]));
     const est = (m.data ?? []).filter((x) => km.has(x.vehiculo_id)).map((x) => estadoMantencion(x, km.get(x.vehiculo_id)).k);
     agregar('Flota', 'mantenciones programadas vencidas', est.filter((k) => k === 'venc').length, 'venc', ctx.ruta('flota.lista'));
@@ -51,7 +51,7 @@ export async function cargarAlertas(ctx) {
   });
   si('sst', async () => {
     const { data } = await ctx.api.from('sst_documentos').select('*, sst_documento_versiones(fecha, created_at, version, archivo)').eq('empresa_id', e).eq('activo', true);
-    const { estadoDocumento } = await import('../sst/vistas/documentos.js?v=fd59ab0');
+    const { estadoDocumento } = await import('../sst/vistas/documentos.js?v=89cd423');
     const est = (data ?? []).map((d) => estadoDocumento(d).k);
     agregar('Prevención SST', 'documentos preventivos con revisión vencida', est.filter((k) => k === 'venc').length, 'venc', ctx.ruta('sst.documentos'));
     agregar('Prevención SST', 'documentos preventivos por revisar en 30 días', est.filter((k) => k === 'prox').length, 'prox', ctx.ruta('sst.documentos'));
@@ -67,7 +67,7 @@ export async function cargarAlertas(ctx) {
     agregar('RRHH', 'contratos a plazo fijo vencidos', (con ?? []).filter((x) => x.contrato_vence < hoy).length, 'venc', ctx.ruta('rrhh.trabajadores'));
     agregar('RRHH', 'contratos que vencen en 30 días', (con ?? []).filter((x) => x.contrato_vence >= hoy && x.contrato_vence <= en30).length, 'prox', ctx.ruta('rrhh.trabajadores'));
     // Asignados a faenas de los próximos 14 días con documentos vencidos o pendientes (necesita ver Faenas)
-    const { asignadosConPendientes, DIAS_PROXIMAS } = await import('../rrhh/proximas.js?v=fd59ab0');
+    const { asignadosConPendientes, DIAS_PROXIMAS } = await import('../rrhh/proximas.js?v=89cd423');
     const asig = await asignadosConPendientes(ctx);
     if (asig) {
       agregar('RRHH', `asignados a faenas de los próximos ${DIAS_PROXIMAS} días con documentos vencidos`, asig.filter((x) => x.venc.length).length, 'venc', ctx.ruta('rrhh.proximas'));
@@ -90,7 +90,7 @@ export async function cargarAlertas(ctx) {
       ctx.api.from('fin_registros').select('recurrente_id').eq('empresa_id', e).eq('periodo', mes).is('deleted_at', null),
     ]);
     agregar('Costos y gastos', 'gastos por pagar con más de 30 días', g.count ?? 0, 'venc', ctx.ruta('costos.registros'));
-    const { tocaEnMes } = await import('../costos/datos.js?v=fd59ab0');
+    const { tocaEnMes } = await import('../costos/datos.js?v=89cd423');
     const ya = new Set((h.data ?? []).map((x) => x.recurrente_id));
     agregar('Costos y gastos', `gastos recurrentes de este mes sin generar`, (r.data ?? []).filter((x) => tocaEnMes(x, mes) && !ya.has(x.id)).length, 'prox', ctx.ruta('costos.recurrentes'));
   });

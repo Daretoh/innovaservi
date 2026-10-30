@@ -3,11 +3,11 @@
 // varios días (⟶), ventana del día, detalle, formulario de trabajo (cliente, sitio sugerido, descripción, tareas,
 // fechas, horario con atajos, personas necesarias por rol, repetir) y borrar uno o toda la serie.
 // Los datos son las faenas (ope_faenas): lo que se pone aquí aparece en Planificación al armar la faena.
-import { el } from '../../../core/ui/dom.js?v=fd59ab0';
-import { avisar } from '../../../core/ui/aviso.js?v=fd59ab0';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=fd59ab0';
-import { hhmm } from '../../../core/ui/formato.js?v=fd59ab0';
-import { cargarBase } from '../datos.js?v=fd59ab0';
+import { el } from '../../../core/ui/dom.js?v=89cd423';
+import { avisar } from '../../../core/ui/aviso.js?v=89cd423';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=89cd423';
+import { hhmm } from '../../../core/ui/formato.js?v=89cd423';
+import { cargarBase } from '../datos.js?v=89cd423';
 
 const MES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
 const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
@@ -48,7 +48,7 @@ const SVG = {
 function cargarEstilos() {
   if (document.getElementById('igcal-css')) return;
   const l = document.createElement('link');
-  l.id = 'igcal-css'; l.rel = 'stylesheet'; l.href = new URL('../calendario.css?v=fd59ab0', import.meta.url).href;
+  l.id = 'igcal-css'; l.rel = 'stylesheet'; l.href = new URL('../calendario.css?v=89cd423', import.meta.url).href;
   document.head.append(l);
 }
 

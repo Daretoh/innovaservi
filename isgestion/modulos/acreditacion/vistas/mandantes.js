@@ -1,10 +1,10 @@
 // Requisitos por mandante: resumen de cumplimiento de cada cliente que acredita a la empresa.
-import { el } from '../../../core/ui/dom.js?v=fd59ab0';
-import { icono } from '../../../core/ui/iconos.js?v=fd59ab0';
-import { nombreMes, moverMes } from '../../../core/ui/formato.js?v=fd59ab0';
-import { cargarDocumentos, cumplimientoMandante, nombreTercero, mesActual } from '../datos.js?v=fd59ab0';
-import { aQuienValidar } from '../trabajadores.js?v=fd59ab0';
-import { fechaLarga } from '../../../core/ui/formato.js?v=fd59ab0';
+import { el } from '../../../core/ui/dom.js?v=89cd423';
+import { icono } from '../../../core/ui/iconos.js?v=89cd423';
+import { nombreMes, moverMes } from '../../../core/ui/formato.js?v=89cd423';
+import { cargarDocumentos, cumplimientoMandante, nombreTercero, mesActual } from '../datos.js?v=89cd423';
+import { aQuienValidar } from '../trabajadores.js?v=89cd423';
+import { fechaLarga } from '../../../core/ui/formato.js?v=89cd423';
 
 export default async function vista(ctx) {
   const e = ctx.empresa.id;

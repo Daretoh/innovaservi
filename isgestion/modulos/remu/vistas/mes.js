@@ -4,14 +4,14 @@
 // liquidación (notas de Enzo, 2026-10-21); no cambia ningún pago. Aguinaldo y anticipo se agregan aquí, solo a fijos.
 // El calendario de días y horas está en Asistencia (Registro de horas), no aquí (Enzo, 2026-10-22).
 // Extras y descuentos: una semana cuenta en el mes que contiene su jueves (mismo criterio de InnovaGestión).
-import { el } from '../../../core/ui/dom.js?v=fd59ab0';
-import { icono } from '../../../core/ui/iconos.js?v=fd59ab0';
-import { boton } from '../../../core/ui/tabla.js?v=fd59ab0';
-import { avisar } from '../../../core/ui/aviso.js?v=fd59ab0';
-import { dinero, hoyISO, moverMes, nombreMes } from '../../../core/ui/formato.js?v=fd59ab0';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=fd59ab0';
-import { cargarBase, resumenMes, nombreCompleto } from '../datos.js?v=fd59ab0';
-import { tablaGrupo, exportarGrupos } from '../grupos.js?v=fd59ab0';
+import { el } from '../../../core/ui/dom.js?v=89cd423';
+import { icono } from '../../../core/ui/iconos.js?v=89cd423';
+import { boton } from '../../../core/ui/tabla.js?v=89cd423';
+import { avisar } from '../../../core/ui/aviso.js?v=89cd423';
+import { dinero, hoyISO, moverMes, nombreMes } from '../../../core/ui/formato.js?v=89cd423';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=89cd423';
+import { cargarBase, resumenMes, nombreCompleto } from '../datos.js?v=89cd423';
+import { tablaGrupo, exportarGrupos } from '../grupos.js?v=89cd423';
 
 const estado = { mes: hoyISO().slice(0, 7), ver: 'todos' };
 
@@ -20,14 +20,15 @@ export default async function vista(ctx) {
   const base = await cargarBase(ctx);
   const RM = await resumenMes(ctx, base, mes);
   const horasTrato = Number(base.config.horas_trato) || 8;
-  const todas = RM.filas.map((f) => ({ ...f, diasEq: f.modo !== 'fijo' && f.vh ? f.baseContable / (f.vh * horasTrato) : null }));
+  // Días: en spot, tratos ÷ valor del día de trato; en fijos, horas trato ÷ horas del día de trato (8)
+  const todas = RM.filas.map((f) => ({ ...f, diasEq: f.modo !== 'fijo' ? (f.vh ? f.baseContable / (f.vh * horasTrato) : null) : f.pagoMin / 60 / horasTrato }));
   const suma = (L) => L.reduce((s, f) => ({
     n: s.n + 1, dias: s.dias + f.dias, min: s.min + f.totMin, tratos: s.tratos + f.baseContable, sueldo: s.sueldo + f.sueldo,
     vueltas: s.vueltas + f.montoVueltas, extra: s.extra + f.extra, desc: s.desc + f.descuento, total: s.total + f.totalMes,
     bono: s.bono + (f.bonoAutos || 0), ag: s.ag + f.aguinaldo, an: s.an + f.anticipo, pagar: s.pagar + f.aPagar, diasEq: s.diasEq + (f.diasEq ?? 0),
   }), { n: 0, dias: 0, min: 0, tratos: 0, sueldo: 0, vueltas: 0, extra: 0, desc: 0, total: 0, bono: 0, ag: 0, an: 0, pagar: 0, diasEq: 0 });
   const spot = todas.filter((f) => f.modo !== 'fijo'); const fijos = todas.filter((f) => f.modo === 'fijo');
-  const sinJornada = fijos.filter((f) => !f.ventana && !f.jornadaHoras);
+  const sinJornada = fijos.filter((f) => !f.ventana && !f.jornadaHoras && !f.condicion?.art22);   // Artículo 22: sin jornada a propósito
   const filas = estado.ver === 'spot' ? spot : estado.ver === 'fijos' ? fijos : todas;   // para exportar lo que se ve
 
   const mover = (n) => { estado.mes = moverMes(estado.mes, n); ctx.refrescar(); };
@@ -53,7 +54,8 @@ export default async function vista(ctx) {
 
 const NOTAS = [
   'Fijos: sueldo base mensual más los tratos (lo que excede su jornada: fines de semana, feriados y horas fuera de turno).',
-  'Días (spot): tratos del mes ÷ valor del día de trato: días equivalentes para la liquidación (no cambia ningún pago).',
+  'Días: en spot, tratos del mes ÷ valor del día de trato; en fijos, horas trato ÷ 8: días equivalentes para la liquidación (no cambia ningún pago).',
+  'Sueldo base proporcional si rige desde un día distinto al 1 (sueldo ÷ 30 × días hasta el 30).',
   'Bonos y extras incluye el bono por autos. El anticipo ya se pagó: se resta de "A pagar".',
 ];
 
@@ -69,6 +71,7 @@ function columnasGrupos(ctx, mes, extra = {}) {
   return [
     { k: 'fijos', titulo: 'Fijos', cols: [nombre, rut,
       { t: 'Sueldo base', tipo: 'dinero', v: (f) => f.sueldo, suma: true },
+      { t: 'Días', tipo: 'numero', v: (f) => f.diasEq, suma: true },
       { t: 'Horas trato', tipo: 'horas', v: (f) => f.pagoMin, suma: true },
       tratos, vueltas, bonos,
       { t: 'Aguinaldo', tipo: 'dinero', v: (f) => f.aguinaldo, suma: true },

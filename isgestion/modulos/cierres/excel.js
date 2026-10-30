@@ -1,7 +1,7 @@
 // Excel con el detalle del cierre mensual (como "Exportar detalle (Excel)" del Cierre GM del OS, 2026-10-22):
 // una fila por vehículo con N°, vehículo, patente, talla, el valor de cada servicio en su columna, extras, descuento,
 // total y notas, y la fila TOTAL DEL MES. Con el membrete y los colores de la empresa (core/excel.js).
-import { nombreTercero, nombreMesLargo, numeroTexto } from './datos.js?v=fd59ab0';
+import { nombreTercero, nombreMesLargo, numeroTexto } from './datos.js?v=89cd423';
 
 const verPatente = (p) => (p && p.length === 6 ? `${p.slice(0, 4)}-${p.slice(4)}` : p ?? '');
 
@@ -34,7 +34,7 @@ export async function excelDetalleCierre(ctx, c, lineas) {
       ...porServicio, extra, descuento, l.monto, [d ? `Orden N° ${d.numero}` : null, l.detalle && !d ? l.detalle : null, l.notas].filter(Boolean).join(' · ')];
   });
   const total = vivas.reduce((t, l) => t + Number(l.monto || 0), 0);
-  const { exportarExcel } = await import('../../core/excel.js?v=fd59ab0');
+  const { exportarExcel } = await import('../../core/excel.js?v=89cd423');
   await exportarExcel(ctx, {
     titulo: `Detalle ${nombreTercero(c.terceros)} · ${nombreMesLargo(c.mes)}`,
     subtitulo: [c.numero ? `Cierre N° ${numeroTexto(c.numero)}` : 'Sin emitir', `${vivas.length} vehículos`, 'montos netos'].join(' · '),

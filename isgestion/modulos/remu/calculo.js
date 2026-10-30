@@ -7,7 +7,7 @@
 // - Registros que se pisan el mismo día se unen (el tiempo repetido cuenta una vez).
 // - Vueltas × valor (propio o general). Extras y descuentos por semana.
 // - Ajuste contable por día: reemplaza el monto de ese día (se muestra real y contable).
-import { aMin, diaSemana, sumarDias } from '../../core/ui/formato.js?v=fd59ab0';
+import { aMin, diaSemana, sumarDias } from '../../core/ui/formato.js?v=89cd423';
 
 // Intervalos [inicio, fin] en minutos del día; si la salida es <= entrada, termina al día siguiente.
 function intervalo(h) {
@@ -165,8 +165,14 @@ export function calcular(D) {
 export function sueldoDelMes(fila, mes) {
   const c = fila.condicion;
   if (fila.modo !== 'fijo' || !c?.sueldo_base) return 0;
-  if (c.fijo_desde && mes < String(c.fijo_desde).slice(0, 7)) return 0;
-  if (c.sueldo_desde && mes < String(c.sueldo_desde).slice(0, 7)) return 0;
+  // Rige desde la fecha más tardía de las dos; el mes en que empieza a mitad se paga proporcional
+  // (mes comercial de 30 días: sueldo ÷ 30 × días desde ese día hasta el 30, como una liquidación)
+  const desde = [c.fijo_desde, c.sueldo_desde].filter(Boolean).map(String).sort().pop();
+  if (desde && mes < desde.slice(0, 7)) return 0;
+  if (desde && mes === desde.slice(0, 7) && Number(desde.slice(8, 10)) > 1) {
+    const dias = Math.max(1, 30 - Math.min(30, Number(desde.slice(8, 10))) + 1);
+    return Math.round(c.sueldo_base * dias / 30);
+  }
   return c.sueldo_base;
 }
 
