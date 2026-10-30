@@ -1,7 +1,7 @@
 // Mis horas: las marcas de la persona vinculada a la cuenta, por mes, con lo trabajado cada día.
-import { el } from '../../../core/ui/dom.js?v=245d3ab';
-import { icono } from '../../../core/ui/iconos.js?v=245d3ab';
-import { horas, hoyISO, rangoMes, moverMes, nombreMes, fechaLarga, nombreDia } from '../../../core/ui/formato.js?v=245d3ab';
+import { el } from '../../../core/ui/dom.js?v=25e9201';
+import { icono } from '../../../core/ui/iconos.js?v=25e9201';
+import { horas, hoyISO, rangoMes, moverMes, nombreMes, fechaLarga, nombreDia } from '../../../core/ui/formato.js?v=25e9201';
 
 const estado = { mes: hoyISO().slice(0, 7) };
 const hora = (ts) => new Date(ts).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });

@@ -2,9 +2,9 @@
 // Shift + flechas o arrastrar para seleccionar, Ctrl + C / V para copiar y pegar (también desde Excel) y Supr para
 // borrar la selección. Cada cambio se guarda solo (por fila, medio segundo después); la base recalcula neto e IVA.
 // No crea registros nuevos: si se pegan más filas de las que hay, las que sobran se ignoran.
-import { el } from '../../core/ui/dom.js?v=245d3ab';
-import { avisar } from '../../core/ui/aviso.js?v=245d3ab';
-import { DOCS } from './datos.js?v=245d3ab';
+import { el } from '../../core/ui/dom.js?v=25e9201';
+import { avisar } from '../../core/ui/aviso.js?v=25e9201';
+import { DOCS } from './datos.js?v=25e9201';
 
 const miles = (n) => (Number(n) || 0).toLocaleString('es-CL');
 const numero = (t) => Math.round(Number(String(t ?? '').replace(/[^\d,-]/g, '').replace(',', '.')) || 0);

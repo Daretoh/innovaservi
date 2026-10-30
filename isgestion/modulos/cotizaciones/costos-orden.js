@@ -4,7 +4,7 @@
 // los insumos de inventario usados. Se les pone precio si se cobran (y así se ve el margen); con precio 0 no salen en
 // el PDF. Cada costo guarda `registro_id` (o `insumos:<orden>`) para no traerlo dos veces.
 // No entran las compras hechas por cuenta de un tercero (a_cuenta_de): se le descuentan a él, no son costo de la empresa.
-import { diaLocal, hoyISO } from '../../core/ui/formato.js?v=245d3ab';
+import { diaLocal, hoyISO } from '../../core/ui/formato.js?v=25e9201';
 
 const nombreT = (t) => t?.nombre_fantasia || t?.razon_social || '';
 

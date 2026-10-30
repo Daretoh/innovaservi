@@ -7,7 +7,7 @@
 // - Registros que se pisan el mismo día se unen (el tiempo repetido cuenta una vez).
 // - Vueltas × valor (propio o general). Extras y descuentos por semana.
 // - Ajuste contable por día: reemplaza el monto de ese día (se muestra real y contable).
-import { aMin, diaSemana, sumarDias } from '../../core/ui/formato.js?v=245d3ab';
+import { aMin, diaSemana, sumarDias } from '../../core/ui/formato.js?v=25e9201';
 
 // Intervalos [inicio, fin] en minutos del día; si la salida es <= entrada, termina al día siguiente.
 function intervalo(h) {
@@ -161,19 +161,23 @@ export function calcular(D) {
   return { filas, total: filas.reduce((s, f) => s + f.total, 0), porDia, diasRepetidos };
 }
 
-// Sueldo base del mes para un fijo (desde la fecha en que rige).
+// Días a liquidar de un fijo en el mes (mes comercial de 30 días): 30, o desde el día en que rige hasta el 30 si
+// empieza a mitad de mes (rige desde la fecha más tardía entre fijo_desde y sueldo_desde); 0 antes de que rija.
+export function diasDelMes(fila, mes) {
+  const c = fila.condicion;
+  if (fila.modo !== 'fijo') return 0;
+  const desde = [c?.fijo_desde, c?.sueldo_desde].filter(Boolean).map(String).sort().pop();
+  if (desde && mes < desde.slice(0, 7)) return 0;
+  if (desde && mes === desde.slice(0, 7)) return Math.max(1, 30 - Math.min(30, Number(desde.slice(8, 10))) + 1);
+  return 30;
+}
+
+// Sueldo base del mes para un fijo: proporcional a los días a liquidar (sueldo ÷ 30 × días, como una liquidación).
 export function sueldoDelMes(fila, mes) {
   const c = fila.condicion;
   if (fila.modo !== 'fijo' || !c?.sueldo_base) return 0;
-  // Rige desde la fecha más tardía de las dos; el mes en que empieza a mitad se paga proporcional
-  // (mes comercial de 30 días: sueldo ÷ 30 × días desde ese día hasta el 30, como una liquidación)
-  const desde = [c.fijo_desde, c.sueldo_desde].filter(Boolean).map(String).sort().pop();
-  if (desde && mes < desde.slice(0, 7)) return 0;
-  if (desde && mes === desde.slice(0, 7) && Number(desde.slice(8, 10)) > 1) {
-    const dias = Math.max(1, 30 - Math.min(30, Number(desde.slice(8, 10))) + 1);
-    return Math.round(c.sueldo_base * dias / 30);
-  }
-  return c.sueldo_base;
+  const dias = diasDelMes(fila, mes);
+  return dias === 30 ? c.sueldo_base : Math.round(c.sueldo_base * dias / 30);
 }
 
 // Extras y descuentos de un mes: una semana cuenta en el mes que contiene su jueves (criterio ISO).
