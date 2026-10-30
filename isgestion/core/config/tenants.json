@@ -1,11 +1,12 @@
 {
-  "_nota": "Solo URL y clave PUBLICA (anon/publishable) de cada organizacion. Nunca la clave de servicio. Ver 02 Arquitectura §2. archivosUrl: Worker de archivos en R2 (cloudflare/archivos).",
+  "_nota": "Solo URL y clave PUBLICA (anon/publishable) de cada organizacion. Nunca la clave de servicio. Ver 02 Arquitectura §2. archivosUrl: Worker de archivos en R2 (cloudflare/archivos). appUrl: dirección publicada; los enlaces que se envían a otras personas (invitaciones, fichas, checklist) la usan aunque la app corra en local.",
   "organizaciones": {
     "isgroup": {
       "nombre": "ISgestión",
       "supabaseUrl": "https://qipfzftvojxfsecjqdzh.supabase.co",
       "supabaseAnonKey": "sb_publishable_BMimLcFz5wJrwfoL-w4TcA_S6REBunK",
       "archivosUrl": "https://isgestion-archivos.innovaservi.workers.dev",
+      "appUrl": "https://innovaservi.cl/isgestion/",
       "dominios": ["innovaservi.cl", "www.innovaservi.cl", "localhost", "127.0.0.1"]
     }
   }
