@@ -2,19 +2,20 @@
 // totales y acciones (PDF, enviar, aceptar, rechazar, reabrir, duplicar, dividir, pasar a orden de trabajo).
 // Las líneas se editan como planilla: Enter y flechas, pegar desde Excel y arrastrar filas o secciones.
 // Ruta: #/cotizaciones.editor?id=<id>
-import { el } from '../../../core/ui/dom.js?v=a8e0f26';
-import { icono } from '../../../core/ui/iconos.js?v=a8e0f26';
-import { boton } from '../../../core/ui/tabla.js?v=a8e0f26';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=a8e0f26';
-import { avisar } from '../../../core/ui/aviso.js?v=a8e0f26';
-import { dinero, fechaLarga } from '../../../core/ui/formato.js?v=a8e0f26';
+import { el } from '../../../core/ui/dom.js?v=14ad9ff';
+import { icono } from '../../../core/ui/iconos.js?v=14ad9ff';
+import { boton } from '../../../core/ui/tabla.js?v=14ad9ff';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=14ad9ff';
+import { avisar } from '../../../core/ui/aviso.js?v=14ad9ff';
+import { dinero, fechaLarga } from '../../../core/ui/formato.js?v=14ad9ff';
 import {
   nombreEstado, CHIP_ESTADO, TALLAS, totales, totalLinea, costoLinea, numeroTexto, nombreTercero, verPatente, normalizarPatente,
   cargarCotizacion, cargarCatalogo, datosCliente,
-} from '../datos.js?v=a8e0f26';
-import { duplicar, dividir, pasarAOrden } from '../acciones.js?v=a8e0f26';
-import { avance } from '../../taller/seguimiento.js?v=a8e0f26';
-import { nombreEstado as estadoOrden } from '../../taller/datos.js?v=a8e0f26';
+} from '../datos.js?v=14ad9ff';
+import { duplicar, dividir, pasarAOrden } from '../acciones.js?v=14ad9ff';
+import { pasosSeguimiento, chipEtapa, etapa } from '../seguimiento.js?v=14ad9ff';
+import { avance } from '../../taller/seguimiento.js?v=14ad9ff';
+import { nombreEstado as estadoOrden } from '../../taller/datos.js?v=14ad9ff';
 
 // Celda a enfocar después de recargar (ej.: la línea recién creada)
 let foco = null;
@@ -55,6 +56,14 @@ export default async function vista(ctx) {
     const suyas = tareasDe.get((l.descripcion ?? '').trim().toLowerCase()) ?? [];
     return o.estado === 'proceso' && suyas.length > 0 && suyas.every((t) => o.tareas.some((x) => x.t === t && x.ok));
   };
+  // Cotizaciones que nacieron de esta al dividirla (una por vehículo): a cuál pasó cada vehículo y en qué va (005)
+  const { data: hijas } = await ctx.api.from('cot_cotizaciones').select('id, numero, estado, oc_numero, oc_fecha, factura_numero, cobro_fecha, cot_grupos(orden_id, patente)')
+    .eq('origen_id', c.id).is('deleted_at', null).order('numero');
+  const hijaDe = new Map();
+  for (const h of hijas ?? []) for (const hg of h.cot_grupos) {
+    const g = grupos.find((x) => !hijaDe.has(x.id) && ((hg.orden_id && x.orden_id === hg.orden_id) || (hg.patente && x.patente === hg.patente)));
+    if (g) hijaDe.set(g.id, h);
+  }
   const ligadas = [...ordenDe.values()];
   const avanceTotal = ligadas.length ? Math.round(ligadas.reduce((a, o) => a + avance(o), 0) / ligadas.length) : null;
   const barraAvance = (p, texto) => el('div', { class: 'cot-avance' }, el('span', { class: 'seg-barra' }, el('i', { style: `width:${p}%` })), el('span', { class: 'texto-chico' }, texto));
@@ -354,6 +363,9 @@ export default async function vista(ctx) {
       g.orden_id ? (ordenDe.get(g.orden_id)
         ? barraAvance(avance(ordenDe.get(g.orden_id)), el('a', { href: ctx.ruta('taller.orden', { id: g.orden_id }) }, `Orden N° ${ordenDe.get(g.orden_id).numero} · ${estadoOrden[ordenDe.get(g.orden_id).estado]} · ${avance(ordenDe.get(g.orden_id))}%`))
         : el('p', { class: 'texto-chico' }, icono('check', { tam: 14 }), ' Ligado a una ', el('a', { href: ctx.ruta('taller.orden', { id: g.orden_id }) }, 'orden de trabajo'))) : null,
+      hijaDe.get(g.id) ? el('p', { class: 'texto-chico cot-hija' }, 'Pasó a la ', el('a', { href: ctx.ruta('cotizaciones.editor', { id: hijaDe.get(g.id).id }) }, el('strong', {}, `N° ${numeroTexto(hijaDe.get(g.id).numero)}`)), ' ',
+        el('span', { class: `chip ${CHIP_ESTADO[hijaDe.get(g.id).estado]}` }, nombreEstado[hijaDe.get(g.id).estado]), ' ', ['enviada', 'aceptada'].includes(hijaDe.get(g.id).estado) ? chipEtapa(hijaDe.get(g.id)) : null)
+        : hijaDe.size ? el('p', { class: 'texto-chico texto-suave' }, 'Aún sin cotización propia.') : null,
       el('div', { class: 'cot-fila cot-fila-cab' }, el('span', {}, 'Descripción'), el('span', {}, 'Cant.'), el('span', {}, 'Precio'), el('span', {}, 'Desc. %'), el('span', {}, 'Total'), el('span', {}, 'Costo'), el('span')),
       hoja,
       el('div', { class: 'listado-cabecera' },
@@ -366,7 +378,7 @@ export default async function vista(ctx) {
   // ---- Acciones según estado
   const acciones = [boton('Ver PDF', { icono: 'ojo', onclick: (ev) => pdf(ctx, c, ev.currentTarget) })];
   // Como el OS (2026-10-22): siempre queda claro que se está editando esta cotización, y se puede empezar una nueva
-  if (ctx.puede('cotizaciones', 'crear')) acciones.push(boton('Nueva cotización', { icono: 'mas', onclick: async () => { const { nueva } = await import('./lista.js?v=a8e0f26'); nueva(ctx); } }));
+  if (ctx.puede('cotizaciones', 'crear')) acciones.push(boton('Nueva cotización', { icono: 'mas', onclick: async () => { const { nueva } = await import('./lista.js?v=14ad9ff'); nueva(ctx); } }));
   const puedeEditar = ctx.puede('cotizaciones', 'editar');
   if (puedeEditar && c.estado === 'borrador') acciones.push(boton('Marcar enviada', { icono: 'check', tipo: 'primario', onclick: () => abrirFormulario({
     titulo: `Enviar cotización N° ${numeroTexto(c.numero)}`, mensaje: 'Queda bloqueada para cambios. Si hay que corregirla, se reabre.', campos: [], textoGuardar: 'Marcar enviada',
@@ -379,7 +391,7 @@ export default async function vista(ctx) {
   if (puedeEditar && c.estado === 'aceptada' && conTaller && ctx.puede('taller', 'crear')) acciones.push(boton('Pasar a orden de trabajo', { icono: 'llave', tipo: 'primario', onclick: (ev) => pasarAOrden(ctx, c, ev.currentTarget) }));
   if (puedeEditar && c.estado !== 'borrador') acciones.push(boton('Reabrir', { icono: 'editar', onclick: async () => { if (await guardarCot({ estado: 'borrador', respondida_at: null }, 'Cotización reabierta.')) ctx.refrescar(); } }));
   if (ctx.puede('cotizaciones', 'crear')) acciones.push(boton('Duplicar', { icono: 'copiar', onclick: (ev) => duplicar(ctx, c, ev.currentTarget) }));
-  if (ctx.puede('cotizaciones', 'crear') && grupos.length > 1) acciones.push(boton('Dividir por grupo', { onclick: (ev) => dividir(ctx, c, ev.currentTarget) }));
+  if (ctx.puede('cotizaciones', 'crear') && grupos.length > 1) acciones.push(boton('Dividir por vehículo', { onclick: () => dividir(ctx, c, hijaDe) }));
   if (ctx.puede('cotizaciones', 'eliminar')) acciones.push(boton('Eliminar', { icono: 'basura', onclick: () => abrirFormulario({
     titulo: 'Eliminar cotización', mensaje: 'Deja de aparecer en el listado (no se borra; el número no se reutiliza).', campos: [], textoGuardar: 'Eliminar',
     alGuardar: async () => { if (!(await guardarCot({ deleted_at: new Date().toISOString() }))) throw new Error('No se pudo.'); location.hash = ctx.ruta('cotizaciones.lista'); },
@@ -403,6 +415,9 @@ export default async function vista(ctx) {
       el('div', { class: 'listado-acciones' }, el('span', { class: `chip ${CHIP_ESTADO[c.estado]}` }, nombreEstado[c.estado]), acciones)),
     c.estado !== 'borrador' ? el('p', { class: 'aviso-bandeja' }, icono('alerta', { tam: 16 }), `${nombreEstado[c.estado]}: bloqueada para cambios. Para corregirla, reábrela.`)
       : el('p', { class: 'aviso-bandeja cot-editando' }, icono('editar', { tam: 16 }), el('strong', {}, `Editando N° ${numeroTexto(c.numero)}`), ' · los cambios se guardan en esta cotización al escribir. Para otra, usa "Nueva cotización".'),
+    // Seguimiento: en una cotización enviada, su OC, factura y cobro; en la del mes (dividida), cómo van sus vehículos
+    hijaDe.size ? resumenHijas(grupos, hijaDe)
+      : ['enviada', 'aceptada'].includes(c.estado) ? pasosSeguimiento(ctx, c, totales(c, grupos, lineas).total) : null,
     el('div', { class: 'plan-editor' },
       el('div', { class: 'ficha doc-grupo' },
         el('h2', {}, 'Cliente'),
@@ -426,7 +441,7 @@ export default async function vista(ctx) {
       if (error) avisar(error.message, 'error'); else ctx.refrescar();
     } }) : null,
     // Traer los autos que el cliente tuvo en el taller en un mes (como "Traer de Cierre GM" del OS)
-    editable && conTaller && c.tercero_id ? boton('Traer autos del mes', { icono: 'llave', onclick: async () => { const { traerMes } = await import('../traer-mes.js?v=a8e0f26'); traerMes(ctx, c, grupos); } }) : null,
+    editable && conTaller && c.tercero_id ? boton('Traer autos del mes', { icono: 'llave', onclick: async () => { const { traerMes } = await import('../traer-mes.js?v=14ad9ff'); traerMes(ctx, c, grupos); } }) : null,
     catalogo.tieneLista ? el('p', { class: 'texto-suave texto-chico' }, 'Este cliente tiene lista de precios: al escribir un servicio se usa su precio especial.') : null,
     editable ? el('p', { class: 'texto-suave texto-chico' }, 'Planilla: Enter baja de fila (en la última crea una línea), Mayús+Enter sube, flechas para moverse; se puede pegar un rango copiado de Excel (Descripción, Cant., Precio, Desc. %) y arrastrar filas o secciones desde el asa (también a otro vehículo).') : null,
   );
@@ -440,10 +455,27 @@ export default async function vista(ctx) {
   return vista;
 }
 
+// Resumen de la cotización del mes ya dividida: cuántos vehículos pasaron a su cotización y en qué etapa van
+function resumenHijas(grupos, hijaDe) {
+  const hs = [...new Set(hijaDe.values())];
+  const vivas = hs.filter((h) => ['enviada', 'aceptada'].includes(h.estado));
+  const cuenta = (k) => vivas.filter((h) => etapa(h) === k).length;
+  return el('div', { class: 'ficha doc-grupo' },
+    el('h2', {}, 'Seguimiento por vehículo'),
+    el('div', { class: 'resumen-chips' },
+      el('span', { class: 'chip chip-pend' }, `${hijaDe.size} de ${grupos.length} vehículos con cotización propia`),
+      hs.length - vivas.length ? el('span', { class: 'chip chip-na' }, `${hs.length - vivas.length} en borrador o rechazadas`) : null,
+      el('span', { class: 'chip chip-prox' }, `${cuenta('sin_oc')} sin OC`),
+      el('span', { class: 'chip chip-prox' }, `${cuenta('oc')} con OC sin facturar`),
+      el('span', { class: 'chip chip-venc' }, `${cuenta('facturada')} facturadas por cobrar`),
+      el('span', { class: 'chip chip-ok' }, `${cuenta('cobrada')} cobradas`)),
+    el('p', { class: 'texto-suave texto-chico' }, 'La OC, la factura y el cobro se registran en la cotización de cada vehículo. El detalle de todas está en Cotizaciones → OC y facturas.'));
+}
+
 async function pdf(ctx, c, b) {
   b.disabled = true;
   try {
-    const { pdfCotizacion } = await import('../documento.js?v=a8e0f26');
+    const { pdfCotizacion } = await import('../documento.js?v=14ad9ff');
     const doc = await pdfCotizacion(ctx, c);
     window.open(doc.output('bloburl'), '_blank', 'noopener');
   } catch (e) { avisar(`No se pudo generar: ${e.message}`, 'error'); } finally { b.disabled = false; }

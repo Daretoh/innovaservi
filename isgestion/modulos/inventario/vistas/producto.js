@@ -1,12 +1,12 @@
 // Ficha del producto: datos (se guardan al salir del campo), stock por almacén y kardex (movimientos con saldo).
 // Ruta: #/inventario.producto?id=<id>
-import { el } from '../../../core/ui/dom.js?v=a8e0f26';
-import { icono } from '../../../core/ui/iconos.js?v=a8e0f26';
-import { boton } from '../../../core/ui/tabla.js?v=a8e0f26';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=a8e0f26';
-import { avisar } from '../../../core/ui/aviso.js?v=a8e0f26';
-import { dinero, fechaLarga } from '../../../core/ui/formato.js?v=a8e0f26';
-import { cargarBase, cargarStock, nombreDoc, cant } from '../datos.js?v=a8e0f26';
+import { el } from '../../../core/ui/dom.js?v=14ad9ff';
+import { icono } from '../../../core/ui/iconos.js?v=14ad9ff';
+import { boton } from '../../../core/ui/tabla.js?v=14ad9ff';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=14ad9ff';
+import { avisar } from '../../../core/ui/aviso.js?v=14ad9ff';
+import { dinero, fechaLarga } from '../../../core/ui/formato.js?v=14ad9ff';
+import { cargarBase, cargarStock, nombreDoc, cant } from '../datos.js?v=14ad9ff';
 
 export default async function vista(ctx) {
   const [{ data: p, error }, base, stock, movs] = await Promise.all([
