@@ -3,14 +3,14 @@
 // tiene varias y la suma cuadra) y se guardan al salir del campo; extras y descuentos se editan en la lista.
 // El ajuste contable (real vs. contable) es una opción de la empresa (Parámetros); apagada, se paga lo calculado.
 // Rutas: #/remu.detalle?p=<persona_id>&s=<lunes> (semanal) · #/remu.detalle?p=<persona_id>&m=<aaaa-mm> (mensual)
-import { el } from '../../../core/ui/dom.js?v=b52224b';
-import { icono } from '../../../core/ui/iconos.js?v=b52224b';
-import { boton } from '../../../core/ui/tabla.js?v=b52224b';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=b52224b';
-import { avisar } from '../../../core/ui/aviso.js?v=b52224b';
-import { dinero, horas, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, hhmm, hoyISO, rangoMes, moverMes, nombreMes } from '../../../core/ui/formato.js?v=b52224b';
-import { cargarBase, calcularRango, pagoMensual, nombreCompleto } from '../datos.js?v=b52224b';
-import { sueldoDelMes, semanaEnMes } from '../calculo.js?v=b52224b';
+import { el } from '../../../core/ui/dom.js?v=605af68';
+import { icono } from '../../../core/ui/iconos.js?v=605af68';
+import { boton } from '../../../core/ui/tabla.js?v=605af68';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=605af68';
+import { avisar } from '../../../core/ui/aviso.js?v=605af68';
+import { dinero, horas, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, hhmm, hoyISO, rangoMes, moverMes, nombreMes } from '../../../core/ui/formato.js?v=605af68';
+import { cargarBase, calcularRango, pagoMensual, nombreCompleto } from '../datos.js?v=605af68';
+import { sueldoDelMes, semanaEnMes } from '../calculo.js?v=605af68';
 
 export default async function vista(ctx) {
   const personaId = ctx.params.p;
@@ -40,6 +40,9 @@ export default async function vista(ctx) {
   const puedeEditar = ctx.puede('remu', 'editar') && ctx.puede('remu', 'crear');
   const contable = !!base.config.ajuste_contable;
   const c = v.condicion;
+  // Fijo: lo pagable son las horas fuera del turno (o fines de semana y feriados), es decir, horas extra
+  const esFijo = f?.modo === 'fijo';
+  const pagables = esFijo ? 'Horas extra' : 'Pagables';
   const cargo = c?.cargo_id ? base.cargos.get(c.cargo_id) : null;
 
   const irSemana = (n) => { location.hash = mes ? ctx.ruta('remu.detalle', { p: personaId, m: moverMes(mes, n) }) : ctx.ruta('remu.detalle', { p: personaId, s: sumarDias(lunes, n * 7) }); };
@@ -136,7 +139,7 @@ export default async function vista(ctx) {
         !mes && f ? boton('Liquidación PDF', { icono: 'descargar', title: 'Descargar la liquidación de la semana en PDF', onclick: async (ev) => {
           const b = ev.currentTarget; b.classList.add('cargando');
           try {
-            const { liquidacionPdf } = await import('../liquidacion.js?v=b52224b');
+            const { liquidacionPdf } = await import('../liquidacion.js?v=605af68');
             await liquidacionPdf(ctx, { f, persona: v.personas, cargo: cargo?.nombre ?? v.cargo, lunes, domingo, contable });
           } catch (e) { avisar(`No se pudo generar el PDF: ${e.message}`, 'error'); } finally { b.classList.remove('cargando'); }
         } }) : null,
@@ -148,7 +151,7 @@ export default async function vista(ctx) {
     !c ? el('p', { class: 'aviso-bandeja' }, icono('alerta', { tam: 16 }), 'Esta persona no tiene condiciones de pago: se usan los valores generales. Configúralas en "Condiciones de pago".') : null,
     el('div', { class: 'tabla-contenedor' },
       el('table', { class: 'tabla' },
-        el('thead', {}, el('tr', {}, (contable ? ['Día', 'Registros', 'Horas', 'Pagables', 'Real', 'Contable'] : ['Día', 'Registros', 'Horas', 'Pagables', 'Monto']).map((t, i) => el('th', { class: i >= 4 ? 'num' : '' }, t)))),
+        el('thead', {}, el('tr', {}, (contable ? ['Día', 'Registros', 'Horas', pagables, 'Real', 'Contable'] : ['Día', 'Registros', 'Horas', pagables, 'Monto']).map((t, i) => el('th', { class: i >= 4 ? 'num' : '' }, t)))),
         el('tbody', {}, filasDias.length ? filasDias : el('tr', {}, el('td', { colspan: contable ? 6 : 5, class: 'tabla-vacia' }, 'Sin registros.'))))),
     el('div', { class: 'ficha resumen-pago' },
       el('h2', {}, 'Resumen'),
@@ -156,9 +159,9 @@ export default async function vista(ctx) {
         ...(mes ? [el('dt', {}, 'Sueldo base'), el('dd', {}, f?.sueldo ? dinero(f.sueldo) : '—'),
           ...(P ? [el('dt', {}, 'Bono por autos')] : []), ...(P ? [el('dd', {}, !P.valorAuto ? 'Sin bono' : f?.sinBono ? 'Excluido este mes' : f?.dias ? `${P.autos.length} × ${dinero(P.valorAuto)} = ${dinero(f.bonoAutos)}` : 'No trabajó este mes',
             P.valorAuto && ctx.puede('remu', 'editar') ? el('button', { type: 'button', class: 'boton-enlace', onclick: () => alternarBono(ctx, personaId, mes, f?.sinBono) }, f?.sinBono ? ' Incluir' : ' Excluir') : null)] : [])] : []),
-        el('dt', {}, contable ? 'Base (contable)' : 'Base'), el('dd', {}, dinero(f?.baseContable ?? 0), contable && f?.hayAjuste ? el('span', { class: 'texto-suave' }, ` · real ${dinero(f.base)}`) : null),
+        el('dt', {}, `${esFijo ? 'Horas extra' : 'Base'}${contable ? ' (contable)' : ''}`), el('dd', {}, esFijo && f?.pagoMin ? `${horas(f.pagoMin)} × ${dinero(f.vh)} = ` : '', dinero(f?.baseContable ?? 0), contable && f?.hayAjuste ? el('span', { class: 'texto-suave' }, ` · real ${dinero(f.base)}`) : null),
+        el('dt', {}, esFijo ? 'Otros extras' : 'Extras'), el('dd', {}, dinero(f?.extra ?? 0)),
         el('dt', {}, 'Vueltas'), el('dd', {}, f?.vueltas ? `${f.vueltas} × ${dinero(f.vv)} = ${dinero(f.montoVueltas)}` : '—', vueltasDia.length ? el('div', { class: 'remu-vueltas' }, vueltasDia) : null),
-        el('dt', {}, 'Extras'), el('dd', {}, dinero(f?.extra ?? 0)),
         el('dt', {}, 'Descuentos'), el('dd', {}, f?.descuento ? `−${dinero(f.descuento)}` : dinero(0)),
         el('dt', {}, el('strong', {}, 'Total')), el('dd', {}, el('strong', {}, dinero(totalPago))))),
     resumenFaenas,

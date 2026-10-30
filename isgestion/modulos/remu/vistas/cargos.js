@@ -1,10 +1,10 @@
 // Cargos y tratos (trato = pago de un día completo; valor hora = trato ÷ horas por trato).
-import { el } from '../../../core/ui/dom.js?v=b52224b';
-import { icono } from '../../../core/ui/iconos.js?v=b52224b';
-import { listado, boton } from '../../../core/ui/tabla.js?v=b52224b';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=b52224b';
-import { avisar } from '../../../core/ui/aviso.js?v=b52224b';
-import { dinero } from '../../../core/ui/formato.js?v=b52224b';
+import { el } from '../../../core/ui/dom.js?v=605af68';
+import { icono } from '../../../core/ui/iconos.js?v=605af68';
+import { listado, boton } from '../../../core/ui/tabla.js?v=605af68';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=605af68';
+import { avisar } from '../../../core/ui/aviso.js?v=605af68';
+import { dinero } from '../../../core/ui/formato.js?v=605af68';
 
 export default async function vista(ctx) {
   const [cargos, config] = await Promise.all([
