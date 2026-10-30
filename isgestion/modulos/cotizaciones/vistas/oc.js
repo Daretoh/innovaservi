@@ -1,12 +1,13 @@
 // Cotizaciones → OC y facturas (005, 2026-10-30): todas las cotizaciones enviadas o aceptadas con su etapa
 // (sin OC, OC sin facturar, facturada por cobrar, cobrada), para seguir a un cliente como Guillermo Morales, que
 // manda una OC por cada cotización de vehículo. La cotización del mes ya dividida no aparece (aparecen sus hijas).
-import { el } from '../../../core/ui/dom.js?v=14ad9ff';
-import { listado, boton } from '../../../core/ui/tabla.js?v=14ad9ff';
-import { avisar } from '../../../core/ui/aviso.js?v=14ad9ff';
-import { dinero, fechaCorta, diaLocal, hoyISO } from '../../../core/ui/formato.js?v=14ad9ff';
-import { totales, numeroTexto, nombreTercero, verPatente } from '../datos.js?v=14ad9ff';
-import { ETAPAS, etapa, chipEtapa, verArchivo } from '../seguimiento.js?v=14ad9ff';
+// Por ahora solo clientes "siempre por cotizar" (terceros.por_cotizar: Guillermo Morales).
+import { el } from '../../../core/ui/dom.js?v=3b97680';
+import { listado, boton } from '../../../core/ui/tabla.js?v=3b97680';
+import { avisar } from '../../../core/ui/aviso.js?v=3b97680';
+import { dinero, fechaCorta, diaLocal, hoyISO } from '../../../core/ui/formato.js?v=3b97680';
+import { totales, numeroTexto, nombreTercero, verPatente } from '../datos.js?v=3b97680';
+import { ETAPAS, etapa, chipEtapa, verArchivo } from '../seguimiento.js?v=3b97680';
 
 const filtro = { etapa: 'pendientes', cliente: '', buscar: '' };
 const dias = (desde) => (desde ? Math.max(0, Math.round((new Date(hoyISO()) - new Date(desde)) / 86400000)) : null);
@@ -17,11 +18,12 @@ export default async function vista(ctx) {
     ctx.api.from('cot_cotizaciones').select('*, cot_grupos(*), cot_lineas(*)').eq('empresa_id', e).is('deleted_at', null)
       .in('estado', ['enviada', 'aceptada']).order('numero', { ascending: false }).limit(1000),
     ctx.api.from('cot_cotizaciones').select('origen_id').eq('empresa_id', e).is('deleted_at', null).not('origen_id', 'is', null),
-    ctx.api.from('terceros').select('id, razon_social, nombre_fantasia').eq('empresa_id', e).is('deleted_at', null).contains('tipo', ['cliente']).order('razon_social'),
+    ctx.api.from('terceros').select('id, razon_social, nombre_fantasia').eq('empresa_id', e).is('deleted_at', null).eq('por_cotizar', true).order('razon_social'),
   ]);
   if (error) throw error;
   const divididas = new Set((madres.data ?? []).map((x) => x.origen_id));
-  const todas = data.filter((c) => !(divididas.has(c.id) && c.cot_grupos.length > 1))
+  const conOC = new Set((clientes.data ?? []).map((t) => t.id));
+  const todas = data.filter((c) => conOC.has(c.tercero_id) && !(divididas.has(c.id) && c.cot_grupos.length > 1))
     .map((c) => ({ ...c, t: totales(c, c.cot_grupos, c.cot_lineas), etapa: etapa(c) }));
   const delCliente = todas.filter((c) => !filtro.cliente || c.tercero_id === filtro.cliente);
   const b = filtro.buscar.trim().toLowerCase();
@@ -52,7 +54,7 @@ export default async function vista(ctx) {
     titulo: 'OC y facturas',
     filas,
     acciones,
-    vacio: 'No hay cotizaciones en esta etapa.',
+    vacio: conOC.size ? 'No hay cotizaciones en esta etapa.' : 'El seguimiento de OC es para clientes marcados "siempre por cotizar" (Clientes y proveedores).',
     columnas: [
       { titulo: 'N°', valor: (c) => el('a', { href: ctx.ruta('cotizaciones.editor', { id: c.id }) }, el('strong', {}, numeroTexto(c.numero))) },
       { titulo: 'Enviada', valor: (c) => el('span', {}, fechaCorta(diaLocal(c.enviada_at) || c.fecha),
@@ -77,7 +79,7 @@ export default async function vista(ctx) {
 }
 
 async function excel(ctx, filas, cliente) {
-  const { exportarExcel } = await import('../../../core/excel.js?v=14ad9ff');
+  const { exportarExcel } = await import('../../../core/excel.js?v=3b97680');
   const nombreEtapa = Object.fromEntries(ETAPAS.map(([k, n]) => [k, n]));
   await exportarExcel(ctx, {
     titulo: 'Seguimiento de OC y facturas',

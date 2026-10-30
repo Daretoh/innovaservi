@@ -1,6 +1,6 @@
 // Estado de resultados: arma las líneas por mes con lo que entrega la base (res_resumen) y agrega
 // Personal desde Remuneraciones (cálculo en el navegador, el mismo del Resumen mensual).
-import { rangoMes, moverMes, hoyISO } from '../../core/ui/formato.js?v=14ad9ff';
+import { rangoMes, moverMes, hoyISO } from '../../core/ui/formato.js?v=3b97680';
 
 export const GRUPOS = [['ingreso', 'Ingresos'], ['costo', 'Costo de lo vendido'], ['gasto', 'Gastos de operación'], ['personal', 'Personal']];
 
@@ -37,7 +37,7 @@ export async function cargarEstado(ctx, meses) {
   // Personal desde Remuneraciones
   let avisoPersonal = null;
   if (conRemu && ctx.puede('remu', 'ver')) {
-    const { cargarBase, totalMes } = await import('../remu/datos.js?v=14ad9ff');
+    const { cargarBase, totalMes } = await import('../remu/datos.js?v=3b97680');
     const base = await cargarBase(ctx);
     const hoy = hoyISO().slice(0, 7);
     const totales = await Promise.all(meses.map((m) => (m > hoy ? 0 : totalMes(ctx, base, m))));

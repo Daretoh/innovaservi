@@ -1,16 +1,16 @@
 // Cierre mensual de un cliente: líneas (órdenes del mes y manuales), emitir, OC, factura, cobro, PDF e historial.
 // Ruta: #/cierres.cierre?id=<id>
-import { el } from '../../../core/ui/dom.js?v=14ad9ff';
-import { icono } from '../../../core/ui/iconos.js?v=14ad9ff';
-import { boton } from '../../../core/ui/tabla.js?v=14ad9ff';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=14ad9ff';
-import { avisar } from '../../../core/ui/aviso.js?v=14ad9ff';
-import { subirArchivo, urlFirmada } from '../../../core/adjuntos.js?v=14ad9ff';
-import { dinero, fechaLarga, hoyISO, diaLocal } from '../../../core/ui/formato.js?v=14ad9ff';
+import { el } from '../../../core/ui/dom.js?v=3b97680';
+import { icono } from '../../../core/ui/iconos.js?v=3b97680';
+import { boton } from '../../../core/ui/tabla.js?v=3b97680';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=3b97680';
+import { avisar } from '../../../core/ui/aviso.js?v=3b97680';
+import { subirArchivo, urlFirmada } from '../../../core/adjuntos.js?v=3b97680';
+import { dinero, fechaLarga, hoyISO, diaLocal } from '../../../core/ui/formato.js?v=3b97680';
 import {
   nombreTercero, nombreEstado, CHIP_ESTADO, indiceEstado, MEDIOS, nombreMedio, ARCHIVOS, verPatente, numeroTexto, nombreMesLargo,
   totalesCierre, verHistorial, archivoSeguro,
-} from '../datos.js?v=14ad9ff';
+} from '../datos.js?v=3b97680';
 
 const SELECT = '*, terceros(*), cie_lineas(*, tal_ordenes(id, numero, estado))';
 
@@ -166,7 +166,7 @@ export default async function vista(ctx) {
   const pdf = async (b) => {
     b.disabled = true;
     try {
-      const { pdfCierre } = await import('../documentos.js?v=14ad9ff');
+      const { pdfCierre } = await import('../documentos.js?v=3b97680');
       const doc = await pdfCierre(ctx, c, lineas, c.terceros, cliCfg.data?.nota);
       doc.save(`cierre-${c.mes}-${archivoSeguro(nombreTercero(c.terceros) || 'cliente')}.pdf`);
     } catch (e) { avisar(e.message, 'error'); } finally { b.disabled = false; }
@@ -179,7 +179,7 @@ export default async function vista(ctx) {
         el('p', { class: 'texto-suave' }, [c.numero ? `Cierre N° ${numeroTexto(c.numero)}` : 'Sin emitir', `${vivas.length} ${vivas.length === 1 ? 'línea' : 'líneas'}`].join(' · '))),
       el('div', { class: 'listado-acciones' }, el('span', { class: `chip ${CHIP_ESTADO[c.estado]}` }, nombreEstado[c.estado]),
         boton(borrador ? 'PDF de prueba' : 'PDF', { icono: 'descargar', onclick: (ev) => pdf(ev.currentTarget) }),
-        ctx.puede('cierres', 'exportar') ? boton('Excel detalle', { icono: 'descargar', onclick: async (ev) => { const b = ev.currentTarget; b.disabled = true; try { const { excelDetalleCierre } = await import('../excel.js?v=14ad9ff'); await excelDetalleCierre(ctx, c, lineas); } catch (e) { avisar(e.message, 'error'); } finally { b.disabled = false; } } }) : null,
+        ctx.puede('cierres', 'exportar') ? boton('Excel detalle', { icono: 'descargar', onclick: async (ev) => { const b = ev.currentTarget; b.disabled = true; try { const { excelDetalleCierre } = await import('../excel.js?v=3b97680'); await excelDetalleCierre(ctx, c, lineas); } catch (e) { avisar(e.message, 'error'); } finally { b.disabled = false; } } }) : null,
         boton('Historial', { icono: 'reloj', onclick: () => verHistorial(ctx, c.id, `${nombreTercero(c.terceros)} ${c.mes}`) }))),
     agregadas ? el('p', { class: 'aviso-bandeja' }, icono('check', { tam: 16 }), `${agregadas} ${agregadas === 1 ? 'línea nueva entró' : 'líneas nuevas entraron'} al cierre (órdenes o faenas del mes).`) : null,
     nuevas.length ? el('p', { class: 'aviso-bandeja' }, icono('alerta', { tam: 16 }),
