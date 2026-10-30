@@ -2,12 +2,12 @@
 // Mismas reglas que calcRemu de InnovaGestión:
 // - Valor hora = trato del cargo ÷ horas_trato (8). Sin trato: valor hora propio o el general.
 // - Modo 'hora' (spot): se pagan todas las horas.
-// - Modo 'fijo': fines de semana y feriados se pagan completos; los demás días solo lo que queda
+// - Modo 'fijo': fines de semana y feriados se pagan completos; los demás días solo lo que queda (Artículo 22: nada)
 //   fuera del turno (inicio–fin) o lo que excede la jornada en horas. Sin jornada ni turno, todo cuenta.
 // - Registros que se pisan el mismo día se unen (el tiempo repetido cuenta una vez).
 // - Vueltas × valor (propio o general). Extras y descuentos por semana.
 // - Ajuste contable por día: reemplaza el monto de ese día (se muestra real y contable).
-import { aMin, diaSemana, sumarDias } from '../../core/ui/formato.js?v=6f62ff2';
+import { aMin, diaSemana, sumarDias } from '../../core/ui/formato.js?v=a8e0f26';
 
 // Intervalos [inicio, fin] en minutos del día; si la salida es <= entrada, termina al día siguiente.
 function intervalo(h) {
@@ -108,8 +108,12 @@ export function calcular(D) {
       // Contrato fijo desde: antes de esa fecha el día se paga como spot
       const fijoHoy = modo === 'fijo' && !(c.fijo_desde && fecha < c.fijo_desde);
       if (fijoHoy && !especial) {
-        pmin = ventana ? min - minEnVentana(unidos, ventana[0], ventana[1]) : Math.max(0, min - jornadaMin);
+        // El viernes el turno puede terminar antes (salida_viernes): lo que pasa de esa hora es extra
+        const v = ventana && diaSemana(fecha) === 4 && c.salida_viernes ? [ventana[0], aMin(c.salida_viernes)] : ventana;
+        pmin = v ? min - minEnVentana(unidos, v[0], v[1]) : Math.max(0, min - jornadaMin);
       }
+      // Artículo 22 (sin jornada): no se pagan horas extra, ni en fines de semana o feriados; solo el sueldo
+      if (fijoHoy && c.art22) pmin = 0;
       const dReal = Math.round((pmin / 60) * vh);
       // Por faena (como InnovaGestión): cada faena con su monto; si el día se paga completo, sus horas × valor hora;
       // si no (fijo en día hábil), el monto del día se reparte entre las faenas según sus horas.

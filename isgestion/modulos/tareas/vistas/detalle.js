@@ -1,15 +1,15 @@
 // Detalle de una tarea (como InnovaGestión): datos editables, estado (pendiente / en proceso / terminada), prioridad
 // inteligente, seguimiento con observaciones y cambios, @menciones que avisan a la persona, botón Recordar a los
 // responsables, y archivos y fotos (elegir, pegar un pantallazo con Ctrl+V o arrastrar sobre la tarea).
-import { el } from '../../../core/ui/dom.js?v=6f62ff2';
-import { icono } from '../../../core/ui/iconos.js?v=6f62ff2';
-import { boton } from '../../../core/ui/tabla.js?v=6f62ff2';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=6f62ff2';
-import { avisar } from '../../../core/ui/aviso.js?v=6f62ff2';
-import { subirArchivo, eliminarArchivo, urlsFirmadas, urlFirmada } from '../../../core/adjuntos.js?v=6f62ff2';
-import { comprimirFoto, esImagen } from '../../../core/imagenes.js?v=6f62ff2';
-import { fechaLarga, diaLocal } from '../../../core/ui/formato.js?v=6f62ff2';
-import { PRIORIDADES, nombrePrioridad, ESTADOS, REPETIR, prioridad, diasAbierta, mencionados } from '../datos.js?v=6f62ff2';
+import { el } from '../../../core/ui/dom.js?v=a8e0f26';
+import { icono } from '../../../core/ui/iconos.js?v=a8e0f26';
+import { boton } from '../../../core/ui/tabla.js?v=a8e0f26';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=a8e0f26';
+import { avisar } from '../../../core/ui/aviso.js?v=a8e0f26';
+import { subirArchivo, eliminarArchivo, urlsFirmadas, urlFirmada } from '../../../core/adjuntos.js?v=a8e0f26';
+import { comprimirFoto, esImagen } from '../../../core/imagenes.js?v=a8e0f26';
+import { fechaLarga, diaLocal } from '../../../core/ui/formato.js?v=a8e0f26';
+import { PRIORIDADES, nombrePrioridad, ESTADOS, REPETIR, prioridad, diasAbierta, mencionados } from '../datos.js?v=a8e0f26';
 
 const MAX = 25 * 1024 * 1024;
 const hora = (ts) => new Date(ts).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });

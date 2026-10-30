@@ -3,12 +3,15 @@
 // (persona con búsqueda por teclado, faena, entrada, salida, vueltas), "+ persona en esta faena", aviso en rojo de
 // horas que se pisan y, abajo, los vehículos y la preparación del día (desde Planificación).
 // Las horas del marcaje (tablet o terreno) se corrigen en Marcajes. "Agregar horas" carga el mismo horario a varios.
-import { el } from '../../../core/ui/dom.js?v=6f62ff2';
-import { icono } from '../../../core/ui/iconos.js?v=6f62ff2';
-import { boton } from '../../../core/ui/tabla.js?v=6f62ff2';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=6f62ff2';
-import { avisar } from '../../../core/ui/aviso.js?v=6f62ff2';
-import { hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, horas, aMin, hhmm } from '../../../core/ui/formato.js?v=6f62ff2';
+// Fijos con turno (2026-10-30): cada día hábil quedan presentes "según horario" solos (asis_generar_fijos); aquí solo se
+// corrigen las excepciones: retraso o salida temprana (cambiar la hora), horas extra (cambiar la salida o agregar otra
+// fila) y ausencias (botón Ausente: el día deja de contar y no se vuelve a crear).
+import { el } from '../../../core/ui/dom.js?v=a8e0f26';
+import { icono } from '../../../core/ui/iconos.js?v=a8e0f26';
+import { boton } from '../../../core/ui/tabla.js?v=a8e0f26';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=a8e0f26';
+import { avisar } from '../../../core/ui/aviso.js?v=a8e0f26';
+import { hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, horas, aMin, hhmm } from '../../../core/ui/formato.js?v=a8e0f26';
 
 const estado = { lunes: lunesDe(hoyISO()), dia: hoyISO(), nuevas: [] };   // nuevas: filas en blanco aún sin guardar
 
@@ -26,7 +29,9 @@ export default async function vista(ctx) {
   if (estado.dia < desde || estado.dia > hasta) estado.dia = desde;
   const verOpe = ctx.puede('ope', 'ver');
 
-  const [regs, vinculos, faenas, colores, planes] = await Promise.all([
+  // Fijos con turno: se crean los días que falten según su horario (no espera al cron)
+  if (ctx.puede('remu', 'ver') || ctx.puede('asistencia', 'ver')) await ctx.api.rpc('asis_generar_fijos', { p_empresa: ctx.empresa.id }).then(() => {}, () => {});
+  const [regs, vinculos, faenas, colores, planes, ausencias] = await Promise.all([
     ctx.api.from('asis_horas').select('id, persona_id, fecha, entrada, salida, faena, vueltas, notas, origen')
       .eq('empresa_id', ctx.empresa.id).is('deleted_at', null).gte('fecha', desde).lte('fecha', hasta)
       .order('fecha').order('entrada'),
@@ -36,6 +41,7 @@ export default async function vista(ctx) {
       .eq('empresa_id', ctx.empresa.id).is('deleted_at', null).eq('estado', 'programada').lte('fecha_inicio', hasta).gte('fecha_fin', desde) : { data: [] },
     verOpe ? ctx.api.from('ope_clientes').select('tercero_id, color').eq('empresa_id', ctx.empresa.id) : { data: [] },
     verOpe ? ctx.api.from('ope_plan').select('id, faena_id, fecha, ope_plan_vehiculos(vehiculo, personas(nombres, apellido_paterno))').eq('empresa_id', ctx.empresa.id).eq('fecha', estado.dia) : { data: [] },
+    ctx.api.from('asis_horas').select('id, persona_id, fecha, notas').eq('empresa_id', ctx.empresa.id).eq('origen', 'horario').not('deleted_at', 'is', null).like('notas', 'Ausente%').eq('fecha', estado.dia),
   ]);
   if (regs.error) throw regs.error;
   if (vinculos.error) throw vinculos.error;
@@ -127,6 +133,7 @@ export default async function vista(ctx) {
 
   const fila = (r, nueva = null) => {
     const desdeMarcaje = r?.origen === 'marcaje';
+    const segunHorario = r?.origen === 'horario';
     const editable = nueva ? puedeCrear : puedeEditar && !desdeMarcaje;
     const persona = nueva
       ? el('input', { class: 'campo hz-persona', list: 'hz-personas', placeholder: 'Trabajador', autocomplete: 'off', value: nueva.persona ?? '', 'aria-label': 'Trabajador' })
@@ -137,16 +144,18 @@ export default async function vista(ctx) {
     const vueltas = el('input', { type: 'number', min: '0', class: 'campo hz-vueltas', value: nueva ? '0' : String(r.vueltas || 0), disabled: !editable, 'aria-label': 'Vueltas', title: 'Vueltas (choferes)' });
     const total = el('span', { class: 'hz-total texto-chico' }, nueva ? '' : `${horas(minutosRegistro(r))}${aMin(r.salida) <= aMin(r.entrada) ? ' (+1 día)' : ''}`);
     const tr = el('tr', { class: `${pisan.has(r?.id) ? 'hz-pisa' : ''}${nueva ? ' hz-nueva' : ''}` },
-      el('td', {}, persona, desdeMarcaje ? el('span', { class: 'chip chip-pend', title: 'Del marcaje: se corrige en Asistencia → Marcajes' }, (r.notas ?? '').includes('terreno') ? 'terreno' : 'tablet') : null,
+      el('td', {}, persona, segunHorario ? el('span', { class: 'chip chip-ok', title: 'Se creó solo según su turno. Si llegó tarde o hizo horas extra, cambia la hora; si faltó, márcalo ausente.' }, (r.notas ?? '').startsWith('Corregido') ? 'horario corregido' : 'según horario') : null, desdeMarcaje ? el('span', { class: 'chip chip-pend', title: 'Del marcaje: se corrige en Asistencia → Marcajes' }, (r.notas ?? '').includes('terreno') ? 'terreno' : 'tablet') : null,
         pisan.has(r?.id) ? el('div', { class: 'texto-chico pct-mal' }, 'Se pisa con otra hora de esta persona ese día') : null),
       el('td', {}, faena), el('td', { class: 'hz-horario' }, entrada, el('span', { class: 'texto-suave' }, '→'), salida), el('td', {}, total), el('td', {}, vueltas),
       el('td', { class: 'acciones-fila' },
         nueva ? el('button', { type: 'button', class: 'boton-icono', title: 'Quitar fila', 'aria-label': 'Quitar fila', onclick: () => { estado.nuevas = estado.nuevas.filter((x) => x !== nueva); ctx.refrescar(); } }, icono('cerrar', { tam: 16 }))
+          : segunHorario ? (puedeEditar ? el('button', { type: 'button', class: 'boton boton-secundario boton-chico', title: 'No vino: el día deja de contar', onclick: () => ausente(ctx, r, personas.get(r.persona_id)) }, 'Ausente') : null)
           : puedeEliminar ? el('button', { type: 'button', class: 'boton-icono', title: 'Eliminar', 'aria-label': 'Eliminar registro', onclick: () => eliminar(ctx, r) }, icono('basura', { tam: 16 })) : null));
     const campos = { persona, faena, entrada, salida, vueltas };
     const alCambiar = () => {
       if (entrada.value && salida.value) total.textContent = horas(minutosRegistro({ entrada: entrada.value, salida: salida.value }));
-      if (nueva) { Object.assign(nueva, { persona: persona.value, faena: faena.value }); guardarNueva(nueva, campos); } else guardarFila(r, campos, tr);
+      if (nueva) { Object.assign(nueva, { persona: persona.value, faena: faena.value }); guardarNueva(nueva, campos); }
+      else { if (segunHorario && !(r.notas ?? '').startsWith('Corregido')) { r.notas = 'Corregido (retraso u horas extra)'; ctx.api.from('asis_horas').update({ notas: r.notas }).eq('id', r.id).then(() => {}); } guardarFila(r, campos, tr); }
     };
     for (const c of [faena, entrada, salida, vueltas, nueva ? persona : null]) if (c) c.addEventListener('change', alCambiar);
     if (nueva) persona.addEventListener('input', () => persona.classList.remove('campo-error'));
@@ -194,9 +203,30 @@ export default async function vista(ctx) {
     el('h2', { class: 'hz-dia-titulo' }, `${nombreDia(estado.dia)} ${fechaCorta(estado.dia)}`,
       el('span', { class: 'texto-suave texto-chico' }, delDia.length ? ` · ${new Set(delDia.map((r) => r.persona_id)).size} personas · ${horas(delDia.reduce((s, r) => s + minutosRegistro(r), 0))}` : ' · sin registros')),
     bloques.length ? bloques : el('p', { class: 'texto-suave' }, 'Sin registros ni faenas este día.'),
+    (ausencias.data ?? []).length ? el('div', { class: 'ficha hz-jornada' }, el('h2', {}, 'Ausentes'),
+      (ausencias.data ?? []).map((a) => el('div', { class: 'doc-fila' }, el('span', { class: 'doc-nombre' }, el('strong', {}, personas.get(a.persona_id) ? nombre(personas.get(a.persona_id).personas) : 'Persona'), el('span', { class: 'texto-suave texto-chico' }, a.notas)),
+        puedeEditar ? el('button', { type: 'button', class: 'boton boton-secundario boton-chico', title: 'Vuelve a quedar presente según su horario', onclick: async () => { const { error } = await ctx.api.from('asis_horas').update({ deleted_at: null, notas: 'Según horario' }).eq('id', a.id); if (error) avisar(error.message, 'error'); else ctx.refrescar(); } }, 'Deshacer') : null))) : null,
     jornada,
-    el('p', { class: 'texto-suave texto-chico' }, 'Cada fila se guarda sola al cambiar un dato. Si la salida es menor que la entrada, el turno termina al día siguiente. Las horas que se pisan se marcan en rojo y al pagar se cuentan una sola vez. Las del marcaje (tablet o terreno) se corrigen en Marcajes.'),
+    el('p', { class: 'texto-suave texto-chico' }, 'Cada fila se guarda sola al cambiar un dato. Si la salida es menor que la entrada, el turno termina al día siguiente. Las horas que se pisan se marcan en rojo y al pagar se cuentan una sola vez. Las del marcaje (tablet o terreno) se corrigen en Marcajes. Los fijos con turno quedan presentes "según horario" cada día hábil: corrige solo retrasos, horas extra o ausencias.'),
   );
+}
+
+// Ausente: el día según horario deja de contar (queda eliminado con el motivo) y no se vuelve a crear
+function ausente(ctx, r, v) {
+  abrirFormulario({
+    titulo: `Ausente · ${v ? nombre(v.personas) : ''}`,
+    mensaje: `${fechaCorta(r.fecha)}: el día deja de contar como trabajado. Se puede deshacer.`,
+    campos: [
+      { id: 'motivo', etiqueta: 'Motivo', opciones: [['Falta', 'Falta'], ['Licencia médica', 'Licencia médica'], ['Vacaciones', 'Vacaciones'], ['Permiso', 'Permiso'], ['Otro', 'Otro']] },
+      { id: 'nota', etiqueta: 'Nota (opcional)' },
+    ],
+    textoGuardar: 'Marcar ausente',
+    alGuardar: async (x) => {
+      const { error } = await ctx.api.from('asis_horas').update({ deleted_at: new Date().toISOString(), notas: `Ausente: ${x.motivo}${x.nota.trim() ? ` · ${x.nota.trim()}` : ''}` }).eq('id', r.id);
+      if (error) throw new Error(error.message);
+      avisar('Marcado ausente.'); ctx.refrescar();
+    },
+  });
 }
 
 function campos(r, activos, varios) {
