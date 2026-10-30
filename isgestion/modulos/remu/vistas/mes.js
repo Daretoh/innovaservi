@@ -4,14 +4,14 @@
 // liquidación (notas de Enzo, 2026-10-21); no cambia ningún pago. Aguinaldo y anticipo se agregan aquí, solo a fijos.
 // El calendario de días y horas está en Asistencia (Registro de horas), no aquí (Enzo, 2026-10-22).
 // Extras y descuentos: una semana cuenta en el mes que contiene su jueves (mismo criterio de InnovaGestión).
-import { el } from '../../../core/ui/dom.js?v=81adf5e';
-import { icono } from '../../../core/ui/iconos.js?v=81adf5e';
-import { boton } from '../../../core/ui/tabla.js?v=81adf5e';
-import { avisar } from '../../../core/ui/aviso.js?v=81adf5e';
-import { dinero, hoyISO, moverMes, nombreMes } from '../../../core/ui/formato.js?v=81adf5e';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=81adf5e';
-import { cargarBase, resumenMes, nombreCompleto } from '../datos.js?v=81adf5e';
-import { tablaGrupo, exportarGrupos } from '../grupos.js?v=81adf5e';
+import { el } from '../../../core/ui/dom.js?v=af5b0f2';
+import { icono } from '../../../core/ui/iconos.js?v=af5b0f2';
+import { boton } from '../../../core/ui/tabla.js?v=af5b0f2';
+import { avisar } from '../../../core/ui/aviso.js?v=af5b0f2';
+import { dinero, hoyISO, moverMes, nombreMes } from '../../../core/ui/formato.js?v=af5b0f2';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=af5b0f2';
+import { cargarBase, resumenMes, nombreCompleto } from '../datos.js?v=af5b0f2';
+import { tablaGrupo, exportarGrupos } from '../grupos.js?v=af5b0f2';
 
 const estado = { mes: hoyISO().slice(0, 7), ver: 'todos' };
 

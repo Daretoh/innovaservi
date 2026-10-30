@@ -1,12 +1,12 @@
 // Cliente Supabase de la organización activa. Versión fija desde CDN (08 Seguridad §5).
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/+esm';
-import { configurarArchivos } from './adjuntos.js?v=81adf5e';
+import { configurarArchivos } from './adjuntos.js?v=af5b0f2';
 
 let cliente = null;
 let organizacion = null;
 
 export async function iniciarApi() {
-  const resp = await fetch(new URL('./config/tenants.json?v=81adf5e', import.meta.url));
+  const resp = await fetch(new URL('./config/tenants.json?v=af5b0f2', import.meta.url));
   const { organizaciones } = await resp.json();
   const host = location.hostname;
   const entrada = Object.entries(organizaciones).find(([, o]) => o.dominios.includes(host));
@@ -17,11 +17,21 @@ export async function iniciarApi() {
   }
   organizacion = { id, nombre: conf.nombre, appUrl: conf.appUrl ?? null };
   cliente = createClient(conf.supabaseUrl, conf.supabaseAnonKey);
+  globalThis.__isgApiIniciada = true;
+  // Si arrancó bien, una próxima versión publicada puede volver a recargar la página (ver db())
+  setTimeout(() => { try { sessionStorage.removeItem('isg.recargada'); } catch { /* */ } }, 15000);
   configurarArchivos(conf.archivosUrl);   // Worker de R2 (si no hay, Supabase Storage)
   return { cliente, organizacion };
 }
 
 export function db() {
+  // Si se publicó una versión nueva con la app abierta, las pantallas que se abren después cargan los módulos de esa
+  // versión (otra URL, ?v=…): esta copia de api.js no está iniciada. Se recarga la página una vez para quedar parejo.
+  let recargada = true; try { recargada = !!sessionStorage.getItem('isg.recargada'); } catch { /* */ }
+  if (!cliente && globalThis.__isgApiIniciada && !recargada) {
+    try { sessionStorage.setItem('isg.recargada', '1'); } catch { /* */ }
+    location.reload();
+  }
   if (!cliente) throw new Error('La API no está iniciada');
   return cliente;
 }

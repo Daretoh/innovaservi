@@ -3,13 +3,13 @@
 // por pagar; tendencia consolidada; CSV y PDF. Cada empresa se calcula con sus propios permisos.
 // Las ventas y compras entre empresas del grupo (cliente o proveedor con el RUT de otra empresa) se descuentan
 // del total (res_intercompania), solo cuando ambas empresas están en la vista.
-import { el } from '../../../core/ui/dom.js?v=81adf5e';
-import { icono } from '../../../core/ui/iconos.js?v=81adf5e';
-import { boton } from '../../../core/ui/tabla.js?v=81adf5e';
-import { avisar } from '../../../core/ui/aviso.js?v=81adf5e';
-import { dinero, hoyISO, nombreMes, moverMes, rangoMes } from '../../../core/ui/formato.js?v=81adf5e';
-import { cargarEmpresas, nombreEmpresa } from '../../../core/empresas.js?v=81adf5e';
-import { mesesEntre, cargarEstado, sumarTotales, pct } from '../../resultados/datos.js?v=81adf5e';
+import { el } from '../../../core/ui/dom.js?v=af5b0f2';
+import { icono } from '../../../core/ui/iconos.js?v=af5b0f2';
+import { boton } from '../../../core/ui/tabla.js?v=af5b0f2';
+import { avisar } from '../../../core/ui/aviso.js?v=af5b0f2';
+import { dinero, hoyISO, nombreMes, moverMes, rangoMes } from '../../../core/ui/formato.js?v=af5b0f2';
+import { cargarEmpresas, nombreEmpresa } from '../../../core/empresas.js?v=af5b0f2';
+import { mesesEntre, cargarEstado, sumarTotales, pct } from '../../resultados/datos.js?v=af5b0f2';
 
 const estado = { modo: 'mes', mes: hoyISO().slice(0, 7), anio: Number(hoyISO().slice(0, 4)) };
 const COLS = [['ingresos', 'Ingresos'], ['costo', 'Costo de lo vendido'], ['margen', 'Margen bruto'], ['gastos', 'Gastos'], ['personal', 'Personal'], ['resultado', 'Resultado']];
@@ -112,7 +112,7 @@ export default async function vista(ctx) {
 }
 
 async function exportarExcel(ctx, ok, total, periodo, elim) {
-  const { exportarExcel: excel } = await import('../../../core/excel.js?v=81adf5e');
+  const { exportarExcel: excel } = await import('../../../core/excel.js?v=af5b0f2');
   const filas = ok.map((r) => [nombreEmpresa(r.e), ...COLS.map(([k]) => r.t[k]), r.cobrar, r.pagar]);
   if (elim) filas.push(['Entre empresas del grupo', ...COLS.map(([k]) => elim[k]), 0, 0]);
   await excel(ctx, { titulo: `Vista Grupo · ${periodo}`, subtitulo: 'Montos netos, sin IVA', nombre: `grupo-${periodo.replace(/\s+/g, '-').toLowerCase()}`,
@@ -123,7 +123,7 @@ async function exportarExcel(ctx, ok, total, periodo, elim) {
 async function exportarPdf(ctx, ok, total, periodo, b, elim) {
   b.disabled = true;
   try {
-    const { nuevoPdf } = await import('../../../core/pdf.js?v=81adf5e');
+    const { nuevoPdf } = await import('../../../core/pdf.js?v=af5b0f2');
     const pdf = await nuevoPdf(ctx, { titulo: `Grupo · ${periodo}`, subtitulo: elim ? 'Consolidado en neto (sin IVA), sin las operaciones entre empresas del grupo' : 'Consolidado en neto (sin IVA), suma por empresa', horizontal: true });
     pdf.tabla({
       columnas: ['Empresa', ...COLS.map(([, n]) => n), 'Margen', 'Por cobrar', 'Por pagar'],
