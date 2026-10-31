@@ -1,11 +1,11 @@
 // Salidas a atención médica por malestar (no laboral): registro y documento con membrete para firmar.
-import { el } from '../../../core/ui/dom.js?v=a7f53fa';
-import { listado, boton } from '../../../core/ui/tabla.js?v=a7f53fa';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=a7f53fa';
-import { avisar } from '../../../core/ui/aviso.js?v=a7f53fa';
-import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=a7f53fa';
-import { hoyISO, fechaLarga, hhmm } from '../../../core/ui/formato.js?v=a7f53fa';
-import { SINTOMAS, TRASLADOS, cargarPersonas } from '../datos.js?v=a7f53fa';
+import { el } from '../../../core/ui/dom.js?v=7860387';
+import { listado, boton } from '../../../core/ui/tabla.js?v=7860387';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=7860387';
+import { avisar } from '../../../core/ui/aviso.js?v=7860387';
+import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=7860387';
+import { hoyISO, fechaLarga, hhmm } from '../../../core/ui/formato.js?v=7860387';
+import { SINTOMAS, TRASLADOS, cargarPersonas } from '../datos.js?v=7860387';
 
 const ahora = () => { const d = new Date(); return `${String(d.getHours()).padStart(2, '0')}:${String(Math.floor(d.getMinutes() / 5) * 5).padStart(2, '0')}`; };
 
@@ -46,7 +46,7 @@ async function abrirPdf(ctx, ruta) {
 async function generar(ctx, s, personas, b) {
   if (b) b.disabled = true;
   try {
-    const { pdfSalida } = await import('../documentos.js?v=a7f53fa');
+    const { pdfSalida } = await import('../documentos.js?v=7860387');
     const doc = await pdfSalida(ctx, s, personas.de.get(s.persona_id));
     const archivo = new File([doc.output('blob')], `salida-medica-${s.fecha}.pdf`, { type: 'application/pdf' });
     const { ruta } = await subirArchivo(ctx.api, { empresaId: ctx.empresa.id, modulo: 'sst', archivo, tabla: 'sst_salidas', registroId: s.id });

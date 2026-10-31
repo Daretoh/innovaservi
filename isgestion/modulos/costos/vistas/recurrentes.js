@@ -1,12 +1,12 @@
 // Gastos recurrentes (arriendo, servicios básicos, asesorías, suscripciones): próximo cobro con semáforo,
 // equivalente mensual, costo por persona y "Generar el mes" (crea los gastos del mes por pagar).
-import { el } from '../../../core/ui/dom.js?v=a7f53fa';
-import { icono } from '../../../core/ui/iconos.js?v=a7f53fa';
-import { boton } from '../../../core/ui/tabla.js?v=a7f53fa';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=a7f53fa';
-import { avisar } from '../../../core/ui/aviso.js?v=a7f53fa';
-import { dinero, fechaLarga, hoyISO, nombreMes, sumarDias } from '../../../core/ui/formato.js?v=a7f53fa';
-import { cargarBase, nombreTercero, DOCS, proximoCobro, mensualCLP, tocaEnMes, generarMes, fechaEnMes } from '../datos.js?v=a7f53fa';
+import { el } from '../../../core/ui/dom.js?v=7860387';
+import { icono } from '../../../core/ui/iconos.js?v=7860387';
+import { boton } from '../../../core/ui/tabla.js?v=7860387';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=7860387';
+import { avisar } from '../../../core/ui/aviso.js?v=7860387';
+import { dinero, fechaLarga, hoyISO, nombreMes, sumarDias } from '../../../core/ui/formato.js?v=7860387';
+import { cargarBase, nombreTercero, DOCS, proximoCobro, mensualCLP, tocaEnMes, generarMes, fechaEnMes } from '../datos.js?v=7860387';
 
 const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 const TC_KEY = 'isg.costos.dolar';
@@ -29,7 +29,7 @@ export default async function vista(ctx) {
   const gastosCat = base.categorias.filter((c) => c.clase !== 'ingreso' && c.activo);
   const ya = new Set((hechos.data ?? []).map((h) => h.recurrente_id));
   const faltan = lista.filter((r) => tocaEnMes(r, mes) && !ya.has(r.id));
-  let tc = leerTc() || Math.round((await import('../../../core/economia.js?v=a7f53fa').then((m) => m.dolarDelDia()).catch(() => 0)) ?? 0);
+  let tc = leerTc() || Math.round((await import('../../../core/economia.js?v=7860387').then((m) => m.dolarDelDia()).catch(() => 0)) ?? 0);
 
   const hoy = hoyISO();
   const semaforo = (r) => {

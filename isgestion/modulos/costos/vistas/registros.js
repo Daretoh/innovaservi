@@ -1,15 +1,15 @@
 // Gastos e ingresos: los recientes (últimos cargados, de cualquier mes), los del mes, pendientes de pago o cobro (de todos
 // los meses), resumen y Excel. "Editar como planilla" cambia la tabla por la planilla del OS (planilla.js). En el teléfono
 // las filas se ven como tarjetas.
-import { el } from '../../../core/ui/dom.js?v=a7f53fa';
-import { icono } from '../../../core/ui/iconos.js?v=a7f53fa';
-import { listado, boton } from '../../../core/ui/tabla.js?v=a7f53fa';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=a7f53fa';
-import { avisar } from '../../../core/ui/aviso.js?v=a7f53fa';
-import { dinero, fechaLarga, hoyISO, nombreMes, moverMes, rangoMes, diaLocal } from '../../../core/ui/formato.js?v=a7f53fa';
-import { cargarBase, nombreTercero, nombreDoc, nombreMedio, MEDIOS, traerComprasInventario, estadosDe, nombreEstado, CHIP_ESTADO, generarAutomatico } from '../datos.js?v=a7f53fa';
-import { planilla } from '../planilla.js?v=a7f53fa';
-import { urlFirmada } from '../../../core/adjuntos.js?v=a7f53fa';
+import { el } from '../../../core/ui/dom.js?v=7860387';
+import { icono } from '../../../core/ui/iconos.js?v=7860387';
+import { listado, boton } from '../../../core/ui/tabla.js?v=7860387';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=7860387';
+import { avisar } from '../../../core/ui/aviso.js?v=7860387';
+import { dinero, fechaLarga, hoyISO, nombreMes, moverMes, rangoMes, diaLocal } from '../../../core/ui/formato.js?v=7860387';
+import { cargarBase, nombreTercero, nombreDoc, nombreMedio, MEDIOS, traerComprasInventario, estadosDe, nombreEstado, CHIP_ESTADO, generarAutomatico } from '../datos.js?v=7860387';
+import { planilla } from '../planilla.js?v=7860387';
+import { urlFirmada } from '../../../core/adjuntos.js?v=7860387';
 
 const estado = { vista: 'recientes', mes: hoyISO().slice(0, 7), categoria: '', editar: false };
 const RECIENTES = 15;
@@ -31,14 +31,14 @@ export default async function vista(ctx) {
   else q = q.order('fecha', { ascending: pendientes }).order('created_at', { ascending: false });
   if (pendientes) q = q.neq('estado_pago', 'pagado');
   else if (revisar) q = q.eq('estado_pago', 'pendiente');
-  else if (sinCentro) q = q.is('centro_id', null);
+  else if (sinCentro) q = q.is('centro_id', null).is('a_cuenta_de', null);   // lo comprado por cuenta de un tercero no es costo nuestro: no lleva centro
   else if (!recientes) q = q.gte('fecha', desde).lte('fecha', hasta);
   if (estado.vista === 'gasto' || estado.vista === 'ingreso') q = q.eq('tipo', estado.vista);
   if (estado.categoria) q = q.eq('categoria_id', estado.categoria);
   const [{ data, error }, base, pend, nRevisar, nSinCentro, us] = await Promise.all([q, cargarBase(ctx),
     ctx.api.from('fin_registros').select('tipo, total').eq('empresa_id', e).is('deleted_at', null).neq('estado_pago', 'pagado'),
     ctx.api.from('fin_registros').select('id', { count: 'exact', head: true }).eq('empresa_id', e).is('deleted_at', null).eq('estado_pago', 'pendiente'),
-    ctx.api.from('fin_registros').select('id', { count: 'exact', head: true }).eq('empresa_id', e).is('deleted_at', null).is('centro_id', null),
+    ctx.api.from('fin_registros').select('id', { count: 'exact', head: true }).eq('empresa_id', e).is('deleted_at', null).is('centro_id', null).is('a_cuenta_de', null),
     ctx.api.rpc('nombres_usuarios', { p_empresa: e })]);
   if (error) throw error;
   const quien = new Map((us.data ?? []).map((u) => [u.user_id, u.nombre]));
@@ -102,7 +102,7 @@ export default async function vista(ctx) {
     el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Mes anterior', onclick: () => mover(-1) }, icono('volver')),
     el('strong', {}, nombreMes(estado.mes)),
     el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Mes siguiente', onclick: () => mover(1) }, icono('derecha'))));
-  if (ctx.puede('costos', 'exportar') && data.length) acciones.push(boton('Excel', { icono: 'descargar', onclick: () => import('../../../core/excel.js?v=a7f53fa').then(({ exportarExcel }) => exportarExcel(ctx, {
+  if (ctx.puede('costos', 'exportar') && data.length) acciones.push(boton('Excel', { icono: 'descargar', onclick: () => import('../../../core/excel.js?v=7860387').then(({ exportarExcel }) => exportarExcel(ctx, {
     titulo: pendientes ? 'Gastos e ingresos pendientes' : revisar ? 'Gastos e ingresos por revisar' : sinCentro ? 'Gastos e ingresos sin centro de costo' : recientes ? 'Gastos e ingresos recientes' : `Gastos e ingresos · ${nombreMes(estado.mes)}`, nombre: `costos-${pendientes ? 'pendientes' : recientes ? 'recientes' : estado.mes}`,
     columnas: [{ t: 'Fecha', tipo: 'fecha' }, 'Tipo', 'Concepto', 'Categoría', 'Centro', 'Proveedor o cliente', 'Documento', 'N°', { t: 'Neto', tipo: 'dinero' }, { t: 'IVA', tipo: 'dinero' }, { t: 'Total', tipo: 'dinero' }, 'Estado', { t: 'Fecha de pago', tipo: 'fecha' }, 'Medio', 'Patente'],
     filas: data.map((r) => [r.fecha, r.tipo === 'gasto' ? 'Gasto' : 'Ingreso', r.concepto, base.categoriaDe.get(r.categoria_id)?.nombre ?? '', base.centroDe.get(r.centro_id)?.nombre ?? '', nombreTercero(r.terceros),
