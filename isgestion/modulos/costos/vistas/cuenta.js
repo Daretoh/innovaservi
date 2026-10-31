@@ -2,14 +2,14 @@
 // las compras que la empresa hizo por su cuenta (se pagan al local y se le descuentan) y los abonos que se le pagan.
 // Resumen por mes y saldo acumulado, como la planilla "Resumen D&P". Se abre desde Pagos (sin opción nueva en el menú).
 // Ruta: #/costos.cuenta?t=<tercero>
-import { el } from '../../../core/ui/dom.js?v=e4cf9a2';
-import { icono } from '../../../core/ui/iconos.js?v=e4cf9a2';
-import { boton } from '../../../core/ui/tabla.js?v=e4cf9a2';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=e4cf9a2';
-import { avisar } from '../../../core/ui/aviso.js?v=e4cf9a2';
-import { subirArchivo } from '../../../core/adjuntos.js?v=e4cf9a2';
-import { dinero, fechaLarga, hoyISO, nombreMes } from '../../../core/ui/formato.js?v=e4cf9a2';
-import { nombreTercero, MEDIOS } from '../datos.js?v=e4cf9a2';
+import { el } from '../../../core/ui/dom.js?v=a7f53fa';
+import { icono } from '../../../core/ui/iconos.js?v=a7f53fa';
+import { boton } from '../../../core/ui/tabla.js?v=a7f53fa';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=a7f53fa';
+import { avisar } from '../../../core/ui/aviso.js?v=a7f53fa';
+import { subirArchivo } from '../../../core/adjuntos.js?v=a7f53fa';
+import { dinero, fechaLarga, hoyISO, nombreMes } from '../../../core/ui/formato.js?v=a7f53fa';
+import { nombreTercero, MEDIOS } from '../datos.js?v=a7f53fa';
 
 const TIPO = { trabajo: ['Trabajo', 'chip-ok'], compra: ['Compra a su cuenta', 'chip-prox'], abono: ['Abono', 'chip-pend'] };
 
@@ -71,7 +71,7 @@ export default async function vista(ctx) {
       avisar('Trabajos al día.'); ctx.refrescar();
     },
   });
-  const excel = () => import('../../../core/excel.js?v=e4cf9a2').then(({ nuevoExcel }) => nuevoExcel(ctx, { titulo: `Cuenta de ${nombreTercero(ter)}`, subtitulo: `Saldo ${saldo >= 0 ? 'a pagarle' : 'a favor de la empresa'}: ${dinero(Math.abs(saldo))}` }))
+  const excel = () => import('../../../core/excel.js?v=a7f53fa').then(({ nuevoExcel }) => nuevoExcel(ctx, { titulo: `Cuenta de ${nombreTercero(ter)}`, subtitulo: `Saldo ${saldo >= 0 ? 'a pagarle' : 'a favor de la empresa'}: ${dinero(Math.abs(saldo))}` }))
     .then(async (x) => {
       x.tabla({ titulo: 'Resumen mensual', columnas: ['Mes', { t: 'Trabajos', tipo: 'dinero' }, { t: 'Compras a su cuenta', tipo: 'dinero' }, { t: 'Abonos', tipo: 'dinero' }, { t: 'Neto del mes', tipo: 'dinero' }, { t: 'Saldo', tipo: 'dinero' }],
         filas: resumen.map((r) => [nombreMes(r.m), r.trabajos, r.compras, r.abonos, r.neto, r.saldo]) });

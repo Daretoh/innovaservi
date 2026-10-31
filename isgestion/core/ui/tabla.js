@@ -1,10 +1,11 @@
 // Listado estándar: barra con búsqueda y acciones + tabla.
 // columnas: [{ titulo, valor: (fila) => texto }]
-import { el } from './dom.js?v=e4cf9a2';
-import { icono } from './iconos.js?v=e4cf9a2';
+import { el } from './dom.js?v=a7f53fa';
+import { icono } from './iconos.js?v=a7f53fa';
 
 // alFila(fila): opcional, la fila se puede tocar (abre su ficha).
-export function listado({ titulo, columnas, filas, acciones = [], vacio = 'No hay registros.', alFila = null }) {
+// claseFila: (fila) => clase extra del <tr> (ej. franja de color por tipo)
+export function listado({ titulo, columnas, filas, acciones = [], vacio = 'No hay registros.', alFila = null, claseFila = null }) {
   const cuerpo = el('tbody');
   const contador = el('span', { class: 'texto-suave' });
   const buscador = el('input', { type: 'search', placeholder: 'Buscar…', 'aria-label': 'Buscar', class: 'campo' });
@@ -18,7 +19,7 @@ export function listado({ titulo, columnas, filas, acciones = [], vacio = 'No ha
     contador.textContent = `${visibles.length} de ${filas.length}`;
     cuerpo.replaceChildren(
       ...(visibles.length
-        ? visibles.map((f) => el('tr', alFila ? { class: 'fila-enlace', title: 'Abrir', onclick: () => alFila(f) } : {}, columnas.map((c) => el('td', {}, c.valor(f) ?? ''))))
+        ? visibles.map((f) => el('tr', { ...(alFila ? { title: 'Abrir', onclick: () => alFila(f) } : {}), class: [alFila ? 'fila-enlace' : '', claseFila?.(f) ?? ''].join(' ').trim() || null }, columnas.map((c) => el('td', {}, c.valor(f) ?? ''))))
         : [el('tr', {}, el('td', { colspan: columnas.length, class: 'tabla-vacia' }, icono(q ? 'buscar' : 'carpeta', { tam: 28 }), q ? 'Nada coincide con la búsqueda.' : vacio))]),
     );
   }

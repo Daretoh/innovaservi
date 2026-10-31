@@ -2187,3 +2187,7 @@ html { transition: background-color 220ms ease; }
 .agh-patente-info.buscando .cargador { transform: scale(.4); margin: -14px; }
 .agh-patente-info.ok { background: var(--ok-fondo); color: var(--ok); }
 .agh-patente-info.mal { background: var(--prox-fondo); color: var(--prox); }
+
+/* Franja al inicio de la fila: ingreso (suma) en verde, gasto o costo (resta) en rojo */
+.fila-suma > td:first-child { box-shadow: inset 4px 0 0 var(--ok); }
+.fila-resta > td:first-child { box-shadow: inset 4px 0 0 var(--error); }
