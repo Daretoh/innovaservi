@@ -3,13 +3,13 @@
 // duplicados con "Unir"; ficha con total gastado, visitas, última visita y ticket, historial de servicios, vehículos,
 // servicios usados, cotizaciones, corregir cliente (mover vehículos o cotizaciones a otro), datos y facturación,
 // y postventa: mensaje de reactivación por WhatsApp y bitácora de contacto.
-import { el } from '../../../core/ui/dom.js?v=7860387';
-import { icono } from '../../../core/ui/iconos.js?v=7860387';
-import { boton } from '../../../core/ui/tabla.js?v=7860387';
-import { avisar } from '../../../core/ui/aviso.js?v=7860387';
-import { dinero, fechaLarga, hoyISO, diaLocal, telefono } from '../../../core/ui/formato.js?v=7860387';
-import { nombreEmpresa } from '../../../core/empresas.js?v=7860387';
-import { nombreEstado, verPatente, nombreVehiculo, totales, esEmpresa } from '../datos.js?v=7860387';
+import { el } from '../../../core/ui/dom.js?v=5909720';
+import { icono } from '../../../core/ui/iconos.js?v=5909720';
+import { boton } from '../../../core/ui/tabla.js?v=5909720';
+import { avisar } from '../../../core/ui/aviso.js?v=5909720';
+import { dinero, fechaLarga, hoyISO, diaLocal, telefono } from '../../../core/ui/formato.js?v=5909720';
+import { nombreEmpresa } from '../../../core/empresas.js?v=5909720';
+import { nombreEstado, verPatente, nombreVehiculo, totales, esEmpresa } from '../datos.js?v=5909720';
 
 const estado = { q: '', clase: 'todos', orden: 'reciente', sel: null, ordenBitacora: 'desc' };
 const RESULTADOS = ['Contactado', 'Contestó', 'No contestó', 'Agendó', 'No interesado', 'Volver a contactar'];
@@ -23,6 +23,8 @@ const textoDias = (d) => (d == null ? 'sin visitas' : d < 0 ? `en ${-d} ${d === 
 const chipDias = (d) => el('span', { class: `chip ${d == null ? 'chip-na' : d <= 60 ? 'chip-ok' : d <= 120 ? 'chip-prox' : 'chip-venc'}` }, textoDias(d));
 const claseDe = (t) => t.clase ?? (esEmpresa(t) ? 'empresa' : 'natural');
 const nombreDe = (t) => t.nombre_fantasia || t.razon_social || '(sin nombre)';
+// Nombre para comparar duplicados: sin espacios ni forma societaria
+const compacto = (s) => norm(s).replace(/\b(spa|ltda|limitada|eirl|s ?a|sociedad|y cia)\b/g, '').replace(/\s+/g, '');
 const telInternacional = (t) => { const d = String(t ?? '').replace(/\D/g, ''); if (!d) return ''; if (d.startsWith('56')) return d; if (d.length === 9 && d[0] === '9') return `56${d}`; if (d.length === 8) return `569${d}`; return d; };
 const servicioCorto = (n) => { const i = String(n ?? '').indexOf('—'); return (i > 0 ? n.slice(0, i) : n ?? '').trim(); };
 
@@ -55,13 +57,13 @@ export default async function vista(ctx) {
     return { t, items, vehs: [...vehs.values()], servicios, total, visitas: items.length, ultima: items[0]?.fecha ?? '', cots: cot.data.filter((c) => c.tercero_id === t.id) };
   });
 
-  // Posibles duplicados: mismo nombre o mismo teléfono
+  // Posibles duplicados: mismo nombre (sin espacios ni SpA, Ltda…: "Innovaservi" = "Innova Servi") o mismo teléfono
   const duplicados = [];
   const vistos = new Set();
   const par = (a, b, motivo) => { const k = [a.t.id, b.t.id].sort().join('|'); if (a.t.id !== b.t.id && !vistos.has(k)) { vistos.add(k); duplicados.push({ a, b, motivo }); } };
   const porNombre = new Map(); const porTel = new Map();
   clientes.forEach((c) => {
-    const n = norm(nombreDe(c.t)); if (n.length > 2) { if (porNombre.has(n)) par(porNombre.get(n), c, 'mismo nombre'); else porNombre.set(n, c); }
+    const n = compacto(nombreDe(c.t)); if (n.length > 2) { if (porNombre.has(n)) par(porNombre.get(n), c, 'mismo nombre'); else porNombre.set(n, c); }
     const d = digitos(c.t.telefono); if (d.length >= 7) { if (porTel.has(d)) par(porTel.get(d), c, 'mismo teléfono'); else porTel.set(d, c); }
   });
 
@@ -130,7 +132,7 @@ export default async function vista(ctx) {
     const marcaVeh = c.vehs.map((x) => ({ id: x.v.id, cb: el('input', { type: 'checkbox' }), x }));
     const marcaCot = c.cots.filter((q) => q.estado === 'borrador').map((q) => ({ id: q.id, cb: el('input', { type: 'checkbox' }), q }));
     const corregir = el('div', {},
-      el('p', { class: 'texto-suave texto-chico' }, 'Si un vehículo o una cotización quedó bajo el cliente equivocado, elige el cliente destino, marca lo que es de ese otro cliente y presiona Mover. Las cotizaciones de los vehículos movidos se mueven con ellos (solo las en borrador).'),
+      el('p', { class: 'texto-suave texto-chico' }, 'Si un vehículo o una cotización quedó bajo el cliente equivocado, elige el cliente destino, marca lo que es de ese otro cliente y presiona Mover. Las cotizaciones de los vehículos movidos se mueven con ellos (solo las en borrador). Si es el mismo cliente repetido, usa Unir: todo pasa al destino y este se elimina.'),
       el('div', { class: 'form-fila' }, el('label', {}, 'Mover al cliente'), destino),
       el('strong', { class: 'texto-chico' }, 'Vehículos de este cliente'),
       marcaVeh.length ? marcaVeh.map((m) => el('label', { class: 'casilla' }, m.cb, `${nombreVehiculo(m.x.v)} · ${verPatente(m.x.v.patente) || 'sin patente'}${m.x.n > 1 ? ` (${m.x.n} visitas)` : ''}`)) : el('p', { class: 'texto-suave texto-chico' }, 'Sin vehículos.'),
@@ -144,7 +146,21 @@ export default async function vista(ctx) {
         const { data, error } = await ctx.api.rpc('tal_mover_cliente', { p_hacia: destino.value, p_vehiculos: vs, p_cotizaciones: cs });
         if (error) { avisar(error.message, 'error'); return; }
         avisar(`Movido: ${data.vehiculos} vehículo(s) y ${data.cotizaciones} cotización(es).`); estado.sel = destino.value; ctx.refrescar();
-      } }) : null);
+      } }) : null,
+      el('div', { class: 'listado-acciones', style: 'margin-top:12px' },
+        ctx.puede('taller', 'editar') && ctx.puede('terceros', 'editar') ? boton('Unir con el cliente destino', { onclick: async () => {
+          if (!destino.value) { avisar('Elige el cliente destino.', 'error'); return; }
+          if (!confirm(`¿Unir «${nombreDe(t)}» dentro de «${destino.selectedOptions[0].textContent}»? Todo lo de este cliente (vehículos, órdenes, cotizaciones, contactos) pasa al destino y este se elimina.`)) return;
+          const { error } = await ctx.api.rpc('tal_unir_clientes', { p_desde: t.id, p_hacia: destino.value });
+          if (error) { avisar(error.message, 'error'); return; }
+          avisar('Clientes unidos.'); estado.sel = destino.value; ctx.refrescar();
+        } }) : null,
+        ctx.puede('terceros', 'eliminar') ? boton('Eliminar cliente', { icono: 'basura', onclick: async () => {
+          if (!confirm(`¿Eliminar «${nombreDe(t)}»? Solo se puede si no tiene vehículos, órdenes ni cotizaciones (si los tiene, únelo con el cliente correcto).`)) return;
+          const { error } = await ctx.api.rpc('tal_eliminar_cliente', { p_id: t.id });
+          if (error) { avisar(error.message, 'error'); return; }
+          avisar('Cliente eliminado.'); estado.sel = null; ctx.refrescar();
+        } }) : null));
 
     // Datos y facturación (maestro de clientes)
     const campo = (id, etiqueta, valor, extra = {}) => { const i = el('input', { class: 'campo', value: valor ?? '', ...extra }); return { i, nodo: el('div', { class: 'form-fila' }, el('label', {}, etiqueta), i) }; };
@@ -226,7 +242,7 @@ export default async function vista(ctx) {
       seccion(`Vehículos (${c.vehs.length})`, el('div', { class: 'crm-chips' }, c.vehs.length ? c.vehs.map((x) => el('a', { class: 'chip chip-na', href: ctx.ruta('taller.vehiculo', { id: x.v.id }) }, `${nombreVehiculo(x.v)} · ${verPatente(x.v.patente) || 'sin patente'}${x.n > 1 ? ` (${x.n}×)` : ''}`)) : el('span', { class: 'texto-suave' }, 'Sin vehículos.'))),
       seccion(`Servicios usados (${c.servicios.size})`, el('div', { class: 'crm-chips' }, c.servicios.size ? [...c.servicios].sort((a, b) => b[1] - a[1]).map(([n, k]) => el('span', { class: 'chip chip-na' }, `${servicioCorto(n)}${k > 1 ? ` (${k}×)` : ''}`)) : el('span', { class: 'texto-suave' }, '—'))),
       conCot ? seccion(`Cotizaciones (${c.cots.length})`, cotizaciones, c.cots.length > 0) : null,
-      seccion('Corregir cliente: mover vehículos o cotizaciones', corregir),
+      seccion('Corregir cliente: mover, unir o eliminar', corregir),
       seccion('Datos y facturación', datos),
       seccion('Postventa', postventa));
   }

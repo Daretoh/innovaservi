@@ -8,7 +8,7 @@ export function leerVence({ fuentes, tipo = null, cedula = false, rut = null, em
     alClic: async ({ valores, poner, estado }) => {
       const F = (await fuentes(valores)).filter((x) => x && !(x instanceof File && !x.size));
       if (!F.length) { estado('Primero elige el archivo del documento.', 'mal'); return; }
-      const L = await import('../lector-venc.js?v=7860387');
+      const L = await import('../lector-venc.js?v=5909720');
       if (cedula) {
         const r = await L.leerVencCedula(F, rut, (t) => estado(t));
         const R = L.resumenCedula(r);

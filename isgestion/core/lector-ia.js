@@ -1,7 +1,7 @@
 // Lectura de documentos con IA (Gemini en la Edge Function leer-documento), igual al lector de Finanzas de
 // InnovaGestión: lee al agregar la foto, sin botón. La clave está solo en el servidor.
 // modo: compra (boleta o factura de un proveedor) · venta (factura emitida) · pago (comprobante) · sindoc (sin documento).
-import { comprimirFoto, esImagen } from './imagenes.js?v=7860387';
+import { comprimirFoto, esImagen } from './imagenes.js?v=5909720';
 
 let sinClave = false;   // si el servidor no tiene la clave, no se vuelve a intentar en esta sesión
 export const iaDisponible = () => !sinClave;
