@@ -7146,10 +7146,10 @@
   // Días para la liquidación (solo spot, solo informativo): total del mes (tratos + vueltas + peajes + extras − desc.) ÷ valor del día de trato (valor hora × 8).
   // Cuadra los días con el monto que se paga; NO cambia pagos, horas ni días con horas (notas de Enzo, NOTAS REMUNERACIONES).
   // Fijos: los mismos días del mes. Spot: total / valor del día de trato.
-  function rmDiasEq(x){ if(rmEsFijo(x)) return rmDias(x); var vd=(x.ext?(+x.vhExt||0):(+x.vh||0))*8; if(!vd) return null; return Math.round(rmTotal(x)/vd*10)/10; }
+  function rmDiasEq(x){ if(rmEsFijo(x)) return rmDias(x); var vd=(x.ext?(+x.vhExt||0):(+x.vh||0))*8; if(!vd) return null; return Math.round(rmTotal(x)/vd); }   // días enteros: desde 0,5 sube
   function rmDec(v){ return (v==null||v==='')?'':Number(v).toLocaleString('es-CL',{maximumFractionDigits:1}); }
   function rmSuma(L){ var s={n:L.length,dias:0,diasEq:0,min:0,sueldo:0,tratos:0,nvu:0,vueltas:0,peajes:0,bono:0,desc:0,ag:0,an:0,total:0,pagar:0};
-    L.forEach(function(x){ s.psem=(s.psem||0)+rmSemanal(x); s.ag+=rmAg(x); s.an+=rmAn(x); s.pagar+=rmPagar(x); s.dias+=rmDias(x); s.diasEq+=(rmDiasEq(x)||0); s.nvu+=(x.ext?0:(x.vueltas||0)); s.sueldo+=rmSueldoPropio(x); s.min+=x.totMin; s.tratos+=x.baseCont; s.vueltas+=x.vueltasMonto; s.peajes+=x.peajes; s.bono+=x.bono; s.desc+=x.desc+rmDescM(x); s.total+=rmTotal(x); }); s.diasEq=Math.round(s.diasEq*10)/10; return s; }
+    L.forEach(function(x){ s.psem=(s.psem||0)+rmSemanal(x); s.ag+=rmAg(x); s.an+=rmAn(x); s.pagar+=rmPagar(x); s.dias+=rmDias(x); s.diasEq+=(rmDiasEq(x)||0); s.nvu+=(x.ext?0:(x.vueltas||0)); s.sueldo+=rmSueldoPropio(x); s.min+=x.totMin; s.tratos+=x.baseCont; s.vueltas+=x.vueltasMonto; s.peajes+=x.peajes; s.bono+=x.bono; s.desc+=x.desc+rmDescM(x); s.total+=rmTotal(x); }); s.diasEq=Math.round(s.diasEq); return s; }
 
   // ---- IS Performance (importado desde su CSV de Remuneraciones) ----
   // Se guarda en config ('remu_ext_is_AAAA-MM') como JSON: compartido entre usuarios y sin tablas nuevas.
@@ -7448,7 +7448,7 @@
     var FIJAS=['N°','NOMBRES','RUT','DV','CARGO','TIPO CONTRATO','EMPRESA'];
     var RES=['N° DÍAS ASISTIDOS','DÍAS LIQ. (EQUIV.)','HORAS','SUELDO BASE','TRATOS','N° VUELTAS','$ VUELTAS','PEAJES','N° VEHÍCULOS','BONO AUTOS','EXTRAS','DESCUENTOS','BONOS / AGUINALDO','TOTAL','ANTICIPOS / QUINCENAS','PAGADO SEMANAL','A PAGAR'];
     var iAg=12, iTot=13, iAn=14, iPS=15, iPag=16;
-    var fmtRes=function(i){ return (i===0||i===5||i===8)?'0':((i===1||i===2)?'0.0':MONEDA); }, centro=function(i){ return i<3||i===5||i===8; };
+    var fmtRes=function(i){ return (i===0||i===1||i===5||i===8)?'0':(i===2?'0.0':MONEDA); }, centro=function(i){ return i<3||i===5||i===8; };
     var cR=FIJAS.length+1, cMax=cR+RES.length-1;
     var NAVY='FF1A1F6E', BORDE={style:'thin',color:{argb:'FFBFC5D6'}};
     var MONEDA='_-"$"* #,##0_-;-"$"* #,##0_-;_-"$"* "-"_-;_-@_-';
