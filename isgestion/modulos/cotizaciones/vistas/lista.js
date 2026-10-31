@@ -1,10 +1,10 @@
 // Cotizaciones: listado con filtro por estado y búsqueda; nueva cotización. Cada fila dice quién la creó y quién la
 // editó por última vez (como el OS; updated_by lo pone la base).
-import { el } from '../../../core/ui/dom.js?v=25e9201';
-import { listado, boton } from '../../../core/ui/tabla.js?v=25e9201';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=25e9201';
-import { dinero, fechaLarga, fechaCorta, hoyISO, diaLocal } from '../../../core/ui/formato.js?v=25e9201';
-import { ESTADOS, nombreEstado, CHIP_ESTADO, SELECT_COT, totales, numeroTexto, nombreTercero, verPatente, siguienteNumero, cargarConfig, datosCliente } from '../datos.js?v=25e9201';
+import { el } from '../../../core/ui/dom.js?v=0e371c2';
+import { listado, boton } from '../../../core/ui/tabla.js?v=0e371c2';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=0e371c2';
+import { dinero, fechaLarga, fechaCorta, hoyISO, diaLocal } from '../../../core/ui/formato.js?v=0e371c2';
+import { ESTADOS, nombreEstado, CHIP_ESTADO, SELECT_COT, totales, numeroTexto, nombreTercero, verPatente, siguienteNumero, cargarConfig, datosCliente } from '../datos.js?v=0e371c2';
 
 const filtro = { estado: 'todas', buscar: '' };
 

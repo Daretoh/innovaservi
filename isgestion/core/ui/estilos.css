@@ -1684,9 +1684,11 @@ body:has(.franja-push:not([hidden])) .aviso { bottom: calc(16px + 76px); }
 .alertas-area { border: 1px solid var(--borde); border-left: 4px solid var(--borde); border-radius: 10px; padding: 10px 12px; }
 .alertas-area.aa-venc { border-left-color: var(--venc); } .alertas-area.aa-prox { border-left-color: var(--prox); }
 .alertas-area h3 { margin: 0 0 6px; font-size: 15px; }
-.eco-valores { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
-.eco-valores > div { display: flex; flex-direction: column; }
-.eco-valores strong { font-size: 18px; font-variant-numeric: tabular-nums; }
+/* Indicadores del día: una franja de una línea (UF · UTM · Dólar) */
+.eco-franja { display: flex; justify-content: flex-end; }
+.eco-valores { display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: baseline; font-size: 13px; }
+.eco-valores > div { display: flex; gap: 6px; align-items: baseline; }
+.eco-valores strong { font-size: 13px; font-variant-numeric: tabular-nums; }
 /* Clientes y sitios: torta de faenas por cliente */
 .torta-fila { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
 .torta { width: 150px; height: 150px; transform: rotate(0deg); }

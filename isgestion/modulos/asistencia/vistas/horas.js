@@ -6,12 +6,12 @@
 // Fijos con turno (2026-10-30): cada día hábil quedan presentes "según horario" solos (asis_generar_fijos); aquí solo se
 // corrigen las excepciones: retraso o salida temprana (cambiar la hora), horas extra (cambiar la salida o agregar otra
 // fila) y ausencias (botón Ausente: el día deja de contar y no se vuelve a crear).
-import { el } from '../../../core/ui/dom.js?v=25e9201';
-import { icono } from '../../../core/ui/iconos.js?v=25e9201';
-import { boton } from '../../../core/ui/tabla.js?v=25e9201';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=25e9201';
-import { avisar } from '../../../core/ui/aviso.js?v=25e9201';
-import { hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, horas, aMin, hhmm } from '../../../core/ui/formato.js?v=25e9201';
+import { el } from '../../../core/ui/dom.js?v=0e371c2';
+import { icono } from '../../../core/ui/iconos.js?v=0e371c2';
+import { boton } from '../../../core/ui/tabla.js?v=0e371c2';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=0e371c2';
+import { avisar } from '../../../core/ui/aviso.js?v=0e371c2';
+import { hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, horas, aMin, hhmm } from '../../../core/ui/formato.js?v=0e371c2';
 
 const estado = { lunes: lunesDe(hoyISO()), dia: hoyISO(), nuevas: [] };   // nuevas: filas en blanco aún sin guardar
 

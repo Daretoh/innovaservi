@@ -1,6 +1,6 @@
 // Carga lo necesario para calcular pagos de la empresa activa en un rango.
-import { calcular, sueldoDelMes, semanaEnMes } from './calculo.js?v=25e9201';
-import { sumarDias, rangoMes, lunesDe } from '../../core/ui/formato.js?v=25e9201';
+import { calcular, sueldoDelMes, semanaEnMes } from './calculo.js?v=0e371c2';
+import { sumarDias, rangoMes, lunesDe } from '../../core/ui/formato.js?v=0e371c2';
 
 export const nombreCompleto = (p) => [p.nombres, p.apellido_paterno, p.apellido_materno].filter(Boolean).join(' ');
 
@@ -75,7 +75,9 @@ export async function pagoMensual(ctx, base, mes) {
   const filas = R.filas.map((f) => {
     const sueldo = sueldoDelMes(f, mes);
     const sin = excluidos.has(f.vinculo.persona_id);
-    const bonoAutos = valorAuto && f.dias > 0 && !sin ? (tope ? Math.min(nAutos * valorAuto, tope) : nAutos * valorAuto) : 0;
+    // Art. 22 (sin control de jornada) no registra horas: cuenta como que trabajó el mes.
+    const trabajo = f.dias > 0 || !!f.condicion?.art22;
+    const bonoAutos = valorAuto && trabajo && !sin ? (tope ? Math.min(nAutos * valorAuto, tope) : nAutos * valorAuto) : 0;
     return { ...f, sueldo, sinBono: sin, bonoAutos, totalMes: f.total + sueldo + bonoAutos, realMes: f.real + sueldo + bonoAutos };
   });
   return { R, filas, autos: autos.data ?? [], valorAuto, tope, total: filas.reduce((s, f) => s + f.totalMes, 0) };
