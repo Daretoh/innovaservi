@@ -1,16 +1,16 @@
 // Arranque de ISgestión: sesión → empresas y permisos → barra con selector → menú → vista.
-import { iniciarApi, db } from './api.js?v=0e371c2';
-import { sesionActual, iniciarSesion, cerrarSesion, alCambiarSesion } from './auth.js?v=0e371c2';
-import { cargarPermisos, crearPuede } from './permisos.js?v=0e371c2';
-import { cargarEmpresas, cargarModulosEmpresa, elegirEmpresa, recordarEmpresa, nombreEmpresa } from './empresas.js?v=0e371c2';
-import { cargarManifiestos, modulosVisibles, apartadosPorCategoria, configModulo } from './modulos.js?v=0e371c2';
-import { el } from './ui/dom.js?v=0e371c2';
-import { icono } from './ui/iconos.js?v=0e371c2';
-import { boton } from './ui/tabla.js?v=0e371c2';
-import inicio from './vistas/inicio.js?v=0e371c2';
-import mas from './vistas/mas.js?v=0e371c2';
-import { franja, botonNotificaciones, desactivar } from './push.js?v=0e371c2';
-import { barraMovil, marcarBarraMovil, bienvenidaInicial, recordarMarca, CORTE_TELEFONO } from './movil.js?v=0e371c2';
+import { iniciarApi, db } from './api.js?v=e4cf9a2';
+import { sesionActual, iniciarSesion, cerrarSesion, alCambiarSesion } from './auth.js?v=e4cf9a2';
+import { cargarPermisos, crearPuede } from './permisos.js?v=e4cf9a2';
+import { cargarEmpresas, cargarModulosEmpresa, elegirEmpresa, recordarEmpresa, nombreEmpresa } from './empresas.js?v=e4cf9a2';
+import { cargarManifiestos, modulosVisibles, apartadosPorCategoria, configModulo } from './modulos.js?v=e4cf9a2';
+import { el } from './ui/dom.js?v=e4cf9a2';
+import { icono } from './ui/iconos.js?v=e4cf9a2';
+import { boton } from './ui/tabla.js?v=e4cf9a2';
+import inicio from './vistas/inicio.js?v=e4cf9a2';
+import mas from './vistas/mas.js?v=e4cf9a2';
+import { franja, botonNotificaciones, desactivar } from './push.js?v=e4cf9a2';
+import { barraMovil, marcarBarraMovil, bienvenidaInicial, recordarMarca, marcaGuardada, CORTE_TELEFONO } from './movil.js?v=e4cf9a2';
 
 const COLOR_BASE = '#1f4e8c';
 const CLAVE_MINIMA = 10;   // 08 Seguridad §4
@@ -206,8 +206,9 @@ async function activarEmpresa(empresa) {
   const tema = empresa.config?.tema;
   if (tema && tema !== 'clasico') document.documentElement.dataset.tema = tema; else delete document.documentElement.dataset.tema;
   document.title = `${nombreEmpresa(empresa)} · ISgestión`;
-  recordarMarca(db(), empresa);   // logo y color para la próxima bienvenida (core/movil.js)
+  const conLogo = recordarMarca(db(), empresa);   // logo y color para la próxima bienvenida (core/movil.js)
   pintarApp();
+  conLogo.then((logo) => ponerLogo(logo));
   navegar();
 }
 
@@ -215,6 +216,7 @@ async function activarEmpresa(empresa) {
 
 function pintarApp() {
   estado.selector = selectorEmpresa();
+  ponerLogo(marcaGuardada(estado.empresa.id)?.logo);   // el guardado, sin esperar la descarga
   estado.menu = el('nav', { class: 'menu', 'aria-label': 'Menú principal' });
   estado.contenido = el('main', { class: 'contenido' });
   pintarMenu();
@@ -286,6 +288,13 @@ function pintarMenu() {
         return [a];
       })));
   estado.menu.replaceChildren(el('div', { class: 'menu-grupo' }, enlace('#/', 'inicio', 'Inicio')), ...grupos);
+}
+
+// Logo de la empresa en el selector de la barra, en lugar del punto de color (si la empresa tiene logo)
+function ponerLogo(logo) {
+  const punto = estado.selector?.querySelector('.punto, .selector-logo');
+  if (!logo || !punto) return;
+  punto.replaceWith(el('img', { class: 'selector-logo', src: logo, alt: '' }));
 }
 
 // Selector de empresa en la barra (02 Arquitectura §7). Oculto si tiene una sola.

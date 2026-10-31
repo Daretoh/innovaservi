@@ -119,6 +119,7 @@ h2 { font-size: 1.1rem; margin: 0; }
   padding: 6px 10px; border-radius: 6px; border: 1px solid var(--borde); background: var(--superficie); color: var(--texto);
 }
 .punto { width: 10px; height: 10px; border-radius: 50%; background: var(--empresa); flex: none; }
+.selector-logo { height: 30px; max-width: 90px; margin: -4px 0; object-fit: contain; flex: none; }
 .selector-lista {
   position: absolute; top: calc(100% + 6px); left: 0; min-width: 300px; z-index: 10; background: var(--superficie);
   border: 1px solid var(--borde); border-radius: var(--radio); box-shadow: var(--sombra); padding: 6px;
