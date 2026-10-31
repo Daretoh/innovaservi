@@ -1,12 +1,12 @@
 // Vehículo de un cliente: datos (se guardan al salir del campo) e historial de órdenes.
 // Ruta: #/taller.vehiculo?id=<id>
-import { el } from '../../../core/ui/dom.js?v=5909720';
-import { icono } from '../../../core/ui/iconos.js?v=5909720';
-import { boton } from '../../../core/ui/tabla.js?v=5909720';
-import { avisar } from '../../../core/ui/aviso.js?v=5909720';
-import { dinero, fechaLarga } from '../../../core/ui/formato.js?v=5909720';
-import { TALLAS, verPatente, normalizarPatente, nombreVehiculo, nombreTercero, nombreEstado, totales } from '../datos.js?v=5909720';
-import { recepcion } from '../recepcion.js?v=5909720';
+import { el } from '../../../core/ui/dom.js?v=66a811d';
+import { icono } from '../../../core/ui/iconos.js?v=66a811d';
+import { boton } from '../../../core/ui/tabla.js?v=66a811d';
+import { avisar } from '../../../core/ui/aviso.js?v=66a811d';
+import { dinero, fechaLarga } from '../../../core/ui/formato.js?v=66a811d';
+import { TALLAS, verPatente, normalizarPatente, nombreVehiculo, nombreTercero, nombreEstado, totales } from '../datos.js?v=66a811d';
+import { recepcion } from '../recepcion.js?v=66a811d';
 
 export default async function vista(ctx) {
   const [{ data: v, error }, ords, clientes] = await Promise.all([
@@ -29,12 +29,37 @@ export default async function vista(ctx) {
       else if (tipo === 'number') val = val === '' ? null : Number(val);
       else if (val === '') val = null;
       const { error: e } = await ctx.api.from('tal_vehiculos').update({ [id]: val }).eq('id', v.id);
-      if (e) { avisar(e.code === '23505' ? 'Ya hay un vehículo con esa patente.' : e.message, 'error'); return; }
+      if (e?.code === '23505' && id === 'patente') { await ofrecerUnir(val); c.value = verPatente(v.patente); return; }
+      if (e) { avisar(e.message, 'error'); return; }
       v[id] = val; avisar('Guardado.');
       if (id === 'patente') c.value = verPatente(val);
     });
     return el('div', { class: 'form-fila' }, el('label', { for: `v-${id}` }, etiqueta), c);
   };
+
+  // Unir vehículos repetidos (Taller 010): lo de este pasa al otro y este se elimina
+  const unir = async (otro) => {
+    if (!confirm(`¿Unir este vehículo dentro de «${nombreVehiculo(otro)}${otro.patente ? ` ${verPatente(otro.patente)}` : ''}»? Sus órdenes y cotizaciones pasan a ese vehículo y este se elimina.`)) return;
+    const { error: e } = await ctx.api.rpc('tal_unir_vehiculos', { p_desde: v.id, p_hacia: otro.id });
+    if (e) { avisar(e.message, 'error'); return; }
+    avisar('Vehículos unidos.'); location.hash = ctx.ruta('taller.vehiculo', { id: otro.id });
+  };
+  // Al poner una patente que ya tiene otro vehículo: es el mismo auto, se ofrece unirlos
+  const ofrecerUnir = async (patente) => {
+    const { data: otro } = await ctx.api.from('tal_vehiculos').select('*').eq('empresa_id', ctx.empresa.id).eq('patente', patente).is('deleted_at', null).maybeSingle();
+    if (!otro) { avisar('Ya hay un vehículo con esa patente.', 'error'); return; }
+    await unir(otro);
+  };
+  const candidatos = editable ? (await ctx.api.from('tal_vehiculos').select('id, patente, marca, modelo, tercero_id').eq('empresa_id', ctx.empresa.id).is('deleted_at', null).neq('id', v.id)
+    .or([v.tercero_id ? `tercero_id.eq.${v.tercero_id}` : null, v.modelo ? `modelo.ilike."${v.modelo.replace(/[,()*"\\]/g, ' ').trim()}"` : null].filter(Boolean).join(',') || 'id.is.null').limit(60)).data ?? [] : [];
+  const selUnir = el('select', { class: 'campo' }, el('option', { value: '' }, '— elegir el vehículo correcto —'),
+    candidatos.sort((a, b) => (b.tercero_id === v.tercero_id) - (a.tercero_id === v.tercero_id) || String(a.patente ?? '~').localeCompare(String(b.patente ?? '~')))
+      .map((x) => el('option', { value: x.id }, `${nombreVehiculo(x)} · ${verPatente(x.patente) || 'sin patente'}${x.tercero_id === v.tercero_id ? ' · mismo cliente' : ''}`)));
+  const unirBloque = editable && candidatos.length ? el('div', { class: 'ficha doc-grupo' },
+    el('h2', {}, 'Vehículo repetido'),
+    el('p', { class: 'texto-suave texto-chico' }, 'Si este auto ya está cargado (con o sin patente, o escrito distinto), elige el correcto y únelos: sus órdenes y cotizaciones pasan a ese y este se elimina.'),
+    el('div', { class: 'form-fila' }, selUnir),
+    boton('Unir con el vehículo elegido', { onclick: () => { const o = candidatos.find((x) => x.id === selUnir.value); if (!o) { avisar('Elige el vehículo correcto.', 'error'); return; } unir(o); } })) : null;
 
   const historial = (ords.data ?? []).map((o) => {
     const t = totales(o, o.tal_orden_servicios);
@@ -61,5 +86,6 @@ export default async function vista(ctx) {
         campo('notas', 'Notas')),
       el('div', { class: 'ficha doc-grupo' },
         el('h2', {}, `Historial (${historial.length})`),
-        historial.length ? historial : el('p', { class: 'texto-suave' }, 'Sin órdenes.'))));
+        historial.length ? historial : el('p', { class: 'texto-suave' }, 'Sin órdenes.'))),
+    unirBloque);
 }

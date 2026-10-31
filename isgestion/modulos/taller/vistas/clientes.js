@@ -3,13 +3,13 @@
 // duplicados con "Unir"; ficha con total gastado, visitas, última visita y ticket, historial de servicios, vehículos,
 // servicios usados, cotizaciones, corregir cliente (mover vehículos o cotizaciones a otro), datos y facturación,
 // y postventa: mensaje de reactivación por WhatsApp y bitácora de contacto.
-import { el } from '../../../core/ui/dom.js?v=5909720';
-import { icono } from '../../../core/ui/iconos.js?v=5909720';
-import { boton } from '../../../core/ui/tabla.js?v=5909720';
-import { avisar } from '../../../core/ui/aviso.js?v=5909720';
-import { dinero, fechaLarga, hoyISO, diaLocal, telefono } from '../../../core/ui/formato.js?v=5909720';
-import { nombreEmpresa } from '../../../core/empresas.js?v=5909720';
-import { nombreEstado, verPatente, nombreVehiculo, totales, esEmpresa } from '../datos.js?v=5909720';
+import { el } from '../../../core/ui/dom.js?v=66a811d';
+import { icono } from '../../../core/ui/iconos.js?v=66a811d';
+import { boton } from '../../../core/ui/tabla.js?v=66a811d';
+import { avisar } from '../../../core/ui/aviso.js?v=66a811d';
+import { dinero, fechaLarga, hoyISO, diaLocal, telefono, nombrePropio } from '../../../core/ui/formato.js?v=66a811d';
+import { nombreEmpresa } from '../../../core/empresas.js?v=66a811d';
+import { nombreEstado, verPatente, nombreVehiculo, totales, esEmpresa } from '../datos.js?v=66a811d';
 
 const estado = { q: '', clase: 'todos', orden: 'reciente', sel: null, ordenBitacora: 'desc' };
 const RESULTADOS = ['Contactado', 'Contestó', 'No contestó', 'Agendó', 'No interesado', 'Volver a contactar'];
@@ -185,8 +185,9 @@ export default async function vista(ctx) {
         const limpio = (x) => x.i.value.trim() || null;
         const rut = limpio(fRut); const r = rut ? rut.replace(/[^0-9kK]/g, '').toUpperCase() : null;
         const { error } = await ctx.api.from('terceros').update({
-          nombre_fantasia: limpio(fNombre), clase: fClase.value, rut: r ? `${r.slice(0, -1)}-${r.slice(-1)}` : null, razon_social: limpio(fRazon) ?? nombreDe(t),
-          representante: fClase.value === 'empresa' ? limpio(fRep) : null, por_cotizar: fClase.value === 'empresa' && fCotizar.checked, giro: limpio(fGiro), telefono: telefono(fTel.i.value), email: limpio(fEmail), direccion: limpio(fDir),
+          // Nombres con mayúscula inicial (nombrePropio)
+          nombre_fantasia: nombrePropio(limpio(fNombre)) || null, clase: fClase.value, rut: r ? `${r.slice(0, -1)}-${r.slice(-1)}` : null, razon_social: nombrePropio(limpio(fRazon) ?? nombreDe(t)),
+          representante: fClase.value === 'empresa' ? nombrePropio(limpio(fRep)) || null : null, por_cotizar: fClase.value === 'empresa' && fCotizar.checked, giro: limpio(fGiro), telefono: telefono(fTel.i.value), email: limpio(fEmail), direccion: limpio(fDir),
         }).eq('id', t.id);
         b.disabled = false;
         if (error) { avisar(error.code === '23505' ? 'Ya hay otro cliente con ese RUT: usa Unir si son el mismo.' : error.code === '23514' ? 'El RUT no es válido.' : error.message, 'error'); return; }

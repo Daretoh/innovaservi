@@ -1,6 +1,6 @@
 // Cambios de estado de una orden (tablero, agenda y detalle).
-import { avisar } from '../../core/ui/aviso.js?v=5909720';
-import { ESTADOS, MARCA_DE, nombreEstado } from './datos.js?v=5909720';
+import { avisar } from '../../core/ui/aviso.js?v=66a811d';
+import { ESTADOS, MARCA_DE, nombreEstado } from './datos.js?v=66a811d';
 
 // Avanza (+1) o retrocede (−1) un estado. Al avanzar marca la hora si no estaba; al retroceder la borra.
 export async function mover(ctx, o, dir) {

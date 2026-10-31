@@ -4,12 +4,12 @@
 // vehículos; si es primera vez se escribe nombre y teléfono. La patente conocida trae el vehículo, su dueño y cuántas
 // veces vino. Un cliente "siempre por cotizar" (terceros.por_cotizar) marca el servicio a convenir y queda con Factura.
 // Devuelve una promesa que se cumple al cerrar la hoja (la barra del teléfono anima el "+" mientras está abierta).
-import { el } from '../../core/ui/dom.js?v=5909720';
-import { icono } from '../../core/ui/iconos.js?v=5909720';
-import { avisar } from '../../core/ui/aviso.js?v=5909720';
-import { placa } from '../../core/ui/placa.js?v=5909720';
-import { hoyISO, telefono, dinero } from '../../core/ui/formato.js?v=5909720';
-import { PRIORIDADES, TALLAS, normalizarPatente, verPatente, nombreTercero, precioTalla, cargarServicios, cargarTrabajadores, siguienteNumero, esEmpresa } from './datos.js?v=5909720';
+import { el } from '../../core/ui/dom.js?v=66a811d';
+import { icono } from '../../core/ui/iconos.js?v=66a811d';
+import { avisar } from '../../core/ui/aviso.js?v=66a811d';
+import { placa } from '../../core/ui/placa.js?v=66a811d';
+import { hoyISO, telefono, dinero, nombrePropio } from '../../core/ui/formato.js?v=66a811d';
+import { PRIORIDADES, TALLAS, normalizarPatente, verPatente, nombreTercero, precioTalla, cargarServicios, cargarTrabajadores, siguienteNumero, esEmpresa } from './datos.js?v=66a811d';
 
 const AYUDA_TALLA = { S: 'City car', M: 'Sedán o hatchback', L: 'SUV', XL: 'Camioneta o van' };
 const soloDigitos = (t) => (t ?? '').replace(/\D/g, '');
@@ -279,7 +279,7 @@ export async function recepcion(ctx, { fecha = hoyISO(), vehiculo = null } = {})
         let veh = e.vehiculo ? { ...e.vehiculo } : null;
         let terceroId = e.cliente?.id ?? null;
         if (e.primera === true) {
-          const { data, error: er } = await ctx.api.from('terceros').insert({ empresa_id: ctx.empresa.id, razon_social: e.nombre.trim(), tipo: ['cliente'], telefono: telefono(e.contacto) }).select('id').single();
+          const { data, error: er } = await ctx.api.from('terceros').insert({ empresa_id: ctx.empresa.id, razon_social: nombrePropio(e.nombre), tipo: ['cliente'], telefono: telefono(e.contacto) }).select('id').single();
           if (er) throw new Error(`No se pudo crear el cliente: ${er.message}`);
           terceroId = data.id;
         }

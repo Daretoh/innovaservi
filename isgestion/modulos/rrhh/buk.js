@@ -1,7 +1,7 @@
 // Exportación "Datos para Buk": una fila por trabajador con sus datos personales y del vínculo.
 // CSV para Excel (separador, tildes y protección contra fórmulas en core/csv.js).
-import { nombreVinculo } from './datos.js?v=5909720';
-import { csv, descargar } from '../../core/csv.js?v=5909720';
+import { nombreVinculo } from './datos.js?v=66a811d';
+import { csv, descargar } from '../../core/csv.js?v=66a811d';
 
 const COLUMNAS = [
   ['RUT', (p) => p.rut],

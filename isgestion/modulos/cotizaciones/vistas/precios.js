@@ -1,11 +1,11 @@
 // Listas de precios por cliente (lo que en el OS era "flota"): precio sin talla o por talla S/M/L/XL.
 // Al cotizar a ese cliente, el precio se sugiere desde su lista antes que desde el catálogo.
-import { el } from '../../../core/ui/dom.js?v=5909720';
-import { listado, boton } from '../../../core/ui/tabla.js?v=5909720';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=5909720';
-import { avisar } from '../../../core/ui/aviso.js?v=5909720';
-import { dinero } from '../../../core/ui/formato.js?v=5909720';
-import { nombreTercero, TALLAS } from '../datos.js?v=5909720';
+import { el } from '../../../core/ui/dom.js?v=66a811d';
+import { listado, boton } from '../../../core/ui/tabla.js?v=66a811d';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=66a811d';
+import { avisar } from '../../../core/ui/aviso.js?v=66a811d';
+import { dinero } from '../../../core/ui/formato.js?v=66a811d';
+import { nombreTercero, TALLAS } from '../datos.js?v=66a811d';
 
 const estado = { cliente: '' };
 

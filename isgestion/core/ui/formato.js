@@ -63,3 +63,25 @@ export function telefono(t) {
   if (d.length === 9) return `+56 ${d.slice(0, 2)} ${d.slice(2, 5)} ${d.slice(5)}`;
   return limpio;
 }
+
+// Nombre propio (clientes, 2026-10-31): mayúscula al inicio de cada palabra ("GUILLERMO MORALES" → "Guillermo Morales").
+// Formas societarias estándar (SpA, Ltda., S.A., EIRL); conectores en minúscula (de, del, la, y…); se respetan
+// siglas: lo que tiene dígitos o & (D&P, 4X4) y las palabras de hasta 3 letras en mayúsculas (BMW, STI), salvo
+// nombres cortos comunes (Ana, Paz…). Si ya viene con mayúsculas y minúsculas, solo se arregla la primera letra.
+const SOCIEDAD = { spa: 'SpA', ltda: 'Ltda.', 'ltda.': 'Ltda.', limitada: 'Limitada', eirl: 'EIRL', 'e.i.r.l.': 'EIRL', sa: 'S.A.', 's.a': 'S.A.', 's.a.': 'S.A.', cia: 'Cía.', 'cia.': 'Cía.', 'cía.': 'Cía.' };
+const CONECTOR = new Set(['de', 'del', 'la', 'las', 'los', 'el', 'y', 'e', 'da', 'do', 'van', 'von']);
+const NOMBRE_CORTO = new Set(['ana', 'eva', 'paz', 'luz', 'sol', 'pia', 'pía', 'ivo', 'leo', 'teo', 'noe', 'ian', 'max', 'ema', 'ely', 'ali', 'ada', 'ema', 'gil', 'rut', 'mia']);
+export function nombrePropio(s) {
+  const texto = String(s ?? '').trim().replace(/\s+/g, ' ');
+  if (!texto) return texto;
+  const mixto = /[a-záéíóúñ]/.test(texto) && /[A-ZÁÉÍÓÚÑ]/.test(texto);
+  return texto.split(' ').map((p, i) => {
+    const min = p.toLowerCase();
+    if (SOCIEDAD[min]) return SOCIEDAD[min];
+    if (/[0-9&]/.test(p)) return p.toUpperCase();
+    if (i > 0 && CONECTOR.has(min)) return min;
+    if (mixto) return p[0].toUpperCase() + p.slice(1);   // ya escrito a mano: solo la inicial
+    if (p.replace(/[^\p{L}]/gu, '').length <= 3 && !NOMBRE_CORTO.has(min) && p === p.toUpperCase()) return p;   // sigla
+    return min.replace(/(^|[-'(])(\p{L})/gu, (_, a, b) => a + b.toUpperCase());
+  }).join(' ');
+}
