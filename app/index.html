@@ -7130,13 +7130,16 @@
   function rmDescM(x){ return rmMovSum(x,'des'); }   // descuentos del mes
   function rmTotal(x){ return (x.ext ? x.contable : x.contable+rmSueldoPropio(x)) + rmAg(x) - rmDescM(x); }
   function rmMovPayload(x){ return x.ext ? {empresa:'is', rut:x.t.rut, trabajador_id:null} : {empresa:'innova', trabajador_id:x.t.id}; }
-  function rmPagar(x){ return rmTotal(x)-rmAn(x); }
+  // Fijos de Innova: sus tratos (horas fuera de jornada, findes y feriados), vueltas, peajes y extras/descuentos semanales ya se pagan
+  // en el pago semanal. En el cierre mensual siguen en el total (costo), pero se restan de "A pagar". IS Performance cierra mensual: no aplica.
+  function rmSemanal(x){ return (!x.ext && !x.manual && rmEsFijo(x)) ? (x.contable||0) : 0; }
+  function rmPagar(x){ return rmTotal(x)-rmAn(x)-rmSemanal(x); }
   // Días para la liquidación (solo spot, solo informativo): total del mes (tratos + vueltas + peajes + extras − desc.) ÷ valor del día de trato (valor hora × 8).
   // Cuadra los días con el monto que se paga; NO cambia pagos, horas ni días con horas (notas de Enzo, NOTAS REMUNERACIONES).
   function rmDiasEq(x){ if(rmEsFijo(x)) return null; var vd=(x.ext?(+x.vhExt||0):(+x.vh||0))*8; if(!vd) return null; return Math.round(rmTotal(x)/vd*10)/10; }
   function rmDec(v){ return (v==null||v==='')?'':Number(v).toLocaleString('es-CL',{maximumFractionDigits:1}); }
   function rmSuma(L){ var s={n:L.length,dias:0,diasEq:0,min:0,sueldo:0,tratos:0,nvu:0,vueltas:0,peajes:0,bono:0,desc:0,ag:0,an:0,total:0,pagar:0};
-    L.forEach(function(x){ s.ag+=rmAg(x); s.an+=rmAn(x); s.pagar+=rmPagar(x); s.dias+=rmDias(x); s.diasEq+=(rmDiasEq(x)||0); s.nvu+=(x.ext?0:(x.vueltas||0)); s.sueldo+=rmSueldoPropio(x); s.min+=x.totMin; s.tratos+=x.baseCont; s.vueltas+=x.vueltasMonto; s.peajes+=x.peajes; s.bono+=x.bono; s.desc+=x.desc+rmDescM(x); s.total+=rmTotal(x); }); s.diasEq=Math.round(s.diasEq*10)/10; return s; }
+    L.forEach(function(x){ s.psem=(s.psem||0)+rmSemanal(x); s.ag+=rmAg(x); s.an+=rmAn(x); s.pagar+=rmPagar(x); s.dias+=rmDias(x); s.diasEq+=(rmDiasEq(x)||0); s.nvu+=(x.ext?0:(x.vueltas||0)); s.sueldo+=rmSueldoPropio(x); s.min+=x.totMin; s.tratos+=x.baseCont; s.vueltas+=x.vueltasMonto; s.peajes+=x.peajes; s.bono+=x.bono; s.desc+=x.desc+rmDescM(x); s.total+=rmTotal(x); }); s.diasEq=Math.round(s.diasEq*10)/10; return s; }
 
   // ---- IS Performance (importado desde su CSV de Remuneraciones) ----
   // Se guarda en config ('remu_ext_is_AAAA-MM') como JSON: compartido entre usuarios y sin tablas nuevas.
@@ -7247,10 +7250,10 @@
       '<div class="rm-kpi"><div class="l">Días trabajados</div><div class="v">'+T.dias+'</div><div class="s">'+hm(T.min)+' en total</div></div>'+
       (sinFicha?'<div class="rm-kpi warn"><div class="l">Sin ficha</div><div class="v">'+sinFicha+'</div><div class="s">nombres en horas que no están en Trabajadores</div></div>':'');
     if(!todas.length){ $('rm-list').innerHTML='<div class="empty">Sin horas ni pagos registrados en '+esc(D.lbl)+'.</div>'; return; }
-    var fechas=[], hoy=todayISO(), nCol=17;   // sin grilla de días: el día a día se ve al tocar el nombre
+    var fechas=[], hoy=todayISO(), nCol=18;   // sin grilla de días: el día a día se ve al tocar el nombre
     var head='<tr><th class="rm-n">N°</th><th class="rm-nm">Trabajador</th><th class="rm-tp">Tipo</th>'+
       fechas.map(function(f){ var dd=new Date(f+'T12:00:00'); return '<th class="rm-d'+(esTratoDia(f)?' we':'')+(f===hoy?' hoy':'')+'">'+DIA_INI[dd.getDay()]+'<small>'+dd.getDate()+'</small></th>'; }).join('')+
-      '<th>Días</th><th title="Solo spot: total del mes ÷ valor del día de trato. Días equivalentes para la liquidación; no cambia ningún pago.">Días liq.</th><th>Horas</th><th>Sueldo base</th><th>Tratos</th><th>Vueltas</th><th>Peajes</th><th title="Vehículos del mes para el bono por autos (IS Performance)">Vehículos</th><th>Extras</th><th>Desc.</th><th title="Bonos y aguinaldo del mes">Bonos / agui.</th><th>Total</th><th title="Anticipos, adelantos y quincenas ya pagados: se restan de A pagar">Anticipos</th><th>A pagar</th></tr>';
+      '<th>Días</th><th title="Solo spot: total del mes ÷ valor del día de trato. Días equivalentes para la liquidación; no cambia ningún pago.">Días liq.</th><th>Horas</th><th>Sueldo base</th><th>Tratos</th><th>Vueltas</th><th>Peajes</th><th title="Vehículos del mes para el bono por autos (IS Performance)">Vehículos</th><th>Extras</th><th>Desc.</th><th title="Bonos y aguinaldo del mes">Bonos / agui.</th><th>Total</th><th title="Anticipos, adelantos y quincenas ya pagados: se restan de A pagar">Anticipos</th><th title="Fijos de Innova: tratos, vueltas, peajes y extras ya pagados en los pagos semanales; se restan de A pagar">Pagado semanal</th><th>A pagar</th></tr>';
     var m=function(v,neg){ return v?((neg?'−':'')+fmtMoney(v)):'<span class="rt-z">—</span>'; };
     var idx=0;
     function extIdx(x){ return ext.indexOf(x); }
@@ -7278,9 +7281,9 @@
         '<td class="rm-tp"><span class="rm-chip '+(fj?'fj':'sp')+'">'+(fj?'Fijo':'Spot')+'</span></td>'+celdas+
         '<td><b>'+rmDias(x)+'</b>'+(soloVu?'<div class="rt-sub" style="color:#0e7490">+'+soloVu+' solo vueltas</div>':'')+'</td><td>'+(rmDiasEq(x)!=null?'<b style="color:var(--navy)">'+rmDec(rmDiasEq(x))+'</b>':'<span class="rt-z">—</span>')+'</td><td>'+hm(x.totMin)+'</td><td>'+(rmSueldoOtra(x)?'<span class="rt-z" style="color:var(--muted)">'+fmtMoney(rmSueldo(x))+'</span><div class="rt-sub">lo paga '+esc(rmSueldoOtra(x))+'</div>':(rmEsFijo(x)&&!x.ext&&!rmSueldo(x)?(rmSueldoAntes(x)&&+x.t.sueldo_base?'<span class="rt-z">—</span><div class="rt-sub">rige desde '+esc(fechaCorta(String(x.t.sueldo_desde).slice(0,10)).replace(/^\d+ /,''))+'</div>':'<span class="rt-z">sin sueldo</span>'):m(rmSueldo(x))))+'</td><td>'+m(x.baseCont)+(rmEsFijo(x)&&!x.ext&&x.baseMin?'<div class="rt-sub">'+hm(x.baseMin)+' extra</div>':'')+'</td><td>'+m(x.vueltasMonto)+(x.vueltas&&!x.ext?'<div class="rt-sub">'+x.vueltas+' vuelta'+(x.vueltas>1?'s':'')+'</div>':'')+'</td><td>'+m(x.peajes)+'</td>'+
         '<td>'+(rmVeh(x)!=null?('<b>'+rmVeh(x)+'</b>'+(x.sinBono?'<div class="rt-sub">sin bono</div>':'')):'<span class="rt-z">—</span>')+'</td>'+
-        extra+'<td class="rt-bad">'+m(x.desc+rmDescM(x),true)+'</td><td class="rt-ok">'+m(rmAg(x))+'</td><td class="rt-tot">'+fmtMoney(rmTotal(x))+'</td><td class="rt-bad">'+m(rmAn(x),true)+'</td><td class="rt-tot">'+fmtMoney(rmPagar(x))+'</td></tr>'; }
+        extra+'<td class="rt-bad">'+m(x.desc+rmDescM(x),true)+'</td><td class="rt-ok">'+m(rmAg(x))+'</td><td class="rt-tot">'+fmtMoney(rmTotal(x))+'</td><td class="rt-bad">'+m(rmAn(x),true)+'</td><td class="rt-bad">'+m(rmSemanal(x),true)+'</td><td class="rt-tot">'+fmtMoney(rmPagar(x))+'</td></tr>'; }
     function totFila(cls,lbl,s){ return '<tr class="'+cls+'"><td class="rm-n"></td><td class="rm-nm">'+lbl+'</td><td class="rm-tp"></td>'+
-      '<td>'+s.dias+'</td><td>'+(s.diasEq?rmDec(s.diasEq):'—')+'</td><td>'+hm(s.min)+'</td><td>'+fmtMoney(s.sueldo)+'</td><td>'+fmtMoney(s.tratos)+'</td><td>'+fmtMoney(s.vueltas)+'</td><td>'+fmtMoney(s.peajes)+'</td><td></td><td>'+fmtMoney(s.bono)+'</td><td>'+(s.desc?'−'+fmtMoney(s.desc):'$0')+'</td><td>'+fmtMoney(s.ag)+'</td><td>'+fmtMoney(s.total)+'</td><td>'+(s.an?'−'+fmtMoney(s.an):'$0')+'</td><td>'+fmtMoney(s.pagar)+'</td></tr>'; }
+      '<td>'+s.dias+'</td><td>'+(s.diasEq?rmDec(s.diasEq):'—')+'</td><td>'+hm(s.min)+'</td><td>'+fmtMoney(s.sueldo)+'</td><td>'+fmtMoney(s.tratos)+'</td><td>'+fmtMoney(s.vueltas)+'</td><td>'+fmtMoney(s.peajes)+'</td><td></td><td>'+fmtMoney(s.bono)+'</td><td>'+(s.desc?'−'+fmtMoney(s.desc):'$0')+'</td><td>'+fmtMoney(s.ag)+'</td><td>'+fmtMoney(s.total)+'</td><td>'+(s.an?'−'+fmtMoney(s.an):'$0')+'</td><td>'+(s.psem?'−'+fmtMoney(s.psem):'$0')+'</td><td>'+fmtMoney(s.pagar)+'</td></tr>'; }
     var G=rmGrupos(RM_FILT), body='', vis=[];
     G.forEach(function(g){ vis=vis.concat(g.L);
       body+='<tr class="rm-grp"><td colspan="'+nCol+'"><i class="rm-dot '+g.k+'"></i>'+esc(g.lbl)+'</td></tr>'+g.L.map(fila).join('')+totFila('rm-sub','Subtotal '+(g.k==='is'?'IS Performance':(g.k==='sp'?'Innova spot':'Innova fijos')),rmSuma(g.L)); });
@@ -7316,7 +7319,8 @@
     var esFijoInn=rmMovPuede(x) && !x.manual;
     rmFijoIts(x,'hab').concat(rmFijoIts(x,'des')).forEach(function(it){ var neg=MOV_TIPOS[it.clase].g==='des'; des+=lin(MOV_TIPOS[it.clase].l+(it.concepto?(' · '+esc(it.concepto)):''), (neg?'− ':'')+fmtMoney(+it.monto||0), neg?'#dc2626':'#0f6e56'); });
     des+='<div class="rd-lin rd-tot"><span>Total del mes</span><b style="color:var(--orange-2)">'+fmtMoney(rmTotal(x))+'</b></div>';
-    if(rmAn(x)){ rmFijoIts(x,'pag').forEach(function(it){ des+=lin(MOV_TIPOS[it.clase].l+' ya pagado'+(it.concepto?(' · '+esc(it.concepto)):''), '− '+fmtMoney(+it.monto||0), '#dc2626'); });
+    if(rmAn(x)||rmSemanal(x)){ rmFijoIts(x,'pag').forEach(function(it){ des+=lin(MOV_TIPOS[it.clase].l+' ya pagado'+(it.concepto?(' · '+esc(it.concepto)):''), '− '+fmtMoney(+it.monto||0), '#dc2626'); });
+      if(rmSemanal(x)) des+=lin('Ya pagado en los pagos semanales (tratos, vueltas, peajes y extras)', '− '+fmtMoney(rmSemanal(x)), '#dc2626');
       des+='<div class="rd-lin rd-tot"><span>Queda por pagar</span><b style="color:var(--orange-2)">'+fmtMoney(rmPagar(x))+'</b></div>'; }
     var agCard='';
     if(esFijoInn){ var its2=rmFijoIts(x);
@@ -7414,11 +7418,11 @@
   function rmCSV(){
     var D=RM_DATA, G=rmGrupos(RM_FILT), todas=[];
     var hs=function(min){ return (Math.round(min/6)/10).toString().replace('.',','); }, dc=function(v){ return v==null?'':String(v).replace('.',','); };
-    var rows=[['Asistencia mensual · '+D.lbl+(rmSegNom()?(' · '+rmSegNom()):'')],[],['N°','Empresa','Nombre','RUT','Cargo','Tipo contrato','Días trabajados','Días liq. (equiv.)','Horas','Sueldo base','Tratos','Vueltas','Peajes','Vehículos','Bono autos','Extras','Descuentos','Bonos / aguinaldo','Total','Anticipos / quincenas','A pagar']];
+    var rows=[['Asistencia mensual · '+D.lbl+(rmSegNom()?(' · '+rmSegNom()):'')],[],['N°','Empresa','Nombre','RUT','Cargo','Tipo contrato','Días trabajados','Días liq. (equiv.)','Horas','Sueldo base','Tratos','Vueltas','Peajes','Vehículos','Bono autos','Extras','Descuentos','Bonos / aguinaldo','Total','Anticipos / quincenas','Pagado semanal','A pagar']];
     var n=0;
     G.forEach(function(g){ g.L.forEach(function(x){ n++; todas.push(x); rows.push([n, g.emp, titleCase(x.t.nombre), x.t.rut||'', x.t.cargo||'', rmEsFijo(x)?'Mensual':'Spot',
-      rmDias(x), dc(rmDiasEq(x)), hs(x.totMin), rmSueldo(x), x.baseCont, x.vueltasMonto, x.peajes, rmVeh(x)==null?'':rmVeh(x), x.bonoAutos||0, x.ext?x.extras:x.bono, x.desc+rmDescM(x), rmAg(x), rmTotal(x), rmAn(x), rmPagar(x)]); }); });
-    var s=rmSuma(todas); rows.push(['','','TOTAL GENERAL','','','', s.dias, dc(s.diasEq), hs(s.min), s.sueldo, s.tratos, s.vueltas, s.peajes, '', '', '', s.desc, s.ag, s.total, s.an, s.pagar]);
+      rmDias(x), dc(rmDiasEq(x)), hs(x.totMin), rmSueldo(x), x.baseCont, x.vueltasMonto, x.peajes, rmVeh(x)==null?'':rmVeh(x), x.bonoAutos||0, x.ext?x.extras:x.bono, x.desc+rmDescM(x), rmAg(x), rmTotal(x), rmAn(x), rmSemanal(x), rmPagar(x)]); }); });
+    var s=rmSuma(todas); rows.push(['','','TOTAL GENERAL','','','', s.dias, dc(s.diasEq), hs(s.min), s.sueldo, s.tratos, s.vueltas, s.peajes, '', '', '', s.desc, s.ag, s.total, s.an, s.psem||0, s.pagar]);
     var csv='\ufeff'+rows.map(function(r){ return r.map(function(v){ v=String(v); return /[;"\n]/.test(v)?('"'+v.replace(/"/g,'""')+'"'):v; }).join(';'); }).join('\r\n');
     descargarBlob(new Blob([csv],{type:'text/csv;charset=utf-8'}), rmArchivo('csv')); }
   $('rm-xls').addEventListener('click',function(){
@@ -7432,8 +7436,8 @@
     var ws=wb.addWorksheet('Asistencia '+D.mes, {views:[{state:'frozen', xSplit:2, ySplit:4, showGridLines:false}],
       pageSetup:{orientation:'landscape', paperSize:9, fitToPage:true, fitToWidth:1, fitToHeight:0, margins:{left:.3,right:.3,top:.4,bottom:.4,header:.2,footer:.2}}});
     var FIJAS=['N°','NOMBRES','RUT','DV','CARGO','TIPO CONTRATO','EMPRESA'];
-    var RES=['N° DÍAS ASISTIDOS','DÍAS LIQ. (EQUIV.)','HORAS','SUELDO BASE','TRATOS','N° VUELTAS','$ VUELTAS','PEAJES','N° VEHÍCULOS','BONO AUTOS','EXTRAS','DESCUENTOS','BONOS / AGUINALDO','TOTAL','ANTICIPOS / QUINCENAS','A PAGAR'];
-    var iAg=12, iTot=13, iAn=14, iPag=15;
+    var RES=['N° DÍAS ASISTIDOS','DÍAS LIQ. (EQUIV.)','HORAS','SUELDO BASE','TRATOS','N° VUELTAS','$ VUELTAS','PEAJES','N° VEHÍCULOS','BONO AUTOS','EXTRAS','DESCUENTOS','BONOS / AGUINALDO','TOTAL','ANTICIPOS / QUINCENAS','PAGADO SEMANAL','A PAGAR'];
+    var iAg=12, iTot=13, iAn=14, iPS=15, iPag=16;
     var fmtRes=function(i){ return (i===0||i===5||i===8)?'0':((i===1||i===2)?'0.0':MONEDA); }, centro=function(i){ return i<3||i===5||i===8; };
     var cR=FIJAS.length+1, cMax=cR+RES.length-1;
     var NAVY='FF1A1F6E', BORDE={style:'thin',color:{argb:'FFBFC5D6'}};
@@ -7441,7 +7445,7 @@
     var fill=function(c){ return {type:'pattern',pattern:'solid',fgColor:{argb:c}}; };
     var caja=function(cell){ cell.border={top:BORDE,left:BORDE,bottom:BORDE,right:BORDE}; };
     [5,34,11,4,30,14,15].forEach(function(w,i){ ws.getColumn(i+1).width=w; });
-    [10,10,8,13,13,8,11,10,10,11,11,12,12,14,12,14].forEach(function(w,i){ ws.getColumn(cR+i).width=w; });
+    [10,10,8,13,13,8,11,10,10,11,11,12,12,14,12,13,14].forEach(function(w,i){ ws.getColumn(cR+i).width=w; });
     ws.mergeCells(1,1,1,cMax); var t1=ws.getCell(1,1); t1.value='ASISTENCIA MENSUAL · '+D.lbl.toUpperCase()+(rmSegNom()?(' · '+rmSegNom().toUpperCase()):''); t1.font={bold:true,size:14,color:{argb:NAVY}};
     ws.mergeCells(2,1,2,cMax); var t2=ws.getCell(2,1);
     t2.value='Innova Servi'+(D.ext?' + IS Performance (importado de '+(D.ext.archivo||'CSV')+')':'')+' · generado el '+fechaCorta(todayISO())+' · Días liq. (spot) = total ÷ valor del día de trato · Aguinaldo y anticipo solo para fijos (el anticipo ya se pagó: se resta de "A pagar")';
@@ -7452,6 +7456,7 @@
     FIJAS.forEach(function(h,i){ hcell(i+1,h,NAVY); });
     RES.forEach(function(h,i){ hcell(cR+i,h,(i===iTot||i===iPag)?'FFC2410C':NAVY); });
     ws.getCell(4,cR+1).note='Solo spot: total del mes ÷ valor del día de trato (valor hora × 8). Días equivalentes para la liquidación; no cambia ningún pago.';
+    ws.getCell(4,cR+iPS).note='Fijos de Innova: tratos, vueltas, peajes y extras ya pagados en los pagos semanales. Se restan de "A pagar", no del total del mes.';
     ws.getCell(4,cR+iAn).note='Anticipos, adelantos y quincenas ya pagados: se restan de "A pagar", no del total del mes.';
     var r=5, n=0, todas=[];
     G.forEach(function(g){
@@ -7460,7 +7465,7 @@
         vals.forEach(function(v,i){ var cell=row.getCell(i+1); cell.value=v; cell.font={size:10}; cell.alignment={vertical:'middle',horizontal:(i===1||i===4)?'left':'center'}; });
         if(rmEsFijo(x)&&!x.ext) row.getCell(6).note=rmJornadaTxt(x)||'Sin jornada configurada: todas sus horas cuentan como trato';
         var fjI=rmEsFijo(x)&&!x.ext;
-        var res=[rmDias(x), rmDiasEq(x)==null?null:rmDiasEq(x), Math.round(x.totMin/6)/10, rmSueldo(x), x.baseCont, x.ext?0:(x.vueltas||0), x.vueltasMonto, x.peajes, rmVeh(x), x.bonoAutos||0, x.ext?x.extras:x.bono, x.desc+rmDescM(x), rmAg(x), rmTotal(x), rmAn(x), rmPagar(x)];
+        var res=[rmDias(x), rmDiasEq(x)==null?null:rmDiasEq(x), Math.round(x.totMin/6)/10, rmSueldo(x), x.baseCont, x.ext?0:(x.vueltas||0), x.vueltasMonto, x.peajes, rmVeh(x), x.bonoAutos||0, x.ext?x.extras:x.bono, x.desc+rmDescM(x), rmAg(x), rmTotal(x), rmAn(x), rmSemanal(x), rmPagar(x)];
         res.forEach(function(v,i){ var cell=row.getCell(cR+i); cell.value=v; cell.alignment={vertical:'middle',horizontal:centro(i)?'center':'right'};
           cell.numFmt=fmtRes(i); cell.font={size:10,bold:(i===0||i===iTot||i===iPag)}; });
         row.getCell(cR).fill=fill('FFE2EFDA'); row.getCell(cR+iTot).fill=fill('FFFFF1E6'); row.getCell(cR+iPag).fill=fill('FFFFF1E6');
@@ -7476,7 +7481,7 @@
     r++;
     function filaTot(lbl, L, fuerte){ var s=rmSuma(L), ba=L.reduce(function(a,x){ return a+(x.bonoAutos||0); },0), row=ws.getRow(r);
       ws.mergeCells(r,1,r,7); var lc=row.getCell(1); lc.value=lbl; lc.alignment={horizontal:'right',vertical:'middle'};
-      [s.dias, s.diasEq||null, Math.round(s.min/6)/10, s.sueldo, s.tratos, s.nvu, s.vueltas, s.peajes, null, ba, s.bono-ba, s.desc, s.ag, s.total, s.an, s.pagar].forEach(function(v,i){ var cell=row.getCell(cR+i); cell.value=v; cell.numFmt=fmtRes(i); cell.alignment={horizontal:centro(i)?'center':'right',vertical:'middle'}; });
+      [s.dias, s.diasEq||null, Math.round(s.min/6)/10, s.sueldo, s.tratos, s.nvu, s.vueltas, s.peajes, null, ba, s.bono-ba, s.desc, s.ag, s.total, s.an, s.psem||0, s.pagar].forEach(function(v,i){ var cell=row.getCell(cR+i); cell.value=v; cell.numFmt=fmtRes(i); cell.alignment={horizontal:centro(i)?'center':'right',vertical:'middle'}; });
       for(var c=1;c<=cMax;c++){ var cell=row.getCell(c); cell.font={bold:true,size:fuerte?11:10,color:{argb:fuerte?'FFC2410C':NAVY}}; cell.fill=fill(fuerte?'FFFFE4D1':'FFEEF0F7'); caja(cell); }
       row.height=fuerte?20:17; r++; }
     G.forEach(function(g){ filaTot('Subtotal '+(g.k==='is'?'IS Performance':(g.k==='sp'?'Innova Servi · Spot':'Innova Servi · Mensual')), g.L, false); });
@@ -7512,6 +7517,7 @@
     {k:'ag', t:'Bonos/agui.', w:17, d:1},
     {k:'tot', t:'Total', w:19, b:1, d:1},
     {k:'an', t:'Anticipos', w:16, d:1, nota:'Anticipos = anticipos, adelantos y quincenas ya pagados: se restan de "A pagar".'},
+    {k:'ps', t:'Pagado sem.', w:17, d:1, nota:'Pagado sem. = tratos, vueltas, peajes y extras de los fijos de Innova ya pagados en los pagos semanales: se restan de "A pagar".'},
     {k:'pag', t:'A pagar', w:20, b:1, d:1}
   ];
   var RMP_SEC=[['sp','Innova Servi · Spot','inn','sp'],['fj','Innova Servi · Fijos','inn','fj'],['isp','IS Performance · Spot','is','sp'],['isf','IS Performance · Fijos','is','fj']];
@@ -7550,7 +7556,7 @@
       case 'vu': return rmpMny(x.vueltasMonto); case 'pe': return rmpMny(x.peajes); case 'veh': return rmVeh(x)!=null?(rmVeh(x)+(x.sinBono?'*':'')):'';
       case 'ba': return rmpMny(x.bonoAutos||0); case 'ex': return rmpMny(x.ext?x.extras:x.bono); case 'de': return rmpNeg(x.desc+rmDescM(x));
       case 'ot': var ot=rmOtros(x); return ot?((ot<0?'-':'')+fmtMoney(Math.abs(ot))):'—';
-      case 'ag': return rmpMny(rmAg(x)); case 'tot': return fmtMoney(rmTotal(x)); case 'an': return rmpNeg(rmAn(x)); case 'pag': return fmtMoney(rmPagar(x)); }
+      case 'ag': return rmpMny(rmAg(x)); case 'tot': return fmtMoney(rmTotal(x)); case 'an': return rmpNeg(rmAn(x)); case 'ps': return rmpNeg(rmSemanal(x)); case 'pag': return fmtMoney(rmPagar(x)); }
     return ''; }
   function rmpValS(c,L){ var s=rmSuma(L), ba=L.reduce(function(a,x){ return a+(x.bonoAutos||0); },0);
     switch(c.k){
@@ -7558,7 +7564,7 @@
       case 'su': return rmpMny(s.sueldo); case 'tr': return rmpMny(s.tratos); case 'vu': return rmpMny(s.vueltas); case 'pe': return rmpMny(s.peajes);
       case 'ba': return rmpMny(ba); case 'ex': return rmpMny(s.bono-ba); case 'de': return rmpNeg(s.desc);
       case 'ot': var ot=s.vueltas+s.peajes+s.bono-s.desc; return ot?((ot<0?'-':'')+fmtMoney(Math.abs(ot))):'—';
-      case 'ag': return rmpMny(s.ag); case 'tot': return fmtMoney(s.total); case 'an': return rmpNeg(s.an); case 'pag': return fmtMoney(s.pagar); }
+      case 'ag': return rmpMny(s.ag); case 'tot': return fmtMoney(s.total); case 'an': return rmpNeg(s.an); case 'ps': return rmpNeg(s.psem||0); case 'pag': return fmtMoney(s.pagar); }
     return ''; }
   // Grupos que van al PDF según la vista (empresas/tipos visibles y filas no ocultas).
   function rmpGruposVisibles(o,aj){ return rmpGrupos(aj).filter(function(g){ return rmpSecVisible(o,g.k); })
@@ -7592,7 +7598,7 @@
               '<button type="button" class="rme-mvadd" data-k="'+esc(k)+'">+ Movimiento</button></div>'+
               (abiertoMov===k?'<div class="rme-mvform"><select data-mf="tipo">'+rmMovOpciones()+'</select><input data-mf="monto" type="number" min="0" placeholder="Monto $"><input data-mf="conc" placeholder="Detalle (opcional)"><button type="button" class="btn small" data-mfok="'+esc(k)+'" style="width:auto">Agregar</button></div>':''); }
           if(x.manual){ var m=aj.manual.filter(function(z){ return z.id===x.mid; })[0]||{};
-            nm+='<div class="rme-man"><label>Días <input type="number" min="0" data-m="'+esc(x.mid)+'" data-f="dias" value="'+(m.dias||'')+'"></label><label>Horas <input type="number" min="0" step="0.5" data-m="'+esc(x.mid)+'" data-f="horas" value="'+(m.horas||'')+'"></label><label>Monto $ <input type="number" min="0" data-m="'+esc(x.mid)+'" data-f="monto" value="'+(m.monto||'')+'"></label><button type="button" class="rme-del" data-m="'+esc(x.mid)+'" title="Quitar del cierre">Quitar</button></div>'; }
+            nm+='<div class="rme-man"><label>Días <input type="number" min="0" data-m="'+esc(x.mid)+'" data-f="dias" value="'+(m.dias||'')+'"></label><label>Horas <input type="number" min="0" step="0.5" data-m="'+esc(x.mid)+'" data-f="horas" value="'+(m.horas||'')+'"></label><label>Monto $ <input type="number" min="0" data-m="'+esc(x.mid)+'" data-f="monto" value="'+(m.monto||'')+'"></label><label>Sección <select data-m="'+esc(x.mid)+'" data-f="sec">'+RMP_SEC.map(function(z){ return '<option value="'+z[0]+'"'+(m.sec===z[0]?' selected':'')+'>'+z[1]+'</option>'; }).join('')+'</select></label><button type="button" class="rme-del" data-m="'+esc(x.mid)+'" title="Quitar del cierre">Quitar</button></div>'; }
           return '<tr class="'+(off?'off':'')+'"><td class="rme-eye"><button type="button" class="rme-ojo" data-k="'+esc(k)+'" title="'+(off?'Mostrar en el PDF':'Ocultar del PDF')+'">'+(off?ojoNo:ojo)+'</button></td><td class="rme-n">'+(off?'':n)+'</td><td class="rme-nm">'+nm+'</td>'+
             cols.map(function(c){ return '<td class="'+(c.a==='l'?'l':'')+(c.b?' b':'')+'">'+esc(rmpVal(c,x))+'</td>'; }).join('')+'</tr>'; }).join('');
         return '<tr class="rme-grp"><td colspan="'+nCol+'"><i style="background:rgb('+RMP_COLOR[g.k].join(',')+')"></i>'+esc(g.lbl)+' <span>'+vivos.length+' de '+g.L.length+'</span></td></tr>'+filas+
@@ -7616,7 +7622,8 @@
           ' <button type="button" class="rme-lnk" id="rme-def">columnas por defecto</button>'+
         '</div>'+
         '<div class="rme-bar rme-busca"><span class="rme-lbl">Agregar trabajador</span><div class="rme-bw"><input id="rme-q" type="search" autocomplete="off" placeholder="Buscar en Trabajadores por nombre o RUT…"><div id="rme-res" class="rme-res hide"></div></div>'+
-          '<select id="rme-emp" title="A qué empresa va en el cierre"><option value="inn">a Innova Servi</option><option value="is">a IS Performance</option></select></div>'+
+          '<select id="rme-emp" title="A qué empresa va en el cierre"><option value="inn">a Innova Servi</option><option value="is">a IS Performance</option></select>'+
+          '<select id="rme-tipo" title="Como qué va en el cierre"><option value="auto">tipo según su ficha</option><option value="fj">como Fijo</option><option value="sp">como Spot</option></select></div>'+
         '<div class="rme-wrap"><table class="rme-tbl"><thead>'+head+'</thead><tbody>'+body+'</tbody></table></div>'+
         '<div class="rme-pie">'+vis.length+' trabajadores en el PDF · las filas ocultas ('+(aj.excl||[]).length+') no se borran ni cambian pagos · lo agregado queda en el cierre del mes</div>'+
       '</div>';
@@ -7638,8 +7645,8 @@
       q('#rme-def').onclick=function(){ o.cols=RMP_COLS.filter(function(c){ return c.d; }).map(function(c){ return c.k; }); rmpGuardarVista(o); render(); };
       ov.querySelectorAll('.rme-ojo').forEach(function(b){ b.onclick=function(){ var k=b.dataset.k, ix=(aj.excl||[]).indexOf(k); aj.excl=aj.excl||[];
         if(ix>=0) aj.excl.splice(ix,1); else aj.excl.push(k); guardarAj(); render(); }; });
-      ov.querySelectorAll('.rme-man input').forEach(function(inp){ inp.onchange=function(){ var m=aj.manual.filter(function(z){ return z.id===inp.dataset.m; })[0]; if(!m) return;
-        m[inp.dataset.f]=Math.max(0,+inp.value||0); guardarAj(); render(); }; });
+      ov.querySelectorAll('.rme-man input, .rme-man select').forEach(function(inp){ inp.onchange=function(){ var m=aj.manual.filter(function(z){ return z.id===inp.dataset.m; })[0]; if(!m) return;
+        if(inp.dataset.f==='sec'){ m.sec=inp.value; if(!o.sec[m.sec]){ o.sec[m.sec]=true; rmpGuardarVista(o); } } else m[inp.dataset.f]=Math.max(0,+inp.value||0); guardarAj(); render(); }; });
       ov.querySelectorAll('.rme-mvadd').forEach(function(b){ b.onclick=function(){ abiertoMov=(abiertoMov===b.dataset.k)?null:b.dataset.k; render(); var f=ov.querySelector('[data-mf="monto"]'); if(f) f.focus(); }; });
       ov.querySelectorAll('[data-mfok]').forEach(function(b){ b.onclick=function(){ var x=filaPorKey[b.dataset.mfok], f=b.parentNode;
         rmMovAgregar(x, f.querySelector('[data-mf="tipo"]').value, f.querySelector('[data-mf="monto"]').value, (f.querySelector('[data-mf="conc"]').value||'').trim(), function(){ abiertoMov=null; render(); }); }; });
@@ -7660,7 +7667,7 @@
           :((RM_DATA.trab||[]).some(function(t){ var nm=norm(t.nombre).normalize('NFD').replace(/[̀-ͯ]/g,''); return t.socio && nm.indexOf(v)>=0; })?'<div class="rme-op none">Es socio de la empresa: no va en Remuneraciones.</div>':'<div class="rme-op none">No está en Trabajadores (o está inactivo). Créalo o actívalo en RRHH → Trabajadores.</div>');
         res.classList.remove('hide');
         res.querySelectorAll('.rme-op[data-id]').forEach(function(b){ b.onclick=function(){ var t=(RM_DATA.trab||[]).filter(function(z){ return String(z.id)===b.dataset.id; })[0]; if(!t) return;
-          var emp=q('#rme-emp').value, fj=t.tipo_pago==='contrato', sec=emp==='is'?(fj?'isf':'isp'):(fj?'fj':'sp');
+          var emp=q('#rme-emp').value, tsel=q('#rme-tipo').value, fj=tsel==='auto'?(t.tipo_pago==='contrato'):(tsel==='fj'), sec=emp==='is'?(fj?'isf':'isp'):(fj?'fj':'sp');
           aj.manual=aj.manual||[]; aj.manual.push({ id:'m'+Date.now().toString(36), trabajador_id:t.id, nombre:titleCase(t.nombre), rut:t.rut||'', cargo:t.cargo||'', sec:sec, dias:0, horas:0, monto:0, autor:userEmail||'' });
           if(!o.sec[sec]) o.sec[sec]=true; rmpGuardarVista(o);
           guardarAj(); render(); toast('Agregado: '+titleCase(t.nombre)+'. Completa días, horas y monto.');
