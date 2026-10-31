@@ -10,12 +10,12 @@ export default {
   rubros: ['todos'],
   acciones: ['ver', 'crear', 'editar', 'exportar'],
   menu: [
-    { id: 'cierres.mensuales', label: 'Cierres mensuales', vista: () => import('./vistas/mensuales.js?v=fb81a8b') },
-    { id: 'cierres.cierre', label: 'Cierre', oculto: true, padre: 'cierres.mensuales', vista: () => import('./vistas/cierre.js?v=fb81a8b') },
-    { id: 'cierres.clientes', label: 'Clientes con cierre', oculto: true, padre: 'cierres.mensuales', vista: () => import('./vistas/clientes.js?v=fb81a8b') },
-    { id: 'cierres.cuentas', label: 'Cuentas corrientes', vista: () => import('./vistas/cuentas.js?v=fb81a8b') },
-    { id: 'cierres.cuenta', label: 'Cuenta corriente', oculto: true, padre: 'cierres.cuentas', vista: () => import('./vistas/cuenta.js?v=fb81a8b') },
+    { id: 'cierres.mensuales', label: 'Cierres mensuales', vista: () => import('./vistas/mensuales.js?v=64a4e9f') },
+    { id: 'cierres.cierre', label: 'Cierre', oculto: true, padre: 'cierres.mensuales', vista: () => import('./vistas/cierre.js?v=64a4e9f') },
+    { id: 'cierres.clientes', label: 'Clientes con cierre', oculto: true, padre: 'cierres.mensuales', vista: () => import('./vistas/clientes.js?v=64a4e9f') },
+    { id: 'cierres.cuentas', label: 'Cuentas corrientes', vista: () => import('./vistas/cuentas.js?v=64a4e9f') },
+    { id: 'cierres.cuenta', label: 'Cuenta corriente', oculto: true, padre: 'cierres.cuentas', vista: () => import('./vistas/cuenta.js?v=64a4e9f') },
   ],
   config: {},
-  migraciones: ['db/001_cierres.sql', 'db/002_faenas.sql', 'db/003_montos_miembro.sql'],
+  migraciones: ['db/001_cierres.sql', 'db/002_faenas.sql', 'db/003_montos_miembro.sql', 'db/004_arrastre.sql'],
 };

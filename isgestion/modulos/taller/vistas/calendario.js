@@ -2,15 +2,15 @@
 // (cita, o ingreso si no tiene cita), color según el estado, marca + modelo + patente y servicios, y el flujo de los
 // "por cotizar": P.C (servicio a convenir) → COTIZADO (tiene cotización) → PAGADO (cobrado). También las tareas del
 // equipo con fecha. Hasta 4 por día ("+N más" abre el día); tocar uno abre su detalle. Clic en un día vacío: agendar.
-import { el } from '../../../core/ui/dom.js?v=fb81a8b';
-import { icono } from '../../../core/ui/iconos.js?v=fb81a8b';
-import { boton } from '../../../core/ui/tabla.js?v=fb81a8b';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=fb81a8b';
-import { dinero, hoyISO, rangoMes, moverMes, nombreMes, sumarDias, lunesDe, diaLocal, hhmm, fechaLarga } from '../../../core/ui/formato.js?v=fb81a8b';
-import { nombreEstado, verPatente, nombreVehiculo, nombreTercero, totales } from '../datos.js?v=fb81a8b';
-import { recepcion } from '../recepcion.js?v=fb81a8b';
+import { el } from '../../../core/ui/dom.js?v=64a4e9f';
+import { icono } from '../../../core/ui/iconos.js?v=64a4e9f';
+import { boton } from '../../../core/ui/tabla.js?v=64a4e9f';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=64a4e9f';
+import { dinero, hoyISO, rangoMes, moverMes, nombreMes, sumarDias, lunesDe, diaLocal, hhmm, fechaLarga } from '../../../core/ui/formato.js?v=64a4e9f';
+import { nombreEstado, verPatente, nombreVehiculo, nombreTercero, totales } from '../datos.js?v=64a4e9f';
+import { recepcion } from '../recepcion.js?v=64a4e9f';
 
-const estado = { mes: hoyISO().slice(0, 7) };
+const estado = { mes: hoyISO().slice(0, 7), ver: 'detalle' };   // ver: detalle (cada vehículo) o resumen (por cliente)
 const CLASE = { agendado: 'agendado', espera: 'espera', proceso: 'proc', terminado: 'term', entregado: 'entreg' };
 const servicioCorto = (n) => { const i = String(n ?? '').indexOf('—'); return (i > 0 ? n.slice(0, i) : n ?? '').trim(); };
 
@@ -18,7 +18,7 @@ export default async function vista(ctx) {
   const { desde, hasta } = rangoMes(estado.mes);
   const ini = lunesDe(desde); const fin = sumarDias(lunesDe(hasta), 6);
   const [ord, cot, tar] = await Promise.all([
-    ctx.api.from('tal_ordenes').select('id, numero, estado, cobrado, fecha_cita, hora_cita, ingreso_at, created_at, descuento, doc_tipo, tipo_venta, abono, contacto, tal_vehiculos(marca, modelo, patente, talla), terceros(razon_social, nombre_fantasia, telefono), tal_orden_servicios(nombre, precio, tal_servicios(variable))')
+    ctx.api.from('tal_ordenes').select('id, numero, estado, cobrado, fecha_cita, hora_cita, ingreso_at, created_at, descuento, doc_tipo, tipo_venta, abono, contacto, tal_vehiculos(marca, modelo, patente, talla), terceros(id, razon_social, nombre_fantasia, telefono, clase), tal_orden_servicios(nombre, precio, tal_servicios(variable))')
       .eq('empresa_id', ctx.empresa.id).neq('estado', 'anulada'),
     ctx.puede('cotizaciones', 'ver') ? ctx.api.from('cot_grupos').select('orden_id').eq('empresa_id', ctx.empresa.id).not('orden_id', 'is', null) : Promise.resolve({ data: [] }),
     ctx.puede('tareas', 'ver') ? ctx.api.from('tar_tareas').select('id, titulo, detalle, fecha, hora, prioridad, estado').eq('empresa_id', ctx.empresa.id).is('deleted_at', null).gte('fecha', ini).lte('fecha', fin) : Promise.resolve({ data: [] }),
@@ -77,18 +77,45 @@ export default async function vista(ctx) {
 
   const hoy = hoyISO();
   const dias = []; for (let f = ini; f <= fin; f = sumarDias(f, 1)) dias.push(f);
+  // Resumen (como el calendario de InnovaGestión): empresas una por una con su número de autos; los clientes
+  // naturales (y sin cliente) juntos en una sola categoría
+  const NATURALES = 'Naturales';
+  const grupo = (o) => (o.terceros && o.terceros.clase === 'empresa' ? nombreTercero(o.terceros) : NATURALES);
+  const contar = (l) => {
+    const m = new Map();
+    for (const x of l) if (x.o) m.set(grupo(x.o), (m.get(grupo(x.o)) ?? 0) + 1);
+    return [...m].sort((a, b) => (a[0] === NATURALES) - (b[0] === NATURALES) || b[1] - a[1] || a[0].localeCompare(b[0]));
+  };
+  const chipResumen = ([n, k]) => el('span', { class: `tcal-res${n === NATURALES ? ' nat' : ''}`, title: `${n}: ${k} auto${k === 1 ? '' : 's'}` }, el('strong', {}, String(k)), ' ', n);
+  const resumen = estado.ver === 'resumen';
+
   const celdas = dias.map((f) => {
     const l = (porDia.get(f) ?? []).sort((a, b) => (a.hora || '99').localeCompare(b.hora || '99'));
+    if (resumen) {
+      const tareas = l.filter((x) => x.t).length;
+      return el('div', { class: `tcal-cel${f.slice(0, 7) !== estado.mes ? ' out' : ''}${f === hoy ? ' today' : ''}`, onclick: () => (l.length ? verDia(f) : ctx.puede('taller', 'crear') ? recepcion(ctx, { fecha: f }) : null) },
+        el('span', { class: 'tcal-dn' }, String(Number(f.slice(8)))),
+        contar(l).map(chipResumen),
+        tareas ? el('span', { class: 'texto-suave texto-chico' }, `${tareas} tarea${tareas === 1 ? '' : 's'}`) : null);
+    }
     return el('div', { class: `tcal-cel${f.slice(0, 7) !== estado.mes ? ' out' : ''}${f === hoy ? ' today' : ''}`, onclick: () => (l.length ? verDia(f) : ctx.puede('taller', 'crear') ? recepcion(ctx, { fecha: f }) : null) },
       el('span', { class: 'tcal-dn' }, String(Number(f.slice(8)))),
       l.slice(0, 4).map(evento),
       l.length > 4 ? el('button', { type: 'button', class: 'tcal-mas', onclick: (ev) => { ev.stopPropagation(); verDia(f); } }, `+${l.length - 4} más`) : null);
   });
   const mover = (n) => { estado.mes = moverMes(estado.mes, n); ctx.refrescar(); };
+  const segmento = el('div', { class: 'segmento', role: 'group', 'aria-label': 'Vista' },
+    [['detalle', 'Detalle'], ['resumen', 'Resumen por cliente']].map(([k, n]) => el('button', { type: 'button', 'aria-pressed': String(estado.ver === k), onclick: () => { estado.ver = k; ctx.refrescar(); } }, n)));
+  // Total del mes por cliente (solo días del mes)
+  const delMes = [...porDia].filter(([f]) => f.slice(0, 7) === estado.mes).flatMap(([, l]) => l);
+  const totalMes = contar(delMes); const autosMes = totalMes.reduce((s2, x) => s2 + x[1], 0);
+  const panelMes = autosMes ? el('div', { class: 'ficha doc-grupo' },
+    el('h2', {}, `Autos de ${nombreMes(estado.mes)} por cliente · ${autosMes}`),
+    el('div', { class: 'tcal-res-mes' }, totalMes.map(chipResumen))) : null;
   return el('section', { class: 'listado' },
     el('header', { class: 'listado-cabecera' },
       el('h1', {}, 'Calendario'),
-      el('div', { class: 'listado-acciones' }, ctx.puede('taller', 'crear') ? boton('Agendar vehículo', { icono: 'mas', tipo: 'primario', onclick: () => recepcion(ctx) }) : null)),
+      el('div', { class: 'listado-acciones' }, segmento, ctx.puede('taller', 'crear') ? boton('Agendar vehículo', { icono: 'mas', tipo: 'primario', onclick: () => recepcion(ctx) }) : null)),
     el('div', { class: 'nav-periodo' },
       el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Mes anterior', onclick: () => mover(-1) }, icono('volver')),
       el('strong', {}, nombreMes(estado.mes)),
@@ -96,7 +123,8 @@ export default async function vista(ctx) {
       boton('Este mes', { onclick: () => { estado.mes = hoyISO().slice(0, 7); ctx.refrescar(); } })),
     el('div', { class: 'tcal' },
       ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map((d) => el('div', { class: 'tcal-cab' }, d)), celdas),
-    el('div', { class: 'tcal-leyenda texto-chico' },
+    panelMes,
+    resumen ? null : el('div', { class: 'tcal-leyenda texto-chico' },
       ['agendado', 'espera', 'proc', 'term', 'entreg'].map((k, i) => el('span', { class: `tcal-ev ${k}` }, ['Agendado', 'En espera', 'En proceso', 'Terminado', 'Entregado'][i])),
       el('span', {}, el('span', { class: 'tcal-pc ec-pc' }, 'P.C'), ' por cotizar'), el('span', {}, el('span', { class: 'tcal-pc ec-cot' }, 'COTIZADO')), el('span', {}, el('span', { class: 'tcal-pc ec-pago' }, 'PAGADO'))));
 }

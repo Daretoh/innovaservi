@@ -1,13 +1,13 @@
 // Documentos preventivos con control de versiones: lista por tipo con la versión vigente y la próxima
 // revisión; detalle con el historial de versiones, subir nueva versión y ver cualquiera.
 // Rutas: #/sst.documentos · #/sst.documentos?id=<documento>
-import { el } from '../../../core/ui/dom.js?v=fb81a8b';
-import { icono } from '../../../core/ui/iconos.js?v=fb81a8b';
-import { boton } from '../../../core/ui/tabla.js?v=fb81a8b';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=fb81a8b';
-import { avisar } from '../../../core/ui/aviso.js?v=fb81a8b';
-import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=fb81a8b';
-import { fechaLarga, hoyISO } from '../../../core/ui/formato.js?v=fb81a8b';
+import { el } from '../../../core/ui/dom.js?v=64a4e9f';
+import { icono } from '../../../core/ui/iconos.js?v=64a4e9f';
+import { boton } from '../../../core/ui/tabla.js?v=64a4e9f';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=64a4e9f';
+import { avisar } from '../../../core/ui/aviso.js?v=64a4e9f';
+import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=64a4e9f';
+import { fechaLarga, hoyISO } from '../../../core/ui/formato.js?v=64a4e9f';
 
 export const TIPOS_DOC = [['pts', 'Procedimiento de trabajo seguro (PTS)'], ['iper', 'Matriz IPER y procedimiento'], ['programa', 'Programa preventivo'],
   ['ley_karin', 'Protocolo Ley Karin'], ['matriz_epp', 'Matriz de EPP'], ['capacitacion', 'Material de capacitación'], ['evaluacion', 'Evaluación de aprendizaje'],

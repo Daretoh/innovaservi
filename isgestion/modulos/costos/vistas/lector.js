@@ -7,16 +7,16 @@
 // trabajador": además del gasto queda un descuento en Remuneraciones (semana o mes según la empresa), ligado al
 // documento (remu_items.origen_id). Requiere poder crear en Remuneraciones.
 // Ruta: #/costos.lector
-import { el } from '../../../core/ui/dom.js?v=fb81a8b';
-import { icono } from '../../../core/ui/iconos.js?v=fb81a8b';
-import { boton } from '../../../core/ui/tabla.js?v=fb81a8b';
-import { avisar } from '../../../core/ui/aviso.js?v=fb81a8b';
-import { subirArchivo, almacen } from '../../../core/adjuntos.js?v=fb81a8b';
-import { dinero, hoyISO, sumarDias, fechaLarga, lunesDe } from '../../../core/ui/formato.js?v=fb81a8b';
-import { TIPOS_DTE, docTipoDe, CAMPOS_DTE, leerParte, combinar, validar, escanearCamara, aJPEG, fmtRut, limpioRut, rutValido, num } from '../../../core/lector-dte.js?v=fb81a8b';
-import { cargarBase, nombreTercero, opcionesACuenta } from '../datos.js?v=fb81a8b';
-import { leerConIA, iaDisponible, numIA, fechaIA, pagadoAlComprar, textoModelo } from '../../../core/lector-ia.js?v=fb81a8b';
-import { esImagen } from '../../../core/imagenes.js?v=fb81a8b';
+import { el } from '../../../core/ui/dom.js?v=64a4e9f';
+import { icono } from '../../../core/ui/iconos.js?v=64a4e9f';
+import { boton } from '../../../core/ui/tabla.js?v=64a4e9f';
+import { avisar } from '../../../core/ui/aviso.js?v=64a4e9f';
+import { subirArchivo, almacen } from '../../../core/adjuntos.js?v=64a4e9f';
+import { dinero, hoyISO, sumarDias, fechaLarga, lunesDe } from '../../../core/ui/formato.js?v=64a4e9f';
+import { TIPOS_DTE, docTipoDe, CAMPOS_DTE, leerParte, combinar, validar, escanearCamara, aJPEG, fmtRut, limpioRut, rutValido, num } from '../../../core/lector-dte.js?v=64a4e9f';
+import { cargarBase, nombreTercero, opcionesACuenta } from '../datos.js?v=64a4e9f';
+import { leerConIA, iaDisponible, numIA, fechaIA, pagadoAlComprar, textoModelo } from '../../../core/lector-ia.js?v=64a4e9f';
+import { esImagen } from '../../../core/imagenes.js?v=64a4e9f';
 
 const ETIQUETA = { timbre: ['Timbre SII', 'chip-ok'], xml: ['XML', 'chip-ok'], ia: ['IA', 'chip-ok'], ocr: ['Revisar', 'chip-prox'], calc: ['Calculado', 'chip-pend'] };
 

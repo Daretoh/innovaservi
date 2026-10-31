@@ -10,11 +10,11 @@ export default {
   rubros: ['todos'],
   acciones: ['ver', 'editar', 'eliminar'],
   menu: [
-    { id: 'nucleo.empresa', label: 'Empresa', vista: () => import('./vistas/empresa.js?v=fb81a8b') },
-    { id: 'nucleo.modulos', label: 'Módulos', icono: 'columnas', vista: () => import('./vistas/modulos.js?v=fb81a8b') },
-    { id: 'nucleo.usuarios', label: 'Usuarios', vista: () => import('./vistas/usuarios.js?v=fb81a8b') },
-    { id: 'nucleo.roles', label: 'Roles y permisos', vista: () => import('./vistas/roles.js?v=fb81a8b') },
-    { id: 'nucleo.auditoria', label: 'Auditoría', vista: () => import('./vistas/auditoria.js?v=fb81a8b') },
+    { id: 'nucleo.empresa', label: 'Empresa', vista: () => import('./vistas/empresa.js?v=64a4e9f') },
+    { id: 'nucleo.modulos', label: 'Módulos', icono: 'columnas', vista: () => import('./vistas/modulos.js?v=64a4e9f') },
+    { id: 'nucleo.usuarios', label: 'Usuarios', vista: () => import('./vistas/usuarios.js?v=64a4e9f') },
+    { id: 'nucleo.roles', label: 'Roles y permisos', vista: () => import('./vistas/roles.js?v=64a4e9f') },
+    { id: 'nucleo.auditoria', label: 'Auditoría', vista: () => import('./vistas/auditoria.js?v=64a4e9f') },
   ],
   config: {},
   migraciones: [],   // sus tablas están en db/nucleo/

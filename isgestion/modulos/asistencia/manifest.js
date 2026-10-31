@@ -8,8 +8,8 @@ export default {
   rubros: ['todos'],
   acciones: ['ver', 'crear', 'editar', 'eliminar', 'exportar'],
   menu: [
-    { id: 'asistencia.horas', label: 'Registro de horas', vista: () => import('./vistas/horas.js?v=fb81a8b') },
-    { id: 'asistencia.marcajes', label: 'Marcajes', vista: () => import('./vistas/marcajes.js?v=fb81a8b') },
+    { id: 'asistencia.horas', label: 'Registro de horas', vista: () => import('./vistas/horas.js?v=64a4e9f') },
+    { id: 'asistencia.marcajes', label: 'Marcajes', vista: () => import('./vistas/marcajes.js?v=64a4e9f') },
   ],
   config: {},
   migraciones: ['db/001_asistencia.sql', 'db/002_origen.sql', 'db/003_solo_vueltas.sql', 'db/004_fijos_automatico.sql', 'db/005_condiciones_editar.sql'],

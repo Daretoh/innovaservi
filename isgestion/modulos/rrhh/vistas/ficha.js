@@ -1,14 +1,14 @@
 // Ficha de un trabajador: documentación (con archivos privados) y datos personales.
 // Ruta: #/rrhh.ficha?p=<persona_id>
-import { el } from '../../../core/ui/dom.js?v=fb81a8b';
-import { icono } from '../../../core/ui/iconos.js?v=fb81a8b';
-import { boton } from '../../../core/ui/tabla.js?v=fb81a8b';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=fb81a8b';
-import { leerVence } from '../../../core/ui/leer-vence.js?v=fb81a8b';
-import { avisar } from '../../../core/ui/aviso.js?v=fb81a8b';
-import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=fb81a8b';
-import { cargarActividad, resumen, panelActividad } from '../actividad.js?v=fb81a8b';
-import { cargarRrhh, cumplimiento, estadoDoc, chipEstado, avatar, nombreCompleto, nivel, VINCULOS, nombreVinculo } from '../datos.js?v=fb81a8b';
+import { el } from '../../../core/ui/dom.js?v=64a4e9f';
+import { icono } from '../../../core/ui/iconos.js?v=64a4e9f';
+import { boton } from '../../../core/ui/tabla.js?v=64a4e9f';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=64a4e9f';
+import { leerVence } from '../../../core/ui/leer-vence.js?v=64a4e9f';
+import { avisar } from '../../../core/ui/aviso.js?v=64a4e9f';
+import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=64a4e9f';
+import { cargarActividad, resumen, panelActividad } from '../actividad.js?v=64a4e9f';
+import { cargarRrhh, cumplimiento, estadoDoc, chipEstado, avatar, nombreCompleto, nivel, VINCULOS, nombreVinculo } from '../datos.js?v=64a4e9f';
 
 const TIPOS_ARCHIVO = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
 const MAX_ARCHIVO = 10 * 1024 * 1024;
@@ -105,7 +105,7 @@ function filaDoc(ctx, tipo, doc, v, puede) {
         type: 'button', class: 'boton-icono', title: 'Generar con el formato de la empresa', 'aria-label': `Generar ${tipo.nombre}`,
         onclick: async () => {
           try {
-            const { generarParaTrabajador, sePuedeGenerar } = await import('../../documentos/integracion.js?v=fb81a8b');
+            const { generarParaTrabajador, sePuedeGenerar } = await import('../../documentos/integracion.js?v=64a4e9f');
             if (!sePuedeGenerar(ctx, tipo.slug)) { avisar('No hay formato para este documento.', 'error'); return; }
             await generarParaTrabajador(ctx, tipo.slug, v.persona_id);
           } catch (err) { avisar(err.message, 'error'); }

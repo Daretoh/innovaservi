@@ -1,12 +1,12 @@
 // Cliente Supabase de la organización activa. Versión fija desde CDN (08 Seguridad §5).
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/+esm';
-import { configurarArchivos } from './adjuntos.js?v=fb81a8b';
+import { configurarArchivos } from './adjuntos.js?v=64a4e9f';
 
 let cliente = null;
 let organizacion = null;
 
 export async function iniciarApi() {
-  const resp = await fetch(new URL('./config/tenants.json?v=fb81a8b', import.meta.url));
+  const resp = await fetch(new URL('./config/tenants.json?v=64a4e9f', import.meta.url));
   const { organizaciones } = await resp.json();
   const host = location.hostname;
   const entrada = Object.entries(organizaciones).find(([, o]) => o.dominios.includes(host));

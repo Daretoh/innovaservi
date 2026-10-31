@@ -2,10 +2,10 @@
 // información de pago, totales, firma, contactos y sello de ISgestión):
 // - Resumen del período (cierre mensual)
 // - Estado de cuenta (cuenta corriente)
-import { cargarJsPdf, cargarLogo, rgb, sellar } from '../../core/pdf.js?v=fb81a8b';
-import { nombreEmpresa } from '../../core/empresas.js?v=fb81a8b';
-import { cargarConfig } from '../cotizaciones/datos.js?v=fb81a8b';
-import { numeroTexto, verPatente, nombreMesLargo, nombreMedio, totalCotizacion, totalesCierre } from './datos.js?v=fb81a8b';
+import { cargarJsPdf, cargarLogo, rgb, sellar } from '../../core/pdf.js?v=64a4e9f';
+import { nombreEmpresa } from '../../core/empresas.js?v=64a4e9f';
+import { cargarConfig } from '../cotizaciones/datos.js?v=64a4e9f';
+import { numeroTexto, verPatente, nombreMesLargo, nombreMedio, totalCotizacion, totalesCierre } from './datos.js?v=64a4e9f';
 
 const M = 15;
 const TEXTO = [28, 35, 48];

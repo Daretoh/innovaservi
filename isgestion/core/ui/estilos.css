@@ -2191,3 +2191,12 @@ html { transition: background-color 220ms ease; }
 /* Franja al inicio de la fila: ingreso (suma) en verde, gasto o costo (resta) en rojo */
 .fila-suma > td:first-child { box-shadow: inset 4px 0 0 var(--ok); }
 .fila-resta > td:first-child { box-shadow: inset 4px 0 0 var(--error); }
+
+/* Calendario del taller, vista Resumen: autos por cliente (empresas una a una, naturales juntos) */
+.tcal-res { display: flex; gap: 4px; align-items: baseline; font-size: 11px; line-height: 1.3; padding: 2px 5px; margin-top: 3px; border-radius: 4px;
+  background: color-mix(in srgb, var(--empresa) 14%, transparent); color: var(--texto); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.tcal-res strong { color: var(--empresa); }
+.tcal-res.nat { background: var(--fondo-hundido); }
+.tcal-res.nat strong { color: var(--texto); }
+.tcal-res-mes { display: flex; flex-wrap: wrap; gap: 6px; }
+.tcal-res-mes .tcal-res { font-size: 13px; padding: 4px 8px; margin: 0; }

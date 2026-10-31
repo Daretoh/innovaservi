@@ -1,11 +1,11 @@
 // Procesos de selección: vacante o cargo, cupos, requisitos (lista que se marca en cada postulante), abrir o cerrar.
-import { el } from '../../../core/ui/dom.js?v=fb81a8b';
-import { icono } from '../../../core/ui/iconos.js?v=fb81a8b';
-import { listado, boton } from '../../../core/ui/tabla.js?v=fb81a8b';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=fb81a8b';
-import { avisar } from '../../../core/ui/aviso.js?v=fb81a8b';
-import { fechaLarga } from '../../../core/ui/formato.js?v=fb81a8b';
-import { cargarBase } from '../datos.js?v=fb81a8b';
+import { el } from '../../../core/ui/dom.js?v=64a4e9f';
+import { icono } from '../../../core/ui/iconos.js?v=64a4e9f';
+import { listado, boton } from '../../../core/ui/tabla.js?v=64a4e9f';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=64a4e9f';
+import { avisar } from '../../../core/ui/aviso.js?v=64a4e9f';
+import { fechaLarga } from '../../../core/ui/formato.js?v=64a4e9f';
+import { cargarBase } from '../datos.js?v=64a4e9f';
 
 export default async function vista(ctx) {
   const base = await cargarBase(ctx);

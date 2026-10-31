@@ -1,14 +1,14 @@
 // Flujo de caja de 8 semanas (como Finanzas de InnovaGestión): saldo de hoy en bancos y caja + cobros esperados −
 // pagos comprometidos (facturas por pagar, cuotas de deudas, gastos fijos aún no generados y sueldos estimados).
 // Lo atrasado (vencido) cae en la primera semana. Solo con costos.aprobar.
-import { el } from '../../../core/ui/dom.js?v=fb81a8b';
-import { icono } from '../../../core/ui/iconos.js?v=fb81a8b';
-import { boton } from '../../../core/ui/tabla.js?v=fb81a8b';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=fb81a8b';
-import { avisar } from '../../../core/ui/aviso.js?v=fb81a8b';
-import { dinero, fechaCorta, fechaLarga, sumarDias, moverMes } from '../../../core/ui/formato.js?v=fb81a8b';
-import { tocaEnMes, fechaEnMes } from '../datos.js?v=fb81a8b';
-import { cargarCuentas, cargarPendientes, cargarDeudas, cargarConfig, diaDelMes, lunesDe, hoy } from '../tesoreria.js?v=fb81a8b';
+import { el } from '../../../core/ui/dom.js?v=64a4e9f';
+import { icono } from '../../../core/ui/iconos.js?v=64a4e9f';
+import { boton } from '../../../core/ui/tabla.js?v=64a4e9f';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=64a4e9f';
+import { avisar } from '../../../core/ui/aviso.js?v=64a4e9f';
+import { dinero, fechaCorta, fechaLarga, sumarDias, moverMes } from '../../../core/ui/formato.js?v=64a4e9f';
+import { tocaEnMes, fechaEnMes } from '../datos.js?v=64a4e9f';
+import { cargarCuentas, cargarPendientes, cargarDeudas, cargarConfig, diaDelMes, lunesDe, hoy } from '../tesoreria.js?v=64a4e9f';
 
 const SEMANAS = 8;
 
@@ -35,7 +35,7 @@ export default async function vista(ctx) {
   for (const d of deudas.filter((x) => x.activo && x.cuota > 0 && x.dia)) {
     for (const m of meses) { const f = diaDelMes(`${m}-01`, d.dia); if (f >= h && (!d.hasta || f <= d.hasta)) agregar(f, 'sale', `Cuota ${d.acreedor}`, Number(d.cuota), 'Deuda'); }
   }
-  const tc = (rec.data ?? []).some((r) => r.moneda === 'USD') ? await import('../../../core/economia.js?v=fb81a8b').then((m) => m.dolarDelDia()).catch(() => null) : null;
+  const tc = (rec.data ?? []).some((r) => r.moneda === 'USD') ? await import('../../../core/economia.js?v=64a4e9f').then((m) => m.dolarDelDia()).catch(() => null) : null;
   const ya = new Set((hechos.data ?? []).map((x) => `${x.recurrente_id}|${x.periodo}`));
   for (const r of rec.data ?? []) {
     for (const m of meses) if (tocaEnMes(r, m) && !ya.has(`${r.id}|${m}`)) agregar(fechaEnMes(m, r.dia), 'sale', r.moneda === 'USD' ? `${r.concepto} (US$ ${r.monto})` : r.concepto, Math.round(r.moneda === 'USD' ? Number(r.monto) * (tc ?? 0) : Number(r.monto)), 'Gasto fijo');

@@ -1,12 +1,12 @@
 // Detalle e investigación de un accidente o incidente. Los campos se guardan al salir de cada uno.
 // Ruta: #/sst.accidente?id=<id>
-import { el } from '../../../core/ui/dom.js?v=fb81a8b';
-import { icono } from '../../../core/ui/iconos.js?v=fb81a8b';
-import { boton } from '../../../core/ui/tabla.js?v=fb81a8b';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=fb81a8b';
-import { avisar } from '../../../core/ui/aviso.js?v=fb81a8b';
-import { fechaLarga, hhmm } from '../../../core/ui/formato.js?v=fb81a8b';
-import { TIPOS_ACC, GRAVEDAD, nombreDe, cargarPersonas, cargarClientes } from '../datos.js?v=fb81a8b';
+import { el } from '../../../core/ui/dom.js?v=64a4e9f';
+import { icono } from '../../../core/ui/iconos.js?v=64a4e9f';
+import { boton } from '../../../core/ui/tabla.js?v=64a4e9f';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=64a4e9f';
+import { avisar } from '../../../core/ui/aviso.js?v=64a4e9f';
+import { fechaLarga, hhmm } from '../../../core/ui/formato.js?v=64a4e9f';
+import { TIPOS_ACC, GRAVEDAD, nombreDe, cargarPersonas, cargarClientes } from '../datos.js?v=64a4e9f';
 
 export default async function vista(ctx) {
   const [{ data: a, error }, personas, clientes] = await Promise.all([
