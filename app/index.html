@@ -1673,23 +1673,42 @@
   .rm-c{font:800 10px/1 var(--font);color:#fff;}
   .rm-tbl tbody tr:not(.rm-grp):not(.rm-sub):not(.rm-tot):hover td{background:#fff4ec;}
   .rm-tbl tbody tr:not(.rm-grp):not(.rm-sub):not(.rm-tot):hover td.rm-nm{box-shadow:inset 3px 0 0 var(--orange);}
-  #rmp-ov{position:fixed;inset:0;z-index:90;background:rgba(20,17,14,.45);display:flex;align-items:center;justify-content:center;padding:16px;}
-  #rmp-ov .rmp-card{background:#fff;border-radius:14px;max-width:680px;width:100%;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 24px 60px -20px rgba(0,0,0,.5);}
-  #rmp-ov .rmp-head,#rmp-ov .rmp-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 16px;border-bottom:1px solid var(--line);}
-  #rmp-ov .rmp-foot{border-bottom:0;border-top:1px solid var(--line);justify-content:flex-end;}
-  #rmp-ov .rmp-head b{font:800 15px var(--font);color:var(--navy);}
-  #rmp-ov .rmp-body{padding:12px 16px;overflow:auto;}
-  #rmp-ov .rmp-sec{margin-bottom:12px;} #rmp-ov .rmp-t{font:800 11px var(--font);text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-bottom:6px;}
-  #rmp-ov .rmp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;}
-  #rmp-ov .rmp-chk{display:flex;align-items:center;gap:7px;font:600 13px var(--font);color:var(--ink);background:var(--alt);border-radius:9px;padding:7px 9px;cursor:pointer;}
-  #rmp-ov .rmp-chk.dis{opacity:.5;cursor:default;} #rmp-ov .rmp-chk input{width:16px;height:16px;accent-color:var(--orange);margin:0;}
-  #rmp-ov .rmp-chk select{font:600 12px var(--font);padding:3px 6px;border:1px solid var(--line);border-radius:7px;background:#fff;}
-  #rmp-ov .rmp-n{font:600 10.5px var(--font);color:var(--muted);text-transform:none;letter-spacing:0;}
-  #rmp-ov .rmp-pg{margin-bottom:8px;} #rmp-ov .rmp-pgt{font:700 11.5px var(--font);color:var(--navy);margin:2px 0 4px;}
-  #rmp-ov .rmp-tag{font:800 9.5px var(--font);background:#fff4ec;color:var(--orange-2);border-radius:999px;padding:1px 6px;}
-  #rmp-ov .rmp-add{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:6px;align-items:center;}
-  #rmp-ov .rmp-add input,#rmp-ov .rmp-add select{font:600 13px var(--font);padding:8px 9px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink);min-width:0;}
-  #rmp-ov .rmp-lnk{border:0;background:none;color:var(--orange-2);font:700 11px var(--font);cursor:pointer;padding:0;text-transform:none;letter-spacing:0;}
+  #rme-ov{position:fixed;inset:0;z-index:90;background:rgba(20,17,14,.45);display:flex;padding:14px;}
+  #rme-ov .rme-card{background:#fff;border-radius:14px;flex:1;min-width:0;display:flex;flex-direction:column;box-shadow:0 24px 60px -20px rgba(0,0,0,.5);overflow:hidden;}
+  #rme-ov .rme-head{display:flex;align-items:center;gap:8px;padding:12px 16px;border-bottom:1px solid var(--line);}
+  #rme-ov .rme-head b{font:800 16px var(--font);color:var(--navy);} #rme-ov .rme-sp{flex:1;}
+  #rme-ov .rme-bar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:8px 16px;border-bottom:1px solid var(--line);background:#fbfbfd;}
+  #rme-ov .rme-lbl{font:800 10.5px var(--font);text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin:0 2px 0 8px;} #rme-ov .rme-lbl:first-child{margin-left:0;}
+  #rme-ov .rme-chip{border:1px solid var(--line);background:#fff;color:var(--muted);font:700 12px var(--font);border-radius:999px;padding:5px 11px;cursor:pointer;}
+  #rme-ov .rme-chip.on{background:var(--navy);border-color:var(--navy);color:#fff;} #rme-ov .rme-chip.add{border-style:dashed;color:var(--navy);}
+  #rme-ov select{font:600 12px var(--font);padding:5px 8px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);}
+  #rme-ov .rme-n2{font:600 12px var(--font);color:var(--muted);}
+  #rme-ov .rme-lnk{border:0;background:none;color:var(--orange-2);font:700 11.5px var(--font);cursor:pointer;padding:0;}
+  #rme-ov .rme-bw{position:relative;flex:1;max-width:460px;min-width:220px;}
+  #rme-ov .rme-bw input{width:100%;box-sizing:border-box;font:600 13px var(--font);padding:7px 10px;border:1px solid var(--line);border-radius:9px;}
+  #rme-ov .rme-res{position:absolute;left:0;right:0;top:100%;margin-top:4px;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 14px 34px -14px rgba(0,0,0,.35);z-index:5;max-height:300px;overflow:auto;}
+  #rme-ov .rme-op{display:block;width:100%;text-align:left;border:0;background:#fff;padding:8px 11px;cursor:pointer;border-bottom:1px solid var(--line);font:600 13px var(--font);color:var(--ink);}
+  #rme-ov .rme-op:hover{background:#fff4ec;} #rme-ov .rme-op span{display:block;font:500 11px var(--font);color:var(--muted);} #rme-ov .rme-op[disabled]{opacity:.45;cursor:default;} #rme-ov .rme-op.none{color:var(--muted);cursor:default;}
+  #rme-ov .rme-wrap{flex:1;overflow:auto;}
+  #rme-ov .rme-tbl{border-collapse:separate;border-spacing:0;width:100%;font:600 12.5px var(--font);font-variant-numeric:tabular-nums;white-space:nowrap;}
+  #rme-ov .rme-tbl th{position:sticky;top:0;z-index:2;background:var(--alt);color:var(--muted);font:800 10px var(--font);text-transform:uppercase;letter-spacing:.03em;padding:8px 9px;text-align:right;border-bottom:1px solid var(--line);}
+  #rme-ov .rme-tbl th.l,#rme-ov .rme-tbl td.l{text-align:left;}
+  #rme-ov .rme-hx{border:0;background:none;color:#c0c4d4;font:800 13px var(--font);cursor:pointer;padding:0 0 0 4px;line-height:1;} #rme-ov .rme-hx:hover{color:#dc2626;}
+  #rme-ov .rme-tbl td{padding:7px 9px;text-align:right;border-bottom:1px solid var(--line);color:var(--ink);}
+  #rme-ov .rme-tbl td.b{font-weight:800;}
+  #rme-ov .rme-tbl .rme-nm,#rme-ov .rme-tbl th.rme-nm{text-align:left;min-width:220px;white-space:normal;}
+  #rme-ov .rme-tbl .rme-n{text-align:center;color:var(--muted);width:28px;} #rme-ov .rme-tbl .rme-eye{width:30px;text-align:center;padding:4px;}
+  #rme-ov .rme-ojo{border:0;background:none;color:var(--navy);cursor:pointer;padding:3px;border-radius:6px;} #rme-ov .rme-ojo:hover{background:var(--alt);}
+  #rme-ov tr.off td{opacity:.42;} #rme-ov tr.off td.rme-eye{opacity:1;} #rme-ov tr.off .rme-ojo{color:#dc2626;} #rme-ov tr.off td.rme-nm b{text-decoration:line-through;}
+  #rme-ov tbody tr:not(.rme-grp):not(.rme-sub):not(.rme-tot):hover td{background:#fff8f2;}
+  #rme-ov .rme-grp td{background:var(--alt);text-align:left;font:800 11px var(--font);color:var(--navy);text-transform:uppercase;letter-spacing:.04em;padding:8px 10px;}
+  #rme-ov .rme-grp i{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:7px;} #rme-ov .rme-grp span{color:var(--muted);text-transform:none;letter-spacing:0;font-weight:600;margin-left:6px;}
+  #rme-ov .rme-sub td{font-weight:800;color:var(--navy);background:#fafbfd;} #rme-ov .rme-tot td{font:800 13px var(--font);color:var(--orange-2);background:#fff1e6;}
+  #rme-ov .rme-tag{font:800 9.5px var(--font);background:#fff4ec;color:var(--orange-2);border-radius:999px;padding:1px 7px;}
+  #rme-ov .rme-man{display:flex;gap:8px;flex-wrap:wrap;margin-top:5px;align-items:center;} #rme-ov .rme-man label{font:700 10.5px var(--font);color:var(--muted);display:flex;align-items:center;gap:4px;}
+  #rme-ov .rme-man input{width:84px;font:700 12.5px var(--font);padding:4px 6px;border:1px solid var(--line);border-radius:7px;text-align:right;}
+  #rme-ov .rme-del{border:1px solid #f0c0c0;background:#fff;color:#dc2626;font:700 11px var(--font);border-radius:7px;padding:4px 8px;cursor:pointer;}
+  #rme-ov .rme-pie{padding:8px 16px;border-top:1px solid var(--line);font:600 11.5px var(--font);color:var(--muted);}
   .rm-tbl .rm-open{cursor:pointer;} .rm-tbl .rm-open:hover b{color:var(--orange-2);text-decoration:underline;}
   .rm-mdia{cursor:pointer;margin:0 -6px;padding-left:6px !important;padding-right:6px !important;border-radius:8px;} .rm-mdia:hover{background:#fff4ec;}
   .rm-ver{font:700 10.5px var(--font);color:var(--orange-2);margin-top:2px;}
@@ -2201,13 +2220,13 @@
             <button class="btn ghost small rm-f on" data-f="todos" type="button">Todos</button>
             <button class="btn ghost small rm-f" data-f="spot" type="button">Spot (trato)</button>
             <button class="btn ghost small rm-f" data-f="fijo" type="button">Fijos</button>
-            <span class="note" style="margin:0;align-self:center;font-size:.74rem">Excel y PDF exportan lo filtrado: elige Fijos o Spot para enviarlos por separado.</span>
+            <span class="note" style="margin:0;align-self:center;font-size:.74rem">El Excel exporta lo filtrado. Para el PDF usa “Editar cierre y PDF”: ahí eliges empresas, tipos, columnas y personas.</span>
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <button id="rm-imp" class="btn ghost small" style="width:auto" type="button" title="Sube el CSV que exporta Remuneraciones de IS Performance"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>Importar IS Performance</button>
             <input id="rm-imp-file" type="file" accept=".csv,.txt,text/csv" class="hide">
             <button id="rm-xls" class="btn ghost small" style="width:auto" type="button"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13l4 5M12 13l-4 5"/></svg>Excel<span class="rm-segl"></span></button>
-            <button id="rm-pdf" class="btn small" style="width:auto" type="button"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>PDF para remuneraciones<span class="rm-segl"></span></button>
+            <button id="rm-pdf" class="btn small" style="width:auto" type="button"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Editar cierre y PDF</button>
           </div>
         </div>
         <div id="rm-ext-info"></div>
@@ -7436,10 +7455,12 @@
       descargarBlob(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}), rmArchivo('xlsx')); });
   }
   // PDF horizontal para enviar a remuneraciones: grilla de asistencia + días, tratos, otros y total, por empresa.
-  // ====== PDF para remuneraciones: con opciones (secciones, columnas, personas, totales, orientación) ======
-  // Columnas y opciones quedan guardadas en este navegador. Quitar personas y agregar personas que no están (ej. practicante)
-  // se guarda por mes en config ('remu_pdf_ajustes_AAAA-MM'), compartido. Solo cambia lo que se imprime: no toca ningún cálculo ni pago.
-  var RMP_KEY='rm-pdf-opciones-v2';
+  // ====== Editor del cierre (tipo planilla) + PDF para remuneraciones ======
+  // Se ocultan/muestran columnas, filas (personas), empresas y tipos; lo que se ve en el editor es lo que sale en el PDF.
+  // Ocultar es solo para el PDF (no borra ni cambia pagos). Agregar trabajador (de la base de Trabajadores) queda en el cierre
+  // del mes: tabla, totales, Excel y PDF. Vista (columnas, empresas, tipos, opciones): este navegador. Filas ocultas y agregados:
+  // por mes en config ('remu_pdf_ajustes_AAAA-MM'), compartido.
+  var RMP_KEY='rm-editor-vista-v1';
   var RMP_COLS=[
     {k:'rut', t:'RUT', w:19, a:'l', d:1},
     {k:'cargo', t:'Cargo', w:28, a:'l'},
@@ -7461,100 +7482,144 @@
     {k:'an', t:'Anticipo', w:16, d:1, nota:'Anticipo (fijos): ya pagado, se resta de "A pagar".'},
     {k:'pag', t:'A pagar', w:20, b:1, d:1}
   ];
-  var RMP_SEC=[['sp','Innova Servi · Spot'],['fj','Innova Servi · Fijos'],['isp','IS Performance · Spot'],['isf','IS Performance · Fijos']];
+  var RMP_SEC=[['sp','Innova Servi · Spot','inn','sp'],['fj','Innova Servi · Fijos','inn','fj'],['isp','IS Performance · Spot','is','sp'],['isf','IS Performance · Fijos','is','fj']];
   var RMP_COLOR={sp:[255,107,0], fj:[26,31,110], isp:[14,116,144], isf:[8,80,100]};
-  function rmpCargar(){ var o=null; try{ o=JSON.parse(localStorage.getItem(RMP_KEY)||'null'); }catch(_){}
-    var def={cols:RMP_COLS.filter(function(c){ return c.d; }).map(function(c){ return c.k; }), sec:{sp:true,fj:true,isp:true,isf:true}, sub:true, tot:true, notas:true, ori:'l'};
-    if(!o||!o.cols) return def; return Object.assign(def,o); }
-  function rmpGuardar(o){ try{ localStorage.setItem(RMP_KEY,JSON.stringify(o)); }catch(_){} }
+  function rmpVista(){ var o=null; try{ o=JSON.parse(localStorage.getItem(RMP_KEY)||'null'); }catch(_){}
+    var def={cols:RMP_COLS.filter(function(c){ return c.d; }).map(function(c){ return c.k; }), emp:{inn:true,is:true}, tip:{sp:true,fj:true}, sub:true, tot:true, notas:true, ori:'l'};
+    return (o&&o.cols)?Object.assign(def,o):def; }
+  function rmpGuardarVista(o){ try{ localStorage.setItem(RMP_KEY,JSON.stringify(o)); }catch(_){} }
+  function rmpSecVisible(o,k){ var p=RMP_SEC.filter(function(z){ return z[0]===k; })[0]; return !!(p && o.emp[p[2]] && o.tip[p[3]]); }
   function rmpClave(){ return 'remu_pdf_ajustes_'+RM_DATA.mes; }
   function rmpPersonaKey(x){ return (x.manual?'m:'+x.mid:((x.ext?'e:':'i:')+(rutCuerpo(x.t.rut)||norm(x.t.nombre)))); }
-  // Persona agregada a mano (no está en los registros): fila con el mismo formato que las demás.
+  // Trabajador agregado al cierre (de la base de Trabajadores): fila con el mismo formato que las demás.
   function rmpFilaManual(m){ var fj=(m.sec==='fj'||m.sec==='isf'), ext=(m.sec==='isp'||m.sec==='isf'), monto=+m.monto||0;
-    return { manual:true, mid:m.id, ext:ext, t:{id:null,nombre:m.nombre||'',rut:m.rut||'',cargo:m.cargo||''}, tipo:fj?'contrato':'hora',
+    return { manual:true, mid:m.id, ext:ext, t:{id:m.trabajador_id||null,nombre:m.nombre||'',rut:m.rut||'',cargo:m.cargo||''}, tipo:fj?'contrato':'hora',
       dias:+m.dias||0, diasH:+m.dias||0, totMin:Math.round((+m.horas||0)*60), baseCont:monto, base:monto, baseMin:0, vh:0, jor:0,
-      vueltas:0, vv:0, vueltasMonto:0, peajes:0, bono:0, bonoAutos:0, extras:0, desc:0, contable:monto, total:monto, real:monto, H:null, diaMonto:{}, vuDia:{}, nota:m.nota||'' }; }
-  // Secciones del PDF: Innova spot / fijos e IS Performance spot / fijos, más las personas agregadas a mano.
-  function rmpGrupos(aj){ var inn=RM_DATA.R.filas, ext=rmExtFilas(), man=((aj&&aj.manual)||[]).map(rmpFilaManual);
+      vueltas:0, vv:0, vueltasMonto:0, peajes:0, bono:0, bonoAutos:0, extras:0, desc:0, contable:monto, total:monto, real:monto, H:null, diaMonto:{}, vuDia:{} }; }
+  function rmpGrupos(aj){ var inn=RM_DATA.R.filas, ext=rmExtFilas(), M=((aj&&aj.manual)||[]);
     var por={ sp:inn.filter(function(x){ return !rmEsFijo(x); }), fj:inn.filter(rmEsFijo), isp:ext.filter(function(x){ return !rmEsFijo(x); }), isf:ext.filter(rmEsFijo) };
-    ((aj&&aj.manual)||[]).forEach(function(m,ix){ if(por[m.sec]) por[m.sec].push(man[ix]); });
+    M.forEach(function(m){ if(por[m.sec]) por[m.sec].push(rmpFilaManual(m)); });
     return RMP_SEC.map(function(p){ return {k:p[0], lbl:p[1], L:por[p[0]]}; }); }
+  var rmpMny=function(v){ return v?fmtMoney(v):'—'; }, rmpNeg=function(v){ return v?('-'+fmtMoney(v)):'—'; };
+  function rmpVal(c,x){ var fj=rmEsFijo(x)&&!x.ext&&!x.manual;
+    switch(c.k){
+      case 'rut': return x.t.rut||'—'; case 'cargo': return x.t.cargo||''; case 'tp': return rmEsFijo(x)?'Fijo':'Spot';
+      case 'dias': return String(rmDias(x)); case 'eq': return rmDiasEq(x)!=null?rmDec(rmDiasEq(x)):''; case 'hr': return hm(x.totMin);
+      case 'su': return rmSueldo(x)?(fmtMoney(rmSueldo(x))+(rmSueldoOtra(x)?'*':'')):'—'; case 'tr': return rmpMny(x.baseCont);
+      case 'vu': return rmpMny(x.vueltasMonto); case 'pe': return rmpMny(x.peajes); case 'veh': return rmVeh(x)!=null?(rmVeh(x)+(x.sinBono?'*':'')):'';
+      case 'ba': return rmpMny(x.bonoAutos||0); case 'ex': return rmpMny(x.ext?x.extras:x.bono); case 'de': return rmpNeg(x.desc);
+      case 'ot': var ot=rmOtros(x); return ot?((ot<0?'-':'')+fmtMoney(Math.abs(ot))):'—';
+      case 'ag': return fj?rmpMny(rmAg(x)):''; case 'tot': return fmtMoney(rmTotal(x)); case 'an': return fj?rmpNeg(rmAn(x)):''; case 'pag': return fmtMoney(rmPagar(x)); }
+    return ''; }
+  function rmpValS(c,L){ var s=rmSuma(L), ba=L.reduce(function(a,x){ return a+(x.bonoAutos||0); },0);
+    switch(c.k){
+      case 'dias': return String(s.dias); case 'eq': return s.diasEq?rmDec(s.diasEq):''; case 'hr': return hm(s.min);
+      case 'su': return rmpMny(s.sueldo); case 'tr': return rmpMny(s.tratos); case 'vu': return rmpMny(s.vueltas); case 'pe': return rmpMny(s.peajes);
+      case 'ba': return rmpMny(ba); case 'ex': return rmpMny(s.bono-ba); case 'de': return rmpNeg(s.desc);
+      case 'ot': var ot=s.vueltas+s.peajes+s.bono-s.desc; return ot?((ot<0?'-':'')+fmtMoney(Math.abs(ot))):'—';
+      case 'ag': return rmpMny(s.ag); case 'tot': return fmtMoney(s.total); case 'an': return rmpNeg(s.an); case 'pag': return fmtMoney(s.pagar); }
+    return ''; }
+  // Grupos que van al PDF según la vista (empresas/tipos visibles y filas no ocultas).
+  function rmpGruposVisibles(o,aj){ return rmpGrupos(aj).filter(function(g){ return rmpSecVisible(o,g.k); })
+    .map(function(g){ return {k:g.k, lbl:g.lbl, L:g.L.filter(function(x){ return (aj.excl||[]).indexOf(rmpPersonaKey(x))<0; })}; }).filter(function(g){ return g.L.length; }); }
   function rmpAbrir(){
-    if(!rmHayDatos()){ toast('No hay datos en este mes.'); return; }
-    busy(true,'Cargando opciones…');
+    if(!RM_DATA||!RM_DATA.R){ toast('Espera a que cargue el mes.'); return; }
+    busy(true,'Abriendo editor…');
     sb.from('config').select('valor').eq('clave',rmpClave()).maybeSingle().then(function(r){ busy(false);
       var aj={excl:[],manual:[]}; try{ if(r&&r.data&&r.data.valor) aj=Object.assign(aj,JSON.parse(r.data.valor)); }catch(_){}
-      rmpPanel(aj);
-    }, function(){ busy(false); rmpPanel({excl:[],manual:[]}); });
+      rmpEditor(aj);
+    }, function(){ busy(false); rmpEditor(Object.assign({excl:[],manual:[]}, RM_DATA.ajPdf||{})); });
   }
-  function rmpPanel(aj){
-    var o=rmpCargar();
-    if(RM_FILT==='fijo') o.sec={sp:false,fj:true,isp:false,isf:true}; else if(RM_FILT==='spot') o.sec={sp:true,fj:false,isp:true,isf:false};
-    var ov=document.createElement('div'); ov.id='rmp-ov';
-    var chk=function(id,lbl,on,dis,extra){ return '<label class="rmp-chk'+(dis?' dis':'')+'"><input type="checkbox" data-id="'+id+'"'+(on?' checked':'')+(dis?' disabled':'')+'><span>'+lbl+(extra||'')+'</span></label>'; };
-    var guardarAj=function(cb){ busy(true,'Guardando…');
-      sb.from('config').upsert({clave:rmpClave(), valor:JSON.stringify(aj)},{onConflict:'clave'}).then(function(r){ busy(false); if(r&&r.error){ toast('No se pudo guardar: '+r.error.message); return; }
-        RM_DATA.ajPdf=JSON.parse(JSON.stringify(aj)); RM_DATA._man=null; pintarRemuMes(); if(cb) cb(); }, function(){ busy(false); toast('No se pudo guardar.'); }); };
+  function rmpEditor(aj){
+    var o=rmpVista(), ov=document.createElement('div'); ov.id='rme-ov';
+    var guardarAj=function(){ RM_DATA.ajPdf=JSON.parse(JSON.stringify(aj)); RM_DATA._man=null; pintarRemuMes();
+      sb.from('config').upsert({clave:rmpClave(), valor:JSON.stringify(aj)},{onConflict:'clave'}).then(function(r){ if(r&&r.error) toast('No se pudo guardar: '+r.error.message); }, function(){ toast('No se pudo guardar.'); }); };
+    var ojo='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+    var ojoNo='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19M1 1l22 22"/></svg>';
+    var chip=function(id,lbl,on){ return '<button type="button" class="rme-chip'+(on?' on':'')+'" data-t="'+id+'">'+lbl+'</button>'; };
     function render(){
-      var cur=ov.querySelector('.rmp-card')?leer():o; o=cur;
-      var G=rmpGrupos(aj), hay={}; G.forEach(function(g){ hay[g.k]=g.L.length; });
-      var personas=G.map(function(g){ if(!g.L.length) return '';
-        return '<div class="rmp-pg"><div class="rmp-pgt">'+esc(g.lbl)+'</div><div class="rmp-grid">'+g.L.map(function(x){ var k=rmpPersonaKey(x);
-          return chk('per-'+k, esc(titleCase(x.t.nombre)||'(sin nombre)'), aj.excl.indexOf(k)<0, false, x.manual?' <span class="rmp-tag">agregada</span> <button type="button" class="rmp-lnk rmp-delm" data-mid="'+esc(x.mid)+'">quitar</button>':''); }).join('')+'</div></div>'; }).join('');
-      ov.innerHTML='<div class="rmp-card"><div class="rmp-head"><b>PDF para remuneraciones · '+esc(RM_DATA.lbl)+'</b><button type="button" class="btn ghost small" id="rmp-x" style="width:auto">Cerrar</button></div>'+
-        '<div class="rmp-body">'+
-          '<div class="rmp-sec"><div class="rmp-t">Secciones</div><div class="rmp-grid">'+RMP_SEC.map(function(p){ return chk('sec-'+p[0],p[1],o.sec[p[0]]!==false&&!!hay[p[0]],!hay[p[0]],' <span class="rmp-n">'+(hay[p[0]]?(hay[p[0]]+' pers.'):'sin datos')+'</span>'); }).join('')+'</div></div>'+
-          '<div class="rmp-sec"><div class="rmp-t">Columnas <span class="rmp-n">(N° y Trabajador siempre van)</span> <button type="button" class="rmp-lnk" id="rmp-todas">todas</button> · <button type="button" class="rmp-lnk" id="rmp-min">mínimas</button> · <button type="button" class="rmp-lnk" id="rmp-def">por defecto</button></div><div class="rmp-grid">'+
-            RMP_COLS.map(function(c){ return chk('col-'+c.k,c.t,o.cols.indexOf(c.k)>=0); }).join('')+'</div></div>'+
-          '<div class="rmp-sec"><div class="rmp-t">Personas <span class="rmp-n">(desmarca a quien no debe ir en el PDF; no borra nada)</span></div>'+personas+'</div>'+
-          '<div class="rmp-sec"><div class="rmp-t">Agregar persona que no está <span class="rmp-n">(ej. practicante; queda en el cierre del mes: tabla, totales, Excel y PDF)</span></div>'+
-            '<div class="rmp-add"><input id="rmp-mn" placeholder="Nombre completo"><input id="rmp-mr" placeholder="RUT"><input id="rmp-mc" placeholder="Cargo (ej. Practicante)">'+
-            '<select id="rmp-ms">'+RMP_SEC.map(function(p){ return '<option value="'+p[0]+'">'+p[1]+'</option>'; }).join('')+'</select>'+
-            '<input id="rmp-md" type="number" min="0" placeholder="Días"><input id="rmp-mh" type="number" min="0" step="0.5" placeholder="Horas"><input id="rmp-mm" type="number" min="0" placeholder="Monto a pagar ($)">'+
-            '<button type="button" class="btn small" id="rmp-madd" style="width:auto">Agregar</button></div></div>'+
-          '<div class="rmp-sec"><div class="rmp-t">Opciones</div><div class="rmp-grid">'+chk('sub','Subtotal por sección',o.sub)+chk('tot','Total general',o.tot)+chk('notas','Notas al pie',o.notas)+
-            '<label class="rmp-chk">Hoja <select id="rmp-ori"><option value="l"'+(o.ori==='l'?' selected':'')+'>Horizontal</option><option value="p"'+(o.ori==='p'?' selected':'')+'>Vertical</option></select></label></div></div>'+
-          '<p class="note" id="rmp-aviso" style="margin:2px 0 0"></p>'+
-        '</div><div class="rmp-foot"><button type="button" class="btn ghost small" id="rmp-cancel" style="width:auto">Cancelar</button><button type="button" class="btn small" id="rmp-ok" style="width:auto">Generar PDF</button></div></div>';
-      var q=function(sel){ return ov.querySelector(sel); };
-      var marcar=function(lista){ RMP_COLS.forEach(function(c){ q('[data-id="col-'+c.k+'"]').checked=lista.indexOf(c.k)>=0; }); aviso(); };
-      q('#rmp-todas').onclick=function(){ marcar(RMP_COLS.map(function(c){ return c.k; })); };
-      q('#rmp-min').onclick=function(){ marcar(['rut','dias','tot','pag']); };
-      q('#rmp-def').onclick=function(){ marcar(RMP_COLS.filter(function(c){ return c.d; }).map(function(c){ return c.k; })); };
-      q('#rmp-x').onclick=cerrar; q('#rmp-cancel').onclick=cerrar;
-      q('#rmp-madd').onclick=function(){ var nom=(q('#rmp-mn').value||'').trim(), monto=+(q('#rmp-mm').value||0);
-        if(!nom){ toast('Escribe el nombre.'); return; } if(!(monto>=0)){ toast('Revisa el monto.'); return; }
-        aj.manual.push({ id:'m'+Date.now().toString(36), nombre:titleCase(nom), rut:(q('#rmp-mr').value||'').trim(), cargo:(q('#rmp-mc').value||'').trim(), sec:q('#rmp-ms').value,
-          dias:+(q('#rmp-md').value||0), horas:+(q('#rmp-mh').value||0), monto:monto, autor:userEmail||'' });
-        guardarAj(function(){ toast('✓ Agregada al PDF de '+RM_DATA.lbl); render(); }); };
-      ov.querySelectorAll('.rmp-delm').forEach(function(b){ b.onclick=function(e){ e.preventDefault(); e.stopPropagation(); if(!confirm('¿Quitar esta persona agregada?')) return;
-        aj.manual=aj.manual.filter(function(m){ return m.id!==b.dataset.mid; }); guardarAj(function(){ render(); }); }; });
-      aviso();
+      var cols=RMP_COLS.filter(function(c){ return o.cols.indexOf(c.k)>=0; }), ocultas=RMP_COLS.filter(function(c){ return o.cols.indexOf(c.k)<0; });
+      var G=rmpGrupos(aj).filter(function(g){ return rmpSecVisible(o,g.k) && g.L.length; }), vis=[];
+      var nCol=3+cols.length;
+      var head='<tr><th class="rme-eye"></th><th class="rme-n">N°</th><th class="rme-nm">Trabajador</th>'+cols.map(function(c){ return '<th class="'+(c.a==='l'?'l':'')+'"><span>'+c.t+'</span><button type="button" class="rme-hx" data-col="'+c.k+'" title="Ocultar columna">×</button></th>'; }).join('')+'</tr>';
+      var n=0, body=G.map(function(g){ var vivos=g.L.filter(function(x){ return (aj.excl||[]).indexOf(rmpPersonaKey(x))<0; }); vis=vis.concat(vivos);
+        var filas=g.L.map(function(x){ var k=rmpPersonaKey(x), off=(aj.excl||[]).indexOf(k)>=0; if(!off) n++;
+          var nm='<b>'+esc(titleCase(x.t.nombre)||'')+'</b>'+(x.manual?' <span class="rme-tag">agregado</span>':'');
+          if(x.manual){ var m=aj.manual.filter(function(z){ return z.id===x.mid; })[0]||{};
+            nm+='<div class="rme-man"><label>Días <input type="number" min="0" data-m="'+esc(x.mid)+'" data-f="dias" value="'+(m.dias||'')+'"></label><label>Horas <input type="number" min="0" step="0.5" data-m="'+esc(x.mid)+'" data-f="horas" value="'+(m.horas||'')+'"></label><label>Monto $ <input type="number" min="0" data-m="'+esc(x.mid)+'" data-f="monto" value="'+(m.monto||'')+'"></label><button type="button" class="rme-del" data-m="'+esc(x.mid)+'" title="Quitar del cierre">Quitar</button></div>'; }
+          return '<tr class="'+(off?'off':'')+'"><td class="rme-eye"><button type="button" class="rme-ojo" data-k="'+esc(k)+'" title="'+(off?'Mostrar en el PDF':'Ocultar del PDF')+'">'+(off?ojoNo:ojo)+'</button></td><td class="rme-n">'+(off?'':n)+'</td><td class="rme-nm">'+nm+'</td>'+
+            cols.map(function(c){ return '<td class="'+(c.a==='l'?'l':'')+(c.b?' b':'')+'">'+esc(rmpVal(c,x))+'</td>'; }).join('')+'</tr>'; }).join('');
+        return '<tr class="rme-grp"><td colspan="'+nCol+'"><i style="background:rgb('+RMP_COLOR[g.k].join(',')+')"></i>'+esc(g.lbl)+' <span>'+vivos.length+' de '+g.L.length+'</span></td></tr>'+filas+
+          (o.sub?'<tr class="rme-sub"><td></td><td></td><td class="rme-nm">Subtotal</td>'+cols.map(function(c){ return '<td class="'+(c.a==='l'?'l':'')+'">'+esc(rmpValS(c,vivos))+'</td>'; }).join('')+'</tr>':''); }).join('');
+      if(o.tot && vis.length) body+='<tr class="rme-tot"><td></td><td></td><td class="rme-nm">Total</td>'+cols.map(function(c){ return '<td class="'+(c.a==='l'?'l':'')+'">'+esc(rmpValS(c,vis))+'</td>'; }).join('')+'</tr>';
+      if(!body) body='<tr><td colspan="'+nCol+'" style="padding:24px;text-align:center;color:var(--muted)">No hay nada visible: activa alguna empresa o tipo.</td></tr>';
+      ov.innerHTML='<div class="rme-card">'+
+        '<div class="rme-head"><b>Editar cierre · '+esc(RM_DATA.lbl)+'</b><span class="rme-sp"></span>'+
+          '<button type="button" class="btn small" id="rme-pdf" style="width:auto">Exportar PDF</button><button type="button" class="btn ghost small" id="rme-x" style="width:auto">Cerrar</button></div>'+
+        '<div class="rme-bar">'+
+          '<span class="rme-lbl">Empresa</span>'+chip('emp-inn','Innova Servi',o.emp.inn)+chip('emp-is','IS Performance',o.emp.is)+
+          '<span class="rme-lbl">Tipo</span>'+chip('tip-sp','Spot',o.tip.sp)+chip('tip-fj','Fijos',o.tip.fj)+
+          '<span class="rme-lbl">Mostrar</span>'+chip('op-sub','Subtotales',o.sub)+chip('op-tot','Total',o.tot)+chip('op-notas','Notas al pie',o.notas)+
+          '<select id="rme-ori" title="Hoja del PDF"><option value="l"'+(o.ori==='l'?' selected':'')+'>Hoja horizontal</option><option value="p"'+(o.ori==='p'?' selected':'')+'>Hoja vertical</option></select>'+
+        '</div>'+
+        '<div class="rme-bar">'+
+          '<span class="rme-lbl">Columnas ocultas</span>'+(ocultas.length?ocultas.map(function(c){ return '<button type="button" class="rme-chip add" data-addcol="'+c.k+'">+ '+c.t+'</button>'; }).join(''):'<span class="rme-n2">ninguna</span>')+
+          ' <button type="button" class="rme-lnk" id="rme-def">columnas por defecto</button>'+
+        '</div>'+
+        '<div class="rme-bar rme-busca"><span class="rme-lbl">Agregar trabajador</span><div class="rme-bw"><input id="rme-q" type="search" autocomplete="off" placeholder="Buscar en Trabajadores por nombre o RUT…"><div id="rme-res" class="rme-res hide"></div></div>'+
+          '<select id="rme-emp" title="A qué empresa va en el cierre"><option value="inn">a Innova Servi</option><option value="is">a IS Performance</option></select></div>'+
+        '<div class="rme-wrap"><table class="rme-tbl"><thead>'+head+'</thead><tbody>'+body+'</tbody></table></div>'+
+        '<div class="rme-pie">'+vis.length+' trabajadores en el PDF · las filas ocultas ('+(aj.excl||[]).length+') no se borran ni cambian pagos · lo agregado queda en el cierre del mes</div>'+
+      '</div>';
+      enlazar();
     }
-    function leer(){ var q=function(sel){ return ov.querySelector(sel); };
-      var cols=RMP_COLS.filter(function(c){ var e=q('[data-id="col-'+c.k+'"]'); return e&&e.checked; }).map(function(c){ return c.k; });
-      var sec={}; RMP_SEC.forEach(function(p){ var e=q('[data-id="sec-'+p[0]+'"]'); sec[p[0]]=!!(e&&e.checked); });
-      return {cols:cols, sec:sec, sub:!!(q('[data-id="sub"]')||{}).checked, tot:!!(q('[data-id="tot"]')||{}).checked, notas:!!(q('[data-id="notas"]')||{}).checked, ori:(q('#rmp-ori')||{}).value||'l'}; }
-    function excluidos(){ var ex=[]; ov.querySelectorAll('[data-id^="per-"]').forEach(function(e){ if(!e.checked) ex.push(e.getAttribute('data-id').slice(4)); }); return ex; }
-    function aviso(){ var x=leer(), wSum=6+38+RMP_COLS.filter(function(c){ return x.cols.indexOf(c.k)>=0; }).reduce(function(a,c){ return a+c.w; },0), W=(x.ori==='l'?279.4:215.9)-18, e=ov.querySelector('#rmp-aviso');
-      if(e) e.textContent = wSum>W ? ('Muchas columnas para la hoja '+(x.ori==='l'?'horizontal':'vertical')+': la letra se achica para que quepan'+(x.ori==='p'?' (prueba Horizontal).':'.')) : ''; }
+    function enlazar(){
+      var q=function(s){ return ov.querySelector(s); };
+      q('#rme-x').onclick=cerrar;
+      q('#rme-pdf').onclick=function(){ var G=rmpGruposVisibles(o,aj); if(!G.length){ toast('No hay nada visible para el PDF.'); return; } rmPDF(o,aj); };
+      ov.querySelectorAll('.rme-chip[data-t]').forEach(function(b){ b.onclick=function(){ var t=b.dataset.t.split('-');
+        if(t[0]==='emp') o.emp[t[1]]=!o.emp[t[1]]; else if(t[0]==='tip') o.tip[t[1]]=!o.tip[t[1]]; else o[t[1]]=!o[t[1]];
+        rmpGuardarVista(o); render(); }; });
+      q('#rme-ori').onchange=function(){ o.ori=this.value; rmpGuardarVista(o); };
+      ov.querySelectorAll('.rme-hx').forEach(function(b){ b.onclick=function(){ o.cols=o.cols.filter(function(k){ return k!==b.dataset.col; }); rmpGuardarVista(o); render(); }; });
+      ov.querySelectorAll('[data-addcol]').forEach(function(b){ b.onclick=function(){ var k=b.dataset.addcol; o.cols=RMP_COLS.filter(function(c){ return c.k===k || o.cols.indexOf(c.k)>=0; }).map(function(c){ return c.k; }); rmpGuardarVista(o); render(); }; });
+      q('#rme-def').onclick=function(){ o.cols=RMP_COLS.filter(function(c){ return c.d; }).map(function(c){ return c.k; }); rmpGuardarVista(o); render(); };
+      ov.querySelectorAll('.rme-ojo').forEach(function(b){ b.onclick=function(){ var k=b.dataset.k, ix=(aj.excl||[]).indexOf(k); aj.excl=aj.excl||[];
+        if(ix>=0) aj.excl.splice(ix,1); else aj.excl.push(k); guardarAj(); render(); }; });
+      ov.querySelectorAll('.rme-man input').forEach(function(inp){ inp.onchange=function(){ var m=aj.manual.filter(function(z){ return z.id===inp.dataset.m; })[0]; if(!m) return;
+        m[inp.dataset.f]=Math.max(0,+inp.value||0); guardarAj(); render(); }; });
+      ov.querySelectorAll('.rme-del').forEach(function(b){ b.onclick=function(){ if(!confirm('¿Quitar a esta persona del cierre del mes?')) return;
+        aj.manual=aj.manual.filter(function(z){ return z.id!==b.dataset.m; }); aj.excl=(aj.excl||[]).filter(function(k){ return k!=='m:'+b.dataset.m; }); guardarAj(); render(); }; });
+      // Buscador sobre la base de Trabajadores: rellena nombre, RUT, cargo y tipo
+      var inp=q('#rme-q'), res=q('#rme-res');
+      var yaEsta=function(t){ var rk=rutCuerpo(t.rut), nm=norm(t.nombre);
+        return rmpGrupos(aj).some(function(g){ return g.L.some(function(x){ return (rk && rutCuerpo(x.t.rut)===rk) || norm(x.t.nombre)===nm; }); }); };
+      inp.oninput=function(){ var v=norm(inp.value).normalize('NFD').replace(/[\u0300-\u036f]/g,''), vr=inp.value.replace(/[^0-9kK]/g,'');
+        if(v.length<2){ res.classList.add('hide'); res.innerHTML=''; return; }
+        var L=(RM_DATA.trab||[]).filter(function(t){ if(t.socio || t.estado==='inactivo') return false;
+          var nm=norm(t.nombre).normalize('NFD').replace(/[\u0300-\u036f]/g,''), r=(t.rut||'').replace(/[^0-9kK]/g,'');
+          return nm.indexOf(v)>=0 || (vr.length>=3 && r.indexOf(vr)>=0); }).slice(0,8);
+        res.innerHTML=L.length?L.map(function(t){ var esta=yaEsta(t);
+          return '<button type="button" class="rme-op" data-id="'+t.id+'"'+(esta?' disabled':'')+'><b>'+esc(titleCase(t.nombre))+'</b><span>'+esc(t.rut||'sin RUT')+' · '+esc(t.cargo||'sin cargo')+' · '+(t.tipo_pago==='contrato'?'Fijo':'Spot')+(esta?' · ya está en el cierre':'')+'</span></button>'; }).join('')
+          :((RM_DATA.trab||[]).some(function(t){ var nm=norm(t.nombre).normalize('NFD').replace(/[̀-ͯ]/g,''); return t.socio && nm.indexOf(v)>=0; })?'<div class="rme-op none">Es socio de la empresa: no va en Remuneraciones.</div>':'<div class="rme-op none">No está en Trabajadores (o está inactivo). Créalo o actívalo en RRHH → Trabajadores.</div>');
+        res.classList.remove('hide');
+        res.querySelectorAll('.rme-op[data-id]').forEach(function(b){ b.onclick=function(){ var t=(RM_DATA.trab||[]).filter(function(z){ return String(z.id)===b.dataset.id; })[0]; if(!t) return;
+          var emp=q('#rme-emp').value, fj=t.tipo_pago==='contrato', sec=emp==='is'?(fj?'isf':'isp'):(fj?'fj':'sp');
+          aj.manual=aj.manual||[]; aj.manual.push({ id:'m'+Date.now().toString(36), trabajador_id:t.id, nombre:titleCase(t.nombre), rut:t.rut||'', cargo:t.cargo||'', sec:sec, dias:0, horas:0, monto:0, autor:userEmail||'' });
+          if(!o.emp[emp]) o.emp[emp]=true; if(!o.tip[fj?'fj':'sp']) o.tip[fj?'fj':'sp']=true; rmpGuardarVista(o);
+          guardarAj(); render(); toast('Agregado: '+titleCase(t.nombre)+'. Completa días, horas y monto.');
+          var ult=ov.querySelector('.rme-man input[data-f="dias"][data-m="'+aj.manual[aj.manual.length-1].id+'"]'); if(ult) ult.focus(); }; });
+      };
+    }
     function cerrar(){ ov.remove(); }
-    ov.addEventListener('change',function(e){ if(e.target&&e.target.id&&e.target.id.indexOf('rmp-m')===0) return; aviso(); });
-    ov.addEventListener('click',function(e){ if(e.target===ov) cerrar(); if(e.target&&e.target.id==='rmp-ok'){ var x=leer(), ex=excluidos();
-      if(!RMP_SEC.some(function(p){ return x.sec[p[0]]; })){ toast('Elige al menos una sección.'); return; }
-      rmpGuardar(x);
-      var cambio=JSON.stringify(ex.slice().sort())!==JSON.stringify((aj.excl||[]).slice().sort());
-      var seguir=function(){ cerrar(); rmPDF(x, aj); };
-      aj.excl=ex; if(cambio) guardarAj(seguir); else seguir(); } });
     document.body.appendChild(ov); render();
   }
   $('rm-pdf').addEventListener('click',rmpAbrir);
   function rmPDF(o, aj){
     var D=RM_DATA; if(!window.jspdf){ toast('No se pudo cargar el generador de PDF. Revisa tu conexión y recarga.'); return; }
     aj=aj||{excl:[],manual:[]};
-    var G=rmpGrupos(aj).filter(function(g){ return o.sec[g.k]; }).map(function(g){ return {k:g.k, lbl:g.lbl, L:g.L.filter(function(x){ return (aj.excl||[]).indexOf(rmpPersonaKey(x))<0; })}; }).filter(function(g){ return g.L.length; });
-    var todas=[]; G.forEach(function(g){ todas=todas.concat(g.L); });
-    if(!todas.length){ toast('No queda nadie para el PDF con esas opciones.'); return; }
+    var G=rmpGruposVisibles(o,aj), todas=[]; G.forEach(function(g){ todas=todas.concat(g.L); });
+    if(!todas.length){ toast('No hay nada visible para el PDF.'); return; }
     var doc=new window.jspdf.jsPDF({unit:'mm',format:'letter',orientation:o.ori==='p'?'portrait':'landscape'});
     var PW=o.ori==='p'?215.9:279.4, PH=o.ori==='p'?279.4:215.9, X=9, y=15, W=PW-18;
     var cols=RMP_COLS.filter(function(c){ return o.cols.indexOf(c.k)>=0; }).map(function(c){ return Object.assign({},c); });
@@ -7563,26 +7628,7 @@
     var fs=Math.max(5.2, Math.min(7.2, 7*f)), cx=X, xs={n:cx}; cx+=6; xs.nm=cx; cx+=nmW;
     cols.forEach(function(c){ c._x=cx; c._w=c.w*f; cx+=c._w; }); var TW=cx-X;
     var NAVY=[26,31,110];
-    var mny=function(v){ return v?fmtMoney(v):'—'; }, neg=function(v){ return v?('-'+fmtMoney(v)):'—'; };
-    var val=function(c,x){ var fj=rmEsFijo(x)&&!x.ext&&!x.manual;
-      switch(c.k){
-        case 'rut': return x.t.rut||'—'; case 'cargo': return x.t.cargo||''; case 'tp': return rmEsFijo(x)?'Fijo':'Spot';
-        case 'dias': return String(rmDias(x)); case 'eq': return rmDiasEq(x)!=null?rmDec(rmDiasEq(x)):''; case 'hr': return hm(x.totMin);
-        case 'su': return rmSueldo(x)?(fmtMoney(rmSueldo(x))+(rmSueldoOtra(x)?'*':'')):'—'; case 'tr': return mny(x.baseCont);
-        case 'vu': return mny(x.vueltasMonto); case 'pe': return mny(x.peajes); case 'veh': return rmVeh(x)!=null?(rmVeh(x)+(x.sinBono?'*':'')):'';
-        case 'ba': return mny(x.bonoAutos||0); case 'ex': return mny(x.ext?x.extras:x.bono); case 'de': return neg(x.desc);
-        case 'ot': var ot=rmOtros(x); return ot?((ot<0?'-':'')+fmtMoney(Math.abs(ot))):'—';
-        case 'ag': return fj?mny(rmAg(x)):''; case 'tot': return fmtMoney(rmTotal(x)); case 'an': return fj?neg(rmAn(x)):''; case 'pag': return fmtMoney(rmPagar(x)); }
-      return ''; };
-    var valS=function(c,L){ var s=rmSuma(L), ba=L.reduce(function(a,x){ return a+(x.bonoAutos||0); },0);
-      switch(c.k){
-        case 'dias': return String(s.dias); case 'eq': return s.diasEq?rmDec(s.diasEq):''; case 'hr': return hm(s.min);
-        case 'su': return mny(s.sueldo); case 'tr': return mny(s.tratos); case 'vu': return mny(s.vueltas); case 'pe': return mny(s.peajes);
-        case 'ba': return mny(ba); case 'ex': return mny(s.bono-ba); case 'de': return neg(s.desc);
-        case 'ot': var ot=s.vueltas+s.peajes+s.bono-s.desc; return ot?((ot<0?'-':'')+fmtMoney(Math.abs(ot))):'—';
-        case 'ag': return mny(s.ag); case 'tot': return fmtMoney(s.total); case 'an': return neg(s.an); case 'pag': return fmtMoney(s.pagar); }
-      return ''; };
-    var todasSec=RMP_SEC.every(function(p){ return o.sec[p[0]] || !rmpGrupos(aj).some(function(g){ return g.k===p[0] && g.L.length; }); });
+    var todasSec=RMP_SEC.every(function(p){ return rmpSecVisible(o,p[0]) || !rmpGrupos(aj).some(function(g){ return g.k===p[0] && g.L.length; }); });
     doc.setFont('helvetica','bold'); doc.setFontSize(14); doc.setTextColor(NAVY[0],NAVY[1],NAVY[2]); doc.text('Remuneraciones · '+D.lbl,X,y);
     doc.setFont('helvetica','normal'); doc.setFontSize(8.5); doc.setTextColor(90,90,90); y+=5;
     doc.splitTextToSize('Generado el '+fechaCorta(todayISO())+' · '+todas.length+' trabajadores · '+G.map(function(g){ return g.lbl.replace(' · ',' ')+' '+fmtMoney(rmSuma(g.L).pagar); }).join(' · '),TW).forEach(function(l){ doc.text(l,X,y); y+=4; });
@@ -7599,7 +7645,7 @@
     function totRow(lbl,L,main){ salto(7);
       if(main){ doc.setFillColor(255,236,222); doc.rect(X,y-4,TW,6.5,'F'); doc.setTextColor(194,65,12); } else { doc.setDrawColor(200,204,220); doc.line(X,y-3.9,X+TW,y-3.9); doc.setTextColor(NAVY[0],NAVY[1],NAVY[2]); }
       doc.setFont('helvetica','bold'); doc.setFontSize(main?fs+1:fs+0.3); doc.text(corta(lbl,nmW-2),xs.nm+1,y);
-      cols.forEach(function(c){ var v=valS(c,L); if(v) celda(c,v); });
+      cols.forEach(function(c){ var v=rmpValS(c,L); if(v) celda(c,v); });
       y+=main?8:7; doc.setTextColor(30,30,30); }
     G.forEach(function(g){ var col=RMP_COLOR[g.k]; salto(14);
       doc.setFillColor(238,240,247); doc.rect(X,y-3.6,TW,5.5,'F'); doc.setFillColor(col[0],col[1],col[2]); doc.rect(X+1,y-2,2.4,2.4,'F');
@@ -7607,16 +7653,15 @@
       g.L.forEach(function(x,i){ salto(6); n++;
         if(i%2){ doc.setFillColor(248,249,252); doc.rect(X,y-3.8,TW,5.6,'F'); }
         doc.setFont('helvetica','normal'); doc.setFontSize(fs); doc.setTextColor(30,30,30);
-        doc.text(String(n),xs.n+1,y); doc.text(corta(titleCase(x.t.nombre)+((!x.ext&&!x.t.id&&!x.manual)?' (sin ficha)':'')+(x.manual?' (agregado)':''),nmW-2),xs.nm+1,y);
-        cols.forEach(function(c){ var v=val(c,x); if(!v) return;
+        doc.text(String(n),xs.n+1,y); doc.text(corta(titleCase(x.t.nombre)+((!x.ext&&!x.t.id&&!x.manual)?' (sin ficha)':''),nmW-2),xs.nm+1,y);
+        cols.forEach(function(c){ var v=rmpVal(c,x); if(!v) return;
           if(c.k==='su'&&rmSueldoOtra(x)) doc.setTextColor(160,160,160); else if((c.k==='de'||c.k==='an')&&v!=='—') doc.setTextColor(220,38,38);
           doc.setFont('helvetica',c.b?'bold':'normal'); celda(c,v); doc.setFont('helvetica','normal'); doc.setTextColor(30,30,30); });
         y+=5.6; });
       if(o.sub) totRow('Subtotal '+g.lbl.replace(' · ',' '), g.L, false); });
     if(o.tot && (G.length>1 || !o.sub)) totRow(todasSec?'TOTAL GENERAL':'TOTAL', todas, true);
     if(o.notas){ var notas=cols.filter(function(c){ return c.nota; }).map(function(c){ return c.nota; });
-      if(todas.some(function(x){ return x.manual; })) notas.push('(agregado) = persona agregada a mano para este mes (no está en los registros de horas).');
-      notas.push('Innova Servi: según el registro de horas y ajustes de InnovaGestión.'+(D.ext&&(o.sec.isp||o.sec.isf)?(' IS Performance: '+(D.ext.archivo||'importado')+'.'):''));
+      notas.push('Innova Servi: según el registro de horas y ajustes de InnovaGestión.'+(D.ext&&o.emp.is?(' IS Performance: '+(D.ext.archivo||'importado')+'.'):''));
       salto(6+notas.length*3.4); doc.setFont('helvetica','normal'); doc.setFontSize(6.8); doc.setTextColor(110,110,110);
       notas.forEach(function(t){ doc.splitTextToSize(t,TW).forEach(function(l){ doc.text(l,X,y); y+=3.2; }); }); }
     var suf=todasSec?'consolidado':G.map(function(g){ return g.k; }).join('-');
