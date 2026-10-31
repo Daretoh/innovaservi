@@ -1673,6 +1673,23 @@
   .rm-c{font:800 10px/1 var(--font);color:#fff;}
   .rm-tbl tbody tr:not(.rm-grp):not(.rm-sub):not(.rm-tot):hover td{background:#fff4ec;}
   .rm-tbl tbody tr:not(.rm-grp):not(.rm-sub):not(.rm-tot):hover td.rm-nm{box-shadow:inset 3px 0 0 var(--orange);}
+  #rmp-ov{position:fixed;inset:0;z-index:90;background:rgba(20,17,14,.45);display:flex;align-items:center;justify-content:center;padding:16px;}
+  #rmp-ov .rmp-card{background:#fff;border-radius:14px;max-width:680px;width:100%;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 24px 60px -20px rgba(0,0,0,.5);}
+  #rmp-ov .rmp-head,#rmp-ov .rmp-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 16px;border-bottom:1px solid var(--line);}
+  #rmp-ov .rmp-foot{border-bottom:0;border-top:1px solid var(--line);justify-content:flex-end;}
+  #rmp-ov .rmp-head b{font:800 15px var(--font);color:var(--navy);}
+  #rmp-ov .rmp-body{padding:12px 16px;overflow:auto;}
+  #rmp-ov .rmp-sec{margin-bottom:12px;} #rmp-ov .rmp-t{font:800 11px var(--font);text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-bottom:6px;}
+  #rmp-ov .rmp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;}
+  #rmp-ov .rmp-chk{display:flex;align-items:center;gap:7px;font:600 13px var(--font);color:var(--ink);background:var(--alt);border-radius:9px;padding:7px 9px;cursor:pointer;}
+  #rmp-ov .rmp-chk.dis{opacity:.5;cursor:default;} #rmp-ov .rmp-chk input{width:16px;height:16px;accent-color:var(--orange);margin:0;}
+  #rmp-ov .rmp-chk select{font:600 12px var(--font);padding:3px 6px;border:1px solid var(--line);border-radius:7px;background:#fff;}
+  #rmp-ov .rmp-n{font:600 10.5px var(--font);color:var(--muted);text-transform:none;letter-spacing:0;}
+  #rmp-ov .rmp-pg{margin-bottom:8px;} #rmp-ov .rmp-pgt{font:700 11.5px var(--font);color:var(--navy);margin:2px 0 4px;}
+  #rmp-ov .rmp-tag{font:800 9.5px var(--font);background:#fff4ec;color:var(--orange-2);border-radius:999px;padding:1px 6px;}
+  #rmp-ov .rmp-add{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:6px;align-items:center;}
+  #rmp-ov .rmp-add input,#rmp-ov .rmp-add select{font:600 13px var(--font);padding:8px 9px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink);min-width:0;}
+  #rmp-ov .rmp-lnk{border:0;background:none;color:var(--orange-2);font:700 11px var(--font);cursor:pointer;padding:0;text-transform:none;letter-spacing:0;}
   .rm-tbl .rm-open{cursor:pointer;} .rm-tbl .rm-open:hover b{color:var(--orange-2);text-decoration:underline;}
   .rm-mdia{cursor:pointer;margin:0 -6px;padding-left:6px !important;padding-right:6px !important;border-radius:8px;} .rm-mdia:hover{background:#fff4ec;}
   .rm-ver{font:700 10.5px var(--font);color:var(--orange-2);margin-top:2px;}
@@ -7029,19 +7046,19 @@
       traerTodo(function(){ return sb.from('horas').select('*').gte('fecha',ini).lte('fecha',fin).order('id'); }),
       traerTodo(function(){ return sb.from('vehiculo_gastos').select('categoria,fecha,monto,cantidad,chofer').in('categoria',['vuelta','peaje']).gte('fecha',ini).lte('fecha',fin).order('id'); }),
       traerTodo(function(){ return sb.from('remuneracion_items').select('*').gte('semana',sumarDias(ini,-3)).lte('semana',sumarDias(fin,-3)).order('id'); }),
-      sb.from('config').select('*').in('clave',['valor_vuelta','valor_hora',rmExtClave(RM_MES)]),
+      sb.from('config').select('*').in('clave',['valor_vuelta','valor_hora',rmExtClave(RM_MES),'remu_pdf_ajustes_'+RM_MES]),
       traerTodo(function(){ return sb.from('remu_ajuste_dia').select('*').gte('fecha',ini).lte('fecha',fin).order('fecha'); }),
       traerTodo(function(){ return sb.from('remu_ajuste_faena').select('*').gte('fecha',ini).lte('fecha',fin).order('fecha'); }),
       traerTodo(function(){ return sb.from('remu_fijo_items').select('*').eq('mes',ini).order('id'); })
     ]).then(function(rs){
       if(tok!==RM_TOK) return;   // el usuario ya cambió de mes
       if(rs[1].error){ $('rm-list').innerHTML='<p class="note">No se pudieron cargar las horas: '+esc(rs[1].error.message||'')+'</p>'; return; }
-      var cfgMap={}, ext=null; ((rs[4]&&rs[4].data)||[]).forEach(function(c){ if(c.clave===rmExtClave(RM_MES)){ try{ ext=JSON.parse(c.valor); }catch(_){} } else cfgMap[c.clave]=+c.valor||0; });
+      var cfgMap={}, ext=null, ajPdf=null; ((rs[4]&&rs[4].data)||[]).forEach(function(c){ if(c.clave===rmExtClave(RM_MES)){ try{ ext=JSON.parse(c.valor); }catch(_){} } else if(c.clave==='remu_pdf_ajustes_'+RM_MES){ try{ ajPdf=JSON.parse(c.valor); }catch(_){} } else cfgMap[c.clave]=+c.valor||0; });
       var ajDia={}; (rs[5].data||[]).forEach(function(a){ ajDia[a.trabajador_id+'|'+a.fecha]={monto:(+a.monto||0), obs:a.obs||''}; });
       var ajFae={}; (rs[6].data||[]).forEach(function(a){ ajFae[a.trabajador_id+'|'+a.fecha+'|'+(a.faena||'')]={monto:(+a.monto||0), obs:a.obs||''}; });
       RM_DATA={ lun:ini, fin:fin, nd:R.nd, lbl:R.lbl, mes:RM_MES,
         trab:(rs[0]&&rs[0].data)||[], regs:rs[1].data||[], vg:rs[2].data||[], items:rs[3].data||[],
-        ajDia:ajDia, ajFae:ajFae, valorVuelta:cfgMap.valor_vuelta||0, valorHora:cfgMap.valor_hora||0, ext:(ext&&ext.filas)?ext:null,
+        ajDia:ajDia, ajFae:ajFae, valorVuelta:cfgMap.valor_vuelta||0, valorHora:cfgMap.valor_hora||0, ext:(ext&&ext.filas)?ext:null, ajPdf:ajPdf,
         fijoIt:(rs[7]&&rs[7].data)||[], fijoItErr:!!(rs[7]&&rs[7].error) };
       RM_DATA.R=calcRemu(RM_DATA); rmAgregarFijos(RM_DATA);
       pintarRemuMes();
@@ -7090,8 +7107,11 @@
       return { ext:true, t:{id:null,nombre:r.nombre,rut:r.rut,cargo:r.cargo}, tipo:fj?'contrato':'hora', dias:r.dias, totMin:r.min,
         autos:(r.autos!=null?+r.autos:null), sinBono:!!r.sinBono, baseCont:r.base, vueltasMonto:0, peajes:0, bonoAutos:r.bonoAutos, extras:r.extras, bono:r.bonoAutos+r.extras, desc:r.desc, sueldoExt:(+r.sueldo||0), vhExt:(+r.vh||0), contable:r.total, real:r.real, H:null }; }); }
   // Grupos del consolidado (mismo orden en pantalla, Excel y PDF). filt: 'todos' | 'spot' | 'fijo'.
+  function rmManual(secs){ var M=(RM_DATA&&RM_DATA.ajPdf&&RM_DATA.ajPdf.manual)||[];
+    if(!RM_DATA._man || RM_DATA._manSrc!==M){ RM_DATA._man=M.map(rmpFilaManual); RM_DATA._manSrc=M; }
+    return RM_DATA._man.filter(function(x,ix){ return secs.indexOf(M[ix].sec)>=0; }); }
   function rmGrupos(filt){
-    var inn=RM_DATA.R.filas, ext=rmExtFilas(), E=RM_DATA.ext;
+    var inn=RM_DATA.R.filas.concat(rmManual(['sp','fj'])), ext=rmExtFilas().concat(rmManual(['isp','isf'])), E=RM_DATA.ext;
     var pasa=function(x){ return filt==='spot'?!rmEsFijo(x):(filt==='fijo'?rmEsFijo(x):true); };
     return [
       {k:'sp', emp:'Innova Servi', lbl:'Innova Servi · Spot · pago por trato', L:inn.filter(function(x){ return !rmEsFijo(x); })},
@@ -7170,9 +7190,9 @@
     var D=RM_DATA; if(!D||!D.R) return;
     rmPintarExtInfo();
     document.querySelectorAll('.rm-segl').forEach(function(e){ e.textContent=rmSegNom()?(' · '+rmSegNom()):''; });
-    var inn=D.R.filas, ext=rmExtFilas(), todas=inn.concat(ext);
+    var inn=D.R.filas.concat(rmManual(['sp','fj'])), ext=rmExtFilas().concat(rmManual(['isp','isf'])), todas=inn.concat(ext);
     var S=rmSuma(inn.filter(function(x){ return !rmEsFijo(x); })), F=rmSuma(inn.filter(rmEsFijo)), I=rmSuma(ext), T=rmSuma(todas);
-    var sinFicha=inn.filter(function(x){ return !x.t.id; }).length, cruce=rmCruce();
+    var sinFicha=inn.filter(function(x){ return !x.t.id && !x.manual; }).length, cruce=rmCruce();
     $('remu-cnt').innerHTML=todas.length+(todas.length===1?' trabajador':' trabajadores')+' en '+esc(D.lbl);
     $('rm-kpis').innerHTML=
       '<div class="rm-kpi main"><div class="l">Total del mes</div><div class="v">'+fmtMoney(T.total)+'</div><div class="s">'+(ext.length?('Innova '+fmtMoney(S.total+F.total)+' · IS '+fmtMoney(I.total)):((T.sueldo?('sueldos '+fmtMoney(T.sueldo)+' · '):'')+'tratos '+fmtMoney(T.tratos)+(T.total-T.sueldo!==T.tratos?(' · otros '+fmtMoney(T.total-T.sueldo-T.tratos)):'')))+'</div></div>'+
@@ -7206,7 +7226,7 @@
       if(x.sinReg) celdas='';
       var nota=x.sinReg?'<div class="rt-sub" style="color:var(--muted);font-style:italic">Sin registros de horas este mes · solo sueldo base</div>':(x.ext?'<div class="rt-sub" style="color:#0e7490;font-style:italic">Detalle por día en IS Performance</div>':'');
       var ambas=rk && (x.ext?cruce.inn[rk]:cruce.ext[rk]);
-      var badge=(!x.ext&&!x.t.id)?'<span class="rm-warn" title="No está registrado como trabajador">Sin ficha</span> ':'';
+      var badge=x.manual?'<span class="rm-warn" style="background:#fff4ec;color:var(--orange-2)" title="Agregado a mano en el PDF para remuneraciones (no está en los registros de horas)">Agregado</span> ':((!x.ext&&!x.t.id)?'<span class="rm-warn" title="No está registrado como trabajador">Sin ficha</span> ':'');
       var extra=x.ext?('<td class="rt-ok"'+(x.bonoAutos?' title="Bono autos '+fmtMoney(x.bonoAutos)+(x.extras?(' + extras '+fmtMoney(x.extras)):'')+'"':'')+'>'+m(x.bono)+(x.bonoAutos?'<div class="rt-sub">incl. bono autos</div>':'')+'</td>'):('<td class="rt-ok">'+m(x.bono)+'</td>');
       return '<tr'+(x.ext?' class="rm-isrow"':'')+'><td class="rm-n">'+idx+'</td><td class="rm-nm rm-open" data-k="'+(x.ext?('e'+extIdx(x)):('i'+ri))+'" title="Ver todos sus trabajos del mes"><b>'+badge+esc(titleCase(x.t.nombre)||'')+'</b><div class="rt-sub">'+(x.t.rut?esc(x.t.rut):'')+(x.t.rut&&x.t.cargo?' · ':'')+esc(x.t.cargo||'')+'</div>'+
         (rmEsFijo(x)&&!x.ext?(rmJornadaTxt(x)?'<div class="rm-jor">'+esc(rmJornadaTxt(x))+'</div>':'<div class="rm-jor bad" title="Configura la jornada en la ficha del trabajador: sin ella todas sus horas se pagan como trato">Sin jornada configurada: todas sus horas cuentan como trato</div>'):'')+
@@ -7223,7 +7243,7 @@
     if(G.length>1) body+=totFila('rm-tot','Total general',rmSuma(vis));
     if(!body) body='<tr><td colspan="'+nCol+'" style="text-align:center;padding:20px">Sin trabajadores en este grupo.</td></tr>';
     $('rm-list').innerHTML='<div class="remu-scroll"><table class="rm-tbl"><thead>'+head+'</thead><tbody>'+body+'</tbody></table></div>';
-    $('rm-list').querySelectorAll('.rm-open[data-k]').forEach(function(el){ el.addEventListener('click',function(){ var k=el.dataset.k, x=k[0]==='e'?ext[+k.slice(1)]:inn[+k.slice(1)]; if(x) abrirMesTrab(x); }); });
+    $('rm-list').querySelectorAll('.rm-open[data-k]').forEach(function(el){ el.addEventListener('click',function(){ var k=el.dataset.k, x=k[0]==='e'?ext[+k.slice(1)]:inn[+k.slice(1)]; if(x&&!x.manual) abrirMesTrab(x); }); });
     $('rm-list').querySelectorAll('.rm-c').forEach(function(b){ b.addEventListener('click',function(){ rmIrSemana(inn[+b.dataset.i], b.dataset.f); }); });
   }
   // Detalle del MES de un trabajador: todos sus trabajos día a día (agrupados por semana), resumen por faena y desglose del pago.
@@ -7385,7 +7405,7 @@
     var r=5, n=0, todas=[];
     G.forEach(function(g){
       g.L.forEach(function(x){ n++; todas.push(x); var rp=rutPartes(x.t.rut), row=ws.getRow(r);
-        var vals=[n, titleCase(x.t.nombre)+((!x.ext&&!x.t.id)?' (sin ficha)':''), rp[0]?(+rp[0]||rp[0]):'', rp[1], x.t.cargo||'', rmEsFijo(x)?'Mensual':'Spot', g.emp];
+        var vals=[n, titleCase(x.t.nombre)+(x.manual?' (agregado)':((!x.ext&&!x.t.id)?' (sin ficha)':'')), rp[0]?(+rp[0]||rp[0]):'', rp[1], x.t.cargo||'', rmEsFijo(x)?'Mensual':'Spot', g.emp];
         vals.forEach(function(v,i){ var cell=row.getCell(i+1); cell.value=v; cell.font={size:10}; cell.alignment={vertical:'middle',horizontal:(i===1||i===4)?'left':'center'}; });
         if(rmEsFijo(x)&&!x.ext) row.getCell(6).note=rmJornadaTxt(x)||'Sin jornada configurada: todas sus horas cuentan como trato';
         var fjI=rmEsFijo(x)&&!x.ext;
@@ -7416,62 +7436,192 @@
       descargarBlob(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}), rmArchivo('xlsx')); });
   }
   // PDF horizontal para enviar a remuneraciones: grilla de asistencia + días, tratos, otros y total, por empresa.
-  $('rm-pdf').addEventListener('click',function(){
-    var D=RM_DATA; if(!rmHayDatos()){ toast('No hay datos en este mes.'); return; }
-    if(!window.jspdf){ toast('No se pudo cargar el generador de PDF. Revisa tu conexión y recarga.'); return; }
-    var doc=new window.jspdf.jsPDF({unit:'mm',format:'letter',orientation:'landscape'}), X=9, y=15;
-    var G=rmGrupos(RM_FILT), todas=[]; G.forEach(function(g){ todas=todas.concat(g.L); });
-    var C={n:6, nm:44, rut:19, tp:11, dias:9, eq:11, hr:16, su:19, tr:19, veh:9, ot:17, ag:17, tot:20, an:17, pag:21};
-    var K=['n','nm','rut','tp','dias','eq','hr','su','tr','veh','ot','ag','tot','an','pag'], xs={}, cx=X; K.forEach(function(k){ xs[k]=cx; cx+=C[k]; }); var W=cx-X;
-    var R=function(k){ return xs[k]+C[k]-1; };
-    var NAVY=[26,31,110], COL={sp:[255,107,0], fj:NAVY, is:[14,116,144]};
-    doc.setFont('helvetica','bold'); doc.setFontSize(14); doc.setTextColor(NAVY[0],NAVY[1],NAVY[2]); doc.text('Asistencia mensual · '+D.lbl+(rmSegNom()?(' · '+rmSegNom()):''),X,y);
+  // ====== PDF para remuneraciones: con opciones (secciones, columnas, personas, totales, orientación) ======
+  // Columnas y opciones quedan guardadas en este navegador. Quitar personas y agregar personas que no están (ej. practicante)
+  // se guarda por mes en config ('remu_pdf_ajustes_AAAA-MM'), compartido. Solo cambia lo que se imprime: no toca ningún cálculo ni pago.
+  var RMP_KEY='rm-pdf-opciones-v2';
+  var RMP_COLS=[
+    {k:'rut', t:'RUT', w:19, a:'l', d:1},
+    {k:'cargo', t:'Cargo', w:28, a:'l'},
+    {k:'tp', t:'Tipo', w:10, a:'l', d:1},
+    {k:'dias', t:'Días', w:9, d:1},
+    {k:'eq', t:'Días liq.', w:12, d:1, nota:'Días liq. (spot) = total / valor del día de trato: días equivalentes para la liquidación.'},
+    {k:'hr', t:'Horas', w:15, d:1},
+    {k:'su', t:'Sueldo', w:18, d:1, nota:'Sueldo con * = lo paga otra empresa (no suma).'},
+    {k:'tr', t:'Tratos', w:18, d:1},
+    {k:'vu', t:'Vueltas', w:16},
+    {k:'pe', t:'Peajes', w:15},
+    {k:'veh', t:'Veh.', w:9, nota:'Veh. = vehículos del mes para el bono por autos (IS Performance; con * = sin bono).'},
+    {k:'ba', t:'Bono autos', w:17},
+    {k:'ex', t:'Extras', w:16},
+    {k:'de', t:'Desc.', w:16},
+    {k:'ot', t:'Otros*', w:17, d:1, nota:'*Otros = vueltas + peajes + bono autos + extras - descuentos.'},
+    {k:'ag', t:'Aguinaldo', w:17, d:1},
+    {k:'tot', t:'Total', w:19, b:1, d:1},
+    {k:'an', t:'Anticipo', w:16, d:1, nota:'Anticipo (fijos): ya pagado, se resta de "A pagar".'},
+    {k:'pag', t:'A pagar', w:20, b:1, d:1}
+  ];
+  var RMP_SEC=[['sp','Innova Servi · Spot'],['fj','Innova Servi · Fijos'],['isp','IS Performance · Spot'],['isf','IS Performance · Fijos']];
+  var RMP_COLOR={sp:[255,107,0], fj:[26,31,110], isp:[14,116,144], isf:[8,80,100]};
+  function rmpCargar(){ var o=null; try{ o=JSON.parse(localStorage.getItem(RMP_KEY)||'null'); }catch(_){}
+    var def={cols:RMP_COLS.filter(function(c){ return c.d; }).map(function(c){ return c.k; }), sec:{sp:true,fj:true,isp:true,isf:true}, sub:true, tot:true, notas:true, ori:'l'};
+    if(!o||!o.cols) return def; return Object.assign(def,o); }
+  function rmpGuardar(o){ try{ localStorage.setItem(RMP_KEY,JSON.stringify(o)); }catch(_){} }
+  function rmpClave(){ return 'remu_pdf_ajustes_'+RM_DATA.mes; }
+  function rmpPersonaKey(x){ return (x.manual?'m:'+x.mid:((x.ext?'e:':'i:')+(rutCuerpo(x.t.rut)||norm(x.t.nombre)))); }
+  // Persona agregada a mano (no está en los registros): fila con el mismo formato que las demás.
+  function rmpFilaManual(m){ var fj=(m.sec==='fj'||m.sec==='isf'), ext=(m.sec==='isp'||m.sec==='isf'), monto=+m.monto||0;
+    return { manual:true, mid:m.id, ext:ext, t:{id:null,nombre:m.nombre||'',rut:m.rut||'',cargo:m.cargo||''}, tipo:fj?'contrato':'hora',
+      dias:+m.dias||0, diasH:+m.dias||0, totMin:Math.round((+m.horas||0)*60), baseCont:monto, base:monto, baseMin:0, vh:0, jor:0,
+      vueltas:0, vv:0, vueltasMonto:0, peajes:0, bono:0, bonoAutos:0, extras:0, desc:0, contable:monto, total:monto, real:monto, H:null, diaMonto:{}, vuDia:{}, nota:m.nota||'' }; }
+  // Secciones del PDF: Innova spot / fijos e IS Performance spot / fijos, más las personas agregadas a mano.
+  function rmpGrupos(aj){ var inn=RM_DATA.R.filas, ext=rmExtFilas(), man=((aj&&aj.manual)||[]).map(rmpFilaManual);
+    var por={ sp:inn.filter(function(x){ return !rmEsFijo(x); }), fj:inn.filter(rmEsFijo), isp:ext.filter(function(x){ return !rmEsFijo(x); }), isf:ext.filter(rmEsFijo) };
+    ((aj&&aj.manual)||[]).forEach(function(m,ix){ if(por[m.sec]) por[m.sec].push(man[ix]); });
+    return RMP_SEC.map(function(p){ return {k:p[0], lbl:p[1], L:por[p[0]]}; }); }
+  function rmpAbrir(){
+    if(!rmHayDatos()){ toast('No hay datos en este mes.'); return; }
+    busy(true,'Cargando opciones…');
+    sb.from('config').select('valor').eq('clave',rmpClave()).maybeSingle().then(function(r){ busy(false);
+      var aj={excl:[],manual:[]}; try{ if(r&&r.data&&r.data.valor) aj=Object.assign(aj,JSON.parse(r.data.valor)); }catch(_){}
+      rmpPanel(aj);
+    }, function(){ busy(false); rmpPanel({excl:[],manual:[]}); });
+  }
+  function rmpPanel(aj){
+    var o=rmpCargar();
+    if(RM_FILT==='fijo') o.sec={sp:false,fj:true,isp:false,isf:true}; else if(RM_FILT==='spot') o.sec={sp:true,fj:false,isp:true,isf:false};
+    var ov=document.createElement('div'); ov.id='rmp-ov';
+    var chk=function(id,lbl,on,dis,extra){ return '<label class="rmp-chk'+(dis?' dis':'')+'"><input type="checkbox" data-id="'+id+'"'+(on?' checked':'')+(dis?' disabled':'')+'><span>'+lbl+(extra||'')+'</span></label>'; };
+    var guardarAj=function(cb){ busy(true,'Guardando…');
+      sb.from('config').upsert({clave:rmpClave(), valor:JSON.stringify(aj)},{onConflict:'clave'}).then(function(r){ busy(false); if(r&&r.error){ toast('No se pudo guardar: '+r.error.message); return; }
+        RM_DATA.ajPdf=JSON.parse(JSON.stringify(aj)); RM_DATA._man=null; pintarRemuMes(); if(cb) cb(); }, function(){ busy(false); toast('No se pudo guardar.'); }); };
+    function render(){
+      var cur=ov.querySelector('.rmp-card')?leer():o; o=cur;
+      var G=rmpGrupos(aj), hay={}; G.forEach(function(g){ hay[g.k]=g.L.length; });
+      var personas=G.map(function(g){ if(!g.L.length) return '';
+        return '<div class="rmp-pg"><div class="rmp-pgt">'+esc(g.lbl)+'</div><div class="rmp-grid">'+g.L.map(function(x){ var k=rmpPersonaKey(x);
+          return chk('per-'+k, esc(titleCase(x.t.nombre)||'(sin nombre)'), aj.excl.indexOf(k)<0, false, x.manual?' <span class="rmp-tag">agregada</span> <button type="button" class="rmp-lnk rmp-delm" data-mid="'+esc(x.mid)+'">quitar</button>':''); }).join('')+'</div></div>'; }).join('');
+      ov.innerHTML='<div class="rmp-card"><div class="rmp-head"><b>PDF para remuneraciones · '+esc(RM_DATA.lbl)+'</b><button type="button" class="btn ghost small" id="rmp-x" style="width:auto">Cerrar</button></div>'+
+        '<div class="rmp-body">'+
+          '<div class="rmp-sec"><div class="rmp-t">Secciones</div><div class="rmp-grid">'+RMP_SEC.map(function(p){ return chk('sec-'+p[0],p[1],o.sec[p[0]]!==false&&!!hay[p[0]],!hay[p[0]],' <span class="rmp-n">'+(hay[p[0]]?(hay[p[0]]+' pers.'):'sin datos')+'</span>'); }).join('')+'</div></div>'+
+          '<div class="rmp-sec"><div class="rmp-t">Columnas <span class="rmp-n">(N° y Trabajador siempre van)</span> <button type="button" class="rmp-lnk" id="rmp-todas">todas</button> · <button type="button" class="rmp-lnk" id="rmp-min">mínimas</button> · <button type="button" class="rmp-lnk" id="rmp-def">por defecto</button></div><div class="rmp-grid">'+
+            RMP_COLS.map(function(c){ return chk('col-'+c.k,c.t,o.cols.indexOf(c.k)>=0); }).join('')+'</div></div>'+
+          '<div class="rmp-sec"><div class="rmp-t">Personas <span class="rmp-n">(desmarca a quien no debe ir en el PDF; no borra nada)</span></div>'+personas+'</div>'+
+          '<div class="rmp-sec"><div class="rmp-t">Agregar persona que no está <span class="rmp-n">(ej. practicante; queda en el cierre del mes: tabla, totales, Excel y PDF)</span></div>'+
+            '<div class="rmp-add"><input id="rmp-mn" placeholder="Nombre completo"><input id="rmp-mr" placeholder="RUT"><input id="rmp-mc" placeholder="Cargo (ej. Practicante)">'+
+            '<select id="rmp-ms">'+RMP_SEC.map(function(p){ return '<option value="'+p[0]+'">'+p[1]+'</option>'; }).join('')+'</select>'+
+            '<input id="rmp-md" type="number" min="0" placeholder="Días"><input id="rmp-mh" type="number" min="0" step="0.5" placeholder="Horas"><input id="rmp-mm" type="number" min="0" placeholder="Monto a pagar ($)">'+
+            '<button type="button" class="btn small" id="rmp-madd" style="width:auto">Agregar</button></div></div>'+
+          '<div class="rmp-sec"><div class="rmp-t">Opciones</div><div class="rmp-grid">'+chk('sub','Subtotal por sección',o.sub)+chk('tot','Total general',o.tot)+chk('notas','Notas al pie',o.notas)+
+            '<label class="rmp-chk">Hoja <select id="rmp-ori"><option value="l"'+(o.ori==='l'?' selected':'')+'>Horizontal</option><option value="p"'+(o.ori==='p'?' selected':'')+'>Vertical</option></select></label></div></div>'+
+          '<p class="note" id="rmp-aviso" style="margin:2px 0 0"></p>'+
+        '</div><div class="rmp-foot"><button type="button" class="btn ghost small" id="rmp-cancel" style="width:auto">Cancelar</button><button type="button" class="btn small" id="rmp-ok" style="width:auto">Generar PDF</button></div></div>';
+      var q=function(sel){ return ov.querySelector(sel); };
+      var marcar=function(lista){ RMP_COLS.forEach(function(c){ q('[data-id="col-'+c.k+'"]').checked=lista.indexOf(c.k)>=0; }); aviso(); };
+      q('#rmp-todas').onclick=function(){ marcar(RMP_COLS.map(function(c){ return c.k; })); };
+      q('#rmp-min').onclick=function(){ marcar(['rut','dias','tot','pag']); };
+      q('#rmp-def').onclick=function(){ marcar(RMP_COLS.filter(function(c){ return c.d; }).map(function(c){ return c.k; })); };
+      q('#rmp-x').onclick=cerrar; q('#rmp-cancel').onclick=cerrar;
+      q('#rmp-madd').onclick=function(){ var nom=(q('#rmp-mn').value||'').trim(), monto=+(q('#rmp-mm').value||0);
+        if(!nom){ toast('Escribe el nombre.'); return; } if(!(monto>=0)){ toast('Revisa el monto.'); return; }
+        aj.manual.push({ id:'m'+Date.now().toString(36), nombre:titleCase(nom), rut:(q('#rmp-mr').value||'').trim(), cargo:(q('#rmp-mc').value||'').trim(), sec:q('#rmp-ms').value,
+          dias:+(q('#rmp-md').value||0), horas:+(q('#rmp-mh').value||0), monto:monto, autor:userEmail||'' });
+        guardarAj(function(){ toast('✓ Agregada al PDF de '+RM_DATA.lbl); render(); }); };
+      ov.querySelectorAll('.rmp-delm').forEach(function(b){ b.onclick=function(e){ e.preventDefault(); e.stopPropagation(); if(!confirm('¿Quitar esta persona agregada?')) return;
+        aj.manual=aj.manual.filter(function(m){ return m.id!==b.dataset.mid; }); guardarAj(function(){ render(); }); }; });
+      aviso();
+    }
+    function leer(){ var q=function(sel){ return ov.querySelector(sel); };
+      var cols=RMP_COLS.filter(function(c){ var e=q('[data-id="col-'+c.k+'"]'); return e&&e.checked; }).map(function(c){ return c.k; });
+      var sec={}; RMP_SEC.forEach(function(p){ var e=q('[data-id="sec-'+p[0]+'"]'); sec[p[0]]=!!(e&&e.checked); });
+      return {cols:cols, sec:sec, sub:!!(q('[data-id="sub"]')||{}).checked, tot:!!(q('[data-id="tot"]')||{}).checked, notas:!!(q('[data-id="notas"]')||{}).checked, ori:(q('#rmp-ori')||{}).value||'l'}; }
+    function excluidos(){ var ex=[]; ov.querySelectorAll('[data-id^="per-"]').forEach(function(e){ if(!e.checked) ex.push(e.getAttribute('data-id').slice(4)); }); return ex; }
+    function aviso(){ var x=leer(), wSum=6+38+RMP_COLS.filter(function(c){ return x.cols.indexOf(c.k)>=0; }).reduce(function(a,c){ return a+c.w; },0), W=(x.ori==='l'?279.4:215.9)-18, e=ov.querySelector('#rmp-aviso');
+      if(e) e.textContent = wSum>W ? ('Muchas columnas para la hoja '+(x.ori==='l'?'horizontal':'vertical')+': la letra se achica para que quepan'+(x.ori==='p'?' (prueba Horizontal).':'.')) : ''; }
+    function cerrar(){ ov.remove(); }
+    ov.addEventListener('change',function(e){ if(e.target&&e.target.id&&e.target.id.indexOf('rmp-m')===0) return; aviso(); });
+    ov.addEventListener('click',function(e){ if(e.target===ov) cerrar(); if(e.target&&e.target.id==='rmp-ok'){ var x=leer(), ex=excluidos();
+      if(!RMP_SEC.some(function(p){ return x.sec[p[0]]; })){ toast('Elige al menos una sección.'); return; }
+      rmpGuardar(x);
+      var cambio=JSON.stringify(ex.slice().sort())!==JSON.stringify((aj.excl||[]).slice().sort());
+      var seguir=function(){ cerrar(); rmPDF(x, aj); };
+      aj.excl=ex; if(cambio) guardarAj(seguir); else seguir(); } });
+    document.body.appendChild(ov); render();
+  }
+  $('rm-pdf').addEventListener('click',rmpAbrir);
+  function rmPDF(o, aj){
+    var D=RM_DATA; if(!window.jspdf){ toast('No se pudo cargar el generador de PDF. Revisa tu conexión y recarga.'); return; }
+    aj=aj||{excl:[],manual:[]};
+    var G=rmpGrupos(aj).filter(function(g){ return o.sec[g.k]; }).map(function(g){ return {k:g.k, lbl:g.lbl, L:g.L.filter(function(x){ return (aj.excl||[]).indexOf(rmpPersonaKey(x))<0; })}; }).filter(function(g){ return g.L.length; });
+    var todas=[]; G.forEach(function(g){ todas=todas.concat(g.L); });
+    if(!todas.length){ toast('No queda nadie para el PDF con esas opciones.'); return; }
+    var doc=new window.jspdf.jsPDF({unit:'mm',format:'letter',orientation:o.ori==='p'?'portrait':'landscape'});
+    var PW=o.ori==='p'?215.9:279.4, PH=o.ori==='p'?279.4:215.9, X=9, y=15, W=PW-18;
+    var cols=RMP_COLS.filter(function(c){ return o.cols.indexOf(c.k)>=0; }).map(function(c){ return Object.assign({},c); });
+    var fijo=6+cols.reduce(function(a,c){ return a+c.w; },0), f=1, nmW=W-fijo;
+    if(nmW<38){ f=(W-38-6)/Math.max(1,(fijo-6)); nmW=38; } else if(nmW>80){ nmW=80; }
+    var fs=Math.max(5.2, Math.min(7.2, 7*f)), cx=X, xs={n:cx}; cx+=6; xs.nm=cx; cx+=nmW;
+    cols.forEach(function(c){ c._x=cx; c._w=c.w*f; cx+=c._w; }); var TW=cx-X;
+    var NAVY=[26,31,110];
+    var mny=function(v){ return v?fmtMoney(v):'—'; }, neg=function(v){ return v?('-'+fmtMoney(v)):'—'; };
+    var val=function(c,x){ var fj=rmEsFijo(x)&&!x.ext&&!x.manual;
+      switch(c.k){
+        case 'rut': return x.t.rut||'—'; case 'cargo': return x.t.cargo||''; case 'tp': return rmEsFijo(x)?'Fijo':'Spot';
+        case 'dias': return String(rmDias(x)); case 'eq': return rmDiasEq(x)!=null?rmDec(rmDiasEq(x)):''; case 'hr': return hm(x.totMin);
+        case 'su': return rmSueldo(x)?(fmtMoney(rmSueldo(x))+(rmSueldoOtra(x)?'*':'')):'—'; case 'tr': return mny(x.baseCont);
+        case 'vu': return mny(x.vueltasMonto); case 'pe': return mny(x.peajes); case 'veh': return rmVeh(x)!=null?(rmVeh(x)+(x.sinBono?'*':'')):'';
+        case 'ba': return mny(x.bonoAutos||0); case 'ex': return mny(x.ext?x.extras:x.bono); case 'de': return neg(x.desc);
+        case 'ot': var ot=rmOtros(x); return ot?((ot<0?'-':'')+fmtMoney(Math.abs(ot))):'—';
+        case 'ag': return fj?mny(rmAg(x)):''; case 'tot': return fmtMoney(rmTotal(x)); case 'an': return fj?neg(rmAn(x)):''; case 'pag': return fmtMoney(rmPagar(x)); }
+      return ''; };
+    var valS=function(c,L){ var s=rmSuma(L), ba=L.reduce(function(a,x){ return a+(x.bonoAutos||0); },0);
+      switch(c.k){
+        case 'dias': return String(s.dias); case 'eq': return s.diasEq?rmDec(s.diasEq):''; case 'hr': return hm(s.min);
+        case 'su': return mny(s.sueldo); case 'tr': return mny(s.tratos); case 'vu': return mny(s.vueltas); case 'pe': return mny(s.peajes);
+        case 'ba': return mny(ba); case 'ex': return mny(s.bono-ba); case 'de': return neg(s.desc);
+        case 'ot': var ot=s.vueltas+s.peajes+s.bono-s.desc; return ot?((ot<0?'-':'')+fmtMoney(Math.abs(ot))):'—';
+        case 'ag': return mny(s.ag); case 'tot': return fmtMoney(s.total); case 'an': return neg(s.an); case 'pag': return fmtMoney(s.pagar); }
+      return ''; };
+    var todasSec=RMP_SEC.every(function(p){ return o.sec[p[0]] || !rmpGrupos(aj).some(function(g){ return g.k===p[0] && g.L.length; }); });
+    doc.setFont('helvetica','bold'); doc.setFontSize(14); doc.setTextColor(NAVY[0],NAVY[1],NAVY[2]); doc.text('Remuneraciones · '+D.lbl,X,y);
     doc.setFont('helvetica','normal'); doc.setFontSize(8.5); doc.setTextColor(90,90,90); y+=5;
-    doc.text('Generado el '+fechaCorta(todayISO())+' · '+todas.length+' trabajadores · '+G.map(function(g){ return (g.k==='is'?'IS Performance':(g.k==='sp'?'Innova spot':'Innova fijos'))+' '+fmtMoney(rmSuma(g.L).pagar); }).join(' · '),X,y);
-    y+=7;
-    function corta(t,w){ t=String(t||''); if(doc.getTextWidth(t)<=w) return t; while(t.length>1 && doc.getTextWidth(t+'…')>w) t=t.slice(0,-1); return t+'…'; }
-    function head(){ doc.setFillColor(NAVY[0],NAVY[1],NAVY[2]); doc.rect(X,y-4,W,7,'F'); doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(7);
-      doc.text('N°',xs.n+1,y+0.8); doc.text('Trabajador',xs.nm+1,y+0.8); doc.text('RUT',xs.rut+1,y+0.8); doc.text('Tipo',xs.tp+1,y+0.8);
-      [['dias','Días'],['eq','D. liq.'],['hr','Horas'],['su','Sueldo'],['tr','Tratos'],['veh','Veh.'],['ot','Otros*'],['ag','Aguinaldo'],['tot','Total'],['an','Anticipo'],['pag','A pagar']].forEach(function(p){ doc.text(p[1],R(p[0]),y+0.8,{align:'right'}); });
+    doc.splitTextToSize('Generado el '+fechaCorta(todayISO())+' · '+todas.length+' trabajadores · '+G.map(function(g){ return g.lbl.replace(' · ',' ')+' '+fmtMoney(rmSuma(g.L).pagar); }).join(' · '),TW).forEach(function(l){ doc.text(l,X,y); y+=4; });
+    y+=3;
+    var corta=function(t,w){ t=String(t||''); if(doc.getTextWidth(t)<=w) return t; while(t.length>1 && doc.getTextWidth(t+'…')>w) t=t.slice(0,-1); return t+'…'; };
+    var celda=function(c,txt){ txt=corta(txt,c._w-1.5); if(c.a==='l') doc.text(txt,c._x+0.8,y); else doc.text(txt,c._x+c._w-0.8,y,{align:'right'}); };
+    function head(){ doc.setFillColor(NAVY[0],NAVY[1],NAVY[2]); doc.rect(X,y-4,TW,7,'F'); doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(fs);
+      doc.text('N°',xs.n+1,y+0.8); doc.text('Trabajador',xs.nm+1,y+0.8);
+      cols.forEach(function(c){ var t=corta(c.t,c._w-1); if(c.a==='l') doc.text(t,c._x+0.8,y+0.8); else doc.text(t,c._x+c._w-0.8,y+0.8,{align:'right'}); });
       y+=7; doc.setTextColor(30,30,30); }
-    function salto(h){ if(y+h>205){ doc.addPage(); y=14; head(); } }
-    var mny=function(v,neg){ return v?((neg?'-':'')+fmtMoney(v)):'—'; };
+    function salto(h){ if(y+h>PH-12){ doc.addPage(); y=14; head(); } }
     head();
     var n=0;
-    function grupo(g){ var L=g.L, col=COL[g.k]; salto(14);
-      doc.setFillColor(238,240,247); doc.rect(X,y-3.6,W,5.5,'F'); doc.setFillColor(col[0],col[1],col[2]); doc.rect(X+1,y-2,2.4,2.4,'F');
-      doc.setFont('helvetica','bold'); doc.setFontSize(7.5); doc.setTextColor(NAVY[0],NAVY[1],NAVY[2]); doc.text(g.lbl,X+5,y); y+=5.5;
-      L.forEach(function(x,i){ salto(6); n++; var fjI=rmEsFijo(x)&&!x.ext;
-        if(i%2){ doc.setFillColor(248,249,252); doc.rect(X,y-3.8,W,5.6,'F'); }
-        doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(30,30,30);
-        doc.text(String(n),xs.n+1,y); doc.text(corta(titleCase(x.t.nombre)+((!x.ext&&!x.t.id)?' (sin ficha)':''),C.nm-2),xs.nm+1,y); doc.text(corta(x.t.rut||'—',C.rut-2),xs.rut+1,y); doc.text(rmEsFijo(x)?'Fijo':'Spot',xs.tp+1,y);
-        doc.text(String(rmDias(x)),R('dias'),y,{align:'right'}); if(rmDiasEq(x)!=null) doc.text(rmDec(rmDiasEq(x)),R('eq'),y,{align:'right'});
-        doc.text(hm(x.totMin),R('hr'),y,{align:'right'});
-        var su=rmSueldo(x); if(su){ if(rmSueldoOtra(x)) doc.setTextColor(160,160,160); doc.text(fmtMoney(su)+(rmSueldoOtra(x)?'*':''),R('su'),y,{align:'right'}); doc.setTextColor(30,30,30); }
-        doc.text(fmtMoney(x.baseCont),R('tr'),y,{align:'right'});
-        if(rmVeh(x)!=null) doc.text(String(rmVeh(x))+(x.sinBono?'*':''),R('veh'),y,{align:'right'});
-        var ot=rmOtros(x); doc.text(ot?((ot<0?'-':'')+fmtMoney(Math.abs(ot))):'—',R('ot'),y,{align:'right'});
-        if(fjI) doc.text(mny(rmAg(x)),R('ag'),y,{align:'right'});
-        doc.setFont('helvetica','bold'); doc.text(fmtMoney(rmTotal(x)),R('tot'),y,{align:'right'}); doc.setFont('helvetica','normal');
-        if(fjI){ if(rmAn(x)) doc.setTextColor(220,38,38); doc.text(mny(rmAn(x),true),R('an'),y,{align:'right'}); doc.setTextColor(30,30,30); }
-        doc.setFont('helvetica','bold'); doc.text(fmtMoney(rmPagar(x)),R('pag'),y,{align:'right'});
-        y+=5.6; });
-      totRow('Subtotal '+(g.k==='is'?'IS Performance':(g.k==='sp'?'Innova spot':'Innova fijos')), rmSuma(L), false); }
-    function totRow(lbl,s,main){ salto(7);
-      if(main){ doc.setFillColor(255,236,222); doc.rect(X,y-4,W,6.5,'F'); doc.setTextColor(194,65,12); doc.setFontSize(8.5); } else { doc.setDrawColor(200,204,220); doc.line(X,y-3.9,X+W,y-3.9); doc.setTextColor(NAVY[0],NAVY[1],NAVY[2]); doc.setFontSize(7.5); }
-      doc.setFont('helvetica','bold'); doc.text(lbl,xs.nm+1,y);
-      doc.text(String(s.dias),R('dias'),y,{align:'right'}); if(s.diasEq) doc.text(rmDec(s.diasEq),R('eq'),y,{align:'right'}); doc.text(hm(s.min),R('hr'),y,{align:'right'});
-      if(s.sueldo) doc.text(fmtMoney(s.sueldo),R('su'),y,{align:'right'}); doc.text(fmtMoney(s.tratos),R('tr'),y,{align:'right'});
-      var ot=s.vueltas+s.peajes+s.bono-s.desc; doc.text(ot?((ot<0?'-':'')+fmtMoney(Math.abs(ot))):'—',R('ot'),y,{align:'right'});
-      if(s.ag) doc.text(fmtMoney(s.ag),R('ag'),y,{align:'right'}); doc.text(fmtMoney(s.total),R('tot'),y,{align:'right'}); if(s.an) doc.text('-'+fmtMoney(s.an),R('an'),y,{align:'right'}); doc.text(fmtMoney(s.pagar),R('pag'),y,{align:'right'});
+    function totRow(lbl,L,main){ salto(7);
+      if(main){ doc.setFillColor(255,236,222); doc.rect(X,y-4,TW,6.5,'F'); doc.setTextColor(194,65,12); } else { doc.setDrawColor(200,204,220); doc.line(X,y-3.9,X+TW,y-3.9); doc.setTextColor(NAVY[0],NAVY[1],NAVY[2]); }
+      doc.setFont('helvetica','bold'); doc.setFontSize(main?fs+1:fs+0.3); doc.text(corta(lbl,nmW-2),xs.nm+1,y);
+      cols.forEach(function(c){ var v=valS(c,L); if(v) celda(c,v); });
       y+=main?8:7; doc.setTextColor(30,30,30); }
-    G.forEach(grupo);
-    totRow(rmSegNom()?('TOTAL '+rmSegNom().toUpperCase()):'TOTAL GENERAL', rmSuma(todas), true);
-    salto(10); doc.setFont('helvetica','normal'); doc.setFontSize(6.8); doc.setTextColor(110,110,110);
-    doc.text('*Otros = vueltas + peajes + bono autos + extras - descuentos. Veh. = vehiculos del mes para el bono (IS Performance; con * = sin bono). D. liq. (spot) = total / valor del dia de trato: dias equivalentes para la liquidacion. Aguinaldo y anticipo solo fijos; el anticipo ya se pago y se resta de "A pagar".',X,y);
-    doc.text('Innova Servi: según el registro de horas y ajustes de InnovaGestión. IS Performance: según su CSV de Remuneraciones'+(D.ext&&D.ext.archivo?(' ('+D.ext.archivo+')'):'')+'. Total = sueldo base + tratos + otros + aguinaldo. *Sueldo en gris = lo paga otra empresa (no suma).',X,y+3.5);
-    doc.save(rmArchivo('pdf'));
-  });
+    G.forEach(function(g){ var col=RMP_COLOR[g.k]; salto(14);
+      doc.setFillColor(238,240,247); doc.rect(X,y-3.6,TW,5.5,'F'); doc.setFillColor(col[0],col[1],col[2]); doc.rect(X+1,y-2,2.4,2.4,'F');
+      doc.setFont('helvetica','bold'); doc.setFontSize(fs+0.5); doc.setTextColor(NAVY[0],NAVY[1],NAVY[2]); doc.text(g.lbl,X+5,y); y+=5.5;
+      g.L.forEach(function(x,i){ salto(6); n++;
+        if(i%2){ doc.setFillColor(248,249,252); doc.rect(X,y-3.8,TW,5.6,'F'); }
+        doc.setFont('helvetica','normal'); doc.setFontSize(fs); doc.setTextColor(30,30,30);
+        doc.text(String(n),xs.n+1,y); doc.text(corta(titleCase(x.t.nombre)+((!x.ext&&!x.t.id&&!x.manual)?' (sin ficha)':'')+(x.manual?' (agregado)':''),nmW-2),xs.nm+1,y);
+        cols.forEach(function(c){ var v=val(c,x); if(!v) return;
+          if(c.k==='su'&&rmSueldoOtra(x)) doc.setTextColor(160,160,160); else if((c.k==='de'||c.k==='an')&&v!=='—') doc.setTextColor(220,38,38);
+          doc.setFont('helvetica',c.b?'bold':'normal'); celda(c,v); doc.setFont('helvetica','normal'); doc.setTextColor(30,30,30); });
+        y+=5.6; });
+      if(o.sub) totRow('Subtotal '+g.lbl.replace(' · ',' '), g.L, false); });
+    if(o.tot && (G.length>1 || !o.sub)) totRow(todasSec?'TOTAL GENERAL':'TOTAL', todas, true);
+    if(o.notas){ var notas=cols.filter(function(c){ return c.nota; }).map(function(c){ return c.nota; });
+      if(todas.some(function(x){ return x.manual; })) notas.push('(agregado) = persona agregada a mano para este mes (no está en los registros de horas).');
+      notas.push('Innova Servi: según el registro de horas y ajustes de InnovaGestión.'+(D.ext&&(o.sec.isp||o.sec.isf)?(' IS Performance: '+(D.ext.archivo||'importado')+'.'):''));
+      salto(6+notas.length*3.4); doc.setFont('helvetica','normal'); doc.setFontSize(6.8); doc.setTextColor(110,110,110);
+      notas.forEach(function(t){ doc.splitTextToSize(t,TW).forEach(function(l){ doc.text(l,X,y); y+=3.2; }); }); }
+    var suf=todasSec?'consolidado':G.map(function(g){ return g.k; }).join('-');
+    doc.save('remuneraciones-'+D.mes+'-'+suf+'.pdf');
+  }
   function renderCfgPago(){
     var D=REMU_DATA||{}, trab=D.trab||[], vhG=D.valorHora||0;
     var glob='<div class="card" style="padding:11px 13px;margin-bottom:12px;border:1px solid var(--orange)">'+
