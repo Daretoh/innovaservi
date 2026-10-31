@@ -1680,6 +1680,8 @@
   #rme-ov .rme-bar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:8px 16px;border-bottom:1px solid var(--line);background:#fbfbfd;}
   #rme-ov .rme-lbl{font:800 10.5px var(--font);text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin:0 2px 0 8px;} #rme-ov .rme-lbl:first-child{margin-left:0;}
   #rme-ov .rme-chip{border:1px solid var(--line);background:#fff;color:var(--muted);font:700 12px var(--font);border-radius:999px;padding:5px 11px;cursor:pointer;}
+  #rme-ov .rme-chip.pre{border-color:var(--orange);color:var(--orange-2);} #rme-ov .rme-chip.pre.on{background:var(--orange);border-color:var(--orange);color:#fff;}
+  #rme-ov .rme-cnt{font-weight:800;opacity:.7;margin-left:3px;}
   #rme-ov .rme-chip.on{background:var(--navy);border-color:var(--navy);color:#fff;} #rme-ov .rme-chip.add{border-style:dashed;color:var(--navy);}
   #rme-ov select{font:600 12px var(--font);padding:5px 8px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);}
   #rme-ov .rme-n2{font:600 12px var(--font);color:var(--muted);}
@@ -7515,10 +7517,19 @@
   var RMP_SEC=[['sp','Innova Servi · Spot','inn','sp'],['fj','Innova Servi · Fijos','inn','fj'],['isp','IS Performance · Spot','is','sp'],['isf','IS Performance · Fijos','is','fj']];
   var RMP_COLOR={sp:[255,107,0], fj:[26,31,110], isp:[14,116,144], isf:[8,80,100]};
   function rmpVista(){ var o=null; try{ o=JSON.parse(localStorage.getItem(RMP_KEY)||'null'); }catch(_){}
-    var def={cols:RMP_COLS.filter(function(c){ return c.d; }).map(function(c){ return c.k; }), emp:{inn:true,is:true}, tip:{sp:true,fj:true}, sub:true, tot:true, notas:true, ori:'l'};
-    return (o&&o.cols)?Object.assign(def,o):def; }
+    var def={cols:RMP_COLS.filter(function(c){ return c.d; }).map(function(c){ return c.k; }), sec:Object.assign({},RMP_PRESETS[0].sec), sub:true, tot:true, notas:true, ori:'l'};
+    if(!o||!o.cols) return def;
+    if(!o.sec) o.sec=Object.assign({},def.sec);   // vistas guardadas antes (empresa × tipo): parten con el cierre mensual
+    delete o.emp; delete o.tip; return Object.assign(def,o); }
+  // Atajos de secciones. Innova spot se cierra por semana; el cierre mensual lleva los fijos de ambas empresas y los spot de IS Performance.
+  var RMP_PRESETS=[
+    {k:'mensual', l:'Cierre mensual', t:'Innova Fijos + IS Performance Fijos y Spot', sec:{sp:false,fj:true,isp:true,isf:true}},
+    {k:'todo', l:'Todo', t:'Las cuatro secciones', sec:{sp:true,fj:true,isp:true,isf:true}},
+    {k:'fijos', l:'Solo fijos', t:'Innova Fijos + IS Performance Fijos', sec:{sp:false,fj:true,isp:false,isf:true}},
+    {k:'innspot', l:'Innova spot (semanal)', t:'Solo Innova Servi Spot', sec:{sp:true,fj:false,isp:false,isf:false}}
+  ];
   function rmpGuardarVista(o){ try{ localStorage.setItem(RMP_KEY,JSON.stringify(o)); }catch(_){} }
-  function rmpSecVisible(o,k){ var p=RMP_SEC.filter(function(z){ return z[0]===k; })[0]; return !!(p && o.emp[p[2]] && o.tip[p[3]]); }
+  function rmpSecVisible(o,k){ return !!(o.sec && o.sec[k]); }
   function rmpClave(){ return 'remu_pdf_ajustes_'+RM_DATA.mes; }
   function rmpPersonaKey(x){ return (x.manual?'m:'+x.mid:((x.ext?'e:':'i:')+(rutCuerpo(x.t.rut)||norm(x.t.nombre)))); }
   // Trabajador agregado al cierre (de la base de Trabajadores): fila con el mismo formato que las demás.
@@ -7587,13 +7598,16 @@
         return '<tr class="rme-grp"><td colspan="'+nCol+'"><i style="background:rgb('+RMP_COLOR[g.k].join(',')+')"></i>'+esc(g.lbl)+' <span>'+vivos.length+' de '+g.L.length+'</span></td></tr>'+filas+
           (o.sub?'<tr class="rme-sub"><td></td><td></td><td class="rme-nm">Subtotal</td>'+cols.map(function(c){ return '<td class="'+(c.a==='l'?'l':'')+'">'+esc(rmpValS(c,vivos))+'</td>'; }).join('')+'</tr>':''); }).join('');
       if(o.tot && vis.length) body+='<tr class="rme-tot"><td></td><td></td><td class="rme-nm">Total</td>'+cols.map(function(c){ return '<td class="'+(c.a==='l'?'l':'')+'">'+esc(rmpValS(c,vis))+'</td>'; }).join('')+'</tr>';
-      if(!body) body='<tr><td colspan="'+nCol+'" style="padding:24px;text-align:center;color:var(--muted)">No hay nada visible: activa alguna empresa o tipo.</td></tr>';
+      if(!body) body='<tr><td colspan="'+nCol+'" style="padding:24px;text-align:center;color:var(--muted)">No hay nada visible: activa alguna sección.</td></tr>';
       ov.innerHTML='<div class="rme-card">'+
         '<div class="rme-head"><b>Editar cierre · '+esc(RM_DATA.lbl)+'</b><span class="rme-sp"></span>'+
           '<button type="button" class="btn ghost small" id="rme-ver" style="width:auto">Vista previa</button><button type="button" class="btn small" id="rme-pdf" style="width:auto">Descargar PDF</button><button type="button" class="btn ghost small" id="rme-x" style="width:auto">Cerrar</button></div>'+
         '<div class="rme-bar">'+
-          '<span class="rme-lbl">Empresa</span>'+chip('emp-inn','Innova Servi',o.emp.inn)+chip('emp-is','IS Performance',o.emp.is)+
-          '<span class="rme-lbl">Tipo</span>'+chip('tip-sp','Spot',o.tip.sp)+chip('tip-fj','Fijos',o.tip.fj)+
+          '<span class="rme-lbl">Atajos</span>'+RMP_PRESETS.map(function(p){ var on=RMP_SEC.every(function(z){ return !!o.sec[z[0]]===!!p.sec[z[0]]; });
+            return '<button type="button" class="rme-chip pre'+(on?' on':'')+'" data-pre="'+p.k+'" title="'+esc(p.t)+'">'+p.l+'</button>'; }).join('')+
+          '</div><div class="rme-bar">'+
+          '<span class="rme-lbl">Secciones</span>'+RMP_SEC.map(function(z){ var nn=rmpGrupos(aj).filter(function(g){ return g.k===z[0]; })[0];
+            return chip('sec-'+z[0], z[1]+' <span class="rme-cnt">'+(nn?nn.L.length:0)+'</span>', !!o.sec[z[0]]); }).join('')+
           '<span class="rme-lbl">Mostrar</span>'+chip('op-sub','Subtotales',o.sub)+chip('op-tot','Total',o.tot)+chip('op-notas','Notas al pie',o.notas)+
           '<select id="rme-ori" title="Hoja del PDF"><option value="l"'+(o.ori==='l'?' selected':'')+'>Hoja horizontal</option><option value="p"'+(o.ori==='p'?' selected':'')+'>Hoja vertical</option></select>'+
         '</div>'+
@@ -7614,8 +7628,10 @@
       q('#rme-pdf').onclick=function(){ var G=rmpGruposVisibles(o,aj); if(!G.length){ toast('No hay nada visible para el PDF.'); return; } rmPDF(o,aj); };
       q('#rme-ver').onclick=function(){ var G=rmpGruposVisibles(o,aj); if(!G.length){ toast('No hay nada visible para el PDF.'); return; } rmPDF(o,aj,true); };
       ov.querySelectorAll('.rme-chip[data-t]').forEach(function(b){ b.onclick=function(){ var t=b.dataset.t.split('-');
-        if(t[0]==='emp') o.emp[t[1]]=!o.emp[t[1]]; else if(t[0]==='tip') o.tip[t[1]]=!o.tip[t[1]]; else o[t[1]]=!o[t[1]];
+        if(t[0]==='sec') o.sec[t[1]]=!o.sec[t[1]]; else o[t[1]]=!o[t[1]];
         rmpGuardarVista(o); render(); }; });
+      ov.querySelectorAll('[data-pre]').forEach(function(b){ b.onclick=function(){ var p=RMP_PRESETS.filter(function(z){ return z.k===b.dataset.pre; })[0]; if(!p) return;
+        o.sec=Object.assign({},p.sec); rmpGuardarVista(o); render(); }; });
       q('#rme-ori').onchange=function(){ o.ori=this.value; rmpGuardarVista(o); };
       ov.querySelectorAll('.rme-hx').forEach(function(b){ b.onclick=function(){ o.cols=o.cols.filter(function(k){ return k!==b.dataset.col; }); rmpGuardarVista(o); render(); }; });
       ov.querySelectorAll('[data-addcol]').forEach(function(b){ b.onclick=function(){ var k=b.dataset.addcol; o.cols=RMP_COLS.filter(function(c){ return c.k===k || o.cols.indexOf(c.k)>=0; }).map(function(c){ return c.k; }); rmpGuardarVista(o); render(); }; });
@@ -7646,7 +7662,7 @@
         res.querySelectorAll('.rme-op[data-id]').forEach(function(b){ b.onclick=function(){ var t=(RM_DATA.trab||[]).filter(function(z){ return String(z.id)===b.dataset.id; })[0]; if(!t) return;
           var emp=q('#rme-emp').value, fj=t.tipo_pago==='contrato', sec=emp==='is'?(fj?'isf':'isp'):(fj?'fj':'sp');
           aj.manual=aj.manual||[]; aj.manual.push({ id:'m'+Date.now().toString(36), trabajador_id:t.id, nombre:titleCase(t.nombre), rut:t.rut||'', cargo:t.cargo||'', sec:sec, dias:0, horas:0, monto:0, autor:userEmail||'' });
-          if(!o.emp[emp]) o.emp[emp]=true; if(!o.tip[fj?'fj':'sp']) o.tip[fj?'fj':'sp']=true; rmpGuardarVista(o);
+          if(!o.sec[sec]) o.sec[sec]=true; rmpGuardarVista(o);
           guardarAj(); render(); toast('Agregado: '+titleCase(t.nombre)+'. Completa días, horas y monto.');
           var ult=ov.querySelector('.rme-man input[data-f="dias"][data-m="'+aj.manual[aj.manual.length-1].id+'"]'); if(ult) ult.focus(); }; });
       };
@@ -7701,7 +7717,7 @@
       if(o.sub) totRow('Subtotal '+g.lbl.replace(' · ',' '), g.L, false); });
     if(o.tot && (G.length>1 || !o.sub)) totRow(todasSec?'TOTAL GENERAL':'TOTAL', todas, true);
     if(o.notas){ var notas=cols.filter(function(c){ return c.nota; }).map(function(c){ return c.nota; });
-      notas.push('Innova Servi: según el registro de horas y ajustes de InnovaGestión.'+(D.ext&&o.emp.is?(' IS Performance: '+(D.ext.archivo||'importado')+'.'):''));
+      notas.push('Innova Servi: según el registro de horas y ajustes de InnovaGestión.'+(D.ext&&(o.sec.isp||o.sec.isf)?(' IS Performance: '+(D.ext.archivo||'importado')+'.'):''));
       salto(6+notas.length*3.4); doc.setFont('helvetica','normal'); doc.setFontSize(6.8); doc.setTextColor(110,110,110);
       notas.forEach(function(t){ doc.splitTextToSize(t,TW).forEach(function(l){ doc.text(l,X,y); y+=3.2; }); }); }
     var suf=todasSec?'consolidado':G.map(function(g){ return g.k; }).join('-');
