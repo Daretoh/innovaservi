@@ -1,11 +1,11 @@
 // Usuarios con acceso a la empresa activa: rol, ficha de trabajador y estado.
 // Acceso con fecha de vencimiento y nota (como Accesos de InnovaGestión): vencido = sin acceso (acceso_vigente en la base).
-import { urlApp } from '../../../core/api.js?v=66a811d';
-import { el } from '../../../core/ui/dom.js?v=66a811d';
-import { icono } from '../../../core/ui/iconos.js?v=66a811d';
-import { listado, boton } from '../../../core/ui/tabla.js?v=66a811d';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=66a811d';
-import { avisar } from '../../../core/ui/aviso.js?v=66a811d';
+import { urlApp } from '../../../core/api.js?v=fb81a8b';
+import { el } from '../../../core/ui/dom.js?v=fb81a8b';
+import { icono } from '../../../core/ui/iconos.js?v=fb81a8b';
+import { listado, boton } from '../../../core/ui/tabla.js?v=fb81a8b';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=fb81a8b';
+import { avisar } from '../../../core/ui/aviso.js?v=fb81a8b';
 
 export default async function vista(ctx) {
   const empresa = ctx.empresa.id;

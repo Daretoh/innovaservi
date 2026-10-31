@@ -1,10 +1,10 @@
 // Cierres mensuales: un cierre por cliente con cierre mensual y mes, con su estado y total.
-import { el } from '../../../core/ui/dom.js?v=66a811d';
-import { icono } from '../../../core/ui/iconos.js?v=66a811d';
-import { listado, boton } from '../../../core/ui/tabla.js?v=66a811d';
-import { avisar } from '../../../core/ui/aviso.js?v=66a811d';
-import { dinero, hoyISO, nombreMes, moverMes } from '../../../core/ui/formato.js?v=66a811d';
-import { nombreTercero, nombreEstado, CHIP_ESTADO, numeroTexto } from '../datos.js?v=66a811d';
+import { el } from '../../../core/ui/dom.js?v=fb81a8b';
+import { icono } from '../../../core/ui/iconos.js?v=fb81a8b';
+import { listado, boton } from '../../../core/ui/tabla.js?v=fb81a8b';
+import { avisar } from '../../../core/ui/aviso.js?v=fb81a8b';
+import { dinero, hoyISO, nombreMes, moverMes } from '../../../core/ui/formato.js?v=fb81a8b';
+import { nombreTercero, nombreEstado, CHIP_ESTADO, numeroTexto } from '../datos.js?v=fb81a8b';
 
 const estado = { mes: hoyISO().slice(0, 7) };
 

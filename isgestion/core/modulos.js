@@ -1,12 +1,12 @@
 // Carga los manifiestos y arma el menú según la empresa activa.
-import ids from './config/modulos.js?v=66a811d';
+import ids from './config/modulos.js?v=fb81a8b';
 
 let manifiestos = null;
 
 export async function cargarManifiestos() {
   if (manifiestos) return manifiestos;
   manifiestos = await Promise.all(
-    ids.map((id) => import(`../modulos/${id}/manifest.js?v=66a811d`).then((m) => m.default)),
+    ids.map((id) => import(`../modulos/${id}/manifest.js?v=fb81a8b`).then((m) => m.default)),
   );
   return manifiestos;
 }

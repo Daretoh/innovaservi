@@ -1,10 +1,10 @@
 // Ventas: ventas del mes con el cuadre por medio de pago (del día elegido y del mes) y exportación CSV.
-import { avisar } from '../../../core/ui/aviso.js?v=66a811d';
-import { el } from '../../../core/ui/dom.js?v=66a811d';
-import { icono } from '../../../core/ui/iconos.js?v=66a811d';
-import { listado, boton } from '../../../core/ui/tabla.js?v=66a811d';
-import { dinero, fechaLarga, hoyISO, nombreMes, moverMes, rangoMes } from '../../../core/ui/formato.js?v=66a811d';
-import { MEDIOS, nombreMedio, nombreDocVenta } from '../datos.js?v=66a811d';
+import { avisar } from '../../../core/ui/aviso.js?v=fb81a8b';
+import { el } from '../../../core/ui/dom.js?v=fb81a8b';
+import { icono } from '../../../core/ui/iconos.js?v=fb81a8b';
+import { listado, boton } from '../../../core/ui/tabla.js?v=fb81a8b';
+import { dinero, fechaLarga, hoyISO, nombreMes, moverMes, rangoMes } from '../../../core/ui/formato.js?v=fb81a8b';
+import { MEDIOS, nombreMedio, nombreDocVenta } from '../datos.js?v=fb81a8b';
 
 const estado = { mes: hoyISO().slice(0, 7), dia: hoyISO() };
 
@@ -36,7 +36,7 @@ export default async function vista(ctx) {
     el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Mes anterior', onclick: () => mover(-1) }, icono('volver')),
     el('strong', {}, nombreMes(estado.mes)),
     el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Mes siguiente', onclick: () => mover(1) }, icono('derecha')))];
-  if (ctx.puede('pos', 'exportar') && data.length) acciones.push(boton('Excel', { icono: 'descargar', onclick: () => import('../../../core/excel.js?v=66a811d').then(({ exportarExcel }) => exportarExcel(ctx, {
+  if (ctx.puede('pos', 'exportar') && data.length) acciones.push(boton('Excel', { icono: 'descargar', onclick: () => import('../../../core/excel.js?v=fb81a8b').then(({ exportarExcel }) => exportarExcel(ctx, {
     titulo: `Ventas · ${nombreMes(estado.mes)}`, nombre: `ventas-${estado.mes}`,
     columnas: ['N°', { t: 'Fecha', tipo: 'fecha' }, 'Cliente', 'Patente', 'Medio de pago', 'Documento', 'N° documento', { t: 'Descuento', tipo: 'dinero' }, { t: 'Total', tipo: 'dinero' }, 'Estado'],
     filas: data.map((v) => [v.numero, v.fecha, cliente(v), v.patente ?? '', nombreMedio[v.medio_pago], nombreDocVenta[v.doc_tipo], v.doc_numero ?? '', v.descuento, v.total, v.estado === 'anulada' ? 'Anulada' : 'Vigente']),

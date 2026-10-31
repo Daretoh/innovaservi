@@ -8,9 +8,9 @@ export default {
   rubros: ['todos'],
   acciones: ['ver', 'crear', 'editar', 'eliminar', 'exportar'],
   menu: [
-    { id: 'flota.lista', label: 'Vehículos', vista: () => import('./vistas/lista.js?v=66a811d') },
-    { id: 'flota.vehiculo', label: 'Vehículo', oculto: true, padre: 'flota.lista', vista: () => import('./vistas/vehiculo.js?v=66a811d') },
-    { id: 'flota.gastos', label: 'Gastos de la flota', pestana: 'Gastos', vista: () => import('./vistas/gastos.js?v=66a811d') },
+    { id: 'flota.lista', label: 'Vehículos', vista: () => import('./vistas/lista.js?v=fb81a8b') },
+    { id: 'flota.vehiculo', label: 'Vehículo', oculto: true, padre: 'flota.lista', vista: () => import('./vistas/vehiculo.js?v=fb81a8b') },
+    { id: 'flota.gastos', label: 'Gastos de la flota', pestana: 'Gastos', vista: () => import('./vistas/gastos.js?v=fb81a8b') },
   ],
   config: {},
   migraciones: ['db/001_flota.sql', 'db/002_mantenciones.sql'],

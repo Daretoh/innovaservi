@@ -2,22 +2,22 @@
 // cotización tuvo en el taller ese mes; cada uno entra como un grupo (vehículo, patente, talla, orden ligada) con sus
 // servicios de la orden: los normales en una sección (GM: "Preparación de Venta y Pulido / Realce de Brillo") y los
 // extras en "Extras". Así se arma la cotización del mes de un cliente de flota y se ve qué autos tuvo.
-import { abrirFormulario } from '../../core/ui/modal.js?v=66a811d';
-import { avisar } from '../../core/ui/aviso.js?v=66a811d';
-import { diaLocal, hoyISO } from '../../core/ui/formato.js?v=66a811d';
-import { numeroTexto, verPatente } from './datos.js?v=66a811d';
-import { costosDeOrdenes, lineasCosto } from './costos-orden.js?v=66a811d';
+import { abrirFormulario } from '../../core/ui/modal.js?v=fb81a8b';
+import { avisar } from '../../core/ui/aviso.js?v=fb81a8b';
+import { diaLocal, hoyISO } from '../../core/ui/formato.js?v=fb81a8b';
+import { numeroTexto, verPatente } from './datos.js?v=fb81a8b';
+import { costosDeOrdenes, lineasCosto } from './costos-orden.js?v=fb81a8b';
+import { trabajosOrden, listaCliente } from './trabajos-orden.js?v=fb81a8b';
 
 const SECCION_FLOTA = 'Preparación de Venta y Pulido / Realce de Brillo';
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
 const esExtra = (n) => /^\s*extras?\b/i.test(n ?? '');
-const porCotizar = (n) => /cotiz/i.test(n ?? '');   // "Pendiente de cotización": no es un servicio
 const diaDe = (o) => o.fecha_cita || diaLocal(o.ingreso_at) || diaLocal(o.created_at);
 
 export async function traerMes(ctx, c, grupos) {
   if (!c.tercero_id) { avisar('Elige primero el cliente de la cotización.', 'error'); return; }
   const { data: ords, error } = await ctx.api.from('tal_ordenes')
-    .select('id, numero, estado, fecha_cita, ingreso_at, entregado_at, created_at, descuento, tal_vehiculos(id, marca, modelo, patente, talla), tal_orden_servicios(nombre, precio, orden)')
+    .select('id, numero, estado, fecha_cita, ingreso_at, entregado_at, created_at, descuento, tareas, tal_vehiculos(id, marca, modelo, patente, talla), tal_orden_servicios(nombre, precio, orden)')
     .eq('empresa_id', ctx.empresa.id).eq('tercero_id', c.tercero_id).neq('estado', 'anulada');
   if (error) { avisar(error.message, 'error'); return; }
   const meses = [...new Set((ords ?? []).map((o) => diaDe(o)?.slice(0, 7)).filter(Boolean))].sort().reverse();
@@ -59,6 +59,7 @@ async function elegirAutos(ctx, c, grupos, delMes, mes) {
       let pos = Math.max(0, ...grupos.filter((g) => !vacios.includes(g)).map((g) => g.orden));
       // Costos de cada orden (trabajo de terceros, compras con la patente, insumos): ítems con costo y precio 0
       const costos = await costosDeOrdenes(ctx, delMes.filter((o) => ordenes.includes(o.id)).map((o) => ({ ...o, patente: o.tal_vehiculos?.patente })));
+      const lista = await listaCliente(ctx, c.tercero_id);   // valoriza las tareas de las órdenes "Pendiente de cotización"
       for (const id of ordenes) {
         const o = delMes.find((x) => x.id === id); const v = o.tal_vehiculos ?? {};
         const { data: g, error } = await ctx.api.from('cot_grupos').insert({
@@ -66,7 +67,7 @@ async function elegirAutos(ctx, c, grupos, delMes, mes) {
           patente: v.patente ?? null, talla: v.talla ?? null, vehiculo_id: v.id ?? null, orden_id: o.id,
         }).select('id').single();
         if (error) throw new Error(error.message);
-        const svs = [...(o.tal_orden_servicios ?? [])].sort((a, b) => a.orden - b.orden).filter((s) => !porCotizar(s.nombre));
+        const svs = trabajosOrden(o, [...(o.tal_orden_servicios ?? [])].sort((a, b) => a.orden - b.orden), lista, v.talla).map((x) => ({ nombre: x.descripcion, precio: x.precio }));
         const normales = svs.filter((s) => !esExtra(s.nombre)); const extras = svs.filter((s) => esExtra(s.nombre));
         const lineas = [];
         if (normales.length) lineas.push({ tipo: 'seccion', descripcion: SECCION_FLOTA }, ...normales.map((s) => ({ tipo: 'item', descripcion: s.nombre, cantidad: 1, precio: s.precio })));
