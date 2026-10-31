@@ -18,3 +18,12 @@ drop policy if exists seg_remu_fijo_wr on public.remu_fijo_items;
 create policy seg_remu_fijo_sel on public.remu_fijo_items for select to authenticated using ((select ig_algun(1, variadic array['remu','costos'])));
 create policy seg_remu_fijo_wr  on public.remu_fijo_items for all    to authenticated using ((select ig_algun(2, variadic array['remu']))) with check ((select ig_algun(2, variadic array['remu'])));
 notify pgrst, 'reload schema';
+
+-- 2026-10-31: pasa a ser "movimientos del mes" para cualquier trabajador (fijo o spot, Innova o IS Performance por RUT).
+-- Ya pagado (resta de "A pagar"): anticipo, adelanto, quincena · Suma al total: bono, aguinaldo · Resta del total: descuento.
+-- (Ya aplicado en Supabase.)
+alter table public.remu_fijo_items alter column trabajador_id drop not null;
+alter table public.remu_fijo_items add column if not exists rut text;
+alter table public.remu_fijo_items add column if not exists empresa text not null default 'innova';
+-- checks: clase in ('aguinaldo','bono','anticipo','adelanto','quincena','descuento'), monto >= 0,
+--         (trabajador_id is not null or rut is not null), empresa in ('innova','is')
