@@ -1,11 +1,11 @@
 // Notificaciones push en este dispositivo (como InnovaGestión): se piden al entrar con una franja fija hasta
 // activarlas; botón con campana para ver el estado, probar o desactivar. Al cerrar sesión el dispositivo deja de
 // recibir. Las envía la Edge Function "push" (db/nucleo/014_push.sql).
-import { db } from './api.js?v=259fbba';
-import { el } from './ui/dom.js?v=259fbba';
-import { icono } from './ui/iconos.js?v=259fbba';
-import { avisar } from './ui/aviso.js?v=259fbba';
-import { abrirFormulario } from './ui/modal.js?v=259fbba';
+import { db } from './api.js?v=1d65874';
+import { el } from './ui/dom.js?v=1d65874';
+import { icono } from './ui/iconos.js?v=1d65874';
+import { avisar } from './ui/aviso.js?v=1d65874';
+import { abrirFormulario } from './ui/modal.js?v=1d65874';
 
 export const soportado = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
 const iphoneSinInstalar = () => /iphone|ipad/i.test(navigator.userAgent) && !navigator.standalone;

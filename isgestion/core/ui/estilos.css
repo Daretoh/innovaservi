@@ -107,7 +107,7 @@ h2 { font-size: 1.1rem; margin: 0; }
 .barra {
   display: flex; align-items: center; gap: 12px; padding: 0 16px; height: 56px;
   background: var(--barra-fondo); color: var(--barra-texto); border-bottom: 1px solid var(--borde); border-top: 4px solid var(--empresa);
-  position: sticky; top: 0; z-index: 5;
+  position: sticky; top: 0; z-index: 7;   /* sobre la barra lateral (6): la lista del selector de empresa no queda tapada */
 }
 .barra .marca { margin-right: 4px; }
 .barra-espacio { flex: 1; }
