@@ -6,8 +6,8 @@
 //  · sueldo base de los fijos (su), vueltas del chofer en Vehículos, extras y bono por autos (ex) y descuentos (de)
 //    → según las horas de la persona en el mes; si no trabajó horas, a "Sin faena asignada" en los días del mes.
 // Mes en curso: el sueldo base se cuenta devengado a hoy (días transcurridos del mes). Sin leyes sociales.
-import { hoyISO, rangoMes, moverMes, sumarDias, lunesDe } from '../../core/ui/formato.js?v=64a4e9f';
-import { resumenMes } from './datos.js?v=64a4e9f';
+import { hoyISO, rangoMes, moverMes, sumarDias, lunesDe } from '../../core/ui/formato.js?v=1944f93';
+import { resumenMes } from './datos.js?v=1944f93';
 
 export const COMPONENTES = [
   ['tr', 'Horas trabajadas', 'tratos y valor hora'],
@@ -85,8 +85,8 @@ export async function libroMes(ctx, base, mes) {
     };
     repartir('su', (f.sueldo || 0) * devengo);
     repartir('vu', f.montoVueltas - vuAsignado);   // vueltas del chofer (Vehículos)
-    repartir('ex', f.extra + (f.bonoAutos || 0) + (f.aguinaldo || 0));   // el anticipo no es costo: ya es parte del sueldo
-    repartir('de', -f.descuento);
+    repartir('ex', f.extra + (f.bonoAutos || 0) + (f.movHab || 0));   // anticipos y quincenas no son costo: ya son parte del pago
+    repartir('de', -f.descuento - (f.movDes || 0));
   }
   return out;
 }

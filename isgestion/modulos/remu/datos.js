@@ -1,6 +1,6 @@
 // Carga lo necesario para calcular pagos de la empresa activa en un rango.
-import { calcular, sueldoDelMes, semanaEnMes } from './calculo.js?v=64a4e9f';
-import { sumarDias, rangoMes, lunesDe } from '../../core/ui/formato.js?v=64a4e9f';
+import { calcular, sueldoDelMes, semanaEnMes } from './calculo.js?v=1944f93';
+import { sumarDias, rangoMes, lunesDe } from '../../core/ui/formato.js?v=1944f93';
 
 export const nombreCompleto = (p) => [p.nombres, p.apellido_paterno, p.apellido_materno].filter(Boolean).join(' ');
 
@@ -83,21 +83,40 @@ export async function pagoMensual(ctx, base, mes) {
   return { R, filas, autos: autos.data ?? [], valorAuto, tope, total: filas.reduce((s, f) => s + f.totalMes, 0) };
 }
 
-// Aguinaldo y anticipo del mes (solo personal fijo): persona → { aguinaldo, anticipo, items }
+// Movimientos del mes (remu_items.clase, migración 007), para cualquier trabajador: g = 'hab' se suma al total (costo),
+// 'des' se descuenta del total, 'pag' ya se pagó (se resta de "A pagar", no del costo).
+export const MOVIMIENTOS = {
+  anticipo: { t: 'Anticipo', g: 'pag', tipo: 'descuento' },
+  quincena: { t: 'Quincena', g: 'pag', tipo: 'descuento' }, bono: { t: 'Bono', g: 'hab', tipo: 'extra' },
+  aguinaldo: { t: 'Aguinaldo', g: 'hab', tipo: 'extra' }, descuento: { t: 'Descuento', g: 'des', tipo: 'descuento' },
+};
+
+// Movimientos del mes: persona → { hab, des, pag, aguinaldo, anticipo, items }
 export async function fijosDelMes(ctx, mes) {
   const { data, error } = await ctx.api.from('remu_items').select('*').eq('empresa_id', ctx.empresa.id).eq('mes', mes).not('clase', 'is', null).order('created_at');
   if (error) throw error;
   const m = new Map();
   for (const it of data) {
-    const o = m.get(it.persona_id) ?? { aguinaldo: 0, anticipo: 0, items: [] };
-    o[it.clase] += it.monto; o.items.push(it); m.set(it.persona_id, o);
+    const o = m.get(it.persona_id) ?? { hab: 0, des: 0, pag: 0, aguinaldo: 0, anticipo: 0, items: [] };
+    const g = MOVIMIENTOS[it.clase]?.g;
+    if (g) o[g] += it.monto;
+    if (it.clase === 'aguinaldo' || it.clase === 'anticipo') o[it.clase] += it.monto;
+    o.items.push(it); m.set(it.persona_id, o);
   }
   return m;
 }
 
+// Fila en cero para quien solo tiene movimientos en el mes (sin horas ni sueldo)
+function filaVacia(v, base) {
+  const c = v.condicion ?? {};
+  return { vinculo: v, persona: v.personas, modo: c.modo ?? (v.tipo_vinculo === 'contrato' ? 'fijo' : 'hora'), cargo: c.cargo_id ? base.cargos.get(c.cargo_id) ?? null : null,
+    trato: 0, vh: 0, vv: 0, ventana: null, jornadaHoras: null, condicion: v.condicion ?? null, dias: 0, totMin: 0, pagoMin: 0, base: 0, baseContable: 0,
+    vueltas: 0, montoVueltas: 0, extra: 0, descuento: 0, items: [], real: 0, total: 0, hayAjuste: false, detalle: [], sueldo: 0, bonoAutos: 0, totalMes: 0, realMes: 0 };
+}
+
 // Resumen del mes con el mismo cálculo para empresas de pago semanal o mensual: filas con sueldo base, bono por
-// autos (mensual), aguinaldo y anticipo; totalMes = costo del mes (pagos + sueldo + bono + aguinaldo) y
-// aPagar = totalMes − anticipo (el anticipo ya se pagó: no cambia el costo). Lo usan el Resumen mensual, el Estado
+// autos (mensual) y movimientos; totalMes = costo del mes (pagos + sueldo + bono + bonos y aguinaldos − descuentos) y
+// aPagar = totalMes − anticipos y quincenas (ya pagados: no cambian el costo). Lo usan el Cierre, el Estado
 // de resultados (totalMes) y Costos de mano de obra.
 export async function resumenMes(ctx, base, mes) {
   const [P, fijos] = await Promise.all([
@@ -112,10 +131,14 @@ export async function resumenMes(ctx, base, mes) {
     })(),
     fijosDelMes(ctx, mes),
   ]);
-  const filas = P.filas.map((f) => {
-    const x = fijos.get(f.vinculo.persona_id) ?? { aguinaldo: 0, anticipo: 0, items: [] };
-    return { ...f, aguinaldo: x.aguinaldo, anticipo: x.anticipo, itemsFijos: x.items,
-      totalMes: f.totalMes + x.aguinaldo, realMes: f.realMes + x.aguinaldo, aPagar: f.totalMes + x.aguinaldo - x.anticipo };
+  // Quien solo tiene movimientos en el mes también va (con lo demás en cero)
+  const conFila = new Set(P.filas.map((f) => f.vinculo.persona_id));
+  const soloMov = base.vinculos.filter((v) => fijos.has(v.persona_id) && !conFila.has(v.persona_id)).map((v) => filaVacia(v, base));
+  const filas = [...P.filas, ...soloMov].map((f) => {
+    const x = fijos.get(f.vinculo.persona_id) ?? { hab: 0, des: 0, pag: 0, aguinaldo: 0, anticipo: 0, items: [] };
+    const total = f.totalMes + x.hab - x.des;
+    return { ...f, aguinaldo: x.aguinaldo, anticipo: x.pag, movHab: x.hab, movDes: x.des, movPag: x.pag, itemsFijos: x.items,
+      totalMes: total, realMes: f.realMes + x.hab - x.des, aPagar: total - x.pag };
   });
   return { ...P, filas, total: filas.reduce((s, f) => s + f.totalMes, 0) };
 }

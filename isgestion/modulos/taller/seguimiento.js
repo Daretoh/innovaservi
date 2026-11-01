@@ -4,11 +4,11 @@
 //   cronómetro desde la recepción y barra de avance, que se arrastra para priorizar (tal_ordenes.orden_manual)
 // - flujo de los "por cotizar": P.C → COTIZADO → PAGADO
 // - detalle a pantalla completa (tablet): cronómetro grande, avance, tareas para marcar, tiempos por etapa y avanzar/volver.
-import { el } from '../../core/ui/dom.js?v=64a4e9f';
-import { icono } from '../../core/ui/iconos.js?v=64a4e9f';
-import { avisar } from '../../core/ui/aviso.js?v=64a4e9f';
-import { ESTADOS, PRIORIDADES, nombreEstado, verPatente, nombreVehiculo, nombreTercero, textoMinutos } from './datos.js?v=64a4e9f';
-import { mover } from './acciones.js?v=64a4e9f';
+import { el } from '../../core/ui/dom.js?v=1944f93';
+import { icono } from '../../core/ui/iconos.js?v=1944f93';
+import { avisar } from '../../core/ui/aviso.js?v=1944f93';
+import { ESTADOS, PRIORIDADES, nombreEstado, verPatente, nombreVehiculo, nombreTercero, textoMinutos } from './datos.js?v=1944f93';
+import { mover } from './acciones.js?v=1944f93';
 
 const ORDEN_PRIO = { urgente: 0, prioridad: 1, normal: 2, programado: 3 };
 const hoyLocal = () => new Date().toLocaleDateString('sv');

@@ -1,16 +1,16 @@
 // Arranque de ISgestión: sesión → empresas y permisos → barra con selector → menú → vista.
-import { iniciarApi, db } from './api.js?v=64a4e9f';
-import { sesionActual, iniciarSesion, cerrarSesion, alCambiarSesion } from './auth.js?v=64a4e9f';
-import { cargarPermisos, crearPuede } from './permisos.js?v=64a4e9f';
-import { cargarEmpresas, cargarModulosEmpresa, elegirEmpresa, recordarEmpresa, nombreEmpresa } from './empresas.js?v=64a4e9f';
-import { cargarManifiestos, modulosVisibles, apartadosPorCategoria, configModulo } from './modulos.js?v=64a4e9f';
-import { el } from './ui/dom.js?v=64a4e9f';
-import { icono } from './ui/iconos.js?v=64a4e9f';
-import { boton } from './ui/tabla.js?v=64a4e9f';
-import inicio from './vistas/inicio.js?v=64a4e9f';
-import mas from './vistas/mas.js?v=64a4e9f';
-import { franja, botonNotificaciones, desactivar } from './push.js?v=64a4e9f';
-import { barraMovil, marcarBarraMovil, bienvenidaInicial, recordarMarca, marcaGuardada, CORTE_TELEFONO } from './movil.js?v=64a4e9f';
+import { iniciarApi, db } from './api.js?v=1944f93';
+import { sesionActual, iniciarSesion, cerrarSesion, alCambiarSesion } from './auth.js?v=1944f93';
+import { cargarPermisos, crearPuede } from './permisos.js?v=1944f93';
+import { cargarEmpresas, cargarModulosEmpresa, elegirEmpresa, recordarEmpresa, nombreEmpresa } from './empresas.js?v=1944f93';
+import { cargarManifiestos, modulosVisibles, apartadosPorCategoria, configModulo } from './modulos.js?v=1944f93';
+import { el } from './ui/dom.js?v=1944f93';
+import { icono } from './ui/iconos.js?v=1944f93';
+import { boton } from './ui/tabla.js?v=1944f93';
+import inicio from './vistas/inicio.js?v=1944f93';
+import mas from './vistas/mas.js?v=1944f93';
+import { franja, botonNotificaciones, desactivar } from './push.js?v=1944f93';
+import { barraMovil, marcarBarraMovil, bienvenidaInicial, recordarMarca, marcaGuardada, CORTE_TELEFONO } from './movil.js?v=1944f93';
 
 const COLOR_BASE = '#1f4e8c';
 const CLAVE_MINIMA = 10;   // 08 Seguridad §4
@@ -182,7 +182,10 @@ async function arrancarSesion(sesion) {
       return;
     }
     estado.empresas = empresas;
-    await activarEmpresa(elegirEmpresa(empresas));
+    let ultima = null;
+    try { ultima = localStorage.getItem('isg.empresa'); } catch { /* sin almacenamiento */ }
+    if (ultima === GRUPO && empresas.length > 1) await activarGrupo();
+    else await activarEmpresa(elegirEmpresa(empresas));
   } finally {
     splash.cerrar();
   }
@@ -194,7 +197,37 @@ async function activarEmpresa(empresa) {
   estado.puede = crearPuede(empresa.id);
   const [modulosEmpresa, manifiestos] = await Promise.all([cargarModulosEmpresa(empresa.id), cargarManifiestos()]);
   estado.modulosEmpresa = modulosEmpresa;
-  estado.visibles = modulosVisibles(manifiestos, modulosEmpresa, estado.puede);
+  estado.grupo = null;
+  // Los módulos del espacio Grupo (espacio: 'grupo') no van en el menú de una empresa
+  estado.visibles = modulosVisibles(manifiestos.filter((m) => !m.espacio), modulosEmpresa, estado.puede);
+  montar(empresa);
+}
+
+// Espacio Grupo (02 Arquitectura §7, "Grupo ISgroup"): todas las empresas del usuario juntas, con sus propios
+// módulos (manifiestos con espacio: 'grupo'). Cada vista calcula cada empresa con los permisos que el usuario tiene
+// en ella (ctx.grupo: [{ empresa, puede, modulos }]); un ítem con requiere: [modulo, accion] solo se muestra si el
+// usuario tiene ese permiso en alguna empresa (con el módulo activo).
+async function activarGrupo() {
+  const [modulos, manifiestos] = await Promise.all([Promise.all(estado.empresas.map((e) => cargarModulosEmpresa(e.id))), cargarManifiestos()]);
+  estado.grupo = estado.empresas.map((e, i) => ({ empresa: e, puede: crearPuede(e.id), modulos: modulos[i] }));
+  const enAlguna = (m, a) => estado.grupo.some((g) => g.modulos.has(m) && g.puede(m, a));
+  estado.empresa = empresaGrupo(estado.empresas);
+  recordarEmpresa(GRUPO);
+  estado.puede = enAlguna;
+  estado.modulosEmpresa = new Map();
+  estado.visibles = manifiestos.filter((m) => m.espacio === 'grupo')
+    .map((m) => ({ ...m, menu: m.menu.filter((it) => !it.requiere || enAlguna(...it.requiere)) }))
+    .filter((m) => m.menu.some((it) => !it.oculto));
+  montar(estado.empresa);
+}
+
+const GRUPO = 'grupo';
+function empresaGrupo(empresas) {
+  return { id: GRUPO, grupo: true, razon_social: 'Grupo', nombre_fantasia: 'Grupo · todas las empresas', rut: empresas.map((e) => e.rut).join(' · '),
+    giro: `${empresas.length} empresas`, color: '#334155', config: {} };
+}
+
+function montar(empresa) {
   estado.rutas = new Map();
   for (const m of estado.visibles) for (const item of m.menu) estado.rutas.set(item.id, { item, modulo: m });
   // Apartados (una opción del menú con sus pantallas como pestañas) y a qué apartado pertenece cada pantalla
@@ -206,7 +239,7 @@ async function activarEmpresa(empresa) {
   const tema = empresa.config?.tema;
   if (tema && tema !== 'clasico') document.documentElement.dataset.tema = tema; else delete document.documentElement.dataset.tema;
   document.title = `${nombreEmpresa(empresa)} · ISgestión`;
-  const conLogo = recordarMarca(db(), empresa);   // logo y color para la próxima bienvenida (core/movil.js)
+  const conLogo = empresa.grupo ? Promise.resolve(null) : recordarMarca(db(), empresa);   // logo y color para la próxima bienvenida (core/movil.js)
   pintarApp();
   conLogo.then((logo) => ponerLogo(logo));
   navegar();
@@ -245,7 +278,7 @@ function pintarApp() {
         el('div', { class: 'usuario' },
           (estado.consola = el('a', { class: 'boton boton-secundario boton-chico solo-escritorio', href: 'consola/', hidden: true, title: 'Consola de la plataforma (equipo ISgestión)' }, icono('ajustes', { tam: 14 }), 'Consola')),
           el('span', { class: 'correo solo-escritorio' }, estado.usuario.email),
-          (estado.botonNotif = botonNotificaciones(estado.usuario.id, () => estado.empresa?.id)),
+          (estado.botonNotif = botonNotificaciones(estado.usuario.id, () => (estado.empresa?.grupo ? estado.empresas[0]?.id : estado.empresa?.id))),
           botonModo(),
           el('button', { type: 'button', class: 'boton-icono solo-escritorio', title: 'Cerrar sesión', 'aria-label': 'Cerrar sesión', onclick: () => salir() }, icono('salir')))),
       franja(),
@@ -287,7 +320,8 @@ function pintarMenu() {
         a.dataset.apartado = ap.id;
         return [a];
       })));
-  estado.menu.replaceChildren(el('div', { class: 'menu-grupo' }, enlace('#/', 'inicio', 'Inicio')), ...grupos);
+  // En el Grupo no hay Inicio: su primera pantalla hace de inicio
+  estado.menu.replaceChildren(...(estado.empresa.grupo ? [] : [el('div', { class: 'menu-grupo' }, enlace('#/', 'inicio', 'Inicio'))]), ...grupos);
 }
 
 // Logo de la empresa en el selector de la barra, en lugar del punto de color (si la empresa tiene logo)
@@ -299,7 +333,7 @@ function ponerLogo(logo) {
 
 // Selector de empresa en la barra (02 Arquitectura §7). Oculto si tiene una sola.
 function selectorEmpresa() {
-  const nombre = el('span', {}, nombreEmpresa(estado.empresa));
+  const nombre = el('span', {}, estado.empresa.grupo ? 'Grupo' : nombreEmpresa(estado.empresa));
   if (estado.empresas.length < 2) {
     return el('div', { class: 'selector' }, el('span', { class: 'selector-boton', 'aria-label': 'Empresa' }, el('span', { class: 'punto' }), nombre));
   }
@@ -312,13 +346,24 @@ function selectorEmpresa() {
 
   function pintarOpciones() {
     const q = filtro.value.trim().toLowerCase();
-    opciones.replaceChildren(...estado.empresas
+    // Primera opción: el espacio Grupo (todas las empresas juntas)
+    const grupo = !q || 'grupo todas las empresas'.includes(q) ? (() => {
+      const op = el('button', { type: 'button', class: 'selector-opcion selector-grupo', role: 'option', 'aria-current': String(!!estado.empresa.grupo) },
+        el('span', { class: 'selector-grupo-icono' }, icono('building', { tam: 14 })), 'Grupo', el('span', { class: 'rut' }, 'todas las empresas'));
+      op.addEventListener('click', () => { cerrar(); if (!estado.empresa.grupo) { history.replaceState(null, '', `${location.pathname}${location.search}#/`); activarGrupo(); } });
+      return op;
+    })() : null;
+    opciones.replaceChildren(...(grupo ? [grupo] : []), ...estado.empresas
       .filter((e) => !q || `${nombreEmpresa(e)} ${e.rut}`.toLowerCase().includes(q))
       .map((e) => {
         const op = el('button', { type: 'button', class: 'selector-opcion', role: 'option', 'aria-current': String(e.id === estado.empresa.id) },
           el('span', { class: 'punto', style: `background:${e.color || COLOR_BASE}` }),
           nombreEmpresa(e), el('span', { class: 'rut' }, e.rut));
-        op.addEventListener('click', () => { cerrar(); if (e.id !== estado.empresa.id) activarEmpresa(e); });
+        op.addEventListener('click', () => {
+          cerrar(); if (e.id === estado.empresa.id) return;
+          if (estado.empresa.grupo) history.replaceState(null, '', `${location.pathname}${location.search}#/`);   // las vistas del Grupo no existen en una empresa
+          activarEmpresa(e);
+        });
         return op;
       }));
   }
@@ -374,6 +419,9 @@ function contexto(query = decodeURIComponent(location.hash.replace(/^#\/?/, ''))
     ruta,
     hayVista: (id) => estado.rutas.has(id),   // la pantalla existe para esta empresa y rol (no oculta)
     refrescar: navegar,
+    // Espacio Grupo: las empresas con los permisos del usuario en cada una, y abrir una pantalla en una empresa
+    grupo: estado.grupo,
+    abrirEnEmpresa: (empresa, hash) => { history.pushState(null, '', `${location.pathname}${location.search}${hash}`); activarEmpresa(empresa); },
   };
 }
 
@@ -404,6 +452,11 @@ async function navegar() {
     estado.contenido.replaceChildren(nodo); estado.vistaActual = location.hash; return;
   }
 
+  // En el Grupo, el inicio es su primera pantalla
+  if (!id && estado.empresa.grupo) {
+    const primera = estado.visibles[0]?.menu.find((it) => !it.oculto);
+    if (primera) { history.replaceState(null, '', `${location.pathname}${location.search}#/${primera.id}`); navegar(); return; }
+  }
   if (!id) {
     const nodo = inicio(ctx, estado.visibles, { abrirNotificaciones: () => estado.botonNotif?.click() });
     if (estado.vistaActual !== '') nodo.classList.add('vista-entra');

@@ -2200,3 +2200,37 @@ html { transition: background-color 220ms ease; }
 .tcal-res.nat strong { color: var(--texto); }
 .tcal-res-mes { display: flex; flex-wrap: wrap; gap: 6px; }
 .tcal-res-mes .tcal-res { font-size: 13px; padding: 4px 8px; margin: 0; }
+
+/* ---------------------------------------------------------------- Espacio Grupo y Cierre de remuneraciones (2026-10-31) */
+.selector-grupo { border-bottom: 1px solid var(--borde); }
+.selector-grupo-icono { width: 18px; height: 18px; border-radius: 5px; display: inline-flex; align-items: center; justify-content: center; background: var(--fondo-hundido); color: var(--texto); flex: none; }
+.grupo-empresas { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 1rem; align-items: start; }
+.grupo-empresas .listado-cabecera h2 { margin: 0; }
+.cierre-paso { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; background: var(--superficie); border: var(--tarjeta-borde); border-radius: var(--radio); }
+.cierre-num { flex: none; width: 26px; height: 26px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: .85rem; background: var(--empresa); color: var(--sobre-empresa); }
+.cierre-paso-cuerpo { display: grid; gap: 8px; flex: 1; min-width: 0; }
+.cierre-paso-cuerpo > p { margin: 0; }
+.cierre-barra { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.cierre-total { margin-right: auto; font-size: 1rem; }
+.cierre-total strong { font-size: 1.25rem; }
+.cierre-secs { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: .9rem; }
+.cierre-avisos { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; color: var(--prox); font-size: .9rem; }
+.cierre-cols { position: relative; }
+.cierre-cols > summary { list-style: none; cursor: pointer; }
+.cierre-cols > summary::-webkit-details-marker { display: none; }
+.cierre-cols-lista { position: absolute; z-index: 20; top: calc(100% + 4px); left: 0; width: 280px; max-height: 60vh; overflow: auto; display: grid; gap: 2px; padding: 10px;
+  background: var(--superficie); border: 1px solid var(--borde); border-radius: var(--radio); box-shadow: var(--sombra); }
+.cierre-col { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.cierre-col .boton-icono { width: 26px; height: 26px; }
+.cierre-nombre { display: flex; align-items: center; gap: 4px; }
+.cierre-ojo { width: 24px; height: 24px; opacity: 0; color: var(--texto-suave); }
+.cierre-tabla tr:hover .cierre-ojo, .cierre-ojo:focus-visible { opacity: 1; }
+.cierre-tabla tbody tr:hover td { background: var(--hover); }
+.cierre-punto { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; vertical-align: middle; }
+.cierre-ocultas { margin: 0; }
+.cierre-previa { width: min(1200px, 96vw); height: 92vh; flex-direction: column; padding: 0; }
+.cierre-previa[open] { display: flex; }
+.cierre-previa iframe { flex: 1; width: 100%; border: 0; background: var(--fondo-hundido); }
+.cierre-remu { gap: 12px; }
+.cierre-tabla td:first-child { min-width: 250px; }
+.cierre-tabla td:first-child .cierre-nombre a { white-space: nowrap; }
