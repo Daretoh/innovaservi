@@ -13,15 +13,15 @@
 //   semanales (tratos, vueltas, extras) se resta de A pagar ("Pagado semanal"); sigue en el total (costo del mes).
 // - Personas ocultas del cierre (remu_cierres.ocultos) y mes enviado (remu_cierres.cerrado_at): no cambian pagos.
 // Columnas, su orden y las secciones que van se recuerdan en este navegador (isg.remu.cierre).
-import { el } from '../../core/ui/dom.js?v=1944f93';
-import { icono } from '../../core/ui/iconos.js?v=1944f93';
-import { boton } from '../../core/ui/tabla.js?v=1944f93';
-import { avisar } from '../../core/ui/aviso.js?v=1944f93';
-import { dinero, horas, hoyISO, moverMes, nombreMes } from '../../core/ui/formato.js?v=1944f93';
-import { abrirFormulario } from '../../core/ui/modal.js?v=1944f93';
-import { nombreEmpresa } from '../../core/empresas.js?v=1944f93';
-import { cargarBase, resumenMes, nombreCompleto, MOVIMIENTOS } from './datos.js?v=1944f93';
-import { diasDelMes } from './calculo.js?v=1944f93';
+import { el } from '../../core/ui/dom.js?v=2f9e074';
+import { icono } from '../../core/ui/iconos.js?v=2f9e074';
+import { boton } from '../../core/ui/tabla.js?v=2f9e074';
+import { avisar } from '../../core/ui/aviso.js?v=2f9e074';
+import { dinero, horas, hoyISO, moverMes, nombreMes } from '../../core/ui/formato.js?v=2f9e074';
+import { abrirFormulario } from '../../core/ui/modal.js?v=2f9e074';
+import { nombreEmpresa } from '../../core/empresas.js?v=2f9e074';
+import { cargarBase, resumenMes, nombreCompleto, MOVIMIENTOS } from './datos.js?v=2f9e074';
+import { diasDelMes } from './calculo.js?v=2f9e074';
 
 const estado = { mes: hoyISO().slice(0, 7) };
 const CLAVE = 'isg.remu.cierre';
@@ -168,13 +168,16 @@ export async function vistaCierre(ctx, { empresas, titulo = 'Cierre de remunerac
 // Paso 1: lo que conviene revisar antes de enviar
 function pasoRevisar(ctx, datos, mes) {
   const avisos = [];
+  // Fijo sin sueldo en una empresa porque se lo paga otra del grupo (Yocelyn: fija en Performance; en Innova, fija con la
+  // jornada de Performance y sin sueldo: sus horas en Innova dentro de esa jornada no se pagan): no es un error
+  const conSueldo = new Set(datos.flatMap((d) => d.filas.filter((r) => esFijo(r) && r.f.condicion?.sueldo_base).map((r) => r.f.vinculo.persona_id)));
   for (const d of datos.filter((x) => !x.error)) {
     const pre = datos.length > 1 ? `${nombreEmpresa(d.empresa)}: ` : '';
     const fijos = d.filas.filter(esFijo).map((r) => r.f);
     const sinJornada = fijos.filter((f) => !f.ventana && !f.jornadaHoras && !f.condicion?.art22);
     if (sinJornada.length) avisos.push(`${pre}${sinJornada.map((f) => nombreCompleto(f.persona)).join(', ')} ${sinJornada.length === 1 ? 'es fijo y no tiene' : 'son fijos y no tienen'} jornada: todas sus horas cuentan como trato (Condiciones de pago).`);
-    const sinSueldo = fijos.filter((f) => !f.condicion?.sueldo_base);
-    if (sinSueldo.length) avisos.push(`${pre}${sinSueldo.map((f) => nombreCompleto(f.persona)).join(', ')} sin sueldo base en Condiciones de pago.`);
+    const sinSueldo = fijos.filter((f) => !f.condicion?.sueldo_base && !conSueldo.has(f.vinculo.persona_id));
+    if (sinSueldo.length) avisos.push(`${pre}${sinSueldo.map((f) => nombreCompleto(f.persona)).join(', ')} sin sueldo base en Condiciones de pago${datos.length > 1 ? '' : ' (si su sueldo lo paga otra empresa del grupo, está bien)'}.`);
     const sinValor = d.filas.filter((r) => !esFijo(r) && r.f.totMin && !r.f.vh).map((r) => r.f);
     if (sinValor.length) avisos.push(`${pre}${sinValor.map((f) => nombreCompleto(f.persona)).join(', ')} con horas pero sin cargo ni valor hora: no suman pago.`);
     if (d.repetidos) avisos.push(`${pre}${d.repetidos} día${d.repetidos === 1 ? '' : 's'} con registros de horas que se pisan (el tiempo repetido cuenta una vez).`);
@@ -342,7 +345,7 @@ async function exportar(ctx, { secs, cols, mes, titulo, grupo }, formato, b) {
     const cab = ['Trabajador', ...cols.map((c) => c.t)];
     const sumar = (filas) => cols.map((c) => (c.suma ? filas.reduce((x, r) => x + (Number(c.v(r)) || 0), 0) : null));
     if (formato === 'excel') {
-      const { nuevoExcel } = await import('../../core/excel.js?v=1944f93');
+      const { nuevoExcel } = await import('../../core/excel.js?v=2f9e074');
       const x = await nuevoExcel(ctx, { titulo: tituloDoc, subtitulo });
       const valor = (c, v) => (c.tipo === 'horas' ? (v == null ? null : Math.round(v / 6) / 10) : c.neg && v ? -v : v);
       const tipo = (c) => (c.tipo === 'horas' ? 'numero' : c.tipo);
@@ -356,7 +359,7 @@ async function exportar(ctx, { secs, cols, mes, titulo, grupo }, formato, b) {
       await x.guardar(nombreArchivo);
       return;
     }
-    const { nuevoPdf } = await import('../../core/pdf.js?v=1944f93');
+    const { nuevoPdf } = await import('../../core/pdf.js?v=2f9e074');
     const pdf = await nuevoPdf(ctx, { titulo: tituloDoc, subtitulo, horizontal: true });
     const doc = pdf.doc;
     const tam = cols.length > 16 ? 6.3 : cols.length > 12 ? 7 : 8;
