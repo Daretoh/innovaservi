@@ -1,9 +1,9 @@
 // Acciones sobre una cotización: duplicar, dividir por vehículo, pasar a orden de trabajo (Taller) y, al cobrarla,
 // dejar cobradas las órdenes ligadas (005).
-import { avisar } from '../../core/ui/aviso.js?v=2f9e074';
-import { abrirFormulario } from '../../core/ui/modal.js?v=2f9e074';
-import { hoyISO, diaLocal } from '../../core/ui/formato.js?v=2f9e074';
-import { totalLinea, numeroTexto, siguienteNumero, verPatente } from './datos.js?v=2f9e074';
+import { avisar } from '../../core/ui/aviso.js?v=d497b5a';
+import { abrirFormulario } from '../../core/ui/modal.js?v=d497b5a';
+import { hoyISO, diaLocal } from '../../core/ui/formato.js?v=d497b5a';
+import { totalLinea, numeroTexto, siguienteNumero, verPatente } from './datos.js?v=d497b5a';
 
 const CAMPOS_COT = ['fecha_hasta', 'validez_dias', 'tercero_id', 'cliente_nombre', 'cliente_rut', 'cliente_giro', 'cliente_contacto', 'cliente_correo', 'cliente_telefono', 'con_iva', 'desc_adic_pct', 'mostrar_valores'];
 const CAMPOS_GRUPO = ['titulo', 'patente', 'anio', 'talla', 'vehiculo_id'];
@@ -40,6 +40,7 @@ export async function duplicar(ctx, c, b) {
 
 // Una cotización nueva por cada vehículo elegido (p. ej. los de esta semana), ligada a la misma orden del taller;
 // la original queda igual y muestra a cuál pasó cada vehículo. Los que ya pasaron a otra quedan sin marcar.
+// "Juntos": los marcados van a una sola cotización (una OC del cliente que cubre varios autos, como la 172 de GM).
 export async function dividir(ctx, c, yaEn = new Map()) {
   const grupos = [...c.cot_grupos].sort((a, b) => a.orden - b.orden);
   const nombre = (g) => [g.titulo, verPatente(g.patente)].filter(Boolean).join(' · ') || 'Vehículo sin datos';
@@ -48,12 +49,20 @@ export async function dividir(ctx, c, yaEn = new Map()) {
     mensaje: 'Cada vehículo marcado pasa a su propia cotización (en borrador) para enviarla. Esta queda igual y muestra a cuál pasó cada uno.',
     campos: [{ id: 'grupos', etiqueta: 'Vehículos', tipo: 'checks',
       opciones: grupos.map((g) => [g.id, `${nombre(g)}${yaEn.get(g.id) ? ` · ya en la N° ${numeroTexto(yaEn.get(g.id).numero)}` : ''}`]),
-      valor: grupos.filter((g) => !yaEn.get(g.id)).map((g) => g.id) }],
+      valor: grupos.filter((g) => !yaEn.get(g.id)).map((g) => g.id) },
+    { id: 'juntos', etiqueta: 'Una OC para varios autos', tipo: 'checks', opciones: [['si', 'Dejar los marcados juntos en una sola cotización']], valor: [] }],
     textoGuardar: 'Crear cotizaciones',
-    alGuardar: async ({ grupos: ids }) => {
+    alGuardar: async ({ grupos: ids, juntos }) => {
       if (!ids.length) throw new Error('Marca al menos un vehículo.');
+      const elegidos = grupos.filter((x) => ids.includes(x.id));
+      if (juntos.includes('si')) {
+        if (elegidos.length === grupos.length) throw new Error('Para dejarlos juntos, marca solo los autos de esa OC (no todos).');
+        const nueva = await copiar(ctx, c, elegidos, { conOrden: true });
+        avisar(`Creada N° ${numeroTexto(nueva.numero)} con ${elegidos.length} vehículos. La original sigue igual.`);
+        ctx.refrescar(); return;
+      }
       const nums = [];
-      for (const g of grupos.filter((x) => ids.includes(x.id))) nums.push((await copiar(ctx, c, [g], { conOrden: true })).numero);
+      for (const g of elegidos) nums.push((await copiar(ctx, c, [g], { conOrden: true })).numero);
       avisar(`Creadas N° ${nums.map(numeroTexto).join(', ')}. La original sigue igual.`);
       ctx.refrescar();
     },

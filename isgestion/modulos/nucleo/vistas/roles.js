@@ -1,10 +1,10 @@
 // Roles de la empresa y matriz rol × módulo × acción.
 // Las plantillas (Administrador, Solo lectura…) se ven pero no se editan: se copian.
-import { el } from '../../../core/ui/dom.js?v=2f9e074';
-import { icono } from '../../../core/ui/iconos.js?v=2f9e074';
-import { boton } from '../../../core/ui/tabla.js?v=2f9e074';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=2f9e074';
-import { avisar } from '../../../core/ui/aviso.js?v=2f9e074';
+import { el } from '../../../core/ui/dom.js?v=d497b5a';
+import { icono } from '../../../core/ui/iconos.js?v=d497b5a';
+import { boton } from '../../../core/ui/tabla.js?v=d497b5a';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=d497b5a';
+import { avisar } from '../../../core/ui/aviso.js?v=d497b5a';
 
 const ACCIONES = [
   ['ver', 'Ver'], ['crear', 'Crear'], ['editar', 'Editar'],
