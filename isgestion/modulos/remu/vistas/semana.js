@@ -1,10 +1,10 @@
 // Pago semanal (lunes a domingo): totales por día y por trabajador.
-import { el } from '../../../core/ui/dom.js?v=d497b5a';
-import { icono } from '../../../core/ui/iconos.js?v=d497b5a';
-import { boton } from '../../../core/ui/tabla.js?v=d497b5a';
-import { avisar } from '../../../core/ui/aviso.js?v=d497b5a';
-import { dinero, horas, hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana } from '../../../core/ui/formato.js?v=d497b5a';
-import { cargarBase, calcularRango, nombreCompleto } from '../datos.js?v=d497b5a';
+import { el } from '../../../core/ui/dom.js?v=259fbba';
+import { icono } from '../../../core/ui/iconos.js?v=259fbba';
+import { boton } from '../../../core/ui/tabla.js?v=259fbba';
+import { avisar } from '../../../core/ui/aviso.js?v=259fbba';
+import { dinero, horas, hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana } from '../../../core/ui/formato.js?v=259fbba';
+import { cargarBase, calcularRango, nombreCompleto } from '../datos.js?v=259fbba';
 
 const estado = { lunes: lunesDe(hoyISO()) };
 
@@ -89,7 +89,7 @@ export default async function vista(ctx) {
 async function exportarPdf(ctx, R, lunes, domingo, b) {
   b.disabled = true;
   try {
-    const { nuevoPdf } = await import('../../../core/pdf.js?v=d497b5a');
+    const { nuevoPdf } = await import('../../../core/pdf.js?v=259fbba');
     const pdf = await nuevoPdf(ctx, { titulo: `Pago semanal · semana ${numSemana(lunes)}`, subtitulo: `${fechaCorta(lunes)} al ${fechaCorta(domingo)} · total ${dinero(R.total)}`, horizontal: true });
     pdf.tabla({
       columnas: ['Trabajador', 'RUT', 'Modo', 'Días', 'Horas', 'Base', 'Vueltas', 'Extras', 'Descuentos', 'Total'],

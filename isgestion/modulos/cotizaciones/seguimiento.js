@@ -1,14 +1,14 @@
 // Seguimiento de una cotización enviada (005, 2026-10-30): OC del cliente → factura → cobro, con número, fecha y
 // archivo. Pensado para Guillermo Morales (una cotización por vehículo, una OC por cotización), sirve para cualquiera.
 // Al registrar la OC la cotización queda aceptada; al cobrar, las órdenes del taller ligadas quedan cobradas.
-import { el } from '../../core/ui/dom.js?v=d497b5a';
-import { icono } from '../../core/ui/iconos.js?v=d497b5a';
-import { boton } from '../../core/ui/tabla.js?v=d497b5a';
-import { abrirFormulario } from '../../core/ui/modal.js?v=d497b5a';
-import { avisar } from '../../core/ui/aviso.js?v=d497b5a';
-import { dinero, fechaLarga, hoyISO } from '../../core/ui/formato.js?v=d497b5a';
-import { subirArchivo, urlFirmada } from '../../core/adjuntos.js?v=d497b5a';
-import { cobrarOrdenes, descobrarOrdenes } from './acciones.js?v=d497b5a';
+import { el } from '../../core/ui/dom.js?v=259fbba';
+import { icono } from '../../core/ui/iconos.js?v=259fbba';
+import { boton } from '../../core/ui/tabla.js?v=259fbba';
+import { abrirFormulario } from '../../core/ui/modal.js?v=259fbba';
+import { avisar } from '../../core/ui/aviso.js?v=259fbba';
+import { dinero, fechaLarga, hoyISO } from '../../core/ui/formato.js?v=259fbba';
+import { subirArchivo, urlFirmada } from '../../core/adjuntos.js?v=259fbba';
+import { cobrarOrdenes, descobrarOrdenes } from './acciones.js?v=259fbba';
 
 export const MEDIOS = [['transferencia', 'Transferencia'], ['efectivo', 'Efectivo'], ['cheque', 'Cheque'], ['debito', 'Débito'], ['credito', 'Crédito'], ['otro', 'Otro']];
 const nombreMedio = Object.fromEntries(MEDIOS);
@@ -99,9 +99,9 @@ export function pasosSeguimiento(ctx, c, total) {
     el('h2', {}, 'Seguimiento'),
     el('div', { class: 'cie-pasos' },
       paso(1, !!(c.oc_fecha || c.oc_numero), e === 'sin_oc', 'Orden de compra',
-        c.oc_fecha ? `${c.oc_numero ? `N° ${c.oc_numero} · ` : ''}${fechaLarga(c.oc_fecha)}` : 'Registra la OC cuando el cliente la envíe.',
-        [editar && !c.cobro_fecha ? boton(c.oc_fecha ? 'Cambiar' : 'Registrar OC', { tipo: e === 'sin_oc' ? 'primario' : 'secundario', onclick: () => doc('oc') }) : null,
-          verArchivo(ctx, c.oc_archivo, 'Ver OC'), editar && c.oc_fecha && !c.factura_numero ? boton('Quitar', { onclick: () => quitar('oc') }) : null]),
+        c.oc_fecha || c.oc_numero ? [c.oc_numero ? `N° ${c.oc_numero}` : null, c.oc_fecha ? fechaLarga(c.oc_fecha) : 'sin fecha', c.oc_archivo ? null : 'sin archivo'].filter(Boolean).join(' · ') : 'Registra la OC cuando el cliente la envíe.',
+        [editar && !c.cobro_fecha ? boton(c.oc_fecha || c.oc_numero ? 'Cambiar' : 'Registrar OC', { tipo: e === 'sin_oc' ? 'primario' : 'secundario', onclick: () => doc('oc') }) : null,
+          verArchivo(ctx, c.oc_archivo, 'Ver OC'), editar && (c.oc_fecha || c.oc_numero) && !c.factura_numero ? boton('Quitar', { onclick: () => quitar('oc') }) : null]),
       paso(2, !!c.factura_numero, e === 'oc', 'Factura',
         c.factura_numero ? `N° ${c.factura_numero} · ${fechaLarga(c.factura_fecha)}` : 'Factura emitida por la OC.',
         [editar && !c.cobro_fecha ? boton(c.factura_numero ? 'Cambiar' : 'Registrar factura', { tipo: e === 'oc' ? 'primario' : 'secundario', onclick: () => doc('factura') }) : null,
