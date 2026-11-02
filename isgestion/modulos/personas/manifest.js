@@ -10,7 +10,7 @@ export default {
   rubros: ['todos'],
   acciones: ['ver', 'crear', 'editar', 'eliminar', 'exportar'],
   menu: [
-    { id: 'personas.listado', label: 'Personas', apartado: 'maestros', vista: () => import('./vistas/listado.js?v=5aa6d16') },
+    { id: 'personas.listado', label: 'Personas', apartado: 'maestros', vista: () => import('./vistas/listado.js?v=cbd7cda') },
   ],
   config: {},
   migraciones: [],   // sus tablas están en db/nucleo/001_nucleo.sql

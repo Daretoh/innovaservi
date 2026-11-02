@@ -1,13 +1,13 @@
 // Clientes (del maestro de Clientes y proveedores) con su color en el calendario y sus sitios de faena. Arriba, como
 // InnovaGestión, un gráfico circular con el % de faenas por cliente en los últimos 12 meses (6 mayores + Otros).
-import { el } from '../../../core/ui/dom.js?v=5aa6d16';
-import { icono } from '../../../core/ui/iconos.js?v=5aa6d16';
-import { boton } from '../../../core/ui/tabla.js?v=5aa6d16';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=5aa6d16';
-import { avisar } from '../../../core/ui/aviso.js?v=5aa6d16';
-import { cargarBase } from '../datos.js?v=5aa6d16';
-import { hoyISO, sumarDias } from '../../../core/ui/formato.js?v=5aa6d16';
-import { fichaTercero } from '../../terceros/formulario.js?v=5aa6d16';
+import { el } from '../../../core/ui/dom.js?v=cbd7cda';
+import { icono } from '../../../core/ui/iconos.js?v=cbd7cda';
+import { boton } from '../../../core/ui/tabla.js?v=cbd7cda';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=cbd7cda';
+import { avisar } from '../../../core/ui/aviso.js?v=cbd7cda';
+import { cargarBase, olvidarBase } from '../datos.js?v=cbd7cda';
+import { hoyISO, sumarDias } from '../../../core/ui/formato.js?v=cbd7cda';
+import { fichaTercero } from '../../terceros/formulario.js?v=cbd7cda';
 
 export default async function vista(ctx) {
   const [base, fae] = await Promise.all([cargarBase(ctx),
@@ -86,6 +86,7 @@ async function guardarCliente(ctx, c, datos) {
     : await ctx.api.from('ope_clientes').insert({ tercero_id: c.id, empresa_id: ctx.empresa.id, color: c.color, ...datos });
   if (error) { avisar(error.message, 'error'); return false; }
   Object.assign(c, datos.pide_informe === undefined ? {} : { pideInforme: datos.pide_informe });
+  olvidarBase();
   return true;
 }
 
@@ -112,6 +113,7 @@ function sitio(ctx, c, s) {
       if (r.error) throw new Error(r.error.code === '23505' ? 'Ese cliente ya tiene un sitio con ese nombre.' : r.error.message);
       if (!r.data?.length) throw new Error('No tienes permiso.');
       avisar('Sitio guardado.');
+      olvidarBase();
       ctx.refrescar();
     },
   });

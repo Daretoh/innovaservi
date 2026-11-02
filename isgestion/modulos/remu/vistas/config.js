@@ -1,10 +1,10 @@
 // Parámetros de remuneraciones y feriados de la empresa (antes fijos en el código de InnovaGestión).
-import { el } from '../../../core/ui/dom.js?v=5aa6d16';
-import { icono } from '../../../core/ui/iconos.js?v=5aa6d16';
-import { boton } from '../../../core/ui/tabla.js?v=5aa6d16';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=5aa6d16';
-import { avisar } from '../../../core/ui/aviso.js?v=5aa6d16';
-import { dinero, fechaLarga, nombreDia, hoyISO } from '../../../core/ui/formato.js?v=5aa6d16';
+import { el } from '../../../core/ui/dom.js?v=cbd7cda';
+import { icono } from '../../../core/ui/iconos.js?v=cbd7cda';
+import { boton } from '../../../core/ui/tabla.js?v=cbd7cda';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=cbd7cda';
+import { avisar } from '../../../core/ui/aviso.js?v=cbd7cda';
+import { dinero, fechaLarga, nombreDia, hoyISO } from '../../../core/ui/formato.js?v=cbd7cda';
 
 let anio = Number(hoyISO().slice(0, 4));
 
@@ -107,11 +107,26 @@ export function feriadosChile(a) {
   ];
 }
 
+// Feriados nacionales desde Nager.Date (gratis, sin clave; ya trae los traslados). Se omiten los regionales
+// (Arica y Parinacota). Los decretados después (elecciones, interferiados) se agregan a mano.
+async function feriadosNager(a) {
+  const r = await fetch(`https://date.nager.at/api/v3/PublicHolidays/${a}/CL`, { signal: AbortSignal.timeout(8000) });
+  if (!r.ok) throw new Error(`Nager.Date respondió ${r.status}`);
+  const lista = (await r.json()).filter((f) => f.global !== false && !f.counties?.length);
+  if (!lista.length) throw new Error('Nager.Date no trajo feriados');
+  return lista.map((f) => [f.date, f.localName]);
+}
+
 async function cargarChile(ctx) {
-  const filas = feriadosChile(anio).map(([fecha, nombre]) => ({ empresa_id: ctx.empresa.id, fecha, nombre }));
+  let lista, delCalculo = false;
+  try { lista = await feriadosNager(anio); }
+  catch { lista = feriadosChile(anio); delCalculo = true; }
+  const filas = lista.map(([fecha, nombre]) => ({ empresa_id: ctx.empresa.id, fecha, nombre }));
   const { error } = await ctx.api.from('remu_feriados').upsert(filas, { onConflict: 'empresa_id,fecha', ignoreDuplicates: true });
   if (error) { avisar(error.message, 'error'); return; }
-  avisar(`Feriados de ${anio} cargados. Revisa los que se trasladan.`);
+  avisar(delCalculo
+    ? `Sin conexión con el calendario oficial: feriados de ${anio} cargados con el cálculo local. Revisa los que se trasladan.`
+    : `Feriados de ${anio} cargados (con traslados). Agrega a mano los que se decreten después.`);
   ctx.refrescar();
 }
 

@@ -1,8 +1,8 @@
 // Rol operativo de cada trabajador (para la dotación de las faenas).
-import { el } from '../../../core/ui/dom.js?v=5aa6d16';
-import { listado } from '../../../core/ui/tabla.js?v=5aa6d16';
-import { avisar } from '../../../core/ui/aviso.js?v=5aa6d16';
-import { cargarBase, ROLES, nombreCompleto } from '../datos.js?v=5aa6d16';
+import { el } from '../../../core/ui/dom.js?v=cbd7cda';
+import { listado } from '../../../core/ui/tabla.js?v=cbd7cda';
+import { avisar } from '../../../core/ui/aviso.js?v=cbd7cda';
+import { cargarBase, olvidarBase, ROLES, nombreCompleto } from '../datos.js?v=cbd7cda';
 
 export default async function vista(ctx) {
   const base = await cargarBase(ctx);
@@ -26,6 +26,7 @@ export default async function vista(ctx) {
               : await ctx.api.from('ope_roles').insert({ vinculo_id: v.id, empresa_id: ctx.empresa.id, rol: s.value });
             if (error) { avisar(error.message, 'error'); s.value = v.rol; return; }
             v.rol = s.value;
+            olvidarBase();
             avisar('Rol guardado.');
           });
           return el('span', {}, s, v.rolElegido ? null : el('span', { class: 'texto-suave texto-chico' }, '  (según el cargo)'));

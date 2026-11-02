@@ -1,9 +1,9 @@
 // Inicio: saludo con la fecha, lo que requiere atención (alertas de los módulos que el usuario puede ver)
 // indicadores de los módulos (core/vistas/indicadores.js) y accesos a los módulos agrupados por área. Las alertas llegan después, sin bloquear la pantalla.
-import { el } from '../ui/dom.js?v=5aa6d16';
-import { icono } from '../ui/iconos.js?v=5aa6d16';
-import { nombreEmpresa } from '../empresas.js?v=5aa6d16';
-import { esTelefono, marcaGuardada, recordarMarca } from '../movil.js?v=5aa6d16';
+import { el } from '../ui/dom.js?v=cbd7cda';
+import { icono } from '../ui/iconos.js?v=cbd7cda';
+import { nombreEmpresa } from '../empresas.js?v=cbd7cda';
+import { esTelefono, marcaGuardada, recordarMarca } from '../movil.js?v=cbd7cda';
 
 const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
@@ -73,7 +73,7 @@ function cabeceraMovil(ctx, { fecha, titulo, abrirNotificaciones, conTaller }) {
 function atencionTaller(ctx) {
   const nodo = el('section', { class: 'im-atencion', hidden: true });
   (async () => {
-    const [{ SELECT_ORDEN, minutosTrabajo }, m] = await Promise.all([import('../../modulos/taller/datos.js?v=5aa6d16'), import('../../modulos/taller/movil.js?v=5aa6d16')]);
+    const [{ SELECT_ORDEN, minutosTrabajo }, m] = await Promise.all([import('../../modulos/taller/datos.js?v=cbd7cda'), import('../../modulos/taller/movil.js?v=cbd7cda')]);
     const { data, error } = await ctx.api.from('tal_ordenes').select(SELECT_ORDEN).eq('empresa_id', ctx.empresa.id).in('estado', ['agendado', 'espera', 'proceso', 'terminado']);
     if (error) throw error;
     // Primero por tipo de motivo; dentro de cada uno, el que lleva más tiempo
@@ -109,12 +109,12 @@ export default function inicio(ctx, visibles, { abrirNotificaciones } = {}) {
   // Indicadores (tarjetas y paneles): llegan después, sin bloquear la pantalla
   const indicadores = el('div', { class: 'cargando-bloque', 'aria-busy': 'true', 'aria-label': 'Cargando indicadores' }, el('span', { class: 'cargador', 'aria-hidden': 'true' }));
   if (visibles.length && !tablet) {
-    import('./indicadores.js?v=5aa6d16')
+    import('./indicadores.js?v=cbd7cda')
       .then(async ({ cargarIndicadores, panelIndicadores }) => { const p = panelIndicadores(ctx, await cargarIndicadores(ctx)); if (p) indicadores.replaceWith(p); else indicadores.remove(); })
       .catch(() => indicadores.remove());
   } else indicadores.remove();
   if (visibles.length && !tablet) {
-    import('../../modulos/gerencia/alertas.js?v=5aa6d16')
+    import('../../modulos/gerencia/alertas.js?v=cbd7cda')
       .then(({ cargarAlertas }) => cargarAlertas(ctx))
       .then((alertas) => {
         atencion.replaceChildren(el('h2', {}, alertas.length ? `Requiere atención (${alertas.length})` : 'Requiere atención'),

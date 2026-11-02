@@ -1,5 +1,5 @@
 // Datos y reglas compartidas de Faenas y planificación.
-import { aMin, hhmm, sumarDias, numSemana, fechaCorta } from '../../core/ui/formato.js?v=5aa6d16';
+import { aMin, hhmm, sumarDias, numSemana, fechaCorta } from '../../core/ui/formato.js?v=cbd7cda';
 
 export const ROLES = [['op', 'Operario', 'Operarios'], ['sup', 'Supervisor', 'Supervisores'], ['prev', 'Prevencionista', 'Prevencionistas']];
 export const nombreRol = Object.fromEntries(ROLES.map(([k, s]) => [k, s]));
@@ -24,7 +24,19 @@ export function turno(ini, fin) {
 export const dotTotal = (d) => (Number(d?.op) || 0) + (Number(d?.sup) || 0) + (Number(d?.prev) || 0);
 export const dotTexto = (d) => ROLES.filter(([k]) => Number(d?.[k])).map(([k, s, pl]) => `${d[k]} ${(Number(d[k]) === 1 ? s : pl).toLowerCase()}`).join(' · ') || 'Sin dotación';
 
-export async function cargarBase(ctx) {
+// Trabajadores, clientes, sitios y roles casi no cambian: se guardan un minuto por empresa (planificación, editor de
+// faena y calendario los piden en cada pantalla). Clientes y sitios, y Roles operativos llaman a olvidarBase al guardar.
+let memo = null;   // { empresa, hora, promesa }
+export const olvidarBase = () => { memo = null; };
+export function cargarBase(ctx) {
+  const e = ctx.empresa.id;
+  if (memo?.empresa === e && Date.now() - memo.hora < 60000) return memo.promesa;
+  const promesa = leerBase(ctx).catch((err) => { memo = null; throw err; });
+  memo = { empresa: e, hora: Date.now(), promesa };
+  return promesa;
+}
+
+async function leerBase(ctx) {
   const e = ctx.empresa.id;
   const [clientes, colores, sitios, vinculos, roles] = await Promise.all([
     ctx.api.from('terceros').select('id, razon_social, nombre_fantasia, tipo').eq('empresa_id', e).is('deleted_at', null).contains('tipo', ['cliente']).order('razon_social'),

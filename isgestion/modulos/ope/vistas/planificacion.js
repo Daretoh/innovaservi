@@ -2,13 +2,13 @@
 // Como InnovaGestión: "Disponibles" de cada día se arrastran a una faena (o se toca la persona y luego la faena);
 // un asignado arrastrado a Disponibles se quita; "Copiar día" replica el personal, vehículos, horario y preparador
 // a otros días; los días se pueden plegar (se recuerda en este equipo).
-import { el } from '../../../core/ui/dom.js?v=5aa6d16';
-import { icono } from '../../../core/ui/iconos.js?v=5aa6d16';
-import { boton } from '../../../core/ui/tabla.js?v=5aa6d16';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=5aa6d16';
-import { avisar } from '../../../core/ui/aviso.js?v=5aa6d16';
-import { hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, hhmm, esFinde } from '../../../core/ui/formato.js?v=5aa6d16';
-import { cargarBase, cargarSemana, faenasDelDia, etiquetaFaena, horarioDe, dotacionDe, dotTotal, turno, ocupacion, resumenWhatsApp, nombreCorto, partesDeRango, estadoParte } from '../datos.js?v=5aa6d16';
+import { el } from '../../../core/ui/dom.js?v=cbd7cda';
+import { icono } from '../../../core/ui/iconos.js?v=cbd7cda';
+import { boton } from '../../../core/ui/tabla.js?v=cbd7cda';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=cbd7cda';
+import { avisar } from '../../../core/ui/aviso.js?v=cbd7cda';
+import { hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, hhmm, esFinde } from '../../../core/ui/formato.js?v=cbd7cda';
+import { cargarBase, cargarSemana, faenasDelDia, etiquetaFaena, horarioDe, dotacionDe, dotTotal, turno, ocupacion, resumenWhatsApp, nombreCorto, partesDeRango, estadoParte } from '../datos.js?v=cbd7cda';
 
 const estado = { lunes: lunesDe(hoyISO()), sel: null };   // sel: { persona_id, fecha } elegido para asignar tocando
 const PLEGADOS = 'isg.plan.plegados';
@@ -19,14 +19,39 @@ const guardarDia = (v) => { try { localStorage.setItem(DIA, v); } catch { /* sin
 const claveFaena = (f) => `${f.tercero_id ?? ''}|${f.sitio_id ?? ''}|${f.titulo.trim().toLowerCase()}`;
 const leerPlegados = () => { try { return new Set(JSON.parse(localStorage.getItem(PLEGADOS) ?? '[]')); } catch { return new Set(); } };
 
+// Datos en memoria (Enzo, 2026-11-02: "va lentísimo y a veces clickeo días y no pasa nada"): antes cada clic (elegir
+// día, persona o plegar) volvía a pedir todo a la base (~15 consultas) y la pantalla no cambiaba mientras cargaba.
+// Ahora: los clics de pantalla repintan con lo que ya hay (pintar), asignar o quitar recarga solo la semana, y lo que
+// casi no cambia (trabajadores y clientes, acreditación, observaciones) se guarda unos minutos.
+const DURA = 3 * 60 * 1000;
+let cache = null;   // { empresa, lunes, base, semana, partes, obsAnt, acr, hora }
+let soloPintar = false;
+const pintar = (ctx) => { soloPintar = true; ctx.refrescar(); };
+
+async function cargarDatos(ctx, lunes, domingo) {
+  const e = ctx.empresa.id;
+  const fresco = cache && cache.empresa === e && Date.now() - cache.hora < DURA;
+  const reusar = soloPintar && cache?.empresa === e && cache.lunes === lunes;
+  soloPintar = false;
+  if (reusar) return cache;
+  const [base, semana, partes, obsAnt, acr] = await Promise.all([
+    cargarBase(ctx),   // con memoria de un minuto (datos.js)
+    cargarSemana(ctx, lunes, domingo),
+    partesDeRango(ctx, lunes, domingo),
+    fresco && cache.obsAnt ? cache.obsAnt : ctx.api.from('ope_faena_obs').select('faena_id, ope_faenas(tercero_id, sitio_id, titulo, fecha_inicio)').eq('empresa_id', e).limit(3000),
+    // Acreditación: asignados sin validar en el cliente de la faena (si el cliente pide documentos a los trabajadores)
+    fresco && 'acr' in cache ? cache.acr : ctx.puede('acreditacion', 'ver') && ctx.puede('rrhh', 'ver')
+      ? import('../../acreditacion/trabajadores.js?v=cbd7cda').then(async (m) => ({ m, d: await m.cargarAcreditacion(ctx) })).catch(() => null) : null,
+  ]);
+  cache = { empresa: e, lunes, base, semana, partes, obsAnt, acr, hora: fresco ? cache.hora : Date.now() };
+  return cache;
+}
+
 export default async function vista(ctx) {
   const lunes = estado.lunes;
   const domingo = sumarDias(lunes, 6);
-  const [base, semana, partes, obsAnt] = await Promise.all([cargarBase(ctx), cargarSemana(ctx, lunes, domingo), partesDeRango(ctx, lunes, domingo),
-    ctx.api.from('ope_faena_obs').select('faena_id, ope_faenas(tercero_id, sitio_id, titulo, fecha_inicio)').eq('empresa_id', ctx.empresa.id).lt('created_at', `${domingo}T23:59:59`).limit(3000)]);
-  // Acreditación: asignados sin validar en el cliente de la faena (si el cliente pide documentos a los trabajadores)
-  const acr = ctx.puede('acreditacion', 'ver') && ctx.puede('rrhh', 'ver')
-    ? await import('../../acreditacion/trabajadores.js?v=5aa6d16').then(async (m) => ({ m, d: await m.cargarAcreditacion(ctx) })).catch(() => null) : null;
+  const { base, semana, partes, obsAnt: obsTodas, acr } = await cargarDatos(ctx, lunes, domingo);
+  const obsAnt = { data: (obsTodas.data ?? []).filter((o) => !o.ope_faenas || o.ope_faenas.fecha_inicio <= domingo) };
   const sinValidar = (f, p) => (acr && f.tercero_id && acr.d.req.some((r) => r.tercero_id === f.tercero_id)
     ? (p?.ope_plan_personas ?? []).filter((x) => !['validado', 'por_vencer'].includes(acr.m.estadoTrabajador(acr.d, f.tercero_id, f.sitio_id, x.persona_id).k)).length : 0);
   // Faenas iguales (cliente + sitio + título) con observaciones en fechas anteriores
@@ -43,12 +68,12 @@ export default async function vista(ctx) {
 
   const editable = ctx.puede('ope', 'editar') && ctx.puede('ope', 'crear');
   const plegados = leerPlegados();
-  const plegar = (fecha) => { if (plegados.has(fecha)) plegados.delete(fecha); else plegados.add(fecha); try { localStorage.setItem(PLEGADOS, JSON.stringify([...plegados])); } catch { /* */ } ctx.refrescar(); };
+  const plegar = (fecha) => { if (plegados.has(fecha)) plegados.delete(fecha); else plegados.add(fecha); try { localStorage.setItem(PLEGADOS, JSON.stringify([...plegados])); } catch { /* */ } pintar(ctx); };
   const asignar = async (f, fecha, persona_id) => {
     estado.sel = null;
     let p = semana.planDe(f, fecha);
-    if (p?.estado === 'enviada') { avisar('Esa planificación ya fue enviada: reábrela para cambiarla.', 'error'); ctx.refrescar(); return; }
-    if (p?.ope_plan_personas?.some((x) => x.persona_id === persona_id)) { ctx.refrescar(); return; }
+    if (p?.estado === 'enviada') { avisar('Esa planificación ya fue enviada: reábrela para cambiarla.', 'error'); pintar(ctx); return; }
+    if (p?.ope_plan_personas?.some((x) => x.persona_id === persona_id)) { pintar(ctx); return; }
     if (!p) {
       const { data, error } = await ctx.api.from('ope_plan').insert({ empresa_id: ctx.empresa.id, faena_id: f.id, fecha, hora_inicio: f.hora_inicio, hora_fin: f.hora_fin }).select('id').single();
       if (error) { avisar(error.message, 'error'); return; }
@@ -122,7 +147,7 @@ export default async function vista(ctx) {
         const ficha = el('button', { type: 'button', class: `plan-persona libre rol-${v.rol}${elegido ? ' elegido' : ''}`, draggable: editable ? 'true' : 'false', disabled: !editable,
           'aria-pressed': String(elegido), title: editable ? 'Arrástrala a una faena, o tócala y luego toca la faena' : '' }, nombreCorto(v.personas));
         if (editable) {
-          ficha.addEventListener('click', () => { estado.sel = elegido ? null : { persona_id: v.persona_id, fecha }; ctx.refrescar(); });
+          ficha.addEventListener('click', () => { estado.sel = elegido ? null : { persona_id: v.persona_id, fecha }; pintar(ctx); });
           ficha.addEventListener('dragstart', (ev) => ev.dataTransfer.setData('text/plain', JSON.stringify({ persona_id: v.persona_id, fecha })));
         }
         return ficha;
@@ -148,9 +173,9 @@ export default async function vista(ctx) {
   const visibles = diaVer === 'todos' ? columnas : columnas.filter((_, i) => diasSemana[i] === diaVer);
   const tablero = el('div', { class: `plan-tablero ope-semana${diaVer === 'todos' ? '' : ' plan-un-dia'}` }, visibles);
   const selectorDia = el('div', { class: 'segmento plan-selector-dia', role: 'group', 'aria-label': 'Día' },
-    diasSemana.map((d) => { const n = faenasDelDia(semana.faenas, d).length; return el('button', { type: 'button', 'aria-pressed': String(diaVer === d), onclick: () => { guardarDia(d); ctx.refrescar(); } },
+    diasSemana.map((d) => { const n = faenasDelDia(semana.faenas, d).length; return el('button', { type: 'button', 'aria-pressed': String(diaVer === d), onclick: () => { guardarDia(d); pintar(ctx); } },
       `${nombreDia(d).slice(0, 3)} ${Number(d.slice(8))}`, n ? el('span', { class: 'plan-dia-n' }, String(n)) : null); }),
-    el('button', { type: 'button', 'aria-pressed': String(diaVer === 'todos'), onclick: () => { guardarDia('todos'); ctx.refrescar(); } }, 'Todos'));
+    el('button', { type: 'button', 'aria-pressed': String(diaVer === 'todos'), onclick: () => { guardarDia('todos'); pintar(ctx); } }, 'Todos'));
   // En tablet o teléfono: mostrar el día de hoy al abrir
   setTimeout(() => { const d = tablero.querySelector('.hoy'); if (d && tablero.scrollWidth > tablero.clientWidth) tablero.scrollTo({ left: d.offsetLeft - tablero.offsetLeft - 4, behavior: 'smooth' }); }, 50);
   const mover = (n) => { estado.lunes = sumarDias(estado.lunes, n * 7); if (leerDia() !== 'todos') guardarDia(''); ctx.refrescar(); };
@@ -171,7 +196,7 @@ export default async function vista(ctx) {
       tot.falt ? el('span', { class: 'chip chip-venc' }, `${tot.falt} por asignar`) : null,
       el('span', { class: 'texto-suave' }, `${tot.env} de ${tot.n} faena-días enviadas`)) : null,
     estado.sel ? el('p', { class: 'aviso-bandeja' }, icono('users', { tam: 16 }), ` ${nombreCorto(base.personas.get(estado.sel.persona_id)?.personas ?? {})}: toca la faena del ${nombreDia(estado.sel.fecha)} donde va. `,
-      el('button', { type: 'button', class: 'boton-enlace', onclick: () => { estado.sel = null; ctx.refrescar(); } }, 'Cancelar')) : null,
+      el('button', { type: 'button', class: 'boton-enlace', onclick: () => { estado.sel = null; pintar(ctx); } }, 'Cancelar')) : null,
     selectorDia,
     tablero,
     editable ? el('p', { class: 'texto-suave texto-chico' }, 'Arrastra a una persona de Disponibles a una faena (o tócala y luego toca la faena); arrastra a un asignado de vuelta a Disponibles para quitarlo. El botón de copiar de cada día replica su planificación en otros días.') : null,
