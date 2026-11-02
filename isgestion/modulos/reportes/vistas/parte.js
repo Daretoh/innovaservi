@@ -1,13 +1,13 @@
 // Parte de trabajo: datos del informe, fotos y videos por etapa, vista previa, confirmar y reabrir.
 // Ruta: #/reportes.parte?id=<parte_id>
-import { el } from '../../../core/ui/dom.js?v=a2dff54';
-import { icono } from '../../../core/ui/iconos.js?v=a2dff54';
-import { boton } from '../../../core/ui/tabla.js?v=a2dff54';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=a2dff54';
-import { avisar } from '../../../core/ui/aviso.js?v=a2dff54';
-import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=a2dff54';
-import { fechaLarga, nombreDia, fechaCorta } from '../../../core/ui/formato.js?v=a2dff54';
-import { cargarParte, ETAPAS, nombreTercero, comprimirFoto, urlsFirmadas, faenasDistintas } from '../datos.js?v=a2dff54';
+import { el } from '../../../core/ui/dom.js?v=eca84e9';
+import { icono } from '../../../core/ui/iconos.js?v=eca84e9';
+import { boton } from '../../../core/ui/tabla.js?v=eca84e9';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=eca84e9';
+import { avisar } from '../../../core/ui/aviso.js?v=eca84e9';
+import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=eca84e9';
+import { fechaLarga, nombreDia, fechaCorta } from '../../../core/ui/formato.js?v=eca84e9';
+import { cargarParte, ETAPAS, nombreTercero, comprimirFoto, urlsFirmadas, faenasDistintas } from '../datos.js?v=eca84e9';
 
 const MAX_VIDEO = 25 * 1024 * 1024;
 let etapaSubida = 'antes';
@@ -24,10 +24,10 @@ export default async function vista(ctx) {
   const varias = distintas.length > 1;
 
   // ---- Datos (se guardan al salir de cada campo)
-  const campo = (id, etiqueta, valor, largo = false) => {
+  const campo = (id, etiqueta, valor, largo = false, sugerido = '') => {
     const c = largo
       ? Object.assign(el('textarea', { class: 'campo', rows: 3, disabled: !editable, id: `p-${id}` }), { value: valor ?? '' })
-      : el('input', { class: 'campo', value: valor ?? '', disabled: !editable, id: `p-${id}` });
+      : el('input', { class: 'campo', value: valor ?? '', disabled: !editable, id: `p-${id}`, placeholder: sugerido });
     c.addEventListener('change', async () => {
       const { error } = await ctx.api.from('rep_partes').update({ [id]: c.value.trim() || null }).eq('id', parte.id);
       if (error) avisar(error.message, 'error'); else avisar('Guardado.');
@@ -143,9 +143,16 @@ export default async function vista(ctx) {
         faenas.length ? faenas.map((f) => el('p', {}, `${nombreDia(f.fecha)} ${fechaCorta(f.fecha)} — ${f.ope_faenas?.titulo ?? ''}`)) : el('p', { class: 'texto-suave' }, 'Sin faenas (parte suelto).')),
       el('div', { class: 'ficha doc-grupo' },
         el('h2', {}, 'Datos del informe'),
+        el('h3', { class: 'ind-sub' }, 'Empresa mandante'),
+        el('p', { class: 'texto-suave texto-chico' }, 'Vacío = los datos del cliente (Clientes y proveedores). Lo que escribas aquí va en este informe y se sugiere en los próximos partes del mismo cliente.'),
+        campo('mandante_razon', 'Empresa (razón social)', parte.mandante_razon, false, parte.terceros?.razon_social || nombreTercero(parte.terceros)),
+        campo('mandante_rut', 'RUT', parte.mandante_rut, false, parte.terceros?.rut ?? ''),
+        campo('mandante_direccion', 'Dirección', parte.mandante_direccion, false, parte.ope_sitios?.direccion || parte.terceros?.direccion || parte.lugar || ''),
+        el('h3', { class: 'ind-sub' }, 'Detalle del trabajo'),
         campo('solicitado_por', 'Solicitado por', parte.solicitado_por),
         campo('responsable', 'Responsable de la faena', parte.responsable),
         campo('lugar', 'Lugar', parte.lugar),
+        campo('fecha_texto', 'Fecha de la faena (texto en el informe)', parte.fecha_texto, false, [...new Set(faenas.map((f) => f.fecha))].sort().map(fechaLarga).join(', ') || fechaLarga(parte.fecha)),
         campo('trabajo', 'Trabajo realizado (una línea por trabajo; se suman los títulos de las faenas)', parte.trabajo, true),
         campo('observaciones', 'Observaciones', parte.observaciones, true))),
     el('div', { class: 'ficha doc-grupo' },
@@ -161,7 +168,7 @@ export default async function vista(ctx) {
 async function previa(ctx, datos, b) {
   b.disabled = true;
   try {
-    const { generarInforme } = await import('../informe.js?v=a2dff54');
+    const { generarInforme } = await import('../informe.js?v=eca84e9');
     const doc = await generarInforme(ctx, datos);
     window.open(doc.output('bloburl'), '_blank', 'noopener');
   } catch (e) { avisar(`No se pudo generar: ${e.message}`, 'error'); } finally { b.disabled = false; }
@@ -175,7 +182,7 @@ function confirmar(ctx, datos) {
     campos: [],
     textoGuardar: 'Confirmar',
     alGuardar: async () => {
-      const { generarInforme } = await import('../informe.js?v=a2dff54');
+      const { generarInforme } = await import('../informe.js?v=eca84e9');
       const doc = await generarInforme(ctx, datos);
       const archivo = new File([doc.output('blob')], `informe-${datos.parte.fecha}.pdf`, { type: 'application/pdf' });
       const { ruta } = await subirArchivo(ctx.api, { empresaId: ctx.empresa.id, modulo: 'reportes', archivo, tabla: 'rep_partes', registroId: datos.parte.id });

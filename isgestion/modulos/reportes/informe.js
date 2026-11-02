@@ -2,10 +2,10 @@
 // colores de la marca (Reportes → Diseño del informe) y el logo grande, datos del servicio, trabajo realizado,
 // observaciones, fotos por etapa (12 por página) y contraportada con teléfonos, correos, web y dirección con iconos.
 // Las fotos "sin ordenar" y los videos no van al informe.
-import { cargarJsPdf, cargarLogo, rgb, sellar } from '../../core/pdf.js?v=a2dff54';
-import { nombreEmpresa } from '../../core/empresas.js?v=a2dff54';
-import { fechaLarga } from '../../core/ui/formato.js?v=a2dff54';
-import { nombreEtapa, nombreTercero, urlsFirmadas, faenasDistintas } from './datos.js?v=a2dff54';
+import { cargarJsPdf, cargarLogo, rgb, sellar } from '../../core/pdf.js?v=eca84e9';
+import { nombreEmpresa } from '../../core/empresas.js?v=eca84e9';
+import { fechaLarga } from '../../core/ui/formato.js?v=eca84e9';
+import { nombreEtapa, nombreTercero, urlsFirmadas, faenasDistintas } from './datos.js?v=eca84e9';
 
 const M = 15;                 // margen
 const TEXTO = [28, 35, 48];
@@ -74,7 +74,7 @@ export async function generarInforme(ctx, { parte, faenas, media, config }) {
   const cliente = parte.terceros?.razon_social || nombreTercero(parte.terceros);
   const lugar = parte.lugar || parte.ope_sitios?.nombre || '';
   const fechas = [...new Set(faenas.map((f) => f.fecha))].sort();
-  const textoFechas = (fechas.length ? fechas : [parte.fecha]).map(fechaLarga).join(', ');
+  const textoFechas = parte.fecha_texto?.trim() || (fechas.length ? fechas : [parte.fecha]).map(fechaLarga).join(', ');
 
   const ponerLogo = (x, y, maxAncho, maxAlto, centrado = false) => {
     if (!logo) return false;
@@ -187,10 +187,11 @@ export async function generarInforme(ctx, { parte, faenas, media, config }) {
     const i = l.indexOf(':');
     return i > 0 ? [l.slice(0, i).trim(), l.slice(i + 1).trim()] : [null, l];
   });
-  const datosContratista = [['Empresa', e.razon_social], ['RUT', rutConPuntos(e.rut)], ['Responsable faena', parte.responsable], ...lineasCfg.filter(([k]) => k)];
+  const datosContratista = [['Empresa', config.contratista_nombre?.trim() || e.razon_social], ['RUT', rutConPuntos(e.rut)], ['Responsable faena', parte.responsable], ...lineasCfg.filter(([k]) => k)];
   const notasContratista = lineasCfg.filter(([k]) => !k).map(([, v]) => v);
   const t = parte.terceros;
-  const datosMandante = [['Empresa', t?.razon_social || nombreTercero(t)], ['RUT', t?.rut ? rutConPuntos(t.rut) : null], ['Dirección', parte.ope_sitios?.direccion || t?.direccion || lugar]];
+  // Lo escrito en el parte manda sobre los datos del cliente (como en InnovaGestión, Reportes 006)
+  const datosMandante = [['Empresa', parte.mandante_razon || t?.razon_social || nombreTercero(t)], ['RUT', parte.mandante_rut || (t?.rut ? rutConPuntos(t.rut) : null)], ['Dirección', parte.mandante_direccion || parte.ope_sitios?.direccion || t?.direccion || lugar]];
   const medir = (filas, notas) => {
     let n = 0;
     filas.filter(([, v]) => v).forEach(([k, v]) => {

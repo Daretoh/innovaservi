@@ -5,14 +5,14 @@
 // El reparto está en ../manoobra.js; el total de cada mes cuadra con Remuneraciones.
 // Grupo → Mano de obra del grupo usa la misma vista con todas las empresas (vistaManoObra con empresas; Enzo,
 // 2026-11-02): suma Innova y Performance, cada una con sus permisos, con filtro y tarjeta por empresa.
-import { el } from '../../../core/ui/dom.js?v=a2dff54';
-import { nombreEmpresa } from '../../../core/empresas.js?v=a2dff54';
-import { icono } from '../../../core/ui/iconos.js?v=a2dff54';
-import { boton } from '../../../core/ui/tabla.js?v=a2dff54';
-import { avisar } from '../../../core/ui/aviso.js?v=a2dff54';
-import { dinero, horas, hoyISO, rangoMes, sumarDias, lunesDe, numSemana, nombreDia, fechaCorta, fechaLarga, moverMes, nombreMes } from '../../../core/ui/formato.js?v=a2dff54';
-import { cargarBase, nombreCompleto } from '../datos.js?v=a2dff54';
-import { COMPONENTES, SIN_FAENA, periodo, libroPeriodo, sumar, agrupar } from '../manoobra.js?v=a2dff54';
+import { el } from '../../../core/ui/dom.js?v=eca84e9';
+import { nombreEmpresa } from '../../../core/empresas.js?v=eca84e9';
+import { icono } from '../../../core/ui/iconos.js?v=eca84e9';
+import { boton } from '../../../core/ui/tabla.js?v=eca84e9';
+import { avisar } from '../../../core/ui/aviso.js?v=eca84e9';
+import { dinero, horas, hoyISO, rangoMes, sumarDias, lunesDe, numSemana, nombreDia, fechaCorta, fechaLarga, moverMes, nombreMes } from '../../../core/ui/formato.js?v=eca84e9';
+import { cargarBase, nombreCompleto } from '../datos.js?v=eca84e9';
+import { COMPONENTES, SIN_FAENA, periodo, libroPeriodo, sumar, agrupar } from '../manoobra.js?v=eca84e9';
 
 const estado = { per: 'mes', ref: hoyISO().slice(0, 7), cliente: '', empresa: '', tabla: 'faenas', q: '', orden: { faenas: ['m', -1], personas: ['m', -1] }, abierto: null };
 const MES3 = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
@@ -263,7 +263,7 @@ function panelDetalle(modo, g, P, S, persona) {
 
 // Excel: cada movimiento del período (filtro de cliente incluido) y el resumen por componente
 async function exportar(ctx, rows, P, persona, nombreEmp = null) {
-  const { nuevoExcel } = await import('../../../core/excel.js?v=a2dff54');
+  const { nuevoExcel } = await import('../../../core/excel.js?v=eca84e9');
   const nombres = Object.fromEntries([...COMPONENTES.map(([k, t]) => [k, t]), ['de', 'Descuentos']]);
   const S = sumar(rows);
   const x = await nuevoExcel(ctx, { titulo: nombreEmp ? 'Mano de obra del grupo' : 'Costos de mano de obra', subtitulo: P.etiqueta });

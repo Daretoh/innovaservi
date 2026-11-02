@@ -1,9 +1,9 @@
 // Vehículos de los clientes: búsqueda por patente, marca, modelo o cliente, con su última visita.
-import { el } from '../../../core/ui/dom.js?v=a2dff54';
-import { listado, boton } from '../../../core/ui/tabla.js?v=a2dff54';
-import { fechaLarga } from '../../../core/ui/formato.js?v=a2dff54';
-import { verPatente, nombreVehiculo, nombreTercero } from '../datos.js?v=a2dff54';
-import { recepcion } from '../recepcion.js?v=a2dff54';
+import { el } from '../../../core/ui/dom.js?v=eca84e9';
+import { listado, boton } from '../../../core/ui/tabla.js?v=eca84e9';
+import { fechaLarga } from '../../../core/ui/formato.js?v=eca84e9';
+import { verPatente, nombreVehiculo, nombreTercero } from '../datos.js?v=eca84e9';
+import { recepcion } from '../recepcion.js?v=eca84e9';
 
 let buscar = '';
 

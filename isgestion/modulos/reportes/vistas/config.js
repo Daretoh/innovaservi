@@ -1,10 +1,10 @@
 // Diseño del informe: textos de la caja "Contratista", lema de la portada, contactos de la contraportada, colores de
 // las franjas laterales y logo grande de portada y contraportada (como InnovaGestión). El logo chico y el color salen
 // de los datos de la empresa; teléfono, correo, web y dirección de la empresa también van a la contraportada.
-import { el } from '../../../core/ui/dom.js?v=a2dff54';
-import { boton } from '../../../core/ui/tabla.js?v=a2dff54';
-import { avisar } from '../../../core/ui/aviso.js?v=a2dff54';
-import { subirArchivo, urlFirmada } from '../../../core/adjuntos.js?v=a2dff54';
+import { el } from '../../../core/ui/dom.js?v=eca84e9';
+import { boton } from '../../../core/ui/tabla.js?v=eca84e9';
+import { avisar } from '../../../core/ui/aviso.js?v=eca84e9';
+import { subirArchivo, urlFirmada } from '../../../core/adjuntos.js?v=eca84e9';
 
 const lineas = (t) => t.split('\n').map((x) => x.trim()).filter(Boolean);
 
@@ -21,6 +21,7 @@ export default async function vista(ctx) {
     return { control, nodo: el('div', { class: 'form-fila' }, el('label', { for: `c-${id}` }, etiqueta), control, ayuda ? el('span', { class: 'texto-suave texto-chico' }, ayuda) : null) };
   };
   const f = {
+    contratista: fila('contratista_nombre', 'Nombre en la caja "Contratista"', c.contratista_nombre, { ayuda: `Vacío: la razón social (${ctx.empresa.razon_social ?? ''}). Ej.: INNOVA SERVI SpA.` }),
     responsable: fila('responsable', 'Responsable de faena por defecto', c.responsable, { ayuda: 'Se copia en cada parte nuevo; en el parte se puede cambiar.' }),
     lineas: fila('lineas', 'Líneas de la caja "Contratista"', (c.lineas ?? []).join('\n'), { largo: true, ayuda: 'Una por línea: registros, resoluciones sanitarias, certificaciones.' }),
     lema: fila('lema', 'Lema de la portada', c.lema),
@@ -47,6 +48,7 @@ export default async function vista(ctx) {
   const guardar = async (ev) => {
     const b = ev.currentTarget; b.disabled = true;
     const v = {
+      contratista_nombre: f.contratista.control.value.trim() || null,
       responsable: f.responsable.control.value.trim() || null,
       lineas: lineas(f.lineas.control.value),
       lema: f.lema.control.value.trim() || null,
@@ -68,7 +70,7 @@ export default async function vista(ctx) {
         el('p', { class: 'texto-suave' }, 'El logo y el color del informe son los de la empresa. Estos textos completan la portada, la caja del contratista y la contraportada.')),
       editable ? el('div', { class: 'listado-acciones' }, boton('Guardar', { icono: 'check', tipo: 'primario', onclick: guardar })) : null),
     el('div', { class: 'plan-editor' },
-      el('div', { class: 'ficha doc-grupo' }, el('h2', {}, 'Portada y contratista'), f.responsable.nodo, f.lineas.nodo, f.lema.nodo),
+      el('div', { class: 'ficha doc-grupo' }, el('h2', {}, 'Portada y contratista'), f.contratista.nodo, f.responsable.nodo, f.lineas.nodo, f.lema.nodo),
       el('div', { class: 'ficha doc-grupo' }, el('h2', {}, 'Contraportada'), f.web.nodo, f.contactos.nodo),
       el('div', { class: 'ficha doc-grupo' }, el('h2', {}, 'Marca'), f.franjas.nodo,
         el('div', { class: 'form-fila' }, el('label', {}, 'Logo grande (portada y contraportada)'), vistaLogo, editable ? entradaLogo : null))));
