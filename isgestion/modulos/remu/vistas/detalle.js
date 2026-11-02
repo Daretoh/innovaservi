@@ -3,14 +3,14 @@
 // tiene varias y la suma cuadra) y se guardan al salir del campo; extras y descuentos se editan en la lista.
 // El ajuste contable (real vs. contable) es una opción de la empresa (Parámetros); apagada, se paga lo calculado.
 // Rutas: #/remu.detalle?p=<persona_id>&s=<lunes> (semanal) · #/remu.detalle?p=<persona_id>&m=<aaaa-mm> (mensual)
-import { el } from '../../../core/ui/dom.js?v=eb25cc4';
-import { icono } from '../../../core/ui/iconos.js?v=eb25cc4';
-import { boton } from '../../../core/ui/tabla.js?v=eb25cc4';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=eb25cc4';
-import { avisar } from '../../../core/ui/aviso.js?v=eb25cc4';
-import { dinero, horas, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, hhmm, hoyISO, rangoMes, moverMes, nombreMes } from '../../../core/ui/formato.js?v=eb25cc4';
-import { cargarBase, calcularRango, pagoMensual, nombreCompleto } from '../datos.js?v=eb25cc4';
-import { sueldoDelMes, semanaEnMes } from '../calculo.js?v=eb25cc4';
+import { el } from '../../../core/ui/dom.js?v=be2fe08';
+import { icono } from '../../../core/ui/iconos.js?v=be2fe08';
+import { boton } from '../../../core/ui/tabla.js?v=be2fe08';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=be2fe08';
+import { avisar } from '../../../core/ui/aviso.js?v=be2fe08';
+import { dinero, horas, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, hhmm, hoyISO, rangoMes, moverMes, nombreMes } from '../../../core/ui/formato.js?v=be2fe08';
+import { cargarBase, calcularRango, pagoMensual, nombreCompleto } from '../datos.js?v=be2fe08';
+import { sueldoDelMes, semanaEnMes } from '../calculo.js?v=be2fe08';
 
 export default async function vista(ctx) {
   const personaId = ctx.params.p;
@@ -141,7 +141,7 @@ export default async function vista(ctx) {
         !mes && f ? boton('Liquidación PDF', { icono: 'descargar', title: 'Descargar la liquidación de la semana en PDF', onclick: async (ev) => {
           const b = ev.currentTarget; b.classList.add('cargando');
           try {
-            const { liquidacionPdf } = await import('../liquidacion.js?v=eb25cc4');
+            const { liquidacionPdf } = await import('../liquidacion.js?v=be2fe08');
             await liquidacionPdf(ctx, { f, persona: v.personas, cargo: cargo?.nombre ?? v.cargo, lunes, domingo, contable });
           } catch (e) { avisar(`No se pudo generar el PDF: ${e.message}`, 'error'); } finally { b.classList.remove('cargando'); }
         } }) : null,

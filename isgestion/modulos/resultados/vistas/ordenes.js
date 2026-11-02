@@ -1,10 +1,10 @@
 // Utilidad directa por orden cobrada en el mes: ingreso neto − insumos − gastos ligados a la orden o con su
 // patente (10 días antes del ingreso a 10 días después del término). No descuenta gastos fijos ni personal.
-import { el } from '../../../core/ui/dom.js?v=eb25cc4';
-import { icono } from '../../../core/ui/iconos.js?v=eb25cc4';
-import { listado } from '../../../core/ui/tabla.js?v=eb25cc4';
-import { dinero, fechaLarga, hoyISO, nombreMes, moverMes, rangoMes } from '../../../core/ui/formato.js?v=eb25cc4';
-import { pct } from '../datos.js?v=eb25cc4';
+import { el } from '../../../core/ui/dom.js?v=be2fe08';
+import { icono } from '../../../core/ui/iconos.js?v=be2fe08';
+import { listado } from '../../../core/ui/tabla.js?v=be2fe08';
+import { dinero, fechaLarga, hoyISO, nombreMes, moverMes, rangoMes } from '../../../core/ui/formato.js?v=be2fe08';
+import { pct } from '../datos.js?v=be2fe08';
 
 const estado = { mes: hoyISO().slice(0, 7), orden: 'fecha' };
 const ORDENES = [['fecha', 'Más recientes'], ['margen', 'Menor margen'], ['utilidad', 'Mayor utilidad']];

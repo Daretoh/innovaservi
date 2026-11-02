@@ -1,14 +1,14 @@
 // Tareas (v2, como InnovaGestión): pestañas Mis tareas / Todas / por persona / Avisos, filtros (abiertas, en proceso,
 // terminadas), búsqueda y orden; cada fila con prioridad inteligente, estado, responsables, vencimiento con color, días
 // abierta y clip con los archivos. Clic abre el detalle (detalle.js). ?nueva=1 abre "Nueva tarea"; ?id= abre una.
-import { el } from '../../../core/ui/dom.js?v=eb25cc4';
-import { icono } from '../../../core/ui/iconos.js?v=eb25cc4';
-import { boton } from '../../../core/ui/tabla.js?v=eb25cc4';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=eb25cc4';
-import { avisar } from '../../../core/ui/aviso.js?v=eb25cc4';
-import { fechaLarga, fechaCorta, diaLocal } from '../../../core/ui/formato.js?v=eb25cc4';
-import { PRIORIDADES, nombrePrioridad, nombreEstado, CHIP_ESTADO, REPETIR, CATEGORIAS, nombreCategoria, categoriaAuto, prioridad, ordenar, diasHasta, diasAbierta, CHIP_PRIO } from '../datos.js?v=eb25cc4';
-import { abrirDetalle } from './detalle.js?v=eb25cc4';
+import { el } from '../../../core/ui/dom.js?v=be2fe08';
+import { icono } from '../../../core/ui/iconos.js?v=be2fe08';
+import { boton } from '../../../core/ui/tabla.js?v=be2fe08';
+import { avisar } from '../../../core/ui/aviso.js?v=be2fe08';
+import { fechaLarga, fechaCorta, diaLocal } from '../../../core/ui/formato.js?v=be2fe08';
+import { nombrePrioridad, nombreEstado, CHIP_ESTADO, CATEGORIAS, nombreCategoria, prioridad, ordenar, diasHasta, diasAbierta, CHIP_PRIO } from '../datos.js?v=be2fe08';
+import { abrirDetalle } from './detalle.js?v=be2fe08';
+import { nuevaTarea } from './nueva.js?v=be2fe08';
 
 const estado = { ver: 'mias', persona: '', filtro: 'abiertas', buscar: '', orden: 'prioridad', categoria: '' };
 
@@ -29,32 +29,8 @@ export default async function vista(ctx) {
   const crear = ctx.puede('tareas', 'crear');
 
   const abrir = (t) => abrirDetalle(ctx, t, { usuarios, alCambiar: () => ctx.refrescar() });
-  const nueva = () => abrirFormulario({
-    titulo: 'Nueva tarea',
-    mensaje: 'Después de crearla puedes adjuntar fotos y archivos (también pegando un pantallazo con Ctrl+V).',
-    campos: [
-      { id: 'titulo', etiqueta: 'Tarea', requerido: true },
-      { id: 'detalle', etiqueta: 'Detalle', tipo: 'textarea' },
-      { id: 'fecha', etiqueta: 'Vence', tipo: 'date' },
-      { id: 'prioridad', etiqueta: 'Prioridad', opciones: PRIORIDADES, valor: 'media' },
-      { id: 'responsable', etiqueta: 'Responsable', opciones: [['', 'Sin asignar'], ...usuarios.map((u) => [u.user_id, u.nombre])], valor: estado.ver === 'persona' && estado.persona ? estado.persona : yo },
-      { id: 'responsable2', etiqueta: '2.º responsable (opcional)', opciones: [['', 'Ninguno'], ...usuarios.map((u) => [u.user_id, u.nombre])] },
-      { id: 'repetir', etiqueta: 'Repetir', opciones: REPETIR, valor: 'no' },
-      { id: 'categoria', etiqueta: 'Categoría', opciones: [['', 'Según el título'], ...CATEGORIAS], valor: '' },
-    ],
-    textoGuardar: 'Crear tarea',
-    alGuardar: async (v) => {
-      if (v.repetir !== 'no' && !v.fecha) throw new Error('Una tarea que se repite necesita fecha.');
-      const { data: t, error: er } = await ctx.api.from('tar_tareas').insert({
-        empresa_id: e, titulo: v.titulo.trim(), detalle: v.detalle.trim() || null, fecha: v.fecha || null, prioridad: v.prioridad,
-        responsable_id: v.responsable || null, responsable2_id: v.responsable2 && v.responsable2 !== v.responsable ? v.responsable2 : null, repetir: v.repetir,
-        categoria: v.categoria || categoriaAuto(v.titulo),
-      }).select('*, tar_adjuntos(id), tar_obs(id)').single();
-      if (er) throw new Error(er.message);
-      avisar('Tarea creada.'); ctx.refrescar();
-      setTimeout(() => abrir(t), 150);
-    },
-  });
+  const nueva = () => nuevaTarea(ctx, { usuarios, responsable: estado.ver === 'persona' && estado.persona ? estado.persona : yo,
+    alCrear: (t) => { ctx.refrescar(); setTimeout(() => abrir(t), 150); } });
 
   // Filtrado en pantalla
   const q2 = estado.buscar.trim().toLowerCase();

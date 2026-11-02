@@ -1,8 +1,8 @@
 // Checklist de carga para la cuadrilla (sin cuenta). URL: /checklist/?t=<token>
 // Todo pasa por la Edge Function checklist-faena: ver, marcar, subir fotos de la carga y fotos del parte por etapa.
-import { el } from '../core/ui/dom.js?v=eb25cc4';
-import { icono } from '../core/ui/iconos.js?v=eb25cc4';
-import { comprimirFoto } from '../core/imagenes.js?v=eb25cc4';
+import { el } from '../core/ui/dom.js?v=be2fe08';
+import { icono } from '../core/ui/iconos.js?v=be2fe08';
+import { comprimirFoto } from '../core/imagenes.js?v=be2fe08';
 
 const raiz = document.getElementById('app');
 const token = new URLSearchParams(location.search).get('t') ?? '';

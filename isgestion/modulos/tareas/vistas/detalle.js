@@ -1,15 +1,15 @@
 // Detalle de una tarea (como InnovaGestión): datos editables, estado (pendiente / en proceso / terminada), prioridad
 // inteligente, seguimiento con observaciones y cambios, @menciones que avisan a la persona, botón Recordar a los
 // responsables, y archivos y fotos (elegir, pegar un pantallazo con Ctrl+V o arrastrar sobre la tarea).
-import { el } from '../../../core/ui/dom.js?v=eb25cc4';
-import { icono } from '../../../core/ui/iconos.js?v=eb25cc4';
-import { boton } from '../../../core/ui/tabla.js?v=eb25cc4';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=eb25cc4';
-import { avisar } from '../../../core/ui/aviso.js?v=eb25cc4';
-import { subirArchivo, eliminarArchivo, urlsFirmadas, urlFirmada } from '../../../core/adjuntos.js?v=eb25cc4';
-import { comprimirFoto, esImagen } from '../../../core/imagenes.js?v=eb25cc4';
-import { fechaLarga, diaLocal } from '../../../core/ui/formato.js?v=eb25cc4';
-import { PRIORIDADES, nombrePrioridad, ESTADOS, REPETIR, CATEGORIAS, nombreCategoria, prioridad, diasAbierta, mencionados } from '../datos.js?v=eb25cc4';
+import { el } from '../../../core/ui/dom.js?v=be2fe08';
+import { icono } from '../../../core/ui/iconos.js?v=be2fe08';
+import { boton } from '../../../core/ui/tabla.js?v=be2fe08';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=be2fe08';
+import { avisar } from '../../../core/ui/aviso.js?v=be2fe08';
+import { subirArchivo, eliminarArchivo, urlsFirmadas, urlFirmada } from '../../../core/adjuntos.js?v=be2fe08';
+import { comprimirFoto, esImagen } from '../../../core/imagenes.js?v=be2fe08';
+import { fechaLarga, diaLocal } from '../../../core/ui/formato.js?v=be2fe08';
+import { PRIORIDADES, nombrePrioridad, ESTADOS, REPETIR, CATEGORIAS, nombreCategoria, prioridad, diasAbierta, mencionados } from '../datos.js?v=be2fe08';
 
 const MAX = 25 * 1024 * 1024;
 const hora = (ts) => new Date(ts).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
@@ -119,7 +119,8 @@ export async function abrirDetalle(ctx, t, { usuarios, alCambiar }) {
     const ver = async (a) => { try { window.open(await urlFirmada(ctx.api, a.ruta, 300), '_blank', 'noopener'); } catch (err) { avisar(err.message, 'error'); } };
     const archivos = adj.data ?? [];
 
-    caja.replaceChildren(
+    // filter: replaceChildren escribe "null" si recibe null (tarea sin detalle, sin permiso para editar)
+    caja.replaceChildren(...[
       el('div', { class: 'seg-cab' },
         el('div', {}, el('h2', {}, t.titulo),
           el('p', { class: 'texto-suave' }, [nombreCategoria[t.categoria ?? 'general'], `Responsable: ${nombre.get(t.responsable_id) ?? 'sin asignar'}`, t.responsable2_id ? `2.º: ${nombre.get(t.responsable2_id) ?? ''}` : null,
@@ -146,7 +147,7 @@ export async function abrirDetalle(ctx, t, { usuarios, alCambiar }) {
       el('div', { class: 'tar2-obs' }, (obs.data ?? []).length ? (obs.data ?? []).map((o) => el('div', { class: `tar2-o ${o.tipo === 'cambio' ? 'tar2-cambio' : ''}` },
         el('span', { class: 'texto-chico texto-suave' }, `${nombre.get(o.autor) ?? 'Sistema'} · ${fechaLarga(diaLocal(o.created_at))} ${hora(o.created_at)}`),
         el('span', {}, o.texto))) : el('p', { class: 'texto-suave texto-chico' }, 'Sin observaciones.')),
-      participa ? el('div', { class: 'tar2-comentar' }, texto, sugerencias, el('div', {}, boton('Agregar observación', { icono: 'mas', tipo: 'primario', onclick: comentar }))) : null);
+      participa ? el('div', { class: 'tar2-comentar' }, texto, sugerencias, el('div', {}, boton('Agregar observación', { icono: 'mas', tipo: 'primario', onclick: comentar }))) : null].filter(Boolean));
   }
 
   async function subir(lista) {

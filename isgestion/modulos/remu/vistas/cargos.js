@@ -1,11 +1,11 @@
 // Cargos y tratos: cada cargo se define por su valor hora (2026-10-30, pedido de Enzo; los fijos ya tienen su turno).
 // Se guarda como trato (pago de un día completo) = valor hora × horas por trato, que es lo que usa el cálculo.
-import { el } from '../../../core/ui/dom.js?v=eb25cc4';
-import { icono } from '../../../core/ui/iconos.js?v=eb25cc4';
-import { listado, boton } from '../../../core/ui/tabla.js?v=eb25cc4';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=eb25cc4';
-import { avisar } from '../../../core/ui/aviso.js?v=eb25cc4';
-import { dinero } from '../../../core/ui/formato.js?v=eb25cc4';
+import { el } from '../../../core/ui/dom.js?v=be2fe08';
+import { icono } from '../../../core/ui/iconos.js?v=be2fe08';
+import { listado, boton } from '../../../core/ui/tabla.js?v=be2fe08';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=be2fe08';
+import { avisar } from '../../../core/ui/aviso.js?v=be2fe08';
+import { dinero } from '../../../core/ui/formato.js?v=be2fe08';
 
 export default async function vista(ctx) {
   const [cargos, config] = await Promise.all([
