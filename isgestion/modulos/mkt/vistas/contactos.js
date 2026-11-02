@@ -1,10 +1,10 @@
 // Contactos: todos en una tabla con búsqueda, filtro por etapa y Excel con el membrete de la empresa.
-import { el } from '../../../core/ui/dom.js?v=228ea7a';
-import { listado, boton } from '../../../core/ui/tabla.js?v=228ea7a';
-import { dinero, fechaLarga, diaLocal } from '../../../core/ui/formato.js?v=228ea7a';
-import { exportarExcel } from '../../../core/excel.js?v=228ea7a';
-import { cargarBase, cargarCss, nombreOrigen } from '../datos.js?v=228ea7a';
-import { formContacto } from '../formularios.js?v=228ea7a';
+import { el } from '../../../core/ui/dom.js?v=c9aedb2';
+import { listado, boton } from '../../../core/ui/tabla.js?v=c9aedb2';
+import { dinero, fechaLarga, diaLocal } from '../../../core/ui/formato.js?v=c9aedb2';
+import { exportarExcel } from '../../../core/excel.js?v=c9aedb2';
+import { cargarBase, cargarCss, nombreOrigen } from '../datos.js?v=c9aedb2';
+import { formContacto } from '../formularios.js?v=c9aedb2';
 
 const estado = { etapa: '' };
 

@@ -1,11 +1,11 @@
 // PDF de la cotización (diseño del OS de IS Performance, con la marca de cada empresa):
 // encabezado con N° y fecha, cajas Cliente y Contacto, tabla por grupo con secciones y subtotal,
 // información de pago, totales, firma, nota de validez, contactos y sello de ISgestión.
-import { cargarJsPdf, cargarLogo, rgb, sellar } from '../../core/pdf.js?v=228ea7a';
-import { nombreEmpresa } from '../../core/empresas.js?v=228ea7a';
-import { sumarDias } from '../../core/ui/formato.js?v=228ea7a';
-import { totales, totalLinea, numeroTexto, verPatente, cargarConfig, IVA } from './datos.js?v=228ea7a';
-import { soloCosto } from './costos-orden.js?v=228ea7a';
+import { cargarJsPdf, cargarLogo, rgb, sellar } from '../../core/pdf.js?v=c9aedb2';
+import { nombreEmpresa } from '../../core/empresas.js?v=c9aedb2';
+import { sumarDias } from '../../core/ui/formato.js?v=c9aedb2';
+import { totales, totalLinea, numeroTexto, verPatente, cargarConfig, IVA } from './datos.js?v=c9aedb2';
+import { soloCosto } from './costos-orden.js?v=c9aedb2';
 
 const M = 15;
 const TEXTO = [28, 35, 48];
@@ -32,6 +32,14 @@ export async function pdfCotizacion(ctx, c) {
   const H = doc.internal.pageSize.getHeight();
   const logo = await cargarLogo(ctx.api, e.logo_url);
   const t = totales(c, c.cot_grupos, c.cot_lineas);
+  // Cliente (como cotCliExtra del OS): lo que falte en la cotización se toma de la ficha del cliente; también si es
+  // "siempre por cotizar" (GM). Y el nombre de quien emite, para la firma.
+  const [{ data: cli }, { data: nombres }] = await Promise.all([
+    c.tercero_id ? ctx.api.from('terceros').select('rut, giro, contacto, representante, email, telefono, por_cotizar').eq('id', c.tercero_id).maybeSingle() : { data: null },
+    ctx.api.rpc('nombres_usuarios', { p_empresa: e.id }),
+  ]);
+  const verRut = (r) => (r && /^\d{7,8}-[\dkK]$/.test(r) ? `${Number(r.split('-')[0]).toLocaleString('es-CL')}-${r.split('-')[1].toUpperCase()}` : r);
+  const dato = (k, alt) => c[k] || alt || null;
 
   // ---- Encabezado
   if (logo) {
@@ -58,18 +66,17 @@ export async function pdfCotizacion(ctx, c) {
       doc.setFont('helvetica', 'bold').setFontSize(8.5).setTextColor(...TEXTO).text(doc.splitTextToSize(v || '—', ancho - 30)[0], x + 26, 58.5 + i * 5.5);
     });
   };
-  cajaDatos(M, 'Cliente', [['Empresa', c.cliente_nombre], ['RUT', c.cliente_rut], ['Giro', c.cliente_giro]]);
-  cajaDatos(M + ancho + 6, 'Contacto', [['Persona', c.cliente_contacto], ['Correo', c.cliente_correo], ['Teléfono', c.cliente_telefono]]);
+  cajaDatos(M, 'Cliente', [['Empresa', c.cliente_nombre], ['RUT', verRut(dato('cliente_rut', cli?.rut))], ['Giro', dato('cliente_giro', cli?.giro)]]);
+  cajaDatos(M + ancho + 6, 'Contacto', [['Persona', dato('cliente_contacto', cli?.contacto || cli?.representante)], ['Correo', dato('cliente_correo', cli?.email)], ['Teléfono', dato('cliente_telefono', cli?.telefono)]]);
 
   // ---- Tabla por grupo (como el OS, 2026-10-22): sin columna c/IVA por ítem (el IVA va solo en el total) y, si hay
   // descuentos por ítem, las columnas Neto · Desc. · Neto c/desc
   const conIva = c.con_iva;
-  // Agrupar secciones (Diseño, como el OS): cada sección en una línea con su total; "Extras" y las líneas sin sección se
-  // detallan. Con un cliente "siempre por cotizar" (GM en el OS) no se muestra el valor de cada línea, solo el total
-  // de cada vehículo.
-  const agrupar = c.agrupar_secciones ?? !!cfg.agrupar_secciones;   // la cotización manda (006); si no, Diseño
-  const porCotizar = agrupar && c.tercero_id
-    ? !!(await ctx.api.from('terceros').select('por_cotizar').eq('id', c.tercero_id).maybeSingle()).data?.por_cotizar : false;
+  // Agrupar secciones (como el OS): solo con un cliente "siempre por cotizar" (GM): cada sección en una línea con su
+  // total, sin el valor de cada línea; "Extras" y las líneas sin sección se detallan. Con el resto de los clientes cada
+  // sección sale como título con sus ítems y valores (2026-11-02: antes agrupaba con todos y solo se veían las secciones).
+  const agrupar = (c.agrupar_secciones ?? !!cfg.agrupar_secciones) && !!cli?.por_cotizar;   // la cotización manda (006); si no, Diseño
+  const porCotizar = agrupar;
   const mostrar = c.mostrar_valores && !porCotizar;
   const conDesc = mostrar && !agrupar && c.cot_lineas.some((l) => l.tipo !== 'seccion' && Number(l.desc_pct) > 0);
   const bruto = (l) => Math.round(Number(l.cantidad || 0) * Number(l.precio || 0));
@@ -92,7 +99,7 @@ export async function pdfCotizacion(ctx, c) {
           body.push(seccion.fila);
           continue;
         }
-        if (l.descripcion) body.push([{ content: l.descripcion.toUpperCase(), colSpan: cols, styles: { fontStyle: 'bold', fontSize: 8, textColor: color, cellPadding: { top: 2.2, bottom: 1.2, left: 6, right: 2 } } }]);
+        if (l.descripcion) body.push([{ content: l.descripcion.toUpperCase(), colSpan: cols, styles: { fontStyle: 'bold', fontSize: 8, halign: 'center', textColor: color, fillColor: color.map((x) => Math.round(x + (255 - x) * 0.93)), cellPadding: { top: 1.8, bottom: 1.8, left: 6, right: 2 } } }]);
         continue;
       }
       const v = totalLinea(l);
@@ -149,11 +156,11 @@ export async function pdfCotizacion(ctx, c) {
   doc.setFont('helvetica', 'bold').setFontSize(10.5).setTextColor(255, 255, 255).text('TOTAL A PAGAR', xT + 4, yTot + 0.5).text(pesos(aPagar), xT + 71, yTot + 0.5, { align: 'right' });
   y = Math.max(y + 10 + pago.length * 4.6, yTot + 10);
 
-  // ---- Firma y nota
-  doc.setDrawColor(...TEXTO).setLineWidth(0.3).line(W / 2 - 35, y + 16, W / 2 + 35, y + 16);
-  doc.setFont('helvetica', 'bold').setFontSize(9).setTextColor(...TEXTO).text(nombreEmpresa(e), W / 2, y + 20.5, { align: 'center' });
-  const firma = cfg.firma || ctx.usuario?.nombre || '';
-  if (firma) doc.setFont('helvetica', 'normal').setFontSize(8.5).text(firma, W / 2, y + 25, { align: 'center' });
+  // ---- Firma (como el OS: el nombre de la empresa como firma manuscrita sobre la línea y, debajo, quien la emite) y nota
+  doc.setFont('times', 'bolditalic').setFontSize(22).setTextColor(...TEXTO).text(nombreEmpresa(e), W / 2, y + 14, { align: 'center' });
+  doc.setDrawColor(...TEXTO).setLineWidth(0.3).line(W / 2 - 40, y + 16, W / 2 + 40, y + 16);
+  const firma = cfg.firma || (nombres ?? []).find((u) => u.user_id === ctx.usuario?.id)?.nombre || '';
+  if (firma) doc.setFont('helvetica', 'bold').setFontSize(9.5).text(firma, W / 2, y + 21, { align: 'center' });
   const nota = `Nota: la cotización es válida por ${c.validez_dias} ${c.validez_dias === 1 ? 'día' : 'días'}.${cfg.nota ? ` ${cfg.nota}` : ''}`;
   doc.setFont('helvetica', 'normal').setFontSize(8).setTextColor(...GRIS).text(doc.splitTextToSize(nota, W - 2 * M), M, y + 33);
 
