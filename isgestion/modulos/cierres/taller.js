@@ -1,6 +1,6 @@
 // Para Taller: si una orden se cobra en un cierre mensual o en una cuenta corriente (no se cobra sola).
 // Devuelve { texto, ruta, enlace } o null. Requiere permiso de ver Cierres.
-import { nombreMesLargo, numeroTexto, nombreEstado } from './datos.js?v=859ca77';
+import { nombreMesLargo, numeroTexto, nombreEstado } from './datos.js?v=a07e023';
 
 export async function cobroExterno(ctx, o) {
   if (!ctx.puede('cierres', 'ver')) return null;

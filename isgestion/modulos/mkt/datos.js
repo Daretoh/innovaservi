@@ -1,6 +1,6 @@
 // Datos y reglas comunes de Marketing y redes (etapa 1: seguimiento sin conexión a Meta).
-import { el } from '../../core/ui/dom.js?v=859ca77';
-import { hoyISO, diaLocal } from '../../core/ui/formato.js?v=859ca77';
+import { el } from '../../core/ui/dom.js?v=a07e023';
+import { hoyISO, diaLocal } from '../../core/ui/formato.js?v=a07e023';
 
 export const ORIGENES = [['whatsapp', 'WhatsApp'], ['instagram', 'Instagram'], ['facebook', 'Facebook'], ['tiktok', 'TikTok'], ['web', 'Sitio web'],
   ['anuncio', 'Anuncio pagado'], ['referido', 'Referido'], ['presencial', 'Presencial'], ['telefono', 'Llamada'], ['correo', 'Correo'], ['otro', 'Otro']];
@@ -86,5 +86,5 @@ export const opcionesCampanas = (campanas, vacio = 'Sin campaña') => [['', vaci
 // Estilos del módulo (una vez)
 export function cargarCss() {
   if (document.getElementById('mkt-css')) return;
-  document.head.append(el('link', { id: 'mkt-css', rel: 'stylesheet', href: new URL('./mkt.css?v=859ca77', import.meta.url).href }));
+  document.head.append(el('link', { id: 'mkt-css', rel: 'stylesheet', href: new URL('./mkt.css?v=a07e023', import.meta.url).href }));
 }

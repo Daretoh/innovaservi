@@ -1,13 +1,13 @@
 // Catálogo de equipamiento: productos en tarjetas con foto, agrupados por categoría y sección (como el catálogo
 // de Canva), con filtros, ficha para crear y editar, PDF del catálogo y Excel.
 // Ruta: #/catalogo.productos
-import { el } from '../../../core/ui/dom.js?v=859ca77';
-import { icono } from '../../../core/ui/iconos.js?v=859ca77';
-import { boton } from '../../../core/ui/tabla.js?v=859ca77';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=859ca77';
-import { avisar } from '../../../core/ui/aviso.js?v=859ca77';
-import { dinero } from '../../../core/ui/formato.js?v=859ca77';
-import { cargarCatalogo, urlsFotos, subirFoto, agrupar, cargarEstilos } from '../datos.js?v=859ca77';
+import { el } from '../../../core/ui/dom.js?v=a07e023';
+import { icono } from '../../../core/ui/iconos.js?v=a07e023';
+import { boton } from '../../../core/ui/tabla.js?v=a07e023';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=a07e023';
+import { avisar } from '../../../core/ui/aviso.js?v=a07e023';
+import { dinero } from '../../../core/ui/formato.js?v=a07e023';
+import { cargarCatalogo, urlsFotos, subirFoto, agrupar, cargarEstilos } from '../datos.js?v=a07e023';
 
 const filtro = { categoria: '', marca: '', texto: '', inactivos: false };   // se mantiene al refrescar
 
@@ -193,7 +193,7 @@ function elegirPdf(ctx, datos) {
     textoGuardar: 'Descargar PDF',
     alGuardar: async (v) => {
       if (!v.categorias.length) throw new Error('Elige al menos una categoría.');
-      const { pdfCatalogo } = await import('../pdf.js?v=859ca77');
+      const { pdfCatalogo } = await import('../pdf.js?v=a07e023');
       await pdfCatalogo(ctx, datos, { categorias: v.categorias, precios: v.precios === 'si', marcas: v.marcas === 'si' });
       avisar('PDF descargado.');
     },
@@ -201,7 +201,7 @@ function elegirPdf(ctx, datos) {
 }
 
 async function excel(ctx, datos) {
-  const { exportarExcel } = await import('../../../core/excel.js?v=859ca77');
+  const { exportarExcel } = await import('../../../core/excel.js?v=a07e023');
   const filas = agrupar(datos, datos.productos).flatMap((g) => g.secciones.flatMap((s) => s.productos.map((p) => [
     g.categoria.nombre, s.nombre, p.nombre, datos.marcaDe.get(p.marca_id)?.nombre ?? '', p.descripcion ?? '', p.material ?? '', p.procedencia ?? '',
     p.precio, p.activo ? 'Sí' : 'No'])));

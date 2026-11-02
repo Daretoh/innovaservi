@@ -3,12 +3,12 @@
 // servicios de la orden: los normales en una sección (GM: "Preparación de Venta y Pulido / Realce de Brillo") y los
 // extras en "Extras". Así se arma la cotización del mes de un cliente de flota y se ve qué autos tuvo.
 // También "Autos por cotizar" (traerPorCotizar).
-import { abrirFormulario } from '../../core/ui/modal.js?v=859ca77';
-import { avisar } from '../../core/ui/aviso.js?v=859ca77';
-import { diaLocal, hoyISO } from '../../core/ui/formato.js?v=859ca77';
-import { numeroTexto, verPatente } from './datos.js?v=859ca77';
-import { costosDeOrdenes, lineasCosto } from './costos-orden.js?v=859ca77';
-import { trabajosOrden, listaCliente } from './trabajos-orden.js?v=859ca77';
+import { abrirFormulario } from '../../core/ui/modal.js?v=a07e023';
+import { avisar } from '../../core/ui/aviso.js?v=a07e023';
+import { diaLocal, hoyISO } from '../../core/ui/formato.js?v=a07e023';
+import { numeroTexto, verPatente } from './datos.js?v=a07e023';
+import { costosDeOrdenes, lineasCosto } from './costos-orden.js?v=a07e023';
+import { trabajosOrden, listaCliente } from './trabajos-orden.js?v=a07e023';
 
 const SECCION_FLOTA = 'Preparación de Venta y Pulido / Realce de Brillo';
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];

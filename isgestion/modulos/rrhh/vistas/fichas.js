@@ -1,10 +1,10 @@
 // Bandeja de fichas de ingreso + enlace público para postulantes.
-import { urlApp } from '../../../core/api.js?v=859ca77';
-import { el } from '../../../core/ui/dom.js?v=859ca77';
-import { icono } from '../../../core/ui/iconos.js?v=859ca77';
-import { listado, boton } from '../../../core/ui/tabla.js?v=859ca77';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=859ca77';
-import { avisar } from '../../../core/ui/aviso.js?v=859ca77';
+import { urlApp } from '../../../core/api.js?v=a07e023';
+import { el } from '../../../core/ui/dom.js?v=a07e023';
+import { icono } from '../../../core/ui/iconos.js?v=a07e023';
+import { listado, boton } from '../../../core/ui/tabla.js?v=a07e023';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=a07e023';
+import { avisar } from '../../../core/ui/aviso.js?v=a07e023';
 
 const ESTADOS = [['pendiente', 'Pendientes'], ['postulante', 'En Postulantes'], ['incorporada', 'Incorporadas'], ['descartada', 'Descartadas']];
 let estado = 'pendiente';

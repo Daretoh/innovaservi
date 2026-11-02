@@ -2284,3 +2284,8 @@ a.tar2-fila, a.tar2-fila:hover { text-decoration: none; color: var(--texto); }
 .remu-pago { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
 .remu-pago-chip { border: 0; font: inherit; cursor: pointer; }
 .aviso-bandeja.aviso-ok { border-color: var(--ok); }
+.asis-res-detalle > td { background: var(--fondo-sutil); padding: 6px 10px 10px 28px; }
+.asis-res-detalle .tabla { margin: 0; }
+.asis-res-especial td { color: var(--prox); }
+.asis-res-mes { display: inline-flex; align-items: center; gap: 4px; }
+.asis-res-mes .campo { width: auto; }

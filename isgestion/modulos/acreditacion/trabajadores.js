@@ -2,14 +2,14 @@
 // cada trabajador (general o por lugar), estado de cada uno (Validado, Por vencer, Listo para enviar, Enviado, Faltan
 // documentos), marca de validación con vigencia, "a quién validar" (faenas de los próximos 14 días y validaciones por
 // vencer) y ZIP con lo que pide el cliente (LEEME con faltantes y lo que va desde Buk; fotos achicadas; partes de 20 MB).
-import { el } from '../../core/ui/dom.js?v=859ca77';
-import { icono } from '../../core/ui/iconos.js?v=859ca77';
-import { boton } from '../../core/ui/tabla.js?v=859ca77';
-import { abrirFormulario } from '../../core/ui/modal.js?v=859ca77';
-import { avisar } from '../../core/ui/aviso.js?v=859ca77';
-import { urlsFirmadas } from '../../core/adjuntos.js?v=859ca77';
-import { comprimirFoto } from '../../core/imagenes.js?v=859ca77';
-import { fechaLarga, fechaCorta, hoyISO, sumarDias, diaLocal } from '../../core/ui/formato.js?v=859ca77';
+import { el } from '../../core/ui/dom.js?v=a07e023';
+import { icono } from '../../core/ui/iconos.js?v=a07e023';
+import { boton } from '../../core/ui/tabla.js?v=a07e023';
+import { abrirFormulario } from '../../core/ui/modal.js?v=a07e023';
+import { avisar } from '../../core/ui/aviso.js?v=a07e023';
+import { urlsFirmadas } from '../../core/adjuntos.js?v=a07e023';
+import { comprimirFoto } from '../../core/imagenes.js?v=a07e023';
+import { fechaLarga, fechaCorta, hoyISO, sumarDias, diaLocal } from '../../core/ui/formato.js?v=a07e023';
 
 const CHIP_DOC = { ok: 'chip-ok', prox: 'chip-prox', venc: 'chip-venc', pend: 'chip-venc', na: 'chip-na' };
 export const ESTADOS = { validado: ['Validado', 'chip-ok'], por_vencer: ['Por vencer', 'chip-prox'], listo: ['Listo para enviar', 'chip-pend'], enviado: ['Enviado', 'chip-pend'], rechazado: ['Rechazado', 'chip-venc'], faltan: ['Faltan documentos', 'chip-venc'] };
@@ -20,7 +20,7 @@ const MAX_PARTE = 20 * 1024 * 1024;
 // Datos de acreditación de trabajadores de la empresa (todos los clientes)
 export async function cargarAcreditacion(ctx) {
   const e = ctx.empresa.id;
-  const m = await import('../rrhh/datos.js?v=859ca77');
+  const m = await import('../rrhh/datos.js?v=a07e023');
   const [rrhh, req, val, sit] = await Promise.all([
     m.cargarRrhh(ctx),
     ctx.api.from('acr_req_trabajador').select('*').eq('empresa_id', e).order('orden'),
