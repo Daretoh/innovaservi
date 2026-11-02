@@ -1,11 +1,11 @@
 // Acciones sobre una cotización: duplicar, dividir por vehículo, pasar a orden de trabajo (Taller) y, al cobrarla,
 // dejar cobradas las órdenes ligadas (005).
-import { avisar } from '../../core/ui/aviso.js?v=53d5117';
-import { abrirFormulario } from '../../core/ui/modal.js?v=53d5117';
-import { hoyISO, diaLocal } from '../../core/ui/formato.js?v=53d5117';
-import { totalLinea, numeroTexto, siguienteNumero, verPatente } from './datos.js?v=53d5117';
+import { avisar } from '../../core/ui/aviso.js?v=6a8f2b9';
+import { abrirFormulario } from '../../core/ui/modal.js?v=6a8f2b9';
+import { hoyISO, diaLocal } from '../../core/ui/formato.js?v=6a8f2b9';
+import { totalLinea, numeroTexto, siguienteNumero, verPatente } from './datos.js?v=6a8f2b9';
 
-const CAMPOS_COT = ['fecha_hasta', 'validez_dias', 'tercero_id', 'cliente_nombre', 'cliente_rut', 'cliente_giro', 'cliente_contacto', 'cliente_correo', 'cliente_telefono', 'con_iva', 'desc_adic_pct', 'mostrar_valores'];
+const CAMPOS_COT = ['fecha_hasta', 'validez_dias', 'tercero_id', 'cliente_nombre', 'cliente_rut', 'cliente_giro', 'cliente_contacto', 'cliente_correo', 'cliente_telefono', 'con_iva', 'desc_adic_pct', 'mostrar_valores', 'agrupar_secciones'];
 const CAMPOS_GRUPO = ['titulo', 'patente', 'anio', 'talla', 'vehiculo_id'];
 const CAMPOS_LINEA = ['orden', 'tipo', 'descripcion', 'cantidad', 'precio', 'desc_pct', 'costos'];
 const tomar = (o, campos) => Object.fromEntries(campos.map((k) => [k, o[k]]));

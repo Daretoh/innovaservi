@@ -1,11 +1,11 @@
 // PDF de la cotización (diseño del OS de IS Performance, con la marca de cada empresa):
 // encabezado con N° y fecha, cajas Cliente y Contacto, tabla por grupo con secciones y subtotal,
 // información de pago, totales, firma, nota de validez, contactos y sello de ISgestión.
-import { cargarJsPdf, cargarLogo, rgb, sellar } from '../../core/pdf.js?v=53d5117';
-import { nombreEmpresa } from '../../core/empresas.js?v=53d5117';
-import { sumarDias } from '../../core/ui/formato.js?v=53d5117';
-import { totales, totalLinea, numeroTexto, verPatente, cargarConfig, IVA } from './datos.js?v=53d5117';
-import { soloCosto } from './costos-orden.js?v=53d5117';
+import { cargarJsPdf, cargarLogo, rgb, sellar } from '../../core/pdf.js?v=6a8f2b9';
+import { nombreEmpresa } from '../../core/empresas.js?v=6a8f2b9';
+import { sumarDias } from '../../core/ui/formato.js?v=6a8f2b9';
+import { totales, totalLinea, numeroTexto, verPatente, cargarConfig, IVA } from './datos.js?v=6a8f2b9';
+import { soloCosto } from './costos-orden.js?v=6a8f2b9';
 
 const M = 15;
 const TEXTO = [28, 35, 48];
@@ -67,7 +67,7 @@ export async function pdfCotizacion(ctx, c) {
   // Agrupar secciones (Diseño, como el OS): cada sección en una línea con su total; "Extras" y las líneas sin sección se
   // detallan. Con un cliente "siempre por cotizar" (GM en el OS) no se muestra el valor de cada línea, solo el total
   // de cada vehículo.
-  const agrupar = !!cfg.agrupar_secciones;
+  const agrupar = c.agrupar_secciones ?? !!cfg.agrupar_secciones;   // la cotización manda (006); si no, Diseño
   const porCotizar = agrupar && c.tercero_id
     ? !!(await ctx.api.from('terceros').select('por_cotizar').eq('id', c.tercero_id).maybeSingle()).data?.por_cotizar : false;
   const mostrar = c.mostrar_valores && !porCotizar;

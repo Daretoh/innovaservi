@@ -2,21 +2,21 @@
 // totales y acciones (PDF, enviar, aceptar, rechazar, reabrir, duplicar, dividir, pasar a orden de trabajo).
 // Las líneas se editan como planilla: Enter y flechas, pegar desde Excel y arrastrar filas o secciones.
 // Ruta: #/cotizaciones.editor?id=<id>
-import { el } from '../../../core/ui/dom.js?v=53d5117';
-import { icono } from '../../../core/ui/iconos.js?v=53d5117';
-import { boton } from '../../../core/ui/tabla.js?v=53d5117';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=53d5117';
-import { avisar } from '../../../core/ui/aviso.js?v=53d5117';
-import { dinero, fechaLarga } from '../../../core/ui/formato.js?v=53d5117';
+import { el } from '../../../core/ui/dom.js?v=6a8f2b9';
+import { icono } from '../../../core/ui/iconos.js?v=6a8f2b9';
+import { boton } from '../../../core/ui/tabla.js?v=6a8f2b9';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=6a8f2b9';
+import { avisar } from '../../../core/ui/aviso.js?v=6a8f2b9';
+import { dinero, fechaLarga } from '../../../core/ui/formato.js?v=6a8f2b9';
 import {
   nombreEstado, CHIP_ESTADO, TALLAS, totales, totalLinea, costoLinea, numeroTexto, nombreTercero, verPatente, normalizarPatente,
-  cargarCotizacion, cargarCatalogo, datosCliente,
-} from '../datos.js?v=53d5117';
-import { duplicar, dividir, pasarAOrden } from '../acciones.js?v=53d5117';
-import { pasosSeguimiento, chipEtapa, etapa } from '../seguimiento.js?v=53d5117';
-import { avance } from '../../taller/seguimiento.js?v=53d5117';
-import { soloCosto } from '../costos-orden.js?v=53d5117';
-import { nombreEstado as estadoOrden } from '../../taller/datos.js?v=53d5117';
+  cargarCotizacion, cargarCatalogo, cargarConfig, datosCliente,
+} from '../datos.js?v=6a8f2b9';
+import { duplicar, dividir, pasarAOrden } from '../acciones.js?v=6a8f2b9';
+import { pasosSeguimiento, chipEtapa, etapa } from '../seguimiento.js?v=6a8f2b9';
+import { avance } from '../../taller/seguimiento.js?v=6a8f2b9';
+import { soloCosto } from '../costos-orden.js?v=6a8f2b9';
+import { nombreEstado as estadoOrden } from '../../taller/datos.js?v=6a8f2b9';
 
 // Celda a enfocar después de recargar (ej.: la línea recién creada)
 let foco = null;
@@ -34,9 +34,10 @@ export default async function vista(ctx) {
   const c = await cargarCotizacion(ctx, ctx.params.id);
   const volver = el('a', { class: 'volver', href: ctx.ruta('cotizaciones.lista') }, icono('volver', { tam: 16 }), 'Cotizaciones');
   if (!c || c.deleted_at) return el('section', { class: 'listado' }, volver, el('h1', {}, 'Cotización no encontrada'));
-  const [catalogo, clientes] = await Promise.all([
+  const [catalogo, clientes, cfg] = await Promise.all([
     cargarCatalogo(ctx, c.tercero_id),
     ctx.api.from('terceros').select('*').eq('empresa_id', ctx.empresa.id).is('deleted_at', null).contains('tipo', ['cliente']).order('razon_social'),
+    cargarConfig(ctx),
   ]);
   const editable = c.estado === 'borrador' && ctx.puede('cotizaciones', 'editar');
   // Seguimiento de OC, factura y cobro: por ahora solo clientes "siempre por cotizar" (Guillermo Morales)
@@ -81,6 +82,14 @@ export default async function vista(ctx) {
       const cg = lineas.filter((l) => l.grupo_id === g.id).reduce((s2, l) => s2 + costoLinea(l), 0);
       if (caja[`m-${g.id}`]) caja[`m-${g.id}`].textContent = cg ? ` · costo ${dinero(cg)} · margen ${dinero((t.porGrupo.get(g.id) ?? 0) - cg)}` : '';
     }
+    // Subtotal de cada sección (como el OS: "Precio $…" en el título), de la sección hasta la siguiente
+    for (const g of grupos) {
+      let s = null;
+      for (const l of lineas.filter((x) => x.grupo_id === g.id).sort((a, b) => a.orden - b.orden)) {
+        if (l.tipo === 'seccion') { s = caja[`s-${l.id}`]; if (s) { s.total = 0; s.textContent = dinero(0); } continue; }
+        if (s) { s.total += totalLinea(l); s.textContent = dinero(s.total); }
+      }
+    }
     caja.sub.textContent = dinero(t.sub);
     caja.desc.textContent = `− ${dinero(t.desc)}`;
     caja.neto.textContent = dinero(t.neto);
@@ -111,6 +120,13 @@ export default async function vista(ctx) {
     });
     if (tipo === 'checkbox') return el('label', { class: 'casilla' }, ctl, etiqueta);
     return el('div', { class: 'form-fila' }, el('label', { for: `c-${id}` }, etiqueta), ctl);
+  };
+
+  // Agrupar las secciones en el PDF (como el OS, en cada cotización; sin elegir, la opción de Diseño)
+  const campoAgrupar = () => {
+    const ctl = el('input', { type: 'checkbox', checked: c.agrupar_secciones ?? !!cfg.agrupar_secciones, disabled: !editable });
+    ctl.addEventListener('change', () => guardarCot({ agrupar_secciones: ctl.checked }));
+    return el('label', { class: 'casilla', title: 'Cada sección sale en una línea con su total; "Extras" se detalla' }, ctl, 'Agrupar las secciones en el PDF');
   };
 
   // Validez con atajos de 7, 15 y 30 días (como el OS)
@@ -193,7 +209,7 @@ export default async function vista(ctx) {
     btn.disabled = true;
     try {
       await Promise.all(pendientes);
-      const { costosDeOrdenes, lineasCosto, yaTraidos } = await import('../costos-orden.js?v=53d5117');
+      const { costosDeOrdenes, lineasCosto, yaTraidos } = await import('../costos-orden.js?v=6a8f2b9');
       const o = ordenDe.get(g.orden_id);
       const nuevas = lineasCosto((await costosDeOrdenes(ctx, [{ ...o, patente: g.patente }])).get(o.id) ?? [], yaTraidos(delGrupo(g)));
       if (!nuevas.length) { avisar('No hay costos nuevos en la orden.'); return; }
@@ -236,7 +252,9 @@ export default async function vista(ctx) {
     if (l.tipo === 'seccion') {
       const tit = el('input', { class: 'campo cot-seccion', value: l.descripcion, placeholder: 'Título de la sección (ej.: INSTALACIÓN DE PPF)', disabled: !editable, 'data-col': 0, 'aria-label': 'Título de la sección' });
       tit.addEventListener('change', () => guardarLinea(l, { descripcion: tit.value.trim() }));
-      fila.append(tit, acciones);
+      const suma = (caja[`s-${l.id}`] = el('span', { class: 'cot-seccion-suma' }));
+      const otra = editable ? el('button', { type: 'button', class: 'boton boton-secundario boton-chico', title: 'Agregar una línea al final de esta sección', onclick: () => lineaEnSeccion(g, l) }, '+ línea') : null;
+      fila.append(tit, el('span', { class: 'cot-seccion-pie' }, 'Precio ', suma, otra), acciones);
       return fila;
     }
     const desc = el('input', { class: 'campo', value: l.descripcion, list: 'cot-catalogo', placeholder: 'Descripción o servicio', disabled: !editable, 'aria-label': 'Descripción', 'data-col': 0 });
@@ -264,6 +282,17 @@ export default async function vista(ctx) {
     return fila;
   };
 
+  // "+ línea" de una sección: la línea nueva queda al final de la sección (antes de la siguiente)
+  const lineaEnSeccion = async (g, sec) => {
+    await Promise.all(pendientes);
+    const del = delGrupo(g).sort((a, b) => a.orden - b.orden);
+    const ult = bloque(g, sec).at(-1);
+    const { data, error } = await ctx.api.from('cot_lineas').insert({ grupo_id: g.id, cotizacion_id: c.id, empresa_id: ctx.empresa.id, orden: ult.orden + 1, tipo: 'item', descripcion: '' }).select('*').single();
+    if (error) { avisar(error.message, 'error'); return; }
+    const i = del.indexOf(ult) + 1;
+    foco = { linea: data.id, col: 0 };
+    await reordenar(g, [...del.slice(0, i), data, ...del.slice(i)]);
+  };
   const agregarLinea = async (g, tipo) => {
     await Promise.all(pendientes);
     const max = Math.max(0, ...delGrupo(g).map((x) => x.orden));
@@ -407,7 +436,7 @@ export default async function vista(ctx) {
   // ---- Acciones según estado
   const acciones = [boton('Ver PDF', { icono: 'ojo', onclick: (ev) => pdf(ctx, c, ev.currentTarget) })];
   // Como el OS (2026-10-22): siempre queda claro que se está editando esta cotización, y se puede empezar una nueva
-  if (ctx.puede('cotizaciones', 'crear')) acciones.push(boton('Nueva cotización', { icono: 'mas', onclick: async () => { const { nueva } = await import('./lista.js?v=53d5117'); nueva(ctx); } }));
+  if (ctx.puede('cotizaciones', 'crear')) acciones.push(boton('Nueva cotización', { icono: 'mas', onclick: async () => { const { nueva } = await import('./lista.js?v=6a8f2b9'); nueva(ctx); } }));
   const puedeEditar = ctx.puede('cotizaciones', 'editar');
   if (puedeEditar && c.estado === 'borrador') acciones.push(boton('Marcar enviada', { icono: 'check', tipo: 'primario', onclick: () => abrirFormulario({
     titulo: `Enviar cotización N° ${numeroTexto(c.numero)}`, mensaje: 'Queda bloqueada para cambios. Si hay que corregirla, se reabre.', campos: [], textoGuardar: 'Marcar enviada',
@@ -461,6 +490,7 @@ export default async function vista(ctx) {
         el('div', { class: 'rejilla-campos' }, campoValidez(), campoCot('desc_adic_pct', 'Descuento adicional %', { tipo: 'number' })),
         campoCot('con_iva', 'Con IVA (19 %)', { tipo: 'checkbox' }),
         campoCot('mostrar_valores', 'Mostrar el valor de cada ítem en el PDF', { tipo: 'checkbox' }),
+        campoAgrupar(),
         campoCot('notas', 'Notas internas (no salen en el PDF)', { tipo: 'textarea' }),
         resumen)),
     avanceTotal != null ? el('div', { class: 'ficha doc-grupo' }, el('strong', {}, 'Avance en el taller'), barraAvance(avanceTotal, `${avanceTotal}% · ${ligadas.length} orden(es) de trabajo · los ítems hechos quedan en verde`)) : null,
@@ -470,7 +500,8 @@ export default async function vista(ctx) {
       if (error) avisar(error.message, 'error'); else ctx.refrescar();
     } }) : null,
     // Traer los autos que el cliente tuvo en el taller en un mes (como "Traer de Cierre GM" del OS)
-    editable && conTaller && c.tercero_id ? boton('Traer autos del mes', { icono: 'llave', onclick: async () => { const { traerMes } = await import('../traer-mes.js?v=53d5117'); traerMes(ctx, c, grupos); } }) : null,
+    editable && conTaller && c.tercero_id ? boton('Autos por cotizar', { icono: 'llave', title: 'Autos del cliente con servicio "Pendiente de cotización" que aún no están en una cotización', onclick: async () => { const { traerPorCotizar } = await import('../traer-mes.js?v=6a8f2b9'); traerPorCotizar(ctx, c, grupos); } }) : null,
+    editable && conTaller && c.tercero_id ? boton('Traer autos del mes', { icono: 'llave', onclick: async () => { const { traerMes } = await import('../traer-mes.js?v=6a8f2b9'); traerMes(ctx, c, grupos); } }) : null,
     catalogo.tieneLista ? el('p', { class: 'texto-suave texto-chico' }, 'Este cliente tiene lista de precios: al escribir un servicio se usa su precio especial.') : null,
     editable ? el('p', { class: 'texto-suave texto-chico' }, 'Planilla: Enter baja de fila (en la última crea una línea), Mayús+Enter sube, flechas para moverse; se puede pegar un rango copiado de Excel (Descripción, Cant., Precio, Desc. %) y arrastrar filas o secciones desde el asa (también a otro vehículo).') : null,
   );
@@ -504,7 +535,7 @@ function resumenHijas(grupos, hijaDe) {
 async function pdf(ctx, c, b) {
   b.disabled = true;
   try {
-    const { pdfCotizacion } = await import('../documento.js?v=53d5117');
+    const { pdfCotizacion } = await import('../documento.js?v=6a8f2b9');
     const doc = await pdfCotizacion(ctx, c);
     window.open(doc.output('bloburl'), '_blank', 'noopener');
   } catch (e) { avisar(`No se pudo generar: ${e.message}`, 'error'); } finally { b.disabled = false; }

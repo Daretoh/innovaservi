@@ -2,12 +2,13 @@
 // cotización tuvo en el taller ese mes; cada uno entra como un grupo (vehículo, patente, talla, orden ligada) con sus
 // servicios de la orden: los normales en una sección (GM: "Preparación de Venta y Pulido / Realce de Brillo") y los
 // extras en "Extras". Así se arma la cotización del mes de un cliente de flota y se ve qué autos tuvo.
-import { abrirFormulario } from '../../core/ui/modal.js?v=53d5117';
-import { avisar } from '../../core/ui/aviso.js?v=53d5117';
-import { diaLocal, hoyISO } from '../../core/ui/formato.js?v=53d5117';
-import { numeroTexto, verPatente } from './datos.js?v=53d5117';
-import { costosDeOrdenes, lineasCosto } from './costos-orden.js?v=53d5117';
-import { trabajosOrden, listaCliente } from './trabajos-orden.js?v=53d5117';
+// También "Autos por cotizar" (traerPorCotizar).
+import { abrirFormulario } from '../../core/ui/modal.js?v=6a8f2b9';
+import { avisar } from '../../core/ui/aviso.js?v=6a8f2b9';
+import { diaLocal, hoyISO } from '../../core/ui/formato.js?v=6a8f2b9';
+import { numeroTexto, verPatente } from './datos.js?v=6a8f2b9';
+import { costosDeOrdenes, lineasCosto } from './costos-orden.js?v=6a8f2b9';
+import { trabajosOrden, listaCliente } from './trabajos-orden.js?v=6a8f2b9';
 
 const SECCION_FLOTA = 'Preparación de Venta y Pulido / Realce de Brillo';
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
@@ -34,7 +35,24 @@ export async function traerMes(ctx, c, grupos) {
   });
 }
 
-async function elegirAutos(ctx, c, grupos, delMes, mes) {
+// "Autos por cotizar" (como los pendientes del OS, 2026-11-02): los autos del cliente con un servicio a convenir
+// ("Pendiente de cotización") que aún no están en ninguna cotización
+export async function traerPorCotizar(ctx, c, grupos) {
+  if (!c.tercero_id) { avisar('Elige primero el cliente de la cotización.', 'error'); return; }
+  const { data: ords, error } = await ctx.api.from('tal_ordenes')
+    .select('id, numero, estado, fecha_cita, ingreso_at, entregado_at, created_at, descuento, tareas, tal_vehiculos(id, marca, modelo, patente, talla), tal_orden_servicios(nombre, precio, orden, tal_servicios(variable))')
+    .eq('empresa_id', ctx.empresa.id).eq('tercero_id', c.tercero_id).neq('estado', 'anulada');
+  if (error) { avisar(error.message, 'error'); return; }
+  const porCotizar = (ords ?? []).filter((o) => o.tal_orden_servicios.some((x) => x.tal_servicios?.variable || /cotiz/i.test(x.nombre)));
+  const { data: ya } = porCotizar.length ? await ctx.api.from('cot_grupos').select('orden_id, cot_cotizaciones!inner(deleted_at)')
+    .in('orden_id', porCotizar.map((o) => o.id)).is('cot_cotizaciones.deleted_at', null) : { data: [] };
+  const cotizadas = new Set((ya ?? []).map((g) => g.orden_id));
+  const pendientes = porCotizar.filter((o) => !cotizadas.has(o.id));
+  if (!pendientes.length) { avisar('Este cliente no tiene autos por cotizar.'); return; }
+  elegirAutos(ctx, c, grupos, pendientes, 'por cotizar', { titulo: 'Autos por cotizar' });
+}
+
+async function elegirAutos(ctx, c, grupos, delMes, mes, { titulo = null } = {}) {
   // Autos que ya están en una cotización (esta u otra): se avisa y quedan sin marcar
   const { data: ya } = await ctx.api.from('cot_grupos').select('orden_id, cot_cotizaciones!inner(numero, deleted_at)')
     .in('orden_id', delMes.map((o) => o.id)).is('cot_cotizaciones.deleted_at', null);
@@ -47,7 +65,7 @@ async function elegirAutos(ctx, c, grupos, delMes, mes) {
       n ? `ya en la N° ${numeroTexto(n)}` : null].filter(Boolean).join(' · ');
   };
   abrirFormulario({
-    titulo: `Autos de ${mes}`,
+    titulo: titulo ?? `Autos de ${mes}`,
     mensaje: `${orden.length} auto(s). Cada uno entra como un vehículo con los servicios de su orden.`,
     campos: [{ id: 'ordenes', etiqueta: 'Autos', tipo: 'checks', opciones: orden.map((o) => [o.id, etiqueta(o)]), valor: orden.filter((o) => !enCot.has(o.id)).map((o) => o.id) }],
     textoGuardar: 'Traer a la cotización',
@@ -80,7 +98,7 @@ async function elegirAutos(ctx, c, grupos, delMes, mes) {
         }
       }
       // Si la cotización no tiene período, queda el del mes
-      if (!c.fecha_hasta) {
+      if (!titulo && !c.fecha_hasta) {
         const m = (delMes[0] && diaDe(delMes[0]).slice(0, 7)) || hoyISO().slice(0, 7);
         const fin = new Date(Number(m.slice(0, 4)), Number(m.slice(5, 7)), 0).getDate();
         if (c.fecha <= `${m}-${fin}`) await ctx.api.from('cot_cotizaciones').update({ fecha_hasta: `${m}-${fin}` }).eq('id', c.id);

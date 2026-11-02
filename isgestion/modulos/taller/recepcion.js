@@ -4,12 +4,12 @@
 // vehículos; si es primera vez se escribe nombre y teléfono. La patente conocida trae el vehículo, su dueño y cuántas
 // veces vino. Un cliente "siempre por cotizar" (terceros.por_cotizar) marca el servicio a convenir y queda con Factura.
 // Devuelve una promesa que se cumple al cerrar la hoja (la barra del teléfono anima el "+" mientras está abierta).
-import { el } from '../../core/ui/dom.js?v=53d5117';
-import { icono } from '../../core/ui/iconos.js?v=53d5117';
-import { avisar } from '../../core/ui/aviso.js?v=53d5117';
-import { placa } from '../../core/ui/placa.js?v=53d5117';
-import { hoyISO, telefono, dinero, nombrePropio } from '../../core/ui/formato.js?v=53d5117';
-import { PRIORIDADES, TALLAS, normalizarPatente, verPatente, nombreTercero, precioTalla, cargarServicios, cargarTrabajadores, siguienteNumero, esEmpresa } from './datos.js?v=53d5117';
+import { el } from '../../core/ui/dom.js?v=6a8f2b9';
+import { icono } from '../../core/ui/iconos.js?v=6a8f2b9';
+import { avisar } from '../../core/ui/aviso.js?v=6a8f2b9';
+import { placa } from '../../core/ui/placa.js?v=6a8f2b9';
+import { hoyISO, telefono, dinero, nombrePropio } from '../../core/ui/formato.js?v=6a8f2b9';
+import { PRIORIDADES, TALLAS, normalizarPatente, verPatente, nombreTercero, precioTalla, cargarServicios, cargarTrabajadores, siguienteNumero, esEmpresa } from './datos.js?v=6a8f2b9';
 
 const AYUDA_TALLA = { S: 'City car', M: 'Sedán o hatchback', L: 'SUV', XL: 'Camioneta o van' };
 const soloDigitos = (t) => (t ?? '').replace(/\D/g, '');
