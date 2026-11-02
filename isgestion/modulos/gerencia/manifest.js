@@ -10,8 +10,8 @@ export default {
   rubros: ['todos'],
   acciones: ['ver', 'exportar'],
   menu: [
-    { id: 'gerencia.panel', label: 'Panel de gerencia', pestana: 'Panel', vista: () => import('./vistas/panel.js?v=11ce3f7') },
-    { id: 'gerencia.grupo', label: 'Vista Grupo', vista: () => import('./vistas/grupo.js?v=11ce3f7') },
+    { id: 'gerencia.panel', label: 'Panel de gerencia', pestana: 'Panel', vista: () => import('./vistas/panel.js?v=228ea7a') },
+    { id: 'gerencia.grupo', label: 'Vista Grupo', vista: () => import('./vistas/grupo.js?v=228ea7a') },
   ],
   config: {},
   migraciones: ['db/001_gerencia.sql'],

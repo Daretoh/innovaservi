@@ -1,11 +1,11 @@
 // Usuarios con acceso a la empresa activa: rol, ficha de trabajador y estado.
 // Acceso con fecha de vencimiento y nota (como Accesos de InnovaGestión): vencido = sin acceso (acceso_vigente en la base).
-import { urlApp } from '../../../core/api.js?v=11ce3f7';
-import { el } from '../../../core/ui/dom.js?v=11ce3f7';
-import { icono } from '../../../core/ui/iconos.js?v=11ce3f7';
-import { listado, boton } from '../../../core/ui/tabla.js?v=11ce3f7';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=11ce3f7';
-import { avisar } from '../../../core/ui/aviso.js?v=11ce3f7';
+import { urlApp } from '../../../core/api.js?v=228ea7a';
+import { el } from '../../../core/ui/dom.js?v=228ea7a';
+import { icono } from '../../../core/ui/iconos.js?v=228ea7a';
+import { listado, boton } from '../../../core/ui/tabla.js?v=228ea7a';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=228ea7a';
+import { avisar } from '../../../core/ui/aviso.js?v=228ea7a';
 
 export default async function vista(ctx) {
   const empresa = ctx.empresa.id;
@@ -36,10 +36,12 @@ export default async function vista(ctx) {
   if (puedeEditar) {
     columnas.push({
       titulo: '',
-      valor: (u) => el('button', {
-        type: 'button', class: 'boton-icono', title: 'Editar acceso', 'aria-label': `Editar acceso de ${u.email}`,
-        onclick: () => editar(ctx, u, opcionesRol),
-      }, icono('editar', { tam: 16 })),
+      valor: (u) => el('span', { class: 'listado-acciones' },
+        !u.ultimo_ingreso && u.rol_id ? el('button', { type: 'button', class: 'boton boton-secundario boton-chico', title: 'Nunca entró: vuelve a enviar el correo de invitación (el enlace anterior vence)', onclick: (ev) => reenviar(ctx, u, ev.currentTarget) }, 'Reenviar invitación') : null,
+        el('button', {
+          type: 'button', class: 'boton-icono', title: 'Editar acceso', 'aria-label': `Editar acceso de ${u.email}`,
+          onclick: () => editar(ctx, u, opcionesRol),
+        }, icono('editar', { tam: 16 }))),
     });
   }
 
@@ -72,10 +74,30 @@ function invitar(ctx, opcionesRol) {
         try { msg = (await error.context.json()).error ?? msg; } catch { /* respuesta sin JSON */ }
         throw new Error(msg);
       }
-      avisar(data.estado === 'invitado' ? `Invitación enviada a ${v.email}.` : 'La cuenta ya existía: se le dio acceso.');
+      avisar(textoEstado(data, v.email), data.aviso ? 'error' : undefined);
       ctx.refrescar();
     },
   });
+}
+
+const textoEstado = (data, email) => (data.estado === 'invitado' ? `Invitación enviada a ${email}.`
+  : data.estado === 'reenviado' ? `Invitación enviada de nuevo a ${email} (aún no la había aceptado).`
+    : data.aviso ? `Tiene acceso, pero no se pudo reenviar la invitación: ${data.aviso}` : 'La cuenta ya existía: se le dio acceso.');
+
+// Reenviar la invitación a quien nunca entró (el enlace del correo vence): misma función, con su rol actual
+async function reenviar(ctx, u, btn) {
+  btn.disabled = true;
+  try {
+    const { data, error } = await ctx.api.functions.invoke('invitar-usuario', {
+      body: { empresa_id: ctx.empresa.id, email: u.email, rol_id: u.rol_id, redirect_to: urlApp() },
+    });
+    if (error) {
+      let msg = error.message;
+      try { msg = (await error.context.json()).error ?? msg; } catch { /* respuesta sin JSON */ }
+      throw new Error(msg);
+    }
+    avisar(data.estado === 'agregado' && !data.aviso ? `${u.email} ya activó su cuenta: puede entrar con su contraseña.` : textoEstado(data, u.email), data.aviso ? 'error' : undefined);
+  } catch (e) { avisar(e.message, 'error'); } finally { btn.disabled = false; }
 }
 
 async function editar(ctx, u, opcionesRol) {

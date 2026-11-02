@@ -1,12 +1,12 @@
 // Cobros del taller: órdenes por cobrar (en proceso, terminadas o entregadas) y cobradas del mes.
 // Arriba, tarjetas de resumen; las pendientes muestran su antigüedad (desde el término) y un acceso a cobrar.
-import { el } from '../../../core/ui/dom.js?v=11ce3f7';
-import { icono } from '../../../core/ui/iconos.js?v=11ce3f7';
-import { listado } from '../../../core/ui/tabla.js?v=11ce3f7';
-import { dinero, fechaLarga, nombreMes, moverMes, rangoMes, diaLocal } from '../../../core/ui/formato.js?v=11ce3f7';
+import { el } from '../../../core/ui/dom.js?v=228ea7a';
+import { icono } from '../../../core/ui/iconos.js?v=228ea7a';
+import { listado } from '../../../core/ui/tabla.js?v=228ea7a';
+import { dinero, fechaLarga, nombreMes, moverMes, rangoMes, diaLocal } from '../../../core/ui/formato.js?v=228ea7a';
 
 const DIAS_ATRASO = 7;   // desde el término: más que esto se marca en rojo
-import { SELECT_ORDEN, verPatente, nombreVehiculo, nombreTercero, totales, TIPOS_VENTA } from '../datos.js?v=11ce3f7';
+import { SELECT_ORDEN, verPatente, nombreVehiculo, nombreTercero, totales, TIPOS_VENTA } from '../datos.js?v=228ea7a';
 
 const estado = { tab: 'pendientes', mes: new Date().toISOString().slice(0, 7) };
 
