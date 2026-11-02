@@ -2206,6 +2206,21 @@ html { transition: background-color 220ms ease; }
 .selector-grupo-icono { width: 18px; height: 18px; border-radius: 5px; display: inline-flex; align-items: center; justify-content: center; background: var(--fondo-hundido); color: var(--texto); flex: none; }
 .grupo-empresas { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 1rem; align-items: start; }
 .grupo-empresas .listado-cabecera h2 { margin: 0; }
+/* Grupo → Tareas del grupo */
+.gtar-tarjeta { text-align: left; font: inherit; color: var(--texto); cursor: pointer; }
+.gtar-tarjeta:hover { background: var(--hover); }
+.gtar-bloque { display: flex; flex-direction: column; gap: 6px; }
+.gtar-bloque h2 { margin: 8px 0 0; }
+.gtar-bloque > p { margin: 0; }
+.gtar-dos { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr)); gap: 1rem; align-items: start; }
+.gtar-num { border: 0; background: none; padding: 2px 6px; border-radius: 6px; font: inherit; color: inherit; font-weight: 600; cursor: pointer; font-variant-numeric: tabular-nums; }
+.gtar-num:hover { background: var(--hover); color: var(--empresa); }
+.gtar-persona { font-weight: 500; padding-left: 0; text-align: left; }
+.gtar-barra { display: flex; align-items: center; gap: 8px; min-width: 90px; }
+.gtar-barra i { display: block; height: 8px; border-radius: 4px; background: var(--empresa); min-width: 4px; }
+a.tar2-fila, a.tar2-fila:hover { text-decoration: none; color: var(--texto); }
+.gtar-sub { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; }
+.gtar-sub .ger-empresa { font-weight: 600; color: var(--texto); }
 .cierre-paso { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; background: var(--superficie); border: var(--tarjeta-borde); border-radius: var(--radio); }
 .cierre-num { flex: none; width: 26px; height: 26px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: .85rem; background: var(--empresa); color: var(--sobre-empresa); }
 .cierre-paso-cuerpo { display: grid; gap: 8px; flex: 1; min-width: 0; }
