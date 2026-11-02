@@ -3,16 +3,16 @@
 // varios días (⟶), ventana del día, detalle, formulario de trabajo (cliente, sitio sugerido, descripción, tareas,
 // fechas, horario con atajos, personas necesarias por rol, repetir) y borrar uno o toda la serie.
 // Los datos son las faenas (ope_faenas): lo que se pone aquí aparece en Planificación al armar la faena.
-import { el } from '../../../core/ui/dom.js?v=be2fe08';
-import { avisar } from '../../../core/ui/aviso.js?v=be2fe08';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=be2fe08';
-import { hhmm } from '../../../core/ui/formato.js?v=be2fe08';
-import { cargarBase } from '../datos.js?v=be2fe08';
+import { el } from '../../../core/ui/dom.js?v=d312ed8';
+import { avisar } from '../../../core/ui/aviso.js?v=d312ed8';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=d312ed8';
+import { hhmm } from '../../../core/ui/formato.js?v=d312ed8';
+import { cargarBase } from '../datos.js?v=d312ed8';
 
 const MES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
 const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
 const ROLES = [['op', 'Operarios', '#7cb342'], ['sup', 'Supervisor', '#2563eb'], ['prev', 'Prevencionista', '#f59e0b']];
-const estado = { ref: new Date(), vista: 'mes', buscar: '' };   // se conserva al volver a la pantalla
+const estado = { ref: new Date(), vista: 'mes', buscar: '', anio: '' };   // se conserva al volver a la pantalla
 
 const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -48,7 +48,7 @@ const SVG = {
 function cargarEstilos() {
   if (document.getElementById('igcal-css')) return;
   const l = document.createElement('link');
-  l.id = 'igcal-css'; l.rel = 'stylesheet'; l.href = new URL('../calendario.css?v=be2fe08', import.meta.url).href;
+  l.id = 'igcal-css'; l.rel = 'stylesheet'; l.href = new URL('../calendario.css?v=d312ed8', import.meta.url).href;
   document.head.append(l);
 }
 
@@ -178,7 +178,37 @@ export default async function vista(ctx) {
       if (ev.target.closest('.igcal-grupo') || ev.target.closest('.igcal-mas')) return;
       const f = c.dataset.f; if (evsDe(f).length) abrirDia(f); else nuevoEn(f);
     }));
+    if (estado.vista === 'mes') requestAnimationFrame(() => ajustarMes(celdas.length / 7));
   }
+
+  // Mes en una pantalla (Enzo, 2026-11-02): las semanas se reparten el alto disponible y lo que no cabe en un día pasa a
+  // "+N más" (abre el día). En pantallas bajas se respeta un alto mínimo y se desliza como antes.
+  function ajustarMes(semanas) {
+    if (!grid.isConnected || matchMedia('(max-width:760px)').matches) return;
+    const arriba = grid.getBoundingClientRect().top + window.scrollY;
+    const alto = Math.max(92, Math.floor((window.innerHeight - arriba - 24) / semanas));
+    grid.querySelectorAll('.igcal-cell').forEach((c) => {
+      c.style.height = `${alto}px`; c.style.minHeight = '0';
+      const mas = c.querySelector('.igcal-mas');
+      let ocultos = mas ? Number(mas.textContent.replace(/\D/g, '')) : 0;
+      const grupos = [...c.querySelectorAll('.igcal-grupo')];
+      const nota = mas ?? el('div', { class: 'igcal-mas', 'data-f': c.dataset.f, onclick: (ev) => { ev.stopPropagation(); abrirDia(c.dataset.f); } });
+      const sobra = () => c.scrollHeight > c.clientHeight + 1;
+      if (!mas) c.append(nota);
+      nota.textContent = '+0 más';
+      // primero se sacan grupos completos (desde el último); si el primero tampoco cabe, sus últimas líneas
+      for (let i = grupos.length - 1; i > 0 && sobra(); i--) { grupos[i].hidden = true; ocultos += 1; }
+      const lineas = grupos[0] ? [...grupos[0].querySelectorAll('.igcal-gitem')] : [];
+      for (let i = lineas.length - 1; i > 0 && sobra(); i--) { lineas[i].hidden = true; ocultos += 1; }
+      if (ocultos) nota.textContent = `+${ocultos} más`; else nota.remove();
+    });
+  }
+  let altoVentana = window.innerHeight;
+  const alRedimensionar = () => {
+    if (!raiz.isConnected) { window.removeEventListener('resize', alRedimensionar); return; }
+    if (Math.abs(window.innerHeight - altoVentana) > 40 && estado.vista === 'mes' && !estado.buscar) { altoVentana = window.innerHeight; render(); }
+  };
+  window.addEventListener('resize', alRedimensionar);
 
   // ---------- Agenda: Próximos, semana en teléfono y búsqueda
   function renderAgenda(lista, desc) {
@@ -216,10 +246,50 @@ export default async function vista(ctx) {
     renderAgenda(porDias(iso(b), iso(b7)), false);
   }
   function renderProximos() { titulo.textContent = 'Próximos trabajos'; renderAgenda(porDias(hoy(), '9999-12-31'), false); }
+  // Búsqueda en lista compacta (Enzo, 2026-11-02: "desde cuándo y cuántas faenas de cámaras tuvimos este año"): una fila
+  // por trabajo, resumen (total, hechos y programados, primero y último) y filtro por año; se exporta a Excel.
   function renderBusqueda() {
-    const res = EVENTS.filter((e) => `${e.titulo} ${e.ubic} ${e.sitio} ${e.desc}`.toLowerCase().includes(estado.buscar)).sort((a, b) => b.fecha.localeCompare(a.fecha));
-    titulo.textContent = `Búsqueda · ${res.length} resultado${res.length === 1 ? '' : 's'}`;
-    renderAgenda(res, true);
+    const todos = EVENTS.filter((e) => `${e.titulo} ${e.ubic} ${e.sitio} ${e.desc}`.toLowerCase().includes(estado.buscar)).sort((a, b) => b.fecha.localeCompare(a.fecha));
+    const anios = [...new Set(todos.map((e) => e.fecha.slice(0, 4)))].sort().reverse();
+    if (estado.anio && !anios.includes(estado.anio)) estado.anio = '';
+    const res = estado.anio ? todos.filter((e) => e.fecha.startsWith(estado.anio)) : todos;
+    titulo.textContent = `Búsqueda · ${res.length} trabajo${res.length === 1 ? '' : 's'}`;
+    grid.classList.add('agenda'); dow.style.display = 'none'; cal.classList.remove('week');
+    pintarLeyenda(res);
+    if (!todos.length) { grid.innerHTML = '<div class="igcal-vacio">Sin trabajos con esa búsqueda.</div>'; return; }
+    const t = hoy();
+    const largo = (f) => { const d = fecha(f); return `${d.getDate()} de ${MES[d.getMonth()]} de ${d.getFullYear()}`; };
+    const corto = (f) => { const d = fecha(f); return `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${d.getFullYear()}`; };
+    const dias = (e) => (e.dias ? e.dias.length : Math.round((fecha(evFin(e)) - fecha(e.fecha)) / 864e5) + 1);
+    const hechos = res.filter((e) => e.fecha <= t).length;
+    const primero = res[res.length - 1]; const ultimo = res[0];
+    const anioChips = [['', `Todos (${todos.length})`], ...anios.map((a) => [a, `${a} (${todos.filter((e) => e.fecha.startsWith(a)).length})`])]
+      .map(([a, txt]) => `<button type="button" class="igcal-chip${(estado.anio ?? '') === a ? ' on' : ''}" data-anio="${a}">${txt}</button>`).join('');
+    grid.innerHTML = `<div class="igcal-bres">
+      <div class="igcal-bsum">
+        <div><b>${res.length}</b><span>trabajo${res.length === 1 ? '' : 's'}</span></div>
+        <div><b>${hechos}</b><span>hechos (hasta hoy)</span></div>
+        <div><b>${res.length - hechos}</b><span>programados</span></div>
+        <div><b>${res.length ? corto(primero.fecha) : '—'}</b><span>el primero${res.length ? ` · ${esc(largo(primero.fecha))}` : ''}</span></div>
+        <div><b>${res.length ? corto(ultimo.fecha) : '—'}</b><span>el último</span></div>
+      </div>
+      <div class="igcal-banios">${anioChips}<button type="button" class="igcal-hoy igcal-bexcel">Exportar a Excel</button></div>
+      <div class="tabla-contenedor"><table class="tabla igcal-btabla"><thead><tr><th>Fecha</th><th class="num">Días</th><th>Cliente</th><th>Sitio</th><th>Trabajo</th></tr></thead><tbody>
+      ${res.map((e) => `<tr data-id="${e.id}" class="${e.fecha > t ? 'igcal-futuro' : ''}"><td>${corto(e.fecha)}${evFin(e) > e.fecha ? ` <span class="texto-suave">→ ${corto(evFin(e))}</span>` : ''}</td>
+        <td class="num">${dias(e)}</td><td><span class="igcal-bcli"><i style="background:${esc(e.color)}"></i>${esc(e.ubic || '—')}</span></td><td>${esc(e.sitio)}</td>
+        <td><strong>${esc(e.titulo)}</strong>${e.desc ? `<div class="texto-suave texto-chico igcal-bdesc">${esc(e.desc)}</div>` : ''}</td></tr>`).join('')}
+      </tbody></table></div></div>`;
+    grid.querySelectorAll('tr[data-id]').forEach((r) => r.addEventListener('click', () => abrir(r.dataset.id)));
+    grid.querySelectorAll('[data-anio]').forEach((b) => b.addEventListener('click', () => { estado.anio = b.dataset.anio; render(); }));
+    grid.querySelector('.igcal-bexcel').addEventListener('click', async () => {
+      try {
+        const { nuevoExcel } = await import('../../../core/excel.js?v=d312ed8');
+        const x = await nuevoExcel(ctx, { titulo: 'Trabajos', subtitulo: `Búsqueda: "${buscador.value.trim()}"${estado.anio ? ` · ${estado.anio}` : ''} · ${res.length} trabajos` });
+        x.tabla({ columnas: [{ t: 'Fecha', tipo: 'fecha' }, { t: 'Hasta', tipo: 'fecha' }, { t: 'Días', tipo: 'numero' }, 'Cliente', 'Sitio', 'Trabajo', 'Descripción'],
+          filas: [...res].reverse().map((e) => [e.fecha, evFin(e), dias(e), e.ubic, e.sitio, e.titulo, e.desc]) });
+        await x.guardar(`trabajos-${buscador.value.trim().replace(/[^\p{L}\p{N}]+/gu, '-').toLowerCase() || 'busqueda'}`);
+      } catch (err) { avisar(err.message, 'error'); }
+    });
   }
 
   // ---------- Ventanas

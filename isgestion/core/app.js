@@ -1,16 +1,16 @@
 // Arranque de ISgestión: sesión → empresas y permisos → barra con selector → menú → vista.
-import { iniciarApi, db } from './api.js?v=be2fe08';
-import { sesionActual, iniciarSesion, cerrarSesion, alCambiarSesion } from './auth.js?v=be2fe08';
-import { cargarPermisos, crearPuede } from './permisos.js?v=be2fe08';
-import { cargarEmpresas, cargarModulosEmpresa, elegirEmpresa, recordarEmpresa, nombreEmpresa } from './empresas.js?v=be2fe08';
-import { cargarManifiestos, modulosVisibles, apartadosPorCategoria, configModulo } from './modulos.js?v=be2fe08';
-import { el } from './ui/dom.js?v=be2fe08';
-import { icono } from './ui/iconos.js?v=be2fe08';
-import { boton } from './ui/tabla.js?v=be2fe08';
-import inicio from './vistas/inicio.js?v=be2fe08';
-import mas from './vistas/mas.js?v=be2fe08';
-import { franja, botonNotificaciones, desactivar } from './push.js?v=be2fe08';
-import { barraMovil, marcarBarraMovil, bienvenidaInicial, recordarMarca, marcaGuardada, CORTE_TELEFONO } from './movil.js?v=be2fe08';
+import { iniciarApi, db } from './api.js?v=d312ed8';
+import { sesionActual, iniciarSesion, cerrarSesion, alCambiarSesion } from './auth.js?v=d312ed8';
+import { cargarPermisos, crearPuede } from './permisos.js?v=d312ed8';
+import { cargarEmpresas, cargarModulosEmpresa, elegirEmpresa, recordarEmpresa, nombreEmpresa } from './empresas.js?v=d312ed8';
+import { cargarManifiestos, modulosVisibles, apartadosPorCategoria, configModulo } from './modulos.js?v=d312ed8';
+import { el } from './ui/dom.js?v=d312ed8';
+import { icono } from './ui/iconos.js?v=d312ed8';
+import { boton } from './ui/tabla.js?v=d312ed8';
+import inicio from './vistas/inicio.js?v=d312ed8';
+import mas from './vistas/mas.js?v=d312ed8';
+import { franja, botonNotificaciones, desactivar } from './push.js?v=d312ed8';
+import { barraMovil, marcarBarraMovil, bienvenidaInicial, recordarMarca, marcaGuardada, CORTE_TELEFONO } from './movil.js?v=d312ed8';
 
 const COLOR_BASE = '#1f4e8c';
 const CLAVE_MINIMA = 10;   // 08 Seguridad §4
@@ -311,9 +311,20 @@ function pintarMenu() {
   const enlace = (href, ic, texto) => el('a', { href, title: texto }, icono(ic), el('span', { class: 'menu-texto' }, texto));
   const total = [...estado.apartados.grupos.values()].flat().reduce((s, ap) => s + ap.items.length, 0);
   estado.menuExpandido = total <= MAX_MENU_EXPANDIDO;
+  // Grupos plegables (Enzo, 2026-11-02): el título abre o cierra el grupo y se recuerda en el navegador (isg.menu.cerrados)
+  let cerrados = [];
+  try { cerrados = JSON.parse(localStorage.getItem('isg.menu.cerrados') ?? '[]'); } catch { /* sin almacenamiento */ }
+  const plegar = (ev) => {
+    const g = ev.currentTarget.closest('.menu-grupo');
+    const cerrado = g.classList.toggle('cerrado');
+    ev.currentTarget.setAttribute('aria-expanded', String(!cerrado));
+    const ahora = [...estado.menu.querySelectorAll('.menu-grupo.cerrado')].map((x) => x.dataset.grupo);
+    try { localStorage.setItem('isg.menu.cerrados', JSON.stringify(ahora)); } catch { /* sin almacenamiento */ }
+  };
   const grupos = [...estado.apartados.grupos].map(([categoria, apartados]) =>
-    el('div', { class: 'menu-grupo' },
-      el('h3', {}, categoria),
+    el('div', { class: `menu-grupo${cerrados.includes(categoria) ? ' cerrado' : ''}`, 'data-grupo': categoria },
+      el('h3', {}, el('button', { type: 'button', class: 'menu-plegar', 'aria-expanded': String(!cerrados.includes(categoria)), onclick: plegar },
+        el('span', {}, categoria), icono('abajo', { tam: 14 }))),
       apartados.flatMap((ap) => {
         if (estado.menuExpandido) return ap.items.map((it) => { const a = enlace(`#/${it.id}`, iconoVista(it), it.label); a.dataset.vista = it.id; return a; });
         const a = enlace(`#/${ap.items[0].id}`, ap.items.length > 1 ? ap.icono : iconoVista(ap.items[0]), ap.items.length > 1 ? ap.label : ap.items[0].label);
@@ -437,7 +448,7 @@ async function navegar() {
     const marcado = a.dataset.vista ? a.dataset.vista === resaltar
       : apartado ? a.dataset.apartado === apartado.id : a.getAttribute('href') === `#/${resaltar}`;
     a.toggleAttribute('aria-current', marcado);
-    if (marcado) a.setAttribute('aria-current', 'page');
+    if (marcado) { a.setAttribute('aria-current', 'page'); a.closest('.menu-grupo.cerrado')?.classList.remove('cerrado'); }
   }
   marcarBarraMovil(estado.barraMovil, id, actual?.item.padre);
   const turno = ++estado.render;

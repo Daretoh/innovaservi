@@ -195,3 +195,23 @@
 .igcal-oadd { display: flex; gap: 6px; align-items: flex-end; }
 .igcal-oadd textarea { flex: 1; font: inherit; padding: 6px 8px; border: 1px solid var(--borde); border-radius: 8px; background: var(--superficie); color: var(--texto); }
 .igcal-tchk .igcal-tadd input { width: 100%; font: inherit; padding: 6px 8px; border: 1px solid var(--borde); border-radius: 8px; background: var(--superficie); color: var(--texto); }
+
+/* Búsqueda en lista compacta */
+.igcal-grid.agenda:has(.igcal-bres) { max-width: none; }
+.igcal-bres { display: flex; flex-direction: column; gap: 12px; }
+.igcal-bsum { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
+.igcal-bsum > div { display: flex; flex-direction: column; gap: 2px; padding: 10px 14px; border: 1px solid var(--borde); border-radius: 12px; background: var(--fondo-sutil); }
+.igcal-bsum b { font-size: 1.25rem; font-variant-numeric: tabular-nums; }
+.igcal-bsum span { font-size: 12px; color: var(--texto-suave); }
+.igcal-banios { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.igcal-chip { border: 1px solid var(--borde); background: var(--superficie); color: var(--texto); border-radius: 999px; padding: 4px 12px; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+.igcal-chip.on { background: var(--ac); border-color: var(--ac); color: var(--sobre-empresa); }
+.igcal-bexcel { margin-left: auto; }
+.igcal-btabla tbody tr { cursor: pointer; }
+.igcal-btabla tbody tr:hover { background: var(--hover); }
+.igcal-btabla td, .igcal-btabla th { vertical-align: top; padding-top: 6px; padding-bottom: 6px; }
+.igcal-btabla td:first-child { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.igcal-btabla tr.igcal-futuro td { color: var(--texto-suave); }
+.igcal-bcli { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; white-space: nowrap; }
+.igcal-bcli i { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+.igcal-bdesc { max-width: 520px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

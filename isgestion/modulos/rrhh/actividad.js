@@ -1,8 +1,8 @@
 // Actividad de los trabajadores (como en InnovaGestión), desde el Registro de horas vía rrhh_actividad:
 // días y horas de los últimos 30 días, última jornada, franja de 30 días (lista), calendario de 8 semanas y
 // faenas de los últimos 4 meses (ficha). Cada cuadro es más intenso según las horas del día.
-import { el } from '../../core/ui/dom.js?v=be2fe08';
-import { hoyISO, sumarDias, lunesDe, fechaLarga, nombreDia, horas } from '../../core/ui/formato.js?v=be2fe08';
+import { el } from '../../core/ui/dom.js?v=d312ed8';
+import { hoyISO, sumarDias, lunesDe, fechaLarga, nombreDia, horas } from '../../core/ui/formato.js?v=d312ed8';
 
 const DIAS_FAENAS = 120;
 

@@ -107,8 +107,11 @@ h2 { font-size: 1.1rem; margin: 0; }
 .barra {
   display: flex; align-items: center; gap: 12px; padding: 0 16px; height: 56px;
   background: var(--barra-fondo); color: var(--barra-texto); border-bottom: 1px solid var(--borde); border-top: 4px solid var(--empresa);
-  position: sticky; top: 0; z-index: 7;   /* sobre la barra lateral (6): la lista del selector de empresa no queda tapada */
+  position: sticky; top: 0; z-index: 5;
 }
+/* Con la lista del selector abierta, la barra pasa sobre la barra lateral (6) para que no quede tapada; cerrada queda
+   debajo, así el menú desplegado al pasar el mouse (tema innova, de alto completo) no queda cortado */
+.barra:has(.selector-lista:not([hidden])) { z-index: 7; }
 .barra .marca { margin-right: 4px; }
 .barra-espacio { flex: 1; }
 .usuario { display: flex; align-items: center; gap: 8px; color: var(--texto-suave); font-size: .9rem; }
@@ -154,6 +157,14 @@ h2 { font-size: 1.1rem; margin: 0; }
   color: var(--menu-texto); text-decoration: none; transition: background var(--transicion), color var(--transicion);
 }
 .menu a:hover { background: var(--menu-hover); }
+/* Grupos plegables: el título es un botón; cerrado oculta sus opciones (en el menú compacto sin desplegar se ven los iconos) */
+.menu-plegar { display: flex; align-items: center; justify-content: space-between; gap: 6px; width: 100%; padding: 0; border: 0; background: none; font: inherit; color: inherit; text-transform: inherit; letter-spacing: inherit; cursor: pointer; }
+.menu-plegar .icono { opacity: 0; transition: transform var(--transicion), opacity var(--transicion); flex: none; }
+.menu:hover .menu-plegar .icono, .menu-plegar:focus-visible .icono, .menu-grupo.cerrado .menu-plegar .icono { opacity: .8; }
+.menu-grupo.cerrado .menu-plegar .icono { transform: rotate(-90deg); }
+.menu-plegar:hover { color: var(--menu-texto); }
+.menu-grupo.cerrado > a { display: none; }
+.menu-compacto .menu:not(:hover) .menu-grupo.cerrado > a { display: flex; }
 .menu a[aria-current="page"] { background: var(--menu-activo-fondo); color: var(--menu-activo-texto); font-weight: 600; }
 .contenido { padding: 24px; min-width: 0; }
 .menu-velo { display: none; }
@@ -1697,6 +1708,8 @@ body:has(.franja-push:not([hidden])) .aviso { bottom: calc(16px + 76px); }
 .torta-leyenda > div { display: grid; grid-template-columns: 12px minmax(0, 1fr) auto; gap: 8px; align-items: center; font-size: 14px; }
 .torta-leyenda i { width: 12px; height: 12px; border-radius: 3px; }
 .ind-cab-acciones a.boton-primario { color: var(--sobre-empresa); text-decoration: none; }
+.ind-cab-acciones a { display: inline-flex; align-items: center; gap: 6px; text-decoration: none; font-weight: 600; }
+.ind-cab-acciones a:not(.boton):hover { text-decoration: underline; }
 /* Tareas v2: lista, avisos y detalle */
 .tar2-filtros { margin: 4px 0; }
 .tar2-lista { padding: 4px; }
