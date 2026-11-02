@@ -2,16 +2,16 @@
 // Toda la tarjeta abre la orden; buscador por patente, vehículo o cliente; la tarjeta recién movida queda
 // resaltada; se actualiza solo cada 2 minutos (pensado para la tablet del taller). Arriba, el resumen del Seguimiento
 // del OS (avance y arrastrar para priorizar); el botón de pantalla completa abre el detalle para la tablet.
-import { el } from '../../../core/ui/dom.js?v=ed8e78f';
-import { icono } from '../../../core/ui/iconos.js?v=ed8e78f';
-import { boton } from '../../../core/ui/tabla.js?v=ed8e78f';
-import { fechaCorta, hhmm, hoyISO } from '../../../core/ui/formato.js?v=ed8e78f';
-import { ESTADOS, PRIORIDADES, CHIP_PRIORIDAD, SELECT_ORDEN, verPatente, nombreVehiculo, nombreTercero, minutosTrabajo, textoMinutos, hora, cargarTrabajadores } from '../datos.js?v=ed8e78f';
-import { mover } from '../acciones.js?v=ed8e78f';
-import { recepcion } from '../recepcion.js?v=ed8e78f';
-import { avance, ordenarActivos, marcaCotizar, resumenTaller, detalleVehiculo } from '../seguimiento.js?v=ed8e78f';
-import { ETAPAS, tarjetaAuto } from '../movil.js?v=ed8e78f';
-import { esTelefono } from '../../../core/movil.js?v=ed8e78f';
+import { el } from '../../../core/ui/dom.js?v=4343d6d';
+import { icono } from '../../../core/ui/iconos.js?v=4343d6d';
+import { boton } from '../../../core/ui/tabla.js?v=4343d6d';
+import { fechaCorta, hhmm, hoyISO } from '../../../core/ui/formato.js?v=4343d6d';
+import { ESTADOS, PRIORIDADES, CHIP_PRIORIDAD, SELECT_ORDEN, verPatente, nombreVehiculo, nombreTercero, minutosTrabajo, textoMinutos, hora, cargarTrabajadores } from '../datos.js?v=4343d6d';
+import { mover, textoAvance, puedeVolver } from '../acciones.js?v=4343d6d';
+import { recepcion } from '../recepcion.js?v=4343d6d';
+import { avance, ordenarActivos, marcaCotizar, resumenTaller, detalleVehiculo } from '../seguimiento.js?v=4343d6d';
+import { ETAPAS, tarjetaAuto } from '../movil.js?v=4343d6d';
+import { esTelefono } from '../../../core/movil.js?v=4343d6d';
 
 const MAX_ENTREGADOS = 6;
 const ESPERA_LARGA = 60;   // minutos en espera para avisar
@@ -76,8 +76,8 @@ export default async function vista(ctx) {
       o.trabajador_id ? el('span', { class: 'texto-chico tal-trabajador' }, icono('users', { tam: 12 }), ` ${trabajadores.de.get(o.trabajador_id)?.nombre ?? ''}`) : null,
       ci >= 3 && !o.cobrado ? el('span', { class: 'chip chip-venc' }, 'Por cobrar') : null,
       puedeMover ? el('div', { class: 'tal-botones' },
-        ci > 0 ? el('button', { type: 'button', class: 'boton boton-secundario boton-chico', onclick: async () => { if (await mover(ctx, o, -1)) { estado.movida = o.id; ctx.refrescar(); } } }, icono('volver', { tam: 14 }), 'Volver') : el('span'),
-        ESTADOS[ci][2] ? el('button', { type: 'button', class: 'boton boton-primario boton-chico', onclick: async () => { if (await mover(ctx, o, 1)) { estado.movida = o.id; ctx.refrescar(); } } }, ESTADOS[ci][2], icono('derecha', { tam: 14 })) : null) : null);
+        ci > 0 && puedeVolver(ctx, o) ? el('button', { type: 'button', class: 'boton boton-secundario boton-chico', onclick: async () => { if (await mover(ctx, o, -1)) { estado.movida = o.id; ctx.refrescar(); } } }, icono('volver', { tam: 14 }), 'Volver') : el('span'),
+        textoAvance(ctx, o) ? el('button', { type: 'button', class: 'boton boton-primario boton-chico', onclick: async () => { if (await mover(ctx, o, 1)) { estado.movida = o.id; ctx.refrescar(); } } }, textoAvance(ctx, o), icono('derecha', { tam: 14 })) : o.estado === 'terminado' ? el('span', { class: 'texto-suave texto-chico' }, 'Espera VB') : null) : null);
     // Toda la tarjeta abre la orden (salvo los botones y enlaces)
     nodo.addEventListener('click', (ev) => { if (!ev.target.closest('button, a')) location.hash = ctx.ruta('taller.orden', { id: o.id }); });
     return nodo;
@@ -154,7 +154,7 @@ function tableroMovil(ctx, data, { puedeMover, movida }) {
     const autos = de(estado.etapa).filter((o) => !q || [o.tal_vehiculos?.patente, verPatente(o.tal_vehiculos?.patente), nombreVehiculo(o.tal_vehiculos), o.terceros ? nombreTercero(o.terceros) : ''].join(' ').toLowerCase().includes(q));
     lista.replaceChildren(...(autos.length ? autos.map((o, i) => {
       const ci = ESTADOS.findIndex(([k]) => k === o.estado);
-      const accion = puedeMover && ESTADOS[ci][2] ? el('button', { type: 'button', class: 'tm-mover', onclick: async () => { if (await mover(ctx, o, 1)) { estado.movida = o.id; ctx.refrescar(); } } }, ESTADOS[ci][2], icono('derecha', { tam: 14 })) : null;
+      const accion = puedeMover && textoAvance(ctx, o) ? el('button', { type: 'button', class: 'tm-mover', onclick: async () => { if (await mover(ctx, o, 1)) { estado.movida = o.id; ctx.refrescar(); } } }, textoAvance(ctx, o), icono('derecha', { tam: 14 })) : null;
       const t = tarjetaAuto(ctx, o, { pie: 'avance', retraso: i * 50, accion });
       if (o.id === movida) t.classList.add('tal-movida');
       return t;

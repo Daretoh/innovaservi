@@ -1,16 +1,16 @@
 // Arranque de ISgestión: sesión → empresas y permisos → barra con selector → menú → vista.
-import { iniciarApi, db } from './api.js?v=ed8e78f';
-import { sesionActual, iniciarSesion, cerrarSesion, alCambiarSesion } from './auth.js?v=ed8e78f';
-import { cargarPermisos, crearPuede } from './permisos.js?v=ed8e78f';
-import { cargarEmpresas, cargarModulosEmpresa, elegirEmpresa, recordarEmpresa, nombreEmpresa } from './empresas.js?v=ed8e78f';
-import { cargarManifiestos, modulosVisibles, apartadosPorCategoria, configModulo } from './modulos.js?v=ed8e78f';
-import { el } from './ui/dom.js?v=ed8e78f';
-import { icono } from './ui/iconos.js?v=ed8e78f';
-import { boton } from './ui/tabla.js?v=ed8e78f';
-import inicio from './vistas/inicio.js?v=ed8e78f';
-import mas from './vistas/mas.js?v=ed8e78f';
-import { franja, botonNotificaciones, desactivar } from './push.js?v=ed8e78f';
-import { barraMovil, marcarBarraMovil, bienvenidaInicial, recordarMarca, marcaGuardada, CORTE_TELEFONO } from './movil.js?v=ed8e78f';
+import { iniciarApi, db } from './api.js?v=4343d6d';
+import { sesionActual, iniciarSesion, cerrarSesion, alCambiarSesion } from './auth.js?v=4343d6d';
+import { cargarPermisos, crearPuede } from './permisos.js?v=4343d6d';
+import { cargarEmpresas, cargarModulosEmpresa, elegirEmpresa, recordarEmpresa, nombreEmpresa } from './empresas.js?v=4343d6d';
+import { cargarManifiestos, modulosVisibles, apartadosPorCategoria, configModulo } from './modulos.js?v=4343d6d';
+import { el } from './ui/dom.js?v=4343d6d';
+import { icono } from './ui/iconos.js?v=4343d6d';
+import { boton } from './ui/tabla.js?v=4343d6d';
+import inicio from './vistas/inicio.js?v=4343d6d';
+import mas from './vistas/mas.js?v=4343d6d';
+import { franja, botonNotificaciones, desactivar } from './push.js?v=4343d6d';
+import { barraMovil, marcarBarraMovil, bienvenidaInicial, recordarMarca, marcaGuardada, CORTE_TELEFONO } from './movil.js?v=4343d6d';
 
 const COLOR_BASE = '#1f4e8c';
 const CLAVE_MINIMA = 10;   // 08 Seguridad §4
@@ -277,7 +277,7 @@ function pintarApp() {
         el('div', { class: 'barra-espacio' }),
         el('div', { class: 'usuario' },
           (estado.consola = el('a', { class: 'boton boton-secundario boton-chico solo-escritorio', href: 'consola/', hidden: true, title: 'Consola de la plataforma (equipo ISgestión)' }, icono('ajustes', { tam: 14 }), 'Consola')),
-          el('span', { class: 'correo solo-escritorio' }, estado.usuario.email),
+          el('button', { type: 'button', class: 'correo solo-escritorio', title: 'Mi PIN personal (crear o cambiar)', onclick: () => import('./pin.js?v=4343d6d').then((m) => m.miPin(db())) }, estado.usuario.email),
           (estado.botonNotif = botonNotificaciones(estado.usuario.id, () => (estado.empresa?.grupo ? estado.empresas[0]?.id : estado.empresa?.id))),
           botonModo(),
           el('button', { type: 'button', class: 'boton-icono solo-escritorio', title: 'Cerrar sesión', 'aria-label': 'Cerrar sesión', onclick: () => salir() }, icono('salir')))),
@@ -480,7 +480,11 @@ async function navegar() {
   }
 
   if (!actual) {
-    estado.contenido.replaceChildren(estadoVacio('candado', 'Sección no disponible', 'No existe o tu rol no tiene acceso en esta empresa.'));
+    // Un enlace de otra empresa (ej.: el taller abierto con InnovaServi elegida): ofrecer abrirlo en las otras
+    const nodo = estadoVacio('candado', 'Sección no disponible', 'No existe o tu rol no tiene acceso en esta empresa.');
+    const otras = estado.empresas.filter((e) => !e.grupo && e.id !== estado.empresa?.id);
+    nodo.querySelector('.listado-acciones').prepend(...otras.map((e) => el('button', { type: 'button', class: 'boton boton-secundario', onclick: () => activarEmpresa(e) }, `Abrir en ${nombreEmpresa(e)}`)));
+    estado.contenido.replaceChildren(nodo);
     return;
   }
   // Al refrescar la misma vista no se borra lo que hay mientras carga (evita parpadeo y salto de scroll).

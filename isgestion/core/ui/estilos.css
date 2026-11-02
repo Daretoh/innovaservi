@@ -115,6 +115,8 @@ h2 { font-size: 1.1rem; margin: 0; }
 .barra .marca { margin-right: 4px; }
 .barra-espacio { flex: 1; }
 .usuario { display: flex; align-items: center; gap: 8px; color: var(--texto-suave); font-size: .9rem; }
+button.correo { background: none; border: 0; padding: 4px 6px; border-radius: 6px; color: inherit; font: inherit; cursor: pointer; }
+button.correo:hover { background: var(--hover); }
 
 .selector { position: relative; }
 .selector-boton {
