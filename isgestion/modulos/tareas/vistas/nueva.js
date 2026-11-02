@@ -1,7 +1,7 @@
 // Formulario "Nueva tarea" (lo usan Tareas y Grupo → Tareas del grupo). ctx = el de la empresa donde se crea.
-import { abrirFormulario } from '../../../core/ui/modal.js?v=eca84e9';
-import { avisar } from '../../../core/ui/aviso.js?v=eca84e9';
-import { PRIORIDADES, REPETIR, CATEGORIAS, categoriaAuto } from '../datos.js?v=eca84e9';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=ed8e78f';
+import { avisar } from '../../../core/ui/aviso.js?v=ed8e78f';
+import { PRIORIDADES, REPETIR, CATEGORIAS, categoriaAuto } from '../datos.js?v=ed8e78f';
 
 export const SELECT_TAREA = '*, tar_adjuntos(id), tar_obs(id)';
 

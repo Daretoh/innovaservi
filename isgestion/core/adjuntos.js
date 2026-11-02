@@ -5,16 +5,20 @@
 // Los módulos usan estas funciones o almacen(api), que tiene la misma forma que api.storage.from('adjuntos').
 const BUCKET = 'adjuntos';
 const MAX_BYTES = 25 * 1024 * 1024;   // igual que el límite del bucket y del Worker
-let ARCHIVOS_URL = null;
+// La URL del Worker se guarda también en globalThis: al publicar una versión con la app abierta, las pantallas que se
+// abren después cargan otra copia de este archivo (otra URL, ?v=…) que no pasó por configurarArchivos; sin esto esa
+// copia subía a Supabase Storage en vez de R2 (pasó el 2026-11-01 con 30 OC de Performance).
+let ARCHIVOS_URL = globalThis.__isgArchivosUrl ?? null;
 
 // La llama core/api.js al iniciar, con la URL del Worker de la organización (o nada)
-export function configurarArchivos(url) { ARCHIVOS_URL = url ? String(url).replace(/\/+$/, '') : null; }
+export function configurarArchivos(url) { ARCHIVOS_URL = url ? String(url).replace(/\/+$/, '') : null; globalThis.__isgArchivosUrl = ARCHIVOS_URL; }
+const urlArchivos = () => ARCHIVOS_URL ?? globalThis.__isgArchivosUrl ?? null;
 
 // Cliente del Worker de R2 con la misma forma que el de Storage ({ data, error })
 function clienteR2(api) {
   const pedir = async (ruta, opciones = {}) => {
     const { data: { session } } = await api.auth.getSession();
-    const resp = await fetch(`${ARCHIVOS_URL}${ruta}`, { ...opciones, headers: { ...(opciones.headers ?? {}), Authorization: `Bearer ${session?.access_token ?? ''}` } });
+    const resp = await fetch(`${urlArchivos()}${ruta}`, { ...opciones, headers: { ...(opciones.headers ?? {}), Authorization: `Bearer ${session?.access_token ?? ''}` } });
     const cuerpo = await resp.json().catch(() => ({}));
     if (!resp.ok) return { data: null, error: { message: cuerpo.error || `Error ${resp.status} del servidor de archivos` } };
     return { data: cuerpo, error: null };
@@ -40,7 +44,7 @@ function clienteR2(api) {
   };
 }
 
-export const almacen = (api) => (ARCHIVOS_URL ? clienteR2(api) : api.storage.from(BUCKET));
+export const almacen = (api) => (urlArchivos() ? clienteR2(api) : api.storage.from(BUCKET));
 
 function nombreSeguro(nombre) {
   const limpio = nombre.normalize('NFD').replace(/[̀-ͯ]/g, '')

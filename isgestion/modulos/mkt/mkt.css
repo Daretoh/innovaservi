@@ -1,0 +1,102 @@
+/* Marketing y redes. Solo variables del tema (sin colores fijos) para que funcione con todos los temas y el modo oscuro. */
+
+/* ---- Embudo */
+.mkt-filtros { flex-wrap: wrap; margin: 4px 0; }
+.mkt-filtros > select.campo { width: auto; flex: 0 1 210px; min-width: 150px; }
+.mkt-filtros > .buscador { flex: 1 1 220px; }
+.mkt-tablero { display: grid; grid-template-columns: repeat(var(--columnas, 6), minmax(210px, 1fr)); gap: 10px; align-items: start; overflow-x: auto; padding-bottom: 8px; }
+.mkt-columna { --col: var(--texto-suave); display: flex; flex-direction: column; gap: 8px; min-height: 180px; padding: 10px; border-radius: var(--radio); background: var(--fondo-hundido); border-top: 3px solid var(--col); transition: outline-color var(--transicion); outline: 2px dashed transparent; }
+.mkt-col-ganada { --col: var(--ok); }
+.mkt-col-perdida { --col: var(--venc); }
+.mkt-columna.mkt-sobre { outline-color: var(--empresa); }
+.mkt-columna-cab { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.mkt-vacio { text-align: center; padding: 16px 0; }
+.mkt-tarjeta { display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; text-align: left; font: inherit; color: var(--texto); cursor: pointer;
+  background: var(--superficie); border: 1px solid var(--borde); border-left: 3px solid var(--col, var(--borde)); border-radius: 8px; box-shadow: var(--sombra-suave); }
+.mkt-tarjeta:hover { border-color: var(--empresa); }
+.mkt-tarjeta:focus-visible { outline: 2px solid var(--empresa); outline-offset: 2px; }
+.mkt-tarjeta[draggable="true"] { cursor: grab; }
+.mkt-tarjeta.mkt-arrastrando { opacity: .5; }
+.mkt-tarjeta.mkt-sin-atender { border-left-color: var(--venc); }
+.mkt-tarjeta-pie { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.mkt-hoy { color: var(--prox); font-weight: 600; }
+@media (max-width: 760px) {
+  .mkt-tablero { display: flex; scroll-snap-type: x mandatory; }
+  .mkt-columna { flex: 0 0 min(280px, 82vw); scroll-snap-align: start; }
+}
+
+/* ---- Ficha del contacto */
+.mkt-etapas { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0 12px; }
+.mkt-etapa { font: inherit; font-size: .85rem; padding: 6px 12px; border: 1px solid var(--borde); border-radius: 999px; background: var(--superficie); color: var(--texto); cursor: pointer; }
+.mkt-etapa:hover:not(:disabled) { background: var(--hover); }
+.mkt-etapa:disabled { cursor: default; }
+.mkt-etapa[aria-pressed="true"] { background: var(--empresa); border-color: var(--empresa); color: var(--sobre-empresa); font-weight: 600; }
+.mkt-etapa-ganada[aria-pressed="true"] { background: var(--ok); border-color: var(--ok); }
+.mkt-etapa-perdida[aria-pressed="true"] { background: var(--venc); border-color: var(--venc); }
+.mkt-ficha { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 16px; align-items: start; }
+.mkt-ficha > .ficha { max-width: none; margin: 0; }
+@media (max-width: 900px) { .mkt-ficha { grid-template-columns: minmax(0, 1fr); } }
+.mkt-datos { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px 16px; }
+.mkt-dato { display: grid; gap: 2px; min-width: 0; overflow-wrap: anywhere; }
+.mkt-dato-ancho { grid-column: 1 / -1; }
+.mkt-notas { white-space: pre-wrap; overflow-wrap: anywhere; }
+.mkt-eventos { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.mkt-evento { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 10px; align-items: start; }
+.mkt-evento-icono { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--fondo-hundido); color: var(--texto-suave); }
+.mkt-evento-etapa .mkt-evento-icono, .mkt-evento-cliente .mkt-evento-icono { background: var(--ok-fondo); color: var(--ok); }
+.mkt-evento-whatsapp .mkt-evento-icono { color: var(--empresa); }
+
+/* ---- Campañas */
+.mkt-campanas { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr)); gap: 16px; align-items: start; }
+.mkt-campanas > .ficha { max-width: none; margin: 0; display: grid; gap: 10px; }
+.mkt-campana-cab { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.mkt-campana-cab h2 { margin: 0; }
+.mkt-cifras { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.mkt-cifras > div { display: grid; gap: 2px; min-width: 0; }
+.mkt-cifras strong { font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+.mkt-barra { display: block; height: 8px; border-radius: 4px; background: var(--fondo-hundido); overflow: hidden; margin-top: 4px; }
+.mkt-barra > span { display: block; height: 100%; background: var(--empresa); border-radius: 4px; }
+
+/* ---- Calendario de contenido */
+.mkt-mes-titulo { min-width: 9em; text-align: center; }
+.mkt-mes { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.mkt-mes-dia-nombre { text-align: center; padding: 4px 0; font-weight: 600; }
+.mkt-mes-dia { display: flex; flex-direction: column; gap: 3px; min-height: 96px; padding: 4px; border: 1px solid var(--borde); border-radius: 8px; background: var(--superficie); min-width: 0; }
+.mkt-mes-dia[title] { cursor: pointer; }
+.mkt-mes-dia[title]:hover { background: var(--hover); }
+.mkt-mes-dia.fuera { background: var(--fondo-sutil); opacity: .6; }
+.mkt-mes-dia.hoy { outline: 2px solid var(--empresa); outline-offset: -1px; }
+.mkt-mes-num { color: var(--texto-suave); font-weight: 600; }
+.mkt-pub { --pub: var(--pend); display: flex; align-items: center; gap: 4px; width: 100%; min-width: 0; padding: 2px 6px; font: inherit; font-size: .75rem; text-align: left; color: var(--texto);
+  background: var(--fondo-hundido); border: 0; border-left: 3px solid var(--pub); border-radius: 4px; cursor: pointer; }
+.mkt-pub:hover { background: var(--hover); }
+.mkt-pub-texto { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mkt-pub-punto { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--pub); }
+.mkt-pub-idea, .mkt-pub-diseno { --pub: var(--pend); }
+.mkt-pub-por_aprobar { --pub: var(--prox); }
+.mkt-pub-aprobada, .mkt-pub-programada { --pub: var(--empresa); }
+.mkt-pub-publicada { --pub: var(--ok); }
+.mkt-leyenda { display: flex; flex-wrap: wrap; gap: 12px; color: var(--texto-suave); }
+.mkt-leyenda > span { display: inline-flex; align-items: center; gap: 4px; }
+.mkt-aprobar { max-width: none; display: grid; gap: 8px; }
+.mkt-aprobar-fila { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; padding-top: 8px; border-top: 1px solid var(--borde); }
+@media (max-width: 760px) {
+  .mkt-mes { grid-template-columns: minmax(0, 1fr); }
+  .mkt-mes-dia-nombre { display: none; }
+  .mkt-mes-dia { min-height: 0; }
+  .mkt-mes-dia.fuera { display: none; }
+}
+
+/* ---- Indicadores */
+.mkt-barras { display: grid; gap: 8px; }
+.mkt-barras-fila { display: grid; grid-template-columns: minmax(80px, 1fr) minmax(60px, 2fr) auto; gap: 8px; align-items: center; }
+.mkt-barras-fila .mkt-barra { margin: 0; }
+.mkt-num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* ---- Ajustes */
+.mkt-ajustes { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 380px), 1fr)); gap: 16px; align-items: start; }
+.mkt-ajustes > .ficha { max-width: none; margin: 0; }
+.mkt-ajustes-lista { margin: 8px 0 0; padding: 0; list-style: none; display: grid; gap: 4px; }
+.mkt-ajustes-lista > li { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 6px 0; border-top: 1px solid var(--borde); }
+.mkt-respuesta { display: grid; gap: 2px; min-width: 0; }
+.mkt-red { width: auto; max-width: 200px; }

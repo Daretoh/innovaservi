@@ -2,13 +2,13 @@
 // Confirmar el pago (Remuneraciones 008, 2026-11-02): la semana se paga la semana siguiente; al pagar se confirma y
 // queda lo pagado a cada uno. Si después cambia algo de esa semana o faltó un saldo, la diferencia se lleva a la semana
 // actual o a la siguiente como extra o descuento con su motivo (remu_items.origen_semana), y la semana queda cuadrada.
-import { el } from '../../../core/ui/dom.js?v=eca84e9';
-import { icono } from '../../../core/ui/iconos.js?v=eca84e9';
-import { boton } from '../../../core/ui/tabla.js?v=eca84e9';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=eca84e9';
-import { avisar } from '../../../core/ui/aviso.js?v=eca84e9';
-import { dinero, horas, hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, fechaLarga, numSemana } from '../../../core/ui/formato.js?v=eca84e9';
-import { cargarBase, calcularRango, nombreCompleto } from '../datos.js?v=eca84e9';
+import { el } from '../../../core/ui/dom.js?v=ed8e78f';
+import { icono } from '../../../core/ui/iconos.js?v=ed8e78f';
+import { boton } from '../../../core/ui/tabla.js?v=ed8e78f';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=ed8e78f';
+import { avisar } from '../../../core/ui/aviso.js?v=ed8e78f';
+import { dinero, horas, hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, fechaLarga, numSemana } from '../../../core/ui/formato.js?v=ed8e78f';
+import { cargarBase, calcularRango, nombreCompleto } from '../datos.js?v=ed8e78f';
 
 const estado = { lunes: lunesDe(hoyISO()) };
 
@@ -17,12 +17,14 @@ export default async function vista(ctx) {
   const lunes = estado.lunes;
   const domingo = sumarDias(lunes, 6);
   const base = await cargarBase(ctx);
-  const R = await calcularRango(ctx, base, { desde: lunes, hasta: domingo });
-  const pagos = await cargarPagos(ctx, lunes);
-  const editar = ctx.puede('remu', 'editar');
   const hoyLunes = lunesDe(hoyISO());
-  // Semana pasada sin confirmar (se avisa al mirar la actual)
-  const pasada = lunes === hoyLunes ? await pendientesDe(ctx, base, sumarDias(lunes, -7)) : 0;
+  // La semana, sus pagos y (al mirar la actual) si la pasada quedó sin confirmar, en paralelo
+  const [R, pagos, pasada] = await Promise.all([
+    calcularRango(ctx, base, { desde: lunes, hasta: domingo }),
+    cargarPagos(ctx, lunes),
+    lunes === hoyLunes ? pendientesDe(ctx, base, sumarDias(lunes, -7)) : 0,
+  ]);
+  const editar = ctx.puede('remu', 'editar');
   const estadoPago = (f) => {
     const p = pagos.pago.get(f.vinculo.persona_id);
     if (!p) return { p: null, dif: 0 };
@@ -227,7 +229,7 @@ function verPago(ctx, f, p, editar) {
 async function exportarPdf(ctx, R, lunes, domingo, b) {
   b.disabled = true;
   try {
-    const { nuevoPdf } = await import('../../../core/pdf.js?v=eca84e9');
+    const { nuevoPdf } = await import('../../../core/pdf.js?v=ed8e78f');
     const pdf = await nuevoPdf(ctx, { titulo: `Pago semanal · semana ${numSemana(lunes)}`, subtitulo: `${fechaCorta(lunes)} al ${fechaCorta(domingo)} · total ${dinero(R.total)}`, horizontal: true });
     pdf.tabla({
       columnas: ['Trabajador', 'RUT', 'Modo', 'Días', 'Horas', 'Base', 'Vueltas', 'Extras', 'Descuentos', 'Total'],

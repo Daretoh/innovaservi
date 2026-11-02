@@ -3,11 +3,11 @@
 // varios días (⟶), ventana del día, detalle, formulario de trabajo (cliente, sitio sugerido, descripción, tareas,
 // fechas, horario con atajos, personas necesarias por rol, repetir) y borrar uno o toda la serie.
 // Los datos son las faenas (ope_faenas): lo que se pone aquí aparece en Planificación al armar la faena.
-import { el } from '../../../core/ui/dom.js?v=eca84e9';
-import { avisar } from '../../../core/ui/aviso.js?v=eca84e9';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=eca84e9';
-import { hhmm } from '../../../core/ui/formato.js?v=eca84e9';
-import { cargarBase } from '../datos.js?v=eca84e9';
+import { el } from '../../../core/ui/dom.js?v=ed8e78f';
+import { avisar } from '../../../core/ui/aviso.js?v=ed8e78f';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=ed8e78f';
+import { hhmm } from '../../../core/ui/formato.js?v=ed8e78f';
+import { cargarBase } from '../datos.js?v=ed8e78f';
 
 const MES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
 const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
@@ -48,21 +48,22 @@ const SVG = {
 function cargarEstilos() {
   if (document.getElementById('igcal-css')) return;
   const l = document.createElement('link');
-  l.id = 'igcal-css'; l.rel = 'stylesheet'; l.href = new URL('../calendario.css?v=eca84e9', import.meta.url).href;
+  l.id = 'igcal-css'; l.rel = 'stylesheet'; l.href = new URL('../calendario.css?v=ed8e78f', import.meta.url).href;
   document.head.append(l);
 }
 
 // Todas las faenas de la empresa (de a 1000, como InnovaGestión)
+// Todas las faenas en páginas de 1.000, pedidas de a 3 a la vez (antes una tras otra: ~1 s con 1.500 faenas)
 async function cargarFaenas(ctx) {
+  const pagina = (desde) => ctx.api.from('ope_faenas')
+    .select('id, titulo, tercero_id, sitio_id, fecha_inicio, fecha_fin, dias, hora_inicio, hora_fin, descripcion, tareas, tareas_check, dotacion, serie_id')
+    .eq('empresa_id', ctx.empresa.id).is('deleted_at', null).neq('estado', 'cancelada')
+    .order('fecha_inicio').order('id').range(desde, desde + 999);
   const todas = [];
-  for (let desde = 0; ; desde += 1000) {
-    const { data, error } = await ctx.api.from('ope_faenas')
-      .select('id, titulo, tercero_id, sitio_id, fecha_inicio, fecha_fin, dias, hora_inicio, hora_fin, descripcion, tareas, tareas_check, dotacion, serie_id')
-      .eq('empresa_id', ctx.empresa.id).is('deleted_at', null).neq('estado', 'cancelada')
-      .order('fecha_inicio').range(desde, desde + 999);
-    if (error) throw error;
-    todas.push(...data);
-    if (data.length < 1000) return todas;
+  for (let desde = 0; ; desde += 3000) {
+    const r = await Promise.all([0, 1000, 2000].map((k) => pagina(desde + k)));
+    for (const x of r) { if (x.error) throw x.error; todas.push(...x.data); }
+    if (r.some((x) => x.data.length < 1000)) return todas;
   }
 }
 
@@ -283,7 +284,7 @@ export default async function vista(ctx) {
     grid.querySelectorAll('[data-anio]').forEach((b) => b.addEventListener('click', () => { estado.anio = b.dataset.anio; render(); }));
     grid.querySelector('.igcal-bexcel').addEventListener('click', async () => {
       try {
-        const { nuevoExcel } = await import('../../../core/excel.js?v=eca84e9');
+        const { nuevoExcel } = await import('../../../core/excel.js?v=ed8e78f');
         const x = await nuevoExcel(ctx, { titulo: 'Trabajos', subtitulo: `Búsqueda: "${buscador.value.trim()}"${estado.anio ? ` · ${estado.anio}` : ''} · ${res.length} trabajos` });
         x.tabla({ columnas: [{ t: 'Fecha', tipo: 'fecha' }, { t: 'Hasta', tipo: 'fecha' }, { t: 'Días', tipo: 'numero' }, 'Cliente', 'Sitio', 'Trabajo', 'Descripción'],
           filas: [...res].reverse().map((e) => [e.fecha, evFin(e), dias(e), e.ubic, e.sitio, e.titulo, e.desc]) });

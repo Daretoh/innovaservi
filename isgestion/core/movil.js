@@ -6,10 +6,10 @@
 //   accesos: [{ id: 'taller.tablero', label: 'Taller', icono: 'auto' }, …]   pestañas de la barra (si la ruta existe)
 //   accion:  { label, icono, requiere: 'crear', abrir: (ctx) => … }           el botón "+" del centro
 // Sin accesos declarados, la barra usa los primeros apartados del menú. Siempre: Inicio al principio y Más al final.
-import { el } from './ui/dom.js?v=eca84e9';
-import { icono } from './ui/iconos.js?v=eca84e9';
-import { urlFirmada } from './adjuntos.js?v=eca84e9';
-import { nombreEmpresa } from './empresas.js?v=eca84e9';
+import { el } from './ui/dom.js?v=ed8e78f';
+import { icono } from './ui/iconos.js?v=ed8e78f';
+import { urlFirmada } from './adjuntos.js?v=ed8e78f';
+import { nombreEmpresa } from './empresas.js?v=ed8e78f';
 
 const MAX_ACCESOS = 2;
 
@@ -191,9 +191,13 @@ export function marcaGuardada(empresaId) {
 // Guarda en este navegador el nombre, color y logo (como imagen incrustada, si es liviano) de la empresa activa,
 // para la próxima bienvenida. Solo datos de la marca, nada privado.
 export async function recordarMarca(api, empresa) {
+  // Ya guardada hace menos de 12 horas con el mismo logo: no se vuelve a firmar ni descargar (la firma en R2 tardaba
+  // ~1,7 s y ocupaba una conexión en cada carga; 2026-11-02)
+  const previa = marcaGuardada(empresa.id);
+  if (previa && previa.ruta === (empresa.logo_url ?? null) && Date.now() - (previa.hora ?? 0) < 12 * 3600e3) return previa.logo;
   let logo = null;
   try { if (empresa.logo_url) logo = await logoChico(await urlFirmada(api, empresa.logo_url, 120)); } catch { /* sin logo: se muestra el nombre */ }
-  try { localStorage.setItem(CLAVE_MARCA, JSON.stringify({ id: empresa.id, nombre: nombreEmpresa(empresa), color: empresa.color || null, logo })); } catch { /* sin almacenamiento */ }
+  try { localStorage.setItem(CLAVE_MARCA, JSON.stringify({ id: empresa.id, nombre: nombreEmpresa(empresa), color: empresa.color || null, logo, ruta: empresa.logo_url ?? null, hora: Date.now() })); } catch { /* sin almacenamiento */ }
   return logo;
 }
 
