@@ -1,24 +1,27 @@
 // Carga lo necesario para calcular pagos de la empresa activa en un rango.
-import { calcular, sueldoDelMes, semanaEnMes } from './calculo.js?v=d312ed8';
-import { sumarDias, rangoMes, lunesDe } from '../../core/ui/formato.js?v=d312ed8';
+import { calcular, sueldoDelMes, semanaEnMes } from './calculo.js?v=ed9463e';
+import { sumarDias, rangoMes, lunesDe } from '../../core/ui/formato.js?v=ed9463e';
 
 export const nombreCompleto = (p) => [p.nombres, p.apellido_paterno, p.apellido_materno].filter(Boolean).join(' ');
 
 export async function cargarBase(ctx) {
   const e = ctx.empresa.id;
-  const [vinculos, condiciones, cargos, config] = await Promise.all([
+  const [vinculos, condiciones, cargos, config, licencias] = await Promise.all([
     ctx.api.from('persona_empresa').select('id, persona_id, estado, tipo_vinculo, cargo, personas(id, rut, nombres, apellido_paterno, apellido_materno)')
       .eq('empresa_id', e).is('deleted_at', null),
     ctx.api.from('remu_condiciones').select('*').eq('empresa_id', e),
     ctx.api.from('remu_cargos').select('*').eq('empresa_id', e).order('orden').order('nombre'),
     ctx.api.from('remu_config').select('*').eq('empresa_id', e).maybeSingle(),
+    // Licencias médicas (núcleo 017): días que no se pagan a los fijos
+    ctx.api.from('licencias').select('persona_id, tipo, desde, hasta').eq('empresa_id', e).is('deleted_at', null),
   ]);
   for (const r of [vinculos, condiciones, cargos, config]) if (r.error) throw r.error;
   const porVinculo = new Map(condiciones.data.map((c) => [c.vinculo_id, c]));
+  const licDe = (pid) => (licencias.data ?? []).filter((l) => l.persona_id === pid);
   // Un vínculo por persona (el activo primero)
   const vistos = new Map();
   for (const v of [...vinculos.data].sort((a, b) => (a.estado === 'activo' ? -1 : 1) - (b.estado === 'activo' ? -1 : 1))) {
-    if (!vistos.has(v.persona_id)) vistos.set(v.persona_id, { ...v, condicion: porVinculo.get(v.id) ?? null });
+    if (!vistos.has(v.persona_id)) vistos.set(v.persona_id, { ...v, condicion: porVinculo.get(v.id) ?? null, licencias: licDe(v.persona_id) });
   }
   // Socios de la empresa (remu_condiciones.socio): fuera de los pagos; Condiciones los muestra en `todos`
   const todos = [...vistos.values()];

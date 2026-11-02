@@ -2262,3 +2262,14 @@ a.tar2-fila, a.tar2-fila:hover { text-decoration: none; color: var(--texto); }
 .cierre-remu { gap: 12px; }
 .cierre-tabla td:first-child { min-width: 250px; }
 .cierre-tabla td:first-child .cierre-nombre a { white-space: nowrap; }
+
+/* Licencias médicas (core/licencias.js) */
+.lic-lista { display: flex; flex-direction: column; gap: 10px; }
+.lic-fila { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border: 1px solid var(--borde); border-radius: var(--radio); background: var(--superficie); }
+.lic-cab { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.lic-acc { margin-left: auto; display: flex; gap: 6px; align-items: center; }
+.lic-archivos { display: flex; flex-wrap: wrap; gap: 6px; }
+.lic-archivo { display: inline-flex; align-items: center; gap: 6px; max-width: 260px; padding: 4px 10px; border: 1px solid var(--borde); border-radius: 999px; background: var(--fondo-sutil); color: var(--texto); font: inherit; font-size: 13px; cursor: pointer; }
+.lic-archivo span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lic-archivo:hover { border-color: var(--empresa); color: var(--empresa); }
+.lic-caja { display: flex; flex-direction: column; gap: 14px; max-width: 760px; height: fit-content; max-height: 100%; margin: auto 0; }

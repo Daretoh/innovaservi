@@ -1,11 +1,11 @@
 // Matriz de trabajos: plantillas de lo que hay que llevar (EPP, herramientas, maquinaria, materiales)
 // por cliente y sitio. Una matriz sin cliente sirve para cualquiera; sin sitio, para todos los sitios del cliente.
-import { el } from '../../../core/ui/dom.js?v=d312ed8';
-import { icono } from '../../../core/ui/iconos.js?v=d312ed8';
-import { boton } from '../../../core/ui/tabla.js?v=d312ed8';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=d312ed8';
-import { avisar } from '../../../core/ui/aviso.js?v=d312ed8';
-import { cargarBase } from '../datos.js?v=d312ed8';
+import { el } from '../../../core/ui/dom.js?v=ed9463e';
+import { icono } from '../../../core/ui/iconos.js?v=ed9463e';
+import { boton } from '../../../core/ui/tabla.js?v=ed9463e';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=ed9463e';
+import { avisar } from '../../../core/ui/aviso.js?v=ed9463e';
+import { cargarBase } from '../datos.js?v=ed9463e';
 
 export const TIPOS_ITEM = [['epp', 'EPP'], ['herramienta', 'Herramientas'], ['maquinaria', 'Maquinaria'], ['material', 'Materiales']];
 

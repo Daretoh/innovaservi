@@ -1,11 +1,13 @@
-// Salidas a atención médica por malestar (no laboral): registro y documento con membrete para firmar.
-import { el } from '../../../core/ui/dom.js?v=d312ed8';
-import { listado, boton } from '../../../core/ui/tabla.js?v=d312ed8';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=d312ed8';
-import { avisar } from '../../../core/ui/aviso.js?v=d312ed8';
-import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=d312ed8';
-import { hoyISO, fechaLarga, hhmm } from '../../../core/ui/formato.js?v=d312ed8';
-import { SINTOMAS, TRASLADOS, cargarPersonas } from '../datos.js?v=d312ed8';
+// Salidas a atención médica por malestar (no laboral): registro y documento con membrete para firmar. Desde aquí se
+// registra la licencia médica con sus archivos (core/licencias.js), que queda también en la ficha del trabajador.
+import { el } from '../../../core/ui/dom.js?v=ed9463e';
+import { listado, boton } from '../../../core/ui/tabla.js?v=ed9463e';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=ed9463e';
+import { avisar } from '../../../core/ui/aviso.js?v=ed9463e';
+import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=ed9463e';
+import { hoyISO, fechaLarga, hhmm } from '../../../core/ui/formato.js?v=ed9463e';
+import { SINTOMAS, TRASLADOS, cargarPersonas } from '../datos.js?v=ed9463e';
+import { cargarLicencias, ventanaLicencias, formularioLicencia, diasLicencia, puedeLicencias } from '../../../core/licencias.js?v=ed9463e';
 
 const ahora = () => { const d = new Date(); return `${String(d.getHours()).padStart(2, '0')}:${String(Math.floor(d.getMinutes() / 5) * 5).padStart(2, '0')}`; };
 
@@ -16,6 +18,8 @@ export default async function vista(ctx) {
   ]);
   if (error) throw error;
   const editable = ctx.puede('sst', 'editar');
+  const licencias = await cargarLicencias(ctx, { salidaIds: data.map((s) => s.id) }).catch(() => []);
+  const licDe = (s) => licencias.filter((l) => l.salida_id === s.id);
 
   const acciones = ctx.puede('sst', 'crear') ? [boton('Nueva salida', { icono: 'mas', tipo: 'primario', onclick: () => formulario(ctx, null, personas) })] : [];
   const lista = listado({
@@ -32,6 +36,17 @@ export default async function vista(ctx) {
       { titulo: 'Documento', valor: (s) => el('div', { class: 'acciones-fila' },
         s.pdf_ruta ? boton('Ver PDF', { icono: 'ojo', onclick: () => abrirPdf(ctx, s.pdf_ruta) }) : el('span', { class: 'chip chip-pend' }, 'Sin PDF'),
         editable ? boton(s.pdf_ruta ? 'Rehacer' : 'Generar', { icono: 'descargar', onclick: (ev) => generar(ctx, s, personas, ev.currentTarget) }) : null) },
+      { titulo: 'Licencia', valor: (s) => {
+        const ls = licDe(s);
+        const nombre = personas.de.get(s.persona_id)?.nombre ?? 'Persona';
+        if (ls.length) {
+          const dias = ls.reduce((n, l) => n + diasLicencia(l), 0); const archivos = ls.reduce((n, l) => n + l.archivos.length, 0);
+          return boton(`${dias} día${dias === 1 ? '' : 's'}${ls.length > 1 ? ` (${ls.length} licencias)` : ''} · ${archivos} archivo${archivos === 1 ? '' : 's'}`, { icono: 'documento', onclick: () => ventanaLicencias(ctx, { salida: s, nombre, alCambiar: () => ctx.refrescar() }) });
+        }
+        return puedeLicencias(ctx, 'crear')
+          ? boton('Registrar licencia', { icono: 'mas', onclick: () => formularioLicencia(ctx, { personaId: s.persona_id, salidaId: s.id, desde: s.fecha, alGuardar: () => ctx.refrescar() }) })
+          : el('span', { class: 'texto-suave' }, 'Sin licencia');
+      } },
     ],
   });
   lista.append(el('p', { class: 'texto-suave texto-chico' }, 'Para malestar no relacionado con el trabajo. Si el malestar tiene origen laboral, regístralo en Accidentes e incidentes y haz la denuncia al organismo administrador.'));
@@ -46,7 +61,7 @@ async function abrirPdf(ctx, ruta) {
 async function generar(ctx, s, personas, b) {
   if (b) b.disabled = true;
   try {
-    const { pdfSalida } = await import('../documentos.js?v=d312ed8');
+    const { pdfSalida } = await import('../documentos.js?v=ed9463e');
     const doc = await pdfSalida(ctx, s, personas.de.get(s.persona_id));
     const archivo = new File([doc.output('blob')], `salida-medica-${s.fecha}.pdf`, { type: 'application/pdf' });
     const { ruta } = await subirArchivo(ctx.api, { empresaId: ctx.empresa.id, modulo: 'sst', archivo, tabla: 'sst_salidas', registroId: s.id });

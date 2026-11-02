@@ -1,14 +1,15 @@
 // Ficha de un trabajador: documentación (con archivos privados) y datos personales.
 // Ruta: #/rrhh.ficha?p=<persona_id>
-import { el } from '../../../core/ui/dom.js?v=d312ed8';
-import { icono } from '../../../core/ui/iconos.js?v=d312ed8';
-import { boton } from '../../../core/ui/tabla.js?v=d312ed8';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=d312ed8';
-import { leerVence } from '../../../core/ui/leer-vence.js?v=d312ed8';
-import { avisar } from '../../../core/ui/aviso.js?v=d312ed8';
-import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=d312ed8';
-import { cargarActividad, resumen, panelActividad } from '../actividad.js?v=d312ed8';
-import { cargarRrhh, cumplimiento, estadoDoc, chipEstado, avatar, nombreCompleto, nivel, VINCULOS, nombreVinculo } from '../datos.js?v=d312ed8';
+import { el } from '../../../core/ui/dom.js?v=ed9463e';
+import { icono } from '../../../core/ui/iconos.js?v=ed9463e';
+import { boton } from '../../../core/ui/tabla.js?v=ed9463e';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=ed9463e';
+import { leerVence } from '../../../core/ui/leer-vence.js?v=ed9463e';
+import { avisar } from '../../../core/ui/aviso.js?v=ed9463e';
+import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=ed9463e';
+import { cargarActividad, resumen, panelActividad } from '../actividad.js?v=ed9463e';
+import { cargarLicencias, filaLicencia, formularioLicencia, diasLicencia, puedeLicencias } from '../../../core/licencias.js?v=ed9463e';
+import { cargarRrhh, cumplimiento, estadoDoc, chipEstado, avatar, nombreCompleto, nivel, VINCULOS, nombreVinculo } from '../datos.js?v=ed9463e';
 
 const TIPOS_ARCHIVO = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
 const MAX_ARCHIVO = 10 * 1024 * 1024;
@@ -28,7 +29,7 @@ export default async function vista(ctx) {
   const p = v.personas;
   const c = cumplimiento(datos, personaId);
 
-  const pestanas = [['docs', 'Documentación'], ['actividad', 'Actividad'], ['datos', 'Datos personales']];
+  const pestanas = [['docs', 'Documentación'], ['licencias', 'Licencias'], ['actividad', 'Actividad'], ['datos', 'Datos personales']];
   const barra = el('div', { class: 'pestanas', role: 'tablist' }, pestanas.map(([id, t]) =>
     el('button', {
       type: 'button', role: 'tab', 'aria-selected': String(pestana === id),
@@ -52,9 +53,25 @@ export default async function vista(ctx) {
         el('span', { class: `chip ${v.estado === 'activo' ? 'chip-ok' : 'chip-na'}` }, v.estado === 'activo' ? 'Activo' : 'Inactivo'))),
     barra,
     pestana === 'docs' ? documentacion(ctx, datos, v)
+      : pestana === 'licencias' ? await licencias(ctx, personaId)
       : pestana === 'actividad' ? panelActividad(resumen((await cargarActividad(ctx, { persona: personaId })).get(personaId)))
         : datosPersonales(ctx, v),
   );
+}
+
+// ---------------------------------------------------------------- Licencias (core/licencias.js)
+
+async function licencias(ctx, personaId) {
+  const lista = await cargarLicencias(ctx, { personaId });
+  const anio = String(new Date().getFullYear());
+  const delAnio = lista.filter((l) => l.desde.startsWith(anio)).reduce((n, l) => n + diasLicencia(l), 0);
+  return el('div', { class: 'ficha doc-grupo' },
+    el('div', { class: 'listado-cabecera' },
+      el('div', {}, el('h2', {}, 'Licencias médicas'),
+        el('p', { class: 'texto-suave texto-chico' }, lista.length ? `${lista.length} licencia${lista.length === 1 ? '' : 's'} · ${delAnio} día${delAnio === 1 ? '' : 's'} en ${anio}` : 'Se registran desde Prevención → Salidas médicas (con sus archivos) o aquí.')),
+      puedeLicencias(ctx, 'crear') ? boton('Registrar licencia', { icono: 'mas', onclick: () => formularioLicencia(ctx, { personaId, alGuardar: () => ctx.refrescar() }) }) : null),
+    lista.length ? el('div', { class: 'lic-lista' }, lista.map((l) => filaLicencia(ctx, l, () => ctx.refrescar())))
+      : el('p', { class: 'texto-suave' }, 'Sin licencias.'));
 }
 
 // ---------------------------------------------------------------- Documentación
@@ -105,7 +122,7 @@ function filaDoc(ctx, tipo, doc, v, puede) {
         type: 'button', class: 'boton-icono', title: 'Generar con el formato de la empresa', 'aria-label': `Generar ${tipo.nombre}`,
         onclick: async () => {
           try {
-            const { generarParaTrabajador, sePuedeGenerar } = await import('../../documentos/integracion.js?v=d312ed8');
+            const { generarParaTrabajador, sePuedeGenerar } = await import('../../documentos/integracion.js?v=ed9463e');
             if (!sePuedeGenerar(ctx, tipo.slug)) { avisar('No hay formato para este documento.', 'error'); return; }
             await generarParaTrabajador(ctx, tipo.slug, v.persona_id);
           } catch (err) { avisar(err.message, 'error'); }

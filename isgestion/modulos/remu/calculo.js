@@ -7,7 +7,7 @@
 // - Registros que se pisan el mismo día se unen (el tiempo repetido cuenta una vez).
 // - Vueltas × valor (propio o general). Extras y descuentos por semana.
 // - Ajuste contable por día: reemplaza el monto de ese día (se muestra real y contable).
-import { aMin, diaSemana, sumarDias } from '../../core/ui/formato.js?v=d312ed8';
+import { aMin, diaSemana, sumarDias } from '../../core/ui/formato.js?v=ed9463e';
 
 // Intervalos [inicio, fin] en minutos del día; si la salida es <= entrada, termina al día siguiente.
 function intervalo(h) {
@@ -163,13 +163,32 @@ export function calcular(D) {
 
 // Días a liquidar de un fijo en el mes (mes comercial de 30 días): 30, o desde el día en que rige hasta el 30 si
 // empieza a mitad de mes (rige desde la fecha más tardía entre fijo_desde y sueldo_desde); 0 antes de que rija.
+// Menos los días de licencia médica del mes (los paga la ISAPRE, FONASA o la mutual; núcleo 017).
 export function diasDelMes(fila, mes) {
   const c = fila.condicion;
   if (fila.modo !== 'fijo') return 0;
   const desde = [c?.fijo_desde, c?.sueldo_desde].filter(Boolean).map(String).sort().pop();
   if (desde && mes < desde.slice(0, 7)) return 0;
-  if (desde && mes === desde.slice(0, 7)) return Math.max(1, 30 - Math.min(30, Number(desde.slice(8, 10))) + 1);
-  return 30;
+  const dias = desde && mes === desde.slice(0, 7) ? Math.max(1, 30 - Math.min(30, Number(desde.slice(8, 10))) + 1) : 30;
+  return Math.max(0, dias - diasLicenciaMes(fila.vinculo?.licencias ?? fila.licencias, mes, desde));
+}
+
+// Días de licencia de un fijo en el mes, en mes comercial: el 31 no cuenta y un mes completo con licencia son todos
+// sus días a liquidar (también en febrero). desde: día en que rige su sueldo (antes no se liquida).
+export function diasLicenciaMes(licencias, mes, desde = null) {
+  if (!licencias?.length) return 0;
+  const [a, m] = mes.split('-').map(Number);
+  const ultimo = new Date(a, m, 0).getDate();
+  const cubiertos = new Set();
+  for (const l of licencias) {
+    for (let d = 1; d <= ultimo; d++) {
+      const f = `${mes}-${String(d).padStart(2, '0')}`;
+      if (f >= l.desde && f <= l.hasta) cubiertos.add(d);
+    }
+  }
+  if (cubiertos.size === ultimo) return 30;
+  const ini = desde && desde.slice(0, 7) === mes ? Number(desde.slice(8, 10)) : 1;
+  return [...cubiertos].filter((d) => d <= 30 && d >= ini).length;
 }
 
 // Sueldo base del mes para un fijo: proporcional a los días a liquidar (sueldo ÷ 30 × días, como una liquidación).
