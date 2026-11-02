@@ -1,11 +1,11 @@
 // Partes de trabajo: listado, pendientes de clientes que piden informe y creación desde las faenas.
-import { el } from '../../../core/ui/dom.js?v=4952823';
-import { icono } from '../../../core/ui/iconos.js?v=4952823';
-import { listado, boton } from '../../../core/ui/tabla.js?v=4952823';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=4952823';
-import { avisar } from '../../../core/ui/aviso.js?v=4952823';
-import { hoyISO, sumarDias, fechaLarga } from '../../../core/ui/formato.js?v=4952823';
-import { faenasSinParte, nombreTercero } from '../datos.js?v=4952823';
+import { el } from '../../../core/ui/dom.js?v=58585c2';
+import { icono } from '../../../core/ui/iconos.js?v=58585c2';
+import { listado, boton } from '../../../core/ui/tabla.js?v=58585c2';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=58585c2';
+import { avisar } from '../../../core/ui/aviso.js?v=58585c2';
+import { hoyISO, sumarDias, fechaLarga } from '../../../core/ui/formato.js?v=58585c2';
+import { faenasSinParte, nombreTercero } from '../datos.js?v=58585c2';
 
 let estado = 'todos';
 
@@ -58,6 +58,12 @@ export default async function vista(ctx) {
 async function nuevo(ctx, preseleccion) {
   const disponibles = await faenasSinParte(ctx, sumarDias(hoyISO(), -45), sumarDias(hoyISO(), 14));
   const { data: clientes } = await ctx.api.from('terceros').select('id, razon_social, nombre_fantasia').eq('empresa_id', ctx.empresa.id).contains('tipo', ['cliente']).is('deleted_at', null).order('razon_social');
+  // La faena desde la que se creó va primera (marcada) y luego las del mismo cliente: antes quedaba marcada al fondo
+  // de la lista, detrás de las futuras, y parecía que no se había elegido (Enzo, 2026-11-02)
+  if (preseleccion) {
+    const k = (f) => (f.id === preseleccion.id && f.fecha === preseleccion.fecha ? 0 : f.tercero_id === preseleccion.tercero_id ? 1 : 2);
+    disponibles.sort((a, b) => k(a) - k(b));
+  }
   abrirFormulario({
     titulo: 'Nuevo parte de trabajo',
     mensaje: 'Elige una o varias faenas-día del mismo cliente (un parte consolidado), o deja sin faenas y elige el cliente.',

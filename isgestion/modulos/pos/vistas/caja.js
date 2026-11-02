@@ -1,12 +1,12 @@
 // Caja del día: abrir con efectivo inicial, ver el efectivo que entró (ventas del POS y cobros del Taller),
 // cerrar contando el efectivo (la base calcula el esperado y la diferencia) y reabrir (permiso aprobar).
 // Abajo, las cajas del mes con su diferencia.
-import { el } from '../../../core/ui/dom.js?v=4952823';
-import { icono } from '../../../core/ui/iconos.js?v=4952823';
-import { boton } from '../../../core/ui/tabla.js?v=4952823';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=4952823';
-import { avisar } from '../../../core/ui/aviso.js?v=4952823';
-import { dinero, fechaLarga, hoyISO, diaLocal, rangoMes } from '../../../core/ui/formato.js?v=4952823';
+import { el } from '../../../core/ui/dom.js?v=58585c2';
+import { icono } from '../../../core/ui/iconos.js?v=58585c2';
+import { boton } from '../../../core/ui/tabla.js?v=58585c2';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=58585c2';
+import { avisar } from '../../../core/ui/aviso.js?v=58585c2';
+import { dinero, fechaLarga, hoyISO, diaLocal, rangoMes } from '../../../core/ui/formato.js?v=58585c2';
 
 const estado = { dia: hoyISO() };
 

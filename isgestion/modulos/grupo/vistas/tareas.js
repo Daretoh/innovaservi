@@ -4,17 +4,17 @@
 // lista unida con la empresa de cada tarea. Las tarjetas y tablas filtran la lista. Desde aquí se trabaja igual que en
 // Tareas: crear (eligiendo la empresa), abrir el detalle (estado, datos, seguimiento, @menciones, recordar, archivos)
 // y los avisos de todas las empresas; cada acción usa los permisos del usuario en la empresa de la tarea.
-import { el } from '../../../core/ui/dom.js?v=4952823';
-import { icono } from '../../../core/ui/iconos.js?v=4952823';
-import { fechaCorta, fechaLarga, diaLocal } from '../../../core/ui/formato.js?v=4952823';
-import { boton } from '../../../core/ui/tabla.js?v=4952823';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=4952823';
-import { avisar } from '../../../core/ui/aviso.js?v=4952823';
-import { nombreEmpresa } from '../../../core/empresas.js?v=4952823';
-import { CATEGORIAS, nombreCategoria, nombrePrioridad, nombreEstado, CHIP_ESTADO, CHIP_PRIO, prioridad, ordenar, diasHasta, diasAbierta, diasQuieta } from '../../tareas/datos.js?v=4952823';
-import { abrirDetalle } from '../../tareas/vistas/detalle.js?v=4952823';
-import { nuevaTarea, SELECT_TAREA } from '../../tareas/vistas/nueva.js?v=4952823';
-import { empresasCon, ctxDe, marcaEmpresa, enlaceEmpresa } from '../empresas.js?v=4952823';
+import { el } from '../../../core/ui/dom.js?v=58585c2';
+import { icono } from '../../../core/ui/iconos.js?v=58585c2';
+import { fechaCorta, fechaLarga, diaLocal } from '../../../core/ui/formato.js?v=58585c2';
+import { boton } from '../../../core/ui/tabla.js?v=58585c2';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=58585c2';
+import { avisar } from '../../../core/ui/aviso.js?v=58585c2';
+import { nombreEmpresa } from '../../../core/empresas.js?v=58585c2';
+import { CATEGORIAS, nombreCategoria, nombrePrioridad, nombreEstado, CHIP_ESTADO, CHIP_PRIO, prioridad, ordenar, diasHasta, diasAbierta, diasQuieta } from '../../tareas/datos.js?v=58585c2';
+import { abrirDetalle } from '../../tareas/vistas/detalle.js?v=58585c2';
+import { nuevaTarea, SELECT_TAREA } from '../../tareas/vistas/nueva.js?v=58585c2';
+import { empresasCon, ctxDe, marcaEmpresa, enlaceEmpresa } from '../empresas.js?v=58585c2';
 
 const filtro = { ver: 'abiertas', empresa: '', persona: '', categoria: '', texto: '', orden: 'prioridad' };
 const VISTAS = [['abiertas', 'Abiertas'], ['vencidas', 'Vencidas'], ['semana', 'Vencen esta semana'], ['quietas', 'Sin movimiento'], ['hechas', 'Terminadas (30 días)']];
