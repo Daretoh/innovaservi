@@ -1,33 +1,43 @@
 // Partes de trabajo: listado, pendientes de clientes que piden informe y creación desde las faenas.
-import { el } from '../../../core/ui/dom.js?v=58585c2';
-import { icono } from '../../../core/ui/iconos.js?v=58585c2';
-import { listado, boton } from '../../../core/ui/tabla.js?v=58585c2';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=58585c2';
-import { avisar } from '../../../core/ui/aviso.js?v=58585c2';
-import { hoyISO, sumarDias, fechaLarga } from '../../../core/ui/formato.js?v=58585c2';
-import { faenasSinParte, nombreTercero } from '../datos.js?v=58585c2';
+import { el } from '../../../core/ui/dom.js?v=a2dff54';
+import { icono } from '../../../core/ui/iconos.js?v=a2dff54';
+import { listado, boton } from '../../../core/ui/tabla.js?v=a2dff54';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=a2dff54';
+import { avisar } from '../../../core/ui/aviso.js?v=a2dff54';
+import { hoyISO, sumarDias, fechaLarga } from '../../../core/ui/formato.js?v=a2dff54';
+import { faenasSinParte, nombreTercero } from '../datos.js?v=a2dff54';
 
 let estado = 'todos';
+// El filtro Todos / Borradores / Confirmados repinta con lo ya cargado (antes volvía a pedir todo y tardaba 2–3 s sin
+// cambiar la pantalla: parecía que no funcionaba; Enzo, 2026-11-02)
+let cache = null;
+let soloPintar = false;
 
-export default async function vista(ctx) {
-  let q = ctx.api.from('rep_partes')
-    .select('id, fecha, estado, lugar, terceros(razon_social, nombre_fantasia), rep_parte_faenas(fecha, ope_faenas(titulo)), rep_media(id)')
-    .eq('empresa_id', ctx.empresa.id).is('deleted_at', null).order('fecha', { ascending: false }).limit(300);
-  if (estado !== 'todos') q = q.eq('estado', estado);
-  const [partes, pideInforme] = await Promise.all([
-    q,
+async function cargar(ctx) {
+  const reusar = soloPintar && cache?.empresa === ctx.empresa.id;
+  soloPintar = false;
+  if (reusar) return cache;
+  const [partes, pideInforme, sinParte] = await Promise.all([
+    ctx.api.from('rep_partes')
+      .select('id, fecha, estado, lugar, terceros(razon_social, nombre_fantasia), rep_parte_faenas(fecha, ope_faenas(titulo)), rep_media(id)')
+      .eq('empresa_id', ctx.empresa.id).is('deleted_at', null).order('fecha', { ascending: false }).limit(500),
     ctx.api.from('ope_clientes').select('tercero_id').eq('empresa_id', ctx.empresa.id).eq('pide_informe', true),
+    faenasSinParte(ctx, sumarDias(hoyISO(), -30), hoyISO()),
   ]);
   if (partes.error) throw partes.error;
-
   // Faenas ya hechas (últimos 30 días) que llevan informe (marcado en la faena o, si no, por su cliente) y aún no tienen parte
   const clientesInforme = new Set((pideInforme.data ?? []).map((c) => c.tercero_id));
-  const pendientes = (await faenasSinParte(ctx, sumarDias(hoyISO(), -30), hoyISO()))
-    .filter((f) => f.pide_informe ?? clientesInforme.has(f.tercero_id));
+  cache = { empresa: ctx.empresa.id, partes: partes.data, pendientes: sinParte.filter((f) => f.pide_informe ?? clientesInforme.has(f.tercero_id)) };
+  return cache;
+}
+
+export default async function vista(ctx) {
+  const { partes: todas, pendientes } = await cargar(ctx);
+  const partes = { data: estado === 'todos' ? todas : todas.filter((p) => p.estado === estado) };
 
   const segmento = el('div', { class: 'segmento', role: 'group', 'aria-label': 'Estado' },
-    [['todos', 'Todos'], ['borrador', 'Borradores'], ['confirmado', 'Confirmados']].map(([v, t]) =>
-      el('button', { type: 'button', 'aria-pressed': String(estado === v), onclick: () => { estado = v; ctx.refrescar(); } }, t)));
+    [['todos', `Todos (${todas.length})`], ['borrador', `Borradores (${todas.filter((p) => p.estado === 'borrador').length})`], ['confirmado', `Confirmados (${todas.filter((p) => p.estado === 'confirmado').length})`]].map(([v, t]) =>
+      el('button', { type: 'button', 'aria-pressed': String(estado === v), onclick: () => { estado = v; soloPintar = true; ctx.refrescar(); } }, t)));
 
   const acciones = [segmento];
   if (ctx.puede('reportes', 'crear')) acciones.push(boton('Nuevo parte', { icono: 'mas', tipo: 'primario', onclick: () => nuevo(ctx, null) }));

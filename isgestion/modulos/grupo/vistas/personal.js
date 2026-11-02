@@ -1,11 +1,11 @@
 // Grupo → Personal del grupo: cada persona una vez (por RUT), con su vínculo en cada empresa: fijo o spot, cargo,
 // sueldo base (si se ven Remuneraciones), socio o inactivo. El estado en cada empresa abre su ficha allí.
-import { el } from '../../../core/ui/dom.js?v=58585c2';
-import { icono } from '../../../core/ui/iconos.js?v=58585c2';
-import { dinero } from '../../../core/ui/formato.js?v=58585c2';
-import { nombreEmpresa } from '../../../core/empresas.js?v=58585c2';
-import { nombreCompleto } from '../../remu/datos.js?v=58585c2';
-import { empresasCon, marcaEmpresa, enlaceEmpresa } from '../empresas.js?v=58585c2';
+import { el } from '../../../core/ui/dom.js?v=a2dff54';
+import { icono } from '../../../core/ui/iconos.js?v=a2dff54';
+import { dinero } from '../../../core/ui/formato.js?v=a2dff54';
+import { nombreEmpresa } from '../../../core/empresas.js?v=a2dff54';
+import { nombreCompleto } from '../../remu/datos.js?v=a2dff54';
+import { empresasCon, marcaEmpresa, enlaceEmpresa } from '../empresas.js?v=a2dff54';
 
 const filtro = { ver: 'activos', texto: '' };
 
