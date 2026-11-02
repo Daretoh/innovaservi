@@ -41,15 +41,22 @@ export async function cargarConfig(ctx) {
   return data ?? { validez_dias: 7, pago: [], contactos: [] };
 }
 
-// Catálogo para sugerir descripciones y precios: lista del cliente primero, luego servicios del taller
+// Catálogo para sugerir descripciones y precios: lista del cliente primero, luego servicios del taller y al final
+// los productos del Catálogo de equipamiento (si la empresa lo tiene)
 export async function cargarCatalogo(ctx, terceroId) {
-  const [precios, servicios] = await Promise.all([
+  const [precios, servicios, equipos] = await Promise.all([
     terceroId ? ctx.api.from('cot_precios').select('*').eq('tercero_id', terceroId) : Promise.resolve({ data: [] }),
     ctx.puede('taller', 'ver') ? ctx.api.from('tal_servicios').select('*').eq('empresa_id', ctx.empresa.id).eq('activo', true).order('orden') : Promise.resolve({ data: [] }),
+    ctx.puede('catalogo', 'ver') ? ctx.api.from('cat_productos').select('nombre, precio, seccion, cat_marcas(nombre)').eq('empresa_id', ctx.empresa.id)
+      .eq('activo', true).is('deleted_at', null).order('orden') : Promise.resolve({ data: [] }),
   ]);
   const cliente = new Map((precios.data ?? []).map((p) => [p.descripcion.toLowerCase(), p]));
   const taller = new Map((servicios.data ?? []).map((s) => [s.nombre.toLowerCase(), s]));
-  const nombres = [...new Set([...(precios.data ?? []).map((p) => p.descripcion), ...(servicios.data ?? []).map((s) => s.nombre)])];
+  const equipo = new Map((equipos.data ?? []).map((p) => [p.nombre.toLowerCase(), p]));
+  const nombres = [...new Set([...(precios.data ?? []).map((p) => p.descripcion), ...(servicios.data ?? []).map((s) => s.nombre), ...(equipos.data ?? []).map((p) => p.nombre)])];
+  // Texto de ayuda en la lista de sugerencias (solo productos del catálogo: marca y sección)
+  const ayuda = new Map((equipos.data ?? []).filter((p) => !taller.has(p.nombre.toLowerCase()))
+    .map((p) => [p.nombre, ['Catálogo', p.cat_marcas?.nombre, p.seccion].filter(Boolean).join(' · ')]));
   // Precio sugerido para una descripción y talla (null si no hay)
   const precio = (desc, talla) => {
     const k = (desc ?? '').trim().toLowerCase();
@@ -57,9 +64,10 @@ export async function cargarCatalogo(ctx, terceroId) {
     const p = cliente.get(k);
     if (p) return p[`precio_${t}`] ?? p.precio ?? null;
     const s = taller.get(k);
-    return s ? s[`precio_${t}`] ?? null : null;
+    if (s) return s[`precio_${t}`] ?? null;
+    return equipo.get(k)?.precio ?? null;
   };
-  return { nombres, precio, tieneLista: cliente.size > 0, taller: servicios.data ?? [] };
+  return { nombres, ayuda, precio, tieneLista: cliente.size > 0, taller: servicios.data ?? [] };
 }
 
 export async function siguienteNumero(ctx) {

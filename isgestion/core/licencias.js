@@ -4,13 +4,13 @@
 // (común) o la mutual (laboral), no la empresa.
 // Archivos en `adjuntos` (tabla 'licencias'): van a la carpeta de RRHH si quien sube puede crear en RRHH (así RRHH los
 // abre), si no a la de SST.
-import { el } from './ui/dom.js?v=4343d6d';
-import { icono } from './ui/iconos.js?v=4343d6d';
-import { boton } from './ui/tabla.js?v=4343d6d';
-import { abrirFormulario } from './ui/modal.js?v=4343d6d';
-import { avisar } from './ui/aviso.js?v=4343d6d';
-import { fechaLarga, hoyISO } from './ui/formato.js?v=4343d6d';
-import { subirArchivo, urlFirmada } from './adjuntos.js?v=4343d6d';
+import { el } from './ui/dom.js?v=53d5117';
+import { icono } from './ui/iconos.js?v=53d5117';
+import { boton } from './ui/tabla.js?v=53d5117';
+import { abrirFormulario } from './ui/modal.js?v=53d5117';
+import { avisar } from './ui/aviso.js?v=53d5117';
+import { fechaLarga, hoyISO } from './ui/formato.js?v=53d5117';
+import { subirArchivo, urlFirmada } from './adjuntos.js?v=53d5117';
 
 export const TIPOS_LICENCIA = [
   ['comun', 'Enfermedad común', 'Paga la ISAPRE o FONASA (si es de 10 días o menos, los 3 primeros no se pagan)'],

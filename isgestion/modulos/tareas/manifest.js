@@ -8,7 +8,7 @@ export default {
   rubros: ['todos'],
   acciones: ['ver', 'crear', 'editar', 'eliminar', 'exportar'],
   menu: [
-    { id: 'tareas.lista', label: 'Tareas', vista: () => import('./vistas/lista.js?v=4343d6d') },
+    { id: 'tareas.lista', label: 'Tareas', vista: () => import('./vistas/lista.js?v=53d5117') },
   ],
   config: {},
   migraciones: ['db/001_tareas.sql', 'db/002_v2.sql', 'db/003_categorias.sql'],
