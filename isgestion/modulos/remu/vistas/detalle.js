@@ -3,14 +3,14 @@
 // tiene varias y la suma cuadra) y se guardan al salir del campo; extras y descuentos se editan en la lista.
 // El ajuste contable (real vs. contable) es una opción de la empresa (Parámetros); apagada, se paga lo calculado.
 // Rutas: #/remu.detalle?p=<persona_id>&s=<lunes> (semanal) · #/remu.detalle?p=<persona_id>&m=<aaaa-mm> (mensual)
-import { el } from '../../../core/ui/dom.js?v=ed9463e';
-import { icono } from '../../../core/ui/iconos.js?v=ed9463e';
-import { boton } from '../../../core/ui/tabla.js?v=ed9463e';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=ed9463e';
-import { avisar } from '../../../core/ui/aviso.js?v=ed9463e';
-import { dinero, horas, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, hhmm, hoyISO, rangoMes, moverMes, nombreMes } from '../../../core/ui/formato.js?v=ed9463e';
-import { cargarBase, calcularRango, pagoMensual, nombreCompleto } from '../datos.js?v=ed9463e';
-import { sueldoDelMes, semanaEnMes } from '../calculo.js?v=ed9463e';
+import { el } from '../../../core/ui/dom.js?v=5aa6d16';
+import { icono } from '../../../core/ui/iconos.js?v=5aa6d16';
+import { boton } from '../../../core/ui/tabla.js?v=5aa6d16';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=5aa6d16';
+import { avisar } from '../../../core/ui/aviso.js?v=5aa6d16';
+import { dinero, horas, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, hhmm, hoyISO, rangoMes, moverMes, nombreMes } from '../../../core/ui/formato.js?v=5aa6d16';
+import { cargarBase, calcularRango, pagoMensual, nombreCompleto } from '../datos.js?v=5aa6d16';
+import { sueldoDelMes, semanaEnMes } from '../calculo.js?v=5aa6d16';
 
 export default async function vista(ctx) {
   const personaId = ctx.params.p;
@@ -98,7 +98,7 @@ export default async function vista(ctx) {
   const items = (f?.items ?? []).map((it) => {
     const tipo = el('span', { class: `chip ${it.tipo === 'extra' ? 'chip-ok' : 'chip-venc'}` }, it.tipo === 'extra' ? 'Extra' : 'Descuento');
     if (!editarItems) {
-      return el('div', { class: 'doc-fila' }, el('div', { class: 'doc-nombre' }, tipo, el('strong', {}, it.concepto)),
+      return el('div', { class: 'doc-fila' }, el('div', { class: 'doc-nombre' }, tipo, el('strong', {}, it.concepto), it.nota ? el('span', { class: 'texto-suave texto-chico' }, it.nota) : null),
         el('strong', {}, `${it.tipo === 'descuento' ? '−' : ''}${dinero(it.monto)}`));
     }
     const concepto = el('input', { type: 'text', class: 'campo', value: it.concepto, 'aria-label': 'Concepto' });
@@ -106,7 +106,7 @@ export default async function vista(ctx) {
     const guardar = () => guardarItem(ctx, it, concepto.value, monto.value);
     concepto.addEventListener('change', guardar); monto.addEventListener('change', guardar);
     return el('div', { class: 'doc-fila remu-item' },
-      el('div', { class: 'doc-nombre' }, tipo, concepto),
+      el('div', { class: 'doc-nombre' }, tipo, concepto, it.nota ? el('span', { class: 'texto-suave texto-chico', title: 'Motivo' }, it.nota) : null),
       el('div', { class: 'remu-item-monto' }, it.tipo === 'descuento' ? el('span', { class: 'texto-suave' }, '−') : null, monto),
       ctx.puede('remu', 'eliminar') ? el('div', { class: 'doc-acciones' }, el('button', {
         type: 'button', class: 'boton-icono', title: 'Eliminar', 'aria-label': `Eliminar ${it.concepto}`, onclick: () => quitarItem(ctx, it),
@@ -141,7 +141,7 @@ export default async function vista(ctx) {
         !mes && f ? boton('Liquidación PDF', { icono: 'descargar', title: 'Descargar la liquidación de la semana en PDF', onclick: async (ev) => {
           const b = ev.currentTarget; b.classList.add('cargando');
           try {
-            const { liquidacionPdf } = await import('../liquidacion.js?v=ed9463e');
+            const { liquidacionPdf } = await import('../liquidacion.js?v=5aa6d16');
             await liquidacionPdf(ctx, { f, persona: v.personas, cargo: cargo?.nombre ?? v.cargo, lunes, domingo, contable });
           } catch (e) { avisar(`No se pudo generar el PDF: ${e.message}`, 'error'); } finally { b.classList.remove('cargando'); }
         } }) : null,

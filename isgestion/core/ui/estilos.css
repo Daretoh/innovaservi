@@ -2273,3 +2273,8 @@ a.tar2-fila, a.tar2-fila:hover { text-decoration: none; color: var(--texto); }
 .lic-archivo span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lic-archivo:hover { border-color: var(--empresa); color: var(--empresa); }
 .lic-caja { display: flex; flex-direction: column; gap: 14px; max-width: 760px; height: fit-content; max-height: 100%; margin: auto 0; }
+
+/* Pago semanal: estado del pago confirmado */
+.remu-pago { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.remu-pago-chip { border: 0; font: inherit; cursor: pointer; }
+.aviso-bandeja.aviso-ok { border-color: var(--ok); }
