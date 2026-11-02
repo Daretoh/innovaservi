@@ -1,16 +1,16 @@
 // Arranque de ISgestión: sesión → empresas y permisos → barra con selector → menú → vista.
-import { iniciarApi, db } from './api.js?v=c9aedb2';
-import { sesionActual, iniciarSesion, cerrarSesion, alCambiarSesion } from './auth.js?v=c9aedb2';
-import { cargarPermisos, crearPuede } from './permisos.js?v=c9aedb2';
-import { cargarEmpresas, cargarModulosEmpresa, elegirEmpresa, recordarEmpresa, nombreEmpresa } from './empresas.js?v=c9aedb2';
-import { cargarManifiestos, modulosVisibles, apartadosPorCategoria, configModulo } from './modulos.js?v=c9aedb2';
-import { el } from './ui/dom.js?v=c9aedb2';
-import { icono } from './ui/iconos.js?v=c9aedb2';
-import { boton } from './ui/tabla.js?v=c9aedb2';
-import inicio from './vistas/inicio.js?v=c9aedb2';
-import mas from './vistas/mas.js?v=c9aedb2';
-import { franja, botonNotificaciones, desactivar } from './push.js?v=c9aedb2';
-import { barraMovil, marcarBarraMovil, bienvenidaInicial, recordarMarca, marcaGuardada, CORTE_TELEFONO } from './movil.js?v=c9aedb2';
+import { iniciarApi, db, urlApp } from './api.js?v=859ca77';
+import { sesionActual, iniciarSesion, cerrarSesion, alCambiarSesion, recuperarClave, errorAuth } from './auth.js?v=859ca77';
+import { cargarPermisos, crearPuede } from './permisos.js?v=859ca77';
+import { cargarEmpresas, cargarModulosEmpresa, elegirEmpresa, recordarEmpresa, nombreEmpresa } from './empresas.js?v=859ca77';
+import { cargarManifiestos, modulosVisibles, apartadosPorCategoria, configModulo } from './modulos.js?v=859ca77';
+import { el } from './ui/dom.js?v=859ca77';
+import { icono } from './ui/iconos.js?v=859ca77';
+import { boton } from './ui/tabla.js?v=859ca77';
+import inicio from './vistas/inicio.js?v=859ca77';
+import mas from './vistas/mas.js?v=859ca77';
+import { franja, botonNotificaciones, desactivar } from './push.js?v=859ca77';
+import { barraMovil, marcarBarraMovil, bienvenidaInicial, recordarMarca, marcaGuardada, CORTE_TELEFONO } from './movil.js?v=859ca77';
 
 const COLOR_BASE = '#1f4e8c';
 const CLAVE_MINIMA = 10;   // 08 Seguridad §4
@@ -117,9 +117,20 @@ function pantallaLogin(mensaje = '') {
       campoClave(el('input', { id: 'login-clave', name: 'clave', type: 'password', class: 'campo', autocomplete: 'current-password', required: true }))),
     error,
     entrar,
+    // Sin contraseña o sin poder entrar: correo con un enlace para crear una nueva (2026-11-02)
+    el('button', { type: 'button', class: 'boton-enlace texto-chico', onclick: async (ev) => {
+      const email = form.elements.email.value.trim();
+      if (!email || !form.elements.email.checkValidity()) { error.textContent = 'Escribe tu correo y vuelve a tocar "¿Olvidaste tu contraseña?".'; form.elements.email.focus(); return; }
+      const b = ev.currentTarget; b.disabled = true; error.textContent = '';
+      try {
+        await recuperarClave(email, urlApp());
+        error.className = 'texto-suave'; error.textContent = `Si ${email} tiene cuenta, le llegó un correo con un enlace para crear una contraseña nueva (revisa también spam).`;
+      } catch (e) { error.className = 'texto-error'; error.textContent = e.message; } finally { b.disabled = false; }
+    } }, '¿Olvidaste tu contraseña?'),
   );
   form.addEventListener('submit', async (ev) => {
     ev.preventDefault();
+    error.className = 'texto-error';
     error.textContent = '';
     entrar.disabled = true;
     const { email, clave } = Object.fromEntries(new FormData(form));
@@ -157,7 +168,7 @@ function pantallaClave(sesion) {
     if (clave1 !== clave2) { error.textContent = 'Las contraseñas no coinciden.'; return; }
     guardar.disabled = true;
     const { error: e } = await db().auth.updateUser({ password: clave1 });
-    if (e) { error.textContent = e.message; guardar.disabled = false; return; }
+    if (e) { error.textContent = errorAuth(e); guardar.disabled = false; return; }
     await arrancarSesion(sesion);
   });
   pantallaAcceso(form);
@@ -277,7 +288,7 @@ function pintarApp() {
         el('div', { class: 'barra-espacio' }),
         el('div', { class: 'usuario' },
           (estado.consola = el('a', { class: 'boton boton-secundario boton-chico solo-escritorio', href: 'consola/', hidden: true, title: 'Consola de la plataforma (equipo ISgestión)' }, icono('ajustes', { tam: 14 }), 'Consola')),
-          el('button', { type: 'button', class: 'correo solo-escritorio', title: 'Mi PIN personal (crear o cambiar)', onclick: () => import('./pin.js?v=c9aedb2').then((m) => m.miPin(db())) }, estado.usuario.email),
+          el('button', { type: 'button', class: 'correo solo-escritorio', title: 'Mi PIN personal (crear o cambiar)', onclick: () => import('./pin.js?v=859ca77').then((m) => m.miPin(db())) }, estado.usuario.email),
           (estado.botonNotif = botonNotificaciones(estado.usuario.id, () => (estado.empresa?.grupo ? estado.empresas[0]?.id : estado.empresa?.id))),
           botonModo(),
           el('button', { type: 'button', class: 'boton-icono solo-escritorio', title: 'Cerrar sesión', 'aria-label': 'Cerrar sesión', onclick: () => salir() }, icono('salir')))),

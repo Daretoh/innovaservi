@@ -1,11 +1,12 @@
 // Usuarios con acceso a la empresa activa: rol, ficha de trabajador y estado.
 // Acceso con fecha de vencimiento y nota (como Accesos de InnovaGestión): vencido = sin acceso (acceso_vigente en la base).
-import { urlApp } from '../../../core/api.js?v=c9aedb2';
-import { el } from '../../../core/ui/dom.js?v=c9aedb2';
-import { icono } from '../../../core/ui/iconos.js?v=c9aedb2';
-import { listado, boton } from '../../../core/ui/tabla.js?v=c9aedb2';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=c9aedb2';
-import { avisar } from '../../../core/ui/aviso.js?v=c9aedb2';
+import { urlApp } from '../../../core/api.js?v=859ca77';
+import { recuperarClave } from '../../../core/auth.js?v=859ca77';
+import { el } from '../../../core/ui/dom.js?v=859ca77';
+import { icono } from '../../../core/ui/iconos.js?v=859ca77';
+import { listado, boton } from '../../../core/ui/tabla.js?v=859ca77';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=859ca77';
+import { avisar } from '../../../core/ui/aviso.js?v=859ca77';
 
 export default async function vista(ctx) {
   const empresa = ctx.empresa.id;
@@ -37,7 +38,8 @@ export default async function vista(ctx) {
     columnas.push({
       titulo: '',
       valor: (u) => el('span', { class: 'listado-acciones' },
-        !u.ultimo_ingreso && u.rol_id ? el('button', { type: 'button', class: 'boton boton-secundario boton-chico', title: 'Nunca entró: vuelve a enviar el correo de invitación (el enlace anterior vence)', onclick: (ev) => reenviar(ctx, u, ev.currentTarget) }, 'Reenviar invitación') : null,
+        !u.ultimo_ingreso && u.rol_id ? el('button', { type: 'button', class: 'boton boton-secundario boton-chico', title: 'Nunca entró: vuelve a enviar el correo de invitación (el enlace anterior vence)', onclick: (ev) => reenviar(ctx, u, ev.currentTarget) }, 'Reenviar invitación')
+          : el('button', { type: 'button', class: 'boton-icono', title: 'Enviarle un correo para crear una contraseña nueva (si no puede entrar)', 'aria-label': `Enviar a ${u.email} un enlace para crear una contraseña nueva`, onclick: (ev) => enlaceClave(u, ev.currentTarget) }, icono('candado', { tam: 16 })),
         el('button', {
           type: 'button', class: 'boton-icono', title: 'Editar acceso', 'aria-label': `Editar acceso de ${u.email}`,
           onclick: () => editar(ctx, u, opcionesRol),
@@ -83,6 +85,14 @@ function invitar(ctx, opcionesRol) {
 const textoEstado = (data, email) => (data.estado === 'invitado' ? `Invitación enviada a ${email}.`
   : data.estado === 'reenviado' ? `Invitación enviada de nuevo a ${email} (aún no la había aceptado).`
     : data.aviso ? `Tiene acceso, pero no se pudo reenviar la invitación: ${data.aviso}` : 'La cuenta ya existía: se le dio acceso.');
+
+// Quien ya activó su cuenta pero no puede entrar (olvidó o no alcanzó a crear su contraseña): correo de recuperación
+async function enlaceClave(u, btn) {
+  if (!confirm(`¿Enviar a ${u.email} un correo para crear una contraseña nueva?`)) return;
+  btn.disabled = true;
+  try { await recuperarClave(u.email, urlApp()); avisar(`Correo enviado a ${u.email}: el enlace le pide una contraseña nueva.`); }
+  catch (e) { avisar(e.message, 'error'); } finally { btn.disabled = false; }
+}
 
 // Reenviar la invitación a quien nunca entró (el enlace del correo vence): misma función, con su rol actual
 async function reenviar(ctx, u, btn) {
