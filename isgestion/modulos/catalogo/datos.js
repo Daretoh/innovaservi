@@ -1,8 +1,8 @@
 // Datos compartidos del Catálogo de equipamiento: categorías, marcas y productos de la empresa activa,
 // fotos con URL firmada y la hoja de estilos del módulo.
-import { el } from '../../core/ui/dom.js?v=6a8f2b9';
-import { urlsFirmadas, subirArchivo } from '../../core/adjuntos.js?v=6a8f2b9';
-import { comprimirFoto, esImagen } from '../../core/imagenes.js?v=6a8f2b9';
+import { el } from '../../core/ui/dom.js?v=11ce3f7';
+import { urlsFirmadas, subirArchivo } from '../../core/adjuntos.js?v=11ce3f7';
+import { comprimirFoto, esImagen } from '../../core/imagenes.js?v=11ce3f7';
 
 export async function cargarCatalogo(ctx, { conEliminados = false } = {}) {
   const sinEliminar = (q) => (conEliminados ? q : q.is('deleted_at', null));
@@ -49,5 +49,5 @@ export function agrupar(datos, productos) {
 
 export function cargarEstilos() {
   if (document.getElementById('catalogo-css')) return;
-  document.head.append(el('link', { id: 'catalogo-css', rel: 'stylesheet', href: new URL('./catalogo.css?v=6a8f2b9', import.meta.url).href }));
+  document.head.append(el('link', { id: 'catalogo-css', rel: 'stylesheet', href: new URL('./catalogo.css?v=11ce3f7', import.meta.url).href }));
 }

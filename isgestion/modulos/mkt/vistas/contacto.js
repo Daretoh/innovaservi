@@ -1,14 +1,14 @@
 // Ficha del contacto: etapa (se cambia con un clic), datos, actividad (lo que se habló, cambios de etapa) y acciones:
 // escribir por WhatsApp con una respuesta guardada (abre WhatsApp y queda en la actividad), registrar actividad,
 // crear tarea de seguimiento, vincular o crear el cliente en Clientes y proveedores, editar y eliminar. ?id=
-import { el } from '../../../core/ui/dom.js?v=6a8f2b9';
-import { icono } from '../../../core/ui/iconos.js?v=6a8f2b9';
-import { boton } from '../../../core/ui/tabla.js?v=6a8f2b9';
-import { avisar } from '../../../core/ui/aviso.js?v=6a8f2b9';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=6a8f2b9';
-import { dinero, fechaLarga, fechaCorta, diaLocal, hhmm } from '../../../core/ui/formato.js?v=6a8f2b9';
-import { cargarBase, cargarCss, nombreOrigen, nombreEvento, enlaceWhatsapp, diasHasta, MOTIVOS, opcionesUsuarios } from '../datos.js?v=6a8f2b9';
-import { formContacto, formActividad } from '../formularios.js?v=6a8f2b9';
+import { el } from '../../../core/ui/dom.js?v=11ce3f7';
+import { icono } from '../../../core/ui/iconos.js?v=11ce3f7';
+import { boton } from '../../../core/ui/tabla.js?v=11ce3f7';
+import { avisar } from '../../../core/ui/aviso.js?v=11ce3f7';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=11ce3f7';
+import { dinero, fechaLarga, fechaCorta, diaLocal, hhmm } from '../../../core/ui/formato.js?v=11ce3f7';
+import { cargarBase, cargarCss, nombreOrigen, nombreEvento, enlaceWhatsapp, diasHasta, MOTIVOS, opcionesUsuarios } from '../datos.js?v=11ce3f7';
+import { formContacto, formActividad } from '../formularios.js?v=11ce3f7';
 
 export default async function vista(ctx) {
   cargarCss();

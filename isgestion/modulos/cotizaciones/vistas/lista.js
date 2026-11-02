@@ -1,10 +1,11 @@
 // Cotizaciones: listado con filtro por estado y búsqueda; nueva cotización. Cada fila dice quién la creó y quién la
 // editó por última vez (como el OS; updated_by lo pone la base).
-import { el } from '../../../core/ui/dom.js?v=6a8f2b9';
-import { listado, boton } from '../../../core/ui/tabla.js?v=6a8f2b9';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=6a8f2b9';
-import { dinero, fechaLarga, fechaCorta, hoyISO, diaLocal, nombrePropio } from '../../../core/ui/formato.js?v=6a8f2b9';
-import { ESTADOS, nombreEstado, CHIP_ESTADO, SELECT_COT, totales, numeroTexto, nombreTercero, verPatente, siguienteNumero, cargarConfig, datosCliente } from '../datos.js?v=6a8f2b9';
+import { el } from '../../../core/ui/dom.js?v=11ce3f7';
+import { listado, boton } from '../../../core/ui/tabla.js?v=11ce3f7';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=11ce3f7';
+import { dinero, fechaLarga, fechaCorta, hoyISO, diaLocal, nombrePropio } from '../../../core/ui/formato.js?v=11ce3f7';
+import { avance } from '../../taller/seguimiento.js?v=11ce3f7';
+import { ESTADOS, nombreEstado, CHIP_ESTADO, SELECT_COT, totales, numeroTexto, nombreTercero, verPatente, siguienteNumero, cargarConfig, datosCliente } from '../datos.js?v=11ce3f7';
 
 const filtro = { estado: 'todas', buscar: '' };
 
@@ -18,6 +19,7 @@ export default async function vista(ctx) {
   const numeroDe = new Map(data.map((c) => [c.id, numeroTexto(c.numero)]));
   const faltan = [...new Set(data.map((c) => c.origen_id).filter((id) => id && !numeroDe.has(id)))];
   if (faltan.length) for (const o of (await ctx.api.from('cot_cotizaciones').select('id, numero').in('id', faltan)).data ?? []) numeroDe.set(o.id, numeroTexto(o.numero));
+  const extra = await avanceYGastos(ctx, data);
   const b = filtro.buscar.trim().toLowerCase();
   const filas = data.map((c) => ({ ...c, t: totales(c, c.cot_grupos, c.cot_lineas) }))
     .filter((c) => !b || [String(c.numero), c.cliente_nombre, ...c.cot_grupos.map((g) => `${g.titulo ?? ''} ${g.patente ?? ''}`)].join(' ').toLowerCase().includes(b));
@@ -39,7 +41,9 @@ export default async function vista(ctx) {
       { titulo: 'Fecha', valor: (c) => fechaLarga(c.fecha) },
       { titulo: 'Cliente', valor: (c) => c.cliente_nombre ?? '' },
       { titulo: 'Detalle', valor: (c) => el('span', {}, c.cot_grupos.map((g) => [g.titulo, verPatente(g.patente)].filter(Boolean).join(' · ')).join(', '),
-        c.origen_id ? el('span', { class: 'texto-chico texto-suave' }, el('br'), `Nace de la N° ${numeroDe.get(c.origen_id) ?? '…'}`) : null) },
+        c.origen_id ? el('span', { class: 'texto-chico texto-suave' }, el('br'), `Nace de la N° ${numeroDe.get(c.origen_id) ?? '…'}`) : null,
+        extra.avance(c) != null ? el('span', { class: `texto-chico cot-lista-avance ${extra.avance(c) >= 75 ? 'estado-ok' : extra.avance(c) >= 40 ? 'estado-prox' : 'estado-venc'}`, title: 'Avance de los trabajos en el taller (órdenes ligadas)' }, el('br'), `Taller ${extra.avance(c)}%`) : null,
+        extra.gastos(c).n ? el('span', { class: 'texto-chico cot-lista-gastos', title: 'Costos cargados en Costos y gastos con la patente (interno)' }, el('br'), `Costos ${dinero(extra.gastos(c).t)} (${extra.gastos(c).n})`) : null) },
       { titulo: 'Estado', valor: (c) => el('span', { class: `chip ${CHIP_ESTADO[c.estado]}` }, nombreEstado[c.estado]) },
       { titulo: 'Total', valor: (c) => el('strong', {}, dinero(c.t.total)) },
       { titulo: 'Registro', valor: (c) => el('span', { class: 'texto-chico texto-suave' },
@@ -95,4 +99,39 @@ export async function nueva(ctx, { tercero = undefined, grupo = null, lineas = [
       await crear(t);
     },
   });
+}
+
+// Como la lista del OS (2026-11-02): avance de los trabajos en el taller (órdenes ligadas a los vehículos) y costos
+// cargados en Costos y gastos con la patente: los de la visita si el vehículo tiene orden (ligados a ella o entre el
+// ingreso y la entrega); si no, todos los de la patente. Solo con permiso de ver Taller / Costos.
+async function avanceYGastos(ctx, cots) {
+  const grupos = cots.flatMap((c) => c.cot_grupos);
+  const idsOrden = [...new Set(grupos.map((g) => g.orden_id).filter(Boolean))];
+  const patentes = [...new Set(grupos.map((g) => g.patente).filter(Boolean))];
+  const [ords, gas] = await Promise.all([
+    ctx.puede('taller', 'ver') && idsOrden.length
+      ? ctx.api.from('tal_ordenes').select('id, estado, tareas, ingreso_at, fecha_cita, created_at, entregado_at').in('id', idsOrden) : { data: [] },
+    ctx.puede('costos', 'ver') && patentes.length
+      ? ctx.api.from('fin_registros').select('patente, fecha, total, orden_id').eq('empresa_id', ctx.empresa.id).eq('tipo', 'gasto').is('deleted_at', null).is('a_cuenta_de', null).in('patente', patentes) : { data: [] },
+  ]);
+  const orden = new Map((ords.data ?? []).map((o) => [o.id, o]));
+  const porPatente = new Map();
+  for (const r of gas.data ?? []) { if (!porPatente.has(r.patente)) porPatente.set(r.patente, []); porPatente.get(r.patente).push(r); }
+  const deGrupo = (g) => {
+    const lista = porPatente.get(g.patente) ?? [];
+    const o = orden.get(g.orden_id);
+    if (!o) return lista;
+    const desde = diaLocal(o.ingreso_at) || o.fecha_cita || diaLocal(o.created_at); const hasta = diaLocal(o.entregado_at) || hoyISO();
+    return lista.filter((r) => r.orden_id === o.id || (r.fecha >= desde && r.fecha <= hasta));
+  };
+  return {
+    avance: (c) => {
+      const os = c.cot_grupos.map((g) => orden.get(g.orden_id)).filter((o) => o && o.estado !== 'anulada');
+      return os.length ? Math.round(os.reduce((s, o) => s + avance(o), 0) / os.length) : null;
+    },
+    gastos: (c) => {
+      const l = c.cot_grupos.flatMap(deGrupo);
+      return { n: l.length, t: l.reduce((s, r) => s + Number(r.total || 0), 0) };
+    },
+  };
 }
