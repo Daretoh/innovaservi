@@ -2,12 +2,12 @@
 // (sin OC, OC sin facturar, facturada por cobrar, cobrada), para seguir a un cliente como Guillermo Morales, que
 // manda una OC por cada cotización de vehículo. La cotización del mes ya dividida no aparece (aparecen sus hijas).
 // Por ahora solo clientes "siempre por cotizar" (terceros.por_cotizar: Guillermo Morales).
-import { el } from '../../../core/ui/dom.js?v=5ab8b1a';
-import { listado, boton } from '../../../core/ui/tabla.js?v=5ab8b1a';
-import { avisar } from '../../../core/ui/aviso.js?v=5ab8b1a';
-import { dinero, fechaCorta, diaLocal, hoyISO } from '../../../core/ui/formato.js?v=5ab8b1a';
-import { totales, numeroTexto, nombreTercero, verPatente } from '../datos.js?v=5ab8b1a';
-import { ETAPAS, etapa, chipEtapa, verArchivo } from '../seguimiento.js?v=5ab8b1a';
+import { el } from '../../../core/ui/dom.js?v=4952823';
+import { listado, boton } from '../../../core/ui/tabla.js?v=4952823';
+import { avisar } from '../../../core/ui/aviso.js?v=4952823';
+import { dinero, fechaCorta, diaLocal, hoyISO } from '../../../core/ui/formato.js?v=4952823';
+import { totales, numeroTexto, nombreTercero, verPatente } from '../datos.js?v=4952823';
+import { ETAPAS, etapa, chipEtapa, verArchivo } from '../seguimiento.js?v=4952823';
 
 const filtro = { etapa: 'pendientes', cliente: '', buscar: '' };
 const dias = (desde) => (desde ? Math.max(0, Math.round((new Date(hoyISO()) - new Date(desde)) / 86400000)) : null);
@@ -79,7 +79,7 @@ export default async function vista(ctx) {
 }
 
 async function excel(ctx, filas, cliente) {
-  const { exportarExcel } = await import('../../../core/excel.js?v=5ab8b1a');
+  const { exportarExcel } = await import('../../../core/excel.js?v=4952823');
   const nombreEtapa = Object.fromEntries(ETAPAS.map(([k, n]) => [k, n]));
   await exportarExcel(ctx, {
     titulo: 'Seguimiento de OC y facturas',

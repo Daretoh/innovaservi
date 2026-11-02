@@ -1,13 +1,13 @@
 // Clientes (del maestro de Clientes y proveedores) con su color en el calendario y sus sitios de faena. Arriba, como
 // InnovaGestión, un gráfico circular con el % de faenas por cliente en los últimos 12 meses (6 mayores + Otros).
-import { el } from '../../../core/ui/dom.js?v=5ab8b1a';
-import { icono } from '../../../core/ui/iconos.js?v=5ab8b1a';
-import { boton } from '../../../core/ui/tabla.js?v=5ab8b1a';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=5ab8b1a';
-import { avisar } from '../../../core/ui/aviso.js?v=5ab8b1a';
-import { cargarBase, olvidarBase } from '../datos.js?v=5ab8b1a';
-import { hoyISO, sumarDias } from '../../../core/ui/formato.js?v=5ab8b1a';
-import { fichaTercero } from '../../terceros/formulario.js?v=5ab8b1a';
+import { el } from '../../../core/ui/dom.js?v=4952823';
+import { icono } from '../../../core/ui/iconos.js?v=4952823';
+import { boton } from '../../../core/ui/tabla.js?v=4952823';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=4952823';
+import { avisar } from '../../../core/ui/aviso.js?v=4952823';
+import { cargarBase, olvidarBase } from '../datos.js?v=4952823';
+import { hoyISO, sumarDias } from '../../../core/ui/formato.js?v=4952823';
+import { fichaTercero } from '../../terceros/formulario.js?v=4952823';
 
 export default async function vista(ctx) {
   const [base, fae] = await Promise.all([cargarBase(ctx),
@@ -45,8 +45,9 @@ export default async function vista(ctx) {
   return el('section', { class: 'listado' },
     el('header', { class: 'listado-cabecera' },
       el('h1', {}, 'Clientes y sitios'),
-      el('a', { class: 'boton boton-secundario', href: ctx.ruta('terceros.listado') }, 'Ir a Clientes y proveedores')),
-    el('p', { class: 'texto-suave' }, `Los clientes vienen de "Clientes y proveedores". Aquí se define su color en el calendario${conReportes ? ', si sus faenas llevan informe por omisión (cada faena se puede cambiar)' : ''} y sus sitios de faena.`),
+      // Clientes y proveedores está en Grupo → Administración (2026-11-02); en la empresa, solo si la ve
+      ctx.hayVista?.('terceros.listado') === false ? null : el('a', { class: 'boton boton-secundario', href: ctx.ruta('terceros.listado') }, 'Ir a Clientes y proveedores')),
+    el('p', { class: 'texto-suave' }, `Los clientes vienen de "Clientes y proveedores" (Grupo → Administración). Aquí se define su color en el calendario${conReportes ? ', si sus faenas llevan informe por omisión (cada faena se puede cambiar)' : ''} y sus sitios de faena.`),
     torta(base, fae.data ?? []),
     tarjetas.length ? tarjetas : el('p', { class: 'texto-suave' }, 'No hay clientes. Créalos en Clientes y proveedores (tipo Cliente).'));
 }

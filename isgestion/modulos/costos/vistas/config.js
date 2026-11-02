@@ -1,9 +1,9 @@
 // Categorías (con su clase: dónde van en el Estado de resultados) y centros de costo de la empresa.
-import { el } from '../../../core/ui/dom.js?v=5ab8b1a';
-import { boton } from '../../../core/ui/tabla.js?v=5ab8b1a';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=5ab8b1a';
-import { avisar } from '../../../core/ui/aviso.js?v=5ab8b1a';
-import { cargarBase, CLASES, nombreClase } from '../datos.js?v=5ab8b1a';
+import { el } from '../../../core/ui/dom.js?v=4952823';
+import { boton } from '../../../core/ui/tabla.js?v=4952823';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=4952823';
+import { avisar } from '../../../core/ui/aviso.js?v=4952823';
+import { cargarBase, CLASES, nombreClase } from '../datos.js?v=4952823';
 
 const CATEGORIAS = [['Arriendo', 'gasto'], ['Servicios básicos', 'gasto'], ['Asesorías', 'gasto'], ['Servicios digitales', 'gasto'], ['Materiales y repuestos', 'gasto'],
   ['Combustible y viajes', 'gasto'], ['Publicidad', 'gasto'], ['Mantención y reparaciones', 'gasto'], ['Impuestos, patentes y bancos', 'gasto'], ['Otros gastos', 'gasto'],

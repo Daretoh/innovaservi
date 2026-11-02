@@ -164,7 +164,7 @@ h2 { font-size: 1.1rem; margin: 0; }
 .menu-grupo.cerrado .menu-plegar .icono { transform: rotate(-90deg); }
 .menu-plegar:hover { color: var(--menu-texto); }
 .menu-grupo.cerrado > a { display: none; }
-.menu-compacto .menu:not(:hover) .menu-grupo.cerrado > a { display: flex; }
+/* En el menú compacto solo se ven los iconos de los grupos abiertos (los cerrados quedan como una raya) */
 .menu a[aria-current="page"] { background: var(--menu-activo-fondo); color: var(--menu-activo-texto); font-weight: 600; }
 .contenido { padding: 24px; min-width: 0; }
 .menu-velo { display: none; }

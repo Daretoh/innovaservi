@@ -1,16 +1,16 @@
 // Arranque de ISgestión: sesión → empresas y permisos → barra con selector → menú → vista.
-import { iniciarApi, db } from './api.js?v=5ab8b1a';
-import { sesionActual, iniciarSesion, cerrarSesion, alCambiarSesion } from './auth.js?v=5ab8b1a';
-import { cargarPermisos, crearPuede } from './permisos.js?v=5ab8b1a';
-import { cargarEmpresas, cargarModulosEmpresa, elegirEmpresa, recordarEmpresa, nombreEmpresa } from './empresas.js?v=5ab8b1a';
-import { cargarManifiestos, modulosVisibles, apartadosPorCategoria, configModulo } from './modulos.js?v=5ab8b1a';
-import { el } from './ui/dom.js?v=5ab8b1a';
-import { icono } from './ui/iconos.js?v=5ab8b1a';
-import { boton } from './ui/tabla.js?v=5ab8b1a';
-import inicio from './vistas/inicio.js?v=5ab8b1a';
-import mas from './vistas/mas.js?v=5ab8b1a';
-import { franja, botonNotificaciones, desactivar } from './push.js?v=5ab8b1a';
-import { barraMovil, marcarBarraMovil, bienvenidaInicial, recordarMarca, marcaGuardada, CORTE_TELEFONO } from './movil.js?v=5ab8b1a';
+import { iniciarApi, db } from './api.js?v=4952823';
+import { sesionActual, iniciarSesion, cerrarSesion, alCambiarSesion } from './auth.js?v=4952823';
+import { cargarPermisos, crearPuede } from './permisos.js?v=4952823';
+import { cargarEmpresas, cargarModulosEmpresa, elegirEmpresa, recordarEmpresa, nombreEmpresa } from './empresas.js?v=4952823';
+import { cargarManifiestos, modulosVisibles, apartadosPorCategoria, configModulo } from './modulos.js?v=4952823';
+import { el } from './ui/dom.js?v=4952823';
+import { icono } from './ui/iconos.js?v=4952823';
+import { boton } from './ui/tabla.js?v=4952823';
+import inicio from './vistas/inicio.js?v=4952823';
+import mas from './vistas/mas.js?v=4952823';
+import { franja, botonNotificaciones, desactivar } from './push.js?v=4952823';
+import { barraMovil, marcarBarraMovil, bienvenidaInicial, recordarMarca, marcaGuardada, CORTE_TELEFONO } from './movil.js?v=4952823';
 
 const COLOR_BASE = '#1f4e8c';
 const CLAVE_MINIMA = 10;   // 08 Seguridad §4
@@ -321,18 +321,23 @@ function pintarMenu() {
     const ahora = [...estado.menu.querySelectorAll('.menu-grupo.cerrado')].map((x) => x.dataset.grupo);
     try { localStorage.setItem('isg.menu.cerrados', JSON.stringify(ahora)); } catch { /* sin almacenamiento */ }
   };
-  const grupos = [...estado.apartados.grupos].map(([categoria, apartados]) =>
+  const enlaces = (apartados) => apartados.flatMap((ap) => {
+    if (estado.menuExpandido) return ap.items.map((it) => { const a = enlace(`#/${it.id}`, iconoVista(it), it.label); a.dataset.vista = it.id; return a; });
+    const a = enlace(`#/${ap.items[0].id}`, ap.items.length > 1 ? ap.icono : iconoVista(ap.items[0]), ap.items.length > 1 ? ap.label : ap.items[0].label);
+    a.dataset.apartado = ap.id;
+    return [a];
+  });
+  // Orden (Enzo, 2026-11-02): los módulos sin categoría (Tareas) van fijos arriba, junto a Inicio; RRHH al final
+  const categorias = [...estado.apartados.grupos].filter(([c]) => c).sort(([a], [b]) => (a === 'RRHH') - (b === 'RRHH'));
+  const fijos = estado.apartados.grupos.get('') ?? [];
+  const grupos = categorias.map(([categoria, apartados]) =>
     el('div', { class: `menu-grupo${cerrados.includes(categoria) ? ' cerrado' : ''}`, 'data-grupo': categoria },
       el('h3', {}, el('button', { type: 'button', class: 'menu-plegar', 'aria-expanded': String(!cerrados.includes(categoria)), onclick: plegar },
         el('span', {}, categoria), icono('abajo', { tam: 14 }))),
-      apartados.flatMap((ap) => {
-        if (estado.menuExpandido) return ap.items.map((it) => { const a = enlace(`#/${it.id}`, iconoVista(it), it.label); a.dataset.vista = it.id; return a; });
-        const a = enlace(`#/${ap.items[0].id}`, ap.items.length > 1 ? ap.icono : iconoVista(ap.items[0]), ap.items.length > 1 ? ap.label : ap.items[0].label);
-        a.dataset.apartado = ap.id;
-        return [a];
-      })));
+      enlaces(apartados)));
   // En el Grupo no hay Inicio: su primera pantalla hace de inicio
-  estado.menu.replaceChildren(...(estado.empresa.grupo ? [] : [el('div', { class: 'menu-grupo' }, enlace('#/', 'inicio', 'Inicio'))]), ...grupos);
+  const arriba = [...(estado.empresa.grupo ? [] : [enlace('#/', 'inicio', 'Inicio')]), ...enlaces(fijos)];
+  estado.menu.replaceChildren(...(arriba.length ? [el('div', { class: 'menu-grupo' }, arriba)] : []), ...grupos);
 }
 
 // Logo de la empresa en el selector de la barra, en lugar del punto de color (si la empresa tiene logo)
