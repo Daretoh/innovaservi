@@ -2,8 +2,8 @@
 // - documento de un trabajador → su documentación de RRHH (tipo con el mismo slug; si la empresa no lo tiene, se crea
 //   sin contar para el % al día, como los "firmados" de InnovaGestión) y queda entregado con el PDF.
 // - documento de la empresa → nueva versión del documento preventivo en Prevención SST (se crea si no existe).
-import { subirArchivo, eliminarArchivo } from '../../core/adjuntos.js?v=cbd7cda';
-import { hoyISO } from '../../core/ui/formato.js?v=cbd7cda';
+import { subirArchivo, eliminarArchivo } from '../../core/adjuntos.js?v=5ab8b1a';
+import { hoyISO } from '../../core/ui/formato.js?v=5ab8b1a';
 
 const NOMBRES_RRHH = {
   contrato: 'Contrato', perfil: 'Perfil de cargo', datos: 'Ficha de datos del trabajador', epp: 'Registro de entrega de EPP',

@@ -1,9 +1,9 @@
 // Liquidación de pago semanal en PDF de un trabajador (como en InnovaGestión): datos del trabajador, días trabajados
 // (faena, horario, horas, vueltas y monto; con el motivo si el monto se ajustó), haberes, descuentos y total a pagar.
 // Usa los mismos montos que la pantalla (contables si la empresa usa el ajuste contable). Documento informativo.
-import { cargarJsPdf, cargarLogo, rgb, sellar } from '../../core/pdf.js?v=cbd7cda';
-import { dinero, horas, nombreDia, fechaCorta, fechaLarga, numSemana, hhmm, hoyISO } from '../../core/ui/formato.js?v=cbd7cda';
-import { nombreEmpresa } from '../../core/empresas.js?v=cbd7cda';
+import { cargarJsPdf, cargarLogo, rgb, sellar } from '../../core/pdf.js?v=5ab8b1a';
+import { dinero, horas, nombreDia, fechaCorta, fechaLarga, numSemana, hhmm, hoyISO } from '../../core/ui/formato.js?v=5ab8b1a';
+import { nombreEmpresa } from '../../core/empresas.js?v=5ab8b1a';
 
 const X = 16;
 const W = 178;

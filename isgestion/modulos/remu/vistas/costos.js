@@ -3,37 +3,50 @@
 // tramo). Indicadores, evolución por día/semana/mes con su composición, por cliente (toca para filtrar) y por
 // cargo, tabla de faenas o trabajadores ordenable con detalle, y Excel (CSV) con cada movimiento.
 // El reparto está en ../manoobra.js; el total de cada mes cuadra con Remuneraciones.
-import { el } from '../../../core/ui/dom.js?v=cbd7cda';
-import { icono } from '../../../core/ui/iconos.js?v=cbd7cda';
-import { boton } from '../../../core/ui/tabla.js?v=cbd7cda';
-import { avisar } from '../../../core/ui/aviso.js?v=cbd7cda';
-import { dinero, horas, hoyISO, rangoMes, sumarDias, lunesDe, numSemana, nombreDia, fechaCorta, fechaLarga, moverMes, nombreMes } from '../../../core/ui/formato.js?v=cbd7cda';
-import { cargarBase, nombreCompleto } from '../datos.js?v=cbd7cda';
-import { COMPONENTES, SIN_FAENA, periodo, libroPeriodo, sumar, agrupar } from '../manoobra.js?v=cbd7cda';
+// Grupo → Mano de obra del grupo usa la misma vista con todas las empresas (vistaManoObra con empresas; Enzo,
+// 2026-11-02): suma Innova y Performance, cada una con sus permisos, con filtro y tarjeta por empresa.
+import { el } from '../../../core/ui/dom.js?v=5ab8b1a';
+import { nombreEmpresa } from '../../../core/empresas.js?v=5ab8b1a';
+import { icono } from '../../../core/ui/iconos.js?v=5ab8b1a';
+import { boton } from '../../../core/ui/tabla.js?v=5ab8b1a';
+import { avisar } from '../../../core/ui/aviso.js?v=5ab8b1a';
+import { dinero, horas, hoyISO, rangoMes, sumarDias, lunesDe, numSemana, nombreDia, fechaCorta, fechaLarga, moverMes, nombreMes } from '../../../core/ui/formato.js?v=5ab8b1a';
+import { cargarBase, nombreCompleto } from '../datos.js?v=5ab8b1a';
+import { COMPONENTES, SIN_FAENA, periodo, libroPeriodo, sumar, agrupar } from '../manoobra.js?v=5ab8b1a';
 
-const estado = { per: 'mes', ref: hoyISO().slice(0, 7), cliente: '', tabla: 'faenas', q: '', orden: { faenas: ['m', -1], personas: ['m', -1] }, abierto: null };
+const estado = { per: 'mes', ref: hoyISO().slice(0, 7), cliente: '', empresa: '', tabla: 'faenas', q: '', orden: { faenas: ['m', -1], personas: ['m', -1] }, abierto: null };
 const MES3 = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 const pct = (a, b) => (b ? `${(Math.round((a / b) * 1000) / 10).toLocaleString('es-CL')}%` : '—');
 const corto = (n) => { const a = Math.abs(n); return a >= 1e6 ? `$${(n / 1e6).toFixed(a >= 1e7 ? 0 : 1).replace('.', ',')}M` : a >= 1e3 ? `$${Math.round(n / 1e3)}k` : `$${Math.round(n)}`; };
 const tituloFaena = (fa) => { const p = fa.split(' · '); return p.length > 2 ? p.slice(2).join(' · ') : p.length > 1 ? p.slice(1).join(' · ') : fa; };
 const sitioFaena = (fa) => { const p = fa.split(' · '); return p.length > 2 ? p[1] : ''; };
 
-export default async function vista(ctx) {
+export default function vista(ctx) { return vistaManoObra(ctx); }
+
+// empresas: [{ empresa, puede, modulos }] del Grupo (sin ella, la empresa activa)
+export async function vistaManoObra(ctx, { empresas = null } = {}) {
   const P = periodo(estado.per, estado.ref);
   const hoy = hoyISO();
-  const base = await cargarBase(ctx);
-  const L = await libroPeriodo(ctx, base, P);
+  const grupo = !!empresas;
+  const fuentes = grupo ? empresas.map((g) => ({ ctx: { ...ctx, empresa: g.empresa, puede: g.puede }, empresa: g.empresa })) : [{ ctx, empresa: ctx.empresa }];
+  const cargados = await Promise.all(fuentes.map(async (fu) => { const base = await cargarBase(fu.ctx); return { ...fu, base, L: await libroPeriodo(fu.ctx, base, P) }; }));
+  const nombreEmp = new Map(cargados.map((c) => [c.empresa.id, nombreEmpresa(c.empresa)]));
+  const L = cargados.flatMap((c) => c.L.map((r) => ({ ...r, emp: c.empresa.id })));
+  if (grupo && estado.empresa && !nombreEmp.has(estado.empresa)) estado.empresa = '';
+  if (!grupo) estado.empresa = '';
 
-  // Personas: nombre, cargo y si es fijo
-  const personas = new Map(base.vinculos.map((v) => {
+  // Personas: nombre, cargo y si es fijo (en el Grupo, la misma persona en dos empresas aparece una vez)
+  const personas = new Map();
+  for (const { base } of cargados) for (const v of base.vinculos) {
+    if (personas.has(v.persona_id)) continue;
     const c = v.condicion;
     const cargo = (c?.cargo_id ? base.cargos.get(c.cargo_id)?.nombre : null) ?? v.cargo ?? '';
-    return [v.persona_id, { nombre: nombreCompleto(v.personas), cargo, fijo: (c?.modo ?? (v.tipo_vinculo === 'contrato' ? 'fijo' : 'hora')) === 'fijo' }];
-  }));
+    personas.set(v.persona_id, { nombre: nombreCompleto(v.personas), cargo, fijo: (c?.modo ?? (v.tipo_vinculo === 'contrato' ? 'fijo' : 'hora')) === 'fijo' });
+  }
   const persona = (pid) => personas.get(pid) ?? { nombre: '—', cargo: '', fijo: false };
 
   // Período actual y anterior (en curso: el mismo tramo del anterior)
-  const pasa = (r) => !estado.cliente || r.cliente === estado.cliente;
+  const pasa = (r) => (!estado.cliente || r.cliente === estado.cliente) && (!estado.empresa || r.emp === estado.empresa);
   const cur = L.filter((r) => r.fecha >= P.ini && r.fecha <= P.fin && pasa(r));
   const enCurso = hoy >= P.ini && hoy <= P.fin;
   const dias = Math.round((new Date(`${hoy}T12:00`) - new Date(`${P.ini}T12:00`)) / 864e5);
@@ -52,6 +65,9 @@ export default async function vista(ctx) {
     el('option', { value: '' }, 'Todos los clientes'),
     clientesPeriodo.map((g) => el('option', { value: g.k, selected: g.k === estado.cliente }, g.k)),
     estado.cliente && !clientesPeriodo.some((g) => g.k === estado.cliente) ? el('option', { value: estado.cliente, selected: true }, estado.cliente) : null);
+  const filtroEmpresa = grupo ? el('select', { class: 'campo campo-filtro', 'aria-label': 'Empresa', onchange: (ev) => cambiar({ empresa: ev.currentTarget.value }) },
+    el('option', { value: '' }, 'Todas las empresas'),
+    cargados.map((c) => el('option', { value: c.empresa.id, selected: c.empresa.id === estado.empresa }, nombreEmp.get(c.empresa.id)))) : null;
   const barra = el('div', { class: 'listado-acciones cmo-barra' },
     segmento,
     el('div', { class: 'nav-periodo' },
@@ -59,12 +75,15 @@ export default async function vista(ctx) {
       el('strong', {}, P.etiqueta),
       el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Período siguiente', disabled: P.fin >= hoy, onclick: () => cambiar({ ref: moverMes(estado.ref, paso) }) }, icono('derecha'))),
     hoy.slice(0, 7) !== estado.ref ? boton('Actual', { onclick: () => cambiar({ ref: hoy.slice(0, 7) }) }) : null,
+    filtroEmpresa,
     filtroCliente);
 
-  const acciones = ctx.puede('remu', 'exportar') && cur.length ? [boton('Excel', { icono: 'descargar', onclick: () => exportar(ctx, cur, P, persona).catch((e) => avisar(e.message, 'error')) })] : [];
+  // Excel: con el membrete de la empresa (en el Grupo, la primera con permiso de exportar) y la columna Empresa
+  const exporta = cargados.find((c) => c.ctx.puede('remu', 'exportar'));
+  const acciones = exporta && cur.length ? [boton('Excel', { icono: 'descargar', onclick: () => exportar(exporta.ctx, cur, P, persona, grupo ? nombreEmp : null).catch((e) => avisar(e.message, 'error')) })] : [];
   const cabecera = el('header', { class: 'listado-cabecera' },
-    el('div', {}, el('h1', {}, 'Costos de mano de obra'),
-      el('p', { class: 'texto-suave' }, `${P.etiqueta}${estado.cliente ? ` · ${estado.cliente}` : ''}`)),
+    el('div', {}, el('h1', {}, grupo ? 'Mano de obra del grupo' : 'Costos de mano de obra'),
+      el('p', { class: 'texto-suave' }, `${P.etiqueta}${estado.empresa ? ` · ${nombreEmp.get(estado.empresa)}` : ''}${estado.cliente ? ` · ${estado.cliente}` : ''}`)),
     el('div', { class: 'listado-acciones' }, acciones));
 
   if (!cur.length) {
@@ -118,7 +137,13 @@ export default async function vista(ctx) {
   };
   const porCliente = agrupar(cur, (r) => r.cliente).sort((a, b) => b.m - a.m);
   const porCargo = agrupar(cur, (r) => persona(r.pid).cargo || 'Sin cargo').sort((a, b) => b.m - a.m);
+  const porEmpresa = grupo ? agrupar(L.filter((r) => r.fecha >= P.ini && r.fecha <= P.fin && (!estado.cliente || r.cliente === estado.cliente)), (r) => r.emp).sort((a, b) => b.m - a.m) : [];
+  const totalEmpresas = porEmpresa.reduce((t, g) => t + g.m, 0);
   const rejilla = el('div', { class: 'cmo-rejilla' },
+    grupo ? el('div', { class: 'ficha' }, el('h2', {}, 'Por empresa'),
+      el('p', { class: 'texto-suave texto-chico' }, estado.empresa ? 'toca de nuevo para ver todas' : 'toca una empresa para filtrar todo el panel'),
+      barras(porEmpresa, { nombre: (g) => nombreEmp.get(g.k) ?? '—', sub: (g) => `${g.nPer} persona${g.nPer === 1 ? '' : 's'} · ${horas(Math.round(g.min))}`,
+        valorSub: (g) => pct(g.m, totalEmpresas), alTocar: (k) => cambiar({ empresa: estado.empresa === k ? '' : k }), activo: estado.empresa })) : null,
     el('div', { class: 'ficha' }, el('h2', {}, 'Por cliente'),
       el('p', { class: 'texto-suave texto-chico' }, estado.cliente ? 'toca de nuevo para ver todos' : 'toca un cliente para filtrar todo el panel'),
       barras(porCliente, { nombre: (g) => g.k || SIN_FAENA, sub: (g) => `${g.nFae ? `${g.nFae} faena${g.nFae === 1 ? '' : 's'} · ` : ''}${horas(Math.round(g.min))}`,
@@ -237,18 +262,18 @@ function panelDetalle(modo, g, P, S, persona) {
 }
 
 // Excel: cada movimiento del período (filtro de cliente incluido) y el resumen por componente
-async function exportar(ctx, rows, P, persona) {
-  const { nuevoExcel } = await import('../../../core/excel.js?v=cbd7cda');
+async function exportar(ctx, rows, P, persona, nombreEmp = null) {
+  const { nuevoExcel } = await import('../../../core/excel.js?v=5ab8b1a');
   const nombres = Object.fromEntries([...COMPONENTES.map(([k, t]) => [k, t]), ['de', 'Descuentos']]);
   const S = sumar(rows);
-  const x = await nuevoExcel(ctx, { titulo: 'Costos de mano de obra', subtitulo: P.etiqueta });
+  const x = await nuevoExcel(ctx, { titulo: nombreEmp ? 'Mano de obra del grupo' : 'Costos de mano de obra', subtitulo: P.etiqueta });
   x.tabla({ titulo: 'Resumen', columnas: ['Componente', { t: 'Monto', tipo: 'dinero' }],
     filas: [...COMPONENTES.map(([k, t]) => [t, Math.round(S.c[k])]), ['Descuentos', Math.round(S.c.de)]], total: ['Total', Math.round(S.m)] });
-  x.tabla({ titulo: 'Detalle', columnas: [{ t: 'Fecha', tipo: 'fecha' }, 'Cliente', 'Faena', 'Trabajador', 'Cargo', 'Modalidad', 'Componente', { t: 'Horas', tipo: 'horas' }, { t: 'Monto', tipo: 'dinero' }],
+  x.tabla({ titulo: 'Detalle', columnas: [{ t: 'Fecha', tipo: 'fecha' }, ...(nombreEmp ? ['Empresa'] : []), 'Cliente', 'Faena', 'Trabajador', 'Cargo', 'Modalidad', 'Componente', { t: 'Horas', tipo: 'horas' }, { t: 'Monto', tipo: 'dinero' }],
     filas: [...rows].sort((a, b) => a.fecha.localeCompare(b.fecha) || a.faena.localeCompare(b.faena)).map((r) => {
       const p = persona(r.pid);
-      return [r.fecha, r.cliente, r.faena || SIN_FAENA, p.nombre, p.cargo, p.fijo ? 'Fijo' : 'Spot', nombres[r.c], Math.round(r.min || 0), Math.round(r.m)];
-    }), total: ['Total', '', '', '', '', '', '', Math.round(S.min), Math.round(S.m)] });
+      return [r.fecha, ...(nombreEmp ? [nombreEmp.get(r.emp) ?? ''] : []), r.cliente, r.faena || SIN_FAENA, p.nombre, p.cargo, p.fijo ? 'Fijo' : 'Spot', nombres[r.c], Math.round(r.min || 0), Math.round(r.m)];
+    }), total: ['Total', ...(nombreEmp ? [''] : []), '', '', '', '', '', '', Math.round(S.min), Math.round(S.m)] });
   await x.guardar(`costos-mano-de-obra-${P.meses[0]}${P.n > 1 ? `-a-${P.meses[P.n - 1]}` : ''}`);
   avisar('Excel descargado.');
 }

@@ -10,18 +10,18 @@ export default {
   // Teléfono (core/movil.js): Taller y Agenda en la barra de abajo; el "+" del centro agenda un vehículo (recepción)
   movil: {
     accesos: [{ id: 'taller.tablero', label: 'Taller', icono: 'auto' }, { id: 'taller.agenda', label: 'Agenda', icono: 'calendario' }],
-    accion: { label: 'Agendar vehículo', icono: 'mas', requiere: 'crear', abrir: (ctx) => import('./recepcion.js?v=cbd7cda').then((m) => m.recepcion(ctx)) },
+    accion: { label: 'Agendar vehículo', icono: 'mas', requiere: 'crear', abrir: (ctx) => import('./recepcion.js?v=5ab8b1a').then((m) => m.recepcion(ctx)) },
   },
   menu: [
-    { id: 'taller.tablero', label: 'Tablero del taller', pestana: 'Tablero', vista: () => import('./vistas/tablero.js?v=cbd7cda') },
-    { id: 'taller.orden', label: 'Orden de trabajo', oculto: true, padre: 'taller.tablero', vista: () => import('./vistas/orden.js?v=cbd7cda') },
-    { id: 'taller.calendario', label: 'Calendario', vista: () => import('./vistas/calendario.js?v=cbd7cda') },
-    { id: 'taller.agenda', label: 'Agenda', vista: () => import('./vistas/agenda.js?v=cbd7cda') },
-    { id: 'taller.cobros', label: 'Cobros', requiere: 'editar', vista: () => import('./vistas/cobros.js?v=cbd7cda') },
-    { id: 'taller.clientes', label: 'Clientes', pestana: 'Clientes', vista: () => import('./vistas/clientes.js?v=cbd7cda') },
-    { id: 'taller.vehiculos', label: 'Vehículos de clientes', pestana: 'Vehículos', vista: () => import('./vistas/vehiculos.js?v=cbd7cda') },
-    { id: 'taller.vehiculo', label: 'Vehículo', oculto: true, padre: 'taller.vehiculos', vista: () => import('./vistas/vehiculo.js?v=cbd7cda') },
-    { id: 'taller.servicios', label: 'Servicios y precios', vista: () => import('./vistas/servicios.js?v=cbd7cda') },
+    { id: 'taller.tablero', label: 'Tablero del taller', pestana: 'Tablero', vista: () => import('./vistas/tablero.js?v=5ab8b1a') },
+    { id: 'taller.orden', label: 'Orden de trabajo', oculto: true, padre: 'taller.tablero', vista: () => import('./vistas/orden.js?v=5ab8b1a') },
+    { id: 'taller.calendario', label: 'Calendario', vista: () => import('./vistas/calendario.js?v=5ab8b1a') },
+    { id: 'taller.agenda', label: 'Agenda', vista: () => import('./vistas/agenda.js?v=5ab8b1a') },
+    { id: 'taller.cobros', label: 'Cobros', requiere: 'editar', vista: () => import('./vistas/cobros.js?v=5ab8b1a') },
+    { id: 'taller.clientes', label: 'Clientes', pestana: 'Clientes', vista: () => import('./vistas/clientes.js?v=5ab8b1a') },
+    { id: 'taller.vehiculos', label: 'Vehículos de clientes', pestana: 'Vehículos', vista: () => import('./vistas/vehiculos.js?v=5ab8b1a') },
+    { id: 'taller.vehiculo', label: 'Vehículo', oculto: true, padre: 'taller.vehiculos', vista: () => import('./vistas/vehiculo.js?v=5ab8b1a') },
+    { id: 'taller.servicios', label: 'Servicios y precios', vista: () => import('./vistas/servicios.js?v=5ab8b1a') },
   ],
   config: {
     // VB del jefe de taller (flujo comercial y taller): el operador llega hasta Terminado; Entregado solo con VB y PIN
