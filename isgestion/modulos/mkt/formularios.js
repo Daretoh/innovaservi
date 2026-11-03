@@ -1,8 +1,8 @@
 // Formularios de Marketing: contacto, actividad, campaña y publicación. base = cargarBase(ctx).
-import { abrirFormulario } from '../../core/ui/modal.js?v=36f4361';
-import { avisar } from '../../core/ui/aviso.js?v=36f4361';
-import { hoyISO, telefono } from '../../core/ui/formato.js?v=36f4361';
-import { ORIGENES, CANALES, ESTADOS_CAMPANA, REDES, FORMATOS, ESTADOS_PUB, TIPOS_EVENTO, opcionesUsuarios, opcionesCampanas, codigoDesde } from './datos.js?v=36f4361';
+import { abrirFormulario } from '../../core/ui/modal.js?v=772212b';
+import { avisar } from '../../core/ui/aviso.js?v=772212b';
+import { hoyISO, telefono } from '../../core/ui/formato.js?v=772212b';
+import { ORIGENES, CANALES, ESTADOS_CAMPANA, REDES, FORMATOS, ESTADOS_PUB, TIPOS_EVENTO, opcionesUsuarios, opcionesCampanas, codigoDesde } from './datos.js?v=772212b';
 
 const texto = (v) => (String(v ?? '').trim() || null);
 const numero = (v) => (v === '' || v == null ? null : Math.max(0, Math.round(Number(String(v).replace(/[^\d-]/g, '')) || 0)));

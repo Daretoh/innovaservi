@@ -3,13 +3,13 @@
 // duplicados con "Unir"; ficha con total gastado, visitas, última visita y ticket, historial de servicios, vehículos,
 // servicios usados, cotizaciones, corregir cliente (mover vehículos o cotizaciones a otro), datos y facturación,
 // y postventa: mensaje de reactivación por WhatsApp y bitácora de contacto.
-import { el } from '../../../core/ui/dom.js?v=36f4361';
-import { icono } from '../../../core/ui/iconos.js?v=36f4361';
-import { boton } from '../../../core/ui/tabla.js?v=36f4361';
-import { avisar } from '../../../core/ui/aviso.js?v=36f4361';
-import { dinero, fechaLarga, hoyISO, diaLocal, telefono, nombrePropio } from '../../../core/ui/formato.js?v=36f4361';
-import { nombreEmpresa } from '../../../core/empresas.js?v=36f4361';
-import { nombreEstado, verPatente, nombreVehiculo, totales, esEmpresa } from '../datos.js?v=36f4361';
+import { el } from '../../../core/ui/dom.js?v=772212b';
+import { icono } from '../../../core/ui/iconos.js?v=772212b';
+import { boton } from '../../../core/ui/tabla.js?v=772212b';
+import { avisar } from '../../../core/ui/aviso.js?v=772212b';
+import { dinero, fechaLarga, hoyISO, diaLocal, telefono, nombrePropio } from '../../../core/ui/formato.js?v=772212b';
+import { nombreEmpresa } from '../../../core/empresas.js?v=772212b';
+import { nombreEstado, verPatente, nombreVehiculo, totales, esEmpresa } from '../datos.js?v=772212b';
 
 const estado = { q: '', clase: 'todos', orden: 'reciente', sel: null, ordenBitacora: 'desc' };
 const RESULTADOS = ['Contactado', 'Contestó', 'No contestó', 'Agendó', 'No interesado', 'Volver a contactar'];

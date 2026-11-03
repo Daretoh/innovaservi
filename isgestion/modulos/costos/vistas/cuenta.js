@@ -4,22 +4,22 @@
 // Pestañas: Resumen mensual (solo lectura, como la planilla "Resumen D&P": por mes sus trabajos, compras y pagos con
 // saldo acumulado) y Movimientos (registrar pago, dejar al día). Se abre desde Pagos (sin opción nueva en el menú).
 // Ruta: #/costos.cuenta?t=<tercero>
-import { el } from '../../../core/ui/dom.js?v=36f4361';
-import { icono } from '../../../core/ui/iconos.js?v=36f4361';
-import { boton } from '../../../core/ui/tabla.js?v=36f4361';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=36f4361';
-import { avisar } from '../../../core/ui/aviso.js?v=36f4361';
-import { subirArchivo } from '../../../core/adjuntos.js?v=36f4361';
-import { dinero, fechaLarga, hoyISO, nombreMes } from '../../../core/ui/formato.js?v=36f4361';
-import { nombreTercero, MEDIOS } from '../datos.js?v=36f4361';
+import { el } from '../../../core/ui/dom.js?v=772212b';
+import { icono } from '../../../core/ui/iconos.js?v=772212b';
+import { boton } from '../../../core/ui/tabla.js?v=772212b';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=772212b';
+import { avisar } from '../../../core/ui/aviso.js?v=772212b';
+import { subirArchivo } from '../../../core/adjuntos.js?v=772212b';
+import { dinero, fechaLarga, hoyISO, nombreMes } from '../../../core/ui/formato.js?v=772212b';
+import { nombreTercero, nombreMedio, MEDIOS } from '../datos.js?v=772212b';
 
-let pestana = 'resumen', tercero = null, mesFiltro = '';   // vuelve al resumen (todos los meses) al abrir otra cuenta
+let pestana = 'resumen', tercero = null, mesFiltro = '', buscar = '';   // vuelve al resumen (todos los meses) al abrir otra cuenta
 const TIPO = { trabajo: ['Factura o trabajo', 'chip-ok'], compra: ['Compra a su cuenta', 'chip-prox'], abono: ['Pago', 'chip-pend'] };
 
 export default async function vista(ctx) {
   const e = ctx.empresa.id;
   const t = ctx.params.t;
-  if (t !== tercero) { tercero = t; pestana = 'resumen'; mesFiltro = ''; }
+  if (t !== tercero) { tercero = t; pestana = 'resumen'; mesFiltro = ''; buscar = ''; }
   const volver = el('a', { class: 'volver', href: ctx.ruta('costos.pagos') }, icono('volver', { tam: 16 }), 'Pagos');
   const [{ data: ter }, mov] = await Promise.all([
     ctx.api.from('terceros').select('id, razon_social, nombre_fantasia, rut').eq('id', t).maybeSingle(),
@@ -28,7 +28,41 @@ export default async function vista(ctx) {
   if (!ter) return el('section', { class: 'listado' }, volver, el('h1', {}, 'Proveedor no encontrado'));
   if (mov.error) throw mov.error;
   const movs = mov.data ?? [];
-  const suma = (k, l = movs) => l.filter((m) => m.tipo === k).reduce((s, m) => s + Number(m.monto), 0);
+
+  // Columnas de la planilla (solo lectura): cliente, vehículo y estado salen de la orden del taller; piezas, cliente
+  // migrado, ubicación y destino de la compra, del registro (las compras migradas traen "Local: producto · destino").
+  const ids = (k) => movs.filter((m) => m.tipo === k).map((m) => m.id);
+  const ordenes = [...new Set(movs.map((m) => m.orden_id).filter(Boolean))];
+  const [regs, pags, ords] = await Promise.all([
+    ids('trabajo').length + ids('compra').length ? ctx.api.from('fin_registros').select('id, notas, terceros:tercero_id(razon_social, nombre_fantasia), fin_categorias(nombre)').in('id', [...ids('trabajo'), ...ids('compra')]) : { data: [] },
+    ids('abono').length ? ctx.api.from('fin_pagos').select('id, medio').in('id', ids('abono')) : { data: [] },
+    ordenes.length ? ctx.api.from('tal_ordenes').select('id, estado, terceros:tercero_id(razon_social, nombre_fantasia), tal_vehiculos:vehiculo_id(marca, modelo, patente)').in('id', ordenes) : { data: [] },
+  ]);
+  const porId = (r) => new Map((r.error ? [] : r.data ?? []).map((x) => [x.id, x]));   // sin Taller instalado, la orden no viene
+  const reg = porId(regs), pag = porId(pags), ord = porId(ords);
+  const cache = new Map();
+  const info = (m) => {
+    if (cache.has(m.id)) return cache.get(m.id);
+    const r = reg.get(m.id) ?? {}, o = m.orden_id ? ord.get(m.orden_id) : null;
+    const nota = (k) => r.notas?.match(new RegExp(`${k}:\\s*([^·]+)`))?.[1].trim() ?? '';
+    let x;
+    if (m.tipo === 'trabajo') {
+      // Sin orden, el vehículo sale del inicio del concepto ("Marca Modelo PATENTE: trabajo")
+      const [marcaTxt, ...modeloTxt] = (m.concepto.includes(': ') ? m.concepto.slice(0, m.concepto.indexOf(': ')) : '').replace(m.patente ?? '', '').trim().split(/\s+/);
+      x = { estado: o?.estado ? o.estado[0].toUpperCase() + o.estado.slice(1).replace(/_/g, ' ') : '', cliente: nombreTercero(o?.terceros) || nota('Cliente'),
+        marca: o?.tal_vehiculos?.marca || marcaTxt || '', modelo: o?.tal_vehiculos?.modelo || modeloTxt.join(' '), patente: o?.tal_vehiculos?.patente ?? m.patente ?? '',
+        piezas: nota('Piezas'), detalle: m.concepto.includes(': ') ? m.concepto.slice(m.concepto.indexOf(': ') + 2) : m.concepto };
+    } else if (m.tipo === 'compra') {
+      const local = nombreTercero(r.terceros);
+      const dos = !local && m.concepto.includes(': ') ? m.concepto.indexOf(': ') : -1;
+      const resto = dos >= 0 ? m.concepto.slice(dos + 2) : m.concepto;
+      const [producto, ...destino] = local ? [resto] : resto.split(' · ');
+      x = { producto, ubicacion: local || (dos >= 0 ? m.concepto.slice(0, dos) : ''), destino: destino.join(' · ') || m.patente || '', categoria: r.fin_categorias?.nombre ?? '' };
+    } else x = { medio: nombreMedio[pag.get(m.id)?.medio] ?? '' };
+    cache.set(m.id, x);
+    return x;
+  };
+  const suma =(k, l = movs) => l.filter((m) => m.tipo === k).reduce((s, m) => s + Number(m.monto), 0);
   const saldo = suma('trabajo') - suma('compra') - suma('abono');
 
   // Resumen por mes con saldo acumulado
@@ -75,14 +109,20 @@ export default async function vista(ctx) {
       avisar('Cuenta al día.'); ctx.refrescar();
     },
   });
-  const excel = () => import('../../../core/excel.js?v=36f4361').then(({ nuevoExcel }) => nuevoExcel(ctx, { titulo: `Cuenta de ${nombreTercero(ter)}`, subtitulo: `Saldo ${saldo >= 0 ? 'a pagarle' : 'a favor de la empresa'}: ${dinero(Math.abs(saldo))}` }))
+  const excel = () => import('../../../core/excel.js?v=772212b').then(({ nuevoExcel }) => nuevoExcel(ctx, { titulo: `Cuenta de ${nombreTercero(ter)}`, subtitulo: `Saldo ${saldo >= 0 ? 'a pagarle' : 'a favor de la empresa'}: ${dinero(Math.abs(saldo))}` }))
     .then(async (x) => {
       x.tabla({ titulo: 'Resumen mensual', columnas: ['Mes', { t: 'Facturas o trabajos', tipo: 'dinero' }, { t: 'Compras a su cuenta', tipo: 'dinero' }, { t: 'Pagos', tipo: 'dinero' }, { t: 'Neto del mes', tipo: 'dinero' }, { t: 'Saldo', tipo: 'dinero' }],
         filas: resumen.map((r) => [nombreMes(r.m), r.trabajos, r.compras, r.abonos, r.neto, r.saldo]) });
-      for (const k of ['trabajo', 'compra', 'abono']) {
-        x.tabla({ titulo: { trabajo: 'Facturas o trabajos', compra: 'Compras por su cuenta', abono: 'Pagos' }[k], columnas: [{ t: 'Fecha', tipo: 'fecha' }, 'Detalle', 'Patente', { t: 'Monto', tipo: 'dinero' }],
-          filas: movs.filter((m) => m.tipo === k).map((m) => [m.fecha, m.concepto, m.patente ?? '', Number(m.monto)]), total: ['Total', '', '', suma(k)] });
-      }
+      const de = (k) => movs.filter((m) => m.tipo === k);
+      const vacios = (n) => Array(n).fill('');
+      x.tabla({ titulo: 'Trabajos', columnas: ['Estado', { t: 'Fecha', tipo: 'fecha' }, 'Mes', 'Cliente', 'Marca', 'Modelo', 'Patente', 'Piezas', 'Detalle del trabajo', 'Pago', { t: 'Monto cobrado', tipo: 'dinero' }],
+        filas: de('trabajo').map((m) => { const i = info(m); return [i.estado, m.fecha, nombreMes(m.fecha.slice(0, 7)), i.cliente, i.marca, i.modelo, i.patente, i.piezas, i.detalle, m.estado === 'pagado' ? 'Pagado' : 'Por pagar', Number(m.monto)]; }),
+        total: ['Total', ...vacios(9), suma('trabajo')] });
+      x.tabla({ titulo: 'Compras por su cuenta', columnas: [{ t: 'Fecha', tipo: 'fecha' }, 'Mes', 'Producto / ítem', 'Ubicación compra', 'Destino', 'Categoría', { t: 'Monto', tipo: 'dinero' }],
+        filas: de('compra').map((m) => { const i = info(m); return [m.fecha, nombreMes(m.fecha.slice(0, 7)), i.producto, i.ubicacion, i.destino, i.categoria, Number(m.monto)]; }),
+        total: ['Total', ...vacios(5), suma('compra')] });
+      x.tabla({ titulo: 'Pagos', columnas: [{ t: 'Fecha', tipo: 'fecha' }, 'Mes', 'Detalle', 'Medio', { t: 'Monto', tipo: 'dinero' }],
+        filas: de('abono').map((m) => [m.fecha, nombreMes(m.fecha.slice(0, 7)), m.concepto, info(m).medio, Number(m.monto)]), total: ['Total', ...vacios(3), suma('abono')] });
       await x.guardar(`cuenta-${nombreTercero(ter)}-${hoyISO()}`);
     }).catch((err) => avisar(err.message, 'error'));
 
@@ -94,55 +134,76 @@ export default async function vista(ctx) {
       m.tipo === 'trabajo' && m.estado !== 'pagado' ? 'por pagar' : null, m.tipo === 'abono' && m.estado === 'por_validar' ? 'por validar' : null].filter(Boolean).join(' · '))),
     el('strong', { class: m.tipo === 'trabajo' ? '' : 'texto-suave' }, `${m.tipo === 'trabajo' ? '' : '−'}${dinero(m.monto)}`));
 
-  // Resumen mensual: totales por mes y el detalle de cada mes (solo lectura, sin enlaces a edición)
-  const estadoDe = (m) => (m.tipo === 'trabajo' ? (m.estado === 'pagado' ? 'Pagado' : 'Por pagar') : m.estado === 'por_validar' ? 'Por validar' : 'Validado');
-  const tablaDetalle = (titulo, lista, conEstado) => el('div', { class: 'cue-detalle' },
-    el('h3', {}, titulo),
-    el('div', { class: 'tabla-contenedor' }, el('table', { class: 'tabla' },
-      el('thead', {}, el('tr', {}, el('th', {}, 'Fecha'), el('th', {}, 'Detalle'), el('th', {}, 'Patente'), conEstado ? el('th', {}, 'Estado') : null, el('th', { class: 'num' }, 'Monto'))),
-      el('tbody', {}, lista.map((m) => el('tr', {}, el('td', {}, fechaLarga(m.fecha)), el('td', {}, m.concepto), el('td', {}, m.patente ?? '—'),
-        conEstado ? el('td', {}, estadoDe(m)) : null, el('td', { class: 'num' }, dinero(m.monto))))),
-      el('tfoot', {}, el('tr', {}, el('th', { colspan: conEstado ? 4 : 3 }, `Total (${lista.length})`),
-        el('th', { class: 'num' }, dinero(lista.reduce((x, m) => x + Number(m.monto), 0))))))));
+  // Pestañas de lectura, con las columnas de la planilla: un bloque por mes con su nombre centrado y el total abajo
   const menos = (n) => (n ? `−${dinero(n)}` : '—');
-  // Filtro por mes: muestra solo la fila y el detalle de ese mes (el saldo acumulado sigue contando los anteriores)
+  // Filtro por mes (todas las pestañas salvo Movimientos; el saldo acumulado sigue contando los meses anteriores)
   if (mesFiltro && !resumen.some((r) => r.m === mesFiltro)) mesFiltro = '';
   const visibles = mesFiltro ? resumen.filter((r) => r.m === mesFiltro) : resumen;
+  // Buscador: patente (con o sin puntos), vehículo, cliente, detalle del trabajo, producto, local, monto o fecha
+  const plano = (s) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  const sinSignos = (s) => s.replace(/[.\-\s]/g, '');
+  const textoDe = new Map(movs.map((m) => [m.id, plano([m.concepto, m.patente, fechaLarga(m.fecha), String(m.monto), dinero(m.monto), ...Object.values(info(m))].filter(Boolean).join(' '))]));
+  const coincide = (m) => {
+    const q = plano(buscar.trim());
+    if (!q) return true;
+    const h = textoDe.get(m.id);
+    return q.split(/\s+/).every((p) => h.includes(p) || sinSignos(h).includes(sinSignos(p)));
+  };
+  const enFiltro = (k) => movs.filter((m) => m.tipo === k && (!mesFiltro || m.fecha.startsWith(mesFiltro)) && coincide(m));
   const filtroMes = el('select', { class: 'campo campo-filtro', 'aria-label': 'Mes', onchange: (ev) => { mesFiltro = ev.target.value; ctx.refrescar(); } },
     el('option', { value: '' }, 'Todos los meses'),
     [...resumen].reverse().map((r) => el('option', { value: r.m, selected: r.m === mesFiltro }, nombreMes(r.m))));
-  const vistaResumen = () => (!resumen.length ? el('div', { class: 'ficha doc-grupo' }, el('p', { class: 'texto-suave' }, 'Sin movimientos.')) : [
-    el('div', { class: 'ficha doc-grupo' },
-      el('div', { class: 'cue-titulo' }, el('h2', {}, 'Resumen mensual'), filtroMes),
-      el('div', { class: 'tabla-contenedor' }, el('table', { class: 'tabla' },
-        el('thead', {}, el('tr', {}, el('th', {}, 'Mes'), ['Facturas o trabajos', 'Compras a su cuenta', 'Pagos', 'Neto del mes', 'Saldo acumulado'].map((h) => el('th', { class: 'num' }, h)))),
-        el('tbody', {}, visibles.map((r) => el('tr', {}, el('td', {}, nombreMes(r.m)), el('td', { class: 'num' }, dinero(r.trabajos)), el('td', { class: 'num' }, menos(r.compras)),
-          el('td', { class: 'num' }, menos(r.abonos)), el('td', { class: 'num' }, dinero(r.neto)), el('td', { class: 'num' }, el('strong', {}, dinero(r.saldo)))))),
-        mesFiltro ? null : el('tfoot', {}, el('tr', {}, el('th', {}, 'Total'), el('th', { class: 'num' }, dinero(suma('trabajo'))), el('th', { class: 'num' }, menos(suma('compra'))),
-          el('th', { class: 'num' }, menos(suma('abono'))), el('th', { class: 'num' }, dinero(saldo)), el('th', { class: 'num' }, dinero(saldo))))))),
-    // Detalle por mes, del más reciente al más antiguo
-    ...[...visibles].reverse().map((r) => {
-      const de = (k) => movs.filter((x) => x.tipo === k && x.fecha.startsWith(r.m));
-      return el('div', { class: 'ficha doc-grupo' },
-        el('h2', {}, nombreMes(r.m)),
-        el('p', { class: 'texto-suave texto-chico' }, `Trabajos ${dinero(r.trabajos)} − compras ${dinero(r.compras)} − pagos ${dinero(r.abonos)} = ${dinero(r.neto)} · saldo acumulado ${dinero(r.saldo)}`),
-        de('trabajo').length ? tablaDetalle('Facturas o trabajos', de('trabajo'), true) : null,
-        de('compra').length ? tablaDetalle('Compras por su cuenta', de('compra'), false) : null,
-        de('abono').length ? tablaDetalle('Pagos', de('abono'), true) : null);
-    }),
-  ]);
+  const porMes = (titulo, lista, columnas) => {
+    const n = columnas.length;
+    const meses = [...new Set(lista.map((m) => m.fecha.slice(0, 7)))].sort();
+    return el('div', { class: 'ficha doc-grupo' }, el('h2', {}, titulo),
+      !lista.length ? el('p', { class: 'texto-suave' }, 'Sin registros.') : el('div', { class: 'tabla-contenedor' }, el('table', { class: 'tabla' },
+        el('thead', {}, el('tr', {}, columnas.map(([h, , num]) => el('th', { class: num ? 'num' : null }, h)))),
+        meses.map((mes) => el('tbody', {},
+          el('tr', { class: 'cue-mes' }, el('td', { colspan: n }, nombreMes(mes))),
+          lista.filter((m) => m.fecha.startsWith(mes)).map((m) => el('tr', {}, columnas.map(([, f, num]) => el('td', { class: num ? 'num' : null }, f(m) || '—')))))),
+        el('tfoot', {}, el('tr', {}, el('th', { colspan: n - 1 }, `Total (${lista.length})`), el('th', { class: 'num' }, dinero(lista.reduce((x, m) => x + Number(m.monto), 0))))))));
+  };
+  const COL_TRABAJOS = [['Estado', (m) => info(m).estado], ['Fecha', (m) => fechaLarga(m.fecha)], ['Cliente', (m) => info(m).cliente], ['Marca', (m) => info(m).marca],
+    ['Modelo', (m) => info(m).modelo], ['Patente', (m) => info(m).patente], ['Piezas', (m) => info(m).piezas], ['Detalle del trabajo', (m) => info(m).detalle],
+    ['Pago', (m) => (m.estado === 'pagado' ? 'Pagado' : 'Por pagar')], ['Monto cobrado', (m) => dinero(m.monto), true]];
+  const COL_COMPRAS = [['Fecha', (m) => fechaLarga(m.fecha)], ['Producto / ítem', (m) => info(m).producto], ['Ubicación compra', (m) => info(m).ubicacion],
+    ['Destino', (m) => info(m).destino], ['Categoría', (m) => info(m).categoria], ['Monto', (m) => dinero(m.monto), true]];
+  const COL_PAGOS = [['Fecha', (m) => fechaLarga(m.fecha)], ['Detalle', (m) => m.concepto], ['Medio', (m) => info(m).medio],
+    ['Estado', (m) => (m.estado === 'por_validar' ? 'Por validar' : 'Validado')], ['Monto', (m) => dinero(m.monto), true]];
+  const vistaResumen = () => el('div', { class: 'ficha doc-grupo' },
+    el('h2', {}, 'Resumen mensual'),
+    !resumen.length ? el('p', { class: 'texto-suave' }, 'Sin movimientos.') : el('div', { class: 'tabla-contenedor' }, el('table', { class: 'tabla' },
+      el('thead', {}, el('tr', {}, el('th', {}, 'Mes'), ['Facturas o trabajos', 'Compras a su cuenta', 'Pagos', 'Neto del mes', 'Saldo acumulado'].map((h) => el('th', { class: 'num' }, h)))),
+      el('tbody', {}, visibles.map((r) => el('tr', {}, el('td', { class: 'cue-mes-celda' }, nombreMes(r.m)), el('td', { class: 'num' }, dinero(r.trabajos)), el('td', { class: 'num' }, menos(r.compras)),
+        el('td', { class: 'num' }, menos(r.abonos)), el('td', { class: 'num' }, dinero(r.neto)), el('td', { class: 'num' }, el('strong', {}, dinero(r.saldo)))))),
+      mesFiltro ? null : el('tfoot', {}, el('tr', {}, el('th', {}, 'Total'), el('th', { class: 'num' }, dinero(suma('trabajo'))), el('th', { class: 'num' }, menos(suma('compra'))),
+        el('th', { class: 'num' }, menos(suma('abono'))), el('th', { class: 'num' }, dinero(saldo)), el('th', { class: 'num' }, dinero(saldo)))))));
   const vistaMovimientos = () => el('div', { class: 'ficha doc-grupo' }, el('h2', {}, 'Movimientos'),
+    buscar.trim() ? (movs.some(coincide) ? movs.filter(coincide).reverse().map(fila) : el('p', { class: 'texto-suave' }, 'Nada coincide con la búsqueda.')) :
     movs.length ? [...movs].reverse().map(fila) : el('p', { class: 'texto-suave' }, 'Sin movimientos. Las facturas se suben como gasto con este proveedor (Subir documentos); los pagos, con Registrar pago o como comprobante. Los trabajos de un contratista se registran desde la orden del taller (Costos con la patente → Trabajo de un tercero) o como gasto con este proveedor; las compras, marcando "por cuenta de" en el gasto o al leer la boleta.'));
+  const VISTAS = {
+    resumen: vistaResumen,
+    trabajos: () => porMes('Trabajos', enFiltro('trabajo'), COL_TRABAJOS),
+    compras: () => porMes('Compras por su cuenta', enFiltro('compra'), COL_COMPRAS),
+    pagos: () => porMes('Pagos', enFiltro('abono'), COL_PAGOS),
+    movimientos: vistaMovimientos,
+  };
 
-  // Las acciones que modifican la cuenta solo aparecen en Movimientos; el Resumen es solo de lectura
+  // Las mismas acciones en todas las pestañas
   const acciones = [];
   if (ctx.puede('costos', 'exportar') && movs.length) acciones.push(boton('Excel', { icono: 'descargar', onclick: excel }));
-  if (pestana === 'movimientos') {
-    if (ctx.puede('costos', 'editar') && movs.some((m) => m.tipo === 'trabajo' && m.estado !== 'pagado')) acciones.push(boton('Dejar al día', { icono: 'check', onclick: alDia }));
-    if (ctx.puede('costos', 'crear')) acciones.push(boton('Registrar pago', { icono: 'mas', tipo: 'primario', onclick: abono }));
-  }
-  const barra = el('div', { class: 'pestanas', role: 'tablist' }, [['resumen', 'Resumen mensual'], ['movimientos', 'Movimientos']].map(([id, txt]) =>
-    el('button', { type: 'button', role: 'tab', 'aria-selected': String(pestana === id), onclick: () => { pestana = id; ctx.refrescar(); } }, txt)));
+  if (ctx.puede('costos', 'editar') && movs.some((m) => m.tipo === 'trabajo' && m.estado !== 'pagado')) acciones.push(boton('Dejar al día', { icono: 'check', onclick: alDia }));
+  if (ctx.puede('costos', 'crear')) acciones.push(boton('Registrar pago', { icono: 'mas', tipo: 'primario', onclick: abono }));
+  // Al buscar desde el Resumen se ven las coincidencias de Trabajos, Compras y Pagos; se repinta sin perder el foco
+  const contenido = () => (buscar.trim() && pestana === 'resumen' ? [VISTAS.trabajos(), VISTAS.compras(), VISTAS.pagos()] : (VISTAS[pestana] ?? vistaResumen)());
+  const cuerpo = el('div', {}, contenido());
+  const buscador = el('input', { class: 'campo', type: 'search', placeholder: 'Buscar patente, vehículo, trabajo…', 'aria-label': 'Buscar en la cuenta', value: buscar,
+    oninput: (ev) => { buscar = ev.target.value; cuerpo.replaceChildren(...[contenido()].flat()); } });
+  const barra = el('div', { class: 'cue-barra' },
+    el('div', { class: 'pestanas', role: 'tablist' }, [['resumen', 'Resumen mensual'], ['trabajos', 'Trabajos'], ['compras', 'Compras'], ['pagos', 'Pagos'], ['movimientos', 'Movimientos']].map(([id, txt]) =>
+      el('button', { type: 'button', role: 'tab', 'aria-selected': String(pestana === id), onclick: () => { pestana = id; ctx.refrescar(); } }, txt))),
+    el('div', { class: 'listado-acciones' }, el('label', { class: 'buscador' }, icono('buscar', { tam: 16 }), buscador), pestana !== 'movimientos' && resumen.length ? filtroMes : null));
   return el('section', { class: 'listado' },
     volver,
     el('header', { class: 'listado-cabecera' },
@@ -154,6 +215,6 @@ export default async function vista(ctx) {
       tarjeta('Pagos', suma('abono'), 'transferencias y abonos'),
       tarjeta(saldo >= 0 ? 'Saldo a pagarle' : 'Pagado a cuenta (falta su factura)', Math.abs(saldo), 'facturas − compras − pagos', saldo > 0 ? 'fin-alerta' : '')),
     barra,
-    pestana === 'resumen' ? vistaResumen() : vistaMovimientos(),
+    cuerpo,
     el('p', { class: 'texto-suave texto-chico' }, 'Las compras por su cuenta se pagan al local como cualquier gasto, pero no son costo de la empresa: no entran al Estado de resultados ni a la utilidad por orden.'));
 }
