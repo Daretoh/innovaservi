@@ -4,14 +4,14 @@
 // Pestañas: Resumen mensual (solo lectura, como la planilla "Resumen D&P": por mes sus trabajos, compras y pagos con
 // saldo acumulado) y Movimientos (registrar pago, dejar al día). Se abre desde Pagos (sin opción nueva en el menú).
 // Ruta: #/costos.cuenta?t=<tercero>
-import { el } from '../../../core/ui/dom.js?v=772212b';
-import { icono } from '../../../core/ui/iconos.js?v=772212b';
-import { boton } from '../../../core/ui/tabla.js?v=772212b';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=772212b';
-import { avisar } from '../../../core/ui/aviso.js?v=772212b';
-import { subirArchivo } from '../../../core/adjuntos.js?v=772212b';
-import { dinero, fechaLarga, hoyISO, nombreMes } from '../../../core/ui/formato.js?v=772212b';
-import { nombreTercero, nombreMedio, MEDIOS } from '../datos.js?v=772212b';
+import { el } from '../../../core/ui/dom.js?v=0ad8916';
+import { icono } from '../../../core/ui/iconos.js?v=0ad8916';
+import { boton } from '../../../core/ui/tabla.js?v=0ad8916';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=0ad8916';
+import { avisar } from '../../../core/ui/aviso.js?v=0ad8916';
+import { subirArchivo } from '../../../core/adjuntos.js?v=0ad8916';
+import { dinero, fechaLarga, hoyISO, nombreMes } from '../../../core/ui/formato.js?v=0ad8916';
+import { nombreTercero, nombreMedio, MEDIOS } from '../datos.js?v=0ad8916';
 
 let pestana = 'resumen', tercero = null, mesFiltro = '', buscar = '';   // vuelve al resumen (todos los meses) al abrir otra cuenta
 const TIPO = { trabajo: ['Factura o trabajo', 'chip-ok'], compra: ['Compra a su cuenta', 'chip-prox'], abono: ['Pago', 'chip-pend'] };
@@ -109,15 +109,15 @@ export default async function vista(ctx) {
       avisar('Cuenta al día.'); ctx.refrescar();
     },
   });
-  const excel = () => import('../../../core/excel.js?v=772212b').then(({ nuevoExcel }) => nuevoExcel(ctx, { titulo: `Cuenta de ${nombreTercero(ter)}`, subtitulo: `Saldo ${saldo >= 0 ? 'a pagarle' : 'a favor de la empresa'}: ${dinero(Math.abs(saldo))}` }))
+  const excel = () => import('../../../core/excel.js?v=0ad8916').then(({ nuevoExcel }) => nuevoExcel(ctx, { titulo: `Cuenta de ${nombreTercero(ter)}`, subtitulo: `Saldo ${saldo >= 0 ? 'a pagarle' : 'a favor de la empresa'}: ${dinero(Math.abs(saldo))}` }))
     .then(async (x) => {
-      x.tabla({ titulo: 'Resumen mensual', columnas: ['Mes', { t: 'Facturas o trabajos', tipo: 'dinero' }, { t: 'Compras a su cuenta', tipo: 'dinero' }, { t: 'Pagos', tipo: 'dinero' }, { t: 'Neto del mes', tipo: 'dinero' }, { t: 'Saldo', tipo: 'dinero' }],
-        filas: resumen.map((r) => [nombreMes(r.m), r.trabajos, r.compras, r.abonos, r.neto, r.saldo]) });
+      x.tabla({ titulo: 'Resumen mensual (saldo)', columnas: ['Mes', { t: 'Saldo inicial', tipo: 'dinero' }, { t: 'Trabajos', tipo: 'dinero' }, { t: 'Compras a su cuenta', tipo: 'dinero' }, { t: 'Pagos', tipo: 'dinero' }, { t: 'Saldo final', tipo: 'dinero' }],
+        filas: resumen.map((r) => [nombreMes(r.m), r.saldo - r.neto, r.trabajos, -r.compras, -r.abonos, r.saldo]) });
       const de = (k) => movs.filter((m) => m.tipo === k);
       const vacios = (n) => Array(n).fill('');
-      x.tabla({ titulo: 'Trabajos', columnas: ['Estado', { t: 'Fecha', tipo: 'fecha' }, 'Mes', 'Cliente', 'Marca', 'Modelo', 'Patente', 'Piezas', 'Detalle del trabajo', 'Pago', { t: 'Monto cobrado', tipo: 'dinero' }],
-        filas: de('trabajo').map((m) => { const i = info(m); return [i.estado, m.fecha, nombreMes(m.fecha.slice(0, 7)), i.cliente, i.marca, i.modelo, i.patente, i.piezas, i.detalle, m.estado === 'pagado' ? 'Pagado' : 'Por pagar', Number(m.monto)]; }),
-        total: ['Total', ...vacios(9), suma('trabajo')] });
+      x.tabla({ titulo: 'Trabajos', columnas: ['Estado', { t: 'Fecha', tipo: 'fecha' }, 'Mes', 'Cliente', 'Marca', 'Modelo', 'Patente', 'Piezas', 'Detalle del trabajo', { t: 'Monto cobrado', tipo: 'dinero' }],
+        filas: de('trabajo').map((m) => { const i = info(m); return [i.estado, m.fecha, nombreMes(m.fecha.slice(0, 7)), i.cliente, i.marca, i.modelo, i.patente, i.piezas, i.detalle, Number(m.monto)]; }),
+        total: ['Total', ...vacios(8), suma('trabajo')] });
       x.tabla({ titulo: 'Compras por su cuenta', columnas: [{ t: 'Fecha', tipo: 'fecha' }, 'Mes', 'Producto / ítem', 'Ubicación compra', 'Destino', 'Categoría', { t: 'Monto', tipo: 'dinero' }],
         filas: de('compra').map((m) => { const i = info(m); return [m.fecha, nombreMes(m.fecha.slice(0, 7)), i.producto, i.ubicacion, i.destino, i.categoria, Number(m.monto)]; }),
         total: ['Total', ...vacios(5), suma('compra')] });
@@ -166,19 +166,24 @@ export default async function vista(ctx) {
   };
   const COL_TRABAJOS = [['Estado', (m) => info(m).estado], ['Fecha', (m) => fechaLarga(m.fecha)], ['Cliente', (m) => info(m).cliente], ['Marca', (m) => info(m).marca],
     ['Modelo', (m) => info(m).modelo], ['Patente', (m) => info(m).patente], ['Piezas', (m) => info(m).piezas], ['Detalle del trabajo', (m) => info(m).detalle],
-    ['Pago', (m) => (m.estado === 'pagado' ? 'Pagado' : 'Por pagar')], ['Monto cobrado', (m) => dinero(m.monto), true]];
+    ['Monto cobrado', (m) => dinero(m.monto), true]];
   const COL_COMPRAS = [['Fecha', (m) => fechaLarga(m.fecha)], ['Producto / ítem', (m) => info(m).producto], ['Ubicación compra', (m) => info(m).ubicacion],
     ['Destino', (m) => info(m).destino], ['Categoría', (m) => info(m).categoria], ['Monto', (m) => dinero(m.monto), true]];
   const COL_PAGOS = [['Fecha', (m) => fechaLarga(m.fecha)], ['Detalle', (m) => m.concepto], ['Medio', (m) => info(m).medio],
     ['Estado', (m) => (m.estado === 'por_validar' ? 'Por validar' : 'Validado')], ['Monto', (m) => dinero(m.monto), true]];
+  // Tabla de saldo (como una amortización): saldo inicial + trabajos − compras − pagos = saldo final de cada mes
+  const cuantos = (m, k, s, p) => { const n = movs.filter((x) => x.tipo === k && x.fecha.startsWith(m)).length; return n ? `${n} ${n === 1 ? s : p}` : null; };
   const vistaResumen = () => el('div', { class: 'ficha doc-grupo' },
     el('h2', {}, 'Resumen mensual'),
+    el('p', { class: 'texto-suave texto-chico' }, 'Lo que se le debe a fin de cada mes: saldo del mes anterior + trabajos hechos − compras a su nombre − pagos.'),
     !resumen.length ? el('p', { class: 'texto-suave' }, 'Sin movimientos.') : el('div', { class: 'tabla-contenedor' }, el('table', { class: 'tabla' },
-      el('thead', {}, el('tr', {}, el('th', {}, 'Mes'), ['Facturas o trabajos', 'Compras a su cuenta', 'Pagos', 'Neto del mes', 'Saldo acumulado'].map((h) => el('th', { class: 'num' }, h)))),
-      el('tbody', {}, visibles.map((r) => el('tr', {}, el('td', { class: 'cue-mes-celda' }, nombreMes(r.m)), el('td', { class: 'num' }, dinero(r.trabajos)), el('td', { class: 'num' }, menos(r.compras)),
-        el('td', { class: 'num' }, menos(r.abonos)), el('td', { class: 'num' }, dinero(r.neto)), el('td', { class: 'num' }, el('strong', {}, dinero(r.saldo)))))),
-      mesFiltro ? null : el('tfoot', {}, el('tr', {}, el('th', {}, 'Total'), el('th', { class: 'num' }, dinero(suma('trabajo'))), el('th', { class: 'num' }, menos(suma('compra'))),
-        el('th', { class: 'num' }, menos(suma('abono'))), el('th', { class: 'num' }, dinero(saldo)), el('th', { class: 'num' }, dinero(saldo)))))));
+      el('thead', {}, el('tr', {}, el('th', {}, 'Mes'), ['Saldo inicial', '+ Trabajos', '− Compras a su nombre', '− Pagos', 'Saldo final'].map((h) => el('th', { class: 'num' }, h)), el('th', {}, 'Detalle'))),
+      el('tbody', {}, visibles.map((r) => el('tr', {}, el('td', { class: 'cue-mes-celda' }, nombreMes(r.m)), el('td', { class: 'num texto-suave' }, dinero(r.saldo - r.neto)),
+        el('td', { class: 'num' }, r.trabajos ? dinero(r.trabajos) : '—'), el('td', { class: 'num' }, menos(r.compras)), el('td', { class: 'num' }, menos(r.abonos)),
+        el('td', { class: 'num' }, el('strong', {}, dinero(r.saldo))),
+        el('td', { class: 'texto-suave texto-chico' }, [cuantos(r.m, 'trabajo', 'trabajo', 'trabajos'), cuantos(r.m, 'compra', 'compra', 'compras'), cuantos(r.m, 'abono', 'pago', 'pagos')].filter(Boolean).join(' · '))))),
+      mesFiltro ? null : el('tfoot', {}, el('tr', {}, el('th', {}, 'Total'), el('th', { class: 'num' }, dinero(0)), el('th', { class: 'num' }, dinero(suma('trabajo'))), el('th', { class: 'num' }, menos(suma('compra'))),
+        el('th', { class: 'num' }, menos(suma('abono'))), el('th', { class: 'num' }, dinero(saldo)), el('th', {}, ''))))));
   const vistaMovimientos = () => el('div', { class: 'ficha doc-grupo' }, el('h2', {}, 'Movimientos'),
     buscar.trim() ? (movs.some(coincide) ? movs.filter(coincide).reverse().map(fila) : el('p', { class: 'texto-suave' }, 'Nada coincide con la búsqueda.')) :
     movs.length ? [...movs].reverse().map(fila) : el('p', { class: 'texto-suave' }, 'Sin movimientos. Las facturas se suben como gasto con este proveedor (Subir documentos); los pagos, con Registrar pago o como comprobante. Los trabajos de un contratista se registran desde la orden del taller (Costos con la patente → Trabajo de un tercero) o como gasto con este proveedor; las compras, marcando "por cuenta de" en el gasto o al leer la boleta.'));

@@ -2,14 +2,14 @@
 // Performance: N° de factura y su cotización al lado, emisión, pago estimado y real, ejecución, OC u orden de servicio,
 // cliente, detalle, estado de pago, neto, IVA y total, y los respaldos (factura, OC, comprobante) con botón para subir
 // lo que falta. Filtros por estado, cliente, año y "sin respaldo"; totales y Excel. La fila abre la factura.
-import { el } from '../../../core/ui/dom.js?v=772212b';
-import { icono } from '../../../core/ui/iconos.js?v=772212b';
-import { boton } from '../../../core/ui/tabla.js?v=772212b';
-import { avisar } from '../../../core/ui/aviso.js?v=772212b';
-import { dinero, fechaLarga, hoyISO } from '../../../core/ui/formato.js?v=772212b';
-import { urlFirmada } from '../../../core/adjuntos.js?v=772212b';
-import { numeroTexto, nombreTercero } from '../datos.js?v=772212b';
-import { estadoPago, ESTADOS_PAGO, RESPALDOS, formFactura, formPago, anularPago, eliminarFactura, subirRespaldo } from '../facturas.js?v=772212b';
+import { el } from '../../../core/ui/dom.js?v=0ad8916';
+import { icono } from '../../../core/ui/iconos.js?v=0ad8916';
+import { boton } from '../../../core/ui/tabla.js?v=0ad8916';
+import { avisar } from '../../../core/ui/aviso.js?v=0ad8916';
+import { dinero, fechaLarga, hoyISO } from '../../../core/ui/formato.js?v=0ad8916';
+import { urlFirmada } from '../../../core/adjuntos.js?v=0ad8916';
+import { numeroTexto, nombreTercero } from '../datos.js?v=0ad8916';
+import { estadoPago, ESTADOS_PAGO, RESPALDOS, formFactura, formPago, anularPago, eliminarFactura, subirRespaldo } from '../facturas.js?v=0ad8916';
 
 const filtro = { estado: 'todas', cliente: '', anio: '', sinRespaldo: false, buscar: '' };
 const fecha = (d) => (d ? fechaLarga(d) : '');
@@ -113,7 +113,7 @@ export default async function vista(ctx) {
   const excel = async (ev) => {
     const btn = ev.currentTarget; btn.disabled = true;
     try {
-      const { exportarExcel } = await import('../../../core/excel.js?v=772212b');
+      const { exportarExcel } = await import('../../../core/excel.js?v=0ad8916');
       await exportarExcel(ctx, {
         titulo: 'Control de facturas', subtitulo: [filtro.anio || 'Todos los años', `${filas.length} facturas`].join(' · '), nombre: 'control-facturas',
         columnas: ['N° factura', 'Cotización', { t: 'Emisión', tipo: 'fecha' }, { t: 'Pago estimado', tipo: 'fecha' }, { t: 'Pago real', tipo: 'fecha' }, { t: 'Ejecución', tipo: 'fecha' },
@@ -145,7 +145,7 @@ export default async function vista(ctx) {
 // Anular pago y eliminar quedan en un menú aparte (poco frecuentes): se elige la factura por número
 function accionesFila(ctx, facturas, refrescar) {
   const pagadas = facturas.filter((f) => f.fecha_pago);
-  const elegir = (titulo, lista, accion) => import('../../../core/ui/modal.js?v=772212b').then(({ abrirFormulario }) => abrirFormulario({
+  const elegir = (titulo, lista, accion) => import('../../../core/ui/modal.js?v=0ad8916').then(({ abrirFormulario }) => abrirFormulario({
     titulo, textoGuardar: 'Seguir', campos: [{ id: 'f', etiqueta: 'Factura', requerido: true, opciones: [['', 'Elegir…'], ...lista.map((f) => [f.id, `N° ${f.numero} · ${f.cliente_nombre ?? ''} · ${dinero(f.total)}`])] }],
     alGuardar: (v) => { const f = lista.find((x) => x.id === v.f); if (f) setTimeout(() => accion(ctx, f, { alGuardar: refrescar }), 50); },
   }));
