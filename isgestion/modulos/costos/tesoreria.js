@@ -1,5 +1,5 @@
 // Datos comunes del flujo de caja y el balance: saldos de las cuentas, por cobrar y por pagar, deudas y ajustes.
-import { hoyISO, sumarDias } from '../../core/ui/formato.js?v=4f2e5e9';
+import { hoyISO, sumarDias } from '../../core/ui/formato.js?v=6098579';
 
 // Último saldo de cada cuenta activa
 export async function cargarCuentas(ctx) {

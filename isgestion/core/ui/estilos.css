@@ -596,6 +596,8 @@ button.dia-tarjeta { cursor: pointer; }
 @media (max-width: 760px) { .pos-linea { grid-template-columns: 1fr 1fr 1fr 32px; } .pos-linea > :first-child { grid-column: 1 / -1; } }
 
 /* ---------- Costos y Estado de resultados ---------- */
+.cue-detalle { margin-top: 12px; }
+.cue-detalle h3 { font-size: .95rem; margin: 0 0 6px; color: var(--texto-suave); }
 .fin-tarjetas { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-bottom: 16px; }
 .fin-tarjeta { display: flex; flex-direction: column; gap: 2px; padding: 12px 16px; }
 .fin-tarjeta strong { font-size: 1.3rem; }
@@ -2289,3 +2291,24 @@ a.tar2-fila, a.tar2-fila:hover { text-decoration: none; color: var(--texto); }
 .asis-res-especial td { color: var(--prox); }
 .asis-res-mes { display: inline-flex; align-items: center; gap: 4px; }
 .asis-res-mes .campo { width: auto; }
+
+/* Cotizaciones → Facturas (007): planilla de control de facturas */
+.fac-filtros { flex-wrap: wrap; margin: 4px 0 8px; }
+.fac-filtros .buscador { flex: 1 1 240px; }
+.fac-tabla { overflow-x: auto; }
+.fac-tabla .tabla { font-size: .85rem; }
+.fac-tabla th { white-space: nowrap; }
+.fac-tabla th.num, .fac-tabla td.num { text-align: right; white-space: nowrap; }
+.fac-fecha { white-space: nowrap; }
+.fac-detalle { min-width: 180px; max-width: 320px; }
+.fac-pagado { color: var(--ok); font-weight: 600; }
+.fac-vencida td:first-child { box-shadow: inset 3px 0 0 var(--venc); }
+.fac-pendiente td:first-child { box-shadow: inset 3px 0 0 var(--prox); }
+.fac-pagada td:first-child { box-shadow: inset 3px 0 0 var(--ok); }
+.fac-estado { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+.fac-estado .boton-chico { padding: 2px 8px; }
+.fac-respaldos { display: flex; gap: 4px; }
+.fac-respaldo { display: inline-flex; align-items: center; gap: 3px; padding: 2px 7px; font: inherit; font-size: .75rem; border-radius: 999px; cursor: pointer; white-space: nowrap; }
+.fac-ok { color: var(--ok); background: var(--ok-fondo); border: 1px solid transparent; }
+.fac-falta { color: var(--texto-suave); background: transparent; border: 1px dashed var(--borde); }
+.fac-falta:hover { color: var(--empresa); border-color: var(--empresa); }

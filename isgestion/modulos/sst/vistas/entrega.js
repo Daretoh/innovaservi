@@ -1,14 +1,14 @@
 // Registro de entrega: participantes, imprimir para firmar, subir el escaneo firmado (marca RRHH) y reabrir.
 // Ruta: #/sst.entrega?id=<id>
-import { el } from '../../../core/ui/dom.js?v=4f2e5e9';
-import { icono } from '../../../core/ui/iconos.js?v=4f2e5e9';
-import { boton } from '../../../core/ui/tabla.js?v=4f2e5e9';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=4f2e5e9';
-import { avisar } from '../../../core/ui/aviso.js?v=4f2e5e9';
-import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=4f2e5e9';
-import { fechaLarga } from '../../../core/ui/formato.js?v=4f2e5e9';
-import { TIPOS_ENTREGA, nombreDe, cargarPersonas } from '../datos.js?v=4f2e5e9';
-import { tiposRrhh } from './entregas.js?v=4f2e5e9';
+import { el } from '../../../core/ui/dom.js?v=6098579';
+import { icono } from '../../../core/ui/iconos.js?v=6098579';
+import { boton } from '../../../core/ui/tabla.js?v=6098579';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=6098579';
+import { avisar } from '../../../core/ui/aviso.js?v=6098579';
+import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=6098579';
+import { fechaLarga } from '../../../core/ui/formato.js?v=6098579';
+import { TIPOS_ENTREGA, nombreDe, cargarPersonas } from '../datos.js?v=6098579';
+import { tiposRrhh } from './entregas.js?v=6098579';
 
 const ESCANEOS = ['application/pdf', 'image/jpeg', 'image/png'];
 
@@ -86,7 +86,7 @@ export default async function vista(ctx) {
 async function imprimir(ctx, ent, participantes, b) {
   b.disabled = true;
   try {
-    const { pdfEntrega } = await import('../documentos.js?v=4f2e5e9');
+    const { pdfEntrega } = await import('../documentos.js?v=6098579');
     const doc = await pdfEntrega(ctx, ent, participantes);
     window.open(doc.output('bloburl'), '_blank', 'noopener');
   } catch (e) { avisar(`No se pudo generar: ${e.message}`, 'error'); } finally { b.disabled = false; }

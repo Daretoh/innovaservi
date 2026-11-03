@@ -1,9 +1,9 @@
 // Diseño de la cotización: validez, información de pago, nota, firma y contactos del pie.
 // Logo y color salen de los datos de la empresa.
-import { el } from '../../../core/ui/dom.js?v=4f2e5e9';
-import { boton } from '../../../core/ui/tabla.js?v=4f2e5e9';
-import { avisar } from '../../../core/ui/aviso.js?v=4f2e5e9';
-import { cargarConfig } from '../datos.js?v=4f2e5e9';
+import { el } from '../../../core/ui/dom.js?v=6098579';
+import { boton } from '../../../core/ui/tabla.js?v=6098579';
+import { avisar } from '../../../core/ui/aviso.js?v=6098579';
+import { cargarConfig } from '../datos.js?v=6098579';
 
 const lineas = (t) => t.split('\n').map((x) => x.trim()).filter(Boolean);
 
@@ -27,7 +27,7 @@ export default async function vista(ctx) {
   const agrupar = el('input', { type: 'checkbox', class: 'interruptor', id: 'k-agrupar', checked: !!cfg.agrupar_secciones, disabled: !editable });
   const filaAgrupar = el('div', { class: 'form-fila' },
     el('label', { class: 'casilla' }, agrupar, 'Agrupar las secciones en el PDF'),
-    el('span', { class: 'texto-suave texto-chico' }, 'Cada sección sale en una sola línea con su total, sin sus ítems; la sección "Extras" se detalla. Con un cliente "siempre por cotizar" no se muestra el valor de cada línea, solo el total de cada vehículo.'));
+    el('span', { class: 'texto-suave texto-chico' }, 'Cada sección sale en una sola línea con su total, sin sus ítems; la sección "Extras" se detalla. Solo se aplica con un cliente "siempre por cotizar"; el valor de cada línea y sección sale si la cotización tiene marcado "Mostrar el valor de cada ítem".'));
   const guardar = async (ev) => {
     const b = ev.currentTarget; b.disabled = true;
     const v = {

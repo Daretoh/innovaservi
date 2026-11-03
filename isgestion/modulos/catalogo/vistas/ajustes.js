@@ -1,11 +1,11 @@
 // Categorías y marcas del catálogo: nombre, orden y frase de la categoría; nombre, presentación y logo de la marca.
 // Ruta: #/catalogo.ajustes
-import { el } from '../../../core/ui/dom.js?v=4f2e5e9';
-import { icono } from '../../../core/ui/iconos.js?v=4f2e5e9';
-import { boton } from '../../../core/ui/tabla.js?v=4f2e5e9';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=4f2e5e9';
-import { avisar } from '../../../core/ui/aviso.js?v=4f2e5e9';
-import { cargarCatalogo, urlsFotos, subirFoto, cargarEstilos } from '../datos.js?v=4f2e5e9';
+import { el } from '../../../core/ui/dom.js?v=6098579';
+import { icono } from '../../../core/ui/iconos.js?v=6098579';
+import { boton } from '../../../core/ui/tabla.js?v=6098579';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=6098579';
+import { avisar } from '../../../core/ui/aviso.js?v=6098579';
+import { cargarCatalogo, urlsFotos, subirFoto, cargarEstilos } from '../datos.js?v=6098579';
 
 export default async function vista(ctx) {
   cargarEstilos();

@@ -1,11 +1,11 @@
 // PDF de la cotización (diseño del OS de IS Performance, con la marca de cada empresa):
 // encabezado con N° y fecha, cajas Cliente y Contacto, tabla por grupo con secciones y subtotal,
 // información de pago, totales, firma, nota de validez, contactos y sello de ISgestión.
-import { cargarJsPdf, cargarLogo, rgb, sellar } from '../../core/pdf.js?v=4f2e5e9';
-import { nombreEmpresa } from '../../core/empresas.js?v=4f2e5e9';
-import { sumarDias } from '../../core/ui/formato.js?v=4f2e5e9';
-import { totales, totalLinea, numeroTexto, verPatente, cargarConfig, IVA } from './datos.js?v=4f2e5e9';
-import { soloCosto } from './costos-orden.js?v=4f2e5e9';
+import { cargarJsPdf, cargarLogo, rgb, sellar } from '../../core/pdf.js?v=6098579';
+import { nombreEmpresa } from '../../core/empresas.js?v=6098579';
+import { sumarDias } from '../../core/ui/formato.js?v=6098579';
+import { totales, totalLinea, numeroTexto, verPatente, cargarConfig, IVA } from './datos.js?v=6098579';
+import { soloCosto } from './costos-orden.js?v=6098579';
 
 const M = 15;
 const TEXTO = [28, 35, 48];
@@ -73,11 +73,12 @@ export async function pdfCotizacion(ctx, c) {
   // descuentos por ítem, las columnas Neto · Desc. · Neto c/desc
   const conIva = c.con_iva;
   // Agrupar secciones (como el OS): solo con un cliente "siempre por cotizar" (GM): cada sección en una línea con su
-  // total, sin el valor de cada línea; "Extras" y las líneas sin sección se detallan. Con el resto de los clientes cada
-  // sección sale como título con sus ítems y valores (2026-11-02: antes agrupaba con todos y solo se veían las secciones).
+  // total; "Extras" y las líneas sin sección se detallan. Con el resto de los clientes cada sección sale como título
+  // con sus ítems y valores (2026-11-02: antes agrupaba con todos y solo se veían las secciones).
+  // "Mostrar el valor de cada ítem" manda siempre (2026-11-03: antes con GM se ocultaba aunque estuviera marcada).
   const agrupar = (c.agrupar_secciones ?? !!cfg.agrupar_secciones) && !!cli?.por_cotizar;   // la cotización manda (006); si no, Diseño
   const porCotizar = agrupar;
-  const mostrar = c.mostrar_valores && !porCotizar;
+  const mostrar = c.mostrar_valores;
   const conDesc = mostrar && !agrupar && c.cot_lineas.some((l) => l.tipo !== 'seccion' && Number(l.desc_pct) > 0);
   const bruto = (l) => Math.round(Number(l.cantidad || 0) * Number(l.precio || 0));
   const cols = conDesc ? 5 : 3;
