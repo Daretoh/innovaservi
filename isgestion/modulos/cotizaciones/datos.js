@@ -1,4 +1,5 @@
 // Datos y cálculos compartidos de Cotizaciones.
+import { nombreVersion } from '../catalogo/datos.js?v=b159e43';
 
 export const ESTADOS = [['borrador', 'Borrador'], ['enviada', 'Enviada'], ['aceptada', 'Aceptada'], ['rechazada', 'Rechazada']];
 export const nombreEstado = Object.fromEntries(ESTADOS);
@@ -47,9 +48,15 @@ export async function cargarCatalogo(ctx, terceroId) {
   const [precios, servicios, equipos] = await Promise.all([
     terceroId ? ctx.api.from('cot_precios').select('*').eq('tercero_id', terceroId) : Promise.resolve({ data: [] }),
     ctx.puede('taller', 'ver') ? ctx.api.from('tal_servicios').select('*').eq('empresa_id', ctx.empresa.id).eq('activo', true).order('orden') : Promise.resolve({ data: [] }),
-    ctx.puede('catalogo', 'ver') ? ctx.api.from('cat_productos').select('nombre, precio, seccion, cat_marcas(nombre)').eq('empresa_id', ctx.empresa.id)
-      .eq('activo', true).is('deleted_at', null).order('orden') : Promise.resolve({ data: [] }),
+    ctx.puede('catalogo', 'ver') ? ctx.api.from('cat_productos').select('nombre, precio, seccion, cat_marcas(nombre), cat_versiones(vehiculo_marca, vehiculo_modelo, cabina, anio_desde, anio_hasta, precio, activo, deleted_at)')
+      .eq('empresa_id', ctx.empresa.id).eq('activo', true).is('deleted_at', null).order('orden') : Promise.resolve({ data: [] }),
   ]);
+  // Cada camioneta de un producto del catálogo es una sugerencia propia con su precio: "BULX15 2.0 · Kia Tasman Cabina doble 2025 en adelante"
+  for (const p of [...(equipos.data ?? [])]) {
+    for (const v of (p.cat_versiones ?? []).filter((x) => x.activo && !x.deleted_at)) {
+      (equipos.data ??= []).push({ nombre: `${p.nombre} · ${nombreVersion(v)}`, precio: v.precio ?? p.precio, seccion: p.seccion, cat_marcas: p.cat_marcas });
+    }
+  }
   const cliente = new Map((precios.data ?? []).map((p) => [p.descripcion.toLowerCase(), p]));
   const taller = new Map((servicios.data ?? []).map((s) => [s.nombre.toLowerCase(), s]));
   const equipo = new Map((equipos.data ?? []).map((p) => [p.nombre.toLowerCase(), p]));

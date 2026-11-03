@@ -1,19 +1,26 @@
 // Catálogo de equipamiento: productos en tarjetas con foto, agrupados por categoría y sección (como el catálogo
-// de Canva), con filtros, ficha para crear y editar, PDF del catálogo y Excel.
+// de Canva), con filtros (también por camioneta), PDF del catálogo, Excel y traer un producto desde el enlace de otra
+// página. Cada tarjeta abre la ficha del producto (vistas/producto.js).
 // Ruta: #/catalogo.productos
-import { el } from '../../../core/ui/dom.js?v=a07e023';
-import { icono } from '../../../core/ui/iconos.js?v=a07e023';
-import { boton } from '../../../core/ui/tabla.js?v=a07e023';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=a07e023';
-import { avisar } from '../../../core/ui/aviso.js?v=a07e023';
-import { dinero } from '../../../core/ui/formato.js?v=a07e023';
-import { cargarCatalogo, urlsFotos, subirFoto, agrupar, cargarEstilos } from '../datos.js?v=a07e023';
+import { el } from '../../../core/ui/dom.js?v=b159e43';
+import { icono } from '../../../core/ui/iconos.js?v=b159e43';
+import { boton } from '../../../core/ui/tabla.js?v=b159e43';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=b159e43';
+import { avisar } from '../../../core/ui/aviso.js?v=b159e43';
+import { dinero } from '../../../core/ui/formato.js?v=b159e43';
+import { cargarCatalogo, urlsFotos, subirFoto, agrupar, cargarEstilos, nombreVersion, traerDesdeEnlace, MARCAS_VEHICULO, CABINAS } from '../datos.js?v=b159e43';
+import { elegirFotos } from './producto.js?v=b159e43';
 
 const filtro = { categoria: '', marca: '', texto: '', inactivos: false };   // se mantiene al refrescar
 
 export default async function vista(ctx) {
   cargarEstilos();
   const datos = await cargarCatalogo(ctx);
+  // Versiones por camioneta: cuántas tiene cada producto, precio desde y texto para buscar por camioneta
+  const { data: vers } = await ctx.api.from('cat_versiones').select('producto_id, vehiculo_marca, vehiculo_modelo, cabina, anio_desde, anio_hasta, precio, activo')
+    .eq('empresa_id', ctx.empresa.id).is('deleted_at', null);
+  datos.versionesDe = new Map();
+  for (const v of vers ?? []) { if (!datos.versionesDe.has(v.producto_id)) datos.versionesDe.set(v.producto_id, []); datos.versionesDe.get(v.producto_id).push(v); }
   const urls = await urlsFotos(ctx, [...datos.productos.map((p) => p.foto_ruta), ...datos.marcas.map((m) => m.logo_ruta)]);
   const puedeEditar = ctx.puede('catalogo', 'editar');
   if (filtro.categoria && !datos.categoriaDe.has(filtro.categoria)) filtro.categoria = '';
@@ -26,7 +33,8 @@ export default async function vista(ctx) {
     return datos.productos.filter((p) => (filtro.inactivos || p.activo)
       && (!filtro.categoria || p.categoria_id === filtro.categoria)
       && (!filtro.marca || p.marca_id === filtro.marca)
-      && (!q || [p.nombre, p.seccion, p.descripcion, p.material, p.procedencia, datos.marcaDe.get(p.marca_id)?.nombre]
+      && (!q || [p.nombre, p.seccion, p.modelo, p.descripcion, p.material, p.procedencia, datos.marcaDe.get(p.marca_id)?.nombre,
+        ...(datos.versionesDe.get(p.id) ?? []).map(nombreVersion)]
         .filter(Boolean).join(' ').toLowerCase().includes(q)));
   }
 
@@ -59,7 +67,7 @@ export default async function vista(ctx) {
       });
       return b;
     }));
-  const buscador = el('input', { type: 'search', class: 'campo', placeholder: 'Buscar producto, marca o material…', 'aria-label': 'Buscar', value: filtro.texto });
+  const buscador = el('input', { type: 'search', class: 'campo', placeholder: 'Buscar producto, marca o camioneta…', 'aria-label': 'Buscar', value: filtro.texto });
   buscador.addEventListener('input', () => { filtro.texto = buscador.value; pintar(); });
   const marca = el('select', { class: 'campo campo-filtro', 'aria-label': 'Marca' },
     el('option', { value: '' }, 'Todas las marcas'),
@@ -77,6 +85,7 @@ export default async function vista(ctx) {
     acciones.push(boton('PDF del catálogo', { icono: 'documento', onclick: () => elegirPdf(ctx, datos) }));
   }
   if (ctx.puede('catalogo', 'crear') && datos.categorias.length) {
+    acciones.push(boton('Traer desde enlace', { icono: 'descargar', title: 'Crear un producto (o una camioneta) desde la ficha de un proveedor o una marca', onclick: () => importar(ctx, datos) }));
     acciones.push(boton('Nuevo producto', { icono: 'mas', tipo: 'primario', onclick: () => editar(ctx, datos, null) }));
   }
 
@@ -99,20 +108,25 @@ function tarjeta(ctx, datos, urls, p, puedeEditar) {
   const m = datos.marcaDe.get(p.marca_id);
   const url = urls.get(p.foto_ruta);
   const logo = m?.logo_ruta ? urls.get(m.logo_ruta) : null;
-  const abrir = puedeEditar ? () => editar(ctx, datos, p) : null;
-  return el('article', { class: `cat-tarjeta ${p.activo ? '' : 'inactiva'} ${abrir ? 'cat-editable' : ''}`,
-    tabindex: abrir ? 0 : null, role: abrir ? 'button' : null, 'aria-label': abrir ? `Editar ${p.nombre}` : null,
-    onclick: abrir, onkeydown: abrir ? (ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); abrir(); } } : null },
+  const abrir = () => { location.hash = ctx.ruta('catalogo.producto', { id: p.id }); };
+  const vs = (datos.versionesDe.get(p.id) ?? []).filter((v) => v.activo);
+  const precios = vs.map((v) => v.precio ?? p.precio).filter((x) => x != null);
+  const desde = precios.length ? Math.min(...precios) : p.precio;
+  return el('article', { class: `cat-tarjeta cat-editable ${p.activo ? '' : 'inactiva'}`,
+    tabindex: 0, role: 'button', 'aria-label': `Abrir ${p.nombre}`,
+    onclick: abrir, onkeydown: (ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); abrir(); } } },
     el('div', { class: 'cat-foto' }, url ? el('img', { src: url, alt: p.nombre, loading: 'lazy' }) : icono('camara', { tam: 32 })),
     el('div', { class: 'cat-info' },
       el('strong', { class: 'cat-nombre' }, p.nombre),
+      vs.length ? el('span', { class: 'texto-suave texto-chico' }, `${vs.length} ${vs.length === 1 ? 'camioneta' : 'camionetas'}`) : null,
       p.descripcion ? el('span', { class: 'cat-desc' }, p.descripcion) : null,
       el('span', { class: 'cat-ficha' },
         p.material ? el('span', {}, el('b', {}, 'Material: '), p.material) : null,
         p.procedencia ? el('span', {}, el('b', {}, 'Procedencia: '), p.procedencia) : null),
       el('div', { class: 'cat-pie' },
         logo ? el('img', { class: 'cat-logo', src: logo, alt: m.nombre }) : m ? el('span', { class: 'chip' }, m.nombre) : null,
-        p.precio != null ? el('span', { class: 'cat-precio', title: p.precio_en_pdf ? 'Sale en el PDF' : 'Precio de referencia (no sale en el PDF)' }, dinero(p.precio)) : null,
+        desde != null ? el('span', { class: 'cat-precio', title: 'Precio neto' }, `${precios.length > 1 ? 'desde ' : ''}${dinero(desde)}`) : null,
+        p.publicar_web ? el('span', { class: 'chip chip-ok', title: 'Se publica en la web' }, 'Web') : null,
         p.activo ? null : el('span', { class: 'chip chip-na' }, 'Inactivo'))));
 }
 
@@ -160,7 +174,7 @@ function editar(ctx, datos, p) {
         if (error) throw new Error(error.message);
       }
       avisar(p ? 'Producto guardado.' : 'Producto creado.');
-      ctx.refrescar();
+      if (p) ctx.refrescar(); else location.hash = ctx.ruta('catalogo.producto', { id, p: 'fotos' });
     },
   });
   // Eliminar, dentro del mismo formulario (solo con permiso)
@@ -193,7 +207,7 @@ function elegirPdf(ctx, datos) {
     textoGuardar: 'Descargar PDF',
     alGuardar: async (v) => {
       if (!v.categorias.length) throw new Error('Elige al menos una categoría.');
-      const { pdfCatalogo } = await import('../pdf.js?v=a07e023');
+      const { pdfCatalogo } = await import('../pdf.js?v=b159e43');
       await pdfCatalogo(ctx, datos, { categorias: v.categorias, precios: v.precios === 'si', marcas: v.marcas === 'si' });
       avisar('PDF descargado.');
     },
@@ -201,7 +215,7 @@ function elegirPdf(ctx, datos) {
 }
 
 async function excel(ctx, datos) {
-  const { exportarExcel } = await import('../../../core/excel.js?v=a07e023');
+  const { exportarExcel } = await import('../../../core/excel.js?v=b159e43');
   const filas = agrupar(datos, datos.productos).flatMap((g) => g.secciones.flatMap((s) => s.productos.map((p) => [
     g.categoria.nombre, s.nombre, p.nombre, datos.marcaDe.get(p.marca_id)?.nombre ?? '', p.descripcion ?? '', p.material ?? '', p.procedencia ?? '',
     p.precio, p.activo ? 'Sí' : 'No'])));
@@ -211,4 +225,104 @@ async function excel(ctx, datos) {
     filas,
   });
   avisar('Excel descargado.');
+}
+
+// ---- Traer un producto desde el enlace de otra página (proveedor o marca)
+// Lee la ficha en el servidor (catalogo-traer), deja revisar los datos y crea el producto o le agrega la camioneta;
+// después se eligen las fotos a copiar. El precio de la otra página se propone en neto (sin IVA): es referencia.
+function importar(ctx, datos) {
+  abrirFormulario({
+    titulo: 'Traer desde enlace',
+    mensaje: 'Pega el enlace de la ficha de un producto (por ejemplo, de Bulder o de la página de la marca).',
+    campos: [{ id: 'url', etiqueta: 'Enlace', tipo: 'url', requerido: true }],
+    textoGuardar: 'Leer la página',
+    alGuardar: async (v) => revisar(ctx, datos, await traerDesdeEnlace(ctx, { accion: 'leer', url: v.url.trim() })),
+  });
+}
+
+const DE_VEHICULO = /marca|modelo|veh[ií]c|a[ñn]o|cabina|origen|procedencia/i;
+
+function revisar(ctx, datos, f) {
+  const s = f.sugerido ?? {};
+  const norm = (t) => (t ?? '').trim().toLowerCase();
+  // Productos existentes: primero los del mismo modelo (para agregarles solo la camioneta)
+  const mismos = datos.productos.filter((p) => s.modelo && norm(p.modelo) === norm(s.modelo));
+  const otros = datos.productos.filter((p) => !mismos.includes(p));
+  const neto = f.precio ? Math.round(f.precio / 1.19) : '';
+  const marcaVeh = MARCAS_VEHICULO.find((m) => norm(m) === norm(s.vehiculo_marca)) ?? (s.vehiculo_marca ? s.vehiculo_marca.toLowerCase().replace(/(^|\s)\S/g, (l) => l.toUpperCase()): '');
+  abrirFormulario({
+    titulo: 'Revisar antes de agregar',
+    mensaje: `Leído de ${new URL(f.url).hostname}: ${f.imagenes.length} fotos${f.videos.length ? `, ${f.videos.length} videos` : ''} y ${f.atributos.length} características.`,
+    campos: [
+      { id: 'destino', etiqueta: 'Agregar como', opciones: [['nuevo', 'Producto nuevo'], ...mismos.map((p) => [p.id, `Camioneta de: ${p.nombre}`]), ...otros.map((p) => [p.id, `Camioneta de: ${p.nombre}`])], valor: mismos[0]?.id ?? 'nuevo',
+        ayuda: mismos.length ? 'Ya hay un producto de ese modelo: se le agrega esta camioneta.' : 'Si la página es una camioneta de un producto que ya tienes, elígelo.' },
+      { id: 'nombre', etiqueta: 'Nombre del producto', requerido: true, valor: s.modelo && s.tipo ? `${s.tipo} ${s.modelo}` : f.titulo ?? '' },
+      { id: 'categoria_id', etiqueta: 'Categoría', opciones: datos.categorias.map((c) => [c.id, c.nombre]), valor: filtro.categoria || datos.categorias[0]?.id },
+      { id: 'seccion', etiqueta: 'Sección', valor: '', sugerencias: [...new Set(datos.productos.map((x) => x.seccion).filter(Boolean))] },
+      { id: 'marca', etiqueta: 'Marca (si no existe, se crea)', valor: datos.marcas.find((m) => norm(m.nombre) === norm(s.marca))?.nombre ?? s.marca ?? '', sugerencias: datos.marcas.map((m) => m.nombre) },
+      { id: 'modelo', etiqueta: 'Modelo del producto', valor: s.modelo ?? '' },
+      { id: 'descripcion', etiqueta: 'Descripción', tipo: 'textarea', filas: 4, valor: [f.descripcion, f.detalle].filter(Boolean).join('\n\n') },
+      { id: 'procedencia', etiqueta: 'Procedencia', valor: s.procedencia ?? '' },
+      { id: 'garantia', etiqueta: 'Garantía', valor: s.garantia ?? '' },
+      { id: 'vehiculo_marca', etiqueta: 'Camioneta: marca (vacío si vale para todas)', valor: marcaVeh, sugerencias: MARCAS_VEHICULO },
+      { id: 'vehiculo_modelo', etiqueta: 'Camioneta: modelo', valor: s.vehiculo_modelo ?? '' },
+      { id: 'cabina', etiqueta: 'Cabina', valor: s.cabina ?? '', sugerencias: CABINAS },
+      { id: 'anio_desde', etiqueta: 'Año desde', tipo: 'number', valor: s.anio_desde ?? '' },
+      { id: 'anio_hasta', etiqueta: 'Año hasta (vacío: en adelante)', tipo: 'number', valor: '' },
+      { id: 'precio', etiqueta: 'Precio neto de venta', tipo: 'number', valor: neto,
+        ayuda: f.precio ? `La página muestra ${dinero(f.precio)} (con IVA); se propone el neto. Ajústalo a tu precio.` : 'La página no muestra precio.' },
+    ],
+    textoGuardar: 'Agregar y elegir fotos',
+    alGuardar: async (v) => {
+      const num = (x) => (x === '' || x == null ? null : Math.round(Number(x)));
+      const conVehiculo = v.vehiculo_marca.trim() && v.vehiculo_modelo.trim();
+      let productoId = v.destino;
+      if (productoId === 'nuevo') {
+        // Marca: la existente con ese nombre o una nueva
+        let marcaId = null;
+        if (v.marca.trim()) {
+          marcaId = datos.marcas.find((m) => norm(m.nombre) === norm(v.marca))?.id ?? null;
+          if (!marcaId) {
+            const { data, error } = await ctx.api.from('cat_marcas').insert({ empresa_id: ctx.empresa.id, nombre: v.marca.trim(), orden: datos.marcas.length + 1 }).select('id').single();
+            if (error) throw new Error(error.message);
+            marcaId = data.id;
+          }
+        }
+        const ficha = f.atributos.filter((a) => !DE_VEHICULO.test(a.e)).map((a) => ({ e: a.e, v: a.v }));
+        const { data, error } = await ctx.api.from('cat_productos').insert({
+          empresa_id: ctx.empresa.id, categoria_id: v.categoria_id, seccion: v.seccion.trim() || null, marca_id: marcaId,
+          nombre: v.nombre.trim(), modelo: v.modelo.trim() || null, descripcion: v.descripcion.trim() || null,
+          procedencia: v.procedencia.trim() || null, garantia: v.garantia.trim() || null, ficha, videos: f.videos ?? [],
+          precio: conVehiculo ? null : num(v.precio), origen_url: f.url, activo: true,
+        }).select('id').single();
+        if (error) throw new Error(error.message);
+        productoId = data.id;
+      } else {
+        // Producto existente: se completan solo los datos que tenga vacíos
+        const actual = datos.productos.find((p) => p.id === productoId);
+        const vacios = {};
+        if (!actual.modelo && v.modelo.trim()) vacios.modelo = v.modelo.trim();
+        if (!actual.garantia && v.garantia.trim()) vacios.garantia = v.garantia.trim();
+        if (!(actual.ficha ?? []).length) vacios.ficha = f.atributos.filter((a) => !DE_VEHICULO.test(a.e)).map((a) => ({ e: a.e, v: a.v }));
+        if (!(actual.videos ?? []).length && f.videos?.length) vacios.videos = f.videos;
+        if (!actual.origen_url) vacios.origen_url = f.url;
+        if (Object.keys(vacios).length) {
+          const { error } = await ctx.api.from('cat_productos').update(vacios).eq('id', productoId);
+          if (error) throw new Error(error.message);
+        }
+      }
+      let versionId = null;
+      if (conVehiculo) {
+        const { data, error } = await ctx.api.from('cat_versiones').insert({
+          empresa_id: ctx.empresa.id, producto_id: productoId, vehiculo_marca: v.vehiculo_marca.trim(), vehiculo_modelo: v.vehiculo_modelo.trim(),
+          cabina: v.cabina.trim() || null, anio_desde: num(v.anio_desde), anio_hasta: num(v.anio_hasta), precio: num(v.precio), origen_url: f.url,
+        }).select('id').single();
+        if (error) throw new Error(error.message);
+        versionId = data.id;
+      }
+      const ir = () => { location.hash = ctx.ruta('catalogo.producto', { id: productoId, p: 'fotos' }); };
+      if (f.imagenes.length) elegirFotos(ctx, productoId, versionId, f, ir); else ir();
+      avisar(v.destino === 'nuevo' ? 'Producto creado.' : 'Camioneta agregada.');
+    },
+  });
 }

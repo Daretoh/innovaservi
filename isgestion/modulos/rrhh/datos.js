@@ -1,6 +1,6 @@
 // Datos y reglas compartidas por las vistas de RRHH.
-import { el } from '../../core/ui/dom.js?v=a07e023';
-import { icono } from '../../core/ui/iconos.js?v=a07e023';
+import { el } from '../../core/ui/dom.js?v=b159e43';
+import { icono } from '../../core/ui/iconos.js?v=b159e43';
 
 export const VINCULOS = [['contrato', 'Contrato'], ['spot', 'Spot'], ['honorarios', 'Honorarios'], ['practica', 'Práctica']];
 export const nombreVinculo = Object.fromEntries(VINCULOS);
