@@ -1,5 +1,6 @@
 // Datos y reglas comunes de Tareas (v2, como InnovaGestión).
-import { hoyISO, diaLocal } from '../../core/ui/formato.js?v=b159e43';
+import { hoyISO, diaLocal } from '../../core/ui/formato.js?v=13da9a0';
+import { el } from '../../core/ui/dom.js?v=13da9a0';
 
 export const PRIORIDADES = [['baja', 'Baja'], ['media', 'Media'], ['alta', 'Alta']];
 export const NIVELES = PRIORIDADES.map(([k]) => k);
@@ -47,6 +48,24 @@ export const ordenar = (lista) => [...lista].sort((a, b) =>
 export function mencionados(texto, usuarios) {
   const t = ` ${texto.toLowerCase()}`;
   return usuarios.filter((u) => t.includes(`@${u.nombre.toLowerCase()}`));
+}
+
+// Sugerencias al escribir "@" en un campo de texto (observaciones, detalle de una tarea nueva): botones con los nombres
+// que calzan; al elegir uno queda "@Nombre Apellido " en el texto. Devuelve el bloque de sugerencias para ponerlo bajo el campo.
+export function sugerirMenciones(campo, usuarios) {
+  const sugerencias = el('div', { class: 'tar2-sug', hidden: true });
+  campo.addEventListener('input', () => {
+    const antes = campo.value.slice(0, campo.selectionStart);
+    const m = antes.match(/@([\p{L} ]{0,30})$/u);
+    const l = m ? usuarios.filter((u) => u.nombre.toLowerCase().startsWith(m[1].toLowerCase())).slice(0, 6) : [];
+    sugerencias.hidden = !l.length;
+    sugerencias.replaceChildren(...l.map((u) => el('button', { type: 'button', class: 'boton boton-secundario boton-chico', onclick: () => {
+      const ini = antes.length - m[0].length;
+      campo.value = `${campo.value.slice(0, ini)}@${u.nombre} ${campo.value.slice(campo.selectionStart)}`;
+      sugerencias.hidden = true; campo.focus();
+    } }, `@${u.nombre}`)));
+  });
+  return sugerencias;
 }
 
 // Categorías (como InnovaGestión): se sugiere por el título y se puede cambiar a mano

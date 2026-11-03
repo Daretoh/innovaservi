@@ -1,7 +1,7 @@
 // Formulario "Nueva tarea" (lo usan Tareas y Grupo → Tareas del grupo). ctx = el de la empresa donde se crea.
-import { abrirFormulario } from '../../../core/ui/modal.js?v=b159e43';
-import { avisar } from '../../../core/ui/aviso.js?v=b159e43';
-import { PRIORIDADES, REPETIR, CATEGORIAS, categoriaAuto } from '../datos.js?v=b159e43';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=13da9a0';
+import { avisar } from '../../../core/ui/aviso.js?v=13da9a0';
+import { PRIORIDADES, REPETIR, CATEGORIAS, categoriaAuto, mencionados, sugerirMenciones } from '../datos.js?v=13da9a0';
 
 export const SELECT_TAREA = '*, tar_adjuntos(id), tar_obs(id)';
 
@@ -28,8 +28,16 @@ export function nuevaTarea(ctx, { usuarios, responsable = ctx.usuario.id, alCrea
         categoria: v.categoria || categoriaAuto(v.titulo),
       }).select(SELECT_TAREA).single();
       if (error) throw new Error(error.message);
-      avisar('Tarea creada.');
+      // @menciones en el detalle: avisan a la persona (como en las observaciones)
+      const ments = mencionados(v.detalle, usuarios).filter((u) => u.user_id !== ctx.usuario.id);
+      if (ments.length) {
+        const { error: e2 } = await ctx.api.from('tar_avisos').insert(ments.map((u) => ({ empresa_id: ctx.empresa.id, tarea_id: t.id, user_id: u.user_id, tipo: 'mencion', texto: v.detalle.trim().slice(0, 300) })));
+        avisar(e2 ? `Tarea creada, pero no se pudo avisar: ${e2.message}` : `Tarea creada. Avisado: ${ments.map((u) => u.nombre).join(', ')}.`, e2 ? 'error' : undefined);
+      } else avisar('Tarea creada.');
       alCrear?.(t);
     },
   });
+  // @ en el detalle: sugerencias de nombres bajo el campo
+  const detalle = document.querySelector('dialog.modal[open] #f-detalle');
+  if (detalle) { detalle.placeholder = 'Usa @ para mencionar a alguien.'; detalle.after(sugerirMenciones(detalle, usuarios)); }
 }

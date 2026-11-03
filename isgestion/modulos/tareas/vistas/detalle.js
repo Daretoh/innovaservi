@@ -1,15 +1,15 @@
 // Detalle de una tarea (como InnovaGestión): datos editables, estado (pendiente / en proceso / terminada), prioridad
 // inteligente, seguimiento con observaciones y cambios, @menciones que avisan a la persona, botón Recordar a los
 // responsables, y archivos y fotos (elegir, pegar un pantallazo con Ctrl+V o arrastrar sobre la tarea).
-import { el } from '../../../core/ui/dom.js?v=b159e43';
-import { icono } from '../../../core/ui/iconos.js?v=b159e43';
-import { boton } from '../../../core/ui/tabla.js?v=b159e43';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=b159e43';
-import { avisar } from '../../../core/ui/aviso.js?v=b159e43';
-import { subirArchivo, eliminarArchivo, urlsFirmadas, urlFirmada } from '../../../core/adjuntos.js?v=b159e43';
-import { comprimirFoto, esImagen } from '../../../core/imagenes.js?v=b159e43';
-import { fechaLarga, diaLocal } from '../../../core/ui/formato.js?v=b159e43';
-import { PRIORIDADES, nombrePrioridad, ESTADOS, REPETIR, CATEGORIAS, nombreCategoria, prioridad, diasAbierta, mencionados } from '../datos.js?v=b159e43';
+import { el } from '../../../core/ui/dom.js?v=13da9a0';
+import { icono } from '../../../core/ui/iconos.js?v=13da9a0';
+import { boton } from '../../../core/ui/tabla.js?v=13da9a0';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=13da9a0';
+import { avisar } from '../../../core/ui/aviso.js?v=13da9a0';
+import { subirArchivo, eliminarArchivo, urlsFirmadas, urlFirmada } from '../../../core/adjuntos.js?v=13da9a0';
+import { comprimirFoto, esImagen } from '../../../core/imagenes.js?v=13da9a0';
+import { fechaLarga, diaLocal } from '../../../core/ui/formato.js?v=13da9a0';
+import { PRIORIDADES, nombrePrioridad, ESTADOS, REPETIR, CATEGORIAS, nombreCategoria, prioridad, diasAbierta, mencionados, sugerirMenciones } from '../datos.js?v=13da9a0';
 
 const MAX = 25 * 1024 * 1024;
 const hora = (ts) => new Date(ts).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
@@ -51,18 +51,7 @@ export async function abrirDetalle(ctx, t, { usuarios, alCambiar }) {
 
     // Seguimiento con @menciones
     const texto = el('textarea', { class: 'campo', rows: 2, placeholder: 'Escribe una observación. Usa @ para mencionar a alguien.', disabled: !participa });
-    const sugerencias = el('div', { class: 'tar2-sug', hidden: true });
-    texto.addEventListener('input', () => {
-      const antes = texto.value.slice(0, texto.selectionStart);
-      const m = antes.match(/@([\p{L} ]{0,30})$/u);
-      const l = m ? usuarios.filter((u) => u.nombre.toLowerCase().startsWith(m[1].toLowerCase())).slice(0, 6) : [];
-      sugerencias.hidden = !l.length;
-      sugerencias.replaceChildren(...l.map((u) => el('button', { type: 'button', class: 'boton boton-secundario boton-chico', onclick: () => {
-        const ini = antes.length - m[0].length;
-        texto.value = `${texto.value.slice(0, ini)}@${u.nombre} ${texto.value.slice(texto.selectionStart)}`;
-        sugerencias.hidden = true; texto.focus();
-      } }, `@${u.nombre}`)));
-    });
+    const sugerencias = sugerirMenciones(texto, usuarios);
     const comentar = async () => {
       const v = texto.value.trim(); if (!v) return;
       const { error } = await ctx.api.from('tar_obs').insert({ empresa_id: e, tarea_id: t.id, texto: v });
