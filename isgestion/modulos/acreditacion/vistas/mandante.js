@@ -1,17 +1,17 @@
 // Requisitos de un mandante: tabla de requisitos mensuales por mes, requisitos únicos y su configuración.
 // Ruta: #/acreditacion.mandante?id=<tercero>
-import { el } from '../../../core/ui/dom.js?v=13da9a0';
-import { icono } from '../../../core/ui/iconos.js?v=13da9a0';
-import { boton } from '../../../core/ui/tabla.js?v=13da9a0';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=13da9a0';
-import { avisar } from '../../../core/ui/aviso.js?v=13da9a0';
-import { subirArchivo, eliminarArchivo } from '../../../core/adjuntos.js?v=13da9a0';
-import { fechaLarga, hoyISO, moverMes, nombreMes } from '../../../core/ui/formato.js?v=13da9a0';
-import { cargarDocumentos, cumplimientoMandante, nombreTercero, mesActual, CHIP, textoEstado } from '../datos.js?v=13da9a0';
-import { REQUISITOS } from '../sugeridos.js?v=13da9a0';
-import { abrir } from './documentos.js?v=13da9a0';
-import { esNomina, generarNomina } from '../nomina.js?v=13da9a0';
-import { seccionTrabajadores } from '../trabajadores.js?v=13da9a0';
+import { el } from '../../../core/ui/dom.js?v=065bd32';
+import { icono } from '../../../core/ui/iconos.js?v=065bd32';
+import { boton } from '../../../core/ui/tabla.js?v=065bd32';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=065bd32';
+import { avisar } from '../../../core/ui/aviso.js?v=065bd32';
+import { subirArchivo, eliminarArchivo } from '../../../core/adjuntos.js?v=065bd32';
+import { fechaLarga, hoyISO, moverMes, nombreMes } from '../../../core/ui/formato.js?v=065bd32';
+import { cargarDocumentos, cumplimientoMandante, nombreTercero, mesActual, CHIP, textoEstado } from '../datos.js?v=065bd32';
+import { REQUISITOS } from '../sugeridos.js?v=065bd32';
+import { abrir } from './documentos.js?v=065bd32';
+import { esNomina, generarNomina } from '../nomina.js?v=065bd32';
+import { seccionTrabajadores } from '../trabajadores.js?v=065bd32';
 
 const ARCHIVOS = ['application/pdf', 'image/jpeg', 'image/png',
   'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
