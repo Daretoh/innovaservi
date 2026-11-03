@@ -1,16 +1,16 @@
 // Arranque de ISgestión: sesión → empresas y permisos → barra con selector → menú → vista.
-import { iniciarApi, db, urlApp } from './api.js?v=6098579';
-import { sesionActual, iniciarSesion, cerrarSesion, alCambiarSesion, recuperarClave, errorAuth } from './auth.js?v=6098579';
-import { cargarPermisos, crearPuede } from './permisos.js?v=6098579';
-import { cargarEmpresas, cargarModulosEmpresa, elegirEmpresa, recordarEmpresa, nombreEmpresa } from './empresas.js?v=6098579';
-import { cargarManifiestos, modulosVisibles, apartadosPorCategoria, configModulo } from './modulos.js?v=6098579';
-import { el } from './ui/dom.js?v=6098579';
-import { icono } from './ui/iconos.js?v=6098579';
-import { boton } from './ui/tabla.js?v=6098579';
-import inicio from './vistas/inicio.js?v=6098579';
-import mas from './vistas/mas.js?v=6098579';
-import { franja, botonNotificaciones, desactivar } from './push.js?v=6098579';
-import { barraMovil, marcarBarraMovil, bienvenidaInicial, recordarMarca, marcaGuardada, CORTE_TELEFONO } from './movil.js?v=6098579';
+import { iniciarApi, db, urlApp } from './api.js?v=36f4361';
+import { sesionActual, iniciarSesion, cerrarSesion, alCambiarSesion, recuperarClave, errorAuth } from './auth.js?v=36f4361';
+import { cargarPermisos, crearPuede } from './permisos.js?v=36f4361';
+import { cargarEmpresas, cargarModulosEmpresa, elegirEmpresa, recordarEmpresa, nombreEmpresa } from './empresas.js?v=36f4361';
+import { cargarManifiestos, modulosVisibles, apartadosPorCategoria, configModulo } from './modulos.js?v=36f4361';
+import { el } from './ui/dom.js?v=36f4361';
+import { icono } from './ui/iconos.js?v=36f4361';
+import { boton } from './ui/tabla.js?v=36f4361';
+import inicio from './vistas/inicio.js?v=36f4361';
+import mas from './vistas/mas.js?v=36f4361';
+import { franja, botonNotificaciones, desactivar } from './push.js?v=36f4361';
+import { barraMovil, marcarBarraMovil, bienvenidaInicial, recordarMarca, marcaGuardada, CORTE_TELEFONO } from './movil.js?v=36f4361';
 
 const COLOR_BASE = '#1f4e8c';
 const CLAVE_MINIMA = 10;   // 08 Seguridad §4
@@ -240,6 +240,8 @@ function empresaGrupo(empresas) {
 
 function montar(empresa) {
   estado.rutas = new Map();
+  // Pantallas recorridas en esta empresa (para "Volver"); se guardan en la pestaña para que sobrevivan a una recarga
+  try { const g = JSON.parse(sessionStorage.getItem('isg.historial') ?? 'null'); estado.historial = g?.empresa === empresa?.id ? g.h : []; } catch { estado.historial = []; }
   for (const m of estado.visibles) for (const item of m.menu) estado.rutas.set(item.id, { item, modulo: m });
   // Apartados (una opción del menú con sus pantallas como pestañas) y a qué apartado pertenece cada pantalla
   estado.apartados = apartadosPorCategoria(estado.visibles);
@@ -288,7 +290,7 @@ function pintarApp() {
         el('div', { class: 'barra-espacio' }),
         el('div', { class: 'usuario' },
           (estado.consola = el('a', { class: 'boton boton-secundario boton-chico solo-escritorio', href: 'consola/', hidden: true, title: 'Consola de la plataforma (equipo ISgestión)' }, icono('ajustes', { tam: 14 }), 'Consola')),
-          el('button', { type: 'button', class: 'correo solo-escritorio', title: 'Mi PIN personal (crear o cambiar)', onclick: () => import('./pin.js?v=6098579').then((m) => m.miPin(db())) }, estado.usuario.email),
+          el('button', { type: 'button', class: 'correo solo-escritorio', title: 'Mi PIN personal (crear o cambiar)', onclick: () => import('./pin.js?v=36f4361').then((m) => m.miPin(db())) }, estado.usuario.email),
           (estado.botonNotif = botonNotificaciones(estado.usuario.id, () => (estado.empresa?.grupo ? estado.empresas[0]?.id : estado.empresa?.id))),
           botonModo(),
           el('button', { type: 'button', class: 'boton-icono solo-escritorio', title: 'Cerrar sesión', 'aria-label': 'Cerrar sesión', onclick: () => salir() }, icono('salir')))),
@@ -467,6 +469,7 @@ async function navegar() {
     if (marcado) { a.setAttribute('aria-current', 'page'); a.closest('.menu-grupo.cerrado')?.classList.remove('cerrado'); }
   }
   marcarBarraMovil(estado.barraMovil, id, actual?.item.padre);
+  anotarHistorial(id);
   const turno = ++estado.render;
   const ctx = contexto(query);
 
@@ -518,11 +521,44 @@ async function navegar() {
         nodo)
       : nodo;
     if (contenido !== nodo) nodo.classList.remove('vista-entra');
+    ajustarVolver(nodo, id);
     if (turno === estado.render) estado.contenido.replaceChildren(contenido);
   } catch (e) {
     if (turno === estado.render) {
       estado.contenido.replaceChildren(estadoVacio('alerta', 'No se pudo cargar', e.message, true));
     }
+  }
+}
+// "Volver" vuelve a la pantalla de donde se llegó (pedido de Enzo, 2026-11-03): de Facturas a una cotización y
+// "Volver" debe dejar en Facturas, no en la lista de cotizaciones. Se anota cada pantalla visitada; ir a la
+// penúltima es volver (se saca la última) y cambiar solo los parámetros de la misma pantalla la reemplaza.
+function anotarHistorial(id) {
+  const h = estado.historial ??= [];
+  const hash = location.hash || '#/';
+  if (h.at(-1) === hash) return;
+  const idDe = (x) => x.replace(/^#\/?/, '').split('?')[0];
+  if (h.at(-2) === hash) h.pop();
+  else if (h.length && idDe(h.at(-1)) === id) h[h.length - 1] = hash;
+  else h.push(hash);
+  if (h.length > 50) h.shift();
+  try { sessionStorage.setItem('isg.historial', JSON.stringify({ empresa: estado.empresa?.id, h })); } catch { /* sin almacenamiento */ }
+}
+// Los enlaces "Volver" de las fichas (a.volver, y el del taller en el teléfono) apuntan a la pantalla anterior, con su
+// nombre, si se llegó desde otra pantalla; si se abrió directo (enlace, recarga), queda el destino fijo de la vista.
+function ajustarVolver(nodo, id) {
+  const previo = estado.historial?.at(-2);
+  if (!previo) return;
+  const idPrevio = previo.replace(/^#\/?/, '').split('?')[0];
+  if (idPrevio === id) return;
+  const nombre = idPrevio === '' ? 'Inicio' : estado.rutas.get(idPrevio)?.item.label ?? (idPrevio === 'mas' ? 'Más' : null);
+  if (!nombre) return;
+  for (const a of nodo.querySelectorAll?.('a.volver, a.om-volver') ?? []) {
+    if (a.getAttribute('href') === previo) continue;
+    a.setAttribute('href', previo);
+    a.onclick = null;
+    if (a.classList.contains('om-volver')) { a.setAttribute('aria-label', `Volver a ${nombre}`); continue; }
+    for (const n of [...a.childNodes]) if (n.nodeType === Node.TEXT_NODE) n.remove();
+    a.append(nombre);
   }
 }
 window.addEventListener('hashchange', navegar);

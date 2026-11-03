@@ -1,10 +1,11 @@
 // Clientes con cierre mensual: sus órdenes del taller se cobran en un cierre por mes (no una a una).
 // Los precios salen de la lista de precios del cliente (Cotizaciones → Listas de precios).
-import { el } from '../../../core/ui/dom.js?v=6098579';
-import { boton } from '../../../core/ui/tabla.js?v=6098579';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=6098579';
-import { avisar } from '../../../core/ui/aviso.js?v=6098579';
-import { nombreTercero } from '../datos.js?v=6098579';
+import { el } from '../../../core/ui/dom.js?v=36f4361';
+import { icono } from '../../../core/ui/iconos.js?v=36f4361';
+import { boton } from '../../../core/ui/tabla.js?v=36f4361';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=36f4361';
+import { avisar } from '../../../core/ui/aviso.js?v=36f4361';
+import { nombreTercero } from '../datos.js?v=36f4361';
 
 export default async function vista(ctx) {
   const e = ctx.empresa.id;
@@ -37,6 +38,7 @@ export default async function vista(ctx) {
   });
 
   return el('section', { class: 'listado' },
+    el('a', { class: 'volver', href: ctx.ruta('cierres.mensuales') }, icono('volver', { tam: 16 }), 'Cierres mensuales'),
     el('header', { class: 'listado-cabecera' }, el('h1', {}, 'Clientes con cierre mensual'),
       editar && libres.length ? el('div', { class: 'listado-acciones' }, boton('Agregar cliente', { icono: 'mas', tipo: 'primario', onclick: () => formulario(null) })) : null),
     el('div', { class: 'ficha doc-grupo' },

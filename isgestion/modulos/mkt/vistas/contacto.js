@@ -1,14 +1,14 @@
 // Ficha del contacto: etapa (se cambia con un clic), datos, actividad (lo que se habló, cambios de etapa) y acciones:
 // escribir por WhatsApp con una respuesta guardada (abre WhatsApp y queda en la actividad), registrar actividad,
 // crear tarea de seguimiento, vincular o crear el cliente en Clientes y proveedores, editar y eliminar. ?id=
-import { el } from '../../../core/ui/dom.js?v=6098579';
-import { icono } from '../../../core/ui/iconos.js?v=6098579';
-import { boton } from '../../../core/ui/tabla.js?v=6098579';
-import { avisar } from '../../../core/ui/aviso.js?v=6098579';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=6098579';
-import { dinero, fechaLarga, fechaCorta, diaLocal, hhmm } from '../../../core/ui/formato.js?v=6098579';
-import { cargarBase, cargarCss, nombreOrigen, nombreEvento, enlaceWhatsapp, diasHasta, MOTIVOS, opcionesUsuarios } from '../datos.js?v=6098579';
-import { formContacto, formActividad } from '../formularios.js?v=6098579';
+import { el } from '../../../core/ui/dom.js?v=36f4361';
+import { icono } from '../../../core/ui/iconos.js?v=36f4361';
+import { boton } from '../../../core/ui/tabla.js?v=36f4361';
+import { avisar } from '../../../core/ui/aviso.js?v=36f4361';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=36f4361';
+import { dinero, fechaLarga, fechaCorta, diaLocal, hhmm } from '../../../core/ui/formato.js?v=36f4361';
+import { cargarBase, cargarCss, nombreOrigen, nombreEvento, enlaceWhatsapp, diasHasta, MOTIVOS, opcionesUsuarios } from '../datos.js?v=36f4361';
+import { formContacto, formActividad } from '../formularios.js?v=36f4361';
 
 export default async function vista(ctx) {
   cargarCss();
@@ -159,7 +159,7 @@ export default async function vista(ctx) {
 
   return el('section', { class: 'listado' },
     el('header', { class: 'listado-cabecera' },
-      el('div', {}, el('a', { href: ctx.ruta('mkt.embudo'), class: 'texto-chico' }, icono('volver', { tam: 14 }), ' Embudo'), el('h1', {}, c.nombre)),
+      el('div', {}, el('a', { class: 'volver', href: ctx.ruta('mkt.embudo') }, icono('volver', { tam: 16 }), 'Embudo'), el('h1', {}, c.nombre)),
       el('div', { class: 'listado-acciones' },
         c.telefono ? boton('WhatsApp', { icono: 'chat', tipo: 'primario', onclick: whatsapp }) : null,
         crear ? boton('Registrar actividad', { icono: 'mas', onclick: () => formActividad(ctx, c, { alGuardar: () => ctx.refrescar() }) }) : null,

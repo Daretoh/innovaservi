@@ -2,14 +2,14 @@
 // y subir respaldos (factura, OC, comprobante de pago). Lo usan la pestaña Facturas y el Seguimiento del editor.
 // Si la factura está ligada a una cotización, la base copia en ella la factura y el pago; al pagar, las órdenes del
 // taller ligadas quedan cobradas (cobrarOrdenes) y al anular el pago vuelven a quedar por cobrar.
-import { el } from '../../core/ui/dom.js?v=6098579';
-import { abrirFormulario } from '../../core/ui/modal.js?v=6098579';
-import { avisar } from '../../core/ui/aviso.js?v=6098579';
-import { hoyISO, sumarDias, dinero } from '../../core/ui/formato.js?v=6098579';
-import { subirArchivo } from '../../core/adjuntos.js?v=6098579';
-import { cobrarOrdenes, descobrarOrdenes } from './acciones.js?v=6098579';
-import { totales, numeroTexto, verPatente, nombreTercero, cargarCotizacion, IVA } from './datos.js?v=6098579';
-import { MEDIOS } from './seguimiento.js?v=6098579';
+import { el } from '../../core/ui/dom.js?v=36f4361';
+import { abrirFormulario } from '../../core/ui/modal.js?v=36f4361';
+import { avisar } from '../../core/ui/aviso.js?v=36f4361';
+import { hoyISO, sumarDias, dinero } from '../../core/ui/formato.js?v=36f4361';
+import { subirArchivo } from '../../core/adjuntos.js?v=36f4361';
+import { cobrarOrdenes, descobrarOrdenes } from './acciones.js?v=36f4361';
+import { totales, numeroTexto, verPatente, nombreTercero, cargarCotizacion, IVA } from './datos.js?v=36f4361';
+import { MEDIOS } from './seguimiento.js?v=36f4361';
 
 export const PLAZO_PAGO = 30;   // días entre la emisión y el pago estimado (como en la planilla de Performance)
 export const TIPOS_ARCHIVO = ['application/pdf', 'image/jpeg', 'image/png'];

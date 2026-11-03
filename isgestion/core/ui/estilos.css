@@ -596,6 +596,8 @@ button.dia-tarjeta { cursor: pointer; }
 @media (max-width: 760px) { .pos-linea { grid-template-columns: 1fr 1fr 1fr 32px; } .pos-linea > :first-child { grid-column: 1 / -1; } }
 
 /* ---------- Costos y Estado de resultados ---------- */
+.cue-titulo { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+.cue-titulo h2 { margin: 0; }
 .cue-detalle { margin-top: 12px; }
 .cue-detalle h3 { font-size: .95rem; margin: 0 0 6px; color: var(--texto-suave); }
 .fin-tarjetas { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-bottom: 16px; }

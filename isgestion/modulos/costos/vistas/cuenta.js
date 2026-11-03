@@ -4,22 +4,22 @@
 // Pestañas: Resumen mensual (solo lectura, como la planilla "Resumen D&P": por mes sus trabajos, compras y pagos con
 // saldo acumulado) y Movimientos (registrar pago, dejar al día). Se abre desde Pagos (sin opción nueva en el menú).
 // Ruta: #/costos.cuenta?t=<tercero>
-import { el } from '../../../core/ui/dom.js?v=6098579';
-import { icono } from '../../../core/ui/iconos.js?v=6098579';
-import { boton } from '../../../core/ui/tabla.js?v=6098579';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=6098579';
-import { avisar } from '../../../core/ui/aviso.js?v=6098579';
-import { subirArchivo } from '../../../core/adjuntos.js?v=6098579';
-import { dinero, fechaLarga, hoyISO, nombreMes } from '../../../core/ui/formato.js?v=6098579';
-import { nombreTercero, MEDIOS } from '../datos.js?v=6098579';
+import { el } from '../../../core/ui/dom.js?v=36f4361';
+import { icono } from '../../../core/ui/iconos.js?v=36f4361';
+import { boton } from '../../../core/ui/tabla.js?v=36f4361';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=36f4361';
+import { avisar } from '../../../core/ui/aviso.js?v=36f4361';
+import { subirArchivo } from '../../../core/adjuntos.js?v=36f4361';
+import { dinero, fechaLarga, hoyISO, nombreMes } from '../../../core/ui/formato.js?v=36f4361';
+import { nombreTercero, MEDIOS } from '../datos.js?v=36f4361';
 
-let pestana = 'resumen', tercero = null;   // vuelve al resumen al abrir otra cuenta
+let pestana = 'resumen', tercero = null, mesFiltro = '';   // vuelve al resumen (todos los meses) al abrir otra cuenta
 const TIPO = { trabajo: ['Factura o trabajo', 'chip-ok'], compra: ['Compra a su cuenta', 'chip-prox'], abono: ['Pago', 'chip-pend'] };
 
 export default async function vista(ctx) {
   const e = ctx.empresa.id;
   const t = ctx.params.t;
-  if (t !== tercero) { tercero = t; pestana = 'resumen'; }
+  if (t !== tercero) { tercero = t; pestana = 'resumen'; mesFiltro = ''; }
   const volver = el('a', { class: 'volver', href: ctx.ruta('costos.pagos') }, icono('volver', { tam: 16 }), 'Pagos');
   const [{ data: ter }, mov] = await Promise.all([
     ctx.api.from('terceros').select('id, razon_social, nombre_fantasia, rut').eq('id', t).maybeSingle(),
@@ -75,7 +75,7 @@ export default async function vista(ctx) {
       avisar('Cuenta al día.'); ctx.refrescar();
     },
   });
-  const excel = () => import('../../../core/excel.js?v=6098579').then(({ nuevoExcel }) => nuevoExcel(ctx, { titulo: `Cuenta de ${nombreTercero(ter)}`, subtitulo: `Saldo ${saldo >= 0 ? 'a pagarle' : 'a favor de la empresa'}: ${dinero(Math.abs(saldo))}` }))
+  const excel = () => import('../../../core/excel.js?v=36f4361').then(({ nuevoExcel }) => nuevoExcel(ctx, { titulo: `Cuenta de ${nombreTercero(ter)}`, subtitulo: `Saldo ${saldo >= 0 ? 'a pagarle' : 'a favor de la empresa'}: ${dinero(Math.abs(saldo))}` }))
     .then(async (x) => {
       x.tabla({ titulo: 'Resumen mensual', columnas: ['Mes', { t: 'Facturas o trabajos', tipo: 'dinero' }, { t: 'Compras a su cuenta', tipo: 'dinero' }, { t: 'Pagos', tipo: 'dinero' }, { t: 'Neto del mes', tipo: 'dinero' }, { t: 'Saldo', tipo: 'dinero' }],
         filas: resumen.map((r) => [nombreMes(r.m), r.trabajos, r.compras, r.abonos, r.neto, r.saldo]) });
@@ -105,16 +105,23 @@ export default async function vista(ctx) {
       el('tfoot', {}, el('tr', {}, el('th', { colspan: conEstado ? 4 : 3 }, `Total (${lista.length})`),
         el('th', { class: 'num' }, dinero(lista.reduce((x, m) => x + Number(m.monto), 0))))))));
   const menos = (n) => (n ? `−${dinero(n)}` : '—');
+  // Filtro por mes: muestra solo la fila y el detalle de ese mes (el saldo acumulado sigue contando los anteriores)
+  if (mesFiltro && !resumen.some((r) => r.m === mesFiltro)) mesFiltro = '';
+  const visibles = mesFiltro ? resumen.filter((r) => r.m === mesFiltro) : resumen;
+  const filtroMes = el('select', { class: 'campo campo-filtro', 'aria-label': 'Mes', onchange: (ev) => { mesFiltro = ev.target.value; ctx.refrescar(); } },
+    el('option', { value: '' }, 'Todos los meses'),
+    [...resumen].reverse().map((r) => el('option', { value: r.m, selected: r.m === mesFiltro }, nombreMes(r.m))));
   const vistaResumen = () => (!resumen.length ? el('div', { class: 'ficha doc-grupo' }, el('p', { class: 'texto-suave' }, 'Sin movimientos.')) : [
-    el('div', { class: 'ficha doc-grupo' }, el('h2', {}, 'Resumen mensual'),
+    el('div', { class: 'ficha doc-grupo' },
+      el('div', { class: 'cue-titulo' }, el('h2', {}, 'Resumen mensual'), filtroMes),
       el('div', { class: 'tabla-contenedor' }, el('table', { class: 'tabla' },
         el('thead', {}, el('tr', {}, el('th', {}, 'Mes'), ['Facturas o trabajos', 'Compras a su cuenta', 'Pagos', 'Neto del mes', 'Saldo acumulado'].map((h) => el('th', { class: 'num' }, h)))),
-        el('tbody', {}, resumen.map((r) => el('tr', {}, el('td', {}, nombreMes(r.m)), el('td', { class: 'num' }, dinero(r.trabajos)), el('td', { class: 'num' }, menos(r.compras)),
+        el('tbody', {}, visibles.map((r) => el('tr', {}, el('td', {}, nombreMes(r.m)), el('td', { class: 'num' }, dinero(r.trabajos)), el('td', { class: 'num' }, menos(r.compras)),
           el('td', { class: 'num' }, menos(r.abonos)), el('td', { class: 'num' }, dinero(r.neto)), el('td', { class: 'num' }, el('strong', {}, dinero(r.saldo)))))),
-        el('tfoot', {}, el('tr', {}, el('th', {}, 'Total'), el('th', { class: 'num' }, dinero(suma('trabajo'))), el('th', { class: 'num' }, menos(suma('compra'))),
+        mesFiltro ? null : el('tfoot', {}, el('tr', {}, el('th', {}, 'Total'), el('th', { class: 'num' }, dinero(suma('trabajo'))), el('th', { class: 'num' }, menos(suma('compra'))),
           el('th', { class: 'num' }, menos(suma('abono'))), el('th', { class: 'num' }, dinero(saldo)), el('th', { class: 'num' }, dinero(saldo))))))),
     // Detalle por mes, del más reciente al más antiguo
-    ...[...resumen].reverse().map((r) => {
+    ...[...visibles].reverse().map((r) => {
       const de = (k) => movs.filter((x) => x.tipo === k && x.fecha.startsWith(r.m));
       return el('div', { class: 'ficha doc-grupo' },
         el('h2', {}, nombreMes(r.m)),
