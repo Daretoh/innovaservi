@@ -1,11 +1,11 @@
 // Ajustes de Marketing: etapas del embudo (nombre, tipo y orden) y respuestas guardadas para WhatsApp e Instagram.
 // En las respuestas, {nombre} se cambia por el nombre del contacto y {empresa} por el de la empresa.
-import { el } from '../../../core/ui/dom.js?v=065bd32';
-import { icono } from '../../../core/ui/iconos.js?v=065bd32';
-import { boton } from '../../../core/ui/tabla.js?v=065bd32';
-import { avisar } from '../../../core/ui/aviso.js?v=065bd32';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=065bd32';
-import { cargarBase, cargarCss, TIPOS_ETAPA } from '../datos.js?v=065bd32';
+import { el } from '../../../core/ui/dom.js?v=4f2e5e9';
+import { icono } from '../../../core/ui/iconos.js?v=4f2e5e9';
+import { boton } from '../../../core/ui/tabla.js?v=4f2e5e9';
+import { avisar } from '../../../core/ui/aviso.js?v=4f2e5e9';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=4f2e5e9';
+import { cargarBase, cargarCss, TIPOS_ETAPA } from '../datos.js?v=4f2e5e9';
 
 const EJEMPLOS = [
   ['Saludo', 'Hola {nombre}, gracias por escribir a {empresa}. ¿En qué te podemos ayudar?'],

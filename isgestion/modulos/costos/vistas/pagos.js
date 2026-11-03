@@ -2,15 +2,15 @@
 // documentos que cubre por completo. Aviso "Falta factura" para proveedores de factura mensual: pagos o compras del
 // mes sin una factura de ese proveedor. Cuentas con contratistas (2026-10-28): saldo de cada tercero con cuenta corriente
 // (trabajos − compras hechas por su cuenta − abonos); la tarjeta abre su cuenta (costos.cuenta).
-import { el } from '../../../core/ui/dom.js?v=065bd32';
-import { icono } from '../../../core/ui/iconos.js?v=065bd32';
-import { listado, boton } from '../../../core/ui/tabla.js?v=065bd32';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=065bd32';
-import { avisar } from '../../../core/ui/aviso.js?v=065bd32';
-import { urlFirmada } from '../../../core/adjuntos.js?v=065bd32';
-import { dinero, fechaLarga, hoyISO, rangoMes, moverMes, nombreMes, diaLocal } from '../../../core/ui/formato.js?v=065bd32';
-import { nombreTercero, nombreMedio } from '../datos.js?v=065bd32';
-import { comprobante } from './subir.js?v=065bd32';
+import { el } from '../../../core/ui/dom.js?v=4f2e5e9';
+import { icono } from '../../../core/ui/iconos.js?v=4f2e5e9';
+import { listado, boton } from '../../../core/ui/tabla.js?v=4f2e5e9';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=4f2e5e9';
+import { avisar } from '../../../core/ui/aviso.js?v=4f2e5e9';
+import { urlFirmada } from '../../../core/adjuntos.js?v=4f2e5e9';
+import { dinero, fechaLarga, hoyISO, rangoMes, moverMes, nombreMes, diaLocal } from '../../../core/ui/formato.js?v=4f2e5e9';
+import { nombreTercero, nombreMedio } from '../datos.js?v=4f2e5e9';
+import { comprobante } from './subir.js?v=4f2e5e9';
 
 const filtro = { estado: 'por_validar' };
 const ESTADOS = [['por_validar', 'Por validar'], ['validado', 'Validados'], ['rechazado', 'Rechazados']];
@@ -106,10 +106,10 @@ export default async function vista(ctx) {
   });
   if (saldos.length) {
     lista.querySelector('.listado-cabecera').after(el('div', { class: 'ficha doc-grupo' },
-      el('h2', {}, 'Cuentas con contratistas'),
+      el('h2', {}, 'Cuentas corrientes'),
       el('div', { class: 'fin-tarjetas' }, saldos.map((c) => el('a', { class: `ficha doc-grupo fin-tarjeta tarjeta-enlace ${c.saldo > 0 ? 'fin-alerta' : ''}`, href: ctx.ruta('costos.cuenta', { t: c.id }) },
         el('span', { class: 'texto-suave texto-chico' }, nombreTercero(c.t)), el('strong', {}, dinero(Math.abs(c.saldo))),
-        el('span', { class: 'texto-suave texto-chico' }, c.saldo > 0 ? 'por pagarle' : c.saldo < 0 ? 'a favor de la empresa' : 'al día'))))));
+        el('span', { class: 'texto-suave texto-chico' }, c.saldo > 0 ? 'por pagarle' : c.saldo < 0 ? 'pagado a cuenta, falta factura' : 'al día'))))));
   }
   if (faltan.length) {
     lista.querySelector('.listado-cabecera').after(el('div', { class: 'aviso-bandeja' }, icono('alerta', { tam: 16 }),
