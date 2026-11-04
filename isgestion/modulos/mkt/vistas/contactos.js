@@ -1,10 +1,10 @@
-// Contactos: todos en una tabla con búsqueda, filtro por etapa y Excel con el membrete de la empresa.
-import { el } from '../../../core/ui/dom.js?v=0ad8916';
-import { listado, boton } from '../../../core/ui/tabla.js?v=0ad8916';
-import { dinero, fechaLarga, diaLocal } from '../../../core/ui/formato.js?v=0ad8916';
-import { exportarExcel } from '../../../core/excel.js?v=0ad8916';
-import { cargarBase, cargarCss, nombreOrigen } from '../datos.js?v=0ad8916';
-import { formContacto } from '../formularios.js?v=0ad8916';
+// Oportunidades (contactos del embudo): todos en una tabla con búsqueda, filtro por etapa y Excel con el membrete de la empresa.
+import { el } from '../../../core/ui/dom.js?v=7f39998';
+import { listado, boton } from '../../../core/ui/tabla.js?v=7f39998';
+import { dinero, fechaLarga, diaLocal } from '../../../core/ui/formato.js?v=7f39998';
+import { exportarExcel } from '../../../core/excel.js?v=7f39998';
+import { cargarBase, cargarCss, nombreOrigen } from '../datos.js?v=7f39998';
+import { formContacto } from '../formularios.js?v=7f39998';
 
 const estado = { etapa: '' };
 
@@ -45,7 +45,7 @@ export default async function vista(ctx) {
 
   const total = filas.reduce((s, c) => s + Number(c.valor_estimado || 0), 0);
   const nodo = listado({
-    titulo: 'Contactos', columnas, filas, alFila: abrir,
+    titulo: 'Oportunidades', columnas, filas, alFila: abrir,
     vacio: 'Todavía no hay contactos. Crea el primero con "Nuevo contacto".',
     acciones: [filtro,
       ctx.puede('mkt', 'exportar') ? boton('Excel', { icono: 'descargar', onclick: excel }) : null,

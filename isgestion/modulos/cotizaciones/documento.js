@@ -1,11 +1,11 @@
 // PDF de la cotización (diseño del OS de IS Performance, con la marca de cada empresa):
 // encabezado con N° y fecha, cajas Cliente y Contacto, tabla por grupo con secciones y subtotal,
 // información de pago, totales, firma, nota de validez, contactos y sello de ISgestión.
-import { cargarJsPdf, cargarLogo, rgb, sellar } from '../../core/pdf.js?v=0ad8916';
-import { nombreEmpresa } from '../../core/empresas.js?v=0ad8916';
-import { sumarDias } from '../../core/ui/formato.js?v=0ad8916';
-import { totales, totalLinea, numeroTexto, verPatente, cargarConfig, IVA } from './datos.js?v=0ad8916';
-import { soloCosto } from './costos-orden.js?v=0ad8916';
+import { cargarJsPdf, cargarLogo, rgb, sellar } from '../../core/pdf.js?v=7f39998';
+import { nombreEmpresa } from '../../core/empresas.js?v=7f39998';
+import { sumarDias } from '../../core/ui/formato.js?v=7f39998';
+import { totales, totalLinea, numeroTexto, verPatente, cargarConfig, IVA } from './datos.js?v=7f39998';
+import { soloCosto } from './costos-orden.js?v=7f39998';
 
 const M = 15;
 const TEXTO = [28, 35, 48];
@@ -86,8 +86,10 @@ export async function pdfCotizacion(ctx, c) {
   const sangria = { cellPadding: { top: 1.8, bottom: 1.8, left: 6, right: 2 } };
   const body = [];
   c.cot_grupos.forEach((g, n) => {
-    // Los ítems "solo costo" (precio 0 con costos internos, ej. traídos de la orden) no salen en el PDF
-    const ls = c.cot_lineas.filter((l) => l.grupo_id === g.id && !soloCosto(l));
+    // Los ítems sin precio (solo costo, traídos de la orden, o en $0 como los extras del OS sin valor) no salen en el
+    // PDF, y tampoco las secciones que quedan sin ítems (2026-11-04)
+    const ls0 = c.cot_lineas.filter((l) => l.grupo_id === g.id && !soloCosto(l) && !(l.tipo === 'item' && !Number(l.precio)));
+    const ls = ls0.filter((l, i) => l.tipo !== 'seccion' || (ls0.slice(i + 1).find((x) => x.tipo === 'seccion' || x.tipo === 'item')?.tipo === 'item'));
     if (!ls.length && !g.titulo) return;
     const cab = [`${n + 1}. ${g.titulo || 'Detalle'}`, verPatente(g.patente), g.anio, g.talla ? `Talla ${g.talla}` : null].filter(Boolean).join('  ·  ');
     body.push([{ content: cab, colSpan: cols, styles: { fillColor: claro, fontStyle: 'bold', textColor: TEXTO } }]);

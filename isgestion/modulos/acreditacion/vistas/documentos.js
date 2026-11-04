@@ -1,14 +1,15 @@
 // Documentos de empresa: carpetas con sus documentos, estado de la versión vigente y avisos de vencimiento.
-import { el } from '../../../core/ui/dom.js?v=0ad8916';
-import { icono } from '../../../core/ui/iconos.js?v=0ad8916';
-import { boton } from '../../../core/ui/tabla.js?v=0ad8916';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=0ad8916';
-import { avisar } from '../../../core/ui/aviso.js?v=0ad8916';
-import { urlFirmada } from '../../../core/adjuntos.js?v=0ad8916';
-import { fechaLarga } from '../../../core/ui/formato.js?v=0ad8916';
-import { cargarDocumentos, CHIP, textoEstado } from '../datos.js?v=0ad8916';
-import { CARPETAS } from '../sugeridos.js?v=0ad8916';
-import { subirVersion } from './tipo.js?v=0ad8916';
+import { el } from '../../../core/ui/dom.js?v=7f39998';
+import { icono } from '../../../core/ui/iconos.js?v=7f39998';
+import { boton } from '../../../core/ui/tabla.js?v=7f39998';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=7f39998';
+import { avisar } from '../../../core/ui/aviso.js?v=7f39998';
+import { urlFirmada } from '../../../core/adjuntos.js?v=7f39998';
+import { fechaLarga } from '../../../core/ui/formato.js?v=7f39998';
+import { cargarDocumentos, CHIP, textoEstado } from '../datos.js?v=7f39998';
+import { CARPETAS } from '../sugeridos.js?v=7f39998';
+import { subirVersion } from './tipo.js?v=7f39998';
+import { plegable } from '../../../core/ui/plegable.js?v=7f39998';
 
 let buscar = '';
 
@@ -39,13 +40,20 @@ export default async function vista(ctx) {
   const grupos = carpetas.map((c) => {
     const lista = tipos.filter((t) => t.carpeta_id === c.id && t.activo && (!q || t.nombre.toLowerCase().includes(q)));
     if (q && !lista.length) return null;
-    return el('div', { class: 'ficha doc-grupo' },
-      el('div', { class: 'listado-cabecera' },
-        el('h2', {}, icono('carpeta', { tam: 18 }), ` ${c.nombre}`),
-        el('div', { class: 'listado-acciones' },
-          puede.crear ? boton('Agregar documento', { icono: 'mas', onclick: () => nuevoTipo(ctx, carpetas, c.id) }) : null,
-          puede.editar ? el('button', { type: 'button', class: 'boton-icono', title: 'Renombrar carpeta', 'aria-label': `Renombrar ${c.nombre}`, onclick: () => carpeta(ctx, c, tipos) }, icono('editar', { tam: 16 })) : null)),
-      lista.length ? lista.map(fila) : el('p', { class: 'texto-suave' }, 'Sin documentos en esta carpeta.'));
+    // Desplegable por carpeta (como Empresa en InnovaGestión): cuántos están cargados y qué falta, sin abrirla
+    const todos = activos.filter((t) => t.carpeta_id === c.id);
+    const cargados = todos.filter((t) => t.estado.k !== 'sin').length;
+    const nVenc = todos.filter((t) => t.estado.k === 'venc').length; const nProx = todos.filter((t) => t.estado.k === 'prox').length;
+    return plegable({
+      clave: `acr-carpeta-${c.id}`, titulo: c.nombre, ico: 'carpeta', abierta: !!q,
+      meta: todos.length ? `${cargados} de ${todos.length} cargados${todos.length - cargados ? ` · faltan ${todos.length - cargados}` : ''}` : 'Vacía',
+      avance: todos.length ? Math.round((cargados / todos.length) * 100) : null,
+      chips: [nVenc ? el('span', { class: 'chip chip-venc' }, `${nVenc} vencido${nVenc === 1 ? '' : 's'}`) : null, nProx ? el('span', { class: 'chip chip-prox' }, `${nProx} por vencer`) : null],
+      acciones: [
+        puede.crear ? el('button', { type: 'button', class: 'boton-icono', title: 'Agregar documento', 'aria-label': `Agregar documento a ${c.nombre}`, onclick: () => nuevoTipo(ctx, carpetas, c.id) }, icono('mas', { tam: 16 })) : null,
+        puede.editar ? el('button', { type: 'button', class: 'boton-icono', title: 'Renombrar carpeta', 'aria-label': `Renombrar ${c.nombre}`, onclick: () => carpeta(ctx, c, tipos) }, icono('editar', { tam: 16 })) : null],
+      cuerpo: lista.length ? lista.map(fila) : el('p', { class: 'texto-suave' }, 'Sin documentos en esta carpeta.'),
+    });
   }).filter(Boolean);
 
   const buscador = el('input', { class: 'campo campo-filtro', type: 'search', placeholder: 'Buscar documento…', value: buscar, 'aria-label': 'Buscar documento' });
@@ -61,7 +69,7 @@ export default async function vista(ctx) {
       cuenta('prox') ? el('span', { class: 'chip chip-prox' }, `${cuenta('prox')} por vencer`) : null,
       cuenta('sin') ? el('span', { class: 'chip chip-pend' }, `${cuenta('sin')} sin archivo`) : null,
       el('span', { class: 'chip chip-ok' }, `${cuenta('ok') + cuenta('cargado')} al día`)) : null,
-    grupos.length ? grupos : el('p', { class: 'texto-suave' }, carpetas.length ? 'Sin resultados.' : 'Aún no hay carpetas. Carga las sugeridas o crea las tuyas.'),
+    grupos.length ? el('div', { class: 'plegables' }, grupos) : el('p', { class: 'texto-suave' }, carpetas.length ? 'Sin resultados.' : 'Aún no hay carpetas. Carga las sugeridas o crea las tuyas.'),
     tipos.some((t) => !t.activo) ? el('p', { class: 'texto-suave texto-chico' }, 'Desactivados: ',
       tipos.filter((t) => !t.activo).flatMap((t, i) => [i ? ' · ' : '', el('a', { href: ctx.ruta('acreditacion.tipo', { id: t.id }) }, t.nombre)])) : null,
     el('p', { class: 'texto-suave texto-chico' }, 'Cada subida es una versión: manda la de fecha más reciente. Los documentos que vencen avisan antes según sus días de aviso.'));

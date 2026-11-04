@@ -1,6 +1,7 @@
 // Datos comunes de Postulantes: etapas y procesos de la empresa, nombres y el formulario del postulante.
-import { abrirFormulario } from '../../core/ui/modal.js?v=0ad8916';
-import { avisar } from '../../core/ui/aviso.js?v=0ad8916';
+import { abrirFormulario } from '../../core/ui/modal.js?v=7f39998';
+import { avisar } from '../../core/ui/aviso.js?v=7f39998';
+import { telefono, campoTelefono } from '../../core/ui/formato.js?v=7f39998';
 
 export const FUENTES = [['directo', 'Contacto directo'], ['referido', 'Referido'], ['portal', 'Portal de empleo'], ['ficha', 'Ficha de ingreso'], ['otro', 'Otro']];
 export const nombreFuente = Object.fromEntries(FUENTES);
@@ -37,7 +38,7 @@ export function formularioPostulante(ctx, base, p = null, { alListo } = {}) {
       { id: 'apellido_paterno', etiqueta: 'Apellido paterno', valor: p?.apellido_paterno ?? '' },
       { id: 'apellido_materno', etiqueta: 'Apellido materno', valor: p?.apellido_materno ?? '' },
       { id: 'rut', etiqueta: 'RUT', valor: p?.rut ?? '', ayuda: 'Opcional al comienzo; hace falta para contratar.' },
-      { id: 'telefono', etiqueta: 'Teléfono', tipo: 'tel', valor: p?.telefono ?? '' },
+      campoTelefono('telefono', 'Teléfono', p?.telefono),
       { id: 'email', etiqueta: 'Correo', tipo: 'email', valor: p?.email ?? '' },
       { id: 'comuna', etiqueta: 'Comuna', valor: p?.comuna ?? '' },
       { id: 'cargo', etiqueta: 'Cargo al que postula', valor: p?.cargo ?? '' },
@@ -47,7 +48,7 @@ export function formularioPostulante(ctx, base, p = null, { alListo } = {}) {
     ],
     alGuardar: async (v) => {
       const t = (k) => v[k].trim() || null;
-      const datos = { nombres: v.nombres.trim(), apellido_paterno: t('apellido_paterno'), apellido_materno: t('apellido_materno'), rut: t('rut'), telefono: t('telefono'),
+      const datos = { nombres: v.nombres.trim(), apellido_paterno: t('apellido_paterno'), apellido_materno: t('apellido_materno'), rut: t('rut'), telefono: telefono(v.telefono),
         email: t('email'), comuna: t('comuna'), cargo: t('cargo') ?? base.procesoDe.get(v.proceso_id)?.cargo ?? null, proceso_id: v.proceso_id || null, fuente: v.fuente, nota: t('nota') };
       if (datos.rut && !p?.rut) {
         const { data: otros } = await ctx.api.from('sel_postulantes').select('id').eq('empresa_id', ctx.empresa.id).eq('rut', datos.rut.replace(/\./g, '').toUpperCase()).is('deleted_at', null);

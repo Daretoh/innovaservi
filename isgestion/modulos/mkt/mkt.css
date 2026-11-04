@@ -100,3 +100,8 @@
 .mkt-ajustes-lista > li { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 6px 0; border-top: 1px solid var(--borde); }
 .mkt-respuesta { display: grid; gap: 2px; min-width: 0; }
 .mkt-red { width: auto; max-width: 200px; }
+
+/* ---- Formulario web */
+.mkt-form-web { display: grid; gap: 10px; }
+.mkt-enlace { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.mkt-enlace code { flex: 1 1 260px; min-width: 0; overflow-wrap: anywhere; padding: 6px 8px; border-radius: 6px; background: var(--fondo-hundido); font-size: .8rem; }

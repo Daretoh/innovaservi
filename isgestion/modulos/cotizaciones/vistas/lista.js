@@ -1,11 +1,11 @@
 // Cotizaciones: listado con filtro por estado y búsqueda; nueva cotización. Cada fila dice quién la creó y quién la
 // editó por última vez (como el OS; updated_by lo pone la base).
-import { el } from '../../../core/ui/dom.js?v=0ad8916';
-import { listado, boton } from '../../../core/ui/tabla.js?v=0ad8916';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=0ad8916';
-import { dinero, fechaLarga, fechaCorta, hoyISO, diaLocal, nombrePropio } from '../../../core/ui/formato.js?v=0ad8916';
-import { avance } from '../../taller/seguimiento.js?v=0ad8916';
-import { ESTADOS, nombreEstado, CHIP_ESTADO, SELECT_COT, totales, numeroTexto, nombreTercero, verPatente, siguienteNumero, cargarConfig, datosCliente } from '../datos.js?v=0ad8916';
+import { el } from '../../../core/ui/dom.js?v=7f39998';
+import { listado, boton } from '../../../core/ui/tabla.js?v=7f39998';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=7f39998';
+import { dinero, fechaLarga, fechaCorta, hoyISO, diaLocal, nombrePropio } from '../../../core/ui/formato.js?v=7f39998';
+import { avance } from '../../taller/seguimiento.js?v=7f39998';
+import { ESTADOS, nombreEstado, CHIP_ESTADO, SELECT_COT, totales, numeroTexto, nombreTercero, verPatente, siguienteNumero, cargarConfig, datosCliente } from '../datos.js?v=7f39998';
 
 const filtro = { estado: 'todas', buscar: '' };
 

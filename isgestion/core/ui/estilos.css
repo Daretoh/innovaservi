@@ -348,6 +348,30 @@ button.chip { cursor: pointer; }
 .doc-grupos { display: grid; gap: 16px; }
 .doc-grupo { max-width: none; gap: 0; padding: 8px 20px; }
 .doc-grupo h2 { padding: 12px 0 8px; }
+/* Secciones desplegables (core/ui/plegable.js) */
+.plegables { display: grid; gap: 10px; }
+.plegables-grupo { margin: 14px 0 0; font-size: .95rem; color: var(--texto-suave); font-weight: 650; }
+.plegable { background: var(--superficie); border: 1px solid var(--borde); border-left: 4px solid var(--borde); border-radius: var(--radio); overflow: hidden; }
+.plegable.abierta { border-left-color: var(--empresa); }
+.plegable-fila { display: flex; align-items: center; }
+.plegable-fila .plegable-cab { flex: 1; min-width: 0; }
+.plegable-acciones { display: flex; align-items: center; gap: 4px; padding-right: 12px; }
+.plegable-cab {
+  display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 16px; border: 0; background: transparent;
+  font: inherit; color: var(--texto); text-align: left; cursor: pointer; transition: background var(--transicion);
+}
+.plegable-cab:hover { background: var(--hover); }
+.plegable-ico { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; flex: none; background: var(--fondo-sutil); color: var(--texto-suave); }
+.plegable.abierta .plegable-ico { background: var(--empresa); color: var(--sobre-empresa); }
+.plegable-tit { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.plegable-barra { width: 90px; height: 6px; border-radius: 3px; background: var(--fondo-hundido); overflow: hidden; flex: none; }
+.plegable-barra i { display: block; height: 100%; background: var(--ok); border-radius: 3px; }
+.plegable-flecha { display: grid; color: var(--texto-suave); transition: transform var(--transicion); flex: none; }
+.plegable.abierta .plegable-flecha { transform: rotate(180deg); }
+.plegable-cuerpo { display: none; padding: 0 16px 10px; }
+.plegable.abierta .plegable-cuerpo { display: block; }
+.plegable-cuerpo .doc-fila:first-child { border-top: 1px solid var(--borde); }
+@media (max-width: 600px) { .plegable-barra { width: 48px; } .plegable-cab { padding: 10px 12px; gap: 8px; } }
 .doc-fila {
   display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px;
   padding: 10px 0; border-top: 1px solid var(--borde);

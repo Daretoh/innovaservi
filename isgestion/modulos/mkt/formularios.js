@@ -1,24 +1,26 @@
 // Formularios de Marketing: contacto, actividad, campaña y publicación. base = cargarBase(ctx).
-import { abrirFormulario } from '../../core/ui/modal.js?v=0ad8916';
-import { avisar } from '../../core/ui/aviso.js?v=0ad8916';
-import { hoyISO, telefono } from '../../core/ui/formato.js?v=0ad8916';
-import { ORIGENES, CANALES, ESTADOS_CAMPANA, REDES, FORMATOS, ESTADOS_PUB, TIPOS_EVENTO, opcionesUsuarios, opcionesCampanas, codigoDesde } from './datos.js?v=0ad8916';
+import { abrirFormulario } from '../../core/ui/modal.js?v=7f39998';
+import { avisar } from '../../core/ui/aviso.js?v=7f39998';
+import { hoyISO, telefono, campoTelefono } from '../../core/ui/formato.js?v=7f39998';
+import { ORIGENES, CANALES, ESTADOS_CAMPANA, REDES, FORMATOS, ESTADOS_PUB, TIPOS_EVENTO, opcionesUsuarios, opcionesCampanas, codigoDesde } from './datos.js?v=7f39998';
 
 const texto = (v) => (String(v ?? '').trim() || null);
 const numero = (v) => (v === '' || v == null ? null : Math.max(0, Math.round(Number(String(v).replace(/[^\d-]/g, '')) || 0)));
 
-export function formContacto(ctx, base, c = null, { etapa = null, alGuardar } = {}) {
+// inicial: datos para llenar un contacto nuevo (ej.: desde un cliente: nombre, teléfono, correo, organizacion, origen, tercero_id)
+export function formContacto(ctx, base, c = null, { etapa = null, inicial = null, alGuardar } = {}) {
+  const d = c ?? inicial ?? {};
   const abierta = base.etapas.find((x) => x.tipo === 'abierta');
   abrirFormulario({
     titulo: c ? 'Editar contacto' : 'Nuevo contacto',
     campos: [
-      { id: 'nombre', etiqueta: 'Nombre', requerido: true, valor: c?.nombre },
-      { id: 'telefono', etiqueta: 'Teléfono (WhatsApp)', tipo: 'tel', valor: c?.telefono },
+      { id: 'nombre', etiqueta: 'Nombre', requerido: true, valor: d.nombre },
+      campoTelefono('telefono', 'Teléfono (WhatsApp)', d.telefono),
       { id: 'instagram', etiqueta: 'Instagram', valor: c?.instagram, ayuda: 'Usuario sin @' },
-      { id: 'correo', etiqueta: 'Correo', tipo: 'email', valor: c?.correo },
-      { id: 'organizacion', etiqueta: 'Empresa del contacto (si es cliente de empresa)', valor: c?.organizacion },
+      { id: 'correo', etiqueta: 'Correo', tipo: 'email', valor: d.correo },
+      { id: 'organizacion', etiqueta: 'Empresa del contacto (si es cliente de empresa)', valor: d.organizacion },
       { id: 'interes', etiqueta: 'Qué le interesa', valor: c?.interes, ayuda: 'Servicio o producto, ej.: cerámico, pulido, limpieza de estanque' },
-      { id: 'origen', etiqueta: 'Cómo llegó', opciones: ORIGENES, valor: c?.origen ?? 'whatsapp' },
+      { id: 'origen', etiqueta: 'Cómo llegó', opciones: ORIGENES, valor: d.origen ?? 'whatsapp' },
       { id: 'campana', etiqueta: 'Campaña', opciones: opcionesCampanas(base.campanas.filter((x) => x.estado !== 'terminada' || x.id === c?.campana_id)), valor: c?.campana_id ?? '' },
       { id: 'etapa', etiqueta: 'Etapa', opciones: base.etapas.map((x) => [x.id, x.nombre]), valor: c?.etapa_id ?? etapa ?? abierta?.id },
       { id: 'responsable', etiqueta: 'Responsable', opciones: opcionesUsuarios(base.usuarios), valor: c?.responsable_id ?? ctx.usuario.id },
@@ -38,7 +40,7 @@ export function formContacto(ctx, base, c = null, { etapa = null, alGuardar } = 
         consentimiento: v.consentimiento === 'si', consentimiento_medio: v.consentimiento === 'si' ? texto(v.medio) : null, notas: texto(v.notas),
       };
       if (!datos.telefono && !datos.instagram && !datos.correo) throw new Error('Anota al menos un teléfono, Instagram o correo para poder contactarlo.');
-      const q = c ? ctx.api.from('mkt_contactos').update(datos).eq('id', c.id) : ctx.api.from('mkt_contactos').insert({ empresa_id: ctx.empresa.id, ...datos });
+      const q = c ? ctx.api.from('mkt_contactos').update(datos).eq('id', c.id) : ctx.api.from('mkt_contactos').insert({ empresa_id: ctx.empresa.id, tercero_id: inicial?.tercero_id ?? null, ...datos });
       const { data, error } = await q.select('*').single();
       if (error) throw new Error(error.message);
       avisar(c ? 'Contacto guardado.' : 'Contacto creado.');
@@ -83,13 +85,13 @@ export function formCampana(ctx, c = null, { alGuardar } = {}) {
       { id: 'presupuesto', etiqueta: 'Presupuesto ($)', tipo: 'number', valor: c?.presupuesto ?? '' },
       { id: 'gasto', etiqueta: 'Gasto real ($)', tipo: 'number', valor: c?.gasto ?? '', ayuda: 'Lo que se pagó en anuncios, diseño, etc. Sirve para el costo por contacto.' },
       { id: 'url', etiqueta: 'Página de destino (opcional)', tipo: 'url', valor: c?.url_destino, ayuda: 'Con un código, se arma el enlace con UTM para saber cuántos llegan desde la campaña.' },
-      { id: 'codigo', etiqueta: 'Código para el enlace', valor: c?.codigo, ayuda: 'Minúsculas, números y guiones. Si lo dejas vacío y hay página de destino, se arma con el nombre.' },
+      { id: 'codigo', etiqueta: 'Código para el enlace', valor: c?.codigo, ayuda: 'Minúsculas, números y guiones. Si lo dejas vacío, se arma con el nombre. Identifica la campaña en los enlaces (UTM y formulario web).' },
       { id: 'notas', etiqueta: 'Notas', tipo: 'textarea', valor: c?.notas },
     ],
     textoGuardar: c ? 'Guardar' : 'Crear campaña',
     alGuardar: async (v) => {
       const url = texto(v.url);
-      const codigo = texto(v.codigo) ? codigoDesde(v.codigo) : url ? codigoDesde(v.nombre) : null;
+      const codigo = texto(v.codigo) ? codigoDesde(v.codigo) : codigoDesde(v.nombre) || null;   // sirve para UTM y para el formulario web
       if (codigo && codigo.length < 2) throw new Error('El código es muy corto.');
       const datos = { nombre: v.nombre.trim(), objetivo: texto(v.objetivo), canal: v.canal, estado: v.estado, inicio: v.inicio || null, fin: v.fin || null,
         presupuesto: numero(v.presupuesto), gasto: numero(v.gasto), url_destino: url, codigo, notas: texto(v.notas) };

@@ -1,20 +1,21 @@
 // Campañas: presupuesto y gasto, contactos y clientes que trajo cada una, costo por contacto y por cliente, publicaciones
 // ligadas y el enlace con UTM por red (para medir cuántos llegan desde cada publicación o anuncio).
-import { el } from '../../../core/ui/dom.js?v=0ad8916';
-import { icono } from '../../../core/ui/iconos.js?v=0ad8916';
-import { boton } from '../../../core/ui/tabla.js?v=0ad8916';
-import { avisar } from '../../../core/ui/aviso.js?v=0ad8916';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=0ad8916';
-import { dinero, fechaCorta } from '../../../core/ui/formato.js?v=0ad8916';
-import { exportarExcel } from '../../../core/excel.js?v=0ad8916';
-import { cargarBase, cargarCss, nombreCanal, nombreEstadoCampana, CHIP_CAMPANA, enlaceUtm, REDES, CANALES } from '../datos.js?v=0ad8916';
-import { formCampana } from '../formularios.js?v=0ad8916';
+import { el } from '../../../core/ui/dom.js?v=7f39998';
+import { icono } from '../../../core/ui/iconos.js?v=7f39998';
+import { boton } from '../../../core/ui/tabla.js?v=7f39998';
+import { avisar } from '../../../core/ui/aviso.js?v=7f39998';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=7f39998';
+import { dinero, fechaCorta } from '../../../core/ui/formato.js?v=7f39998';
+import { exportarExcel } from '../../../core/excel.js?v=7f39998';
+import { cargarBase, cargarCss, nombreCanal, nombreEstadoCampana, CHIP_CAMPANA, enlaceUtm, REDES, CANALES } from '../datos.js?v=7f39998';
+import { formCampana } from '../formularios.js?v=7f39998';
+import { cargarFormulario, enlaceFormulario, descargarQr } from '../formulario-web.js?v=7f39998';
 
 const estado = { ver: 'vigentes' };
 
 export default async function vista(ctx) {
   cargarCss();
-  const base = await cargarBase(ctx);
+  const [base, formWeb] = await Promise.all([cargarBase(ctx), cargarFormulario(ctx).catch(() => null)]);
   const e = ctx.empresa.id;
   const [rc, rp] = await Promise.all([
     ctx.api.from('mkt_contactos').select('id, campana_id, etapa_id, tercero_id').eq('empresa_id', e).is('deleted_at', null).not('campana_id', 'is', null).limit(10000),
@@ -60,6 +61,11 @@ export default async function vista(ctx) {
         avance != null ? el('div', { class: 'mkt-barra', title: `${avance}%` }, el('span', { style: `width: ${avance}%` })) : null) : null,
       el('div', { class: 'listado-acciones' },
         c.url_destino && c.codigo ? boton('Enlaces con UTM', { icono: 'copiar', onclick: () => enlaces(c) }) : null,
+        formWeb?.activo && c.codigo ? boton('Formulario de la campaña', { icono: 'copiar', title: 'Copia el enlace del formulario web que deja los contactos en esta campaña', onclick: async () => {
+          const url = enlaceFormulario(formWeb.token, c.codigo);
+          try { await navigator.clipboard.writeText(url); avisar('Enlace del formulario copiado (los contactos quedan en esta campaña).'); } catch { avisar(url); }
+        } }) : null,
+        formWeb?.activo && c.codigo ? boton('QR', { icono: 'descargar', onclick: () => descargarQr(enlaceFormulario(formWeb.token, c.codigo), `formulario-${c.codigo}`).catch((er) => avisar(er.message, 'error')) }) : null,
         n.contactos ? el('a', { class: 'boton boton-secundario', href: ctx.ruta('mkt.embudo', { campana: c.id }) }, 'Ver en el embudo') : null,
         editar ? boton('Editar', { icono: 'editar', onclick: () => formCampana(ctx, c, { alGuardar: () => ctx.refrescar() }) }) : null,
         ctx.puede('mkt', 'eliminar') ? boton('Eliminar', { icono: 'basura', onclick: () => abrirFormulario({

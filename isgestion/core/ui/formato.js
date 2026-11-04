@@ -52,17 +52,44 @@ export const hhmm = (t) => String(t || '').slice(0, 5);
 
 // Teléfono chileno con formato único: celular → '+56 9 1234 5678' (acepta 912345678, 56912345678, +56 9 1234-5678…);
 // fijo → '+56 2 2345 6789' (Santiago) o '+56 XX XXX XXXX'. Si no es un número chileno reconocible, queda tal cual (sin
-// basura de importaciones). Vacío → null.
+// basura de importaciones). Vacío → null. Un celular antiguo de 8 dígitos (sin el 9 que se agregó en 2012, ej.:
+// 8765 4321) pasa a +56 9 8765 4321; revisarTelefono avisa que se agregó.
+const digitosTel = (limpio) => { let d = limpio.replace(/\D/g, ''); if (d.startsWith('00')) d = d.slice(2); if (d.length === 11 && d.startsWith('56')) d = d.slice(2); return d; };
+const limpiarTel = (t) => String(t ?? '').replace(/System\.[A-Za-z.]+/g, '').trim();
 export function telefono(t) {
-  const limpio = String(t ?? '').replace(/System\.[A-Za-z.]+/g, '').trim();
+  const limpio = limpiarTel(t);
   if (!limpio) return null;
-  let d = limpio.replace(/\D/g, '');
-  if (d.length === 11 && d.startsWith('56')) d = d.slice(2);
+  let d = digitosTel(limpio);
+  if (d.length === 8 && !d.startsWith('2')) d = `9${d}`;
   if (d.length === 9 && d.startsWith('9')) return `+56 9 ${d.slice(1, 5)} ${d.slice(5)}`;
   if (d.length === 9 && d.startsWith('2')) return `+56 2 ${d.slice(1, 5)} ${d.slice(5)}`;
   if (d.length === 9) return `+56 ${d.slice(0, 2)} ${d.slice(2, 5)} ${d.slice(5)}`;
   return limpio;
 }
+
+// Revisa un teléfono: { valor (con formato), aviso (texto o null), grave (true si no sirve para WhatsApp) }
+export function revisarTelefono(t) {
+  const limpio = limpiarTel(t);
+  if (!limpio) return { valor: null, aviso: 'Sin teléfono', grave: true };
+  const d = digitosTel(limpio);
+  const valor = telefono(limpio);
+  if (d.length === 8 && !d.startsWith('2')) return { valor, aviso: 'Tenía 8 dígitos: se agregó el 9 de celular (confírmalo)', grave: false };
+  if (d.length === 9 && !d.startsWith('9')) return { valor, aviso: 'Es un teléfono fijo: no sirve para WhatsApp', grave: true };
+  if (d.length === 9) return { valor, aviso: null, grave: false };
+  if (d.length > 0 && d.length < 9) return { valor, aviso: `Le ${9 - d.length === 1 ? 'falta un número' : `faltan ${9 - d.length} números`} (tiene ${d.length} dígitos; un celular es +56 9 XXXX XXXX)`, grave: true };
+  return { valor, aviso: `No parece un teléfono chileno (tiene ${d.length} dígitos)`, grave: true };
+}
+
+// Campo de teléfono para abrirFormulario: al salir del campo queda con formato +56 9 XXXX XXXX y avisa si falta un número
+export const campoTelefono = (id, etiqueta, valor, extra = {}) => ({
+  id, etiqueta, tipo: 'tel', valor: valor ?? '', ...extra,
+  alCambiar: ({ valor: v, poner, estado }) => {
+    if (!String(v ?? '').trim()) { estado(''); return; }
+    const r = revisarTelefono(v);
+    if (r.valor && r.valor !== v) poner(id, r.valor);
+    estado(r.aviso ?? 'Formato correcto.', r.aviso ? (r.grave ? 'mal' : 'prox') : 'ok');
+  },
+});
 
 // Nombre propio (clientes, 2026-10-31): mayúscula al inicio de cada palabra ("GUILLERMO MORALES" → "Guillermo Morales").
 // Formas societarias estándar (SpA, Ltda., S.A., EIRL); conectores en minúscula (de, del, la, y…); se respetan

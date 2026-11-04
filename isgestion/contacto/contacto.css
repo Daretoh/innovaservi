@@ -1,0 +1,9 @@
+/* Formulario web de contacto: usa los estilos de la ficha de ingreso (../ficha/ficha.css) y agrega las opciones de interés */
+.fc-intereses { border: 0; padding: 0; margin: 0; display: grid; gap: 8px; }
+.fc-intereses legend { font-weight: 600; margin-bottom: 6px; }
+.fc-opciones { display: flex; flex-wrap: wrap; gap: 8px; }
+.fc-opcion { position: relative; cursor: pointer; }
+.fc-opcion input { position: absolute; opacity: 0; inset: 0; cursor: pointer; }
+.fc-opcion span { display: inline-block; padding: 9px 14px; border: 1px solid var(--borde); border-radius: 999px; background: var(--superficie); font-size: .95rem; }
+.fc-opcion input:checked + span { background: var(--empresa); border-color: var(--empresa); color: var(--sobre-empresa); font-weight: 600; }
+.fc-opcion input:focus-visible + span { outline: 2px solid var(--empresa); outline-offset: 2px; }

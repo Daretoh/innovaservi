@@ -1,8 +1,8 @@
 // Ficha de un cliente o proveedor (crear o editar). La usan Clientes y proveedores y Faenas → Clientes y sitios.
 // Sus datos salen en los documentos: razón social, RUT y dirección en el informe de trabajo, cotizaciones y cierres.
-import { abrirFormulario } from '../../core/ui/modal.js?v=0ad8916';
-import { avisar } from '../../core/ui/aviso.js?v=0ad8916';
-import { telefono } from '../../core/ui/formato.js?v=0ad8916';
+import { abrirFormulario } from '../../core/ui/modal.js?v=7f39998';
+import { avisar } from '../../core/ui/aviso.js?v=7f39998';
+import { telefono, campoTelefono } from '../../core/ui/formato.js?v=7f39998';
 
 export const TIPOS = [['cliente', 'Cliente'], ['proveedor', 'Proveedor'], ['ambos', 'Cliente y proveedor']];
 
@@ -27,7 +27,7 @@ export function fichaTercero(ctx, t = null, { alGuardar } = {}) {
       { id: 'tipo', etiqueta: 'Tipo', opciones: TIPOS, valor: tipo },
       { id: 'contacto', etiqueta: 'Contacto', valor: t?.contacto ?? '' },
       { id: 'email', etiqueta: 'Correo', tipo: 'email', valor: t?.email ?? '' },
-      { id: 'telefono', etiqueta: 'Teléfono', tipo: 'tel', valor: t?.telefono ?? '' },
+      campoTelefono('telefono', 'Teléfono', t?.telefono),
     ],
     textoGuardar: t ? 'Guardar cambios' : 'Crear',
     alGuardar: async (v) => {
