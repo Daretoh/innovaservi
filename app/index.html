@@ -1946,9 +1946,21 @@
   #cos-detalle{position:fixed;inset:0;z-index:75;background:var(--alt);overflow-y:auto;-webkit-overflow-scrolling:touch;}
   #cos-detalle.hide{display:none;}
   #cos-detalle .ficha-body{max-width:980px;}
+  /* Aviso fijo: se trabaja en ISgestión (2026-11-05, pedido de Enzo). Los paneles a pantalla completa (z-index 75+) lo tapan mientras están abiertos. */
+  :root{--aviso-h:0px;}
+  #aviso-isgestion{position:fixed;top:0;left:0;right:0;z-index:70;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:6px 14px;padding:9px 14px;background:#b91c1c;color:#fff;font:600 14px/1.35 var(--font);text-align:center;}
+  #aviso-isgestion a{flex:none;padding:5px 12px;border-radius:8px;background:#fff;color:#b91c1c;font-weight:800;text-decoration:none;white-space:nowrap;}
+  body{padding-top:var(--aviso-h);}
+  #gate{min-height:calc(100vh - var(--aviso-h));}
+  #app{min-height:calc(100vh - var(--aviso-h));}
+  .topbar{top:var(--aviso-h);}
+  .sbar{top:var(--aviso-h) !important;}
+  @media print{#aviso-isgestion{display:none !important;}body{padding-top:0;}}
 </style>
 </head>
 <body>
+<div id="aviso-isgestion" role="alert"><span><b>InnovaGestión ya no se usa.</b> Trabaja en ISgestión: lo que cargues aquí no se verá allá.</span><a href="https://innovaservi.cl/isgestion/">Ir a ISgestión</a></div>
+<script>(function(){var b=document.getElementById('aviso-isgestion'),r=document.documentElement;function m(){r.style.setProperty('--aviso-h',b.offsetHeight+'px');}m();addEventListener('resize',m);addEventListener('load',m);})();</script>
 
 <!-- ============ LOGIN ============ -->
 <div id="gate">
