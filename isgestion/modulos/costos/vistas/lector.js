@@ -7,16 +7,16 @@
 // trabajador": además del gasto queda un descuento en Remuneraciones (semana o mes según la empresa), ligado al
 // documento (remu_items.origen_id). Requiere poder crear en Remuneraciones.
 // Ruta: #/costos.lector
-import { el } from '../../../core/ui/dom.js?v=7f39998';
-import { icono } from '../../../core/ui/iconos.js?v=7f39998';
-import { boton } from '../../../core/ui/tabla.js?v=7f39998';
-import { avisar } from '../../../core/ui/aviso.js?v=7f39998';
-import { subirArchivo, almacen } from '../../../core/adjuntos.js?v=7f39998';
-import { dinero, hoyISO, sumarDias, fechaLarga, lunesDe } from '../../../core/ui/formato.js?v=7f39998';
-import { TIPOS_DTE, docTipoDe, CAMPOS_DTE, leerParte, combinar, validar, escanearCamara, aJPEG, fmtRut, limpioRut, rutValido, num } from '../../../core/lector-dte.js?v=7f39998';
-import { cargarBase, nombreTercero, opcionesACuenta } from '../datos.js?v=7f39998';
-import { leerConIA, iaDisponible, numIA, fechaIA, pagadoAlComprar, textoModelo } from '../../../core/lector-ia.js?v=7f39998';
-import { esImagen } from '../../../core/imagenes.js?v=7f39998';
+import { el } from '../../../core/ui/dom.js?v=3af27b3';
+import { icono } from '../../../core/ui/iconos.js?v=3af27b3';
+import { boton } from '../../../core/ui/tabla.js?v=3af27b3';
+import { avisar } from '../../../core/ui/aviso.js?v=3af27b3';
+import { subirArchivo, almacen } from '../../../core/adjuntos.js?v=3af27b3';
+import { dinero, hoyISO, sumarDias, fechaLarga, lunesDe } from '../../../core/ui/formato.js?v=3af27b3';
+import { TIPOS_DTE, docTipoDe, CAMPOS_DTE, leerParte, combinar, validar, escanearCamara, aJPEG, fmtRut, limpioRut, rutValido, num } from '../../../core/lector-dte.js?v=3af27b3';
+import { cargarBase, nombreTercero, opcionesACuenta } from '../datos.js?v=3af27b3';
+import { leerConIA, iaDisponible, numIA, fechaIA, pagadoAlComprar, textoModelo } from '../../../core/lector-ia.js?v=3af27b3';
+import { esImagen } from '../../../core/imagenes.js?v=3af27b3';
 
 const ETIQUETA = { timbre: ['Timbre SII', 'chip-ok'], xml: ['XML', 'chip-ok'], ia: ['IA', 'chip-ok'], ocr: ['Revisar', 'chip-prox'], calc: ['Calculado', 'chip-pend'] };
 
@@ -254,7 +254,7 @@ export default async function vista(ctx) {
     proveedor,
     el('div', { class: 'rejilla-campos lec-montos' }, ctl('neto', 'Neto', { num: true }), ctl('iva', 'IVA', { num: true }), ctl('exento', 'Exento', { num: true }), ctl('otros', 'Otros impuestos', { num: true }), ctl('total', 'Total', { num: true })),
     cuadre,
-    el('div', { class: 'rejilla-campos' }, fila('Categoría', categoria), fila('Centro de costo', centro), conFaenas ? fila('Faena', faena) : null),
+    el('div', { class: 'rejilla-campos' }, fila('Categoría', categoria), ctx.config?.centros ? fila('Centro de costo', centro) : null, conFaenas ? fila('Faena', faena) : null),
     el('div', { class: 'rejilla-campos' }, fila('¿Por cuenta de un tercero?', aCuenta)),
     fila('Concepto', concepto),
     el('label', { class: 'casilla' }, pagado, 'Ya está pagado (boletas y tickets quedan pagados solos; la factura queda por pagar)'),

@@ -2339,3 +2339,27 @@ a.tar2-fila, a.tar2-fila:hover { text-decoration: none; color: var(--texto); }
 .fac-ok { color: var(--ok); background: var(--ok-fondo); border: 1px solid transparent; }
 .fac-falta { color: var(--texto-suave); background: transparent; border: 1px dashed var(--borde); }
 .fac-falta:hover { color: var(--empresa); border-color: var(--empresa); }
+
+/* ---------- Buscador con sugerencias (core/ui/combo.js) ---------- */
+.combo-nativo { position: absolute !important; opacity: 0 !important; width: 1px !important; height: 1px !important; padding: 0 !important; border: 0 !important; pointer-events: none; }
+.combo-entrada {
+  padding-right: 32px; text-overflow: ellipsis;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238a8f98' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 10px center;
+}
+.combo-entrada:not(.campo) { font: inherit; padding: 6px 30px 6px 8px; border: 1px solid var(--borde); border-radius: var(--radio-control); background-color: var(--superficie); color: var(--texto); }
+.combo-entrada[aria-expanded="true"] { border-color: var(--empresa); }
+.combo-lista {
+  position: fixed; inset: auto; margin: 0; z-index: 60; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain;
+  padding: 4px; border: 1px solid var(--borde); border-radius: var(--radio); background: var(--superficie); color: var(--texto);
+  box-shadow: var(--sombra); font-size: .92rem;
+}
+.combo-lista[hidden] { display: none; }
+.combo-opcion { display: flex; align-items: baseline; gap: 8px; min-width: 0; overflow-wrap: anywhere; padding: 7px 10px; border-radius: var(--radio-control); cursor: pointer; }
+.combo-opcion:hover { background: var(--hover, var(--fondo)); }
+.combo-opcion[aria-selected="true"] { background: color-mix(in srgb, var(--empresa) 14%, var(--superficie)); box-shadow: inset 3px 0 0 var(--empresa); }
+.combo-opcion[aria-current="true"] { font-weight: 600; }
+.combo-opcion mark { background: none; color: var(--empresa); font-weight: 700; }
+.combo-ayuda { margin-left: auto; color: var(--texto-suave); font-size: .82rem; }
+.combo-grupo { padding: 8px 10px 4px; font-size: .74rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--texto-suave); }
+.combo-vacio { padding: 8px 10px; color: var(--texto-suave); font-size: .85rem; }

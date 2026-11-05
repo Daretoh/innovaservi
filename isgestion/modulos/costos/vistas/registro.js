@@ -1,15 +1,15 @@
 // Gasto u otro ingreso.
 // - Nuevo:  #/costos.registro?tipo=gasto|ingreso
 // - Ver y editar: #/costos.registro?id=<id>
-import { el } from '../../../core/ui/dom.js?v=7f39998';
-import { icono } from '../../../core/ui/iconos.js?v=7f39998';
-import { boton } from '../../../core/ui/tabla.js?v=7f39998';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=7f39998';
-import { avisar } from '../../../core/ui/aviso.js?v=7f39998';
-import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=7f39998';
-import { dinero, hoyISO, fechaLarga, sumarDias } from '../../../core/ui/formato.js?v=7f39998';
-import { leerConIA, iaDisponible, numIA, fechaIA, pagadoAlComprar, textoModelo } from '../../../core/lector-ia.js?v=7f39998';
-import { cargarBase, nombreTercero, DOCS, MEDIOS, netoDe, estadosDe, estadoInicial, nombreEstado, opcionesACuenta } from '../datos.js?v=7f39998';
+import { el } from '../../../core/ui/dom.js?v=3af27b3';
+import { icono } from '../../../core/ui/iconos.js?v=3af27b3';
+import { boton } from '../../../core/ui/tabla.js?v=3af27b3';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=3af27b3';
+import { avisar } from '../../../core/ui/aviso.js?v=3af27b3';
+import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=3af27b3';
+import { dinero, hoyISO, fechaLarga, sumarDias } from '../../../core/ui/formato.js?v=3af27b3';
+import { leerConIA, iaDisponible, numIA, fechaIA, pagadoAlComprar, textoModelo } from '../../../core/lector-ia.js?v=3af27b3';
+import { cargarBase, nombreTercero, DOCS, MEDIOS, netoDe, estadosDe, estadoInicial, nombreEstado, opcionesACuenta } from '../datos.js?v=3af27b3';
 
 
 const ARCHIVOS = ['application/pdf', 'image/jpeg', 'image/png'];
@@ -189,7 +189,7 @@ export default async function vista(ctx) {
     origen.length ? el('p', { class: 'texto-suave texto-chico' }, origen.join(' · ')) : null,
     el('div', { class: 'ficha doc-grupo fin-form' },
       el('div', { class: 'rejilla-campos' }, fila('Fecha', fecha), fila('Concepto', concepto)),
-      el('div', { class: 'rejilla-campos' }, fila('Categoría', categoria), fila('Centro de costo', centro), fila(esIngreso ? 'Cliente' : 'Proveedor', tercero)),
+      el('div', { class: 'rejilla-campos' }, fila('Categoría', categoria), ctx.config?.centros ? fila('Centro de costo', centro) : null, fila(esIngreso ? 'Cliente' : 'Proveedor', tercero)),
       el('div', { class: 'rejilla-campos' }, fila('Documento', doc), fila('N° de documento', docNum), fila('Total (con IVA si lo tiene)', total, desglose)),
       esIngreso ? (faena ? el('div', { class: 'rejilla-campos' }, fila('Faena', faena)) : null) : el('div', { class: 'rejilla-campos' }, faena ? fila('Faena', faena) : null, fila('Patente', patente), orden ? fila('Orden de trabajo', orden) : null),
       aCuenta ? el('div', { class: 'rejilla-campos' }, fila('¿Compra por cuenta de un tercero?', aCuenta, el('span', { class: 'texto-suave texto-chico' }, 'Ej.: materiales del pintor: se paga al local, no es gasto de la empresa y se descuenta de lo que se le paga.'))) : null,

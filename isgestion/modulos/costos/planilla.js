@@ -2,9 +2,9 @@
 // Shift + flechas o arrastrar para seleccionar, Ctrl + C / V para copiar y pegar (también desde Excel) y Supr para
 // borrar la selección. Cada cambio se guarda solo (por fila, medio segundo después); la base recalcula neto e IVA.
 // No crea registros nuevos: si se pegan más filas de las que hay, las que sobran se ignoran.
-import { el } from '../../core/ui/dom.js?v=7f39998';
-import { avisar } from '../../core/ui/aviso.js?v=7f39998';
-import { DOCS } from './datos.js?v=7f39998';
+import { el } from '../../core/ui/dom.js?v=3af27b3';
+import { avisar } from '../../core/ui/aviso.js?v=3af27b3';
+import { DOCS } from './datos.js?v=3af27b3';
 
 const miles = (n) => (Number(n) || 0).toLocaleString('es-CL');
 const numero = (t) => Math.round(Number(String(t ?? '').replace(/[^\d,-]/g, '').replace(',', '.')) || 0);
@@ -24,7 +24,7 @@ export function planilla(ctx, filas, base) {
     { k: 'fecha', t: 'Fecha', tipo: 'date' },
     { k: 'concepto', t: 'Concepto' },
     { k: 'categoria_id', t: 'Categoría', opciones: opcionesCat },
-    { k: 'centro_id', t: 'Centro', opciones: opcionesCen, vaciable: true },
+    ...(ctx.config?.centros ? [{ k: 'centro_id', t: 'Centro', opciones: opcionesCen, vaciable: true }] : []),
     { k: 'patente', t: 'Patente', vaciable: true },
     { k: 'doc_tipo', t: 'Documento', opciones: DOCS },
     { k: 'doc_numero', t: 'N°', vaciable: true },
@@ -106,7 +106,7 @@ export function planilla(ctx, filas, base) {
   };
 
   const cuerpo = el('tbody', {}, filas.map((r, i) => el('tr', {}, celdas[i].map((n, j) => el('td', { class: COLS[j].num ? 'pl-num' : '' }, n)))));
-  const tabla = el('table', { class: 'tabla planilla' },
+  const tabla = el('table', { class: 'tabla planilla', 'data-nativo': '' },   // celdas propias de la planilla: sin el buscador de core/ui/combo.js
     el('thead', {}, el('tr', {}, COLS.map((c) => el('th', { class: c.num ? 'pl-num' : '' }, c.t)))), cuerpo);
 
   tabla.addEventListener('focusin', (ev) => { if (sel.nav) return; const p = posDe(ev.target); if (p) { sel.a = sel.b = p; pintar(); } });
@@ -180,7 +180,7 @@ export function planilla(ctx, filas, base) {
       el('div', { class: 'tabla-contenedor' }, tabla),
       el('p', { class: 'texto-suave texto-chico pl-ayuda' },
         el('kbd', {}, '↑↓←→'), ' moverse · ', el('kbd', {}, 'Enter'), ' / ', el('kbd', {}, 'Tab'), ' siguiente celda · ', el('kbd', {}, 'Shift'), ' + flechas o arrastrar: seleccionar · ',
-        el('kbd', {}, 'Ctrl'), ' + ', el('kbd', {}, 'C'), ' / ', el('kbd', {}, 'V'), ' copiar y pegar (también desde Excel) · ', el('kbd', {}, 'Supr'), ' borrar centro, patente o N° · los cambios se guardan solos')),
+        el('kbd', {}, 'Ctrl'), ' + ', el('kbd', {}, 'C'), ' / ', el('kbd', {}, 'V'), ' copiar y pegar (también desde Excel) · ', el('kbd', {}, 'Supr'), ` borrar ${ctx.config?.centros ? 'centro, ' : ''}patente o N° · los cambios se guardan solos`)),
     enfocar,
     // Guarda lo que quede pendiente (al salir de la planilla)
     terminar: async () => {

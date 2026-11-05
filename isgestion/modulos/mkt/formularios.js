@@ -1,8 +1,8 @@
 // Formularios de Marketing: contacto, actividad, campaña y publicación. base = cargarBase(ctx).
-import { abrirFormulario } from '../../core/ui/modal.js?v=7f39998';
-import { avisar } from '../../core/ui/aviso.js?v=7f39998';
-import { hoyISO, telefono, campoTelefono } from '../../core/ui/formato.js?v=7f39998';
-import { ORIGENES, CANALES, ESTADOS_CAMPANA, REDES, FORMATOS, ESTADOS_PUB, TIPOS_EVENTO, opcionesUsuarios, opcionesCampanas, codigoDesde } from './datos.js?v=7f39998';
+import { abrirFormulario } from '../../core/ui/modal.js?v=3af27b3';
+import { avisar } from '../../core/ui/aviso.js?v=3af27b3';
+import { hoyISO, telefono, campoTelefono } from '../../core/ui/formato.js?v=3af27b3';
+import { ORIGENES, CANALES, ESTADOS_CAMPANA, REDES, FORMATOS, ESTADOS_PUB, TIPOS_EVENTO, opcionesUsuarios, opcionesCampanas, codigoDesde } from './datos.js?v=3af27b3';
 
 const texto = (v) => (String(v ?? '').trim() || null);
 const numero = (v) => (v === '' || v == null ? null : Math.max(0, Math.round(Number(String(v).replace(/[^\d-]/g, '')) || 0)));
@@ -87,6 +87,10 @@ export function formCampana(ctx, c = null, { alGuardar } = {}) {
       { id: 'url', etiqueta: 'Página de destino (opcional)', tipo: 'url', valor: c?.url_destino, ayuda: 'Con un código, se arma el enlace con UTM para saber cuántos llegan desde la campaña.' },
       { id: 'codigo', etiqueta: 'Código para el enlace', valor: c?.codigo, ayuda: 'Minúsculas, números y guiones. Si lo dejas vacío, se arma con el nombre. Identifica la campaña en los enlaces (UTM y formulario web).' },
       { id: 'notas', etiqueta: 'Notas', tipo: 'textarea', valor: c?.notas },
+      // Formulario web propio de la campaña (su enlace y QR); vacío = el formulario general
+      { id: 'form_titulo', etiqueta: 'Formulario de la campaña: texto (opcional)', valor: c?.form_titulo ?? '', ayuda: 'Ej.: "Participa en el sorteo de un lavado completo". Vacío = el texto del formulario general.' },
+      { id: 'form_intereses', etiqueta: 'Formulario de la campaña: opciones (opcional)', tipo: 'lista', valor: c?.form_intereses ?? [], textoAgregar: 'Agregar opción', placeholder: 'Ej.: Quiero participar' },
+      { id: 'form_condiciones', etiqueta: 'Formulario de la campaña: casilla obligatoria (opcional)', valor: c?.form_condiciones ?? '', ayuda: 'Ej.: "Acepto las bases del sorteo". Si la escribes, el cliente debe marcarla para enviar.' },
     ],
     textoGuardar: c ? 'Guardar' : 'Crear campaña',
     alGuardar: async (v) => {
@@ -94,7 +98,8 @@ export function formCampana(ctx, c = null, { alGuardar } = {}) {
       const codigo = texto(v.codigo) ? codigoDesde(v.codigo) : codigoDesde(v.nombre) || null;   // sirve para UTM y para el formulario web
       if (codigo && codigo.length < 2) throw new Error('El código es muy corto.');
       const datos = { nombre: v.nombre.trim(), objetivo: texto(v.objetivo), canal: v.canal, estado: v.estado, inicio: v.inicio || null, fin: v.fin || null,
-        presupuesto: numero(v.presupuesto), gasto: numero(v.gasto), url_destino: url, codigo, notas: texto(v.notas) };
+        presupuesto: numero(v.presupuesto), gasto: numero(v.gasto), url_destino: url, codigo, notas: texto(v.notas),
+        form_titulo: texto(v.form_titulo), form_intereses: (v.form_intereses ?? []).map((x) => x.slice(0, 60)), form_condiciones: texto(v.form_condiciones) };
       if (datos.inicio && datos.fin && datos.fin < datos.inicio) throw new Error('El término es anterior al inicio.');
       const q = c ? ctx.api.from('mkt_campanas').update(datos).eq('id', c.id) : ctx.api.from('mkt_campanas').insert({ empresa_id: ctx.empresa.id, ...datos });
       const { error } = await q;

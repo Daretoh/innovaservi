@@ -1,9 +1,9 @@
 // Formulario web de contacto (Marketing): el cliente deja su nombre, teléfono, qué le interesa y su mensaje, sin cuenta.
 // URL: /contacto/?t=<token de la empresa>[&c=<código de campaña>]. Envía todo a la Edge Function mkt-formulario, que
 // lo deja como contacto nuevo en el Embudo y avisa a quien atiende Marketing. Mismo estilo que la ficha de ingreso.
-import { el } from '../core/ui/dom.js?v=7f39998';
-import { icono } from '../core/ui/iconos.js?v=7f39998';
-import { revisarTelefono } from '../core/ui/formato.js?v=7f39998';
+import { el } from '../core/ui/dom.js?v=3af27b3';
+import { icono } from '../core/ui/iconos.js?v=3af27b3';
+import { revisarTelefono } from '../core/ui/formato.js?v=3af27b3';
 
 const raiz = document.getElementById('app');
 const params = new URLSearchParams(location.search);
@@ -24,7 +24,7 @@ async function iniciar() {
   let url; let f;
   try {
     url = await urlFuncion();
-    const r = await fetch(`${url}?t=${encodeURIComponent(token)}`);
+    const r = await fetch(`${url}?t=${encodeURIComponent(token)}${campana ? `&c=${encodeURIComponent(campana)}` : ''}`);
     f = await r.json();
     if (!r.ok) throw new Error(f.error ?? 'Enlace no válido.');
   } catch (e) {
@@ -50,6 +50,7 @@ async function iniciar() {
   const mensaje = Object.assign(el('textarea', { id: 'mensaje', class: 'campo', rows: 4, maxlength: 1000, placeholder: 'Cuéntanos qué necesitas' }));
   const promociones = el('input', { type: 'checkbox', name: 'promociones' });
   const privacidad = el('input', { type: 'checkbox', name: 'privacidad', required: true });
+  const condiciones = f.condiciones ? el('input', { type: 'checkbox', name: 'condiciones', required: true }) : null;
   const trampa = el('input', { name: 'sitio_web', tabindex: '-1', autocomplete: 'off' });
   const error = el('p', { class: 'texto-error', role: 'alert' });
   const enviar = el('button', { type: 'submit', class: 'boton boton-primario fp-enviar' }, 'Enviar');
@@ -64,6 +65,7 @@ async function iniciar() {
       intereses.length ? el('fieldset', { class: 'fc-intereses' }, el('legend', {}, '¿Qué te interesa?'), el('div', { class: 'fc-opciones' }, intereses)) : null,
       fila('Mensaje', mensaje)),
     el('section', { class: 'fp-seccion' },
+      condiciones ? el('label', { class: 'fp-consentimiento' }, condiciones, el('span', { class: 'fp-obligatorio' }, f.condiciones)) : null,
       el('label', { class: 'fp-consentimiento' }, promociones, el('span', {}, `Quiero recibir promociones y novedades de ${f.empresa} por WhatsApp (puedo darme de baja cuando quiera).`)),
       el('label', { class: 'fp-consentimiento' }, privacidad,
         el('span', {}, `Autorizo a ${f.razon_social} a usar mis datos solo para responder mi consulta, conforme a la Ley 19.628 y la Ley 21.719. Puedo pedir que los corrijan o eliminen.`))),
@@ -81,7 +83,7 @@ async function iniciar() {
       const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
         t: token, nombre: nombre.value, telefono: telefono.value, correo: correo.value, vehiculo: vehiculo?.value ?? '', mensaje: mensaje.value,
         intereses: intereses.map((x) => x.querySelector('input')).filter((x) => x.checked).map((x) => x.value),
-        promociones: promociones.checked, privacidad: privacidad.checked, campana, sitio_web: trampa.value,
+        promociones: promociones.checked, condiciones: condiciones?.checked ?? false, privacidad: privacidad.checked, campana, sitio_web: trampa.value,
       }) });
       const cuerpo = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(cuerpo.error ?? 'No se pudo enviar. Intenta de nuevo.');
@@ -95,7 +97,7 @@ async function iniciar() {
 
   raiz.replaceChildren(el('div', { class: 'ficha-publica' },
     el('header', { class: 'fp-cabecera' },
-      el('span', { class: 'fp-sobre' }, 'Contacto'),
+      el('span', { class: 'fp-sobre' }, f.campana ?? 'Contacto'),
       el('h1', {}, f.empresa),
       el('p', {}, f.titulo || 'Déjanos tus datos y te contactamos por WhatsApp. Los campos con * son obligatorios.')),
     form));

@@ -1,11 +1,11 @@
 // Marcajes de la tablet (módulo Marcaje): marcas del día por persona, entradas sin salida, marca manual,
 // corregir hora (guarda la original y el motivo) y anular. Las parejas generan las horas del Registro.
-import { el } from '../../../core/ui/dom.js?v=7f39998';
-import { icono } from '../../../core/ui/iconos.js?v=7f39998';
-import { boton } from '../../../core/ui/tabla.js?v=7f39998';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=7f39998';
-import { avisar } from '../../../core/ui/aviso.js?v=7f39998';
-import { horas, hoyISO, sumarDias, nombreDia, fechaLarga } from '../../../core/ui/formato.js?v=7f39998';
+import { el } from '../../../core/ui/dom.js?v=3af27b3';
+import { icono } from '../../../core/ui/iconos.js?v=3af27b3';
+import { boton } from '../../../core/ui/tabla.js?v=3af27b3';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=3af27b3';
+import { avisar } from '../../../core/ui/aviso.js?v=3af27b3';
+import { horas, hoyISO, sumarDias, nombreDia, fechaLarga } from '../../../core/ui/formato.js?v=3af27b3';
 
 const estado = { dia: hoyISO() };
 const hora = (ts) => new Date(ts).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });

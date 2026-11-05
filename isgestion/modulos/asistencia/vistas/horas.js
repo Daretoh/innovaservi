@@ -6,12 +6,12 @@
 // Fijos con turno (2026-10-30): cada día hábil quedan presentes "según horario" solos (asis_generar_fijos); aquí solo se
 // corrigen las excepciones: retraso o salida temprana (cambiar la hora), horas extra (cambiar la salida o agregar otra
 // fila) y ausencias (botón Ausente: el día deja de contar y no se vuelve a crear).
-import { el } from '../../../core/ui/dom.js?v=7f39998';
-import { icono } from '../../../core/ui/iconos.js?v=7f39998';
-import { boton } from '../../../core/ui/tabla.js?v=7f39998';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=7f39998';
-import { avisar } from '../../../core/ui/aviso.js?v=7f39998';
-import { hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, horas, aMin, hhmm } from '../../../core/ui/formato.js?v=7f39998';
+import { el } from '../../../core/ui/dom.js?v=3af27b3';
+import { icono } from '../../../core/ui/iconos.js?v=3af27b3';
+import { boton } from '../../../core/ui/tabla.js?v=3af27b3';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=3af27b3';
+import { avisar } from '../../../core/ui/aviso.js?v=3af27b3';
+import { hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, horas, aMin, hhmm } from '../../../core/ui/formato.js?v=3af27b3';
 
 const estado = { lunes: lunesDe(hoyISO()), dia: hoyISO(), nuevas: [] };   // nuevas: filas en blanco aún sin guardar
 
@@ -86,6 +86,10 @@ export default async function vista(ctx) {
 
   // ---- Planilla del día
   const delDia = porDia.get(estado.dia) ?? [];
+  // Faena: solo donde se usa Faenas y planificación (Innova); en las demás (Performance) no se muestra, salvo que el día
+  // ya tenga horas con faena escrita (2026-11-05)
+  const conFaena = verOpe || delDia.some((r) => r.faena);
+  estado.conFaena = conFaena;
   // Horas que se pisan: misma persona, mismo día, horarios solapados
   const pisan = new Set();
   const iv = (r) => { const a = aMin(r.entrada); return [a, a + minutosRegistro(r)]; };
@@ -146,7 +150,7 @@ export default async function vista(ctx) {
     const tr = el('tr', { class: `${pisan.has(r?.id) ? 'hz-pisa' : ''}${nueva ? ' hz-nueva' : ''}` },
       el('td', {}, persona, segunHorario ? el('span', { class: 'chip chip-ok', title: 'Se creó solo según su turno. Si llegó tarde o hizo horas extra, cambia la hora; si faltó, márcalo ausente.' }, (r.notas ?? '').startsWith('Corregido') ? 'horario corregido' : 'según horario') : null, desdeMarcaje ? el('span', { class: 'chip chip-pend', title: 'Del marcaje: se corrige en Asistencia → Marcajes' }, (r.notas ?? '').includes('terreno') ? 'terreno' : 'tablet') : null,
         pisan.has(r?.id) ? el('div', { class: 'texto-chico pct-mal' }, 'Se pisa con otra hora de esta persona ese día') : null),
-      el('td', {}, faena), el('td', { class: 'hz-horario' }, entrada, el('span', { class: 'texto-suave' }, '→'), salida), el('td', {}, total), el('td', {}, vueltas),
+      conFaena ? el('td', {}, faena) : null, el('td', { class: 'hz-horario' }, entrada, el('span', { class: 'texto-suave' }, '→'), salida), el('td', {}, total), el('td', {}, vueltas),
       el('td', { class: 'acciones-fila' },
         nueva ? el('button', { type: 'button', class: 'boton-icono', title: 'Quitar fila', 'aria-label': 'Quitar fila', onclick: () => { estado.nuevas = estado.nuevas.filter((x) => x !== nueva); ctx.refrescar(); } }, icono('cerrar', { tam: 16 }))
           : segunHorario ? (puedeEditar ? el('button', { type: 'button', class: 'boton boton-secundario boton-chico', title: 'No vino: el día deja de contar', onclick: () => ausente(ctx, r, personas.get(r.persona_id)) }, 'Ausente') : null)
@@ -174,12 +178,12 @@ export default async function vista(ctx) {
     const color = colorFaena(g.texto);
     const min = delDia.filter((r) => clave(r.faena) === k).reduce((s, r) => s + minutosRegistro(r), 0);
     return el('div', { class: 'hz-grupo', style: color ? `--hz-color:${color}` : '' },
-      el('div', { class: 'hz-grupo-cabeza' }, el('strong', {}, g.texto || 'Sin faena'),
+      el('div', { class: 'hz-grupo-cabeza' }, el('strong', {}, g.texto || (conFaena ? 'Sin faena' : 'Trabajadores')),
         el('span', { class: 'texto-suave texto-chico' }, g.filas.length ? `${g.filas.length} registro${g.filas.length > 1 ? 's' : ''} · ${horas(min)}` : 'sin horas aún')),
       g.filas.length ? el('div', { class: 'tabla-contenedor' }, el('table', { class: 'tabla hz-tabla' },
-        el('thead', {}, el('tr', {}, ['Trabajador', 'Faena', 'Horario', 'Horas', 'Vueltas', ''].map((t) => el('th', {}, t)))),
+        el('thead', {}, el('tr', {}, ['Trabajador', ...(conFaena ? ['Faena'] : []), 'Horario', 'Horas', 'Vueltas', ''].map((t) => el('th', {}, t)))),
         el('tbody', {}, g.filas))) : null,
-      puedeCrear ? el('button', { type: 'button', class: 'boton-enlace hz-agregar', onclick: () => agregarEn(g.texto) }, icono('mas', { tam: 14 }), g.texto ? 'persona en esta faena' : 'persona (sin faena)') : null);
+      puedeCrear ? el('button', { type: 'button', class: 'boton-enlace hz-agregar', onclick: () => agregarEn(g.texto) }, icono('mas', { tam: 14 }), g.texto ? 'persona en esta faena' : conFaena ? 'persona (sin faena)' : 'persona') : null);
   });
 
   // Vehículos y preparación del día (desde Planificación)
@@ -202,7 +206,7 @@ export default async function vista(ctx) {
     listaPersonas, listaFaenas,
     el('h2', { class: 'hz-dia-titulo' }, `${nombreDia(estado.dia)} ${fechaCorta(estado.dia)}`,
       el('span', { class: 'texto-suave texto-chico' }, delDia.length ? ` · ${new Set(delDia.map((r) => r.persona_id)).size} personas · ${horas(delDia.reduce((s, r) => s + minutosRegistro(r), 0))}` : ' · sin registros')),
-    bloques.length ? bloques : el('p', { class: 'texto-suave' }, 'Sin registros ni faenas este día.'),
+    bloques.length ? bloques : el('p', { class: 'texto-suave' }, conFaena ? 'Sin registros ni faenas este día.' : 'Sin registros este día.'),
     (ausencias.data ?? []).length ? el('div', { class: 'ficha hz-jornada' }, el('h2', {}, 'Ausentes'),
       (ausencias.data ?? []).map((a) => el('div', { class: 'doc-fila' }, el('span', { class: 'doc-nombre' }, el('strong', {}, personas.get(a.persona_id) ? nombre(personas.get(a.persona_id).personas) : 'Persona'), el('span', { class: 'texto-suave texto-chico' }, a.notas)),
         puedeEditar ? el('button', { type: 'button', class: 'boton boton-secundario boton-chico', title: 'Vuelve a quedar presente según su horario', onclick: async () => { const { error } = await ctx.api.from('asis_horas').update({ deleted_at: null, notas: 'Según horario' }).eq('id', a.id); if (error) avisar(error.message, 'error'); else ctx.refrescar(); } }, 'Deshacer') : null))) : null,
@@ -238,7 +242,7 @@ function campos(r, activos, varios) {
     { id: 'fecha', etiqueta: 'Fecha', tipo: 'date', requerido: true, valor: r?.fecha ?? estado.dia },
     { id: 'entrada', etiqueta: 'Entrada', tipo: 'time', requerido: true, valor: r ? hhmm(r.entrada) : '08:00' },
     { id: 'salida', etiqueta: 'Salida', tipo: 'time', requerido: true, valor: r ? hhmm(r.salida) : '17:00' },
-    { id: 'faena', etiqueta: 'Faena o lugar', valor: r?.faena ?? '' },
+    ...(estado.conFaena || r?.faena ? [{ id: 'faena', etiqueta: 'Faena o lugar', valor: r?.faena ?? '' }] : []),
     { id: 'vueltas', etiqueta: 'Vueltas (choferes)', tipo: 'number', valor: String(r?.vueltas ?? 0) },
     { id: 'notas', etiqueta: 'Notas', valor: r?.notas ?? '' },
   ];
@@ -246,7 +250,8 @@ function campos(r, activos, varios) {
 
 const datosDe = (v) => {
   if (v.entrada === v.salida) throw new Error('La entrada y la salida no pueden ser iguales.');
-  return { fecha: v.fecha, entrada: v.entrada, salida: v.salida, faena: v.faena.trim() || null, vueltas: Number(v.vueltas) || 0, notas: v.notas.trim() || null };
+  return { fecha: v.fecha, entrada: v.entrada, salida: v.salida, faena: v.faena === undefined ? undefined : v.faena.trim() || null,   // sin el campo (empresa sin faenas) no se toca
+    vueltas: Number(v.vueltas) || 0, notas: v.notas.trim() || null };
 };
 
 function agregar(ctx, activos) {

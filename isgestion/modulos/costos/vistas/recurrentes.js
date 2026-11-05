@@ -1,12 +1,12 @@
 // Gastos recurrentes (arriendo, servicios básicos, asesorías, suscripciones): próximo cobro con semáforo,
 // equivalente mensual, costo por persona y "Generar el mes" (crea los gastos del mes por pagar).
-import { el } from '../../../core/ui/dom.js?v=7f39998';
-import { icono } from '../../../core/ui/iconos.js?v=7f39998';
-import { boton } from '../../../core/ui/tabla.js?v=7f39998';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=7f39998';
-import { avisar } from '../../../core/ui/aviso.js?v=7f39998';
-import { dinero, fechaLarga, hoyISO, nombreMes, sumarDias } from '../../../core/ui/formato.js?v=7f39998';
-import { cargarBase, nombreTercero, DOCS, proximoCobro, mensualCLP, tocaEnMes, generarMes, fechaEnMes } from '../datos.js?v=7f39998';
+import { el } from '../../../core/ui/dom.js?v=3af27b3';
+import { icono } from '../../../core/ui/iconos.js?v=3af27b3';
+import { boton } from '../../../core/ui/tabla.js?v=3af27b3';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=3af27b3';
+import { avisar } from '../../../core/ui/aviso.js?v=3af27b3';
+import { dinero, fechaLarga, hoyISO, nombreMes, sumarDias } from '../../../core/ui/formato.js?v=3af27b3';
+import { cargarBase, nombreTercero, DOCS, proximoCobro, mensualCLP, tocaEnMes, generarMes, fechaEnMes } from '../datos.js?v=3af27b3';
 
 const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 const TC_KEY = 'isg.costos.dolar';
@@ -29,7 +29,7 @@ export default async function vista(ctx) {
   const gastosCat = base.categorias.filter((c) => c.clase !== 'ingreso' && c.activo);
   const ya = new Set((hechos.data ?? []).map((h) => h.recurrente_id));
   const faltan = lista.filter((r) => tocaEnMes(r, mes) && !ya.has(r.id));
-  let tc = leerTc() || Math.round((await import('../../../core/economia.js?v=7f39998').then((m) => m.dolarDelDia()).catch(() => 0)) ?? 0);
+  let tc = leerTc() || Math.round((await import('../../../core/economia.js?v=3af27b3').then((m) => m.dolarDelDia()).catch(() => 0)) ?? 0);
 
   const hoy = hoyISO();
   const semaforo = (r) => {
@@ -50,7 +50,7 @@ export default async function vista(ctx) {
     campos: [
       { id: 'concepto', etiqueta: 'Concepto', requerido: true, valor: r?.concepto ?? '' },
       { id: 'categoria', etiqueta: 'Categoría', opciones: gastosCat.map((c) => [c.id, c.nombre]), valor: r?.categoria_id ?? gastosCat[0]?.id },
-      { id: 'centro', etiqueta: 'Centro de costo', opciones: [['', 'Sin centro'], ...base.centros.filter((c) => c.activo).map((c) => [c.id, c.nombre])], valor: r?.centro_id ?? '' },
+      ...(ctx.config?.centros ? [{ id: 'centro', etiqueta: 'Centro de costo', opciones: [['', 'Sin centro'], ...base.centros.filter((c) => c.activo).map((c) => [c.id, c.nombre])], valor: r?.centro_id ?? '' }] : []),
       { id: 'tercero', etiqueta: 'Proveedor', opciones: [['', 'Sin proveedor del maestro'], ...base.terceros.filter((t) => t.tipo?.includes('proveedor')).map((t) => [t.id, nombreTercero(t)])], valor: r?.tercero_id ?? '' },
       { id: 'monto', etiqueta: 'Monto (total del documento)', tipo: 'number', requerido: true, valor: r?.monto ?? '' },
       { id: 'moneda', etiqueta: 'Moneda', opciones: [['CLP', 'Pesos (CLP)'], ['USD', 'Dólares (USD)']], valor: r?.moneda ?? 'CLP' },
@@ -70,7 +70,7 @@ export default async function vista(ctx) {
       if (v.ciclo === 'anual' && !v.mes_anual) throw new Error('Indica el mes de cobro del gasto anual.');
       if (!(Number(v.monto) > 0)) throw new Error('El monto debe ser mayor a cero.');
       const datos = {
-        concepto: v.concepto.trim(), categoria_id: v.categoria, centro_id: v.centro || null, tercero_id: v.tercero || null, monto: Number(v.monto),
+        concepto: v.concepto.trim(), categoria_id: v.categoria, ...(ctx.config?.centros ? { centro_id: v.centro || null } : {}), tercero_id: v.tercero || null, monto: Number(v.monto),
         moneda: v.moneda, ciclo: v.ciclo, dia, mes_anual: v.ciclo === 'anual' ? Number(v.mes_anual) : null, doc_tipo: v.doc, autopago: v.autopago === 'si',
         asignado_a: v.asignado || null, desde: v.desde, hasta: v.hasta || null, ...(r ? { activo: v.activo === 'true' } : {}),
       };
@@ -122,7 +122,7 @@ export default async function vista(ctx) {
       el('thead', {}, el('tr', {}, ['Concepto', 'Categoría', 'Monto', 'Ciclo', 'Próximo cobro', 'Asignado'].map((t, i) => el('th', { class: i === 2 ? 'num' : '' }, t)))),
       el('tbody', {}, lista.length ? lista.map((r) => el('tr', { class: r.activo ? '' : 'fila-inactiva' },
         el('td', {}, puedeEditar ? el('a', { href: '#', onclick: (ev) => { ev.preventDefault(); editar(r); } }, el('strong', {}, r.concepto)) : el('strong', {}, r.concepto),
-          el('div', { class: 'texto-suave texto-chico' }, [base.centroDe.get(r.centro_id)?.nombre, nombreTercero(base.terceros.find((t) => t.id === r.tercero_id)), r.autopago ? 'pago automático' : null].filter(Boolean).join(' · '))),
+          el('div', { class: 'texto-suave texto-chico' }, [ctx.config?.centros ? base.centroDe.get(r.centro_id)?.nombre : null, nombreTercero(base.terceros.find((t) => t.id === r.tercero_id)), r.autopago ? 'pago automático' : null].filter(Boolean).join(' · '))),
         el('td', {}, base.categoriaDe.get(r.categoria_id)?.nombre ?? ''),
         el('td', { class: 'num' }, r.moneda === 'USD' ? `US$ ${Number(r.monto)}${tc ? ` · ${dinero(r.monto * tc)}` : ''}` : dinero(r.monto)),
         el('td', {}, r.ciclo === 'anual' ? `Anual (${MESES[r.mes_anual - 1]})` : `Mensual${r.dia ? `, día ${r.dia}` : ''}`),
