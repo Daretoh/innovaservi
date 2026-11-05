@@ -2321,13 +2321,24 @@ a.tar2-fila, a.tar2-fila:hover { text-decoration: none; color: var(--texto); }
 
 /* Cotizaciones → Facturas (007): planilla de control de facturas */
 .fac-filtros { flex-wrap: wrap; margin: 4px 0 8px; }
-.fac-filtros .buscador { flex: 1 1 240px; }
+.fac-filtros .buscador { flex: 2 1 280px; }
 .fac-tabla { overflow-x: auto; }
-.fac-tabla .tabla { font-size: .85rem; }
+.fac-tabla .tabla { font-size: .82rem; }
+.fac-tabla th, .fac-tabla td { padding: 7px 8px; }
+.fac-tabla thead th { position: sticky; top: 0; z-index: 1; background: var(--superficie); }
+.fac-tabla td:first-child, .fac-tabla th:first-child { position: sticky; left: 0; background: var(--superficie); }
 .fac-tabla th { white-space: nowrap; }
 .fac-tabla th.num, .fac-tabla td.num { text-align: right; white-space: nowrap; }
 .fac-fecha { white-space: nowrap; }
-.fac-detalle { min-width: 180px; max-width: 320px; }
+.fac-cliente { min-width: 190px; max-width: 280px; }
+.fac-cliente strong { display: block; line-height: 1.25; }
+.fac-orden { display: block; font-size: .78rem; font-weight: 600; white-space: nowrap; }
+.fac-detalle { display: block; font-size: .76rem; color: var(--texto-suave); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 270px; }
+.fac-oc { white-space: nowrap; }
+.fac-zona { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.fac-estados { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.fac-por-facturar { max-width: none; }
+.fac-por-facturar h2 { margin: 0; font-size: 1rem; }
 .fac-pagado { color: var(--ok); font-weight: 600; }
 .fac-vencida td:first-child { box-shadow: inset 3px 0 0 var(--venc); }
 .fac-pendiente td:first-child { box-shadow: inset 3px 0 0 var(--prox); }

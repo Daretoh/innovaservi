@@ -1,7 +1,7 @@
 // PIN personal (núcleo 010): 4 a 6 dígitos que solo sabe cada usuario, para pasos clave como el VB del taller.
 // La base guarda solo el hash y bloquea 15 minutos tras 5 errores; aquí solo se define o cambia.
-import { abrirFormulario } from './ui/modal.js?v=3af27b3';
-import { avisar } from './ui/aviso.js?v=3af27b3';
+import { abrirFormulario } from './ui/modal.js?v=d9e25ec';
+import { avisar } from './ui/aviso.js?v=d9e25ec';
 
 export async function estadoPin(api) {
   const { data, error } = await api.rpc('pin_estado');

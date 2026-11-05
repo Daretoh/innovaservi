@@ -2,16 +2,16 @@
 // Toda la tarjeta abre la orden; buscador por patente, vehículo o cliente; la tarjeta recién movida queda
 // resaltada; se actualiza solo cada 2 minutos (pensado para la tablet del taller). Arriba, el resumen del Seguimiento
 // del OS (avance y arrastrar para priorizar); el botón de pantalla completa abre el detalle para la tablet.
-import { el } from '../../../core/ui/dom.js?v=3af27b3';
-import { icono } from '../../../core/ui/iconos.js?v=3af27b3';
-import { boton } from '../../../core/ui/tabla.js?v=3af27b3';
-import { fechaCorta, hhmm, hoyISO } from '../../../core/ui/formato.js?v=3af27b3';
-import { ESTADOS, PRIORIDADES, CHIP_PRIORIDAD, SELECT_ORDEN, verPatente, nombreVehiculo, nombreTercero, minutosTrabajo, textoMinutos, hora, cargarTrabajadores } from '../datos.js?v=3af27b3';
-import { mover, textoAvance, puedeVolver } from '../acciones.js?v=3af27b3';
-import { recepcion } from '../recepcion.js?v=3af27b3';
-import { avance, ordenarActivos, marcaCotizar, resumenTaller, detalleVehiculo } from '../seguimiento.js?v=3af27b3';
-import { ETAPAS, tarjetaAuto } from '../movil.js?v=3af27b3';
-import { esTelefono } from '../../../core/movil.js?v=3af27b3';
+import { el } from '../../../core/ui/dom.js?v=d9e25ec';
+import { icono } from '../../../core/ui/iconos.js?v=d9e25ec';
+import { boton } from '../../../core/ui/tabla.js?v=d9e25ec';
+import { fechaCorta, hhmm, hoyISO } from '../../../core/ui/formato.js?v=d9e25ec';
+import { ESTADOS, PRIORIDADES, CHIP_PRIORIDAD, SELECT_ORDEN, verPatente, nombreVehiculo, nombreTercero, minutosTrabajo, textoMinutos, hora, cargarTrabajadores } from '../datos.js?v=d9e25ec';
+import { mover, textoAvance, puedeVolver, esperaPagoFactura } from '../acciones.js?v=d9e25ec';
+import { recepcion } from '../recepcion.js?v=d9e25ec';
+import { avance, ordenarActivos, marcaCotizar, resumenTaller, detalleVehiculo } from '../seguimiento.js?v=d9e25ec';
+import { ETAPAS, tarjetaAuto } from '../movil.js?v=d9e25ec';
+import { esTelefono } from '../../../core/movil.js?v=d9e25ec';
 
 const MAX_ENTREGADOS = 6;
 const ESPERA_LARGA = 60;   // minutos en espera para avisar
@@ -77,7 +77,7 @@ export default async function vista(ctx) {
       ci >= 3 && !o.cobrado ? el('span', { class: 'chip chip-venc' }, 'Por cobrar') : null,
       puedeMover ? el('div', { class: 'tal-botones' },
         ci > 0 && puedeVolver(ctx, o) ? el('button', { type: 'button', class: 'boton boton-secundario boton-chico', onclick: async () => { if (await mover(ctx, o, -1)) { estado.movida = o.id; ctx.refrescar(); } } }, icono('volver', { tam: 14 }), 'Volver') : el('span'),
-        textoAvance(ctx, o) ? el('button', { type: 'button', class: 'boton boton-primario boton-chico', onclick: async () => { if (await mover(ctx, o, 1)) { estado.movida = o.id; ctx.refrescar(); } } }, textoAvance(ctx, o), icono('derecha', { tam: 14 })) : o.estado === 'terminado' ? el('span', { class: 'texto-suave texto-chico' }, 'Espera VB') : null) : null);
+        textoAvance(ctx, o) ? el('button', { type: 'button', class: 'boton boton-primario boton-chico', onclick: async () => { if (await mover(ctx, o, 1)) { estado.movida = o.id; ctx.refrescar(); } } }, textoAvance(ctx, o), icono('derecha', { tam: 14 })) : o.estado === 'terminado' ? el('span', { class: 'texto-suave texto-chico' }, esperaPagoFactura(o) ? 'Espera pago de factura' : 'Espera VB') : null) : null);
     // Toda la tarjeta abre la orden (salvo los botones y enlaces)
     nodo.addEventListener('click', (ev) => { if (!ev.target.closest('button, a')) location.hash = ctx.ruta('taller.orden', { id: o.id }); });
     return nodo;

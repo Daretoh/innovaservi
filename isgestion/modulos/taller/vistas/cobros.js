@@ -1,12 +1,12 @@
 // Cobros del taller: órdenes por cobrar (en proceso, terminadas o entregadas) y cobradas del mes.
 // Arriba, tarjetas de resumen; las pendientes muestran su antigüedad (desde el término) y un acceso a cobrar.
-import { el } from '../../../core/ui/dom.js?v=3af27b3';
-import { icono } from '../../../core/ui/iconos.js?v=3af27b3';
-import { listado } from '../../../core/ui/tabla.js?v=3af27b3';
-import { dinero, fechaLarga, nombreMes, moverMes, rangoMes, diaLocal } from '../../../core/ui/formato.js?v=3af27b3';
+import { el } from '../../../core/ui/dom.js?v=d9e25ec';
+import { icono } from '../../../core/ui/iconos.js?v=d9e25ec';
+import { listado } from '../../../core/ui/tabla.js?v=d9e25ec';
+import { dinero, fechaLarga, nombreMes, moverMes, rangoMes, diaLocal } from '../../../core/ui/formato.js?v=d9e25ec';
 
 const DIAS_ATRASO = 7;   // desde el término: más que esto se marca en rojo
-import { SELECT_ORDEN, verPatente, nombreVehiculo, nombreTercero, totales, TIPOS_VENTA } from '../datos.js?v=3af27b3';
+import { SELECT_ORDEN, verPatente, nombreVehiculo, nombreTercero, totales, TIPOS_VENTA } from '../datos.js?v=d9e25ec';
 
 const estado = { tab: 'pendientes', mes: new Date().toISOString().slice(0, 7) };
 
@@ -21,7 +21,7 @@ export default async function vista(ctx) {
   // Órdenes que se cobran en un cierre mensual o una cuenta corriente (módulo Cierres): no se cobran solas
   const externas = estado.tab === 'pendientes' && ctx.puede('cierres', 'ver') ? await ordenesExternas(ctx, data) : new Map();
   // Las de un cierre ya cobrado no se muestran: se cobraron en el cierre
-  const filas = data.filter((o) => externas.get(o.id) !== 'cobrada').map((o) => ({ ...o, t: totales(o, o.tal_orden_servicios), externa: externas.get(o.id) ?? null }));
+  const filas = data.filter((o) => externas.get(o.id) !== 'cobrada').map((o) => ({ ...o, t: totales(o, o.tal_orden_servicios), externa: externas.get(o.id) ?? (o.factura_tercero_id ? 'Con factura' : null) }));
   const suma = (k) => filas.filter((f) => !f.externa).reduce((s, f) => s + f.t[k], 0);
   // Días desde que se terminó (o desde que empezó, si sigue en proceso)
   const dias = (o) => { const ts = o.termino_at ?? o.inicio_at ?? o.ingreso_at; return ts ? Math.floor((Date.now() - new Date(ts)) / 864e5) : null; };
@@ -50,7 +50,7 @@ export default async function vista(ctx) {
       { titulo: 'Documento', valor: (o) => (o.tipo_venta !== 'normal' ? TIPOS_VENTA.find((x) => x[0] === o.tipo_venta)[1] : o.doc_tipo === 'factura' ? 'Factura' : 'Boleta') },
       { titulo: 'Total', valor: (o) => dinero(o.t.total) },
       { titulo: estado.tab === 'pendientes' ? 'Saldo' : 'Ingreso', valor: (o) => (o.externa ? el('span', { class: 'chip chip-pend' }, o.externa) : el('strong', {}, dinero(estado.tab === 'pendientes' ? o.t.saldo : o.t.ingreso))) },
-      ...(estado.tab === 'pendientes' && ctx.puede('taller', 'editar') ? [{ titulo: '', valor: (o) => (o.externa ? '' : el('a', { class: 'boton boton-secundario boton-chico', href: ctx.ruta('taller.orden', { id: o.id, ir: 'cobro' }) }, 'Cobrar', icono('derecha', { tam: 14 }))) }] : []),
+      ...(estado.tab === 'pendientes' && ctx.puede('taller', 'editar') ? [{ titulo: '', valor: (o) => (o.externa === 'Con factura' && ctx.puede('cotizaciones', 'ver') ? el('a', { class: 'boton boton-secundario boton-chico', href: ctx.ruta('cotizaciones.oc') }, 'Ir a Facturas', icono('derecha', { tam: 14 })) : o.externa ? '' : el('a', { class: 'boton boton-secundario boton-chico', href: ctx.ruta('taller.orden', { id: o.id, ir: 'cobro' }) }, 'Cobrar', icono('derecha', { tam: 14 }))) }] : []),
     ],
   });
   if (filas.length) {
@@ -62,7 +62,7 @@ export default async function vista(ctx) {
         ? [tarjeta('Saldo por cobrar', dinero(suma('saldo')), `${propias.length} ${propias.length === 1 ? 'orden' : 'órdenes'}`),
           tarjeta(`Atrasadas (más de ${DIAS_ATRASO} días)`, String(atrasadas.length), atrasadas.length ? dinero(atrasadas.reduce((x, o) => x + o.t.saldo, 0)) : 'Ninguna', atrasadas.length ? 'fin-alerta' : ''),
           tarjeta('Abonos recibidos', dinero(suma('abono')), 'anticipos de órdenes sin cobrar'),
-          filas.length > propias.length ? tarjeta('En cierre o cuenta corriente', String(filas.length - propias.length), 'se cobran fuera del taller') : null]
+          filas.length > propias.length ? tarjeta('En cierre, cuenta o factura', String(filas.length - propias.length), 'se cobran fuera del taller') : null]
         : [tarjeta(`Ingreso de ${nombreMes(estado.mes)}`, dinero(suma('ingreso')), `${filas.length} ${filas.length === 1 ? 'orden cobrada' : 'órdenes cobradas'}`),
           tarjeta('IVA', dinero(suma('iva'))),
           tarjeta('Ticket promedio', dinero(filas.length ? Math.round(suma('total') / filas.length) : 0), 'total por orden')]), lista.children[1]);
@@ -71,7 +71,7 @@ export default async function vista(ctx) {
 }
 
 // Mapa orden → "Cierre mensual" | "Cuenta corriente" para las órdenes que se cobran fuera de Taller
-async function ordenesExternas(ctx, ordenes) {
+export async function ordenesExternas(ctx, ordenes) {
   const ids = ordenes.map((o) => o.id);
   if (!ids.length) return new Map();
   const [cli, lin, grp] = await Promise.all([

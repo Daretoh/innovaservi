@@ -1,13 +1,17 @@
 // Cambios de estado de una orden (tablero, agenda y detalle).
-import { avisar } from '../../core/ui/aviso.js?v=3af27b3';
-import { ESTADOS, MARCA_DE, nombreEstado } from './datos.js?v=3af27b3';
-import { pideVb, puedeVb, darVb } from './vb.js?v=3af27b3';
+import { avisar } from '../../core/ui/aviso.js?v=d9e25ec';
+import { ESTADOS, MARCA_DE, nombreEstado } from './datos.js?v=d9e25ec';
+import { pideVb, puedeVb, darVb } from './vb.js?v=d9e25ec';
+
+// Pidió factura y aún no paga: se queda en Terminado (Cotizaciones 008; la base también lo exige)
+export const esperaPagoFactura = (o) => !!o.factura_tercero_id && !o.cobrado && o.tipo_venta === 'normal';
 
 // Avanza (+1) o retrocede (−1) un estado. Al avanzar marca la hora si no estaba; al retroceder la borra.
 export async function mover(ctx, o, dir) {
   const i = ESTADOS.findIndex(([k]) => k === o.estado);
   const destino = ESTADOS[i + dir]?.[0];
   if (!destino) return false;
+  if (destino === 'entregado' && esperaPagoFactura(o)) { avisar('Esta orden se paga con factura: se entrega cuando el pago esté registrado en Cotizaciones → Facturas.', 'error'); return false; }
   // Entregar o devolver una entregada: con VB lo hace quien tiene taller.aprobar, con su PIN (vb.js)
   if (pideVb(ctx) && (destino === 'entregado' || o.estado === 'entregado')) {
     if (!puedeVb(ctx)) { avisar('Entregar (o devolver a Terminado) lo hace quien da el VB de entrega.', 'error'); return false; }
@@ -26,6 +30,7 @@ export async function mover(ctx, o, dir) {
 export function textoAvance(ctx, o) {
   const i = ESTADOS.findIndex(([k]) => k === o.estado);
   const t = ESTADOS[i]?.[2] ?? null;
+  if (ESTADOS[i + 1]?.[0] === 'entregado' && esperaPagoFactura(o)) return null;
   if (t && ESTADOS[i + 1]?.[0] === 'entregado' && pideVb(ctx)) return puedeVb(ctx) ? 'Dar VB y entregar' : null;
   return t;
 }

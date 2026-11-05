@@ -2,14 +2,15 @@
 // y subir respaldos (factura, OC, comprobante de pago). Lo usan la pestaña Facturas y el Seguimiento del editor.
 // Si la factura está ligada a una cotización, la base copia en ella la factura y el pago; al pagar, las órdenes del
 // taller ligadas quedan cobradas (cobrarOrdenes) y al anular el pago vuelven a quedar por cobrar.
-import { el } from '../../core/ui/dom.js?v=3af27b3';
-import { abrirFormulario } from '../../core/ui/modal.js?v=3af27b3';
-import { avisar } from '../../core/ui/aviso.js?v=3af27b3';
-import { hoyISO, sumarDias, dinero } from '../../core/ui/formato.js?v=3af27b3';
-import { subirArchivo } from '../../core/adjuntos.js?v=3af27b3';
-import { cobrarOrdenes, descobrarOrdenes } from './acciones.js?v=3af27b3';
-import { totales, numeroTexto, verPatente, nombreTercero, cargarCotizacion, IVA } from './datos.js?v=3af27b3';
-import { MEDIOS } from './seguimiento.js?v=3af27b3';
+// Con una orden del taller ligada directo (008, orden_id), lo hace la base: ver db/008_factura_orden.sql.
+import { el } from '../../core/ui/dom.js?v=d9e25ec';
+import { abrirFormulario } from '../../core/ui/modal.js?v=d9e25ec';
+import { avisar } from '../../core/ui/aviso.js?v=d9e25ec';
+import { hoyISO, sumarDias, dinero } from '../../core/ui/formato.js?v=d9e25ec';
+import { subirArchivo } from '../../core/adjuntos.js?v=d9e25ec';
+import { cobrarOrdenes, descobrarOrdenes } from './acciones.js?v=d9e25ec';
+import { totales, numeroTexto, verPatente, nombreTercero, cargarCotizacion, IVA } from './datos.js?v=d9e25ec';
+import { MEDIOS } from './seguimiento.js?v=d9e25ec';
 
 export const PLAZO_PAGO = 30;   // días entre la emisión y el pago estimado (como en la planilla de Performance)
 export const TIPOS_ARCHIVO = ['application/pdf', 'image/jpeg', 'image/png'];
@@ -29,18 +30,28 @@ const subir = async (ctx, archivo, id) => (archivo?.size
 
 // Formulario de factura. f = factura existente; cotizacion = la cotización desde la que se factura (editor).
 // cotizaciones = enviadas o aceptadas sin factura, para elegir una (pestaña Facturas); clientes = terceros.
-export function formFactura(ctx, { f = null, cotizacion = null, cotizaciones = [], clientes = [], alGuardar } = {}) {
+// ordenes = órdenes del taller por facturar, para buscar el vehículo; orden = la que ya viene elegida.
+export function formFactura(ctx, { f = null, cotizacion = null, cotizaciones = [], clientes = [], ordenes = [], orden = null, alGuardar } = {}) {
   const cot0 = cotizacion ?? null;
   const t0 = cot0 ? totales(cot0, cot0.cot_grupos, cot0.cot_lineas) : null;
   const opcionesCot = [['', 'Sin cotización'], ...(cot0 ? [cot0] : cotizaciones).map((c) => [c.id, `N° ${numeroTexto(c.numero)} · ${c.cliente_nombre ?? ''} · ${detalleCot(c) || 'sin detalle'}`])];
   if (f?.cotizacion_id && !opcionesCot.some(([v]) => v === f.cotizacion_id)) opcionesCot.push([f.cotizacion_id, 'Cotización ligada']);
   const conIva = f ? (f.iva > 0 || f.neto === 0 ? 'si' : 'no') : t0 ? (cot0.con_iva ? 'si' : 'no') : 'si';
   const fecha0 = f?.fecha_emision ?? hoyISO();
+  const opcionesOrden = [['', 'Sin vehículo del taller'], ...ordenes.map((o) => [o.id, o.texto])];
+  if (f?.orden_id && !opcionesOrden.some(([v]) => v === f.orden_id)) opcionesOrden.push([f.orden_id, 'Orden ligada']);
   abrirFormulario({
     titulo: f ? `Factura N° ${f.numero}` : 'Nueva factura',
-    mensaje: cot0 && !f ? `Se liga a la cotización N° ${numeroTexto(cot0.numero)} (la deja aceptada si estaba enviada).` : null,
+    mensaje: cot0 && !f ? `Se liga a la cotización N° ${numeroTexto(cot0.numero)} (la deja aceptada si estaba enviada).` : orden ? `Orden N° ${orden.numero}: al registrar el pago queda cobrada y se puede entregar.` : null,
     campos: [
       { id: 'numero', etiqueta: 'N° de factura', requerido: true, valor: f?.numero ?? '' },
+      ...(!cot0 && opcionesOrden.length > 1 ? [{ id: 'orden', etiqueta: 'Vehículo (orden del taller)', opciones: opcionesOrden, valor: f?.orden_id ?? orden?.id ?? '',
+        ayuda: 'Escribe la patente o el cliente. Al pagar la factura, la orden queda cobrada.',
+        alCambiar: ({ valor, poner }) => {
+          const o = ordenes.find((x) => x.id === valor);
+          if (!o) return;
+          poner('cliente', o.tercero ?? ''); poner('detalle', o.detalle); poner('neto', String(o.neto)); poner('iva', 'si'); poner('ejecucion', o.fecha ?? '');
+        } }] : []),
       { id: 'cotizacion', etiqueta: 'Cotización', opciones: opcionesCot, valor: f?.cotizacion_id ?? cot0?.id ?? '',
         ayuda: cot0 ? null : 'Al elegir una, se llenan el cliente, la OC, el detalle y los montos.',
         alCambiar: ({ valor, poner }) => {
@@ -50,14 +61,14 @@ export function formFactura(ctx, { f = null, cotizacion = null, cotizaciones = [
           poner('cliente', c.tercero_id ?? ''); poner('oc', c.oc_numero ?? ''); poner('detalle', detalleCot(c));
           poner('neto', String(t.neto)); poner('iva', c.con_iva ? 'si' : 'no'); poner('ejecucion', c.fecha ?? '');
         } },
-      { id: 'cliente', etiqueta: 'Cliente', opciones: [['', 'Elegir…'], ...clientes.map((t) => [t.id, nombreTercero(t)])], valor: f?.tercero_id ?? cot0?.tercero_id ?? '' },
+      { id: 'cliente', etiqueta: 'Cliente', opciones: [['', 'Elegir…'], ...clientes.map((t) => [t.id, nombreTercero(t)])], valor: f?.tercero_id ?? cot0?.tercero_id ?? orden?.tercero ?? '' },
       { id: 'oc', etiqueta: 'OC u orden de servicio', valor: f?.oc_numero ?? cot0?.oc_numero ?? '' },
-      { id: 'detalle', etiqueta: 'Detalle de trabajos', valor: f?.detalle ?? (cot0 ? detalleCot(cot0) : '') },
+      { id: 'detalle', etiqueta: 'Detalle de trabajos', valor: f?.detalle ?? (cot0 ? detalleCot(cot0) : orden?.detalle ?? '') },
       { id: 'emision', etiqueta: 'Fecha de emisión', tipo: 'date', requerido: true, valor: fecha0,
         alCambiar: ({ valor, poner }) => { if (valor && !f) poner('estimada', sumarDias(valor, PLAZO_PAGO)); } },
       { id: 'estimada', etiqueta: 'Fecha de pago estimada', tipo: 'date', valor: f?.fecha_pago_estimada ?? sumarDias(fecha0, PLAZO_PAGO), ayuda: `Por omisión, ${PLAZO_PAGO} días después de la emisión.` },
-      { id: 'ejecucion', etiqueta: 'Fecha de ejecución del trabajo', tipo: 'date', valor: f?.fecha_ejecucion ?? cot0?.fecha ?? '' },
-      { id: 'neto', etiqueta: 'Monto neto ($)', tipo: 'number', requerido: true, valor: String(f?.neto ?? t0?.neto ?? '') },
+      { id: 'ejecucion', etiqueta: 'Fecha de ejecución del trabajo', tipo: 'date', valor: f?.fecha_ejecucion ?? cot0?.fecha ?? orden?.fecha ?? '' },
+      { id: 'neto', etiqueta: 'Monto neto ($)', tipo: 'number', requerido: true, valor: String(f?.neto ?? t0?.neto ?? orden?.neto ?? '') },
       { id: 'iva', etiqueta: 'IVA', opciones: [['si', 'Con IVA (19 %)'], ['no', 'Sin IVA (exenta)']], valor: conIva },
       { id: 'archivo', etiqueta: `${f?.archivo ? 'Reemplazar factura' : 'Factura'} (PDF o imagen, opcional)`, tipo: 'file', accept: TIPOS_ARCHIVO.join(','), multiple: false },
       { id: 'oc_archivo', etiqueta: `${f?.oc_archivo ? 'Reemplazar OC' : 'OC'} (opcional)`, tipo: 'file', accept: TIPOS_ARCHIVO.join(','), multiple: false },
@@ -70,7 +81,7 @@ export function formFactura(ctx, { f = null, cotizacion = null, cotizaciones = [
       const tercero = clientes.find((t) => t.id === v.cliente);
       const cot = cotizaciones.find((x) => x.id === v.cotizacion) ?? (cot0?.id === v.cotizacion ? cot0 : null);
       const datos = {
-        numero: v.numero.trim(), cotizacion_id: v.cotizacion || null, tercero_id: v.cliente || cot?.tercero_id || f?.tercero_id || null,
+        numero: v.numero.trim(), cotizacion_id: v.cotizacion || null, orden_id: v.orden || f?.orden_id || null, tercero_id: v.cliente || cot?.tercero_id || f?.tercero_id || null,
         cliente_nombre: tercero ? nombreTercero(tercero) : cot?.cliente_nombre ?? f?.cliente_nombre ?? null,
         oc_numero: v.oc.trim() || null, detalle: v.detalle.trim() || null, fecha_emision: v.emision, fecha_pago_estimada: v.estimada || null,
         fecha_ejecucion: v.ejecucion || null, neto, iva: v.iva === 'si' ? Math.round(neto * IVA) : 0, notas: v.notas.trim() || null,
@@ -80,7 +91,7 @@ export function formFactura(ctx, { f = null, cotizacion = null, cotizaciones = [
       if (!f && cot?.oc_archivo) datos.oc_archivo = cot.oc_archivo;
       const q = f ? ctx.api.from('cot_facturas').update(datos).eq('id', f.id) : ctx.api.from('cot_facturas').insert({ empresa_id: ctx.empresa.id, ...datos });
       const { data, error } = await q.select('*').single();
-      if (error) throw new Error(/cot_facturas_numero_uq/.test(error.message) ? `Ya hay una factura N° ${datos.numero}.` : /cot_facturas_cot_uq/.test(error.message) ? 'Esa cotización ya tiene factura.' : error.message);
+      if (error) throw new Error(/cot_facturas_numero_uq/.test(error.message) ? `Ya hay una factura N° ${datos.numero}.` : /cot_facturas_cot_uq/.test(error.message) ? 'Esa cotización ya tiene factura.' : /cot_facturas_orden_uq/.test(error.message) ? 'Esa orden ya tiene factura.' : error.message);
       // Respaldos después de guardar (la ruta lleva el id de la factura)
       const archivos = {};
       for (const k of ['archivo', 'oc_archivo']) { const r = await subir(ctx, v[k], data.id); if (r) archivos[k] = r; }
@@ -98,7 +109,7 @@ export function formFactura(ctx, { f = null, cotizacion = null, cotizaciones = [
 export function formPago(ctx, f, { alGuardar } = {}) {
   abrirFormulario({
     titulo: `Pago de la factura N° ${f.numero}`,
-    mensaje: f.cotizacion_id ? 'Si la cotización tiene órdenes del taller ligadas, quedan cobradas con sus valores (así suman al Estado de resultados).' : null,
+    mensaje: f.orden_id ? 'La orden del taller queda cobrada y se puede entregar.' : f.cotizacion_id ? 'Si la cotización tiene órdenes del taller ligadas, quedan cobradas con sus valores (así suman al Estado de resultados).' : null,
     campos: [
       { id: 'monto', etiqueta: 'Monto pagado ($, total)', tipo: 'number', requerido: true, valor: String(f.pago_monto ?? f.total) },
       { id: 'fecha', etiqueta: 'Fecha de pago', tipo: 'date', requerido: true, valor: f.fecha_pago ?? hoyISO() },
@@ -128,7 +139,7 @@ export function formPago(ctx, f, { alGuardar } = {}) {
 export function anularPago(ctx, f, { alGuardar } = {}) {
   abrirFormulario({
     titulo: 'Anular el pago', campos: [], textoGuardar: 'Anular pago',
-    mensaje: `La factura N° ${f.numero} vuelve a quedar pendiente${f.cotizacion_id ? '; las órdenes del taller que se cobraron con ella vuelven a quedar por cobrar' : ''}.`,
+    mensaje: `La factura N° ${f.numero} vuelve a quedar pendiente${f.cotizacion_id || f.orden_id ? '; las órdenes del taller que se cobraron con ella vuelven a quedar por cobrar' : ''}.`,
     alGuardar: async () => {
       if (f.cotizacion_id) { const c = await cargarCotizacion(ctx, f.cotizacion_id); if (c) await descobrarOrdenes(ctx, c); }
       const { error } = await ctx.api.from('cot_facturas').update({ fecha_pago: null, pago_monto: null, pago_medio: null }).eq('id', f.id);
