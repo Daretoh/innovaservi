@@ -5,7 +5,7 @@
 // el PDF. Cada costo guarda `registro_id` (o `insumos:<orden>`) para no traerlo dos veces.
 // No entran las compras hechas por cuenta de un tercero (a_cuenta_de): se le descuentan a él, no son costo de la empresa.
 // La lista y el editor de cotizaciones muestran estos mismos costos aunque nadie los haya traído (costosDeGrupos).
-import { diaLocal, hoyISO } from '../../core/ui/formato.js?v=7100fbc';
+import { diaLocal, hoyISO } from '../../core/ui/formato.js?v=d781526';
 
 const nombreT = (t) => t?.nombre_fantasia || t?.razon_social || '';
 

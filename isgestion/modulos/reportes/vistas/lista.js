@@ -1,11 +1,12 @@
 // Partes de trabajo: listado, pendientes de clientes que piden informe y creación desde las faenas.
-import { el } from '../../../core/ui/dom.js?v=7100fbc';
-import { icono } from '../../../core/ui/iconos.js?v=7100fbc';
-import { listado, boton } from '../../../core/ui/tabla.js?v=7100fbc';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=7100fbc';
-import { avisar } from '../../../core/ui/aviso.js?v=7100fbc';
-import { hoyISO, sumarDias, fechaLarga } from '../../../core/ui/formato.js?v=7100fbc';
-import { faenasSinParte, nombreTercero } from '../datos.js?v=7100fbc';
+import { el } from '../../../core/ui/dom.js?v=d781526';
+import { icono } from '../../../core/ui/iconos.js?v=d781526';
+import { listado, boton } from '../../../core/ui/tabla.js?v=d781526';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=d781526';
+import { avisar } from '../../../core/ui/aviso.js?v=d781526';
+import { hoyISO, sumarDias, fechaLarga } from '../../../core/ui/formato.js?v=d781526';
+import { faenasSinParte, nombreTercero } from '../datos.js?v=d781526';
+import { esTelefono } from '../../../core/movil.js?v=d781526';
 
 let estado = 'todos';
 // El filtro Todos / Borradores / Confirmados repinta con lo ya cargado (antes volvía a pedir todo y tardaba 2–3 s sin
@@ -41,6 +42,26 @@ export default async function vista(ctx) {
 
   const acciones = [segmento];
   if (ctx.puede('reportes', 'crear')) acciones.push(boton('Nuevo parte', { icono: 'mas', tipo: 'primario', onclick: () => nuevo(ctx, null) }));
+
+  // Teléfono (para subir las fotos en terreno): tarjetas en vez de la tabla; las faenas sin parte, plegadas
+  if (esTelefono()) {
+    const puedeCrear = ctx.puede('reportes', 'crear');
+    return el('section', { class: 'listado rep-movil' },
+      el('h1', {}, 'Reportes de trabajo'),
+      segmento,
+      puedeCrear ? boton('Nuevo parte', { icono: 'mas', tipo: 'primario', onclick: () => nuevo(ctx, null) }) : null,
+      pendientes.length ? el('details', { class: 'ficha rep-pendientes' },
+        el('summary', {}, icono('alerta', { tam: 16 }), ` Faenas sin parte (${pendientes.length})`),
+        pendientes.map((f) => el('div', { class: 'doc-fila' }, el('span', { class: 'doc-nombre' }, f.etiqueta),
+          puedeCrear ? boton('Crear parte', { onclick: () => nuevo(ctx, f) }) : null))) : null,
+      partes.data.length ? el('div', { class: 'rep-lista' }, partes.data.map((p) => el('a', { class: 'rep-fila', href: ctx.ruta('reportes.parte', { id: p.id }) },
+        el('span', { class: 'rep-fotos-n' }, icono('camara', { tam: 18 }), String(p.rep_media.length)),
+        el('span', { class: 'rep-fila-texto' }, el('strong', {}, nombreTercero(p.terceros)),
+          el('span', { class: 'texto-suave texto-chico' }, p.rep_parte_faenas.map((x) => x.ope_faenas?.titulo).filter(Boolean).join(' · ') || p.lugar || ''),
+          el('span', { class: 'rep-fila-pie' }, el('span', { class: 'texto-chico' }, fechaLarga(p.fecha)),
+            el('span', { class: `chip ${p.estado === 'confirmado' ? 'chip-ok' : 'chip-prox'}` }, p.estado === 'confirmado' ? 'Confirmado' : 'Borrador'))),
+        icono('derecha', { tam: 18 })))) : el('div', { class: 'tm-vacio' }, el('span', {}, 'No hay partes.')));
+  }
 
   const lista = listado({
     titulo: 'Partes de trabajo',

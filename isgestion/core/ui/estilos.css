@@ -1804,7 +1804,79 @@ li.tarea-ok { text-decoration: line-through; color: var(--texto-suave); }
 
 /* ---------- Teléfono como app (core/movil.js, dirección B aprobada por Enzo el 2026-10-27) ---------- */
 .barra-movil { display: none; }
+/* Asistencia en el teléfono (modulos/asistencia/vistas/horas-movil.js) */
+/* Reportes de trabajo en el teléfono: tarjetas y, en el parte, las fotos antes que los datos */
+.rep-lista { display: flex; flex-direction: column; gap: 8px; }
+.rep-fila { display: flex; align-items: center; gap: 12px; min-height: 72px; padding: 10px 12px; border: 1px solid var(--borde); border-radius: 14px; background: var(--superficie); color: var(--texto); text-decoration: none; }
+.rep-fila > svg { flex: none; color: var(--texto-suave); }
+.rep-fotos-n { flex: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; width: 46px; height: 50px; border-radius: 13px; background: color-mix(in srgb, var(--empresa) 14%, var(--superficie)); font-size: 12px; font-weight: 800; }
+.rep-fila-texto { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.rep-fila-texto strong { font-size: 15px; overflow-wrap: anywhere; }
+.rep-fila-pie { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 8px; }
+.rep-pendientes { max-width: none; display: block; padding: 12px 14px; }
+.rep-pendientes summary { min-height: 28px; font-weight: 700; cursor: pointer; }
+@media (max-width: 760px) {
+  .rep-parte .rep-fotos { order: 1; }
+  .rep-parte .plan-editor { order: 2; }
+  .rep-fotos .listado-acciones > * { width: 100%; }
+}
+.asm { padding-bottom: 72px; }
+body:has(.asm-varios:not([hidden])) .aviso { bottom: calc(164px + env(safe-area-inset-bottom)); }
+@media (max-width: 760px) {
+  /* Pestañas de un apartado en una sola línea que se desliza: en tres líneas se comían media pantalla */
+  .pestanas-apartado { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  .pestanas-apartado::-webkit-scrollbar { display: none; }
+  .pestanas-apartado > * { flex: none; white-space: nowrap; }
+}
+.asm-pestanas { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.asm-pestana { display: flex; flex-direction: column; align-items: center; gap: 2px; min-height: 64px; justify-content: center; padding: 8px 4px; border: 1px solid var(--borde); border-radius: 14px; background: var(--superficie); color: var(--texto-suave); font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+.asm-pestana strong { font-size: 22px; line-height: 26px; font-weight: 800; color: var(--texto); }
+.asm-pestana[aria-selected="true"] { border-color: var(--empresa); background: color-mix(in srgb, var(--empresa) 12%, var(--superficie)); color: var(--texto); box-shadow: inset 0 0 0 1px var(--empresa); }
+.asm-aus strong { color: var(--venc); }
+.asm-buscar { width: 100%; min-height: 44px; box-sizing: border-box; }
+.asm-lista { display: flex; flex-direction: column; gap: 8px; }
+.asm-grupo { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
+.asm-grupo h3 { display: flex; align-items: baseline; gap: 8px; margin: 4px 2px 0; font-size: 13px; font-weight: 800; color: var(--texto); }
+.asm-grupo h3 i { flex: none; align-self: center; width: 10px; height: 10px; border-radius: 3px; background: var(--asm-color, var(--texto-suave)); }
+.asm-grupo h3 span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.asm-grupo h3 small { flex: none; font-weight: 600; color: var(--texto-suave); }
+.asm-persona { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 64px; box-sizing: border-box; padding: 10px 12px; border: 1px solid var(--borde); border-radius: 14px; background: var(--superficie); color: var(--texto); font: inherit; text-align: left; }
+button.asm-persona { cursor: pointer; }
+button.asm-persona > svg, .asm-persona-abrir > svg { flex: none; color: var(--texto-suave); }
+.asm-persona.pisa { border-color: var(--venc); }
+.asm-avatar { flex: none; display: grid; place-items: center; width: 42px; height: 42px; border-radius: 13px; background: color-mix(in srgb, var(--empresa) 14%, var(--superficie)); color: var(--texto); font-size: 14px; font-weight: 800; }
+.asm-persona-texto { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.asm-persona-texto strong { font-size: 15px; font-weight: 700; overflow-wrap: anywhere; }
+.asm-horario { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; font-size: 13px; font-variant-numeric: tabular-nums; color: var(--texto-suave); }
+.asm-horario b { color: var(--texto); font-weight: 800; }
+.asm-sin { padding: 0 0 0 10px; gap: 4px; }
+.asm-sin.marcada { border-color: var(--empresa); background: color-mix(in srgb, var(--empresa) 8%, var(--superficie)); }
+.asm-marca { flex: none; display: grid; place-items: center; width: 48px; height: 48px; padding: 0; border: 0; border-radius: 14px; background: transparent; color: var(--sobre-empresa); cursor: pointer; }
+.asm-sin.marcada .asm-marca { width: 42px; height: 42px; margin: 3px; background: var(--empresa); }
+.asm-persona-abrir { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; min-height: 64px; padding: 8px 12px 8px 6px; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.asm-planificados { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; border: 1px dashed var(--empresa); border-radius: 12px; background: transparent; color: var(--texto); font: inherit; font-weight: 700; cursor: pointer; }
+.asm-planificados svg { color: var(--empresa); }
+.asm-varios { position: fixed; z-index: 650; left: 12px; right: 12px; bottom: calc(86px + env(safe-area-inset-bottom)); display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 8px 8px 16px; border: 1px solid var(--borde); border-radius: 18px; background: var(--superficie); box-shadow: 0 10px 28px rgb(0 0 0 / .2); }
+.asm-varios[hidden] { display: none; }
+.asm-limpiar { min-height: 44px; border: 0; background: transparent; color: var(--texto-suave); font: inherit; font-weight: 700; cursor: pointer; }
+.asm-hoja-titulo { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.asm-form { gap: 14px; }
+.asm-atajos { display: flex; flex-wrap: wrap; gap: 8px; }
+.asm-atajo { min-height: 40px; padding: 0 12px; border: 1px solid var(--borde); border-radius: 999px; background: var(--superficie); color: var(--texto); font: inherit; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; cursor: pointer; }
+.asm-atajo.activo { border-color: var(--empresa); background: var(--empresa); color: var(--sobre-empresa); }
+.asm-horas { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: end; gap: 8px; }
+.asm-horas label, .asm-campo { display: flex; flex-direction: column; gap: 5px; min-width: 0; font-size: 13px; font-weight: 700; }
+.asm-horas input { width: 100%; min-width: 0; box-sizing: border-box; min-height: 52px; font-size: 20px; font-weight: 700; text-align: center; font-variant-numeric: tabular-nums; }
+.asm-flecha { display: grid; place-items: center; height: 52px; color: var(--texto-suave); }
+.asm-total { margin: -6px 0 0; text-align: center; font-size: 14px; font-weight: 800; color: var(--texto); min-height: 20px; }
+.asm-campo input { width: 100%; box-sizing: border-box; min-height: 46px; }
+.asm-nota { margin: 0; padding: 10px 12px; border-radius: 10px; background: var(--fondo-sutil); font-size: 14px; }
+.asm-error { margin: 0; color: var(--error); font-size: 14px; font-weight: 600; }
+.asm-error[hidden] { display: none; }
+.asm-extras { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 12px; border-top: 1px solid var(--borde); }
 /* Menú del "+" (core/movil.js): sobre la barra (700) y bajo las ventanas */
+html.bm-sin-seleccion, html.bm-sin-seleccion * { -webkit-user-select: none !important; user-select: none !important; -webkit-touch-callout: none !important; }
+.bm-velo, .bm-opciones { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 .bm-velo { position: fixed; inset: 0; z-index: 705; background: var(--velo); animation: bm-velo 160ms ease both; }
 .bm-opciones { position: fixed; z-index: 710; left: 50%; transform: translateX(-50%); bottom: calc(96px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; align-items: stretch; gap: 10px; width: min(260px, calc(100vw - 48px)); }
 .bm-opcion { display: flex; align-items: center; gap: 12px; min-height: 54px; padding: 0 18px; border: 1px solid var(--borde); border-radius: 18px; cursor: pointer; background: var(--superficie); color: var(--texto); font: inherit; font-weight: 700; text-align: left; box-shadow: 0 10px 28px rgb(0 0 0 / .22); animation: bm-opcion 200ms cubic-bezier(.3, 1.4, .5, 1) both; }

@@ -6,14 +6,15 @@
 // Fijos con turno (2026-10-30): cada día hábil quedan presentes "según horario" solos (asis_generar_fijos); aquí solo se
 // corrigen las excepciones: retraso o salida temprana (cambiar la hora), horas extra (cambiar la salida o agregar otra
 // fila) y ausencias (botón Ausente: el día deja de contar y no se vuelve a crear).
-import { el } from '../../../core/ui/dom.js?v=7100fbc';
-import { icono } from '../../../core/ui/iconos.js?v=7100fbc';
-import { boton } from '../../../core/ui/tabla.js?v=7100fbc';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=7100fbc';
-import { avisar } from '../../../core/ui/aviso.js?v=7100fbc';
-import { hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, horas, aMin, hhmm } from '../../../core/ui/formato.js?v=7100fbc';
+import { el } from '../../../core/ui/dom.js?v=d781526';
+import { icono } from '../../../core/ui/iconos.js?v=d781526';
+import { boton } from '../../../core/ui/tabla.js?v=d781526';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=d781526';
+import { avisar } from '../../../core/ui/aviso.js?v=d781526';
+import { esTelefono } from '../../../core/movil.js?v=d781526';
+import { hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, horas, aMin, hhmm } from '../../../core/ui/formato.js?v=d781526';
 
-const estado = { lunes: lunesDe(hoyISO()), dia: hoyISO(), nuevas: [] };   // nuevas: filas en blanco aún sin guardar
+export const estado = { lunes: lunesDe(hoyISO()), dia: hoyISO(), nuevas: [] };   // nuevas: filas en blanco aún sin guardar
 
 const nombre = (p) => [p.nombres, p.apellido_paterno, p.apellido_materno].filter(Boolean).join(' ');
 export function minutosRegistro(h) {
@@ -24,6 +25,7 @@ export function minutosRegistro(h) {
 const clave = (s) => String(s ?? '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[·—-]+/g, ' ').replace(/\s+/g, ' ');
 
 export default async function vista(ctx) {
+  if (esTelefono()) return (await import('./horas-movil.js?v=d781526')).default(ctx);   // en el teléfono, lista de personas en vez de planilla
   const desde = estado.lunes;
   const hasta = sumarDias(desde, 6);
   if (estado.dia < desde || estado.dia > hasta) estado.dia = desde;
@@ -216,7 +218,7 @@ export default async function vista(ctx) {
 }
 
 // Ausente: el día según horario deja de contar (queda eliminado con el motivo) y no se vuelve a crear
-function ausente(ctx, r, v) {
+export function ausente(ctx, r, v) {
   abrirFormulario({
     titulo: `Ausente · ${v ? nombre(v.personas) : ''}`,
     mensaje: `${fechaCorta(r.fecha)}: el día deja de contar como trabajado. Se puede deshacer.`,
@@ -290,7 +292,7 @@ function editar(ctx, r, activos) {
   setTimeout(() => { const s = document.querySelector('dialog[open] select[name="persona"]'); if (s) s.disabled = true; }, 0);
 }
 
-function eliminar(ctx, r) {
+export function eliminar(ctx, r) {
   abrirFormulario({
     titulo: 'Eliminar registro',
     mensaje: `${hhmm(r.entrada)} – ${hhmm(r.salida)} del ${fechaCorta(r.fecha)}. Deja de contar para el pago (queda en la auditoría).`,

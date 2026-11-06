@@ -8,11 +8,11 @@
 //   o con menú: { label, opciones: [{ label, icono, requiere: [modulo, accion], ruta, abrir }, …] }: tocar o mantener el "+"
 //   muestra las opciones que el usuario puede usar (mantener y soltar sobre una la elige); si queda una sola, la abre directo.
 // Sin accesos declarados, la barra usa los primeros apartados del menú. Siempre: Inicio al principio y Más al final.
-import { el } from './ui/dom.js?v=7100fbc';
-import { icono } from './ui/iconos.js?v=7100fbc';
-import { urlFirmada } from './adjuntos.js?v=7100fbc';
-import { nombreEmpresa } from './empresas.js?v=7100fbc';
-import { avisar } from './ui/aviso.js?v=7100fbc';
+import { el } from './ui/dom.js?v=d781526';
+import { icono } from './ui/iconos.js?v=d781526';
+import { urlFirmada } from './adjuntos.js?v=d781526';
+import { nombreEmpresa } from './empresas.js?v=d781526';
+import { avisar } from './ui/aviso.js?v=d781526';
 
 const MAX_ACCESOS = 2;
 
@@ -49,6 +49,7 @@ export function barraMovil({ visibles, apartados, rutas, puede, ctx }) {
         Promise.resolve(accion.opciones ? mostrarMenu(accion.opciones, ctx, (m) => { menuAccion = m; }) : accion.abrir(ctx())).catch((err) => avisar(err?.message ?? 'No se pudo abrir.', 'error')).finally(() => { boton.classList.remove('abierta'); boton.setAttribute('aria-expanded', 'false'); });
       } }, el('span', { class: 'bm-onda', 'aria-hidden': 'true' }), icono(accion.icono ?? 'mas', { tam: 28 }));
     items.splice(Math.ceil(items.length / 2), 0, boton);
+    sinSeleccion(boton);
     if (accion.opciones) mantenerParaMenu(boton, () => menuAccion);
   }
   const indicador = el('span', { class: 'bm-indicador', 'aria-hidden': 'true' });
@@ -89,6 +90,23 @@ function mostrarMenu(opciones, ctx, avisarMenu) {
     document.addEventListener('keydown', tecla); addEventListener('hashchange', alNavegar);
     document.body.append(velo, lista);
     avisarMenu(menu);
+  });
+}
+
+// Mantener presionado el "+" en el teléfono no debe seleccionar la página (el navegador elige el texto más cercano)
+function sinSeleccion(boton) {
+  const raiz = document.documentElement;
+  const evitar = (ev) => ev.preventDefault();
+  const fin = () => {
+    raiz.classList.remove('bm-sin-seleccion');
+    document.removeEventListener('selectstart', evitar, true); document.removeEventListener('contextmenu', evitar, true);
+    removeEventListener('pointerup', fin, true); removeEventListener('pointercancel', fin, true);
+    getSelection()?.removeAllRanges();
+  };
+  boton.addEventListener('pointerdown', () => {
+    raiz.classList.add('bm-sin-seleccion');
+    document.addEventListener('selectstart', evitar, true); document.addEventListener('contextmenu', evitar, true);
+    addEventListener('pointerup', fin, true); addEventListener('pointercancel', fin, true);
   });
 }
 

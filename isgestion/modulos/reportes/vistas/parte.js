@@ -1,13 +1,13 @@
 // Parte de trabajo: datos del informe, fotos y videos por etapa, vista previa, confirmar y reabrir.
 // Ruta: #/reportes.parte?id=<parte_id>
-import { el } from '../../../core/ui/dom.js?v=7100fbc';
-import { icono } from '../../../core/ui/iconos.js?v=7100fbc';
-import { boton } from '../../../core/ui/tabla.js?v=7100fbc';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=7100fbc';
-import { avisar } from '../../../core/ui/aviso.js?v=7100fbc';
-import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=7100fbc';
-import { fechaLarga, nombreDia, fechaCorta } from '../../../core/ui/formato.js?v=7100fbc';
-import { cargarParte, ETAPAS, nombreTercero, comprimirFoto, urlsFirmadas, faenasDistintas } from '../datos.js?v=7100fbc';
+import { el } from '../../../core/ui/dom.js?v=d781526';
+import { icono } from '../../../core/ui/iconos.js?v=d781526';
+import { boton } from '../../../core/ui/tabla.js?v=d781526';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=d781526';
+import { avisar } from '../../../core/ui/aviso.js?v=d781526';
+import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=d781526';
+import { fechaLarga, nombreDia, fechaCorta } from '../../../core/ui/formato.js?v=d781526';
+import { cargarParte, ETAPAS, nombreTercero, comprimirFoto, urlsFirmadas, faenasDistintas } from '../datos.js?v=d781526';
 
 const MAX_VIDEO = 25 * 1024 * 1024;
 let etapaSubida = 'antes';
@@ -129,7 +129,7 @@ export default async function vista(ctx) {
   if (confirmado && parte.pdf_ruta) acciones.push(boton('Descargar PDF', { icono: 'descargar', onclick: async () => { try { window.open(await urlFirmada(ctx.api, parte.pdf_ruta, 300), '_blank', 'noopener'); } catch (e) { avisar(e.message, 'error'); } } }));
   if (confirmado && ctx.puede('reportes', 'editar')) acciones.push(boton('Reabrir', { icono: 'editar', onclick: () => reabrir(ctx, parte) }));
 
-  return el('section', { class: 'listado' },
+  return el('section', { class: 'listado rep-parte' },
     volver,
     el('header', { class: 'listado-cabecera' },
       el('div', {},
@@ -155,7 +155,7 @@ export default async function vista(ctx) {
         campo('fecha_texto', 'Fecha de la faena (texto en el informe)', parte.fecha_texto, false, [...new Set(faenas.map((f) => f.fecha))].sort().map(fechaLarga).join(', ') || fechaLarga(parte.fecha)),
         campo('trabajo', 'Trabajo realizado (una línea por trabajo; se suman los títulos de las faenas)', parte.trabajo, true),
         campo('observaciones', 'Observaciones', parte.observaciones, true))),
-    el('div', { class: 'ficha doc-grupo' },
+    el('div', { class: 'ficha doc-grupo rep-fotos' },
       el('div', { class: 'listado-cabecera' },
         el('h2', {}, `Fotos y videos (${media.length})`),
         editable ? el('div', { class: 'listado-acciones' }, selEtapa, boton('Subir fotos o videos', { icono: 'camara', tipo: 'primario', onclick: () => entrada.click() }), progreso, entrada) : null),
@@ -168,7 +168,7 @@ export default async function vista(ctx) {
 async function previa(ctx, datos, b) {
   b.disabled = true;
   try {
-    const { generarInforme } = await import('../informe.js?v=7100fbc');
+    const { generarInforme } = await import('../informe.js?v=d781526');
     const doc = await generarInforme(ctx, datos);
     window.open(doc.output('bloburl'), '_blank', 'noopener');
   } catch (e) { avisar(`No se pudo generar: ${e.message}`, 'error'); } finally { b.disabled = false; }
@@ -182,7 +182,7 @@ function confirmar(ctx, datos) {
     campos: [],
     textoGuardar: 'Confirmar',
     alGuardar: async () => {
-      const { generarInforme } = await import('../informe.js?v=7100fbc');
+      const { generarInforme } = await import('../informe.js?v=d781526');
       const doc = await generarInforme(ctx, datos);
       const archivo = new File([doc.output('blob')], `informe-${datos.parte.fecha}.pdf`, { type: 'application/pdf' });
       const { ruta } = await subirArchivo(ctx.api, { empresaId: ctx.empresa.id, modulo: 'reportes', archivo, tabla: 'rep_partes', registroId: datos.parte.id });

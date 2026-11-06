@@ -3,11 +3,11 @@
 // varios días (⟶), ventana del día, detalle, formulario de trabajo (cliente, sitio sugerido, descripción, tareas,
 // fechas, horario con atajos, personas necesarias por rol, repetir) y borrar uno o toda la serie.
 // Los datos son las faenas (ope_faenas): lo que se pone aquí aparece en Planificación al armar la faena.
-import { el } from '../../../core/ui/dom.js?v=7100fbc';
-import { avisar } from '../../../core/ui/aviso.js?v=7100fbc';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=7100fbc';
-import { hhmm } from '../../../core/ui/formato.js?v=7100fbc';
-import { cargarBase } from '../datos.js?v=7100fbc';
+import { el } from '../../../core/ui/dom.js?v=d781526';
+import { avisar } from '../../../core/ui/aviso.js?v=d781526';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=d781526';
+import { hhmm } from '../../../core/ui/formato.js?v=d781526';
+import { cargarBase } from '../datos.js?v=d781526';
 
 const MES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
 const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
@@ -51,7 +51,7 @@ const SVG = {
 function cargarEstilos() {
   if (document.getElementById('igcal-css')) return;
   const l = document.createElement('link');
-  l.id = 'igcal-css'; l.rel = 'stylesheet'; l.href = new URL('../calendario.css?v=7100fbc', import.meta.url).href;
+  l.id = 'igcal-css'; l.rel = 'stylesheet'; l.href = new URL('../calendario.css?v=d781526', import.meta.url).href;
   document.head.append(l);
 }
 
@@ -287,7 +287,7 @@ export default async function vista(ctx) {
     grid.querySelectorAll('[data-anio]').forEach((b) => b.addEventListener('click', () => { estado.anio = b.dataset.anio; render(); }));
     grid.querySelector('.igcal-bexcel').addEventListener('click', async () => {
       try {
-        const { nuevoExcel } = await import('../../../core/excel.js?v=7100fbc');
+        const { nuevoExcel } = await import('../../../core/excel.js?v=d781526');
         const x = await nuevoExcel(ctx, { titulo: 'Trabajos', subtitulo: `Búsqueda: "${buscador.value.trim()}"${estado.anio ? ` · ${estado.anio}` : ''} · ${res.length} trabajos` });
         x.tabla({ columnas: [{ t: 'Fecha', tipo: 'fecha' }, { t: 'Hasta', tipo: 'fecha' }, { t: 'Días', tipo: 'numero' }, 'Cliente', 'Sitio', 'Trabajo', 'Descripción'],
           filas: [...res].reverse().map((e) => [e.fecha, evFin(e), dias(e), e.ubic, e.sitio, e.titulo, e.desc]) });
