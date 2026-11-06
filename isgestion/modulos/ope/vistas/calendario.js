@@ -3,11 +3,11 @@
 // varios días (⟶), ventana del día, detalle, formulario de trabajo (cliente, sitio sugerido, descripción, tareas,
 // fechas, horario con atajos, personas necesarias por rol, repetir) y borrar uno o toda la serie.
 // Los datos son las faenas (ope_faenas): lo que se pone aquí aparece en Planificación al armar la faena.
-import { el } from '../../../core/ui/dom.js?v=9ecb423';
-import { avisar } from '../../../core/ui/aviso.js?v=9ecb423';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=9ecb423';
-import { hhmm } from '../../../core/ui/formato.js?v=9ecb423';
-import { cargarBase } from '../datos.js?v=9ecb423';
+import { el } from '../../../core/ui/dom.js?v=7100fbc';
+import { avisar } from '../../../core/ui/aviso.js?v=7100fbc';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=7100fbc';
+import { hhmm } from '../../../core/ui/formato.js?v=7100fbc';
+import { cargarBase } from '../datos.js?v=7100fbc';
 
 const MES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
 const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
@@ -18,6 +18,9 @@ const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').
 const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 const hoy = () => iso(new Date());
 const fecha = (f) => new Date(`${f}T00:00:00`);
+// Sin tope el navegador acepta años de 6 dígitos (112026-10-27) si el foco cae en el año del campo de fecha
+const FECHA_MIN = '2000-01-01'; const FECHA_MAX = '2099-12-31';
+const fechaValida = (f) => /^\d{4}-\d{2}-\d{2}$/.test(f) && f >= FECHA_MIN && f <= FECHA_MAX;
 function numSemanaISO(dt) {
   const d = new Date(Date.UTC(dt.getFullYear(), dt.getMonth(), dt.getDate())); const dia = (d.getUTCDay() + 6) % 7;
   d.setUTCDate(d.getUTCDate() - dia + 3); const jueves = d.getTime(); d.setUTCMonth(0, 1);
@@ -48,7 +51,7 @@ const SVG = {
 function cargarEstilos() {
   if (document.getElementById('igcal-css')) return;
   const l = document.createElement('link');
-  l.id = 'igcal-css'; l.rel = 'stylesheet'; l.href = new URL('../calendario.css?v=9ecb423', import.meta.url).href;
+  l.id = 'igcal-css'; l.rel = 'stylesheet'; l.href = new URL('../calendario.css?v=7100fbc', import.meta.url).href;
   document.head.append(l);
 }
 
@@ -284,7 +287,7 @@ export default async function vista(ctx) {
     grid.querySelectorAll('[data-anio]').forEach((b) => b.addEventListener('click', () => { estado.anio = b.dataset.anio; render(); }));
     grid.querySelector('.igcal-bexcel').addEventListener('click', async () => {
       try {
-        const { nuevoExcel } = await import('../../../core/excel.js?v=9ecb423');
+        const { nuevoExcel } = await import('../../../core/excel.js?v=7100fbc');
         const x = await nuevoExcel(ctx, { titulo: 'Trabajos', subtitulo: `Búsqueda: "${buscador.value.trim()}"${estado.anio ? ` · ${estado.anio}` : ''} · ${res.length} trabajos` });
         x.tabla({ columnas: [{ t: 'Fecha', tipo: 'fecha' }, { t: 'Hasta', tipo: 'fecha' }, { t: 'Días', tipo: 'numero' }, 'Cliente', 'Sitio', 'Trabajo', 'Descripción'],
           filas: [...res].reverse().map((e) => [e.fecha, evFin(e), dias(e), e.ubic, e.sitio, e.titulo, e.desc]) });
@@ -468,8 +471,8 @@ export default async function vista(ctx) {
           <section class="igcal-ffsec igcal-o2"><h4><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Cuándo</h4>
             <div class="igcal-fgrid">
               <div class="full igcal-modo"><button type="button" data-modo="seguidos">Días seguidos</button><button type="button" data-modo="eleccion">Días a elección</button></div>
-              <label data-seg><span>Inicio <i class="igcal-req">*</i></span><input type="date" name="fecha"></label>
-              <label data-seg><span>Fin <span class="igcal-opt">(si dura varios días)</span></span><input type="date" name="fin"></label>
+              <label data-seg><span>Inicio <i class="igcal-req">*</i></span><input type="date" name="fecha" min="${FECHA_MIN}" max="${FECHA_MAX}"></label>
+              <label data-seg><span>Fin <span class="igcal-opt">(si dura varios días)</span></span><input type="date" name="fin" min="${FECHA_MIN}" max="${FECHA_MAX}"></label>
               <div class="full igcal-mini-cal" hidden></div>
               <div class="full igcal-dur"></div>
               <label class="full">Horario<input type="text" name="hora" placeholder="09:00 - 13:00 o Todo el día"></label>
@@ -559,6 +562,7 @@ export default async function vista(ctx) {
     const actualizarDur = () => {
       const fi = campo('fecha').value; const ff = campo('fin').value; const d = $('.igcal-dur');
       if (!fi) { d.textContent = ''; return; }
+      if (!fechaValida(fi) || (ff && !fechaValida(ff))) { d.textContent = 'Revisa el año de la fecha.'; return; }
       const a = fecha(fi);
       if (ff && ff < fi) { d.textContent = 'La fecha de fin es anterior al inicio; se guardará como trabajo de un día.'; return; }
       if (ff && ff > fi) { const b = fecha(ff); d.textContent = `${Math.round((b - a) / 86400000) + 1} días · del ${a.getDate()} ${MES[a.getMonth()].slice(0, 3)} al ${b.getDate()} ${MES[b.getMonth()].slice(0, 3)}`; return; }
@@ -628,13 +632,15 @@ export default async function vista(ctx) {
       if (dias && campo('repetir').value !== 'no') { avisar('Con días a elección no se puede repetir: elige los días en el calendario.', 'error'); return; }
       const tituloT = campo('titulo').value.trim(); const cli = campo('cliente').value; const sitioT = campo('sitio').value.trim();
       if (!fi || !tituloT) { avisar('Fecha y título son obligatorios.', 'error'); return; }
-      if (!cli) { avisar('Elige la empresa / cliente (de la lista).', 'error'); return; }
-      if (!sitioT) { avisar('Indica la ubicación / sitio.', 'error'); campo('sitio').focus(); return; }
+      if (!dias && (!fechaValida(fi) || (ff && !fechaValida(ff)))) { avisar('Revisa la fecha: el año debe estar entre 2000 y 2099.', 'error'); return; }
+      // Las faenas antiguas sin cliente o sin sitio (cargadas de InnovaGestión) se pueden mover de fecha sin completarlos
+      if (!cli && (!e || e.terceroId || sitioT)) { avisar('Elige la empresa / cliente (de la lista).', 'error'); return; }
+      if (!sitioT && (!e || e.sitioId)) { avisar('Indica la ubicación / sitio.', 'error'); campo('sitio').focus(); return; }
       btnGuardar.disabled = true;
       try {
         // El sitio se busca entre los del cliente; si es nuevo, se crea
-        let s = base.sitios.find((x) => x.tercero_id === cli && x.nombre.trim().toUpperCase() === sitioT.toUpperCase());
-        if (!s) {
+        let s = sitioT ? base.sitios.find((x) => x.tercero_id === cli && x.nombre.trim().toUpperCase() === sitioT.toUpperCase()) : null;
+        if (!s && sitioT) {
           const { data, error } = await ctx.api.from('ope_sitios').insert({ empresa_id: ctx.empresa.id, tercero_id: cli, nombre: sitioT }).select('*').single();
           if (error) throw new Error(`No se pudo crear el sitio: ${error.message}`);
           s = data; base.sitios.push(s); sitio.set(s.id, s);
@@ -642,7 +648,7 @@ export default async function vista(ctx) {
         const h = /todo el d[ií]a/i.test(campo('hora').value) ? { ini: null, fin: null } : leerHora(campo('hora').value);
         const pendiente = campo('tarea').value.trim();   // una tarea escrita sin Enter también se guarda
         const fila = {
-          titulo: tituloT, tercero_id: cli, sitio_id: s.id, fecha_inicio: fi, fecha_fin: ff && ff >= fi ? ff : fi,
+          titulo: tituloT, tercero_id: cli || null, sitio_id: s?.id ?? null, fecha_inicio: fi, fecha_fin: ff && ff >= fi ? ff : fi,
           hora_inicio: h.ini, hora_fin: h.ini ? h.fin : null, dias: dias && dias.length > 1 ? dias : null,
           tareas: [...tareas, ...(pendiente ? [pendiente] : [])].map((t) => String(t ?? '').trim()).filter(Boolean),
           dotacion: dotForm(),
@@ -687,5 +693,7 @@ export default async function vista(ctx) {
   }
 
   render();
+  // Desde el "+" del teléfono: abre el formulario una vez y deja la dirección limpia (recargar no lo vuelve a abrir)
+  if (ctx.params.nuevo && puedeCrear) { history.replaceState(null, '', ctx.ruta('ope.calendario')); abrirForm(null); }
   return raiz;
 }

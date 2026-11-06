@@ -3,12 +3,12 @@
 // Excel o en el correo con columnas), PDF con el membrete de la empresa y Excel. Baja: trabajador y fecha, con el
 // texto del correo listo para copiar o abrir en el correo. No envía nada: lo envía quien la usa, desde su correo.
 // Parámetros: ?m=baja&p=<persona>&f=<fecha> abre el aviso de baja prellenado (desde "Pasar a inactivo").
-import { el } from '../../../core/ui/dom.js?v=9ecb423';
-import { icono } from '../../../core/ui/iconos.js?v=9ecb423';
-import { boton } from '../../../core/ui/tabla.js?v=9ecb423';
-import { avisar } from '../../../core/ui/aviso.js?v=9ecb423';
-import { hoyISO } from '../../../core/ui/formato.js?v=9ecb423';
-import { cargarRrhh, nombreCompleto } from '../datos.js?v=9ecb423';
+import { el } from '../../../core/ui/dom.js?v=7100fbc';
+import { icono } from '../../../core/ui/iconos.js?v=7100fbc';
+import { boton } from '../../../core/ui/tabla.js?v=7100fbc';
+import { avisar } from '../../../core/ui/aviso.js?v=7100fbc';
+import { hoyISO } from '../../../core/ui/formato.js?v=7100fbc';
+import { cargarRrhh, nombreCompleto } from '../datos.js?v=7100fbc';
 
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
 const fechaTexto = (f) => { const [a, m, d] = (f || hoyISO()).split('-').map(Number); return `${d} de ${MESES[m - 1]} de ${a}`; };
@@ -79,7 +79,7 @@ export default async function vista(ctx) {
   };
   const pdf = async () => {
     exigir();
-    const { nuevoPdf } = await import('../../../core/pdf.js?v=9ecb423');
+    const { nuevoPdf } = await import('../../../core/pdf.js?v=7100fbc');
     const L = lista();
     const p = await nuevoPdf(ctx, { titulo: asunto.value.trim() || 'Nómina de personal activo', subtitulo: `${empresa} · al ${fechaTexto()} · ${L.length} persona${L.length === 1 ? '' : 's'}` });
     p.tabla({ columnas, filas: filas().map((f) => f.map((v) => String(v || '—'))) });
@@ -87,7 +87,7 @@ export default async function vista(ctx) {
   };
   const excel = async () => {
     exigir();
-    const { exportarExcel } = await import('../../../core/excel.js?v=9ecb423');
+    const { exportarExcel } = await import('../../../core/excel.js?v=7100fbc');
     const L = lista();
     await exportarExcel(ctx, { titulo: asunto.value.trim() || 'Nómina de personal activo', subtitulo: `${empresa} · al ${fechaTexto()} · ${L.length} persona${L.length === 1 ? '' : 's'}`,
       columnas, filas: filas(), nombre: base() });

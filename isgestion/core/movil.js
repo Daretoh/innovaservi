@@ -5,11 +5,14 @@
 // Cada módulo puede declarar en su manifiesto `movil`:
 //   accesos: [{ id: 'taller.tablero', label: 'Taller', icono: 'auto' }, …]   pestañas de la barra (si la ruta existe)
 //   accion:  { label, icono, requiere: 'crear', abrir: (ctx) => … }           el botón "+" del centro
+//   o con menú: { label, opciones: [{ label, icono, requiere: [modulo, accion], ruta, abrir }, …] }: tocar o mantener el "+"
+//   muestra las opciones que el usuario puede usar (mantener y soltar sobre una la elige); si queda una sola, la abre directo.
 // Sin accesos declarados, la barra usa los primeros apartados del menú. Siempre: Inicio al principio y Más al final.
-import { el } from './ui/dom.js?v=9ecb423';
-import { icono } from './ui/iconos.js?v=9ecb423';
-import { urlFirmada } from './adjuntos.js?v=9ecb423';
-import { nombreEmpresa } from './empresas.js?v=9ecb423';
+import { el } from './ui/dom.js?v=7100fbc';
+import { icono } from './ui/iconos.js?v=7100fbc';
+import { urlFirmada } from './adjuntos.js?v=7100fbc';
+import { nombreEmpresa } from './empresas.js?v=7100fbc';
+import { avisar } from './ui/aviso.js?v=7100fbc';
 
 const MAX_ACCESOS = 2;
 
@@ -20,13 +23,13 @@ export const esTelefono = () => matchMedia(CORTE_TELEFONO).matches;
 
 // Barra de abajo. `ctx()` entrega el contexto actual (para abrir la acción del "+").
 export function barraMovil({ visibles, apartados, rutas, puede, ctx }) {
+  let menuAccion = null;   // menú abierto del "+"
   let accesos = visibles.flatMap((m) => (m.movil?.accesos ?? []).filter((a) => rutas.has(a.id)));
   if (!accesos.length) {
     accesos = [...apartados.grupos.values()].flat().map((ap) => ({ id: ap.items[0].id, label: ap.items.length > 1 ? ap.label : ap.items[0].label, icono: ap.icono ?? ap.items[0].modulo?.icono ?? 'lista' }));
   }
   accesos = accesos.slice(0, MAX_ACCESOS);
-  const conAccion = visibles.find((m) => m.movil?.accion && puede(m.id, m.movil.accion.requiere ?? 'crear'));
-  const accion = conAccion?.movil.accion;
+  const accion = visibles.map((m) => accionDe(m, { puede, rutas })).find(Boolean);
 
   const pestana = (href, ic, texto, vista) => {
     const a = el('a', { class: 'bm-item', href }, icono(ic, { tam: 24 }), el('span', {}, texto));
@@ -39,12 +42,14 @@ export function barraMovil({ visibles, apartados, rutas, puede, ctx }) {
     // Al tocarlo: se hunde, el "+" gira a "×" y sale una onda; vuelve cuando se cierra lo que abrió (si devuelve una promesa)
     const boton = el('button', { type: 'button', class: 'bm-accion', 'aria-label': accion.label, title: accion.label, 'aria-expanded': 'false',
       onclick: () => {
+        if (menuAccion) { if (menuAccion.mantenido) menuAccion.mantenido = false; else menuAccion.cerrar?.(); return; }
         if (boton.classList.contains('abierta')) return;
         boton.classList.add('abierta'); boton.setAttribute('aria-expanded', 'true');
         try { navigator.vibrate?.(10); } catch { /* sin vibración */ }
-        Promise.resolve(accion.abrir(ctx())).catch(() => {}).finally(() => { boton.classList.remove('abierta'); boton.setAttribute('aria-expanded', 'false'); });
+        Promise.resolve(accion.opciones ? mostrarMenu(accion.opciones, ctx, (m) => { menuAccion = m; }) : accion.abrir(ctx())).catch((err) => avisar(err?.message ?? 'No se pudo abrir.', 'error')).finally(() => { boton.classList.remove('abierta'); boton.setAttribute('aria-expanded', 'false'); });
       } }, el('span', { class: 'bm-onda', 'aria-hidden': 'true' }), icono(accion.icono ?? 'mas', { tam: 28 }));
     items.splice(Math.ceil(items.length / 2), 0, boton);
+    if (accion.opciones) mantenerParaMenu(boton, () => menuAccion);
   }
   const indicador = el('span', { class: 'bm-indicador', 'aria-hidden': 'true' });
   const nav = el('nav', { class: 'barra-movil', 'aria-label': 'Navegación principal' }, indicador, items);
@@ -53,6 +58,68 @@ export function barraMovil({ visibles, apartados, rutas, puede, ctx }) {
   // Si cambia el ancho (girar el teléfono), el indicador vuelve a su pestaña
   new ResizeObserver(() => moverIndicador(nav, nav.querySelector('.bm-item[aria-current]'), false)).observe(nav);
   return nav;
+}
+
+// La acción del "+" de un módulo para este usuario: null si no puede usarla. Las opciones sin permiso o sin pantalla no se
+// muestran; con una sola no hay menú.
+function accionDe(m, { puede, rutas }) {
+  const accion = m.movil?.accion;
+  if (!accion) return null;
+  if (!accion.opciones) return puede(m.id, accion.requiere ?? 'crear') ? accion : null;
+  const opciones = accion.opciones.filter((o) => puede(...o.requiere) && (!o.ruta || rutas.has(o.ruta)));
+  if (!opciones.length) return null;
+  return opciones.length === 1 ? { ...accion, ...opciones[0], opciones: undefined } : { ...accion, opciones };
+}
+
+// Menú sobre el "+": se cierra al elegir, al tocar fuera, con Esc o al cambiar de pantalla. La promesa termina al cerrarse
+// (el "+" vuelve de "×" a "+"). Va en <body>: dentro de la barra (backdrop-filter) la posición fija quedaría relativa a ella.
+function mostrarMenu(opciones, ctx, avisarMenu) {
+  return new Promise((listo, fallo) => {
+    const elegir = (o) => { cerrar(); Promise.resolve(o.abrir(ctx())).catch(fallo).finally(listo); };
+    const botones = opciones.map((o) => el('button', { type: 'button', class: 'bm-opcion', role: 'menuitem', onclick: () => elegir(o) }, icono(o.icono, { tam: 20 }), el('span', {}, o.label)));
+    const lista = el('div', { class: 'bm-opciones', role: 'menu', 'aria-label': 'Agregar' }, botones);
+    const velo = el('div', { class: 'bm-velo', onclick: () => { cerrar(); listo(); } });
+    const tecla = (ev) => { if (ev.key === 'Escape') { cerrar(); listo(); } };
+    const alNavegar = () => { cerrar(); listo(); };
+    const menu = { mantenido: false, botones, elegirBoton: (b) => elegir(opciones[botones.indexOf(b)]), cerrar: alNavegar };
+    function cerrar() {
+      velo.remove(); lista.remove(); avisarMenu(null);
+      document.removeEventListener('keydown', tecla); removeEventListener('hashchange', alNavegar);
+    }
+    document.addEventListener('keydown', tecla); addEventListener('hashchange', alNavegar);
+    document.body.append(velo, lista);
+    avisarMenu(menu);
+  });
+}
+
+// Mantener presionado el "+" también abre el menú; al soltar el dedo sobre una opción, se elige
+function mantenerParaMenu(boton, menuActual) {
+  let tiempo = 0;
+  const bajo = (ev) => document.elementFromPoint(ev.clientX, ev.clientY)?.closest('.bm-opcion');
+  boton.addEventListener('pointerdown', (ev) => {
+    if (ev.button > 0 || menuActual()) return;
+    tiempo = setTimeout(() => { boton.click(); const m = menuActual(); if (m) m.mantenido = true; }, 350);
+    try { boton.setPointerCapture(ev.pointerId); } catch { /* sin captura */ }
+  });
+  boton.addEventListener('pointermove', (ev) => {
+    const m = menuActual(); if (!m?.mantenido) return;
+    const b = bajo(ev);
+    for (const x of m.botones) x.classList.toggle('bm-sobre', x === b);
+  });
+  const soltar = (ev) => {
+    clearTimeout(tiempo);
+    const m = menuActual(); if (!m?.mantenido) return;
+    const b = ev.type === 'pointerup' ? bajo(ev) : null;
+    if (ev.type === 'pointercancel') m.mantenido = false;
+    if (!b) { for (const x of m.botones) x.classList.remove('bm-sobre'); return; }
+    // El toque que viene después de soltar sobre una opción no debe volver a abrir el menú
+    const bloquear = (e) => e.stopImmediatePropagation();
+    boton.addEventListener('click', bloquear, { capture: true, once: true });
+    setTimeout(() => boton.removeEventListener('click', bloquear, { capture: true }), 350);
+    m.mantenido = false; m.elegirBoton(b);
+  };
+  boton.addEventListener('pointerup', soltar);
+  boton.addEventListener('pointercancel', soltar);
 }
 
 // Indicador (pastilla detrás del icono) que se desliza a la pestaña indicada

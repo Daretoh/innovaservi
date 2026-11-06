@@ -1804,6 +1804,16 @@ li.tarea-ok { text-decoration: line-through; color: var(--texto-suave); }
 
 /* ---------- Teléfono como app (core/movil.js, dirección B aprobada por Enzo el 2026-10-27) ---------- */
 .barra-movil { display: none; }
+/* Menú del "+" (core/movil.js): sobre la barra (700) y bajo las ventanas */
+.bm-velo { position: fixed; inset: 0; z-index: 705; background: var(--velo); animation: bm-velo 160ms ease both; }
+.bm-opciones { position: fixed; z-index: 710; left: 50%; transform: translateX(-50%); bottom: calc(96px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; align-items: stretch; gap: 10px; width: min(260px, calc(100vw - 48px)); }
+.bm-opcion { display: flex; align-items: center; gap: 12px; min-height: 54px; padding: 0 18px; border: 1px solid var(--borde); border-radius: 18px; cursor: pointer; background: var(--superficie); color: var(--texto); font: inherit; font-weight: 700; text-align: left; box-shadow: 0 10px 28px rgb(0 0 0 / .22); animation: bm-opcion 200ms cubic-bezier(.3, 1.4, .5, 1) both; }
+.bm-opcion .icono, .bm-opcion svg { color: var(--empresa); flex: none; }
+.bm-opcion:nth-child(2) { animation-delay: 40ms; }
+.bm-opcion:active, .bm-opcion.bm-sobre { background: color-mix(in srgb, var(--empresa) 16%, var(--superficie)); border-color: var(--empresa); }
+@keyframes bm-velo { from { opacity: 0; } }
+@keyframes bm-opcion { from { opacity: 0; transform: translateY(14px) scale(.96); } }
+@media (prefers-reduced-motion: reduce) { .bm-velo, .bm-opcion { animation: none; } }
 @media (max-width: 760px) {
   .solo-escritorio, .menu-boton, .menu, .menu-velo { display: none !important; }
   .contenido { padding-bottom: calc(104px + env(safe-area-inset-bottom)); }
@@ -2044,6 +2054,10 @@ html { transition: background-color 220ms ease; }
   margin: calc(-16px - env(safe-area-inset-top)) -16px 0; padding: calc(18px + env(safe-area-inset-top)) 20px 22px; border-radius: 0 0 28px 28px;
   background: var(--empresa); color: var(--sobre-empresa); display: flex; flex-direction: column; gap: 14px;
 }
+/* Innova en el teléfono: azul marino de InnovaGestión con el naranja de acento (allí el menú azul no se ve y quedaba igual a Performance) */
+[data-tema="innova"] .im-cab { background: linear-gradient(135deg, var(--menu-fondo), color-mix(in srgb, var(--menu-fondo) 45%, #000)); }
+[data-tema="innova"] .im-saludo h1 { color: inherit; }
+@media (max-width: 760px) { .indicadores, .indicadores > .ficha { grid-template-columns: minmax(0, 1fr); } .ind-cab { flex-wrap: wrap; } }   /* las tarjetas del Inicio no se salen de la pantalla */
 .im-cab-fila { display: flex; align-items: center; gap: 10px; }
 .im-marca {
   margin-right: auto; display: inline-flex; align-items: center; gap: 8px; min-height: 38px; padding: 4px 12px 4px 8px; border-radius: 14px;
