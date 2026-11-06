@@ -2,19 +2,20 @@
 // datos, entrega de EPP, IRL y registros de entrega de PTS), formatos para firmar (registro de capacitación,
 // evaluación de aprendizaje, entrega de EPP e IRL en blanco) y documentos de la empresa (PTS, matriz e instructivo
 // IPER, programa preventivo, Ley Karin, emergencias y accidentes, matriz de EPP y capacitaciones).
-import { el } from '../../../core/ui/dom.js?v=d9e25ec';
-import { icono } from '../../../core/ui/iconos.js?v=d9e25ec';
-import { boton } from '../../../core/ui/tabla.js?v=d9e25ec';
-import { avisar } from '../../../core/ui/aviso.js?v=d9e25ec';
-import { cargarPlantillas, trabajador, abrirDocumento, sueldosBase } from '../editor.js?v=d9e25ec';
-import { guardarEnRrhh, guardarEnSst, puedeGuardarRrhh, puedeGuardarSst } from '../acciones.js?v=d9e25ec';
+import { el } from '../../../core/ui/dom.js?v=12d5283';
+import { icono } from '../../../core/ui/iconos.js?v=12d5283';
+import { boton } from '../../../core/ui/tabla.js?v=12d5283';
+import { avisar } from '../../../core/ui/aviso.js?v=12d5283';
+import { hoyISO } from '../../../core/ui/formato.js?v=12d5283';
+import { cargarPlantillas, trabajador, abrirDocumento, sueldosBase } from '../editor.js?v=12d5283';
+import { guardarEnRrhh, guardarEnSst, guardarRegistro, puedeGuardarRrhh, puedeGuardarSst } from '../acciones.js?v=12d5283';
 
 const estado = { persona: '' };
 const DEL_TRABAJADOR = ['contrato', 'perfil', 'datos', 'epp', 'odi'];
 
 export default async function vista(ctx) {
   const e = ctx.empresa.id;
-  const [{ P, faltan }, vinc, sueldos, guardados] = await Promise.all([
+  const [{ P, faltan, config }, vinc, sueldos, guardados] = await Promise.all([
     cargarPlantillas(ctx),
     ctx.api.from('persona_empresa').select('id, persona_id, cargo, fecha_ingreso, estado, personas(nombres, apellido_paterno, apellido_materno, rut, direccion, numero, poblacion, comuna, nacionalidad, estado_civil, fecha_nacimiento, email, telefono, afp, salud)')
       .eq('empresa_id', e).is('deleted_at', null),
@@ -62,6 +63,67 @@ export default async function vista(ctx) {
   // ---- Formatos para firmar (en blanco o con los trabajadores elegidos)
   const formato = (titulo, op) => abrirDocumento({ titulo, autor: ctx.empresa.razon_social, elegibles, ...op });
   const evaluaciones = Object.keys(P.CAP_DOC).filter((k) => P.CAP_DOC[k].vf).flatMap((k) => [{ v: k, n: P.CAP_DOC[k].n }, { v: `${k}|pauta`, n: `${P.CAP_DOC[k].n} · pauta de corrección (relator)` }]);
+
+  // ---- Registros en terreno (charla diaria y checklist): con datos ya cargados, se guardan en Prevención SST
+  let listas = null;
+  const listasRegistro = async () => {
+    if (listas) return listas;
+    // Clientes y sitios de Faenas, si la empresa los tiene y el rol los puede ver
+    const [ter, sit] = await Promise.all([
+      ctx.puede('terceros', 'ver') ? ctx.api.from('terceros').select('id, razon_social, nombre_fantasia').eq('empresa_id', e).is('deleted_at', null).contains('tipo', ['cliente']).order('razon_social') : Promise.resolve({ data: [] }),
+      ctx.puede('ope', 'ver') ? ctx.api.from('ope_sitios').select('tercero_id, nombre, activo').eq('empresa_id', e).order('nombre') : Promise.resolve({ data: [] }),
+    ]);
+    const clientes = (ter.data ?? []).map((t) => ({ id: t.id, nombre: t.nombre_fantasia || t.razon_social })).filter((t) => t.nombre);
+    const sitios = sit.data ?? [];
+    const esSup = (t) => (/superv|capataz/i.test(t.cargo || '') ? 0 : 1);
+    const orden = [...elegibles].sort((a, b) => esSup(a) - esSup(b) || a.nombre.localeCompare(b.nombre));
+    const prev = config.prevencionista || '';
+    listas = {
+      L: { clientes: clientes.map((c) => c.nombre), supervisores: orden.map((t) => t.nombre), relatores: [prev, ...orden.map((t) => t.nombre).filter((n) => n !== prev)].filter(Boolean) },
+      campos: {
+        prevNombre: prev, gases: P.CHK_GAS,
+        sitiosDe: (nom) => { const c = clientes.find((x) => x.nombre === nom); return c ? sitios.filter((s) => s.tercero_id === c.id && s.activo !== false).map((s) => s.nombre) : []; },
+        cargoDe: (nom) => (nom === prev ? config.prev_cargo || 'Técnico en Prevención de Riesgos' : elegibles.find((t) => t.nombre === nom)?.cargo || ''),
+      },
+    };
+    return listas;
+  };
+  const valorDe = (hoja, k) => hoja.querySelector(`[data-k="${k}"]`)?.textContent.trim() ?? '';
+  // "06-11-2026" → fecha ISO; si no se entiende, hoy
+  const fechaDe = (t) => { const m = /(\d{2})-(\d{2})-(\d{4})/.exec(t); return m ? `${m[3]}-${m[2]}-${m[1]}` : hoyISO(); };
+  const datosFaena = (h) => [['Cliente', valorDe(h, 'cli')], ['Lugar', valorDe(h, 'lug')]].filter((x) => x[1]).map((x) => `${x[0]}: ${x[1]}`);
+  const abrirCharla = async () => {
+    const { L, campos } = await listasRegistro();
+    // Propone la charla que sigue a la última registrada (después de la 30 vuelve a la 1)
+    let ultima = 0;
+    if (ctx.puede('sst', 'ver')) {
+      const { data } = await ctx.api.from('sst_entregas').select('tema').eq('empresa_id', e).eq('tipo', 'charla').is('deleted_at', null).like('tema', 'Charla %').order('fecha', { ascending: false }).order('created_at', { ascending: false }).limit(1);
+      ultima = Number(/^Charla (\d+)/.exec(data?.[0]?.tema ?? '')?.[1]) || 0;
+    }
+    formato('Charla diaria de autocuidado', { nombreArchivo: 'charla-diaria', variantes: P.opcionesCharla(), variante: `c${(ultima % P.CHARLAS.length) + 1}`, personas: 'lista', campos,
+      construir: (v, PER) => P.docCharla(v, PER, L),
+      guardar: puedeGuardarSst(ctx) ? { texto: 'Guardar en Prevención SST', alGuardar: async (blob, x) => {
+        const n = Number(x.variante.slice(1)), c = P.CHARLAS[n - 1], h = x.hoja, hi = valorDe(h, 'hi'), hf = valorDe(h, 'hf'), obs = valorDe(h, 'obs');
+        await guardarRegistro(ctx, { tipo: 'charla', tema: `Charla ${n}: ${c.t}`, fecha: fechaDe(valorDe(h, 'fecha')), relator: valorDe(h, 'rel'), personas: x.personas,
+          contenido: [...datosFaena(h), hi || hf ? `Horario: ${hi} a ${hf}` : '', obs ? `Observaciones: ${obs}` : ''].filter(Boolean).join('\n') }, blob, x.nombre);
+        avisar('Charla guardada en Prevención SST → Registros de entrega, por firmar.');
+      } } : null });
+  };
+  const abrirChecklist = async () => {
+    const { L, campos } = await listasRegistro();
+    formato('Checklist de diluidores de sal', { nombreArchivo: 'checklist-diluidores', personas: 'lista', campos,
+      construir: (v, PER) => P.docChecklistDil(PER, L),
+      guardar: puedeGuardarSst(ctx) ? { texto: 'Guardar en Prevención SST',
+        // Los "si aplica" pueden quedar sin marcar
+        validar: (h) => { const n = h.querySelectorAll('.dg-ck:not(.on):not([data-opc])').length; return !n || confirm(`Hay ${n} ítem${n === 1 ? '' : 's'} del checklist sin marcar. ¿Guardar igual?`); },
+        alGuardar: async (blob, x) => {
+          const h = x.hoja, obs = valorDe(h, 'obs'), rojos = h.querySelectorAll('td.gas-ro').length;
+          await guardarRegistro(ctx, { tipo: 'otro', tema: ['Checklist diluidores de sal', valorDe(h, 'cli'), valorDe(h, 'lug')].filter(Boolean).join(' · '), fecha: fechaDe(valorDe(h, 'fecha')), relator: valorDe(h, 'sup'), personas: x.personas,
+            contenido: [...datosFaena(h), `Ítems marcados: ${h.querySelectorAll('.dg-ck.on').length} de ${h.querySelectorAll('.dg-ck').length}`,
+              rojos ? `Gases: ${rojos} lectura${rojos === 1 ? '' : 's'} fuera del valor de aceptación del PTS-PREV-08` : '', obs ? `Observaciones: ${obs}` : ''].filter(Boolean).join('\n') }, blob, x.nombre);
+          avisar('Checklist guardado en Prevención SST → Registros de entrega, por firmar.');
+        } } : null });
+  };
   const seccionFormatos = el('div', { class: 'ficha doc-grupo' },
     el('h2', {}, 'Formatos para firmar'),
     el('p', { class: 'texto-suave texto-chico' }, 'Con membrete, en blanco o con los trabajadores que elijas (nombre, RUT y cargo).'),
@@ -71,6 +133,9 @@ export default async function vista(ctx) {
       variantes: evaluaciones, personas: 'lista', construir: (v, PER) => (/\|pauta$/.test(v || '') ? P.docEvaluacion(v) : P.porPersona(PER, (t) => P.docEvaluacion(v, t))) })) : null,
     tarjetaDoc('Entrega de elementos de protección personal', null, () => formato('Entrega de EPP', { personas: 'lista', construir: (v, PER) => P.porPersona(PER, (t) => P.docEPP(t)) })),
     tarjetaDoc('Información de riesgos laborales (IRL)', null, () => formato('IRL', { personas: 'lista', construir: (v, PER) => P.porPersona(PER, (t) => P.docODI(t)) })),
+    tarjetaDoc('Charla diaria de autocuidado (con lista de asistencia)', 'Elige una de las 30 charlas; propone la que sigue a la última registrada', abrirCharla),
+    tarjetaDoc('Charlas diarias: las 30 charlas juntas', 'Guía completa para quien las dicta', () => formato('Charlas diarias', { nombreArchivo: 'charlas-diarias', construir: () => P.docCharlasTodas() })),
+    tarjetaDoc('Checklist de seguridad y ejecución · diluidores de sal', 'Ítems marcables, medición de gases y firmas', abrirChecklist),
     tarjetaDoc('Carta (formato editable)', 'En blanco o carta de compromiso (sin examen de altura / espacios confinados), con la lista de trabajadores y la firma del representante legal',
       () => formato('Carta', { variantes: P.opcionesCarta(), personas: 'lista', construir: (v, PER) => P.docCarta(v, PER) })));
 

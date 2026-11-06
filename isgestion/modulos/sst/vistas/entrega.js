@@ -1,14 +1,14 @@
 // Registro de entrega: participantes, imprimir para firmar, subir el escaneo firmado (marca RRHH) y reabrir.
 // Ruta: #/sst.entrega?id=<id>
-import { el } from '../../../core/ui/dom.js?v=d9e25ec';
-import { icono } from '../../../core/ui/iconos.js?v=d9e25ec';
-import { boton } from '../../../core/ui/tabla.js?v=d9e25ec';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=d9e25ec';
-import { avisar } from '../../../core/ui/aviso.js?v=d9e25ec';
-import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=d9e25ec';
-import { fechaLarga } from '../../../core/ui/formato.js?v=d9e25ec';
-import { TIPOS_ENTREGA, nombreDe, cargarPersonas } from '../datos.js?v=d9e25ec';
-import { tiposRrhh } from './entregas.js?v=d9e25ec';
+import { el } from '../../../core/ui/dom.js?v=12d5283';
+import { icono } from '../../../core/ui/iconos.js?v=12d5283';
+import { boton } from '../../../core/ui/tabla.js?v=12d5283';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=12d5283';
+import { avisar } from '../../../core/ui/aviso.js?v=12d5283';
+import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=12d5283';
+import { fechaLarga } from '../../../core/ui/formato.js?v=12d5283';
+import { TIPOS_ENTREGA, nombreDe, cargarPersonas } from '../datos.js?v=12d5283';
+import { tiposRrhh } from './entregas.js?v=12d5283';
 
 const ESCANEOS = ['application/pdf', 'image/jpeg', 'image/png'];
 
@@ -43,8 +43,9 @@ export default async function vista(ctx) {
   });
 
   // ---- Acciones
-  const acciones = [boton('Imprimir para firmar', { icono: 'descargar', onclick: (ev) => imprimir(ctx, ent, participantes, ev.currentTarget) })];
-  if (ent.archivo) acciones.push(boton('Ver firmado', { icono: 'ojo', onclick: async () => { try { window.open(await urlFirmada(ctx.api, ent.archivo, 300), '_blank', 'noopener'); } catch (e) { avisar(e.message, 'error'); } } }));
+  // Los registros del generador (charla, checklist) ya traen su PDF: ese es el que se imprime para firmar
+  const acciones = firmado || !ent.archivo ? [boton('Imprimir para firmar', { icono: 'descargar', onclick: (ev) => imprimir(ctx, ent, participantes, ev.currentTarget) })] : [];
+  if (ent.archivo) acciones.push(boton(firmado ? 'Ver firmado' : 'Ver e imprimir PDF', { icono: 'ojo', onclick: async () => { try { window.open(await urlFirmada(ctx.api, ent.archivo, 300), '_blank', 'noopener'); } catch (e) { avisar(e.message, 'error'); } } }));
   if (!firmado && ctx.puede('sst', 'editar')) acciones.push(boton('Subir registro firmado', { icono: 'check', tipo: 'primario', onclick: () => subirFirmado(ctx, ent, participantes, tipoDoc) }));
   if (firmado && ctx.puede('sst', 'editar')) acciones.push(boton('Volver a por firmar', { icono: 'editar', onclick: () => reabrir(ctx, ent) }));
   if (!firmado && ctx.puede('sst', 'eliminar')) acciones.push(boton('Eliminar', { icono: 'basura', onclick: () => abrirFormulario({
@@ -86,7 +87,7 @@ export default async function vista(ctx) {
 async function imprimir(ctx, ent, participantes, b) {
   b.disabled = true;
   try {
-    const { pdfEntrega } = await import('../documentos.js?v=d9e25ec');
+    const { pdfEntrega } = await import('../documentos.js?v=12d5283');
     const doc = await pdfEntrega(ctx, ent, participantes);
     window.open(doc.output('bloburl'), '_blank', 'noopener');
   } catch (e) { avisar(`No se pudo generar: ${e.message}`, 'error'); } finally { b.disabled = false; }
@@ -115,6 +116,8 @@ function subirFirmado(ctx, ent, participantes, tipoDoc) {
       if (v.vence) ent.vence = v.vence;
       const { error } = await ctx.api.from('sst_entregas').update({ archivo: ruta, estado: 'firmado', vence: ent.vence ?? null }).eq('id', ent.id);
       if (error) { await eliminarArchivo(ctx.api, ruta).catch(() => {}); throw new Error(error.message); }
+      // El PDF del generador queda reemplazado por el firmado (por firmar no lo usa ninguna ficha de RRHH)
+      if (ent.archivo && ent.estado === 'pendiente') await eliminarArchivo(ctx.api, ent.archivo).catch(() => {});
       let marcadas = 0;
       if (marcaRrhh) {
         for (const p of participantes) if (await marcarDocumento(ctx, p.id, tipoDoc, ent, ruta)) marcadas += 1;

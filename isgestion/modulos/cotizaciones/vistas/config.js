@@ -1,9 +1,9 @@
 // Diseño de la cotización: validez, información de pago, nota, firma y contactos del pie.
 // Logo y color salen de los datos de la empresa.
-import { el } from '../../../core/ui/dom.js?v=d9e25ec';
-import { boton } from '../../../core/ui/tabla.js?v=d9e25ec';
-import { avisar } from '../../../core/ui/aviso.js?v=d9e25ec';
-import { cargarConfig } from '../datos.js?v=d9e25ec';
+import { el } from '../../../core/ui/dom.js?v=12d5283';
+import { boton } from '../../../core/ui/tabla.js?v=12d5283';
+import { avisar } from '../../../core/ui/aviso.js?v=12d5283';
+import { cargarConfig } from '../datos.js?v=12d5283';
 
 const lineas = (t) => t.split('\n').map((x) => x.trim()).filter(Boolean);
 

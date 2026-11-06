@@ -2,20 +2,21 @@
 // a pantalla completa (como en InnovaGestión): los campos subrayados se escriben ahí mismo, los bloques opcionales se
 // quitan con la ×, se elige el formato (variante) y los trabajadores que firman; luego se imprime, se descarga en PDF
 // o se guarda donde corresponde (RRHH o Prevención SST), según lo que pase quien abre el documento.
-import { el } from '../../core/ui/dom.js?v=d9e25ec';
-import { icono } from '../../core/ui/iconos.js?v=d9e25ec';
-import { boton } from '../../core/ui/tabla.js?v=d9e25ec';
-import { avisar } from '../../core/ui/aviso.js?v=d9e25ec';
-import { cargarJsPdf, cargarLogo, sellar } from '../../core/pdf.js?v=d9e25ec';
-import { crearPlantillas } from './plantillas.js?v=d9e25ec';
-import { pdfDesde } from './pdf.js?v=d9e25ec';
-import { fmtRut } from '../../core/lector-dte.js?v=d9e25ec';
+import { el } from '../../core/ui/dom.js?v=12d5283';
+import { icono } from '../../core/ui/iconos.js?v=12d5283';
+import { boton } from '../../core/ui/tabla.js?v=12d5283';
+import { avisar } from '../../core/ui/aviso.js?v=12d5283';
+import { cargarJsPdf, cargarLogo, sellar } from '../../core/pdf.js?v=12d5283';
+import { crearPlantillas } from './plantillas.js?v=12d5283';
+import { pdfDesde } from './pdf.js?v=12d5283';
+import { fmtRut } from '../../core/lector-dte.js?v=12d5283';
+import { activarCampos } from './campos.js?v=12d5283';
 
 let estilos = null;
 function cargarEstilos() {
   estilos ??= new Promise((ok) => {
     const l = document.createElement('link');
-    l.rel = 'stylesheet'; l.href = new URL('./documentos.css?v=d9e25ec', import.meta.url).href;
+    l.rel = 'stylesheet'; l.href = new URL('./documentos.css?v=12d5283', import.meta.url).href;
     l.onload = ok; l.onerror = ok;
     document.head.append(l);
   });
@@ -82,8 +83,8 @@ export function trabajador(v, extra = {}) {
 }
 
 // Abre un documento. o: { titulo, construir(variante, personas) → html, variantes?: [{v, n}], variante?,
-//   personas?: 'una' | 'lista', elegibles?: [trabajador], elegidos?: [trabajador], guardar?: { texto, alGuardar(blob, { variante, personas }) },
-//   nombreArchivo }
+//   personas?: 'una' | 'lista', elegibles?: [trabajador], elegidos?: [trabajador], guardar?: { texto, validar?(hoja) → boolean, alGuardar(blob, { variante, personas, hoja }) },
+//   campos?: opciones de activarCampos (campos.js: ítems marcables, listas de datos cargados, lecturas de gases), nombreArchivo }
 export async function abrirDocumento(o) {
   await cargarEstilos();
   let variante = o.variante ?? o.variantes?.[0]?.v ?? null;
@@ -92,8 +93,14 @@ export async function abrirDocumento(o) {
   // Color de la empresa en títulos y bandas del documento
   const color = getComputedStyle(document.documentElement).getPropertyValue('--empresa').trim();
   if (color) hoja.style.setProperty('--doc-color', color);
+  const campos = o.campos ? activarCampos(hoja, o.campos) : null;
+  let pintado = false;
   const pintar = () => {
+    const escrito = campos && pintado ? campos.copiar() : null;   // lo escrito se mantiene al cambiar de opción o de trabajadores
     hoja.innerHTML = o.construir(variante, personas);   // plantillas: todo dato pasa por esc()/ce()
+    pintado = true;
+    if (escrito) campos.restaurar(escrito);
+    campos?.refrescar();
     for (const img of hoja.querySelectorAll('img[onerror]')) img.removeAttribute('onerror');
     for (const img of hoja.querySelectorAll('img')) if (!img.getAttribute('src')) img.remove();
     firmaMovible(hoja);
@@ -133,7 +140,8 @@ export async function abrirDocumento(o) {
       boton('Imprimir', { icono: 'documento', onclick: accion(async () => window.open(URL.createObjectURL((await pdf()).output('blob')), '_blank')) }),
       boton('Descargar PDF', { icono: 'descargar', onclick: accion(async () => (await pdf()).save(nombre())) }),
       o.guardar ? boton(o.guardar.texto ?? 'Guardar', { icono: 'check', tipo: 'primario', onclick: accion(async () => {
-        await o.guardar.alGuardar((await pdf()).output('blob'), { variante, personas, nombre: nombre() });
+        if (o.guardar.validar && !o.guardar.validar(hoja)) return;
+        await o.guardar.alGuardar((await pdf()).output('blob'), { variante, personas, nombre: nombre(), hoja });
         cerrar();
       }) }) : null));
   const capa = el('div', { class: 'dg-capa', role: 'dialog', 'aria-modal': 'true', 'aria-label': o.titulo },
@@ -150,7 +158,7 @@ const textoPersonas = (L) => (L.length ? `Trabajadores (${L.length})` : 'Trabaja
 
 // Campos vacíos: los marca y pregunta si seguir igual (para completarlos a mano después)
 function revisarVacios(hoja) {
-  const vacios = [...hoja.querySelectorAll('[contenteditable]')].filter((x) => !x.closest('[data-html2canvas-ignore]') && !(x.textContent || '').replace(/[\s_.\-—]/g, ''));
+  const vacios = [...hoja.querySelectorAll('[contenteditable]:not([data-opc])')].filter((x) => !x.closest('[data-html2canvas-ignore]') && !(x.textContent || '').replace(/[\s_.\-—]/g, ''));
   if (!vacios.length) return true;
   for (const x of vacios) x.classList.add('dg-vacio');
   if (confirm(`Hay ${vacios.length} campo${vacios.length === 1 ? '' : 's'} sin completar (marcados en naranjo). ¿Seguir igual? Quedarán en blanco para completarlos a mano.`)) {
