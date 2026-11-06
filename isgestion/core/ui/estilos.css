@@ -312,7 +312,7 @@ button.chip { cursor: pointer; }
 .tarjeta-persona.borde-mal { border-left-color: var(--venc); }
 .tarjeta-persona.inactiva { opacity: .65; }
 .tp-cuerpo { display: grid; gap: 2px; min-width: 0; }
-.tp-nombre { font-weight: 700; color: var(--texto); text-decoration: none; font-size: 1.02rem; }
+.tp-nombre { font-weight: 700; color: var(--texto); text-decoration: none; font-size: 1.02rem; width: fit-content; max-width: 100%; }
 .tp-cargo { color: var(--texto-suave); }
 .tp-linea { font-size: .85rem; color: var(--texto-suave); }
 .tp-chips { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
@@ -887,12 +887,12 @@ a { color: color-mix(in srgb, var(--empresa) 85%, var(--texto)); text-underline-
 .num, .tabla td.num, .fin-tarjeta strong, .total-grande { font-variant-numeric: tabular-nums; }
 .tabla td a:not(.boton) { font-weight: 600; text-decoration: none; }
 .tabla td a[class]:not(.boton):hover { text-decoration: underline; }
-/* Enlaces animados (adaptados de los "link-1" y "link-2" que pasó Enzo), con el color de la empresa; también con el
+/* Enlaces animados (adaptados de los "link-1" y "link-2" que pasó Enzo): texto oscuro y la barra con el color de la empresa (2026-11-06); también con el
    foco del teclado. Relleno: la línea de abajo sube y rellena el texto (.enlace-relleno, .ind-cab a).
    Barrido: una línea tenue en reposo que sale por la derecha mientras entra la fuerte por la izquierda
    (.enlace-barrido, .tabla td a:not([class]), .tp-nombre, .tal-vehiculo). */
-.enlace-relleno, .ind-cab a, .enlace-barrido, .tabla td a:not([class]), .tp-nombre, .tal-vehiculo { position: relative; isolation: isolate; display: inline-block; text-decoration: none; transition: color .3s ease; }
-.enlace-relleno, .ind-cab a { color: var(--empresa); white-space: nowrap; padding: 0 3px; border-radius: 3px; }
+.enlace-relleno, .ind-cab a, .enlace-barrido, .tabla td a:not([class]), .tp-nombre, .tal-vehiculo { position: relative; isolation: isolate; display: inline-block; color: var(--texto); text-decoration: none; transition: color .3s ease; }
+.enlace-relleno, .ind-cab a { white-space: nowrap; padding: 0 3px; border-radius: 3px; }
 .enlace-relleno::after, .ind-cab a::after {
   content: ""; position: absolute; z-index: -1; left: 0; bottom: 0; width: 100%; height: 2px; border-radius: inherit;
   background: var(--empresa); transition: height .3s ease;
@@ -901,7 +901,7 @@ a { color: color-mix(in srgb, var(--empresa) 85%, var(--texto)); text-underline-
 .enlace-relleno:is(:hover, :focus-visible)::after, .ind-cab a:is(:hover, :focus-visible)::after { height: 100%; }
 .enlace-barrido::before, .tabla td a:not([class])::before, .tp-nombre::before, .tal-vehiculo::before, .enlace-barrido::after, .tabla td a:not([class])::after, .tp-nombre::after, .tal-vehiculo::after { content: ""; position: absolute; z-index: -1; left: 0; bottom: -1px; height: 2px; border-radius: 1px; }
 .enlace-barrido::before, .tabla td a:not([class])::before, .tp-nombre::before, .tal-vehiculo::before { width: 0; background: var(--empresa); transition: width .4s ease; }
-.enlace-barrido::after, .tabla td a:not([class])::after, .tp-nombre::after, .tal-vehiculo::after { width: 100%; background: color-mix(in srgb, var(--empresa) 30%, transparent); transition: left .6s ease, width .6s ease; }
+.enlace-barrido::after, .tabla td a:not([class])::after, .tp-nombre::after, .tal-vehiculo::after { width: 100%; background: color-mix(in srgb, var(--empresa) 70%, transparent); transition: left .6s ease, width .6s ease; }
 .enlace-barrido:is(:hover, :focus-visible)::before, .tabla td a:not([class]):is(:hover, :focus-visible)::before, .tp-nombre:is(:hover, :focus-visible)::before, .tal-vehiculo:is(:hover, :focus-visible)::before { width: 100%; }
 .enlace-barrido:is(:hover, :focus-visible)::after, .tabla td a:not([class]):is(:hover, :focus-visible)::after, .tp-nombre:is(:hover, :focus-visible)::after, .tal-vehiculo:is(:hover, :focus-visible)::after { left: 100%; width: 0; transition: left .2s ease, width .2s ease; }
 /* Formularios */
@@ -1192,7 +1192,7 @@ a.ind-barra-fila:hover .ind-nombre { color: var(--empresa); }
 }
 [data-tema="innova"] .fin-tarjeta strong { font-size: 1.6rem; font-weight: 800; }
 [data-tema="innova"] .tabla th { color: var(--texto-suave); font-weight: 800; font-size: .68rem; letter-spacing: .08em; }
-[data-tema="innova"] .contenido a:not(.boton):not(.tarjeta):not(.ger-alerta):not(.plan-tarjeta):not(.tal-placa):not(.pestana):not(.enlace-relleno):not(.ind-cab a) { color: var(--empresa); }
+[data-tema="innova"] .contenido a:not(.boton):not(.tarjeta):not(.ger-alerta):not(.plan-tarjeta):not(.tal-placa):not(.pestana):not(.enlace-relleno):not(.ind-cab a):not(.enlace-barrido):not(.tp-nombre):not(.tal-vehiculo):not(.tabla td a:not([class])) { color: var(--empresa); }
 [data-tema="innova"] .boton-primario { font-weight: 700; }
 [data-tema="innova"] .titulo-icono { color: var(--empresa); }
 /* Escritorio: la barra lateral sube a toda la altura y la barra superior queda solo sobre el contenido */

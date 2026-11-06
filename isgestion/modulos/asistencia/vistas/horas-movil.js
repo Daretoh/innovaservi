@@ -3,12 +3,12 @@
 // atajos de horario. En Sin horas se marcan varias personas (o las planificadas) y se registran de una vez.
 // Mismos datos y reglas que la planilla de escritorio (horas.js): las del marcaje se corrigen en Marcajes y los fijos con
 // turno quedan presentes "según horario".
-import { el } from '../../../core/ui/dom.js?v=d781526';
-import { icono } from '../../../core/ui/iconos.js?v=d781526';
-import { boton } from '../../../core/ui/tabla.js?v=d781526';
-import { avisar } from '../../../core/ui/aviso.js?v=d781526';
-import { hoyISO, lunesDe, sumarDias, nombreDia, nombreMes, horas, aMin, hhmm } from '../../../core/ui/formato.js?v=d781526';
-import { estado, minutosRegistro, ausente, eliminar } from './horas.js?v=d781526';
+import { el } from '../../../core/ui/dom.js?v=11a5492';
+import { icono } from '../../../core/ui/iconos.js?v=11a5492';
+import { boton } from '../../../core/ui/tabla.js?v=11a5492';
+import { avisar } from '../../../core/ui/aviso.js?v=11a5492';
+import { hoyISO, lunesDe, sumarDias, nombreDia, nombreMes, horas, aMin, hhmm } from '../../../core/ui/formato.js?v=11a5492';
+import { estado, minutosRegistro, ausente, eliminar } from './horas.js?v=11a5492';
 
 const pantalla = { pestana: null, buscar: '', marcados: new Set() };
 const DIAS_LARGOS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];

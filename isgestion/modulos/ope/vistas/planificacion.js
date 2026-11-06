@@ -2,13 +2,13 @@
 // Como InnovaGestión: "Disponibles" de cada día se arrastran a una faena (o se toca la persona y luego la faena);
 // un asignado arrastrado a Disponibles se quita; "Copiar día" replica el personal, vehículos, horario y preparador
 // a otros días; los días se pueden plegar (se recuerda en este equipo).
-import { el } from '../../../core/ui/dom.js?v=d781526';
-import { icono } from '../../../core/ui/iconos.js?v=d781526';
-import { boton } from '../../../core/ui/tabla.js?v=d781526';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=d781526';
-import { avisar } from '../../../core/ui/aviso.js?v=d781526';
-import { hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, hhmm, esFinde } from '../../../core/ui/formato.js?v=d781526';
-import { cargarBase, cargarSemana, faenasDelDia, etiquetaFaena, horarioDe, dotacionDe, dotTotal, turno, ocupacion, resumenWhatsApp, nombreCorto, partesDeRango, estadoParte } from '../datos.js?v=d781526';
+import { el } from '../../../core/ui/dom.js?v=11a5492';
+import { icono } from '../../../core/ui/iconos.js?v=11a5492';
+import { boton } from '../../../core/ui/tabla.js?v=11a5492';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=11a5492';
+import { avisar } from '../../../core/ui/aviso.js?v=11a5492';
+import { hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, hhmm, esFinde } from '../../../core/ui/formato.js?v=11a5492';
+import { cargarBase, cargarSemana, faenasDelDia, etiquetaFaena, horarioDe, dotacionDe, dotTotal, turno, ocupacion, resumenWhatsApp, nombreCorto, partesDeRango, estadoParte } from '../datos.js?v=11a5492';
 
 const estado = { lunes: lunesDe(hoyISO()), sel: null };   // sel: { persona_id, fecha } elegido para asignar tocando
 const PLEGADOS = 'isg.plan.plegados';
@@ -41,7 +41,7 @@ async function cargarDatos(ctx, lunes, domingo) {
     fresco && cache.obsAnt ? cache.obsAnt : ctx.api.from('ope_faena_obs').select('faena_id, ope_faenas(tercero_id, sitio_id, titulo, fecha_inicio)').eq('empresa_id', e).limit(3000),
     // Acreditación: asignados sin validar en el cliente de la faena (si el cliente pide documentos a los trabajadores)
     fresco && 'acr' in cache ? cache.acr : ctx.puede('acreditacion', 'ver') && ctx.puede('rrhh', 'ver')
-      ? import('../../acreditacion/trabajadores.js?v=d781526').then(async (m) => ({ m, d: await m.cargarAcreditacion(ctx) })).catch(() => null) : null,
+      ? import('../../acreditacion/trabajadores.js?v=11a5492').then(async (m) => ({ m, d: await m.cargarAcreditacion(ctx) })).catch(() => null) : null,
   ]);
   cache = { empresa: e, lunes, base, semana, partes, obsAnt, acr, hora: fresco ? cache.hora : Date.now() };
   return cache;

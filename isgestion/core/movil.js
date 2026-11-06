@@ -8,11 +8,11 @@
 //   o con menú: { label, opciones: [{ label, icono, requiere: [modulo, accion], ruta, abrir }, …] }: tocar o mantener el "+"
 //   muestra las opciones que el usuario puede usar (mantener y soltar sobre una la elige); si queda una sola, la abre directo.
 // Sin accesos declarados, la barra usa los primeros apartados del menú. Siempre: Inicio al principio y Más al final.
-import { el } from './ui/dom.js?v=d781526';
-import { icono } from './ui/iconos.js?v=d781526';
-import { urlFirmada } from './adjuntos.js?v=d781526';
-import { nombreEmpresa } from './empresas.js?v=d781526';
-import { avisar } from './ui/aviso.js?v=d781526';
+import { el } from './ui/dom.js?v=11a5492';
+import { icono } from './ui/iconos.js?v=11a5492';
+import { urlFirmada } from './adjuntos.js?v=11a5492';
+import { nombreEmpresa } from './empresas.js?v=11a5492';
+import { avisar } from './ui/aviso.js?v=11a5492';
 
 const MAX_ACCESOS = 2;
 

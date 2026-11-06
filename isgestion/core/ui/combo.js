@@ -6,7 +6,7 @@
 // - <input list="…"> (texto libre con sugerencias, ej.: faena en Registro de horas): la misma lista en lugar de la del
 //   navegador; se puede escribir cualquier cosa y Enter solo elige si se marcó una sugerencia con flechas o Tab.
 // Se aplica solo (activarCombos observa la página). Para dejar un campo como el del navegador: atributo data-nativo.
-import { el } from './dom.js?v=d781526';
+import { el } from './dom.js?v=11a5492';
 
 const UMBRAL = 6;          // opciones desde las que un <select> pasa a buscador
 const MAX_VISIBLES = 150;  // sugerencias que se dibujan a la vez

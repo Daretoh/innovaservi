@@ -1,7 +1,7 @@
 // Ficha pública de ingreso: el postulante la llena sin cuenta desde el enlace que le da RRHH.
 // URL: /ficha/?t=<token de la empresa>. Envía todo a la Edge Function ficha-ingreso.
-import { el } from '../core/ui/dom.js?v=d781526';
-import { icono } from '../core/ui/iconos.js?v=d781526';
+import { el } from '../core/ui/dom.js?v=11a5492';
+import { icono } from '../core/ui/iconos.js?v=11a5492';
 
 const raiz = document.getElementById('app');
 const token = new URLSearchParams(location.search).get('t') ?? '';
