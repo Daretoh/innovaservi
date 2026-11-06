@@ -1,16 +1,18 @@
-// Cierre mensual de un cliente: líneas (órdenes del mes y manuales), emitir, OC, factura, cobro, PDF e historial.
+// Cierre mensual de un cliente: líneas (órdenes entregadas en el mes y manuales), emitir, OC, factura, cobro, PDF e historial.
+// El mes de una orden es el de su entrega (Cierres 005); las sin entregar se avisan y no entran solas.
 // Ruta: #/cierres.cierre?id=<id>
-import { el } from '../../../core/ui/dom.js?v=12d5283';
-import { icono } from '../../../core/ui/iconos.js?v=12d5283';
-import { boton } from '../../../core/ui/tabla.js?v=12d5283';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=12d5283';
-import { avisar } from '../../../core/ui/aviso.js?v=12d5283';
-import { subirArchivo, urlFirmada } from '../../../core/adjuntos.js?v=12d5283';
-import { dinero, fechaLarga, hoyISO, diaLocal } from '../../../core/ui/formato.js?v=12d5283';
+import { el } from '../../../core/ui/dom.js?v=9ecb423';
+import { icono } from '../../../core/ui/iconos.js?v=9ecb423';
+import { boton } from '../../../core/ui/tabla.js?v=9ecb423';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=9ecb423';
+import { avisar } from '../../../core/ui/aviso.js?v=9ecb423';
+import { subirArchivo, urlFirmada } from '../../../core/adjuntos.js?v=9ecb423';
+import { dinero, fechaLarga, hoyISO, diaLocal } from '../../../core/ui/formato.js?v=9ecb423';
 import {
   nombreTercero, nombreEstado, CHIP_ESTADO, indiceEstado, MEDIOS, nombreMedio, ARCHIVOS, verPatente, numeroTexto, nombreMesLargo,
   totalesCierre, verHistorial, archivoSeguro,
-} from '../datos.js?v=12d5283';
+} from '../datos.js?v=9ecb423';
+import { nombreEstado as estadoOrden } from '../../taller/datos.js?v=9ecb423';
 
 const SELECT = '*, terceros(*), cie_lineas(*, tal_ordenes(id, numero, estado))';
 
@@ -22,7 +24,7 @@ export default async function vista(ctx) {
   const editar = ctx.puede('cierres', 'editar');
   const conTaller = ctx.puede('taller', 'ver');
 
-  // Borrador: entran solas las órdenes nuevas del mes y se actualizan los montos
+  // Borrador: entran solas las órdenes entregadas en el mes y se actualizan los montos
   let agregadas = 0;
   if (c.estado === 'borrador' && editar) {
     const r = await ctx.api.rpc('cie_sincronizar', { p_cierre: c.id });
@@ -36,11 +38,14 @@ export default async function vista(ctx) {
   const vivas = lineas.filter((l) => !l.excluida);
   const excluidas = lineas.filter((l) => l.excluida);
   const t = totalesCierre(c, lineas);
-  const [cliCfg, nuevas] = await Promise.all([
+  const [cliCfg, pend] = await Promise.all([
     ctx.api.from('cie_clientes').select('nota').eq('empresa_id', c.empresa_id).eq('tercero_id', c.tercero_id).maybeSingle(),
-    // Emitido: órdenes del mes que quedaron fuera (no entran solas a un cierre emitido)
-    !borrador && conTaller ? ordenesFuera(ctx, c) : Promise.resolve([]),
+    conTaller ? ctx.api.rpc('cie_pendientes', { p_cierre: c.id }) : { data: [] },
   ]);
+  if (pend.error) avisar(pend.error.message, 'error');
+  // Emitido: entregadas en el mes que quedaron fuera. Mes en curso: en el taller sin entregar.
+  const nuevas = (pend.data ?? []).filter((o) => o.tipo === 'fuera');
+  const sinEntregar = (pend.data ?? []).filter((o) => o.tipo === 'sin_entregar');
 
   const rpc = async (fn, args, aviso) => {
     const { error: e } = await ctx.api.rpc(fn, args);
@@ -102,8 +107,8 @@ export default async function vista(ctx) {
       alGuardar: async (v) => {
         // Si estaba excluida de este cierre, se vuelve a incluir
         const prev = lineas.find((l) => l.orden_id === v.orden);
-        const r = prev ? await ctx.api.from('cie_lineas').update({ excluida: false }).eq('id', prev.id)
-          : await ctx.api.from('cie_lineas').insert({ cierre_id: c.id, empresa_id: c.empresa_id, orden_id: v.orden });
+        const r = prev ? await ctx.api.from('cie_lineas').update({ excluida: false, a_mano: true }).eq('id', prev.id)
+          : await ctx.api.from('cie_lineas').insert({ cierre_id: c.id, empresa_id: c.empresa_id, orden_id: v.orden, a_mano: true });
         if (r.error) throw new Error(r.error.message);
         await ctx.api.rpc('cie_sincronizar', { p_cierre: c.id });
         avisar('Orden agregada.'); ctx.refrescar();
@@ -133,7 +138,7 @@ export default async function vista(ctx) {
   });
   const emitir = () => abrirFormulario({
     titulo: `Emitir cierre de ${nombreMesLargo(c.mes)}`,
-    mensaje: `Se congelan ${vivas.length} líneas por ${dinero(t.total)}${c.afecto_iva ? ' (con IVA)' : ''} y se asigna el número. Las órdenes nuevas del mes ya no entran solas.`,
+    mensaje: `Se congelan ${vivas.length} líneas por ${dinero(t.total)}${c.afecto_iva ? ' (con IVA)' : ''} y se asigna el número. Lo que se entregue después con fecha de este mes ya no entra solo.`,
     campos: [], textoGuardar: 'Emitir',
     alGuardar: () => rpc('cie_emitir', { p_cierre: c.id }, 'Cierre emitido.'),
   });
@@ -166,7 +171,7 @@ export default async function vista(ctx) {
   const pdf = async (b) => {
     b.disabled = true;
     try {
-      const { pdfCierre } = await import('../documentos.js?v=12d5283');
+      const { pdfCierre } = await import('../documentos.js?v=9ecb423');
       const doc = await pdfCierre(ctx, c, lineas, c.terceros, cliCfg.data?.nota);
       doc.save(`cierre-${c.mes}-${archivoSeguro(nombreTercero(c.terceros) || 'cliente')}.pdf`);
     } catch (e) { avisar(e.message, 'error'); } finally { b.disabled = false; }
@@ -179,25 +184,28 @@ export default async function vista(ctx) {
         el('p', { class: 'texto-suave' }, [c.numero ? `Cierre N° ${numeroTexto(c.numero)}` : 'Sin emitir', `${vivas.length} ${vivas.length === 1 ? 'línea' : 'líneas'}`].join(' · '))),
       el('div', { class: 'listado-acciones' }, el('span', { class: `chip ${CHIP_ESTADO[c.estado]}` }, nombreEstado[c.estado]),
         boton(borrador ? 'PDF de prueba' : 'PDF', { icono: 'descargar', onclick: (ev) => pdf(ev.currentTarget) }),
-        ctx.puede('cierres', 'exportar') ? boton('Excel detalle', { icono: 'descargar', onclick: async (ev) => { const b = ev.currentTarget; b.disabled = true; try { const { excelDetalleCierre } = await import('../excel.js?v=12d5283'); await excelDetalleCierre(ctx, c, lineas); } catch (e) { avisar(e.message, 'error'); } finally { b.disabled = false; } } }) : null,
+        ctx.puede('cierres', 'exportar') ? boton('Excel detalle', { icono: 'descargar', onclick: async (ev) => { const b = ev.currentTarget; b.disabled = true; try { const { excelDetalleCierre } = await import('../excel.js?v=9ecb423'); await excelDetalleCierre(ctx, c, lineas); } catch (e) { avisar(e.message, 'error'); } finally { b.disabled = false; } } }) : null,
         boton('Historial', { icono: 'reloj', onclick: () => verHistorial(ctx, c.id, `${nombreTercero(c.terceros)} ${c.mes}`) }))),
-    agregadas ? el('p', { class: 'aviso-bandeja' }, icono('check', { tam: 16 }), `${agregadas} ${agregadas === 1 ? 'línea nueva entró' : 'líneas nuevas entraron'} al cierre (órdenes o faenas del mes).`) : null,
+    agregadas ? el('p', { class: 'aviso-bandeja' }, icono('check', { tam: 16 }), `${agregadas} ${agregadas === 1 ? 'línea nueva entró' : 'líneas nuevas entraron'} al cierre (órdenes entregadas o faenas del mes).`) : null,
     nuevas.length ? el('p', { class: 'aviso-bandeja' }, icono('alerta', { tam: 16 }),
-      `El cierre está emitido y hay ${nuevas.length} ${nuevas.length === 1 ? 'orden' : 'órdenes'} del mes fuera: ${nuevas.map((o) => `N° ${o.numero} ${verPatente(o.tal_vehiculos?.patente)}`).join(', ')}. Reábrelo para incluirlas o déjalas para el mes siguiente.`) : null,
+      `El cierre está emitido y hay ${nuevas.length} ${nuevas.length === 1 ? 'orden entregada' : 'órdenes entregadas'} en el mes fuera: ${nuevas.map((o) => `N° ${o.numero} ${verPatente(o.patente)}`).join(', ')}. Reábrelo para incluirlas o agrégalas al mes siguiente con "Orden de otro mes".`) : null,
+    sinEntregar.length ? el('p', { class: 'aviso-bandeja' }, icono('alerta', { tam: 16 }),
+      `En el taller sin entregar: `, sinEntregar.map((o, k) => el('span', {}, k ? ', ' : '', el('a', { href: ctx.ruta('taller.orden', { id: o.id }) }, `N° ${o.numero} ${verPatente(o.patente)}`), ` (${estadoOrden[o.estado]})`)),
+      `. Entran al cierre del mes en que se entreguen.${borrador && editar ? ' Si hay que cobrarlas antes, usa "Orden de otro mes".' : ''}`) : null,
     pasos,
     el('div', { class: 'ficha doc-grupo' },
       el('div', { class: 'listado-cabecera' }, el('h2', {}, 'Líneas del cierre'),
         borrador && editar ? el('div', { class: 'listado-acciones' },
           conTaller ? boton('Orden de otro mes', { icono: 'mas', onclick: agregarOrden }) : null,
           boton('Línea manual', { icono: 'mas', onclick: agregarManual })) : null),
-      vivas.length ? vivas.map(filaLinea) : el('p', { class: 'texto-suave' }, 'Sin líneas. Las órdenes del taller y las faenas enviadas del cliente en el mes entran solas; también puedes agregar líneas manuales.'),
+      vivas.length ? vivas.map(filaLinea) : el('p', { class: 'texto-suave' }, 'Sin líneas. Las órdenes entregadas y las faenas enviadas del cliente en el mes entran solas; también puedes agregar líneas manuales.'),
       el('div', { class: 'cobro-resumen' },
         el('div', {}, el('span', {}, 'Neto'), el('span', {}, dinero(t.neto))),
         el('div', {}, el('label', { class: 'casilla' }, iva, 'Afecto a IVA 19 %'), el('span', {}, dinero(t.iva))),
         el('div', { class: 'cobro-saldo' }, el('strong', {}, 'Total'), el('strong', {}, dinero(t.total)))),
       excluidas.length ? el('details', {}, el('summary', { class: 'texto-suave texto-chico' }, `Órdenes quitadas de este cierre (${excluidas.length})`),
         excluidas.map((l) => el('div', { class: 'doc-fila' }, el('span', { class: 'doc-nombre' }, `${l.descripcion} ${verPatente(l.patente)}`),
-          borrador && editar ? boton('Volver a incluir', { onclick: async () => { if (await actualizar(l, { excluida: false })) ctx.refrescar(); } }) : null))) : null),
+          borrador && editar ? boton('Volver a incluir', { onclick: async () => { if (await actualizar(l, { excluida: false, a_mano: true })) ctx.refrescar(); } }) : null))) : null),
     c.notas || editar ? notasCierre(ctx, c, editar) : null);
 }
 
@@ -208,17 +216,4 @@ function notasCierre(ctx, c, editar) {
     if (error) avisar(error.message, 'error'); else avisar('Notas guardadas.');
   });
   return el('div', { class: 'form-fila' }, el('label', { for: 'cie-notas' }, 'Notas internas'), n);
-}
-
-// Órdenes del cliente en el mes que no están en ningún cierre
-async function ordenesFuera(ctx, c) {
-  const desde = `${c.mes}-01`;
-  const [a, m] = c.mes.split('-').map(Number);
-  const hasta = `${m === 12 ? a + 1 : a}-${String(m === 12 ? 1 : m + 1).padStart(2, '0')}-01`;
-  const { data: ords } = await ctx.api.from('tal_ordenes').select('id, numero, fecha_cita, ingreso_at, tal_vehiculos(patente)')
-    .eq('empresa_id', c.empresa_id).eq('tercero_id', c.tercero_id).eq('cobrado', false).neq('estado', 'anulada')
-    .gte('fecha_cita', desde).lt('fecha_cita', hasta);
-  if (!ords?.length) return [];
-  const { data: tomadas } = await ctx.api.from('cie_lineas').select('orden_id').in('orden_id', ords.map((o) => o.id));
-  return ords.filter((o) => !(tomadas ?? []).some((x) => x.orden_id === o.id));
 }

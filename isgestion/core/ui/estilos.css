@@ -573,8 +573,21 @@ button.dia-tarjeta { cursor: pointer; }
 .cot-fila-seccion { grid-template-columns: 1fr auto 112px; background: var(--fondo-sutil); border-radius: 6px; padding: 4px 0 4px 4px; margin-top: 6px; }
 .cot-seccion-pie { display: flex; align-items: center; gap: 8px; font-size: .82rem; color: var(--texto-suave); white-space: nowrap; }
 .cot-seccion-suma { font-weight: 700; color: var(--texto); }
-.cot-lista-avance { font-weight: 700; } .cot-lista-avance.estado-ok { color: var(--ok); } .cot-lista-avance.estado-prox { color: var(--prox); } .cot-lista-avance.estado-venc { color: var(--venc); }
-.cot-lista-gastos { font-weight: 700; color: var(--venc); }
+.cot-lista-taller { display: grid; grid-template-columns: minmax(70px, 140px) auto; justify-content: start; align-items: center; gap: 2px 8px; margin-top: 6px; }
+.cot-lista-pct { font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.cot-lista-estado { grid-column: 1 / -1; font-weight: 600; }
+.cot-lista-gastos { display: block; margin-top: 2px; font-weight: 700; color: var(--venc); }
+.cot-costos { display: grid; gap: 4px; margin: 8px 0; padding: 10px 12px; border: 1px solid var(--borde); border-radius: 8px; background: var(--fondo-sutil); }
+.cot-costos-cab { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+.cot-costos-suma { margin-left: auto; font-variant-numeric: tabular-nums; }
+.cot-costos-fila { display: grid; grid-template-columns: 84px minmax(0, 1fr) auto 90px; align-items: center; gap: 8px; font-size: 13px; }
+.cot-costos-monto { text-align: right; font-variant-numeric: tabular-nums; }
+.cot-costos p { margin: 4px 0 0; }
+.cobro-resumen > div[hidden] { display: none; }
+@media (max-width: 700px) {
+  .cot-costos-fila { grid-template-columns: 1fr auto auto; }
+  .cot-costos-fila > :nth-child(2) { grid-column: 1 / -1; grid-row: 1; }
+}
 .cot-fila .campo-num { width: 100%; min-width: 0; }
 .cot-seccion { font-weight: 700; text-transform: uppercase; color: var(--empresa); }
 .cot-total { text-align: right; font-weight: 600; }

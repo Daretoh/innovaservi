@@ -3,17 +3,18 @@
 // servicios de la orden: los normales en una sección (GM: "Preparación de Venta y Pulido / Realce de Brillo") y los
 // extras en "Extras". Así se arma la cotización del mes de un cliente de flota y se ve qué autos tuvo.
 // También "Autos por cotizar" (traerPorCotizar).
-import { abrirFormulario } from '../../core/ui/modal.js?v=12d5283';
-import { avisar } from '../../core/ui/aviso.js?v=12d5283';
-import { diaLocal, hoyISO } from '../../core/ui/formato.js?v=12d5283';
-import { numeroTexto, verPatente } from './datos.js?v=12d5283';
-import { costosDeOrdenes, lineasCosto } from './costos-orden.js?v=12d5283';
-import { trabajosOrden, listaCliente } from './trabajos-orden.js?v=12d5283';
+import { abrirFormulario } from '../../core/ui/modal.js?v=9ecb423';
+import { avisar } from '../../core/ui/aviso.js?v=9ecb423';
+import { diaLocal, hoyISO } from '../../core/ui/formato.js?v=9ecb423';
+import { numeroTexto, verPatente } from './datos.js?v=9ecb423';
+import { costosDeOrdenes, lineasCosto } from './costos-orden.js?v=9ecb423';
+import { trabajosOrden, listaCliente } from './trabajos-orden.js?v=9ecb423';
 
 const SECCION_FLOTA = 'Preparación de Venta y Pulido / Realce de Brillo';
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
 const esExtra = (n) => /^\s*extras?\b/i.test(n ?? '');
-const diaDe = (o) => o.fecha_cita || diaLocal(o.ingreso_at) || diaLocal(o.created_at);
+// Mes del auto: el de su entrega, como el cierre; sin entregar (o entregado sin fecha), el de la cita o el ingreso
+const diaDe = (o) => diaLocal(o.entregado_at) || o.fecha_cita || diaLocal(o.ingreso_at) || diaLocal(o.created_at);
 
 export async function traerMes(ctx, c, grupos) {
   if (!c.tercero_id) { avisar('Elige primero el cliente de la cotización.', 'error'); return; }

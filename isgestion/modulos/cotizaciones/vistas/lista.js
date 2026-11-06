@@ -1,11 +1,13 @@
 // Cotizaciones: listado con filtro por estado y búsqueda; nueva cotización. Cada fila dice quién la creó y quién la
 // editó por última vez (como el OS; updated_by lo pone la base).
-import { el } from '../../../core/ui/dom.js?v=12d5283';
-import { listado, boton } from '../../../core/ui/tabla.js?v=12d5283';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=12d5283';
-import { dinero, fechaLarga, fechaCorta, hoyISO, diaLocal, nombrePropio } from '../../../core/ui/formato.js?v=12d5283';
-import { avance } from '../../taller/seguimiento.js?v=12d5283';
-import { ESTADOS, nombreEstado, CHIP_ESTADO, SELECT_COT, totales, numeroTexto, nombreTercero, verPatente, siguienteNumero, cargarConfig, datosCliente } from '../datos.js?v=12d5283';
+import { el } from '../../../core/ui/dom.js?v=9ecb423';
+import { listado, boton } from '../../../core/ui/tabla.js?v=9ecb423';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=9ecb423';
+import { dinero, fechaLarga, fechaCorta, hoyISO, diaLocal, nombrePropio } from '../../../core/ui/formato.js?v=9ecb423';
+import { avance, colorAvance } from '../../taller/seguimiento.js?v=9ecb423';
+import { nombreEstado as estadoOrden } from '../../taller/datos.js?v=9ecb423';
+import { costosDeGrupos, costoFuera, sinRepetir, yaTraidos } from '../costos-orden.js?v=9ecb423';
+import { ESTADOS, nombreEstado, CHIP_ESTADO, SELECT_COT, totales, costoLinea, numeroTexto, nombreTercero, verPatente, siguienteNumero, cargarConfig, datosCliente } from '../datos.js?v=9ecb423';
 
 const filtro = { estado: 'todas', buscar: '' };
 
@@ -42,8 +44,8 @@ export default async function vista(ctx) {
       { titulo: 'Cliente', valor: (c) => c.cliente_nombre ?? '' },
       { titulo: 'Detalle', valor: (c) => el('span', {}, c.cot_grupos.map((g) => [g.titulo, verPatente(g.patente)].filter(Boolean).join(' · ')).join(', '),
         c.origen_id ? el('span', { class: 'texto-chico texto-suave' }, el('br'), `Nace de la N° ${numeroDe.get(c.origen_id) ?? '…'}`) : null,
-        extra.avance(c) != null ? el('span', { class: `texto-chico cot-lista-avance ${extra.avance(c) >= 75 ? 'estado-ok' : extra.avance(c) >= 40 ? 'estado-prox' : 'estado-venc'}`, title: 'Avance de los trabajos en el taller (órdenes ligadas)' }, el('br'), `Taller ${extra.avance(c)}%`) : null,
-        extra.gastos(c).n ? el('span', { class: 'texto-chico cot-lista-gastos', title: 'Costos cargados en Costos y gastos con la patente (interno)' }, el('br'), `Costos ${dinero(extra.gastos(c).t)} (${extra.gastos(c).n})`) : null) },
+        barraTaller(extra.taller(c)),
+        extra.costo(c) ? el('span', { class: 'texto-chico cot-lista-gastos', title: 'Costo interno, el mismo que se ve dentro de la cotización con su detalle.' }, `Costos ${dinero(extra.costo(c))}`) : null) },
       { titulo: 'Estado', valor: (c) => el('span', { class: `chip ${CHIP_ESTADO[c.estado]}` }, nombreEstado[c.estado]) },
       { titulo: 'Total', valor: (c) => el('strong', {}, dinero(c.t.total)) },
       { titulo: 'Registro', valor: (c) => el('span', { class: 'texto-chico texto-suave' },
@@ -101,37 +103,61 @@ export async function nueva(ctx, { tercero = undefined, grupo = null, lineas = [
   });
 }
 
-// Como la lista del OS (2026-11-02): avance de los trabajos en el taller (órdenes ligadas a los vehículos) y costos
-// cargados en Costos y gastos con la patente: los de la visita si el vehículo tiene orden (ligados a ella o entre el
-// ingreso y la entrega); si no, todos los de la patente. Solo con permiso de ver Taller / Costos.
+// Barra de avance con el estado y la fecha: la fecha de entrega dice a qué mes corresponde el trabajo
+function barraTaller(t) {
+  if (!t) return null;
+  return el('span', { class: 'cot-lista-taller', title: t.detalle },
+    el('span', { class: 'seg-barra' }, el('i', { style: `width:${t.avance}%;background:${colorAvance(t.avance)}` })),
+    el('span', { class: 'cot-lista-pct' }, `${t.avance}%`),
+    el('span', { class: 'texto-chico cot-lista-estado' }, t.texto));
+}
+
+// Estado de las órdenes ligadas en una línea. Las entregadas antiguas del OS pueden no tener fecha.
+function textoTaller(os) {
+  const entregadas = os.filter((o) => o.estado === 'entregado');
+  const fechas = entregadas.map((o) => diaLocal(o.entregado_at)).filter(Boolean).sort();
+  const sinFecha = entregadas.length - fechas.length;
+  if (os.length === 1) {
+    const o = os[0];
+    if (o.estado === 'entregado') return fechas[0] ? `Entregado ${fechaLarga(fechas[0])}` : 'Entregado · sin fecha';
+    return o.estado === 'terminado' && o.termino_at ? `Terminado ${fechaLarga(diaLocal(o.termino_at))}` : estadoOrden[o.estado];
+  }
+  const nota = sinFecha ? ` · ${sinFecha} sin fecha` : '';
+  if (entregadas.length === os.length) {
+    if (!fechas.length) return `${os.length} entregados · sin fecha`;
+    return `${os.length} entregados · ${fechas[0] === fechas.at(-1) ? fechaLarga(fechas[0]) : `${fechaLarga(fechas[0])} a ${fechaLarga(fechas.at(-1))}`}${nota}`;
+  }
+  if (entregadas.length) return `${entregadas.length} de ${os.length} entregados${fechas.length ? ` · último ${fechaLarga(fechas.at(-1))}` : ''}${nota}`;
+  const cuenta = new Map();
+  for (const o of os) cuenta.set(o.estado, (cuenta.get(o.estado) ?? 0) + 1);
+  return [...cuenta].map(([k, n]) => `${n} ${estadoOrden[k]}`).join(', ');
+}
+
+// Avance en el taller (órdenes ligadas a los vehículos) y costos de cada vehículo, los mismos que se ven dentro de la
+// cotización (costos-orden.js). Solo con permiso de ver Taller / Costos.
 async function avanceYGastos(ctx, cots) {
   const grupos = cots.flatMap((c) => c.cot_grupos);
   const idsOrden = [...new Set(grupos.map((g) => g.orden_id).filter(Boolean))];
-  const patentes = [...new Set(grupos.map((g) => g.patente).filter(Boolean))];
-  const [ords, gas] = await Promise.all([
-    ctx.puede('taller', 'ver') && idsOrden.length
-      ? ctx.api.from('tal_ordenes').select('id, estado, tareas, ingreso_at, fecha_cita, created_at, entregado_at').in('id', idsOrden) : { data: [] },
-    ctx.puede('costos', 'ver') && patentes.length
-      ? ctx.api.from('fin_registros').select('patente, fecha, total, orden_id').eq('empresa_id', ctx.empresa.id).eq('tipo', 'gasto').is('deleted_at', null).is('a_cuenta_de', null).in('patente', patentes) : { data: [] },
-  ]);
+  const ords = ctx.puede('taller', 'ver') && idsOrden.length
+    ? await ctx.api.from('tal_ordenes').select('id, numero, estado, tareas, ingreso_at, fecha_cita, created_at, termino_at, entregado_at').in('id', idsOrden) : { data: [] };
   const orden = new Map((ords.data ?? []).map((o) => [o.id, o]));
-  const porPatente = new Map();
-  for (const r of gas.data ?? []) { if (!porPatente.has(r.patente)) porPatente.set(r.patente, []); porPatente.get(r.patente).push(r); }
-  const deGrupo = (g) => {
-    const lista = porPatente.get(g.patente) ?? [];
-    const o = orden.get(g.orden_id);
-    if (!o) return lista;
-    const desde = diaLocal(o.ingreso_at) || o.fecha_cita || diaLocal(o.created_at); const hasta = diaLocal(o.entregado_at) || hoyISO();
-    return lista.filter((r) => r.orden_id === o.id || (r.fecha >= desde && r.fecha <= hasta));
-  };
+  const costos = await costosDeGrupos(ctx, grupos, orden);
   return {
-    avance: (c) => {
-      const os = c.cot_grupos.map((g) => orden.get(g.orden_id)).filter((o) => o && o.estado !== 'anulada');
-      return os.length ? Math.round(os.reduce((s, o) => s + avance(o), 0) / os.length) : null;
+    taller: (c) => {
+      const gs = c.cot_grupos.filter((g) => orden.get(g.orden_id) && orden.get(g.orden_id).estado !== 'anulada');
+      if (!gs.length) return null;
+      const os = gs.map((g) => orden.get(g.orden_id));
+      return {
+        avance: Math.round(os.reduce((s, o) => s + avance(o), 0) / os.length),
+        texto: textoTaller(os),
+        detalle: gs.map((g) => { const o = orden.get(g.orden_id); return [`N° ${o.numero}`, verPatente(g.patente), estadoOrden[o.estado], o.estado === 'entregado' ? (o.entregado_at ? fechaLarga(diaLocal(o.entregado_at)) : 'sin fecha') : null].filter(Boolean).join(' · '); }).join('\n'),
+      };
     },
-    gastos: (c) => {
-      const l = c.cot_grupos.flatMap(deGrupo);
-      return { n: l.length, t: l.reduce((s, r) => s + Number(r.total || 0), 0) };
+    // El mismo costo interno del editor: lo de las líneas más los gastos que no están en ellas
+    costo: (c) => {
+      const vistos = new Set(); const traidos = yaTraidos(c.cot_lineas);
+      const extra = c.cot_grupos.reduce((s, g) => s + costoFuera(c.cot_lineas.filter((l) => l.grupo_id === g.id), sinRepetir(costos.get(g.id) ?? [], vistos), traidos).extra, 0);
+      return c.cot_lineas.reduce((s, l) => s + costoLinea(l), 0) + extra;
     },
   };
 }

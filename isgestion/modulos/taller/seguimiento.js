@@ -4,11 +4,11 @@
 //   cronómetro desde la recepción y barra de avance, que se arrastra para priorizar (tal_ordenes.orden_manual)
 // - flujo de los "por cotizar": P.C → COTIZADO → PAGADO
 // - detalle a pantalla completa (tablet): cronómetro grande, avance, tareas para marcar, tiempos por etapa y avanzar/volver.
-import { el } from '../../core/ui/dom.js?v=12d5283';
-import { icono } from '../../core/ui/iconos.js?v=12d5283';
-import { avisar } from '../../core/ui/aviso.js?v=12d5283';
-import { ESTADOS, PRIORIDADES, nombreEstado, verPatente, nombreVehiculo, nombreTercero, textoMinutos } from './datos.js?v=12d5283';
-import { mover } from './acciones.js?v=12d5283';
+import { el } from '../../core/ui/dom.js?v=9ecb423';
+import { icono } from '../../core/ui/iconos.js?v=9ecb423';
+import { avisar } from '../../core/ui/aviso.js?v=9ecb423';
+import { ESTADOS, PRIORIDADES, nombreEstado, verPatente, nombreVehiculo, nombreTercero, textoMinutos } from './datos.js?v=9ecb423';
+import { mover } from './acciones.js?v=9ecb423';
 
 const ORDEN_PRIO = { urgente: 0, prioridad: 1, normal: 2, programado: 3 };
 const hoyLocal = () => new Date().toLocaleDateString('sv');
@@ -21,7 +21,7 @@ export function avance(o) {
   if (i === 2) { const n = o.tareas?.length ?? 0; return n ? Math.round(40 + (50 * o.tareas.filter((t) => t.ok).length) / n) : 60; }
   return i === 1 ? 20 : 5;
 }
-const colorAvance = (p) => (p >= 75 ? 'var(--ok)' : p >= 40 ? 'var(--prox)' : 'var(--venc)');
+export const colorAvance = (p) => (p >= 75 ? 'var(--ok)' : p >= 40 ? 'var(--prox)' : 'var(--venc)');
 export const ordenarActivos = (l) => [...l].sort((a, b) => {
   if (a.orden_manual && b.orden_manual) return a.orden_manual - b.orden_manual;
   if (a.orden_manual || b.orden_manual) return a.orden_manual ? -1 : 1;

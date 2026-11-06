@@ -2,16 +2,16 @@
 // Toda la tarjeta abre la orden; buscador por patente, vehículo o cliente; la tarjeta recién movida queda
 // resaltada; se actualiza solo cada 2 minutos (pensado para la tablet del taller). Arriba, el resumen del Seguimiento
 // del OS (avance y arrastrar para priorizar); el botón de pantalla completa abre el detalle para la tablet.
-import { el } from '../../../core/ui/dom.js?v=12d5283';
-import { icono } from '../../../core/ui/iconos.js?v=12d5283';
-import { boton } from '../../../core/ui/tabla.js?v=12d5283';
-import { fechaCorta, hhmm, hoyISO } from '../../../core/ui/formato.js?v=12d5283';
-import { ESTADOS, PRIORIDADES, CHIP_PRIORIDAD, SELECT_ORDEN, verPatente, nombreVehiculo, nombreTercero, minutosTrabajo, textoMinutos, hora, cargarTrabajadores } from '../datos.js?v=12d5283';
-import { mover, textoAvance, puedeVolver, esperaPagoFactura } from '../acciones.js?v=12d5283';
-import { recepcion } from '../recepcion.js?v=12d5283';
-import { avance, ordenarActivos, marcaCotizar, resumenTaller, detalleVehiculo } from '../seguimiento.js?v=12d5283';
-import { ETAPAS, tarjetaAuto } from '../movil.js?v=12d5283';
-import { esTelefono } from '../../../core/movil.js?v=12d5283';
+import { el } from '../../../core/ui/dom.js?v=9ecb423';
+import { icono } from '../../../core/ui/iconos.js?v=9ecb423';
+import { boton } from '../../../core/ui/tabla.js?v=9ecb423';
+import { fechaCorta, hhmm, hoyISO } from '../../../core/ui/formato.js?v=9ecb423';
+import { ESTADOS, PRIORIDADES, CHIP_PRIORIDAD, SELECT_ORDEN, verPatente, nombreVehiculo, nombreTercero, minutosTrabajo, textoMinutos, hora, cargarTrabajadores } from '../datos.js?v=9ecb423';
+import { mover, textoAvance, puedeVolver, esperaPagoFactura } from '../acciones.js?v=9ecb423';
+import { recepcion } from '../recepcion.js?v=9ecb423';
+import { avance, ordenarActivos, marcaCotizar, resumenTaller, detalleVehiculo } from '../seguimiento.js?v=9ecb423';
+import { ETAPAS, tarjetaAuto } from '../movil.js?v=9ecb423';
+import { esTelefono } from '../../../core/movil.js?v=9ecb423';
 
 const MAX_ENTREGADOS = 6;
 const ESPERA_LARGA = 60;   // minutos en espera para avisar
@@ -25,7 +25,7 @@ export default async function vista(ctx) {
     base().in('estado', ['agendado', 'espera', 'proceso']),
     base().in('estado', ['terminado', 'entregado']).or(`termino_at.gte.${inicioMes},cobrado.eq.false`),
     cargarTrabajadores(ctx),
-    ctx.puede('cotizaciones', 'ver') ? ctx.api.from('cot_grupos').select('orden_id').eq('empresa_id', ctx.empresa.id).not('orden_id', 'is', null) : Promise.resolve({ data: [] }),
+    ctx.puede('cotizaciones', 'ver') ? ctx.api.from('cot_grupos').select('orden_id, cot_cotizaciones!inner(id)').eq('empresa_id', ctx.empresa.id).not('orden_id', 'is', null).is('cot_cotizaciones.deleted_at', null) : Promise.resolve({ data: [] }),
   ]);
   const cotizadas = new Set((cot.data ?? []).map((g) => g.orden_id));
   if (enCurso.error) throw enCurso.error;

@@ -2,13 +2,13 @@
 // (cita, o ingreso si no tiene cita), color según el estado, marca + modelo + patente y servicios, y el flujo de los
 // "por cotizar": P.C (servicio a convenir) → COTIZADO (tiene cotización) → PAGADO (cobrado). También las tareas del
 // equipo con fecha. Hasta 4 por día ("+N más" abre el día); tocar uno abre su detalle. Clic en un día vacío: agendar.
-import { el } from '../../../core/ui/dom.js?v=12d5283';
-import { icono } from '../../../core/ui/iconos.js?v=12d5283';
-import { boton } from '../../../core/ui/tabla.js?v=12d5283';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=12d5283';
-import { dinero, hoyISO, rangoMes, moverMes, nombreMes, sumarDias, lunesDe, diaLocal, hhmm, fechaLarga } from '../../../core/ui/formato.js?v=12d5283';
-import { nombreEstado, verPatente, nombreVehiculo, nombreTercero, totales } from '../datos.js?v=12d5283';
-import { recepcion } from '../recepcion.js?v=12d5283';
+import { el } from '../../../core/ui/dom.js?v=9ecb423';
+import { icono } from '../../../core/ui/iconos.js?v=9ecb423';
+import { boton } from '../../../core/ui/tabla.js?v=9ecb423';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=9ecb423';
+import { dinero, hoyISO, rangoMes, moverMes, nombreMes, sumarDias, lunesDe, diaLocal, hhmm, fechaLarga } from '../../../core/ui/formato.js?v=9ecb423';
+import { nombreEstado, verPatente, nombreVehiculo, nombreTercero, totales } from '../datos.js?v=9ecb423';
+import { recepcion } from '../recepcion.js?v=9ecb423';
 
 const estado = { mes: hoyISO().slice(0, 7), ver: 'detalle' };   // ver: detalle (cada vehículo) o resumen (por cliente)
 const CLASE = { agendado: 'agendado', espera: 'espera', proceso: 'proc', terminado: 'term', entregado: 'entreg' };
@@ -20,7 +20,7 @@ export default async function vista(ctx) {
   const [ord, cot, tar] = await Promise.all([
     ctx.api.from('tal_ordenes').select('id, numero, estado, cobrado, fecha_cita, hora_cita, ingreso_at, created_at, descuento, doc_tipo, tipo_venta, abono, contacto, tal_vehiculos(marca, modelo, patente, talla), terceros(id, razon_social, nombre_fantasia, telefono, clase), tal_orden_servicios(nombre, precio, tal_servicios(variable))')
       .eq('empresa_id', ctx.empresa.id).neq('estado', 'anulada'),
-    ctx.puede('cotizaciones', 'ver') ? ctx.api.from('cot_grupos').select('orden_id').eq('empresa_id', ctx.empresa.id).not('orden_id', 'is', null) : Promise.resolve({ data: [] }),
+    ctx.puede('cotizaciones', 'ver') ? ctx.api.from('cot_grupos').select('orden_id, cot_cotizaciones!inner(id)').eq('empresa_id', ctx.empresa.id).not('orden_id', 'is', null).is('cot_cotizaciones.deleted_at', null) : Promise.resolve({ data: [] }),
     ctx.puede('tareas', 'ver') ? ctx.api.from('tar_tareas').select('id, titulo, detalle, fecha, hora, prioridad, estado').eq('empresa_id', ctx.empresa.id).is('deleted_at', null).gte('fecha', ini).lte('fecha', fin) : Promise.resolve({ data: [] }),
   ]);
   if (ord.error) throw ord.error;
