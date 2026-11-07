@@ -7,7 +7,7 @@ export function nuevaFaena(ctx) {
 
 export async function nuevaTareaMovil(ctx) {
   const [{ nuevaTarea }, { data, error }] = await Promise.all([
-    import('../tareas/vistas/nueva.js?v=11a5492'),
+    import('../tareas/vistas/nueva.js?v=58a63ab'),
     ctx.api.rpc('nombres_usuarios', { p_empresa: ctx.empresa.id }),
   ]);
   if (error) throw error;

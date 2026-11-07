@@ -2,13 +2,13 @@
 // Confirmar el pago (Remuneraciones 008, 2026-11-02): la semana se paga la semana siguiente; al pagar se confirma y
 // queda lo pagado a cada uno. Si después cambia algo de esa semana o faltó un saldo, la diferencia se lleva a la semana
 // actual o a la siguiente como extra o descuento con su motivo (remu_items.origen_semana), y la semana queda cuadrada.
-import { el } from '../../../core/ui/dom.js?v=11a5492';
-import { icono } from '../../../core/ui/iconos.js?v=11a5492';
-import { boton } from '../../../core/ui/tabla.js?v=11a5492';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=11a5492';
-import { avisar } from '../../../core/ui/aviso.js?v=11a5492';
-import { dinero, horas, hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, fechaLarga, numSemana } from '../../../core/ui/formato.js?v=11a5492';
-import { cargarBase, calcularRango, nombreCompleto } from '../datos.js?v=11a5492';
+import { el } from '../../../core/ui/dom.js?v=58a63ab';
+import { icono } from '../../../core/ui/iconos.js?v=58a63ab';
+import { boton } from '../../../core/ui/tabla.js?v=58a63ab';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=58a63ab';
+import { avisar } from '../../../core/ui/aviso.js?v=58a63ab';
+import { dinero, horas, hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, fechaLarga, numSemana } from '../../../core/ui/formato.js?v=58a63ab';
+import { cargarBase, calcularRango, nombreCompleto } from '../datos.js?v=58a63ab';
 
 const estado = { lunes: lunesDe(hoyISO()) };
 
@@ -63,7 +63,7 @@ export default async function vista(ctx) {
     const desc = [f.cargo?.nombre ?? f.vinculo.cargo, f.modo === 'fijo' ? `fijo${f.ventana ? ` ${f.ventana}` : f.jornadaHoras ? ` ${f.jornadaHoras} h/día` : ''}` : 'por hora']
       .filter(Boolean).join(' · ');
     const fila = el('tr', { class: `fila-enlace${f.modo === 'fijo' ? ' fila-fijo' : ''}`, title: 'Ver el detalle, ajustar días y extras' },
-      el('td', {}, el('a', { href }, nombreCompleto(f.persona)), el('div', { class: 'texto-suave texto-chico' }, desc), faenasDe(f)),
+      el('td', {}, el('a', { href }, nombreCompleto(f.persona)), f.modo === 'fijo' ? el('span', { class: 'chip chip-fijo' }, 'Fijo') : null, el('div', { class: 'texto-suave texto-chico' }, desc), faenasDe(f)),
       el('td', { class: 'centro' }, f.dias),
       el('td', {}, horas(f.totMin), f.modo === 'fijo' ? el('div', { class: 'texto-suave texto-chico' }, `${horas(f.pagoMin)} pagables`) : null),
       el('td', { class: 'num' }, f.vh ? dinero(f.vh) : el('span', { class: 'pct-mal', title: 'Sin trato ni valor hora' }, 'Sin valor')),
@@ -229,7 +229,7 @@ function verPago(ctx, f, p, editar) {
 async function exportarPdf(ctx, R, lunes, domingo, b) {
   b.disabled = true;
   try {
-    const { nuevoPdf } = await import('../../../core/pdf.js?v=11a5492');
+    const { nuevoPdf } = await import('../../../core/pdf.js?v=58a63ab');
     const pdf = await nuevoPdf(ctx, { titulo: `Pago semanal · semana ${numSemana(lunes)}`, subtitulo: `${fechaCorta(lunes)} al ${fechaCorta(domingo)} · total ${dinero(R.total)}`, horizontal: true });
     pdf.tabla({
       columnas: ['Trabajador', 'RUT', 'Modo', 'Días', 'Horas', 'Base', 'Vueltas', 'Extras', 'Descuentos', 'Total'],

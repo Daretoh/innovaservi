@@ -3,14 +3,14 @@
 // atajos de horario. En Sin horas se marcan varias personas (o las planificadas) y se registran de una vez.
 // Mismos datos y reglas que la planilla de escritorio (horas.js): las del marcaje se corrigen en Marcajes y los fijos con
 // turno quedan presentes "según horario".
-import { el } from '../../../core/ui/dom.js?v=11a5492';
-import { icono } from '../../../core/ui/iconos.js?v=11a5492';
-import { boton } from '../../../core/ui/tabla.js?v=11a5492';
-import { avisar } from '../../../core/ui/aviso.js?v=11a5492';
-import { hoyISO, lunesDe, sumarDias, nombreDia, nombreMes, horas, aMin, hhmm } from '../../../core/ui/formato.js?v=11a5492';
-import { estado, minutosRegistro, ausente, eliminar } from './horas.js?v=11a5492';
+import { el } from '../../../core/ui/dom.js?v=58a63ab';
+import { icono } from '../../../core/ui/iconos.js?v=58a63ab';
+import { boton } from '../../../core/ui/tabla.js?v=58a63ab';
+import { avisar } from '../../../core/ui/aviso.js?v=58a63ab';
+import { hoyISO, lunesDe, sumarDias, nombreDia, nombreMes, horas, aMin, hhmm } from '../../../core/ui/formato.js?v=58a63ab';
+import { estado, minutosRegistro, ausente, eliminar } from './horas.js?v=58a63ab';
 
-const pantalla = { pestana: null, buscar: '', marcados: new Set() };
+const pantalla = { pestana: null, buscar: '', marcados: new Set(), abiertas: new Set() };   // abiertas: faenas desplegadas (día|faena)
 const DIAS_LARGOS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 const HORARIO_BASE = '08:00-17:00';
 
@@ -221,9 +221,18 @@ export default async function asistenciaMovil(ctx) {
         const k = clave(r.faena); if (!grupos.has(k)) grupos.set(k, { texto: r.faena, filas: [] });
         grupos.get(k).filas.push(r);
       }
-      contenido = [...grupos.entries()].sort(([a], [b]) => (a === '') - (b === '') || a.localeCompare(b)).map(([k, g]) => el('div', { class: 'asm-grupo', style: colorFaena.get(k) ? `--asm-color:${colorFaena.get(k)}` : '' },
-        verOpe || g.texto ? el('h3', {}, el('i', { 'aria-hidden': 'true' }), el('span', {}, g.texto || 'Sin faena'), el('small', {}, `${g.filas.length} · ${horas(g.filas.reduce((s, r) => s + minutosRegistro(r), 0))}`)) : null,
-        g.filas.map(tarjetaHoras)));
+      contenido = [...grupos.entries()].sort(([a], [b]) => (a === '') - (b === '') || a.localeCompare(b)).map(([k, g]) => {
+        // Las faenas parten plegadas; al buscar se abren para ver a quien se encontró
+        const conCabeza = verOpe || !!g.texto;
+        const llave = `${estado.dia}|${k}`;
+        const abierto = !conCabeza || !!pantalla.buscar.trim() || pantalla.abiertas.has(llave);
+        const cuerpo = el('div', { class: 'asm-grupo-cuerpo', hidden: !abierto }, g.filas.map(tarjetaHoras));
+        const cabeza = conCabeza ? el('button', { type: 'button', class: 'asm-grupo-cabeza', 'aria-expanded': String(abierto), onclick: () => {
+          const abrir = cuerpo.hidden; cuerpo.hidden = !abrir; cabeza.setAttribute('aria-expanded', String(abrir));
+          if (abrir) pantalla.abiertas.add(llave); else pantalla.abiertas.delete(llave);
+        } }, el('i', { 'aria-hidden': 'true' }), el('span', {}, g.texto || 'Sin faena'), el('small', {}, `${g.filas.length} · ${horas(g.filas.reduce((s, r) => s + minutosRegistro(r), 0))}`), icono('derecha', { tam: 18 })) : null;
+        return el('div', { class: 'asm-grupo', style: colorFaena.get(k) ? `--asm-color:${colorFaena.get(k)}` : '' }, cabeza, cuerpo);
+      });
       if (!contenido.length) contenido = [el('div', { class: 'tm-vacio' }, el('span', {}, pantalla.buscar ? 'Nadie con ese nombre.' : 'Nadie con horas este día.'))];
     } else if (pantalla.pestana === 'sin') {
       const visibles = sin.filter(coincide);

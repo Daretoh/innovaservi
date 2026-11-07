@@ -424,7 +424,16 @@ button.dia-tarjeta { cursor: pointer; }
 .tabla .num { text-align: right; white-space: nowrap; }
 .tabla tfoot th { background: var(--fondo-sutil); border-top: 2px solid var(--borde); text-align: left; }
 .tabla tfoot th.num { text-align: right; }
-.fila-fijo td { background: var(--fondo-sutil); }
+/* Fijos en Remuneraciones: fila y etiqueta con un azul oscuro propio, distinto del color de la empresa de los montos */
+:root { --fijo: #2b3a67; }
+[data-tema="innova"] { --fijo: #1a1f6e; }
+[data-tema="taller"] { --fijo: #26282c; }
+html[data-modo="oscuro"] { --fijo: #7c8cc4; }
+.fila-fijo td { background: color-mix(in srgb, var(--fijo) 9%, var(--superficie)); }
+.fila-fijo td:first-child { box-shadow: inset 4px 0 0 var(--fijo); }
+.chip-fijo { margin-left: 6px; color: #fff; background: var(--fijo); border-color: var(--fijo); }
+html[data-modo="oscuro"] .chip-fijo { color: #10131a; }
+.remu-grupo-titulo .chip-fijo { margin-left: 0; font-size: inherit; }
 .fila-especial td { background: color-mix(in srgb, var(--prox-fondo) 60%, transparent); }
 .acciones-fila { white-space: nowrap; text-align: right !important; }
 .resumen-pago { max-width: 520px; }
@@ -1804,6 +1813,12 @@ li.tarea-ok { text-decoration: line-through; color: var(--texto-suave); }
 
 /* ---------- Teléfono como app (core/movil.js, dirección B aprobada por Enzo el 2026-10-27) ---------- */
 .barra-movil { display: none; }
+/* Registro de horas: faenas plegables */
+.hz-grupo-boton { width: 100%; border: 0; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.hz-grupo-boton > svg { flex: none; color: var(--texto-suave); transition: transform 180ms ease; }
+.hz-grupo-boton[aria-expanded="true"] > svg { transform: rotate(90deg); }
+.hz-grupo-cuerpo { display: grid; gap: inherit; min-width: 0; }
+.hz-grupo-cuerpo[hidden] { display: none; }
 /* Asistencia en el teléfono (modulos/asistencia/vistas/horas-movil.js) */
 /* Reportes de trabajo en el teléfono: tarjetas y, en el parte, las fotos antes que los datos */
 .rep-lista { display: flex; flex-direction: column; gap: 8px; }
@@ -1836,10 +1851,14 @@ body:has(.asm-varios:not([hidden])) .aviso { bottom: calc(164px + env(safe-area-
 .asm-buscar { width: 100%; min-height: 44px; box-sizing: border-box; }
 .asm-lista { display: flex; flex-direction: column; gap: 8px; }
 .asm-grupo { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
-.asm-grupo h3 { display: flex; align-items: baseline; gap: 8px; margin: 4px 2px 0; font-size: 13px; font-weight: 800; color: var(--texto); }
-.asm-grupo h3 i { flex: none; align-self: center; width: 10px; height: 10px; border-radius: 3px; background: var(--asm-color, var(--texto-suave)); }
-.asm-grupo h3 span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
-.asm-grupo h3 small { flex: none; font-weight: 600; color: var(--texto-suave); }
+.asm-grupo-cabeza { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 52px; padding: 8px 12px; border: 1px solid var(--borde); border-radius: 14px; background: var(--superficie); color: var(--texto); font: inherit; font-size: 13px; font-weight: 800; text-align: left; cursor: pointer; }
+.asm-grupo-cabeza i { flex: none; width: 10px; height: 10px; border-radius: 3px; background: var(--asm-color, var(--texto-suave)); }
+.asm-grupo-cabeza span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.asm-grupo-cabeza small { flex: none; font-weight: 600; color: var(--texto-suave); }
+.asm-grupo-cabeza svg { flex: none; color: var(--texto-suave); transition: transform 180ms ease; }
+.asm-grupo-cabeza[aria-expanded="true"] svg { transform: rotate(90deg); }
+.asm-grupo-cuerpo { display: flex; flex-direction: column; gap: 8px; }
+.asm-grupo-cuerpo[hidden] { display: none; }
 .asm-persona { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 64px; box-sizing: border-box; padding: 10px 12px; border: 1px solid var(--borde); border-radius: 14px; background: var(--superficie); color: var(--texto); font: inherit; text-align: left; }
 button.asm-persona { cursor: pointer; }
 button.asm-persona > svg, .asm-persona-abrir > svg { flex: none; color: var(--texto-suave); }

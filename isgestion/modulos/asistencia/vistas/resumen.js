@@ -3,11 +3,11 @@
 // turno en día hábil (el viernes desde su salida_viernes) y todo el sábado, domingo o feriado; con Artículo 22 no hay
 // extras. Un spot cobra todas sus horas: no tiene "extras". Al tocar una fila se ve el detalle por día.
 // Las condiciones (turno, modo, valor hora) son de Remuneraciones: sin permiso de verlas solo se muestran las horas.
-import { el } from '../../../core/ui/dom.js?v=11a5492';
-import { icono } from '../../../core/ui/iconos.js?v=11a5492';
-import { boton } from '../../../core/ui/tabla.js?v=11a5492';
-import { avisar } from '../../../core/ui/aviso.js?v=11a5492';
-import { hoyISO, rangoMes, nombreMes, fechaCorta, nombreDia, horas, hhmm, dinero } from '../../../core/ui/formato.js?v=11a5492';
+import { el } from '../../../core/ui/dom.js?v=58a63ab';
+import { icono } from '../../../core/ui/iconos.js?v=58a63ab';
+import { boton } from '../../../core/ui/tabla.js?v=58a63ab';
+import { avisar } from '../../../core/ui/aviso.js?v=58a63ab';
+import { hoyISO, rangoMes, nombreMes, fechaCorta, nombreDia, horas, hhmm, dinero } from '../../../core/ui/formato.js?v=58a63ab';
 
 const estado = { mes: hoyISO().slice(0, 7), abierto: null };
 const nombre = (p) => [p.nombres, p.apellido_paterno, p.apellido_materno].filter(Boolean).join(' ');
@@ -17,7 +17,7 @@ export default async function vista(ctx) {
   const conRemu = ctx.puede('remu', 'ver');
   const verMonto = conRemu;
   const { desde, hasta } = rangoMes(estado.mes);
-  const d = await import('../../remu/datos.js?v=11a5492');
+  const d = await import('../../remu/datos.js?v=58a63ab');
   const base = await d.cargarBase(ctx);
   const R = await d.calcularRango(ctx, base, { desde, hasta, itemsMes: estado.mes });
   const filas = R.filas.filter((f) => f.totMin > 0).map((f) => {
@@ -41,7 +41,7 @@ export default async function vista(ctx) {
     const vis = filas.filter((x) => !q || nombre(x.f.persona).toLowerCase().includes(q));
     cuerpo.replaceChildren(...(vis.length ? vis.flatMap((x) => {
       const id = x.f.vinculo.persona_id; const abierto = estado.abierto === id;
-      const fila = el('tr', { class: 'fila-enlace', title: abierto ? 'Ocultar el detalle' : 'Ver el detalle por día', onclick: () => { estado.abierto = abierto ? null : id; pintar(); } },
+      const fila = el('tr', { class: `fila-enlace${x.fijo ? ' fila-fijo' : ''}`, title: abierto ? 'Ocultar el detalle' : 'Ver el detalle por día', onclick: () => { estado.abierto = abierto ? null : id; pintar(); } },
         el('td', {}, icono(abierto ? 'abajo' : 'derecha', { tam: 14 }), ' ', el('strong', {}, nombre(x.f.persona)),
           el('span', { class: 'texto-chico texto-suave' }, el('br'), x.fijo ? `Fijo${x.f.ventana ? ` · turno ${x.f.ventana}` : ''}${x.f.condicion?.salida_viernes ? ` · viernes hasta ${hhmm(x.f.condicion.salida_viernes)}` : ''}${x.f.condicion?.art22 ? ' · Art. 22' : ''}` : conRemu ? 'Por hora (todas sus horas se pagan)' : '')),
         el('td', { class: 'num' }, String(x.f.dias)),
@@ -68,7 +68,7 @@ export default async function vista(ctx) {
 
   const totalExtra = filas.reduce((s, x) => s + x.extra, 0);
   const exportar = async () => {
-    const { exportarExcel } = await import('../../../core/excel.js?v=11a5492');
+    const { exportarExcel } = await import('../../../core/excel.js?v=58a63ab');
     await exportarExcel(ctx, {
       titulo: 'Resumen de horas del mes', subtitulo: nombreMes(estado.mes), nombre: `horas-${estado.mes}`,
       columnas: ['Trabajador', 'Tipo', { t: 'Días', tipo: 'numero' }, { t: 'Horas', tipo: 'horas' }, { t: 'Normales', tipo: 'horas' }, { t: 'Extra hábil', tipo: 'horas' }, { t: 'Extra fin de semana y feriado', tipo: 'horas' }, { t: 'Total extra', tipo: 'horas' }, ...(verMonto ? [{ t: 'Monto extra', tipo: 'dinero' }] : [])],

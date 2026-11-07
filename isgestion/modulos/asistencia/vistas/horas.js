@@ -6,15 +6,15 @@
 // Fijos con turno (2026-10-30): cada día hábil quedan presentes "según horario" solos (asis_generar_fijos); aquí solo se
 // corrigen las excepciones: retraso o salida temprana (cambiar la hora), horas extra (cambiar la salida o agregar otra
 // fila) y ausencias (botón Ausente: el día deja de contar y no se vuelve a crear).
-import { el } from '../../../core/ui/dom.js?v=11a5492';
-import { icono } from '../../../core/ui/iconos.js?v=11a5492';
-import { boton } from '../../../core/ui/tabla.js?v=11a5492';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=11a5492';
-import { avisar } from '../../../core/ui/aviso.js?v=11a5492';
-import { esTelefono } from '../../../core/movil.js?v=11a5492';
-import { hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, horas, aMin, hhmm } from '../../../core/ui/formato.js?v=11a5492';
+import { el } from '../../../core/ui/dom.js?v=58a63ab';
+import { icono } from '../../../core/ui/iconos.js?v=58a63ab';
+import { boton } from '../../../core/ui/tabla.js?v=58a63ab';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=58a63ab';
+import { avisar } from '../../../core/ui/aviso.js?v=58a63ab';
+import { esTelefono } from '../../../core/movil.js?v=58a63ab';
+import { hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, horas, aMin, hhmm } from '../../../core/ui/formato.js?v=58a63ab';
 
-export const estado = { lunes: lunesDe(hoyISO()), dia: hoyISO(), nuevas: [] };   // nuevas: filas en blanco aún sin guardar
+export const estado = { lunes: lunesDe(hoyISO()), dia: hoyISO(), nuevas: [], abiertas: new Set() };   // abiertas: faenas desplegadas (día|faena)   // nuevas: filas en blanco aún sin guardar
 
 const nombre = (p) => [p.nombres, p.apellido_paterno, p.apellido_materno].filter(Boolean).join(' ');
 export function minutosRegistro(h) {
@@ -25,7 +25,7 @@ export function minutosRegistro(h) {
 const clave = (s) => String(s ?? '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[·—-]+/g, ' ').replace(/\s+/g, ' ');
 
 export default async function vista(ctx) {
-  if (esTelefono()) return (await import('./horas-movil.js?v=11a5492')).default(ctx);   // en el teléfono, lista de personas en vez de planilla
+  if (esTelefono()) return (await import('./horas-movil.js?v=58a63ab')).default(ctx);   // en el teléfono, lista de personas en vez de planilla
   const desde = estado.lunes;
   const hasta = sumarDias(desde, 6);
   if (estado.dia < desde || estado.dia > hasta) estado.dia = desde;
@@ -175,17 +175,28 @@ export default async function vista(ctx) {
   for (const n of estado.nuevas) grupoDe(n.faena).filas.push(fila(null, n));
   for (const f of faenasDia) grupoDe(f.texto);   // las faenas del día aparecen aunque no tengan horas aún
   const orden = [...grupos.entries()].sort(([a], [b]) => (a === '') - (b === '') || a.localeCompare(b));
-  const agregarEn = (texto) => { estado.nuevas.push({ faena: texto, persona: '' }); ctx.refrescar(); };
+  const agregarEn = (texto) => { estado.abiertas.add(`${estado.dia}|${clave(texto)}`); estado.nuevas.push({ faena: texto, persona: '' }); ctx.refrescar(); };
   const bloques = orden.map(([k, g]) => {
     const color = colorFaena(g.texto);
     const min = delDia.filter((r) => clave(r.faena) === k).reduce((s, r) => s + minutosRegistro(r), 0);
-    return el('div', { class: 'hz-grupo', style: color ? `--hz-color:${color}` : '' },
-      el('div', { class: 'hz-grupo-cabeza' }, el('strong', {}, g.texto || (conFaena ? 'Sin faena' : 'Trabajadores')),
-        el('span', { class: 'texto-suave texto-chico' }, g.filas.length ? `${g.filas.length} registro${g.filas.length > 1 ? 's' : ''} · ${horas(min)}` : 'sin horas aún')),
+    // Las faenas parten plegadas (Enzo, 2026-11-06); se abren al tocarlas y siguen abiertas al guardar. Sin Faenas hay un solo grupo: abierto
+    const llave = `${estado.dia}|${k}`;
+    const abierto = !conFaena || estado.abiertas.has(llave) || estado.nuevas.some((n) => clave(n.faena) === k);
+    const resumen = [el('strong', {}, g.texto || (conFaena ? 'Sin faena' : 'Trabajadores')),
+      el('span', { class: 'texto-suave texto-chico' }, g.filas.length ? `${g.filas.length} registro${g.filas.length > 1 ? 's' : ''} · ${horas(min)}` : 'sin horas aún'),
+      g.filas.some((tr) => tr.classList.contains('hz-pisa')) ? el('span', { class: 'chip chip-venc' }, 'Horas que se pisan') : null];
+    const cuerpo = el('div', { class: 'hz-grupo-cuerpo', hidden: !abierto });
+    const cabeza = conFaena ? el('button', { type: 'button', class: 'hz-grupo-cabeza hz-grupo-boton', 'aria-expanded': String(abierto), onclick: () => {
+      const abrir = cuerpo.hidden; cuerpo.hidden = !abrir; cabeza.setAttribute('aria-expanded', String(abrir));
+      if (abrir) estado.abiertas.add(llave); else estado.abiertas.delete(llave);
+    } }, icono('derecha', { tam: 16 }), resumen) : el('div', { class: 'hz-grupo-cabeza' }, resumen);
+    cuerpo.append(...[
       g.filas.length ? el('div', { class: 'tabla-contenedor' }, el('table', { class: 'tabla hz-tabla' },
         el('thead', {}, el('tr', {}, ['Trabajador', ...(conFaena ? ['Faena'] : []), 'Horario', 'Horas', 'Vueltas', ''].map((t) => el('th', {}, t)))),
         el('tbody', {}, g.filas))) : null,
-      puedeCrear ? el('button', { type: 'button', class: 'boton-enlace hz-agregar', onclick: () => agregarEn(g.texto) }, icono('mas', { tam: 14 }), g.texto ? 'persona en esta faena' : conFaena ? 'persona (sin faena)' : 'persona') : null);
+      puedeCrear ? el('button', { type: 'button', class: 'boton-enlace hz-agregar', onclick: () => agregarEn(g.texto) }, icono('mas', { tam: 14 }), g.texto ? 'persona en esta faena' : conFaena ? 'persona (sin faena)' : 'persona') : null,
+    ].filter(Boolean));
+    return el('div', { class: 'hz-grupo', style: color ? `--hz-color:${color}` : '' }, cabeza, cuerpo);
   });
 
   // Vehículos y preparación del día (desde Planificación)

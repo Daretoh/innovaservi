@@ -1,5 +1,5 @@
 // Datos y cálculos compartidos de Cotizaciones.
-import { nombreVersion } from '../catalogo/datos.js?v=11a5492';
+import { nombreVersion } from '../catalogo/datos.js?v=58a63ab';
 
 export const ESTADOS = [['borrador', 'Borrador'], ['enviada', 'Enviada'], ['aceptada', 'Aceptada'], ['rechazada', 'Rechazada']];
 export const nombreEstado = Object.fromEntries(ESTADOS);

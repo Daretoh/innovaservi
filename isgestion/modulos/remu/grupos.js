@@ -3,8 +3,8 @@
 // Columna: { t: título, tipo: 'texto' | 'dinero' | 'horas' | 'numero', v: (fila) => valor, suma?: true, neg?: true (se
 // muestra con signo menos), fuerte?: true, celda?: (fila) => contenido propio en pantalla, soloExport?: true (no se
 // muestra en pantalla) }.
-import { el } from '../../core/ui/dom.js?v=11a5492';
-import { dinero, horas } from '../../core/ui/formato.js?v=11a5492';
+import { el } from '../../core/ui/dom.js?v=58a63ab';
+import { dinero, horas } from '../../core/ui/formato.js?v=58a63ab';
 
 const texto = (c, v) => {
   if (c.tipo === 'dinero') return v ? `${c.neg ? '−' : ''}${dinero(v)}` : '—';
@@ -19,12 +19,13 @@ export function tablaGrupo({ titulo, cols: todas, filas, alFila }) {
   const cols = todas.filter((c) => !c.soloExport);
   const tot = sumar(cols, filas);
   const clase = (c, i) => (i === 0 ? '' : c.tipo === 'texto' ? '' : 'num');
+  const fijos = /^fijos/i.test(titulo);
   return el('div', { class: 'remu-grupo' },
-    el('h2', { class: 'remu-grupo-titulo' }, titulo, el('span', { class: 'texto-suave texto-chico' }, ` · ${filas.length} ${filas.length === 1 ? 'persona' : 'personas'}`)),
+    el('h2', { class: 'remu-grupo-titulo' }, fijos ? el('span', { class: 'chip chip-fijo' }, titulo) : titulo, el('span', { class: 'texto-suave texto-chico' }, ` · ${filas.length} ${filas.length === 1 ? 'persona' : 'personas'}`)),
     el('div', { class: 'tabla-contenedor' }, el('table', { class: 'tabla' },
       el('thead', {}, el('tr', {}, cols.map((c, i) => el('th', { class: clase(c, i) }, c.t)))),
       el('tbody', {}, filas.map((f) => {
-        const tr = el('tr', {}, cols.map((c, i) => el('td', { class: `${clase(c, i)}${c.neg && c.v(f) ? ' pct-mal' : ''}` },
+        const tr = el('tr', { class: fijos ? 'fila-fijo' : '' }, cols.map((c, i) => el('td', { class: `${clase(c, i)}${c.neg && c.v(f) ? ' pct-mal' : ''}` },
           c.celda ? c.celda(f) : c.fuerte ? el('strong', {}, texto(c, c.v(f))) : texto(c, c.v(f)))));
         alFila?.(tr, f);
         return tr;
@@ -38,7 +39,7 @@ export async function exportarGrupos(ctx, { formato, titulo, subtitulo, grupos, 
   const con = grupos.filter((g) => g.filas.length);
   const exp = (c) => c.exp ?? c.v;
   if (formato === 'excel') {
-    const { nuevoExcel } = await import('../../core/excel.js?v=11a5492');
+    const { nuevoExcel } = await import('../../core/excel.js?v=58a63ab');
     const x = await nuevoExcel(ctx, { titulo, subtitulo });
     con.forEach((g) => x.tabla({
       titulo: g.titulo,
@@ -51,7 +52,7 @@ export async function exportarGrupos(ctx, { formato, titulo, subtitulo, grupos, 
     await x.guardar(nombre);
     return;
   }
-  const { nuevoPdf } = await import('../../core/pdf.js?v=11a5492');
+  const { nuevoPdf } = await import('../../core/pdf.js?v=58a63ab');
   const pdf = await nuevoPdf(ctx, { titulo, subtitulo, horizontal: true });
   con.forEach((g) => {
     pdf.doc.setFont('helvetica', 'bold').setFontSize(11).setTextColor(28, 35, 48).text(g.titulo, 15, pdf.y);
