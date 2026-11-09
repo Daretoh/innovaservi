@@ -5,14 +5,15 @@
 // Cada módulo puede declarar en su manifiesto `movil`:
 //   accesos: [{ id: 'taller.tablero', label: 'Taller', icono: 'auto' }, …]   pestañas de la barra (si la ruta existe)
 //   accion:  { label, icono, requiere: 'crear', abrir: (ctx) => … }           el botón "+" del centro
-//   o con menú: { label, opciones: [{ label, icono, requiere: [modulo, accion], ruta, abrir }, …] }: tocar o mantener el "+"
-//   muestra las opciones que el usuario puede usar (mantener y soltar sobre una la elige); si queda una sola, la abre directo.
+//   o con abanico: { label, opciones: [{ label, icono, requiere: [modulo, accion], ruta, abrir }, …] }: tocar o mantener el "+"
+//   abre en abanico las opciones que el usuario puede usar (mantener y arrastrar hacia una la elige; un toque abre y otro
+//   elige); si queda una sola, la abre directo. Con 3 son tres direcciones; con más, el arco se abre y luego suma otra vuelta.
 // Sin accesos declarados, la barra usa los primeros apartados del menú. Siempre: Inicio al principio y Más al final.
-import { el } from './ui/dom.js?v=58a63ab';
-import { icono } from './ui/iconos.js?v=58a63ab';
-import { urlFirmada } from './adjuntos.js?v=58a63ab';
-import { nombreEmpresa } from './empresas.js?v=58a63ab';
-import { avisar } from './ui/aviso.js?v=58a63ab';
+import { el } from './ui/dom.js?v=4bb9c7a';
+import { icono } from './ui/iconos.js?v=4bb9c7a';
+import { urlFirmada } from './adjuntos.js?v=4bb9c7a';
+import { nombreEmpresa } from './empresas.js?v=4bb9c7a';
+import { avisar } from './ui/aviso.js?v=4bb9c7a';
 
 const MAX_ACCESOS = 2;
 
@@ -46,7 +47,7 @@ export function barraMovil({ visibles, apartados, rutas, puede, ctx }) {
         if (boton.classList.contains('abierta')) return;
         boton.classList.add('abierta'); boton.setAttribute('aria-expanded', 'true');
         try { navigator.vibrate?.(10); } catch { /* sin vibración */ }
-        Promise.resolve(accion.opciones ? mostrarMenu(accion.opciones, ctx, (m) => { menuAccion = m; }) : accion.abrir(ctx())).catch((err) => avisar(err?.message ?? 'No se pudo abrir.', 'error')).finally(() => { boton.classList.remove('abierta'); boton.setAttribute('aria-expanded', 'false'); });
+        Promise.resolve(accion.opciones ? mostrarAbanico(boton, accion.opciones, ctx, (m) => { menuAccion = m; }) : accion.abrir(ctx())).catch((err) => avisar(err?.message ?? 'No se pudo abrir.', 'error')).finally(() => { boton.classList.remove('abierta'); boton.setAttribute('aria-expanded', 'false'); });
       } }, el('span', { class: 'bm-onda', 'aria-hidden': 'true' }), icono(accion.icono ?? 'mas', { tam: 28 }));
     items.splice(Math.ceil(items.length / 2), 0, boton);
     sinSeleccion(boton);
@@ -72,23 +73,49 @@ function accionDe(m, { puede, rutas }) {
   return opciones.length === 1 ? { ...accion, ...opciones[0], opciones: undefined } : { ...accion, opciones };
 }
 
-// Menú sobre el "+": se cierra al elegir, al tocar fuera, con Esc o al cambiar de pantalla. La promesa termina al cerrarse
-// (el "+" vuelve de "×" a "+"). Va en <body>: dentro de la barra (backdrop-filter) la posición fija quedaría relativa a ella.
-function mostrarMenu(opciones, ctx, avisarMenu) {
-  return new Promise((listo, fallo) => {
-    const elegir = (o) => { cerrar(); Promise.resolve(o.abrir(ctx())).catch(fallo).finally(listo); };
-    const botones = opciones.map((o) => el('button', { type: 'button', class: 'bm-opcion', role: 'menuitem', onclick: () => elegir(o) }, icono(o.icono, { tam: 20 }), el('span', {}, o.label)));
-    const lista = el('div', { class: 'bm-opciones', role: 'menu', 'aria-label': 'Agregar' }, botones);
-    const velo = el('div', { class: 'bm-velo', onclick: () => { cerrar(); listo(); } });
-    const tecla = (ev) => { if (ev.key === 'Escape') { cerrar(); listo(); } };
-    const alNavegar = () => { cerrar(); listo(); };
-    const menu = { mantenido: false, botones, elegirBoton: (b) => elegir(opciones[botones.indexOf(b)]), cerrar: alNavegar };
-    function cerrar() {
-      velo.remove(); lista.remove(); avisarMenu(null);
-      document.removeEventListener('keydown', tecla); removeEventListener('hashchange', alNavegar);
+// Dónde va cada opción, en px desde el centro del "+" (de izquierda a derecha; x<0 izquierda, y<0 arriba). Hasta 5 por vuelta:
+// 2 y 3 quedan en arco cerrado (3 = arriba-izquierda, arriba, arriba-derecha), 4 y 5 abren el arco, y desde la sexta se suma
+// otra vuelta más arriba. Nunca se salen de la pantalla.
+const POR_VUELTA = 5;
+const SEPARACION = 92;   // distancia mínima entre centros
+function posicionesAbanico(n, limiteX) {
+  const posiciones = [];
+  for (let vuelta = 0, resto = n; resto > 0; vuelta += 1, resto -= POR_VUELTA) {
+    const cuantas = Math.min(resto, POR_VUELTA);
+    const arco = cuantas === 1 ? 0 : Math.min(160, 45 * (cuantas - 1));
+    const paso = cuantas > 1 ? arco / (cuantas - 1) : 0;
+    const radio = Math.max(118, paso ? SEPARACION / (2 * Math.sin((paso * Math.PI) / 360)) : 0) + vuelta * SEPARACION;
+    for (let i = 0; i < cuantas; i += 1) {
+      const a = ((90 + arco / 2 - paso * i) * Math.PI) / 180;
+      posiciones.push({ x: Math.max(-limiteX, Math.min(limiteX, Math.cos(a) * radio)), y: -Math.sin(a) * radio });
     }
-    document.addEventListener('keydown', tecla); addEventListener('hashchange', alNavegar);
-    document.body.append(velo, lista);
+  }
+  return posiciones;
+}
+
+// Abanico sobre el "+": se cierra al elegir, al tocar fuera, con Esc, al girar o al cambiar de pantalla. La promesa termina al
+// cerrarse (el "+" vuelve de "×" a "+"). Va en <body>: dentro de la barra (backdrop-filter) la posición fija quedaría relativa a
+// ella. El velo tapa la barra, así que un "×" igual al botón queda encima para cerrar.
+function mostrarAbanico(boton, opciones, ctx, avisarMenu) {
+  return new Promise((listo, fallo) => {
+    const r = boton.getBoundingClientRect();
+    const centro = { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+    const posiciones = posicionesAbanico(opciones.length, Math.min(centro.x, innerWidth - centro.x) - 46);
+    const elegir = (o) => { cerrar(); Promise.resolve(o.abrir(ctx())).catch(fallo).finally(listo); };
+    const salir = () => { cerrar(); listo(); };
+    const botones = opciones.map((o, i) => el('button', { type: 'button', class: 'bm-rayo', role: 'menuitem', style: `--x:${Math.round(posiciones[i].x)}px;--y:${Math.round(posiciones[i].y)}px;--orden:${i};left:${centro.x}px;top:${centro.y}px`, onclick: () => elegir(o) },
+      el('span', { class: 'bm-rayo-circulo' }, icono(o.icono, { tam: 24 })), el('span', { class: 'bm-rayo-texto' }, o.label)));
+    const abanico = el('div', { class: 'bm-abanico', role: 'menu', 'aria-label': 'Agregar' }, botones);
+    const velo = el('div', { class: 'bm-velo', onclick: salir });
+    const equis = el('button', { type: 'button', class: 'bm-abanico-cerrar', 'aria-label': 'Cerrar', style: `left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px`, onclick: salir }, icono('cerrar', { tam: 26 }));
+    const tecla = (ev) => { if (ev.key === 'Escape') salir(); };
+    const menu = { mantenido: false, botones, posiciones, elegirBoton: (b) => elegir(opciones[botones.indexOf(b)]), cerrar: salir };
+    function cerrar() {
+      velo.remove(); abanico.remove(); equis.remove(); avisarMenu(null);
+      document.removeEventListener('keydown', tecla); removeEventListener('hashchange', salir); removeEventListener('resize', salir);
+    }
+    document.addEventListener('keydown', tecla); addEventListener('hashchange', salir); addEventListener('resize', salir);
+    document.body.append(velo, abanico, equis);
     avisarMenu(menu);
   });
 }
@@ -110,27 +137,48 @@ function sinSeleccion(boton) {
   });
 }
 
-// Mantener presionado el "+" también abre el menú; al soltar el dedo sobre una opción, se elige
+// Mantener presionado el "+" abre el abanico (o antes, si el dedo ya partió hacia un lado). Lo que cuenta es la dirección del
+// arrastre desde donde se apoyó el dedo: la opción más cercana a ese recorrido se marca y al soltar se elige. Soltar sin haber
+// salido del centro deja el abanico abierto para elegir con un toque.
+const UMBRAL_ARRASTRE = 30;
 function mantenerParaMenu(boton, menuActual) {
   let tiempo = 0;
-  const bajo = (ev) => document.elementFromPoint(ev.clientX, ev.clientY)?.closest('.bm-opcion');
+  let inicio = null;
+  let sobre = null;
+  const marcar = (m, b) => {
+    if (b === sobre) return;
+    sobre = b;
+    for (const x of m.botones) x.classList.toggle('bm-sobre', x === b);
+    if (b) try { navigator.vibrate?.(8); } catch { /* sin vibración */ }
+  };
+  const elegida = (m, ev) => {
+    const dx = ev.clientX - inicio.x; const dy = ev.clientY - inicio.y;
+    if (Math.hypot(dx, dy) < UMBRAL_ARRASTRE) return null;
+    let mejor = 0; let menor = Infinity;
+    m.posiciones.forEach((p, i) => { const d = Math.hypot(p.x - dx, p.y - dy); if (d < menor) { menor = d; mejor = i; } });
+    return m.botones[mejor];
+  };
+  const abrirMantenido = () => { clearTimeout(tiempo); tiempo = 0; boton.click(); const m = menuActual(); if (m) m.mantenido = true; };
   boton.addEventListener('pointerdown', (ev) => {
     if (ev.button > 0 || menuActual()) return;
-    tiempo = setTimeout(() => { boton.click(); const m = menuActual(); if (m) m.mantenido = true; }, 350);
+    inicio = { x: ev.clientX, y: ev.clientY }; sobre = null;
+    tiempo = setTimeout(abrirMantenido, 350);
     try { boton.setPointerCapture(ev.pointerId); } catch { /* sin captura */ }
   });
   boton.addEventListener('pointermove', (ev) => {
-    const m = menuActual(); if (!m?.mantenido) return;
-    const b = bajo(ev);
-    for (const x of m.botones) x.classList.toggle('bm-sobre', x === b);
+    if (!inicio) return;
+    if (tiempo && Math.hypot(ev.clientX - inicio.x, ev.clientY - inicio.y) >= UMBRAL_ARRASTRE / 2) abrirMantenido();
+    const m = menuActual(); if (m?.mantenido) marcar(m, elegida(m, ev));
   });
   const soltar = (ev) => {
-    clearTimeout(tiempo);
-    const m = menuActual(); if (!m?.mantenido) return;
-    const b = ev.type === 'pointerup' ? bajo(ev) : null;
-    if (ev.type === 'pointercancel') m.mantenido = false;
-    if (!b) { for (const x of m.botones) x.classList.remove('bm-sobre'); return; }
-    // El toque que viene después de soltar sobre una opción no debe volver a abrir el menú
+    clearTimeout(tiempo); tiempo = 0;
+    const m = menuActual();
+    if (!inicio || !m?.mantenido) { inicio = null; return; }
+    const b = ev.type === 'pointerup' ? elegida(m, ev) : null;
+    inicio = null;
+    marcar(m, null);
+    if (!b) { setTimeout(() => { m.mantenido = false; }, 350); return; }   // el navegador puede no lanzar el toque que lo apaga
+    // El toque que viene después de soltar sobre una opción no debe volver a abrir el abanico
     const bloquear = (e) => e.stopImmediatePropagation();
     boton.addEventListener('click', bloquear, { capture: true, once: true });
     setTimeout(() => boton.removeEventListener('click', bloquear, { capture: true }), 350);

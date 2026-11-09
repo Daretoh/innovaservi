@@ -3,12 +3,12 @@
 // atajos de horario. En Sin horas se marcan varias personas (o las planificadas) y se registran de una vez.
 // Mismos datos y reglas que la planilla de escritorio (horas.js): las del marcaje se corrigen en Marcajes y los fijos con
 // turno quedan presentes "según horario".
-import { el } from '../../../core/ui/dom.js?v=58a63ab';
-import { icono } from '../../../core/ui/iconos.js?v=58a63ab';
-import { boton } from '../../../core/ui/tabla.js?v=58a63ab';
-import { avisar } from '../../../core/ui/aviso.js?v=58a63ab';
-import { hoyISO, lunesDe, sumarDias, nombreDia, nombreMes, horas, aMin, hhmm } from '../../../core/ui/formato.js?v=58a63ab';
-import { estado, minutosRegistro, ausente, eliminar } from './horas.js?v=58a63ab';
+import { el } from '../../../core/ui/dom.js?v=4bb9c7a';
+import { icono } from '../../../core/ui/iconos.js?v=4bb9c7a';
+import { boton } from '../../../core/ui/tabla.js?v=4bb9c7a';
+import { avisar } from '../../../core/ui/aviso.js?v=4bb9c7a';
+import { hoyISO, lunesDe, sumarDias, nombreDia, nombreMes, horas, aMin, hhmm } from '../../../core/ui/formato.js?v=4bb9c7a';
+import { estado, minutosRegistro, ausente, eliminar } from './horas.js?v=4bb9c7a';
 
 const pantalla = { pestana: null, buscar: '', marcados: new Set(), abiertas: new Set() };   // abiertas: faenas desplegadas (día|faena)
 const DIAS_LARGOS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
@@ -22,10 +22,16 @@ const enDia = (f, d) => f.fecha_inicio <= d && f.fecha_fin >= d && (!f.dias?.len
 
 export default async function asistenciaMovil(ctx) {
   const hoy = hoyISO();
+  const puedeCrear = ctx.puede('asistencia', 'crear');
+  // Desde el "+" de la barra: hoy, en Sin horas; una vez (la dirección queda limpia y recargar no lo repite)
+  if (ctx.params.registrar && puedeCrear) {
+    history.replaceState(null, '', ctx.ruta('asistencia.horas'));
+    estado.lunes = lunesDe(hoy); estado.dia = hoy;
+    pantalla.pestana = 'sin'; pantalla.buscar = ''; pantalla.marcados.clear();
+  }
   const desde = estado.lunes; const hasta = sumarDias(desde, 6);
   if (estado.dia < desde || estado.dia > hasta) estado.dia = hoy >= desde && hoy <= hasta ? hoy : desde;
   const verOpe = ctx.puede('ope', 'ver');
-  const puedeCrear = ctx.puede('asistencia', 'crear');
   const puedeEditar = ctx.puede('asistencia', 'editar');
   const puedeEliminar = ctx.puede('asistencia', 'eliminar');
 
@@ -160,6 +166,7 @@ export default async function asistenciaMovil(ctx) {
   const pestanas = el('div', { class: 'asm-pestanas', role: 'tablist', 'aria-label': 'Personas del día' });
   const titulo = el('h2', { class: 'ag-titulo' });
   const barraVarios = el('div', { class: 'asm-varios', hidden: true });
+  const registrar = el('div', { class: 'asm-registrar' });
   const buscador = el('input', { type: 'search', class: 'campo asm-buscar', placeholder: 'Buscar trabajador', 'aria-label': 'Buscar trabajador', value: pantalla.buscar });
   buscador.addEventListener('input', () => { pantalla.buscar = buscador.value; pintarLista(); });
   const dias = [0, 1, 2, 3, 4, 5, 6].map((i) => sumarDias(desde, i));
@@ -238,6 +245,7 @@ export default async function asistenciaMovil(ctx) {
       const visibles = sin.filter(coincide);
       const planificados = visibles.filter((v) => plan.has(v.persona_id));
       contenido = [
+        puedeCrear && visibles.length ? el('p', { class: 'asm-guia' }, 'Toca a una persona para registrar sus horas, o marca varias en el círculo de la izquierda.') : null,
         puedeCrear && planificados.length > 1 ? el('button', { type: 'button', class: 'asm-planificados', onclick: () => { planificados.forEach((v) => pantalla.marcados.add(v.persona_id)); pintarLista(); } },
           icono('check', { tam: 16 }), `Marcar los ${planificados.length} planificados`) : null,
         ...visibles.map((v) => {
@@ -279,6 +287,8 @@ export default async function asistenciaMovil(ctx) {
     titulo.textContent = `${d === hoy ? `Hoy, ${DIAS_LARGOS[i].toLowerCase()}` : DIAS_LARGOS[i]} ${Number(d.slice(8))}${min ? ` · ${horas(min)}` : ''}`;
     pestanas.replaceChildren(...[['con', 'Con horas', new Set(delDia.map((r) => r.persona_id)).size], ['sin', 'Sin horas', sin.length], ['aus', 'Ausentes', aus.length]].map(([k, t, n]) =>
       el('button', { type: 'button', role: 'tab', class: `asm-pestana asm-${k}`, 'aria-selected': String(pantalla.pestana === k), onclick: () => { pantalla.pestana = k; pintar(); } }, el('strong', {}, String(n)), el('span', {}, t))));
+    // Agregar siempre a la vista: lleva a quienes faltan (en Sin horas, cada persona ya es el botón)
+    registrar.replaceChildren(...(puedeCrear && sin.length && pantalla.pestana !== 'sin' ? [boton('Registrar horas', { tipo: 'primario', icono: 'mas', onclick: () => { pantalla.pestana = 'sin'; pintar(); } })] : []));
     pintarLista();
   }
   pintar();
@@ -293,7 +303,7 @@ export default async function asistenciaMovil(ctx) {
           el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Semana siguiente', onclick: () => mover(1) }, icono('derecha')))),
       franja,
       desde !== lunesDe(hoy) ? el('button', { type: 'button', class: 'ag-hoy', onclick: () => { estado.lunes = lunesDe(hoy); estado.dia = hoy; pantalla.pestana = null; recargar(); } }, 'Volver a hoy') : null),
-    titulo, pestanas,
+    titulo, pestanas, registrar,
     activos.length > 8 ? buscador : null,
     lista, barraVarios);
 }

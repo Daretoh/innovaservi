@@ -1,5 +1,5 @@
 // Datos y reglas compartidas de Faenas y planificación.
-import { aMin, hhmm, sumarDias, numSemana, fechaCorta } from '../../core/ui/formato.js?v=58a63ab';
+import { aMin, hhmm, sumarDias, numSemana, fechaCorta } from '../../core/ui/formato.js?v=4bb9c7a';
 
 export const ROLES = [['op', 'Operario', 'Operarios'], ['sup', 'Supervisor', 'Supervisores'], ['prev', 'Prevencionista', 'Prevencionistas']];
 export const nombreRol = Object.fromEntries(ROLES.map(([k, s]) => [k, s]));

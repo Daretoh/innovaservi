@@ -1,7 +1,7 @@
 // Cambios de estado de una orden (tablero, agenda y detalle).
-import { avisar } from '../../core/ui/aviso.js?v=58a63ab';
-import { ESTADOS, MARCA_DE, nombreEstado } from './datos.js?v=58a63ab';
-import { pideVb, puedeVb, darVb } from './vb.js?v=58a63ab';
+import { avisar } from '../../core/ui/aviso.js?v=4bb9c7a';
+import { ESTADOS, MARCA_DE, nombreEstado } from './datos.js?v=4bb9c7a';
+import { pideVb, puedeVb, darVb } from './vb.js?v=4bb9c7a';
 
 // Pidió factura y aún no paga: se queda en Terminado (Cotizaciones 008; la base también lo exige)
 export const esperaPagoFactura = (o) => !!o.factura_tercero_id && !o.cobrado && o.tipo_venta === 'normal';
