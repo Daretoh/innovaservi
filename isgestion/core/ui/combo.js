@@ -5,8 +5,9 @@
 //   sus eventos 'change' y la validación del formulario: el código de cada módulo no cambia.
 // - <input list="…"> (texto libre con sugerencias, ej.: faena en Registro de horas): la misma lista en lugar de la del
 //   navegador; se puede escribir cualquier cosa y Enter solo elige si se marcó una sugerencia con flechas o Tab.
+//   Con data-planilla (Registro de horas): Enter elige la primera sugerencia y Tab la elige y pasa a la columna siguiente.
 // Se aplica solo (activarCombos observa la página). Para dejar un campo como el del navegador: atributo data-nativo.
-import { el } from './dom.js?v=163dc56rf';
+import { el } from './dom.js?v=163dc56rfh';
 
 const UMBRAL = 6;          // opciones desde las que un <select> pasa a buscador
 const MAX_VISIBLES = 150;  // sugerencias que se dibujan a la vez
@@ -193,9 +194,12 @@ function crearControl(entrada, { modo, items, elegir, actual, restaurar }) {
     lista.hidden = true; entrada.setAttribute('aria-expanded', 'false'); entrada.removeAttribute('aria-activedescendant');
     removeEventListener('scroll', alMover, true); removeEventListener('resize', alMover);
   };
-  const confirmar = (k) => { const it = visibles[k]; if (it) { cerrar(); elegir(it); } };
+  // Al elegir, el 'input' que avisa el cambio no vuelve a abrir la lista
+  let eligiendo = false;
+  const elegirCerrado = (it) => { cerrar(); eligiendo = true; try { elegir(it); } finally { eligiendo = false; } };
+  const confirmar = (k) => { const it = visibles[k]; if (it) elegirCerrado(it); };
 
-  entrada.addEventListener('input', () => { navego = false; abrir(entrada.value); });
+  entrada.addEventListener('input', () => { if (eligiendo) return; navego = false; abrir(entrada.value); });
   entrada.addEventListener('mousedown', () => {
     if (entrada.disabled || entrada.readOnly) return;
     if (abierta) { cerrar(); return; }
@@ -210,12 +214,18 @@ function crearControl(entrada, { modo, items, elegir, actual, restaurar }) {
       marcar(marcada + (k === 'ArrowDown' ? 1 : -1)); return;
     }
     if (k === 'ArrowDown' && ev.altKey) { ev.preventDefault(); abrir(''); return; }
+    const planilla = modo === 'lista' && entrada.hasAttribute('data-planilla');
+    const escrito = planilla && visibles.length && entrada.value.trim();
+    if (k === 'Tab' && abierta && planilla && !ev.ctrlKey && !ev.altKey) {   // sin preventDefault: el foco sigue a la columna siguiente
+      if (escrito) elegirCerrado(visibles[marcada >= 0 ? marcada : 0]); else cerrar();
+      return;
+    }
     if (k === 'Tab' && abierta && visibles.length && !ev.ctrlKey && !ev.altKey) {
       ev.preventDefault(); navego = true;
       marcar(marcada < 0 ? (ev.shiftKey ? visibles.length - 1 : 0) : marcada + (ev.shiftKey ? -1 : 1)); return;
     }
     if (k === 'Enter' && abierta) {
-      if (modo === 'lista' && !navego) { cerrar(); return; }   // texto libre: Enter deja lo escrito
+      if (modo === 'lista' && !navego && !escrito) { cerrar(); return; }   // texto libre: Enter deja lo escrito
       ev.preventDefault(); ev.stopPropagation(); confirmar(marcada >= 0 ? marcada : 0); return;
     }
     if (k === 'Escape' && abierta) { ev.preventDefault(); ev.stopPropagation(); cerrar(); restaurar(); return; }

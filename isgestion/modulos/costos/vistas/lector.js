@@ -7,16 +7,16 @@
 // trabajador": además del gasto queda un descuento en Remuneraciones (semana o mes según la empresa), ligado al
 // documento (remu_items.origen_id). Requiere poder crear en Remuneraciones.
 // Ruta: #/costos.lector
-import { el } from '../../../core/ui/dom.js?v=163dc56rf';
-import { icono } from '../../../core/ui/iconos.js?v=163dc56rf';
-import { boton } from '../../../core/ui/tabla.js?v=163dc56rf';
-import { avisar } from '../../../core/ui/aviso.js?v=163dc56rf';
-import { subirArchivo, almacen } from '../../../core/adjuntos.js?v=163dc56rf';
-import { dinero, hoyISO, sumarDias, fechaLarga, lunesDe } from '../../../core/ui/formato.js?v=163dc56rf';
-import { TIPOS_DTE, docTipoDe, CAMPOS_DTE, leerParte, combinar, validar, escanearCamara, aJPEG, fmtRut, limpioRut, rutValido, num } from '../../../core/lector-dte.js?v=163dc56rf';
-import { cargarBase, nombreTercero, opcionesACuenta } from '../datos.js?v=163dc56rf';
-import { leerConIA, iaDisponible, numIA, fechaIA, pagadoAlComprar, textoModelo } from '../../../core/lector-ia.js?v=163dc56rf';
-import { esImagen } from '../../../core/imagenes.js?v=163dc56rf';
+import { el } from '../../../core/ui/dom.js?v=163dc56rfh';
+import { icono } from '../../../core/ui/iconos.js?v=163dc56rfh';
+import { boton } from '../../../core/ui/tabla.js?v=163dc56rfh';
+import { avisar } from '../../../core/ui/aviso.js?v=163dc56rfh';
+import { subirArchivo, almacen } from '../../../core/adjuntos.js?v=163dc56rfh';
+import { dinero, hoyISO, sumarDias, fechaLarga, lunesDe } from '../../../core/ui/formato.js?v=163dc56rfh';
+import { TIPOS_DTE, docTipoDe, CAMPOS_DTE, leerParte, combinar, validar, escanearCamara, aJPEG, fmtRut, limpioRut, rutValido, num } from '../../../core/lector-dte.js?v=163dc56rfh';
+import { cargarBase, nombreTercero, opcionesACuenta } from '../datos.js?v=163dc56rfh';
+import { leerConIA, iaDisponible, numIA, fechaIA, pagadoAlComprar, textoModelo } from '../../../core/lector-ia.js?v=163dc56rfh';
+import { esImagen } from '../../../core/imagenes.js?v=163dc56rfh';
 
 const ETIQUETA = { timbre: ['Timbre SII', 'chip-ok'], xml: ['XML', 'chip-ok'], ia: ['IA', 'chip-ok'], ocr: ['Revisar', 'chip-prox'], calc: ['Calculado', 'chip-pend'] };
 

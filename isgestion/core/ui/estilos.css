@@ -1372,6 +1372,13 @@ tr.fila-enlace { cursor: pointer; }
 .hz-nueva td { background: var(--fondo-sutil); }
 .hz-guardando { opacity: .6; }
 .hz-agregar { justify-self: start; }
+.hz-acciones { display: flex; flex-wrap: wrap; gap: 4px 16px; }
+.hz-horario { position: relative; }
+.hz-arrastre { display: inline-block; width: 12px; height: 12px; margin-left: 6px; padding: 0; vertical-align: middle; border: 2px solid var(--superficie); border-radius: 3px; background: var(--empresa); box-shadow: 0 0 0 1px var(--empresa); cursor: ns-resize; opacity: .35; touch-action: none; }
+tr:hover .hz-arrastre, tr:focus-within .hz-arrastre, .hz-arrastre:focus-visible { opacity: 1; }
+.hz-rango td { background: color-mix(in srgb, var(--empresa) 12%, var(--superficie)); }
+.hz-rango-origen td { background: color-mix(in srgb, var(--empresa) 22%, var(--superficie)); }
+body.hz-arrastrando, body.hz-arrastrando * { cursor: ns-resize !important; user-select: none !important; }
 .campo-error { border-color: var(--venc) !important; }
 
 /* ---------- Faenas · Planificación como InnovaGestión: disponibles, arrastrar, copiar día, plegar ---------- */
