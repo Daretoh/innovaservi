@@ -1,10 +1,10 @@
 // Tipos de documento de la empresa activa (antes estaban fijos en el código de InnovaGestión).
-import { el } from '../../../core/ui/dom.js?v=1f30021k';
-import { icono } from '../../../core/ui/iconos.js?v=1f30021k';
-import { listado, boton } from '../../../core/ui/tabla.js?v=1f30021k';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=1f30021k';
-import { avisar } from '../../../core/ui/aviso.js?v=1f30021k';
-import sugeridos from '../tipos-sugeridos.js?v=1f30021k';
+import { el } from '../../../core/ui/dom.js?v=163dc56';
+import { icono } from '../../../core/ui/iconos.js?v=163dc56';
+import { listado, boton } from '../../../core/ui/tabla.js?v=163dc56';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=163dc56';
+import { avisar } from '../../../core/ui/aviso.js?v=163dc56';
+import sugeridos from '../tipos-sugeridos.js?v=163dc56';
 
 const SI_NO = [['true', 'Sí'], ['false', 'No']];
 const si = (b) => (b ? 'Sí' : 'No');

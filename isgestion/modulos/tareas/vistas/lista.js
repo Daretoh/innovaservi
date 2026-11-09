@@ -1,35 +1,39 @@
 // Tareas (v2, como InnovaGestión): pestañas Mis tareas / Todas / por persona / Avisos, filtros (abiertas, en proceso,
 // terminadas), búsqueda y orden; cada fila con prioridad inteligente, estado, responsables, vencimiento con color, días
 // abierta y clip con los archivos. Clic abre el detalle (detalle.js). ?nueva=1 abre "Nueva tarea"; ?id= abre una.
-import { el } from '../../../core/ui/dom.js?v=1f30021k';
-import { icono } from '../../../core/ui/iconos.js?v=1f30021k';
-import { boton } from '../../../core/ui/tabla.js?v=1f30021k';
-import { avisar } from '../../../core/ui/aviso.js?v=1f30021k';
-import { fechaLarga, fechaCorta, diaLocal } from '../../../core/ui/formato.js?v=1f30021k';
-import { nombrePrioridad, nombreEstado, CHIP_ESTADO, CATEGORIAS, nombreCategoria, prioridad, ordenar, diasHasta, diasAbierta, CHIP_PRIO } from '../datos.js?v=1f30021k';
-import { abrirDetalle } from './detalle.js?v=1f30021k';
-import { nuevaTarea } from './nueva.js?v=1f30021k';
+import { el } from '../../../core/ui/dom.js?v=163dc56';
+import { icono } from '../../../core/ui/iconos.js?v=163dc56';
+import { boton } from '../../../core/ui/tabla.js?v=163dc56';
+import { avisar } from '../../../core/ui/aviso.js?v=163dc56';
+import { fechaLarga, fechaCorta, diaLocal } from '../../../core/ui/formato.js?v=163dc56';
+import { nombrePrioridad, nombreEstado, CHIP_ESTADO, CATEGORIAS, nombreCategoria, prioridad, ordenar, diasHasta, diasAbierta, CHIP_PRIO } from '../datos.js?v=163dc56';
+import { abrirDetalle } from './detalle.js?v=163dc56';
+import { nuevaTarea } from './nueva.js?v=163dc56';
+import { ctxTareas } from '../../../core/tareas-unidas.js?v=163dc56';
 
 const estado = { ver: 'mias', persona: '', filtro: 'abiertas', buscar: '', orden: 'prioridad', categoria: '' };
 
 export default async function vista(ctx) {
-  const e = ctx.empresa.id;
+  // Innova y Performance: una sola lista (core/tareas-unidas.js); cada tarea se abre con los permisos de su empresa
+  const contextos = ctxTareas(ctx);
+  const ids = contextos.map((c) => c.empresa.id);
   const yo = ctx.usuario.id;
-  let q = ctx.api.from('tar_tareas').select('*, tar_adjuntos(id), tar_obs(id)').eq('empresa_id', e).is('deleted_at', null);
+  let q = ctx.api.from('tar_tareas').select('*, tar_adjuntos(id), tar_obs(id)').in('empresa_id', ids).is('deleted_at', null);
   if (estado.filtro === 'hechas') q = q.eq('estado', 'hecha').gte('hecha_at', new Date(Date.now() - 60 * 864e5).toISOString());
   else if (estado.filtro === 'en_proceso') q = q.eq('estado', 'en_proceso');
   else q = q.neq('estado', 'hecha');
-  const [{ data, error }, us, av] = await Promise.all([q.limit(500), ctx.api.rpc('tar_usuarios', { p_empresa: e }),
-    ctx.api.from('tar_avisos').select('*, tar_tareas(titulo)').eq('empresa_id', e).eq('user_id', yo).order('created_at', { ascending: false }).limit(100)]);
+  const [{ data, error }, us, av] = await Promise.all([q.limit(1000), Promise.all(ids.map((id) => ctx.api.rpc('tar_usuarios', { p_empresa: id }))),
+    ctx.api.from('tar_avisos').select('*, tar_tareas(titulo)').in('empresa_id', ids).eq('user_id', yo).order('created_at', { ascending: false }).limit(100)]);
   if (error) throw error;
-  const usuarios = us.data ?? [];
+  const usuariosDe = new Map(ids.map((id, i) => [id, us[i].data ?? []]));
+  const usuarios = [...new Map(us.flatMap((r) => r.data ?? []).map((u) => [u.user_id, u])).values()].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
   const nombre = new Map(usuarios.map((u) => [u.user_id, u.nombre]));
   const avisos = av.data ?? [];
   const sinLeer = avisos.filter((a) => !a.leido_at).length;
   const crear = ctx.puede('tareas', 'crear');
 
-  const abrir = (t) => abrirDetalle(ctx, t, { usuarios, alCambiar: () => ctx.refrescar() });
-  const nueva = () => nuevaTarea(ctx, { usuarios, responsable: estado.ver === 'persona' && estado.persona ? estado.persona : yo,
+  const abrir = (t) => abrirDetalle(contextos.find((c) => c.empresa.id === t.empresa_id) ?? ctx, t, { usuarios: usuariosDe.get(t.empresa_id) ?? usuarios, alCambiar: () => ctx.refrescar() });
+  const nueva = () => nuevaTarea(ctx, { usuarios: usuariosDe.get(ctx.empresa.id) ?? [], responsable: estado.ver === 'persona' && estado.persona ? estado.persona : yo,
     alCrear: (t) => { ctx.refrescar(); setTimeout(() => abrir(t), 150); } });
 
   // Filtrado en pantalla
