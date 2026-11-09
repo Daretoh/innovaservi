@@ -1,15 +1,15 @@
 // Detalle de una tarea (como InnovaGestión): datos editables, estado (pendiente / en proceso / terminada), prioridad
 // inteligente, seguimiento con observaciones y cambios, @menciones que avisan a la persona, botón Recordar a los
 // responsables, y archivos y fotos (elegir, pegar un pantallazo con Ctrl+V o arrastrar sobre la tarea).
-import { el } from '../../../core/ui/dom.js?v=163dc56rfh';
-import { icono } from '../../../core/ui/iconos.js?v=163dc56rfh';
-import { boton } from '../../../core/ui/tabla.js?v=163dc56rfh';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=163dc56rfh';
-import { avisar } from '../../../core/ui/aviso.js?v=163dc56rfh';
-import { subirArchivo, eliminarArchivo, urlsFirmadas, urlFirmada } from '../../../core/adjuntos.js?v=163dc56rfh';
-import { comprimirFoto, esImagen } from '../../../core/imagenes.js?v=163dc56rfh';
-import { fechaLarga, diaLocal } from '../../../core/ui/formato.js?v=163dc56rfh';
-import { PRIORIDADES, nombrePrioridad, ESTADOS, REPETIR, CATEGORIAS, nombreCategoria, prioridad, diasAbierta, mencionados, sugerirMenciones } from '../datos.js?v=163dc56rfh';
+import { el } from '../../../core/ui/dom.js?v=163dc56rfht';
+import { icono } from '../../../core/ui/iconos.js?v=163dc56rfht';
+import { boton } from '../../../core/ui/tabla.js?v=163dc56rfht';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=163dc56rfht';
+import { avisar } from '../../../core/ui/aviso.js?v=163dc56rfht';
+import { subirArchivo, eliminarArchivo, urlsFirmadas, urlFirmada } from '../../../core/adjuntos.js?v=163dc56rfht';
+import { comprimirFoto, esImagen } from '../../../core/imagenes.js?v=163dc56rfht';
+import { fechaLarga, diaLocal } from '../../../core/ui/formato.js?v=163dc56rfht';
+import { PRIORIDADES, nombrePrioridad, ESTADOS, REPETIR, CATEGORIAS, nombreCategoria, prioridad, diasAbierta, mencionados, sugerirMenciones } from '../datos.js?v=163dc56rfht';
 
 const MAX = 25 * 1024 * 1024;
 const hora = (ts) => new Date(ts).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });

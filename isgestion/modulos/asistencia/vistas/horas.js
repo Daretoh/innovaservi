@@ -6,14 +6,14 @@
 // Fijos con turno (2026-10-30): cada día hábil quedan presentes "según horario" solos (asis_generar_fijos); aquí solo se
 // corrigen las excepciones: retraso o salida temprana (cambiar la hora), horas extra (cambiar la salida o agregar otra
 // fila) y ausencias (botón Ausente: el día deja de contar y no se vuelve a crear).
-import { el } from '../../../core/ui/dom.js?v=163dc56rfh';
-import { icono } from '../../../core/ui/iconos.js?v=163dc56rfh';
-import { boton } from '../../../core/ui/tabla.js?v=163dc56rfh';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=163dc56rfh';
-import { arrastrarHorario } from './arrastre.js?v=163dc56rfh';
-import { avisar } from '../../../core/ui/aviso.js?v=163dc56rfh';
-import { esTelefono } from '../../../core/movil.js?v=163dc56rfh';
-import { hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, horas, aMin, hhmm } from '../../../core/ui/formato.js?v=163dc56rfh';
+import { el } from '../../../core/ui/dom.js?v=163dc56rfht';
+import { icono } from '../../../core/ui/iconos.js?v=163dc56rfht';
+import { boton } from '../../../core/ui/tabla.js?v=163dc56rfht';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=163dc56rfht';
+import { arrastrarHorario } from './arrastre.js?v=163dc56rfht';
+import { avisar } from '../../../core/ui/aviso.js?v=163dc56rfht';
+import { esTelefono } from '../../../core/movil.js?v=163dc56rfht';
+import { hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, horas, aMin, hhmm } from '../../../core/ui/formato.js?v=163dc56rfht';
 
 const DIAS_LARGOS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 export const estado = { lunes: lunesDe(hoyISO()), dia: hoyISO(), nuevas: [], abiertas: new Set(), diasAbiertos: new Set(), filtro: '', borradorLeido: new Set() };   // abiertas: faenas desplegadas (día|faena)   // nuevas: filas en blanco aún sin guardar
@@ -27,7 +27,7 @@ export function minutosRegistro(h) {
 const clave = (s) => String(s ?? '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[·—-]+/g, ' ').replace(/\s+/g, ' ');
 
 export default async function vista(ctx) {
-  if (esTelefono()) return (await import('./horas-movil.js?v=163dc56rfh')).default(ctx);   // en el teléfono, lista de personas en vez de planilla
+  if (esTelefono()) return (await import('./horas-movil.js?v=163dc56rfht')).default(ctx);   // en el teléfono, lista de personas en vez de planilla
   const desde = estado.lunes;
   const hasta = sumarDias(desde, 6);
   const hoy = hoyISO();
@@ -240,11 +240,38 @@ export default async function vista(ctx) {
     refrescar();
   }
   // Las mismas horas en otra faena del día (ej.: Cámara 1 y Cámara 2 por separado)
+  // Juntar: las horas de esta faena pasan a otra del día (ej.: el mismo trabajo escrito de dos formas)
+  function juntarFaena(d, g) {
+    const textos = new Map();
+    for (const t of [...registrosDe(d).map((r) => r.faena), ...faenasDe(d).map((f) => f.texto)]) if (t && clave(t) !== clave(g.texto) && !textos.has(clave(t))) textos.set(clave(t), String(t).trim());
+    const mover = g.regs.filter((r) => r.origen !== 'marcaje');
+    const delMarcaje = g.regs.length - mover.length;
+    if (!mover.length) { avisar('Estas horas vienen del marcaje: su faena se corrige en Marcajes.', 'error'); return; }
+    abrirFormulario({
+      titulo: 'Juntar con otra faena',
+      mensaje: `${mover.length === 1 ? 'La hora' : `Las ${mover.length} horas`} de "${g.texto || 'Sin faena'}" ${mover.length === 1 ? 'pasa' : 'pasan'} a la faena que elijas.${delMarcaje ? ` ${delMarcaje} del marcaje se quedan (se corrigen en Marcajes).` : ''}`,
+      campos: [
+        ...(textos.size ? [{ id: 'destino', etiqueta: 'Faena de este día', opciones: [['', '— elige —'], ...[...textos.values()].sort().map((t) => [t, t])] }] : []),
+        { id: 'otra', etiqueta: textos.size ? 'U otra faena (escríbela)' : 'Faena' },
+      ],
+      textoGuardar: 'Juntar',
+      alGuardar: async (v) => {
+        const destino = (v.otra ?? '').trim() || v.destino || '';
+        if (!destino) throw new Error('Elige o escribe la faena.');
+        const { data, error } = await ctx.api.from('asis_horas').update({ faena: destino }).in('id', mover.map((r) => r.id)).select('id');
+        if (error) throw new Error(error.message);
+        if (!data?.length) throw new Error('No tienes permiso para editar.');
+        estado.abiertas.add(`${d}|${clave(destino)}`);
+        avisar(`${data.length} ${data.length === 1 ? 'hora pasó' : 'horas pasaron'} a "${destino}".`);
+        refrescar();
+      },
+    });
+  }
   function copiarAFaena(d, g) {
     const otras = faenasDe(d).filter((f) => clave(f.texto) !== clave(g.texto));
     abrirFormulario({
       titulo: 'Copiar a otra faena',
-      mensaje: `Las ${g.regs.length} horas de "${g.texto || 'Sin faena'}" se registran también en la faena que elijas, con la misma persona y horario. Quedan como filas separadas (se marcan como horas que se pisan y al pagar se cuentan una vez).`,
+      mensaje: `${g.regs.length === 1 ? 'La hora' : `Las ${g.regs.length} horas`} de "${g.texto || 'Sin faena'}" se registran también en la faena que elijas, con la misma persona y horario. Quedan como filas separadas (se marcan como horas que se pisan y al pagar se cuentan una vez).`,
       campos: [
         ...(otras.length ? [{ id: 'destinos', etiqueta: 'Faenas de este día', tipo: 'checks', opciones: otras.map((f) => [f.texto, f.texto]) }] : []),
         { id: 'otra', etiqueta: otras.length ? 'Otra faena (opcional)' : 'Faena' },
@@ -308,7 +335,8 @@ export default async function vista(ctx) {
           planilla(el('tbody', {}, g.filas), () => agregarEn(g.texto), d))) : null,
         el('div', { class: 'hz-acciones' },
           puedeCrear ? el('button', { type: 'button', class: 'boton-enlace hz-agregar', onclick: () => agregarEn(g.texto) }, icono('mas', { tam: 14 }), g.texto ? 'persona en esta faena' : conFaena ? 'persona (sin faena)' : 'persona') : null,
-          puedeCrear && conFaena && g.regs.length ? el('button', { type: 'button', class: 'boton-enlace hz-agregar', onclick: () => copiarAFaena(d, g) }, icono('copiar', { tam: 14 }), 'copiar a otra faena') : null),
+          puedeCrear && conFaena && g.regs.length ? el('button', { type: 'button', class: 'boton-enlace hz-agregar', onclick: () => copiarAFaena(d, g) }, icono('copiar', { tam: 14 }), 'copiar a otra faena') : null,
+          puedeEditar && conFaena && g.regs.length ? el('button', { type: 'button', class: 'boton-enlace hz-agregar', onclick: () => juntarFaena(d, g) }, icono('arrastrar', { tam: 14 }), 'juntar con otra faena') : null),
       ].filter(Boolean));
       return el('div', { class: 'hz-grupo', style: color ? `--hz-color:${color}` : '' }, cabeza, cuerpo);
     });

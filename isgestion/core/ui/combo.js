@@ -7,7 +7,7 @@
 //   navegador; se puede escribir cualquier cosa y Enter solo elige si se marcó una sugerencia con flechas o Tab.
 //   Con data-planilla (Registro de horas): Enter elige la primera sugerencia y Tab la elige y pasa a la columna siguiente.
 // Se aplica solo (activarCombos observa la página). Para dejar un campo como el del navegador: atributo data-nativo.
-import { el } from './dom.js?v=163dc56rfh';
+import { el } from './dom.js?v=163dc56rfht';
 
 const UMBRAL = 6;          // opciones desde las que un <select> pasa a buscador
 const MAX_VISIBLES = 150;  // sugerencias que se dibujan a la vez
@@ -145,7 +145,7 @@ function crearControl(entrada, { modo, items, elegir, actual, restaurar }) {
   entrada.setAttribute('aria-autocomplete', 'list');
   entrada.setAttribute('aria-expanded', 'false');
   entrada.setAttribute('aria-controls', id);
-  let visibles = []; let marcada = -1; let abierta = false; let navego = false;
+  let visibles = []; let marcada = -1; let abierta = false; let navego = false; let escribio = false;   // escribio: hubo texto desde que se abrió
 
   const dibujar = (texto) => {
     const todos = items();
@@ -189,7 +189,7 @@ function crearControl(entrada, { modo, items, elegir, actual, restaurar }) {
   };
   const cerrar = () => {
     if (!abierta) return;
-    abierta = false; navego = false;
+    abierta = false; navego = false; escribio = false;
     if (conPopover) { try { lista.hidePopover(); } catch { /* ya cerrada */ } }
     lista.hidden = true; entrada.setAttribute('aria-expanded', 'false'); entrada.removeAttribute('aria-activedescendant');
     removeEventListener('scroll', alMover, true); removeEventListener('resize', alMover);
@@ -199,7 +199,7 @@ function crearControl(entrada, { modo, items, elegir, actual, restaurar }) {
   const elegirCerrado = (it) => { cerrar(); eligiendo = true; try { elegir(it); } finally { eligiendo = false; } };
   const confirmar = (k) => { const it = visibles[k]; if (it) elegirCerrado(it); };
 
-  entrada.addEventListener('input', () => { if (eligiendo) return; navego = false; abrir(entrada.value); });
+  entrada.addEventListener('input', () => { if (eligiendo) return; navego = false; escribio = true; abrir(entrada.value); });
   entrada.addEventListener('mousedown', () => {
     if (entrada.disabled || entrada.readOnly) return;
     if (abierta) { cerrar(); return; }
@@ -215,7 +215,7 @@ function crearControl(entrada, { modo, items, elegir, actual, restaurar }) {
     }
     if (k === 'ArrowDown' && ev.altKey) { ev.preventDefault(); abrir(''); return; }
     const planilla = modo === 'lista' && entrada.hasAttribute('data-planilla');
-    const escrito = planilla && visibles.length && entrada.value.trim();
+    const escrito = planilla && visibles.length && entrada.value.trim() && (escribio || navego);
     if (k === 'Tab' && abierta && planilla && !ev.ctrlKey && !ev.altKey) {   // sin preventDefault: el foco sigue a la columna siguiente
       if (escrito) elegirCerrado(visibles[marcada >= 0 ? marcada : 0]); else cerrar();
       return;

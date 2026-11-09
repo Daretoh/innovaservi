@@ -1,17 +1,17 @@
 // Requisitos de un mandante: tabla de requisitos mensuales por mes, requisitos únicos y su configuración.
 // Ruta: #/acreditacion.mandante?id=<tercero>
-import { el } from '../../../core/ui/dom.js?v=163dc56rfh';
-import { icono } from '../../../core/ui/iconos.js?v=163dc56rfh';
-import { boton } from '../../../core/ui/tabla.js?v=163dc56rfh';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=163dc56rfh';
-import { avisar } from '../../../core/ui/aviso.js?v=163dc56rfh';
-import { subirArchivo, eliminarArchivo } from '../../../core/adjuntos.js?v=163dc56rfh';
-import { fechaLarga, hoyISO, moverMes, nombreMes } from '../../../core/ui/formato.js?v=163dc56rfh';
-import { cargarDocumentos, cumplimientoMandante, nombreTercero, mesActual, CHIP, textoEstado } from '../datos.js?v=163dc56rfh';
-import { REQUISITOS } from '../sugeridos.js?v=163dc56rfh';
-import { abrir } from './documentos.js?v=163dc56rfh';
-import { esNomina, generarNomina } from '../nomina.js?v=163dc56rfh';
-import { seccionTrabajadores } from '../trabajadores.js?v=163dc56rfh';
+import { el } from '../../../core/ui/dom.js?v=163dc56rfht';
+import { icono } from '../../../core/ui/iconos.js?v=163dc56rfht';
+import { boton } from '../../../core/ui/tabla.js?v=163dc56rfht';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=163dc56rfht';
+import { avisar } from '../../../core/ui/aviso.js?v=163dc56rfht';
+import { subirArchivo, eliminarArchivo } from '../../../core/adjuntos.js?v=163dc56rfht';
+import { fechaLarga, hoyISO, moverMes, nombreMes } from '../../../core/ui/formato.js?v=163dc56rfht';
+import { cargarDocumentos, cumplimientoMandante, nombreTercero, mesActual, CHIP, textoEstado } from '../datos.js?v=163dc56rfht';
+import { REQUISITOS } from '../sugeridos.js?v=163dc56rfht';
+import { abrir } from './documentos.js?v=163dc56rfht';
+import { esNomina, generarNomina } from '../nomina.js?v=163dc56rfht';
+import { seccionTrabajadores } from '../trabajadores.js?v=163dc56rfht';
 
 const ARCHIVOS = ['application/pdf', 'image/jpeg', 'image/png',
   'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];

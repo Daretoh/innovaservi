@@ -2,10 +2,10 @@
 // colores de la marca (Reportes → Diseño del informe) y el logo grande, datos del servicio, trabajo realizado,
 // observaciones, fotos por etapa (12 por página) y contraportada con teléfonos, correos, web y dirección con iconos.
 // Las fotos "sin ordenar" y los videos no van al informe.
-import { cargarJsPdf, cargarLogo, rgb, sellar } from '../../core/pdf.js?v=163dc56rfh';
-import { nombreEmpresa } from '../../core/empresas.js?v=163dc56rfh';
-import { fechaLarga } from '../../core/ui/formato.js?v=163dc56rfh';
-import { nombreEtapa, nombreTercero, urlsFirmadas, faenasDistintas } from './datos.js?v=163dc56rfh';
+import { cargarJsPdf, cargarLogo, rgb, sellar } from '../../core/pdf.js?v=163dc56rfht';
+import { nombreEmpresa } from '../../core/empresas.js?v=163dc56rfht';
+import { fechaLarga } from '../../core/ui/formato.js?v=163dc56rfht';
+import { nombreEtapa, nombreTercero, urlsFirmadas, faenasDistintas } from './datos.js?v=163dc56rfht';
 
 const M = 15;                 // margen
 const TEXTO = [28, 35, 48];
