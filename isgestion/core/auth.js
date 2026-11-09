@@ -1,5 +1,5 @@
 // Sesión del usuario (Supabase Auth).
-import { db } from './api.js?v=1f30021h';
+import { db } from './api.js?v=1f30021k';
 
 export async function sesionActual() {
   const { data, error } = await db().auth.getSession();

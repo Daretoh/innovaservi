@@ -3,11 +3,11 @@
 // varios días (⟶), ventana del día, detalle, formulario de trabajo (cliente, sitio sugerido, descripción, tareas,
 // fechas, horario con atajos, personas necesarias por rol, repetir) y borrar uno o toda la serie.
 // Los datos son las faenas (ope_faenas): lo que se pone aquí aparece en Planificación al armar la faena.
-import { el } from '../../../core/ui/dom.js?v=1f30021h';
-import { avisar } from '../../../core/ui/aviso.js?v=1f30021h';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=1f30021h';
-import { hhmm } from '../../../core/ui/formato.js?v=1f30021h';
-import { cargarBase } from '../datos.js?v=1f30021h';
+import { el } from '../../../core/ui/dom.js?v=1f30021k';
+import { avisar } from '../../../core/ui/aviso.js?v=1f30021k';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=1f30021k';
+import { hhmm } from '../../../core/ui/formato.js?v=1f30021k';
+import { cargarBase } from '../datos.js?v=1f30021k';
 
 const MES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
 const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
@@ -51,7 +51,7 @@ const SVG = {
 function cargarEstilos() {
   if (document.getElementById('igcal-css')) return;
   const l = document.createElement('link');
-  l.id = 'igcal-css'; l.rel = 'stylesheet'; l.href = new URL('../calendario.css?v=1f30021h', import.meta.url).href;
+  l.id = 'igcal-css'; l.rel = 'stylesheet'; l.href = new URL('../calendario.css?v=1f30021k', import.meta.url).href;
   document.head.append(l);
 }
 
@@ -157,7 +157,7 @@ export default async function vista(ctx) {
     }
     const desde = iso(celdas[0].d); const hasta = iso(celdas[celdas.length - 1].d);
     pintarLeyenda(EVENTS.filter((e) => e.fecha >= desde && e.fecha <= hasta));
-    const t = hoy(); const max = estado.vista === 'semana' ? 60 : 6;
+    const t = hoy(); const max = 60;   // en la celda sale todo lo del día (Enzo, 2026-11-09)
     const html = celdas.map((c) => {
       const f = iso(c.d); const grupos = agrupar(evsDe(f));
       let ev = grupos.slice(0, max).map((g) => {
@@ -185,27 +185,13 @@ export default async function vista(ctx) {
     if (estado.vista === 'mes') requestAnimationFrame(() => ajustarMes(celdas.length / 7));
   }
 
-  // Mes en una pantalla (Enzo, 2026-11-02): las semanas se reparten el alto disponible y lo que no cabe en un día pasa a
-  // "+N más" (abre el día). En pantallas bajas se respeta un alto mínimo y se desliza como antes.
+  // Mes (Enzo, 2026-11-09): las semanas se reparten el alto de la pantalla como mínimo, y la semana con más trabajos crece y
+  // muestra todo lo del día, sin "+N más". Si no cabe, la página se desliza.
   function ajustarMes(semanas) {
     if (!grid.isConnected || matchMedia('(max-width:760px)').matches) return;
     const arriba = grid.getBoundingClientRect().top + window.scrollY;
     const alto = Math.max(92, Math.floor((window.innerHeight - arriba - 24) / semanas));
-    grid.querySelectorAll('.igcal-cell').forEach((c) => {
-      c.style.height = `${alto}px`; c.style.minHeight = '0';
-      const mas = c.querySelector('.igcal-mas');
-      let ocultos = mas ? Number(mas.textContent.replace(/\D/g, '')) : 0;
-      const grupos = [...c.querySelectorAll('.igcal-grupo')];
-      const nota = mas ?? el('div', { class: 'igcal-mas', 'data-f': c.dataset.f, onclick: (ev) => { ev.stopPropagation(); abrirDia(c.dataset.f); } });
-      const sobra = () => c.scrollHeight > c.clientHeight + 1;
-      if (!mas) c.append(nota);
-      nota.textContent = '+0 más';
-      // primero se sacan grupos completos (desde el último); si el primero tampoco cabe, sus últimas líneas
-      for (let i = grupos.length - 1; i > 0 && sobra(); i--) { grupos[i].hidden = true; ocultos += 1; }
-      const lineas = grupos[0] ? [...grupos[0].querySelectorAll('.igcal-gitem')] : [];
-      for (let i = lineas.length - 1; i > 0 && sobra(); i--) { lineas[i].hidden = true; ocultos += 1; }
-      if (ocultos) nota.textContent = `+${ocultos} más`; else nota.remove();
-    });
+    grid.querySelectorAll('.igcal-cell').forEach((c) => { c.style.minHeight = `${alto}px`; });
   }
   let altoVentana = window.innerHeight;
   const alRedimensionar = () => {
@@ -287,7 +273,7 @@ export default async function vista(ctx) {
     grid.querySelectorAll('[data-anio]').forEach((b) => b.addEventListener('click', () => { estado.anio = b.dataset.anio; render(); }));
     grid.querySelector('.igcal-bexcel').addEventListener('click', async () => {
       try {
-        const { nuevoExcel } = await import('../../../core/excel.js?v=1f30021h');
+        const { nuevoExcel } = await import('../../../core/excel.js?v=1f30021k');
         const x = await nuevoExcel(ctx, { titulo: 'Trabajos', subtitulo: `Búsqueda: "${buscador.value.trim()}"${estado.anio ? ` · ${estado.anio}` : ''} · ${res.length} trabajos` });
         x.tabla({ columnas: [{ t: 'Fecha', tipo: 'fecha' }, { t: 'Hasta', tipo: 'fecha' }, { t: 'Días', tipo: 'numero' }, 'Cliente', 'Sitio', 'Trabajo', 'Descripción'],
           filas: [...res].reverse().map((e) => [e.fecha, evFin(e), dias(e), e.ubic, e.sitio, e.titulo, e.desc]) });
