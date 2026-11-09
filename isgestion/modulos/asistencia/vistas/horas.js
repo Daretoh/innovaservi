@@ -1,20 +1,21 @@
-// Registro de horas tipo planilla (como InnovaGestión): semana con sus días; el día elegido muestra sus registros
-// agrupados por faena con el color del cliente; cada fila se edita ahí mismo y se guarda sola al cambiar
+// Registro de horas tipo planilla (como InnovaGestión): la semana y, abajo, los días con horas cargadas (se abren al tocarlos),
+// cada uno agrupado por faena con el color del cliente, con filtro por faena; cada fila se edita ahí mismo y se guarda sola al cambiar
 // (persona con búsqueda por teclado, faena, entrada, salida, vueltas), "+ persona en esta faena", aviso en rojo de
 // horas que se pisan y, abajo, los vehículos y la preparación del día (desde Planificación).
 // Las horas del marcaje (tablet o terreno) se corrigen en Marcajes. "Agregar horas" carga el mismo horario a varios.
 // Fijos con turno (2026-10-30): cada día hábil quedan presentes "según horario" solos (asis_generar_fijos); aquí solo se
 // corrigen las excepciones: retraso o salida temprana (cambiar la hora), horas extra (cambiar la salida o agregar otra
 // fila) y ausencias (botón Ausente: el día deja de contar y no se vuelve a crear).
-import { el } from '../../../core/ui/dom.js?v=1f30021';
-import { icono } from '../../../core/ui/iconos.js?v=1f30021';
-import { boton } from '../../../core/ui/tabla.js?v=1f30021';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=1f30021';
-import { avisar } from '../../../core/ui/aviso.js?v=1f30021';
-import { esTelefono } from '../../../core/movil.js?v=1f30021';
-import { hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, horas, aMin, hhmm } from '../../../core/ui/formato.js?v=1f30021';
+import { el } from '../../../core/ui/dom.js?v=1f30021h';
+import { icono } from '../../../core/ui/iconos.js?v=1f30021h';
+import { boton } from '../../../core/ui/tabla.js?v=1f30021h';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=1f30021h';
+import { avisar } from '../../../core/ui/aviso.js?v=1f30021h';
+import { esTelefono } from '../../../core/movil.js?v=1f30021h';
+import { hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, horas, aMin, hhmm } from '../../../core/ui/formato.js?v=1f30021h';
 
-export const estado = { lunes: lunesDe(hoyISO()), dia: hoyISO(), nuevas: [], abiertas: new Set() };   // abiertas: faenas desplegadas (día|faena)   // nuevas: filas en blanco aún sin guardar
+const DIAS_LARGOS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+export const estado = { lunes: lunesDe(hoyISO()), dia: hoyISO(), nuevas: [], abiertas: new Set(), diasAbiertos: new Set(), filtro: '' };   // abiertas: faenas desplegadas (día|faena)   // nuevas: filas en blanco aún sin guardar
 
 const nombre = (p) => [p.nombres, p.apellido_paterno, p.apellido_materno].filter(Boolean).join(' ');
 export function minutosRegistro(h) {
@@ -25,10 +26,11 @@ export function minutosRegistro(h) {
 const clave = (s) => String(s ?? '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[·—-]+/g, ' ').replace(/\s+/g, ' ');
 
 export default async function vista(ctx) {
-  if (esTelefono()) return (await import('./horas-movil.js?v=1f30021')).default(ctx);   // en el teléfono, lista de personas en vez de planilla
+  if (esTelefono()) return (await import('./horas-movil.js?v=1f30021h')).default(ctx);   // en el teléfono, lista de personas en vez de planilla
   const desde = estado.lunes;
   const hasta = sumarDias(desde, 6);
-  if (estado.dia < desde || estado.dia > hasta) estado.dia = desde;
+  const hoy = hoyISO();
+  if (estado.dia < desde || estado.dia > hasta) estado.dia = hoy >= desde && hoy <= hasta ? hoy : desde;
   const verOpe = ctx.puede('ope', 'ver');
 
   // Fijos con turno: se crean los días que falten según su horario (no espera al cron)
@@ -42,8 +44,8 @@ export default async function vista(ctx) {
     verOpe ? ctx.api.from('ope_faenas').select('id, titulo, tercero_id, fecha_inicio, fecha_fin, dias, terceros(nombre_fantasia, razon_social), ope_sitios(nombre)')
       .eq('empresa_id', ctx.empresa.id).is('deleted_at', null).eq('estado', 'programada').lte('fecha_inicio', hasta).gte('fecha_fin', desde) : { data: [] },
     verOpe ? ctx.api.from('ope_clientes').select('tercero_id, color').eq('empresa_id', ctx.empresa.id) : { data: [] },
-    verOpe ? ctx.api.from('ope_plan').select('id, faena_id, fecha, ope_plan_vehiculos(vehiculo, personas(nombres, apellido_paterno))').eq('empresa_id', ctx.empresa.id).eq('fecha', estado.dia) : { data: [] },
-    ctx.api.from('asis_horas').select('id, persona_id, fecha, notas').eq('empresa_id', ctx.empresa.id).eq('origen', 'horario').not('deleted_at', 'is', null).like('notas', 'Ausente%').eq('fecha', estado.dia),
+    verOpe ? ctx.api.from('ope_plan').select('id, faena_id, fecha, ope_plan_vehiculos(vehiculo, personas(nombres, apellido_paterno))').eq('empresa_id', ctx.empresa.id).gte('fecha', desde).lte('fecha', hasta) : { data: [] },
+    ctx.api.from('asis_horas').select('id, persona_id, fecha, notas').eq('empresa_id', ctx.empresa.id).eq('origen', 'horario').not('deleted_at', 'is', null).like('notas', 'Ausente%').gte('fecha', desde).lte('fecha', hasta),
   ]);
   if (regs.error) throw regs.error;
   if (vinculos.error) throw vinculos.error;
@@ -52,57 +54,45 @@ export default async function vista(ctx) {
   const activos = vinculos.data.filter((v) => v.estado === 'activo').sort((a, b) => nombre(a.personas).localeCompare(nombre(b.personas)));
   const porDia = new Map();
   for (const r of regs.data) { if (!porDia.has(r.fecha)) porDia.set(r.fecha, []); porDia.get(r.fecha).push(r); }
+  const diasSemana = [0, 1, 2, 3, 4, 5, 6].map((i) => sumarDias(desde, i));
 
   // Faenas (texto como lo escriben Planificación y el marcaje) y su color de cliente
   const colorDe = new Map((colores.data ?? []).map((c) => [c.tercero_id, c.color]));
   const textoFaena = (f) => [f.terceros?.nombre_fantasia || f.terceros?.razon_social || 'Interno', f.ope_sitios?.nombre, f.titulo].filter(Boolean).join(' · ');
-  const faenasDia = (faenas.data ?? []).filter((f) => f.fecha_inicio <= estado.dia && f.fecha_fin >= estado.dia && (!f.dias?.length || f.dias.includes(estado.dia)))
+  const faenasDe = (d) => (faenas.data ?? []).filter((f) => f.fecha_inicio <= d && f.fecha_fin >= d && (!f.dias?.length || f.dias.includes(d)))
     .map((f) => ({ id: f.id, texto: textoFaena(f), color: colorDe.get(f.tercero_id) ?? null }));
   const colorFaena = (texto) => {
     const k = clave(texto); if (!k) return null;
-    return faenasDia.find((f) => clave(f.texto) === k)?.color ?? (faenas.data ?? []).map((f) => ({ k: clave(textoFaena(f)), c: colorDe.get(f.tercero_id) })).find((x) => x.k === k)?.c ?? null;
+    return (faenas.data ?? []).map((f) => ({ k: clave(textoFaena(f)), c: colorDe.get(f.tercero_id) })).find((x) => x.k === k)?.c ?? null;
   };
 
   const puedeCrear = ctx.puede('asistencia', 'crear');
   const puedeEditar = ctx.puede('asistencia', 'editar');
   const puedeEliminar = ctx.puede('asistencia', 'eliminar');
 
-  const mover = (n) => { estado.lunes = sumarDias(estado.lunes, n * 7); estado.dia = estado.lunes; estado.nuevas = []; ctx.refrescar(); };
+  const mover = (n) => { estado.lunes = sumarDias(estado.lunes, n * 7); estado.dia = estado.lunes; estado.nuevas = []; estado.diasAbiertos.clear(); ctx.refrescar(); };
   const navegacion = el('div', { class: 'nav-periodo' },
     el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Semana anterior', onclick: () => mover(-1) }, icono('volver')),
     el('strong', {}, `Semana ${numSemana(desde)} · ${fechaCorta(desde)} – ${fechaCorta(hasta)}`),
     el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Semana siguiente', onclick: () => mover(1) }, icono('derecha')),
-    boton('Hoy', { onclick: () => { estado.lunes = lunesDe(hoyISO()); estado.dia = hoyISO(); estado.nuevas = []; ctx.refrescar(); } }));
+    boton('Hoy', { onclick: () => { estado.lunes = lunesDe(hoyISO()); estado.dia = hoyISO(); estado.nuevas = []; estado.diasAbiertos.clear(); ctx.refrescar(); } }));
 
-  const dias = el('div', { class: 'dias-semana', role: 'tablist' }, [0, 1, 2, 3, 4, 5, 6].map((i) => {
-    const f = sumarDias(desde, i);
-    const lista = porDia.get(f) ?? [];
-    const min = lista.reduce((s, r) => s + minutosRegistro(r), 0);
-    return el('button', {
-      type: 'button', role: 'tab', class: `dia-tarjeta ${f === hoyISO() ? 'hoy' : ''}`, 'aria-selected': String(f === estado.dia),
-      onclick: () => { estado.dia = f; estado.nuevas = []; ctx.refrescar(); },
-    }, el('span', {}, `${nombreDia(f)} ${Number(f.slice(8))}`),
-      el('strong', {}, lista.length ? `${new Set(lista.map((r) => r.persona_id)).size} pers.` : '—'),
-      el('span', { class: 'texto-suave texto-chico' }, min ? horas(min) : ''));
-  }));
-
-  // ---- Planilla del día
-  const delDia = porDia.get(estado.dia) ?? [];
-  // Faena: solo donde se usa Faenas y planificación (Innova); en las demás (Performance) no se muestra, salvo que el día
+  // Faena: solo donde se usa Faenas y planificación (Innova); en las demás (Performance) no se muestra, salvo que la semana
   // ya tenga horas con faena escrita (2026-11-05)
-  const conFaena = verOpe || delDia.some((r) => r.faena);
+  const conFaena = verOpe || regs.data.some((r) => r.faena);
   estado.conFaena = conFaena;
+  const filtro = campoFiltroFaena(regs.data, () => ctx.refrescar());
   // Horas que se pisan: misma persona, mismo día, horarios solapados
   const pisan = new Set();
   const iv = (r) => { const a = aMin(r.entrada); return [a, a + minutosRegistro(r)]; };
-  for (let i = 0; i < delDia.length; i++) for (let j = i + 1; j < delDia.length; j++) {
+  for (const delDia of porDia.values()) for (let i = 0; i < delDia.length; i++) for (let j = i + 1; j < delDia.length; j++) {
     const a = delDia[i]; const b = delDia[j];
     if (a.persona_id !== b.persona_id) continue;
     const [a0, a1] = iv(a); const [b0, b1] = iv(b);
     if (a0 < b1 && b0 < a1) { pisan.add(a.id); pisan.add(b.id); }
   }
   const listaPersonas = el('datalist', { id: 'hz-personas' }, activos.map((v) => el('option', { value: `${nombre(v.personas)}${v.cargo ? ` · ${v.cargo}` : ''}` })));
-  const listaFaenas = el('datalist', { id: 'hz-faenas' }, faenasDia.map((f) => el('option', { value: f.texto })));
+  const listasFaenas = diasSemana.map((d) => el('datalist', { id: `hz-faenas-${d}` }, faenasDe(d).map((f) => el('option', { value: f.texto }))));
   const personaDeTexto = (t) => {
     const k = clave(t).replace(/ · .*$/, ''); if (!k) return null;
     const exactos = activos.filter((v) => clave(`${nombre(v.personas)}${v.cargo ? ` · ${v.cargo}` : ''}`) === clave(t) || clave(nombre(v.personas)) === k);
@@ -130,7 +120,7 @@ export default async function vista(ctx) {
     if (!campos.persona.value.trim() || !campos.entrada.value || !campos.salida.value) return;
     if (!persona_id) { campos.persona.classList.add('campo-error'); avisar('Elige a la persona de la lista (nombre con ficha activa).', 'error'); return; }
     if (campos.entrada.value === campos.salida.value) { avisar('La entrada y la salida no pueden ser iguales.', 'error'); return; }
-    const { error } = await ctx.api.from('asis_horas').insert({ empresa_id: ctx.empresa.id, persona_id, fecha: estado.dia, entrada: campos.entrada.value, salida: campos.salida.value,
+    const { error } = await ctx.api.from('asis_horas').insert({ empresa_id: ctx.empresa.id, persona_id, fecha: n.fecha, entrada: campos.entrada.value, salida: campos.salida.value,
       faena: campos.faena.value.trim() || null, vueltas: Math.max(0, Number(campos.vueltas.value) || 0) });
     if (error) { avisar(error.message, 'error'); return; }
     estado.nuevas = estado.nuevas.filter((x) => x !== n);
@@ -144,7 +134,7 @@ export default async function vista(ctx) {
     const persona = nueva
       ? el('input', { class: 'campo hz-persona', list: 'hz-personas', placeholder: 'Trabajador', autocomplete: 'off', value: nueva.persona ?? '', 'aria-label': 'Trabajador' })
       : el('span', { class: 'hz-nombre' }, personas.get(r.persona_id) ? nombre(personas.get(r.persona_id).personas) : 'Persona sin vínculo');
-    const faena = el('input', { class: 'campo hz-faena', list: 'hz-faenas', placeholder: 'Faena', value: nueva ? nueva.faena ?? '' : r.faena ?? '', disabled: !editable, 'aria-label': 'Faena' });
+    const faena = el('input', { class: 'campo hz-faena', list: `hz-faenas-${nueva ? nueva.fecha : r.fecha}`, placeholder: 'Faena', value: nueva ? nueva.faena ?? '' : r.faena ?? '', disabled: !editable, 'aria-label': 'Faena' });
     const entrada = el('input', { type: 'time', class: 'campo hz-hora', value: nueva ? '' : hhmm(r.entrada), disabled: !editable, 'aria-label': 'Entrada' });
     const salida = el('input', { type: 'time', class: 'campo hz-hora', value: nueva ? '' : hhmm(r.salida), disabled: !editable, 'aria-label': 'Salida' });
     const vueltas = el('input', { type: 'number', min: '0', class: 'campo hz-vueltas', value: nueva ? '0' : String(r.vueltas || 0), disabled: !editable, 'aria-label': 'Vueltas', title: 'Vueltas (choferes)' });
@@ -168,46 +158,81 @@ export default async function vista(ctx) {
     return tr;
   };
 
-  // Agrupar por faena (las nuevas, en la faena desde la que se agregaron)
-  const grupos = new Map();
-  const grupoDe = (texto) => { const k = clave(texto) || ''; if (!grupos.has(k)) grupos.set(k, { texto: String(texto ?? '').trim(), filas: [] }); return grupos.get(k); };
-  for (const r of delDia) grupoDe(r.faena).filas.push(fila(r));
-  for (const n of estado.nuevas) grupoDe(n.faena).filas.push(fila(null, n));
-  for (const f of faenasDia) grupoDe(f.texto);   // las faenas del día aparecen aunque no tengan horas aún
-  const orden = [...grupos.entries()].sort(([a], [b]) => (a === '') - (b === '') || a.localeCompare(b));
-  const agregarEn = (texto) => { estado.abiertas.add(`${estado.dia}|${clave(texto)}`); estado.nuevas.push({ faena: texto, persona: '' }); ctx.refrescar(); };
-  const bloques = orden.map(([k, g]) => {
-    const color = colorFaena(g.texto);
-    const min = delDia.filter((r) => clave(r.faena) === k).reduce((s, r) => s + minutosRegistro(r), 0);
-    // Las faenas parten plegadas (Enzo, 2026-11-06); se abren al tocarlas y siguen abiertas al guardar. Sin Faenas hay un solo grupo: abierto
-    const llave = `${estado.dia}|${k}`;
-    const abierto = !conFaena || estado.abiertas.has(llave) || estado.nuevas.some((n) => clave(n.faena) === k);
-    const resumen = [el('strong', {}, g.texto || (conFaena ? 'Sin faena' : 'Trabajadores')),
-      el('span', { class: 'texto-suave texto-chico' }, g.filas.length ? `${g.filas.length} registro${g.filas.length > 1 ? 's' : ''} · ${horas(min)}` : 'sin horas aún'),
-      g.filas.some((tr) => tr.classList.contains('hz-pisa')) ? el('span', { class: 'chip chip-venc' }, 'Horas que se pisan') : null];
-    const cuerpo = el('div', { class: 'hz-grupo-cuerpo', hidden: !abierto });
-    const cabeza = conFaena ? el('button', { type: 'button', class: 'hz-grupo-cabeza hz-grupo-boton', 'aria-expanded': String(abierto), onclick: () => {
-      const abrir = cuerpo.hidden; cuerpo.hidden = !abrir; cabeza.setAttribute('aria-expanded', String(abrir));
-      if (abrir) estado.abiertas.add(llave); else estado.abiertas.delete(llave);
-    } }, icono('derecha', { tam: 16 }), resumen) : el('div', { class: 'hz-grupo-cabeza' }, resumen);
-    cuerpo.append(...[
-      g.filas.length ? el('div', { class: 'tabla-contenedor' }, el('table', { class: 'tabla hz-tabla' },
-        el('thead', {}, el('tr', {}, ['Trabajador', ...(conFaena ? ['Faena'] : []), 'Horario', 'Horas', 'Vueltas', ''].map((t) => el('th', {}, t)))),
-        el('tbody', {}, g.filas))) : null,
-      puedeCrear ? el('button', { type: 'button', class: 'boton-enlace hz-agregar', onclick: () => agregarEn(g.texto) }, icono('mas', { tam: 14 }), g.texto ? 'persona en esta faena' : conFaena ? 'persona (sin faena)' : 'persona') : null,
-    ].filter(Boolean));
-    return el('div', { class: 'hz-grupo', style: color ? `--hz-color:${color}` : '' }, cabeza, cuerpo);
-  });
+  // ---- Un día: sus faenas (cada una plegable) y, abajo, ausentes, vehículos y preparación
+  const registrosDe = (d) => (porDia.get(d) ?? []).filter(pasaFiltroFaena);
+  const ausentesDe = (d) => (ausencias.data ?? []).filter((a) => a.fecha === d);
+  const nuevasDe = (d) => estado.nuevas.filter((n) => n.fecha === d);
 
-  // Vehículos y preparación del día (desde Planificación)
-  const vehiculos = (planes.data ?? []).flatMap((p) => (p.ope_plan_vehiculos ?? []).map((v) => ({ p, v })));
-  const jornada = verOpe ? el('div', { class: 'ficha hz-jornada' },
-    el('h2', {}, 'Vehículos y preparación del día'),
-    vehiculos.length ? el('div', { class: 'chips-fila' }, vehiculos.map(({ p, v }) => el('span', { class: 'chip chip-na' }, icono('camion', { tam: 12 }),
-      ` ${v.vehiculo}${v.personas ? ` · ${v.personas.nombres.split(' ')[0]} ${v.personas.apellido_paterno}` : ''}${faenasDia.find((f) => f.id === p.faena_id) ? ` · ${faenasDia.find((f) => f.id === p.faena_id).texto}` : ''}`)))
-      : el('p', { class: 'texto-suave' }, 'Sin vehículos planificados este día.'),
-    (planes.data ?? []).length ? el('div', { class: 'chips-fila' }, (planes.data ?? []).map((p) => el('a', { class: 'boton-enlace', href: ctx.ruta('ope.plan', { f: p.faena_id, d: estado.dia }) },
-      icono('check', { tam: 14 }), `Preparación · ${faenasDia.find((f) => f.id === p.faena_id)?.texto ?? 'faena'}`))) : null) : null;
+  function detalleDia(d) {
+    const delDia = registrosDe(d);
+    const faenasDia = faenasDe(d);
+    // Agrupar por faena (las nuevas, en la faena desde la que se agregaron)
+    const grupos = new Map();
+    const grupoDe = (texto) => { const k = clave(texto) || ''; if (!grupos.has(k)) grupos.set(k, { texto: String(texto ?? '').trim(), filas: [] }); return grupos.get(k); };
+    for (const r of delDia) grupoDe(r.faena).filas.push(fila(r));
+    for (const n of nuevasDe(d)) grupoDe(n.faena).filas.push(fila(null, n));
+    if (!estado.filtro) for (const f of faenasDia) grupoDe(f.texto);   // las faenas del día aparecen aunque no tengan horas aún
+    const orden = [...grupos.entries()].sort(([a], [b]) => (a === '') - (b === '') || a.localeCompare(b));
+    const agregarEn = (texto) => { estado.dia = d; estado.diasAbiertos.add(d); estado.abiertas.add(`${d}|${clave(texto)}`); estado.nuevas.push({ fecha: d, faena: texto, persona: '' }); ctx.refrescar(); };
+    const bloques = orden.map(([k, g]) => {
+      const color = colorFaena(g.texto);
+      const min = delDia.filter((r) => clave(r.faena) === k).reduce((s, r) => s + minutosRegistro(r), 0);
+      // Las faenas parten plegadas (Enzo, 2026-11-06); se abren al tocarlas y siguen abiertas al guardar. Sin Faenas hay un solo
+      // grupo: abierto. Con filtro se ve directo la faena elegida.
+      const llave = `${d}|${k}`;
+      const abierto = !conFaena || !!estado.filtro || estado.abiertas.has(llave) || nuevasDe(d).some((n) => clave(n.faena) === k);
+      const resumen = [el('strong', {}, g.texto || (conFaena ? 'Sin faena' : 'Trabajadores')),
+        el('span', { class: 'texto-suave texto-chico' }, g.filas.length ? `${g.filas.length} registro${g.filas.length > 1 ? 's' : ''} · ${horas(min)}` : 'sin horas aún'),
+        g.filas.some((tr) => tr.classList.contains('hz-pisa')) ? el('span', { class: 'chip chip-venc' }, 'Horas que se pisan') : null];
+      const cuerpo = el('div', { class: 'hz-grupo-cuerpo', hidden: !abierto });
+      const cabeza = conFaena ? el('button', { type: 'button', class: 'hz-grupo-cabeza hz-grupo-boton', 'aria-expanded': String(abierto), onclick: () => {
+        const abrir = cuerpo.hidden; cuerpo.hidden = !abrir; cabeza.setAttribute('aria-expanded', String(abrir));
+        if (abrir) estado.abiertas.add(llave); else estado.abiertas.delete(llave);
+      } }, icono('derecha', { tam: 16 }), resumen) : el('div', { class: 'hz-grupo-cabeza' }, resumen);
+      cuerpo.append(...[
+        g.filas.length ? el('div', { class: 'tabla-contenedor' }, el('table', { class: 'tabla hz-tabla' },
+          el('thead', {}, el('tr', {}, ['Trabajador', ...(conFaena ? ['Faena'] : []), 'Horario', 'Horas', 'Vueltas', ''].map((t) => el('th', {}, t)))),
+          el('tbody', {}, g.filas))) : null,
+        puedeCrear ? el('button', { type: 'button', class: 'boton-enlace hz-agregar', onclick: () => agregarEn(g.texto) }, icono('mas', { tam: 14 }), g.texto ? 'persona en esta faena' : conFaena ? 'persona (sin faena)' : 'persona') : null,
+      ].filter(Boolean));
+      return el('div', { class: 'hz-grupo', style: color ? `--hz-color:${color}` : '' }, cabeza, cuerpo);
+    });
+
+    // Vehículos y preparación del día (desde Planificación)
+    const planesDia = (planes.data ?? []).filter((p) => p.fecha === d);
+    const vehiculos = planesDia.flatMap((p) => (p.ope_plan_vehiculos ?? []).map((v) => ({ p, v })));
+    const jornada = verOpe ? el('div', { class: 'ficha hz-jornada' },
+      el('h2', {}, 'Vehículos y preparación del día'),
+      vehiculos.length ? el('div', { class: 'chips-fila' }, vehiculos.map(({ p, v }) => el('span', { class: 'chip chip-na' }, icono('camion', { tam: 12 }),
+        ` ${v.vehiculo}${v.personas ? ` · ${v.personas.nombres.split(' ')[0]} ${v.personas.apellido_paterno}` : ''}${faenasDia.find((f) => f.id === p.faena_id) ? ` · ${faenasDia.find((f) => f.id === p.faena_id).texto}` : ''}`)))
+        : el('p', { class: 'texto-suave' }, 'Sin vehículos planificados este día.'),
+      planesDia.length ? el('div', { class: 'chips-fila' }, planesDia.map((p) => el('a', { class: 'boton-enlace', href: ctx.ruta('ope.plan', { f: p.faena_id, d }) },
+        icono('check', { tam: 14 }), `Preparación · ${faenasDia.find((f) => f.id === p.faena_id)?.texto ?? 'faena'}`))) : null) : null;
+    const aus = ausentesDe(d);
+
+    return [
+      bloques.length ? bloques : el('p', { class: 'texto-suave' }, conFaena ? 'Sin registros ni faenas este día.' : 'Sin registros este día.'),
+      aus.length ? el('div', { class: 'ficha hz-jornada' }, el('h2', {}, 'Ausentes'),
+        aus.map((a) => el('div', { class: 'doc-fila' }, el('span', { class: 'doc-nombre' }, el('strong', {}, personas.get(a.persona_id) ? nombre(personas.get(a.persona_id).personas) : 'Persona'), el('span', { class: 'texto-suave texto-chico' }, a.notas)),
+          puedeEditar ? el('button', { type: 'button', class: 'boton boton-secundario boton-chico', title: 'Vuelve a quedar presente según su horario', onclick: async () => { const { error } = await ctx.api.from('asis_horas').update({ deleted_at: null, notas: 'Según horario' }).eq('id', a.id); if (error) avisar(error.message, 'error'); else ctx.refrescar(); } }, 'Deshacer') : null))) : null,
+      jornada,
+    ].flat().filter(Boolean);
+  }
+
+  // ---- La semana: un bloque por cada día con horas cargadas; los demás quedan abajo para abrirlos si hace falta
+  const conCarga = (d) => registrosDe(d).length > 0 || nuevasDe(d).length > 0 || (!estado.filtro && (ausentesDe(d).length > 0 || estado.diasAbiertos.has(d)));
+  const listados = diasSemana.filter(conCarga);
+  const bloquesDia = listados.map((d) => {
+    const abierto = !!estado.filtro || estado.diasAbiertos.has(d) || nuevasDe(d).length > 0;
+    const cuerpo = el('div', { class: 'sem-dia-cuerpo', hidden: !abierto }, detalleDia(d));
+    const cabeza = el('button', { type: 'button', class: 'sem-dia-cabeza', 'aria-expanded': String(abierto), onclick: () => {
+      const abrir = cuerpo.hidden; cuerpo.hidden = !abrir; cabeza.setAttribute('aria-expanded', String(abrir));
+      estado.dia = d;
+      if (abrir) estado.diasAbiertos.add(d); else estado.diasAbiertos.delete(d);
+    } }, icono('derecha', { tam: 18 }), el('strong', {}, `${DIAS_LARGOS[(new Date(`${d}T12:00:00`).getDay() + 6) % 7]} ${Number(d.slice(8))}`), d === hoy ? el('span', { class: 'chip chip-ok' }, 'Hoy') : null, el('span', { class: 'sem-dia-resumen' }, resumenDia(registrosDe(d), conFaena)));
+    return el('div', { class: `sem-dia${d === hoy ? ' hoy' : ''}` }, cabeza, cuerpo);
+  });
+  const otros = estado.filtro ? [] : diasSemana.filter((d) => !listados.includes(d));
 
   return el('section', { class: 'listado' },
     el('header', { class: 'listado-cabecera' },
@@ -215,17 +240,37 @@ export default async function vista(ctx) {
       el('div', { class: 'listado-acciones' },
         puedeCrear ? boton('Agregar horas a varios', { icono: 'mas', tipo: 'primario', onclick: () => agregar(ctx, activos) }) : null)),
     navegacion,
-    dias,
-    listaPersonas, listaFaenas,
-    el('h2', { class: 'hz-dia-titulo' }, `${nombreDia(estado.dia)} ${fechaCorta(estado.dia)}`,
-      el('span', { class: 'texto-suave texto-chico' }, delDia.length ? ` · ${new Set(delDia.map((r) => r.persona_id)).size} personas · ${horas(delDia.reduce((s, r) => s + minutosRegistro(r), 0))}` : ' · sin registros')),
-    bloques.length ? bloques : el('p', { class: 'texto-suave' }, conFaena ? 'Sin registros ni faenas este día.' : 'Sin registros este día.'),
-    (ausencias.data ?? []).length ? el('div', { class: 'ficha hz-jornada' }, el('h2', {}, 'Ausentes'),
-      (ausencias.data ?? []).map((a) => el('div', { class: 'doc-fila' }, el('span', { class: 'doc-nombre' }, el('strong', {}, personas.get(a.persona_id) ? nombre(personas.get(a.persona_id).personas) : 'Persona'), el('span', { class: 'texto-suave texto-chico' }, a.notas)),
-        puedeEditar ? el('button', { type: 'button', class: 'boton boton-secundario boton-chico', title: 'Vuelve a quedar presente según su horario', onclick: async () => { const { error } = await ctx.api.from('asis_horas').update({ deleted_at: null, notas: 'Según horario' }).eq('id', a.id); if (error) avisar(error.message, 'error'); else ctx.refrescar(); } }, 'Deshacer') : null))) : null,
-    jornada,
+    filtro,
+    listaPersonas, listasFaenas,
+    el('div', { class: 'sem-dias' }, bloquesDia.length ? bloquesDia : el('p', { class: 'texto-suave' }, 'Sin horas cargadas esta semana.')),
+    otros.length && puedeCrear ? el('div', { class: 'sem-otros' }, el('span', { class: 'texto-suave texto-chico' }, 'Días sin carga:'),
+      otros.map((d) => el('button', { type: 'button', class: 'boton-enlace', onclick: () => { estado.dia = d; estado.diasAbiertos.add(d); ctx.refrescar(); } }, icono('mas', { tam: 14 }), `${nombreDia(d)} ${Number(d.slice(8))}`))) : null,
     el('p', { class: 'texto-suave texto-chico' }, 'Cada fila se guarda sola al cambiar un dato. Si la salida es menor que la entrada, el turno termina al día siguiente. Las horas que se pisan se marcan en rojo y al pagar se cuentan una sola vez. Las del marcaje (tablet o terreno) se corrigen en Marcajes. Los fijos con turno quedan presentes "según horario" cada día hábil: corrige solo retrasos, horas extra o ausencias.'),
   );
+}
+
+// ---- Compartido con el teléfono: filtro por faena de la semana y resumen del día
+const SIN_FAENA = '∅';
+export const pasaFiltroFaena = (r) => !estado.filtro || (estado.filtro === SIN_FAENA ? !clave(r.faena) : clave(r.faena) === estado.filtro);
+// Lista para elegir una faena de las cargadas en la semana; null si hay menos de dos (no hay nada que filtrar)
+export function campoFiltroFaena(registros, alCambiar) {
+  const faenas = new Map();
+  for (const r of registros) { const k = clave(r.faena) || SIN_FAENA; if (!faenas.has(k)) faenas.set(k, k === SIN_FAENA ? 'Sin faena' : String(r.faena).trim()); }
+  if (!faenas.has(estado.filtro)) estado.filtro = '';
+  if (faenas.size < 2) return null;
+  const orden = [...faenas.entries()].sort(([a, ta], [b, tb]) => (a === SIN_FAENA) - (b === SIN_FAENA) || ta.localeCompare(tb));
+  const campo = el('select', { class: 'campo', 'aria-label': 'Filtrar por faena' },
+    el('option', { value: '' }, 'Todas las faenas'), orden.map(([k, t]) => el('option', { value: k }, t)));
+  campo.value = estado.filtro;
+  campo.addEventListener('change', () => { estado.filtro = campo.value; alCambiar(); });
+  return el('label', { class: 'sem-filtro' }, el('span', { class: 'texto-suave texto-chico' }, 'Faena'), campo);
+}
+export function resumenDia(registros, conFaena) {
+  const personas = new Set(registros.map((r) => r.persona_id)).size;
+  if (!registros.length) return 'sin horas';
+  const faenas = new Set(registros.map((r) => clave(r.faena))).size;
+  const min = registros.reduce((s, r) => s + minutosRegistro(r), 0);
+  return [`${personas} ${personas === 1 ? 'persona' : 'personas'}`, horas(min), conFaena && faenas > 1 ? `${faenas} faenas` : null].filter(Boolean).join(' · ');
 }
 
 // Ausente: el día según horario deja de contar (queda eliminado con el motivo) y no se vuelve a crear

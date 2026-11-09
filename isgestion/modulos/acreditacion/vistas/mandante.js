@@ -1,17 +1,17 @@
 // Requisitos de un mandante: tabla de requisitos mensuales por mes, requisitos únicos y su configuración.
 // Ruta: #/acreditacion.mandante?id=<tercero>
-import { el } from '../../../core/ui/dom.js?v=1f30021';
-import { icono } from '../../../core/ui/iconos.js?v=1f30021';
-import { boton } from '../../../core/ui/tabla.js?v=1f30021';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=1f30021';
-import { avisar } from '../../../core/ui/aviso.js?v=1f30021';
-import { subirArchivo, eliminarArchivo } from '../../../core/adjuntos.js?v=1f30021';
-import { fechaLarga, hoyISO, moverMes, nombreMes } from '../../../core/ui/formato.js?v=1f30021';
-import { cargarDocumentos, cumplimientoMandante, nombreTercero, mesActual, CHIP, textoEstado } from '../datos.js?v=1f30021';
-import { REQUISITOS } from '../sugeridos.js?v=1f30021';
-import { abrir } from './documentos.js?v=1f30021';
-import { esNomina, generarNomina } from '../nomina.js?v=1f30021';
-import { seccionTrabajadores } from '../trabajadores.js?v=1f30021';
+import { el } from '../../../core/ui/dom.js?v=1f30021h';
+import { icono } from '../../../core/ui/iconos.js?v=1f30021h';
+import { boton } from '../../../core/ui/tabla.js?v=1f30021h';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=1f30021h';
+import { avisar } from '../../../core/ui/aviso.js?v=1f30021h';
+import { subirArchivo, eliminarArchivo } from '../../../core/adjuntos.js?v=1f30021h';
+import { fechaLarga, hoyISO, moverMes, nombreMes } from '../../../core/ui/formato.js?v=1f30021h';
+import { cargarDocumentos, cumplimientoMandante, nombreTercero, mesActual, CHIP, textoEstado } from '../datos.js?v=1f30021h';
+import { REQUISITOS } from '../sugeridos.js?v=1f30021h';
+import { abrir } from './documentos.js?v=1f30021h';
+import { esNomina, generarNomina } from '../nomina.js?v=1f30021h';
+import { seccionTrabajadores } from '../trabajadores.js?v=1f30021h';
 
 const ARCHIVOS = ['application/pdf', 'image/jpeg', 'image/png',
   'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];

@@ -1,18 +1,19 @@
 // Asistencia en el teléfono (Enzo, 2026-11-06): en vez de la planilla, una lista de personas por día.
-// Arriba la semana; pestañas Con horas / Sin horas / Ausentes. Tocar a alguien abre una hoja con entrada, salida, faena y
+// Como en InnovaGestión: la semana y, abajo, los días con horas cargadas; al abrir uno, pestañas Con horas (por faena) / Sin horas /
+// Ausentes, y filtro por faena. Tocar a alguien abre una hoja con entrada, salida, faena y
 // atajos de horario. En Sin horas se marcan varias personas (o las planificadas) y se registran de una vez.
 // Botón Agregar (y el "+" de la barra), como en InnovaGestión: primero las faenas del día, después se marca la gente; cada faena
 // abierta tiene además "Agregar persona en esta faena".
 // Mismos datos y reglas que la planilla de escritorio (horas.js): las del marcaje se corrigen en Marcajes y los fijos con
 // turno quedan presentes "según horario".
-import { el } from '../../../core/ui/dom.js?v=1f30021';
-import { icono } from '../../../core/ui/iconos.js?v=1f30021';
-import { boton } from '../../../core/ui/tabla.js?v=1f30021';
-import { avisar } from '../../../core/ui/aviso.js?v=1f30021';
-import { hoyISO, lunesDe, sumarDias, nombreDia, nombreMes, horas, aMin, hhmm } from '../../../core/ui/formato.js?v=1f30021';
-import { estado, minutosRegistro, ausente, eliminar } from './horas.js?v=1f30021';
+import { el } from '../../../core/ui/dom.js?v=1f30021h';
+import { icono } from '../../../core/ui/iconos.js?v=1f30021h';
+import { boton } from '../../../core/ui/tabla.js?v=1f30021h';
+import { avisar } from '../../../core/ui/aviso.js?v=1f30021h';
+import { hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, horas, aMin, hhmm } from '../../../core/ui/formato.js?v=1f30021h';
+import { estado, minutosRegistro, ausente, eliminar, campoFiltroFaena, pasaFiltroFaena, resumenDia } from './horas.js?v=1f30021h';
 
-const pantalla = { pestana: null, buscar: '', marcados: new Set(), abiertas: new Set() };   // abiertas: faenas desplegadas (día|faena)
+const pantalla = { pestana: null, buscar: '', marcados: new Set(), abiertas: new Set(), diaAbierto: null };   // abiertas: faenas desplegadas (día|faena)
 const DIAS_LARGOS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 const HORARIO_BASE = '08:00-17:00';
 
@@ -66,8 +67,9 @@ export default async function asistenciaMovil(ctx) {
   for (const r of regs.data) { const h = `${hhmm(r.entrada)}-${hhmm(r.salida)}`; cuenta.set(h, (cuenta.get(h) ?? 0) + 1); }
   const atajos = [...cuenta.entries()].sort((a, b) => b[1] - a[1]).slice(0, 4).map(([h]) => h);
 
+  const dias = [0, 1, 2, 3, 4, 5, 6].map((i) => sumarDias(desde, i));
   const recargar = () => { pantalla.marcados.clear(); ctx.refrescar(); };
-  const mover = (n) => { estado.lunes = sumarDias(estado.lunes, n * 7); estado.dia = estado.lunes; pantalla.pestana = null; recargar(); };
+  const mover = (n) => { estado.lunes = sumarDias(estado.lunes, n * 7); estado.dia = estado.lunes; pantalla.pestana = null; pantalla.diaAbierto = null; recargar(); };
 
   // Lo planificado el día: persona → { faena, entrada, salida }
   const planDelDia = (d) => {
@@ -120,9 +122,12 @@ export default async function asistenciaMovil(ctx) {
   }
 
   function agregar(faenaInicial) {
-    const d = estado.dia;
-    const conFaena = verOpe || datosDia.delDia.some((r) => r.faena);
-    const opciones = conFaena ? faenasParaAgregar(d) : [];
+    // Con el botón general: el día abierto, o hoy si es de esta semana (arriba se puede cambiar)
+    if (!faenaInicial) estado.dia = pantalla.diaAbierto ?? (hoy >= desde && hoy <= hasta ? hoy : desde);
+    calcularDia();
+    let d = estado.dia;
+    const conFaena = verOpe || regs.data.some((r) => r.faena);
+    let opciones = conFaena ? faenasParaAgregar(d) : [];
     const tituloEl = el('h2', {});
     const subtitulo = el('span', { class: 'texto-suave texto-chico' });
     const cuerpo = el('div', { class: 'asm-agregar' });
@@ -131,17 +136,21 @@ export default async function asistenciaMovil(ctx) {
         el('div', { class: 'asm-hoja-titulo' }, tituloEl, subtitulo),
         el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Cerrar', onclick: () => cerrar() }, icono('cerrar'))),
       cuerpo);
-    function cerrar() { dialogo.close(); dialogo.remove(); }
-    dialogo.addEventListener('cancel', () => dialogo.remove());
+    const alSalir = () => { if (pantalla.diaAbierto) { estado.dia = pantalla.diaAbierto; calcularDia(); } };   // el día de fondo vuelve a ser el abierto
+    function cerrar() { dialogo.close(); dialogo.remove(); alSalir(); }
+    dialogo.addEventListener('cancel', () => { dialogo.remove(); alSalir(); });
+    const cambiarDia = (f) => { estado.dia = f; d = f; calcularDia(); opciones = conFaena ? faenasParaAgregar(d) : []; elegirFaena(); };
 
     function elegirFaena() {
-      tituloEl.textContent = '¿En qué faena?';
+      tituloEl.textContent = conFaena ? '¿En qué faena?' : '¿Qué día?';
       subtitulo.textContent = diaLargo(d);
       cuerpo.replaceChildren(el('div', { class: 'modal-cuerpo asm-faenas' },
+        el('div', { class: 'asm-atajos', role: 'group', 'aria-label': 'Día' }, dias.map((f) => el('button', { type: 'button', class: `asm-atajo${f === d ? ' activo' : ''}`, onclick: () => cambiarDia(f) }, `${nombreDia(f)} ${Number(f.slice(8))}`))),
+        conFaena && !opciones.length ? el('p', { class: 'texto-suave texto-chico' }, 'Sin faenas este día.') : null,
         opciones.map((f) => el('button', { type: 'button', class: 'asm-grupo-cabeza', style: f.color ? `--asm-color:${f.color}` : '', onclick: () => elegirGente(f, true) },
           el('i', { 'aria-hidden': 'true' }), el('span', {}, f.texto),
           el('small', {}, f.conHoras ? `${f.conHoras} con horas` : f.planificados ? `${f.planificados} planif.` : ''), icono('derecha', { tam: 18 }))),
-        el('button', { type: 'button', class: 'asm-otra-faena', onclick: () => elegirGente({ texto: '' }, true) }, 'Sin faena u otra')));
+        el('button', { type: 'button', class: 'asm-otra-faena', onclick: () => elegirGente({ texto: '' }, true) }, conFaena ? 'Sin faena u otra' : 'Elegir gente')));
     }
 
     function elegirGente(f, conVolver) {
@@ -192,7 +201,7 @@ export default async function asistenciaMovil(ctx) {
         const n = marcados.size;
         cerrar();
         avisar(n === 1 ? 'Horas registradas.' : `Horas registradas a ${n} personas.`);
-        pantalla.pestana = 'con'; pantalla.abiertas.add(`${d}|${clave(nombreFaena)}`);
+        pantalla.pestana = 'con'; pantalla.diaAbierto = d; pantalla.abiertas.add(`${d}|${clave(nombreFaena)}`);
         recargar();
       };
       cuerpo.replaceChildren(el('form', { class: 'modal-cuerpo asm-form', onsubmit: guardar },
@@ -203,15 +212,14 @@ export default async function asistenciaMovil(ctx) {
         marcarPlan,
         filas,
         error,
-        el('div', { class: 'modal-pie' }, conVolver && opciones.length ? boton('Volver', { onclick: elegirFaena }) : boton('Cancelar', { onclick: () => cerrar() }), btn)));
+        el('div', { class: 'modal-pie' }, conVolver ? boton('Volver', { onclick: elegirFaena }) : boton('Cancelar', { onclick: () => cerrar() }), btn)));
       pintarGente(); h.iniciar();
     }
 
     document.body.append(dialogo);
     dialogo.showModal();
     if (faenaInicial) elegirGente(faenaInicial, false);
-    else if (opciones.length) elegirFaena();
-    else elegirGente({ texto: '' }, false);
+    else elegirFaena();
   }
 
   // ---- Hoja para registrar o corregir
@@ -283,24 +291,17 @@ export default async function asistenciaMovil(ctx) {
     h.iniciar();
   }
 
-  // ---- Pantalla
+  // ---- Pantalla: la semana y, abajo, los días con horas cargadas; al abrir uno salen sus faenas (y Sin horas / Ausentes)
   const lista = el('div', { class: 'asm-lista' });
   const pestanas = el('div', { class: 'asm-pestanas', role: 'tablist', 'aria-label': 'Personas del día' });
-  const titulo = el('h2', { class: 'ag-titulo' });
   const barraVarios = el('div', { class: 'asm-varios', hidden: true });
   const registrar = puedeCrear ? el('div', { class: 'asm-registrar' }, boton('Agregar', { tipo: 'primario', icono: 'mas', onclick: () => agregar() })) : null;
   const buscador = el('input', { type: 'search', class: 'campo asm-buscar', placeholder: 'Buscar trabajador', 'aria-label': 'Buscar trabajador', value: pantalla.buscar });
   buscador.addEventListener('input', () => { pantalla.buscar = buscador.value; pintarLista(); });
-  const dias = [0, 1, 2, 3, 4, 5, 6].map((i) => sumarDias(desde, i));
-  const botonesDia = dias.map((f, i) => el('button', { type: 'button', role: 'tab', class: `ag-dia${f === hoy ? ' hoy' : ''}`,
-    onclick: () => { estado.dia = f; pantalla.pestana = null; pantalla.marcados.clear(); pintar(); } },
-  el('span', {}, nombreDia(f)), el('strong', {}, String(Number(f.slice(8)))),
-  el('i', { class: regs.data.some((r) => r.fecha === f) ? 'con-citas' : '', 'aria-hidden': 'true' }),
-  el('span', { class: 'sr-solo' }, DIAS_LARGOS[i])));
-  const franja = el('div', { class: 'ag-franja', role: 'tablist', 'aria-label': 'Días de la semana' }, botonesDia);
-  let x0 = null;
-  franja.addEventListener('touchstart', (ev) => { x0 = ev.touches[0].clientX; }, { passive: true });
-  franja.addEventListener('touchend', (ev) => { if (x0 == null) return; const dx = ev.changedTouches[0].clientX - x0; x0 = null; if (Math.abs(dx) >= 60) mover(dx < 0 ? 1 : -1); }, { passive: true });
+  const listaDias = el('div', { class: 'sem-dias' });
+  const otrosDias = el('div', { class: 'sem-otros' });
+  const filtro = campoFiltroFaena(regs.data, () => { pantalla.pestana = null; pintarSemana(); });
+  if (pantalla.diaAbierto && (pantalla.diaAbierto < desde || pantalla.diaAbierto > hasta)) pantalla.diaAbierto = null;
 
   let datosDia = null;
   function calcularDia() {
@@ -346,15 +347,15 @@ export default async function asistenciaMovil(ctx) {
     if (pantalla.pestana === 'con') {
       const grupos = new Map();
       for (const r of delDia) {
-        if (!coincide(personas.get(r.persona_id))) continue;
+        if (!pasaFiltroFaena(r) || !coincide(personas.get(r.persona_id))) continue;
         const k = clave(r.faena); if (!grupos.has(k)) grupos.set(k, { texto: r.faena, filas: [] });
         grupos.get(k).filas.push(r);
       }
       contenido = [...grupos.entries()].sort(([a], [b]) => (a === '') - (b === '') || a.localeCompare(b)).map(([k, g]) => {
-        // Las faenas parten plegadas; al buscar se abren para ver a quien se encontró
+        // Las faenas parten plegadas; al buscar o filtrar se abren para ver lo encontrado
         const conCabeza = verOpe || !!g.texto;
         const llave = `${estado.dia}|${k}`;
-        const abierto = !conCabeza || !!pantalla.buscar.trim() || pantalla.abiertas.has(llave);
+        const abierto = !conCabeza || !!pantalla.buscar.trim() || !!estado.filtro || pantalla.abiertas.has(llave);
         const cuerpo = el('div', { class: 'asm-grupo-cuerpo', hidden: !abierto }, g.filas.map(tarjetaHoras),
           puedeCrear ? el('button', { type: 'button', class: 'asm-planificados', onclick: () => agregar({ texto: g.texto ?? '', entrada: '', salida: '' }) }, icono('mas', { tam: 16 }), g.texto ? 'Agregar persona en esta faena' : 'Agregar persona') : null);
         const cabeza = conCabeza ? el('button', { type: 'button', class: 'asm-grupo-cabeza', 'aria-expanded': String(abierto), onclick: () => {
@@ -400,18 +401,42 @@ export default async function asistenciaMovil(ctx) {
       boton(`Registrar a ${n}`, { tipo: 'primario', icono: 'reloj', onclick: () => { const ids = [...pantalla.marcados]; hoja({ ids, plan: ids.length && ids.every((x) => plan.get(x)?.faena === plan.get(ids[0])?.faena) ? plan.get(ids[0]) : null }); } }));
   }
 
+  // El día abierto: pestañas y lista
   function pintar() {
+    if (pantalla.diaAbierto) estado.dia = pantalla.diaAbierto;
     calcularDia();
-    const { d, delDia, aus, sin } = datosDia;
-    botonesDia.forEach((b, i) => b.setAttribute('aria-selected', String(dias[i] === d)));
-    const i = dias.indexOf(d);
-    const min = delDia.reduce((s, r) => s + minutosRegistro(r), 0);
-    titulo.textContent = `${d === hoy ? `Hoy, ${DIAS_LARGOS[i].toLowerCase()}` : DIAS_LARGOS[i]} ${Number(d.slice(8))}${min ? ` · ${horas(min)}` : ''}`;
+    const { delDia, aus, sin } = datosDia;
     pestanas.replaceChildren(...[['con', 'Con horas', new Set(delDia.map((r) => r.persona_id)).size], ['sin', 'Sin horas', sin.length], ['aus', 'Ausentes', aus.length]].map(([k, t, n]) =>
       el('button', { type: 'button', role: 'tab', class: `asm-pestana asm-${k}`, 'aria-selected': String(pantalla.pestana === k), onclick: () => { pantalla.pestana = k; pintar(); } }, el('strong', {}, String(n)), el('span', {}, t))));
     pintarLista();
   }
-  pintar();
+
+  // La semana: un bloque por día con carga (o abierto); uno abierto a la vez
+  const registrosDe = (d) => regs.data.filter((r) => r.fecha === d && pasaFiltroFaena(r));
+  const ausentesDe = (d) => (ausencias.data ?? []).filter((a) => a.fecha === d);
+  const abrirDia = (d) => {
+    pantalla.diaAbierto = pantalla.diaAbierto === d ? null : d;
+    pantalla.pestana = null; pantalla.marcados.clear();
+    pintarSemana();
+  };
+  function pintarSemana() {
+    const listados = dias.filter((d) => registrosDe(d).length || d === pantalla.diaAbierto || (!estado.filtro && ausentesDe(d).length));
+    listaDias.replaceChildren(...(listados.length ? listados.map((d) => {
+      const abierto = d === pantalla.diaAbierto;
+      return el('div', { class: `sem-dia${d === hoy ? ' hoy' : ''}` },
+        el('button', { type: 'button', class: 'sem-dia-cabeza', 'aria-expanded': String(abierto), onclick: () => abrirDia(d) },
+          icono('derecha', { tam: 18 }), el('strong', {}, diaLargo(d)), d === hoy ? el('span', { class: 'chip chip-ok' }, 'Hoy') : null,
+          el('span', { class: 'sem-dia-resumen' }, resumenDia(registrosDe(d), verOpe || regs.data.some((r) => r.faena)))),
+        abierto ? el('div', { class: 'sem-dia-cuerpo' }, pestanas, activos.length > 8 ? buscador : null, lista) : null);
+    }) : [el('div', { class: 'tm-vacio' }, el('span', {}, 'Sin horas cargadas esta semana.'))]));
+    const otros = estado.filtro ? [] : dias.filter((d) => !listados.includes(d));
+    otrosDias.hidden = !otros.length;
+    otrosDias.replaceChildren(el('span', { class: 'texto-suave texto-chico' }, 'Días sin carga:'),
+      ...otros.map((d) => el('button', { type: 'button', class: 'boton-enlace', onclick: () => abrirDia(d) }, `${nombreDia(d)} ${Number(d.slice(8))}`)));
+    if (pantalla.diaAbierto) pintar(); else barraVarios.hidden = true;
+  }
+  calcularDia();
+  pintarSemana();
   if (abrirAgregar) agregar();
 
   return el('section', { class: 'listado tm ag asm' },
@@ -420,11 +445,9 @@ export default async function asistenciaMovil(ctx) {
         el('h1', {}, 'Asistencia'),
         el('div', { class: 'ag-semana' },
           el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Semana anterior', onclick: () => mover(-1) }, icono('volver')),
-          el('span', {}, nombreMes(desde.slice(0, 7)).split(' ')[0]),
+          el('span', {}, `Semana ${numSemana(desde)}`),
           el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Semana siguiente', onclick: () => mover(1) }, icono('derecha')))),
-      franja,
-      desde !== lunesDe(hoy) ? el('button', { type: 'button', class: 'ag-hoy', onclick: () => { estado.lunes = lunesDe(hoy); estado.dia = hoy; pantalla.pestana = null; recargar(); } }, 'Volver a hoy') : null),
-    titulo, registrar, pestanas,
-    activos.length > 8 ? buscador : null,
-    lista, barraVarios);
+      el('p', { class: 'texto-suave texto-chico sem-rango' }, `${fechaCorta(desde)} – ${fechaCorta(hasta)}`),
+      desde !== lunesDe(hoy) ? el('button', { type: 'button', class: 'ag-hoy', onclick: () => { estado.lunes = lunesDe(hoy); estado.dia = hoy; pantalla.pestana = null; pantalla.diaAbierto = hoy; recargar(); } }, 'Volver a hoy') : null),
+    registrar, filtro, listaDias, otrosDias, barraVarios);
 }
