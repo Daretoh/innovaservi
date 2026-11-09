@@ -1,15 +1,15 @@
 // Tareas (v2, como InnovaGestión): pestañas Mis tareas / Todas / por persona / Avisos, filtros (abiertas, en proceso,
 // terminadas), búsqueda y orden; cada fila con prioridad inteligente, estado, responsables, vencimiento con color, días
 // abierta y clip con los archivos. Clic abre el detalle (detalle.js). ?nueva=1 abre "Nueva tarea"; ?id= abre una.
-import { el } from '../../../core/ui/dom.js?v=163dc56r';
-import { icono } from '../../../core/ui/iconos.js?v=163dc56r';
-import { boton } from '../../../core/ui/tabla.js?v=163dc56r';
-import { avisar } from '../../../core/ui/aviso.js?v=163dc56r';
-import { fechaLarga, fechaCorta, diaLocal } from '../../../core/ui/formato.js?v=163dc56r';
-import { nombrePrioridad, nombreEstado, CHIP_ESTADO, CATEGORIAS, nombreCategoria, prioridad, ordenar, diasHasta, diasAbierta, CHIP_PRIO } from '../datos.js?v=163dc56r';
-import { abrirDetalle } from './detalle.js?v=163dc56r';
-import { nuevaTarea } from './nueva.js?v=163dc56r';
-import { ctxTareas } from '../../../core/tareas-unidas.js?v=163dc56r';
+import { el } from '../../../core/ui/dom.js?v=163dc56rf';
+import { icono } from '../../../core/ui/iconos.js?v=163dc56rf';
+import { boton } from '../../../core/ui/tabla.js?v=163dc56rf';
+import { avisar } from '../../../core/ui/aviso.js?v=163dc56rf';
+import { fechaLarga, fechaCorta, diaLocal } from '../../../core/ui/formato.js?v=163dc56rf';
+import { nombrePrioridad, nombreEstado, CHIP_ESTADO, CATEGORIAS, nombreCategoria, prioridad, ordenar, diasHasta, diasAbierta, CHIP_PRIO } from '../datos.js?v=163dc56rf';
+import { abrirDetalle } from './detalle.js?v=163dc56rf';
+import { nuevaTarea } from './nueva.js?v=163dc56rf';
+import { ctxTareas } from '../../../core/tareas-unidas.js?v=163dc56rf';
 
 const estado = { ver: 'mias', persona: '', filtro: 'abiertas', buscar: '', orden: 'prioridad', categoria: '' };
 

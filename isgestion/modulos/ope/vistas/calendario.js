@@ -3,11 +3,11 @@
 // varios días (⟶), ventana del día, detalle, formulario de trabajo (cliente, sitio sugerido, descripción, tareas,
 // fechas, horario con atajos, personas necesarias por rol, repetir) y borrar uno o toda la serie.
 // Los datos son las faenas (ope_faenas): lo que se pone aquí aparece en Planificación al armar la faena.
-import { el } from '../../../core/ui/dom.js?v=163dc56r';
-import { avisar } from '../../../core/ui/aviso.js?v=163dc56r';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=163dc56r';
-import { hhmm } from '../../../core/ui/formato.js?v=163dc56r';
-import { cargarBase } from '../datos.js?v=163dc56r';
+import { el } from '../../../core/ui/dom.js?v=163dc56rf';
+import { avisar } from '../../../core/ui/aviso.js?v=163dc56rf';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=163dc56rf';
+import { hhmm } from '../../../core/ui/formato.js?v=163dc56rf';
+import { cargarBase } from '../datos.js?v=163dc56rf';
 
 const MES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
 const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
@@ -51,7 +51,7 @@ const SVG = {
 function cargarEstilos() {
   if (document.getElementById('igcal-css')) return;
   const l = document.createElement('link');
-  l.id = 'igcal-css'; l.rel = 'stylesheet'; l.href = new URL('../calendario.css?v=163dc56r', import.meta.url).href;
+  l.id = 'igcal-css'; l.rel = 'stylesheet'; l.href = new URL('../calendario.css?v=163dc56rf', import.meta.url).href;
   document.head.append(l);
 }
 
@@ -59,7 +59,7 @@ function cargarEstilos() {
 // Todas las faenas en páginas de 1.000, pedidas de a 3 a la vez (antes una tras otra: ~1 s con 1.500 faenas)
 async function cargarFaenas(ctx) {
   const pagina = (desde) => ctx.api.from('ope_faenas')
-    .select('id, titulo, tercero_id, sitio_id, fecha_inicio, fecha_fin, dias, hora_inicio, hora_fin, descripcion, tareas, tareas_check, dotacion, serie_id')
+    .select('id, titulo, tercero_id, sitio_id, fecha_inicio, fecha_fin, dias, hora_inicio, hora_fin, descripcion, tareas, tareas_check, dotacion, serie_id, pide_informe')
     .eq('empresa_id', ctx.empresa.id).is('deleted_at', null).neq('estado', 'cancelada')
     .order('fecha_inicio').order('id').range(desde, desde + 999);
   const todas = [];
@@ -175,8 +175,8 @@ export default async function vista(ctx) {
     const filas = [];
     for (let i = 0; i < html.length; i += 7) filas.push(`<div class="igcal-wk" title="Semana ISO">${numSemanaISO(celdas[i].d)}</div>${html.slice(i, i + 7).join('')}`);
     grid.innerHTML = filas.join('');
-    grid.querySelectorAll('.igcal-gitem').forEach((b) => b.addEventListener('click', (ev) => { ev.stopPropagation(); abrir(b.dataset.id); }));
-    grid.querySelectorAll('.igcal-ghead').forEach((b) => b.addEventListener('click', (ev) => { ev.stopPropagation(); if (b.dataset.id) abrir(b.dataset.id); else abrirDiaUbic(b.dataset.f, b.dataset.ubic, b.dataset.sitio); }));
+    grid.querySelectorAll('.igcal-gitem').forEach((b) => b.addEventListener('click', (ev) => { ev.stopPropagation(); abrir(b.dataset.id, b.closest('.igcal-cell')?.dataset.f); }));
+    grid.querySelectorAll('.igcal-ghead').forEach((b) => b.addEventListener('click', (ev) => { ev.stopPropagation(); if (b.dataset.id) abrir(b.dataset.id, b.closest('.igcal-cell')?.dataset.f); else abrirDiaUbic(b.dataset.f, b.dataset.ubic, b.dataset.sitio); }));
     grid.querySelectorAll('.igcal-mas').forEach((b) => b.addEventListener('click', (ev) => { ev.stopPropagation(); abrirDia(b.dataset.f); }));
     grid.querySelectorAll('.igcal-cell').forEach((c) => c.addEventListener('click', (ev) => {
       if (ev.target.closest('.igcal-grupo') || ev.target.closest('.igcal-mas')) return;
@@ -273,7 +273,7 @@ export default async function vista(ctx) {
     grid.querySelectorAll('[data-anio]').forEach((b) => b.addEventListener('click', () => { estado.anio = b.dataset.anio; render(); }));
     grid.querySelector('.igcal-bexcel').addEventListener('click', async () => {
       try {
-        const { nuevoExcel } = await import('../../../core/excel.js?v=163dc56r');
+        const { nuevoExcel } = await import('../../../core/excel.js?v=163dc56rf');
         const x = await nuevoExcel(ctx, { titulo: 'Trabajos', subtitulo: `Búsqueda: "${buscador.value.trim()}"${estado.anio ? ` · ${estado.anio}` : ''} · ${res.length} trabajos` });
         x.tabla({ columnas: [{ t: 'Fecha', tipo: 'fecha' }, { t: 'Hasta', tipo: 'fecha' }, { t: 'Días', tipo: 'numero' }, 'Cliente', 'Sitio', 'Trabajo', 'Descripción'],
           filas: [...res].reverse().map((e) => [e.fecha, evFin(e), dias(e), e.ubic, e.sitio, e.titulo, e.desc]) });
@@ -304,7 +304,7 @@ export default async function vista(ctx) {
     }
     return `${d.getDate()} de ${MES[d.getMonth()]} ${d.getFullYear()}`;
   }
-  function abrir(id) {
+  function abrir(id, dia = null) {   // dia: el día desde el que se abrió (lo propone al eliminar)
     const e = EVENTS.find((x) => String(x.id) === String(id)); if (!e) return;
     const v = ventana({
       cabeza: `linear-gradient(135deg,${esc(e.color)},#0c0f2e)`, titulo: e.titulo,
@@ -315,10 +315,10 @@ export default async function vista(ctx) {
         + '<div class="igcal-lbl">Observaciones</div><div class="igcal-obs"></div>'
         + `<div class="igcal-btns"><a class="igcal-hoy" style="text-decoration:none" href="${ctx.ruta('ope.plan', { f: e.id, d: e.fecha })}">Planificar</a>${puedeEliminar ? '<button type="button" class="igcal-del" data-a="del">Eliminar</button>' : ''}${puedeEditar && puedeEliminar ? '<button type="button" class="igcal-hoy" data-a="unir" title="Juntar con otra faena duplicada">Unir con otra</button>' : ''}${puedeEditar ? '<button type="button" class="igcal-add" data-a="edit">✎ Editar</button>' : ''}</div>`,
     });
-    v.box.querySelector('[data-a="edit"]')?.addEventListener('click', () => { v.cerrar(); abrirForm(e); });
+    v.box.querySelector('[data-a="edit"]')?.addEventListener('click', () => { v.cerrar(); abrirForm(e, { dia }); });
     v.box.querySelector('[data-a="unir"]')?.addEventListener('click', () => { v.cerrar(); unir(e); });
     detalleExtra(v.box, e);
-    v.box.querySelector('[data-a="del"]')?.addEventListener('click', () => { v.cerrar(); abrirBorrado(e); });
+    v.box.querySelector('[data-a="del"]')?.addEventListener('click', () => { v.cerrar(); abrirBorrado(e, dia); });
     v.box.querySelector('a.igcal-hoy')?.addEventListener('click', () => v.cerrar());
   }
   // Tareas con casilla (quién y cuándo) y observaciones con autor y fecha: basta con ver Faenas
@@ -391,7 +391,7 @@ export default async function vista(ctx) {
       cuerpo: evs.map((e) => `<div class="igcal-row click" data-id="${e.id}"><span class="igcal-chip" style="background:${esc(e.color)}">&nbsp;</span> ${esc(e.titulo)}${e.ubic ? ` · ${esc(e.ubic)}` : ''}${e.sitio ? ` · ${esc(e.sitio)}` : ''}</div>`).join('')
         + (puedeCrear ? '<div class="igcal-btns"><button type="button" class="igcal-add" data-a="add">＋ Agregar aquí</button></div>' : ''),
     });
-    v.box.querySelectorAll('[data-id]').forEach((r) => r.addEventListener('click', () => { v.cerrar(); abrir(r.dataset.id); }));
+    v.box.querySelectorAll('[data-id]').forEach((r) => r.addEventListener('click', () => { v.cerrar(); abrir(r.dataset.id, f); }));
     v.box.querySelector('[data-a="add"]')?.addEventListener('click', () => { v.cerrar(); nuevoEn(f); });
   }
   function abrirDiaUbic(f, ubic, sit) {
@@ -403,29 +403,49 @@ export default async function vista(ctx) {
       cuerpo: evs.map((e) => `<div class="igcal-row click" data-id="${e.id}"><span class="igcal-chip" style="background:${esc(e.color)}">&nbsp;</span> ${esc(e.titulo)}${e.hora ? ` · ${esc(e.hora)}` : ''}</div>`).join('')
         + (puedeCrear ? `<div class="igcal-btns"><button type="button" class="igcal-add" data-a="add">＋ Agregar a ${esc(lbl)}</button></div>` : ''),
     });
-    v.box.querySelectorAll('[data-id]').forEach((r) => r.addEventListener('click', () => { v.cerrar(); abrir(r.dataset.id); }));
+    v.box.querySelectorAll('[data-id]').forEach((r) => r.addEventListener('click', () => { v.cerrar(); abrir(r.dataset.id, f); }));
     v.box.querySelector('[data-a="add"]')?.addEventListener('click', () => { v.cerrar(); nuevoEn(f, evs[0].terceroId, sit); });
   }
   function nuevoEn(f, terceroId, sit) { if (puedeCrear) abrirForm(null, { fecha: f, terceroId, sitio: sit }); }
 
   // Borrar: solo este o toda la serie (las faenas se marcan como eliminadas, no se borran de la base)
-  function abrirBorrado(e) {
+  // Una faena de varios días es un solo registro: "solo ese día" lo saca de sus días y el resto del trabajo queda igual (Enzo, 2026-11-09)
+  function diasDeTrabajo(e) {
+    if (e.dias) return [...e.dias].sort();
+    const out = []; const fin = e.fin || e.fecha;
+    for (let d = fecha(e.fecha); iso(d) <= fin; d.setDate(d.getDate() + 1)) out.push(iso(d));
+    return out;
+  }
+  function abrirBorrado(e, dia = null) {
     const serie = !!e.serie && EVENTS.filter((x) => x.serie === e.serie).length > 1;
+    const dias = diasDeTrabajo(e); const varios = dias.length > 1;
+    const etiquetaDia = (f) => { const d = fecha(f); return `${DIAS[d.getDay()]} ${d.getDate()} de ${MES[d.getMonth()]}`; };
+    const pregunta = varios ? `Este trabajo dura <b>${dias.length} días</b>. ¿Qué quieres eliminar?` : serie ? 'Este trabajo es parte de una <b>serie repetida</b>. ¿Qué quieres eliminar?' : '¿Seguro que quieres eliminar este trabajo?';
     const v = ventana({
       cabeza: 'linear-gradient(135deg,#dc2626,#7f1d1d)', titulo: 'Eliminar trabajo', ancho: '',
-      cuerpo: `<p style="font-size:.92rem;line-height:1.6;margin:0 0 16px">${serie ? 'Este trabajo es parte de una <b>serie repetida</b>. ¿Qué quieres eliminar?' : '¿Seguro que quieres eliminar este trabajo?'}</p>`
-        + `<div style="display:flex;flex-direction:column;gap:9px"><button type="button" class="igcal-del" data-a="uno" style="width:100%">${serie ? 'Eliminar solo este' : 'Eliminar'}</button>`
+      cuerpo: `<p style="font-size:.92rem;line-height:1.6;margin:0 0 16px">${pregunta}</p>`
+        + '<div style="display:flex;flex-direction:column;gap:9px">'
+        + (varios ? `<select data-a="dia" data-nativo aria-label="Día a eliminar" style="width:100%">${dias.map((f) => `<option value="${f}"${f === dia ? ' selected' : ''}>${etiquetaDia(f)}</option>`).join('')}</select><button type="button" class="igcal-del" data-a="dia-solo" style="width:100%">Eliminar solo ese día</button>` : '')
+        + `<button type="button" class="igcal-del" data-a="uno" style="width:100%">${varios ? `Eliminar los ${dias.length} días` : serie ? 'Eliminar solo este' : 'Eliminar'}</button>`
         + (serie ? '<button type="button" class="igcal-del" data-a="serie" style="width:100%;background:#dc2626;color:#fff;border-color:#dc2626">Eliminar toda la serie</button>' : '')
         + '<button type="button" class="igcal-hoy" data-a="no" style="width:100%">Cancelar</button></div>',
     });
-    const borrar = async (q) => {
-      const { data, error } = await q.update({ deleted_at: new Date().toISOString() }).select('id');
+    const borrar = async (filtro) => {
+      const { data, error } = await filtro(ctx.api.from('ope_faenas').update({ deleted_at: new Date().toISOString() })).select('id');
       if (error || !data?.length) { avisar(error?.message ?? 'No tienes permiso para eliminar.', 'error'); return; }
       avisar(data.length > 1 ? `Se eliminaron ${data.length} trabajos.` : 'Trabajo eliminado.');
       v.cerrar(); document.querySelector('.igcal-modal.form')?.remove(); recargar();
     };
-    v.box.querySelector('[data-a="uno"]').addEventListener('click', () => borrar(ctx.api.from('ope_faenas').eq('id', e.id)));
-    v.box.querySelector('[data-a="serie"]')?.addEventListener('click', () => borrar(ctx.api.from('ope_faenas').eq('serie_id', e.serie).eq('empresa_id', ctx.empresa.id)));
+    const quitarDia = async (f) => {
+      const resto = dias.filter((x) => x !== f);
+      const { data, error } = await ctx.api.from('ope_faenas').update({ dias: resto.length > 1 ? resto : null, fecha_inicio: resto[0], fecha_fin: resto[resto.length - 1] }).eq('id', e.id).select('id');
+      if (error || !data?.length) { avisar(error?.message ?? 'No tienes permiso para eliminar.', 'error'); return; }
+      avisar(`Se quitó el ${etiquetaDia(f)}. El trabajo sigue los otros ${resto.length === 1 ? 'día' : `${resto.length} días`}.`);
+      v.cerrar(); document.querySelector('.igcal-modal.form')?.remove(); recargar();
+    };
+    v.box.querySelector('[data-a="dia-solo"]')?.addEventListener('click', () => quitarDia(v.box.querySelector('[data-a="dia"]').value));
+    v.box.querySelector('[data-a="uno"]').addEventListener('click', () => borrar((q) => q.eq('id', e.id)));
+    v.box.querySelector('[data-a="serie"]')?.addEventListener('click', () => borrar((q) => q.eq('serie_id', e.serie).eq('empresa_id', ctx.empresa.id)));
     v.box.querySelector('[data-a="no"]').addEventListener('click', v.cerrar);
   }
 
@@ -434,6 +454,7 @@ export default async function vista(ctx) {
     let tareas = e ? [...e.tareas] : [];
     const box = el('div', { class: 'igcal-box igcal-ffbox' });
     const fondo = el('div', { class: 'igcal-modal igcal form' }, box);
+    const conReportes = ctx.hayVista?.('reportes.lista');
     const opcionesCli = base.clientes.map((c) => `<option value="${c.id}">${esc(c.nombre)}</option>`).join('');
     const rolHtml = ROLES.map(([k, n, col]) => `<div class="igcal-rol"><span class="igcal-rl"><i style="background:${col}"></i>${n}</span><div class="igcal-step"><button type="button" data-d="-1" aria-label="Menos">−</button><input type="number" data-rol="${k}" min="0" max="99" placeholder="0"><button type="button" data-d="1" aria-label="Más">+</button></div></div>`).join('');
     box.innerHTML = `
@@ -447,6 +468,7 @@ export default async function vista(ctx) {
               <label><span>Ubicación / Sitio <i class="igcal-req">*</i></span><input type="text" name="sitio" list="igcal-sitios" placeholder="Ej: Chinquihue"></label>
               <datalist id="igcal-sitios"></datalist>
               <span class="full igcal-hint" style="margin-top:-6px">Solo clientes registrados. ¿Falta uno? Agrégalo en Clientes y proveedores. El sitio sugiere los ya usados por ese cliente.</span>
+              ${conReportes ? '<label class="full igcal-check"><input type="checkbox" name="informe"><span>Lleva reporte de trabajo</span></label>' : ''}
               <label class="full">${e ? 'Nueva observación' : 'Observación'} <span class="igcal-opt">(queda con tu nombre y la fecha; las anteriores se ven en el detalle)</span><textarea name="desc" rows="3" placeholder="Detalle, materiales, accesos, contacto en sitio…"></textarea></label>
             </div></section>
           <section class="igcal-ffsec igcal-o4"><h4><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Tareas <span class="igcal-fcnt" data-a="tcnt"></span></h4>
@@ -484,7 +506,7 @@ export default async function vista(ctx) {
     document.addEventListener('keydown', tecla);
     $('[data-a="x"]').addEventListener('click', cerrar);
     $('[data-a="cancel"]').addEventListener('click', cerrar);
-    $('[data-a="del"]')?.addEventListener('click', () => abrirBorrado(e));
+    $('[data-a="del"]')?.addEventListener('click', () => abrirBorrado(e, pre.dia ?? null));
 
     // Valores iniciales
     campo('titulo').value = e?.titulo ?? '';
@@ -494,6 +516,16 @@ export default async function vista(ctx) {
     campo('fin').value = e?.fin ?? '';
     campo('hora').value = e?.hora ?? '';
     box.querySelectorAll('[data-rol]').forEach((i) => { i.value = e?.dot?.[i.dataset.rol] || ''; });
+
+    // Lleva reporte: marcado según el cliente hasta que se cambie a mano en este trabajo (sin tocar, sigue lo que diga el cliente)
+    const informe = campo('informe');
+    let informeTocado = false;
+    const informeCliente = () => !!base.clientes.find((c) => c.id === campo('cliente').value)?.pideInforme;
+    if (informe) {
+      informe.checked = e?.raw.pide_informe ?? informeCliente();
+      informe.addEventListener('change', () => { informeTocado = true; });
+      campo('cliente').addEventListener('change', () => { if (!informeTocado && e?.raw.pide_informe == null) informe.checked = informeCliente(); });
+    }
 
     // Sitios sugeridos: los del cliente y los ya usados en sus trabajos
     const pintarSitios = () => {
@@ -638,6 +670,7 @@ export default async function vista(ctx) {
           hora_inicio: h.ini, hora_fin: h.ini ? h.fin : null, dias: dias && dias.length > 1 ? dias : null,
           tareas: [...tareas, ...(pendiente ? [pendiente] : [])].map((t) => String(t ?? '').trim()).filter(Boolean),
           dotacion: dotForm(),
+          ...(informe && informeTocado ? { pide_informe: informe.checked } : {}),
         };
         const rep = campo('repetir').value;
         const veces = Math.min(parseInt(campo('veces').value, 10) || 0, 52);

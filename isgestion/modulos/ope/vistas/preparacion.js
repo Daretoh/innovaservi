@@ -1,16 +1,16 @@
 // Preparación de una faena en un día: checklist (matrices + ropa por talla + ítems sueltos),
 // link para que la cuadrilla marque desde el celular y fotos de la carga general.
 // Se puede preparar aunque la planificación esté enviada (es lo que pasa después de enviarla).
-import { urlApp } from '../../../core/api.js?v=163dc56r';
-import { el } from '../../../core/ui/dom.js?v=163dc56r';
-import { icono } from '../../../core/ui/iconos.js?v=163dc56r';
-import { boton } from '../../../core/ui/tabla.js?v=163dc56r';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=163dc56r';
-import { avisar } from '../../../core/ui/aviso.js?v=163dc56r';
-import { urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=163dc56r';
-import { fechaLarga } from '../../../core/ui/formato.js?v=163dc56r';
-import { nombreCorto } from '../datos.js?v=163dc56r';
-import { TIPOS_ITEM } from './matrices.js?v=163dc56r';
+import { urlApp } from '../../../core/api.js?v=163dc56rf';
+import { el } from '../../../core/ui/dom.js?v=163dc56rf';
+import { icono } from '../../../core/ui/iconos.js?v=163dc56rf';
+import { boton } from '../../../core/ui/tabla.js?v=163dc56rf';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=163dc56rf';
+import { avisar } from '../../../core/ui/aviso.js?v=163dc56rf';
+import { urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=163dc56rf';
+import { fechaLarga } from '../../../core/ui/formato.js?v=163dc56rf';
+import { nombreCorto } from '../datos.js?v=163dc56rf';
+import { TIPOS_ITEM } from './matrices.js?v=163dc56rf';
 
 const SECCIONES = [['epp', 'EPP'], ['ropa', 'Ropa de trabajo'], ['herramienta', 'Herramientas'], ['maquinaria', 'Maquinaria'], ['material', 'Materiales']];
 const PRENDAS = [['Overol', 'ropa'], ['Botas', 'botas']];
