@@ -4,12 +4,12 @@
 // Trabajo de un tercero (2026-10-28): p. ej. desabolladura y pintura de un contratista, que cobra su parte; queda como
 // gasto suyo ligado a la orden y entra en su cuenta (Costos → Pagos). Las compras hechas por cuenta de un tercero
 // (fin_registros.a_cuenta_de) se muestran aparte: no son costo de la empresa, se le descuentan a él.
-import { el } from '../../core/ui/dom.js?v=4bb9c7a';
-import { boton } from '../../core/ui/tabla.js?v=4bb9c7a';
-import { abrirFormulario } from '../../core/ui/modal.js?v=4bb9c7a';
-import { avisar } from '../../core/ui/aviso.js?v=4bb9c7a';
-import { dinero, fechaLarga, diaLocal, hoyISO } from '../../core/ui/formato.js?v=4bb9c7a';
-import { nombreVehiculo } from './datos.js?v=4bb9c7a';
+import { el } from '../../core/ui/dom.js?v=64053cb';
+import { boton } from '../../core/ui/tabla.js?v=64053cb';
+import { abrirFormulario } from '../../core/ui/modal.js?v=64053cb';
+import { avisar } from '../../core/ui/aviso.js?v=64053cb';
+import { dinero, fechaLarga, diaLocal, hoyISO } from '../../core/ui/formato.js?v=64053cb';
+import { nombreVehiculo } from './datos.js?v=64053cb';
 
 const nombreT = (t) => t?.nombre_fantasia || t?.razon_social || '';
 

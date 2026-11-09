@@ -1,14 +1,16 @@
 // Asistencia en el teléfono (Enzo, 2026-11-06): en vez de la planilla, una lista de personas por día.
 // Arriba la semana; pestañas Con horas / Sin horas / Ausentes. Tocar a alguien abre una hoja con entrada, salida, faena y
 // atajos de horario. En Sin horas se marcan varias personas (o las planificadas) y se registran de una vez.
+// Botón Agregar (y el "+" de la barra), como en InnovaGestión: primero las faenas del día, después se marca la gente; cada faena
+// abierta tiene además "Agregar persona en esta faena".
 // Mismos datos y reglas que la planilla de escritorio (horas.js): las del marcaje se corrigen en Marcajes y los fijos con
 // turno quedan presentes "según horario".
-import { el } from '../../../core/ui/dom.js?v=4bb9c7a';
-import { icono } from '../../../core/ui/iconos.js?v=4bb9c7a';
-import { boton } from '../../../core/ui/tabla.js?v=4bb9c7a';
-import { avisar } from '../../../core/ui/aviso.js?v=4bb9c7a';
-import { hoyISO, lunesDe, sumarDias, nombreDia, nombreMes, horas, aMin, hhmm } from '../../../core/ui/formato.js?v=4bb9c7a';
-import { estado, minutosRegistro, ausente, eliminar } from './horas.js?v=4bb9c7a';
+import { el } from '../../../core/ui/dom.js?v=64053cb';
+import { icono } from '../../../core/ui/iconos.js?v=64053cb';
+import { boton } from '../../../core/ui/tabla.js?v=64053cb';
+import { avisar } from '../../../core/ui/aviso.js?v=64053cb';
+import { hoyISO, lunesDe, sumarDias, nombreDia, nombreMes, horas, aMin, hhmm } from '../../../core/ui/formato.js?v=64053cb';
+import { estado, minutosRegistro, ausente, eliminar } from './horas.js?v=64053cb';
 
 const pantalla = { pestana: null, buscar: '', marcados: new Set(), abiertas: new Set() };   // abiertas: faenas desplegadas (día|faena)
 const DIAS_LARGOS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
@@ -23,11 +25,12 @@ const enDia = (f, d) => f.fecha_inicio <= d && f.fecha_fin >= d && (!f.dias?.len
 export default async function asistenciaMovil(ctx) {
   const hoy = hoyISO();
   const puedeCrear = ctx.puede('asistencia', 'crear');
-  // Desde el "+" de la barra: hoy, en Sin horas; una vez (la dirección queda limpia y recargar no lo repite)
-  if (ctx.params.registrar && puedeCrear) {
+  // Desde el "+" de la barra: hoy, con Agregar abierto; una vez (la dirección queda limpia y recargar no lo repite)
+  const abrirAgregar = !!ctx.params.registrar && puedeCrear;
+  if (abrirAgregar) {
     history.replaceState(null, '', ctx.ruta('asistencia.horas'));
     estado.lunes = lunesDe(hoy); estado.dia = hoy;
-    pantalla.pestana = 'sin'; pantalla.buscar = ''; pantalla.marcados.clear();
+    pantalla.pestana = null; pantalla.buscar = ''; pantalla.marcados.clear();
   }
   const desde = estado.lunes; const hasta = sumarDias(desde, 6);
   if (estado.dia < desde || estado.dia > hasta) estado.dia = hoy >= desde && hoy <= hasta ? hoy : desde;
@@ -77,16 +80,10 @@ export default async function asistenciaMovil(ctx) {
     return m;
   };
 
-  // ---- Hoja para registrar o corregir
-  function hoja({ r = null, ids = [], plan = null }) {
-    const d = r?.fecha ?? estado.dia;
-    const v = personas.get(r?.persona_id ?? ids[0]);
-    const varias = ids.length > 1;
-    const desdeMarcaje = r?.origen === 'marcaje';
-    const editable = r ? puedeEditar && !desdeMarcaje : puedeCrear;
-    const titulo = varias ? `${ids.length} personas` : v ? nombre(v.personas) : 'Persona';
-    const entrada = el('input', { type: 'time', class: 'campo', 'aria-label': 'Entrada', required: true, disabled: !editable, value: r ? hhmm(r.entrada) : plan?.entrada || HORARIO_BASE.split('-')[0] });
-    const salida = el('input', { type: 'time', class: 'campo', 'aria-label': 'Salida', required: true, disabled: !editable, value: r ? hhmm(r.salida) : plan?.salida || HORARIO_BASE.split('-')[1] });
+  // Atajos de horario, entrada, salida y total (hoja de una persona y Agregar)
+  function camposHorario({ inicial, final, editable }) {
+    const entrada = el('input', { type: 'time', class: 'campo', 'aria-label': 'Entrada', required: true, disabled: !editable, value: inicial });
+    const salida = el('input', { type: 'time', class: 'campo', 'aria-label': 'Salida', required: true, disabled: !editable, value: final });
     const total = el('p', { class: 'asm-total', 'aria-live': 'polite' });
     const pintarTotal = () => {
       if (!entrada.value || !salida.value) { total.textContent = ''; return; }
@@ -99,6 +96,134 @@ export default async function asistenciaMovil(ctx) {
     }));
     const marcarAtajo = () => { [...chips.children].forEach((c) => c.classList.toggle('activo', c.textContent === `${entrada.value} – ${salida.value}`)); };
     for (const c of [entrada, salida]) c.addEventListener('input', () => { pintarTotal(); marcarAtajo(); });
+    const filas = el('div', { class: 'asm-horas' },
+      el('label', {}, el('span', {}, 'Entrada'), entrada),
+      el('span', { class: 'asm-flecha', 'aria-hidden': 'true' }, icono('derecha', { tam: 18 })),
+      el('label', {}, el('span', {}, 'Salida'), salida));
+    return { entrada, salida, total, chips, filas, iniciar: () => { pintarTotal(); marcarAtajo(); } };
+  }
+
+  // ---- Agregar (como en InnovaGestión): primero la faena del día, después la gente
+  const diaLargo = (d) => `${DIAS_LARGOS[(new Date(`${d}T12:00:00`).getDay() + 6) % 7]} ${Number(d.slice(8))}`;
+  function faenasParaAgregar(d) {
+    const { delDia, plan } = datosDia;
+    const m = new Map();
+    for (const f of (faenas.data ?? []).filter((x) => enDia(x, d))) {
+      const texto = textoFaena(f);
+      if (!m.has(clave(texto))) m.set(clave(texto), { texto, color: colorDe.get(f.tercero_id), entrada: hhmm(f.hora_inicio ?? '') || '', salida: hhmm(f.hora_fin ?? '') || '' });
+    }
+    for (const r of delDia) if (r.faena && !m.has(clave(r.faena))) m.set(clave(r.faena), { texto: r.faena, color: colorFaena.get(clave(r.faena)), entrada: '', salida: '' });
+    return [...m.entries()].map(([k, f]) => ({ ...f,
+      conHoras: new Set(delDia.filter((r) => clave(r.faena) === k).map((r) => r.persona_id)).size,
+      planificados: activos.filter((v) => clave(plan.get(v.persona_id)?.faena) === k).length,
+    })).sort((a, b) => a.texto.localeCompare(b.texto));
+  }
+
+  function agregar(faenaInicial) {
+    const d = estado.dia;
+    const conFaena = verOpe || datosDia.delDia.some((r) => r.faena);
+    const opciones = conFaena ? faenasParaAgregar(d) : [];
+    const tituloEl = el('h2', {});
+    const subtitulo = el('span', { class: 'texto-suave texto-chico' });
+    const cuerpo = el('div', { class: 'asm-agregar' });
+    const dialogo = el('dialog', { class: 'modal asm-hoja', 'aria-label': 'Agregar horas' },
+      el('header', { class: 'modal-cabecera' },
+        el('div', { class: 'asm-hoja-titulo' }, tituloEl, subtitulo),
+        el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Cerrar', onclick: () => cerrar() }, icono('cerrar'))),
+      cuerpo);
+    function cerrar() { dialogo.close(); dialogo.remove(); }
+    dialogo.addEventListener('cancel', () => dialogo.remove());
+
+    function elegirFaena() {
+      tituloEl.textContent = '¿En qué faena?';
+      subtitulo.textContent = diaLargo(d);
+      cuerpo.replaceChildren(el('div', { class: 'modal-cuerpo asm-faenas' },
+        opciones.map((f) => el('button', { type: 'button', class: 'asm-grupo-cabeza', style: f.color ? `--asm-color:${f.color}` : '', onclick: () => elegirGente(f, true) },
+          el('i', { 'aria-hidden': 'true' }), el('span', {}, f.texto),
+          el('small', {}, f.conHoras ? `${f.conHoras} con horas` : f.planificados ? `${f.planificados} planif.` : ''), icono('derecha', { tam: 18 }))),
+        el('button', { type: 'button', class: 'asm-otra-faena', onclick: () => elegirGente({ texto: '' }, true) }, 'Sin faena u otra')));
+    }
+
+    function elegirGente(f, conVolver) {
+      const { plan, delDia, aus } = datosDia;
+      const ausentes = new Set(aus.map((a) => a.persona_id));
+      const k = clave(f.texto);
+      const delPlan = (v) => !!k && clave(plan.get(v.persona_id)?.faena) === k;
+      const horasDe = (v) => delDia.filter((r) => r.persona_id === v.persona_id);
+      const gente = activos.filter((v) => !ausentes.has(v.persona_id))
+        .sort((a, b) => delPlan(b) - delPlan(a) || (horasDe(a).length > 0) - (horasDe(b).length > 0));   // planificados, sin horas, con horas
+      const planificado = gente.find(delPlan) ? plan.get(gente.find(delPlan).persona_id) : null;
+      const marcados = new Set();
+      const h = camposHorario({ inicial: planificado?.entrada || f.entrada || HORARIO_BASE.split('-')[0], final: planificado?.salida || f.salida || HORARIO_BASE.split('-')[1], editable: true });
+      tituloEl.textContent = f.texto || 'Sin faena u otra';
+      subtitulo.textContent = `${diaLargo(d)} · marca a la gente`;
+      const faena = el('input', { class: 'campo', list: 'asm-faenas-agregar', placeholder: 'Elige o escribe', autocomplete: 'off', value: f.texto });
+      const listaFaenas = el('datalist', { id: 'asm-faenas-agregar' }, opciones.map((o) => el('option', { value: o.texto })));
+      const buscar = el('input', { type: 'search', class: 'campo', placeholder: 'Buscar trabajador', 'aria-label': 'Buscar trabajador' });
+      const filas = el('div', { class: 'asm-gente' });
+      const error = el('p', { class: 'asm-error', role: 'alert', hidden: true });
+      const btn = boton('Marca a alguien', { tipo: 'primario', type: 'submit', disabled: true });
+      const contar = () => { const n = marcados.size; btn.disabled = !n; btn.textContent = n ? `Agregar ${n === 1 ? 'a 1 persona' : `a ${n} personas`}` : 'Marca a alguien'; };
+      const planificados = gente.filter(delPlan);
+      const marcarPlan = planificados.length > 1 ? el('button', { type: 'button', class: 'asm-planificados', onclick: () => { planificados.forEach((v) => marcados.add(v.persona_id)); pintarGente(); } }, icono('check', { tam: 16 }), `Marcar los ${planificados.length} planificados`) : null;
+      function pintarGente() {
+        const texto = clave(buscar.value);
+        filas.replaceChildren(...gente.filter((v) => !texto || clave(`${nombre(v.personas)} ${v.cargo ?? ''}`).includes(texto)).map((v) => {
+          const marcado = marcados.has(v.persona_id);
+          const ya = horasDe(v);
+          return el('button', { type: 'button', class: `asm-persona asm-elegir${marcado ? ' marcada' : ''}`, role: 'checkbox', 'aria-checked': String(marcado),
+            onclick: () => { if (marcado) marcados.delete(v.persona_id); else marcados.add(v.persona_id); pintarGente(); } },
+          el('span', { class: 'asm-marca-chica', 'aria-hidden': 'true' }, marcado ? icono('check', { tam: 18 }) : iniciales(v.personas)),
+          el('span', { class: 'asm-persona-texto' }, el('strong', {}, nombre(v.personas)),
+            el('span', { class: 'texto-suave texto-chico' }, delPlan(v) ? 'Planificado aquí' : ya.length ? `Ya tiene ${ya.map((r) => `${hhmm(r.entrada)}–${hhmm(r.salida)}`).join(', ')}` : v.cargo || 'Sin horas')));
+        }));
+        contar();
+      }
+      buscar.addEventListener('input', pintarGente);
+      const guardar = async (ev) => {
+        ev.preventDefault();
+        error.hidden = true;
+        if (h.entrada.value === h.salida.value) { error.textContent = 'La entrada y la salida no pueden ser iguales.'; error.hidden = false; return; }
+        const nombreFaena = conFaena ? faena.value.trim() : '';
+        btn.disabled = true; btn.classList.add('cargando');
+        const res = await ctx.api.from('asis_horas').insert([...marcados].map((persona_id) => ({ persona_id, fecha: d, empresa_id: ctx.empresa.id, entrada: h.entrada.value, salida: h.salida.value, faena: nombreFaena || null, vueltas: 0 }))).select('id');
+        btn.classList.remove('cargando');
+        if (res.error || !res.data?.length) { contar(); error.textContent = res.error?.message ?? 'No tienes permiso para guardar.'; error.hidden = false; return; }
+        const n = marcados.size;
+        cerrar();
+        avisar(n === 1 ? 'Horas registradas.' : `Horas registradas a ${n} personas.`);
+        pantalla.pestana = 'con'; pantalla.abiertas.add(`${d}|${clave(nombreFaena)}`);
+        recargar();
+      };
+      cuerpo.replaceChildren(el('form', { class: 'modal-cuerpo asm-form', onsubmit: guardar },
+        h.chips, h.filas, h.total,
+        conFaena && !f.texto ? el('label', { class: 'asm-campo' }, el('span', {}, 'Faena'), faena) : null,
+        conFaena && !f.texto ? listaFaenas : null,
+        gente.length > 8 ? buscar : null,
+        marcarPlan,
+        filas,
+        error,
+        el('div', { class: 'modal-pie' }, conVolver && opciones.length ? boton('Volver', { onclick: elegirFaena }) : boton('Cancelar', { onclick: () => cerrar() }), btn)));
+      pintarGente(); h.iniciar();
+    }
+
+    document.body.append(dialogo);
+    dialogo.showModal();
+    if (faenaInicial) elegirGente(faenaInicial, false);
+    else if (opciones.length) elegirFaena();
+    else elegirGente({ texto: '' }, false);
+  }
+
+  // ---- Hoja para registrar o corregir
+  function hoja({ r = null, ids = [], plan = null }) {
+    const d = r?.fecha ?? estado.dia;
+    const v = personas.get(r?.persona_id ?? ids[0]);
+    const varias = ids.length > 1;
+    const desdeMarcaje = r?.origen === 'marcaje';
+    const editable = r ? puedeEditar && !desdeMarcaje : puedeCrear;
+    const titulo = varias ? `${ids.length} personas` : v ? nombre(v.personas) : 'Persona';
+    const h = camposHorario({ inicial: r ? hhmm(r.entrada) : plan?.entrada || HORARIO_BASE.split('-')[0], final: r ? hhmm(r.salida) : plan?.salida || HORARIO_BASE.split('-')[1], editable });
+    const { entrada, salida, total, chips } = h;
 
     const listaFaenas = el('datalist', { id: 'asm-faenas' }, faenasDe(d).map((t) => el('option', { value: t })));
     const conFaena = verOpe || !!r?.faena;
@@ -137,10 +262,7 @@ export default async function asistenciaMovil(ctx) {
     const form = el('form', { class: 'modal-cuerpo asm-form', onsubmit: guardar },
       desdeMarcaje ? el('p', { class: 'asm-nota' }, 'Viene del marcaje: se corrige en ', ctx.hayVista('asistencia.marcajes') ? el('a', { href: ctx.ruta('asistencia.marcajes'), onclick: () => cerrar() }, 'Marcajes') : 'Marcajes', '.') : null,
       editable ? chips : null,
-      el('div', { class: 'asm-horas' },
-        el('label', {}, el('span', {}, 'Entrada'), entrada),
-        el('span', { class: 'asm-flecha', 'aria-hidden': 'true' }, icono('derecha', { tam: 18 })),
-        el('label', {}, el('span', {}, 'Salida'), salida)),
+      h.filas,
       total,
       conFaena ? el('label', { class: 'asm-campo' }, el('span', {}, 'Faena'), faena) : null,
       conFaena ? listaFaenas : null,
@@ -158,7 +280,7 @@ export default async function asistenciaMovil(ctx) {
     dialogo.addEventListener('cancel', () => dialogo.remove());
     document.body.append(dialogo);
     dialogo.showModal();
-    pintarTotal(); marcarAtajo();
+    h.iniciar();
   }
 
   // ---- Pantalla
@@ -166,7 +288,7 @@ export default async function asistenciaMovil(ctx) {
   const pestanas = el('div', { class: 'asm-pestanas', role: 'tablist', 'aria-label': 'Personas del día' });
   const titulo = el('h2', { class: 'ag-titulo' });
   const barraVarios = el('div', { class: 'asm-varios', hidden: true });
-  const registrar = el('div', { class: 'asm-registrar' });
+  const registrar = puedeCrear ? el('div', { class: 'asm-registrar' }, boton('Agregar', { tipo: 'primario', icono: 'mas', onclick: () => agregar() })) : null;
   const buscador = el('input', { type: 'search', class: 'campo asm-buscar', placeholder: 'Buscar trabajador', 'aria-label': 'Buscar trabajador', value: pantalla.buscar });
   buscador.addEventListener('input', () => { pantalla.buscar = buscador.value; pintarLista(); });
   const dias = [0, 1, 2, 3, 4, 5, 6].map((i) => sumarDias(desde, i));
@@ -233,7 +355,8 @@ export default async function asistenciaMovil(ctx) {
         const conCabeza = verOpe || !!g.texto;
         const llave = `${estado.dia}|${k}`;
         const abierto = !conCabeza || !!pantalla.buscar.trim() || pantalla.abiertas.has(llave);
-        const cuerpo = el('div', { class: 'asm-grupo-cuerpo', hidden: !abierto }, g.filas.map(tarjetaHoras));
+        const cuerpo = el('div', { class: 'asm-grupo-cuerpo', hidden: !abierto }, g.filas.map(tarjetaHoras),
+          puedeCrear ? el('button', { type: 'button', class: 'asm-planificados', onclick: () => agregar({ texto: g.texto ?? '', entrada: '', salida: '' }) }, icono('mas', { tam: 16 }), g.texto ? 'Agregar persona en esta faena' : 'Agregar persona') : null);
         const cabeza = conCabeza ? el('button', { type: 'button', class: 'asm-grupo-cabeza', 'aria-expanded': String(abierto), onclick: () => {
           const abrir = cuerpo.hidden; cuerpo.hidden = !abrir; cabeza.setAttribute('aria-expanded', String(abrir));
           if (abrir) pantalla.abiertas.add(llave); else pantalla.abiertas.delete(llave);
@@ -245,7 +368,6 @@ export default async function asistenciaMovil(ctx) {
       const visibles = sin.filter(coincide);
       const planificados = visibles.filter((v) => plan.has(v.persona_id));
       contenido = [
-        puedeCrear && visibles.length ? el('p', { class: 'asm-guia' }, 'Toca a una persona para registrar sus horas, o marca varias en el círculo de la izquierda.') : null,
         puedeCrear && planificados.length > 1 ? el('button', { type: 'button', class: 'asm-planificados', onclick: () => { planificados.forEach((v) => pantalla.marcados.add(v.persona_id)); pintarLista(); } },
           icono('check', { tam: 16 }), `Marcar los ${planificados.length} planificados`) : null,
         ...visibles.map((v) => {
@@ -287,11 +409,10 @@ export default async function asistenciaMovil(ctx) {
     titulo.textContent = `${d === hoy ? `Hoy, ${DIAS_LARGOS[i].toLowerCase()}` : DIAS_LARGOS[i]} ${Number(d.slice(8))}${min ? ` · ${horas(min)}` : ''}`;
     pestanas.replaceChildren(...[['con', 'Con horas', new Set(delDia.map((r) => r.persona_id)).size], ['sin', 'Sin horas', sin.length], ['aus', 'Ausentes', aus.length]].map(([k, t, n]) =>
       el('button', { type: 'button', role: 'tab', class: `asm-pestana asm-${k}`, 'aria-selected': String(pantalla.pestana === k), onclick: () => { pantalla.pestana = k; pintar(); } }, el('strong', {}, String(n)), el('span', {}, t))));
-    // Agregar siempre a la vista: lleva a quienes faltan (en Sin horas, cada persona ya es el botón)
-    registrar.replaceChildren(...(puedeCrear && sin.length && pantalla.pestana !== 'sin' ? [boton('Registrar horas', { tipo: 'primario', icono: 'mas', onclick: () => { pantalla.pestana = 'sin'; pintar(); } })] : []));
     pintarLista();
   }
   pintar();
+  if (abrirAgregar) agregar();
 
   return el('section', { class: 'listado tm ag asm' },
     el('header', { class: 'tm-cab ag-cab' },
@@ -303,7 +424,7 @@ export default async function asistenciaMovil(ctx) {
           el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Semana siguiente', onclick: () => mover(1) }, icono('derecha')))),
       franja,
       desde !== lunesDe(hoy) ? el('button', { type: 'button', class: 'ag-hoy', onclick: () => { estado.lunes = lunesDe(hoy); estado.dia = hoy; pantalla.pestana = null; recargar(); } }, 'Volver a hoy') : null),
-    titulo, pestanas, registrar,
+    titulo, registrar, pestanas,
     activos.length > 8 ? buscador : null,
     lista, barraVarios);
 }

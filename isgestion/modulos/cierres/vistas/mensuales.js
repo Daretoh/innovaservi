@@ -1,57 +1,91 @@
-// Cierres mensuales: un cierre por cliente con cierre mensual y mes, con su estado y total.
-import { el } from '../../../core/ui/dom.js?v=4bb9c7a';
-import { icono } from '../../../core/ui/iconos.js?v=4bb9c7a';
-import { listado, boton } from '../../../core/ui/tabla.js?v=4bb9c7a';
-import { avisar } from '../../../core/ui/aviso.js?v=4bb9c7a';
-import { dinero, hoyISO, nombreMes, moverMes } from '../../../core/ui/formato.js?v=4bb9c7a';
-import { nombreTercero, nombreEstado, CHIP_ESTADO, numeroTexto } from '../datos.js?v=4bb9c7a';
+// Cierres: lista general de todos los meses y clientes, con filtros (2026-11-09, antes era una pantalla por mes).
+// Si el cierre generó una cotización, sus montos y estado son los de la cotización.
+import { el } from '../../../core/ui/dom.js?v=64053cb';
+import { listado, boton } from '../../../core/ui/tabla.js?v=64053cb';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=64053cb';
+import { dinero, hoyISO } from '../../../core/ui/formato.js?v=64053cb';
+import { nombreTercero, nombreEstado, CHIP_ESTADO, numeroTexto, nombreMesLargo, IVA } from '../datos.js?v=64053cb';
+import { totales, nombreEstado as estadoCot, CHIP_ESTADO as CHIP_COT } from '../../cotizaciones/datos.js?v=64053cb';
 
-const estado = { mes: hoyISO().slice(0, 7) };
+const filtro = { grupo: 'todos', cliente: '', anio: '' };
+const GRUPOS = [['todos', 'Todos'], ['borrador', 'Borrador'], ['proceso', 'Por cobrar'], ['cobrado', 'Cobrados']];
+
+const cotViva = (c) => (c.cot_cotizaciones && !c.cot_cotizaciones.deleted_at ? c.cot_cotizaciones : null);
+const grupoDe = (c) => {
+  const q = cotViva(c);
+  if (q) return q.cobro_fecha ? 'cobrado' : 'proceso';
+  return c.estado === 'borrador' ? 'borrador' : c.estado === 'cobrado' ? 'cobrado' : 'proceso';
+};
+function montos(c) {
+  const q = cotViva(c);
+  if (q) { const t = totales(q, q.cot_grupos, q.cot_lineas); return { neto: t.neto, iva: t.iva, total: t.total }; }
+  if (c.estado !== 'borrador') return { neto: c.neto, iva: c.iva, total: c.total };
+  const neto = c.cie_lineas.filter((l) => !l.excluida).reduce((s, l) => s + l.monto, 0);
+  const iva = c.afecto_iva ? Math.round(neto * IVA) : 0;
+  return { neto, iva, total: neto + iva };
+}
+function textoLineas(c) {
+  const vivas = c.cie_lineas.filter((l) => !l.excluida);
+  const autos = vivas.filter((l) => l.orden_id).length;
+  if (autos && autos === vivas.length) return `${autos} ${autos === 1 ? 'vehículo' : 'vehículos'}`;
+  return `${vivas.length} ${vivas.length === 1 ? 'línea' : 'líneas'}`;
+}
 
 export default async function vista(ctx) {
   const e = ctx.empresa.id;
   const [cli, cie] = await Promise.all([
-    ctx.api.from('cie_clientes').select('*, terceros(id, razon_social, nombre_fantasia)').eq('empresa_id', e).eq('activo', true),
-    ctx.api.from('cie_cierres').select('*, cie_lineas(monto, excluida), terceros(id, razon_social, nombre_fantasia)').eq('empresa_id', e).eq('mes', estado.mes),
+    ctx.api.from('cie_clientes').select('tercero_id, terceros(id, razon_social, nombre_fantasia)').eq('empresa_id', e).eq('activo', true),
+    ctx.api.from('cie_cierres').select('*, cie_lineas(monto, excluida, orden_id), terceros(id, razon_social, nombre_fantasia), cot_cotizaciones(*, cot_grupos(id), cot_lineas(*))').eq('empresa_id', e).order('mes', { ascending: false }),
   ]);
   if (cli.error) throw cli.error;
   if (cie.error) throw cie.error;
-  // Una fila por cliente activo + cierres del mes de clientes que ya no están activos
-  const porCliente = new Map(cie.data.map((c) => [c.tercero_id, c]));
-  const filas = [
-    ...cli.data.map((x) => ({ tercero: x.terceros, cierre: porCliente.get(x.tercero_id) ?? null })),
-    ...cie.data.filter((c) => !cli.data.some((x) => x.tercero_id === c.tercero_id)).map((c) => ({ tercero: c.terceros, cierre: c })),
-  ].sort((a, b) => nombreTercero(a.tercero).localeCompare(nombreTercero(b.tercero), 'es'));
-  const neto = (c) => (c.estado === 'borrador' ? c.cie_lineas.filter((l) => !l.excluida).reduce((s, l) => s + l.monto, 0) : c.neto);
+  const clientes = [...new Map(cie.data.map((c) => [c.tercero_id, nombreTercero(c.terceros)])).entries()].sort((a, b) => a[1].localeCompare(b[1], 'es'));
+  const anios = [...new Set(cie.data.map((c) => c.mes.slice(0, 4)))].sort().reverse();
+  const filas = cie.data.filter((c) => (filtro.grupo === 'todos' || grupoDe(c) === filtro.grupo)
+    && (!filtro.cliente || c.tercero_id === filtro.cliente) && (!filtro.anio || c.mes.startsWith(filtro.anio)))
+    .map((c) => ({ ...c, m: montos(c), q: cotViva(c) }))
+    .sort((a, b) => b.mes.localeCompare(a.mes) || nombreTercero(a.terceros).localeCompare(nombreTercero(b.terceros), 'es'));
 
-  const abrir = async (t, b) => {
-    b.disabled = true;
-    const { data: id, error } = await ctx.api.rpc('cie_abrir', { p_empresa: e, p_tercero: t.id, p_mes: estado.mes });
-    if (error) { avisar(error.message, 'error'); b.disabled = false; return; }
-    location.hash = ctx.ruta('cierres.cierre', { id });
+  const selector = (clave, etiqueta, opciones) => {
+    const s = el('select', { class: 'campo campo-filtro', 'aria-label': etiqueta }, el('option', { value: '' }, etiqueta), opciones.map(([v, t]) => el('option', { value: v, selected: filtro[clave] === v }, t)));
+    s.addEventListener('change', () => { filtro[clave] = s.value; ctx.refrescar(); });
+    return s;
   };
-  const mover = (n) => { estado.mes = moverMes(estado.mes, n); ctx.refrescar(); };
-  const acciones = [el('div', { class: 'nav-periodo' },
-    el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Mes anterior', onclick: () => mover(-1) }, icono('volver')),
-    el('strong', {}, nombreMes(estado.mes)),
-    el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Mes siguiente', onclick: () => mover(1) }, icono('derecha')))];
+  const abrir = () => abrirFormulario({
+    titulo: 'Abrir cierre',
+    campos: [
+      { id: 'cliente', etiqueta: 'Cliente', opciones: cli.data.map((x) => [x.tercero_id, nombreTercero(x.terceros)]) },
+      { id: 'mes', etiqueta: 'Mes', tipo: 'month', requerido: true, valor: hoyISO().slice(0, 7) },
+    ],
+    textoGuardar: 'Abrir',
+    alGuardar: async (v) => {
+      const { data: id, error } = await ctx.api.rpc('cie_abrir', { p_empresa: e, p_tercero: v.cliente, p_mes: v.mes });
+      if (error) throw new Error(error.message);
+      location.hash = ctx.ruta('cierres.cierre', { id });
+    },
+  });
+  const acciones = [
+    el('div', { class: 'segmento', role: 'group', 'aria-label': 'Estado' }, GRUPOS.map(([k, n]) => el('button', { type: 'button', 'aria-pressed': String(filtro.grupo === k), onclick: () => { filtro.grupo = k; ctx.refrescar(); } }, n))),
+    selector('cliente', 'Todos los clientes', clientes),
+    selector('anio', 'Todos los años', anios.map((a) => [a, a])),
+  ];
   if (ctx.puede('cierres', 'editar')) acciones.push(boton('Clientes con cierre', { icono: 'users', onclick: () => { location.hash = ctx.ruta('cierres.clientes'); } }));
+  if (ctx.puede('cierres', 'crear') && cli.data.length) acciones.push(boton('Abrir cierre', { icono: 'mas', tipo: 'primario', onclick: abrir }));
 
-  const tabla = listado({
-    titulo: 'Cierres mensuales',
+  return listado({
+    titulo: 'Cierres',
     filas,
     acciones,
-    vacio: 'No hay clientes con cierre mensual. Agrégalos en "Clientes con cierre".',
+    vacio: 'No hay cierres con estos filtros.',
     columnas: [
-      { titulo: 'Cliente', valor: (f) => el('strong', {}, nombreTercero(f.tercero)) },
-      { titulo: 'Cierre', valor: (f) => (f.cierre ? el('a', { href: ctx.ruta('cierres.cierre', { id: f.cierre.id }) }, f.cierre.numero ? `N° ${numeroTexto(f.cierre.numero)}` : 'Borrador') : el('span', { class: 'texto-suave' }, 'Sin abrir')) },
-      { titulo: 'Estado', valor: (f) => (f.cierre ? el('span', { class: `chip ${CHIP_ESTADO[f.cierre.estado]}` }, nombreEstado[f.cierre.estado]) : '') },
-      { titulo: 'Líneas', valor: (f) => (f.cierre ? String(f.cierre.cie_lineas.filter((l) => !l.excluida).length) : '') },
-      { titulo: 'Neto', valor: (f) => (f.cierre ? dinero(neto(f.cierre)) : '') },
-      { titulo: 'Total', valor: (f) => (f.cierre ? (f.cierre.estado === 'borrador' ? el('span', { class: 'texto-suave' }, 'al emitir') : el('strong', {}, dinero(f.cierre.total))) : '') },
-      { titulo: '', valor: (f) => (f.cierre ? boton('Abrir', { icono: 'derecha', onclick: () => { location.hash = ctx.ruta('cierres.cierre', { id: f.cierre.id }); } })
-        : ctx.puede('cierres', 'crear') ? boton('Abrir cierre', { icono: 'mas', tipo: 'primario', onclick: (ev) => abrir(f.tercero, ev.currentTarget) }) : '') },
+      { titulo: 'Cierre', valor: (c) => el('a', { href: ctx.ruta('cierres.cierre', { id: c.id }) }, el('strong', {}, nombreMesLargo(c.mes))) },
+      { titulo: 'Cliente', valor: (c) => nombreTercero(c.terceros) },
+      { titulo: 'Líneas', valor: textoLineas },
+      { titulo: 'Neto', valor: (c) => dinero(c.m.neto) },
+      { titulo: 'IVA', valor: (c) => dinero(c.m.iva) },
+      { titulo: 'Total', valor: (c) => el('strong', {}, dinero(c.m.total)) },
+      { titulo: 'Documento', valor: (c) => (c.q ? el('a', { href: ctx.ruta('cotizaciones.editor', { id: c.q.id }) }, `Cotización N° ${numeroTexto(c.q.numero)}`) : c.numero ? `Cierre N° ${numeroTexto(c.numero)}` : el('span', { class: 'texto-suave' }, 'Sin documento')) },
+      { titulo: 'Estado', valor: (c) => (c.q ? el('span', { class: `chip ${c.q.cobro_fecha ? 'chip-ok' : CHIP_COT[c.q.estado]}` }, c.q.cobro_fecha ? 'Cobrada' : estadoCot[c.q.estado]) : el('span', { class: `chip ${CHIP_ESTADO[c.estado]}` }, nombreEstado[c.estado])) },
     ],
   });
-  return tabla;
 }

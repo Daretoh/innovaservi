@@ -1,23 +1,24 @@
 // Cierre mensual de un cliente: líneas (órdenes entregadas en el mes y manuales), emitir, OC, factura, cobro, PDF e historial.
 // El mes de una orden es el de su entrega (Cierres 005); las sin entregar se avisan y no entran solas.
 // Ruta: #/cierres.cierre?id=<id>
-import { el } from '../../../core/ui/dom.js?v=4bb9c7a';
-import { icono } from '../../../core/ui/iconos.js?v=4bb9c7a';
-import { boton } from '../../../core/ui/tabla.js?v=4bb9c7a';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=4bb9c7a';
-import { avisar } from '../../../core/ui/aviso.js?v=4bb9c7a';
-import { subirArchivo, urlFirmada } from '../../../core/adjuntos.js?v=4bb9c7a';
-import { dinero, fechaLarga, hoyISO, diaLocal } from '../../../core/ui/formato.js?v=4bb9c7a';
+import { el } from '../../../core/ui/dom.js?v=64053cb';
+import { icono } from '../../../core/ui/iconos.js?v=64053cb';
+import { boton } from '../../../core/ui/tabla.js?v=64053cb';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=64053cb';
+import { avisar } from '../../../core/ui/aviso.js?v=64053cb';
+import { subirArchivo, urlFirmada } from '../../../core/adjuntos.js?v=64053cb';
+import { dinero, fechaLarga, hoyISO, diaLocal } from '../../../core/ui/formato.js?v=64053cb';
 import {
   nombreTercero, nombreEstado, CHIP_ESTADO, indiceEstado, MEDIOS, nombreMedio, ARCHIVOS, verPatente, numeroTexto, nombreMesLargo,
   totalesCierre, verHistorial, archivoSeguro,
-} from '../datos.js?v=4bb9c7a';
-import { nombreEstado as estadoOrden } from '../../taller/datos.js?v=4bb9c7a';
+} from '../datos.js?v=64053cb';
+import { nombreEstado as estadoOrden } from '../../taller/datos.js?v=64053cb';
+import { nombreEstado as estadoCot, CHIP_ESTADO as CHIP_COT } from '../../cotizaciones/datos.js?v=64053cb';
 
-const SELECT = '*, terceros(*), cie_lineas(*, tal_ordenes(id, numero, estado))';
+const SELECT = '*, terceros(*), cie_lineas(*, tal_ordenes(id, numero, estado)), cot_cotizaciones(id, numero, estado, deleted_at)';
 
 export default async function vista(ctx) {
-  const volver = el('a', { class: 'volver', href: ctx.ruta('cierres.mensuales') }, icono('volver', { tam: 16 }), 'Cierres mensuales');
+  const volver = el('a', { class: 'volver', href: ctx.ruta('cierres.mensuales') }, icono('volver', { tam: 16 }), 'Cierres');
   let { data: c, error } = await ctx.api.from('cie_cierres').select(SELECT).eq('id', ctx.params.id).maybeSingle();
   if (error) throw error;
   if (!c) return el('section', { class: 'listado' }, volver, el('h1', {}, 'Cierre no encontrado'));
@@ -39,9 +40,20 @@ export default async function vista(ctx) {
   const excluidas = lineas.filter((l) => l.excluida);
   const t = totalesCierre(c, lineas);
   const [cliCfg, pend] = await Promise.all([
-    ctx.api.from('cie_clientes').select('nota').eq('empresa_id', c.empresa_id).eq('tercero_id', c.tercero_id).maybeSingle(),
+    ctx.api.from('cie_clientes').select('nota, con_cotizacion').eq('empresa_id', c.empresa_id).eq('tercero_id', c.tercero_id).maybeSingle(),
     conTaller ? ctx.api.rpc('cie_pendientes', { p_cierre: c.id }) : { data: [] },
   ]);
+  // El documento del mes es una cotización normal (Cierres 006); un cierre ya emitido a la antigua sigue como estaba
+  const conCot = !!c.cotizacion_id || (!!cliCfg.data?.con_cotizacion && !c.numero);
+  const cotDe = new Map();   // orden → cotizaciones vigentes en que está
+  const idsOrden = vivas.map((l) => l.orden_id).filter(Boolean);
+  if (idsOrden.length && ctx.puede('cotizaciones', 'ver')) {
+    const { data: gs } = await ctx.api.from('cot_grupos').select('orden_id, cot_cotizaciones!inner(id, numero, estado, deleted_at)').in('orden_id', idsOrden).is('cot_cotizaciones.deleted_at', null);
+    for (const g of gs ?? []) cotDe.set(g.orden_id, [...(cotDe.get(g.orden_id) ?? []), g.cot_cotizaciones]);
+  }
+  const enlaceCot = (q) => el('a', { href: ctx.ruta('cotizaciones.editor', { id: q.id }) }, `N° ${numeroTexto(q.numero)}`);
+  const relacionadas = [...new Map([...cotDe.values()].flat().map((q) => [q.id, q])).values()].sort((a, b) => a.numero - b.numero);
+  const sinCot = vivas.filter((l) => l.orden_id && !cotDe.has(l.orden_id));
   if (pend.error) avisar(pend.error.message, 'error');
   // Emitido: entregadas en el mes que quedaron fuera. Mes en curso: en el taller sin entregar.
   const nuevas = (pend.data ?? []).filter((o) => o.tipo === 'fuera');
@@ -74,7 +86,10 @@ export default async function vista(ctx) {
       el('div', { class: 'doc-nombre' },
         l.orden_id && conTaller ? el('a', { href: ctx.ruta('taller.orden', { id: l.orden_id }) }, el('strong', {}, l.descripcion || 'Vehículo')) : el('strong', {}, l.descripcion || 'Línea manual'),
         el('span', { class: 'texto-suave texto-chico' }, [verPatente(l.patente), l.tal_ordenes ? `orden N° ${l.tal_ordenes.numero}` : l.plan_id ? 'faena-día' : 'manual', l.monto_manual ? 'monto ajustado' : null].filter(Boolean).join(' · ')),
-        l.detalle ? el('span', { class: 'texto-chico cie-detalle' }, l.detalle) : null),
+        l.detalle ? el('span', { class: 'texto-chico cie-detalle' }, l.detalle) : null,
+        l.orden_id && ctx.puede('cotizaciones', 'ver') ? el('span', { class: 'texto-chico' },
+          cotDe.has(l.orden_id) ? ['Cotización ', cotDe.get(l.orden_id).flatMap((q, k) => [k ? ', ' : '', enlaceCot(q)])]
+            : ['Sin cotización', conTaller ? [' · ', el('a', { href: ctx.ruta('taller.orden', { id: l.orden_id }) }, 'Cotizar en la orden')] : null]) : null),
       el('div', { class: 'cie-linea-monto' }, monto,
         borrador && editar && l.orden_id && l.monto_manual ? el('button', { type: 'button', class: 'enlace texto-chico', onclick: async () => {
           if (await actualizar(l, { monto_manual: false })) { await ctx.api.rpc('cie_sincronizar', { p_cierre: c.id }); ctx.refrescar(); }
@@ -136,6 +151,17 @@ export default async function vista(ctx) {
     textoGuardar: 'Registrar cobro',
     alGuardar: (v) => rpc('cie_paso', { p_cierre: c.id, p_paso: 'cobro', p_monto: Math.round(Number(v.monto)), p_fecha: v.fecha, p_medio: v.medio }, 'Cobro registrado: el cierre suma al Estado de resultados.'),
   });
+  const crearCotizacion = () => abrirFormulario({
+    titulo: `Crear cotización de ${nombreMesLargo(c.mes)}`,
+    mensaje: `Se crea una cotización en borrador con ${vivas.length} ${vivas.length === 1 ? 'línea' : 'líneas'} por ${dinero(t.neto)} neto. Su OC, factura y cobro se llevan en Cotizaciones.`,
+    campos: [], textoGuardar: 'Crear cotización',
+    alGuardar: async () => {
+      const { data: id, error: e } = await ctx.api.rpc('cie_a_cotizacion', { p_cierre: c.id });
+      if (e) throw new Error(e.message);
+      avisar('Cotización creada.');
+      location.hash = ctx.ruta('cotizaciones.editor', { id });
+    },
+  });
   const emitir = () => abrirFormulario({
     titulo: `Emitir cierre de ${nombreMesLargo(c.mes)}`,
     mensaje: `Se congelan ${vivas.length} líneas por ${dinero(t.total)}${c.afecto_iva ? ' (con IVA)' : ''} y se asigna el número. Lo que se entregue después con fecha de este mes ya no entra solo.`,
@@ -171,7 +197,7 @@ export default async function vista(ctx) {
   const pdf = async (b) => {
     b.disabled = true;
     try {
-      const { pdfCierre } = await import('../documentos.js?v=4bb9c7a');
+      const { pdfCierre } = await import('../documentos.js?v=64053cb');
       const doc = await pdfCierre(ctx, c, lineas, c.terceros, cliCfg.data?.nota);
       doc.save(`cierre-${c.mes}-${archivoSeguro(nombreTercero(c.terceros) || 'cliente')}.pdf`);
     } catch (e) { avisar(e.message, 'error'); } finally { b.disabled = false; }
@@ -183,8 +209,8 @@ export default async function vista(ctx) {
       el('div', {}, el('h1', {}, `${nombreTercero(c.terceros)} · ${nombreMesLargo(c.mes)}`),
         el('p', { class: 'texto-suave' }, [c.numero ? `Cierre N° ${numeroTexto(c.numero)}` : 'Sin emitir', `${vivas.length} ${vivas.length === 1 ? 'línea' : 'líneas'}`].join(' · '))),
       el('div', { class: 'listado-acciones' }, el('span', { class: `chip ${CHIP_ESTADO[c.estado]}` }, nombreEstado[c.estado]),
-        boton(borrador ? 'PDF de prueba' : 'PDF', { icono: 'descargar', onclick: (ev) => pdf(ev.currentTarget) }),
-        ctx.puede('cierres', 'exportar') ? boton('Excel detalle', { icono: 'descargar', onclick: async (ev) => { const b = ev.currentTarget; b.disabled = true; try { const { excelDetalleCierre } = await import('../excel.js?v=4bb9c7a'); await excelDetalleCierre(ctx, c, lineas); } catch (e) { avisar(e.message, 'error'); } finally { b.disabled = false; } } }) : null,
+        conCot ? null : boton(borrador ? 'PDF de prueba' : 'PDF', { icono: 'descargar', onclick: (ev) => pdf(ev.currentTarget) }),
+        ctx.puede('cierres', 'exportar') ? boton('Excel detalle', { icono: 'descargar', onclick: async (ev) => { const b = ev.currentTarget; b.disabled = true; try { const { excelDetalleCierre } = await import('../excel.js?v=64053cb'); await excelDetalleCierre(ctx, c, lineas); } catch (e) { avisar(e.message, 'error'); } finally { b.disabled = false; } } }) : null,
         boton('Historial', { icono: 'reloj', onclick: () => verHistorial(ctx, c.id, `${nombreTercero(c.terceros)} ${c.mes}`) }))),
     agregadas ? el('p', { class: 'aviso-bandeja' }, icono('check', { tam: 16 }), `${agregadas} ${agregadas === 1 ? 'línea nueva entró' : 'líneas nuevas entraron'} al cierre (órdenes entregadas o faenas del mes).`) : null,
     nuevas.length ? el('p', { class: 'aviso-bandeja' }, icono('alerta', { tam: 16 }),
@@ -192,7 +218,17 @@ export default async function vista(ctx) {
     sinEntregar.length ? el('p', { class: 'aviso-bandeja' }, icono('alerta', { tam: 16 }),
       `En el taller sin entregar: `, sinEntregar.map((o, k) => el('span', {}, k ? ', ' : '', el('a', { href: ctx.ruta('taller.orden', { id: o.id }) }, `N° ${o.numero} ${verPatente(o.patente)}`), ` (${estadoOrden[o.estado]})`)),
       `. Entran al cierre del mes en que se entreguen.${borrador && editar ? ' Si hay que cobrarlas antes, usa "Orden de otro mes".' : ''}`) : null,
-    pasos,
+    relacionadas.length || sinCot.length ? el('p', { class: 'aviso-bandeja' }, icono('documento', { tam: 16 }),
+      relacionadas.length ? ['Cotizaciones relacionadas: ', relacionadas.flatMap((q, k) => [k ? ', ' : '', enlaceCot(q)]), '. '] : null,
+      sinCot.length ? `${sinCot.length} ${sinCot.length === 1 ? 'vehículo' : 'vehículos'} sin cotización.` : null) : null,
+    conCot ? el('div', { class: 'ficha doc-grupo' },
+      el('h2', {}, 'Cotización del mes'),
+      c.cot_cotizaciones && !c.cot_cotizaciones.deleted_at
+        ? el('p', {}, enlaceCot(c.cot_cotizaciones), ' ', el('span', { class: `chip ${CHIP_COT[c.cot_cotizaciones.estado]}` }, estadoCot[c.cot_cotizaciones.estado]), el('span', { class: 'texto-suave texto-chico' }, ' · La OC, la factura y el cobro se llevan en la cotización.'))
+        : borrador ? el('p', { class: 'texto-suave' }, 'Revisa las líneas y crea la cotización con todos estos vehículos.') : el('p', { class: 'texto-suave' }, 'La cotización ya no está vigente: reabre el cierre para crear otra.'),
+      el('div', { class: 'listado-acciones' },
+        editar && borrador && ctx.puede('cotizaciones', 'crear') ? boton('Crear cotización', { icono: 'documento', tipo: 'primario', onclick: crearCotizacion }) : null,
+        editar && c.estado === 'emitido' && c.cotizacion_id ? boton('Reabrir', { icono: 'editar', onclick: () => abrirFormulario({ titulo: 'Reabrir cierre', mensaje: 'Solo se puede si la cotización se eliminó o rechazó.', campos: [], textoGuardar: 'Reabrir', alGuardar: () => rpc('cie_reabrir', { p_cierre: c.id }, 'Cierre reabierto.') }) }) : null)) : pasos,
     el('div', { class: 'ficha doc-grupo' },
       el('div', { class: 'listado-cabecera' }, el('h2', {}, 'Líneas del cierre'),
         borrador && editar ? el('div', { class: 'listado-acciones' },

@@ -7,10 +7,10 @@
 // sugerencias (en un campo de texto): lista que aparece al escribir (datalist).
 // alCambiar({ valor, valores, poner(id, valor), opciones(id, [[v, t]]) }) en un campo: se llama al cambiarlo (ej.: elegir un
 // cliente llena su teléfono y sus vehículos). poner en un campo 'checks' marca los valores dados.
-import { el } from './dom.js?v=4bb9c7a';
-import { icono } from './iconos.js?v=4bb9c7a';
-import { boton } from './tabla.js?v=4bb9c7a';
-import { prepararArchivos } from '../imagenes.js?v=4bb9c7a';
+import { el } from './dom.js?v=64053cb';
+import { icono } from './iconos.js?v=64053cb';
+import { boton } from './tabla.js?v=64053cb';
+import { prepararArchivos } from '../imagenes.js?v=64053cb';
 
 // Si acepta JPEG, también fotos de iPhone (HEIC): se convierten a JPEG al guardar
 const aceptar = (a) => (a && /image\/(jpeg|\*)/.test(a) ? `${a},.heic,.heif,image/heic,image/heif` : a);

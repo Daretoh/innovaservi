@@ -1,11 +1,11 @@
 // Clientes con cierre mensual: sus órdenes del taller se cobran en un cierre por mes (no una a una).
 // Los precios salen de la lista de precios del cliente (Cotizaciones → Listas de precios).
-import { el } from '../../../core/ui/dom.js?v=4bb9c7a';
-import { icono } from '../../../core/ui/iconos.js?v=4bb9c7a';
-import { boton } from '../../../core/ui/tabla.js?v=4bb9c7a';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=4bb9c7a';
-import { avisar } from '../../../core/ui/aviso.js?v=4bb9c7a';
-import { nombreTercero } from '../datos.js?v=4bb9c7a';
+import { el } from '../../../core/ui/dom.js?v=64053cb';
+import { icono } from '../../../core/ui/iconos.js?v=64053cb';
+import { boton } from '../../../core/ui/tabla.js?v=64053cb';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=64053cb';
+import { avisar } from '../../../core/ui/aviso.js?v=64053cb';
+import { nombreTercero } from '../datos.js?v=64053cb';
 
 export default async function vista(ctx) {
   const e = ctx.empresa.id;
@@ -25,11 +25,12 @@ export default async function vista(ctx) {
     campos: [
       ...(c ? [] : [{ id: 'tercero', etiqueta: 'Cliente', opciones: libres.map((t) => [t.id, nombreTercero(t)]) }]),
       { id: 'iva', etiqueta: 'IVA', opciones: [['si', 'Afecto a IVA (19 %)'], ['no', 'Sin IVA']], valor: c && !c.afecto_iva ? 'no' : 'si' },
+      { id: 'cot', etiqueta: 'Documento del mes', opciones: [['no', 'Cierre mensual'], ['si', 'Cotización con todos los vehículos']], valor: c?.con_cotizacion ? 'si' : 'no' },
       { id: 'nota', etiqueta: 'Nota al pie del resumen (opcional)', tipo: 'textarea', valor: c?.nota ?? '' },
       ...(c ? [{ id: 'activo', etiqueta: 'Estado', opciones: [['true', 'Activo'], ['false', 'Inactivo (sus órdenes vuelven a cobrarse una a una)']], valor: String(c.activo) }] : []),
     ],
     alGuardar: async (v) => {
-      const datos = { afecto_iva: v.iva === 'si', nota: v.nota.trim() || null, ...(c ? { activo: v.activo === 'true' } : {}) };
+      const datos = { afecto_iva: v.iva === 'si', con_cotizacion: v.cot === 'si', nota: v.nota.trim() || null, ...(c ? { activo: v.activo === 'true' } : {}) };
       const r = c ? await ctx.api.from('cie_clientes').update(datos).eq('id', c.id)
         : await ctx.api.from('cie_clientes').insert({ ...datos, empresa_id: e, tercero_id: v.tercero });
       if (r.error) throw new Error(r.error.message);
@@ -38,14 +39,14 @@ export default async function vista(ctx) {
   });
 
   return el('section', { class: 'listado' },
-    el('a', { class: 'volver', href: ctx.ruta('cierres.mensuales') }, icono('volver', { tam: 16 }), 'Cierres mensuales'),
+    el('a', { class: 'volver', href: ctx.ruta('cierres.mensuales') }, icono('volver', { tam: 16 }), 'Cierres'),
     el('header', { class: 'listado-cabecera' }, el('h1', {}, 'Clientes con cierre mensual'),
       editar && libres.length ? el('div', { class: 'listado-acciones' }, boton('Agregar cliente', { icono: 'mas', tipo: 'primario', onclick: () => formulario(null) })) : null),
     el('div', { class: 'ficha doc-grupo' },
       cli.data.length ? cli.data.map((c) => el('div', { class: 'doc-fila' },
         el('div', { class: 'doc-nombre' },
           editar ? el('a', { href: '#', onclick: (ev) => { ev.preventDefault(); formulario(c); } }, el('strong', {}, nombreTercero(c.terceros))) : el('strong', {}, nombreTercero(c.terceros)),
-          el('span', { class: 'texto-suave texto-chico' }, [c.afecto_iva ? 'afecto a IVA' : 'sin IVA', c.activo ? null : 'inactivo',
+          el('span', { class: 'texto-suave texto-chico' }, [c.afecto_iva ? 'afecto a IVA' : 'sin IVA', c.con_cotizacion ? 'con cotización' : null, c.activo ? null : 'inactivo',
             conLista ? (conLista.has(c.tercero_id) ? 'con lista de precios' : 'sin lista de precios') : null].filter(Boolean).join(' · '))),
         conLista && ctx.puede('cotizaciones', 'ver') ? el('a', { class: 'texto-chico', href: ctx.ruta('cotizaciones.precios') }, 'Lista de precios') : null))
         : el('p', { class: 'texto-suave' }, 'Sin clientes con cierre mensual.')),

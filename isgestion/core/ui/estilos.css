@@ -1905,9 +1905,14 @@ html.bm-sin-seleccion, html.bm-sin-seleccion * { -webkit-user-select: none !impo
 @keyframes bm-velo { from { opacity: 0; } }
 @keyframes bm-rayo { from { opacity: 0; transform: translate(-50%, -50%) scale(.3); } }
 @media (prefers-reduced-motion: reduce) { .bm-velo, .bm-rayo, .bm-abanico-cerrar { animation: none; } .bm-rayo-circulo { transition: none; } }
-.asm-registrar:empty { display: none; }
 .asm-registrar > * { width: 100%; min-height: 48px; justify-content: center; }
-.asm-guia { margin: 0; color: var(--texto-suave); font-size: 13px; line-height: 18px; }
+.asm-faenas { display: flex; flex-direction: column; gap: 8px; }
+.asm-otra-faena { min-height: 48px; border: 1px dashed var(--borde); border-radius: 14px; background: transparent; color: var(--texto-suave); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+.asm-gente { display: flex; flex-direction: column; gap: 6px; }
+.asm-elegir { min-height: 56px; padding: 6px 12px; text-align: left; cursor: pointer; }
+.asm-elegir.marcada { border-color: var(--empresa); background: color-mix(in srgb, var(--empresa) 8%, var(--superficie)); }
+.asm-marca-chica { flex: none; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; background: var(--fondo-sutil); color: var(--texto-suave); font-size: 13px; font-weight: 800; }
+.asm-elegir.marcada .asm-marca-chica { background: var(--empresa); color: var(--sobre-empresa); }
 @media (max-width: 760px) {
   .solo-escritorio, .menu-boton, .menu, .menu-velo { display: none !important; }
   .contenido { padding-bottom: calc(104px + env(safe-area-inset-bottom)); }
