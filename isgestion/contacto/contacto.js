@@ -1,9 +1,9 @@
 // Formulario web de contacto (Marketing): el cliente deja su nombre, teléfono, qué le interesa y su mensaje, sin cuenta.
 // URL: /contacto/?t=<token de la empresa>[&c=<código de campaña>]. Envía todo a la Edge Function mkt-formulario, que
 // lo deja como contacto nuevo en el Embudo y avisa a quien atiende Marketing. Mismo estilo que la ficha de ingreso.
-import { el } from '../core/ui/dom.js?v=64053cb';
-import { icono } from '../core/ui/iconos.js?v=64053cb';
-import { revisarTelefono } from '../core/ui/formato.js?v=64053cb';
+import { el } from '../core/ui/dom.js?v=1f30021';
+import { icono } from '../core/ui/iconos.js?v=1f30021';
+import { revisarTelefono } from '../core/ui/formato.js?v=1f30021';
 
 const raiz = document.getElementById('app');
 const params = new URLSearchParams(location.search);

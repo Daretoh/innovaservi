@@ -7,16 +7,16 @@
 // trabajador": además del gasto queda un descuento en Remuneraciones (semana o mes según la empresa), ligado al
 // documento (remu_items.origen_id). Requiere poder crear en Remuneraciones.
 // Ruta: #/costos.lector
-import { el } from '../../../core/ui/dom.js?v=64053cb';
-import { icono } from '../../../core/ui/iconos.js?v=64053cb';
-import { boton } from '../../../core/ui/tabla.js?v=64053cb';
-import { avisar } from '../../../core/ui/aviso.js?v=64053cb';
-import { subirArchivo, almacen } from '../../../core/adjuntos.js?v=64053cb';
-import { dinero, hoyISO, sumarDias, fechaLarga, lunesDe } from '../../../core/ui/formato.js?v=64053cb';
-import { TIPOS_DTE, docTipoDe, CAMPOS_DTE, leerParte, combinar, validar, escanearCamara, aJPEG, fmtRut, limpioRut, rutValido, num } from '../../../core/lector-dte.js?v=64053cb';
-import { cargarBase, nombreTercero, opcionesACuenta } from '../datos.js?v=64053cb';
-import { leerConIA, iaDisponible, numIA, fechaIA, pagadoAlComprar, textoModelo } from '../../../core/lector-ia.js?v=64053cb';
-import { esImagen } from '../../../core/imagenes.js?v=64053cb';
+import { el } from '../../../core/ui/dom.js?v=1f30021';
+import { icono } from '../../../core/ui/iconos.js?v=1f30021';
+import { boton } from '../../../core/ui/tabla.js?v=1f30021';
+import { avisar } from '../../../core/ui/aviso.js?v=1f30021';
+import { subirArchivo, almacen } from '../../../core/adjuntos.js?v=1f30021';
+import { dinero, hoyISO, sumarDias, fechaLarga, lunesDe } from '../../../core/ui/formato.js?v=1f30021';
+import { TIPOS_DTE, docTipoDe, CAMPOS_DTE, leerParte, combinar, validar, escanearCamara, aJPEG, fmtRut, limpioRut, rutValido, num } from '../../../core/lector-dte.js?v=1f30021';
+import { cargarBase, nombreTercero, opcionesACuenta } from '../datos.js?v=1f30021';
+import { leerConIA, iaDisponible, numIA, fechaIA, pagadoAlComprar, textoModelo } from '../../../core/lector-ia.js?v=1f30021';
+import { esImagen } from '../../../core/imagenes.js?v=1f30021';
 
 const ETIQUETA = { timbre: ['Timbre SII', 'chip-ok'], xml: ['XML', 'chip-ok'], ia: ['IA', 'chip-ok'], ocr: ['Revisar', 'chip-prox'], calc: ['Calculado', 'chip-pend'] };
 
@@ -24,13 +24,16 @@ export default async function vista(ctx) {
   const e = ctx.empresa.id;
   const conFaenas = ctx.puede('ope', 'ver');
   const conDescuento = ctx.puede('remu', 'crear');
-  const [base, ruts, faenas, personas, remuCfg] = await Promise.all([
+  const conTaller = ctx.puede('taller', 'ver');
+  const [base, ruts, faenas, personas, remuCfg, vehiculos, ordenes] = await Promise.all([
     cargarBase(ctx),
     ctx.api.from('terceros').select('id, rut, razon_social, nombre_fantasia, tipo').eq('empresa_id', e).is('deleted_at', null).not('rut', 'is', null),
     conFaenas ? ctx.api.from('ope_faenas').select('id, titulo, fecha_inicio, fecha_fin').eq('empresa_id', e).is('deleted_at', null).neq('estado', 'cancelada')
       .gte('fecha_fin', sumarDias(hoyISO(), -60)).lte('fecha_inicio', sumarDias(hoyISO(), 14)).order('fecha_inicio', { ascending: false }) : Promise.resolve({ data: [] }),
     conDescuento ? ctx.api.from('persona_empresa').select('persona_id, personas(nombres, apellido_paterno, apellido_materno, rut)').eq('empresa_id', e).eq('estado', 'activo').is('deleted_at', null) : Promise.resolve({ data: [] }),
     conDescuento ? ctx.api.from('remu_config').select('periodo').eq('empresa_id', e).maybeSingle() : Promise.resolve({ data: null }),
+    conTaller ? ctx.api.from('tal_vehiculos').select('id, patente, marca, modelo').eq('empresa_id', e).is('deleted_at', null).order('patente') : Promise.resolve({ data: [] }),
+    conTaller ? ctx.api.from('tal_ordenes').select('id, vehiculo_id').eq('empresa_id', e).not('estado', 'in', '(entregado,anulada)') : Promise.resolve({ data: [] }),
   ]);
   const mensual = remuCfg.data?.periodo === 'mensual';
   const volver = el('a', { class: 'volver', href: ctx.ruta('costos.registros') }, icono('volver', { tam: 16 }), 'Gastos e ingresos');
@@ -123,6 +126,9 @@ export default async function vista(ctx) {
   const aCuenta = el('select', { class: 'campo', id: 'lec-acu' }, opcionesACuenta(base).map(([v, t]) => el('option', { value: v }, t)));
   const faena = el('select', { class: 'campo', id: 'lec-fae' }, el('option', { value: '' }, 'Sin faena (gasto general)'),
     (faenas.data ?? []).map((f) => el('option', { value: f.id, selected: f.fecha_inicio <= hoy && f.fecha_fin >= hoy && (faenas.data ?? []).filter((x) => x.fecha_inicio <= hoy && x.fecha_fin >= hoy).length === 1 }, `${fechaLarga(f.fecha_inicio)} · ${f.titulo}`)));
+  // Vehículo del taller: el gasto queda con su patente y, si tiene una sola orden abierta, ligado a esa orden
+  const vehiculo = el('select', { class: 'campo', id: 'lec-veh' }, el('option', { value: '' }, 'Sin vehículo'),
+    (vehiculos.data ?? []).map((x) => el('option', { value: x.id }, [x.patente, x.marca, x.modelo].filter(Boolean).join(' · '))));
   const concepto = el('input', { class: 'campo', id: 'lec-con', placeholder: 'Se completa con el proveedor y el documento' });
   const pagado = el('input', { type: 'checkbox', id: 'lec-pag' });
   let pagadoTocado = false;
@@ -217,12 +223,15 @@ export default async function vista(ctx) {
       const o = datos.origen.total;
       const origen = editados.has('total') ? 'manual' : o === 'timbre' ? 'timbre' : o === 'xml' ? 'xml' : o === 'ocr' ? 'ocr' : o === 'ia' ? 'ia' : 'manual';
       const doc = docTipoDe(v.td);
+      const veh = (vehiculos.data ?? []).find((x) => x.id === vehiculo.value);
+      const abiertas = veh ? (ordenes.data ?? []).filter((x) => x.vehiculo_id === veh.id) : [];
       const iva = doc === 'factura' ? v.iva ?? 0 : 0;
       const { data, error } = await ctx.api.from('fin_registros').insert({
         empresa_id: e, tipo: 'gasto', fecha: v.fecha || hoyISO(), concepto: concepto.value.trim(), categoria_id: categoria.value, centro_id: centro.value || null,
         tercero_id: tercero?.id ?? null, doc_tipo: doc, doc_numero: v.folio, total: v.total, neto: v.total - iva, iva,
         // Boleta o ticket: pagado al comprar (salvo que se desmarque a mano); factura: por pagar
         ...(!ctx.puede('costos', 'editar') ? { estado_pago: 'pendiente' } : (pagadoTocado ? pagado.checked : pagado.checked || doc !== 'factura') ? { estado_pago: 'pagado', fecha_pago: v.fecha || hoyISO() } : { estado_pago: 'listo' }), archivo: subidas[0] ?? null, adjuntos: subidas.slice(1), faena_id: faena.value || null, a_cuenta_de: aCuenta.value || null,
+        patente: veh?.patente ?? null, orden_id: abiertas.length === 1 ? abiertas[0].id : null,
         dte: { ...v, rut: v.rut ? fmtRut(v.rut) : null, td: v.td == null ? null : String(v.td), items: datos.items ?? [], origen },
       }).select('id').single();
       if (error) throw new Error(error.code === '23505' ? 'Este documento ya estaba registrado (mismo emisor, tipo y folio).' : error.message);
@@ -255,7 +264,7 @@ export default async function vista(ctx) {
     el('div', { class: 'rejilla-campos lec-montos' }, ctl('neto', 'Neto', { num: true }), ctl('iva', 'IVA', { num: true }), ctl('exento', 'Exento', { num: true }), ctl('otros', 'Otros impuestos', { num: true }), ctl('total', 'Total', { num: true })),
     cuadre,
     el('div', { class: 'rejilla-campos' }, fila('Categoría', categoria), ctx.config?.centros ? fila('Centro de costo', centro) : null, conFaenas ? fila('Faena', faena) : null),
-    el('div', { class: 'rejilla-campos' }, fila('¿Por cuenta de un tercero?', aCuenta)),
+    el('div', { class: 'rejilla-campos' }, conTaller ? fila('Vehículo (opcional)', vehiculo) : null, fila('¿Por cuenta de un tercero?', aCuenta)),
     fila('Concepto', concepto),
     el('label', { class: 'casilla' }, pagado, 'Ya está pagado (boletas y tickets quedan pagados solos; la factura queda por pagar)'),
     conDescuento ? el('div', { class: 'lec-descuento' },

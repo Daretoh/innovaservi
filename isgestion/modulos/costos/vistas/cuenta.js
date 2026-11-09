@@ -4,14 +4,14 @@
 // Pestañas: Resumen mensual (solo lectura, como la planilla "Resumen D&P": por mes sus trabajos, compras y pagos con
 // saldo acumulado) y Movimientos (registrar pago, dejar al día). Se abre desde Pagos (sin opción nueva en el menú).
 // Ruta: #/costos.cuenta?t=<tercero>
-import { el } from '../../../core/ui/dom.js?v=64053cb';
-import { icono } from '../../../core/ui/iconos.js?v=64053cb';
-import { boton } from '../../../core/ui/tabla.js?v=64053cb';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=64053cb';
-import { avisar } from '../../../core/ui/aviso.js?v=64053cb';
-import { subirArchivo } from '../../../core/adjuntos.js?v=64053cb';
-import { dinero, fechaLarga, hoyISO, nombreMes } from '../../../core/ui/formato.js?v=64053cb';
-import { nombreTercero, nombreMedio, MEDIOS } from '../datos.js?v=64053cb';
+import { el } from '../../../core/ui/dom.js?v=1f30021';
+import { icono } from '../../../core/ui/iconos.js?v=1f30021';
+import { boton } from '../../../core/ui/tabla.js?v=1f30021';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=1f30021';
+import { avisar } from '../../../core/ui/aviso.js?v=1f30021';
+import { subirArchivo } from '../../../core/adjuntos.js?v=1f30021';
+import { dinero, fechaLarga, hoyISO, nombreMes } from '../../../core/ui/formato.js?v=1f30021';
+import { nombreTercero, nombreMedio, MEDIOS } from '../datos.js?v=1f30021';
 
 let pestana = 'resumen', tercero = null, mesFiltro = '', buscar = '';   // vuelve al resumen (todos los meses) al abrir otra cuenta
 const TIPO = { trabajo: ['Factura o trabajo', 'chip-ok'], compra: ['Compra a su cuenta', 'chip-prox'], abono: ['Pago', 'chip-pend'] };
@@ -109,7 +109,7 @@ export default async function vista(ctx) {
       avisar('Cuenta al día.'); ctx.refrescar();
     },
   });
-  const excel = () => import('../../../core/excel.js?v=64053cb').then(({ nuevoExcel }) => nuevoExcel(ctx, { titulo: `Cuenta de ${nombreTercero(ter)}`, subtitulo: `Saldo ${saldo >= 0 ? 'a pagarle' : 'a favor de la empresa'}: ${dinero(Math.abs(saldo))}` }))
+  const excel = () => import('../../../core/excel.js?v=1f30021').then(({ nuevoExcel }) => nuevoExcel(ctx, { titulo: `Cuenta de ${nombreTercero(ter)}`, subtitulo: `Saldo ${saldo >= 0 ? 'a pagarle' : 'a favor de la empresa'}: ${dinero(Math.abs(saldo))}` }))
     .then(async (x) => {
       x.tabla({ titulo: 'Resumen mensual (saldo)', columnas: ['Mes', { t: 'Saldo inicial', tipo: 'dinero' }, { t: 'Trabajos', tipo: 'dinero' }, { t: 'Compras a su cuenta', tipo: 'dinero' }, { t: 'Pagos', tipo: 'dinero' }, { t: 'Saldo final', tipo: 'dinero' }],
         filas: resumen.map((r) => [nombreMes(r.m), r.saldo - r.neto, r.trabajos, -r.compras, -r.abonos, r.saldo]) });
