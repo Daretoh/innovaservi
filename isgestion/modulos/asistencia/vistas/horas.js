@@ -6,13 +6,13 @@
 // Fijos con turno (2026-10-30): cada día hábil quedan presentes "según horario" solos (asis_generar_fijos); aquí solo se
 // corrigen las excepciones: retraso o salida temprana (cambiar la hora), horas extra (cambiar la salida o agregar otra
 // fila) y ausencias (botón Ausente: el día deja de contar y no se vuelve a crear).
-import { el } from '../../../core/ui/dom.js?v=163dc56';
-import { icono } from '../../../core/ui/iconos.js?v=163dc56';
-import { boton } from '../../../core/ui/tabla.js?v=163dc56';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=163dc56';
-import { avisar } from '../../../core/ui/aviso.js?v=163dc56';
-import { esTelefono } from '../../../core/movil.js?v=163dc56';
-import { hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, horas, aMin, hhmm } from '../../../core/ui/formato.js?v=163dc56';
+import { el } from '../../../core/ui/dom.js?v=163dc56r';
+import { icono } from '../../../core/ui/iconos.js?v=163dc56r';
+import { boton } from '../../../core/ui/tabla.js?v=163dc56r';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=163dc56r';
+import { avisar } from '../../../core/ui/aviso.js?v=163dc56r';
+import { esTelefono } from '../../../core/movil.js?v=163dc56r';
+import { hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, horas, aMin, hhmm } from '../../../core/ui/formato.js?v=163dc56r';
 
 const DIAS_LARGOS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 export const estado = { lunes: lunesDe(hoyISO()), dia: hoyISO(), nuevas: [], abiertas: new Set(), diasAbiertos: new Set(), filtro: '' };   // abiertas: faenas desplegadas (día|faena)   // nuevas: filas en blanco aún sin guardar
@@ -26,7 +26,7 @@ export function minutosRegistro(h) {
 const clave = (s) => String(s ?? '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[·—-]+/g, ' ').replace(/\s+/g, ' ');
 
 export default async function vista(ctx) {
-  if (esTelefono()) return (await import('./horas-movil.js?v=163dc56')).default(ctx);   // en el teléfono, lista de personas en vez de planilla
+  if (esTelefono()) return (await import('./horas-movil.js?v=163dc56r')).default(ctx);   // en el teléfono, lista de personas en vez de planilla
   const desde = estado.lunes;
   const hasta = sumarDias(desde, 6);
   const hoy = hoyISO();

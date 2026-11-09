@@ -1,13 +1,13 @@
 // Parte de trabajo: datos del informe, fotos y videos por etapa, vista previa, confirmar y reabrir.
 // Ruta: #/reportes.parte?id=<parte_id>
-import { el } from '../../../core/ui/dom.js?v=163dc56';
-import { icono } from '../../../core/ui/iconos.js?v=163dc56';
-import { boton } from '../../../core/ui/tabla.js?v=163dc56';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=163dc56';
-import { avisar } from '../../../core/ui/aviso.js?v=163dc56';
-import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=163dc56';
-import { fechaLarga, nombreDia, fechaCorta } from '../../../core/ui/formato.js?v=163dc56';
-import { cargarParte, ETAPAS, nombreTercero, comprimirFoto, urlsFirmadas, faenasDistintas } from '../datos.js?v=163dc56';
+import { el } from '../../../core/ui/dom.js?v=163dc56r';
+import { icono } from '../../../core/ui/iconos.js?v=163dc56r';
+import { boton } from '../../../core/ui/tabla.js?v=163dc56r';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=163dc56r';
+import { avisar } from '../../../core/ui/aviso.js?v=163dc56r';
+import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=163dc56r';
+import { fechaLarga, nombreDia, fechaCorta } from '../../../core/ui/formato.js?v=163dc56r';
+import { cargarParte, ETAPAS, opcionesEtapa, valorEtapa, desdeValorEtapa, nombreTercero, comprimirFoto, urlsFirmadas, faenasDistintas } from '../datos.js?v=163dc56r';
 
 const MAX_VIDEO = 25 * 1024 * 1024;
 let etapaSubida = 'antes';
@@ -22,6 +22,9 @@ export default async function vista(ctx) {
   const urls = await urlsFirmadas(ctx.api, media.map((m) => m.ruta));
   const distintas = faenasDistintas(faenas);
   const varias = distintas.length > 1;
+  const procesos = parte.procesos ?? [];
+  const opciones = opcionesEtapa(procesos);
+  if (!opciones.some(([k]) => k === etapaSubida)) etapaSubida = 'antes';   // el paso elegido era de otro parte
 
   // ---- Datos (se guardan al salir de cada campo)
   const campo = (id, etiqueta, valor, largo = false, sugerido = '') => {
@@ -50,7 +53,7 @@ export default async function vista(ctx) {
         const archivo = video ? a : await comprimirFoto(a);
         const { ruta } = await subirArchivo(ctx.api, { empresaId: ctx.empresa.id, modulo: 'reportes', archivo, tabla: 'rep_partes', registroId: parte.id, maxBytes: MAX_VIDEO });
         const { error } = await ctx.api.from('rep_media').insert({
-          parte_id: parte.id, empresa_id: ctx.empresa.id, ruta, tipo: video ? 'video' : 'foto', etapa: etapaSubida,
+          parte_id: parte.id, empresa_id: ctx.empresa.id, ruta, tipo: video ? 'video' : 'foto', ...desdeValorEtapa(etapaSubida),
           faena_id: distintas.length === 1 ? distintas[0].faena_id : null, orden: orden++, nombre: a.name, tamano: archivo.size,
         });
         if (error) { await eliminarArchivo(ctx.api, ruta).catch(() => {}); throw new Error(error.message); }
@@ -61,8 +64,50 @@ export default async function vista(ctx) {
     ctx.refrescar();
   });
   const selEtapa = el('select', { class: 'campo campo-filtro', 'aria-label': 'Etapa de las fotos que vas a subir' },
-    ETAPAS.map(([k, t]) => el('option', { value: k, selected: k === etapaSubida }, `Subir como: ${t}`)));
+    opciones.map(([k, t]) => el('option', { value: k, selected: k === etapaSubida }, `Subir como: ${t}`)));
   selEtapa.addEventListener('change', () => { etapaSubida = selEtapa.value; });
+
+  // ---- Procesos personalizados: pasos con nombre dentro de Proceso (ej.: Primera y Segunda desinsectación)
+  const guardarProcesos = async (lista) => {
+    const { error } = await ctx.api.from('rep_partes').update({ procesos: lista }).eq('id', parte.id);
+    if (error) throw new Error(error.message);
+    ctx.refrescar();
+  };
+  const fotosDe = (x) => media.filter((m) => m.etapa === 'proceso' && m.proceso === x.id).length;
+  const formProceso = (x = null) => abrirFormulario({
+    titulo: x ? 'Editar proceso' : 'Agregar proceso',
+    mensaje: x ? '' : 'Un paso del trabajo con nombre propio (ej.: Primera desinsectación). Sale con su título en el informe, entre Antes y Después.',
+    campos: [
+      { id: 'nombre', etiqueta: 'Nombre del proceso', requerido: true, valor: x?.nombre ?? '' },
+      { id: 'nota', etiqueta: 'Nota para el informe (opcional, ej.: 2 horas de espera)', valor: x?.nota ?? '' },
+    ],
+    textoGuardar: x ? 'Guardar' : 'Agregar',
+    alGuardar: async (v) => {
+      const datosP = { nombre: v.nombre.trim().slice(0, 60), nota: v.nota.trim().slice(0, 140) };
+      await guardarProcesos(x ? procesos.map((y) => (y.id === x.id ? { ...y, ...datosP } : y)) : [...procesos, { id: crypto.randomUUID(), ...datosP }]);
+    },
+  });
+  const quitarProceso = (x) => abrirFormulario({
+    titulo: `Quitar ${x.nombre}`,
+    mensaje: fotosDe(x) ? `Sus ${fotosDe(x)} fotos no se borran: pasan a Proceso.` : 'No tiene fotos.',
+    campos: [], textoGuardar: 'Quitar',
+    alGuardar: async () => {
+      const { error } = await ctx.api.from('rep_media').update({ proceso: null }).eq('parte_id', parte.id).eq('proceso', x.id);
+      if (error) throw new Error(error.message);
+      await guardarProcesos(procesos.filter((y) => y.id !== x.id));
+    },
+  });
+  const moverProceso = (i, dir) => { const l = [...procesos]; [l[i], l[i + dir]] = [l[i + dir], l[i]]; guardarProcesos(l).catch((e) => avisar(e.message, 'error')); };
+  const bloqueProcesos = editable || procesos.length ? el('div', { class: 'galeria-etapa' },
+    el('h3', {}, 'Procesos del trabajo'),
+    procesos.map((x, i) => el('div', { class: 'doc-fila' },
+      el('span', { class: 'doc-nombre' }, el('strong', {}, x.nombre), el('span', { class: 'texto-suave texto-chico' }, [x.nota, `${fotosDe(x)} ${fotosDe(x) === 1 ? 'foto' : 'fotos'}`].filter(Boolean).join(' · '))),
+      editable ? el('div', { class: 'media-acciones' },
+        el('button', { type: 'button', class: 'boton-icono', title: 'Subir', 'aria-label': `Subir ${x.nombre}`, disabled: i === 0, onclick: () => moverProceso(i, -1) }, icono('volver', { tam: 15 })),
+        el('button', { type: 'button', class: 'boton-icono', title: 'Bajar', 'aria-label': `Bajar ${x.nombre}`, disabled: i === procesos.length - 1, onclick: () => moverProceso(i, 1) }, icono('derecha', { tam: 15 })),
+        el('button', { type: 'button', class: 'boton-icono', title: 'Editar', 'aria-label': `Editar ${x.nombre}`, onclick: () => formProceso(x) }, icono('editar', { tam: 15 })),
+        el('button', { type: 'button', class: 'boton-icono', title: 'Quitar', 'aria-label': `Quitar ${x.nombre}`, onclick: () => quitarProceso(x) }, icono('basura', { tam: 15 }))) : null)),
+    editable ? boton('Agregar proceso', { icono: 'mas', onclick: () => formProceso() }) : null) : null;
 
   // ---- Galería por etapa
   const mover = async (m, lista, dir) => {
@@ -83,8 +128,8 @@ export default async function vista(ctx) {
   };
   const tarjeta = (m, lista) => {
     const url = urls.get(m.ruta);
-    const selector = el('select', { class: 'campo', disabled: !editable, 'aria-label': 'Etapa' }, ETAPAS.map(([k, t]) => el('option', { value: k, selected: m.etapa === k }, t)));
-    selector.addEventListener('change', async () => { const { error } = await ctx.api.from('rep_media').update({ etapa: selector.value }).eq('id', m.id); if (error) avisar(error.message, 'error'); ctx.refrescar(); });
+    const selector = el('select', { class: 'campo', disabled: !editable, 'aria-label': 'Etapa' }, opciones.map(([k, t]) => el('option', { value: k, selected: valorEtapa(m, procesos) === k }, t)));
+    selector.addEventListener('change', async () => { const { error } = await ctx.api.from('rep_media').update(desdeValorEtapa(selector.value)).eq('id', m.id); if (error) avisar(error.message, 'error'); ctx.refrescar(); });
     const selFaena = varias ? el('select', { class: 'campo', disabled: !editable, 'aria-label': 'Faena' },
       el('option', { value: '' }, 'Sin faena'), distintas.map((f) => el('option', { value: f.faena_id, selected: m.faena_id === f.faena_id }, f.ope_faenas?.titulo ?? 'Faena'))) : null;
     selFaena?.addEventListener('change', async () => { const { error } = await ctx.api.from('rep_media').update({ faena_id: selFaena.value || null }).eq('id', m.id); if (error) avisar(error.message, 'error'); ctx.refrescar(); });
@@ -115,10 +160,11 @@ export default async function vista(ctx) {
           },
         }, icono('basura', { tam: 15 }))) : null);
   };
-  const galeria = ETAPAS.map(([k, t]) => {
-    const lista = media.filter((m) => m.etapa === k);
+  const galeria = opciones.map(([k, t]) => {
+    const lista = media.filter((m) => valorEtapa(m, procesos) === k);
     if (!lista.length) return null;
-    return el('div', { class: 'galeria-etapa' }, el('h3', {}, `${t} (${lista.length})`), el('div', { class: 'galeria' }, lista.map((m) => tarjeta(m, lista))));
+    const nota = k.startsWith('proceso:') ? procesos.find((x) => `proceso:${x.id}` === k)?.nota : '';
+    return el('div', { class: 'galeria-etapa' }, el('h3', {}, `${t} (${lista.length})`), nota ? el('p', { class: 'texto-suave texto-chico' }, nota) : null, el('div', { class: 'galeria' }, lista.map((m) => tarjeta(m, lista))));
   }).filter(Boolean);
   const sinOrdenar = media.filter((m) => m.etapa === 'sin').length;
 
@@ -160,6 +206,7 @@ export default async function vista(ctx) {
         el('h2', {}, `Fotos y videos (${media.length})`),
         editable ? el('div', { class: 'listado-acciones' }, selEtapa, boton('Subir fotos o videos', { icono: 'camara', tipo: 'primario', onclick: () => entrada.click() }), progreso, entrada) : null),
       sinOrdenar ? el('p', { class: 'aviso-bandeja' }, icono('alerta', { tam: 16 }), `${sinOrdenar} sin ordenar: asígnales una etapa (Antes, Proceso, Después o Registro documental); las sin ordenar no van al informe.`) : null,
+      bloqueProcesos,
       galeria.length ? galeria : el('p', { class: 'texto-suave' }, 'Aún no hay fotos. Elige la etapa y súbelas; desde el celular puedes tomarlas en el momento.'),
       el('p', { class: 'texto-suave texto-chico' }, 'Las fotos se achican antes de subir (lado mayor 1.600 px). Los videos (hasta 25 MB) se guardan pero no van al PDF.')),
   );
@@ -168,7 +215,7 @@ export default async function vista(ctx) {
 async function previa(ctx, datos, b) {
   b.disabled = true;
   try {
-    const { generarInforme } = await import('../informe.js?v=163dc56');
+    const { generarInforme } = await import('../informe.js?v=163dc56r');
     const doc = await generarInforme(ctx, datos);
     window.open(doc.output('bloburl'), '_blank', 'noopener');
   } catch (e) { avisar(`No se pudo generar: ${e.message}`, 'error'); } finally { b.disabled = false; }
@@ -182,7 +229,7 @@ function confirmar(ctx, datos) {
     campos: [],
     textoGuardar: 'Confirmar',
     alGuardar: async () => {
-      const { generarInforme } = await import('../informe.js?v=163dc56');
+      const { generarInforme } = await import('../informe.js?v=163dc56r');
       const doc = await generarInforme(ctx, datos);
       const archivo = new File([doc.output('blob')], `informe-${datos.parte.fecha}.pdf`, { type: 'application/pdf' });
       const { ruta } = await subirArchivo(ctx.api, { empresaId: ctx.empresa.id, modulo: 'reportes', archivo, tabla: 'rep_partes', registroId: datos.parte.id });

@@ -1,9 +1,9 @@
 // Movimientos: documentos de inventario (entradas, salidas, ajustes y traslados) por mes.
-import { el } from '../../../core/ui/dom.js?v=163dc56';
-import { icono } from '../../../core/ui/iconos.js?v=163dc56';
-import { listado, boton } from '../../../core/ui/tabla.js?v=163dc56';
-import { dinero, fechaLarga, nombreMes, moverMes, rangoMes } from '../../../core/ui/formato.js?v=163dc56';
-import { TIPOS_DOC, nombreDoc, cargarBase, nombreTercero } from '../datos.js?v=163dc56';
+import { el } from '../../../core/ui/dom.js?v=163dc56r';
+import { icono } from '../../../core/ui/iconos.js?v=163dc56r';
+import { listado, boton } from '../../../core/ui/tabla.js?v=163dc56r';
+import { dinero, fechaLarga, nombreMes, moverMes, rangoMes } from '../../../core/ui/formato.js?v=163dc56r';
+import { TIPOS_DOC, nombreDoc, cargarBase, nombreTercero } from '../datos.js?v=163dc56r';
 
 const estado = { tipo: 'todos', mes: new Date().toISOString().slice(0, 7) };
 

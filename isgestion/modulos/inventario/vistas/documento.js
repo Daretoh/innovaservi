@@ -1,14 +1,14 @@
 // Documento de inventario.
 // - Ver:       #/inventario.documento?id=<id>   (líneas, archivo y anular)
 // - Registrar: #/inventario.documento?tipo=entrada|salida|ajuste|traslado[&producto=<id>][&solicitud=<id>]
-import { el } from '../../../core/ui/dom.js?v=163dc56';
-import { icono } from '../../../core/ui/iconos.js?v=163dc56';
-import { boton } from '../../../core/ui/tabla.js?v=163dc56';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=163dc56';
-import { avisar } from '../../../core/ui/aviso.js?v=163dc56';
-import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=163dc56';
-import { dinero, fechaLarga, hoyISO, diaLocal } from '../../../core/ui/formato.js?v=163dc56';
-import { nombreDoc, DOCS_COMPRA, cargarBase, cargarProductos, cargarStock, registrar, anular, nombreTercero, cant } from '../datos.js?v=163dc56';
+import { el } from '../../../core/ui/dom.js?v=163dc56r';
+import { icono } from '../../../core/ui/iconos.js?v=163dc56r';
+import { boton } from '../../../core/ui/tabla.js?v=163dc56r';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=163dc56r';
+import { avisar } from '../../../core/ui/aviso.js?v=163dc56r';
+import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=163dc56r';
+import { dinero, fechaLarga, hoyISO, diaLocal } from '../../../core/ui/formato.js?v=163dc56r';
+import { nombreDoc, DOCS_COMPRA, cargarBase, cargarProductos, cargarStock, registrar, anular, nombreTercero, cant } from '../datos.js?v=163dc56r';
 
 const ARCHIVOS = ['application/pdf', 'image/jpeg', 'image/png'];
 

@@ -2,10 +2,10 @@
 // colores de la marca (Reportes → Diseño del informe) y el logo grande, datos del servicio, trabajo realizado,
 // observaciones, fotos por etapa (12 por página) y contraportada con teléfonos, correos, web y dirección con iconos.
 // Las fotos "sin ordenar" y los videos no van al informe.
-import { cargarJsPdf, cargarLogo, rgb, sellar } from '../../core/pdf.js?v=163dc56';
-import { nombreEmpresa } from '../../core/empresas.js?v=163dc56';
-import { fechaLarga } from '../../core/ui/formato.js?v=163dc56';
-import { nombreEtapa, nombreTercero, urlsFirmadas, faenasDistintas } from './datos.js?v=163dc56';
+import { cargarJsPdf, cargarLogo, rgb, sellar } from '../../core/pdf.js?v=163dc56r';
+import { nombreEmpresa } from '../../core/empresas.js?v=163dc56r';
+import { fechaLarga } from '../../core/ui/formato.js?v=163dc56r';
+import { nombreEtapa, nombreTercero, urlsFirmadas, faenasDistintas } from './datos.js?v=163dc56r';
 
 const M = 15;                 // margen
 const TEXTO = [28, 35, 48];
@@ -270,6 +270,11 @@ export async function generarInforme(ctx, { parte, faenas, media, config }) {
   const cargadas = new Map(await Promise.all(fotos.map(async (m) => [m.id, await cargarFoto(urls.get(m.ruta), anchoCelda / altoCelda)])));
   const distintas = faenasDistintas(faenas);
   const varias = distintas.length > 1;
+  // Procesos personalizados: dentro de Proceso, primero las fotos generales y luego un bloque por paso, en su orden
+  const procesos = parte.procesos ?? [];
+  const idProceso = (m) => (procesos.some((p) => p.id === m.proceso) ? m.proceso : null);
+  const PASOS = ORDEN_ETAPAS.flatMap((etapa) => (etapa === 'proceso' ? [{ etapa, proceso: null }, ...procesos.map((proceso) => ({ etapa, proceso }))] : [{ etapa, proceso: null }]));
+  const enPaso = (m, paso) => m.etapa === paso.etapa && (paso.etapa !== 'proceso' || idProceso(m) === (paso.proceso?.id ?? null));
   const grupos = [];
   // Con secciones (ej.: Cámara 1 / Cámara 2): un bloque por sección (y faena si hay varias) con sus etapas; las fotos
   // sin sección van al final
@@ -277,21 +282,21 @@ export async function generarInforme(ctx, { parte, faenas, media, config }) {
   if (secciones.length) {
     for (const f of varias ? [...distintas, { faena_id: null }] : [null]) {
       for (const sec of [...secciones, null]) {
-        for (const etapa of ORDEN_ETAPAS) {
-          const g = fotos.filter((m) => m.etapa === etapa && cargadas.get(m.id) && (m.seccion ?? null) === sec && (!f || (m.faena_id ?? null) === f.faena_id));
+        for (const paso of PASOS) {
+          const g = fotos.filter((m) => enPaso(m, paso) && cargadas.get(m.id) && (m.seccion ?? null) === sec && (!f || (m.faena_id ?? null) === f.faena_id));
           const faena = f ? (f.faena_id ? f.ope_faenas?.titulo : 'General') : null;
-          if (g.length) grupos.push({ etapa, faena: [faena, sec].filter(Boolean).join(' — ') || null, fotos: g });
+          if (g.length) grupos.push({ ...paso, faena: [faena, sec].filter(Boolean).join(' — ') || null, fotos: g });
         }
       }
     }
   }
-  for (const etapa of secciones.length ? [] : ORDEN_ETAPAS) {
-    const deEtapa = fotos.filter((m) => m.etapa === etapa && cargadas.get(m.id));
+  for (const paso of secciones.length ? [] : PASOS) {
+    const deEtapa = fotos.filter((m) => enPaso(m, paso) && cargadas.get(m.id));
     if (!deEtapa.length) continue;
-    if (!varias) { grupos.push({ etapa, faena: null, fotos: deEtapa }); continue; }
+    if (!varias) { grupos.push({ ...paso, faena: null, fotos: deEtapa }); continue; }
     for (const f of [...distintas, { faena_id: null }]) {
       const deFaena = deEtapa.filter((m) => (m.faena_id ?? null) === f.faena_id);
-      if (deFaena.length) grupos.push({ etapa, faena: f.faena_id ? f.ope_faenas?.titulo : 'General', fotos: deFaena });
+      if (deFaena.length) grupos.push({ ...paso, faena: f.faena_id ? f.ope_faenas?.titulo : 'General', fotos: deFaena });
     }
   }
   for (const g of grupos) {
@@ -299,11 +304,15 @@ export async function generarInforme(ctx, { parte, faenas, media, config }) {
     for (let i = 0, n = 1; i < g.fotos.length; i += COLS * FILAS, n += 1) {
       y = nuevaPagina();
       y = tituloSeccion(`Registro fotográfico${g.faena ? ` — ${g.faena}` : ''}`, y);
-      const chip = `${ETIQUETA[g.etapa] ?? nombreEtapa[g.etapa].toUpperCase()}${total > 1 ? ` ${n}-${total}` : ''}`;
+      const chip = `${g.proceso ? g.proceso.nombre.toUpperCase() : ETIQUETA[g.etapa] ?? nombreEtapa[g.etapa].toUpperCase()}${total > 1 ? ` ${n}-${total}` : ''}`;
       doc.setFont('helvetica', 'bold').setFontSize(10);
       const wChip = doc.getTextWidth(chip) + 10;
       doc.setFillColor(...color).roundedRect(M, y, wChip, 7.5, 2, 2, 'F');
       doc.setTextColor(255, 255, 255).text(chip, M + 5, y + 5.2, { charSpace: 0.3 });
+      if (g.proceso?.nota) {   // la nota del proceso, al lado de su título
+        doc.setFont('helvetica', 'normal').setFontSize(9.5).setTextColor(...NAVY);
+        doc.text(doc.splitTextToSize(g.proceso.nota, W - 2 * M - wChip - 6)[0], M + wChip + 4, y + 5.2);
+      }
       y += 12;
       g.fotos.slice(i, i + COLS * FILAS).forEach((m, j) => {
         const foto = cargadas.get(m.id);
