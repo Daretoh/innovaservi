@@ -48,7 +48,9 @@ export const almacen = (api) => (urlArchivos() ? clienteR2(api) : api.storage.fr
 
 function nombreSeguro(nombre) {
   const limpio = nombre.normalize('NFD').replace(/[̀-ͯ]/g, '')
-    .replace(/[^A-Za-z0-9._-]+/g, '-').replace(/-+/g, '-').slice(-80);
+    .replace(/[^A-Za-z0-9._-]+/g, '-').replace(/-+/g, '-')
+    // Puntos seguidos (p. ej. "peaje 7..jpg"): el Worker rechaza toda ruta con ".." (Solicitud no válida, 2026-11-10)
+    .replace(/\.{2,}/g, '.').slice(-80).replace(/^[.-]+/, '');
   return limpio || 'archivo';
 }
 
