@@ -1,13 +1,13 @@
 // Parte de trabajo: datos del informe, fotos y videos por etapa, vista previa, confirmar y reabrir.
 // Ruta: #/reportes.parte?id=<parte_id>
-import { el } from '../../../core/ui/dom.js?v=c9a2c01';
-import { icono } from '../../../core/ui/iconos.js?v=c9a2c01';
-import { boton } from '../../../core/ui/tabla.js?v=c9a2c01';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=c9a2c01';
-import { avisar } from '../../../core/ui/aviso.js?v=c9a2c01';
-import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=c9a2c01';
-import { fechaLarga, nombreDia, fechaCorta } from '../../../core/ui/formato.js?v=c9a2c01';
-import { cargarParte, ETAPAS, opcionesEtapa, valorEtapa, desdeValorEtapa, nombreTercero, comprimirFoto, urlsFirmadas, faenasDistintas } from '../datos.js?v=c9a2c01';
+import { el } from '../../../core/ui/dom.js?v=c16a35c';
+import { icono } from '../../../core/ui/iconos.js?v=c16a35c';
+import { boton } from '../../../core/ui/tabla.js?v=c16a35c';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=c16a35c';
+import { avisar } from '../../../core/ui/aviso.js?v=c16a35c';
+import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=c16a35c';
+import { fechaLarga, nombreDia, fechaCorta } from '../../../core/ui/formato.js?v=c16a35c';
+import { cargarParte, ETAPAS, opcionesEtapa, valorEtapa, desdeValorEtapa, nombreTercero, comprimirFoto, urlsFirmadas, faenasDistintas } from '../datos.js?v=c16a35c';
 
 const MAX_VIDEO = 25 * 1024 * 1024;
 let etapaSubida = 'antes';
@@ -215,7 +215,7 @@ export default async function vista(ctx) {
 async function previa(ctx, datos, b) {
   b.disabled = true;
   try {
-    const { generarInforme } = await import('../informe.js?v=c9a2c01');
+    const { generarInforme } = await import('../informe.js?v=c16a35c');
     const doc = await generarInforme(ctx, datos);
     window.open(doc.output('bloburl'), '_blank', 'noopener');
   } catch (e) { avisar(`No se pudo generar: ${e.message}`, 'error'); } finally { b.disabled = false; }
@@ -229,7 +229,7 @@ function confirmar(ctx, datos) {
     campos: [],
     textoGuardar: 'Confirmar',
     alGuardar: async () => {
-      const { generarInforme } = await import('../informe.js?v=c9a2c01');
+      const { generarInforme } = await import('../informe.js?v=c16a35c');
       const doc = await generarInforme(ctx, datos);
       const archivo = new File([doc.output('blob')], `informe-${datos.parte.fecha}.pdf`, { type: 'application/pdf' });
       const { ruta } = await subirArchivo(ctx.api, { empresaId: ctx.empresa.id, modulo: 'reportes', archivo, tabla: 'rep_partes', registroId: datos.parte.id });

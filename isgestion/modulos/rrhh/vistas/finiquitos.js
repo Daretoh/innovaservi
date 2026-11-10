@@ -1,13 +1,13 @@
 // Finiquitos (como InnovaGestión): trabajador, fecha, monto, motivo, nota y documento firmado; al registrarlo se puede
 // dejar al trabajador inactivo. Permiso de RRHH.
-import { el } from '../../../core/ui/dom.js?v=c9a2c01';
-import { icono } from '../../../core/ui/iconos.js?v=c9a2c01';
-import { listado, boton } from '../../../core/ui/tabla.js?v=c9a2c01';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=c9a2c01';
-import { avisar } from '../../../core/ui/aviso.js?v=c9a2c01';
-import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=c9a2c01';
-import { dinero, fechaLarga, hoyISO } from '../../../core/ui/formato.js?v=c9a2c01';
-import { nombreCompleto } from '../datos.js?v=c9a2c01';
+import { el } from '../../../core/ui/dom.js?v=c16a35c';
+import { icono } from '../../../core/ui/iconos.js?v=c16a35c';
+import { listado, boton } from '../../../core/ui/tabla.js?v=c16a35c';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=c16a35c';
+import { avisar } from '../../../core/ui/aviso.js?v=c16a35c';
+import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=c16a35c';
+import { dinero, fechaLarga, hoyISO } from '../../../core/ui/formato.js?v=c16a35c';
+import { nombreCompleto } from '../datos.js?v=c16a35c';
 
 const MOTIVOS = ['Término de contrato a plazo fijo', 'Renuncia voluntaria', 'Mutuo acuerdo', 'Necesidades de la empresa', 'Conclusión del trabajo o servicio', 'Otro'];
 

@@ -5,19 +5,19 @@
 // gasto suyo ligado a la orden y entra en su cuenta (Costos → Pagos). Las compras hechas por cuenta de un tercero
 // (fin_registros.a_cuenta_de) se muestran aparte: no son costo de la empresa, se le descuentan a él.
 // Cada fila dice qué es (Mano de obra del contratista o Material) y cómo se paga; "A servicios" la cobra en la orden con nuestro margen.
-import { el } from '../../core/ui/dom.js?v=c9a2c01';
-import { boton } from '../../core/ui/tabla.js?v=c9a2c01';
-import { abrirFormulario } from '../../core/ui/modal.js?v=c9a2c01';
-import { avisar } from '../../core/ui/aviso.js?v=c9a2c01';
-import { dinero, fechaLarga, diaLocal, hoyISO } from '../../core/ui/formato.js?v=c9a2c01';
-import { nombreVehiculo } from './datos.js?v=c9a2c01';
+import { el } from '../../core/ui/dom.js?v=c16a35c';
+import { boton } from '../../core/ui/tabla.js?v=c16a35c';
+import { abrirFormulario } from '../../core/ui/modal.js?v=c16a35c';
+import { avisar } from '../../core/ui/aviso.js?v=c16a35c';
+import { dinero, fechaLarga, diaLocal, hoyISO } from '../../core/ui/formato.js?v=c16a35c';
+import { nombreVehiculo } from './datos.js?v=c16a35c';
 
 const nombreT = (t) => t?.nombre_fantasia || t?.razon_social || '';
 
 export async function seccionCostosPatente(ctx, o, v) {
   if (!v?.patente || !ctx.puede('costos', 'ver')) return null;
   const { data, error } = await ctx.api.from('fin_registros')
-    .select('id, fecha, concepto, total, neto, doc_tipo, estado_pago, orden_id, a_cuenta_de, tercero_id, proveedor:terceros!fin_registros_tercero_id_fkey(razon_social, nombre_fantasia), cuenta:terceros!fin_registros_a_cuenta_de_fkey(razon_social, nombre_fantasia)')
+    .select('id, fecha, concepto, total, neto, doc_tipo, estado_pago, orden_id, a_cuenta_de, tercero_id, categoria:fin_categorias(nombre), proveedor:terceros!fin_registros_tercero_id_fkey(razon_social, nombre_fantasia), cuenta:terceros!fin_registros_a_cuenta_de_fkey(razon_social, nombre_fantasia)')
     .eq('empresa_id', ctx.empresa.id).eq('patente', v.patente).eq('tipo', 'gasto').is('deleted_at', null).order('fecha', { ascending: false });
   if (error) return null;
   // Contratistas con cuenta corriente: sus trabajos no se pagan uno a uno, van al saldo de su cuenta
@@ -35,7 +35,9 @@ export async function seccionCostosPatente(ctx, o, v) {
   const porPagar = suma(data.filter((r) => r.estado_pago !== 'pagado' && !porSaldo(r)));
   const puedeCobrar = ctx.puede('taller', 'editar') && !o.cobrado && o.estado !== 'anulada';
   const lineas = o.tal_orden_servicios ?? [];
-  const esContratista = (r) => r.doc_tipo === 'otro' && r.tercero_id;
+  // Mano de obra o Material según la categoría del gasto (2026-11-10: una ampolleta comprada sin boleta salía como mano de obra);
+  // sin categoría, como antes: documento "otro" de un proveedor = trabajo de un contratista
+  const esContratista = (r) => (r.categoria?.nombre ? /tercero|mano de obra|desabollad|pintura|contratista/i.test(r.categoria.nombre) : !!(r.doc_tipo === 'otro' && r.tercero_id));
   const fila = (r) => {
     const quien = nombreT(r.proveedor);
     const enServicios = lineas.some((l) => l.nombre === r.concepto);
