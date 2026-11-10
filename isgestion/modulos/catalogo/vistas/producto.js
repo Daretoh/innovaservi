@@ -2,16 +2,16 @@
 // carrusel de vista previa, traer fotos desde un enlace), versiones por camioneta con precio, costo y margen.
 // Los costos y márgenes solo se ven con el permiso aprobar. Los datos se guardan al salir del campo.
 // Ruta: #/catalogo.producto?id=<id>&p=<pestaña>
-import { el } from '../../../core/ui/dom.js?v=36a65ad';
-import { icono } from '../../../core/ui/iconos.js?v=36a65ad';
-import { boton } from '../../../core/ui/tabla.js?v=36a65ad';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=36a65ad';
-import { avisar } from '../../../core/ui/aviso.js?v=36a65ad';
-import { dinero } from '../../../core/ui/formato.js?v=36a65ad';
+import { el } from '../../../core/ui/dom.js?v=dcd938a';
+import { icono } from '../../../core/ui/iconos.js?v=dcd938a';
+import { boton } from '../../../core/ui/tabla.js?v=dcd938a';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=dcd938a';
+import { avisar } from '../../../core/ui/aviso.js?v=dcd938a';
+import { dinero } from '../../../core/ui/formato.js?v=dcd938a';
 import {
   cargarCatalogo, cargarProducto, urlsFotos, subirFoto, cargarEstilos, guardarCosto, margen, nombreVersion, anios,
   traerDesdeEnlace, abrirCarrusel, MARCAS_VEHICULO, CABINAS,
-} from '../datos.js?v=36a65ad';
+} from '../datos.js?v=dcd938a';
 
 let pestana = 'datos';   // se mantiene al refrescar
 

@@ -1,10 +1,10 @@
 // Clientes (organizaciones): estado, plan, empresas, trabajadores activos, renovación y cobro estimado.
-import { el } from '../../core/ui/dom.js?v=36a65ad';
-import { listado, boton } from '../../core/ui/tabla.js?v=36a65ad';
-import { abrirFormulario } from '../../core/ui/modal.js?v=36a65ad';
-import { avisar } from '../../core/ui/aviso.js?v=36a65ad';
-import { fechaLarga, dinero } from '../../core/ui/formato.js?v=36a65ad';
-import { cargarTodo, ESTADOS, nombreEstado, cobroUF, leerUF, uf, diasHasta } from './datos.js?v=36a65ad';
+import { el } from '../../core/ui/dom.js?v=dcd938a';
+import { listado, boton } from '../../core/ui/tabla.js?v=dcd938a';
+import { abrirFormulario } from '../../core/ui/modal.js?v=dcd938a';
+import { avisar } from '../../core/ui/aviso.js?v=dcd938a';
+import { fechaLarga, dinero } from '../../core/ui/formato.js?v=dcd938a';
+import { cargarTodo, ESTADOS, nombreEstado, cobroUF, leerUF, uf, diasHasta } from './datos.js?v=dcd938a';
 
 export default async function vista(ctx) {
   const d = await cargarTodo(ctx);

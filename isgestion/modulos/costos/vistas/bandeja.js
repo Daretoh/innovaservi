@@ -3,14 +3,14 @@
 // (Costos 008) con su archivo en R2 (<empresa>/costos/…). "Cargar" abre el lector con la foto ya puesta; al registrar
 // el gasto la foto pasa a ser su archivo y el lector sigue con la siguiente de la bandeja.
 // Ruta: #/costos.bandeja
-import { el } from '../../../core/ui/dom.js?v=36a65ad';
-import { icono } from '../../../core/ui/iconos.js?v=36a65ad';
-import { boton } from '../../../core/ui/tabla.js?v=36a65ad';
-import { avisar } from '../../../core/ui/aviso.js?v=36a65ad';
-import { subirArchivo, urlsFirmadas, eliminarArchivo } from '../../../core/adjuntos.js?v=36a65ad';
-import { botonesFotos, tomarFotos } from '../../../core/ui/camara.js?v=36a65ad';
-import { comprimirFoto, esImagen, esPdf } from '../../../core/imagenes.js?v=36a65ad';
-import { fechaLarga, diaLocal } from '../../../core/ui/formato.js?v=36a65ad';
+import { el } from '../../../core/ui/dom.js?v=dcd938a';
+import { icono } from '../../../core/ui/iconos.js?v=dcd938a';
+import { boton } from '../../../core/ui/tabla.js?v=dcd938a';
+import { avisar } from '../../../core/ui/aviso.js?v=dcd938a';
+import { subirArchivo, urlsFirmadas, eliminarArchivo } from '../../../core/adjuntos.js?v=dcd938a';
+import { botonesFotos, tomarFotos } from '../../../core/ui/camara.js?v=dcd938a';
+import { comprimirFoto, esImagen, esPdf } from '../../../core/imagenes.js?v=dcd938a';
+import { fechaLarga, diaLocal } from '../../../core/ui/formato.js?v=dcd938a';
 
 // Pendientes de la empresa en orden de llegada (RLS: quien solo carga ve las suyas)
 export const pendientesBandeja = (ctx) => ctx.api.from('fin_bandeja').select('id, ruta, nombre, tipo_mime, nota, created_at, created_by')

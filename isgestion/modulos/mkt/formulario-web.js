@@ -1,12 +1,12 @@
 // Formulario web de contacto (Marketing 003): tarjeta de Ajustes para crear el enlace público, activarlo o renovarlo,
 // elegir el texto, las opciones de "¿Qué te interesa?" y si pide el vehículo; copiar el enlace y descargar el QR.
 // El enlace con &c=<código> atribuye el contacto a esa campaña (Campañas → "Enlace del formulario").
-import { el } from '../../core/ui/dom.js?v=36a65ad';
-import { icono } from '../../core/ui/iconos.js?v=36a65ad';
-import { boton } from '../../core/ui/tabla.js?v=36a65ad';
-import { avisar } from '../../core/ui/aviso.js?v=36a65ad';
-import { abrirFormulario } from '../../core/ui/modal.js?v=36a65ad';
-import { urlApp } from '../../core/api.js?v=36a65ad';
+import { el } from '../../core/ui/dom.js?v=dcd938a';
+import { icono } from '../../core/ui/iconos.js?v=dcd938a';
+import { boton } from '../../core/ui/tabla.js?v=dcd938a';
+import { avisar } from '../../core/ui/aviso.js?v=dcd938a';
+import { abrirFormulario } from '../../core/ui/modal.js?v=dcd938a';
+import { urlApp } from '../../core/api.js?v=dcd938a';
 
 const QR_JS = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
 export const enlaceFormulario = (token, campana = null) => urlApp(`contacto/?t=${token}${campana ? `&c=${encodeURIComponent(campana)}` : ''}`);

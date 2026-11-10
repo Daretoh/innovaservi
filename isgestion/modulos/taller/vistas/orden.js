@@ -2,27 +2,27 @@
 // Cabecera con placa y línea de avance por estado (con la hora de cada paso); checklist táctil con avance;
 // fotos con zona para arrastrar y soltar.
 // Ruta: #/taller.orden?id=<id>
-import { el } from '../../../core/ui/dom.js?v=36a65ad';
-import { icono } from '../../../core/ui/iconos.js?v=36a65ad';
-import { boton } from '../../../core/ui/tabla.js?v=36a65ad';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=36a65ad';
-import { avisar } from '../../../core/ui/aviso.js?v=36a65ad';
-import { subirArchivo, eliminarArchivo, urlsFirmadas } from '../../../core/adjuntos.js?v=36a65ad';
-import { comprimirFoto } from '../../../core/imagenes.js?v=36a65ad';
-import { dinero, fechaLarga, fechaCorta, hhmm, diaLocal } from '../../../core/ui/formato.js?v=36a65ad';
+import { el } from '../../../core/ui/dom.js?v=dcd938a';
+import { icono } from '../../../core/ui/iconos.js?v=dcd938a';
+import { boton } from '../../../core/ui/tabla.js?v=dcd938a';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=dcd938a';
+import { avisar } from '../../../core/ui/aviso.js?v=dcd938a';
+import { subirArchivo, eliminarArchivo, urlsFirmadas, urlFirmada } from '../../../core/adjuntos.js?v=dcd938a';
+import { comprimirFoto } from '../../../core/imagenes.js?v=dcd938a';
+import { dinero, fechaLarga, fechaCorta, hhmm, diaLocal } from '../../../core/ui/formato.js?v=dcd938a';
 import {
   ESTADOS, nombreEstado, PRIORIDADES, TIPOS_VENTA, MODOS_PAGO, CATEGORIAS_MEDIA, SELECT_ORDEN,
   verPatente, nombreVehiculo, nombreTercero, precioTalla, totales, minutosTrabajo, textoMinutos, cargarServicios, cargarTrabajadores, hora,
-} from '../datos.js?v=36a65ad';
-import { mover, textoAvance, puedeVolver, esperaPagoFactura } from '../acciones.js?v=36a65ad';
-import { formPedirFactura, quitarPedido } from '../factura.js?v=36a65ad';
-import { seccionInsumos } from '../insumos.js?v=36a65ad';
-import { seccionCostosPatente } from '../costos.js?v=36a65ad';
-import { pasosEtapa, tiempoOrden } from '../movil.js?v=36a65ad';
-import { avisoTarjeta } from '../pedidas.js?v=36a65ad';
-import { avance as avanceOrden } from '../seguimiento.js?v=36a65ad';
-import { placa } from '../../../core/ui/placa.js?v=36a65ad';
-import { esTelefono } from '../../../core/movil.js?v=36a65ad';
+} from '../datos.js?v=dcd938a';
+import { mover, textoAvance, puedeVolver, esperaPagoFactura } from '../acciones.js?v=dcd938a';
+import { formPedirFactura, quitarPedido } from '../factura.js?v=dcd938a';
+import { seccionInsumos } from '../insumos.js?v=dcd938a';
+import { seccionCostosPatente } from '../costos.js?v=dcd938a';
+import { pasosEtapa, tiempoOrden } from '../movil.js?v=dcd938a';
+import { avisoTarjeta } from '../pedidas.js?v=dcd938a';
+import { avance as avanceOrden } from '../seguimiento.js?v=dcd938a';
+import { placa } from '../../../core/ui/placa.js?v=dcd938a';
+import { esTelefono } from '../../../core/movil.js?v=dcd938a';
 
 const MAX_VIDEO = 25 * 1024 * 1024;
 let categoriaSubida = 'exterior';
@@ -51,7 +51,7 @@ export default async function vista(ctx) {
     // Lista de precios del cliente (Cotizaciones): manda sobre el precio del catálogo
     o.tercero_id && ctx.puede('cotizaciones', 'ver') ? ctx.api.from('cot_precios').select('*').eq('tercero_id', o.tercero_id) : Promise.resolve({ data: [] }),
     // ¿Se cobra en un cierre mensual o una cuenta corriente?
-    ctx.puede('cierres', 'ver') ? import('../../cierres/taller.js?v=36a65ad').then((m) => m.cobroExterno(ctx, o)) : Promise.resolve(null),
+    ctx.puede('cierres', 'ver') ? import('../../cierres/taller.js?v=dcd938a').then((m) => m.cobroExterno(ctx, o)) : Promise.resolve(null),
   ]);
   // Factura ligada a la orden, cliente y a quién se factura (Cotizaciones 008)
   const [{ data: factura }, { data: datosCliente }] = await Promise.all([
@@ -227,16 +227,64 @@ export default async function vista(ctx) {
     } }, `${n} (${k ? (media.data ?? []).filter((m) => m.categoria === k).length : media.data?.length ?? 0})`)));
 
   // ---- Cobro
+  // Boleta o comprobante del cobro (Taller 011): queda en la orden (boleta_ruta), aparte de Fotos y videos.
+  // Subir pide taller.crear (archivo privado) y guardarla taller.editar; con la orden cobrada se puede igual.
+  const puedeBoleta = ctx.puede('taller', 'crear') && ctx.puede('taller', 'editar') && !anulada;
+  const campoBoleta = { id: 'boleta', etiqueta: 'Boleta o comprobante (foto o PDF)', tipo: 'file', accept: 'image/*,application/pdf',
+    ayuda: 'Comprobante TUU, boleta o factura. Queda guardada en el cobro de esta orden.' };
+  const subirBoleta = async (archivo) => {
+    const a = archivo.type.startsWith('image/') ? await comprimirFoto(archivo) : archivo;
+    const { ruta } = await subirArchivo(ctx.api, { empresaId: ctx.empresa.id, modulo: 'taller', archivo: a, tabla: 'tal_ordenes', registroId: o.id, tipos: ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'] });
+    return { boleta_ruta: ruta, boleta_nombre: archivo.name.slice(0, 200) };
+  };
+  // Quita el archivo anterior al cambiarla o quitarla (si no hay permiso para eliminar, queda en adjuntos)
+  const borrarBoletaAnterior = async (ruta) => { if (ruta && ctx.puede('taller', 'eliminar')) await eliminarArchivo(ctx.api, ruta).catch(() => {}); };
   const cobrar = () => abrirFormulario({
     titulo: `Registrar cobro · N° ${o.numero}`,
     mensaje: `${o.tipo_venta === 'normal' ? `Total ${dinero(t.total)}${t.abono ? `, abono ${dinero(t.abono)}, saldo ${dinero(t.saldo)}` : ''}` : `Venta tipo ${TIPOS_VENTA.find((x) => x[0] === o.tipo_venta)[1].toLowerCase()}: no se cobra; ingreso ${dinero(t.ingreso)}`}. La orden queda bloqueada hasta reabrir el cobro.`,
-    campos: [], textoGuardar: 'Registrar cobro',
-    alGuardar: async () => {
+    campos: puedeBoleta ? [{ ...campoBoleta, etiqueta: o.boleta_ruta ? `Cambiar boleta (hay una: ${o.boleta_nombre ?? 'archivo'})` : `${campoBoleta.etiqueta}, opcional` }] : [],
+    textoGuardar: 'Registrar cobro',
+    alGuardar: async (x) => {
       if (o.tipo_venta === 'normal' && !lineas.length) throw new Error('La orden no tiene servicios.');
-      if (!(await guardar({ cobrado: true, cobrado_at: new Date().toISOString(), cobrado_por: ctx.usuario.id }, 'Cobro registrado.'))) throw new Error('No se pudo registrar.');
+      const anterior = o.boleta_ruta;
+      const boleta = x.boleta ? await subirBoleta(x.boleta) : {};
+      if (!(await guardar({ cobrado: true, cobrado_at: new Date().toISOString(), cobrado_por: ctx.usuario.id, ...boleta }, 'Cobro registrado.'))) {
+        if (boleta.boleta_ruta) await eliminarArchivo(ctx.api, boleta.boleta_ruta).catch(() => {});
+        throw new Error('No se pudo registrar.');
+      }
+      if (boleta.boleta_ruta) await borrarBoletaAnterior(anterior);
       ctx.refrescar();
     },
   });
+  const adjuntarBoleta = () => abrirFormulario({
+    titulo: `${o.boleta_ruta ? 'Cambiar' : 'Adjuntar'} boleta · N° ${o.numero}`,
+    campos: [{ ...campoBoleta, requerido: true }], textoGuardar: 'Guardar boleta',
+    alGuardar: async (x) => {
+      if (!x.boleta) throw new Error('Elige la foto o el PDF de la boleta.');
+      const anterior = o.boleta_ruta;
+      const boleta = await subirBoleta(x.boleta);
+      if (!(await guardar(boleta, 'Boleta guardada.'))) { await eliminarArchivo(ctx.api, boleta.boleta_ruta).catch(() => {}); throw new Error('No se pudo guardar la boleta.'); }
+      await borrarBoletaAnterior(anterior);
+      ctx.refrescar();
+    },
+  });
+  const verBoleta = async () => { try { window.open(await urlFirmada(ctx.api, o.boleta_ruta, 300), '_blank', 'noopener'); } catch (e) { avisar(e.message, 'error'); } };
+  const quitarBoleta = async () => {
+    if (!confirm(`¿Quitar la boleta «${o.boleta_nombre ?? 'archivo'}» de esta orden?`)) return;
+    const anterior = o.boleta_ruta;
+    if (await guardar({ boleta_ruta: null, boleta_nombre: null }, 'Boleta quitada.')) { await borrarBoletaAnterior(anterior); ctx.refrescar(); }
+  };
+  const bloqueBoleta = o.boleta_ruta
+    ? el('div', { class: 'cobro-boleta' },
+        icono('documento', { tam: 18 }),
+        el('div', { class: 'cobro-boleta-texto' }, el('span', { class: 'texto-chico texto-suave' }, 'Boleta del cobro'),
+          el('button', { type: 'button', class: 'enlace', title: 'Ver la boleta', onclick: verBoleta }, o.boleta_nombre ?? 'Ver archivo')),
+        el('div', { class: 'cobro-boleta-acciones' },
+          boton('Ver', { icono: 'ojo', class: 'boton boton-secundario boton-chico', onclick: verBoleta }),
+          puedeBoleta ? boton('Cambiar', { icono: 'editar', class: 'boton boton-secundario boton-chico', onclick: adjuntarBoleta }) : null,
+          puedeBoleta ? el('button', { type: 'button', class: 'boton-icono', title: 'Quitar la boleta', 'aria-label': 'Quitar la boleta', onclick: quitarBoleta }, icono('basura', { tam: 15 })) : null))
+    // Cobrada sin boleta: se puede adjuntar después
+    : o.cobrado && puedeBoleta ? boton('Adjuntar boleta', { icono: 'documento', class: 'boton boton-secundario boton-chico', onclick: adjuntarBoleta }) : null;
 
   // ---- Factura: pedida por el cliente, registrada o pagada (se cobra en Cotizaciones → Facturas)
   const verFacturas = ctx.puede('cotizaciones', 'ver') ? el('a', { href: ctx.ruta('cotizaciones.oc') }, 'Ir a Facturas') : null;
@@ -303,7 +351,7 @@ export default async function vista(ctx) {
       el('h2', {}, `Fotos y documentos (${media.data?.length ?? 0})`),
       editableTrabajo ? el('div', { class: 'listado-acciones' }, selCat, boton('Subir', { icono: 'camara', tipo: 'primario', onclick: () => entrada.click() }), entrada) : null),
     media.data?.length ? filtroMedia : null,
-    media.data?.length ? galeria : el('p', { class: 'texto-suave' }, 'Fotos del vehículo al ingresar y al entregar, boleta o voucher.'),
+    media.data?.length ? galeria : el('p', { class: 'texto-suave' }, 'Fotos del vehículo al ingresar y al entregar. La boleta del cobro se adjunta en Cobro.'),
     zona);
   // Teléfono (dirección B): barra con volver y N°, la placa grande, la línea de etapas con horas y avance, las tareas
   // primero y un pie fijo con Fotos y el paso siguiente. Debajo, los datos, servicios, tiempos y cobro de siempre.
@@ -396,6 +444,7 @@ export default async function vista(ctx) {
           t.abono ? el('div', {}, el('span', {}, 'Abono'), el('span', {}, dinero(t.abono))) : null,
           el('div', { class: 'cobro-saldo' }, el('strong', {}, 'Saldo'), el('strong', {}, dinero(t.saldo))),
           o.tipo_venta !== 'normal' ? el('p', { class: 'texto-suave texto-chico' }, 'Venta sin cobro: el ingreso es solo el abono.') : null),
+        bloqueBoleta,
         // Se cobra en un cierre mensual o una cuenta corriente: no se cobra sola
         !o.cobrado && externo
           ? el('p', { class: 'aviso-bandeja' }, icono('documento', { tam: 16 }), `${externo.texto} `, el('a', { href: externo.ruta }, externo.enlace))
@@ -415,18 +464,18 @@ export default async function vista(ctx) {
 async function cotizar(ctx, o, lineas, b) {
   b.disabled = true;
   try {
-    const { nueva } = await import('../../cotizaciones/vistas/lista.js?v=36a65ad');
+    const { nueva } = await import('../../cotizaciones/vistas/lista.js?v=dcd938a');
     const { data: t } = o.tercero_id ? await ctx.api.from('terceros').select('*').eq('id', o.tercero_id).maybeSingle() : { data: null };
     const v = o.tal_vehiculos;
     // Sin servicios con precio ("Pendiente de cotización"): las tareas, con la lista de precios del cliente y la talla
-    const { trabajosOrden, listaCliente } = await import('../../cotizaciones/trabajos-orden.js?v=36a65ad');
+    const { trabajosOrden, listaCliente } = await import('../../cotizaciones/trabajos-orden.js?v=dcd938a');
     const trabajos = trabajosOrden(o, lineas, await listaCliente(ctx, o.tercero_id), v.talla);
     await nueva(ctx, {
       tercero: t ?? null,
       grupo: { titulo: [v.marca, v.modelo].filter(Boolean).join(' ') || null, patente: v.patente, anio: v.anio, talla: v.talla, vehiculo_id: v.id },
       // Más los costos de la orden (trabajo de terceros, compras con la patente, insumos) como ítems con costo y precio 0
       lineas: [...trabajos.map((x) => ({ tipo: 'item', descripcion: x.descripcion, cantidad: 1, precio: x.precio })),
-        ...await import('../../cotizaciones/costos-orden.js?v=36a65ad').then(async (m) => m.lineasCosto((await m.costosDeOrdenes(ctx, [{ ...o, patente: v.patente }])).get(o.id) ?? []))],
+        ...await import('../../cotizaciones/costos-orden.js?v=dcd938a').then(async (m) => m.lineasCosto((await m.costosDeOrdenes(ctx, [{ ...o, patente: v.patente }])).get(o.id) ?? []))],
       ordenId: o.id,
     });
   } catch (e) { avisar(e.message, 'error'); b.disabled = false; }

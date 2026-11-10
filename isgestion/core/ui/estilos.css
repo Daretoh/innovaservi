@@ -593,6 +593,13 @@ html[data-modo="oscuro"] .chip-fijo { color: #10131a; }
 .cot-costos-monto { text-align: right; font-variant-numeric: tabular-nums; }
 .cot-costos p { margin: 4px 0 0; }
 .cobro-resumen > div[hidden] { display: none; }
+/* Boleta del cobro (Taller 011) */
+.cobro-boleta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin: 0 0 10px; padding: 8px 10px; border: 1px solid var(--borde); border-radius: 8px; background: var(--superficie); color: var(--texto-suave); }
+.cobro-boleta-texto { display: flex; flex-direction: column; min-width: 0; flex: 1 1 120px; }
+.cobro-boleta-texto .enlace { color: var(--texto); text-align: left; overflow-wrap: anywhere; }
+.cobro-boleta-acciones { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+#orden-cobro > .boton-chico { margin: 0 0 10px; }
+.cobro-doc { display: inline-flex; align-items: center; gap: 4px; }
 @media (max-width: 700px) {
   .cot-costos-fila { grid-template-columns: 1fr auto auto; }
   .cot-costos-fila > :nth-child(2) { grid-column: 1 / -1; grid-row: 1; }

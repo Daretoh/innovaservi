@@ -1,12 +1,14 @@
 // Cobros del taller: órdenes por cobrar (en proceso, terminadas o entregadas) y cobradas del mes.
 // Arriba, tarjetas de resumen; las pendientes muestran su antigüedad (desde el término) y un acceso a cobrar.
-import { el } from '../../../core/ui/dom.js?v=36a65ad';
-import { icono } from '../../../core/ui/iconos.js?v=36a65ad';
-import { listado } from '../../../core/ui/tabla.js?v=36a65ad';
-import { dinero, fechaLarga, nombreMes, moverMes, rangoMes, diaLocal } from '../../../core/ui/formato.js?v=36a65ad';
+import { el } from '../../../core/ui/dom.js?v=dcd938a';
+import { icono } from '../../../core/ui/iconos.js?v=dcd938a';
+import { listado } from '../../../core/ui/tabla.js?v=dcd938a';
+import { avisar } from '../../../core/ui/aviso.js?v=dcd938a';
+import { urlFirmada } from '../../../core/adjuntos.js?v=dcd938a';
+import { dinero, fechaLarga, nombreMes, moverMes, rangoMes, diaLocal } from '../../../core/ui/formato.js?v=dcd938a';
 
 const DIAS_ATRASO = 7;   // desde el término: más que esto se marca en rojo
-import { SELECT_ORDEN, verPatente, nombreVehiculo, nombreTercero, totales, TIPOS_VENTA } from '../datos.js?v=36a65ad';
+import { SELECT_ORDEN, verPatente, nombreVehiculo, nombreTercero, totales, TIPOS_VENTA } from '../datos.js?v=dcd938a';
 
 const estado = { tab: 'pendientes', mes: new Date().toISOString().slice(0, 7) };
 
@@ -47,7 +49,9 @@ export default async function vista(ctx) {
       { titulo: 'Vehículo', valor: (o) => el('span', { class: 'cobro-vehiculo' }, el('span', { class: 'tal-placa' }, verPatente(o.tal_vehiculos?.patente) || 'S/P'), nombreVehiculo(o.tal_vehiculos)) },
       { titulo: 'Cliente', valor: (o) => nombreTercero(o.terceros) },
       { titulo: estado.tab === 'pendientes' ? 'Antigüedad' : 'Cobrado', valor: (o) => (estado.tab === 'pendientes' ? antig(o) : fechaLarga(diaLocal(o.cobrado_at))) },
-      { titulo: 'Documento', valor: (o) => (o.tipo_venta !== 'normal' ? TIPOS_VENTA.find((x) => x[0] === o.tipo_venta)[1] : o.doc_tipo === 'factura' ? 'Factura' : 'Boleta') },
+      { titulo: 'Documento', valor: (o) => el('span', { class: 'cobro-doc' }, o.tipo_venta !== 'normal' ? TIPOS_VENTA.find((x) => x[0] === o.tipo_venta)[1] : o.doc_tipo === 'factura' ? 'Factura' : 'Boleta',
+        // Boleta adjunta al cobro (Taller 011)
+        o.boleta_ruta ? el('button', { type: 'button', class: 'boton-icono', title: `Ver la boleta: ${o.boleta_nombre ?? 'archivo'}`, 'aria-label': 'Ver la boleta', onclick: async () => { try { window.open(await urlFirmada(ctx.api, o.boleta_ruta, 300), '_blank', 'noopener'); } catch (e) { avisar(e.message, 'error'); } } }, icono('documento', { tam: 15 })) : null) },
       { titulo: 'Total', valor: (o) => dinero(o.t.total) },
       { titulo: estado.tab === 'pendientes' ? 'Saldo' : 'Ingreso', valor: (o) => (o.externa ? el('span', { class: 'chip chip-pend' }, o.externa) : el('strong', {}, dinero(estado.tab === 'pendientes' ? o.t.saldo : o.t.ingreso))) },
       ...(estado.tab === 'pendientes' && ctx.puede('taller', 'editar') ? [{ titulo: '', valor: (o) => (o.externa === 'Con factura' && ctx.puede('cotizaciones', 'ver') ? el('a', { class: 'boton boton-secundario boton-chico', href: ctx.ruta('cotizaciones.oc') }, 'Ir a Facturas', icono('derecha', { tam: 14 })) : o.externa ? '' : el('a', { class: 'boton boton-secundario boton-chico', href: ctx.ruta('taller.orden', { id: o.id, ir: 'cobro' }) }, 'Cobrar', icono('derecha', { tam: 14 }))) }] : []),
