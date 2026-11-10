@@ -7,11 +7,12 @@
 // - Registros que se pisan el mismo día se unen (el tiempo repetido cuenta una vez).
 // - Vueltas × valor (propio o general). Extras y descuentos por semana.
 // - Ajuste contable por día: reemplaza el monto de ese día (se muestra real y contable).
-import { aMin, diaSemana, sumarDias } from '../../core/ui/formato.js?v=163dc56rfht';
+import { aMin, diaSemana, sumarDias } from '../../core/ui/formato.js?v=96d87cf';
 
 // Intervalos [inicio, fin] en minutos del día; si la salida es <= entrada, termina al día siguiente.
 function intervalo(h) {
   const a = aMin(h.entrada); let b = aMin(h.salida);
+  if (!h.salida) return [a, a];   // sin salida: no cuenta hasta completarla
   if (b <= a) b += 1440;
   return [a, b];
 }

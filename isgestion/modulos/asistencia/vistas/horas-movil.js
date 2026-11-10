@@ -6,12 +6,12 @@
 // abierta tiene además "Agregar persona en esta faena".
 // Mismos datos y reglas que la planilla de escritorio (horas.js): las del marcaje se corrigen en Marcajes y los fijos con
 // turno quedan presentes "según horario".
-import { el } from '../../../core/ui/dom.js?v=163dc56rfht';
-import { icono } from '../../../core/ui/iconos.js?v=163dc56rfht';
-import { boton } from '../../../core/ui/tabla.js?v=163dc56rfht';
-import { avisar } from '../../../core/ui/aviso.js?v=163dc56rfht';
-import { hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, horas, aMin, hhmm } from '../../../core/ui/formato.js?v=163dc56rfht';
-import { estado, minutosRegistro, ausente, eliminar, campoFiltroFaena, pasaFiltroFaena, resumenDia } from './horas.js?v=163dc56rfht';
+import { el } from '../../../core/ui/dom.js?v=96d87cf';
+import { icono } from '../../../core/ui/iconos.js?v=96d87cf';
+import { boton } from '../../../core/ui/tabla.js?v=96d87cf';
+import { avisar } from '../../../core/ui/aviso.js?v=96d87cf';
+import { hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, horas, aMin, hhmm } from '../../../core/ui/formato.js?v=96d87cf';
+import { estado, minutosRegistro, ausente, eliminar, campoFiltroFaena, pasaFiltroFaena, resumenDia } from './horas.js?v=96d87cf';
 
 const pantalla = { pestana: null, buscar: '', marcados: new Set(), abiertas: new Set(), diaAbierto: null };   // abiertas: faenas desplegadas (día|faena)
 const DIAS_LARGOS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
@@ -85,9 +85,10 @@ export default async function asistenciaMovil(ctx) {
   // Atajos de horario, entrada, salida y total (hoja de una persona y Agregar)
   function camposHorario({ inicial, final, editable }) {
     const entrada = el('input', { type: 'time', class: 'campo', 'aria-label': 'Entrada', required: true, disabled: !editable, value: inicial });
-    const salida = el('input', { type: 'time', class: 'campo', 'aria-label': 'Salida', required: true, disabled: !editable, value: final });
+    const salida = el('input', { type: 'time', class: 'campo', 'aria-label': 'Salida', disabled: !editable, value: final });   // opcional (Asistencia 007)
     const total = el('p', { class: 'asm-total', 'aria-live': 'polite' });
     const pintarTotal = () => {
+      if (entrada.value && !salida.value) { total.textContent = 'Sin salida: no cuenta hasta completarla.'; return; }
       if (!entrada.value || !salida.value) { total.textContent = ''; return; }
       if (entrada.value === salida.value) { total.textContent = 'La entrada y la salida no pueden ser iguales.'; return; }
       total.textContent = `${horas(minutosRegistro({ entrada: entrada.value, salida: salida.value }))}${aMin(salida.value) <= aMin(entrada.value) ? ' · termina al día siguiente' : ''}`;
@@ -101,7 +102,7 @@ export default async function asistenciaMovil(ctx) {
     const filas = el('div', { class: 'asm-horas' },
       el('label', {}, el('span', {}, 'Entrada'), entrada),
       el('span', { class: 'asm-flecha', 'aria-hidden': 'true' }, icono('derecha', { tam: 18 })),
-      el('label', {}, el('span', {}, 'Salida'), salida));
+      el('label', {}, el('span', {}, 'Salida', editable ? el('button', { type: 'button', class: 'asm-sin-salida', onclick: (ev) => { ev.preventDefault(); salida.value = ''; pintarTotal(); marcarAtajo(); } }, 'Dejar en blanco') : null), salida));
     return { entrada, salida, total, chips, filas, iniciar: () => { pintarTotal(); marcarAtajo(); } };
   }
 
@@ -192,10 +193,10 @@ export default async function asistenciaMovil(ctx) {
       const guardar = async (ev) => {
         ev.preventDefault();
         error.hidden = true;
-        if (h.entrada.value === h.salida.value) { error.textContent = 'La entrada y la salida no pueden ser iguales.'; error.hidden = false; return; }
+        if (h.salida.value && h.entrada.value === h.salida.value) { error.textContent = 'La entrada y la salida no pueden ser iguales.'; error.hidden = false; return; }
         const nombreFaena = conFaena ? faena.value.trim() : '';
         btn.disabled = true; btn.classList.add('cargando');
-        const res = await ctx.api.from('asis_horas').insert([...marcados].map((persona_id) => ({ persona_id, fecha: d, empresa_id: ctx.empresa.id, entrada: h.entrada.value, salida: h.salida.value, faena: nombreFaena || null, vueltas: 0 }))).select('id');
+        const res = await ctx.api.from('asis_horas').insert([...marcados].map((persona_id) => ({ persona_id, fecha: d, empresa_id: ctx.empresa.id, entrada: h.entrada.value, salida: h.salida.value || null, faena: nombreFaena || null, vueltas: 0 }))).select('id');
         btn.classList.remove('cargando');
         if (res.error || !res.data?.length) { contar(); error.textContent = res.error?.message ?? 'No tienes permiso para guardar.'; error.hidden = false; return; }
         const n = marcados.size;
@@ -230,7 +231,7 @@ export default async function asistenciaMovil(ctx) {
     const desdeMarcaje = r?.origen === 'marcaje';
     const editable = r ? puedeEditar && !desdeMarcaje : puedeCrear;
     const titulo = varias ? `${ids.length} personas` : v ? nombre(v.personas) : 'Persona';
-    const h = camposHorario({ inicial: r ? hhmm(r.entrada) : plan?.entrada || HORARIO_BASE.split('-')[0], final: r ? hhmm(r.salida) : plan?.salida || HORARIO_BASE.split('-')[1], editable });
+    const h = camposHorario({ inicial: r ? hhmm(r.entrada) : plan?.entrada || HORARIO_BASE.split('-')[0], final: r ? hhmm(r.salida) : plan?.sinSalida ? '' : plan?.salida || HORARIO_BASE.split('-')[1], editable });
     const { entrada, salida, total, chips } = h;
 
     const listaFaenas = el('datalist', { id: 'asm-faenas' }, faenasDe(d).map((t) => el('option', { value: t })));
@@ -243,9 +244,9 @@ export default async function asistenciaMovil(ctx) {
     const guardar = async (ev) => {
       ev.preventDefault();
       error.hidden = true;
-      if (entrada.value === salida.value) { error.textContent = 'La entrada y la salida no pueden ser iguales.'; error.hidden = false; return; }
+      if (salida.value && entrada.value === salida.value) { error.textContent = 'La entrada y la salida no pueden ser iguales.'; error.hidden = false; return; }
       btn.disabled = true; btn.classList.add('cargando');
-      const datos = { entrada: entrada.value, salida: salida.value, ...(conFaena ? { faena: faena.value.trim() || null } : {}), vueltas: conVueltas ? Math.max(0, Number(vueltas.value) || 0) : (r?.vueltas ?? 0) };
+      const datos = { entrada: entrada.value, salida: salida.value || null, ...(conFaena ? { faena: faena.value.trim() || null } : {}), vueltas: conVueltas ? Math.max(0, Number(vueltas.value) || 0) : (r?.vueltas ?? 0) };
       let res;
       if (r) {
         const corregido = r.origen === 'horario' && !(r.notas ?? '').startsWith('Corregido') && (hhmm(r.entrada) !== entrada.value || hhmm(r.salida) !== salida.value);
@@ -265,7 +266,7 @@ export default async function asistenciaMovil(ctx) {
     const extras = r && !desdeMarcaje ? [
       r.origen === 'horario' && puedeEditar ? boton('Marcar ausente', { onclick: () => { cerrar(); ausente(ctx, r, v); } }) : null,
       r.origen !== 'horario' && puedeEliminar ? boton('Eliminar', { icono: 'basura', onclick: () => { cerrar(); eliminar(ctx, r); } }) : null,
-      puedeCrear ? boton('Otra hora', { icono: 'mas', onclick: () => { cerrar(); hoja({ ids: [r.persona_id], plan: { faena: r.faena ?? '', entrada: hhmm(r.salida), salida: '' } }); } }) : null,
+      puedeCrear ? boton('Otra hora', { icono: 'mas', onclick: () => { cerrar(); hoja({ ids: [r.persona_id], plan: { faena: r.faena ?? '', entrada: hhmm(r.salida) || hhmm(r.entrada), salida: '', sinSalida: true } }); } }) : null,
     ].filter(Boolean) : [];
     const form = el('form', { class: 'modal-cuerpo asm-form', onsubmit: guardar },
       desdeMarcaje ? el('p', { class: 'asm-nota' }, 'Viene del marcaje: se corrige en ', ctx.hayVista('asistencia.marcajes') ? el('a', { href: ctx.ruta('asistencia.marcajes'), onclick: () => cerrar() }, 'Marcajes') : 'Marcajes', '.') : null,
@@ -336,7 +337,7 @@ export default async function asistenciaMovil(ctx) {
       avatar(v),
       el('span', { class: 'asm-persona-texto' },
         el('strong', {}, v ? nombre(v.personas) : 'Persona sin vínculo'),
-        el('span', { class: 'asm-horario' }, `${hhmm(r.entrada)} – ${hhmm(r.salida)}`, el('b', {}, horas(minutosRegistro(r))), chip ? el('span', { class: `chip ${chip[1]}` }, chip[0]) : null),
+        el('span', { class: 'asm-horario' }, `${hhmm(r.entrada)} – ${hhmm(r.salida) || '…'}`, r.salida ? el('b', {}, horas(minutosRegistro(r))) : el('span', { class: 'chip chip-prox' }, 'Sin salida'), chip ? el('span', { class: `chip ${chip[1]}` }, chip[0]) : null),
         datosDia.pisan.has(r.id) ? el('span', { class: 'texto-chico pct-mal' }, 'Se pisa con otra hora ese día') : null),
       icono('derecha', { tam: 18 }));
   }
