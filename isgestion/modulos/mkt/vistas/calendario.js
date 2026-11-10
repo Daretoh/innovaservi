@@ -1,13 +1,13 @@
 // Calendario de contenido: publicaciones del mes por día, con su estado (idea → en diseño → por aprobar → aprobada →
 // programada → publicada). Quien tiene el permiso aprobar ve arriba las piezas por aprobar y las aprueba con un clic.
 // La programación en las redes se hace en Metricool o Meta Business Suite; aquí queda el plan y los resultados.
-import { el } from '../../../core/ui/dom.js?v=dd03031';
-import { icono } from '../../../core/ui/iconos.js?v=dd03031';
-import { boton } from '../../../core/ui/tabla.js?v=dd03031';
-import { avisar } from '../../../core/ui/aviso.js?v=dd03031';
-import { hoyISO, rangoMes, moverMes, nombreMes, lunesDe, sumarDias, fechaCorta, hhmm } from '../../../core/ui/formato.js?v=dd03031';
-import { cargarBase, cargarCss, nombreRed, nombreFormato, nombreEstadoPub, ESTADOS_PUB } from '../datos.js?v=dd03031';
-import { formPublicacion } from '../formularios.js?v=dd03031';
+import { el } from '../../../core/ui/dom.js?v=8dee83b';
+import { icono } from '../../../core/ui/iconos.js?v=8dee83b';
+import { boton } from '../../../core/ui/tabla.js?v=8dee83b';
+import { avisar } from '../../../core/ui/aviso.js?v=8dee83b';
+import { hoyISO, rangoMes, moverMes, nombreMes, lunesDe, sumarDias, fechaCorta, hhmm } from '../../../core/ui/formato.js?v=8dee83b';
+import { cargarBase, cargarCss, nombreRed, nombreFormato, nombreEstadoPub, ESTADOS_PUB } from '../datos.js?v=8dee83b';
+import { formPublicacion } from '../formularios.js?v=8dee83b';
 
 const estado = { mes: hoyISO().slice(0, 7), red: '' };
 const DIAS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];

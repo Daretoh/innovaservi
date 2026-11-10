@@ -105,3 +105,27 @@
 .mkt-form-web { display: grid; gap: 10px; }
 .mkt-enlace { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .mkt-enlace code { flex: 1 1 260px; min-width: 0; overflow-wrap: anywhere; padding: 6px 8px; border-radius: 6px; background: var(--fondo-hundido); font-size: .8rem; }
+
+/* ---- Bot de clientes */
+.mkt-bot { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.mkt-bot-col { display: grid; gap: 16px; min-width: 0; }
+.mkt-bot .ficha { max-width: none; margin: 0; }
+.mkt-bot-grupos { display: grid; gap: 12px; }
+.mkt-bot-cat { margin: 12px 0 0; font-size: .85rem; color: var(--texto-suave); text-transform: uppercase; letter-spacing: .04em; }
+.mkt-bot-pausada .mkt-respuesta { opacity: .6; }
+.mkt-bot-pausada .chip { margin-left: 6px; }
+.mkt-bot-pie { margin-top: 12px; }
+.mkt-bot-dato { display: grid; gap: 2px; padding: 6px 0; border-top: 1px solid var(--borde); white-space: pre-wrap; }
+.mkt-bot-sim { position: sticky; top: 72px; display: grid; gap: 10px; }
+.mkt-bot-chat { display: flex; flex-direction: column; gap: 8px; min-height: 260px; max-height: 55vh; overflow-y: auto; padding: 10px; border-radius: 10px; background: var(--fondo-hundido); }
+.mkt-bot-vacio { margin: auto; text-align: center; max-width: 320px; }
+.mkt-bot-msj { display: grid; gap: 4px; max-width: 85%; }
+.mkt-bot-msj.es-cliente { align-self: flex-end; justify-items: end; }
+.mkt-bot-msj.es-bot { align-self: flex-start; }
+.mkt-bot-burbuja { padding: 8px 12px; border-radius: 12px; white-space: pre-wrap; overflow-wrap: anywhere; background: var(--superficie); border: 1px solid var(--borde); }
+.es-cliente .mkt-bot-burbuja { background: var(--empresa); color: var(--sobre-empresa); border-color: transparent; }
+.es-error .mkt-bot-burbuja { color: var(--error, var(--texto)); border-style: dashed; }
+.mkt-bot-derivar { display: inline-flex; align-items: center; gap: 4px; font-size: .78rem; color: var(--prox); }
+.mkt-bot-entrada { display: flex; gap: 8px; align-items: flex-end; }
+.mkt-bot-entrada textarea { flex: 1; resize: vertical; }
+@media (max-width: 900px) { .mkt-bot { grid-template-columns: 1fr; } .mkt-bot-sim { position: static; } }
