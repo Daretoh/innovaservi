@@ -1,19 +1,19 @@
 // Cierre mensual de un cliente: líneas (órdenes terminadas en el mes y manuales), emitir, OC, factura, cobro, PDF e historial.
 // El mes de una orden es el de su entrega (Cierres 005); las sin entregar se avisan y no entran solas.
 // Ruta: #/cierres.cierre?id=<id>
-import { el } from '../../../core/ui/dom.js?v=37c9450';
-import { icono } from '../../../core/ui/iconos.js?v=37c9450';
-import { boton } from '../../../core/ui/tabla.js?v=37c9450';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=37c9450';
-import { avisar } from '../../../core/ui/aviso.js?v=37c9450';
-import { subirArchivo, urlFirmada } from '../../../core/adjuntos.js?v=37c9450';
-import { dinero, fechaLarga, hoyISO, diaLocal } from '../../../core/ui/formato.js?v=37c9450';
+import { el } from '../../../core/ui/dom.js?v=0ddac6e';
+import { icono } from '../../../core/ui/iconos.js?v=0ddac6e';
+import { boton } from '../../../core/ui/tabla.js?v=0ddac6e';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=0ddac6e';
+import { avisar } from '../../../core/ui/aviso.js?v=0ddac6e';
+import { subirArchivo, urlFirmada } from '../../../core/adjuntos.js?v=0ddac6e';
+import { dinero, fechaLarga, hoyISO, diaLocal } from '../../../core/ui/formato.js?v=0ddac6e';
 import {
   nombreTercero, nombreEstado, CHIP_ESTADO, indiceEstado, MEDIOS, nombreMedio, ARCHIVOS, verPatente, numeroTexto, nombreMesLargo,
   totalesCierre, verHistorial, archivoSeguro,
-} from '../datos.js?v=37c9450';
-import { nombreEstado as estadoOrden } from '../../taller/datos.js?v=37c9450';
-import { nombreEstado as estadoCot, CHIP_ESTADO as CHIP_COT } from '../../cotizaciones/datos.js?v=37c9450';
+} from '../datos.js?v=0ddac6e';
+import { nombreEstado as estadoOrden } from '../../taller/datos.js?v=0ddac6e';
+import { nombreEstado as estadoCot, CHIP_ESTADO as CHIP_COT } from '../../cotizaciones/datos.js?v=0ddac6e';
 
 const SELECT = '*, terceros(*), cie_lineas(*, tal_ordenes(id, numero, estado)), cot_cotizaciones(id, numero, estado, deleted_at)';
 
@@ -197,7 +197,7 @@ export default async function vista(ctx) {
   const pdf = async (b) => {
     b.disabled = true;
     try {
-      const { pdfCierre } = await import('../documentos.js?v=37c9450');
+      const { pdfCierre } = await import('../documentos.js?v=0ddac6e');
       const doc = await pdfCierre(ctx, c, lineas, c.terceros, cliCfg.data?.nota);
       doc.save(`cierre-${c.mes}-${archivoSeguro(nombreTercero(c.terceros) || 'cliente')}.pdf`);
     } catch (e) { avisar(e.message, 'error'); } finally { b.disabled = false; }
@@ -210,7 +210,7 @@ export default async function vista(ctx) {
         el('p', { class: 'texto-suave' }, [c.emitido_at ? `Emitido el ${fechaLarga(diaLocal(c.emitido_at))}` : 'Sin emitir', `${vivas.length} ${vivas.length === 1 ? 'línea' : 'líneas'}`].join(' · '))),
       el('div', { class: 'listado-acciones' }, el('span', { class: `chip ${CHIP_ESTADO[c.estado]}` }, nombreEstado[c.estado]),
         conCot || c.estado === 'anulado' ? null : boton(borrador ? 'PDF de prueba' : 'PDF', { icono: 'descargar', onclick: (ev) => pdf(ev.currentTarget) }),
-        ctx.puede('cierres', 'exportar') ? boton('Excel detalle', { icono: 'descargar', onclick: async (ev) => { const b = ev.currentTarget; b.disabled = true; try { const { excelDetalleCierre } = await import('../excel.js?v=37c9450'); await excelDetalleCierre(ctx, c, lineas); } catch (e) { avisar(e.message, 'error'); } finally { b.disabled = false; } } }) : null,
+        ctx.puede('cierres', 'exportar') ? boton('Excel detalle', { icono: 'descargar', onclick: async (ev) => { const b = ev.currentTarget; b.disabled = true; try { const { excelDetalleCierre } = await import('../excel.js?v=0ddac6e'); await excelDetalleCierre(ctx, c, lineas); } catch (e) { avisar(e.message, 'error'); } finally { b.disabled = false; } } }) : null,
         boton('Historial', { icono: 'reloj', onclick: () => verHistorial(ctx, c.id, `${nombreTercero(c.terceros)} ${c.mes}`) }))),
     agregadas ? el('p', { class: 'aviso-bandeja' }, icono('check', { tam: 16 }), `${agregadas} ${agregadas === 1 ? 'línea nueva entró' : 'líneas nuevas entraron'} al cierre (órdenes terminadas o faenas del mes).`) : null,
     nuevas.length ? el('p', { class: 'aviso-bandeja' }, icono('alerta', { tam: 16 }),

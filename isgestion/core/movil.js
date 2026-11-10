@@ -9,11 +9,12 @@
 //   abre en abanico las opciones que el usuario puede usar (mantener y arrastrar hacia una la elige; un toque abre y otro
 //   elige); si queda una sola, la abre directo. Con 3 son tres direcciones; con más, el arco se abre y luego suma otra vuelta.
 // Sin accesos declarados, la barra usa los primeros apartados del menú. Siempre: Inicio al principio y Más al final.
-import { el } from './ui/dom.js?v=37c9450';
-import { icono } from './ui/iconos.js?v=37c9450';
-import { urlFirmada } from './adjuntos.js?v=37c9450';
-import { nombreEmpresa } from './empresas.js?v=37c9450';
-import { avisar } from './ui/aviso.js?v=37c9450';
+import { el } from './ui/dom.js?v=0ddac6e';
+import { icono } from './ui/iconos.js?v=0ddac6e';
+import { urlFirmada } from './adjuntos.js?v=0ddac6e';
+import { nombreEmpresa } from './empresas.js?v=0ddac6e';
+import { avisar } from './ui/aviso.js?v=0ddac6e';
+import { guardarLogoAviso } from './push.js?v=0ddac6e';
 
 const MAX_ACCESOS = 2;
 
@@ -327,10 +328,14 @@ export async function recordarMarca(api, empresa) {
   // Ya guardada hace menos de 12 horas con el mismo logo: no se vuelve a firmar ni descargar (la firma en R2 tardaba
   // ~1,7 s y ocupaba una conexión en cada carga; 2026-11-02)
   const previa = marcaGuardada(empresa.id);
-  if (previa && previa.ruta === (empresa.logo_url ?? null) && Date.now() - (previa.hora ?? 0) < 12 * 3600e3) return previa.logo;
+  if (previa && previa.ruta === (empresa.logo_url ?? null) && Date.now() - (previa.hora ?? 0) < 12 * 3600e3) {
+    guardarLogoAviso(empresa.id, previa.logo, previa.ruta);   // ícono de los avisos push de esta empresa (core/push.js)
+    return previa.logo;
+  }
   let logo = null;
   try { if (empresa.logo_url) logo = await logoChico(await urlFirmada(api, empresa.logo_url, 120)); } catch { /* sin logo: se muestra el nombre */ }
   try { localStorage.setItem(CLAVE_MARCA, JSON.stringify({ id: empresa.id, nombre: nombreEmpresa(empresa), color: empresa.color || null, logo, ruta: empresa.logo_url ?? null, hora: Date.now() })); } catch { /* sin almacenamiento */ }
+  guardarLogoAviso(empresa.id, logo, empresa.logo_url ?? null);
   return logo;
 }
 

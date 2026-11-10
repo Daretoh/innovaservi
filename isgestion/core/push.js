@@ -1,11 +1,11 @@
 // Notificaciones push en este dispositivo (como InnovaGestión): se piden al entrar con una franja fija hasta
 // activarlas; botón con campana para ver el estado, probar o desactivar. Al cerrar sesión el dispositivo deja de
 // recibir. Las envía la Edge Function "push" (db/nucleo/014_push.sql).
-import { db } from './api.js?v=37c9450';
-import { el } from './ui/dom.js?v=37c9450';
-import { icono } from './ui/iconos.js?v=37c9450';
-import { avisar } from './ui/aviso.js?v=37c9450';
-import { abrirFormulario } from './ui/modal.js?v=37c9450';
+import { db } from './api.js?v=0ddac6e';
+import { el } from './ui/dom.js?v=0ddac6e';
+import { icono } from './ui/iconos.js?v=0ddac6e';
+import { avisar } from './ui/aviso.js?v=0ddac6e';
+import { abrirFormulario } from './ui/modal.js?v=0ddac6e';
 
 export const soportado = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
 const iphoneSinInstalar = () => /iphone|ipad/i.test(navigator.userAgent) && !navigator.standalone;
@@ -42,6 +42,31 @@ export async function activar() {
     return activar();
   }
   return true;
+}
+
+// Logo de la empresa para el ícono de los avisos push (Android, Windows, Mac con Chrome/Edge; iPhone lo ignora y
+// siempre muestra el ícono de la app instalada). Los logos están en un bucket privado y una URL firmada vencería antes
+// del aviso, así que la app, con sesión, deja en este dispositivo una copia cuadrada (192 px, fondo blanco) en
+// Cache Storage; sw.js la busca por empresa_id al llegar el aviso. Solo la marca, nada privado.
+const CACHE_LOGOS = 'isg-logos-aviso';
+const claveLogo = (empresaId) => new URL(`logo-aviso/${empresaId}`, location.href).href;
+export async function guardarLogoAviso(empresaId, logoDataUrl, ruta) {
+  try {
+    if (!empresaId || !('caches' in window)) return;
+    const cache = await caches.open(CACHE_LOGOS);
+    if (!logoDataUrl) { await cache.delete(claveLogo(empresaId)); return; }
+    const previo = await cache.match(claveLogo(empresaId));
+    if (previo && previo.headers.get('x-ruta') === String(ruta)) return;   // ya está el mismo logo
+    const img = await new Promise((ok, mal) => { const i = new Image(); i.onload = () => ok(i); i.onerror = mal; i.src = logoDataUrl; });
+    const L = 192, margen = 16, w = img.naturalWidth || L, h = img.naturalHeight || L;
+    const k = Math.min((L - 2 * margen) / w, (L - 2 * margen) / h);
+    const lienzo = Object.assign(document.createElement('canvas'), { width: L, height: L });
+    const g = lienzo.getContext('2d');
+    g.fillStyle = '#ffffff'; g.fillRect(0, 0, L, L);
+    g.drawImage(img, (L - w * k) / 2, (L - h * k) / 2, w * k, h * k);
+    const blob = await new Promise((ok) => lienzo.toBlob(ok, 'image/png'));
+    if (blob) await cache.put(claveLogo(empresaId), new Response(blob, { headers: { 'content-type': 'image/png', 'x-ruta': String(ruta) } }));
+  } catch { /* sin logo: el aviso usa el ícono de ISgestión */ }
 }
 
 export async function desactivar() {
