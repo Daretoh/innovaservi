@@ -1,13 +1,14 @@
 // Agenda del taller: citas de la semana por día, con su estado. Hoy destacado; en tablet las columnas se
 // deslizan y parte mostrando el día de hoy; "+" para agendar en un día (aparece al pasar el mouse).
-import { el } from '../../../core/ui/dom.js?v=8dee83b';
-import { icono } from '../../../core/ui/iconos.js?v=8dee83b';
-import { boton } from '../../../core/ui/tabla.js?v=8dee83b';
-import { hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, hhmm, esFinde, nombreMes } from '../../../core/ui/formato.js?v=8dee83b';
-import { placa } from '../../../core/ui/placa.js?v=8dee83b';
-import { esTelefono } from '../../../core/movil.js?v=8dee83b';
-import { SELECT_ORDEN, CHIP_PRIORIDAD, nombreEstado, verPatente, nombreVehiculo, nombreTercero } from '../datos.js?v=8dee83b';
-import { recepcion } from '../recepcion.js?v=8dee83b';
+import { el } from '../../../core/ui/dom.js?v=37c9450';
+import { icono } from '../../../core/ui/iconos.js?v=37c9450';
+import { boton } from '../../../core/ui/tabla.js?v=37c9450';
+import { hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, hhmm, esFinde, nombreMes } from '../../../core/ui/formato.js?v=37c9450';
+import { placa } from '../../../core/ui/placa.js?v=37c9450';
+import { esTelefono } from '../../../core/movil.js?v=37c9450';
+import { SELECT_ORDEN, CHIP_PRIORIDAD, nombreEstado, verPatente, nombreVehiculo, nombreTercero } from '../datos.js?v=37c9450';
+import { recepcion } from '../recepcion.js?v=37c9450';
+import { franjaPedidas } from '../pedidas.js?v=37c9450';
 
 const estado = { lunes: lunesDe(hoyISO()), dia: null };
 
@@ -19,7 +20,8 @@ export default async function vista(ctx) {
     .neq('estado', 'anulada').gte('fecha_cita', lunes).lte('fecha_cita', domingo).order('hora_cita', { nullsFirst: false });
   if (error) throw error;
   const crear = ctx.puede('taller', 'crear');
-  if (esTelefono()) return agendaMovil(ctx, data, { lunes, hoy, crear });
+  const pedidas = await franjaPedidas(ctx);
+  if (esTelefono()) return agendaMovil(ctx, data, { lunes, hoy, crear, pedidas });
 
   const chipEstado = (o) => (o.estado === 'agendado' ? CHIP_PRIORIDAD[o.prioridad] : o.estado === 'entregado' ? 'chip-ok' : 'chip-prox');
   const columnas = [0, 1, 2, 3, 4, 5, 6].map((i) => {
@@ -61,6 +63,7 @@ export default async function vista(ctx) {
           el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Semana siguiente', onclick: () => mover(1) }, icono('derecha'))),
         lunes !== lunesDe(hoy) ? boton('Hoy', { onclick: () => { estado.lunes = lunesDe(hoy); ctx.refrescar(); } }) : null,
         crear ? boton('Agendar vehículo', { icono: 'mas', tipo: 'primario', onclick: () => recepcion(ctx) }) : null)),
+    pedidas,
     el('p', { class: 'texto-suave' }, total ? `${total} ${total === 1 ? 'cita' : 'citas'} esta semana` : 'Sin citas esta semana.'),
     tablero);
 }
@@ -68,7 +71,7 @@ export default async function vista(ctx) {
 // Teléfono (dirección B): franja con los 7 días (punto si hay citas) y la línea de tiempo del día elegido; flechas o
 // deslizar para cambiar de semana. Día vacío: "Agendar este día".
 const DIAS_LARGOS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
-function agendaMovil(ctx, data, { lunes, hoy, crear }) {
+function agendaMovil(ctx, data, { lunes, hoy, crear, pedidas }) {
   const dias = [0, 1, 2, 3, 4, 5, 6].map((i) => sumarDias(lunes, i));
   if (!dias.includes(estado.dia)) estado.dia = dias.includes(hoy) ? hoy : lunes;
   const chip = { agendado: 'chip-pend', espera: 'chip-prox', proceso: 'chip-prox', terminado: 'chip-ok', entregado: 'chip-ok' };
@@ -110,6 +113,7 @@ function agendaMovil(ctx, data, { lunes, hoy, crear }) {
           el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Semana siguiente', onclick: () => mover(1) }, icono('derecha')))),
       franja,
       lunes !== lunesDe(hoy) ? el('button', { type: 'button', class: 'ag-hoy', onclick: () => { estado.lunes = lunesDe(hoy); estado.dia = hoy; ctx.refrescar(); } }, 'Volver a hoy') : null),
+    pedidas,
     titulo,
     lista);
 }

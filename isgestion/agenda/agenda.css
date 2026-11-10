@@ -1,0 +1,13 @@
+/* Agenda en línea: usa los estilos de la ficha de ingreso y del formulario de contacto; agrega días y horas */
+.ag-dias { display: flex; gap: 8px; overflow-x: auto; padding: 2px 2px 8px; scroll-snap-type: x proximity; }
+.ag-dia { position: relative; flex: none; cursor: pointer; scroll-snap-align: start; }
+.ag-dia input { position: absolute; opacity: 0; inset: 0; cursor: pointer; }
+.ag-dia span { display: grid; justify-items: center; gap: 2px; width: 64px; padding: 8px 4px; border: 1px solid var(--borde); border-radius: 12px; background: var(--superficie); }
+.ag-dia small { font-size: .72rem; text-transform: capitalize; color: var(--texto-suave); }
+.ag-dia strong { font-size: 1.25rem; line-height: 1.1; }
+.ag-dia input:checked + span { background: var(--empresa); border-color: var(--empresa); color: var(--sobre-empresa, #fff); }
+.ag-dia input:checked + span small { color: inherit; opacity: .85; }
+.ag-dia input:focus-visible + span { outline: 2px solid var(--empresa); outline-offset: 2px; }
+.ag-horas { min-height: 44px; }
+.ag-dur { font-weight: 400; opacity: .75; }
+.ag-socio { border-left: 4px solid var(--empresa); }

@@ -2576,3 +2576,12 @@ a.tar2-fila, a.tar2-fila:hover { text-decoration: none; color: var(--texto); }
   .sop-boton.abierto { display: none; }
 }
 @media print { .sop { display: none; } }
+
+/* Taller → Agenda: horas pedidas en línea (Marketing 006) */
+.tal-pedidas { max-width: none; margin: 0 0 14px; border-left: 4px solid var(--empresa); }
+.tal-pedidas h2 { display: inline-flex; align-items: center; gap: 6px; }
+.tal-pedidas-lista { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 0; }
+.tal-pedidas-lista > li { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px 16px; padding: 10px 0; border-top: 1px solid var(--borde); }
+.tal-pedida-datos { display: grid; gap: 2px; min-width: 0; }
+.tal-pedida-datos .chip { justify-self: start; }
+.aviso-bandeja.tal-premio { border-color: var(--ok); background: var(--ok-fondo); }

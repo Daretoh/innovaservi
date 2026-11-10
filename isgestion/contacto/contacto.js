@@ -1,9 +1,9 @@
 // Formulario web de contacto (Marketing): el cliente deja su nombre, teléfono, qué le interesa y su mensaje, sin cuenta.
 // URL: /contacto/?t=<token de la empresa>[&c=<código de campaña>]. Envía todo a la Edge Function mkt-formulario, que
 // lo deja como contacto nuevo en el Embudo y avisa a quien atiende Marketing. Mismo estilo que la ficha de ingreso.
-import { el } from '../core/ui/dom.js?v=8dee83b';
-import { icono } from '../core/ui/iconos.js?v=8dee83b';
-import { revisarTelefono } from '../core/ui/formato.js?v=8dee83b';
+import { el } from '../core/ui/dom.js?v=37c9450';
+import { icono } from '../core/ui/iconos.js?v=37c9450';
+import { revisarTelefono } from '../core/ui/formato.js?v=37c9450';
 
 const raiz = document.getElementById('app');
 const params = new URLSearchParams(location.search);
@@ -32,6 +32,7 @@ async function iniciar() {
     return;
   }
   if (f.color) document.documentElement.style.setProperty('--empresa', f.color);
+  if (f.tema) document.documentElement.dataset.tema = f.tema;   // Performance (taller): grafito y naranja, sin el azul de Innova
   document.title = `Contacto · ${f.empresa}`;
 
   const nombre = el('input', { id: 'nombre', class: 'campo', required: true, maxlength: 80, autocomplete: 'name' });

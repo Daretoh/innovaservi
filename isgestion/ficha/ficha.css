@@ -13,15 +13,23 @@
 .fp-listo { text-align: center; padding: 48px 16px; display: grid; gap: 10px; justify-items: center; }
 .fp-listo .icono { color: var(--ok); }
 
-/* Estilo InnovaGestión para las páginas del celular: cabecera oscura con franja de la empresa, Inter, tarjetas suaves */
-body { font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: #f5f6fb; color: #1b1f4d; }
-.fp-cabecera { background: #1a1f6e; border-bottom: 4px solid var(--empresa); padding: 26px 20px 22px; border-radius: 0 0 18px 18px; margin-bottom: 18px; }
+/* Páginas públicas del celular: cabecera oscura con franja de la empresa, Inter, tarjetas suaves. Colores por tema de la
+   empresa (data-tema en <html>, lo pone la página con el dato de la Edge Function): azul marino de Innova por defecto;
+   Performance (taller) en grafito, sin azul. */
+:root { --fp-fondo: #f5f6fb; --fp-texto: #1b1f4d; --fp-cab: #1a1f6e; --fp-cab-2: #262c8a; --fp-borde: #e6e8f2; --fp-sombra: 27, 31, 77; }
+:root[data-tema="taller"] { --fp-fondo: #eeede9; --fp-texto: #1d1d1b; --fp-cab: #1f2124; --fp-cab-2: #2c2f33; --fp-borde: #dcdad3; --fp-sombra: 20, 20, 18; }
+body { font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--fp-fondo); color: var(--fp-texto); }
+.fp-cabecera { background: var(--fp-cab); border-bottom: 4px solid var(--empresa); padding: 26px 20px 22px; border-radius: 0 0 18px 18px; margin-bottom: 18px; }
 .fp-sobre { display: block; font-size: .7rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: rgba(255, 255, 255, .6); margin-bottom: 6px; }
 .fp-cabecera h1 { font-size: 1.45rem; font-weight: 800; letter-spacing: -.01em; }
 .fp-cabecera p { color: rgba(255, 255, 255, .85); }
-.fp-seccion { border: 1px solid #e6e8f2; border-radius: 14px; box-shadow: 0 1px 2px rgba(27, 31, 77, .04), 0 4px 14px rgba(27, 31, 77, .06); animation: isg-entrar 260ms ease-out both; }
+.fp-seccion { border: 1px solid var(--fp-borde); border-radius: 14px; box-shadow: 0 1px 2px rgba(var(--fp-sombra), .04), 0 4px 14px rgba(var(--fp-sombra), .06); animation: isg-entrar 260ms ease-out both; }
 .fp-seccion h2 { font-weight: 800; }
 .fp-avance { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
 .fp-avance strong { font-size: 1.6rem; font-weight: 800; color: var(--ok); font-variant-numeric: tabular-nums; }
 .fp-enviar, .cl-subir { border-radius: 12px; font-weight: 700; min-height: 48px; }
 .ficha-publica .campo { min-height: 44px; font-size: 1rem; }   /* más fácil de tocar */
+/* Performance (taller): esquinas más rectas, como la app */
+:root[data-tema="taller"] .fp-cabecera { border-radius: 0 0 10px 10px; }
+:root[data-tema="taller"] .fp-seccion { border-radius: 10px; }
+:root[data-tema="taller"] .fp-enviar { border-radius: 8px; }

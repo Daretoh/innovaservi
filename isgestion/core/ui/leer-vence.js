@@ -10,7 +10,7 @@ export function leerVence({ fuentes, tipo = null, cedula = false, rut = null, em
       const F = (await fuentes(valores)).filter((x) => x && !(x instanceof File && !x.size));
       if (!F.length) { estado('Primero elige el archivo del documento.', 'mal'); return; }
       if (ia && await leerConIA({ F, ia, tipo, cedula, rut, emision, poner, estado })) return;
-      const L = await import('../lector-venc.js?v=8dee83b');
+      const L = await import('../lector-venc.js?v=37c9450');
       if (cedula) {
         const r = await L.leerVencCedula(F, rut, (t) => estado(t));
         const R = L.resumenCedula(r);
@@ -30,7 +30,7 @@ export function leerVence({ fuentes, tipo = null, cedula = false, rut = null, em
 // Lectura con IA. Devuelve true si dejó un resultado (aunque sea "no trae vencimiento"); false para seguir con el
 // lector del navegador (sin clave o error).
 async function leerConIA({ F, ia, tipo, cedula, rut, emision, poner, estado }) {
-  const { leerVencConIA, iaDisponible, fechaIA, textoModelo } = await import('../lector-ia.js?v=8dee83b');
+  const { leerVencConIA, iaDisponible, fechaIA, textoModelo } = await import('../lector-ia.js?v=37c9450');
   if (!iaDisponible()) return false;
   estado('Leyendo con IA…');
   let r;
@@ -42,7 +42,7 @@ async function leerConIA({ F, ia, tipo, cedula, rut, emision, poner, estado }) {
   const emis = fechaIA(d.emision);
   let nota = '';
   if (!venc && emis) {
-    const { REGLAS_VIGENCIA } = await import('../lector-venc.js?v=8dee83b');
+    const { REGLAS_VIGENCIA } = await import('../lector-venc.js?v=37c9450');
     const regla = REGLAS_VIGENCIA[tipo];
     if (regla) { const x = new Date(`${emis}T12:00`); x.setDate(x.getDate() + regla.dias); venc = x.toISOString().slice(0, 10); nota = ` ${regla.texto}`; }
   }
