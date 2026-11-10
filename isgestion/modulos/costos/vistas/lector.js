@@ -6,17 +6,21 @@
 // Si el documento es un gasto a cuenta de un trabajador (compra que se le descuenta), se marca "Descontar a un
 // trabajador": además del gasto queda un descuento en Remuneraciones (semana o mes según la empresa), ligado al
 // documento (remu_items.origen_id). Requiere poder crear en Remuneraciones.
-// Ruta: #/costos.lector
-import { el } from '../../../core/ui/dom.js?v=5f872bd';
-import { icono } from '../../../core/ui/iconos.js?v=5f872bd';
-import { boton } from '../../../core/ui/tabla.js?v=5f872bd';
-import { avisar } from '../../../core/ui/aviso.js?v=5f872bd';
-import { subirArchivo, almacen } from '../../../core/adjuntos.js?v=5f872bd';
-import { dinero, hoyISO, sumarDias, fechaLarga, lunesDe } from '../../../core/ui/formato.js?v=5f872bd';
-import { TIPOS_DTE, docTipoDe, CAMPOS_DTE, leerParte, combinar, validar, escanearCamara, aJPEG, fmtRut, limpioRut, rutValido, num } from '../../../core/lector-dte.js?v=5f872bd';
-import { cargarBase, nombreTercero, opcionesACuenta } from '../datos.js?v=5f872bd';
-import { leerConIA, iaDisponible, numIA, fechaIA, pagadoAlComprar, textoModelo } from '../../../core/lector-ia.js?v=5f872bd';
-import { esImagen } from '../../../core/imagenes.js?v=5f872bd';
+// Bandeja "Por cargar" (Costos 008, 2026-11-10): con ?bandeja=<id> abre un documento ya subido a la bandeja, lo lee
+// igual y al registrar lo marca registrado y sigue con el siguiente pendiente (Saltar / Descartar de la bandeja).
+// Ruta: #/costos.lector · #/costos.lector?bandeja=<id>
+import { el } from '../../../core/ui/dom.js?v=6d3f615';
+import { icono } from '../../../core/ui/iconos.js?v=6d3f615';
+import { boton } from '../../../core/ui/tabla.js?v=6d3f615';
+import { avisar } from '../../../core/ui/aviso.js?v=6d3f615';
+import { subirArchivo, almacen, urlFirmada } from '../../../core/adjuntos.js?v=6d3f615';
+import { pendientesBandeja, descartarDeBandeja } from './bandeja.js?v=6d3f615';
+import { dinero, hoyISO, sumarDias, fechaLarga, lunesDe } from '../../../core/ui/formato.js?v=6d3f615';
+import { TIPOS_DTE, docTipoDe, CAMPOS_DTE, leerParte, combinar, validar, escanearCamara, aJPEG, fmtRut, limpioRut, rutValido, num } from '../../../core/lector-dte.js?v=6d3f615';
+import { cargarBase, nombreTercero, opcionesACuenta } from '../datos.js?v=6d3f615';
+import { leerConIA, iaDisponible, numIA, fechaIA, pagadoAlComprar, textoModelo } from '../../../core/lector-ia.js?v=6d3f615';
+import { esImagen } from '../../../core/imagenes.js?v=6d3f615';
+import { tomarFotos } from '../../../core/ui/camara.js?v=6d3f615';
 
 const ETIQUETA = { timbre: ['Timbre SII', 'chip-ok'], xml: ['XML', 'chip-ok'], ia: ['IA', 'chip-ok'], ocr: ['Revisar', 'chip-prox'], calc: ['Calculado', 'chip-pend'] };
 
@@ -41,6 +45,18 @@ export default async function vista(ctx) {
   if (!categorias.length) return el('section', { class: 'listado' }, volver, el('h1', {}, 'Primero crea una categoría de gasto en Categorías y centros'));
   const terceroPorRut = new Map((ruts.data ?? []).map((t) => [limpioRut(t.rut), t]));
   const propios = [ctx.empresa.rut];
+
+  // Bandeja "Por cargar" (Costos 008): ?bandeja=<id> abre el documento ya subido; su archivo pasa a ser el del gasto
+  // (no se sube de nuevo) y al registrar sigue con el siguiente pendiente.
+  const idBandeja = ctx.params.bandeja ?? null;
+  const pendientes = idBandeja ? (await pendientesBandeja(ctx)).data ?? [] : [];
+  const deBandeja = pendientes.find((x) => x.id === idBandeja) ?? null;
+  const otroPendiente = () => { const i = pendientes.indexOf(deBandeja); return pendientes[i + 1] ?? pendientes.find((x) => x !== deBandeja) ?? null; };
+  const irA = (registroId, siguiente) => {
+    location.hash = !idBandeja ? ctx.ruta('costos.registro', { id: registroId })
+      : siguiente ? ctx.ruta('costos.lector', { bandeja: siguiente.id }) : ctx.ruta('costos.bandeja');
+  };
+  if (idBandeja) { volver.replaceChildren(icono('volver', { tam: 16 }), 'Por cargar'); volver.setAttribute('href', ctx.ruta('costos.bandeja')); }
 
   const partes = [];     // { id, archivo, nombre, thumb, estado, ted, xml, texto, foto }
   let datos = { origen: {}, items: [] };
@@ -70,9 +86,9 @@ export default async function vista(ctx) {
     el('span', { class: 'lec-estado' }, p.estado),
     el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Quitar', onclick: () => { partes.splice(partes.indexOf(p), 1); pintarFotos(); recombinar(); leerIA(); } }, icono('cerrar', { tam: 14 })))));
   let cola = Promise.resolve();
-  const agregar = (archivos) => {
+  const agregar = (archivos, extra = {}) => {
     for (const a of archivos) {
-      const p = { id: crypto.randomUUID(), archivo: a, nombre: a.name, estado: 'En cola', thumb: a.type.startsWith('image/') ? URL.createObjectURL(a) : null };
+      const p = { id: crypto.randomUUID(), archivo: a, nombre: a.name, estado: 'En cola', thumb: a.type.startsWith('image/') ? URL.createObjectURL(a) : null, ...extra };
       partes.push(p);
       cola = cola.then(async () => {
         if (!partes.includes(p)) return;
@@ -204,7 +220,8 @@ export default async function vista(ctx) {
     if (!concepto.value.trim()) { avisar('Escribe el concepto.', 'error'); return; }
     if (descontar.checked && !trabajador.value) { avisar('Elige a qué trabajador se le descuenta.', 'error'); return; }
     b.disabled = true; b.classList.add('cargando');
-    const subidas = [];
+    const subidas = [];   // archivos subidos ahora (se borran si falla)
+    const rutas = [];     // todos los del gasto, en orden (incluye el de la bandeja, que ya estaba subido)
     try {
       // Proveedor por RUT (si no existe y se puede, se crea)
       let tercero = v.rut ? terceroPorRut.get(limpioRut(v.rut)) ?? null : null;
@@ -215,10 +232,12 @@ export default async function vista(ctx) {
       }
       // Fotos y XML: el primero es el archivo principal, el resto va a adjuntos
       for (const p of partes) {
+        if (p.ruta) { rutas.push(p.ruta); continue; }
         const esXml = /\.xml$/i.test(p.nombre);
         const blob = esXml ? p.archivo : await aJPEG(p.foto ?? p.archivo, 1800);
         const archivo = new File([blob], esXml ? p.nombre : `${p.nombre.replace(/\.\w+$/, '')}.jpg`, { type: esXml ? 'text/xml' : 'image/jpeg' });
-        subidas.push((await subirArchivo(ctx.api, { empresaId: e, modulo: 'costos', archivo, tabla: 'fin_registros' })).ruta);
+        const r = (await subirArchivo(ctx.api, { empresaId: e, modulo: 'costos', archivo, tabla: 'fin_registros' })).ruta;
+        subidas.push(r); rutas.push(r);
       }
       const o = datos.origen.total;
       const origen = editados.has('total') ? 'manual' : o === 'timbre' ? 'timbre' : o === 'xml' ? 'xml' : o === 'ocr' ? 'ocr' : o === 'ia' ? 'ia' : 'manual';
@@ -230,11 +249,20 @@ export default async function vista(ctx) {
         empresa_id: e, tipo: 'gasto', fecha: v.fecha || hoyISO(), concepto: concepto.value.trim(), categoria_id: categoria.value, centro_id: centro.value || null,
         tercero_id: tercero?.id ?? null, doc_tipo: doc, doc_numero: v.folio, total: v.total, neto: v.total - iva, iva,
         // Boleta o ticket: pagado al comprar (salvo que se desmarque a mano); factura: por pagar
-        ...(!ctx.puede('costos', 'editar') ? { estado_pago: 'pendiente' } : (pagadoTocado ? pagado.checked : pagado.checked || doc !== 'factura') ? { estado_pago: 'pagado', fecha_pago: v.fecha || hoyISO() } : { estado_pago: 'listo' }), archivo: subidas[0] ?? null, adjuntos: subidas.slice(1), faena_id: faena.value || null, a_cuenta_de: aCuenta.value || null,
+        ...(!ctx.puede('costos', 'editar') ? { estado_pago: 'pendiente' } : (pagadoTocado ? pagado.checked : pagado.checked || doc !== 'factura') ? { estado_pago: 'pagado', fecha_pago: v.fecha || hoyISO() } : { estado_pago: 'listo' }), archivo: rutas[0] ?? null, adjuntos: rutas.slice(1), faena_id: faena.value || null, a_cuenta_de: aCuenta.value || null,
         patente: veh?.patente ?? null, orden_id: abiertas.length === 1 ? abiertas[0].id : null,
         dte: { ...v, rut: v.rut ? fmtRut(v.rut) : null, td: v.td == null ? null : String(v.td), items: datos.items ?? [], origen },
       }).select('id').single();
       if (error) throw new Error(error.code === '23505' ? 'Este documento ya estaba registrado (mismo emisor, tipo y folio).' : error.message);
+      // Bandeja: el documento queda registrado y se sigue con el siguiente
+      let siguiente = null; let nota = '';
+      if (deBandeja) {
+        const { error: eb } = await ctx.api.from('fin_bandeja').update({ estado: 'registrado', registro_id: data.id }).eq('id', deBandeja.id);
+        if (eb) avisar(`Gasto registrado, pero no se pudo sacar de la bandeja: ${eb.message}`, 'error');
+        siguiente = otroPendiente();
+        const quedan = pendientes.length - 1;
+        nota = quedan ? ` Quedan ${quedan} por cargar.` : ' La bandeja quedó vacía.';
+      }
       if (descontar.checked) {
         const fecha = v.fecha || hoyISO();
         const { error: e2 } = await ctx.api.from('remu_items').insert({
@@ -242,12 +270,12 @@ export default async function vista(ctx) {
           origen_id: data.id, ...(mensual ? { mes: fecha.slice(0, 7) } : { semana: lunesDe(fecha) }),
         });
         if (e2) { avisar(`Gasto registrado, pero no se pudo cargar el descuento: ${e2.message}`, 'error'); location.hash = ctx.ruta('costos.registro', { id: data.id }); return; }
-        avisar(`Gasto registrado y descuento de ${dinero(v.total)} cargado en Remuneraciones (${mensual ? 'mes' : 'semana'} del documento).`);
-        location.hash = ctx.ruta('costos.registro', { id: data.id });
+        avisar(`Gasto registrado y descuento de ${dinero(v.total)} cargado en Remuneraciones (${mensual ? 'mes' : 'semana'} del documento).${nota}`);
+        irA(data.id, siguiente);
         return;
       }
-      avisar('Gasto registrado desde el documento.');
-      location.hash = ctx.ruta('costos.registro', { id: data.id });
+      avisar(`Gasto registrado desde el documento.${nota}`);
+      irA(data.id, siguiente);
     } catch (err) {
       for (const r of subidas) await almacen(ctx.api).remove([r]).catch(() => {});
       avisar(err.message, 'error'); b.disabled = false; b.classList.remove('cargando');
@@ -276,17 +304,51 @@ export default async function vista(ctx) {
       textoLeido),
     el('div', { class: 'listado-acciones' },
       ctx.puede('costos', 'crear') ? boton('Registrar gasto', { icono: 'check', tipo: 'primario', onclick: guardar }) : null,
-      boton('Descartar', { onclick: () => ctx.refrescar() })));
+      idBandeja ? null : boton('Descartar', { onclick: () => ctx.refrescar() })));
+
+  // ---- Documento de la bandeja: se baja la foto ya subida y se lee como si se acabara de sacar
+  let cabezaBandeja = null;
+  if (idBandeja) {
+    const i = pendientes.indexOf(deBandeja);
+    const saltar = () => irA(null, otroPendiente());
+    const quitar = async (ev) => {
+      const b = ev.currentTarget;
+      if (b.dataset.seguro !== '1') { b.dataset.seguro = '1'; b.lastChild.textContent = '¿Seguro? Toca de nuevo'; setTimeout(() => { b.dataset.seguro = ''; b.lastChild.textContent = 'Descartar de la bandeja'; }, 3000); return; }
+      b.disabled = true;
+      try { await descartarDeBandeja(ctx, deBandeja); avisar('Documento descartado.'); irA(null, otroPendiente()); } catch (err) { avisar(err.message, 'error'); b.disabled = false; }
+    };
+    cabezaBandeja = deBandeja
+      ? el('div', { class: 'aviso-bandeja ban-cabeza' },
+        el('span', {}, icono('lista', { tam: 16 }), ` Por cargar: documento ${i + 1} de ${pendientes.length}`),
+        el('div', { class: 'listado-acciones' },
+          pendientes.length > 1 ? boton('Saltar', { icono: 'derecha', onclick: saltar }) : null,
+          boton('Descartar de la bandeja', { icono: 'basura', onclick: quitar })))
+      : el('p', { class: 'aviso-bandeja' }, icono('alerta', { tam: 16 }), 'Ese documento ya no está en la bandeja (ya se cargó o se descartó). ',
+        el('a', { href: ctx.ruta('costos.bandeja') }, 'Volver a Por cargar'));
+    if (deBandeja) {
+      (async () => {
+        try {
+          const resp = await fetch(await urlFirmada(ctx.api, deBandeja.ruta, 300));
+          if (!resp.ok) throw new Error(`Error ${resp.status}`);
+          const blob = await resp.blob();
+          const tipo = deBandeja.tipo_mime || blob.type || 'image/jpeg';
+          agregar([new File([blob], deBandeja.nombre || 'documento.jpg', { type: tipo })], { ruta: deBandeja.ruta });
+        } catch (err) { formulario.hidden = false; aviso(`No se pudo abrir el documento de la bandeja (${err.message}). Revisa la conexión y vuelve a abrirlo.`, 'mal'); }
+      })();
+    }
+  }
 
   return el('section', { class: 'listado' },
     volver,
+    cabezaBandeja,
     el('header', { class: 'listado-cabecera' }, el('div', {}, el('h1', {}, 'Leer boleta o factura'),
       el('p', { class: 'texto-suave' }, 'Lee el timbre electrónico, el XML o el texto de la foto y registra el gasto. Todo se procesa en este equipo.'))),
     el('div', { class: 'ficha doc-grupo' },
       el('h2', {}, '1. Documento'),
       el('div', { class: 'listado-acciones lec-botones' },
         boton('Escanear timbre', { icono: 'camara', tipo: 'primario', onclick: escanear }),
-        boton('Tomar foto', { icono: 'camara', onclick: () => inFoto.click() }),
+        // Cámara en la página: varias fotos del mismo documento sin salir (boleta larga); si no hay, la del teléfono
+        boton('Tomar foto', { icono: 'camara', onclick: async () => { const l = await tomarFotos({ titulo: 'Fotos del documento', textoListo: 'Usar' }); if (l.length) agregar(l); } }),
         boton('Subir PDF, XML o imagen', { icono: 'descargar', onclick: () => inArch.click() }), inFoto, inArch),
       cajaCam, fotos,
       el('p', { class: 'texto-suave texto-chico' }, 'Puedes agregar varias fotos del mismo documento (por ejemplo, una boleta larga). El XML trae todos los datos y el detalle.')),

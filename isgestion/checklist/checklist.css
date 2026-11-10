@@ -20,3 +20,6 @@
 .cl-item { border-radius: 10px; padding: 14px 6px; transition: background 160ms; }
 .cl-item:active { background: #f5f6fb; }
 .cl-fotos img { border-radius: 10px; }
+/* Cámara (varias seguidas) y Galería para el informe, a mano en el celular */
+.cl-botones { position: sticky; bottom: 12px; z-index: 2; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.cl-foto { width: 100%; justify-content: center; padding: 12px; white-space: nowrap; box-shadow: var(--sombra-suave); }

@@ -1,8 +1,9 @@
 // Checklist de carga para la cuadrilla (sin cuenta). URL: /checklist/?t=<token>
 // Todo pasa por la Edge Function checklist-faena: ver, marcar, subir fotos de la carga y fotos del parte por etapa.
-import { el } from '../core/ui/dom.js?v=5f872bd';
-import { icono } from '../core/ui/iconos.js?v=5f872bd';
-import { comprimirFoto } from '../core/imagenes.js?v=5f872bd';
+import { el } from '../core/ui/dom.js?v=6d3f615';
+import { icono } from '../core/ui/iconos.js?v=6d3f615';
+import { comprimirFoto } from '../core/imagenes.js?v=6d3f615';
+import { botonesFotos } from '../core/ui/camara.js?v=6d3f615';
 
 const raiz = document.getElementById('app');
 const token = new URLSearchParams(location.search).get('t') ?? '';
@@ -116,33 +117,35 @@ function seccionInforme(r) {
   if (r.confirmado) {
     return el('section', { class: 'fp-seccion' }, titulo, el('p', { class: 'texto-suave' }, 'El informe de esta faena ya fue confirmado. Si falta una foto, avisa a quien lo prepara.'));
   }
-  const entrada = el('input', { type: 'file', accept: 'image/*', multiple: true, hidden: true });
   const nombre = (k) => ETAPAS.find(([v]) => v === k)[1];
-  const boton = el('button', { type: 'button', class: 'boton boton-primario cl-subir', onclick: () => entrada.click() }, icono('camara', { tam: 18 }), `Subir fotos: ${nombre(etapa)}`);
+  const quedan = Math.max(0, r.max - r.fotos.length);
+  const progreso = el('p', { class: 'texto-suave texto-chico', 'aria-live': 'polite' });
+  // Cámara: varias fotos seguidas sin salir de la página (se suben al tocar Subir); Galería: varias ya tomadas
+  const subir = async (lista) => {
+    const archivos = lista.slice(0, quedan);
+    if (!archivos.length) return;
+    botones.camara.disabled = true; botones.galeria.disabled = true; error.textContent = '';
+    let ultimo = null;
+    for (const [i, a] of archivos.entries()) {
+      progreso.textContent = `Subiendo ${i + 1} de ${archivos.length} (${nombre(etapa)})…`;
+      const datos = new FormData(); datos.append('t', token); datos.append('accion', 'reporte'); datos.append('etapa', etapa); datos.append('foto', await comprimirFoto(a));
+      try { ultimo = await pedir({ method: 'POST', body: datos }); } catch (e) { error.textContent = `${e.message}${i ? ` (se subieron ${i} de ${archivos.length})` : ''}`; break; }
+    }
+    if (lista.length > quedan) error.textContent = `Solo se subieron ${quedan}: se alcanzó el máximo de fotos por el link.`;
+    if (ultimo) pintar(ultimo); else { botones.camara.disabled = false; botones.galeria.disabled = false; progreso.textContent = ''; }
+  };
+  const botones = botonesFotos({ alElegir: subir, titulo: () => `Fotos: ${nombre(etapa)}`, textoListo: 'Subir', claseBoton: 'boton cl-foto', max: quedan, textoGaleria: 'Galería' });
   const etapas = el('div', { class: 'segmento cl-etapas', role: 'group', 'aria-label': 'Etapa de las fotos' },
     ETAPAS.map(([v, t]) => el('button', { type: 'button', 'aria-pressed': String(etapa === v), onclick: (ev) => {
       etapa = v;
       etapas.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b === ev.currentTarget)));
-      boton.lastChild.textContent = `Subir fotos: ${t}`;
     } }, t)));
-  entrada.addEventListener('change', async () => {
-    const archivos = [...entrada.files];
-    if (!archivos.length) return;
-    boton.disabled = true;
-    let ultimo = null;
-    for (const [i, a] of archivos.entries()) {
-      boton.lastChild.textContent = `Subiendo ${i + 1} de ${archivos.length}…`;
-      const datos = new FormData(); datos.append('t', token); datos.append('accion', 'reporte'); datos.append('etapa', etapa); datos.append('foto', await comprimirFoto(a));
-      try { ultimo = await pedir({ method: 'POST', body: datos }); } catch (e) { error.textContent = e.message; break; }
-    }
-    if (ultimo) pintar(ultimo); else { boton.disabled = false; boton.lastChild.textContent = `Subir fotos: ${nombre(etapa)}`; }
-  });
   const grupos = ETAPAS.map(([v, t]) => {
     const fotos = r.fotos.filter((f) => f.etapa === v);
     return fotos.length ? el('div', {}, el('h3', { class: 'cl-etapa-titulo' }, `${t} (${fotos.length})`),
       el('div', { class: 'cl-fotos' }, fotos.map((f) => el('a', { href: f.url, target: '_blank', rel: 'noopener' }, el('img', { src: f.url, alt: `Foto ${t}`, loading: 'lazy' }))))) : null;
   });
   return el('section', { class: 'fp-seccion' }, titulo,
-    el('p', { class: 'texto-suave texto-chico' }, 'Elige la etapa y saca o elige las fotos del trabajo. Van directo al parte de trabajo.'),
-    etapas, grupos, r.fotos.length < r.max ? boton : el('p', { class: 'texto-suave' }, 'Se alcanzó el máximo de fotos por el link.'), entrada, error);
+    el('p', { class: 'texto-suave texto-chico' }, 'Elige la etapa y toca Cámara: saca todas las fotos seguidas y toca Subir. Galería sube varias ya tomadas. Van directo al parte de trabajo.'),
+    etapas, grupos, quedan ? el('div', { class: 'fotos-botones cl-botones' }, botones.camara, botones.galeria) : el('p', { class: 'texto-suave' }, 'Se alcanzó el máximo de fotos por el link.'), progreso, error);
 }

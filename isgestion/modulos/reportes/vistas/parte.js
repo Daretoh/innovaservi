@@ -1,13 +1,14 @@
 // Parte de trabajo: datos del informe, fotos y videos por etapa, vista previa, confirmar y reabrir.
 // Ruta: #/reportes.parte?id=<parte_id>
-import { el } from '../../../core/ui/dom.js?v=5f872bd';
-import { icono } from '../../../core/ui/iconos.js?v=5f872bd';
-import { boton } from '../../../core/ui/tabla.js?v=5f872bd';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=5f872bd';
-import { avisar } from '../../../core/ui/aviso.js?v=5f872bd';
-import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=5f872bd';
-import { fechaLarga, nombreDia, fechaCorta } from '../../../core/ui/formato.js?v=5f872bd';
-import { cargarParte, ETAPAS, opcionesEtapa, valorEtapa, desdeValorEtapa, nombreTercero, comprimirFoto, urlsFirmadas, faenasDistintas } from '../datos.js?v=5f872bd';
+import { el } from '../../../core/ui/dom.js?v=6d3f615';
+import { icono } from '../../../core/ui/iconos.js?v=6d3f615';
+import { boton } from '../../../core/ui/tabla.js?v=6d3f615';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=6d3f615';
+import { avisar } from '../../../core/ui/aviso.js?v=6d3f615';
+import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=6d3f615';
+import { fechaLarga, nombreDia, fechaCorta } from '../../../core/ui/formato.js?v=6d3f615';
+import { botonesFotos } from '../../../core/ui/camara.js?v=6d3f615';
+import { cargarParte, ETAPAS, opcionesEtapa, valorEtapa, desdeValorEtapa, nombreTercero, comprimirFoto, urlsFirmadas, faenasDistintas } from '../datos.js?v=6d3f615';
 
 const MAX_VIDEO = 25 * 1024 * 1024;
 let etapaSubida = 'antes';
@@ -38,12 +39,13 @@ export default async function vista(ctx) {
     return el('div', { class: 'form-fila' }, el('label', { for: `p-${id}` }, etiqueta), c);
   };
 
-  // ---- Subida de fotos y videos
-  const entrada = el('input', { type: 'file', accept: 'image/*,video/*', multiple: true, hidden: true });
-  const progreso = el('span', { class: 'texto-suave' });
-  entrada.addEventListener('change', async () => {
-    const archivos = [...entrada.files];
-    if (!archivos.length) return;
+  // ---- Subida de fotos y videos. Cámara: varias fotos seguidas sin salir de la página (core/ui/camara.js) y se suben
+  // todas al tocar Subir; Galería: varias ya tomadas (también videos).
+  const progreso = el('span', { class: 'texto-suave', 'aria-live': 'polite' });
+  let subiendo = false;
+  const subir = async (archivos) => {
+    if (!archivos.length || subiendo) return;
+    subiendo = true; fotosBtn.camara.disabled = true; fotosBtn.galeria.disabled = true;
     let ok = 0; let orden = media.length;
     for (const [i, a] of archivos.entries()) {
       progreso.textContent = `Subiendo ${i + 1} de ${archivos.length}…`;
@@ -60,9 +62,11 @@ export default async function vista(ctx) {
         ok += 1;
       } catch (e) { avisar(e.message, 'error'); }
     }
-    avisar(`Se subieron ${ok} de ${archivos.length}.`);
+    avisar(ok === archivos.length ? (ok === 1 ? 'Se subió 1 archivo.' : `Se subieron los ${ok}.`) : `Se subieron ${ok} de ${archivos.length}.`, ok === archivos.length ? 'ok' : 'error');
     ctx.refrescar();
-  });
+  };
+  const nombreEtapa = () => opciones.find(([k]) => k === etapaSubida)?.[1] ?? '';
+  const fotosBtn = botonesFotos({ alElegir: subir, titulo: () => `Fotos: ${nombreEtapa()}`, textoListo: 'Subir', accept: 'image/*,video/*' });
   const selEtapa = el('select', { class: 'campo campo-filtro', 'aria-label': 'Etapa de las fotos que vas a subir' },
     opciones.map(([k, t]) => el('option', { value: k, selected: k === etapaSubida }, `Subir como: ${t}`)));
   selEtapa.addEventListener('change', () => { etapaSubida = selEtapa.value; });
@@ -204,10 +208,10 @@ export default async function vista(ctx) {
     el('div', { class: 'ficha doc-grupo rep-fotos' },
       el('div', { class: 'listado-cabecera' },
         el('h2', {}, `Fotos y videos (${media.length})`),
-        editable ? el('div', { class: 'listado-acciones' }, selEtapa, boton('Subir fotos o videos', { icono: 'camara', tipo: 'primario', onclick: () => entrada.click() }), progreso, entrada) : null),
+        editable ? el('div', { class: 'listado-acciones fotos-botones' }, selEtapa, fotosBtn.camara, fotosBtn.galeria, progreso) : null),
       sinOrdenar ? el('p', { class: 'aviso-bandeja' }, icono('alerta', { tam: 16 }), `${sinOrdenar} sin ordenar: asígnales una etapa (Antes, Proceso, Después o Registro documental); las sin ordenar no van al informe.`) : null,
       bloqueProcesos,
-      galeria.length ? galeria : el('p', { class: 'texto-suave' }, 'Aún no hay fotos. Elige la etapa y súbelas; desde el celular puedes tomarlas en el momento.'),
+      galeria.length ? galeria : el('p', { class: 'texto-suave' }, 'Aún no hay fotos. Elige la etapa y toca Cámara: sacas todas las fotos seguidas y se suben juntas al tocar Subir. Galería sube varias ya tomadas (también videos).'),
       el('p', { class: 'texto-suave texto-chico' }, 'Las fotos se achican antes de subir (lado mayor 1.600 px). Los videos (hasta 25 MB) se guardan pero no van al PDF.')),
   );
 }
@@ -215,7 +219,7 @@ export default async function vista(ctx) {
 async function previa(ctx, datos, b) {
   b.disabled = true;
   try {
-    const { generarInforme } = await import('../informe.js?v=5f872bd');
+    const { generarInforme } = await import('../informe.js?v=6d3f615');
     const doc = await generarInforme(ctx, datos);
     window.open(doc.output('bloburl'), '_blank', 'noopener');
   } catch (e) { avisar(`No se pudo generar: ${e.message}`, 'error'); } finally { b.disabled = false; }
@@ -229,7 +233,7 @@ function confirmar(ctx, datos) {
     campos: [],
     textoGuardar: 'Confirmar',
     alGuardar: async () => {
-      const { generarInforme } = await import('../informe.js?v=5f872bd');
+      const { generarInforme } = await import('../informe.js?v=6d3f615');
       const doc = await generarInforme(ctx, datos);
       const archivo = new File([doc.output('blob')], `informe-${datos.parte.fecha}.pdf`, { type: 'application/pdf' });
       const { ruta } = await subirArchivo(ctx.api, { empresaId: ctx.empresa.id, modulo: 'reportes', archivo, tabla: 'rep_partes', registroId: datos.parte.id });

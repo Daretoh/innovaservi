@@ -2585,3 +2585,52 @@ a.tar2-fila, a.tar2-fila:hover { text-decoration: none; color: var(--texto); }
 .tal-pedida-datos { display: grid; gap: 2px; min-width: 0; }
 .tal-pedida-datos .chip { justify-self: start; }
 .aviso-bandeja.tal-premio { border-color: var(--ok); background: var(--ok-fondo); }
+
+/* ---- Cámara en la página (core/ui/camara.js): varias fotos seguidas. El visor es oscuro en todos los temas. */
+.cam-capa {
+  --cam-fondo: #0b0d10; --cam-texto: #f4f5f7; --cam-velo: rgba(11, 13, 16, .72); --cam-linea: rgba(244, 245, 247, .28);
+  position: fixed; inset: 0; z-index: 1000; display: grid; grid-template-rows: auto 1fr auto;
+  background: var(--cam-fondo); color: var(--cam-texto); height: 100dvh;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  user-select: none; -webkit-user-select: none; touch-action: manipulation;
+}
+html.cam-abierta, html.cam-abierta body { overflow: hidden; }
+.cam-arriba { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; }
+.cam-titulo { display: grid; text-align: center; gap: 2px; min-width: 0; }
+.cam-titulo strong { font-size: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cam-contador { font-size: .82rem; opacity: .8; }
+.cam-boton { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--cam-linea); background: var(--cam-velo); color: inherit; display: grid; place-items: center; cursor: pointer; flex: none; }
+.cam-boton[aria-pressed="true"] { background: var(--empresa); border-color: var(--empresa); color: var(--sobre-empresa); }
+.cam-hueco { visibility: hidden; }
+.cam-visor { position: relative; min-height: 0; overflow: hidden; display: grid; place-items: center; }
+.cam-video { width: 100%; height: 100%; object-fit: contain; background: var(--cam-fondo); }
+.cam-destello { position: absolute; inset: 0; background: var(--cam-texto); opacity: 0; pointer-events: none; }
+.cam-destello.activo { animation: cam-destello 220ms ease-out; }
+@keyframes cam-destello { from { opacity: .7; } to { opacity: 0; } }
+.cam-aviso { position: absolute; left: 12px; right: 12px; bottom: 12px; margin: 0; padding: 10px 12px; border-radius: var(--radio); background: var(--cam-velo); font-size: .88rem; text-align: center; }
+.cam-aviso[hidden] { display: none; }
+.cam-abajo { display: grid; gap: 10px; padding: 10px 12px 14px; }
+.cam-tira { display: flex; gap: 8px; overflow-x: auto; min-height: 64px; scrollbar-width: none; }
+.cam-tira::-webkit-scrollbar { display: none; }
+.cam-mini { position: relative; flex: none; width: 56px; height: 64px; padding: 0; border: 2px solid var(--cam-linea); border-radius: 8px; overflow: hidden; background: var(--cam-velo); cursor: pointer; }
+.cam-mini img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cam-quitar { position: absolute; top: 2px; right: 2px; width: 18px; height: 18px; border-radius: 50%; background: var(--cam-velo); color: var(--cam-texto); display: grid; place-items: center; }
+.cam-controles { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px; }
+.cam-lado { display: flex; justify-content: flex-end; }
+.cam-disparador { width: 74px; height: 74px; border-radius: 50%; border: 4px solid var(--cam-texto); background: var(--cam-texto); box-shadow: inset 0 0 0 4px var(--cam-fondo); cursor: pointer; transition: transform 90ms ease-out; }
+.cam-disparador:active { transform: scale(.92); }
+.cam-listo { white-space: nowrap; }
+.cam-listo:disabled { opacity: .45; cursor: default; }
+/* Botones Cámara / Galería en una pantalla */
+.fotos-botones { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+/* Costos → Por cargar (bandeja de boletas y facturas) */
+.ban-galeria { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+.ban-previa { display: block; aspect-ratio: 3 / 4; border-radius: 6px; overflow: hidden; background: var(--fondo-hundido); }
+.ban-previa img { width: 100%; height: 100%; object-fit: cover; display: block; aspect-ratio: auto; }
+.ban-acciones { display: grid; grid-template-columns: 1fr; gap: 6px; }
+.ban-acciones .boton { justify-content: center; width: 100%; }
+.ban-cabeza { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; }
+/* Más → Accesos rápidos (Escanear documentos) */
+.mas-atajo { padding: 10px 16px; text-decoration: none; }
+.mas-atajo .mas-fila-texto { display: grid; gap: 2px; }
+.mas-atajo .mas-fila-texto .texto-chico { font-weight: 400; }

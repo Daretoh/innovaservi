@@ -1,9 +1,9 @@
 // "Más" en el teléfono (pestaña de la barra de abajo): la cuenta y la empresa, todos los módulos que el rol ve,
 // la apariencia (claro, oscuro o como el sistema), notificaciones y cerrar sesión. En pantallas grandes también se
 // puede abrir (#/mas), pero ahí el menú lateral ya lo tiene todo.
-import { el } from '../ui/dom.js?v=5f872bd';
-import { icono } from '../ui/iconos.js?v=5f872bd';
-import { nombreEmpresa } from '../empresas.js?v=5f872bd';
+import { el } from '../ui/dom.js?v=6d3f615';
+import { icono } from '../ui/iconos.js?v=6d3f615';
+import { nombreEmpresa } from '../empresas.js?v=6d3f615';
 
 const TEMAS = [['claro', 'Claro', 'sol'], ['oscuro', 'Oscuro', 'luna'], ['sistema', 'Sistema', 'pantalla']];
 const AYUDA = { claro: 'Fondo claro: mejor a pleno sol.', oscuro: 'Fondo oscuro: descansa la vista y ahorra batería.', sistema: 'Sigue el modo del teléfono o del computador.' };
@@ -27,6 +27,18 @@ export default function mas(ctx, { empresas, cambiarEmpresa, apartados, modo, ca
     el('div', { class: 'mas-lista ficha' }, otras.map((e) => el('button', { type: 'button', class: 'mas-fila', onclick: () => cambiarEmpresa(e) },
       el('span', { class: 'punto', style: `background:${e.color || 'var(--empresa)'}` }), el('span', { class: 'mas-fila-texto' }, nombreEmpresa(e)), icono('derecha', { tam: 16 }))))) : null;
 
+  // Atajos de terreno (2026-11-10, pedido de Enzo para los prevencionistas): escanear boletas y facturas a la bandeja
+  // "Por cargar" de Costos (cámara con varias fotos seguidas). Sale a quien puede subir en Costos y tiene la pantalla.
+  const atajos = [
+    ctx.hayVista?.('costos.bandeja') && ctx.puede('costos', 'crear')
+      ? ['costos.bandeja', 'camara', 'Escanear documentos', 'Boletas y facturas: varias fotos seguidas, se cargan después'] : null,
+  ].filter(Boolean);
+  const atajosNodo = atajos.length ? el('section', { class: 'mas-seccion' },
+    el('h2', {}, 'Accesos rápidos'),
+    el('div', { class: 'mas-lista ficha' }, atajos.map(([rid, ic, t, sub]) => el('a', { class: 'mas-fila mas-atajo', href: `#/${rid}` },
+      el('span', { class: 'mas-modulo-icono' }, icono(ic, { tam: 20 })),
+      el('span', { class: 'mas-fila-texto' }, el('strong', {}, t), el('span', { class: 'texto-suave texto-chico' }, sub)), icono('derecha', { tam: 16 }))))) : null;
+
   const modulos = el('section', { class: 'mas-seccion' },
     el('h2', {}, 'Módulos'),
     el('div', { class: 'mas-modulos' }, [...apartados.grupos.values()].flat().map((ap) => {
@@ -47,6 +59,7 @@ export default function mas(ctx, { empresas, cambiarEmpresa, apartados, modo, ca
     el('header', { class: 'listado-cabecera' }, el('h1', {}, 'Más')),
     cuenta,
     empresasNodo,
+    atajosNodo,
     modulos,
     el('section', { class: 'mas-seccion' }, el('h2', {}, 'Apariencia'), grupo, ayuda),
     el('div', { class: 'mas-lista ficha' },

@@ -3,14 +3,14 @@
 // 2. Gasto sin ningún papel → registro sin documento, no declarable, pagado.
 // 3. Comprobante de pago (transferencia, depósito…) → fin_pagos "por validar"; cubre facturas por pagar del proveedor.
 // 4. Factura emitida (a un cliente) → ingreso por cobrar.
-import { el } from '../../../core/ui/dom.js?v=5f872bd';
-import { icono } from '../../../core/ui/iconos.js?v=5f872bd';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=5f872bd';
-import { avisar } from '../../../core/ui/aviso.js?v=5f872bd';
-import { subirArchivo, eliminarArchivo } from '../../../core/adjuntos.js?v=5f872bd';
-import { dinero, hoyISO, fechaLarga, sumarDias } from '../../../core/ui/formato.js?v=5f872bd';
-import { cargarBase, nombreTercero, MEDIOS } from '../datos.js?v=5f872bd';
-import { leerConIA, iaDisponible, numIA, fechaIA, medioIA, textoModelo } from '../../../core/lector-ia.js?v=5f872bd';
+import { el } from '../../../core/ui/dom.js?v=6d3f615';
+import { icono } from '../../../core/ui/iconos.js?v=6d3f615';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=6d3f615';
+import { avisar } from '../../../core/ui/aviso.js?v=6d3f615';
+import { subirArchivo, eliminarArchivo } from '../../../core/adjuntos.js?v=6d3f615';
+import { dinero, hoyISO, fechaLarga, sumarDias } from '../../../core/ui/formato.js?v=6d3f615';
+import { cargarBase, nombreTercero, MEDIOS } from '../datos.js?v=6d3f615';
+import { leerConIA, iaDisponible, numIA, fechaIA, medioIA, textoModelo } from '../../../core/lector-ia.js?v=6d3f615';
 
 // Lee con IA al elegir la foto (como InnovaGestión) y llena el formulario con aplicar(datos, poner)
 export const leerAlElegir = (ctx, modo, aplicar) => async ({ archivos, estado, poner, opciones }) => {
@@ -26,12 +26,14 @@ export const leerAlElegir = (ctx, modo, aplicar) => async ({ archivos, estado, p
 export default async function vista(ctx) {
   const e = ctx.empresa.id;
   const puede = ctx.puede('costos', 'crear');
+  const porCargar = puede ? (await ctx.api.from('fin_bandeja').select('id', { count: 'exact', head: true }).eq('empresa_id', e).eq('estado', 'pendiente')).count ?? 0 : 0;
   const tarjeta = (ic, titulo, texto, accion) => el('button', { type: 'button', class: 'ficha subir-tipo', disabled: !puede, onclick: accion },
     el('span', { class: 'subir-icono' }, icono(ic, { tam: 26 })), el('strong', {}, titulo), el('span', { class: 'texto-suave texto-chico' }, texto));
   return el('section', { class: 'listado' },
     el('header', { class: 'listado-cabecera' }, el('h1', {}, 'Subir documentos')),
     el('p', { class: 'texto-suave' }, 'Elige qué vas a subir. Sin documento no hay reembolso ni pago: la boleta va a la bandeja "Por cargar" antes de 48 horas.'),
     el('div', { class: 'subir-tipos' },
+      tarjeta('lista', `Varias boletas de una vez${porCargar ? ` (${porCargar} por cargar)` : ''}`, 'Saca o elige todas las fotos seguidas (ej.: 20 boletas al volver de terreno); quedan en Por cargar y después se cargan una por una.', () => { location.hash = ctx.ruta('costos.bandeja'); }),
       tarjeta('camara', 'Boleta, factura o ticket de compra', 'Incluye tickets de peaje y estacionamiento. La IA lee la foto (y el timbre o el XML si los hay); la boleta queda pagada y la factura por pagar.', () => { location.hash = ctx.ruta('costos.lector'); }),
       tarjeta('dinero', 'Gasto sin ningún papel', 'Solo cuando no hay boleta, factura ni ticket (ej.: propina, feria). No es gasto declarable.', () => sinDocumento(ctx)),
       tarjeta('check', 'Comprobante de pago', 'Transferencia, depósito o pago con tarjeta a un proveedor. Queda por validar; al validarlo, las facturas que cubre quedan pagadas.', () => comprobante(ctx)),
