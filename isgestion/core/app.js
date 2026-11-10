@@ -1,17 +1,18 @@
 // Arranque de ISgestión: sesión → empresas y permisos → barra con selector → menú → vista.
-import { iniciarApi, db, urlApp } from './api.js?v=c16a35c';
-import { sesionActual, iniciarSesion, cerrarSesion, alCambiarSesion, recuperarClave, errorAuth } from './auth.js?v=c16a35c';
-import { cargarPermisos, crearPuede } from './permisos.js?v=c16a35c';
-import { cargarEmpresas, cargarModulosEmpresa, elegirEmpresa, recordarEmpresa, nombreEmpresa } from './empresas.js?v=c16a35c';
-import { cargarManifiestos, modulosVisibles, apartadosPorCategoria, configModulo } from './modulos.js?v=c16a35c';
-import { el } from './ui/dom.js?v=c16a35c';
-import { activarCombos } from './ui/combo.js?v=c16a35c';
-import { icono } from './ui/iconos.js?v=c16a35c';
-import { boton } from './ui/tabla.js?v=c16a35c';
-import inicio from './vistas/inicio.js?v=c16a35c';
-import mas from './vistas/mas.js?v=c16a35c';
-import { franja, botonNotificaciones, desactivar } from './push.js?v=c16a35c';
-import { barraMovil, marcarBarraMovil, bienvenidaInicial, recordarMarca, marcaGuardada, CORTE_TELEFONO } from './movil.js?v=c16a35c';
+import { iniciarApi, db, urlApp } from './api.js?v=dd03031';
+import { sesionActual, iniciarSesion, cerrarSesion, alCambiarSesion, recuperarClave, errorAuth } from './auth.js?v=dd03031';
+import { cargarPermisos, crearPuede } from './permisos.js?v=dd03031';
+import { cargarEmpresas, cargarModulosEmpresa, elegirEmpresa, recordarEmpresa, nombreEmpresa } from './empresas.js?v=dd03031';
+import { cargarManifiestos, modulosVisibles, apartadosPorCategoria, configModulo } from './modulos.js?v=dd03031';
+import { el } from './ui/dom.js?v=dd03031';
+import { activarCombos } from './ui/combo.js?v=dd03031';
+import { icono } from './ui/iconos.js?v=dd03031';
+import { boton } from './ui/tabla.js?v=dd03031';
+import inicio from './vistas/inicio.js?v=dd03031';
+import mas from './vistas/mas.js?v=dd03031';
+import { franja, botonNotificaciones, desactivar } from './push.js?v=dd03031';
+import { barraMovil, marcarBarraMovil, bienvenidaInicial, recordarMarca, marcaGuardada, CORTE_TELEFONO } from './movil.js?v=dd03031';
+import { botonSoporte } from './soporte.js?v=dd03031';
 
 const COLOR_BASE = '#1f4e8c';
 const CLAVE_MINIMA = 10;   // 08 Seguridad §4
@@ -291,7 +292,7 @@ function pintarApp() {
         el('div', { class: 'barra-espacio' }),
         el('div', { class: 'usuario' },
           (estado.consola = el('a', { class: 'boton boton-secundario boton-chico solo-escritorio', href: 'consola/', hidden: true, title: 'Consola de la plataforma (equipo ISgestión)' }, icono('ajustes', { tam: 14 }), 'Consola')),
-          el('button', { type: 'button', class: 'correo solo-escritorio', title: 'Mi PIN personal (crear o cambiar)', onclick: () => import('./pin.js?v=c16a35c').then((m) => m.miPin(db())) }, estado.usuario.email),
+          el('button', { type: 'button', class: 'correo solo-escritorio', title: 'Mi PIN personal (crear o cambiar)', onclick: () => import('./pin.js?v=dd03031').then((m) => m.miPin(db())) }, estado.usuario.email),
           (estado.botonNotif = botonNotificaciones(estado.usuario.id, () => (estado.empresa?.grupo ? estado.empresas[0]?.id : estado.empresa?.id))),
           botonModo(),
           el('button', { type: 'button', class: 'boton-icono solo-escritorio', title: 'Cerrar sesión', 'aria-label': 'Cerrar sesión', onclick: () => salir() }, icono('salir')))),
@@ -299,6 +300,12 @@ function pintarApp() {
       el('div', { class: 'cuerpo' }, estado.menu, el('div', { class: 'menu-velo', onclick: () => alternarMenu(false) }), estado.contenido),
       // Teléfono: barra de navegación abajo (core/movil.js; oculta en pantallas grandes)
       (estado.barraMovil = barraMovil({ visibles: estado.visibles, apartados: estado.apartados, rutas: estado.rutas, puede: estado.puede, ctx: contexto })),
+      // Ayuda con IA (core/soporte.js): conoce solo las pantallas que esta cuenta ve en el menú
+      botonSoporte({
+        db: db(),
+        empresaId: () => (estado.empresa?.grupo ? estado.empresas[0]?.id : estado.empresa?.id),
+        pantallas: () => [...estado.rutas.values()].filter(({ item }) => !item.oculto).map(({ item }) => ({ id: item.id, nombre: item.label })),
+      }),
     ),
   );
 }

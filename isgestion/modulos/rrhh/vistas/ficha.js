@@ -1,15 +1,15 @@
 // Ficha de un trabajador: documentación (con archivos privados) y datos personales.
 // Ruta: #/rrhh.ficha?p=<persona_id>
-import { el } from '../../../core/ui/dom.js?v=c16a35c';
-import { icono } from '../../../core/ui/iconos.js?v=c16a35c';
-import { boton } from '../../../core/ui/tabla.js?v=c16a35c';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=c16a35c';
-import { leerVence } from '../../../core/ui/leer-vence.js?v=c16a35c';
-import { avisar } from '../../../core/ui/aviso.js?v=c16a35c';
-import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=c16a35c';
-import { cargarActividad, resumen, panelActividad } from '../actividad.js?v=c16a35c';
-import { cargarLicencias, filaLicencia, formularioLicencia, diasLicencia, puedeLicencias } from '../../../core/licencias.js?v=c16a35c';
-import { cargarRrhh, cumplimiento, estadoDoc, chipEstado, avatar, nombreCompleto, nivel, VINCULOS, nombreVinculo } from '../datos.js?v=c16a35c';
+import { el } from '../../../core/ui/dom.js?v=dd03031';
+import { icono } from '../../../core/ui/iconos.js?v=dd03031';
+import { boton } from '../../../core/ui/tabla.js?v=dd03031';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=dd03031';
+import { leerVence } from '../../../core/ui/leer-vence.js?v=dd03031';
+import { avisar } from '../../../core/ui/aviso.js?v=dd03031';
+import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=dd03031';
+import { cargarActividad, resumen, panelActividad } from '../actividad.js?v=dd03031';
+import { cargarLicencias, filaLicencia, formularioLicencia, diasLicencia, puedeLicencias } from '../../../core/licencias.js?v=dd03031';
+import { cargarRrhh, cumplimiento, estadoDoc, chipEstado, avatar, nombreCompleto, nivel, VINCULOS, nombreVinculo } from '../datos.js?v=dd03031';
 
 const TIPOS_ARCHIVO = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
 const MAX_ARCHIVO = 10 * 1024 * 1024;
@@ -122,7 +122,7 @@ function filaDoc(ctx, tipo, doc, v, puede) {
         type: 'button', class: 'boton-icono', title: 'Generar con el formato de la empresa', 'aria-label': `Generar ${tipo.nombre}`,
         onclick: async () => {
           try {
-            const { generarParaTrabajador, sePuedeGenerar } = await import('../../documentos/integracion.js?v=c16a35c');
+            const { generarParaTrabajador, sePuedeGenerar } = await import('../../documentos/integracion.js?v=dd03031');
             if (!sePuedeGenerar(ctx, tipo.slug)) { avisar('No hay formato para este documento.', 'error'); return; }
             await generarParaTrabajador(ctx, tipo.slug, v.persona_id);
           } catch (err) { avisar(err.message, 'error'); }
@@ -144,7 +144,7 @@ function editarDoc(ctx, tipo, doc, v) {
     ...(tipo.vence ? [{ id: 'vence', etiqueta: 'Fecha de vencimiento', tipo: 'date', valor: doc?.vence ?? '',
       // Lee el vencimiento del archivo elegido o, si no se eligió, del que ya está guardado
       accion: leerVence({
-        cedula: tipo.slug === 'cedula', rut: v.personas?.rut, tipo: tipo.slug,
+        cedula: tipo.slug === 'cedula', rut: v.personas?.rut, tipo: tipo.slug, ia: { api: ctx.api, empresaId: ctx.empresa.id, modulo: 'rrhh' },
         fuentes: async (x) => {
           const ya = async (ruta) => (ruta ? urlFirmada(ctx.api, ruta, 300) : null);
           return tipo.slug === 'cedula'

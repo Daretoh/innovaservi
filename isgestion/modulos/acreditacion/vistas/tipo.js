@@ -1,15 +1,15 @@
 // Un documento de empresa: versiones (la vigente arriba), subir una nueva y ajustes del documento.
 // Ruta: #/acreditacion.tipo?id=<tipo>
-import { el } from '../../../core/ui/dom.js?v=c16a35c';
-import { icono } from '../../../core/ui/iconos.js?v=c16a35c';
-import { boton } from '../../../core/ui/tabla.js?v=c16a35c';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=c16a35c';
-import { leerVence } from '../../../core/ui/leer-vence.js?v=c16a35c';
-import { avisar } from '../../../core/ui/aviso.js?v=c16a35c';
-import { subirArchivo, eliminarArchivo } from '../../../core/adjuntos.js?v=c16a35c';
-import { fechaLarga, hoyISO } from '../../../core/ui/formato.js?v=c16a35c';
-import { cargarDocumentos, estadoVersion, vigentes, CHIP, textoEstado } from '../datos.js?v=c16a35c';
-import { abrir } from './documentos.js?v=c16a35c';
+import { el } from '../../../core/ui/dom.js?v=dd03031';
+import { icono } from '../../../core/ui/iconos.js?v=dd03031';
+import { boton } from '../../../core/ui/tabla.js?v=dd03031';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=dd03031';
+import { leerVence } from '../../../core/ui/leer-vence.js?v=dd03031';
+import { avisar } from '../../../core/ui/aviso.js?v=dd03031';
+import { subirArchivo, eliminarArchivo } from '../../../core/adjuntos.js?v=dd03031';
+import { fechaLarga, hoyISO } from '../../../core/ui/formato.js?v=dd03031';
+import { cargarDocumentos, estadoVersion, vigentes, CHIP, textoEstado } from '../datos.js?v=dd03031';
+import { abrir } from './documentos.js?v=dd03031';
 
 const ARCHIVOS = ['application/pdf', 'image/jpeg', 'image/png',
   'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -68,7 +68,7 @@ export function subirVersion(ctx, t) {
       { id: 'archivo', etiqueta: 'Archivo (PDF, imagen, Word o Excel; hasta 25 MB)', tipo: 'file', accept: ARCHIVOS.join(','), requerido: true },
       ...(t.multi ? [{ id: 'titular', etiqueta: '¿A quién corresponde?', requerido: true, ayuda: 'Ej.: la empresa, un socio.' }] : [{ id: 'titular', etiqueta: 'Detalle (opcional)' }]),
       { id: 'fecha', etiqueta: 'Fecha del documento', tipo: 'date', requerido: true, valor: hoyISO() },
-      ...(t.vence ? [{ id: 'vence', etiqueta: 'Vence', tipo: 'date', requerido: true, accion: leerVence({ tipo: /vigencia/i.test(t.nombre) ? 'vigencia' : t.id, emision: 'fecha', fuentes: async (x) => [x.archivo] }) }] : []),
+      ...(t.vence ? [{ id: 'vence', etiqueta: 'Vence', tipo: 'date', requerido: true, accion: leerVence({ tipo: /vigencia/i.test(t.nombre) ? 'vigencia' : t.id, emision: 'fecha', fuentes: async (x) => [x.archivo], ia: { api: ctx.api, empresaId: ctx.empresa.id, modulo: 'acreditacion' } }) }] : []),
       { id: 'nota', etiqueta: 'Nota' },
     ],
     textoGuardar: 'Subir',

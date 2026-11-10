@@ -1,19 +1,19 @@
-// Cierre mensual de un cliente: líneas (órdenes entregadas en el mes y manuales), emitir, OC, factura, cobro, PDF e historial.
+// Cierre mensual de un cliente: líneas (órdenes terminadas en el mes y manuales), emitir, OC, factura, cobro, PDF e historial.
 // El mes de una orden es el de su entrega (Cierres 005); las sin entregar se avisan y no entran solas.
 // Ruta: #/cierres.cierre?id=<id>
-import { el } from '../../../core/ui/dom.js?v=c16a35c';
-import { icono } from '../../../core/ui/iconos.js?v=c16a35c';
-import { boton } from '../../../core/ui/tabla.js?v=c16a35c';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=c16a35c';
-import { avisar } from '../../../core/ui/aviso.js?v=c16a35c';
-import { subirArchivo, urlFirmada } from '../../../core/adjuntos.js?v=c16a35c';
-import { dinero, fechaLarga, hoyISO, diaLocal } from '../../../core/ui/formato.js?v=c16a35c';
+import { el } from '../../../core/ui/dom.js?v=dd03031';
+import { icono } from '../../../core/ui/iconos.js?v=dd03031';
+import { boton } from '../../../core/ui/tabla.js?v=dd03031';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=dd03031';
+import { avisar } from '../../../core/ui/aviso.js?v=dd03031';
+import { subirArchivo, urlFirmada } from '../../../core/adjuntos.js?v=dd03031';
+import { dinero, fechaLarga, hoyISO, diaLocal } from '../../../core/ui/formato.js?v=dd03031';
 import {
   nombreTercero, nombreEstado, CHIP_ESTADO, indiceEstado, MEDIOS, nombreMedio, ARCHIVOS, verPatente, numeroTexto, nombreMesLargo,
   totalesCierre, verHistorial, archivoSeguro,
-} from '../datos.js?v=c16a35c';
-import { nombreEstado as estadoOrden } from '../../taller/datos.js?v=c16a35c';
-import { nombreEstado as estadoCot, CHIP_ESTADO as CHIP_COT } from '../../cotizaciones/datos.js?v=c16a35c';
+} from '../datos.js?v=dd03031';
+import { nombreEstado as estadoOrden } from '../../taller/datos.js?v=dd03031';
+import { nombreEstado as estadoCot, CHIP_ESTADO as CHIP_COT } from '../../cotizaciones/datos.js?v=dd03031';
 
 const SELECT = '*, terceros(*), cie_lineas(*, tal_ordenes(id, numero, estado)), cot_cotizaciones(id, numero, estado, deleted_at)';
 
@@ -25,7 +25,7 @@ export default async function vista(ctx) {
   const editar = ctx.puede('cierres', 'editar');
   const conTaller = ctx.puede('taller', 'ver');
 
-  // Borrador: entran solas las órdenes entregadas en el mes y se actualizan los montos
+  // Borrador: entran solas las órdenes terminadas en el mes (Cierres 009) y se actualizan los montos
   let agregadas = 0;
   if (c.estado === 'borrador' && editar) {
     const r = await ctx.api.rpc('cie_sincronizar', { p_cierre: c.id });
@@ -55,7 +55,7 @@ export default async function vista(ctx) {
   const relacionadas = [...new Map([...cotDe.values()].flat().map((q) => [q.id, q])).values()].sort((a, b) => a.numero - b.numero);
   const sinCot = vivas.filter((l) => l.orden_id && !cotDe.has(l.orden_id));
   if (pend.error) avisar(pend.error.message, 'error');
-  // Emitido: entregadas en el mes que quedaron fuera. Mes en curso: en el taller sin entregar.
+  // Emitido: terminadas en el mes que quedaron fuera. Mes en curso: en el taller sin terminar.
   const nuevas = (pend.data ?? []).filter((o) => o.tipo === 'fuera');
   const sinEntregar = (pend.data ?? []).filter((o) => o.tipo === 'sin_entregar');
 
@@ -197,7 +197,7 @@ export default async function vista(ctx) {
   const pdf = async (b) => {
     b.disabled = true;
     try {
-      const { pdfCierre } = await import('../documentos.js?v=c16a35c');
+      const { pdfCierre } = await import('../documentos.js?v=dd03031');
       const doc = await pdfCierre(ctx, c, lineas, c.terceros, cliCfg.data?.nota);
       doc.save(`cierre-${c.mes}-${archivoSeguro(nombreTercero(c.terceros) || 'cliente')}.pdf`);
     } catch (e) { avisar(e.message, 'error'); } finally { b.disabled = false; }
@@ -210,14 +210,14 @@ export default async function vista(ctx) {
         el('p', { class: 'texto-suave' }, [c.emitido_at ? `Emitido el ${fechaLarga(diaLocal(c.emitido_at))}` : 'Sin emitir', `${vivas.length} ${vivas.length === 1 ? 'línea' : 'líneas'}`].join(' · '))),
       el('div', { class: 'listado-acciones' }, el('span', { class: `chip ${CHIP_ESTADO[c.estado]}` }, nombreEstado[c.estado]),
         conCot || c.estado === 'anulado' ? null : boton(borrador ? 'PDF de prueba' : 'PDF', { icono: 'descargar', onclick: (ev) => pdf(ev.currentTarget) }),
-        ctx.puede('cierres', 'exportar') ? boton('Excel detalle', { icono: 'descargar', onclick: async (ev) => { const b = ev.currentTarget; b.disabled = true; try { const { excelDetalleCierre } = await import('../excel.js?v=c16a35c'); await excelDetalleCierre(ctx, c, lineas); } catch (e) { avisar(e.message, 'error'); } finally { b.disabled = false; } } }) : null,
+        ctx.puede('cierres', 'exportar') ? boton('Excel detalle', { icono: 'descargar', onclick: async (ev) => { const b = ev.currentTarget; b.disabled = true; try { const { excelDetalleCierre } = await import('../excel.js?v=dd03031'); await excelDetalleCierre(ctx, c, lineas); } catch (e) { avisar(e.message, 'error'); } finally { b.disabled = false; } } }) : null,
         boton('Historial', { icono: 'reloj', onclick: () => verHistorial(ctx, c.id, `${nombreTercero(c.terceros)} ${c.mes}`) }))),
-    agregadas ? el('p', { class: 'aviso-bandeja' }, icono('check', { tam: 16 }), `${agregadas} ${agregadas === 1 ? 'línea nueva entró' : 'líneas nuevas entraron'} al cierre (órdenes entregadas o faenas del mes).`) : null,
+    agregadas ? el('p', { class: 'aviso-bandeja' }, icono('check', { tam: 16 }), `${agregadas} ${agregadas === 1 ? 'línea nueva entró' : 'líneas nuevas entraron'} al cierre (órdenes terminadas o faenas del mes).`) : null,
     nuevas.length ? el('p', { class: 'aviso-bandeja' }, icono('alerta', { tam: 16 }),
-      `El cierre está emitido y hay ${nuevas.length} ${nuevas.length === 1 ? 'orden entregada' : 'órdenes entregadas'} en el mes fuera: ${nuevas.map((o) => `N° ${o.numero} ${verPatente(o.patente)}`).join(', ')}. Reábrelo para incluirlas o agrégalas al mes siguiente con "Orden de otro mes".`) : null,
+      `El cierre está emitido y hay ${nuevas.length} ${nuevas.length === 1 ? 'orden terminada' : 'órdenes terminadas'} en el mes fuera: ${nuevas.map((o) => `N° ${o.numero} ${verPatente(o.patente)}`).join(', ')}. Reábrelo para incluirlas o agrégalas al mes siguiente con "Orden de otro mes".`) : null,
     sinEntregar.length ? el('p', { class: 'aviso-bandeja' }, icono('alerta', { tam: 16 }),
-      `En el taller sin entregar: `, sinEntregar.map((o, k) => el('span', {}, k ? ', ' : '', el('a', { href: ctx.ruta('taller.orden', { id: o.id }) }, `N° ${o.numero} ${verPatente(o.patente)}`), ` (${estadoOrden[o.estado]})`)),
-      `. Entran al cierre del mes en que se entreguen.${borrador && editar ? ' Si hay que cobrarlas antes, usa "Orden de otro mes".' : ''}`) : null,
+      `En el taller sin terminar: `, sinEntregar.map((o, k) => el('span', {}, k ? ', ' : '', el('a', { href: ctx.ruta('taller.orden', { id: o.id }) }, `N° ${o.numero} ${verPatente(o.patente)}`), ` (${estadoOrden[o.estado]})`)),
+      `. Entran al cierre del mes en que se terminen.${borrador && editar ? ' Si hay que cobrarlas antes, usa "Orden de otro mes".' : ''}`) : null,
     relacionadas.length || sinCot.length ? el('p', { class: 'aviso-bandeja' }, icono('documento', { tam: 16 }),
       relacionadas.length ? ['Cotizaciones relacionadas: ', relacionadas.flatMap((q, k) => [k ? ', ' : '', enlaceCot(q)]), '. '] : null,
       sinCot.length ? `${sinCot.length} ${sinCot.length === 1 ? 'vehículo' : 'vehículos'} sin cotización.` : null) : null,
@@ -235,7 +235,7 @@ export default async function vista(ctx) {
         borrador && editar ? el('div', { class: 'listado-acciones' },
           conTaller ? boton('Orden de otro mes', { icono: 'mas', onclick: agregarOrden }) : null,
           boton('Línea manual', { icono: 'mas', onclick: agregarManual })) : null),
-      vivas.length ? vivas.map(filaLinea) : el('p', { class: 'texto-suave' }, 'Sin líneas. Las órdenes entregadas y las faenas enviadas del cliente en el mes entran solas; también puedes agregar líneas manuales.'),
+      vivas.length ? vivas.map(filaLinea) : el('p', { class: 'texto-suave' }, 'Sin líneas. Las órdenes terminadas y las faenas enviadas del cliente en el mes entran solas; también puedes agregar líneas manuales.'),
       el('div', { class: 'cobro-resumen' },
         el('div', {}, el('span', {}, 'Neto'), el('span', {}, dinero(t.neto))),
         el('div', {}, el('label', { class: 'casilla' }, iva, 'Afecto a IVA 19 %'), el('span', {}, dinero(t.iva))),

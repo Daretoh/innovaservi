@@ -1,12 +1,12 @@
 // Usuarios con acceso a la empresa activa: rol, ficha de trabajador y estado.
 // Acceso con fecha de vencimiento y nota (como Accesos de InnovaGestión): vencido = sin acceso (acceso_vigente en la base).
-import { urlApp } from '../../../core/api.js?v=c16a35c';
-import { recuperarClave } from '../../../core/auth.js?v=c16a35c';
-import { el } from '../../../core/ui/dom.js?v=c16a35c';
-import { icono } from '../../../core/ui/iconos.js?v=c16a35c';
-import { listado, boton } from '../../../core/ui/tabla.js?v=c16a35c';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=c16a35c';
-import { avisar } from '../../../core/ui/aviso.js?v=c16a35c';
+import { urlApp } from '../../../core/api.js?v=dd03031';
+import { recuperarClave } from '../../../core/auth.js?v=dd03031';
+import { el } from '../../../core/ui/dom.js?v=dd03031';
+import { icono } from '../../../core/ui/iconos.js?v=dd03031';
+import { listado, boton } from '../../../core/ui/tabla.js?v=dd03031';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=dd03031';
+import { avisar } from '../../../core/ui/aviso.js?v=dd03031';
 
 export default async function vista(ctx) {
   const empresa = ctx.empresa.id;
@@ -31,7 +31,8 @@ export default async function vista(ctx) {
     { titulo: 'Estado', valor: (u) => el('span', {},
       el('span', { class: `etiqueta ${u.vigente ? '' : 'etiqueta-apagada'}` }, !u.activo ? 'Desactivado' : u.vigente ? 'Activo' : 'Vencido'),
       u.vence ? el('span', { class: 'texto-suave texto-chico' }, ` hasta ${new Date(`${u.vence}T12:00`).toLocaleDateString('es-CL')}`) : null,
-      u.nota ? el('div', { class: 'texto-suave texto-chico' }, u.nota) : null) },
+      u.nota ? el('div', { class: 'texto-suave texto-chico' }, u.nota) : null,
+      u.soporte_montos ? el('div', { class: 'texto-suave texto-chico', title: 'Puede preguntar montos al asistente de ayuda' }, 'Montos en el asistente') : null) },
     { titulo: 'Último ingreso', valor: (u) => (u.ultimo_ingreso ? new Date(u.ultimo_ingreso).toLocaleString('es-CL') : 'Nunca') },
   ];
   if (puedeEditar) {
@@ -127,11 +128,14 @@ async function editar(ctx, u, opcionesRol) {
       { id: 'activo', etiqueta: 'Estado', opciones: [['true', 'Activo'], ['false', 'Desactivado']], valor: String(u.activo) },
       { id: 'vence', etiqueta: 'Acceso hasta (opcional)', tipo: 'date', valor: u.vence ?? '', ayuda: 'Después de esa fecha no puede entrar a esta empresa (ej.: reemplazos o personal temporal). Vacío = sin vencimiento.' },
       { id: 'nota', etiqueta: 'Nota', tipo: 'textarea', valor: u.nota ?? '' },
+      // Asistente de ayuda (Núcleo 020): solo cambia lo que responde el asistente, no lo que ve en la app
+      { id: 'montos', etiqueta: 'Puede preguntar montos al asistente', opciones: [['false', 'No'], ['true', 'Sí']], valor: String(!!u.soporte_montos),
+        ayuda: 'Con Sí, el asistente de ayuda le responde cifras de dinero (ventas, saldos, gastos, facturas) de lo que ya puede ver. Con No, solo cantidades, estados y listas.' },
     ],
     alGuardar: async (v) => {
       const { data, error: e } = await ctx.api
         .from('usuario_empresa')
-        .update({ rol_id: v.rol, persona_id: v.persona || null, activo: v.activo === 'true', vence: v.vence || null, nota: v.nota.trim() || null })
+        .update({ rol_id: v.rol, persona_id: v.persona || null, activo: v.activo === 'true', vence: v.vence || null, nota: v.nota.trim() || null, soporte_montos: v.montos === 'true' })
         .eq('empresa_id', ctx.empresa.id)
         .eq('user_id', u.user_id)
         .select('user_id');

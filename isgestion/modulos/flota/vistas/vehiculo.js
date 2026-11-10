@@ -1,14 +1,14 @@
 // Ficha del vehículo: datos, documentos con vencimiento, mantenciones programadas, historial de pagos y gastos, y archivos.
 // Ruta: #/flota.vehiculo?id=<id>
-import { el } from '../../../core/ui/dom.js?v=c16a35c';
-import { icono } from '../../../core/ui/iconos.js?v=c16a35c';
-import { boton } from '../../../core/ui/tabla.js?v=c16a35c';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=c16a35c';
-import { leerVence } from '../../../core/ui/leer-vence.js?v=c16a35c';
-import { avisar } from '../../../core/ui/aviso.js?v=c16a35c';
-import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=c16a35c';
-import { dinero, fechaLarga, hoyISO, diaLocal } from '../../../core/ui/formato.js?v=c16a35c';
-import { CATEGORIAS, CON_VENCE, nombreCat, TIPOS, ESTADOS, vencimientos, normalizarPatente, estadoMantencion } from '../datos.js?v=c16a35c';
+import { el } from '../../../core/ui/dom.js?v=dd03031';
+import { icono } from '../../../core/ui/iconos.js?v=dd03031';
+import { boton } from '../../../core/ui/tabla.js?v=dd03031';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=dd03031';
+import { leerVence } from '../../../core/ui/leer-vence.js?v=dd03031';
+import { avisar } from '../../../core/ui/aviso.js?v=dd03031';
+import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=dd03031';
+import { dinero, fechaLarga, hoyISO, diaLocal } from '../../../core/ui/formato.js?v=dd03031';
+import { CATEGORIAS, CON_VENCE, nombreCat, TIPOS, ESTADOS, vencimientos, normalizarPatente, estadoMantencion } from '../datos.js?v=dd03031';
 
 const ARCHIVOS = ['application/pdf', 'image/jpeg', 'image/png'];
 let filtroCat = '';
@@ -197,7 +197,7 @@ export function registrar(ctx, v, personas, categoria, m = null) {
       { id: 'proveedor', etiqueta: 'Proveedor' },
       { id: 'descripcion', etiqueta: 'Detalle', valor: m?.nombre ?? '' },
       { id: 'km', etiqueta: 'Kilometraje', tipo: 'number', valor: m ? v.km ?? '' : '' },
-      { id: 'vence', etiqueta: 'Vence (permiso, revisión técnica, SOAP, seguro)', tipo: 'date', accion: leerVence({ tipo: 'veh', fuentes: async (x) => [x.archivo] }) },
+      { id: 'vence', etiqueta: 'Vence (permiso, revisión técnica, SOAP, seguro)', tipo: 'date', accion: leerVence({ tipo: 'veh', fuentes: async (x) => [x.archivo], ia: { api: ctx.api, empresaId: ctx.empresa.id, modulo: 'flota' } }) },
       { id: 'chofer_id', etiqueta: 'Chofer (peajes, multas, combustible)', opciones: [['', 'Ninguno'], ...choferes.map((p) => [p.persona_id, p.nombre])] },
       { id: 'archivo', etiqueta: 'Comprobante o documento (PDF o imagen)', tipo: 'file', accept: ARCHIVOS.join(',') },
     ],

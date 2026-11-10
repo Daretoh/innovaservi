@@ -3,23 +3,24 @@
 // servicios de la orden: los normales en una sección (GM: "Preparación de Venta y Pulido / Realce de Brillo") y los
 // extras en "Extras". Así se arma la cotización del mes de un cliente de flota y se ve qué autos tuvo.
 // También "Autos por cotizar" (traerPorCotizar).
-import { abrirFormulario } from '../../core/ui/modal.js?v=c16a35c';
-import { avisar } from '../../core/ui/aviso.js?v=c16a35c';
-import { diaLocal, hoyISO } from '../../core/ui/formato.js?v=c16a35c';
-import { numeroTexto, verPatente } from './datos.js?v=c16a35c';
-import { costosDeOrdenes, lineasCosto } from './costos-orden.js?v=c16a35c';
-import { trabajosOrden, listaCliente } from './trabajos-orden.js?v=c16a35c';
+import { abrirFormulario } from '../../core/ui/modal.js?v=dd03031';
+import { avisar } from '../../core/ui/aviso.js?v=dd03031';
+import { diaLocal, hoyISO } from '../../core/ui/formato.js?v=dd03031';
+import { numeroTexto, verPatente } from './datos.js?v=dd03031';
+import { costosDeOrdenes, lineasCosto } from './costos-orden.js?v=dd03031';
+import { trabajosOrden, listaCliente } from './trabajos-orden.js?v=dd03031';
 
 const SECCION_FLOTA = 'Preparación de Venta y Pulido / Realce de Brillo';
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
 const esExtra = (n) => /^\s*extras?\b/i.test(n ?? '');
-// Mes del auto: el de su entrega, como el cierre; sin entregar (o entregado sin fecha), el de la cita o el ingreso
-const diaDe = (o) => diaLocal(o.entregado_at) || o.fecha_cita || diaLocal(o.ingreso_at) || diaLocal(o.created_at);
+// Mes del auto: el de su término, como el cierre (Cierres 009: la entrega se marca a última hora, con la cotización);
+// si la entrega quedó antes que el término, la entrega; sin terminar, el de la cita o el ingreso
+const diaDe = (o) => [diaLocal(o.termino_at), diaLocal(o.entregado_at)].filter(Boolean).sort()[0] || o.fecha_cita || diaLocal(o.ingreso_at) || diaLocal(o.created_at);
 
 export async function traerMes(ctx, c, grupos) {
   if (!c.tercero_id) { avisar('Elige primero el cliente de la cotización.', 'error'); return; }
   const { data: ords, error } = await ctx.api.from('tal_ordenes')
-    .select('id, numero, estado, fecha_cita, ingreso_at, entregado_at, created_at, descuento, tareas, tal_vehiculos(id, marca, modelo, patente, talla), tal_orden_servicios(nombre, precio, orden)')
+    .select('id, numero, estado, fecha_cita, ingreso_at, termino_at, entregado_at, created_at, descuento, tareas, tal_vehiculos(id, marca, modelo, patente, talla), tal_orden_servicios(nombre, precio, orden)')
     .eq('empresa_id', ctx.empresa.id).eq('tercero_id', c.tercero_id).neq('estado', 'anulada');
   if (error) { avisar(error.message, 'error'); return; }
   const meses = [...new Set((ords ?? []).map((o) => diaDe(o)?.slice(0, 7)).filter(Boolean))].sort().reverse();
@@ -41,7 +42,7 @@ export async function traerMes(ctx, c, grupos) {
 export async function traerPorCotizar(ctx, c, grupos) {
   if (!c.tercero_id) { avisar('Elige primero el cliente de la cotización.', 'error'); return; }
   const { data: ords, error } = await ctx.api.from('tal_ordenes')
-    .select('id, numero, estado, fecha_cita, ingreso_at, entregado_at, created_at, descuento, tareas, tal_vehiculos(id, marca, modelo, patente, talla), tal_orden_servicios(nombre, precio, orden, tal_servicios(variable))')
+    .select('id, numero, estado, fecha_cita, ingreso_at, termino_at, entregado_at, created_at, descuento, tareas, tal_vehiculos(id, marca, modelo, patente, talla), tal_orden_servicios(nombre, precio, orden, tal_servicios(variable))')
     .eq('empresa_id', ctx.empresa.id).eq('tercero_id', c.tercero_id).neq('estado', 'anulada');
   if (error) { avisar(error.message, 'error'); return; }
   const porCotizar = (ords ?? []).filter((o) => o.tal_orden_servicios.some((x) => x.tal_servicios?.variable || /cotiz/i.test(x.nombre)));
