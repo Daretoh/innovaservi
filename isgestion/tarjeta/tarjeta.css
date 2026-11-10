@@ -41,7 +41,6 @@
 .tj-mas { font-size: .75rem; font-weight: 700; color: var(--empresa); }
 .tj details summary { cursor: pointer; font-weight: 700; display: flex; align-items: center; gap: 6px; list-style: none; }
 .tj details summary::-webkit-details-marker { display: none; }
-.tj-guardar ol { margin: 4px 0 0; padding-left: 20px; display: grid; gap: 4px; }
 .tj-pie { text-align: center; }
 .tj .fp-enviar { display: inline-flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; }
 
@@ -51,3 +50,31 @@
 :root[data-tema="taller"] .fp-enviar { border-radius: 8px; }
 :root[data-tema="taller"] .fp-cabecera { border-radius: 0 0 10px 10px; }
 @media (prefers-reduced-motion: reduce) { .tj-sello.siguiente { animation: none; } }
+
+/* Tutorial para guardar la tarjeta (guardar.js): dibujos SVG propios por paso */
+.tj-guardar { --tj-marco: #1b1b1d; --tj-pantalla: #fff; --tj-barra: #f2f2f4; --tj-gris: #8a8a90; --tj-texto: #1d1d1f; --tj-cab: var(--fp-cab); }
+.tj-guardar { gap: 10px; }
+.tj-guardar[open] summary { margin-bottom: 2px; }
+.tj-pestanas { display: inline-flex; gap: 4px; padding: 4px; border-radius: 10px; background: var(--fp-fondo); justify-self: start; }
+.tj-pestana { border: 0; background: transparent; padding: 7px 16px; border-radius: 7px; font: inherit; font-weight: 600; color: var(--texto-suave); cursor: pointer; }
+.tj-pestana[aria-selected="true"] { background: var(--superficie, #fff); color: var(--fp-texto); box-shadow: 0 1px 3px rgba(var(--fp-sombra), .15); }
+.tj-pasos { list-style: none; margin: 4px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 210px), 1fr)); gap: 14px; }
+.tj-pasos li { display: grid; gap: 8px; align-content: start; }
+.tj-dibujo { display: grid; place-items: center; padding: 12px 0; border-radius: 10px; background: var(--fp-fondo); }
+.tj-dibujo svg { width: 118px; height: auto; display: block; filter: drop-shadow(0 4px 10px rgba(0, 0, 0, .15)); }
+.tj-paso-texto { display: flex; gap: 8px; align-items: flex-start; }
+.tj-paso-texto p { margin: 0; font-size: .9rem; line-height: 1.4; }
+.tj-num { flex: none; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--empresa); color: #fff; font-size: .75rem; font-weight: 800; }
+.tj-nota { margin: 2px 0 0; padding: 8px 10px; border-radius: 8px; background: var(--fp-fondo); }
+.tj-qr-caja { display: flex; gap: 14px; align-items: center; padding: 10px; border-radius: 10px; background: var(--fp-fondo); }
+.tj-qr { flex: none; padding: 6px; background: #fff; border-radius: 6px; line-height: 0; }
+.tj-qr img, .tj-qr canvas { width: 132px; height: 132px; }
+/* En el teléfono los pasos se deslizan de lado (uno y un poco del siguiente) */
+@media (max-width: 600px) {
+  .tj-pasos { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 12px; padding-bottom: 6px; margin-right: -18px; padding-right: 18px; }
+  .tj-pasos li { flex: 0 0 78%; scroll-snap-align: start; }
+  .tj-dibujo svg { width: 104px; }
+}
+.tj { grid-template-columns: minmax(0, 1fr); }
+.tj-guardar { grid-template-columns: minmax(0, 1fr); }
+.tj-guardar > * { min-width: 0; }

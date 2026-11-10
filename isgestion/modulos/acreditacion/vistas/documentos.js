@@ -1,15 +1,15 @@
 // Documentos de empresa: carpetas con sus documentos, estado de la versión vigente y avisos de vencimiento.
-import { el } from '../../../core/ui/dom.js?v=0ddac6e';
-import { icono } from '../../../core/ui/iconos.js?v=0ddac6e';
-import { boton } from '../../../core/ui/tabla.js?v=0ddac6e';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=0ddac6e';
-import { avisar } from '../../../core/ui/aviso.js?v=0ddac6e';
-import { urlFirmada } from '../../../core/adjuntos.js?v=0ddac6e';
-import { fechaLarga } from '../../../core/ui/formato.js?v=0ddac6e';
-import { cargarDocumentos, CHIP, textoEstado } from '../datos.js?v=0ddac6e';
-import { CARPETAS } from '../sugeridos.js?v=0ddac6e';
-import { subirVersion } from './tipo.js?v=0ddac6e';
-import { plegable } from '../../../core/ui/plegable.js?v=0ddac6e';
+import { el } from '../../../core/ui/dom.js?v=5f872bd';
+import { icono } from '../../../core/ui/iconos.js?v=5f872bd';
+import { boton } from '../../../core/ui/tabla.js?v=5f872bd';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=5f872bd';
+import { avisar } from '../../../core/ui/aviso.js?v=5f872bd';
+import { urlFirmada } from '../../../core/adjuntos.js?v=5f872bd';
+import { fechaLarga } from '../../../core/ui/formato.js?v=5f872bd';
+import { cargarDocumentos, CHIP, textoEstado } from '../datos.js?v=5f872bd';
+import { CARPETAS } from '../sugeridos.js?v=5f872bd';
+import { subirVersion } from './tipo.js?v=5f872bd';
+import { plegable } from '../../../core/ui/plegable.js?v=5f872bd';
 
 let buscar = '';
 

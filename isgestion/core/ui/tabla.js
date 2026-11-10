@@ -1,7 +1,7 @@
 // Listado estándar: barra con búsqueda y acciones + tabla.
 // columnas: [{ titulo, valor: (fila) => texto }]
-import { el } from './dom.js?v=0ddac6e';
-import { icono } from './iconos.js?v=0ddac6e';
+import { el } from './dom.js?v=5f872bd';
+import { icono } from './iconos.js?v=5f872bd';
 
 // alFila(fila): opcional, la fila se puede tocar (abre su ficha).
 // claseFila: (fila) => clase extra del <tr> (ej. franja de color por tipo)

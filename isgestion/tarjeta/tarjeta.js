@@ -1,9 +1,10 @@
 // Tarjeta de cliente (Marketing 007): sellos, premio, hora pedida y visitas del cliente, sin app ni cuenta.
 // URL: /tarjeta/?t=<token de la tarjeta>. Lee la Edge Function pública mkt-tarjeta. El cliente la guarda en la pantalla
 // de inicio del celular (se explica cómo según el teléfono).
-import { el } from '../core/ui/dom.js?v=0ddac6e';
-import { icono } from '../core/ui/iconos.js?v=0ddac6e';
-import { nombreDia, fechaCorta, fechaLarga, dinero } from '../core/ui/formato.js?v=0ddac6e';
+import { el } from '../core/ui/dom.js?v=5f872bd';
+import { icono } from '../core/ui/iconos.js?v=5f872bd';
+import { nombreDia, fechaCorta, fechaLarga, dinero } from '../core/ui/formato.js?v=5f872bd';
+import { comoGuardar } from './guardar.js?v=5f872bd';
 
 const raiz = document.getElementById('app');
 const token = new URLSearchParams(location.search).get('t') ?? '';
@@ -16,21 +17,20 @@ async function urlFuncion(nombre) {
 }
 const verPatente = (p) => (p && p.length === 6 ? `${p.slice(0, 4)}-${p.slice(4)}` : p ?? '');
 
-function comoGuardar() {
-  const ua = navigator.userAgent;
-  const ios = /iPhone|iPad|iPod/i.test(ua);
-  const android = /Android/i.test(ua);
-  const enApp = window.matchMedia?.('(display-mode: standalone)').matches || navigator.standalone;
-  if (enApp) return null;
-  const pasos = ios
-    ? ['Abre esta página en Safari.', 'Toca el botón Compartir (el cuadrado con la flecha).', 'Elige "Agregar a pantalla de inicio" y luego "Agregar".']
-    : android
-      ? ['Toca el menú de Chrome (los tres puntos arriba).', 'Elige "Agregar a la pantalla principal" (o "Instalar").', 'Confirma con "Agregar".']
-      : ['Abre este enlace en tu celular.', 'Guárdalo en la pantalla de inicio desde el menú del navegador.'];
-  return el('details', { class: 'fp-seccion tj-guardar' },
-    el('summary', {}, icono('descargar', { tam: 16 }), ' Guarda tu tarjeta en el celular'),
-    el('ol', {}, pasos.map((p) => el('li', {}, p))),
-    el('p', { class: 'texto-chico texto-suave' }, 'Queda como un ícono más, sin instalar nada. También puedes guardar el enlace que te enviamos.'));
+// Ícono de la pantalla de inicio: se dibuja con los colores de la empresa (iPhone usa apple-touch-icon; Android el ícono)
+function iconoInicio(empresa) {
+  try {
+    const css = getComputedStyle(document.documentElement);
+    const c = document.createElement('canvas'); c.width = c.height = 180;
+    const g = c.getContext('2d');
+    g.fillStyle = css.getPropertyValue('--fp-cab').trim() || '#1f2124'; g.fillRect(0, 0, 180, 180);
+    g.fillStyle = css.getPropertyValue('--empresa').trim() || '#ff6b00'; g.fillRect(0, 0, 180, 10);
+    g.beginPath(); g.arc(90, 96, 52, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#fff'; g.font = '800 44px Inter, system-ui, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillText(empresa.split(/s+/).filter(Boolean).map((x) => x[0]).join('').slice(0, 2).toUpperCase() || 'MI', 90, 98);
+    const url = c.toDataURL('image/png');
+    for (const rel of ['apple-touch-icon', 'icon']) document.head.append(Object.assign(document.createElement('link'), { rel, href: url, sizes: '180x180' }));
+  } catch { /* sin ícono propio */ }
 }
 
 async function iniciar() {
@@ -46,6 +46,7 @@ async function iniciar() {
   if (t.color) document.documentElement.style.setProperty('--empresa', t.color);
   if (t.tema) document.documentElement.dataset.tema = t.tema;   // Performance (taller): grafito y naranja, sin el azul de Innova
   document.title = `Mi tarjeta · ${t.empresa}`;
+  iconoInicio(t.empresa);
 
   const llena = t.sellos >= t.meta;
   const enTarjeta = llena ? t.meta : t.sellos;
