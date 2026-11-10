@@ -1,13 +1,13 @@
 // Clientes (del maestro de Clientes y proveedores) con su color en el calendario y sus sitios de faena. Arriba, como
 // InnovaGestión, un gráfico circular con el % de faenas por cliente en los últimos 12 meses (6 mayores + Otros).
-import { el } from '../../../core/ui/dom.js?v=96d87cf';
-import { icono } from '../../../core/ui/iconos.js?v=96d87cf';
-import { boton } from '../../../core/ui/tabla.js?v=96d87cf';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=96d87cf';
-import { avisar } from '../../../core/ui/aviso.js?v=96d87cf';
-import { cargarBase, olvidarBase } from '../datos.js?v=96d87cf';
-import { hoyISO, sumarDias } from '../../../core/ui/formato.js?v=96d87cf';
-import { fichaTercero } from '../../terceros/formulario.js?v=96d87cf';
+import { el } from '../../../core/ui/dom.js?v=c9a2c01';
+import { icono } from '../../../core/ui/iconos.js?v=c9a2c01';
+import { boton } from '../../../core/ui/tabla.js?v=c9a2c01';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=c9a2c01';
+import { avisar } from '../../../core/ui/aviso.js?v=c9a2c01';
+import { cargarBase, olvidarBase } from '../datos.js?v=c9a2c01';
+import { hoyISO, sumarDias } from '../../../core/ui/formato.js?v=c9a2c01';
+import { fichaTercero } from '../../terceros/formulario.js?v=c9a2c01';
 
 export default async function vista(ctx) {
   const [base, fae] = await Promise.all([cargarBase(ctx),

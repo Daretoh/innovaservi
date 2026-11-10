@@ -2,10 +2,10 @@
 // información de pago, totales, firma, contactos y sello de ISgestión):
 // - Resumen del período (cierre mensual)
 // - Estado de cuenta (cuenta corriente)
-import { cargarJsPdf, cargarLogo, rgb, sellar } from '../../core/pdf.js?v=96d87cf';
-import { nombreEmpresa } from '../../core/empresas.js?v=96d87cf';
-import { cargarConfig } from '../cotizaciones/datos.js?v=96d87cf';
-import { numeroTexto, verPatente, nombreMesLargo, nombreMedio, totalCotizacion, totalesCierre } from './datos.js?v=96d87cf';
+import { cargarJsPdf, cargarLogo, rgb, sellar } from '../../core/pdf.js?v=c9a2c01';
+import { nombreEmpresa } from '../../core/empresas.js?v=c9a2c01';
+import { cargarConfig } from '../cotizaciones/datos.js?v=c9a2c01';
+import { numeroTexto, verPatente, nombreMesLargo, nombreMedio, totalCotizacion, totalesCierre } from './datos.js?v=c9a2c01';
 
 const M = 15;
 const TEXTO = [28, 35, 48];
@@ -95,7 +95,7 @@ export async function pdfCierre(ctx, c, lineas, cliente, nota) {
   const vivas = lineas.filter((l) => !l.excluida).sort((a, b) => a.orden - b.orden);
   const t = totalesCierre(c, lineas);
   const p = await base(ctx, {
-    etiqueta: c.numero ? 'N° CIERRE' : 'BORRADOR', numero: c.numero ? numeroTexto(c.numero) : 'SIN EMITIR',
+    etiqueta: c.numero ? 'CIERRE' : 'BORRADOR', numero: c.numero ? nombreMesLargo(c.mes).toUpperCase() : 'SIN EMITIR',
     lineas: [`Período: ${nombreMesLargo(c.mes)}`, `Fecha: ${fecha(c.emitido_at ? c.emitido_at.slice(0, 10) : hoy())}`],
     cliente,
     filasCaja: [['Empresa', cliente?.razon_social], ['RUT', cliente?.rut], ['Período', nombreMesLargo(c.mes)], ['Líneas', String(vivas.length)],
@@ -110,7 +110,7 @@ export async function pdfCierre(ctx, c, lineas, cliente, nota) {
   });
   const filas = c.afecto_iva ? [['Neto', pesos(t.neto)], ['IVA 19 %', pesos(t.iva)]] : [['Neto', pesos(t.neto)]];
   cierrePdf(p, filas, ['TOTAL A PAGAR', pesos(t.total)], nota || 'Cierre mensual de servicios. Los valores corresponden a los servicios realizados en el período indicado.');
-  return sellar(p.doc, { autor: p.e.razon_social, titulo: `Cierre ${nombreMesLargo(c.mes)}${c.numero ? ` N° ${numeroTexto(c.numero)}` : ''}` });
+  return sellar(p.doc, { autor: p.e.razon_social, titulo: `Cierre ${nombreMesLargo(c.mes)}` });
 }
 
 // ---- Estado de cuenta (cuenta corriente)

@@ -1,17 +1,18 @@
 // Cierres: lista general de todos los meses y clientes, con filtros (2026-11-09, antes era una pantalla por mes).
 // Si el cierre generó una cotización, sus montos y estado son los de la cotización.
-import { el } from '../../../core/ui/dom.js?v=96d87cf';
-import { listado, boton } from '../../../core/ui/tabla.js?v=96d87cf';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=96d87cf';
-import { dinero, hoyISO } from '../../../core/ui/formato.js?v=96d87cf';
-import { nombreTercero, nombreEstado, CHIP_ESTADO, numeroTexto, nombreMesLargo, IVA } from '../datos.js?v=96d87cf';
-import { totales, nombreEstado as estadoCot, CHIP_ESTADO as CHIP_COT } from '../../cotizaciones/datos.js?v=96d87cf';
+import { el } from '../../../core/ui/dom.js?v=c9a2c01';
+import { listado, boton } from '../../../core/ui/tabla.js?v=c9a2c01';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=c9a2c01';
+import { dinero, hoyISO } from '../../../core/ui/formato.js?v=c9a2c01';
+import { nombreTercero, nombreEstado, CHIP_ESTADO, numeroTexto, nombreMesLargo, IVA } from '../datos.js?v=c9a2c01';
+import { totales, nombreEstado as estadoCot, CHIP_ESTADO as CHIP_COT } from '../../cotizaciones/datos.js?v=c9a2c01';
 
 const filtro = { grupo: 'todos', cliente: '', anio: '' };
-const GRUPOS = [['todos', 'Todos'], ['borrador', 'Borrador'], ['proceso', 'Por cobrar'], ['cobrado', 'Cobrados']];
+const GRUPOS = [['todos', 'Todos'], ['borrador', 'Borrador'], ['proceso', 'Por cobrar'], ['cobrado', 'Cobrados'], ['anulado', 'Anulados']];
 
 const cotViva = (c) => (c.cot_cotizaciones && !c.cot_cotizaciones.deleted_at ? c.cot_cotizaciones : null);
 const grupoDe = (c) => {
+  if (c.estado === 'anulado') return 'anulado';
   const q = cotViva(c);
   if (q) return q.cobro_fecha ? 'cobrado' : 'proceso';
   return c.estado === 'borrador' ? 'borrador' : c.estado === 'cobrado' ? 'cobrado' : 'proceso';
@@ -84,7 +85,7 @@ export default async function vista(ctx) {
       { titulo: 'Neto', valor: (c) => dinero(c.m.neto) },
       { titulo: 'IVA', valor: (c) => dinero(c.m.iva) },
       { titulo: 'Total', valor: (c) => el('strong', {}, dinero(c.m.total)) },
-      { titulo: 'Documento', valor: (c) => (c.q ? el('a', { href: ctx.ruta('cotizaciones.editor', { id: c.q.id }) }, `Cotización N° ${numeroTexto(c.q.numero)}`) : c.numero ? `Cierre N° ${numeroTexto(c.numero)}` : el('span', { class: 'texto-suave' }, 'Sin documento')) },
+      { titulo: 'Documento', valor: (c) => (c.q ? el('a', { href: ctx.ruta('cotizaciones.editor', { id: c.q.id }) }, `Cotización N° ${numeroTexto(c.q.numero)}`) : c.numero ? `Cierre ${nombreMesLargo(c.mes).toLowerCase()}` : el('span', { class: 'texto-suave' }, 'Sin documento')) },
       { titulo: 'Estado', valor: (c) => (c.q ? el('span', { class: `chip ${c.q.cobro_fecha ? 'chip-ok' : CHIP_COT[c.q.estado]}` }, c.q.cobro_fecha ? 'Cobrada' : estadoCot[c.q.estado]) : el('span', { class: `chip ${CHIP_ESTADO[c.estado]}` }, nombreEstado[c.estado])) },
     ],
   });

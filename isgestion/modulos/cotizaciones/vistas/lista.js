@@ -1,13 +1,13 @@
 // Cotizaciones: listado con filtro por estado y búsqueda; nueva cotización. Cada fila dice quién la creó y quién la
 // editó por última vez (como el OS; updated_by lo pone la base).
-import { el } from '../../../core/ui/dom.js?v=96d87cf';
-import { listado, boton } from '../../../core/ui/tabla.js?v=96d87cf';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=96d87cf';
-import { dinero, fechaLarga, fechaCorta, hoyISO, diaLocal, nombrePropio } from '../../../core/ui/formato.js?v=96d87cf';
-import { avance, colorAvance } from '../../taller/seguimiento.js?v=96d87cf';
-import { nombreEstado as estadoOrden } from '../../taller/datos.js?v=96d87cf';
-import { costosDeGrupos, costoFuera, sinRepetir, yaTraidos } from '../costos-orden.js?v=96d87cf';
-import { ESTADOS, nombreEstado, CHIP_ESTADO, SELECT_COT, totales, costoLinea, numeroTexto, nombreTercero, verPatente, siguienteNumero, cargarConfig, datosCliente } from '../datos.js?v=96d87cf';
+import { el } from '../../../core/ui/dom.js?v=c9a2c01';
+import { listado, boton } from '../../../core/ui/tabla.js?v=c9a2c01';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=c9a2c01';
+import { dinero, fechaLarga, fechaCorta, hoyISO, diaLocal, nombrePropio } from '../../../core/ui/formato.js?v=c9a2c01';
+import { avance, colorAvance } from '../../taller/seguimiento.js?v=c9a2c01';
+import { nombreEstado as estadoOrden } from '../../taller/datos.js?v=c9a2c01';
+import { costosDeGrupos, costoFuera, sinRepetir, yaTraidos } from '../costos-orden.js?v=c9a2c01';
+import { ESTADOS, nombreEstado, CHIP_ESTADO, SELECT_COT, totales, costoLinea, numeroTexto, nombreTercero, verPatente, siguienteNumero, cargarConfig, datosCliente } from '../datos.js?v=c9a2c01';
 
 const filtro = { estado: 'todas', buscar: '' };
 
@@ -19,7 +19,10 @@ export default async function vista(ctx) {
   const quien = new Map((us.data ?? []).map((u) => [u.user_id, u.nombre]));
   // N° de la cotización de la que nace (copiada o dividida); si no está en la página, se busca
   const numeroDe = new Map(data.map((c) => [c.id, numeroTexto(c.numero)]));
-  const faltan = [...new Set(data.map((c) => c.origen_id).filter((id) => id && !numeroDe.has(id)))];
+  const faltan = [...new Set(data.flatMap((c) => [c.origen_id, c.madre_id]).filter((id) => id && !numeroDe.has(id)))];
+  // Cotización del mes (009): cuántas hijas junta; las hijas no suman (su monto está en la madre)
+  const nHijas = new Map();
+  for (const c of data) if (c.madre_id) nHijas.set(c.madre_id, (nHijas.get(c.madre_id) ?? 0) + 1);
   if (faltan.length) for (const o of (await ctx.api.from('cot_cotizaciones').select('id, numero').in('id', faltan)).data ?? []) numeroDe.set(o.id, numeroTexto(o.numero));
   const extra = await avanceYGastos(ctx, data);
   const b = filtro.buscar.trim().toLowerCase();
@@ -44,6 +47,8 @@ export default async function vista(ctx) {
       { titulo: 'Cliente', valor: (c) => c.cliente_nombre ?? '' },
       { titulo: 'Detalle', valor: (c) => el('span', {}, c.cot_grupos.map((g) => [g.titulo, verPatente(g.patente)].filter(Boolean).join(' · ')).join(', '),
         c.origen_id ? el('span', { class: 'texto-chico texto-suave' }, el('br'), `Nace de la N° ${numeroDe.get(c.origen_id) ?? '…'}`) : null,
+        c.madre_id ? el('span', { class: 'texto-chico texto-suave' }, el('br'), `Dentro de la N° ${numeroDe.get(c.madre_id) ?? '…'}: se cobra allá`) : null,
+        nHijas.get(c.id) ? el('span', { class: 'texto-chico texto-suave' }, el('br'), `${c.notas?.startsWith('Cierre ') ? `${c.notas} · ` : ''}junta ${nHijas.get(c.id)} cotizaciones`) : null,
         barraTaller(extra.taller(c)),
         extra.costo(c) ? el('span', { class: 'texto-chico cot-lista-gastos', title: 'Costo interno, el mismo que se ve dentro de la cotización con su detalle.' }, `Costos ${dinero(extra.costo(c))}`) : null) },
       { titulo: 'Estado', valor: (c) => el('span', { class: `chip ${CHIP_ESTADO[c.estado]}` }, nombreEstado[c.estado]) },
@@ -55,7 +60,7 @@ export default async function vista(ctx) {
     ],
   });
   if (filas.length) {
-    const suma = (est) => filas.filter((c) => c.estado === est).reduce((s, c) => s + c.t.total, 0);
+    const suma = (est) => filas.filter((c) => c.estado === est && !c.madre_id).reduce((s, c) => s + c.t.total, 0);
     lista.insertBefore(el('div', { class: 'resumen-chips' },
       el('span', { class: 'chip chip-prox' }, `Enviadas ${dinero(suma('enviada'))}`),
       el('span', { class: 'chip chip-ok' }, `Aceptadas ${dinero(suma('aceptada'))}`),

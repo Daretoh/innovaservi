@@ -1,12 +1,12 @@
 // Datos compartidos de Cierres y cuentas.
-import { el } from '../../core/ui/dom.js?v=96d87cf';
-import { abrirFormulario } from '../../core/ui/modal.js?v=96d87cf';
-import { avisar } from '../../core/ui/aviso.js?v=96d87cf';
-import { dinero, fechaLarga, diaLocal } from '../../core/ui/formato.js?v=96d87cf';
+import { el } from '../../core/ui/dom.js?v=c9a2c01';
+import { abrirFormulario } from '../../core/ui/modal.js?v=c9a2c01';
+import { avisar } from '../../core/ui/aviso.js?v=c9a2c01';
+import { dinero, fechaLarga, diaLocal } from '../../core/ui/formato.js?v=c9a2c01';
 
 export const ESTADOS = [['borrador', 'Borrador'], ['emitido', 'Emitido'], ['oc', 'OC recibida'], ['facturado', 'Facturado'], ['cobrado', 'Cobrado']];
-export const nombreEstado = Object.fromEntries(ESTADOS);
-export const CHIP_ESTADO = { borrador: 'chip-pend', emitido: 'chip-prox', oc: 'chip-prox', facturado: 'chip-venc', cobrado: 'chip-ok' };
+export const nombreEstado = { ...Object.fromEntries(ESTADOS), anulado: 'Anulado' };
+export const CHIP_ESTADO = { borrador: 'chip-pend', emitido: 'chip-prox', oc: 'chip-prox', facturado: 'chip-venc', cobrado: 'chip-ok', anulado: 'chip-na' };
 export const indiceEstado = (e) => ESTADOS.findIndex(([k]) => k === e);
 export const MEDIOS = [['transferencia', 'Transferencia'], ['efectivo', 'Efectivo'], ['cheque', 'Cheque'], ['debito', 'Débito'], ['credito', 'Crédito'], ['otro', 'Otro']];
 export const nombreMedio = Object.fromEntries(MEDIOS);
@@ -60,7 +60,7 @@ const TABLA = { cie_cierres: 'Cierre', cie_lineas: 'Línea', cie_cuentas: 'Cuent
 const ACCION = { insert: 'agregó', update: 'cambió', delete: 'quitó' };
 function describir(h) {
   const d = h.despues ?? {}, a = h.antes ?? {};
-  if (h.tabla === 'cie_cierres' && d.estado !== a.estado) return `pasó a ${nombreEstado[d.estado] ?? d.estado}${d.numero && !a.numero ? ` (N° ${d.numero})` : ''}`;
+  if (h.tabla === 'cie_cierres' && d.estado !== a.estado) return `pasó a ${nombreEstado[d.estado] ?? d.estado}`;
   if (h.tabla === 'cie_lineas') return `${ACCION[h.accion]} ${d.descripcion || a.descripcion || 'línea'}${d.excluida && !a.excluida ? ' (excluida)' : ''}`;
   if (h.tabla === 'cie_abonos') return d.deleted_at && !a.deleted_at ? `anuló abono de ${dinero(d.monto)}` : `${ACCION[h.accion]} abono de ${dinero(d.monto ?? a.monto)}`;
   if (h.tabla === 'cie_cuentas' && d.estado !== a.estado) return d.estado === 'cerrada' ? 'cerró la cuenta' : 'reabrió la cuenta';

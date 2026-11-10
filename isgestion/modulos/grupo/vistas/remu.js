@@ -1,6 +1,6 @@
 // Grupo → Cierre de remuneraciones: el cierre del mes de todas las empresas con Remuneraciones (modulos/remu/cierre.js).
-import { vistaCierre } from '../../remu/cierre.js?v=96d87cf';
-import { empresasCon } from '../empresas.js?v=96d87cf';
+import { vistaCierre } from '../../remu/cierre.js?v=c9a2c01';
+import { empresasCon } from '../empresas.js?v=c9a2c01';
 
 export default function vista(ctx) {
   return vistaCierre(ctx, { empresas: empresasCon(ctx, 'remu'), titulo: 'Cierre de remuneraciones', grupo: true });

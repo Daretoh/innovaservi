@@ -1,6 +1,6 @@
 // Para Taller: si una orden se cobra en un cierre mensual o en una cuenta corriente (no se cobra sola).
 // Devuelve { texto, ruta, enlace } o null. Requiere permiso de ver Cierres.
-import { nombreMesLargo, numeroTexto, nombreEstado } from './datos.js?v=96d87cf';
+import { nombreMesLargo, numeroTexto, nombreEstado } from './datos.js?v=c9a2c01';
 
 export async function cobroExterno(ctx, o) {
   if (!ctx.puede('cierres', 'ver')) return null;
@@ -14,7 +14,7 @@ export async function cobroExterno(ctx, o) {
     return { texto: `Se cobra con la cotización N° ${numeroTexto(c.cot_cotizaciones.numero)}, del cierre de ${nombreMesLargo(c.mes)}.`, ruta: ctx.ruta('cotizaciones.editor', { id: c.cot_cotizaciones.id }), enlace: 'Ver cotización' };
   }
   if (c) {
-    return { texto: `Se cobra en el cierre de ${nombreMesLargo(c.mes)}${c.numero ? ` (N° ${numeroTexto(c.numero)})` : ''}, ${nombreEstado[c.estado].toLowerCase()}.`, ruta: ctx.ruta('cierres.cierre', { id: c.id }), enlace: 'Ver cierre' };
+    return { texto: `Se cobra en el cierre de ${nombreMesLargo(c.mes)}, ${nombreEstado[c.estado].toLowerCase()}.`, ruta: ctx.ruta('cierres.cierre', { id: c.id }), enlace: 'Ver cierre' };
   }
   const cots = (grp.data ?? []).map((g) => g.cotizacion_id);
   if (cots.length) {
