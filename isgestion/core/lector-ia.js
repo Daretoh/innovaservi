@@ -46,7 +46,7 @@ export async function leerVencConIA(api, { empresaId, modulo, fuentes }) {
       partes.push({ mime: 'application/pdf', data: await aBase64(blob) });
     } else if (blob.type.startsWith('image/') || esImagen(blob)) {
       const j = await comprimirFoto(blob, 1800);
-      if (/^image/(jpeg|png|webp)$/.test(j.type)) partes.push({ mime: j.type, data: await aBase64(j) });
+      if (/^image\/(jpeg|png|webp)$/.test(j.type)) partes.push({ mime: j.type, data: await aBase64(j) });
     }
   }
   if (!partes.length) throw new Error('La IA lee fotos o PDF');
