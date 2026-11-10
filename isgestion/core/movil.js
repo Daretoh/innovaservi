@@ -5,16 +5,17 @@
 // Cada módulo puede declarar en su manifiesto `movil`:
 //   accesos: [{ id: 'taller.tablero', label: 'Taller', icono: 'auto' }, …]   pestañas de la barra (si la ruta existe)
 //   accion:  { label, icono, requiere: 'crear', abrir: (ctx) => … }           el botón "+" del centro
+//   extra:   [{ label, icono, requiere: [modulo, accion], ruta, abrir }]   opciones que se suman al abanico del "+"
 //   o con abanico: { label, opciones: [{ label, icono, requiere: [modulo, accion], ruta, abrir }, …] }: tocar o mantener el "+"
 //   abre en abanico las opciones que el usuario puede usar (mantener y arrastrar hacia una la elige; un toque abre y otro
 //   elige); si queda una sola, la abre directo. Con 3 son tres direcciones; con más, el arco se abre y luego suma otra vuelta.
 // Sin accesos declarados, la barra usa los primeros apartados del menú. Siempre: Inicio al principio y Más al final.
-import { el } from './ui/dom.js?v=6d3f615';
-import { icono } from './ui/iconos.js?v=6d3f615';
-import { urlFirmada } from './adjuntos.js?v=6d3f615';
-import { nombreEmpresa } from './empresas.js?v=6d3f615';
-import { avisar } from './ui/aviso.js?v=6d3f615';
-import { guardarLogoAviso } from './push.js?v=6d3f615';
+import { el } from './ui/dom.js?v=36a65ad';
+import { icono } from './ui/iconos.js?v=36a65ad';
+import { urlFirmada } from './adjuntos.js?v=36a65ad';
+import { nombreEmpresa } from './empresas.js?v=36a65ad';
+import { avisar } from './ui/aviso.js?v=36a65ad';
+import { guardarLogoAviso } from './push.js?v=36a65ad';
 
 const MAX_ACCESOS = 2;
 
@@ -31,7 +32,12 @@ export function barraMovil({ visibles, apartados, rutas, puede, ctx }) {
     accesos = [...apartados.grupos.values()].flat().map((ap) => ({ id: ap.items[0].id, label: ap.items.length > 1 ? ap.label : ap.items[0].label, icono: ap.icono ?? ap.items[0].modulo?.icono ?? 'lista' }));
   }
   accesos = accesos.slice(0, MAX_ACCESOS);
-  const accion = visibles.map((m) => accionDe(m, { puede, rutas })).find(Boolean);
+  let accion = visibles.map((m) => accionDe(m, { puede, rutas })).find(Boolean);
+  // Opciones que otros módulos suman al abanico del "+" (movil.extra; p. ej. Escanear documentos de Costos, 2026-11-10).
+  // Se suman a un "+" con abanico o hacen de "+" si no hay; un "+" de una sola acción (Taller) no cambia.
+  const extras = visibles.flatMap((m) => (m.movil?.extra ?? []).filter((o) => puede(...o.requiere) && (!o.ruta || rutas.has(o.ruta))));
+  if (extras.length && !accion) accion = extras.length === 1 ? { ...extras[0] } : { label: 'Agregar', icono: 'mas', opciones: extras };
+  else if (extras.length && accion.opciones) accion = { ...accion, opciones: [...accion.opciones, ...extras] };
 
   const pestana = (href, ic, texto, vista) => {
     const a = el('a', { class: 'bm-item', href }, icono(ic, { tam: 24 }), el('span', {}, texto));

@@ -1,7 +1,7 @@
 // Registro de horas (PC): copiar el horario de una fila a otras, como el cuadrito de relleno de una planilla.
 // Arrastrar el cuadrito hacia arriba o abajo marca las filas de la misma faena y al soltar les copia la entrada y la salida;
 // un clic sin arrastrar abre la lista del día para elegir a quiénes (Enzo, 2026-11-09).
-import { abrirFormulario } from '../../../core/ui/modal.js?v=6d3f615';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=36a65ad';
 
 // opciones: filas() → filas de esta tabla en orden; delDia() → todas las filas del día; nombre(x); aplicar(entrada, salida, destinos)
 // Cada fila es { r, nueva, tr, campos } (campos.entrada / campos.salida son los inputs).

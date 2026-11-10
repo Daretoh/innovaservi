@@ -9,18 +9,18 @@
 // Bandeja "Por cargar" (Costos 008, 2026-11-10): con ?bandeja=<id> abre un documento ya subido a la bandeja, lo lee
 // igual y al registrar lo marca registrado y sigue con el siguiente pendiente (Saltar / Descartar de la bandeja).
 // Ruta: #/costos.lector · #/costos.lector?bandeja=<id>
-import { el } from '../../../core/ui/dom.js?v=6d3f615';
-import { icono } from '../../../core/ui/iconos.js?v=6d3f615';
-import { boton } from '../../../core/ui/tabla.js?v=6d3f615';
-import { avisar } from '../../../core/ui/aviso.js?v=6d3f615';
-import { subirArchivo, almacen, urlFirmada } from '../../../core/adjuntos.js?v=6d3f615';
-import { pendientesBandeja, descartarDeBandeja } from './bandeja.js?v=6d3f615';
-import { dinero, hoyISO, sumarDias, fechaLarga, lunesDe } from '../../../core/ui/formato.js?v=6d3f615';
-import { TIPOS_DTE, docTipoDe, CAMPOS_DTE, leerParte, combinar, validar, escanearCamara, aJPEG, fmtRut, limpioRut, rutValido, num } from '../../../core/lector-dte.js?v=6d3f615';
-import { cargarBase, nombreTercero, opcionesACuenta } from '../datos.js?v=6d3f615';
-import { leerConIA, iaDisponible, numIA, fechaIA, pagadoAlComprar, textoModelo } from '../../../core/lector-ia.js?v=6d3f615';
-import { esImagen } from '../../../core/imagenes.js?v=6d3f615';
-import { tomarFotos } from '../../../core/ui/camara.js?v=6d3f615';
+import { el } from '../../../core/ui/dom.js?v=36a65ad';
+import { icono } from '../../../core/ui/iconos.js?v=36a65ad';
+import { boton } from '../../../core/ui/tabla.js?v=36a65ad';
+import { avisar } from '../../../core/ui/aviso.js?v=36a65ad';
+import { subirArchivo, almacen, urlFirmada } from '../../../core/adjuntos.js?v=36a65ad';
+import { pendientesBandeja, descartarDeBandeja } from './bandeja.js?v=36a65ad';
+import { dinero, hoyISO, sumarDias, fechaLarga, lunesDe } from '../../../core/ui/formato.js?v=36a65ad';
+import { TIPOS_DTE, docTipoDe, CAMPOS_DTE, leerParte, combinar, validar, escanearCamara, aJPEG, fmtRut, limpioRut, rutValido, num } from '../../../core/lector-dte.js?v=36a65ad';
+import { cargarBase, nombreTercero, opcionesACuenta } from '../datos.js?v=36a65ad';
+import { leerConIA, iaDisponible, numIA, fechaIA, pagadoAlComprar, textoModelo } from '../../../core/lector-ia.js?v=36a65ad';
+import { esImagen } from '../../../core/imagenes.js?v=36a65ad';
+import { tomarFotos } from '../../../core/ui/camara.js?v=36a65ad';
 
 const ETIQUETA = { timbre: ['Timbre SII', 'chip-ok'], xml: ['XML', 'chip-ok'], ia: ['IA', 'chip-ok'], ocr: ['Revisar', 'chip-prox'], calc: ['Calculado', 'chip-pend'] };
 

@@ -3,14 +3,14 @@
 // (Costos 008) con su archivo en R2 (<empresa>/costos/…). "Cargar" abre el lector con la foto ya puesta; al registrar
 // el gasto la foto pasa a ser su archivo y el lector sigue con la siguiente de la bandeja.
 // Ruta: #/costos.bandeja
-import { el } from '../../../core/ui/dom.js?v=6d3f615';
-import { icono } from '../../../core/ui/iconos.js?v=6d3f615';
-import { boton } from '../../../core/ui/tabla.js?v=6d3f615';
-import { avisar } from '../../../core/ui/aviso.js?v=6d3f615';
-import { subirArchivo, urlsFirmadas, eliminarArchivo } from '../../../core/adjuntos.js?v=6d3f615';
-import { botonesFotos } from '../../../core/ui/camara.js?v=6d3f615';
-import { comprimirFoto, esImagen, esPdf } from '../../../core/imagenes.js?v=6d3f615';
-import { fechaLarga, diaLocal } from '../../../core/ui/formato.js?v=6d3f615';
+import { el } from '../../../core/ui/dom.js?v=36a65ad';
+import { icono } from '../../../core/ui/iconos.js?v=36a65ad';
+import { boton } from '../../../core/ui/tabla.js?v=36a65ad';
+import { avisar } from '../../../core/ui/aviso.js?v=36a65ad';
+import { subirArchivo, urlsFirmadas, eliminarArchivo } from '../../../core/adjuntos.js?v=36a65ad';
+import { botonesFotos, tomarFotos } from '../../../core/ui/camara.js?v=36a65ad';
+import { comprimirFoto, esImagen, esPdf } from '../../../core/imagenes.js?v=36a65ad';
+import { fechaLarga, diaLocal } from '../../../core/ui/formato.js?v=36a65ad';
 
 // Pendientes de la empresa en orden de llegada (RLS: quien solo carga ve las suyas)
 export const pendientesBandeja = (ctx) => ctx.api.from('fin_bandeja').select('id, ruta, nombre, tipo_mime, nota, created_at, created_by')
@@ -33,6 +33,17 @@ export async function subirABandeja(ctx, archivos, avance = () => {}) {
     } catch (err) { avisar(err.message, 'error'); }
   }
   return ok;
+}
+
+// Desde el "+" del teléfono: abre la cámara, sube las fotos a la bandeja y muestra Por cargar
+export async function escanearABandeja(ctx) {
+  const fotos = await tomarFotos({ titulo: 'Escanear documentos', textoListo: 'Subir' });
+  if (!fotos.length) return;
+  avisar(`Subiendo ${fotos.length === 1 ? '1 documento' : `${fotos.length} documentos`}…`);
+  const ok = await subirABandeja(ctx, fotos);
+  avisar(ok === fotos.length ? `${ok === 1 ? 'Quedó 1 documento' : `Quedaron ${ok} documentos`} por cargar.` : `Se subieron ${ok} de ${fotos.length}.`, ok === fotos.length ? 'ok' : 'error');
+  const destino = ctx.ruta('costos.bandeja');
+  if (location.hash === destino) ctx.refrescar(); else location.hash = destino;
 }
 
 // Saca un documento de la bandeja sin registrarlo (el archivo se borra si se puede)
