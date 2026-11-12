@@ -7,10 +7,10 @@
 // sugerencias (en un campo de texto): lista que aparece al escribir (datalist).
 // alCambiar({ valor, valores, poner(id, valor), opciones(id, [[v, t]]) }) en un campo: se llama al cambiarlo (ej.: elegir un
 // cliente llena su teléfono y sus vehículos). poner en un campo 'checks' marca los valores dados.
-import { el } from './dom.js?v=bdac687';
-import { icono } from './iconos.js?v=bdac687';
-import { boton } from './tabla.js?v=bdac687';
-import { prepararArchivos } from '../imagenes.js?v=bdac687';
+import { el } from './dom.js?v=d222bfb';
+import { icono } from './iconos.js?v=d222bfb';
+import { boton } from './tabla.js?v=d222bfb';
+import { prepararArchivos } from '../imagenes.js?v=d222bfb';
 
 // Si acepta JPEG, también fotos de iPhone (HEIC): se convierten a JPEG al guardar
 const aceptar = (a) => (a && /image\/(jpeg|\*)/.test(a) ? `${a},.heic,.heif,image/heic,image/heif` : a);
@@ -44,9 +44,16 @@ export function abrirFormulario({ titulo, mensaje, campos, textoGuardar = 'Guard
         c.ayuda ? el('span', { class: 'texto-suave texto-chico' }, c.ayuda) : null);
     }
     if (c.tipo === 'textarea') {
-      return el('div', { class: 'form-fila' }, el('label', { for: `f-${c.id}` }, c.etiqueta),
-        Object.assign(el('textarea', { id: `f-${c.id}`, name: c.id, class: 'campo', rows: c.filas ?? 3, required: c.requerido }), { value: c.valor ?? '' }),
-        c.ayuda ? el('span', { class: 'texto-suave texto-chico' }, c.ayuda) : null);
+      const area = Object.assign(el('textarea', { id: `f-${c.id}`, name: c.id, class: 'campo', rows: c.filas ?? 3, required: c.requerido }), { value: c.valor ?? '' });
+      // alCambiar también aquí (al escribir), con estado(texto) bajo el campo
+      const estadoArea = c.alCambiar ? el('span', { class: 'texto-chico campo-accion-estado', 'aria-live': 'polite' }) : null;
+      if (c.alCambiar) {
+        const avisarCambio = () => c.alCambiar({ valor: area.value, estado: (t, clase = '') => { estadoArea.textContent = t; estadoArea.className = `texto-chico campo-accion-estado ${clase ? `estado-${clase}` : ''}`; }, ...ayudantes() });
+        area.addEventListener('input', avisarCambio);   // poner(id, valor) desde otro campo también dispara input
+        queueMicrotask(avisarCambio);
+      }
+      return el('div', { class: 'form-fila' }, el('label', { for: `f-${c.id}` }, c.etiqueta), area,
+        c.ayuda ? el('span', { class: 'texto-suave texto-chico' }, c.ayuda) : null, estadoArea);
     }
     const control = c.opciones
       ? el('select', { id: `f-${c.id}`, name: c.id, class: 'campo', required: c.requerido },

@@ -1,9 +1,9 @@
 // Proveedores: modalidad de pago (por compra o factura mensual) y plazo en días. El plazo da el vencimiento de las
 // facturas por pagar; los de factura mensual avisan "Falta factura" en Pagos.
-import { el } from '../../../core/ui/dom.js?v=bdac687';
-import { listado } from '../../../core/ui/tabla.js?v=bdac687';
-import { avisar } from '../../../core/ui/aviso.js?v=bdac687';
-import { nombreTercero } from '../datos.js?v=bdac687';
+import { el } from '../../../core/ui/dom.js?v=d222bfb';
+import { listado } from '../../../core/ui/tabla.js?v=d222bfb';
+import { avisar } from '../../../core/ui/aviso.js?v=d222bfb';
+import { nombreTercero } from '../datos.js?v=d222bfb';
 
 export default async function vista(ctx) {
   const e = ctx.empresa.id;

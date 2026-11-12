@@ -3,17 +3,20 @@
 // cliente, detalle, estado de pago, neto, IVA y total, y los respaldos (factura, OC, comprobante) con botón para subir
 // lo que falta. Filtros por estado, cliente, año y "sin respaldo"; totales y Excel. La fila abre la factura.
 // Busca también por patente y RUT. Arriba, los vehículos que pidieron factura y falta registrarla (008).
-import { el } from '../../../core/ui/dom.js?v=bdac687';
-import { icono } from '../../../core/ui/iconos.js?v=bdac687';
-import { boton } from '../../../core/ui/tabla.js?v=bdac687';
-import { avisar } from '../../../core/ui/aviso.js?v=bdac687';
-import { dinero, fechaLarga, hoyISO, diaLocal } from '../../../core/ui/formato.js?v=bdac687';
-import { normalizar } from '../../../core/ui/combo.js?v=bdac687';
-import { urlFirmada } from '../../../core/adjuntos.js?v=bdac687';
-import { numeroTexto, nombreTercero, verPatente, IVA } from '../datos.js?v=bdac687';
-import { totales } from '../../taller/datos.js?v=bdac687';
-import { ordenesExternas } from '../../taller/vistas/cobros.js?v=bdac687';
-import { estadoPago, ESTADOS_PAGO, RESPALDOS, formFactura, formPago, anularPago, eliminarFactura, subirRespaldo } from '../facturas.js?v=bdac687';
+import { el } from '../../../core/ui/dom.js?v=d222bfb';
+import { icono } from '../../../core/ui/iconos.js?v=d222bfb';
+import { boton } from '../../../core/ui/tabla.js?v=d222bfb';
+import { avisar } from '../../../core/ui/aviso.js?v=d222bfb';
+import { dinero, fechaLarga, hoyISO, diaLocal } from '../../../core/ui/formato.js?v=d222bfb';
+import { normalizar } from '../../../core/ui/combo.js?v=d222bfb';
+import { urlFirmada } from '../../../core/adjuntos.js?v=d222bfb';
+import { numeroTexto, nombreTercero, verPatente, IVA } from '../datos.js?v=d222bfb';
+import { totales } from '../../taller/datos.js?v=d222bfb';
+import { ordenesExternas } from '../../taller/vistas/cobros.js?v=d222bfb';
+import { estadoPago, ESTADOS_PAGO, RESPALDOS, formFactura, formPago, anularPago, eliminarFactura, subirRespaldo } from '../facturas.js?v=d222bfb';
+import { formEmitir, anularConNota } from '../emitir.js?v=d222bfb';
+import { panelEmitidas } from '../emitidas.js?v=d222bfb';
+import { NOMBRE_DTE } from '../../../core/dte.js?v=d222bfb';
 
 const filtro = { estado: 'todas', cliente: '', anio: '', sinRespaldo: false, buscar: '' };
 const fecha = (d) => (d ? fechaLarga(d) : '');
@@ -32,11 +35,17 @@ export default async function vista(ctx) {
     // Cotizaciones enviadas o aceptadas (para ligar una factura nueva y mostrar su N°)
     ctx.api.from('cot_cotizaciones').select('*, cot_grupos(*), cot_lineas(*)').eq('empresa_id', e).is('deleted_at', null).is('madre_id', null).in('estado', ['enviada', 'aceptada'])
       .order('numero', { ascending: false }).limit(1000),
-    ctx.api.from('terceros').select('id, razon_social, nombre_fantasia, rut').eq('empresa_id', e).is('deleted_at', null).contains('tipo', ['cliente']).order('razon_social').limit(5000),
+    ctx.api.from('terceros').select('id, razon_social, nombre_fantasia, rut, giro, direccion').eq('empresa_id', e).is('deleted_at', null).contains('tipo', ['cliente']).order('razon_social').limit(5000),
     verTaller ? ctx.api.from('tal_ordenes').select(SELECT_OT).eq('empresa_id', e).eq('cobrado', false).eq('tipo_venta', 'normal').in('estado', ['espera', 'proceso', 'terminado', 'entregado']).order('numero', { ascending: false }).limit(500) : Promise.resolve({ data: [] }),
   ]);
   if (rf.error) throw rf.error;
   if (rc.error) throw rc.error;
+  // Documentos emitidos desde ISgestión con OpenFactura (Núcleo 021): facturas, notas de crédito y pruebas
+  const { data: dtes } = await ctx.api.from('dte_documentos').select('id, prueba, tipo, folio, estado, error, fecha, razon_social, total, pdf_ruta, xml_ruta, cot_factura_id, created_at')
+    .eq('empresa_id', e).eq('sentido', 'emitido').eq('origen', 'isgestion').order('created_at', { ascending: false }).limit(500);
+  const dteDe = new Map((dtes ?? []).filter((d) => !d.prueba && [33, 34].includes(d.tipo) && d.cot_factura_id && d.estado !== 'anulado').map((d) => [d.cot_factura_id, d]));
+  const sueltas = (dtes ?? []).filter((d) => !d.prueba && [33, 34].includes(d.tipo) && d.estado === 'emitido' && !d.cot_factura_id);
+  const pruebas = (dtes ?? []).filter((d) => d.prueba && d.estado !== 'pendiente').slice(0, 8);
   const facturas = rf.data.map((f) => ({ ...f, estado: estadoPago(f, hoy) }));
   const cots = rc.data ?? [];
   const numCot = new Map(cots.map((c) => [c.id, c]));
@@ -113,8 +122,14 @@ export default async function vista(ctx) {
       o ? el('a', { class: 'fac-orden', href: ctx.ruta('taller.orden', { id: o.id }), onclick: (ev) => ev.stopPropagation(), title: 'Ver la orden' }, `${verPatente(o.tal_vehiculos?.patente) || 'S/P'} · N° ${o.numero}`) : null,
       f.detalle ? el('span', { class: 'fac-detalle', title: f.detalle }, f.detalle) : null);
   };
+  const celdaNumero = (f) => {
+    const d = dteDe.get(f.id);
+    return el('td', {}, el('strong', {}, f.numero),
+      d ? el('span', { class: 'chip chip-ok fac-sii', title: 'Emitida en el SII desde ISgestión' }, 'SII') : null,
+      d?.xml_ruta ? el('button', { type: 'button', class: 'fac-respaldo fac-ok', title: 'Ver el XML del SII', onclick: (ev) => { ev.stopPropagation(); verArchivo(d.xml_ruta); } }, 'XML') : null);
+  };
   const fila = (f) => el('tr', { class: `fila-enlace fac-${f.estado}`, title: editar ? 'Abrir factura' : null, onclick: () => abrir(f) },
-    el('td', {}, el('strong', {}, f.numero)), el('td', {}, cot(f)),
+    celdaNumero(f), el('td', {}, cot(f)),
     el('td', { class: 'fac-fecha' }, fecha(f.fecha_emision)), el('td', { class: 'fac-fecha' }, fecha(f.fecha_pago_estimada)),
     el('td', { class: `fac-fecha${f.fecha_pago ? ' fac-pagado' : ''}` }, f.fecha_pago ? fecha(f.fecha_pago) : el('span', { class: 'texto-suave' }, '—')),
     el('td', { class: 'fac-fecha' }, fecha(f.fecha_ejecucion)),
@@ -141,8 +156,27 @@ export default async function vista(ctx) {
       lista.map((o) => el('div', { class: 'doc-fila' },
         el('span', { class: 'doc-nombre' }, el('strong', {}, `${verPatente(o.patente) || 'S/P'} · ${o.auto || 'Vehículo'}`),
           el('span', { class: 'texto-suave texto-chico' }, `${o.cliente} · N° ${o.numero} · ${dinero(o.total)} con IVA · ${o.estado === 'entregado' ? 'Ya entregado' : 'No se entrega hasta el pago'}`)),
-        crear ? boton('Registrar factura', { icono: 'mas', onclick: () => formFactura(ctx, { orden: o, cotizaciones: porFacturar, clientes, ordenes, alGuardar: refrescar }) }) : null)));
+        crear ? el('div', { class: 'listado-acciones' },
+          boton('Emitir factura', { icono: 'documento', tipo: 'primario', onclick: () => formEmitir(ctx, { orden: o, cotizaciones: porFacturar, clientes, ordenes, alGuardar: refrescar }) }),
+          boton('Registrar a mano', { icono: 'mas', onclick: () => formFactura(ctx, { orden: o, cotizaciones: porFacturar, clientes, ordenes, alGuardar: refrescar }) })) : null)));
   };
+
+  // Emitidas en el SII que no quedaron en Facturas (se cortó algo al registrar) y últimas pruebas
+  const verDoc = (d) => (d.pdf_ruta ? boton('PDF', { icono: 'documento', class: 'boton boton-secundario boton-chico', onclick: () => verArchivo(d.pdf_ruta) }) : null);
+  const bandaDte = () => [
+    sueltas.length ? el('div', { class: 'ficha doc-grupo' },
+      el('h2', {}, `Emitidas en el SII sin registrar en Facturas (${sueltas.length})`),
+      el('p', { class: 'texto-suave texto-chico' }, 'Regístralas con "Registrar a mano" usando el mismo número y sube el PDF.'),
+      sueltas.map((d) => el('div', { class: 'doc-fila' }, el('span', { class: 'doc-nombre' }, el('strong', {}, `${NOMBRE_DTE[d.tipo]} N° ${d.folio}`),
+        el('span', { class: 'texto-suave texto-chico' }, `${d.razon_social ?? ''} · ${fecha(d.fecha)} · ${dinero(d.total)}`)), verDoc(d)))) : null,
+    pruebas.length ? el('details', { class: 'ficha doc-grupo dte-pruebas' },
+      el('summary', {}, `Emisiones de prueba (ambiente de desarrollo de OpenFactura, ${pruebas.length})`),
+      el('p', { class: 'texto-suave texto-chico' }, 'Timbre simulado: no valen en el SII y no están en Facturas.'),
+      pruebas.map((d) => el('div', { class: 'doc-fila' }, el('span', { class: 'doc-nombre' }, el('strong', {}, `${NOMBRE_DTE[d.tipo] ?? d.tipo}${d.folio ? ` N° ${d.folio}` : ''}`),
+        el('span', { class: 'texto-suave texto-chico' }, d.estado === 'error' ? `No se emitió: ${d.error ?? ''}` : `${d.razon_social ?? ''} · ${fecha(d.fecha)} · ${dinero(d.total)}${d.estado === 'anulado' ? ' · anulada' : ''}`)),
+        el('div', { class: 'listado-acciones' }, verDoc(d),
+          editar && [33, 34].includes(d.tipo) && d.estado === 'emitido' ? boton('Anular', { class: 'boton boton-secundario boton-chico', onclick: () => anularConNota(ctx, { numero: d.folio, total: d.total }, d, { alGuardar: refrescar }) }) : null)))) : null,
+  ].filter(Boolean);
 
   // Lo que cambia con los filtros se repinta sin recargar ni perder el cursor del buscador
   const zona = el('div', { class: 'fac-zona' });
@@ -166,7 +200,7 @@ export default async function vista(ctx) {
   };
   function pintar() {
     const { base, filas } = calcular();
-    zona.replaceChildren(...[bandaPedidas(), el('div', { class: 'fac-estados' }, segmentoDe(base), resumenDe(base)), tablaDe(filas)].filter(Boolean));
+    zona.replaceChildren(...[bandaPedidas(), ...bandaDte(),el('div', { class: 'fac-estados' }, segmentoDe(base), resumenDe(base)), tablaDe(filas)].filter(Boolean));
   }
 
   const sel = (opciones, valor, etiqueta, al) => { const s = el('select', { class: 'campo campo-filtro', 'aria-label': etiqueta }, opciones.map(([v, t]) => el('option', { value: v, selected: v === valor }, t))); s.addEventListener('change', () => al(s.value)); return s; };
@@ -178,7 +212,7 @@ export default async function vista(ctx) {
     const btn = ev.currentTarget; btn.disabled = true;
     const { filas } = calcular();
     try {
-      const { exportarExcel } = await import('../../../core/excel.js?v=bdac687');
+      const { exportarExcel } = await import('../../../core/excel.js?v=d222bfb');
       await exportarExcel(ctx, {
         titulo: 'Control de facturas', subtitulo: [filtro.anio || 'Todos los años', `${filas.length} facturas`].join(' · '), nombre: 'control-facturas',
         columnas: ['N° factura', 'Cotización', { t: 'Emisión', tipo: 'fecha' }, { t: 'Pago estimado', tipo: 'fecha' }, { t: 'Pago real', tipo: 'fecha' }, { t: 'Ejecución', tipo: 'fecha' },
@@ -196,7 +230,10 @@ export default async function vista(ctx) {
     el('header', { class: 'listado-cabecera' }, el('h1', {}, 'Facturas'),
       el('div', { class: 'listado-acciones' },
         ctx.puede('cotizaciones', 'exportar') && facturas.length ? boton('Excel', { icono: 'descargar', onclick: excel }) : null,
-        crear ? boton('Nueva factura', { icono: 'mas', tipo: 'primario', onclick: () => formFactura(ctx, { cotizaciones: porFacturar, clientes, ordenes, alGuardar: refrescar }) }) : null)),
+        crear ? boton('Registrar a mano', { icono: 'mas', onclick: () => formFactura(ctx, { cotizaciones: porFacturar, clientes, ordenes, alGuardar: refrescar }) }) : null,
+        // Emitir desde ISgestión: para los cierres (las demás las hace la máquina y se traen del SII)
+        crear ? boton('Emitir factura (cierres)', { icono: 'documento', onclick: () => formEmitir(ctx, { cotizaciones: porFacturar, clientes, ordenes, alGuardar: refrescar }) }) : null)),
+    crear ? panelEmitidas(ctx, { cotizaciones: porFacturar, clientes, ordenes, alGuardar: refrescar }) : null,
     el('div', { class: 'listado-acciones fac-filtros' },
       el('label', { class: 'buscador' }, icono('buscar', { tam: 16 }), buscador),
       sel([['', 'Todos los clientes'], ...opcionesCliente], filtro.cliente, 'Cliente', (v) => { filtro.cliente = v; pintar(); }),
@@ -204,18 +241,20 @@ export default async function vista(ctx) {
       el('label', { class: 'casilla' }, el('input', { type: 'checkbox', checked: filtro.sinRespaldo, onchange: (ev) => { filtro.sinRespaldo = ev.target.checked; pintar(); } }), 'Solo con respaldos por subir')),
     zona,
     editar ? el('p', { class: 'texto-suave texto-chico' }, 'Toca una factura para editarla. En Respaldos, lo verde se abre y lo gris con + se sube (la OC solo si tiene número; el comprobante, cuando está pagada).') : null,
-    editar ? el('div', { class: 'listado-acciones' }, ...accionesFila(ctx, facturas, refrescar)) : null);
+    editar ? el('div', { class: 'listado-acciones' }, ...accionesFila(ctx, facturas, refrescar, dteDe)) : null);
 }
 
 // Anular pago y eliminar quedan en un menú aparte (poco frecuentes): se elige la factura por número
-function accionesFila(ctx, facturas, refrescar) {
+function accionesFila(ctx, facturas, refrescar, dteDe) {
   const pagadas = facturas.filter((f) => f.fecha_pago);
-  const elegir = (titulo, lista, accion) => import('../../../core/ui/modal.js?v=bdac687').then(({ abrirFormulario }) => abrirFormulario({
+  const elegir = (titulo, lista, accion) => import('../../../core/ui/modal.js?v=d222bfb').then(({ abrirFormulario }) => abrirFormulario({
     titulo, textoGuardar: 'Seguir', campos: [{ id: 'f', etiqueta: 'Factura', requerido: true, opciones: [['', 'Elegir…'], ...lista.map((f) => [f.id, `N° ${f.numero} · ${f.cliente_nombre ?? ''} · ${dinero(f.total)}`])] }],
     alGuardar: (v) => { const f = lista.find((x) => x.id === v.f); if (f) setTimeout(() => accion(ctx, f, { alGuardar: refrescar }), 50); },
   }));
   return [
     pagadas.length ? boton('Anular un pago', { onclick: () => elegir('Anular un pago', pagadas, anularPago) }) : null,
-    ctx.puede('cotizaciones', 'eliminar') && facturas.length ? boton('Eliminar una factura', { icono: 'basura', onclick: () => elegir('Eliminar una factura', facturas.filter((f) => !f.fecha_pago), eliminarFactura) }) : null,
+    ctx.puede('cotizaciones', 'eliminar') && facturas.length ? boton('Eliminar una factura', { icono: 'basura', onclick: () => elegir('Eliminar una factura', facturas.filter((f) => !f.fecha_pago && !dteDe.has(f.id)), eliminarFactura) }) : null,
+    // Emitidas en el SII: se anulan con nota de crédito (Cotizaciones 010 impide eliminarlas)
+    facturas.some((f) => dteDe.has(f.id) && !f.fecha_pago) ? boton('Anular con nota de crédito', { icono: 'documento', onclick: () => elegir('Anular con nota de crédito', facturas.filter((f) => dteDe.has(f.id) && !f.fecha_pago), (c, f, o) => anularConNota(c, f, dteDe.get(f.id), o)) }) : null,
   ];
 }

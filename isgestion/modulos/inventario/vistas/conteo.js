@@ -1,13 +1,13 @@
 // Conteo físico: se cuenta un almacén y se registra un solo ajuste con las diferencias.
 // Solo cuentan los productos con cantidad escrita. La diferencia se calcula con el stock al momento de
 // registrar (por si hubo movimientos mientras se contaba). El borrador del conteo se guarda en este navegador.
-import { el } from '../../../core/ui/dom.js?v=bdac687';
-import { icono } from '../../../core/ui/iconos.js?v=bdac687';
-import { boton } from '../../../core/ui/tabla.js?v=bdac687';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=bdac687';
-import { avisar } from '../../../core/ui/aviso.js?v=bdac687';
-import { dinero, hoyISO, fechaLarga } from '../../../core/ui/formato.js?v=bdac687';
-import { cargarBase, cargarProductos, cargarStock, registrar, cant } from '../datos.js?v=bdac687';
+import { el } from '../../../core/ui/dom.js?v=d222bfb';
+import { icono } from '../../../core/ui/iconos.js?v=d222bfb';
+import { boton } from '../../../core/ui/tabla.js?v=d222bfb';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=d222bfb';
+import { avisar } from '../../../core/ui/aviso.js?v=d222bfb';
+import { dinero, hoyISO, fechaLarga } from '../../../core/ui/formato.js?v=d222bfb';
+import { cargarBase, cargarProductos, cargarStock, registrar, cant } from '../datos.js?v=d222bfb';
 
 const estado = { almacen: null, buscar: '' };
 const clave = (e, a) => `isg.conteo.${e}.${a}`;

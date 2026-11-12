@@ -9,18 +9,18 @@
 // Bandeja "Por cargar" (Costos 008, 2026-11-10): con ?bandeja=<id> abre un documento ya subido a la bandeja, lo lee
 // igual y al registrar lo marca registrado y sigue con el siguiente pendiente (Saltar / Descartar de la bandeja).
 // Ruta: #/costos.lector · #/costos.lector?bandeja=<id>
-import { el } from '../../../core/ui/dom.js?v=bdac687';
-import { icono } from '../../../core/ui/iconos.js?v=bdac687';
-import { boton } from '../../../core/ui/tabla.js?v=bdac687';
-import { avisar } from '../../../core/ui/aviso.js?v=bdac687';
-import { subirArchivo, almacen, urlFirmada } from '../../../core/adjuntos.js?v=bdac687';
-import { pendientesBandeja, descartarDeBandeja } from './bandeja.js?v=bdac687';
-import { dinero, hoyISO, sumarDias, fechaLarga, lunesDe } from '../../../core/ui/formato.js?v=bdac687';
-import { TIPOS_DTE, docTipoDe, CAMPOS_DTE, leerParte, combinar, validar, escanearCamara, aJPEG, fmtRut, limpioRut, rutValido, num } from '../../../core/lector-dte.js?v=bdac687';
-import { cargarBase, nombreTercero, opcionesACuenta } from '../datos.js?v=bdac687';
-import { leerConIA, iaDisponible, numIA, fechaIA, pagadoAlComprar, textoModelo } from '../../../core/lector-ia.js?v=bdac687';
-import { esImagen } from '../../../core/imagenes.js?v=bdac687';
-import { tomarFotos } from '../../../core/ui/camara.js?v=bdac687';
+import { el } from '../../../core/ui/dom.js?v=d222bfb';
+import { icono } from '../../../core/ui/iconos.js?v=d222bfb';
+import { boton } from '../../../core/ui/tabla.js?v=d222bfb';
+import { avisar } from '../../../core/ui/aviso.js?v=d222bfb';
+import { subirArchivo, almacen, urlFirmada } from '../../../core/adjuntos.js?v=d222bfb';
+import { pendientesBandeja, descartarDeBandeja } from './bandeja.js?v=d222bfb';
+import { dinero, hoyISO, sumarDias, fechaLarga, lunesDe } from '../../../core/ui/formato.js?v=d222bfb';
+import { TIPOS_DTE, docTipoDe, CAMPOS_DTE, leerParte, combinar, validar, escanearCamara, aJPEG, fmtRut, limpioRut, rutValido, num } from '../../../core/lector-dte.js?v=d222bfb';
+import { cargarBase, nombreTercero, opcionesACuenta } from '../datos.js?v=d222bfb';
+import { leerConIA, iaDisponible, numIA, fechaIA, pagadoAlComprar, textoModelo } from '../../../core/lector-ia.js?v=d222bfb';
+import { esImagen } from '../../../core/imagenes.js?v=d222bfb';
+import { tomarFotos } from '../../../core/ui/camara.js?v=d222bfb';
 
 const ETIQUETA = { timbre: ['Timbre SII', 'chip-ok'], xml: ['XML', 'chip-ok'], ia: ['IA', 'chip-ok'], ocr: ['Revisar', 'chip-prox'], calc: ['Calculado', 'chip-pend'] };
 
@@ -90,6 +90,7 @@ export default async function vista(ctx) {
     for (const a of archivos) {
       const p = { id: crypto.randomUUID(), archivo: a, nombre: a.name, estado: 'En cola', thumb: a.type.startsWith('image/') ? URL.createObjectURL(a) : null, ...extra };
       partes.push(p);
+      if (extra.sinLeer) { p.estado = 'PDF del SII'; continue; }   // los datos salen de su XML
       cola = cola.then(async () => {
         if (!partes.includes(p)) return;
         try {
@@ -328,9 +329,15 @@ export default async function vista(ctx) {
     if (deBandeja) {
       (async () => {
         try {
-          const resp = await fetch(await urlFirmada(ctx.api, deBandeja.ruta, 300));
-          if (!resp.ok) throw new Error(`Error ${resp.status}`);
-          const blob = await resp.blob();
+          const bajar = async (ruta) => { const r = await fetch(await urlFirmada(ctx.api, ruta, 300)); if (!r.ok) throw new Error(`Error ${r.status}`); return r.blob(); };
+          // Factura del SII (OpenFactura): el PDF queda como archivo del gasto sin leerlo y los datos salen del XML
+          if (deBandeja.origen === 'sii' && deBandeja.xml_ruta) {
+            const [pdf, xml] = await Promise.all([bajar(deBandeja.ruta), bajar(deBandeja.xml_ruta)]);
+            agregar([new File([pdf], deBandeja.nombre || 'factura.pdf', { type: 'application/pdf' })], { ruta: deBandeja.ruta, sinLeer: true });
+            agregar([new File([xml], (deBandeja.nombre || 'factura.pdf').replace(/\.pdf$/i, '.xml'), { type: 'text/xml' })], { ruta: deBandeja.xml_ruta });
+            return;
+          }
+          const blob = await bajar(deBandeja.ruta);
           const tipo = deBandeja.tipo_mime || blob.type || 'image/jpeg';
           agregar([new File([blob], deBandeja.nombre || 'documento.jpg', { type: tipo })], { ruta: deBandeja.ruta });
         } catch (err) { formulario.hidden = false; aviso(`No se pudo abrir el documento de la bandeja (${err.message}). Revisa la conexión y vuelve a abrirlo.`, 'mal'); }

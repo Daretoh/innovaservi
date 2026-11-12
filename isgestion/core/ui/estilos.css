@@ -598,6 +598,21 @@ html[data-modo="oscuro"] .chip-fijo { color: #10131a; }
 .cobro-boleta-texto { display: flex; flex-direction: column; min-width: 0; flex: 1 1 120px; }
 .cobro-boleta-texto .enlace { color: var(--texto); text-align: left; overflow-wrap: anywhere; }
 .cobro-boleta-acciones { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+/* Abonos de la orden con su boleta (Taller 012) */
+.cobro-abonos { display: flex; flex-direction: column; gap: 6px; margin: 0 0 10px; }
+.cobro-abonos-cabecera { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.cobro-abono { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 8px 10px; border: 1px solid var(--borde); border-radius: 8px; background: var(--superficie); color: var(--texto-suave); }
+.cobro-abono strong { color: var(--texto); }
+.cobro-abono .enlace { color: var(--texto); text-align: left; overflow-wrap: anywhere; }
+/* Cobrar en la TUU (OpenFactura): qué marcar en la máquina */
+.cobro-tuu { margin: 0 0 10px; padding: 10px 12px; border: 1px dashed var(--empresa); border-radius: 8px; background: var(--fondo-sutil); display: flex; flex-direction: column; gap: 4px; }
+.cobro-tuu-titulo { margin: 0 0 2px; font-weight: 600; color: var(--texto); display: flex; align-items: center; gap: 6px; }
+.cobro-tuu > div:not(.listado-acciones) { display: flex; justify-content: space-between; gap: 10px; font-size: .92em; }
+.cobro-tuu > div > span { color: var(--texto-suave); }
+.cobro-tuu > div > strong { text-align: right; overflow-wrap: anywhere; }
+.cobro-tuu .cobro-tuu-monto { margin-top: 4px; padding-top: 6px; border-top: 1px solid var(--borde); font-size: 1.15em; }
+.cobro-tuu .cobro-tuu-monto strong { color: var(--empresa); }
+.cobro-tuu .listado-acciones { margin-top: 4px; }
 #orden-cobro > .boton-chico { margin: 0 0 10px; }
 .cobro-doc { display: inline-flex; align-items: center; gap: 4px; }
 @media (max-width: 700px) {

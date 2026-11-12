@@ -1,10 +1,10 @@
 // Resumen de gastos de la flota por vehículo y mes, y por categoría, con exportación a CSV.
-import { avisar } from '../../../core/ui/aviso.js?v=bdac687';
-import { el } from '../../../core/ui/dom.js?v=bdac687';
-import { icono } from '../../../core/ui/iconos.js?v=bdac687';
-import { boton } from '../../../core/ui/tabla.js?v=bdac687';
-import { dinero } from '../../../core/ui/formato.js?v=bdac687';
-import { CATEGORIAS, nombreCat } from '../datos.js?v=bdac687';
+import { avisar } from '../../../core/ui/aviso.js?v=d222bfb';
+import { el } from '../../../core/ui/dom.js?v=d222bfb';
+import { icono } from '../../../core/ui/iconos.js?v=d222bfb';
+import { boton } from '../../../core/ui/tabla.js?v=d222bfb';
+import { dinero } from '../../../core/ui/formato.js?v=d222bfb';
+import { CATEGORIAS, nombreCat } from '../datos.js?v=d222bfb';
 
 const estado = { anio: new Date().getFullYear() };
 const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
@@ -32,7 +32,7 @@ export default async function vista(ctx) {
   const nombre = (x) => `${x.nombre}${x.patente ? ` · ${x.patente}` : ''}${x.deleted_at ? ' (eliminado)' : ''}`;
 
   const exportar = async () => {
-    const { nuevoExcel } = await import('../../../core/excel.js?v=bdac687');
+    const { nuevoExcel } = await import('../../../core/excel.js?v=d222bfb');
     const x = await nuevoExcel(ctx, { titulo: `Gastos de la flota · ${a}` });
     x.tabla({ titulo: 'Por vehículo', columnas: ['Vehículo', 'Patente', ...MESES.map((m) => ({ t: m, tipo: 'dinero' })), { t: 'Total', tipo: 'dinero' }],
       filas: porVeh.map((f) => [f.x.nombre, f.x.patente ?? '', ...f.m, f.total]), total: ['Total', '', ...totMes, total] });

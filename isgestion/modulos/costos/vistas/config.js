@@ -1,13 +1,13 @@
 // Categorías (con su clase: dónde van en el Estado de resultados) y centros de costo de la empresa.
-import { el } from '../../../core/ui/dom.js?v=bdac687';
-import { boton } from '../../../core/ui/tabla.js?v=bdac687';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=bdac687';
-import { avisar } from '../../../core/ui/aviso.js?v=bdac687';
-import { cargarBase, CLASES, nombreClase } from '../datos.js?v=bdac687';
+import { el } from '../../../core/ui/dom.js?v=d222bfb';
+import { boton } from '../../../core/ui/tabla.js?v=d222bfb';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=d222bfb';
+import { avisar } from '../../../core/ui/aviso.js?v=d222bfb';
+import { cargarBase, CLASES, nombreClase } from '../datos.js?v=d222bfb';
 
 // Nombres comunes del grupo (2026-11-05): los mismos en todas las empresas para que el Grupo sume bien
 const CATEGORIAS = [['Arriendo', 'gasto'], ['Servicios básicos', 'gasto'], ['Contabilidad y asesorías', 'gasto'], ['Software y servicios digitales', 'gasto'], ['Materiales e insumos', 'gasto'],
-  ['Combustible y peajes', 'gasto'], ['Viáticos y colaciones', 'gasto'], ['Publicidad', 'gasto'], ['Mantención y reparaciones', 'gasto'], ['Impuestos, patentes y bancos', 'gasto'], ['Otros gastos', 'gasto'],
+  ['Combustible y peajes', 'gasto'], ['Transportes', 'gasto'], ['Viáticos y colaciones', 'gasto'], ['Publicidad', 'gasto'], ['Mantención y reparaciones', 'gasto'], ['Infraestructura y ampliaciones', 'gasto'], ['Impuestos, patentes y bancos', 'gasto'], ['Otros gastos', 'gasto'],
   ['Remuneraciones y honorarios', 'personal'], ['Compras de inventario', 'inventario'], ['Otros ingresos', 'ingreso']];
 const CENTROS = ['Operación', 'Oficina', 'Ventas'];
 
