@@ -6,12 +6,12 @@
 // abierta tiene además "Agregar persona en esta faena".
 // Mismos datos y reglas que la planilla de escritorio (horas.js): las del marcaje se corrigen en Marcajes y los fijos con
 // turno quedan presentes "según horario".
-import { el } from '../../../core/ui/dom.js?v=d222bfb';
-import { icono } from '../../../core/ui/iconos.js?v=d222bfb';
-import { boton } from '../../../core/ui/tabla.js?v=d222bfb';
-import { avisar } from '../../../core/ui/aviso.js?v=d222bfb';
-import { hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, horas, aMin, hhmm } from '../../../core/ui/formato.js?v=d222bfb';
-import { estado, minutosRegistro, ausente, eliminar, campoFiltroFaena, pasaFiltroFaena, resumenDia } from './horas.js?v=d222bfb';
+import { el } from '../../../core/ui/dom.js?v=24a7fd7';
+import { icono } from '../../../core/ui/iconos.js?v=24a7fd7';
+import { boton } from '../../../core/ui/tabla.js?v=24a7fd7';
+import { avisar } from '../../../core/ui/aviso.js?v=24a7fd7';
+import { hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, horas, aMin, hhmm } from '../../../core/ui/formato.js?v=24a7fd7';
+import { estado, minutosRegistro, ausente, eliminar, campoFiltroFaena, pasaFiltroFaena, resumenDia } from './horas.js?v=24a7fd7';
 
 const pantalla = { pestana: null, buscar: '', marcados: new Set(), abiertas: new Set(), diaAbierto: null };   // abiertas: faenas desplegadas (día|faena)
 const DIAS_LARGOS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];

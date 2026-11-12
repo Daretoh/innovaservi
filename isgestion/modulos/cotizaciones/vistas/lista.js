@@ -1,13 +1,13 @@
 // Cotizaciones: listado con filtro por estado y búsqueda; nueva cotización. Cada fila dice quién la creó y quién la
 // editó por última vez (como el OS; updated_by lo pone la base).
-import { el } from '../../../core/ui/dom.js?v=d222bfb';
-import { listado, boton } from '../../../core/ui/tabla.js?v=d222bfb';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=d222bfb';
-import { dinero, fechaLarga, fechaCorta, hoyISO, diaLocal, nombrePropio } from '../../../core/ui/formato.js?v=d222bfb';
-import { avance, colorAvance } from '../../taller/seguimiento.js?v=d222bfb';
-import { nombreEstado as estadoOrden } from '../../taller/datos.js?v=d222bfb';
-import { costosDeGrupos, costoFuera, sinRepetir, yaTraidos } from '../costos-orden.js?v=d222bfb';
-import { ESTADOS, nombreEstado, CHIP_ESTADO, SELECT_COT, totales, costoLinea, numeroTexto, nombreTercero, verPatente, siguienteNumero, cargarConfig, datosCliente } from '../datos.js?v=d222bfb';
+import { el } from '../../../core/ui/dom.js?v=24a7fd7';
+import { listado, boton } from '../../../core/ui/tabla.js?v=24a7fd7';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=24a7fd7';
+import { dinero, fechaLarga, fechaCorta, hoyISO, diaLocal, nombrePropio } from '../../../core/ui/formato.js?v=24a7fd7';
+import { avance, colorAvance } from '../../taller/seguimiento.js?v=24a7fd7';
+import { nombreEstado as estadoOrden } from '../../taller/datos.js?v=24a7fd7';
+import { costosDeGrupos, costoFuera, sinRepetir, yaTraidos } from '../costos-orden.js?v=24a7fd7';
+import { ESTADOS, nombreEstado, CHIP_ESTADO, SELECT_COT, totales, costoLinea, numeroTexto, nombreTercero, verPatente, siguienteNumero, cargarConfig, datosCliente } from '../datos.js?v=24a7fd7';
 
 const filtro = { estado: 'todas', buscar: '' };
 
