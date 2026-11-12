@@ -3,15 +3,15 @@
 // (Costos 008) con su archivo en R2 (<empresa>/costos/…). "Cargar" abre el lector con la foto ya puesta; al registrar
 // el gasto la foto pasa a ser su archivo y el lector sigue con la siguiente de la bandeja.
 // Ruta: #/costos.bandeja
-import { el } from '../../../core/ui/dom.js?v=24a7fd7';
-import { icono } from '../../../core/ui/iconos.js?v=24a7fd7';
-import { boton } from '../../../core/ui/tabla.js?v=24a7fd7';
-import { avisar } from '../../../core/ui/aviso.js?v=24a7fd7';
-import { subirArchivo, urlsFirmadas, eliminarArchivo } from '../../../core/adjuntos.js?v=24a7fd7';
-import { botonesFotos, tomarFotos } from '../../../core/ui/camara.js?v=24a7fd7';
-import { comprimirFoto, esImagen, esPdf } from '../../../core/imagenes.js?v=24a7fd7';
-import { fechaLarga, diaLocal, dinero } from '../../../core/ui/formato.js?v=24a7fd7';
-import { llamarDte, estadoDte, NOMBRE_DTE } from '../../../core/dte.js?v=24a7fd7';
+import { el } from '../../../core/ui/dom.js?v=5a36f48';
+import { icono } from '../../../core/ui/iconos.js?v=5a36f48';
+import { boton } from '../../../core/ui/tabla.js?v=5a36f48';
+import { avisar } from '../../../core/ui/aviso.js?v=5a36f48';
+import { subirArchivo, urlsFirmadas, eliminarArchivo } from '../../../core/adjuntos.js?v=5a36f48';
+import { botonesFotos, tomarFotos } from '../../../core/ui/camara.js?v=5a36f48';
+import { comprimirFoto, esImagen, esPdf } from '../../../core/imagenes.js?v=5a36f48';
+import { fechaLarga, diaLocal, dinero } from '../../../core/ui/formato.js?v=5a36f48';
+import { llamarDte, estadoDte, NOMBRE_DTE } from '../../../core/dte.js?v=5a36f48';
 
 // Pendientes de la empresa en orden de llegada (RLS: quien solo carga ve las suyas)
 // Las compras del SII (origen 'sii', Núcleo 021) traen además su XML y sus datos (dte)

@@ -2,21 +2,21 @@
 // a pantalla completa (como en InnovaGestión): los campos subrayados se escriben ahí mismo, los bloques opcionales se
 // quitan con la ×, se elige el formato (variante) y los trabajadores que firman; luego se imprime, se descarga en PDF
 // o se guarda donde corresponde (RRHH o Prevención SST), según lo que pase quien abre el documento.
-import { el } from '../../core/ui/dom.js?v=24a7fd7';
-import { icono } from '../../core/ui/iconos.js?v=24a7fd7';
-import { boton } from '../../core/ui/tabla.js?v=24a7fd7';
-import { avisar } from '../../core/ui/aviso.js?v=24a7fd7';
-import { cargarJsPdf, cargarLogo, sellar } from '../../core/pdf.js?v=24a7fd7';
-import { crearPlantillas } from './plantillas.js?v=24a7fd7';
-import { pdfDesde } from './pdf.js?v=24a7fd7';
-import { fmtRut } from '../../core/lector-dte.js?v=24a7fd7';
-import { activarCampos } from './campos.js?v=24a7fd7';
+import { el } from '../../core/ui/dom.js?v=5a36f48';
+import { icono } from '../../core/ui/iconos.js?v=5a36f48';
+import { boton } from '../../core/ui/tabla.js?v=5a36f48';
+import { avisar } from '../../core/ui/aviso.js?v=5a36f48';
+import { cargarJsPdf, cargarLogo, sellar } from '../../core/pdf.js?v=5a36f48';
+import { crearPlantillas } from './plantillas.js?v=5a36f48';
+import { pdfDesde } from './pdf.js?v=5a36f48';
+import { fmtRut } from '../../core/lector-dte.js?v=5a36f48';
+import { activarCampos } from './campos.js?v=5a36f48';
 
 let estilos = null;
 function cargarEstilos() {
   estilos ??= new Promise((ok) => {
     const l = document.createElement('link');
-    l.rel = 'stylesheet'; l.href = new URL('./documentos.css?v=24a7fd7', import.meta.url).href;
+    l.rel = 'stylesheet'; l.href = new URL('./documentos.css?v=5a36f48', import.meta.url).href;
     l.onload = ok; l.onerror = ok;
     document.head.append(l);
   });
@@ -193,15 +193,16 @@ function elegirPersonas(o, actuales, listo) {
 }
 
 // Firma y timbre editables en el documento (como InnovaGestión): arrastrar para mover, rueda del mouse para agrandar o
-// achicar (proporción fija, sin deformar). Se aplica al imprimir o descargar el PDF.
+// achicar (proporción fija, sin deformar). Se aplica al imprimir o descargar el PDF. Se mueven con transform (encima del
+// papel): no ocupan espacio, así las líneas y textos de firma no se corren.
 let avisoFirma = false;
 function firmaMovible(raiz) {
   let hubo = false;
   for (const img of raiz.querySelectorAll('img.rs-sig, img.rs-tim, img.rs-prev')) {
     hubo = true; img.classList.add('fmov'); img.title = 'Arrastra para mover · rueda del mouse para agrandar o achicar';
-    let h0 = 0; let sc = 1; let dx = 0; let dy = 0; let arrastre = null;
-    const base = () => { if (h0) return; h0 = img.getBoundingClientRect().height || img.naturalHeight || 80; img.style.maxWidth = 'none'; img.style.maxHeight = 'none'; img.style.width = 'auto'; };
-    const aplicar = () => { img.style.height = `${h0 * sc}px`; img.style.marginLeft = `${dx}px`; img.style.marginTop = `${dy}px`; };
+    let t0 = null; let sc = 1; let dx = 0; let dy = 0; let arrastre = null;
+    const base = () => { if (t0 !== null) return; const t = getComputedStyle(img).transform; t0 = t && t !== 'none' ? `${t} ` : ''; };
+    const aplicar = () => { img.style.transform = `${t0}translate(${dx}px, ${dy}px) scale(${sc})`; };
     img.addEventListener('pointerdown', (ev) => { base(); ev.preventDefault(); try { img.setPointerCapture(ev.pointerId); } catch { /* */ } arrastre = { x: ev.clientX, y: ev.clientY, dx, dy }; });
     img.addEventListener('pointermove', (ev) => { if (!arrastre) return; dx = arrastre.dx + (ev.clientX - arrastre.x); dy = arrastre.dy + (ev.clientY - arrastre.y); aplicar(); });
     const fin = (ev) => { arrastre = null; try { img.releasePointerCapture(ev.pointerId); } catch { /* */ } };
