@@ -2,21 +2,21 @@
 // a pantalla completa (como en InnovaGestión): los campos subrayados se escriben ahí mismo, los bloques opcionales se
 // quitan con la ×, se elige el formato (variante) y los trabajadores que firman; luego se imprime, se descarga en PDF
 // o se guarda donde corresponde (RRHH o Prevención SST), según lo que pase quien abre el documento.
-import { el } from '../../core/ui/dom.js?v=5a36f48';
-import { icono } from '../../core/ui/iconos.js?v=5a36f48';
-import { boton } from '../../core/ui/tabla.js?v=5a36f48';
-import { avisar } from '../../core/ui/aviso.js?v=5a36f48';
-import { cargarJsPdf, cargarLogo, sellar } from '../../core/pdf.js?v=5a36f48';
-import { crearPlantillas } from './plantillas.js?v=5a36f48';
-import { pdfDesde } from './pdf.js?v=5a36f48';
-import { fmtRut } from '../../core/lector-dte.js?v=5a36f48';
-import { activarCampos } from './campos.js?v=5a36f48';
+import { el } from '../../core/ui/dom.js?v=9dfb925';
+import { icono } from '../../core/ui/iconos.js?v=9dfb925';
+import { boton } from '../../core/ui/tabla.js?v=9dfb925';
+import { avisar } from '../../core/ui/aviso.js?v=9dfb925';
+import { cargarJsPdf, cargarLogo, sellar } from '../../core/pdf.js?v=9dfb925';
+import { crearPlantillas } from './plantillas.js?v=9dfb925';
+import { pdfDesde } from './pdf.js?v=9dfb925';
+import { fmtRut } from '../../core/lector-dte.js?v=9dfb925';
+import { activarCampos } from './campos.js?v=9dfb925';
 
 let estilos = null;
 function cargarEstilos() {
   estilos ??= new Promise((ok) => {
     const l = document.createElement('link');
-    l.rel = 'stylesheet'; l.href = new URL('./documentos.css?v=5a36f48', import.meta.url).href;
+    l.rel = 'stylesheet'; l.href = new URL('./documentos.css?v=9dfb925', import.meta.url).href;
     l.onload = ok; l.onerror = ok;
     document.head.append(l);
   });
@@ -104,6 +104,7 @@ export async function abrirDocumento(o) {
     for (const img of hoja.querySelectorAll('img[onerror]')) img.removeAttribute('onerror');
     for (const img of hoja.querySelectorAll('img')) if (!img.getAttribute('src')) img.remove();
     firmaMovible(hoja);
+    aplicarFirmas();
   };
   // Quitar bloques opcionales; recordar lo escrito en campos con data-ls (relator, horario…)
   hoja.addEventListener('click', (ev) => { const x = ev.target.closest('.dg-x'); if (x) x.closest('.dg-opt')?.remove(); });
@@ -113,11 +114,24 @@ export async function abrirDocumento(o) {
     ev.target.classList?.remove('dg-vacio');
   });
 
+  // Firmas y timbre: botón Firmas para ponerlos o quitarlos (se ocultan sin mover nada; también en el PDF).
+  const firmas = { sig: true, tim: true, prev: true };
+  const NOMBRE_FIRMA = { sig: 'Firma del representante legal', tim: 'Timbre de la empresa', prev: 'Firma de la prevencionista' };
+  const menuFirmas = el('div', { class: 'dg-fmenu', hidden: true });
+  const botonFirmas = boton('Firmas', { icono: 'editar', onclick: () => { menuFirmas.hidden = !menuFirmas.hidden; } });
+  const cajaFirmas = el('span', { class: 'dg-fwrap', hidden: true }, botonFirmas, menuFirmas);
+  function aplicarFirmas() {
+    const hay = Object.keys(firmas).filter((k) => hoja.querySelector(`img.rs-${k}`));
+    for (const k of Object.keys(firmas)) for (const img of hoja.querySelectorAll(`img.rs-${k}`)) img.style.visibility = firmas[k] ? '' : 'hidden';
+    cajaFirmas.hidden = !hay.length;
+    menuFirmas.replaceChildren(...hay.map((k) => el('label', {}, el('input', { type: 'checkbox', checked: firmas[k], onchange: (ev) => { firmas[k] = ev.currentTarget.checked; aplicarFirmas(); } }), NOMBRE_FIRMA[k])));
+  }
   const selVariante = o.variantes ? el('select', { class: 'campo', 'aria-label': 'Formato', onchange: (ev) => { variante = ev.currentTarget.value; pintar(); } },
     o.variantes.map((x) => el('option', { value: x.v, selected: x.v === variante }, x.n))) : null;
   const botonPersonas = o.personas ? boton(textoPersonas(personas), { icono: 'users', onclick: () => elegirPersonas(o, personas, (L) => { personas = L; botonPersonas.lastChild.textContent = textoPersonas(L); pintar(); }) }) : null;
 
-  const cerrar = () => { capa.remove(); document.removeEventListener('keydown', tecla); document.body.style.overflow = ''; };
+  const cerrar = () => { capa.remove(); document.removeEventListener('keydown', tecla); document.removeEventListener('click', fueraFirmas); document.body.style.overflow = ''; };
+  const fueraFirmas = (ev) => { if (!cajaFirmas.contains(ev.target)) menuFirmas.hidden = true; };
   const tecla = (ev) => { if (ev.key === 'Escape' && !document.querySelector('dialog[open]')) cerrar(); };
   const accion = (fn) => async (ev) => {
     const b = ev.currentTarget;
@@ -135,7 +149,7 @@ export async function abrirDocumento(o) {
   const barra = el('div', { class: 'dg-barra' },
     el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Cerrar', title: 'Cerrar', onclick: cerrar }, icono('cerrar')),
     el('strong', { class: 'dg-barra-t' }, o.titulo),
-    selVariante, botonPersonas,
+    selVariante, botonPersonas, cajaFirmas,
     el('span', { class: 'dg-barra-acc' },
       boton('Imprimir', { icono: 'documento', onclick: accion(async () => window.open(URL.createObjectURL((await pdf()).output('blob')), '_blank')) }),
       boton('Descargar PDF', { icono: 'descargar', onclick: accion(async () => (await pdf()).save(nombre())) }),
@@ -152,6 +166,7 @@ export async function abrirDocumento(o) {
   document.body.append(capa);
   document.body.style.overflow = 'hidden';
   document.addEventListener('keydown', tecla);
+  document.addEventListener('click', fueraFirmas);
 }
 
 const textoPersonas = (L) => (L.length ? `Trabajadores (${L.length})` : 'Trabajadores');

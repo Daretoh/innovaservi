@@ -113,3 +113,10 @@
 .fmov{cursor:move;touch-action:none;}
 .dg-doc .fmov:hover{outline:2px dashed var(--doc-color);outline-offset:3px;}
 .dg-capturando .fmov:hover{outline:none;}
+
+/* Botón Firmas: poner o quitar firma, timbre y firma de la prevencionista */
+.dg-fwrap{position:relative;display:inline-flex;}
+.dg-fwrap[hidden]{display:none;}
+.dg-fmenu{position:absolute;right:0;top:calc(100% + 6px);z-index:5;background:var(--superficie);color:var(--texto);border:1px solid var(--borde);border-radius:10px;box-shadow:var(--sombra);padding:8px 10px;min-width:220px;}
+.dg-fmenu[hidden]{display:none;}
+.dg-fmenu label{display:flex;align-items:center;gap:8px;padding:6px 2px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;}

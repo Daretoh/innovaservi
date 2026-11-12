@@ -1,8 +1,8 @@
 // Documentos tributarios electrónicos (OpenFactura, Núcleo 021): llamadas a la Edge Function `dte`, que es la única que
 // habla con Haulmer. En 'pruebas' (ambiente de desarrollo de Haulmer, timbre simulado) nada se escribe en facturas,
 // órdenes ni gastos: los documentos quedan marcados como prueba. Ver supabase/functions/dte/index.ts.
-import { el } from './ui/dom.js?v=5a36f48';
-import { icono } from './ui/iconos.js?v=5a36f48';
+import { el } from './ui/dom.js?v=9dfb925';
+import { icono } from './ui/iconos.js?v=9dfb925';
 
 export async function llamarDte(ctx, accion, datos = {}) {
   const { data, error } = await ctx.api.functions.invoke('dte', { body: { accion, empresa_id: ctx.empresa.id, ...datos } });

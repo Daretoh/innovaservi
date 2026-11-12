@@ -1144,7 +1144,7 @@ export function crearPlantillas(D) {
         etqTabla(['Trimestre','Color de la cinta'],ETQ_INSP,['40%'])+
       H('Registros')+ulDg(['Registro de capacitación CAP-PREV-07 Etiquetado y código de colores.','Inventario de productos químicos con sus HDS.','Registro de bloqueo en el permiso de trabajo.','Lista de inspección trimestral de herramientas y equipos.'])+
       H('Control de cambios')+'<table class="dg-tbl"><thead><tr><th style="width:15%">Versión</th><th style="width:20%">Fecha</th><th>Descripción del cambio</th></tr></thead><tbody><tr><td>01</td><td>'+ETQ_FECHA+'</td><td>Emisión del procedimiento.</td></tr></tbody></table>'+
-      '<div class="dg-firmas"><div>Elaboró<br>'+esc(EMP_PREV.nombre)+'<br>'+esc(EMP_PREV.cargo)+'</div><div>'+firmaRepHtml()+'Aprobó<br>'+esc(EMP.rep)+'<br>Representante legal</div></div>';
+      '<div class="dg-firmas'+((FIRMA_SIG||FIRMA_TIM)?' con-rep':'')+'"><div>'+firmaPrevHtml()+'Elaboró<br>'+esc(EMP_PREV.nombre)+'<br>'+esc(EMP_PREV.cargo)+'</div><div class="dg-rep">'+firmaRepHtml()+'Aprobó<br>'+esc(EMP.rep)+'<br>Representante legal</div></div>';
   }
   // Catálogo de capacitaciones: alimenta el Registro de capacitación (tema, temario, duración) y la Evaluación de aprendizaje.
   var CAP_FECHA='10-10-2026';   // fecha de la versión vigente de las capacitaciones (encabezado y tabla de control)

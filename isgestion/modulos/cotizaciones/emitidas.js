@@ -2,14 +2,14 @@
 // Decisión de Enzo: las facturas las hace la máquina; ISgestión las trae del SII y las registra en Facturas con su
 // PDF y XML (folio = N°), ligadas a la cotización u orden del taller. Emitir desde ISgestión queda para los cierres.
 // En el ambiente de pruebas se ven las de la empresa de pruebas de Haulmer y "Registrar" solo muestra el PDF.
-import { el } from '../../core/ui/dom.js?v=5a36f48';
-import { boton } from '../../core/ui/tabla.js?v=5a36f48';
-import { abrirFormulario } from '../../core/ui/modal.js?v=5a36f48';
-import { avisar } from '../../core/ui/aviso.js?v=5a36f48';
-import { dinero, fechaLarga, sumarDias } from '../../core/ui/formato.js?v=5a36f48';
-import { llamarDte, estadoDte, NOMBRE_DTE } from '../../core/dte.js?v=5a36f48';
-import { numeroTexto, nombreTercero } from './datos.js?v=5a36f48';
-import { PLAZO_PAGO } from './facturas.js?v=5a36f48';
+import { el } from '../../core/ui/dom.js?v=9dfb925';
+import { boton } from '../../core/ui/tabla.js?v=9dfb925';
+import { abrirFormulario } from '../../core/ui/modal.js?v=9dfb925';
+import { avisar } from '../../core/ui/aviso.js?v=9dfb925';
+import { dinero, fechaLarga, sumarDias } from '../../core/ui/formato.js?v=9dfb925';
+import { llamarDte, estadoDte, NOMBRE_DTE } from '../../core/dte.js?v=9dfb925';
+import { numeroTexto, nombreTercero } from './datos.js?v=9dfb925';
+import { PLAZO_PAGO } from './facturas.js?v=9dfb925';
 
 const limpio = (r) => String(r ?? '').replace(/[^0-9kK]/g, '').toUpperCase();
 
