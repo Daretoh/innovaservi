@@ -9906,12 +9906,13 @@
   // Bloque de firma del representante (firma centrada sobre "Atentamente" y timbre a la derecha).
   function firmaRepHtml(){ return (FIRMA_SIG?'<img class="rs-sig" src="'+FIRMA_SIG+'" alt="">':'')+(FIRMA_TIM?'<img class="rs-tim" src="'+esc(FIRMA_TIM)+'" alt="">':''); }
   // Firma/timbre editables en el documento: arrastrar para mover, rueda del mouse para agrandar/achicar (proporción fija, sin deformar).
+  // Se mueven con transform (encima del papel): no ocupan espacio, así las líneas y textos de firma no se corren.
   function firmaMovible(root){ if(!root) return; var hubo=false;
     root.querySelectorAll('img.rs-sig,img.rs-tim,img.rs-prev').forEach(function(el){
       if(el._mov) return; el._mov=1; hubo=true; el.classList.add('fmov'); el.setAttribute('title','Arrastra para mover · rueda del mouse para agrandar o achicar');
-      var h0=0, sc=1, mlx=0, mly=0, drag=null;
-      function base(){ if(h0) return; h0=el.getBoundingClientRect().height||el.naturalHeight||80; el.style.maxWidth='none'; el.style.maxHeight='none'; el.style.width='auto'; }
-      function apply(){ el.style.height=(h0*sc)+'px'; el.style.marginLeft=mlx+'px'; el.style.marginTop=mly+'px'; }
+      var t0=null, sc=1, mlx=0, mly=0, drag=null;
+      function base(){ if(t0!==null) return; var t=getComputedStyle(el).transform; t0=(t&&t!=='none')?t+' ':''; }
+      function apply(){ el.style.transform=t0+'translate('+mlx+'px,'+mly+'px) scale('+sc+')'; }
       el.addEventListener('pointerdown', function(e){ base(); e.preventDefault(); try{ el.setPointerCapture(e.pointerId); }catch(_){} drag={x:e.clientX,y:e.clientY,mlx:mlx,mly:mly}; });
       el.addEventListener('pointermove', function(e){ if(!drag) return; mlx=drag.mlx+(e.clientX-drag.x); mly=drag.mly+(e.clientY-drag.y); apply(); });
       function fin(e){ drag=null; try{ el.releasePointerCapture(e.pointerId); }catch(_){} }
