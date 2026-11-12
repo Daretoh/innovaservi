@@ -534,6 +534,9 @@
   .mepp-si{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#22a06b;} .mepp-no{color:#b9bfd1;font-weight:700;}
   .pts-tit{font:800 19px var(--font);color:var(--ink);text-align:center;margin:4px 0 10px;text-transform:uppercase;letter-spacing:.02em;}
   .pts-ctl td{width:25%;}
+  .dg-fwrap{position:relative;flex:none;} .dg-fwrap .btn{width:auto;display:inline-flex;align-items:center;gap:6px;}
+  .dg-fmenu{position:absolute;right:0;top:calc(100% + 6px);z-index:5;background:var(--card);border:1px solid var(--line);border-radius:11px;box-shadow:0 10px 30px -12px rgba(0,0,0,.35);padding:8px 10px;min-width:210px;}
+  .dg-fmenu label{display:flex;align-items:center;gap:8px;font:600 13px var(--font);color:var(--ink);padding:6px 2px;cursor:pointer;white-space:nowrap;}
   .dg-acc{display:flex;gap:6px;flex:none;} .dg-acc .btn{width:auto;display:inline-flex;align-items:center;gap:6px;}
   .report-actions .dg-acc .btn.ghost{color:#fff;border-color:rgba(255,255,255,.45);background:rgba(255,255,255,.08);}
   @media(max-width:600px){ .dg-acc .btn span{display:none;} .dg-acc .btn{padding:8px 10px;} }
@@ -2630,6 +2633,7 @@
     <span class="rep-hint" id="dg-hint">Revisa los datos y descarga</span>
     <select id="dg-var" class="hide" title="Formato según el cargo"></select>
     <button id="dg-pers" type="button" class="btn ghost small hide" title="Elegir los trabajadores que firman: se completan su nombre y RUT"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span id="dg-pers-t">Trabajadores</span></button>
+    <div class="dg-fwrap hide" id="dg-fwrap"><button id="dg-firm" type="button" class="btn ghost small" title="Poner o quitar firmas y timbre"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg><span>Firmas</span></button><div id="dg-fmenu" class="dg-fmenu hide"></div></div>
     <div class="dg-acc">
       <button id="dg-print" type="button" class="btn ghost small" title="Imprimir"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg><span>Imprimir</span></button>
       <button id="dg-dl" type="button" class="btn ghost small" title="Descargar PDF"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span>Descargar</span></button>
@@ -9919,6 +9923,7 @@
       el.addEventListener('pointerup', fin); el.addEventListener('pointercancel', fin);
       el.addEventListener('wheel', function(e){ base(); e.preventDefault(); sc=Math.max(0.4, Math.min(4, sc*(e.deltaY<0?1.08:0.92))); apply(); }, {passive:false});
     });
+    dgFirmas();
     if(hubo && !firmaMovible._avisado){ firmaMovible._avisado=true; toast('Tip: arrastra la firma para moverla y usa la rueda del mouse para agrandarla'); }
   }
   function mesPrevio(){ var d=new Date(); d.setDate(1); d.setMonth(d.getMonth()-1); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
@@ -11924,7 +11929,16 @@
   var EMP={ rz:'Innovación y Servicios SpA', rut:'77.647.955-1', dir:'Av. Nueva Providencia 1881, Providencia', rep:'Cristopher Andrés Ruiz Vidal', repRut:'17.240.763-3' };
   function dgHead(titulo, ver, fecha){ return '<div class="dg-h"><div class="lg"><img src="../assets/images/InnovaServi-completo.png" onerror="this.style.display=\'none\'"></div><div class="t"><b>'+titulo+'</b><span>'+EMP.rz+' · RUT '+EMP.rut+'</span></div><div class="ver"><span>Versión <b>'+(ver||'01')+'</b></span><span>Fecha <b>'+(fecha||fFaena(todayISO()))+'</b></span></div></div><div class="dg-band"></div>'; }
   function dgFoot(){ return '<div class="dg-foot"><span>'+EMP.rz+' · RUT '+EMP.rut+' · Los Lirios 35, Mirasol, Puerto Montt</span><span>Documento generado con InnovaGestión</span></div>'; }
-  function dgSet(html){ $('dg-doc').classList.remove('fa-mode'); $('dg-doc').innerHTML=html+dgFoot(); }
+  function dgSet(html){ $('dg-doc').classList.remove('fa-mode'); $('dg-doc').innerHTML=html+dgFoot(); dgFirmas(); }
+  // Firmas y timbre: botón Firmas para ponerlos o quitarlos. Se ocultan con estilo en línea (también al imprimir) y sin mover nada.
+  var DG_FIR={sig:true,tim:true,prev:true}, DG_FIR_N={sig:'Firma del representante legal',tim:'Timbre de la empresa',prev:'Firma de la prevencionista'};
+  function dgFirmas(){ var d=$('dg-doc'); if(!d) return; var hay={};
+    ['sig','tim','prev'].forEach(function(k){ d.querySelectorAll('img.rs-'+k).forEach(function(im){ hay[k]=1; im.style.visibility=DG_FIR[k]?'':'hidden'; }); });
+    var w=$('dg-fwrap'); if(w) w.classList.toggle('hide',!Object.keys(hay).length);
+    var m=$('dg-fmenu'); if(!m) return;
+    m.innerHTML=['sig','tim','prev'].filter(function(k){ return hay[k]; }).map(function(k){ return '<label><input type="checkbox" data-k="'+k+'"'+(DG_FIR[k]?' checked':'')+'>'+DG_FIR_N[k]+'</label>'; }).join('');
+    m.querySelectorAll('input').forEach(function(c){ c.onchange=function(){ DG_FIR[c.dataset.k]=c.checked; dgFirmas(); }; }); }
+  document.addEventListener('click',function(e){ var m=$('dg-fmenu'); if(!m) return; if(e.target.closest('#dg-firm')){ m.classList.toggle('hide'); return; } if(!e.target.closest('#dg-fmenu')) m.classList.add('hide'); });
   function ce(v){ return '<span contenteditable>'+(v?esc(v):'')+'</span>'; }
 
   // Plantilla: Contrato de trabajo por obra o faena (Operario de Servicios) — fiel al formato del Drive.
