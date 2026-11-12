@@ -55,7 +55,7 @@ export function crearPlantillas(D) {
       '<h4 class="dg-h4">Temario</h4>'+(temario?(temario.length>3?'<div class="dg-cols asis-tem">'+ulDg(temario.slice(0,Math.ceil(temario.length/2)))+ulDg(temario.slice(Math.ceil(temario.length/2)))+'</div>':'<div class="asis-tem">'+ulDg(temario)+'</div>'):'<div class="dg-box" style="min-height:70px" contenteditable></div>')+
       '<p class="asis-decl">Los trabajadores individualizados declaran haber recibido la '+(I?'instrucción y una copia del procedimiento indicado':'capacitación')+', haber comprendido su contenido y se comprometen a cumplirlo.</p>'+
       '<table class="dg-tbl asis-tb"><thead><tr><th class="n">N°</th><th style="width:34%">Nombre completo</th><th style="width:15%">RUT</th><th style="width:18%">Cargo</th><th>Firma</th></tr></thead><tbody>'+rows+'</tbody></table>'+
-      '<div class="dg-firmas asis-fir"><div>'+(relNom===EMP_PREV.nombre?firmaPrevHtml():'')+'Firma del relator<br>'+esc(relNom)+'</div><div>V°B° jefatura</div></div>';
+      '<div class="dg-firmas asis-fir"><div style="flex:0 0 45%">'+(relNom===EMP_PREV.nombre?firmaPrevHtml():'')+'Firma del relator<br>'+esc(relNom)+'</div></div>';
   }
 
   // PTS acorde a sus funciones, según el cargo (usa las funciones del contrato / perfil de cargo).
@@ -1439,7 +1439,7 @@ export function crearPlantillas(D) {
       '<h4 class="dg-h4">Aportes y observaciones del grupo</h4><div class="dg-box dg-obs" data-k="obs" data-opc contenteditable style="min-height:34px"></div>'+
       '<p class="asis-decl">Los trabajadores individualizados declaran haber participado en esta charla y haber comprendido su contenido.</p>'+
       '<table class="dg-tbl asis-tb"><thead><tr><th class="n">N°</th><th style="width:32%">Nombre completo</th><th style="width:14%">RUT</th><th style="width:24%">Cargo</th><th>Firma</th></tr></thead><tbody>'+rows+'</tbody></table>'+
-      '<div class="dg-firmas asis-fir"><div><span class="ch-fprev" style="display:none">'+firmaPrevHtml()+'</span>Firma del relator<br><span data-espejo="rel"></span></div><div>V°B° jefatura</div></div></div>';
+      '<div class="dg-firmas asis-fir"><div style="flex:0 0 45%"><span class="ch-fprev" style="display:none">'+firmaPrevHtml()+'</span>Firma del relator<br><span data-espejo="rel"></span></div></div></div>';
   }
   // Las 30 charlas juntas, como guía para quien las dicta.
   function docCharlasTodas(){
