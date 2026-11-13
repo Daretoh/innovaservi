@@ -6,13 +6,13 @@
 //   boleta → su PDF queda como boleta de la orden (y el cobro se registra si faltaba);
 //   factura → queda en Cotizaciones → Facturas, ligada a la orden y pagada (la base deja la orden cobrada).
 // En el ambiente de pruebas solo se muestra el PDF (documentos de la empresa de pruebas de Haulmer).
-import { el } from '../../core/ui/dom.js?v=16e128e';
-import { icono } from '../../core/ui/iconos.js?v=16e128e';
-import { boton } from '../../core/ui/tabla.js?v=16e128e';
-import { abrirFormulario } from '../../core/ui/modal.js?v=16e128e';
-import { avisar } from '../../core/ui/aviso.js?v=16e128e';
-import { dinero, diaLocal, hoyISO } from '../../core/ui/formato.js?v=16e128e';
-import { llamarDte, estadoDte, ofrecerPdf } from '../../core/dte.js?v=16e128e';
+import { el } from '../../core/ui/dom.js?v=23e9550';
+import { icono } from '../../core/ui/iconos.js?v=23e9550';
+import { boton } from '../../core/ui/tabla.js?v=23e9550';
+import { abrirFormulario } from '../../core/ui/modal.js?v=23e9550';
+import { avisar } from '../../core/ui/aviso.js?v=23e9550';
+import { dinero, diaLocal, hoyISO, fechaLarga, sumarDias } from '../../core/ui/formato.js?v=23e9550';
+import { llamarDte, estadoDte, ofrecerPdf } from '../../core/dte.js?v=23e9550';
 
 const limpio = (r) => String(r ?? '').replace(/[^0-9kK]/g, '').toUpperCase();
 
@@ -51,19 +51,40 @@ export async function traerDeTuu(ctx, o, { tipo = 39, total = null, rut = null, 
   const factura = tipo === 33;
   const nombre = factura ? 'factura' : 'boleta';
   let lista = [];
-  const buscar = async ({ valor, opciones, poner, estado }) => {
-    if (!valor) return;
-    estado(`Buscando las ${nombre}s de ese día en el SII…`);
+  // Busca en un rango (desde–hasta): la boleta puede ser de otro día que el cobro (pedido de Enzo). Las ya usadas
+  // (en otra orden, un abono, el cobro o en Facturas) se muestran al final con dónde están y no se pueden elegir.
+  const buscar = async ({ valores, opciones, poner, estado }) => {
+    const desde = valores.desde; const hasta = valores.hasta || valores.desde;
+    if (!desde) return;
+    if (hasta < desde) { estado('"Hasta" es anterior a "Desde".', 'error'); return; }
+    estado(`Buscando ${nombre}s del ${fechaLarga(desde)}${hasta !== desde ? ` al ${fechaLarga(hasta)}` : ''} en el SII…`);
     try {
-      const r = await llamarDte(ctx, 'boletas', { fecha: valor, tipo });
+      const r = await llamarDte(ctx, 'boletas', { desde, hasta, tipo });
       const coincide = (b) => b.total === total && (!factura || !rut || limpio(b.rut) === limpio(rut));
-      lista = r.boletas.filter((b) => (!b.orden_id || b.orden_id === o.id) && !b.registrada)
-        .sort((a, b) => (Number(coincide(b)) - Number(coincide(a))) || String(b.hora).localeCompare(String(a.hora)));
-      opciones('doc', [['', lista.length ? 'Elegir…' : `No hay ${nombre}s libres ese día`],
-        ...lista.map((b) => [b.token, `N° ${b.folio}${b.hora ? ` · ${b.hora}` : ''} · ${dinero(b.total)}${factura && b.razon ? ` · ${b.razon}` : ''}${coincide(b) ? ' · coincide con esta orden' : ''}`])]);
-      const igual = lista.filter(coincide);
+      const libres = r.boletas.filter((b) => !b.uso)
+        .sort((a, b) => (Number(coincide(b)) - Number(coincide(a))) || `${b.fecha}${b.hora}`.localeCompare(`${a.fecha}${a.hora}`) * -1);
+      const usadas = r.boletas.filter((b) => b.uso);
+      lista = libres;
+      const texto = (b) => `N° ${b.folio} · ${fechaLarga(b.fecha)}${b.hora ? ` ${b.hora}` : ''} · ${dinero(b.total)}${factura && b.razon ? ` · ${b.razon}` : ''}`;
+      // En la lista solo las libres; las ya usadas van debajo, en rojo, con enlace a donde están (pedido de Enzo)
+      opciones('doc', [['', libres.length ? 'Elegir…' : `No hay ${nombre}s libres en esas fechas`],
+        ...libres.map((b) => [b.token, `${texto(b)}${coincide(b) ? ' · coincide con esta orden' : ''}`])]);
+      const igual = libres.filter(coincide);
       if (igual.length === 1) poner('doc', igual[0].token);
-      estado(`${lista.length} ${lista.length === 1 ? nombre : `${nombre}s`} sin ligar${igual.length ? `; ${igual.length} coincide${igual.length === 1 ? '' : 'n'} con esta orden` : ''}.${r.completo ? '' : ' (Solo las primeras 150.)'}`, 'ok');
+      estado(`${libres.length} sin usar${usadas.length ? ` · ${usadas.length} ya ${usadas.length === 1 ? 'usada' : 'usadas'} (abajo, en rojo)` : ''}${igual.length ? ` · ${igual.length} coincide${igual.length === 1 ? '' : 'n'} con esta orden` : ''}.${r.completo ? '' : ' (Solo las primeras 300: acorta el rango.)'}`, 'ok');
+      const caja = document.getElementById('f-doc')?.closest('.form-fila');
+      caja?.parentElement?.querySelector('.tuu-usadas')?.remove();
+      if (caja && usadas.length) {
+        const destino = (b) => (b.orden_id && b.orden_id !== o.id ? ctx.ruta('taller.orden', { id: b.orden_id, ir: 'cobro' })
+          : b.orden_id === o.id ? null : b.registrada ? ctx.ruta('cotizaciones.oc') : null);
+        caja.after(el('div', { class: 'tuu-usadas' },
+          el('p', { class: 'texto-chico' }, `Ya usadas (${usadas.length}):`),
+          el('ul', {}, usadas.map((b) => {
+            const href = destino(b);
+            return el('li', {}, icono('alerta', { tam: 13 }), ` ${texto(b)} · ya está en `,
+              href ? el('a', { href, target: '_blank', rel: 'noopener', title: 'Abrir en otra pestaña' }, b.uso) : el('strong', {}, b.orden_id === o.id ? `${b.uso} (esta misma orden)` : b.uso));
+          }))));
+      }
     } catch (err) { estado(err.message, 'error'); }
   };
   abrirFormulario({
@@ -76,26 +97,29 @@ export async function traerDeTuu(ctx, o, { tipo = 39, total = null, rut = null, 
         ? `Elige la factura que emitió la TUU${total != null ? ` (${dinero(total)})` : ''}. Queda en Facturas, pagada, y la orden queda cobrada.`
         : `Elige la boleta que emitió la TUU${total != null ? ` (${dinero(total)})` : ''}. Su PDF queda en la orden${o.cobrado ? '' : ' y el cobro queda registrado'}.`,
     campos: [
-      { id: 'fecha', etiqueta: `Día de la ${nombre}`, tipo: 'date', requerido: true, valor: abono?.fecha ?? (diaLocal(o.cobrado_at) || hoyISO()), alCambiar: buscar },
+      // Rango por omisión: desde dos días antes del cobro (o del abono) hasta hoy
+      { id: 'desde', etiqueta: 'Desde', tipo: 'date', requerido: true, valor: sumarDias(abono?.fecha ?? (diaLocal(o.cobrado_at) || hoyISO()), -2), alCambiar: buscar },
+      { id: 'hasta', etiqueta: 'Hasta', tipo: 'date', requerido: true, valor: hoyISO(), alCambiar: buscar },
       { id: 'doc', etiqueta: factura ? 'Factura' : 'Boleta', requerido: true, opciones: [['', 'Buscando…']] },
     ],
     textoGuardar: est.prueba ? 'Ver el PDF (prueba)' : 'Guardar en la orden',
     alGuardar: async (v) => {
       if (!v.doc) throw new Error(`Elige la ${nombre}.`);
+      if (v.doc.startsWith('usada:')) throw new Error(`Esa ${nombre} ya está usada: elige otra.`);
       const d = lista.find((b) => b.token === v.doc);
       const r = factura
-        ? await llamarDte(ctx, 'registrar_emitida', { token: v.doc, orden_id: o.id, tercero_id: terceroId, pago: { fecha: d?.fecha ?? v.fecha, medio: medio ?? 'debito' } })
+        ? await llamarDte(ctx, 'registrar_emitida', { token: v.doc, orden_id: o.id, tercero_id: terceroId, pago: { fecha: d?.fecha ?? v.hasta, medio: medio ?? 'debito' } })
         : await llamarDte(ctx, 'ligar_boleta', { orden_id: o.id, token: v.doc, ...(abono ? { abono_id: abono.id } : {}) });
       ofrecerPdf(r.pdf, { titulo: `${factura ? 'Factura' : 'Boleta'} N° ${r.folio}`, texto: r.prueba ? 'Ambiente de pruebas: la orden no cambia.' : 'Quedó guardada en la orden.' });
       if (r.aviso) { avisar(r.aviso, 'error'); alGuardar?.(r); return; }
       if (r.prueba) { avisar(`${factura ? 'Factura' : 'Boleta'} de prueba N° ${r.folio}: la orden no cambia.`); alGuardar?.(r); return; }
       if (abono) { avisar(`Boleta N° ${r.folio} guardada en el abono.`); alGuardar?.(r); return; }
-      if (!factura && !o.cobrado && alCobrar) await alCobrar(d?.fecha ?? v.fecha);
+      if (!factura && !o.cobrado && alCobrar) await alCobrar(d?.fecha ?? v.hasta);
       avisar(factura ? `Factura N° ${r.folio} registrada y pagada: la orden quedó cobrada.` : `Boleta N° ${r.folio} guardada${o.cobrado ? '' : ' y cobro registrado'}.`);
       alGuardar?.(r);
     },
   });
-  setTimeout(() => document.getElementById('f-fecha')?.dispatchEvent(new Event('change')), 0);
+  setTimeout(() => document.getElementById('f-desde')?.dispatchEvent(new Event('change')), 0);
 }
 
 // Compatibilidad: boleta (lo usaba la orden antes)

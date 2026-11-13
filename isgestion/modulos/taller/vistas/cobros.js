@@ -1,16 +1,16 @@
 // Cobros del taller: órdenes por cobrar (en proceso, terminadas o entregadas) y cobradas del mes.
 // Arriba, tarjetas de resumen; las pendientes muestran su antigüedad (desde el término) y un acceso a cobrar.
-import { el } from '../../../core/ui/dom.js?v=16e128e';
-import { icono } from '../../../core/ui/iconos.js?v=16e128e';
-import { listado } from '../../../core/ui/tabla.js?v=16e128e';
-import { avisar } from '../../../core/ui/aviso.js?v=16e128e';
-import { urlFirmada } from '../../../core/adjuntos.js?v=16e128e';
-import { dinero, fechaLarga, nombreMes, moverMes, rangoMes, diaLocal } from '../../../core/ui/formato.js?v=16e128e';
+import { el } from '../../../core/ui/dom.js?v=23e9550';
+import { icono } from '../../../core/ui/iconos.js?v=23e9550';
+import { listado } from '../../../core/ui/tabla.js?v=23e9550';
+import { avisar } from '../../../core/ui/aviso.js?v=23e9550';
+import { urlFirmada } from '../../../core/adjuntos.js?v=23e9550';
+import { dinero, fechaLarga, nombreMes, moverMes, rangoMes, diaLocal } from '../../../core/ui/formato.js?v=23e9550';
 
 const DIAS_ATRASO = 7;   // desde el término: más que esto se marca en rojo
-import { SELECT_ORDEN, verPatente, nombreVehiculo, nombreTercero, totales, TIPOS_VENTA } from '../datos.js?v=16e128e';
+import { SELECT_ORDEN, verPatente, nombreVehiculo, nombreTercero, totales, TIPOS_VENTA } from '../datos.js?v=23e9550';
 
-const estado = { tab: 'pendientes', mes: new Date().toISOString().slice(0, 7) };
+const estado = { tab: 'pendientes', mes: new Date().toISOString().slice(0, 7), soloAbonos: false, verExternas: false };
 
 export default async function vista(ctx) {
   const { desde, hasta } = rangoMes(estado.mes);
@@ -23,7 +23,14 @@ export default async function vista(ctx) {
   // Órdenes que se cobran en un cierre mensual o una cuenta corriente (módulo Cierres): no se cobran solas
   const externas = estado.tab === 'pendientes' && ctx.puede('cierres', 'ver') ? await ordenesExternas(ctx, data) : new Map();
   // Las de un cierre ya cobrado no se muestran: se cobraron en el cierre
-  const filas = data.filter((o) => externas.get(o.id) !== 'cobrada').map((o) => ({ ...o, t: totales(o, o.tal_orden_servicios), externa: externas.get(o.id) ?? (o.factura_tercero_id ? 'Con factura' : null) }));
+  const todas = data.filter((o) => externas.get(o.id) !== 'cobrada').map((o) => ({ ...o, t: totales(o, o.tal_orden_servicios), externa: externas.get(o.id) ?? (o.factura_tercero_id ? 'Con factura' : null) }));
+  // "Abonos recibidos" (tarjeta) filtra a las órdenes con abono, para saber dónde están (pedido de Enzo)
+  const conAbono = todas.filter((o) => o.t.abono > 0);
+  if (estado.tab !== 'pendientes' || !conAbono.length) estado.soloAbonos = false;
+  // Por omisión solo las que cobra el taller; las de cierre, cuenta corriente o factura se ven tocando su tarjeta
+  const externasLista = todas.filter((o) => o.externa);
+  if (estado.tab !== 'pendientes' || !externasLista.length) estado.verExternas = false;
+  const filas = estado.soloAbonos ? conAbono : estado.tab === 'pendientes' && !estado.verExternas ? todas.filter((o) => !o.externa) : todas;
   const suma = (k) => filas.filter((f) => !f.externa).reduce((s, f) => s + f.t[k], 0);
   // Días desde que se terminó (o desde que empezó, si sigue en proceso)
   const dias = (o) => { const ts = o.termino_at ?? o.inicio_at ?? o.ingreso_at; return ts ? Math.floor((Date.now() - new Date(ts)) / 864e5) : null; };
@@ -53,20 +60,24 @@ export default async function vista(ctx) {
         // Boleta adjunta al cobro (Taller 011)
         o.boleta_ruta ? el('button', { type: 'button', class: 'boton-icono', title: `Ver la boleta: ${o.boleta_nombre ?? 'archivo'}`, 'aria-label': 'Ver la boleta', onclick: async () => { try { window.open(await urlFirmada(ctx.api, o.boleta_ruta, 300), '_blank', 'noopener'); } catch (e) { avisar(e.message, 'error'); } } }, icono('documento', { tam: 15 })) : null) },
       { titulo: 'Total', valor: (o) => dinero(o.t.total) },
+      ...(estado.tab === 'pendientes' && conAbono.length ? [{ titulo: 'Abono', valor: (o) => (o.t.abono ? el('a', { href: ctx.ruta('taller.orden', { id: o.id, ir: 'cobro' }), title: 'Ver los abonos en el cobro de la orden' }, dinero(o.t.abono)) : '') }] : []),
       { titulo: estado.tab === 'pendientes' ? 'Saldo' : 'Ingreso', valor: (o) => (o.externa ? el('span', { class: 'chip chip-pend' }, o.externa) : el('strong', {}, dinero(estado.tab === 'pendientes' ? o.t.saldo : o.t.ingreso))) },
       ...(estado.tab === 'pendientes' && ctx.puede('taller', 'editar') ? [{ titulo: '', valor: (o) => (o.externa === 'Con factura' && ctx.puede('cotizaciones', 'ver') ? el('a', { class: 'boton boton-secundario boton-chico', href: ctx.ruta('cotizaciones.oc') }, 'Ir a Facturas', icono('derecha', { tam: 14 })) : o.externa ? '' : el('a', { class: 'boton boton-secundario boton-chico', href: ctx.ruta('taller.orden', { id: o.id, ir: 'cobro' }) }, 'Cobrar', icono('derecha', { tam: 14 }))) }] : []),
     ],
   });
-  if (filas.length) {
-    const tarjeta = (titulo, valor, sub, clase = '') => el('div', { class: `ficha doc-grupo fin-tarjeta ${clase}` }, el('span', { class: 'texto-suave texto-chico' }, titulo), el('strong', {}, valor), sub ? el('span', { class: 'texto-suave texto-chico' }, sub) : null);
+  if (todas.length) {
+    const tarjeta = (titulo, valor, sub, clase = '', alClic = null, activa = false) => el(alClic ? 'button' : 'div', { class: `ficha doc-grupo fin-tarjeta ${clase}${alClic ? ' fin-tarjeta-boton' : ''}`, ...(alClic ? { type: 'button', onclick: alClic, 'aria-pressed': String(activa) } : {}) }, el('span', { class: 'texto-suave texto-chico' }, titulo), el('strong', {}, valor), sub ? el('span', { class: 'texto-suave texto-chico' }, sub) : null);
     const propias = filas.filter((f) => !f.externa);
     const atrasadas = propias.filter((o) => o.estado !== 'proceso' && dias(o) > DIAS_ATRASO);
     lista.insertBefore(el('div', { class: 'fin-tarjetas' },
       estado.tab === 'pendientes'
         ? [tarjeta('Saldo por cobrar', dinero(suma('saldo')), `${propias.length} ${propias.length === 1 ? 'orden' : 'órdenes'}`),
           tarjeta(`Atrasadas (más de ${DIAS_ATRASO} días)`, String(atrasadas.length), atrasadas.length ? dinero(atrasadas.reduce((x, o) => x + o.t.saldo, 0)) : 'Ninguna', atrasadas.length ? 'fin-alerta' : ''),
-          tarjeta('Abonos recibidos', dinero(suma('abono')), 'anticipos de órdenes sin cobrar'),
-          filas.length > propias.length ? tarjeta('En cierre, cuenta o factura', String(filas.length - propias.length), 'se cobran fuera del taller') : null]
+          tarjeta('Abonos recibidos', dinero(conAbono.filter((f) => !f.externa).reduce((x, f) => x + f.t.abono, 0)),
+            estado.soloAbonos ? 'Mostrando solo estas órdenes · tocar para ver todas' : conAbono.length ? `en ${conAbono.length} ${conAbono.length === 1 ? 'orden' : 'órdenes'} sin cobrar · tocar para verlas` : 'anticipos de órdenes sin cobrar',
+            estado.soloAbonos ? 'fin-activa' : '', conAbono.length ? () => { estado.soloAbonos = !estado.soloAbonos; ctx.refrescar(); } : null, estado.soloAbonos),
+          externasLista.length ? tarjeta('En cierre, cuenta o factura', String(externasLista.length), estado.verExternas ? 'Mostrándolas en la lista · tocar para ocultarlas' : 'se cobran fuera del taller · tocar para verlas',
+            estado.verExternas ? 'fin-activa' : '', () => { estado.verExternas = !estado.verExternas; estado.soloAbonos = false; ctx.refrescar(); }, estado.verExternas) : null]
         : [tarjeta(`Ingreso de ${nombreMes(estado.mes)}`, dinero(suma('ingreso')), `${filas.length} ${filas.length === 1 ? 'orden cobrada' : 'órdenes cobradas'}`),
           tarjeta('IVA', dinero(suma('iva'))),
           tarjeta('Ticket promedio', dinero(filas.length ? Math.round(suma('total') / filas.length) : 0), 'total por orden')]), lista.children[1]);

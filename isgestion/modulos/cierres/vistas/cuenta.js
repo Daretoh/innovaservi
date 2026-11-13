@@ -1,15 +1,15 @@
 // Cuenta corriente: cotizaciones aceptadas del cliente, abonos con saldo corriente, OC y factura,
 // cerrar o reabrir, estado de cuenta en PDF, texto para el correo e historial.
 // Ruta: #/cierres.cuenta?id=<id>
-import { el } from '../../../core/ui/dom.js?v=16e128e';
-import { icono } from '../../../core/ui/iconos.js?v=16e128e';
-import { boton } from '../../../core/ui/tabla.js?v=16e128e';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=16e128e';
-import { avisar } from '../../../core/ui/aviso.js?v=16e128e';
-import { subirArchivo, urlFirmada } from '../../../core/adjuntos.js?v=16e128e';
-import { dinero, fechaLarga, hoyISO } from '../../../core/ui/formato.js?v=16e128e';
-import { nombreTercero, MEDIOS, nombreMedio, ARCHIVOS, verPatente, numeroTexto, totalesCuenta, estadoCuenta, totalCotizacion, verHistorial, archivoSeguro } from '../datos.js?v=16e128e';
-import { SELECT_CUENTA } from './cuentas.js?v=16e128e';
+import { el } from '../../../core/ui/dom.js?v=23e9550';
+import { icono } from '../../../core/ui/iconos.js?v=23e9550';
+import { boton } from '../../../core/ui/tabla.js?v=23e9550';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=23e9550';
+import { avisar } from '../../../core/ui/aviso.js?v=23e9550';
+import { subirArchivo, urlFirmada } from '../../../core/adjuntos.js?v=23e9550';
+import { dinero, fechaLarga, hoyISO } from '../../../core/ui/formato.js?v=23e9550';
+import { nombreTercero, MEDIOS, nombreMedio, ARCHIVOS, verPatente, numeroTexto, totalesCuenta, estadoCuenta, totalCotizacion, verHistorial, archivoSeguro } from '../datos.js?v=23e9550';
+import { SELECT_CUENTA } from './cuentas.js?v=23e9550';
 
 const ESTADO_ORDEN = { agendado: 'Agendado', espera: 'En espera', proceso: 'En proceso', terminado: 'Terminado', entregado: 'Entregado', anulada: 'Anulada' };
 
@@ -19,7 +19,8 @@ export default async function vista(ctx) {
   if (error) throw error;
   if (!k) return el('section', { class: 'listado' }, volver, el('h1', {}, 'Cuenta no encontrada'));
   const items = [...k.cie_cuenta_cotizaciones].sort((a, b) => (a.cot_cotizaciones?.numero ?? 0) - (b.cot_cotizaciones?.numero ?? 0));
-  const abonos = [...k.cie_abonos].sort((a, b) => a.fecha.localeCompare(b.fecha) || a.created_at.localeCompare(b.created_at));
+  const abonos = [...k.cie_abonos].sort((a, b) => (a.fecha ?? '9999').localeCompare(b.fecha ?? '9999') || (a.created_at ?? '').localeCompare(b.created_at ?? ''));
+  const fechaAbono = (a) => (a.fecha ? fechaLarga(a.fecha) : 'Sin fecha');
   const vivos = abonos.filter((a) => !a.deleted_at);
   const t = totalesCuenta(items, abonos);
   const [estadoTxt, estadoChip] = estadoCuenta(k, t);
@@ -120,7 +121,7 @@ export default async function vista(ctx) {
     corre -= a.monto;
     const c = items.find((i) => i.cotizacion_id === a.cotizacion_id)?.cot_cotizaciones;
     return el('tr', {},
-      el('td', {}, fechaLarga(a.fecha)),
+      el('td', {}, fechaAbono(a)),
       el('td', { class: 'num' }, el('strong', {}, dinero(a.monto))),
       el('td', {}, c ? `N° ${numeroTexto(c.numero)}` : 'General'),
       el('td', {}, nombreMedio[a.medio] ?? a.medio),
@@ -129,7 +130,7 @@ export default async function vista(ctx) {
       el('td', {}, el('div', { class: 'cot-acc' },
         a.archivo ? el('button', { type: 'button', class: 'boton-icono', title: 'Ver comprobante', 'aria-label': 'Ver comprobante', onclick: async () => { try { window.open(await urlFirmada(ctx.api, a.archivo, 300), '_blank', 'noopener'); } catch (e) { avisar(e.message, 'error'); } } }, icono('ojo', { tam: 16 })) : null,
         editar ? el('button', { type: 'button', class: 'boton-icono', title: 'Anular abono', 'aria-label': 'Anular abono', onclick: () => abrirFormulario({
-          titulo: 'Anular abono', mensaje: `${dinero(a.monto)} del ${fechaLarga(a.fecha)}. Sale del saldo y del Estado de resultados; queda en el historial.`, campos: [], textoGuardar: 'Anular',
+          titulo: 'Anular abono', mensaje: `${dinero(a.monto)} (${fechaAbono(a)}). Sale del saldo y del Estado de resultados; queda en el historial.`, campos: [], textoGuardar: 'Anular',
           alGuardar: async () => {
             const { error: e } = await ctx.api.from('cie_abonos').update({ deleted_at: new Date().toISOString() }).eq('id', a.id);
             if (e) throw new Error(e.message);
@@ -163,7 +164,7 @@ export default async function vista(ctx) {
   const pdf = async (b) => {
     b.disabled = true;
     try {
-      const { pdfCuenta } = await import('../documentos.js?v=16e128e');
+      const { pdfCuenta } = await import('../documentos.js?v=23e9550');
       const doc = await pdfCuenta(ctx, k, items, abonos, t, k.terceros);
       doc.save(`estado-de-cuenta-${archivoSeguro(k.nombre)}.pdf`);
     } catch (e) { avisar(e.message, 'error'); } finally { b.disabled = false; }

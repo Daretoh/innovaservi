@@ -673,6 +673,14 @@ html[data-modo="oscuro"] .chip-fijo { color: #10131a; }
 .fin-tarjetas { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-bottom: 16px; }
 .fin-tarjeta { display: flex; flex-direction: column; gap: 2px; padding: 12px 16px; }
 .fin-tarjeta strong { font-size: 1.3rem; }
+.fin-tarjeta-boton { text-align: left; font: inherit; color: inherit; cursor: pointer; border: 1px solid var(--borde); }
+.fin-tarjeta-boton:hover { background: var(--hover); }
+.fin-tarjeta.fin-activa { outline: 2px solid var(--empresa); outline-offset: -2px; }
+/* Boletas o facturas de la TUU ya usadas (en rojo, con enlace a donde están) */
+.tuu-usadas { margin: -4px 0 12px; padding: 8px 10px; border-radius: 8px; color: var(--venc); background: var(--venc-fondo); }
+.tuu-usadas p { margin: 0 0 4px; font-weight: 600; }
+.tuu-usadas ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: .9em; }
+.tuu-usadas a { color: inherit; font-weight: 600; text-decoration: underline; }
 .fin-alerta { border-left: 4px solid var(--venc); }
 .fin-bien { border-left: 4px solid var(--ok); }
 .fin-form { display: flex; flex-direction: column; gap: 12px; padding: 16px 20px; }

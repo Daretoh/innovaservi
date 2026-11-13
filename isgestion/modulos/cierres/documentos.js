@@ -2,10 +2,10 @@
 // información de pago, totales, firma, contactos y sello de ISgestión):
 // - Resumen del período (cierre mensual)
 // - Estado de cuenta (cuenta corriente)
-import { cargarJsPdf, cargarLogo, rgb, sellar } from '../../core/pdf.js?v=16e128e';
-import { nombreEmpresa } from '../../core/empresas.js?v=16e128e';
-import { cargarConfig } from '../cotizaciones/datos.js?v=16e128e';
-import { numeroTexto, verPatente, nombreMesLargo, nombreMedio, totalCotizacion, totalesCierre } from './datos.js?v=16e128e';
+import { cargarJsPdf, cargarLogo, rgb, sellar } from '../../core/pdf.js?v=23e9550';
+import { nombreEmpresa } from '../../core/empresas.js?v=23e9550';
+import { cargarConfig } from '../cotizaciones/datos.js?v=23e9550';
+import { numeroTexto, verPatente, nombreMesLargo, nombreMedio, totalCotizacion, totalesCierre } from './datos.js?v=23e9550';
 
 const M = 15;
 const TEXTO = [28, 35, 48];
@@ -131,23 +131,39 @@ export async function pdfCuenta(ctx, k, items, abonos, t, cliente) {
     ...estilosTabla(p.color),
     columnStyles: { 0: { cellWidth: 24 }, 1: { cellWidth: 20 }, 3: { cellWidth: 25, halign: 'right' }, 4: { cellWidth: 25, halign: 'right' }, 5: { cellWidth: 25, halign: 'right' } },
   });
-  const vivos = abonos.filter((a) => !a.deleted_at).sort((a, b) => a.fecha.localeCompare(b.fecha));
-  let corre = t.total;
-  p.doc.setFont('helvetica', 'bold').setFontSize(9).setTextColor(...p.color).text('ABONOS', M, p.doc.lastAutoTable.finalY + 8);
+  // Abonos: una fila por abono (fecha, glosa y monto) y su suma
+  const vivos = abonos.filter((a) => !a.deleted_at).sort((a, b) => (a.fecha ?? '9999').localeCompare(b.fecha ?? '9999') || (a.created_at ?? '').localeCompare(b.created_at ?? ''));
+  const sumaAbonos = vivos.reduce((s, a) => s + Number(a.monto || 0), 0);
+  let yAb = p.doc.lastAutoTable.finalY + 8;
+  if (yAb > p.H - 50) { p.doc.addPage(); yAb = 20; }
+  p.doc.setFont('helvetica', 'bold').setFontSize(9).setTextColor(...p.color).text('ABONOS', M, yAb);
   p.doc.autoTable({
-    startY: p.doc.lastAutoTable.finalY + 10,
-    head: [['Fecha', 'Monto', 'Asignado a', 'Medio', 'Referencia', 'Saldo']],
-    body: vivos.length ? vivos.map((a) => {
-      corre -= a.monto;
-      const c = items.find((i) => i.cotizacion_id === a.cotizacion_id)?.cot_cotizaciones;
-      return [fecha(a.fecha), pesos(a.monto), c ? `N° ${numeroTexto(c.numero)}` : 'General', nombreMedio[a.medio] ?? a.medio, a.referencia || '', pesos(corre)];
-    }) : [[{ content: 'Sin abonos registrados.', colSpan: 6 }]],
+    startY: yAb + 2,
+    head: [['Fecha', 'Detalle', 'Monto']],
+    body: vivos.length ? vivos.map((a) => [a.fecha ? fecha(a.fecha) : 'Sin fecha', glosaAbono(a, items), pesos(a.monto)])
+      : [[{ content: 'Sin abonos registrados.', colSpan: 3, styles: { textColor: GRIS, fontStyle: 'italic' } }]],
+    foot: [[{ content: `Total abonos${vivos.length ? ` (${vivos.length})` : ''}`, colSpan: 2 }, pesos(sumaAbonos)]],
+    showFoot: 'lastPage',
     ...estilosTabla(p.color),
-    columnStyles: { 1: { halign: 'right' }, 5: { halign: 'right' } },
+    footStyles: { fillColor: SUAVE, textColor: TEXTO, fontStyle: 'bold' },
+    columnStyles: { 0: { cellWidth: 22 }, 2: { cellWidth: 30, halign: 'right' } },
+    didParseCell: (d) => { if (d.section !== 'body' && d.column.index === 2) d.cell.styles.halign = 'right'; },
   });
-  cierrePdf(p, [['Total aprobado', pesos(t.total)], ['− Abonos', `- ${pesos(t.abonado)}`]], t.saldo < 0 ? ['SALDO A FAVOR', pesos(-t.saldo)] : ['TOTAL A PAGAR', pesos(t.saldo)],
+  cierrePdf(p, [['Total aprobado', pesos(t.total)], ['Abonado', `- ${pesos(t.abonado)}`]], t.saldo < 0 ? ['SALDO A FAVOR', pesos(-t.saldo)] : ['SALDO A PAGAR', pesos(t.saldo)],
     'Estado de cuenta de los trabajos aprobados. Los montos incluyen IVA cuando la cotización lo indica.');
   return sellar(p.doc, { autor: p.e.razon_social, titulo: `Estado de cuenta ${k.nombre}` });
+}
+
+// Glosa de un abono: medio, N° de transferencia o comprobante, cotización a la que va y nota
+export function glosaAbono(a, items = []) {
+  const medio = nombreMedio[a.medio] ?? a.medio ?? '';
+  const ref = (a.referencia ?? '').trim();
+  const c = a.cotizacion_id ? items.find((i) => i.cotizacion_id === a.cotizacion_id)?.cot_cotizaciones : null;
+  return [
+    [medio, ref ? `N° ${ref.replace(/^n[°º.]?\s*/i, '')}` : ''].filter(Boolean).join(' '),
+    c ? `Cotización N° ${numeroTexto(c.numero)}` : 'Abono general',
+    (a.nota ?? '').trim(),
+  ].filter(Boolean).join(' · ');
 }
 
 // Cotización: total para mostrar
