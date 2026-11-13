@@ -534,6 +534,13 @@
   .mepp-si{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#22a06b;} .mepp-no{color:#b9bfd1;font-weight:700;}
   .pts-tit{font:800 19px var(--font);color:var(--ink);text-align:center;margin:4px 0 10px;text-transform:uppercase;letter-spacing:.02em;}
   .pts-ctl td{width:25%;}
+  /* Firmar un PDF: páginas del PDF subido con las firmas encima (movibles) */
+  #dg-doc:has(.dg-pag){padding:14px;}
+  .dg-pag{position:relative;width:100%;margin:0 0 14px;background:#fff;box-shadow:0 0 0 1px #d6d9e3;overflow:hidden;}
+  .dg-pag-img{display:block;width:100%;height:100%;}
+  .dg-pag-fir{position:absolute;left:10%;bottom:12%;width:28%;height:0;} .dg-pag-fir.dg-pag-rep{left:58%;}
+  .dg-pag-fir img{position:absolute;left:50%;bottom:0;transform:translateX(-50%);width:75%;height:auto;max-width:none;}
+  .dg-pag-fir img.rs-tim{left:95%;width:60%;}
   .dg-fwrap{position:relative;flex:none;} .dg-fwrap .btn{width:auto;display:inline-flex;align-items:center;gap:6px;}
   .dg-fmenu{position:absolute;right:0;top:calc(100% + 6px);z-index:5;background:var(--card);border:1px solid var(--line);border-radius:11px;box-shadow:0 10px 30px -12px rgba(0,0,0,.35);padding:8px 10px;min-width:210px;}
   .dg-fmenu label{display:flex;align-items:center;gap:8px;font:600 13px var(--font);color:var(--ink);padding:6px 2px;cursor:pointer;white-space:nowrap;}
@@ -8864,6 +8871,7 @@
     {k:'fmt_chk_dil', n:'Checklist de seguridad y ejecución · diluidores de sal', sub:'Ítems marcables, medición de gases y firmas', btn:'Abrir checklist', datos:true, personas:'lista', tipo:'reg_chk_diluidor', carpeta:'formatos', regNombre:'Checklists de diluidores realizados', validar:chkValidar,
       titular:function(){ return [dgValor('fecha'),dgValor('cli'),dgValor('lug')].filter(Boolean).join(' · '); }, nota:function(){ return null; }, build:function(v,PER){ return docChecklistDil(v,PER); }},
     {k:'fmt_salida', n:'Registro de salida a atención médica', build:function(){ return docSalida({}); }},
+    {k:'fmt_firmarpdf', n:'Firmar un PDF', sub:'Sube un PDF (por ejemplo, la matriz IPER) y agrégale la firma, el timbre y la firma de la prevencionista guardados', btn:'Elegir PDF', archivo:firmarPdfElegir, opciones:function(){ return DG_PDFP.map(function(p,k){ return {v:String(k+1), n:'Firmas en la página '+(k+1)+' de '+DG_PDFP.length}; }); }, inicial:firmarPdfPagina, build:function(v){ return firmarPdfHtml(v); }},
     {k:'fmt_carta', n:'Carta (formato editable)', opciones:function(){ return [{v:'libre',n:'Carta en blanco'},{v:'compromiso',n:'Carta de compromiso · sin examen de altura / espacios confinados'}]; }, personas:'lista', build:function(v,PER){ return docCarta(v,PER); }}
   ];
   var EMP_Q='';
@@ -8936,7 +8944,7 @@
     c.querySelectorAll('.emp-gen').forEach(function(b){ b.addEventListener('click',function(ev){ ev.stopPropagation(); abrirPickDoc(b.dataset.gen); }); });
     c.querySelectorAll('.emp-pf').forEach(function(b){ b.addEventListener('click',function(ev){ ev.stopPropagation(); generarPTS(b.dataset.pts); }); });
     c.querySelectorAll('.emp-edpts').forEach(function(b){ b.addEventListener('click',function(ev){ ev.stopPropagation(); abrirEditorPTS(b.dataset.pts); }); });
-    c.querySelectorAll('.emp-fmt').forEach(function(el){ el.addEventListener('click',function(){ var f=EMP_FMT.filter(function(x){ return x.k===el.dataset.k; })[0]; if(!f) return; function abrir(){ abrirDocEmpresa({ nombre:f.n, opciones:f.opciones?f.opciones():null, build:f.build, personas:f.personas, inicial:f.inicial, tipo:f.tipo, carpeta:f.carpeta, regNombre:f.regNombre, titular:f.titular, nota:f.nota, validar:f.validar }); } if(f.datos) dgDatosBase(abrir); else abrir(); }); });
+    c.querySelectorAll('.emp-fmt').forEach(function(el){ el.addEventListener('click',function(){ var f=EMP_FMT.filter(function(x){ return x.k===el.dataset.k; })[0]; if(!f) return; function abrir(){ abrirDocEmpresa({ nombre:f.n, opciones:f.opciones?f.opciones():null, build:f.build, personas:f.personas, inicial:f.inicial, tipo:f.tipo, carpeta:f.carpeta, regNombre:f.regNombre, titular:f.titular, nota:f.nota, validar:f.validar }); } if(f.archivo) f.archivo(abrir); else if(f.datos) dgDatosBase(abrir); else abrir(); }); });
     c.querySelectorAll('.emp-add').forEach(function(b){ b.addEventListener('click',function(){ abrirEmpDoc(null, '', false, b.dataset.c); }); });
   }
   // Firmas para los documentos (botón arriba a la derecha en Empresa): gerente (firma y timbre) y prevencionista.
@@ -11861,7 +11869,49 @@
 
   // ====== Generador de documentos (formatos RRHH → PDF con membrete) ======
   // Captura un elemento a PDF A4 (parte en varias páginas si es alto). Reusa html2canvas + jsPDF.
+  // Firmar un PDF: se sube un PDF (p. ej. la matriz IPER hecha en Excel), sus páginas se muestran como imágenes y encima
+  // van la firma, el timbre y la firma de la prevencionista guardados, movibles. Al descargar sale página por página.
+  var DG_PDFP=[], PDFJS='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
+  function cargarPdfJs(){ if(window.pdfjsLib) return Promise.resolve(); return new Promise(function(res,rej){ var s=document.createElement('script'); s.src=PDFJS+'pdf.min.js'; s.onload=function(){ window.pdfjsLib.GlobalWorkerOptions.workerSrc=PDFJS+'pdf.worker.min.js'; res(); }; s.onerror=function(){ rej(new Error('No se pudo cargar el lector de PDF. Revisa la conexión.')); }; document.head.appendChild(s); }); }
+  function pdfAPaginas(file){
+    return cargarPdfJs().then(function(){ return file.arrayBuffer(); }).then(function(buf){ return window.pdfjsLib.getDocument({data:buf}).promise; }).then(function(pdf){
+      var out=[], i=0;
+      function sig(){ i++; if(i>pdf.numPages) return Promise.resolve(out);
+        return pdf.getPage(i).then(function(pg){ var vp=pg.getViewport({scale:2}), cv=document.createElement('canvas'); cv.width=vp.width; cv.height=vp.height;
+          return pg.render({canvasContext:cv.getContext('2d'), viewport:vp}).promise.then(function(){ return pg.getTextContent().catch(function(){ return {items:[]}; }); }).then(function(tc){
+          var txt=(tc.items||[]).map(function(x){ return x.str; }).join(' ');
+          out.push({src:cv.toDataURL('image/jpeg',0.9), w:vp.width, h:vp.height, firma:/aprobado por|firma del|elaborado por|elabor[óo]/i.test(txt)}); return sig(); }); }); }
+      return sig(); });
+  }
+  function firmarPdfElegir(cb){
+    var inp=document.createElement('input'); inp.type='file'; inp.accept='application/pdf,.pdf';
+    inp.onchange=function(){ var f=inp.files&&inp.files[0]; if(!f) return; busy(true,'Leyendo el PDF…');
+      pdfAPaginas(f).then(function(P){ busy(false); DG_PDFP=P;
+        cb();
+        if(!FIRMA_SIG&&!FIRMA_TIM&&!FIRMA_PREV) toast('No hay firmas guardadas: súbelas en Empresa → Firma y timbre.');
+        else toast('Arrastra las firmas a su lugar. Si van en otra hoja, elige la página arriba.');
+      }).catch(function(e){ busy(false); toast((e&&e.message)||'No se pudo leer el PDF.'); });
+    };
+    inp.click();
+  }
+  // Páginas del PDF subido; las firmas van encima de la página elegida (por defecto, la última que dice Aprobado o Elaborado por).
+  function firmarPdfPagina(){ for(var k=DG_PDFP.length-1;k>=0;k--) if(DG_PDFP[k].firma) return String(k+1); return String(DG_PDFP.length||1); }
+  function firmarPdfHtml(v){ var pf=+v||DG_PDFP.length;
+    return DG_PDFP.map(function(p,k){ return '<div class="dg-pag" style="aspect-ratio:'+p.w+' / '+p.h+'"><img class="dg-pag-img" src="'+p.src+'" alt="">'+
+      (k+1===pf?'<div class="dg-pag-fir">'+firmaPrevHtml()+'</div><div class="dg-pag-fir dg-pag-rep">'+firmaRepHtml()+'</div>':'')+'</div>'; }).join(''); }
+  // Descarga del PDF firmado: cada página con su tamaño y orientación (vertical u horizontal).
+  function pdfFirmado(el){
+    return cargarH2C().then(function(){ return inlineImagenes(el); }).then(function(){
+      var pags=el.querySelectorAll('.dg-pag'), doc=null, i=0;
+      function sig(){ if(i>=pags.length) return Promise.resolve(doc); var p=pags[i++];
+        return window.html2canvas(p,{scale:2,useCORS:true,backgroundColor:'#ffffff',logging:false}).then(function(cv){
+          var hz=cv.width>cv.height, W=hz?279.4:215.9, H=W*cv.height/cv.width;   // ancho carta y alto según la proporción de la página
+          if(!doc) doc=new window.jspdf.jsPDF({unit:'mm',format:[W,H],orientation:hz?'l':'p',compress:true}); else doc.addPage([W,H],hz?'l':'p');
+          doc.addImage(cv.toDataURL('image/jpeg',0.92),'JPEG',0,0,W,H); return sig(); }); }
+      return sig(); });
+  }
   function pdfDesde(el){
+    if(el.querySelector(".dg-pag")) return pdfFirmado(el);   // PDF subido para firmar: página por página
     return cargarH2C().then(function(){ return inlineImagenes(el); }).then(function(){
       if(!window.jspdf) throw new Error('jspdf');
       var doc=new window.jspdf.jsPDF({unit:'mm',format:'letter',compress:true}), A4W=215.9, A4H=279.4;
@@ -11929,7 +11979,7 @@
   var EMP={ rz:'Innovación y Servicios SpA', rut:'77.647.955-1', dir:'Av. Nueva Providencia 1881, Providencia', rep:'Cristopher Andrés Ruiz Vidal', repRut:'17.240.763-3' };
   function dgHead(titulo, ver, fecha){ return '<div class="dg-h"><div class="lg"><img src="../assets/images/InnovaServi-completo.png" onerror="this.style.display=\'none\'"></div><div class="t"><b>'+titulo+'</b><span>'+EMP.rz+' · RUT '+EMP.rut+'</span></div><div class="ver"><span>Versión <b>'+(ver||'01')+'</b></span><span>Fecha <b>'+(fecha||fFaena(todayISO()))+'</b></span></div></div><div class="dg-band"></div>'; }
   function dgFoot(){ return '<div class="dg-foot"><span>'+EMP.rz+' · RUT '+EMP.rut+' · Los Lirios 35, Mirasol, Puerto Montt</span><span>Documento generado con InnovaGestión</span></div>'; }
-  function dgSet(html){ $('dg-doc').classList.remove('fa-mode'); $('dg-doc').innerHTML=html+dgFoot(); dgFirmas(); }
+  function dgSet(html){ $('dg-doc').classList.remove('fa-mode'); $('dg-doc').innerHTML=html+(html.indexOf('class="dg-pag"')>=0?'':dgFoot()); firmaMovible($('dg-doc')); dgFirmas(); }
   // Firmas y timbre: botón Firmas para ponerlos o quitarlos. Se ocultan con estilo en línea (también al imprimir) y sin mover nada.
   var DG_FIR={sig:true,tim:true,prev:true}, DG_FIR_N={sig:'Firma del representante legal',tim:'Timbre de la empresa',prev:'Firma de la prevencionista'};
   function dgFirmas(){ var d=$('dg-doc'); if(!d) return; var hay={};
@@ -13513,6 +13563,7 @@
   }
   $('dg-print').addEventListener('click',function(){ dgRevisar(dgImprimir,'Imprimir'); });
   function dgImprimir(){
+    if($("dg-doc").querySelector(".dg-pag")){ busy(true,"Generando PDF…"); pdfDesde($("dg-doc")).then(function(doc){ busy(false); window.open(URL.createObjectURL(doc.output("blob")),"_blank"); }).catch(function(){ busy(false); toast("No se pudo generar el PDF."); }); return; }   // PDF firmado: se imprime desde el visor
     // Imprime el documento tal cual se ve, en un marco aparte con los mismos estilos (sin la barra ni los controles de pantalla)
     var css=Array.prototype.map.call(document.querySelectorAll('style'),function(s){ return s.textContent; }).join('\n');
     var links=Array.prototype.map.call(document.querySelectorAll('link[rel="stylesheet"]'),function(l){ return l.outerHTML; }).join('');
