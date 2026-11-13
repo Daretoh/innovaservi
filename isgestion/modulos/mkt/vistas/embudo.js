@@ -1,14 +1,14 @@
 // Embudo: contactos en columnas por etapa (como Kommo o Leadsales). Arrastrar una tarjeta a otra columna cambia la
 // etapa (la base lo anota en la actividad); la tarjeta abre la ficha. Filtros por responsable, origen y campaña.
 // "Sin atender": en la primera etapa y sin actividad en DIAS_SIN_ATENDER días.
-import { el } from '../../../core/ui/dom.js?v=92f4191';
-import { icono } from '../../../core/ui/iconos.js?v=92f4191';
-import { boton } from '../../../core/ui/tabla.js?v=92f4191';
-import { avisar } from '../../../core/ui/aviso.js?v=92f4191';
-import { dinero, fechaCorta } from '../../../core/ui/formato.js?v=92f4191';
-import { cargarBase, cargarCss, nombreOrigen, ORIGENES, diasDesde, diasHasta, DIAS_SIN_ATENDER, opcionesUsuarios, MOTIVOS } from '../datos.js?v=92f4191';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=92f4191';
-import { formContacto } from '../formularios.js?v=92f4191';
+import { el } from '../../../core/ui/dom.js?v=16e128e';
+import { icono } from '../../../core/ui/iconos.js?v=16e128e';
+import { boton } from '../../../core/ui/tabla.js?v=16e128e';
+import { avisar } from '../../../core/ui/aviso.js?v=16e128e';
+import { dinero, fechaCorta } from '../../../core/ui/formato.js?v=16e128e';
+import { cargarBase, cargarCss, nombreOrigen, ORIGENES, diasDesde, diasHasta, DIAS_SIN_ATENDER, opcionesUsuarios, MOTIVOS } from '../datos.js?v=16e128e';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=16e128e';
+import { formContacto } from '../formularios.js?v=16e128e';
 
 const estado = { responsable: '', origen: '', campana: '', buscar: '', cerradas: false };
 

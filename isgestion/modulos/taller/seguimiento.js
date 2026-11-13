@@ -4,11 +4,11 @@
 //   cronómetro desde la recepción y barra de avance, que se arrastra para priorizar (tal_ordenes.orden_manual)
 // - flujo de los "por cotizar": P.C → COTIZADO → PAGADO
 // - detalle a pantalla completa (tablet): cronómetro grande, avance, tareas para marcar, tiempos por etapa y avanzar/volver.
-import { el } from '../../core/ui/dom.js?v=92f4191';
-import { icono } from '../../core/ui/iconos.js?v=92f4191';
-import { avisar } from '../../core/ui/aviso.js?v=92f4191';
-import { ESTADOS, PRIORIDADES, nombreEstado, verPatente, nombreVehiculo, nombreTercero, textoMinutos } from './datos.js?v=92f4191';
-import { mover } from './acciones.js?v=92f4191';
+import { el } from '../../core/ui/dom.js?v=16e128e';
+import { icono } from '../../core/ui/iconos.js?v=16e128e';
+import { avisar } from '../../core/ui/aviso.js?v=16e128e';
+import { ESTADOS, PRIORIDADES, nombreEstado, verPatente, nombreVehiculo, nombreTercero, textoMinutos } from './datos.js?v=16e128e';
+import { mover } from './acciones.js?v=16e128e';
 
 const ORDEN_PRIO = { urgente: 0, prioridad: 1, normal: 2, programado: 3 };
 const hoyLocal = () => new Date().toLocaleDateString('sv');
@@ -98,8 +98,10 @@ export function resumenTaller(ctx, data, { alAbrir }) {
     lista.addEventListener('pointerup', soltar);
     lista.addEventListener('pointercancel', soltar);
   }
-  // En el teléfono parte cerrado: lo primero que se ve es el tablero (pedido de Enzo)
-  return el('details', { class: 'ficha doc-grupo seg-resumen', open: !matchMedia('(max-width: 700px)').matches },
+  // Parte cerrado (pedido de Enzo, 2026-11-13): lo primero que se ve es el tablero; se recuerda si lo abres
+  let abierto = false;
+  try { abierto = localStorage.getItem('isg.taller.resumen') === '1'; } catch { /* sin almacenamiento */ }
+  const det = el('details', { class: 'ficha doc-grupo seg-resumen', open: abierto },
     el('summary', {}, el('strong', {}, 'Resumen del taller'), el('span', { class: 'texto-suave texto-chico' }, ` ${activos.length} activos · ${prom}% de avance${puede ? ' · arrastra para priorizar' : ''}`)),
     el('div', { class: 'fin-tarjetas' },
       kpi('En proceso', String(data.filter((o) => o.estado === 'proceso').length), 'activos ahora'),
@@ -108,6 +110,8 @@ export function resumenTaller(ctx, data, { alAbrir }) {
       kpi('Entregados hoy', String(data.filter((o) => o.estado === 'entregado' && diaDe(o.entregado_at) === hoy).length), 'salieron')),
     el('div', { class: 'resumen-chips' }, PRIORIDADES.map(([k, n]) => el('span', { class: `chip seg-prio-${k}` }, `${n} `, el('strong', {}, String(activos.filter((o) => o.prioridad === k).length))))),
     lista);
+  det.addEventListener('toggle', () => { try { localStorage.setItem('isg.taller.resumen', det.open ? '1' : '0'); } catch { /* sin almacenamiento */ } });
+  return det;
 }
 
 // Detalle a pantalla completa (tablet): cronómetro, avance, tareas, tiempos por etapa y avanzar/volver

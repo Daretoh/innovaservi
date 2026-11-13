@@ -2721,3 +2721,39 @@ html.cam-abierta, html.cam-abierta body { overflow: hidden; }
 }
 .aviso-version .icono { color: var(--empresa); flex: none; }
 .aviso-version .boton { margin-left: auto; }
+
+/* Orden de trabajo (2026-11-13, pedido de Enzo): datos del cliente arriba y un color por sección */
+:root { --sec-costos: #c2410c; --sec-servicios: #1d6fd1; --sec-tiempos: #6d5bd0; --sec-insumos: #a16207; --sec-fotos: #0f8a6a; --sec-cobro: #2f8a3a; }
+html[data-modo="oscuro"] { --sec-costos: #f0916b; --sec-servicios: #7fb2f0; --sec-tiempos: #a99cf0; --sec-insumos: #e3b462; --sec-fotos: #5ccaa5; --sec-cobro: #8fcf6a; }
+.orden-sec { --sec: var(--texto-suave); box-shadow: inset 4px 0 0 var(--sec); }
+.orden-sec h2 { color: var(--sec); }
+.sec-costos { --sec: var(--sec-costos); } .sec-servicios { --sec: var(--sec-servicios); } .sec-tiempos { --sec: var(--sec-tiempos); }
+.sec-insumos { --sec: var(--sec-insumos); } .sec-fotos { --sec: var(--sec-fotos); } .sec-cobro { --sec: var(--sec-cobro); }
+.sec-cobro .cobro-saldo strong { color: var(--sec-cobro); }
+.orden-ficha-datos { max-width: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr)); gap: 6px 14px; padding: 12px 16px; }
+.orden-ficha-datos .form-fila { margin: 0; }
+.orden-notas { grid-column: 1 / -1; }
+.orden-fila-cobro { grid-template-columns: minmax(0, 1fr); }
+.orden-fila-cobro > .ficha { max-width: none; }
+
+/* Datos de la orden como información en la cabecera: al tocar uno se abre el apartado para cambiarlo */
+.orden-infos { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.orden-info { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border: 1px solid var(--borde); border-radius: 999px;
+  background: var(--superficie); color: var(--texto); font: inherit; font-size: .88rem; cursor: pointer; max-width: 100%; transition: background var(--transicion); }
+.orden-info:hover { background: var(--hover); }
+.orden-info.vacio { border-style: dashed; color: var(--texto-suave); }
+.orden-info.prio-urgente { border-color: var(--error); color: var(--error); }
+.orden-info.prio-prioridad { border-color: var(--sec-insumos); color: var(--sec-insumos); }
+.orden-ficha-datos[hidden] { display: none; }
+.orden-ficha-cab { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+
+/* Tiempos de la orden en la línea de avance: la hora se toca para cambiarla */
+.orden-tiempos { background: var(--superficie); border: var(--tarjeta-borde); border-radius: var(--radio); box-shadow: inset 4px 0 0 var(--sec-tiempos); }
+.orden-tiempos .orden-avance { border: 0; background: none; padding-bottom: 6px; }
+.orden-hora { display: inline-flex; align-items: center; gap: 4px; padding: 1px 6px; margin-left: -6px; border: 1px dashed transparent; border-radius: var(--radio-control);
+  background: none; color: var(--sec-tiempos); font: inherit; font-size: .8rem; cursor: pointer; white-space: nowrap; }
+.orden-hora:hover { border-color: var(--sec-tiempos); background: var(--hover); }
+.orden-hora-campo { font-size: .8rem; padding: 2px 4px; min-width: 0; width: 100%; max-width: 190px; }
+.orden-tiempos-pie { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; padding: 0 16px 12px 20px; font-size: .88rem; color: var(--texto-suave); }
+.orden-muerto { display: inline-flex; align-items: center; gap: 6px; }
+.orden-muerto .campo { width: 80px; padding: 3px 6px; }

@@ -1,12 +1,12 @@
 // Carga los manifiestos y arma el menú según la empresa activa.
-import ids from './config/modulos.js?v=92f4191';
+import ids from './config/modulos.js?v=16e128e';
 
 let manifiestos = null;
 
 export async function cargarManifiestos() {
   if (manifiestos) return manifiestos;
   manifiestos = await Promise.all(
-    ids.map((id) => import(`../modulos/${id}/manifest.js?v=92f4191`).then((m) => m.default)),
+    ids.map((id) => import(`../modulos/${id}/manifest.js?v=16e128e`).then((m) => m.default)),
   );
   return manifiestos;
 }
@@ -28,16 +28,21 @@ export function modulosVisibles(lista, modulosEmpresa, puede) {
 // `etiqueta` del módulo (o su nombre) o `apartados: { x: { label, icono } }` del módulo que lo define primero.
 export function apartadosPorCategoria(visibles) {
   const porId = new Map(); const grupos = new Map();
-  for (const m of visibles) {
+  // Dos vueltas: primero cada módulo con lo suyo y después las pantallas que van en el apartado de otro módulo
+  // (así el apartado queda en el lugar y la categoría de su dueño)
+  const ajeno = (m, item) => !!item.apartado && !m.apartados?.[item.apartado] && visibles.some((x) => x !== m && x.apartados?.[item.apartado]);
+  for (const vuelta of [false, true]) for (const m of visibles) {
     for (const item of m.menu) {
-      if (item.oculto) continue;
+      if (item.oculto || ajeno(m, item) !== vuelta) continue;
       const id = item.apartado ?? m.id;
       if (!porId.has(id)) {
-        const meta = m.apartados?.[id] ?? (id === m.id ? { label: m.etiqueta ?? m.nombre, icono: m.icono } : { label: item.label, icono: m.icono });
-        const ap = { id, label: meta.label, icono: meta.icono, categoria: m.categoria, items: [] };
+        // Un apartado de otro módulo (p. ej. Servicios y precios del Taller dentro de Catálogo) toma nombre y categoría del dueño
+        const dueno = visibles.find((x) => x.apartados?.[id]) ?? m;
+        const meta = dueno.apartados?.[id] ?? (id === m.id ? { label: m.etiqueta ?? m.nombre, icono: m.icono } : { label: item.label, icono: m.icono });
+        const ap = { id, label: meta.label, icono: meta.icono, categoria: dueno.categoria, dueno: dueno.id, items: [] };
         porId.set(id, ap);
-        if (!grupos.has(m.categoria)) grupos.set(m.categoria, []);
-        grupos.get(m.categoria).push(ap);
+        if (!grupos.has(dueno.categoria)) grupos.set(dueno.categoria, []);
+        grupos.get(dueno.categoria).push(ap);
       }
       porId.get(id).items.push({ ...item, modulo: m });
     }

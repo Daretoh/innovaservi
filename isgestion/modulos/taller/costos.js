@@ -5,13 +5,13 @@
 // gasto suyo ligado a la orden y entra en su cuenta (Costos → Pagos). Las compras hechas por cuenta de un tercero
 // (fin_registros.a_cuenta_de) se muestran aparte: no son costo de la empresa, se le descuentan a él.
 // Cada fila dice qué es (Mano de obra del contratista o Material) y cómo se paga; "A servicios" la cobra en la orden con nuestro margen.
-import { el } from '../../core/ui/dom.js?v=92f4191';
-import { boton } from '../../core/ui/tabla.js?v=92f4191';
-import { abrirFormulario } from '../../core/ui/modal.js?v=92f4191';
-import { avisar } from '../../core/ui/aviso.js?v=92f4191';
-import { dinero, fechaLarga, diaLocal, hoyISO } from '../../core/ui/formato.js?v=92f4191';
-import { nombreVehiculo } from './datos.js?v=92f4191';
-import { botonesCompra } from './abonos.js?v=92f4191';
+import { el } from '../../core/ui/dom.js?v=16e128e';
+import { boton } from '../../core/ui/tabla.js?v=16e128e';
+import { abrirFormulario } from '../../core/ui/modal.js?v=16e128e';
+import { avisar } from '../../core/ui/aviso.js?v=16e128e';
+import { dinero, fechaLarga, diaLocal, hoyISO } from '../../core/ui/formato.js?v=16e128e';
+import { nombreVehiculo } from './datos.js?v=16e128e';
+import { botonesCompra } from './abonos.js?v=16e128e';
 
 const nombreT = (t) => t?.nombre_fantasia || t?.razon_social || '';
 

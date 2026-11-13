@@ -1,14 +1,14 @@
 // Ficha del postulante: seguimiento (etapa, proceso, próximo contacto, valoración), requisitos, historial de
 // entrevistas y notas, documentos iniciales, datos; contratar, descartar, reactivar o eliminar.
 // Ruta: #/postulantes.ficha?id=<postulante>
-import { el } from '../../../core/ui/dom.js?v=92f4191';
-import { icono } from '../../../core/ui/iconos.js?v=92f4191';
-import { boton } from '../../../core/ui/tabla.js?v=92f4191';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=92f4191';
-import { avisar } from '../../../core/ui/aviso.js?v=92f4191';
-import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=92f4191';
-import { fechaLarga, hoyISO, diaLocal } from '../../../core/ui/formato.js?v=92f4191';
-import { cargarBase, formularioPostulante, nombreCompleto, iniciales, requisitosDe, nombreFuente } from '../datos.js?v=92f4191';
+import { el } from '../../../core/ui/dom.js?v=16e128e';
+import { icono } from '../../../core/ui/iconos.js?v=16e128e';
+import { boton } from '../../../core/ui/tabla.js?v=16e128e';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=16e128e';
+import { avisar } from '../../../core/ui/aviso.js?v=16e128e';
+import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=16e128e';
+import { fechaLarga, hoyISO, diaLocal } from '../../../core/ui/formato.js?v=16e128e';
+import { cargarBase, formularioPostulante, nombreCompleto, iniciales, requisitosDe, nombreFuente } from '../datos.js?v=16e128e';
 
 const TIPOS_EVENTO = [['entrevista', 'Entrevista'], ['llamada', 'Llamada'], ['nota', 'Nota']];
 const NOMBRE_EVENTO = { entrevista: 'Entrevista', llamada: 'Llamada', nota: 'Nota', etapa: 'Cambio de etapa', estado: 'Estado' };
@@ -176,7 +176,7 @@ function contratar(ctx, p) {
       let aviso = null;
       if (p.ficha_id) {
         const { data: f } = await ctx.api.from('rrhh_fichas_ingreso').select('*').eq('id', p.ficha_id).maybeSingle();
-        if (f && (f.archivo_frente || f.archivo_reverso)) aviso = await (await import('../../rrhh/vistas/ingreso.js?v=92f4191')).moverCedula(ctx, f, personaId, null);
+        if (f && (f.archivo_frente || f.archivo_reverso)) aviso = await (await import('../../rrhh/vistas/ingreso.js?v=16e128e')).moverCedula(ctx, f, personaId, null);
       }
       avisar(aviso ?? 'Contratado. Ya está en RRHH → Trabajadores.', aviso ? 'error' : 'ok');
       ctx.refrescar();

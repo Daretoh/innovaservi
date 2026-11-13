@@ -2,31 +2,31 @@
 // Cabecera con placa y línea de avance por estado (con la hora de cada paso); checklist táctil con avance;
 // fotos con zona para arrastrar y soltar.
 // Ruta: #/taller.orden?id=<id>
-import { el } from '../../../core/ui/dom.js?v=92f4191';
-import { icono } from '../../../core/ui/iconos.js?v=92f4191';
-import { boton } from '../../../core/ui/tabla.js?v=92f4191';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=92f4191';
-import { avisar } from '../../../core/ui/aviso.js?v=92f4191';
-import { subirArchivo, eliminarArchivo, urlsFirmadas, urlFirmada, limiteVideo, megas } from '../../../core/adjuntos.js?v=92f4191';
-import { prepararVideo } from '../../../core/video.js?v=92f4191';
-import { panelSubida } from '../../../core/ui/subida.js?v=92f4191';
-import { comprimirFoto } from '../../../core/imagenes.js?v=92f4191';
-import { dinero, fechaLarga, fechaCorta, hhmm, diaLocal } from '../../../core/ui/formato.js?v=92f4191';
+import { el } from '../../../core/ui/dom.js?v=16e128e';
+import { icono } from '../../../core/ui/iconos.js?v=16e128e';
+import { boton } from '../../../core/ui/tabla.js?v=16e128e';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=16e128e';
+import { avisar } from '../../../core/ui/aviso.js?v=16e128e';
+import { subirArchivo, eliminarArchivo, urlsFirmadas, urlFirmada, limiteVideo, megas } from '../../../core/adjuntos.js?v=16e128e';
+import { prepararVideo } from '../../../core/video.js?v=16e128e';
+import { panelSubida } from '../../../core/ui/subida.js?v=16e128e';
+import { comprimirFoto } from '../../../core/imagenes.js?v=16e128e';
+import { dinero, fechaLarga, fechaCorta, hhmm, diaLocal } from '../../../core/ui/formato.js?v=16e128e';
 import {
   ESTADOS, nombreEstado, PRIORIDADES, TIPOS_VENTA, MODOS_PAGO, CATEGORIAS_MEDIA, SELECT_ORDEN,
   verPatente, nombreVehiculo, nombreTercero, precioTalla, totales, minutosTrabajo, textoMinutos, cargarServicios, cargarTrabajadores, hora,
-} from '../datos.js?v=92f4191';
-import { mover, textoAvance, puedeVolver, esperaPagoFactura } from '../acciones.js?v=92f4191';
-import { formPedirFactura, quitarPedido } from '../factura.js?v=92f4191';
-import { tarjetaTuu, traerDeTuu } from '../boleta-tuu.js?v=92f4191';
-import { cargarAbonos, seccionAbonos } from '../abonos.js?v=92f4191';
-import { seccionInsumos } from '../insumos.js?v=92f4191';
-import { seccionCostosPatente } from '../costos.js?v=92f4191';
-import { pasosEtapa, tiempoOrden } from '../movil.js?v=92f4191';
-import { avisoTarjeta } from '../pedidas.js?v=92f4191';
-import { avance as avanceOrden } from '../seguimiento.js?v=92f4191';
-import { placa } from '../../../core/ui/placa.js?v=92f4191';
-import { esTelefono } from '../../../core/movil.js?v=92f4191';
+} from '../datos.js?v=16e128e';
+import { mover, textoAvance, puedeVolver, esperaPagoFactura } from '../acciones.js?v=16e128e';
+import { formPedirFactura, quitarPedido } from '../factura.js?v=16e128e';
+import { tarjetaTuu, traerDeTuu } from '../boleta-tuu.js?v=16e128e';
+import { cargarAbonos, seccionAbonos } from '../abonos.js?v=16e128e';
+import { seccionInsumos } from '../insumos.js?v=16e128e';
+import { seccionCostosPatente } from '../costos.js?v=16e128e';
+import { pasosEtapa, tiempoOrden } from '../movil.js?v=16e128e';
+import { avisoTarjeta } from '../pedidas.js?v=16e128e';
+import { avance as avanceOrden, detalleVehiculo } from '../seguimiento.js?v=16e128e';
+import { placa } from '../../../core/ui/placa.js?v=16e128e';
+import { esTelefono } from '../../../core/movil.js?v=16e128e';
 
 let categoriaSubida = 'exterior';
 
@@ -54,7 +54,7 @@ export default async function vista(ctx) {
     // Lista de precios del cliente (Cotizaciones): manda sobre el precio del catálogo
     o.tercero_id && ctx.puede('cotizaciones', 'ver') ? ctx.api.from('cot_precios').select('*').eq('tercero_id', o.tercero_id) : Promise.resolve({ data: [] }),
     // ¿Se cobra en un cierre mensual o una cuenta corriente?
-    ctx.puede('cierres', 'ver') ? import('../../cierres/taller.js?v=92f4191').then((m) => m.cobroExterno(ctx, o)) : Promise.resolve(null),
+    ctx.puede('cierres', 'ver') ? import('../../cierres/taller.js?v=16e128e').then((m) => m.cobroExterno(ctx, o)) : Promise.resolve(null),
   ]);
   // Factura ligada a la orden, cliente y a quién se factura (Cotizaciones 008)
   const [{ data: factura }, { data: datosCliente }] = await Promise.all([
@@ -358,10 +358,30 @@ export default async function vista(ctx) {
 
   const dur = minutosTrabajo(o);
   const MARCAS = { agendado: o.fecha_cita ? `${fechaCorta(o.fecha_cita)}${o.hora_cita ? ` ${hhmm(o.hora_cita)}` : ''}` : '', espera: hora(o.ingreso_at), proceso: hora(o.inicio_at), terminado: hora(o.termino_at), entregado: hora(o.entregado_at) };
-  const avance = anulada ? null : el('ol', { class: 'orden-avance', 'aria-label': 'Avance de la orden' },
-    ESTADOS.map(([k, n], j) => el('li', { class: j < i ? 'hecho' : j === i ? 'actual' : '' },
-      el('span', { class: 'orden-paso' }, j < i ? icono('check', { tam: 14 }) : String(j + 1)),
-      el('span', { class: 'orden-paso-texto' }, el('strong', {}, n), el('span', { class: 'texto-chico texto-suave' }, MARCAS[k] || (j === i ? 'ahora' : '')))))) ;
+  // Los tiempos van en la misma línea de avance (pedido de Enzo, 2026-11-13): la hora de cada etapa se toca para cambiarla
+  const HORA_DE = { espera: ['ingreso_at', !o.cobrado], proceso: ['inicio_at', !o.cobrado], terminado: ['termino_at', true], entregado: ['entregado_at', true] };
+  const marca = (k, j) => {
+    const texto = MARCAS[k] || (j === i ? 'ahora' : '');
+    const [id, libre] = HORA_DE[k] ?? [];
+    if (!id || !editableTrabajo || !libre) return el('span', { class: 'texto-chico texto-suave' }, texto);
+    const b = el('button', { type: 'button', class: 'orden-hora', title: 'Tocar para cambiar la hora' }, texto || 'Poner hora', icono('editar', { tam: 12 }));
+    b.addEventListener('click', () => {
+      const entrada = campo(id, '', { tipo: 'datetime-local', conv: { a: aLocal, de: deLocal }, refrescar: true }).querySelector('.campo');
+      entrada.classList.add('orden-hora-campo');
+      entrada.addEventListener('blur', () => setTimeout(() => entrada.isConnected && entrada.replaceWith(b), 200));
+      b.replaceWith(entrada); entrada.focus();
+    });
+    return b;
+  };
+  const avance = anulada ? null : el('div', { class: 'orden-tiempos' },
+    el('ol', { class: 'orden-avance', 'aria-label': 'Avance de la orden' },
+      ESTADOS.map(([k, n], j) => el('li', { class: j < i ? 'hecho' : j === i ? 'actual' : '' },
+        el('span', { class: 'orden-paso' }, j < i ? icono('check', { tam: 14 }) : String(j + 1)),
+        el('span', { class: 'orden-paso-texto' }, el('strong', {}, n), marca(k, j))))),
+    el('div', { class: 'orden-tiempos-pie' },
+      dur != null ? el('span', {}, icono('reloj', { tam: 14 }), ` ${o.termino_at ? 'Demoró' : 'Lleva'} ${textoMinutos(dur)} de trabajo`) : null,
+      el('label', { class: 'orden-muerto' }, 'Tiempo muerto',
+        campo('t_muerto_min', '', { tipo: 'number', puede: editableTrabajo && !o.cobrado, refrescar: true }).querySelector('.campo'), 'min')));
   // Zona para soltar fotos y documentos
   const zona = el('div', { class: 'orden-zona', hidden: !editableTrabajo }, icono('camara', { tam: 22 }), el('span', {}, 'Suelta aquí fotos, videos o PDF, o usa "Subir"'));
   if (editableTrabajo) {
@@ -422,11 +442,45 @@ export default async function vista(ctx) {
   if (ctx.params.ir === 'cobro') setTimeout(() => document.getElementById('orden-cobro')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
   const seccionCostos = await seccionCostosPatente(ctx, o, v);
   const seccionIns = await seccionInsumos(ctx, o, anulada);
-  const bloqueServicios = el('div', { class: 'ficha doc-grupo' },
-        el('h2', {}, `Servicios · ${dinero(t.bruto)}`),
+  // Un color por sección (pedido de Enzo, 2026-11-13); las tareas van en la tarjeta ampliada, no en Servicios
+  for (const [s, tipo] of [[seccionCostos, 'costos'], [seccionIns, 'insumos']]) s?.classList.add('orden-sec', `sec-${tipo}`);
+  fotos.classList.add('orden-sec', 'sec-fotos');
+  const verTareas = !telefono && o.tareas.length
+    ? boton(`Tareas ${hechas}/${o.tareas.length}`, { icono: 'expandir', onclick: () => detalleVehiculo(ctx, o, { alCambiar: () => ctx.refrescar() }) })
+    : null;
+  const bloqueServicios = el('div', { class: 'ficha doc-grupo orden-sec sec-servicios' },
+        el('div', { class: 'listado-cabecera' }, el('h2', {}, `Servicios · ${dinero(t.bruto)}`), verTareas),
         lineas.length ? lineas.map(filaServicio) : el('p', { class: 'texto-suave' }, 'Sin servicios.'),
-        editable ? agregarServicio : null,
-        telefono ? null : bloqueTareas);
+        editable ? agregarServicio : null);
+  // Cliente, teléfono, trabajador, prioridad, cita y notas: arriba, junto a la patente
+  // Se ven como información en la cabecera (chips); al tocar uno se abre este apartado en ese campo (Enzo, 2026-11-13)
+  const fichaDatos = el('div', { class: 'ficha orden-ficha-datos', hidden: true },
+    el('div', { class: 'orden-ficha-cab' }, el('h2', {}, 'Datos de la orden'),
+      boton('Listo', { icono: 'check', onclick: () => { fichaDatos.hidden = true; } })),
+    campo('tercero_id', 'Cliente', { opciones: [['', 'Sin cliente'], ...(clientes.data ?? []).map((c) => [c.id, nombreTercero(c)])], refrescar: true }),
+    campo('contacto', 'Teléfono de contacto'),
+    campo('trabajador_id', 'Trabajador', { opciones: [['', 'Sin asignar'], ...trabajadores.lista.filter((x) => x.estado === 'activo' || x.id === o.trabajador_id).map((x) => [x.id, x.nombre])], puede: editableTrabajo }),
+    campo('prioridad', 'Prioridad', { opciones: PRIORIDADES, puede: !anulada && ctx.puede('taller', 'editar') }),
+    campo('fecha_cita', 'Fecha de la cita', { tipo: 'date' }),
+    campo('hora_cita', 'Hora', { tipo: 'time', conv: { a: hhmm, de: (x) => x || null } }),
+    el('div', { class: 'orden-notas' }, campo('notas', 'Notas', { tipo: 'textarea' })));
+  const editarDato = (id) => {
+    fichaDatos.hidden = false;
+    fichaDatos.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    setTimeout(() => { const c = document.getElementById(`o-${id}`); (c?.parentElement?.querySelector('input:not([type=hidden])') ?? c)?.focus(); }, 150);
+  };
+  const nombreTrab = trabajadores.lista.find((x) => x.id === o.trabajador_id)?.nombre;
+  const nombrePrio = PRIORIDADES.find(([k]) => k === o.prioridad)?.[1];
+  const chipDato = (id, ic, texto, vacio, clase = '') => el('button', { type: 'button', class: `orden-info${texto ? '' : ' vacio'}${clase ? ` ${clase}` : ''}`, title: 'Tocar para cambiar', onclick: () => editarDato(id) },
+    icono(ic, { tam: 14 }), texto || vacio);
+  const infoDatos = el('div', { class: 'orden-infos' },
+    chipDato('tercero_id', 'users', o.terceros ? nombreTercero(o.terceros) : '', 'Sin cliente'),
+    chipDato('contacto', 'chat', o.contacto, 'Sin teléfono'),
+    chipDato('trabajador_id', 'llave', nombreTrab, 'Sin trabajador'),
+    chipDato('prioridad', 'alerta', nombrePrio, 'Prioridad', `prio-${o.prioridad}`),
+    o.fecha_cita ? chipDato('fecha_cita', 'calendario', `Cita ${fechaCorta(o.fecha_cita)}${o.hora_cita ? ` ${hhmm(o.hora_cita)}` : ''}`, '') : null,
+    o.notas ? chipDato('notas', 'documento', o.notas.length > 40 ? `${o.notas.slice(0, 40)}…` : o.notas, '') : chipDato('notas', 'documento', '', 'Agregar nota'));
+  cabMovil?.splice(2, 0, infoDatos);   // en el teléfono, a lo ancho bajo la placa
   return el('section', { class: `listado${telefono ? ' orden-movil' : ''}` },
     telefono ? cabMovil : [volver,
     el('header', { class: 'listado-cabecera orden-cabecera' },
@@ -435,30 +489,20 @@ export default async function vista(ctx) {
         el('h1', {}, nombreVehiculo(v)),
         el('div', { class: 'orden-datos' },
           el('a', { class: 'tal-placa', href: ctx.ruta('taller.vehiculo', { id: v.id }), title: 'Ver el vehículo' }, verPatente(v.patente) || 'Sin patente'),
-          el('span', { class: 'chip chip-pend' }, `Talla ${v.talla}`),
-          o.terceros ? el('span', { class: 'texto-suave' }, nombreTercero(o.terceros)) : null)),
+          el('span', { class: 'chip chip-pend' }, `Talla ${v.talla}`)),
+        infoDatos),
       el('div', { class: 'listado-acciones' },
         el('span', { class: `chip ${anulada ? 'chip-na' : o.estado === 'entregado' ? 'chip-ok' : 'chip-prox'}` }, nombreEstado[o.estado]),
         o.cobrado ? el('span', { class: 'chip chip-ok' }, 'Cobrado') : null, acciones)),
     avance],
+    fichaDatos,
     o.cobrado ? el('p', { class: 'aviso-bandeja' }, icono('check', { tam: 16 }), `Cobrada el ${fechaLarga(diaLocal(o.cobrado_at))}: servicios y cobro bloqueados. Para corregir, reabre el cobro.`) : null,
     avisoFactura,
     tarjetaCliente,
     // Arriba, lo del día a día: costos a la izquierda (con Trabajo de un tercero), servicios y tareas a la derecha
     el('div', { class: 'plan-editor' }, telefono ? [bloqueServicios, seccionCostos] : [seccionCostos, bloqueServicios]),
     el('div', { class: 'plan-editor' },
-      el('div', { class: 'ficha doc-grupo' },
-        el('h2', {}, 'Datos'),
-        campo('tercero_id', 'Cliente', { opciones: [['', 'Sin cliente'], ...(clientes.data ?? []).map((c) => [c.id, nombreTercero(c)])], refrescar: true }),
-        campo('contacto', 'Teléfono de contacto'),
-        el('div', { class: 'rejilla-campos' },
-          campo('prioridad', 'Prioridad', { opciones: PRIORIDADES, puede: !anulada && ctx.puede('taller', 'editar') }),
-          campo('trabajador_id', 'Trabajador', { opciones: [['', 'Sin asignar'], ...trabajadores.lista.filter((x) => x.estado === 'activo' || x.id === o.trabajador_id).map((x) => [x.id, x.nombre])], puede: editableTrabajo })),
-        el('div', { class: 'rejilla-campos' },
-          campo('fecha_cita', 'Fecha de la cita', { tipo: 'date' }),
-          campo('hora_cita', 'Hora', { tipo: 'time', conv: { a: hhmm, de: (x) => x || null } })),
-        campo('notas', 'Notas', { tipo: 'textarea' })),
-      el('div', { class: 'ficha doc-grupo' },
+      !telefono ? null : el('div', { class: 'ficha doc-grupo orden-sec sec-tiempos' },
         el('h2', {}, 'Tiempos'),
         el('div', { class: 'rejilla-campos' },
           campo('ingreso_at', 'Ingreso', { tipo: 'datetime-local', conv: { a: aLocal, de: deLocal }, puede: editableTrabajo && !o.cobrado }),
@@ -467,9 +511,13 @@ export default async function vista(ctx) {
           campo('termino_at', 'Término', { tipo: 'datetime-local', conv: { a: aLocal, de: deLocal }, puede: editableTrabajo }),
           campo('entregado_at', 'Entrega', { tipo: 'datetime-local', conv: { a: aLocal, de: deLocal }, puede: editableTrabajo })),
         campo('t_muerto_min', 'Tiempo muerto (minutos)', { tipo: 'number', puede: editableTrabajo && !o.cobrado, refrescar: true }),
-        dur != null ? el('p', {}, icono('reloj', { tam: 14 }), ` ${o.termino_at ? 'Demoró' : 'Lleva'} ${textoMinutos(dur)} de trabajo`) : null)),
-    el('div', { class: 'plan-editor' },
-      el('div', { class: 'ficha doc-grupo', id: 'orden-cobro' },
+        dur != null ? el('p', {}, icono('reloj', { tam: 14 }), ` ${o.termino_at ? 'Demoró' : 'Lleva'} ${textoMinutos(dur)} de trabajo`) : null),
+      seccionIns,
+      telefono ? null : fotos),
+    telefono ? fotos : null,
+    // El cobro al final y a lo ancho: es lo último que se hace
+    el('div', { class: 'plan-editor orden-fila-cobro' },
+      el('div', { class: 'ficha doc-grupo orden-sec sec-cobro', id: 'orden-cobro' },
         el('h2', {}, 'Cobro'),
         el('div', { class: 'rejilla-campos' },
           campo('doc_tipo', 'Documento', { opciones: [['boleta', 'Boleta'], ['factura', 'Factura (+ IVA)']], refrescar: true }),
@@ -500,9 +548,7 @@ export default async function vista(ctx) {
             ? (factura ? null : boton('Reabrir cobro', { icono: 'editar', onclick: async () => { if (await guardar({ cobrado: false, cobrado_at: null, cobrado_por: null }, 'Cobro reabierto.')) ctx.refrescar(); } }))
             : cobraConFactura ? null : boton('Registrar cobro', { icono: 'check', tipo: 'primario', onclick: cobrar }))
           : null,
-        accionesFactura.length ? el('div', { class: 'listado-acciones' }, accionesFactura) : null),
-      seccionIns),
-    fotos,
+        accionesFactura.length ? el('div', { class: 'listado-acciones' }, accionesFactura) : null)),
     pieMovil,
   );
 }
@@ -511,18 +557,18 @@ export default async function vista(ctx) {
 async function cotizar(ctx, o, lineas, b) {
   b.disabled = true;
   try {
-    const { nueva } = await import('../../cotizaciones/vistas/lista.js?v=92f4191');
+    const { nueva } = await import('../../cotizaciones/vistas/lista.js?v=16e128e');
     const { data: t } = o.tercero_id ? await ctx.api.from('terceros').select('*').eq('id', o.tercero_id).maybeSingle() : { data: null };
     const v = o.tal_vehiculos;
     // Sin servicios con precio ("Pendiente de cotización"): las tareas, con la lista de precios del cliente y la talla
-    const { trabajosOrden, listaCliente } = await import('../../cotizaciones/trabajos-orden.js?v=92f4191');
+    const { trabajosOrden, listaCliente } = await import('../../cotizaciones/trabajos-orden.js?v=16e128e');
     const trabajos = trabajosOrden(o, lineas, await listaCliente(ctx, o.tercero_id), v.talla);
     await nueva(ctx, {
       tercero: t ?? null,
       grupo: { titulo: [v.marca, v.modelo].filter(Boolean).join(' ') || null, patente: v.patente, anio: v.anio, talla: v.talla, vehiculo_id: v.id },
       // Más los costos de la orden (trabajo de terceros, compras con la patente, insumos) como ítems con costo y precio 0
       lineas: [...trabajos.map((x) => ({ tipo: 'item', descripcion: x.descripcion, cantidad: 1, precio: x.precio })),
-        ...await import('../../cotizaciones/costos-orden.js?v=92f4191').then(async (m) => m.lineasCosto((await m.costosDeOrdenes(ctx, [{ ...o, patente: v.patente }])).get(o.id) ?? []))],
+        ...await import('../../cotizaciones/costos-orden.js?v=16e128e').then(async (m) => m.lineasCosto((await m.costosDeOrdenes(ctx, [{ ...o, patente: v.patente }])).get(o.id) ?? []))],
       ordenId: o.id,
     });
   } catch (e) { avisar(e.message, 'error'); b.disabled = false; }

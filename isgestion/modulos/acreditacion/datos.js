@@ -1,5 +1,5 @@
 // Datos y reglas compartidas de Acreditación.
-import { hoyISO, moverMes } from '../../core/ui/formato.js?v=92f4191';
+import { hoyISO, moverMes } from '../../core/ui/formato.js?v=16e128e';
 
 export const nombreTercero = (t) => t?.nombre_fantasia || t?.razon_social || '';
 export const mesActual = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; };
