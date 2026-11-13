@@ -2,16 +2,16 @@
 // cada abono (anticipo cobrado en la TUU) con fecha, medio, monto, nota y su boleta (foto o PDF subido, o traída del
 // SII con "Boleta de la TUU"). La base suma los abonos vigentes en tal_ordenes.abono (saldo, caja y resultados igual).
 // Con la orden cobrada o anulada no se agregan ni quitan abonos; la boleta de un abono sí se adjunta o cambia.
-import { el } from '../../core/ui/dom.js?v=a35d6c9';
-import { icono } from '../../core/ui/iconos.js?v=a35d6c9';
-import { boton } from '../../core/ui/tabla.js?v=a35d6c9';
-import { abrirFormulario } from '../../core/ui/modal.js?v=a35d6c9';
-import { avisar } from '../../core/ui/aviso.js?v=a35d6c9';
-import { subirArchivo, eliminarArchivo, urlFirmada } from '../../core/adjuntos.js?v=a35d6c9';
-import { comprimirFoto } from '../../core/imagenes.js?v=a35d6c9';
-import { dinero, fechaLarga, hoyISO } from '../../core/ui/formato.js?v=a35d6c9';
-import { MODOS_PAGO } from './datos.js?v=a35d6c9';
-import { traerDeTuu } from './boleta-tuu.js?v=a35d6c9';
+import { el } from '../../core/ui/dom.js?v=60a60f0';
+import { icono } from '../../core/ui/iconos.js?v=60a60f0';
+import { boton } from '../../core/ui/tabla.js?v=60a60f0';
+import { abrirFormulario } from '../../core/ui/modal.js?v=60a60f0';
+import { avisar } from '../../core/ui/aviso.js?v=60a60f0';
+import { subirArchivo, eliminarArchivo, urlFirmada } from '../../core/adjuntos.js?v=60a60f0';
+import { comprimirFoto } from '../../core/imagenes.js?v=60a60f0';
+import { dinero, fechaLarga, hoyISO } from '../../core/ui/formato.js?v=60a60f0';
+import { MODOS_PAGO } from './datos.js?v=60a60f0';
+import { traerDeTuu } from './boleta-tuu.js?v=60a60f0';
 
 const MEDIOS = MODOS_PAGO.filter(([k]) => k);
 const nombreMedio = (k) => MEDIOS.find(([m]) => m === k)?.[1] ?? '';
@@ -112,10 +112,11 @@ export function seccionAbonos(ctx, { o, t, abonos, alCambiar }) {
     abonos.map(fila));
 }
 
-// Compra como costo desde el Cobro de la orden (2026-11-12, pedido de Enzo): boleta o factura de un proveedor, en foto
+// Compra como costo desde la orden (2026-11-12, pedido de Enzo): boleta o factura de un proveedor, en foto
 // o PDF (lector de Costos con ?orden=) o una compra traída del SII que espera en la Bandeja de Costos. El gasto queda
 // con la patente y ligado a esta orden: sale en "Costos de este vehículo" y en el margen. Pide costos.crear.
-export function compraComoCosto(ctx, o) {
+// Botones de "Costos con la patente" en la orden (decisión de Enzo, 2026-11-13: solo ahí, no en el Cobro).
+export function botonesCompra(ctx, o, { chico = true } = {}) {
   if (!ctx.puede('costos', 'crear') || o.estado === 'anulada') return null;
   const lector = (extra = {}) => { location.hash = ctx.ruta('costos.lector', { orden: o.id, ...extra }); };
   const delSii = async (ev) => {
@@ -137,9 +138,9 @@ export function compraComoCosto(ctx, o) {
       alGuardar: (v) => { if (!v.doc) throw new Error('Elige la compra.'); lector({ bandeja: v.doc }); },
     });
   };
-  return el('div', { class: 'cobro-abonos' },
-    el('span', { class: 'texto-chico texto-suave' }, 'Compras de este trabajo (costo)'),
-    el('div', { class: 'cobro-compras' },
-        boton('Subir compra', { icono: 'documento', class: 'boton boton-secundario boton-chico', title: 'Boleta o factura del proveedor (foto o PDF): queda como costo de este vehículo', onclick: () => lector() }),
-        boton('Compra del SII', { icono: 'buscar', class: 'boton boton-secundario boton-chico', title: 'Una compra traída del SII que espera en la Bandeja de Costos', onclick: delSii })));
+  const clase = chico ? 'boton boton-secundario boton-chico' : 'boton';
+  return [
+    boton('Subir compra', { icono: 'documento', class: clase, title: 'Boleta o factura del proveedor (foto o PDF): queda como costo de este vehículo', onclick: () => lector() }),
+    boton('Compra del SII', { icono: 'buscar', class: clase, title: 'Una compra traída del SII que espera en la Bandeja de Costos', onclick: delSii }),
+  ];
 }

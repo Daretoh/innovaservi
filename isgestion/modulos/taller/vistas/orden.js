@@ -2,31 +2,32 @@
 // Cabecera con placa y línea de avance por estado (con la hora de cada paso); checklist táctil con avance;
 // fotos con zona para arrastrar y soltar.
 // Ruta: #/taller.orden?id=<id>
-import { el } from '../../../core/ui/dom.js?v=a35d6c9';
-import { icono } from '../../../core/ui/iconos.js?v=a35d6c9';
-import { boton } from '../../../core/ui/tabla.js?v=a35d6c9';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=a35d6c9';
-import { avisar } from '../../../core/ui/aviso.js?v=a35d6c9';
-import { subirArchivo, eliminarArchivo, urlsFirmadas, urlFirmada } from '../../../core/adjuntos.js?v=a35d6c9';
-import { comprimirFoto } from '../../../core/imagenes.js?v=a35d6c9';
-import { dinero, fechaLarga, fechaCorta, hhmm, diaLocal } from '../../../core/ui/formato.js?v=a35d6c9';
+import { el } from '../../../core/ui/dom.js?v=60a60f0';
+import { icono } from '../../../core/ui/iconos.js?v=60a60f0';
+import { boton } from '../../../core/ui/tabla.js?v=60a60f0';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=60a60f0';
+import { avisar } from '../../../core/ui/aviso.js?v=60a60f0';
+import { subirArchivo, eliminarArchivo, urlsFirmadas, urlFirmada, limiteVideo, megas } from '../../../core/adjuntos.js?v=60a60f0';
+import { prepararVideo } from '../../../core/video.js?v=60a60f0';
+import { panelSubida } from '../../../core/ui/subida.js?v=60a60f0';
+import { comprimirFoto } from '../../../core/imagenes.js?v=60a60f0';
+import { dinero, fechaLarga, fechaCorta, hhmm, diaLocal } from '../../../core/ui/formato.js?v=60a60f0';
 import {
   ESTADOS, nombreEstado, PRIORIDADES, TIPOS_VENTA, MODOS_PAGO, CATEGORIAS_MEDIA, SELECT_ORDEN,
   verPatente, nombreVehiculo, nombreTercero, precioTalla, totales, minutosTrabajo, textoMinutos, cargarServicios, cargarTrabajadores, hora,
-} from '../datos.js?v=a35d6c9';
-import { mover, textoAvance, puedeVolver, esperaPagoFactura } from '../acciones.js?v=a35d6c9';
-import { formPedirFactura, quitarPedido } from '../factura.js?v=a35d6c9';
-import { tarjetaTuu, traerDeTuu } from '../boleta-tuu.js?v=a35d6c9';
-import { cargarAbonos, seccionAbonos, compraComoCosto } from '../abonos.js?v=a35d6c9';
-import { seccionInsumos } from '../insumos.js?v=a35d6c9';
-import { seccionCostosPatente } from '../costos.js?v=a35d6c9';
-import { pasosEtapa, tiempoOrden } from '../movil.js?v=a35d6c9';
-import { avisoTarjeta } from '../pedidas.js?v=a35d6c9';
-import { avance as avanceOrden } from '../seguimiento.js?v=a35d6c9';
-import { placa } from '../../../core/ui/placa.js?v=a35d6c9';
-import { esTelefono } from '../../../core/movil.js?v=a35d6c9';
+} from '../datos.js?v=60a60f0';
+import { mover, textoAvance, puedeVolver, esperaPagoFactura } from '../acciones.js?v=60a60f0';
+import { formPedirFactura, quitarPedido } from '../factura.js?v=60a60f0';
+import { tarjetaTuu, traerDeTuu } from '../boleta-tuu.js?v=60a60f0';
+import { cargarAbonos, seccionAbonos } from '../abonos.js?v=60a60f0';
+import { seccionInsumos } from '../insumos.js?v=60a60f0';
+import { seccionCostosPatente } from '../costos.js?v=60a60f0';
+import { pasosEtapa, tiempoOrden } from '../movil.js?v=60a60f0';
+import { avisoTarjeta } from '../pedidas.js?v=60a60f0';
+import { avance as avanceOrden } from '../seguimiento.js?v=60a60f0';
+import { placa } from '../../../core/ui/placa.js?v=60a60f0';
+import { esTelefono } from '../../../core/movil.js?v=60a60f0';
 
-const MAX_VIDEO = 25 * 1024 * 1024;
 let categoriaSubida = 'exterior';
 
 // timestamptz ↔ input datetime-local (hora local)
@@ -53,7 +54,7 @@ export default async function vista(ctx) {
     // Lista de precios del cliente (Cotizaciones): manda sobre el precio del catálogo
     o.tercero_id && ctx.puede('cotizaciones', 'ver') ? ctx.api.from('cot_precios').select('*').eq('tercero_id', o.tercero_id) : Promise.resolve({ data: [] }),
     // ¿Se cobra en un cierre mensual o una cuenta corriente?
-    ctx.puede('cierres', 'ver') ? import('../../cierres/taller.js?v=a35d6c9').then((m) => m.cobroExterno(ctx, o)) : Promise.resolve(null),
+    ctx.puede('cierres', 'ver') ? import('../../cierres/taller.js?v=60a60f0').then((m) => m.cobroExterno(ctx, o)) : Promise.resolve(null),
   ]);
   // Factura ligada a la orden, cliente y a quién se factura (Cotizaciones 008)
   const [{ data: factura }, { data: datosCliente }] = await Promise.all([
@@ -178,20 +179,30 @@ export default async function vista(ctx) {
   const entrada = el('input', { type: 'file', accept: 'image/*,video/*,application/pdf', multiple: true, hidden: true });
   const selCat = el('select', { class: 'campo campo-filtro', 'aria-label': 'Categoría de lo que vas a subir' }, CATEGORIAS_MEDIA.map(([k, n]) => el('option', { value: k, selected: k === categoriaSubida }, `Subir como: ${n}`)));
   selCat.addEventListener('change', () => { categoriaSubida = selCat.value; });
+  // Videos: hasta 200 MB tal cual (por partes, con avance); más grandes se achican en el navegador (core/video.js)
+  let subiendo = false;
   const subir = async (archivos) => {
+    if (subiendo || !archivos.length) return;
+    subiendo = true;
+    const panel = panelSubida();
     let ok = 0;
-    for (const a of archivos) {
+    for (const [i, a] of archivos.entries()) {
+      const cuenta = archivos.length > 1 ? ` · ${i + 1} de ${archivos.length}` : '';
       try {
         const tipo = a.type.startsWith('video/') ? 'video' : a.type === 'application/pdf' ? 'documento' : 'foto';
-        if (tipo === 'video' && a.size > MAX_VIDEO) throw new Error(`${a.name}: el video supera 25 MB.`);
-        const archivo = tipo === 'foto' ? await comprimirFoto(a) : a;
-        const { ruta } = await subirArchivo(ctx.api, { empresaId: ctx.empresa.id, modulo: 'taller', archivo, tabla: 'tal_ordenes', registroId: o.id, maxBytes: MAX_VIDEO });
+        panel.estado(`Preparando ${a.name}${cuenta}`, null);
+        const archivo = tipo === 'foto' ? await comprimirFoto(a)
+          : tipo === 'video' ? await prepararVideo(a, { maximo: limiteVideo(), alProgreso: (f, t) => panel.estado(`${t}${cuenta}`, f) }) : a;
+        panel.estado(`Subiendo ${archivo.name} (${megas(archivo.size)})${cuenta}`, 0);
+        const { ruta } = await subirArchivo(ctx.api, { empresaId: ctx.empresa.id, modulo: 'taller', archivo, tabla: 'tal_ordenes', registroId: o.id, maxBytes: limiteVideo(),
+          alProgreso: (n, total) => panel.estado(`Subiendo ${archivo.name} · ${megas(n)} de ${megas(total)}${cuenta}`, n / total) });
         const { error: e } = await ctx.api.from('tal_media').insert({ orden_id: o.id, empresa_id: ctx.empresa.id, ruta, categoria: categoriaSubida, tipo, nombre: a.name });
         if (e) { await eliminarArchivo(ctx.api, ruta).catch(() => {}); throw new Error(e.message); }
         ok += 1;
       } catch (e) { avisar(e.message, 'error'); }
     }
-    if (ok) { avisar(`Se subieron ${ok}.`); ctx.refrescar(); }
+    panel.cerrar(); subiendo = false;
+    if (ok) { avisar(ok === 1 ? 'Se subió 1 archivo.' : `Se subieron ${ok}.`); ctx.refrescar(); }
   };
   entrada.addEventListener('change', () => subir([...entrada.files]));
   const rutas = (media.data ?? []).map((m) => m.ruta);
@@ -358,11 +369,26 @@ export default async function vista(ctx) {
     zona.addEventListener('dragleave', () => zona.classList.remove('activa'));
     zona.addEventListener('drop', (ev) => { ev.preventDefault(); zona.classList.remove('activa'); if (ev.dataTransfer.files.length) subir([...ev.dataTransfer.files]); });
   }
-  const bloqueTareas = [
-    el('h2', {}, `Tareas${o.tareas.length ? ` (${o.tareas.filter((x) => x.ok).length}/${o.tareas.length})` : ''}`),
-    o.tareas.length ? el('span', { class: 'tal-progreso-barra orden-barra' }, el('i', { style: `width:${Math.round((o.tareas.filter((x) => x.ok).length / o.tareas.length) * 100)}%` })) : null,
+  // Tareas plegables: la cabecera (Tareas X/Y, barra y flecha) abre o cierra la lista; cerrada se sigue viendo el
+  // avance. Con más de 6 tareas parte cerrada; si la persona la abre o la cierra se recuerda en el navegador.
+  const hechas = o.tareas.filter((x) => x.ok).length;
+  const tareasAbiertas = (() => {
+    try { const g = localStorage.getItem('isg.orden.tareas'); if (g === 'abierta' || g === 'cerrada') return g === 'abierta'; } catch { /* sin almacenamiento */ }
+    return o.tareas.length <= 6;
+  })();
+  const bloqueTareas = el('div', { class: `orden-tareas${tareasAbiertas ? ' abierta' : ''}` });
+  const cabTareas = el('button', { type: 'button', class: 'orden-tareas-cab', 'aria-expanded': String(tareasAbiertas) },
+    el('h2', {}, `Tareas${o.tareas.length ? ` (${hechas}/${o.tareas.length})` : ''}`),
+    el('span', { class: 'orden-tareas-flecha' }, icono('abajo', { tam: 20 })),
+    o.tareas.length ? el('span', { class: 'tal-progreso-barra orden-barra' }, el('i', { style: `width:${Math.round((hechas / o.tareas.length) * 100)}%` })) : null);
+  cabTareas.addEventListener('click', () => {
+    const a = !bloqueTareas.classList.contains('abierta');
+    bloqueTareas.classList.toggle('abierta', a); cabTareas.setAttribute('aria-expanded', String(a));
+    try { localStorage.setItem('isg.orden.tareas', a ? 'abierta' : 'cerrada'); } catch { /* sin almacenamiento */ }
+  });
+  bloqueTareas.append(cabTareas, el('div', { class: 'orden-tareas-cuerpo' },
     o.tareas.length ? o.tareas.map(filaTarea) : el('p', { class: 'texto-suave' }, 'Sin tareas. Se agregan con los servicios o a mano.'),
-    editableTrabajo && !o.cobrado ? nuevaTarea : null];
+    editableTrabajo && !o.cobrado ? nuevaTarea : null));
   const fotos = el('div', { class: 'ficha doc-grupo', id: 'orden-fotos' },
     el('div', { class: 'listado-cabecera' },
       el('h2', {}, `Fotos y documentos (${media.data?.length ?? 0})`),
@@ -461,7 +487,6 @@ export default async function vista(ctx) {
           el('div', { class: 'cobro-saldo' }, el('strong', {}, t.abono ? 'Falta por pagar' : 'Saldo'), el('strong', {}, dinero(t.saldo))),
           o.tipo_venta !== 'normal' ? el('p', { class: 'texto-suave texto-chico' }, 'Venta sin cobro: el ingreso es solo el abono.') : null),
         seccionAbonos(ctx, { o, t, abonos, alCambiar: () => ctx.refrescar() }),
-        compraComoCosto(ctx, o),
         // Antes de cobrar: qué marcar en la TUU (documento, datos y monto con IVA) y traer después lo que emitió
         !o.cobrado && !anulada && !externo && !factura && o.tipo_venta === 'normal' && t.saldo > 0 && ctx.puede('taller', 'editar')
           ? tarjetaTuu({ o, t, facturarA: facturarA ?? clienteOrden, alTraer: o.doc_tipo === 'factura' ? (ctx.puede('cotizaciones', 'crear') ? traerTuu : null) : (puedeBoleta ? traerTuu : null) })
@@ -486,18 +511,18 @@ export default async function vista(ctx) {
 async function cotizar(ctx, o, lineas, b) {
   b.disabled = true;
   try {
-    const { nueva } = await import('../../cotizaciones/vistas/lista.js?v=a35d6c9');
+    const { nueva } = await import('../../cotizaciones/vistas/lista.js?v=60a60f0');
     const { data: t } = o.tercero_id ? await ctx.api.from('terceros').select('*').eq('id', o.tercero_id).maybeSingle() : { data: null };
     const v = o.tal_vehiculos;
     // Sin servicios con precio ("Pendiente de cotización"): las tareas, con la lista de precios del cliente y la talla
-    const { trabajosOrden, listaCliente } = await import('../../cotizaciones/trabajos-orden.js?v=a35d6c9');
+    const { trabajosOrden, listaCliente } = await import('../../cotizaciones/trabajos-orden.js?v=60a60f0');
     const trabajos = trabajosOrden(o, lineas, await listaCliente(ctx, o.tercero_id), v.talla);
     await nueva(ctx, {
       tercero: t ?? null,
       grupo: { titulo: [v.marca, v.modelo].filter(Boolean).join(' ') || null, patente: v.patente, anio: v.anio, talla: v.talla, vehiculo_id: v.id },
       // Más los costos de la orden (trabajo de terceros, compras con la patente, insumos) como ítems con costo y precio 0
       lineas: [...trabajos.map((x) => ({ tipo: 'item', descripcion: x.descripcion, cantidad: 1, precio: x.precio })),
-        ...await import('../../cotizaciones/costos-orden.js?v=a35d6c9').then(async (m) => m.lineasCosto((await m.costosDeOrdenes(ctx, [{ ...o, patente: v.patente }])).get(o.id) ?? []))],
+        ...await import('../../cotizaciones/costos-orden.js?v=60a60f0').then(async (m) => m.lineasCosto((await m.costosDeOrdenes(ctx, [{ ...o, patente: v.patente }])).get(o.id) ?? []))],
       ordenId: o.id,
     });
   } catch (e) { avisar(e.message, 'error'); b.disabled = false; }

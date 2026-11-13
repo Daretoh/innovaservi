@@ -5,12 +5,13 @@
 // gasto suyo ligado a la orden y entra en su cuenta (Costos → Pagos). Las compras hechas por cuenta de un tercero
 // (fin_registros.a_cuenta_de) se muestran aparte: no son costo de la empresa, se le descuentan a él.
 // Cada fila dice qué es (Mano de obra del contratista o Material) y cómo se paga; "A servicios" la cobra en la orden con nuestro margen.
-import { el } from '../../core/ui/dom.js?v=a35d6c9';
-import { boton } from '../../core/ui/tabla.js?v=a35d6c9';
-import { abrirFormulario } from '../../core/ui/modal.js?v=a35d6c9';
-import { avisar } from '../../core/ui/aviso.js?v=a35d6c9';
-import { dinero, fechaLarga, diaLocal, hoyISO } from '../../core/ui/formato.js?v=a35d6c9';
-import { nombreVehiculo } from './datos.js?v=a35d6c9';
+import { el } from '../../core/ui/dom.js?v=60a60f0';
+import { boton } from '../../core/ui/tabla.js?v=60a60f0';
+import { abrirFormulario } from '../../core/ui/modal.js?v=60a60f0';
+import { avisar } from '../../core/ui/aviso.js?v=60a60f0';
+import { dinero, fechaLarga, diaLocal, hoyISO } from '../../core/ui/formato.js?v=60a60f0';
+import { nombreVehiculo } from './datos.js?v=60a60f0';
+import { botonesCompra } from './abonos.js?v=60a60f0';
 
 const nombreT = (t) => t?.nombre_fantasia || t?.razon_social || '';
 
@@ -53,7 +54,9 @@ export async function seccionCostosPatente(ctx, o, v) {
   };
   return el('div', { class: 'ficha doc-grupo' },
     el('div', { class: 'listado-cabecera' }, el('h2', {}, 'Costos con la patente'),
-      puedeCrear ? boton('Trabajo de un tercero', { icono: 'mas', title: 'Ej.: desabolladura y pintura de un contratista', onclick: () => trabajoTercero(ctx, o, v) }) : null),
+      puedeCrear ? el('div', { class: 'listado-acciones' },
+        botonesCompra(ctx, o, { chico: false }),
+        boton('Trabajo de un tercero', { icono: 'mas', title: 'Ej.: desabolladura y pintura de un contratista', onclick: () => trabajoTercero(ctx, o, v) })) : null),
     data.length ? el('div', { class: 'cobro-resumen' },
       el('div', {}, el('span', {}, 'Esta visita'), el('strong', {}, dinero(suma(visita)))),
       visita.length ? el('div', {}, el('span', {}, 'Mano de obra'), el('span', {}, dinero(suma(visita.filter(esContratista))))) : null,

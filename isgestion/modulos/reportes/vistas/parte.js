@@ -1,17 +1,18 @@
 // Parte de trabajo: datos del informe, fotos y videos por etapa, vista previa, confirmar y reabrir.
 // Ruta: #/reportes.parte?id=<parte_id>
-import { el } from '../../../core/ui/dom.js?v=a35d6c9';
-import { icono } from '../../../core/ui/iconos.js?v=a35d6c9';
-import { boton } from '../../../core/ui/tabla.js?v=a35d6c9';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=a35d6c9';
-import { avisar } from '../../../core/ui/aviso.js?v=a35d6c9';
-import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=a35d6c9';
-import { fechaLarga, nombreDia, fechaCorta } from '../../../core/ui/formato.js?v=a35d6c9';
-import { botonesFotos } from '../../../core/ui/camara.js?v=a35d6c9';
-import { marcarFoto } from '../../../core/ui/marcar.js?v=a35d6c9';
-import { cargarParte, ETAPAS, opcionesEtapa, valorEtapa, desdeValorEtapa, nombreTercero, comprimirFoto, urlsFirmadas, faenasDistintas } from '../datos.js?v=a35d6c9';
+import { el } from '../../../core/ui/dom.js?v=60a60f0';
+import { icono } from '../../../core/ui/iconos.js?v=60a60f0';
+import { boton } from '../../../core/ui/tabla.js?v=60a60f0';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=60a60f0';
+import { avisar } from '../../../core/ui/aviso.js?v=60a60f0';
+import { subirArchivo, urlFirmada, eliminarArchivo, limiteVideo, megas } from '../../../core/adjuntos.js?v=60a60f0';
+import { prepararVideo } from '../../../core/video.js?v=60a60f0';
+import { panelSubida } from '../../../core/ui/subida.js?v=60a60f0';
+import { fechaLarga, nombreDia, fechaCorta } from '../../../core/ui/formato.js?v=60a60f0';
+import { botonesFotos } from '../../../core/ui/camara.js?v=60a60f0';
+import { marcarFoto } from '../../../core/ui/marcar.js?v=60a60f0';
+import { cargarParte, ETAPAS, opcionesEtapa, valorEtapa, desdeValorEtapa, nombreTercero, comprimirFoto, urlsFirmadas, faenasDistintas } from '../datos.js?v=60a60f0';
 
-const MAX_VIDEO = 25 * 1024 * 1024;
 let etapaSubida = 'antes';
 
 export default async function vista(ctx) {
@@ -51,13 +52,16 @@ export default async function vista(ctx) {
     if (!archivos.length || subiendo) return;
     subiendo = true; fotosBtn.camara.disabled = true; fotosBtn.galeria.disabled = true;
     let ok = 0; let orden = media.length;
+    const panel = archivos.some((a) => a.type.startsWith('video/')) ? panelSubida() : null;
     for (const [i, a] of archivos.entries()) {
       progreso.textContent = `Subiendo ${i + 1} de ${archivos.length}…`;
+      const cuenta = archivos.length > 1 ? ` · ${i + 1} de ${archivos.length}` : '';
       try {
         const video = a.type.startsWith('video/');
-        if (video && a.size > MAX_VIDEO) throw new Error(`${a.name}: el video supera 25 MB.`);
-        const archivo = video ? a : await comprimirFoto(a);
-        const { ruta } = await subirArchivo(ctx.api, { empresaId: ctx.empresa.id, modulo: 'reportes', archivo, tabla: 'rep_partes', registroId: parte.id, maxBytes: MAX_VIDEO });
+        const archivo = video ? await prepararVideo(a, { maximo: limiteVideo(), alProgreso: (f, t) => panel?.estado(`${t}${cuenta}`, f) }) : await comprimirFoto(a);
+        panel?.estado(`Subiendo ${archivo.name} (${megas(archivo.size)})${cuenta}`, 0);
+        const { ruta } = await subirArchivo(ctx.api, { empresaId: ctx.empresa.id, modulo: 'reportes', archivo, tabla: 'rep_partes', registroId: parte.id, maxBytes: limiteVideo(),
+          alProgreso: (n, total) => panel?.estado(`Subiendo ${archivo.name} · ${megas(n)} de ${megas(total)}${cuenta}`, n / total) });
         const { error } = await ctx.api.from('rep_media').insert({
           parte_id: parte.id, empresa_id: ctx.empresa.id, ruta, tipo: video ? 'video' : 'foto', ...desdeValorEtapa(etapaSubida),
           faena_id: distintas.length === 1 ? distintas[0].faena_id : null, orden: orden++, nombre: a.name, tamano: archivo.size,
@@ -66,6 +70,7 @@ export default async function vista(ctx) {
         ok += 1;
       } catch (e) { avisar(e.message, 'error'); }
     }
+    panel?.cerrar();
     avisar(ok === archivos.length ? (ok === 1 ? 'Se subió 1 archivo.' : `Se subieron los ${ok}.`) : `Se subieron ${ok} de ${archivos.length}.`, ok === archivos.length ? 'ok' : 'error');
     ctx.refrescar();
   };
@@ -294,14 +299,14 @@ export default async function vista(ctx) {
       sinOrdenar ? el('p', { class: 'aviso-bandeja' }, icono('alerta', { tam: 16 }), `${sinOrdenar} sin ordenar: asígnales una etapa (Antes, Proceso, Después o Registro documental); las sin ordenar no van al informe.`) : null,
       bloqueProcesos,
       galeria.length ? galeria : el('p', { class: 'texto-suave' }, 'Aún no hay fotos. Elige la etapa y toca Cámara: sacas todas las fotos seguidas y se suben juntas al tocar Subir. Galería sube varias ya tomadas (también videos).'),
-      el('p', { class: 'texto-suave texto-chico' }, 'Las fotos se achican antes de subir (lado mayor 1.600 px). Los videos (hasta 25 MB) se guardan pero no van al PDF.')),
+      el('p', { class: 'texto-suave texto-chico' }, 'Las fotos se achican antes de subir (lado mayor 1.600 px). Los videos (hasta 200 MB; si pesan más se achican antes de subir) se guardan pero no van al PDF.')),
   );
 }
 
 async function previa(ctx, datos, b) {
   b.disabled = true;
   try {
-    const { generarInforme } = await import('../informe.js?v=a35d6c9');
+    const { generarInforme } = await import('../informe.js?v=60a60f0');
     const doc = await generarInforme(ctx, datos);
     window.open(doc.output('bloburl'), '_blank', 'noopener');
   } catch (e) { avisar(`No se pudo generar: ${e.message}`, 'error'); } finally { b.disabled = false; }
@@ -315,7 +320,7 @@ function confirmar(ctx, datos) {
     campos: [],
     textoGuardar: 'Confirmar',
     alGuardar: async () => {
-      const { generarInforme } = await import('../informe.js?v=a35d6c9');
+      const { generarInforme } = await import('../informe.js?v=60a60f0');
       const doc = await generarInforme(ctx, datos);
       const archivo = new File([doc.output('blob')], `informe-${datos.parte.fecha}.pdf`, { type: 'application/pdf' });
       const { ruta } = await subirArchivo(ctx.api, { empresaId: ctx.empresa.id, modulo: 'reportes', archivo, tabla: 'rep_partes', registroId: datos.parte.id });

@@ -5,6 +5,12 @@
 // Los módulos usan estas funciones o almacen(api), que tiene la misma forma que api.storage.from('adjuntos').
 const BUCKET = 'adjuntos';
 const MAX_BYTES = 25 * 1024 * 1024;   // igual que el límite del bucket y del Worker
+// Videos (2026-11-13): en R2 se suben por partes hasta 200 MB (un minuto del teléfono pesa 60 a 150 MB).
+// Sin R2 (Supabase Storage) el límite sigue en 25 MB.
+export const MAX_VIDEO = 200 * 1024 * 1024;
+const PARTE = 8 * 1024 * 1024;        // R2 exige partes iguales (mín. 5 MB) salvo la última; el Worker acepta hasta 10 MB
+export const limiteVideo = () => (urlArchivos() ? MAX_VIDEO : MAX_BYTES);
+export const megas = (b) => `${(b / 1024 / 1024).toLocaleString('es-CL', { maximumFractionDigits: b < 10 * 1024 * 1024 ? 1 : 0 })} MB`;
 // La URL del Worker se guarda también en globalThis: al publicar una versión con la app abierta, las pantallas que se
 // abren después cargan otra copia de este archivo (otra URL, ?v=…) que no pasó por configurarArchivos; sin esto esa
 // copia subía a Supabase Storage en vez de R2 (pasó el 2026-11-01 con 30 OC de Performance).
@@ -24,8 +30,39 @@ function clienteR2(api) {
     return { data: cuerpo, error: null };
   };
   const ruta = (r) => `/${r.split('/').map(encodeURIComponent).join('/')}`;
+  // Por partes: iniciar → cada parte (con reintento) → completar; si algo falla se aborta para no dejar restos
+  const subirPorPartes = async (r, archivo, { contentType, alProgreso } = {}) => {
+    const base = ruta(r);
+    const ini = await pedir(`${base}?partes=iniciar`, { method: 'POST', headers: { 'x-isg-tipo': contentType || archivo.type || 'application/octet-stream' } });
+    if (ini.error) return ini;
+    const id = encodeURIComponent(ini.data.id);
+    const listas = [];
+    try {
+      const total = Math.ceil(archivo.size / PARTE);
+      for (let n = 1; n <= total; n++) {
+        const trozo = archivo.slice((n - 1) * PARTE, Math.min(archivo.size, n * PARTE));
+        let res;
+        for (let intento = 0; intento < 3; intento++) {
+          res = await pedir(`${base}?partes=${n}&id=${id}`, { method: 'PUT', body: trozo, headers: { 'content-type': 'application/octet-stream' } }).catch((e) => ({ error: { message: e.message } }));
+          if (!res.error) break;
+          await new Promise((ok) => setTimeout(ok, 1000 * (intento + 1)));
+        }
+        if (res.error) throw new Error(res.error.message);
+        listas.push({ n, etag: res.data.etag });
+        alProgreso?.(Math.min(archivo.size, n * PARTE), archivo.size);
+      }
+      const fin = await pedir(`${base}?partes=completar&id=${id}`, { method: 'POST', body: JSON.stringify({ partes: listas }), headers: { 'content-type': 'application/json' } });
+      if (fin.error) throw new Error(fin.error.message);
+      return fin;
+    } catch (e) {
+      await pedir(`${base}?partes=abortar&id=${id}`, { method: 'DELETE' }).catch(() => {});
+      return { data: null, error: { message: e.message } };
+    }
+  };
   return {
-    upload: (r, archivo, { contentType } = {}) => pedir(ruta(r), { method: 'PUT', body: archivo, headers: { 'content-type': contentType || archivo.type || 'application/octet-stream' } }),
+    upload: (r, archivo, { contentType, alProgreso } = {}) => (archivo.size > PARTE
+      ? subirPorPartes(r, archivo, { contentType, alProgreso })
+      : pedir(ruta(r), { method: 'PUT', body: archivo, headers: { 'content-type': contentType || archivo.type || 'application/octet-stream' } })),
     remove: async (rutas) => {
       for (const r of rutas) { const res = await pedir(ruta(r), { method: 'DELETE' }); if (res.error) return res; }
       return { data: rutas, error: null };
@@ -57,14 +94,16 @@ function nombreSeguro(nombre) {
 // Sube un archivo y lo registra en la tabla adjuntos. Devuelve { id, ruta }.
 // Con personaId (sin empresaId) es un archivo personal: personas/<persona>/<modulo>/…, válido en todas
 // las empresas donde la persona tiene vínculo; no se registra en adjuntos (lo registra el módulo).
-export async function subirArchivo(api, { empresaId = null, personaId = null, modulo, archivo, tabla = null, registroId = null, tipos = null, maxBytes = MAX_BYTES }) {
+// alProgreso(subidos, total) avisa el avance (los archivos de más de 8 MB van por partes a R2).
+export async function subirArchivo(api, { empresaId = null, personaId = null, modulo, archivo, tabla = null, registroId = null, tipos = null, maxBytes = MAX_BYTES, alProgreso = null }) {
   if (!archivo) throw new Error('Elige un archivo.');
-  if (archivo.size > maxBytes) throw new Error(`El archivo supera ${Math.round(maxBytes / 1024 / 1024)} MB.`);
+  const tope = urlArchivos() ? maxBytes : Math.min(maxBytes, MAX_BYTES);
+  if (archivo.size > tope) throw new Error(`${archivo.name || 'El archivo'} pesa ${megas(archivo.size)} y el máximo es ${megas(tope)}.`);
   if (tipos && !tipos.includes(archivo.type)) throw new Error('Tipo de archivo no permitido.');
 
   const raiz = empresaId ?? `personas/${personaId}`;
   const ruta = `${raiz}/${modulo}/${crypto.randomUUID()}-${nombreSeguro(archivo.name)}`;
-  const { error: eSubir } = await almacen(api).upload(ruta, archivo, { contentType: archivo.type, upsert: false });
+  const { error: eSubir } = await almacen(api).upload(ruta, archivo, { contentType: archivo.type, upsert: false, alProgreso });
   if (eSubir) throw new Error(`No se pudo subir el archivo: ${eSubir.message}`);
   if (!empresaId) return { id: null, ruta };
 
