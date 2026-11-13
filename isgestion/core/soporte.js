@@ -2,8 +2,8 @@
 // Pregunta a la Edge Function `soporte` (Claude, con la clave solo en el servidor), que responde con el manual de los
 // módulos que la cuenta puede ver y enlaces #/<modulo>.<vista>. La respuesta se arma con nodos de texto (sin innerHTML):
 // solo **negrita**, listas y enlaces a rutas de la app. La conversación vive en la pestaña hasta cambiar de empresa.
-import { el } from './ui/dom.js?v=7f910f1';
-import { icono } from './ui/iconos.js?v=7f910f1';
+import { el } from './ui/dom.js?v=a35d6c9';
+import { icono } from './ui/iconos.js?v=a35d6c9';
 
 const RUTA = /^#\/[a-z]+\.[a-z0-9_]+(\?[\w=&%.-]*)?$/;
 const SUGERENCIAS = ['¿Cómo agrego a un usuario nuevo?', '¿Dónde veo lo que tengo pendiente?', '¿Cómo descargo esta pantalla en Excel?'];

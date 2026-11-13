@@ -2,13 +2,14 @@
 // datos, entrega de EPP, IRL y registros de entrega de PTS), formatos para firmar (registro de capacitación,
 // evaluación de aprendizaje, entrega de EPP e IRL en blanco) y documentos de la empresa (PTS, matriz e instructivo
 // IPER, programa preventivo, Ley Karin, emergencias y accidentes, matriz de EPP y capacitaciones).
-import { el } from '../../../core/ui/dom.js?v=7f910f1';
-import { icono } from '../../../core/ui/iconos.js?v=7f910f1';
-import { boton } from '../../../core/ui/tabla.js?v=7f910f1';
-import { avisar } from '../../../core/ui/aviso.js?v=7f910f1';
-import { hoyISO } from '../../../core/ui/formato.js?v=7f910f1';
-import { cargarPlantillas, trabajador, abrirDocumento, sueldosBase } from '../editor.js?v=7f910f1';
-import { guardarEnRrhh, guardarEnSst, guardarRegistro, puedeGuardarRrhh, puedeGuardarSst } from '../acciones.js?v=7f910f1';
+import { el } from '../../../core/ui/dom.js?v=a35d6c9';
+import { icono } from '../../../core/ui/iconos.js?v=a35d6c9';
+import { boton } from '../../../core/ui/tabla.js?v=a35d6c9';
+import { avisar } from '../../../core/ui/aviso.js?v=a35d6c9';
+import { hoyISO } from '../../../core/ui/formato.js?v=a35d6c9';
+import { cargarPlantillas, trabajador, abrirDocumento, sueldosBase } from '../editor.js?v=a35d6c9';
+import { leerPaginas, paginaFirmas, htmlFirmado } from '../firmarpdf.js?v=a35d6c9';
+import { guardarEnRrhh, guardarEnSst, guardarRegistro, puedeGuardarRrhh, puedeGuardarSst } from '../acciones.js?v=a35d6c9';
 
 const estado = { persona: '' };
 const DEL_TRABAJADOR = ['contrato', 'perfil', 'datos', 'epp', 'odi'];
@@ -124,6 +125,22 @@ export default async function vista(ctx) {
           avisar('Checklist guardado en Prevención SST → Registros de entrega, por firmar.');
         } } : null });
   };
+  // Firmar un PDF: se elige el archivo y se abre con las firmas guardadas encima de la página elegida
+  const firmarPdf = () => {
+    const inp = el('input', { type: 'file', accept: 'application/pdf,.pdf' });
+    inp.addEventListener('change', async () => {
+      const f = inp.files?.[0]; if (!f) return;
+      avisar('Leyendo el PDF…');
+      try {
+        const pags = await leerPaginas(f);
+        formato('Firmar un PDF', { nombreArchivo: `${f.name.replace(/\.pdf$/i, '')}-firmado`,
+          variantes: pags.map((p, k) => ({ v: String(k + 1), n: `Firmas en la página ${k + 1} de ${pags.length}` })), variante: paginaFirmas(pags),
+          construir: (v) => htmlFirmado(pags, v, P.firmaPrevHtml, P.firmaRepHtml) });
+        avisar('Arrastra las firmas a su lugar. Si van en otra hoja, elige la página arriba.');
+      } catch (e) { avisar(e.message || 'No se pudo leer el PDF.', 'error'); }
+    });
+    inp.click();
+  };
   const seccionFormatos = el('div', { class: 'ficha doc-grupo' },
     el('h2', {}, 'Formatos para firmar'),
     el('p', { class: 'texto-suave texto-chico' }, 'Con membrete, en blanco o con los trabajadores que elijas (nombre, RUT y cargo).'),
@@ -137,7 +154,8 @@ export default async function vista(ctx) {
     tarjetaDoc('Charlas diarias: las 30 charlas juntas', 'Guía completa para quien las dicta', () => formato('Charlas diarias', { nombreArchivo: 'charlas-diarias', construir: () => P.docCharlasTodas() })),
     tarjetaDoc('Checklist de seguridad y ejecución · diluidores de sal', 'Ítems marcables, medición de gases y firmas', abrirChecklist),
     tarjetaDoc('Carta (formato editable)', 'En blanco o carta de compromiso (sin examen de altura / espacios confinados), con la lista de trabajadores y la firma del representante legal',
-      () => formato('Carta', { variantes: P.opcionesCarta(), personas: 'lista', construir: (v, PER) => P.docCarta(v, PER) })));
+      () => formato('Carta', { variantes: P.opcionesCarta(), personas: 'lista', construir: (v, PER) => P.docCarta(v, PER) })),
+    tarjetaDoc('Firmar un PDF', 'Sube un PDF (por ejemplo, la matriz IPER) y agrégale la firma, el timbre y la firma de la prevencionista guardados', firmarPdf));
 
   // ---- Documentos de la empresa
   const docEmpresa = (slug, nombre) => {

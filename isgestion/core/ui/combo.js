@@ -7,7 +7,7 @@
 //   navegador; se puede escribir cualquier cosa y Enter solo elige si se marcó una sugerencia con flechas o Tab.
 //   Con data-planilla (Registro de horas): Enter elige la primera sugerencia y Tab la elige y pasa a la columna siguiente.
 // Se aplica solo (activarCombos observa la página). Para dejar un campo como el del navegador: atributo data-nativo.
-import { el } from './dom.js?v=7f910f1';
+import { el } from './dom.js?v=a35d6c9';
 
 const UMBRAL = 6;          // opciones desde las que un <select> pasa a buscador
 const MAX_VISIBLES = 150;  // sugerencias que se dibujan a la vez

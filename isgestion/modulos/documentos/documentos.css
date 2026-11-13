@@ -120,3 +120,11 @@
 .dg-fmenu{position:absolute;right:0;top:calc(100% + 6px);z-index:5;background:var(--superficie);color:var(--texto);border:1px solid var(--borde);border-radius:10px;box-shadow:var(--sombra);padding:8px 10px;min-width:220px;}
 .dg-fmenu[hidden]{display:none;}
 .dg-fmenu label{display:flex;align-items:center;gap:8px;padding:6px 2px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;}
+
+/* Firmar un PDF: páginas del PDF subido con las firmas encima (movibles) */
+.dg-doc:has(.dg-pag){padding:14px;}
+.dg-pag{position:relative;width:100%;margin:0 0 14px;background:#fff;box-shadow:0 0 0 1px #d6d9e3;overflow:hidden;}
+.dg-pag-img{display:block;width:100%;height:100%;}
+.dg-pag-fir{position:absolute;left:10%;bottom:12%;width:28%;height:0;} .dg-pag-fir.dg-pag-rep{left:58%;}
+.dg-pag-fir img{position:absolute;left:50%;bottom:0;transform:translateX(-50%);width:75%;height:auto;max-width:none;}
+.dg-pag-fir img.rs-tim{left:95%;width:60%;}

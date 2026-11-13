@@ -2,16 +2,16 @@
 // cada abono (anticipo cobrado en la TUU) con fecha, medio, monto, nota y su boleta (foto o PDF subido, o traída del
 // SII con "Boleta de la TUU"). La base suma los abonos vigentes en tal_ordenes.abono (saldo, caja y resultados igual).
 // Con la orden cobrada o anulada no se agregan ni quitan abonos; la boleta de un abono sí se adjunta o cambia.
-import { el } from '../../core/ui/dom.js?v=7f910f1';
-import { icono } from '../../core/ui/iconos.js?v=7f910f1';
-import { boton } from '../../core/ui/tabla.js?v=7f910f1';
-import { abrirFormulario } from '../../core/ui/modal.js?v=7f910f1';
-import { avisar } from '../../core/ui/aviso.js?v=7f910f1';
-import { subirArchivo, eliminarArchivo, urlFirmada } from '../../core/adjuntos.js?v=7f910f1';
-import { comprimirFoto } from '../../core/imagenes.js?v=7f910f1';
-import { dinero, fechaLarga, hoyISO } from '../../core/ui/formato.js?v=7f910f1';
-import { MODOS_PAGO } from './datos.js?v=7f910f1';
-import { traerDeTuu } from './boleta-tuu.js?v=7f910f1';
+import { el } from '../../core/ui/dom.js?v=a35d6c9';
+import { icono } from '../../core/ui/iconos.js?v=a35d6c9';
+import { boton } from '../../core/ui/tabla.js?v=a35d6c9';
+import { abrirFormulario } from '../../core/ui/modal.js?v=a35d6c9';
+import { avisar } from '../../core/ui/aviso.js?v=a35d6c9';
+import { subirArchivo, eliminarArchivo, urlFirmada } from '../../core/adjuntos.js?v=a35d6c9';
+import { comprimirFoto } from '../../core/imagenes.js?v=a35d6c9';
+import { dinero, fechaLarga, hoyISO } from '../../core/ui/formato.js?v=a35d6c9';
+import { MODOS_PAGO } from './datos.js?v=a35d6c9';
+import { traerDeTuu } from './boleta-tuu.js?v=a35d6c9';
 
 const MEDIOS = MODOS_PAGO.filter(([k]) => k);
 const nombreMedio = (k) => MEDIOS.find(([m]) => m === k)?.[1] ?? '';

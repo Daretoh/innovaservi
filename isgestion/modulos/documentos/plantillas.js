@@ -1585,7 +1585,7 @@ export function crearPlantillas(D) {
       '<table class="dg-tbl asis-tb"><thead><tr><th class="n">N°</th><th style="width:44%">Nombre completo</th><th style="width:18%">RUT</th><th>Firma</th></tr></thead><tbody>'+rows+'</tbody></table>'+
       '<div class="dg-firmas asis-fir"><div>Firma del supervisor<br><span data-espejo="sup"></span></div><div>V°B° Prevención de riesgos</div></div></div>';
   }
-  return { CHARLAS, CHK_GAS, opcionesCharla, docCharla, docCharlasTodas, docChecklistDil, DOC_GEN, EMP_GEN, EMP_CARPETAS, PTS_DOC, PTS_INFO, CAP_DOC, DG_VARS, docAsistencia, opcionesRegistro, docEvaluacion,
+  return { firmaPrevHtml, firmaRepHtml, CHARLAS, CHK_GAS, opcionesCharla, docCharla, docCharlasTodas, docChecklistDil, DOC_GEN, EMP_GEN, EMP_CARPETAS, PTS_DOC, PTS_INFO, CAP_DOC, DG_VARS, docAsistencia, opcionesRegistro, docEvaluacion,
     docEPP, docODI, docDatos, docContrato, docPerfil, docCarta, opcionesCarta, porPersona, docPTSDoc, docPTSFunciones, varDefault, ptsDatos, ptsCambios,
     nombrePTS, esPTS, dgFoot, esc };
 }
