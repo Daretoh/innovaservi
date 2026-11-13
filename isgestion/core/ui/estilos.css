@@ -2710,3 +2710,14 @@ html.cam-abierta, html.cam-abierta body { overflow: hidden; }
 .mar-opcion:disabled { opacity: .4; cursor: default; }
 .mar-muestra { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--cam-linea); }
 .mar-punto { border-radius: 50%; background: var(--cam-texto); }
+
+/* Aviso de versión nueva (core/version.js): fijo arriba, sobre la barra del teléfono y las ventanas */
+.aviso-version {
+  position: fixed; top: 8px; left: 50%; transform: translateX(-50%); z-index: 1000;
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  width: max-content; max-width: calc(100vw - 32px); padding: 10px 14px;
+  background: var(--superficie); color: inherit; border: 2px solid var(--empresa); border-radius: 10px;
+  box-shadow: var(--sombra);
+}
+.aviso-version .icono { color: var(--empresa); flex: none; }
+.aviso-version .boton { margin-left: auto; }

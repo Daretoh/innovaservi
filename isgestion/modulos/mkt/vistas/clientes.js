@@ -3,15 +3,15 @@
 // (si la empresa tiene Taller) y si está en el embudo. Acciones: WhatsApp con respuesta guardada, "Al embudo" (crea el
 // contacto ligado al cliente para una oportunidad nueva) y "Revisar datos" (nombres y teléfonos con formato estándar,
 // se aplican con un clic; necesita editar clientes).
-import { el } from '../../../core/ui/dom.js?v=60a60f0';
-import { icono } from '../../../core/ui/iconos.js?v=60a60f0';
-import { boton } from '../../../core/ui/tabla.js?v=60a60f0';
-import { avisar } from '../../../core/ui/aviso.js?v=60a60f0';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=60a60f0';
-import { revisarTelefono, nombrePropio, fechaLarga, diaLocal } from '../../../core/ui/formato.js?v=60a60f0';
-import { exportarExcel } from '../../../core/excel.js?v=60a60f0';
-import { cargarBase, cargarCss, enlaceWhatsapp, diasDesde } from '../datos.js?v=60a60f0';
-import { formContacto } from '../formularios.js?v=60a60f0';
+import { el } from '../../../core/ui/dom.js?v=92f4191';
+import { icono } from '../../../core/ui/iconos.js?v=92f4191';
+import { boton } from '../../../core/ui/tabla.js?v=92f4191';
+import { avisar } from '../../../core/ui/aviso.js?v=92f4191';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=92f4191';
+import { revisarTelefono, nombrePropio, fechaLarga, diaLocal } from '../../../core/ui/formato.js?v=92f4191';
+import { exportarExcel } from '../../../core/excel.js?v=92f4191';
+import { cargarBase, cargarCss, enlaceWhatsapp, diasDesde } from '../datos.js?v=92f4191';
+import { formContacto } from '../formularios.js?v=92f4191';
 
 const estado = { ver: 'todos', buscar: '' };
 const nombreDe = (t) => t.nombre_fantasia || t.razon_social || '';

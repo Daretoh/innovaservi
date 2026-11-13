@@ -1,7 +1,7 @@
 // Videos del teléfono (2026-11-13). Hasta el máximo (200 MB en R2) se suben tal cual, con su resolución real.
 // Si pasan el máximo se recodifican en el navegador a 1280 px y ~2,5 Mbps: el video se reproduce (sin sonido por el
 // parlante) en un canvas que graba MediaRecorder, así que tarda lo que dura el video. Sin soporte avisa con el tamaño.
-import { megas } from './adjuntos.js?v=60a60f0';
+import { megas } from './adjuntos.js?v=92f4191';
 
 const LADO = 1280;
 const BITS = 2_500_000;

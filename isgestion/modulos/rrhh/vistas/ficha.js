@@ -1,15 +1,15 @@
 // Ficha de un trabajador: documentación (con archivos privados) y datos personales.
 // Ruta: #/rrhh.ficha?p=<persona_id>
-import { el } from '../../../core/ui/dom.js?v=60a60f0';
-import { icono } from '../../../core/ui/iconos.js?v=60a60f0';
-import { boton } from '../../../core/ui/tabla.js?v=60a60f0';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=60a60f0';
-import { leerVence } from '../../../core/ui/leer-vence.js?v=60a60f0';
-import { avisar } from '../../../core/ui/aviso.js?v=60a60f0';
-import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=60a60f0';
-import { cargarActividad, resumen, panelActividad } from '../actividad.js?v=60a60f0';
-import { cargarLicencias, filaLicencia, formularioLicencia, diasLicencia, puedeLicencias } from '../../../core/licencias.js?v=60a60f0';
-import { cargarRrhh, cumplimiento, estadoDoc, chipEstado, avatar, nombreCompleto, nivel, VINCULOS, nombreVinculo } from '../datos.js?v=60a60f0';
+import { el } from '../../../core/ui/dom.js?v=92f4191';
+import { icono } from '../../../core/ui/iconos.js?v=92f4191';
+import { boton } from '../../../core/ui/tabla.js?v=92f4191';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=92f4191';
+import { leerVence } from '../../../core/ui/leer-vence.js?v=92f4191';
+import { avisar } from '../../../core/ui/aviso.js?v=92f4191';
+import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=92f4191';
+import { cargarActividad, resumen, panelActividad } from '../actividad.js?v=92f4191';
+import { cargarLicencias, filaLicencia, formularioLicencia, diasLicencia, puedeLicencias } from '../../../core/licencias.js?v=92f4191';
+import { cargarRrhh, cumplimiento, estadoDoc, chipEstado, avatar, nombreCompleto, nivel, VINCULOS, nombreVinculo } from '../datos.js?v=92f4191';
 
 const TIPOS_ARCHIVO = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
 const MAX_ARCHIVO = 10 * 1024 * 1024;
@@ -122,7 +122,7 @@ function filaDoc(ctx, tipo, doc, v, puede) {
         type: 'button', class: 'boton-icono', title: 'Generar con el formato de la empresa', 'aria-label': `Generar ${tipo.nombre}`,
         onclick: async () => {
           try {
-            const { generarParaTrabajador, sePuedeGenerar } = await import('../../documentos/integracion.js?v=60a60f0');
+            const { generarParaTrabajador, sePuedeGenerar } = await import('../../documentos/integracion.js?v=92f4191');
             if (!sePuedeGenerar(ctx, tipo.slug)) { avisar('No hay formato para este documento.', 'error'); return; }
             await generarParaTrabajador(ctx, tipo.slug, v.persona_id);
           } catch (err) { avisar(err.message, 'error'); }

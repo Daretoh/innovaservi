@@ -3,7 +3,7 @@
 /* eslint-disable */
 const H2C = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
 function cargarH2C(){ if(window.html2canvas) return Promise.resolve(); return new Promise(function(res,rej){ var s=document.createElement('script'); s.src=H2C; s.onload=function(){res();}; s.onerror=function(){rej(new Error('No se pudo cargar el generador de PDF. Revisa la conexión.'));}; document.head.appendChild(s); }); }
-import { pdfFirmado } from './firmarpdf.js?v=60a60f0';
+import { pdfFirmado } from './firmarpdf.js?v=92f4191';
 export function pdfDesde(el, jsPDF){
     if(el.querySelector('.dg-pag')) return cargarH2C().then(function(){ return pdfFirmado(el, jsPDF); });   // PDF subido para firmar
     return cargarH2C().then(function(){
