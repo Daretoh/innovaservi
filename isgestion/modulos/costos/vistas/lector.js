@@ -9,18 +9,18 @@
 // Bandeja "Por cargar" (Costos 008, 2026-11-10): con ?bandeja=<id> abre un documento ya subido a la bandeja, lo lee
 // igual y al registrar lo marca registrado y sigue con el siguiente pendiente (Saltar / Descartar de la bandeja).
 // Ruta: #/costos.lector · #/costos.lector?bandeja=<id>
-import { el } from '../../../core/ui/dom.js?v=9dfb925';
-import { icono } from '../../../core/ui/iconos.js?v=9dfb925';
-import { boton } from '../../../core/ui/tabla.js?v=9dfb925';
-import { avisar } from '../../../core/ui/aviso.js?v=9dfb925';
-import { subirArchivo, almacen, urlFirmada } from '../../../core/adjuntos.js?v=9dfb925';
-import { pendientesBandeja, descartarDeBandeja } from './bandeja.js?v=9dfb925';
-import { dinero, hoyISO, sumarDias, fechaLarga, lunesDe } from '../../../core/ui/formato.js?v=9dfb925';
-import { TIPOS_DTE, docTipoDe, CAMPOS_DTE, leerParte, combinar, validar, escanearCamara, aJPEG, fmtRut, limpioRut, rutValido, num } from '../../../core/lector-dte.js?v=9dfb925';
-import { cargarBase, nombreTercero, opcionesACuenta } from '../datos.js?v=9dfb925';
-import { leerConIA, iaDisponible, numIA, fechaIA, pagadoAlComprar, textoModelo } from '../../../core/lector-ia.js?v=9dfb925';
-import { esImagen } from '../../../core/imagenes.js?v=9dfb925';
-import { tomarFotos } from '../../../core/ui/camara.js?v=9dfb925';
+import { el } from '../../../core/ui/dom.js?v=882cc93';
+import { icono } from '../../../core/ui/iconos.js?v=882cc93';
+import { boton } from '../../../core/ui/tabla.js?v=882cc93';
+import { avisar } from '../../../core/ui/aviso.js?v=882cc93';
+import { subirArchivo, almacen, urlFirmada } from '../../../core/adjuntos.js?v=882cc93';
+import { pendientesBandeja, descartarDeBandeja } from './bandeja.js?v=882cc93';
+import { dinero, hoyISO, sumarDias, fechaLarga, lunesDe } from '../../../core/ui/formato.js?v=882cc93';
+import { TIPOS_DTE, docTipoDe, CAMPOS_DTE, leerParte, combinar, validar, escanearCamara, aJPEG, fmtRut, limpioRut, rutValido, num } from '../../../core/lector-dte.js?v=882cc93';
+import { cargarBase, nombreTercero, opcionesACuenta } from '../datos.js?v=882cc93';
+import { leerConIA, iaDisponible, numIA, fechaIA, pagadoAlComprar, textoModelo } from '../../../core/lector-ia.js?v=882cc93';
+import { esImagen } from '../../../core/imagenes.js?v=882cc93';
+import { tomarFotos } from '../../../core/ui/camara.js?v=882cc93';
 
 const ETIQUETA = { timbre: ['Timbre SII', 'chip-ok'], xml: ['XML', 'chip-ok'], ia: ['IA', 'chip-ok'], ocr: ['Revisar', 'chip-prox'], calc: ['Calculado', 'chip-pend'] };
 
@@ -36,7 +36,7 @@ export default async function vista(ctx) {
       .gte('fecha_fin', sumarDias(hoyISO(), -60)).lte('fecha_inicio', sumarDias(hoyISO(), 14)).order('fecha_inicio', { ascending: false }) : Promise.resolve({ data: [] }),
     conDescuento ? ctx.api.from('persona_empresa').select('persona_id, personas(nombres, apellido_paterno, apellido_materno, rut)').eq('empresa_id', e).eq('estado', 'activo').is('deleted_at', null) : Promise.resolve({ data: [] }),
     conDescuento ? ctx.api.from('remu_config').select('periodo').eq('empresa_id', e).maybeSingle() : Promise.resolve({ data: null }),
-    conTaller ? ctx.api.from('tal_vehiculos').select('id, patente, marca, modelo').eq('empresa_id', e).is('deleted_at', null).order('patente') : Promise.resolve({ data: [] }),
+    conTaller ? ctx.api.from('tal_vehiculos').select('id, patente, marca, modelo, terceros(razon_social, nombre_fantasia)').eq('empresa_id', e).is('deleted_at', null).order('patente') : Promise.resolve({ data: [] }),
     conTaller ? ctx.api.from('tal_ordenes').select('id, vehiculo_id').eq('empresa_id', e).not('estado', 'in', '(entregado,anulada)') : Promise.resolve({ data: [] }),
   ]);
   const mensual = remuCfg.data?.periodo === 'mensual';
@@ -49,14 +49,21 @@ export default async function vista(ctx) {
   // Bandeja "Por cargar" (Costos 008): ?bandeja=<id> abre el documento ya subido; su archivo pasa a ser el del gasto
   // (no se sube de nuevo) y al registrar sigue con el siguiente pendiente.
   const idBandeja = ctx.params.bandeja ?? null;
+  // Compra de una orden del taller (2026-11-12, desde Cobro de la orden): ?orden=<id> deja el gasto con la patente y
+  // ligado a esa orden (Costos de este vehículo y margen) y al guardar vuelve a la orden
+  const { data: deOrden } = conTaller && ctx.params.orden
+    ? await ctx.api.from('tal_ordenes').select('id, numero, vehiculo_id, tal_vehiculos(patente)').eq('id', ctx.params.orden).eq('empresa_id', e).maybeSingle()
+    : { data: null };
   const pendientes = idBandeja ? (await pendientesBandeja(ctx)).data ?? [] : [];
   const deBandeja = pendientes.find((x) => x.id === idBandeja) ?? null;
   const otroPendiente = () => { const i = pendientes.indexOf(deBandeja); return pendientes[i + 1] ?? pendientes.find((x) => x !== deBandeja) ?? null; };
   const irA = (registroId, siguiente) => {
-    location.hash = !idBandeja ? ctx.ruta('costos.registro', { id: registroId })
+    location.hash = deOrden ? `${ctx.ruta('taller.orden', { id: deOrden.id })}`
+      : !idBandeja ? ctx.ruta('costos.registro', { id: registroId })
       : siguiente ? ctx.ruta('costos.lector', { bandeja: siguiente.id }) : ctx.ruta('costos.bandeja');
   };
-  if (idBandeja) { volver.replaceChildren(icono('volver', { tam: 16 }), 'Por cargar'); volver.setAttribute('href', ctx.ruta('costos.bandeja')); }
+  if (idBandeja) { volver.replaceChildren(icono('volver', { tam: 16 }), 'Bandeja'); volver.setAttribute('href', ctx.ruta('costos.bandeja')); }
+  if (deOrden) { volver.replaceChildren(icono('volver', { tam: 16 }), `Orden N° ${deOrden.numero}`); volver.setAttribute('href', ctx.ruta('taller.orden', { id: deOrden.id })); }
 
   const partes = [];     // { id, archivo, nombre, thumb, estado, ted, xml, texto, foto }
   let datos = { origen: {}, items: [] };
@@ -141,11 +148,17 @@ export default async function vista(ctx) {
   const centro = el('select', { class: 'campo', id: 'lec-cen' }, el('option', { value: '' }, 'Sin centro de costo'), base.centros.filter((c) => c.activo).map((c) => el('option', { value: c.id }, c.nombre)));
   const hoy = hoyISO();
   const aCuenta = el('select', { class: 'campo', id: 'lec-acu' }, opcionesACuenta(base).map(([v, t]) => el('option', { value: v }, t)));
+  const exigirDestino = !!ctx.config?.exigir_destino;
+  const destino = el('select', { class: 'campo', id: 'lec-dest' }, [['', 'Elige…'],
+    ...(conTaller ? [['vehiculo', 'Un vehículo del taller (patente)']] : []),
+    ['tercero', 'Un tercero, a su cuenta (ej.: D&P)'],
+    ...(conFaenas ? [['faena', 'Una faena']] : []),
+    ['general', 'Gasto general de la empresa']].map(([v, t]) => el('option', { value: v }, t)));
   const faena = el('select', { class: 'campo', id: 'lec-fae' }, el('option', { value: '' }, 'Sin faena (gasto general)'),
     (faenas.data ?? []).map((f) => el('option', { value: f.id, selected: f.fecha_inicio <= hoy && f.fecha_fin >= hoy && (faenas.data ?? []).filter((x) => x.fecha_inicio <= hoy && x.fecha_fin >= hoy).length === 1 }, `${fechaLarga(f.fecha_inicio)} · ${f.titulo}`)));
   // Vehículo del taller: el gasto queda con su patente y, si tiene una sola orden abierta, ligado a esa orden
   const vehiculo = el('select', { class: 'campo', id: 'lec-veh' }, el('option', { value: '' }, 'Sin vehículo'),
-    (vehiculos.data ?? []).map((x) => el('option', { value: x.id }, [x.patente, x.marca, x.modelo].filter(Boolean).join(' · '))));
+    (vehiculos.data ?? []).map((x) => el('option', { value: x.id }, [x.patente, [x.marca, x.modelo].filter(Boolean).join(' '), x.terceros?.nombre_fantasia || x.terceros?.razon_social].filter(Boolean).join(' · '))));
   const concepto = el('input', { class: 'campo', id: 'lec-con', placeholder: 'Se completa con el proveedor y el documento' });
   const pagado = el('input', { type: 'checkbox', id: 'lec-pag' });
   let pagadoTocado = false;
@@ -218,6 +231,12 @@ export default async function vista(ctx) {
     const v = valores();
     if (!v.total || v.total <= 0) { avisar('Falta el total.', 'error'); return; }
     if (duplicado) { avisar('Este documento ya está registrado.', 'error'); return; }
+    if (exigirDestino) {
+      const d = destino.value;
+      const falta = !d ? 'Elige a qué va este gasto.' : d === 'vehiculo' && !vehiculo.value ? 'Elige el vehículo (patente).'
+        : d === 'tercero' && !aCuenta.value ? 'Elige el tercero.' : d === 'faena' && !faena.value ? 'Elige la faena.' : null;
+      if (falta) { avisar(falta, 'error'); destino.focus(); return; }
+    }
     if (!concepto.value.trim()) { avisar('Escribe el concepto.', 'error'); return; }
     if (descontar.checked && !trabajador.value) { avisar('Elige a qué trabajador se le descuenta.', 'error'); return; }
     b.disabled = true; b.classList.add('cargando');
@@ -251,7 +270,7 @@ export default async function vista(ctx) {
         tercero_id: tercero?.id ?? null, doc_tipo: doc, doc_numero: v.folio, total: v.total, neto: v.total - iva, iva,
         // Boleta o ticket: pagado al comprar (salvo que se desmarque a mano); factura: por pagar
         ...(!ctx.puede('costos', 'editar') ? { estado_pago: 'pendiente' } : (pagadoTocado ? pagado.checked : pagado.checked || doc !== 'factura') ? { estado_pago: 'pagado', fecha_pago: v.fecha || hoyISO() } : { estado_pago: 'listo' }), archivo: rutas[0] ?? null, adjuntos: rutas.slice(1), faena_id: faena.value || null, a_cuenta_de: aCuenta.value || null,
-        patente: veh?.patente ?? null, orden_id: abiertas.length === 1 ? abiertas[0].id : null,
+        patente: veh?.patente ?? null, orden_id: deOrden && veh?.id === deOrden.vehiculo_id ? deOrden.id : abiertas.length === 1 ? abiertas[0].id : null,
         dte: { ...v, rut: v.rut ? fmtRut(v.rut) : null, td: v.td == null ? null : String(v.td), items: datos.items ?? [], origen },
       }).select('id').single();
       if (error) throw new Error(error.code === '23505' ? 'Este documento ya estaba registrado (mismo emisor, tipo y folio).' : error.message);
@@ -284,6 +303,25 @@ export default async function vista(ctx) {
   };
 
   const fila = (etq, c) => el('div', { class: 'form-fila' }, el('label', { for: c.id }, etq), c);
+  // ¿A qué va? (opción del módulo exigir_destino): muestra solo el campo que corresponde y lo pide al guardar
+  const filaVehiculo = fila(exigirDestino ? 'Vehículo (patente · cliente)' : 'Vehículo (opcional)', vehiculo);
+  const filaACuenta = fila(exigirDestino ? 'Tercero (a su cuenta)' : '¿Por cuenta de un tercero?', aCuenta);
+  const filaFaena = fila('Faena', faena);
+  const mostrarDestino = () => {
+    if (!exigirDestino) return;
+    const d = destino.value;
+    filaVehiculo.hidden = d !== 'vehiculo'; filaACuenta.hidden = d !== 'tercero'; filaFaena.hidden = d !== 'faena';
+  };
+  destino.addEventListener('change', () => {
+    // Solo queda el dato del destino elegido
+    if (destino.value !== 'vehiculo') vehiculo.value = '';
+    if (destino.value !== 'tercero') aCuenta.value = '';
+    if (destino.value !== 'faena') faena.value = '';
+    mostrarDestino();
+  });
+  // Desde una orden: va a su vehículo (se puede cambiar)
+  if (deOrden) { if (exigirDestino) destino.value = 'vehiculo'; vehiculo.value = deOrden.vehiculo_id; }
+  mostrarDestino();
   const formulario = el('div', { class: 'ficha doc-grupo lec-form', hidden: true },
     el('h2', {}, '2. Revisar y guardar'),
     estado, iaEstado,
@@ -292,8 +330,9 @@ export default async function vista(ctx) {
     proveedor,
     el('div', { class: 'rejilla-campos lec-montos' }, ctl('neto', 'Neto', { num: true }), ctl('iva', 'IVA', { num: true }), ctl('exento', 'Exento', { num: true }), ctl('otros', 'Otros impuestos', { num: true }), ctl('total', 'Total', { num: true })),
     cuadre,
-    el('div', { class: 'rejilla-campos' }, fila('Categoría', categoria), ctx.config?.centros ? fila('Centro de costo', centro) : null, conFaenas ? fila('Faena', faena) : null),
-    el('div', { class: 'rejilla-campos' }, conTaller ? fila('Vehículo (opcional)', vehiculo) : null, fila('¿Por cuenta de un tercero?', aCuenta)),
+    exigirDestino ? fila('¿A qué va este gasto?', destino) : null,
+    el('div', { class: 'rejilla-campos' }, fila('Categoría', categoria), ctx.config?.centros ? fila('Centro de costo', centro) : null, conFaenas ? filaFaena : null),
+    el('div', { class: 'rejilla-campos' }, conTaller ? filaVehiculo : null, filaACuenta),
     fila('Concepto', concepto),
     el('label', { class: 'casilla' }, pagado, 'Ya está pagado (boletas y tickets quedan pagados solos; la factura queda por pagar)'),
     conDescuento ? el('div', { class: 'lec-descuento' },
@@ -322,7 +361,7 @@ export default async function vista(ctx) {
       ? el('div', { class: 'aviso-bandeja ban-cabeza' },
         el('span', {}, icono('lista', { tam: 16 }), ` Por cargar: documento ${i + 1} de ${pendientes.length}`),
         el('div', { class: 'listado-acciones' },
-          pendientes.length > 1 ? boton('Saltar', { icono: 'derecha', onclick: saltar }) : null,
+          pendientes.length > 1 && !deOrden ? boton('Saltar', { icono: 'derecha', onclick: saltar }) : null,
           boton('Descartar de la bandeja', { icono: 'basura', onclick: quitar })))
       : el('p', { class: 'aviso-bandeja' }, icono('alerta', { tam: 16 }), 'Ese documento ya no está en la bandeja (ya se cargó o se descartó). ',
         el('a', { href: ctx.ruta('costos.bandeja') }, 'Volver a Por cargar'));
@@ -349,7 +388,9 @@ export default async function vista(ctx) {
     volver,
     cabezaBandeja,
     el('header', { class: 'listado-cabecera' }, el('div', {}, el('h1', {}, 'Leer boleta o factura'),
-      el('p', { class: 'texto-suave' }, 'Lee el timbre electrónico, el XML o el texto de la foto y registra el gasto. Todo se procesa en este equipo.'))),
+      el('p', { class: 'texto-suave' }, deOrden
+        ? `Compra para la orden N° ${deOrden.numero}${deOrden.tal_vehiculos?.patente ? ` (${deOrden.tal_vehiculos.patente})` : ''}: queda como costo de ese vehículo.`
+        : 'Lee el timbre electrónico, el XML o el texto de la foto y registra el gasto. Todo se procesa en este equipo.'))),
     el('div', { class: 'ficha doc-grupo' },
       el('h2', {}, '1. Documento'),
       el('div', { class: 'listado-acciones lec-botones' },

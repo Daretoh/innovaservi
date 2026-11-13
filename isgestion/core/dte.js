@@ -1,8 +1,8 @@
 // Documentos tributarios electrónicos (OpenFactura, Núcleo 021): llamadas a la Edge Function `dte`, que es la única que
 // habla con Haulmer. En 'pruebas' (ambiente de desarrollo de Haulmer, timbre simulado) nada se escribe en facturas,
 // órdenes ni gastos: los documentos quedan marcados como prueba. Ver supabase/functions/dte/index.ts.
-import { el } from './ui/dom.js?v=9dfb925';
-import { icono } from './ui/iconos.js?v=9dfb925';
+import { el } from './ui/dom.js?v=882cc93';
+import { icono } from './ui/iconos.js?v=882cc93';
 
 export async function llamarDte(ctx, accion, datos = {}) {
   const { data, error } = await ctx.api.functions.invoke('dte', { body: { accion, empresa_id: ctx.empresa.id, ...datos } });
@@ -29,5 +29,16 @@ export async function estadoDte(ctx, { forzar = false } = {}) {
 // Aviso del ambiente de pruebas (para los formularios y pantallas)
 export const avisoPrueba = (texto = 'Ambiente de pruebas de OpenFactura: el documento es de prueba (timbre simulado) y no se guarda en ISgestión.') =>
   el('p', { class: 'aviso-bandeja dte-prueba' }, icono('alerta', { tam: 16 }), ' ', texto);
+
+// Mostrar el PDF de un documento recién emitido o traído. El navegador bloquea las pestañas que se abren solas
+// después de esperar al servidor, así que se ofrece un botón: con el clic sí se abre.
+export function ofrecerPdf(url, { titulo = 'Documento listo', texto = '' } = {}) {
+  if (!url) return;
+  // Después de cerrar el formulario anterior
+  setTimeout(() => import('./ui/modal.js?v=882cc93').then(({ abrirFormulario }) => abrirFormulario({
+    titulo, mensaje: texto || 'El PDF está listo.', campos: [], textoGuardar: 'Abrir el PDF',
+    alGuardar: () => { window.open(url, '_blank', 'noopener'); },
+  })), 50);
+}
 
 export const NOMBRE_DTE = { 33: 'Factura', 34: 'Factura exenta', 39: 'Boleta', 41: 'Boleta exenta', 43: 'Liquidación factura', 46: 'Factura de compra', 52: 'Guía de despacho', 56: 'Nota de débito', 61: 'Nota de crédito' };

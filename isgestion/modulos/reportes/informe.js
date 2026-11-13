@@ -2,10 +2,10 @@
 // colores de la marca (Reportes → Diseño del informe) y el logo grande, datos del servicio, trabajo realizado,
 // observaciones, fotos por etapa (12 por página) y contraportada con teléfonos, correos, web y dirección con iconos.
 // Las fotos "sin ordenar" y los videos no van al informe.
-import { cargarJsPdf, cargarLogo, rgb, sellar } from '../../core/pdf.js?v=9dfb925';
-import { nombreEmpresa } from '../../core/empresas.js?v=9dfb925';
-import { fechaLarga } from '../../core/ui/formato.js?v=9dfb925';
-import { nombreEtapa, nombreTercero, urlsFirmadas, faenasDistintas } from './datos.js?v=9dfb925';
+import { cargarJsPdf, cargarLogo, rgb, sellar } from '../../core/pdf.js?v=882cc93';
+import { nombreEmpresa } from '../../core/empresas.js?v=882cc93';
+import { fechaLarga } from '../../core/ui/formato.js?v=882cc93';
+import { nombreEtapa, nombreTercero, urlsFirmadas, faenasDistintas } from './datos.js?v=882cc93';
 
 const M = 15;                 // margen
 const TEXTO = [28, 35, 48];
@@ -53,6 +53,25 @@ async function cargarFoto(url, proporcion = null) {
   } catch {
     return null;
   }
+}
+
+// Ancho de un texto con espaciado entre letras (charSpace) y el texto partido en líneas que quepan en "maximo"
+// (con la fuente activa del documento); una palabra más ancha que el máximo se corta por letras
+const anchoEspaciado = (doc, t, esp) => doc.getTextWidth(t) + esp * Math.max(0, t.length - 1);
+function partirEspaciado(doc, texto, maximo, esp) {
+  const lineas = []; let actual = '';
+  for (const palabra of texto.split(/\s+/).filter(Boolean)) {
+    const prueba = actual ? `${actual} ${palabra}` : palabra;
+    if (!actual || anchoEspaciado(doc, prueba, esp) <= maximo) { actual = prueba; continue; }
+    lineas.push(actual); actual = palabra;
+  }
+  if (actual) lineas.push(actual);
+  return lineas.flatMap((l) => {
+    if (anchoEspaciado(doc, l, esp) <= maximo) return [l];
+    const out = []; let t = '';
+    for (const c of l) { if (t && anchoEspaciado(doc, t + c, esp) > maximo) { out.push(t); t = c; } else t += c; }
+    return t ? [...out, t] : out;
+  });
 }
 
 const unicos = (lista) => {
@@ -248,18 +267,46 @@ export async function generarInforme(ctx, { parte, faenas, media, config }) {
   itemLs.forEach((ls) => { doc.setFillColor(...NAVY).circle(M + pad + 1, yt - 1.3, 0.8, 'F'); doc.text(ls, M + pad + 4, yt); yt += ls.length * 5; });
   y += altoTrabajo + 6;
 
-  // Observaciones (fondo suave con visto verde)
-  if (parte.observaciones?.trim()) {
+  // Observaciones: sección propia; en un mismo cuadro suave el texto y debajo hasta 4 imágenes (rep_media con etapa 'obs')
+  // en una fila, más chicas y enteras. Si el texto es largo el cuadro sigue en la página siguiente.
+  const fotosObs = media.filter((m) => m.tipo === 'foto' && m.etapa === 'obs').slice(0, 4);
+  const textoObs = parte.observaciones?.trim() ?? '';
+  if (textoObs || fotosObs.length) {
+    const urlsObs = await urlsFirmadas(ctx.api, fotosObs.map((m) => m.ruta));
+    const imgsObs = (await Promise.all(fotosObs.map((m) => cargarFoto(urlsObs.get(m.ruta))))).filter(Boolean);
+    const LIM = H - 22; const anchoIn = W - 2 * M - 2 * pad;
+    const gapImg = 4; const anchoImg = (anchoIn - 3 * gapImg) / 4; const altoImg = 34;
+    const hImgs = imgsObs.length ? altoImg + (textoObs ? 4 : 0) : 0;
     doc.setFont('helvetica', 'normal').setFontSize(10.5);
-    const obs = doc.splitTextToSize(parte.observaciones.trim(), W - 2 * M - 30);
-    const altoObs = Math.max(22, 13 + obs.length * 5 + 4);
-    if (y + altoObs > H - 25) y = nuevaPagina();
-    doc.setFillColor(243, 244, 250).setDrawColor(...LINEA).roundedRect(M, y, W - 2 * M, altoObs, 3, 3, 'FD');
-    doc.setFillColor(34, 160, 107).circle(M + 11, y + altoObs / 2, 5, 'F');
-    doc.setDrawColor(255, 255, 255).setLineWidth(0.9).lines([[1.6, 1.8], [3.2, -4]], M + 8.6, y + altoObs / 2 + 0.2);
-    doc.setFont('helvetica', 'bold').setFontSize(11).setTextColor(...NAVY).text('Observaciones:', M + 21, y + 9);
-    doc.setFont('helvetica', 'normal').setFontSize(10.5).text(obs, M + 21, y + 15);
-    y += altoObs + 6;
+    let resto = textoObs ? doc.splitTextToSize(textoObs, anchoIn) : [];
+    if (y + 11 + 2 * pad + Math.min(resto.length, 3) * 5 + hImgs > LIM) y = nuevaPagina();
+    y = tituloSeccion('Observaciones', y);
+    let fotosPuestas = !imgsObs.length;
+    while (resto.length || !fotosPuestas) {
+      const libre = LIM - y - 2 * pad + 1;
+      let caben = Math.max(0, Math.floor(libre / 5));
+      if (!resto.length && libre < hImgs) { y = nuevaPagina(); continue; }   // solo faltan las imágenes y no caben aquí
+      if (resto.length && caben < 1) { y = nuevaPagina(); continue; }
+      const trozo = resto.slice(0, caben); resto = resto.slice(caben);
+      const conFotos = !resto.length && !fotosPuestas && trozo.length * 5 + hImgs <= libre;
+      const altoTexto = trozo.length ? trozo.length * 5 - 1 : 0;
+      const alto = 2 * pad + altoTexto + (conFotos ? altoImg + (trozo.length ? 4 : 0) : 0);
+      doc.setFillColor(243, 244, 250).setDrawColor(...LINEA).setLineWidth(0.3).roundedRect(M, y, W - 2 * M, alto, 3, 3, 'FD');
+      if (trozo.length) doc.setFont('helvetica', 'normal').setFontSize(10.5).setTextColor(...NAVY).text(trozo, M + pad, y + pad + 3.2);
+      if (conFotos) {
+        const y0 = y + pad + altoTexto + (trozo.length ? 4 : 0);
+        imgsObs.forEach((img, k) => {
+          const x0 = M + pad + k * (anchoImg + gapImg);
+          const esc = Math.min((anchoImg - 1.5) / img.ancho, (altoImg - 1.5) / img.alto);
+          const w = img.ancho * esc; const h = img.alto * esc;
+          doc.setFillColor(255, 255, 255).setDrawColor(...LINEA).setLineWidth(0.3).roundedRect(x0, y0, anchoImg, altoImg, 1.5, 1.5, 'FD');
+          doc.addImage(img.dataUrl, 'JPEG', x0 + (anchoImg - w) / 2, y0 + (altoImg - h) / 2, w, h);
+        });
+        fotosPuestas = true;
+      }
+      y += alto + 6;
+      if (resto.length || !fotosPuestas) y = nuevaPagina();
+    }
   }
 
   // ---------- Registro fotográfico: por etapa (y por faena si hay varias), 2 columnas × 6 filas por página
@@ -305,21 +352,34 @@ export async function generarInforme(ctx, { parte, faenas, media, config }) {
       y = nuevaPagina();
       y = tituloSeccion(`Registro fotográfico${g.faena ? ` — ${g.faena}` : ''}`, y);
       const chip = `${g.proceso ? g.proceso.nombre.toUpperCase() : ETIQUETA[g.etapa] ?? nombreEtapa[g.etapa].toUpperCase()}${total > 1 ? ` ${n}-${total}` : ''}`;
+      // Píldora con el título: crece con el texto y, si es muy largo (o hay nota al lado), se parte en varias líneas;
+      // la nota del proceso va a su derecha, completa y ajustada al espacio que queda
+      const nota = g.proceso?.nota?.trim() ?? '';
       doc.setFont('helvetica', 'bold').setFontSize(10);
-      const wChip = doc.getTextWidth(chip) + 10;
-      doc.setFillColor(...color).roundedRect(M, y, wChip, 7.5, 2, 2, 'F');
-      doc.setTextColor(255, 255, 255).text(chip, M + 5, y + 5.2, { charSpace: 0.3 });
-      if (g.proceso?.nota) {   // la nota del proceso, al lado de su título
+      const lineasChip = partirEspaciado(doc, chip, (nota ? (W - 2 * M) * 0.5 : W - 2 * M) - 10, 0.3);
+      const wChip = Math.max(...lineasChip.map((l) => anchoEspaciado(doc, l, 0.3))) + 10;
+      const hChip = 7.5 + (lineasChip.length - 1) * 4.6;
+      doc.setFillColor(...color).roundedRect(M, y, wChip, hChip, 2, 2, 'F');
+      doc.setTextColor(255, 255, 255);
+      lineasChip.forEach((l, k) => doc.text(l, M + 5, y + 5.2 + k * 4.6, { charSpace: 0.3 }));
+      let hNota = 0;
+      if (nota) {
         doc.setFont('helvetica', 'normal').setFontSize(9.5).setTextColor(...NAVY);
-        doc.text(doc.splitTextToSize(g.proceso.nota, W - 2 * M - wChip - 6)[0], M + wChip + 4, y + 5.2);
+        const ls = doc.splitTextToSize(nota, W - 2 * M - wChip - 5);
+        ls.forEach((l, k) => doc.text(l, M + wChip + 5, y + 5.2 + k * 4.4));
+        hNota = 7.5 + (ls.length - 1) * 4.4;
       }
-      y += 12;
+      y += 12 + Math.max(hChip, hNota) - 7.5;
+      // Si la cabecera ocupó más de una línea, las fotos se achican un poco (mismas proporciones) para caber en la página
+      const k = Math.min(1, (H - 22 - y + 4) / (FILAS * (altoCelda + 4)));
+      const aw = anchoCelda * k; const ah = altoCelda * k;
+      const x00 = M + (W - 2 * M - (COLS * aw + (COLS - 1) * 5)) / 2;
       g.fotos.slice(i, i + COLS * FILAS).forEach((m, j) => {
         const foto = cargadas.get(m.id);
-        const x0 = M + (j % COLS) * (anchoCelda + 5);
-        const y0 = y + Math.floor(j / COLS) * (altoCelda + 4);
-        doc.addImage(foto.dataUrl, 'JPEG', x0, y0, anchoCelda, altoCelda);
-        doc.setDrawColor(...LINEA).setLineWidth(0.4).roundedRect(x0, y0, anchoCelda, altoCelda, 1.5, 1.5, 'S');
+        const x0 = x00 + (j % COLS) * (aw + 5);
+        const y0 = y + Math.floor(j / COLS) * (ah + 4);
+        doc.addImage(foto.dataUrl, 'JPEG', x0, y0, aw, ah);
+        doc.setDrawColor(...LINEA).setLineWidth(0.4).roundedRect(x0, y0, aw, ah, 1.5, 1.5, 'S');
       });
     }
   }
@@ -352,13 +412,19 @@ export async function generarInforme(ctx, { parte, faenas, media, config }) {
     doc.text(nombreEmpresa(e), W / 2, yC + 26, { align: 'center' });
   }
 
-  // ---------- Pie en páginas interiores (como InnovaGestión: empresa · web a la izquierda, fecha y página a la derecha)
-  interiores.forEach((p, i) => {
+  // ---------- Pie: en las páginas interiores empresa · web a la izquierda (como InnovaGestión); en todas, "Página X de Y"
+  // a la derecha. La única fecha es la del sello "Generado con ISgestión" (sellar, al centro abajo).
+  const totalPaginas = doc.getNumberOfPages();
+  for (let p = 1; p <= totalPaginas; p++) {
     doc.setPage(p);
-    doc.setDrawColor(230, 227, 220).setLineWidth(0.3).line(M, H - 12.5, W - M, H - 12.5);
+    const interior = interiores.includes(p);
     doc.setFont('helvetica', 'bold').setFontSize(7.5).setTextColor(154, 150, 142);
-    doc.text([nombreEmpresa(e), web.replace(/^https?:\/\//, '').replace(/^www\./, '')].filter(Boolean).join(' · '), M, H - 9);
-    doc.text(`${fechaLarga(fechas[0] ?? parte.fecha)} · Pág. ${i + 1} de ${interiores.length}`, W - M, H - 9, { align: 'right' });
-  });
+    if (interior) {
+      doc.setDrawColor(230, 227, 220).setLineWidth(0.3).line(M, H - 12.5, W - M, H - 12.5);
+      doc.text([nombreEmpresa(e), web.replace(/^https?:\/\//, '').replace(/^www\./, '')].filter(Boolean).join(' · '), M, H - 9);
+    }
+    // portada y contraportada: dentro de las franjas laterales
+    doc.text(`Página ${p} de ${totalPaginas}`, W - (interior ? M : 19), H - 9, { align: 'right' });
+  }
   return sellar(doc, { autor: e.razon_social, titulo: `Informe de trabajo · ${cliente}` });
 }

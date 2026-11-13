@@ -1,9 +1,9 @@
 // Datos compartidos del Catálogo de equipamiento: categorías, marcas y productos de la empresa activa,
 // fotos con URL firmada y la hoja de estilos del módulo.
-import { el } from '../../core/ui/dom.js?v=9dfb925';
-import { icono } from '../../core/ui/iconos.js?v=9dfb925';
-import { urlsFirmadas, subirArchivo } from '../../core/adjuntos.js?v=9dfb925';
-import { comprimirFoto, esImagen } from '../../core/imagenes.js?v=9dfb925';
+import { el } from '../../core/ui/dom.js?v=882cc93';
+import { icono } from '../../core/ui/iconos.js?v=882cc93';
+import { urlsFirmadas, subirArchivo } from '../../core/adjuntos.js?v=882cc93';
+import { comprimirFoto, esImagen } from '../../core/imagenes.js?v=882cc93';
 
 export async function cargarCatalogo(ctx, { conEliminados = false } = {}) {
   const sinEliminar = (q) => (conEliminados ? q : q.is('deleted_at', null));
@@ -50,7 +50,7 @@ export function agrupar(datos, productos) {
 
 export function cargarEstilos() {
   if (document.getElementById('catalogo-css')) return;
-  document.head.append(el('link', { id: 'catalogo-css', rel: 'stylesheet', href: new URL('./catalogo.css?v=9dfb925', import.meta.url).href }));
+  document.head.append(el('link', { id: 'catalogo-css', rel: 'stylesheet', href: new URL('./catalogo.css?v=882cc93', import.meta.url).href }));
 }
 
 // ---- Fase 1 del catálogo web (002): versiones por camioneta, galería y costos

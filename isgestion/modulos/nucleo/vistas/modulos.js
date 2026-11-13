@@ -1,11 +1,11 @@
 // Módulos de la empresa (Administración): qué módulos tiene contratados, sus opciones (las del manifiesto, guardadas
 // en empresa_modulos.config) y acceso directo a las pantallas de ajustes de cada uno (ítems con `ajustes: true`).
 // Activar o quitar módulos y ocultar pantallas lo hace el equipo ISgestión desde la Consola.
-import { el } from '../../../core/ui/dom.js?v=9dfb925';
-import { icono } from '../../../core/ui/iconos.js?v=9dfb925';
-import { boton } from '../../../core/ui/tabla.js?v=9dfb925';
-import { avisar } from '../../../core/ui/aviso.js?v=9dfb925';
-import { cargarManifiestos, configModulo } from '../../../core/modulos.js?v=9dfb925';
+import { el } from '../../../core/ui/dom.js?v=882cc93';
+import { icono } from '../../../core/ui/iconos.js?v=882cc93';
+import { boton } from '../../../core/ui/tabla.js?v=882cc93';
+import { avisar } from '../../../core/ui/aviso.js?v=882cc93';
+import { cargarManifiestos, configModulo } from '../../../core/modulos.js?v=882cc93';
 
 export default async function vista(ctx) {
   const [manifiestos, { data, error }] = await Promise.all([

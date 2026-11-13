@@ -2,16 +2,16 @@
 // cada abono (anticipo cobrado en la TUU) con fecha, medio, monto, nota y su boleta (foto o PDF subido, o traída del
 // SII con "Boleta de la TUU"). La base suma los abonos vigentes en tal_ordenes.abono (saldo, caja y resultados igual).
 // Con la orden cobrada o anulada no se agregan ni quitan abonos; la boleta de un abono sí se adjunta o cambia.
-import { el } from '../../core/ui/dom.js?v=9dfb925';
-import { icono } from '../../core/ui/iconos.js?v=9dfb925';
-import { boton } from '../../core/ui/tabla.js?v=9dfb925';
-import { abrirFormulario } from '../../core/ui/modal.js?v=9dfb925';
-import { avisar } from '../../core/ui/aviso.js?v=9dfb925';
-import { subirArchivo, eliminarArchivo, urlFirmada } from '../../core/adjuntos.js?v=9dfb925';
-import { comprimirFoto } from '../../core/imagenes.js?v=9dfb925';
-import { dinero, fechaLarga, hoyISO } from '../../core/ui/formato.js?v=9dfb925';
-import { MODOS_PAGO } from './datos.js?v=9dfb925';
-import { traerDeTuu } from './boleta-tuu.js?v=9dfb925';
+import { el } from '../../core/ui/dom.js?v=882cc93';
+import { icono } from '../../core/ui/iconos.js?v=882cc93';
+import { boton } from '../../core/ui/tabla.js?v=882cc93';
+import { abrirFormulario } from '../../core/ui/modal.js?v=882cc93';
+import { avisar } from '../../core/ui/aviso.js?v=882cc93';
+import { subirArchivo, eliminarArchivo, urlFirmada } from '../../core/adjuntos.js?v=882cc93';
+import { comprimirFoto } from '../../core/imagenes.js?v=882cc93';
+import { dinero, fechaLarga, hoyISO } from '../../core/ui/formato.js?v=882cc93';
+import { MODOS_PAGO } from './datos.js?v=882cc93';
+import { traerDeTuu } from './boleta-tuu.js?v=882cc93';
 
 const MEDIOS = MODOS_PAGO.filter(([k]) => k);
 const nombreMedio = (k) => MEDIOS.find(([m]) => m === k)?.[1] ?? '';
@@ -110,4 +110,36 @@ export function seccionAbonos(ctx, { o, t, abonos, alCambiar }) {
       el('span', { class: 'texto-chico texto-suave' }, abonos.length ? `Abonos (${abonos.length})` : 'Abonos'),
       puedeAbonar ? boton('Registrar abono', { icono: 'mas', class: 'boton boton-secundario boton-chico', onclick: registrar }) : null),
     abonos.map(fila));
+}
+
+// Compra como costo desde el Cobro de la orden (2026-11-12, pedido de Enzo): boleta o factura de un proveedor, en foto
+// o PDF (lector de Costos con ?orden=) o una compra traída del SII que espera en la Bandeja de Costos. El gasto queda
+// con la patente y ligado a esta orden: sale en "Costos de este vehículo" y en el margen. Pide costos.crear.
+export function compraComoCosto(ctx, o) {
+  if (!ctx.puede('costos', 'crear') || o.estado === 'anulada') return null;
+  const lector = (extra = {}) => { location.hash = ctx.ruta('costos.lector', { orden: o.id, ...extra }); };
+  const delSii = async (ev) => {
+    const b = ev.currentTarget; b.disabled = true;
+    const { data, error } = await ctx.api.from('fin_bandeja').select('id, nombre, dte, created_at')
+      .eq('empresa_id', ctx.empresa.id).eq('estado', 'pendiente').eq('origen', 'sii').order('created_at', { ascending: false }).limit(300);
+    b.disabled = false;
+    if (error) { avisar(error.message, 'error'); return; }
+    if (!data.length) { avisar('No hay compras del SII esperando en la Bandeja de Costos. Tráelas desde Costos → Bandeja.', 'error'); return; }
+    const texto = (x) => {
+      const d = x.dte ?? {};
+      return [d.razon ?? d.rut ?? x.nombre, d.folio ? `N° ${d.folio}` : null, d.fecha ? fechaLarga(d.fecha) : null, d.total != null ? dinero(Number(d.total)) : null].filter(Boolean).join(' · ');
+    };
+    abrirFormulario({
+      titulo: `Compra del SII · orden N° ${o.numero}`,
+      mensaje: 'Elige la compra: se abre en el lector con sus datos y queda como costo de este vehículo.',
+      campos: [{ id: 'doc', etiqueta: 'Compra', requerido: true, opciones: [['', 'Elegir…'], ...data.map((x) => [x.id, texto(x)])] }],
+      textoGuardar: 'Abrir en el lector',
+      alGuardar: (v) => { if (!v.doc) throw new Error('Elige la compra.'); lector({ bandeja: v.doc }); },
+    });
+  };
+  return el('div', { class: 'cobro-abonos' },
+    el('span', { class: 'texto-chico texto-suave' }, 'Compras de este trabajo (costo)'),
+    el('div', { class: 'cobro-compras' },
+        boton('Subir compra', { icono: 'documento', class: 'boton boton-secundario boton-chico', title: 'Boleta o factura del proveedor (foto o PDF): queda como costo de este vehículo', onclick: () => lector() }),
+        boton('Compra del SII', { icono: 'buscar', class: 'boton boton-secundario boton-chico', title: 'Una compra traída del SII que espera en la Bandeja de Costos', onclick: delSii })));
 }

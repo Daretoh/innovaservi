@@ -2,14 +2,15 @@
 // archivo. Pensado para Guillermo Morales (una cotización por vehículo, una OC por cotización), sirve para cualquiera.
 // Al registrar la OC la cotización queda aceptada. La factura y el cobro van en el registro de facturas (007, facturas.js),
 // que los copia en la cotización; al cobrar, las órdenes del taller ligadas quedan cobradas.
-import { el } from '../../core/ui/dom.js?v=9dfb925';
-import { icono } from '../../core/ui/iconos.js?v=9dfb925';
-import { boton } from '../../core/ui/tabla.js?v=9dfb925';
-import { abrirFormulario } from '../../core/ui/modal.js?v=9dfb925';
-import { avisar } from '../../core/ui/aviso.js?v=9dfb925';
-import { dinero, fechaLarga, hoyISO } from '../../core/ui/formato.js?v=9dfb925';
-import { subirArchivo, urlFirmada } from '../../core/adjuntos.js?v=9dfb925';
-import { formFactura, formPago, anularPago, eliminarFactura } from './facturas.js?v=9dfb925';
+import { el } from '../../core/ui/dom.js?v=882cc93';
+import { icono } from '../../core/ui/iconos.js?v=882cc93';
+import { boton } from '../../core/ui/tabla.js?v=882cc93';
+import { abrirFormulario } from '../../core/ui/modal.js?v=882cc93';
+import { avisar } from '../../core/ui/aviso.js?v=882cc93';
+import { dinero, fechaLarga, hoyISO } from '../../core/ui/formato.js?v=882cc93';
+import { subirArchivo, urlFirmada } from '../../core/adjuntos.js?v=882cc93';
+import { formFactura, formPago, anularPago, eliminarFactura } from './facturas.js?v=882cc93';
+import { formEmitir } from './emitir.js?v=882cc93';
 
 export const MEDIOS = [['transferencia', 'Transferencia'], ['efectivo', 'Efectivo'], ['cheque', 'Cheque'], ['debito', 'Débito'], ['credito', 'Crédito'], ['otro', 'Otro']];
 const nombreMedio = Object.fromEntries(MEDIOS);
@@ -51,6 +52,13 @@ export function pasosSeguimiento(ctx, c, total) {
     const { data: t } = c.tercero_id ? await ctx.api.from('terceros').select('id, razon_social, nombre_fantasia').eq('id', c.tercero_id) : { data: [] };
     formFactura(ctx, { f, cotizacion: c, clientes: t ?? [], alGuardar: () => ctx.refrescar() });
   };
+  // Emitir la factura electrónica desde la cotización (OpenFactura): para los cierres del mes (Innovaservi, Guillermo
+  // Morales); una línea por vehículo, la OC como referencia. Las demás facturas las hace la máquina TUU.
+  const emitir = async () => {
+    const { data: t } = c.tercero_id ? await ctx.api.from('terceros').select('id, rut, razon_social, nombre_fantasia, giro, direccion').eq('id', c.tercero_id) : { data: [] };
+    formEmitir(ctx, { cotizacion: c, clientes: t ?? [], alGuardar: () => ctx.refrescar() });
+  };
+  const puedeEmitir = editar && ctx.puede('cotizaciones', 'crear') && !c.factura_numero && !c.madre_id;
 
   // La OC se registra en la cotización
   const doc = () => abrirFormulario({
@@ -87,7 +95,8 @@ export function pasosSeguimiento(ctx, c, total) {
           verArchivo(ctx, c.oc_archivo, 'Ver OC'), editar && (c.oc_fecha || c.oc_numero) && !c.factura_numero ? boton('Quitar', { onclick: quitarOc }) : null]),
       paso(2, !!c.factura_numero, e === 'oc', 'Factura',
         c.factura_numero ? `N° ${c.factura_numero} · ${fechaLarga(c.factura_fecha)}` : 'Factura emitida por la OC (queda en Cotizaciones → Facturas).',
-        [editar && !c.cobro_fecha ? boton(c.factura_numero ? 'Cambiar' : 'Registrar factura', { tipo: e === 'oc' ? 'primario' : 'secundario', onclick: facturar }) : null,
+        [puedeEmitir ? boton('Emitir factura', { icono: 'documento', tipo: e === 'oc' ? 'primario' : 'secundario', onclick: emitir }) : null,
+          editar && !c.cobro_fecha ? boton(c.factura_numero ? 'Cambiar' : 'Registrar a mano', { tipo: 'secundario', onclick: facturar }) : null,
           verArchivo(ctx, c.factura_archivo, 'Ver factura'), editar && ctx.puede('cotizaciones', 'eliminar') && c.factura_numero && !c.cobro_fecha ? boton('Quitar', { onclick: conFactura(eliminarFactura) }) : null]),
       paso(3, !!c.cobro_fecha, e === 'facturada', 'Cobro',
         c.cobro_fecha ? `${dinero(c.cobro_monto)} · ${fechaLarga(c.cobro_fecha)} · ${nombreMedio[c.cobro_medio] ?? ''}` : c.factura_numero ? `Por cobrar: ${dinero(total)}` : 'Se cobra después de facturar.',

@@ -1,14 +1,14 @@
 // Parte de trabajo: datos del informe, fotos y videos por etapa, vista previa, confirmar y reabrir.
 // Ruta: #/reportes.parte?id=<parte_id>
-import { el } from '../../../core/ui/dom.js?v=9dfb925';
-import { icono } from '../../../core/ui/iconos.js?v=9dfb925';
-import { boton } from '../../../core/ui/tabla.js?v=9dfb925';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=9dfb925';
-import { avisar } from '../../../core/ui/aviso.js?v=9dfb925';
-import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=9dfb925';
-import { fechaLarga, nombreDia, fechaCorta } from '../../../core/ui/formato.js?v=9dfb925';
-import { botonesFotos } from '../../../core/ui/camara.js?v=9dfb925';
-import { cargarParte, ETAPAS, opcionesEtapa, valorEtapa, desdeValorEtapa, nombreTercero, comprimirFoto, urlsFirmadas, faenasDistintas } from '../datos.js?v=9dfb925';
+import { el } from '../../../core/ui/dom.js?v=882cc93';
+import { icono } from '../../../core/ui/iconos.js?v=882cc93';
+import { boton } from '../../../core/ui/tabla.js?v=882cc93';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=882cc93';
+import { avisar } from '../../../core/ui/aviso.js?v=882cc93';
+import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=882cc93';
+import { fechaLarga, nombreDia, fechaCorta } from '../../../core/ui/formato.js?v=882cc93';
+import { botonesFotos } from '../../../core/ui/camara.js?v=882cc93';
+import { cargarParte, ETAPAS, opcionesEtapa, valorEtapa, desdeValorEtapa, nombreTercero, comprimirFoto, urlsFirmadas, faenasDistintas } from '../datos.js?v=882cc93';
 
 const MAX_VIDEO = 25 * 1024 * 1024;
 let etapaSubida = 'antes';
@@ -17,10 +17,13 @@ export default async function vista(ctx) {
   const datos = await cargarParte(ctx, ctx.params.id);
   const volver = el('a', { class: 'volver', href: ctx.ruta('reportes.lista') }, icono('volver', { tam: 16 }), 'Partes de trabajo');
   if (!datos.parte) return el('section', { class: 'listado' }, volver, el('h1', {}, 'Parte no encontrado'));
-  const { parte, faenas, media } = datos;
+  const { parte, faenas } = datos;
+  // Las imágenes de las observaciones (etapa 'obs', máx. 4) van aparte de las fotos por etapa
+  const fotosObs = datos.media.filter((m) => m.etapa === 'obs');
+  const media = datos.media.filter((m) => m.etapa !== 'obs');
   const confirmado = parte.estado === 'confirmado';
   const editable = !confirmado && ctx.puede('reportes', 'editar') && ctx.puede('reportes', 'crear');
-  const urls = await urlsFirmadas(ctx.api, media.map((m) => m.ruta));
+  const urls = await urlsFirmadas(ctx.api, datos.media.map((m) => m.ruta));
   const distintas = faenasDistintas(faenas);
   const varias = distintas.length > 1;
   const procesos = parte.procesos ?? [];
@@ -70,6 +73,52 @@ export default async function vista(ctx) {
   const selEtapa = el('select', { class: 'campo campo-filtro', 'aria-label': 'Etapa de las fotos que vas a subir' },
     opciones.map(([k, t]) => el('option', { value: k, selected: k === etapaSubida }, `Subir como: ${t}`)));
   selEtapa.addEventListener('change', () => { etapaSubida = selEtapa.value; });
+
+  // ---- Imágenes de las observaciones: hasta 4 (la base también lo exige), salen en el informe debajo de las observaciones
+  const MAX_OBS = 4;
+  const cupoObs = () => Math.max(0, MAX_OBS - fotosObs.length);
+  const progresoObs = el('span', { class: 'texto-suave', 'aria-live': 'polite' });
+  let subiendoObs = false;
+  const subirObs = async (archivos) => {
+    if (subiendoObs) return;
+    const fotos = archivos.filter((a) => !a.type.startsWith('video/'));
+    if (fotos.length < archivos.length) avisar('En las observaciones solo van imágenes: los videos no se subieron.', 'error');
+    if (fotos.length > cupoObs()) avisar(`Las observaciones admiten hasta ${MAX_OBS} imágenes: se suben ${cupoObs()}.`, 'error');
+    const lista = fotos.slice(0, cupoObs());
+    if (!lista.length) return;
+    subiendoObs = true; obsBtn.camara.disabled = true; obsBtn.galeria.disabled = true;
+    let ok = 0; let orden = fotosObs.length;
+    for (const [i, a] of lista.entries()) {
+      progresoObs.textContent = `Subiendo ${i + 1} de ${lista.length}…`;
+      try {
+        const archivo = await comprimirFoto(a);
+        const { ruta } = await subirArchivo(ctx.api, { empresaId: ctx.empresa.id, modulo: 'reportes', archivo, tabla: 'rep_partes', registroId: parte.id });
+        const { error } = await ctx.api.from('rep_media').insert({
+          parte_id: parte.id, empresa_id: ctx.empresa.id, ruta, tipo: 'foto', etapa: 'obs', orden: orden++, nombre: a.name, tamano: archivo.size,
+        });
+        if (error) { await eliminarArchivo(ctx.api, ruta).catch(() => {}); throw new Error(error.message); }
+        ok += 1;
+      } catch (e) { avisar(e.message, 'error'); }
+    }
+    if (ok) avisar(ok === 1 ? 'Se subió 1 imagen.' : `Se subieron ${ok} imágenes.`);
+    ctx.refrescar();
+  };
+  const obsBtn = botonesFotos({ alElegir: subirObs, titulo: 'Imágenes de las observaciones', textoListo: 'Subir', accept: 'image/*', max: cupoObs, textoGaleria: 'Galería' });
+  const bloqueObs = editable || fotosObs.length ? el('div', { class: 'form-fila rep-obs-fotos' },
+    el('label', {}, `Imágenes de las observaciones (${fotosObs.length} de ${MAX_OBS})`),
+    fotosObs.length ? el('div', { class: 'galeria' }, fotosObs.map((m) => el('div', { class: 'media-tarjeta' },
+      el('a', { href: urls.get(m.ruta), target: '_blank', rel: 'noopener' }, el('img', { src: urls.get(m.ruta), alt: m.nombre ?? 'Imagen', loading: 'lazy' })),
+      editable ? el('div', { class: 'media-acciones' }, el('button', {
+        type: 'button', class: 'boton-icono', title: 'Quitar', 'aria-label': 'Quitar imagen',
+        onclick: async () => {
+          const { error } = await ctx.api.from('rep_media').delete().eq('id', m.id);
+          if (error) { avisar(error.message, 'error'); return; }
+          await eliminarArchivo(ctx.api, m.ruta).catch(() => {});
+          avisar('Imagen quitada.'); ctx.refrescar();
+        },
+      }, icono('basura', { tam: 15 }))) : null))) : null,
+    editable && cupoObs() ? el('div', { class: 'listado-acciones fotos-botones' }, obsBtn.camara, obsBtn.galeria, progresoObs) : null,
+    editable ? el('p', { class: 'texto-suave texto-chico' }, 'Salen en el informe debajo de las observaciones.') : null) : null;
 
   // ---- Procesos personalizados: pasos con nombre dentro de Proceso (ej.: Primera y Segunda desinsectación)
   const guardarProcesos = async (lista) => {
@@ -204,7 +253,8 @@ export default async function vista(ctx) {
         campo('lugar', 'Lugar', parte.lugar),
         campo('fecha_texto', 'Fecha de la faena (texto en el informe)', parte.fecha_texto, false, [...new Set(faenas.map((f) => f.fecha))].sort().map(fechaLarga).join(', ') || fechaLarga(parte.fecha)),
         campo('trabajo', 'Trabajo realizado (una línea por trabajo; se suman los títulos de las faenas)', parte.trabajo, true),
-        campo('observaciones', 'Observaciones', parte.observaciones, true))),
+        campo('observaciones', 'Observaciones', parte.observaciones, true),
+        bloqueObs)),
     el('div', { class: 'ficha doc-grupo rep-fotos' },
       el('div', { class: 'listado-cabecera' },
         el('h2', {}, `Fotos y videos (${media.length})`),
@@ -219,7 +269,7 @@ export default async function vista(ctx) {
 async function previa(ctx, datos, b) {
   b.disabled = true;
   try {
-    const { generarInforme } = await import('../informe.js?v=9dfb925');
+    const { generarInforme } = await import('../informe.js?v=882cc93');
     const doc = await generarInforme(ctx, datos);
     window.open(doc.output('bloburl'), '_blank', 'noopener');
   } catch (e) { avisar(`No se pudo generar: ${e.message}`, 'error'); } finally { b.disabled = false; }
@@ -233,7 +283,7 @@ function confirmar(ctx, datos) {
     campos: [],
     textoGuardar: 'Confirmar',
     alGuardar: async () => {
-      const { generarInforme } = await import('../informe.js?v=9dfb925');
+      const { generarInforme } = await import('../informe.js?v=882cc93');
       const doc = await generarInforme(ctx, datos);
       const archivo = new File([doc.output('blob')], `informe-${datos.parte.fecha}.pdf`, { type: 'application/pdf' });
       const { ruta } = await subirArchivo(ctx.api, { empresaId: ctx.empresa.id, modulo: 'reportes', archivo, tabla: 'rep_partes', registroId: datos.parte.id });

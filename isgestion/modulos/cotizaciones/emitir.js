@@ -5,13 +5,13 @@
 // En producción la factura queda registrada en Facturas con el PDF del SII como respaldo y la OC como referencia.
 // En pruebas se emite en el ambiente de desarrollo de Haulmer y solo se muestra el PDF de prueba.
 // Anular: nota de crédito (anularConNota), que quita la factura de Facturas (la cotización queda libre).
-import { el } from '../../core/ui/dom.js?v=9dfb925';
-import { abrirFormulario } from '../../core/ui/modal.js?v=9dfb925';
-import { avisar } from '../../core/ui/aviso.js?v=9dfb925';
-import { hoyISO, sumarDias, dinero } from '../../core/ui/formato.js?v=9dfb925';
-import { llamarDte, nuevaLlave, estadoDte } from '../../core/dte.js?v=9dfb925';
-import { totales, numeroTexto, verPatente, nombreTercero, IVA } from './datos.js?v=9dfb925';
-import { PLAZO_PAGO } from './facturas.js?v=9dfb925';
+import { el } from '../../core/ui/dom.js?v=882cc93';
+import { abrirFormulario } from '../../core/ui/modal.js?v=882cc93';
+import { avisar } from '../../core/ui/aviso.js?v=882cc93';
+import { hoyISO, sumarDias, dinero } from '../../core/ui/formato.js?v=882cc93';
+import { llamarDte, nuevaLlave, estadoDte, ofrecerPdf } from '../../core/dte.js?v=882cc93';
+import { totales, totalLinea, numeroTexto, verPatente, nombreTercero, IVA } from './datos.js?v=882cc93';
+import { PLAZO_PAGO } from './facturas.js?v=882cc93';
 
 const detalleCot = (c) => c.cot_grupos.map((g) => [g.titulo, verPatente(g.patente)].filter(Boolean).join(' · ')).join(', ');
 const miles = (n) => Math.round(n).toLocaleString('es-CL');
@@ -30,7 +30,21 @@ export function lineasCotizacion(c) {
     return { nombre: `${nombre}${c.cot_grupos.length === 1 ? ` (cotización N° ${numeroTexto(c.numero)})` : ''}`.slice(0, 80), monto };
   });
 }
+// Ítems de la cotización tal cual (pedido de Enzo, 2026-11-12): cantidad, precio unitario y descuento de cada línea; con
+// varios vehículos, cada ítem lleva su patente. El descuento adicional va aparte (descuento global de la factura).
+export function itemsCotizacion(c) {
+  const varios = c.cot_grupos.length > 1;
+  const grupos = [...c.cot_grupos].sort((a, b) => a.orden - b.orden);
+  return grupos.flatMap((g) => c.cot_lineas.filter((l) => l.grupo_id === g.id && l.tipo !== 'seccion').sort((a, b) => a.orden - b.orden)
+    .map((l) => ({ l, monto: totalLinea(l) })).filter(({ monto }) => monto > 0)
+    .map(({ l, monto }) => ({
+      nombre: `${varios ? `${verPatente(g.patente) || g.titulo || 'Vehículo'} · ` : ''}${(l.descripcion || 'Ítem').replace(/\s+/g, ' ').trim()}`.slice(0, 80),
+      cant: Number(l.cantidad) || 1, precio: Number(l.precio) || 0, monto,
+    })));
+}
 const textoLineas = (ls) => ls.map((l) => `${l.nombre} ${miles(l.monto)}`).join('\n');
+// Vista previa de los ítems (no se edita: para escribir otro detalle se elige "Escribir el detalle")
+const textoItems = (ls) => ls.map((l) => `${l.nombre}  ·  ${l.cant} × ${miles(l.precio)} = ${miles(l.monto)}`).join('\n');
 // "Mantención 10.000 km 120.000" → { nombre: 'Mantención 10.000 km', monto: 120000 }
 export function leerLineas(texto) {
   return String(texto ?? '').split('\n').map((s) => s.trim()).filter(Boolean).map((s) => {
@@ -50,6 +64,10 @@ export async function formEmitir(ctx, { cotizacion = null, cotizaciones = [], cl
   const cliente0 = cot0?.tercero_id ?? orden?.tercero ?? '';
   const t0 = clientes.find((t) => t.id === cliente0);
   const lineas0 = cot0 ? lineasCotizacion(cot0) : orden ? [{ nombre: `${orden.detalle || 'Servicio de taller'} · OT N° ${orden.numero}`.slice(0, 80), monto: orden.neto }] : [];
+  // Cómo va el detalle: ítems de la cotización (con cantidad y precio), un ítem por vehículo, o escrito a mano
+  let cotActual = cot0;
+  const items0 = cot0 ? itemsCotizacion(cot0) : [];
+  const modo0 = cot0 && items0.length && items0.length <= 60 ? 'items' : cot0 ? 'vehiculos' : 'libre';
   const opcionesCot = [['', 'Sin cotización'], ...(cot0 ? [cot0] : cotizaciones).map((c) => [c.id, `N° ${numeroTexto(c.numero)} · ${c.cliente_nombre ?? ''} · ${detalleCot(c) || 'sin detalle'}`])];
   const opcionesOrden = [['', 'Sin vehículo del taller'], ...ordenes.map((o) => [o.id, o.texto])];
   let sii = null;   // datos del SII del último RUT consultado
@@ -66,6 +84,10 @@ export async function formEmitir(ctx, { cotizacion = null, cotizaciones = [], cl
       if (sii.comuna) poner('comuna', sii.comuna);
       estado?.(`Datos del SII${sii.giros?.length > 1 ? `. Otros giros: ${sii.giros.slice(1, 4).join(' · ')}` : ''}.`, 'ok');
     } catch (err) { estado?.(err.message, 'error'); }
+  };
+  const resumenItems = (c) => {
+    const t = totales(c, c.cot_grupos, c.cot_lineas);
+    return `${itemsCotizacion(c).length} ítems${t.desc ? ` · descuento adicional ${Number(c.desc_adic_pct)} %` : ''} · Neto ${dinero(t.neto)} · IVA ${dinero(Math.round(t.neto * IVA))} · Total ${dinero(t.neto + Math.round(t.neto * IVA))}`;
   };
   const sumar = (texto) => {
     const ls = leerLineas(texto);
@@ -92,7 +114,11 @@ export async function formEmitir(ctx, { cotizacion = null, cotizaciones = [], cl
         alCambiar: ({ valor, poner }) => {
           const c = cotizaciones.find((x) => x.id === valor); if (!c) return;
           poner('cliente', c.tercero_id ?? ''); poner('oc', c.oc_numero ?? ''); poner('detalle', detalleCot(c)); poner('ejecucion', c.fecha ?? '');
-          poner('lineas', textoLineas(lineasCotizacion(c)));
+          cotActual = c;
+          const its = itemsCotizacion(c);
+          const conItems = its.length && its.length <= 60;
+          poner('modo', conItems ? 'items' : 'vehiculos');
+          poner('lineas', conItems ? textoItems(its) : textoLineas(lineasCotizacion(c)));
           const t = clientes.find((x) => x.id === c.tercero_id); if (t?.rut) traerSii(t.rut, poner);
         } },
       { id: 'cliente', etiqueta: 'Cliente', opciones: [['', 'Elegir…'], ...clientes.map((t) => [t.id, nombreTercero(t)])], valor: cliente0,
@@ -103,9 +129,19 @@ export async function formEmitir(ctx, { cotizacion = null, cotizaciones = [], cl
       { id: 'giro', etiqueta: 'Giro', requerido: true, valor: t0?.giro ?? '', ayuda: 'Hasta 40 caracteres (así lo pide el SII).' },
       { id: 'direccion', etiqueta: 'Dirección', requerido: true, valor: '' },
       { id: 'comuna', etiqueta: 'Comuna', requerido: true, valor: '' },
-      { id: 'lineas', etiqueta: 'Detalle de la factura', tipo: 'textarea', requerido: true, valor: textoLineas(lineas0),
-        ayuda: 'Una línea por ítem, con el monto neto al final (ej.: Mantención 10.000 km 120.000).',
-        alCambiar: ({ valor, estado }) => estado(sumar(valor)) },
+      { id: 'modo', etiqueta: 'Detalle de la factura', opciones: [
+          ...(cot0 || cotizaciones.length ? [['items', 'Ítems de la cotización (cantidad y precio)'], ['vehiculos', 'Un ítem por vehículo']] : []), ['libre', 'Escribir el detalle']], valor: modo0,
+        alCambiar: ({ valor, poner }) => {
+          const c = cotActual;
+          if (valor === 'items' && c) {
+            const its = itemsCotizacion(c);
+            if (its.length > 60) { avisar('La cotización tiene más de 60 ítems (el máximo del SII): va un ítem por vehículo.', 'error'); poner('modo', 'vehiculos'); poner('lineas', textoLineas(lineasCotizacion(c))); return; }
+            poner('lineas', textoItems(its));
+          } else if (valor === 'vehiculos' && c) poner('lineas', textoLineas(lineasCotizacion(c)));
+        } },
+      { id: 'lineas', etiqueta: 'Líneas', tipo: 'textarea', filas: 6, requerido: true, valor: modo0 === 'items' ? textoItems(items0) : textoLineas(lineas0),
+        ayuda: 'Con "Ítems de la cotización" esto es solo la vista previa. Para escribir: una línea por ítem con el monto neto al final (ej.: Mantención 10.000 km 120.000).',
+        alCambiar: ({ valor, valores, estado }) => estado(valores.modo === 'items' && cotActual ? resumenItems(cotActual) : sumar(valor)) },
       { id: 'iva', etiqueta: 'IVA', opciones: [['si', 'Con IVA (19 %)'], ['no', 'Sin IVA (factura exenta)']], valor: cot0 && !cot0.con_iva ? 'no' : 'si' },
       { id: 'forma', etiqueta: 'Forma de pago', opciones: [['2', 'Crédito'], ['1', 'Contado']], valor: '2' },
       { id: 'oc', etiqueta: 'OC u orden de servicio (va como referencia)', valor: cot0?.oc_numero ?? '' },
@@ -118,24 +154,35 @@ export async function formEmitir(ctx, { cotizacion = null, cotizaciones = [], cl
     ],
     textoGuardar: est.prueba_emision ? 'Emitir prueba' : 'Emitir en el SII',
     alGuardar: async (v) => {
-      const lineas = leerLineas(v.lineas);
+      const conItems = v.modo === 'items' && cotActual;
+      const lineas = conItems ? itemsCotizacion(cotActual) : v.modo === 'vehiculos' && cotActual ? lineasCotizacion(cotActual) : leerLineas(v.lineas);
       if (!lineas.length || lineas.some((l) => !l.nombre || !(l.monto > 0))) throw new Error('Revisa el detalle: cada línea debe terminar en su monto neto.');
-      const neto = lineas.reduce((s, l) => s + l.monto, 0);
+      if (lineas.length > 60) throw new Error('El SII acepta hasta 60 ítems: elige "Un ítem por vehículo".');
+      const descuentoPct = conItems ? Number(cotActual.desc_adic_pct) || 0 : 0;
+      const suma = lineas.reduce((s, l) => s + l.monto, 0);
+      const neto = suma - Math.round(suma * descuentoPct / 100);
       const tercero = clientes.find((t) => t.id === v.cliente);
       const r = await llamarDte(ctx, 'emitir_factura', {
         idempotencia: llave, exenta: v.iva === 'no', forma_pago: Number(v.forma),
         receptor: { rut: v.rut, razon: v.razon, giro: v.giro, direccion: v.direccion, comuna: v.comuna },
-        lineas,
+        lineas, descuento_pct: descuentoPct,
         factura: { cotizacion_id: v.cotizacion || null, orden_id: v.orden || orden?.id || null, tercero_id: tercero?.id ?? null, oc_numero: v.oc.trim() || null,
           detalle: v.detalle.trim() || null, fecha_emision: v.emision, fecha_pago_estimada: v.estimada || null, fecha_ejecucion: v.ejecucion || null, notas: v.notas.trim() || null },
       });
-      if (r.pdf) window.open(r.pdf, '_blank', 'noopener');
       const total = v.iva === 'no' ? neto : neto + Math.round(neto * IVA);
       if (r.aviso) avisar(r.aviso, 'error');
       else avisar(r.prueba ? `Factura de prueba N° ${r.folio} emitida (${dinero(total)}). No se guardó en Facturas.` : `Factura N° ${r.folio} emitida en el SII y registrada (${dinero(total)}).`);
+      ofrecerPdf(r.pdf, { titulo: r.prueba ? `Factura de prueba N° ${r.folio}` : `Factura N° ${r.folio}`, texto: r.prueba ? 'Emitida en el ambiente de pruebas de Haulmer (timbre simulado): no vale en el SII y no queda en Facturas.' : 'Emitida en el SII y registrada en Facturas.' });
       alGuardar?.(r);
     },
   });
+  // Con el RUT del cliente ya puesto, completar dirección, comuna y giro con el SII al abrir
+  if (t0?.rut) {
+    setTimeout(() => {
+      const dlg = [...document.querySelectorAll('dialog[open]')].pop();
+      [...(dlg?.querySelectorAll('.campo-accion button') ?? [])].find((b) => /Traer datos del SII/.test(b.textContent))?.click();
+    }, 0);
+  }
 }
 
 // Anular una factura emitida con una nota de crédito (documento de dte_documentos)
@@ -148,7 +195,7 @@ export function anularConNota(ctx, f, doc, { alGuardar } = {}) {
     textoGuardar: 'Emitir nota de crédito',
     alGuardar: async (v) => {
       const r = await llamarDte(ctx, 'nota_credito', { documento_id: doc.id, motivo: v.motivo, idempotencia: llave });
-      if (r.pdf) window.open(r.pdf, '_blank', 'noopener');
+      ofrecerPdf(r.pdf, { titulo: `Nota de crédito N° ${r.folio}` });
       if (r.aviso) avisar(r.aviso, 'error'); else avisar(`Nota de crédito N° ${r.folio} emitida: la factura N° ${f.numero} quedó anulada.`);
       alGuardar?.(r);
     },
