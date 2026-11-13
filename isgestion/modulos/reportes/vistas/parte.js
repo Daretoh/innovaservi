@@ -1,14 +1,15 @@
 // Parte de trabajo: datos del informe, fotos y videos por etapa, vista previa, confirmar y reabrir.
 // Ruta: #/reportes.parte?id=<parte_id>
-import { el } from '../../../core/ui/dom.js?v=882cc93';
-import { icono } from '../../../core/ui/iconos.js?v=882cc93';
-import { boton } from '../../../core/ui/tabla.js?v=882cc93';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=882cc93';
-import { avisar } from '../../../core/ui/aviso.js?v=882cc93';
-import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=882cc93';
-import { fechaLarga, nombreDia, fechaCorta } from '../../../core/ui/formato.js?v=882cc93';
-import { botonesFotos } from '../../../core/ui/camara.js?v=882cc93';
-import { cargarParte, ETAPAS, opcionesEtapa, valorEtapa, desdeValorEtapa, nombreTercero, comprimirFoto, urlsFirmadas, faenasDistintas } from '../datos.js?v=882cc93';
+import { el } from '../../../core/ui/dom.js?v=7f910f1';
+import { icono } from '../../../core/ui/iconos.js?v=7f910f1';
+import { boton } from '../../../core/ui/tabla.js?v=7f910f1';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=7f910f1';
+import { avisar } from '../../../core/ui/aviso.js?v=7f910f1';
+import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=7f910f1';
+import { fechaLarga, nombreDia, fechaCorta } from '../../../core/ui/formato.js?v=7f910f1';
+import { botonesFotos } from '../../../core/ui/camara.js?v=7f910f1';
+import { marcarFoto } from '../../../core/ui/marcar.js?v=7f910f1';
+import { cargarParte, ETAPAS, opcionesEtapa, valorEtapa, desdeValorEtapa, nombreTercero, comprimirFoto, urlsFirmadas, faenasDistintas } from '../datos.js?v=7f910f1';
 
 const MAX_VIDEO = 25 * 1024 * 1024;
 let etapaSubida = 'antes';
@@ -74,6 +75,34 @@ export default async function vista(ctx) {
     opciones.map(([k, t]) => el('option', { value: k, selected: k === etapaSubida }, `Subir como: ${t}`)));
   selEtapa.addEventListener('change', () => { etapaSubida = selEtapa.value; });
 
+  // ---- Marcar una foto (rayar, flechas, círculos, texto: core/ui/marcar.js). La marcada reemplaza a la del informe y la
+  // original queda en ruta_original (Reportes 009) para volver a ella; si se marca de nuevo se dibuja sobre la marcada.
+  const marcar = async (m) => {
+    let archivo;
+    try { archivo = await marcarFoto(urls.get(m.ruta), { titulo: 'Marcar foto', colorEmpresa: ctx.empresa.color }); } catch (e) { avisar(e.message, 'error'); return; }
+    if (!archivo) return;
+    try {
+      const listo = await comprimirFoto(archivo);
+      const { ruta } = await subirArchivo(ctx.api, { empresaId: ctx.empresa.id, modulo: 'reportes', archivo: listo, tabla: 'rep_partes', registroId: parte.id });
+      const { error } = await ctx.api.from('rep_media').update({ ruta, ruta_original: m.ruta_original ?? m.ruta, tamano: listo.size }).eq('id', m.id);
+      if (error) { await eliminarArchivo(ctx.api, ruta).catch(() => {}); throw new Error(error.message); }
+      if (m.ruta_original) await eliminarArchivo(ctx.api, m.ruta).catch(() => {});   // la marcada anterior
+      avisar('Foto marcada.');
+      ctx.refrescar();
+    } catch (e) { avisar(e.message, 'error'); }
+  };
+  const volverOriginal = async (m) => {
+    const { error } = await ctx.api.from('rep_media').update({ ruta: m.ruta_original, ruta_original: null }).eq('id', m.id);
+    if (error) { avisar(error.message, 'error'); return; }
+    await eliminarArchivo(ctx.api, m.ruta).catch(() => {});
+    avisar('Volvió la foto original.');
+    ctx.refrescar();
+  };
+  const botonesMarcar = (m) => [
+    el('button', { type: 'button', class: 'boton-icono', title: 'Marcar (rayar, flechas, texto)', 'aria-label': 'Marcar la foto', onclick: () => marcar(m) }, icono('lapiz', { tam: 15 })),
+    m.ruta_original ? el('button', { type: 'button', class: 'boton-icono', title: 'Volver a la foto original', 'aria-label': 'Volver a la foto original', onclick: () => volverOriginal(m) }, icono('deshacer', { tam: 15 })) : null,
+  ].filter(Boolean);
+
   // ---- Imágenes de las observaciones: hasta 4 (la base también lo exige), salen en el informe debajo de las observaciones
   const MAX_OBS = 4;
   const cupoObs = () => Math.max(0, MAX_OBS - fotosObs.length);
@@ -108,12 +137,13 @@ export default async function vista(ctx) {
     el('label', {}, `Imágenes de las observaciones (${fotosObs.length} de ${MAX_OBS})`),
     fotosObs.length ? el('div', { class: 'galeria' }, fotosObs.map((m) => el('div', { class: 'media-tarjeta' },
       el('a', { href: urls.get(m.ruta), target: '_blank', rel: 'noopener' }, el('img', { src: urls.get(m.ruta), alt: m.nombre ?? 'Imagen', loading: 'lazy' })),
-      editable ? el('div', { class: 'media-acciones' }, el('button', {
+      editable ? el('div', { class: 'media-acciones' }, ...botonesMarcar(m), el('button', {
         type: 'button', class: 'boton-icono', title: 'Quitar', 'aria-label': 'Quitar imagen',
         onclick: async () => {
           const { error } = await ctx.api.from('rep_media').delete().eq('id', m.id);
           if (error) { avisar(error.message, 'error'); return; }
           await eliminarArchivo(ctx.api, m.ruta).catch(() => {});
+          if (m.ruta_original) await eliminarArchivo(ctx.api, m.ruta_original).catch(() => {});
           avisar('Imagen quitada.'); ctx.refrescar();
         },
       }, icono('basura', { tam: 15 }))) : null))) : null,
@@ -202,6 +232,7 @@ export default async function vista(ctx) {
       selector, selFaena, selSeccion,
       editable ? el('div', { class: 'media-acciones' },
         el('button', { type: 'button', class: 'boton-icono', title: 'Mover antes', 'aria-label': 'Mover antes', onclick: () => mover(m, lista, -1) }, icono('volver', { tam: 15 })),
+        ...(m.tipo === 'foto' ? botonesMarcar(m) : []),
         el('button', { type: 'button', class: 'boton-icono', title: 'Mover después', 'aria-label': 'Mover después', onclick: () => mover(m, lista, 1) }, icono('derecha', { tam: 15 })),
         el('button', {
           type: 'button', class: 'boton-icono', title: 'Eliminar', 'aria-label': 'Eliminar archivo',
@@ -209,6 +240,7 @@ export default async function vista(ctx) {
             const { error } = await ctx.api.from('rep_media').delete().eq('id', m.id);
             if (error) { avisar(error.message, 'error'); return; }
             await eliminarArchivo(ctx.api, m.ruta).catch(() => {});
+            if (m.ruta_original) await eliminarArchivo(ctx.api, m.ruta_original).catch(() => {});
             avisar('Eliminado.'); ctx.refrescar();
           },
         }, icono('basura', { tam: 15 }))) : null);
@@ -269,7 +301,7 @@ export default async function vista(ctx) {
 async function previa(ctx, datos, b) {
   b.disabled = true;
   try {
-    const { generarInforme } = await import('../informe.js?v=882cc93');
+    const { generarInforme } = await import('../informe.js?v=7f910f1');
     const doc = await generarInforme(ctx, datos);
     window.open(doc.output('bloburl'), '_blank', 'noopener');
   } catch (e) { avisar(`No se pudo generar: ${e.message}`, 'error'); } finally { b.disabled = false; }
@@ -283,7 +315,7 @@ function confirmar(ctx, datos) {
     campos: [],
     textoGuardar: 'Confirmar',
     alGuardar: async () => {
-      const { generarInforme } = await import('../informe.js?v=882cc93');
+      const { generarInforme } = await import('../informe.js?v=7f910f1');
       const doc = await generarInforme(ctx, datos);
       const archivo = new File([doc.output('blob')], `informe-${datos.parte.fecha}.pdf`, { type: 'application/pdf' });
       const { ruta } = await subirArchivo(ctx.api, { empresaId: ctx.empresa.id, modulo: 'reportes', archivo, tabla: 'rep_partes', registroId: datos.parte.id });

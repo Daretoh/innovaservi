@@ -2,29 +2,29 @@
 // Cabecera con placa y línea de avance por estado (con la hora de cada paso); checklist táctil con avance;
 // fotos con zona para arrastrar y soltar.
 // Ruta: #/taller.orden?id=<id>
-import { el } from '../../../core/ui/dom.js?v=882cc93';
-import { icono } from '../../../core/ui/iconos.js?v=882cc93';
-import { boton } from '../../../core/ui/tabla.js?v=882cc93';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=882cc93';
-import { avisar } from '../../../core/ui/aviso.js?v=882cc93';
-import { subirArchivo, eliminarArchivo, urlsFirmadas, urlFirmada } from '../../../core/adjuntos.js?v=882cc93';
-import { comprimirFoto } from '../../../core/imagenes.js?v=882cc93';
-import { dinero, fechaLarga, fechaCorta, hhmm, diaLocal } from '../../../core/ui/formato.js?v=882cc93';
+import { el } from '../../../core/ui/dom.js?v=7f910f1';
+import { icono } from '../../../core/ui/iconos.js?v=7f910f1';
+import { boton } from '../../../core/ui/tabla.js?v=7f910f1';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=7f910f1';
+import { avisar } from '../../../core/ui/aviso.js?v=7f910f1';
+import { subirArchivo, eliminarArchivo, urlsFirmadas, urlFirmada } from '../../../core/adjuntos.js?v=7f910f1';
+import { comprimirFoto } from '../../../core/imagenes.js?v=7f910f1';
+import { dinero, fechaLarga, fechaCorta, hhmm, diaLocal } from '../../../core/ui/formato.js?v=7f910f1';
 import {
   ESTADOS, nombreEstado, PRIORIDADES, TIPOS_VENTA, MODOS_PAGO, CATEGORIAS_MEDIA, SELECT_ORDEN,
   verPatente, nombreVehiculo, nombreTercero, precioTalla, totales, minutosTrabajo, textoMinutos, cargarServicios, cargarTrabajadores, hora,
-} from '../datos.js?v=882cc93';
-import { mover, textoAvance, puedeVolver, esperaPagoFactura } from '../acciones.js?v=882cc93';
-import { formPedirFactura, quitarPedido } from '../factura.js?v=882cc93';
-import { tarjetaTuu, traerDeTuu } from '../boleta-tuu.js?v=882cc93';
-import { cargarAbonos, seccionAbonos, compraComoCosto } from '../abonos.js?v=882cc93';
-import { seccionInsumos } from '../insumos.js?v=882cc93';
-import { seccionCostosPatente } from '../costos.js?v=882cc93';
-import { pasosEtapa, tiempoOrden } from '../movil.js?v=882cc93';
-import { avisoTarjeta } from '../pedidas.js?v=882cc93';
-import { avance as avanceOrden } from '../seguimiento.js?v=882cc93';
-import { placa } from '../../../core/ui/placa.js?v=882cc93';
-import { esTelefono } from '../../../core/movil.js?v=882cc93';
+} from '../datos.js?v=7f910f1';
+import { mover, textoAvance, puedeVolver, esperaPagoFactura } from '../acciones.js?v=7f910f1';
+import { formPedirFactura, quitarPedido } from '../factura.js?v=7f910f1';
+import { tarjetaTuu, traerDeTuu } from '../boleta-tuu.js?v=7f910f1';
+import { cargarAbonos, seccionAbonos, compraComoCosto } from '../abonos.js?v=7f910f1';
+import { seccionInsumos } from '../insumos.js?v=7f910f1';
+import { seccionCostosPatente } from '../costos.js?v=7f910f1';
+import { pasosEtapa, tiempoOrden } from '../movil.js?v=7f910f1';
+import { avisoTarjeta } from '../pedidas.js?v=7f910f1';
+import { avance as avanceOrden } from '../seguimiento.js?v=7f910f1';
+import { placa } from '../../../core/ui/placa.js?v=7f910f1';
+import { esTelefono } from '../../../core/movil.js?v=7f910f1';
 
 const MAX_VIDEO = 25 * 1024 * 1024;
 let categoriaSubida = 'exterior';
@@ -53,7 +53,7 @@ export default async function vista(ctx) {
     // Lista de precios del cliente (Cotizaciones): manda sobre el precio del catálogo
     o.tercero_id && ctx.puede('cotizaciones', 'ver') ? ctx.api.from('cot_precios').select('*').eq('tercero_id', o.tercero_id) : Promise.resolve({ data: [] }),
     // ¿Se cobra en un cierre mensual o una cuenta corriente?
-    ctx.puede('cierres', 'ver') ? import('../../cierres/taller.js?v=882cc93').then((m) => m.cobroExterno(ctx, o)) : Promise.resolve(null),
+    ctx.puede('cierres', 'ver') ? import('../../cierres/taller.js?v=7f910f1').then((m) => m.cobroExterno(ctx, o)) : Promise.resolve(null),
   ]);
   // Factura ligada a la orden, cliente y a quién se factura (Cotizaciones 008)
   const [{ data: factura }, { data: datosCliente }] = await Promise.all([
@@ -486,18 +486,18 @@ export default async function vista(ctx) {
 async function cotizar(ctx, o, lineas, b) {
   b.disabled = true;
   try {
-    const { nueva } = await import('../../cotizaciones/vistas/lista.js?v=882cc93');
+    const { nueva } = await import('../../cotizaciones/vistas/lista.js?v=7f910f1');
     const { data: t } = o.tercero_id ? await ctx.api.from('terceros').select('*').eq('id', o.tercero_id).maybeSingle() : { data: null };
     const v = o.tal_vehiculos;
     // Sin servicios con precio ("Pendiente de cotización"): las tareas, con la lista de precios del cliente y la talla
-    const { trabajosOrden, listaCliente } = await import('../../cotizaciones/trabajos-orden.js?v=882cc93');
+    const { trabajosOrden, listaCliente } = await import('../../cotizaciones/trabajos-orden.js?v=7f910f1');
     const trabajos = trabajosOrden(o, lineas, await listaCliente(ctx, o.tercero_id), v.talla);
     await nueva(ctx, {
       tercero: t ?? null,
       grupo: { titulo: [v.marca, v.modelo].filter(Boolean).join(' ') || null, patente: v.patente, anio: v.anio, talla: v.talla, vehiculo_id: v.id },
       // Más los costos de la orden (trabajo de terceros, compras con la patente, insumos) como ítems con costo y precio 0
       lineas: [...trabajos.map((x) => ({ tipo: 'item', descripcion: x.descripcion, cantidad: 1, precio: x.precio })),
-        ...await import('../../cotizaciones/costos-orden.js?v=882cc93').then(async (m) => m.lineasCosto((await m.costosDeOrdenes(ctx, [{ ...o, patente: v.patente }])).get(o.id) ?? []))],
+        ...await import('../../cotizaciones/costos-orden.js?v=7f910f1').then(async (m) => m.lineasCosto((await m.costosDeOrdenes(ctx, [{ ...o, patente: v.patente }])).get(o.id) ?? []))],
       ordenId: o.id,
     });
   } catch (e) { avisar(e.message, 'error'); b.disabled = false; }

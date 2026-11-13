@@ -1,9 +1,9 @@
 // El cliente pide factura (Cotizaciones 008, 2026-11-05), aunque sea a última hora y estuviera como natural y sin datos:
 // se completan los datos de facturación (tal_pedir_factura) y la orden queda esperando el pago: no se entrega hasta que
 // el pago de su factura esté registrado en Cotizaciones → Facturas (la base lo exige). Boletas y cierres, sin cambios.
-import { abrirFormulario } from '../../core/ui/modal.js?v=882cc93';
-import { avisar } from '../../core/ui/aviso.js?v=882cc93';
-import { rutValido, limpioRut } from '../../core/lector-dte.js?v=882cc93';
+import { abrirFormulario } from '../../core/ui/modal.js?v=7f910f1';
+import { avisar } from '../../core/ui/aviso.js?v=7f910f1';
+import { rutValido, limpioRut } from '../../core/lector-dte.js?v=7f910f1';
 
 const rutGuardado = (r) => { const c = limpioRut(r); return `${c.slice(0, -1)}-${c.slice(-1)}`; };   // como en el maestro: 12345678-9
 
