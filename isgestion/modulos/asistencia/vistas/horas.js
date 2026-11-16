@@ -6,14 +6,14 @@
 // Fijos con turno (2026-10-30): cada día hábil quedan presentes "según horario" solos (asis_generar_fijos); aquí solo se
 // corrigen las excepciones: retraso o salida temprana (cambiar la hora), horas extra (cambiar la salida o agregar otra
 // fila) y ausencias (botón Ausente: el día deja de contar y no se vuelve a crear).
-import { el } from '../../../core/ui/dom.js?v=4820557';
-import { icono } from '../../../core/ui/iconos.js?v=4820557';
-import { boton } from '../../../core/ui/tabla.js?v=4820557';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=4820557';
-import { arrastrarHorario } from './arrastre.js?v=4820557';
-import { avisar } from '../../../core/ui/aviso.js?v=4820557';
-import { esTelefono } from '../../../core/movil.js?v=4820557';
-import { hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, horas, aMin, hhmm } from '../../../core/ui/formato.js?v=4820557';
+import { el } from '../../../core/ui/dom.js?v=0d7c846';
+import { icono } from '../../../core/ui/iconos.js?v=0d7c846';
+import { boton } from '../../../core/ui/tabla.js?v=0d7c846';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=0d7c846';
+import { arrastrarHorario } from './arrastre.js?v=0d7c846';
+import { avisar } from '../../../core/ui/aviso.js?v=0d7c846';
+import { esTelefono } from '../../../core/movil.js?v=0d7c846';
+import { hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, horas, aMin, hhmm, diaLocal } from '../../../core/ui/formato.js?v=0d7c846';
 
 const DIAS_LARGOS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 export const estado = { lunes: lunesDe(hoyISO()), dia: hoyISO(), nuevas: [], abiertas: new Set(), diasAbiertos: new Set(), filtro: '', borradorLeido: new Set() };   // abiertas: faenas desplegadas (día|faena)   // nuevas: filas en blanco aún sin guardar
@@ -33,7 +33,7 @@ export function minutosRegistro(h) {
 const clave = (s) => String(s ?? '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[·—-]+/g, ' ').replace(/\s+/g, ' ');
 
 export default async function vista(ctx) {
-  if (esTelefono()) return (await import('./horas-movil.js?v=4820557')).default(ctx);   // en el teléfono, lista de personas en vez de planilla
+  if (esTelefono()) return (await import('./horas-movil.js?v=0d7c846')).default(ctx);   // en el teléfono, lista de personas en vez de planilla
   const desde = estado.lunes;
   const hasta = sumarDias(desde, 6);
   const hoy = hoyISO();
@@ -75,7 +75,7 @@ export default async function vista(ctx) {
 
   // Fijos con turno: se crean los días que falten según su horario (no espera al cron)
   if (ctx.puede('remu', 'ver') || ctx.puede('asistencia', 'ver')) await ctx.api.rpc('asis_generar_fijos', { p_empresa: ctx.empresa.id }).then(() => {}, () => {});
-  const [regs, vinculos, faenas, colores, planes, ausencias] = await Promise.all([
+  const [regs, vinculos, faenas, colores, planes, ausencias, abiertas] = await Promise.all([
     ctx.api.from('asis_horas').select('id, persona_id, fecha, entrada, salida, faena, vueltas, notas, origen')
       .eq('empresa_id', ctx.empresa.id).is('deleted_at', null).gte('fecha', desde).lte('fecha', hasta)
       .order('fecha').order('entrada'),
@@ -85,6 +85,11 @@ export default async function vista(ctx) {
     verOpe ? ctx.api.from('ope_clientes').select('tercero_id, color').eq('empresa_id', ctx.empresa.id) : { data: [] },
     verOpe ? ctx.api.from('ope_plan').select('id, faena_id, fecha, ope_plan_vehiculos(vehiculo, personas(nombres, apellido_paterno))').eq('empresa_id', ctx.empresa.id).gte('fecha', desde).lte('fecha', hasta) : { data: [] },
     ctx.api.from('asis_horas').select('id, persona_id, fecha, notas').eq('empresa_id', ctx.empresa.id).eq('origen', 'horario').not('deleted_at', 'is', null).like('notas', 'Ausente%').gte('fecha', desde).lte('fecha', hasta),
+    // Entradas del marcaje (tablet o terreno) que aún no tienen salida: se ven aquí como filas "sin salida" (2026-11-16,
+    // Enzo: Marcajes y Registro de horas en una sola pantalla). Sin el módulo Marcaje la consulta falla y no hay nada.
+    ctx.api.from('asis_marcas').select('id, persona_id, ts, origen, motivo').eq('empresa_id', ctx.empresa.id).eq('tipo', 'entrada')
+      .is('horas_id', null).is('anulada_at', null).gte('ts', new Date(`${desde}T00:00:00`).toISOString()).lt('ts', new Date(`${sumarDias(hasta, 1)}T00:00:00`).toISOString()).order('ts')
+      .then((r) => r, () => ({ data: [] })),
   ]);
   if (regs.error) throw regs.error;
   if (vinculos.error) throw vinculos.error;
@@ -120,6 +125,9 @@ export default async function vista(ctx) {
   // ya tenga horas con faena escrita (2026-11-05)
   const conFaena = verOpe || regs.data.some((r) => r.faena);
   estado.conFaena = conFaena;
+  // Vueltas: solo donde hay choferes (cargo) o la semana ya tiene vueltas; en Performance no aplica (2026-11-16)
+  const conVueltas = regs.data.some((r) => Number(r.vueltas) > 0) || vinculos.data.some((v) => v.estado === 'activo' && /chofer|conductor/i.test(v.cargo ?? ''));
+  estado.conVueltas = conVueltas;
   const filtro = campoFiltroFaena(regs.data, () => ctx.refrescar());
   // Horas que se pisan: misma persona, mismo día, horarios solapados
   const pisan = new Set();
@@ -193,11 +201,12 @@ export default async function vista(ctx) {
     const total = el('span', { class: 'hz-total texto-chico' }, nueva ? '' : !r.entrada ? 'Sin horario' : !r.salida ? 'Sin salida' : `${horas(minutosRegistro(r))}${aMin(r.salida) <= aMin(r.entrada) ? ' (+1 día)' : ''}`);
     const incompleta = nueva && !!nueva.persona;   // escribió un nombre que no calza con nadie: aún no se guarda
     const tr = el('tr', { class: `${pisan.has(r?.id) ? 'hz-pisa' : ''}${nueva ? ' hz-nueva' : ''}`, 'data-k': llave },
-      el('td', {}, persona, incompleta ? el('span', { class: 'chip chip-pend', title: 'Se guarda apenas eliges al trabajador de la lista' }, 'Sin guardar: elige al trabajador') : null, segunHorario ? el('span', { class: 'chip chip-ok', title: 'Se creó solo según su turno. Si llegó tarde o hizo horas extra, cambia la hora; si faltó, márcalo ausente.' }, (r.notas ?? '').startsWith('Corregido') ? 'horario corregido' : 'según horario') : null, desdeMarcaje ? el('span', { class: 'chip chip-pend', title: 'Del marcaje: se corrige en Asistencia → Marcajes' }, (r.notas ?? '').includes('terreno') ? 'terreno' : 'tablet') : null,
+      el('td', {}, persona, incompleta ? el('span', { class: 'chip chip-pend', title: 'Se guarda apenas eliges al trabajador de la lista' }, 'Sin guardar: elige al trabajador') : null, segunHorario ? el('span', { class: 'chip chip-ok', title: 'Se creó solo según su turno. Si llegó tarde o hizo horas extra, cambia la hora; si faltó, márcalo ausente.' }, (r.notas ?? '').startsWith('Corregido') ? 'horario corregido' : 'según horario') : null, desdeMarcaje ? el('span', { class: 'chip chip-pend', title: 'Del marcaje: se cambia con Corregir (guarda la hora original y el motivo)' }, (r.notas ?? '').includes('terreno') ? 'terreno' : 'tablet') : null,
         pisan.has(r?.id) ? el('div', { class: 'texto-chico pct-mal' }, 'Se pisa con otra hora de esta persona ese día') : null),
-      conFaena ? el('td', {}, faena) : null, el('td', { class: 'hz-horario' }, entrada, el('span', { class: 'texto-suave' }, '→'), salida, (nueva ? puedeCrear : puedeEditar) ? el('button', { type: 'button', class: 'hz-arrastre', title: 'Copiar este horario: arrástralo hacia abajo hasta donde quieras, o haz clic para elegir a quiénes', 'aria-label': 'Copiar este horario a otras personas', tabindex: '-1' }) : null), el('td', {}, total), el('td', {}, vueltas),
+      conFaena ? el('td', {}, faena) : null, el('td', { class: 'hz-horario' }, entrada, el('span', { class: 'texto-suave' }, '→'), salida, (nueva ? puedeCrear : puedeEditar) ? el('button', { type: 'button', class: 'hz-arrastre', title: 'Copiar este horario: arrástralo hacia abajo hasta donde quieras, o haz clic para elegir a quiénes', 'aria-label': 'Copiar este horario a otras personas', tabindex: '-1' }) : null), el('td', {}, total), conVueltas ? el('td', {}, vueltas) : null,
       el('td', { class: 'acciones-fila' },
         nueva ? el('button', { type: 'button', class: 'boton-icono', title: 'Quitar fila', 'aria-label': 'Quitar fila', onclick: () => { estado.nuevas = estado.nuevas.filter((x) => x !== nueva); refrescar(); } }, icono('cerrar', { tam: 16 }))
+          : desdeMarcaje && puedeEditar ? el('button', { type: 'button', class: 'boton boton-secundario boton-chico', title: 'Corrige la entrada o la salida marcada (queda la hora original y el motivo)', onclick: () => corregirMarcaje(ctx, r) }, 'Corregir')
           : segunHorario ? (puedeEditar ? el('button', { type: 'button', class: 'boton boton-secundario boton-chico', title: 'No vino: el día deja de contar', onclick: () => ausente(ctx, r, personas.get(r.persona_id)) }, 'Ausente') : null)
           : puedeEliminar ? el('button', { type: 'button', class: 'boton-icono', title: 'Eliminar', 'aria-label': 'Eliminar registro', onclick: () => eliminar(ctx, r) }, icono('basura', { tam: 16 })) : null));
     const campos = { persona, faena, entrada, salida, vueltas };
@@ -254,7 +263,7 @@ export default async function vista(ctx) {
       if ((data?.length ?? 0) < existentes.length) avisar('Algunas filas no se pudieron cambiar (sin permiso).', 'error');
     }
     for (const x of nuevas) await guardarNueva(x.nueva, x.campos);
-    avisar(`Horario ${entrada} – ${salida} copiado a ${existentes.length + nuevas.length} ${existentes.length + nuevas.length === 1 ? 'fila' : 'filas'}${delMarcaje.length ? ` (${delMarcaje.length} del marcaje no se tocan: se corrigen en Marcajes)` : ''}.`);
+    avisar(`Horario ${entrada} – ${salida} copiado a ${existentes.length + nuevas.length} ${existentes.length + nuevas.length === 1 ? 'fila' : 'filas'}${delMarcaje.length ? ` (${delMarcaje.length} del marcaje no se tocan: se cambian con Corregir)` : ''}.`);
     refrescar();
   }
   // Las mismas horas en otra faena del día (ej.: Cámara 1 y Cámara 2 por separado)
@@ -264,10 +273,10 @@ export default async function vista(ctx) {
     for (const t of [...registrosDe(d).map((r) => r.faena), ...faenasDe(d).map((f) => f.texto)]) if (t && clave(t) !== clave(g.texto) && !textos.has(clave(t))) textos.set(clave(t), String(t).trim());
     const mover = g.regs.filter((r) => r.origen !== 'marcaje');
     const delMarcaje = g.regs.length - mover.length;
-    if (!mover.length) { avisar('Estas horas vienen del marcaje: su faena se corrige en Marcajes.', 'error'); return; }
+    if (!mover.length) { avisar('Estas horas vienen del marcaje: no se juntan.', 'error'); return; }
     abrirFormulario({
       titulo: 'Juntar con otra faena',
-      mensaje: `${mover.length === 1 ? 'La hora' : `Las ${mover.length} horas`} de "${g.texto || 'Sin faena'}" ${mover.length === 1 ? 'pasa' : 'pasan'} a la faena que elijas.${delMarcaje ? ` ${delMarcaje} del marcaje se quedan (se corrigen en Marcajes).` : ''}`,
+      mensaje: `${mover.length === 1 ? 'La hora' : `Las ${mover.length} horas`} de "${g.texto || 'Sin faena'}" ${mover.length === 1 ? 'pasa' : 'pasan'} a la faena que elijas.${delMarcaje ? ` ${delMarcaje} del marcaje se quedan.` : ''}`,
       campos: [
         ...(textos.size ? [{ id: 'destino', etiqueta: 'Faena de este día', opciones: [['', '— elige —'], ...[...textos.values()].sort().map((t) => [t, t])] }] : []),
         { id: 'otra', etiqueta: textos.size ? 'U otra faena (escríbela)' : 'Faena' },
@@ -315,6 +324,21 @@ export default async function vista(ctx) {
   const registrosDe = (d) => (porDia.get(d) ?? []).filter(pasaFiltroFaena);
   const ausentesDe = (d) => (ausencias.data ?? []).filter((a) => a.fecha === d);
   const nuevasDe = (d) => estado.nuevas.filter((n) => n.fecha === d && n.empresa === ctx.empresa.id);
+  const abiertasDe = (d) => (estado.filtro && estado.filtro !== SIN_FAENA ? [] : (abiertas.data ?? []).filter((m) => diaLocal(m.ts) === d));
+  // Entrada marcada sin salida: Registrar salida (marca manual con motivo) o Anular entrada (no se borra)
+  const filaAbierta = (m) => {
+    const enCurso = diaLocal(m.ts) === hoy;
+    return el('tr', { class: 'hz-abierta' },
+      el('td', {}, el('span', { class: 'hz-nombre' }, personas.get(m.persona_id) ? nombre(personas.get(m.persona_id).personas) : 'Persona'),
+        el('span', { class: 'chip chip-pend', title: m.motivo ?? '' }, m.origen === 'terreno' ? 'terreno' : m.origen === 'manual' ? 'manual' : 'tablet')),
+      conFaena ? el('td', {}) : null,
+      el('td', { class: 'hz-horario' }, el('strong', {}, horaTs(m.ts)), el('span', { class: 'texto-suave' }, '→'), el('span', { class: 'chip chip-prox' }, 'sin salida')),
+      el('td', {}, el('span', { class: 'hz-total texto-chico' }, enCurso ? 'En curso' : 'Falta la salida')),
+      conVueltas ? el('td', {}) : null,
+      el('td', { class: 'acciones-fila' },
+        puedeCrear ? el('button', { type: 'button', class: 'boton boton-secundario boton-chico', onclick: () => registrarSalida(ctx, m, personas) }, 'Registrar salida') : null,
+        puedeEditar ? el('button', { type: 'button', class: 'boton-enlace boton-chico', onclick: () => anularEntrada(ctx, m, personas) }, 'Anular entrada') : null));
+  };
 
   function detalleDia(d) {
     const delDia = registrosDe(d);
@@ -324,6 +348,7 @@ export default async function vista(ctx) {
     const grupoDe = (texto) => { const k = clave(texto) || ''; if (!grupos.has(k)) grupos.set(k, { texto: String(texto ?? '').trim(), filas: [], regs: [] }); return grupos.get(k); };
     for (const r of delDia) { const g = grupoDe(r.faena); g.filas.push(fila(r)); g.regs.push(r); }
     for (const n of nuevasDe(d)) grupoDe(n.faena).filas.push(fila(null, n));
+    for (const m of abiertasDe(d)) grupoDe('').filas.push(filaAbierta(m));
     if (!estado.filtro) for (const f of faenasDia) grupoDe(f.texto);   // las faenas del día aparecen aunque no tengan horas aún
     const orden = [...grupos.entries()].sort(([a], [b]) => (a === '') - (b === '') || a.localeCompare(b));
     const agregarEn = (texto) => {
@@ -349,7 +374,7 @@ export default async function vista(ctx) {
       } }, icono('derecha', { tam: 16 }), resumen) : el('div', { class: 'hz-grupo-cabeza' }, resumen);
       cuerpo.append(...[
         g.filas.length ? el('div', { class: 'tabla-contenedor' }, el('table', { class: 'tabla hz-tabla' },
-          el('thead', {}, el('tr', {}, ['Trabajador', ...(conFaena ? ['Faena'] : []), 'Horario', 'Horas', 'Vueltas', ''].map((t) => el('th', {}, t)))),
+          el('thead', {}, el('tr', {}, ['Trabajador', ...(conFaena ? ['Faena'] : []), 'Horario', 'Horas', ...(conVueltas ? ['Vueltas'] : []), ''].map((t) => el('th', {}, t)))),
           planilla(el('tbody', {}, g.filas), () => agregarEn(g.texto), d))) : null,
         el('div', { class: 'hz-acciones' },
           puedeCrear ? el('button', { type: 'button', class: 'boton-enlace hz-agregar', onclick: () => agregarEn(g.texto) }, icono('mas', { tam: 14 }), g.texto ? 'persona en esta faena' : conFaena ? 'persona (sin faena)' : 'persona') : null,
@@ -381,10 +406,10 @@ export default async function vista(ctx) {
   }
 
   // ---- La semana: un bloque por cada día con horas cargadas; los demás quedan abajo para abrirlos si hace falta
-  const conCarga = (d) => registrosDe(d).length > 0 || nuevasDe(d).length > 0 || (!estado.filtro && (ausentesDe(d).length > 0 || estado.diasAbiertos.has(d)));
+  const conCarga = (d) => registrosDe(d).length > 0 || nuevasDe(d).length > 0 || abiertasDe(d).length > 0 || (!estado.filtro && (ausentesDe(d).length > 0 || estado.diasAbiertos.has(d)));
   const listados = diasSemana.filter(conCarga);
   const bloquesDia = listados.map((d) => {
-    const abierto = !!estado.filtro || estado.diasAbiertos.has(d) || nuevasDe(d).length > 0;
+    const abierto = !!estado.filtro || estado.diasAbiertos.has(d) || nuevasDe(d).length > 0 || abiertasDe(d).length > 0;
     const cuerpo = el('div', { class: 'sem-dia-cuerpo', hidden: !abierto }, detalleDia(d));
     const cabeza = el('button', { type: 'button', class: 'sem-dia-cabeza', 'aria-expanded': String(abierto), onclick: () => {
       const abrir = cuerpo.hidden; cuerpo.hidden = !abrir; cabeza.setAttribute('aria-expanded', String(abrir));
@@ -406,7 +431,7 @@ export default async function vista(ctx) {
     el('div', { class: 'sem-dias' }, bloquesDia.length ? bloquesDia : el('p', { class: 'texto-suave' }, 'Sin horas cargadas esta semana.')),
     otros.length && puedeCrear ? el('div', { class: 'sem-otros' }, el('span', { class: 'texto-suave texto-chico' }, 'Días sin carga:'),
       otros.map((d) => el('button', { type: 'button', class: 'boton-enlace', onclick: () => { estado.dia = d; estado.diasAbiertos.add(d); ctx.refrescar(); } }, icono('mas', { tam: 14 }), `${nombreDia(d)} ${Number(d.slice(8))}`))) : null,
-    el('p', { class: 'texto-suave texto-chico' }, 'Cada fila se guarda sola al cambiar un dato. Si la salida es menor que la entrada, el turno termina al día siguiente. Las horas que se pisan se marcan en rojo y al pagar se cuentan una sola vez. Las del marcaje (tablet o terreno) se corrigen en Marcajes. Los fijos con turno quedan presentes "según horario" cada día hábil: corrige solo retrasos, horas extra o ausencias.'),
+    el('p', { class: 'texto-suave texto-chico' }, 'Cada fila se guarda sola al cambiar un dato. Si la salida es menor que la entrada, el turno termina al día siguiente. Las horas que se pisan se marcan en rojo y al pagar se cuentan una sola vez. Las del marcaje (tablet o terreno) se cambian con Corregir, que guarda la hora original y el motivo; una entrada sin salida se cierra con Registrar salida o se anula.'),
   );
 }
 
@@ -462,7 +487,7 @@ function campos(r, activos, varios) {
     { id: 'entrada', etiqueta: 'Entrada', tipo: 'time', requerido: true, valor: r ? hhmm(r.entrada) : '08:00' },
     { id: 'salida', etiqueta: 'Salida (en blanco si aún no sale: no cuenta hasta completarla)', tipo: 'time', valor: r ? hhmm(r.salida) : '17:00' },
     ...(estado.conFaena || r?.faena ? [{ id: 'faena', etiqueta: 'Faena o lugar', valor: r?.faena ?? '' }] : []),
-    { id: 'vueltas', etiqueta: 'Vueltas (choferes)', tipo: 'number', valor: String(r?.vueltas ?? 0) },
+    ...(estado.conVueltas || r?.vueltas ? [{ id: 'vueltas', etiqueta: 'Vueltas (choferes)', tipo: 'number', valor: String(r?.vueltas ?? 0) }] : []),
     { id: 'notas', etiqueta: 'Notas', valor: r?.notas ?? '' },
   ];
 }
@@ -521,6 +546,68 @@ export function eliminar(ctx, r) {
       if (!data?.length) throw new Error('No tienes permiso para eliminar.');
       avisar('Registro eliminado.');
       ctx.refrescar();
+    },
+  });
+}
+
+// ---- Marcaje dentro del Registro de horas (2026-11-16): antes estaba en la pantalla Marcajes
+const aTs = (fecha, h) => new Date(`${fecha}T${h}:00`).toISOString();
+function horaTs(ts) { return new Date(ts).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }); }
+const rpcMarca = async (ctx, fn, args, aviso) => {
+  const { error } = await ctx.api.rpc(fn, args);
+  if (error) throw new Error(error.message);
+  avisar(aviso); ctx.refrescar();
+};
+function registrarSalida(ctx, m, personas) {
+  const quien = personas.get(m.persona_id) ? nombre(personas.get(m.persona_id).personas) : 'la persona';
+  abrirFormulario({
+    titulo: `Registrar salida de ${quien}`,
+    mensaje: `Entrada marcada a las ${horaTs(m.ts)} del ${fechaCorta(diaLocal(m.ts))}. La salida queda como marca manual con el motivo y se genera su fila de horas.`,
+    campos: [
+      { id: 'fecha', etiqueta: 'Fecha', tipo: 'date', requerido: true, valor: diaLocal(m.ts) },
+      { id: 'hora', etiqueta: 'Hora de salida', tipo: 'time', requerido: true },
+      { id: 'motivo', etiqueta: 'Motivo', requerido: true, valor: 'Olvidó marcar la salida' },
+    ],
+    textoGuardar: 'Registrar salida',
+    alGuardar: (v) => rpcMarca(ctx, 'mar_agregar', { p_empresa: ctx.empresa.id, p_persona: m.persona_id, p_tipo: 'salida', p_ts: aTs(v.fecha, v.hora), p_motivo: v.motivo }, 'Salida registrada.'),
+  });
+}
+function anularEntrada(ctx, m, personas) {
+  const quien = personas.get(m.persona_id) ? nombre(personas.get(m.persona_id).personas) : 'la persona';
+  abrirFormulario({
+    titulo: `Anular entrada de ${quien}`,
+    mensaje: `${horaTs(m.ts)} del ${fechaCorta(diaLocal(m.ts))}. La marca no se borra: queda anulada con el motivo.`,
+    campos: [{ id: 'motivo', etiqueta: 'Motivo', requerido: true, valor: 'Marca duplicada' }],
+    textoGuardar: 'Anular entrada',
+    alGuardar: (v) => rpcMarca(ctx, 'mar_anular', { p_marca: m.id, p_motivo: v.motivo }, 'Entrada anulada.'),
+  });
+}
+// Corregir una fila del marcaje: entrada y/o salida con motivo (mar_corregir guarda la hora original y recalcula la fila)
+async function corregirMarcaje(ctx, r) {
+  const { data, error } = await ctx.api.from('asis_marcas').select('id, tipo, ts, ts_original').eq('horas_id', r.id).is('anulada_at', null);
+  if (error) { avisar(error.message, 'error'); return; }
+  const ent = data.find((x) => x.tipo === 'entrada'); const sal = data.find((x) => x.tipo === 'salida');
+  if (!ent || !sal) { avisar('No se encontraron las marcas de esta fila.', 'error'); return; }
+  abrirFormulario({
+    titulo: 'Corregir marcaje',
+    mensaje: `Marcado: ${horaTs(ent.ts)} → ${horaTs(sal.ts)}${ent.ts_original || sal.ts_original ? ' (ya corregido antes)' : ''}. Se guarda la hora original y el motivo.`,
+    campos: [
+      { id: 'entrada', etiqueta: 'Entrada', tipo: 'time', requerido: true, valor: horaTs(ent.ts) },
+      { id: 'salida', etiqueta: 'Salida', tipo: 'time', requerido: true, valor: horaTs(sal.ts) },
+      { id: 'motivo', etiqueta: 'Motivo', requerido: true },
+    ],
+    textoGuardar: 'Corregir',
+    alGuardar: async (v) => {
+      const dEnt = diaLocal(ent.ts);
+      const cambios = [[ent, v.entrada, dEnt], [sal, v.salida, v.salida <= v.entrada ? sumarDias(dEnt, 1) : dEnt]].filter(([mm, h]) => horaTs(mm.ts) !== h);
+      if (!cambios.length) throw new Error('No cambiaste ninguna hora.');
+      // Primero la que no deja la salida antes de la entrada (mar_corregir lo valida en cada paso)
+      if (cambios.length === 2 && v.entrada > horaTs(sal.ts)) cambios.reverse();
+      for (const [mm, h, fecha] of cambios) {
+        const { error: e2 } = await ctx.api.rpc('mar_corregir', { p_marca: mm.id, p_ts: aTs(fecha, h), p_motivo: v.motivo });
+        if (e2) throw new Error(e2.message);
+      }
+      avisar('Marcaje corregido.'); ctx.refrescar();
     },
   });
 }
