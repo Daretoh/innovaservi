@@ -6,14 +6,14 @@
 // Fijos con turno (2026-10-30): cada día hábil quedan presentes "según horario" solos (asis_generar_fijos); aquí solo se
 // corrigen las excepciones: retraso o salida temprana (cambiar la hora), horas extra (cambiar la salida o agregar otra
 // fila) y ausencias (botón Ausente: el día deja de contar y no se vuelve a crear).
-import { el } from '../../../core/ui/dom.js?v=96a2962';
-import { icono } from '../../../core/ui/iconos.js?v=96a2962';
-import { boton } from '../../../core/ui/tabla.js?v=96a2962';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=96a2962';
-import { arrastrarHorario } from './arrastre.js?v=96a2962';
-import { avisar } from '../../../core/ui/aviso.js?v=96a2962';
-import { esTelefono } from '../../../core/movil.js?v=96a2962';
-import { hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, horas, aMin, hhmm, diaLocal } from '../../../core/ui/formato.js?v=96a2962';
+import { el } from '../../../core/ui/dom.js?v=09fc2dc';
+import { icono } from '../../../core/ui/iconos.js?v=09fc2dc';
+import { boton } from '../../../core/ui/tabla.js?v=09fc2dc';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=09fc2dc';
+import { arrastrarHorario } from './arrastre.js?v=09fc2dc';
+import { avisar } from '../../../core/ui/aviso.js?v=09fc2dc';
+import { esTelefono } from '../../../core/movil.js?v=09fc2dc';
+import { hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, horas, aMin, hhmm, diaLocal } from '../../../core/ui/formato.js?v=09fc2dc';
 
 const DIAS_LARGOS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 export const estado = { lunes: lunesDe(hoyISO()), dia: hoyISO(), nuevas: [], abiertas: new Set(), diasAbiertos: new Set(), filtro: '', borradorLeido: new Set() };   // abiertas: faenas desplegadas (día|faena)   // nuevas: filas en blanco aún sin guardar
@@ -33,7 +33,7 @@ export function minutosRegistro(h) {
 const clave = (s) => String(s ?? '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[·—-]+/g, ' ').replace(/\s+/g, ' ');
 
 export default async function vista(ctx) {
-  if (esTelefono()) return (await import('./horas-movil.js?v=96a2962')).default(ctx);   // en el teléfono, lista de personas en vez de planilla
+  if (esTelefono()) return (await import('./horas-movil.js?v=09fc2dc')).default(ctx);   // en el teléfono, lista de personas en vez de planilla
   const desde = estado.lunes;
   const hasta = sumarDias(desde, 6);
   const hoy = hoyISO();
@@ -561,13 +561,13 @@ export function eliminar(ctx, r) {
 
 // ---- Marcaje dentro del Registro de horas (2026-11-16): antes estaba en la pantalla Marcajes
 const aTs = (fecha, h) => new Date(`${fecha}T${h}:00`).toISOString();
-function horaTs(ts) { return new Date(ts).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }); }
+export function horaTs(ts) { return new Date(ts).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }); }
 const rpcMarca = async (ctx, fn, args, aviso) => {
   const { error } = await ctx.api.rpc(fn, args);
   if (error) throw new Error(error.message);
   avisar(aviso); ctx.refrescar();
 };
-function registrarSalida(ctx, m, personas) {
+export function registrarSalida(ctx, m, personas) {
   const quien = personas.get(m.persona_id) ? nombre(personas.get(m.persona_id).personas) : 'la persona';
   abrirFormulario({
     titulo: `Registrar salida de ${quien}`,
@@ -581,7 +581,7 @@ function registrarSalida(ctx, m, personas) {
     alGuardar: (v) => rpcMarca(ctx, 'mar_agregar', { p_empresa: ctx.empresa.id, p_persona: m.persona_id, p_tipo: 'salida', p_ts: aTs(v.fecha, v.hora), p_motivo: v.motivo }, 'Salida registrada.'),
   });
 }
-function anularEntrada(ctx, m, personas) {
+export function anularEntrada(ctx, m, personas) {
   const quien = personas.get(m.persona_id) ? nombre(personas.get(m.persona_id).personas) : 'la persona';
   abrirFormulario({
     titulo: `Anular entrada de ${quien}`,

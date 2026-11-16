@@ -1,9 +1,9 @@
 // Asignados a faenas próximas (14 días) con documentación incompleta (como la alerta de InnovaGestión): quién está
 // planificado, en qué faenas y qué documentos tiene vencidos o pendientes. El nombre abre su ficha.
-import { el } from '../../../core/ui/dom.js?v=96a2962';
-import { icono } from '../../../core/ui/iconos.js?v=96a2962';
-import { nombreDia, fechaCorta } from '../../../core/ui/formato.js?v=96a2962';
-import { asignadosConPendientes, DIAS_PROXIMAS } from '../proximas.js?v=96a2962';
+import { el } from '../../../core/ui/dom.js?v=09fc2dc';
+import { icono } from '../../../core/ui/iconos.js?v=09fc2dc';
+import { nombreDia, fechaCorta } from '../../../core/ui/formato.js?v=09fc2dc';
+import { asignadosConPendientes, DIAS_PROXIMAS } from '../proximas.js?v=09fc2dc';
 
 export default async function vista(ctx) {
   const titulo = el('header', { class: 'listado-cabecera' }, el('div', {},

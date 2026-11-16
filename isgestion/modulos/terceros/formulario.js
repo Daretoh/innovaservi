@@ -1,8 +1,8 @@
 // Ficha de un cliente o proveedor (crear o editar). La usan Clientes y proveedores y Faenas → Clientes y sitios.
 // Sus datos salen en los documentos: razón social, RUT y dirección en el informe de trabajo, cotizaciones y cierres.
-import { abrirFormulario } from '../../core/ui/modal.js?v=96a2962';
-import { avisar } from '../../core/ui/aviso.js?v=96a2962';
-import { telefono, campoTelefono } from '../../core/ui/formato.js?v=96a2962';
+import { abrirFormulario } from '../../core/ui/modal.js?v=09fc2dc';
+import { avisar } from '../../core/ui/aviso.js?v=09fc2dc';
+import { telefono, campoTelefono } from '../../core/ui/formato.js?v=09fc2dc';
 
 export const TIPOS = [['cliente', 'Cliente'], ['proveedor', 'Proveedor'], ['ambos', 'Cliente y proveedor']];
 

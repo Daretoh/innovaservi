@@ -1,14 +1,14 @@
 // Agenda del taller: citas de la semana por día, con su estado. Hoy destacado; en tablet las columnas se
 // deslizan y parte mostrando el día de hoy; "+" para agendar en un día (aparece al pasar el mouse).
-import { el } from '../../../core/ui/dom.js?v=96a2962';
-import { icono } from '../../../core/ui/iconos.js?v=96a2962';
-import { boton } from '../../../core/ui/tabla.js?v=96a2962';
-import { hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, hhmm, esFinde, nombreMes } from '../../../core/ui/formato.js?v=96a2962';
-import { placa } from '../../../core/ui/placa.js?v=96a2962';
-import { esTelefono } from '../../../core/movil.js?v=96a2962';
-import { SELECT_ORDEN, CHIP_PRIORIDAD, nombreEstado, verPatente, nombreVehiculo, nombreTercero } from '../datos.js?v=96a2962';
-import { recepcion } from '../recepcion.js?v=96a2962';
-import { franjaPedidas } from '../pedidas.js?v=96a2962';
+import { el } from '../../../core/ui/dom.js?v=09fc2dc';
+import { icono } from '../../../core/ui/iconos.js?v=09fc2dc';
+import { boton } from '../../../core/ui/tabla.js?v=09fc2dc';
+import { hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, hhmm, esFinde, nombreMes } from '../../../core/ui/formato.js?v=09fc2dc';
+import { placa } from '../../../core/ui/placa.js?v=09fc2dc';
+import { esTelefono } from '../../../core/movil.js?v=09fc2dc';
+import { SELECT_ORDEN, CHIP_PRIORIDAD, nombreEstado, verPatente, nombreVehiculo, nombreTercero } from '../datos.js?v=09fc2dc';
+import { recepcion } from '../recepcion.js?v=09fc2dc';
+import { franjaPedidas } from '../pedidas.js?v=09fc2dc';
 
 const estado = { lunes: lunesDe(hoyISO()), dia: null };
 

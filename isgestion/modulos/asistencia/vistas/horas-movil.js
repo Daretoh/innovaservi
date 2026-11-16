@@ -6,12 +6,12 @@
 // abierta tiene además "Agregar persona en esta faena".
 // Mismos datos y reglas que la planilla de escritorio (horas.js): las del marcaje se corrigen en Marcajes y los fijos con
 // turno quedan presentes "según horario".
-import { el } from '../../../core/ui/dom.js?v=96a2962';
-import { icono } from '../../../core/ui/iconos.js?v=96a2962';
-import { boton } from '../../../core/ui/tabla.js?v=96a2962';
-import { avisar } from '../../../core/ui/aviso.js?v=96a2962';
-import { hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, horas, aMin, hhmm } from '../../../core/ui/formato.js?v=96a2962';
-import { estado, minutosRegistro, ausente, eliminar, campoFiltroFaena, pasaFiltroFaena, resumenDia, vinculosAsistencia } from './horas.js?v=96a2962';
+import { el } from '../../../core/ui/dom.js?v=09fc2dc';
+import { icono } from '../../../core/ui/iconos.js?v=09fc2dc';
+import { boton } from '../../../core/ui/tabla.js?v=09fc2dc';
+import { avisar } from '../../../core/ui/aviso.js?v=09fc2dc';
+import { hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, horas, aMin, hhmm, diaLocal } from '../../../core/ui/formato.js?v=09fc2dc';
+import { estado, minutosRegistro, ausente, eliminar, campoFiltroFaena, pasaFiltroFaena, resumenDia, vinculosAsistencia, horaTs, registrarSalida, anularEntrada } from './horas.js?v=09fc2dc';
 
 const pantalla = { pestana: null, buscar: '', marcados: new Set(), abiertas: new Set(), diaAbierto: null };   // abiertas: faenas desplegadas (día|faena)
 const DIAS_LARGOS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
@@ -53,6 +53,13 @@ export default async function asistenciaMovil(ctx) {
       .eq('empresa_id', ctx.empresa.id).gte('fecha', desde).lte('fecha', hasta) : { data: [] },
   ]);
   if (regs.error) throw regs.error;
+  // Entradas del marcaje sin salida (tablet o terreno): se ven en el día como "En curso", igual que en el PC (2026-11-16:
+  // en el teléfono no salía quien había marcado entrada y aún no salida). Sin el módulo Marcaje no hay nada.
+  const marcasAbiertas = await ctx.api.from('asis_marcas').select('id, persona_id, ts, origen, motivo').eq('empresa_id', ctx.empresa.id).eq('tipo', 'entrada')
+    .is('horas_id', null).is('anulada_at', null).gte('ts', new Date(`${desde}T00:00:00`).toISOString()).lt('ts', new Date(`${sumarDias(hasta, 1)}T00:00:00`).toISOString())
+    .then((r) => r.data ?? [], () => []);
+  for (const m of marcasAbiertas) regs.data.push({ id: `marca:${m.id}`, persona_id: m.persona_id, fecha: diaLocal(m.ts), entrada: horaTs(m.ts), salida: null, faena: null, vueltas: 0,
+    notas: m.origen === 'terreno' ? 'terreno' : 'tablet', origen: 'marcaje', marca: m });
   if (vinculos.error) throw vinculos.error;
 
   const personas = new Map(vinculos.data.map((v) => [v.persona_id, v]));
@@ -340,13 +347,20 @@ export default async function asistenciaMovil(ctx) {
     const v = personas.get(r.persona_id);
     const chip = r.origen === 'horario' ? [(r.notas ?? '').startsWith('Corregido') ? 'corregido' : 'según horario', 'chip-ok']
       : r.origen === 'marcaje' ? [(r.notas ?? '').includes('terreno') ? 'terreno' : 'tablet', 'chip-pend'] : null;
-    return el('button', { type: 'button', class: `asm-persona${datosDia.pisan.has(r.id) ? ' pisa' : ''}`, onclick: () => hoja({ r }) },
+    const enCurso = r.marca ? (r.fecha === hoyISO() ? 'En curso' : 'Falta la salida') : null;
+    return el('button', { type: 'button', class: `asm-persona${datosDia.pisan.has(r.id) ? ' pisa' : ''}`, onclick: () => (r.marca ? accionesMarca(r) : hoja({ r })) },
       avatar(v),
       el('span', { class: 'asm-persona-texto' },
         el('strong', {}, v ? nombre(v.personas) : 'Persona sin vínculo'),
-        el('span', { class: 'asm-horario' }, `${hhmm(r.entrada)} – ${hhmm(r.salida) || '…'}`, r.salida ? el('b', {}, horas(minutosRegistro(r))) : el('span', { class: 'chip chip-prox' }, 'Sin salida'), chip ? el('span', { class: `chip ${chip[1]}` }, chip[0]) : null),
+        el('span', { class: 'asm-horario' }, `${hhmm(r.entrada)} – ${hhmm(r.salida) || '…'}`, r.salida ? el('b', {}, horas(minutosRegistro(r))) : el('span', { class: 'chip chip-prox' }, enCurso ?? 'Sin salida'), chip ? el('span', { class: `chip ${chip[1]}` }, chip[0]) : null),
         datosDia.pisan.has(r.id) ? el('span', { class: 'texto-chico pct-mal' }, 'Se pisa con otra hora ese día') : null),
       icono('derecha', { tam: 18 }));
+  }
+
+  // Entrada marcada sin salida: Registrar salida o Anular entrada (las mismas del PC)
+  function accionesMarca(r) {
+    if (puedeCrear) registrarSalida(ctx, r.marca, personas);
+    else if (puedeEditar) anularEntrada(ctx, r.marca, personas);
   }
 
   function pintarLista() {
