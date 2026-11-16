@@ -1,11 +1,11 @@
 // Condiciones de pago de cada trabajador en la empresa: modo, cargo/trato, jornada o turno, sueldo y vuelta.
-import { el } from '../../../core/ui/dom.js?v=23e9550';
-import { icono } from '../../../core/ui/iconos.js?v=23e9550';
-import { listado } from '../../../core/ui/tabla.js?v=23e9550';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=23e9550';
-import { avisar } from '../../../core/ui/aviso.js?v=23e9550';
-import { dinero, hhmm, fechaLarga } from '../../../core/ui/formato.js?v=23e9550';
-import { cargarBase, nombreCompleto } from '../datos.js?v=23e9550';
+import { el } from '../../../core/ui/dom.js?v=63fa14d';
+import { icono } from '../../../core/ui/iconos.js?v=63fa14d';
+import { listado } from '../../../core/ui/tabla.js?v=63fa14d';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=63fa14d';
+import { avisar } from '../../../core/ui/aviso.js?v=63fa14d';
+import { dinero, hhmm, fechaLarga } from '../../../core/ui/formato.js?v=63fa14d';
+import { cargarBase, nombreCompleto } from '../datos.js?v=63fa14d';
 
 export default async function vista(ctx) {
   const base = await cargarBase(ctx);
@@ -21,7 +21,7 @@ export default async function vista(ctx) {
     { titulo: 'Modo', valor: (v) => (modoDe(v) === 'fijo' ? `Fijo${v.condicion?.fijo_desde ? ` desde ${fechaLarga(v.condicion.fijo_desde)}` : ''}` : 'Por hora') },
     { titulo: 'Cargo', valor: (v) => { const c = v.condicion?.cargo_id ? base.cargos.get(v.condicion.cargo_id) : null; return c ? c.nombre : '—'; } },
     { titulo: 'Valor hora', valor: (v) => { const c = v.condicion?.cargo_id ? base.cargos.get(v.condicion.cargo_id) : null; const vh = c?.trato ? Math.round(c.trato / ht) : (v.condicion?.valor_hora || base.config.valor_hora); return vh ? dinero(vh) : el('span', { class: 'pct-mal' }, 'Sin valor'); } },
-    { titulo: 'Jornada', valor: (v) => { const c = v.condicion; if (modoDe(v) !== 'fijo') return '—'; if (c?.art22) return el('span', { class: 'chip chip-na', title: 'Sin jornada: sin asistencia ni horas extra' }, 'Artículo 22');
+    { titulo: 'Jornada', valor: (v) => { const c = v.condicion; if (modoDe(v) !== 'fijo') return c?.jornada_ini ? el('span', { title: 'Solo para atrasos: por hora se pagan todas sus horas' }, `Turno ${hhmm(c.jornada_ini)}–${hhmm(c.jornada_fin)}${c.salida_viernes ? ` (vie ${hhmm(c.salida_viernes)})` : ''}`) : '—'; if (c?.art22) return el('span', { class: 'chip chip-na', title: 'Sin jornada: sin asistencia ni horas extra' }, 'Artículo 22');
       return c?.jornada_ini ? el('span', {}, `Turno ${hhmm(c.jornada_ini)}–${hhmm(c.jornada_fin)}${c.salida_viernes ? ` (vie ${hhmm(c.salida_viernes)})` : ''}`, c.asistencia_desde ? el('div', { class: 'texto-suave texto-chico' }, `Asistencia automática desde ${fechaLarga(c.asistencia_desde)}`) : null)
         : c?.jornada_horas ? `${Number(c.jornada_horas)} h/día` : el('span', { class: 'texto-suave' }, 'Sin jornada'); } },
     { titulo: 'Sueldo base', valor: (v) => (v.condicion?.sueldo_base ? `${dinero(v.condicion.sueldo_base)}${v.condicion.sueldo_desde ? ` desde ${fechaLarga(v.condicion.sueldo_desde)}` : ''}` : '—') },
@@ -41,7 +41,7 @@ function editar(ctx, v, base) {
   const ht = Number(base.config.horas_trato ?? 8);
   abrirFormulario({
     titulo: `Condiciones de ${nombreCompleto(v.personas)}`,
-    mensaje: 'Para un fijo, usa turno (hora de inicio y fin) o jornada en horas por día, no ambos.',
+    mensaje: 'Para un fijo, usa turno (hora de inicio y fin) o jornada en horas por día, no ambos. Por hora: el turno solo sirve para ver atrasos (Asistencia → Atrasos y ausencias); se siguen pagando todas sus horas.',
     campos: [
       { id: 'modo', etiqueta: 'Modo de pago', opciones: [['hora', 'Por hora (spot): se pagan todas las horas'], ['fijo', 'Fijo: solo extras, findes y feriados']], valor: c.modo ?? (v.tipo_vinculo === 'contrato' ? 'fijo' : 'hora') },
       { id: 'cargo_id', etiqueta: 'Cargo (define el valor hora)', opciones: [['', 'Sin cargo'], ...base.listaCargos.filter((x) => x.activo || x.id === c.cargo_id).map((x) => [x.id, `${x.nombre}${x.trato ? ` · ${dinero(Math.round(x.trato / ht))} la hora` : ''}`])], valor: c.cargo_id ?? '' },

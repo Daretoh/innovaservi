@@ -6,14 +6,14 @@
 // Fijos con turno (2026-10-30): cada día hábil quedan presentes "según horario" solos (asis_generar_fijos); aquí solo se
 // corrigen las excepciones: retraso o salida temprana (cambiar la hora), horas extra (cambiar la salida o agregar otra
 // fila) y ausencias (botón Ausente: el día deja de contar y no se vuelve a crear).
-import { el } from '../../../core/ui/dom.js?v=23e9550';
-import { icono } from '../../../core/ui/iconos.js?v=23e9550';
-import { boton } from '../../../core/ui/tabla.js?v=23e9550';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=23e9550';
-import { arrastrarHorario } from './arrastre.js?v=23e9550';
-import { avisar } from '../../../core/ui/aviso.js?v=23e9550';
-import { esTelefono } from '../../../core/movil.js?v=23e9550';
-import { hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, horas, aMin, hhmm } from '../../../core/ui/formato.js?v=23e9550';
+import { el } from '../../../core/ui/dom.js?v=63fa14d';
+import { icono } from '../../../core/ui/iconos.js?v=63fa14d';
+import { boton } from '../../../core/ui/tabla.js?v=63fa14d';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=63fa14d';
+import { arrastrarHorario } from './arrastre.js?v=63fa14d';
+import { avisar } from '../../../core/ui/aviso.js?v=63fa14d';
+import { esTelefono } from '../../../core/movil.js?v=63fa14d';
+import { hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, horas, aMin, hhmm } from '../../../core/ui/formato.js?v=63fa14d';
 
 const DIAS_LARGOS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 export const estado = { lunes: lunesDe(hoyISO()), dia: hoyISO(), nuevas: [], abiertas: new Set(), diasAbiertos: new Set(), filtro: '', borradorLeido: new Set() };   // abiertas: faenas desplegadas (día|faena)   // nuevas: filas en blanco aún sin guardar
@@ -30,7 +30,7 @@ export function minutosRegistro(h) {
 const clave = (s) => String(s ?? '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[·—-]+/g, ' ').replace(/\s+/g, ' ');
 
 export default async function vista(ctx) {
-  if (esTelefono()) return (await import('./horas-movil.js?v=23e9550')).default(ctx);   // en el teléfono, lista de personas en vez de planilla
+  if (esTelefono()) return (await import('./horas-movil.js?v=63fa14d')).default(ctx);   // en el teléfono, lista de personas en vez de planilla
   const desde = estado.lunes;
   const hasta = sumarDias(desde, 6);
   const hoy = hoyISO();
@@ -286,7 +286,7 @@ export default async function vista(ctx) {
         if (!destinos.length) throw new Error('Elige o escribe la faena.');
         const ya = registrosDe(d);
         const filas = destinos.flatMap((faena) => g.regs.filter((r) => !ya.some((x) => x.persona_id === r.persona_id && clave(x.faena) === clave(faena) && hhmm(x.entrada) === hhmm(r.entrada)))
-          .map((r) => ({ empresa_id: ctx.empresa.id, persona_id: r.persona_id, fecha: d, entrada: hhmm(r.entrada), salida: hhmm(r.salida), faena, vueltas: 0 })));
+          .map((r) => ({ empresa_id: ctx.empresa.id, persona_id: r.persona_id, fecha: d, entrada: r.entrada ? hhmm(r.entrada) : null, salida: r.salida ? hhmm(r.salida) : null, faena, vueltas: 0 })));
         if (!filas.length) throw new Error('Esas personas ya tienen ese horario en esa faena.');
         const { error } = await ctx.api.from('asis_horas').insert(filas);
         if (error) throw new Error(error.message);
@@ -446,7 +446,7 @@ function campos(r, activos, varios) {
       : { id: 'persona', etiqueta: 'Persona', opciones, valor: r?.persona_id },
     { id: 'fecha', etiqueta: 'Fecha', tipo: 'date', requerido: true, valor: r?.fecha ?? estado.dia },
     { id: 'entrada', etiqueta: 'Entrada', tipo: 'time', requerido: true, valor: r ? hhmm(r.entrada) : '08:00' },
-    { id: 'salida', etiqueta: 'Salida', tipo: 'time', requerido: true, valor: r ? hhmm(r.salida) : '17:00' },
+    { id: 'salida', etiqueta: 'Salida (en blanco si aún no sale: no cuenta hasta completarla)', tipo: 'time', valor: r ? hhmm(r.salida) : '17:00' },
     ...(estado.conFaena || r?.faena ? [{ id: 'faena', etiqueta: 'Faena o lugar', valor: r?.faena ?? '' }] : []),
     { id: 'vueltas', etiqueta: 'Vueltas (choferes)', tipo: 'number', valor: String(r?.vueltas ?? 0) },
     { id: 'notas', etiqueta: 'Notas', valor: r?.notas ?? '' },
@@ -454,8 +454,8 @@ function campos(r, activos, varios) {
 }
 
 const datosDe = (v) => {
-  if (v.entrada === v.salida) throw new Error('La entrada y la salida no pueden ser iguales.');
-  return { fecha: v.fecha, entrada: v.entrada, salida: v.salida, faena: v.faena === undefined ? undefined : v.faena.trim() || null,   // sin el campo (empresa sin faenas) no se toca
+  if (v.salida && v.entrada === v.salida) throw new Error('La entrada y la salida no pueden ser iguales.');
+  return { fecha: v.fecha, entrada: v.entrada, salida: v.salida || null,   // sin salida (Asistencia 007): no cuenta hasta completarla faena: v.faena === undefined ? undefined : v.faena.trim() || null,   // sin el campo (empresa sin faenas) no se toca
     vueltas: Number(v.vueltas) || 0, notas: v.notas.trim() || null };
 };
 
@@ -498,7 +498,7 @@ function editar(ctx, r, activos) {
 export function eliminar(ctx, r) {
   abrirFormulario({
     titulo: 'Eliminar registro',
-    mensaje: `${hhmm(r.entrada)} – ${hhmm(r.salida)} del ${fechaCorta(r.fecha)}. Deja de contar para el pago (queda en la auditoría).`,
+    mensaje: `${hhmm(r.entrada) || 'sin entrada'} – ${hhmm(r.salida) || 'sin salida'} del ${fechaCorta(r.fecha)}. Deja de contar para el pago (queda en la auditoría).`,
     campos: [],
     textoGuardar: 'Eliminar',
     alGuardar: async () => {

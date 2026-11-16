@@ -8,10 +8,18 @@ export default {
   rubros: ['todos'],
   acciones: ['ver', 'crear', 'editar', 'eliminar', 'exportar'],
   menu: [
-    { id: 'asistencia.horas', label: 'Registro de horas', vista: () => import('./vistas/horas.js?v=23e9550') },
-    { id: 'asistencia.marcajes', label: 'Marcajes', vista: () => import('./vistas/marcajes.js?v=23e9550') },
-    { id: 'asistencia.resumen', label: 'Resumen del mes', icono: 'reloj', vista: () => import('./vistas/resumen.js?v=23e9550') },
+    { id: 'asistencia.horas', label: 'Registro de horas', vista: () => import('./vistas/horas.js?v=63fa14d') },
+    { id: 'asistencia.marcajes', label: 'Marcajes', vista: () => import('./vistas/marcajes.js?v=63fa14d') },
+    { id: 'asistencia.resumen', label: 'Resumen del mes', icono: 'reloj', vista: () => import('./vistas/resumen.js?v=63fa14d') },
+    { id: 'asistencia.atrasos', label: 'Atrasos y ausencias', icono: 'alerta', vista: () => import('./vistas/atrasos.js?v=63fa14d') },
   ],
-  config: {},
-  migraciones: ['db/001_asistencia.sql', 'db/002_origen.sql', 'db/003_solo_vueltas.sql', 'db/004_fijos_automatico.sql', 'db/005_condiciones_editar.sql', 'db/006_licencias.sql'],
+  config: {
+    // Atrasos (2026-11-13, Asistencia 009): minutos de gracia antes de contar un atraso o una salida anticipada
+    tolerancia_atraso: { tipo: 'number', etiqueta: 'Tolerancia para atrasos y salidas anticipadas (minutos)', default: 5 },
+    // Aviso privado a la persona en la tablet al marcar su entrada tarde
+    aviso_atraso_tablet: { tipo: 'bool', etiqueta: 'Mostrar el atraso a la persona en la tablet al marcar su entrada', default: true },
+    // Aviso al teléfono de quien edita Asistencia
+    avisar_atrasos: { tipo: 'bool', etiqueta: 'Avisar al jefe (quien edita Asistencia) cuando alguien marca su entrada tarde', default: false },
+  },
+  migraciones: ['db/001_asistencia.sql', 'db/002_origen.sql', 'db/003_solo_vueltas.sql', 'db/004_fijos_automatico.sql', 'db/005_condiciones_editar.sql', 'db/006_licencias.sql', 'db/007_sin_salida.sql', 'db/008_sin_entrada.sql', 'db/009_puntualidad.sql'],
 };

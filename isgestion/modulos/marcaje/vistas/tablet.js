@@ -1,8 +1,8 @@
 // Marcaje en tablet: la persona escribe los 4 últimos dígitos de su RUT (sin dígito verificador),
 // confirma su nombre y marca entrada o salida. La hora la pone el servidor.
 // Modo tablet: oculta el menú; para salir, mantener presionado el reloj 2 segundos.
-import { el } from '../../../core/ui/dom.js?v=23e9550';
-import { icono } from '../../../core/ui/iconos.js?v=23e9550';
+import { el } from '../../../core/ui/dom.js?v=63fa14d';
+import { icono } from '../../../core/ui/iconos.js?v=63fa14d';
 
 const MODO = 'modo-tablet';
 
@@ -95,8 +95,11 @@ export default async function vista(ctx) {
       icono('check', { tam: 56 }),
       el('p', { class: 'tab-nombre' }, data.nombre),
       el('p', { class: 'tab-hora' }, `${tipo === 'entrada' ? 'Entrada' : 'Salida'} ${h}`),
-      tipo === 'salida' && min ? el('p', { class: 'tab-instruccion' }, `Hoy trabajaste ${Math.floor(min / 60)} h ${String(min % 60).padStart(2, '0')} min`) : null));
-    timer = setTimeout(() => reiniciar(), 3500);
+      tipo === 'salida' && min ? el('p', { class: 'tab-instruccion' }, `Hoy trabajaste ${Math.floor(min / 60)} h ${String(min % 60).padStart(2, '0')} min`) : null,
+      // Atraso (Asistencia 009): aviso solo a quien marca, unos segundos más en pantalla
+      data.atraso_min > 0 ? el('p', { class: 'tab-atraso' }, icono('reloj', { tam: 18 }),
+        ` Llegaste ${data.atraso_min >= 60 ? `${Math.floor(data.atraso_min / 60)} h ${String(data.atraso_min % 60).padStart(2, '0')} min` : `${data.atraso_min} min`} después de tu horario (${data.turno_ini})`) : null));
+    timer = setTimeout(() => reiniciar(), data.atraso_min > 0 ? 6000 : 3500);
   };
 
   // Teclado físico

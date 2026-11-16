@@ -1,8 +1,8 @@
 // Personas con vínculo en la empresa activa.
-import { el } from '../../../core/ui/dom.js?v=23e9550';
-import { listado, boton } from '../../../core/ui/tabla.js?v=23e9550';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=23e9550';
-import { avisar } from '../../../core/ui/aviso.js?v=23e9550';
+import { el } from '../../../core/ui/dom.js?v=63fa14d';
+import { listado, boton } from '../../../core/ui/tabla.js?v=63fa14d';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=63fa14d';
+import { avisar } from '../../../core/ui/aviso.js?v=63fa14d';
 
 const VINCULOS = [['contrato', 'Contrato'], ['spot', 'Spot'], ['honorarios', 'Honorarios'], ['practica', 'Práctica']];
 const nombreVinculo = Object.fromEntries(VINCULOS);
@@ -43,7 +43,7 @@ export default async function vista(ctx) {
 async function exportarPdf(ctx, filas, boton) {
   boton.disabled = true;
   try {
-    const { nuevoPdf } = await import('../../../core/pdf.js?v=23e9550');
+    const { nuevoPdf } = await import('../../../core/pdf.js?v=63fa14d');
     const pdf = await nuevoPdf(ctx, { titulo: 'Nómina de personas' });
     pdf.tabla({
       columnas: ['RUT', 'Nombre', 'Cargo', 'Vínculo', 'Ingreso', 'Estado'],
