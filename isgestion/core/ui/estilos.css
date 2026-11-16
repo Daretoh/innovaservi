@@ -2818,3 +2818,4 @@ html[data-modo="oscuro"] { --turno-dia-fondo: #4a3a12; --turno-dia-texto: #fde68
 /* Día abierto: línea de la empresa bajo la cabecera, como InnovaGestión */
 .sem-dia-cabeza[aria-expanded="true"] { border-bottom: 2px solid var(--empresa); border-radius: 14px 14px 0 0; }
 .sem-dia-cabeza strong { font-size: 15px; }
+.asm-gente-titulo { margin: 8px 2px 2px; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: var(--texto-suave); }

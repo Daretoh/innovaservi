@@ -1,12 +1,12 @@
 // Partes de trabajo: listado, pendientes de clientes que piden informe y creación desde las faenas.
-import { el } from '../../../core/ui/dom.js?v=fab7b11';
-import { icono } from '../../../core/ui/iconos.js?v=fab7b11';
-import { listado, boton } from '../../../core/ui/tabla.js?v=fab7b11';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=fab7b11';
-import { avisar } from '../../../core/ui/aviso.js?v=fab7b11';
-import { hoyISO, sumarDias, fechaLarga } from '../../../core/ui/formato.js?v=fab7b11';
-import { faenasSinParte, nombreTercero } from '../datos.js?v=fab7b11';
-import { esTelefono } from '../../../core/movil.js?v=fab7b11';
+import { el } from '../../../core/ui/dom.js?v=96a2962';
+import { icono } from '../../../core/ui/iconos.js?v=96a2962';
+import { listado, boton } from '../../../core/ui/tabla.js?v=96a2962';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=96a2962';
+import { avisar } from '../../../core/ui/aviso.js?v=96a2962';
+import { hoyISO, sumarDias, fechaLarga } from '../../../core/ui/formato.js?v=96a2962';
+import { faenasSinParte, nombreTercero } from '../datos.js?v=96a2962';
+import { esTelefono } from '../../../core/movil.js?v=96a2962';
 
 let estado = 'todos';
 // El filtro Todos / Borradores / Confirmados repinta con lo ya cargado (antes volvía a pedir todo y tardaba 2–3 s sin

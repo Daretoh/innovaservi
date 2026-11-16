@@ -6,12 +6,12 @@
 // abierta tiene además "Agregar persona en esta faena".
 // Mismos datos y reglas que la planilla de escritorio (horas.js): las del marcaje se corrigen en Marcajes y los fijos con
 // turno quedan presentes "según horario".
-import { el } from '../../../core/ui/dom.js?v=fab7b11';
-import { icono } from '../../../core/ui/iconos.js?v=fab7b11';
-import { boton } from '../../../core/ui/tabla.js?v=fab7b11';
-import { avisar } from '../../../core/ui/aviso.js?v=fab7b11';
-import { hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, horas, aMin, hhmm } from '../../../core/ui/formato.js?v=fab7b11';
-import { estado, minutosRegistro, ausente, eliminar, campoFiltroFaena, pasaFiltroFaena, resumenDia, vinculosAsistencia } from './horas.js?v=fab7b11';
+import { el } from '../../../core/ui/dom.js?v=96a2962';
+import { icono } from '../../../core/ui/iconos.js?v=96a2962';
+import { boton } from '../../../core/ui/tabla.js?v=96a2962';
+import { avisar } from '../../../core/ui/aviso.js?v=96a2962';
+import { hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, horas, aMin, hhmm } from '../../../core/ui/formato.js?v=96a2962';
+import { estado, minutosRegistro, ausente, eliminar, campoFiltroFaena, pasaFiltroFaena, resumenDia, vinculosAsistencia } from './horas.js?v=96a2962';
 
 const pantalla = { pestana: null, buscar: '', marcados: new Set(), abiertas: new Set(), diaAbierto: null };   // abiertas: faenas desplegadas (día|faena)
 const DIAS_LARGOS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
@@ -159,8 +159,11 @@ export default async function asistenciaMovil(ctx) {
       const k = clave(f.texto);
       const delPlan = (v) => !!k && clave(plan.get(v.persona_id)?.faena) === k;
       const horasDe = (v) => delDia.filter((r) => r.persona_id === v.persona_id);
-      const gente = activos.filter((v) => !ausentes.has(v.persona_id))
-        .sort((a, b) => delPlan(b) - delPlan(a) || (horasDe(a).length > 0) - (horasDe(b).length > 0));   // planificados, sin horas, con horas
+      // Quienes ya tienen horas en ESTA faena van arriba, con sus horas (2026-11-16: quedaban al final y parecía que no
+      // hubiera nadie cargado); después los planificados, los sin horas y los que tienen horas en otra faena
+      const enEsta = (v) => horasDe(v).some((r) => clave(r.faena) === k);
+      const grupo = (v) => (enEsta(v) ? 0 : delPlan(v) ? 1 : horasDe(v).length ? 3 : 2);
+      const gente = activos.filter((v) => !ausentes.has(v.persona_id)).sort((a, b) => grupo(a) - grupo(b));
       const planificado = gente.find(delPlan) ? plan.get(gente.find(delPlan).persona_id) : null;
       const marcados = new Set();
       const h = camposHorario({ inicial: planificado?.entrada || f.entrada || HORARIO_BASE.split('-')[0], final: planificado?.salida || f.salida || HORARIO_BASE.split('-')[1], editable: true });
@@ -177,14 +180,19 @@ export default async function asistenciaMovil(ctx) {
       const marcarPlan = planificados.length > 1 ? el('button', { type: 'button', class: 'asm-planificados', onclick: () => { planificados.forEach((v) => marcados.add(v.persona_id)); pintarGente(); } }, icono('check', { tam: 16 }), `Marcar los ${planificados.length} planificados`) : null;
       function pintarGente() {
         const texto = clave(buscar.value);
-        filas.replaceChildren(...gente.filter((v) => !texto || clave(`${nombre(v.personas)} ${v.cargo ?? ''}`).includes(texto)).map((v) => {
+        let anterior = null;
+        filas.replaceChildren(...gente.filter((v) => !texto || clave(`${nombre(v.personas)} ${v.cargo ?? ''}`).includes(texto)).flatMap((v) => {
           const marcado = marcados.has(v.persona_id);
           const ya = horasDe(v);
-          return el('button', { type: 'button', class: `asm-persona asm-elegir${marcado ? ' marcada' : ''}`, role: 'checkbox', 'aria-checked': String(marcado),
+          const g = grupo(v);
+          const titulo = g !== anterior && (g === 0 || anterior === 0) ? el('p', { class: 'asm-gente-titulo' }, g === 0 ? 'Ya en esta faena' : 'Agregar a') : null;
+          anterior = g;
+          const delaFaena = ya.filter((r) => clave(r.faena) === k);
+          return [titulo, el('button', { type: 'button', class: `asm-persona asm-elegir${marcado ? ' marcada' : ''}`, role: 'checkbox', 'aria-checked': String(marcado),
             onclick: () => { if (marcado) marcados.delete(v.persona_id); else marcados.add(v.persona_id); pintarGente(); } },
           el('span', { class: 'asm-marca-chica', 'aria-hidden': 'true' }, marcado ? icono('check', { tam: 18 }) : iniciales(v.personas)),
           el('span', { class: 'asm-persona-texto' }, el('strong', {}, nombre(v.personas)),
-            el('span', { class: 'texto-suave texto-chico' }, delPlan(v) ? 'Planificado aquí' : ya.length ? `Ya tiene ${ya.map((r) => `${hhmm(r.entrada)}–${hhmm(r.salida)}`).join(', ')}` : v.cargo || 'Sin horas')));
+            el('span', { class: 'texto-suave texto-chico' }, delaFaena.length ? `En esta faena: ${delaFaena.map((r) => `${hhmm(r.entrada) || '…'}–${hhmm(r.salida) || '…'}`).join(', ')}` : delPlan(v) ? 'Planificado aquí' : ya.length ? `Ya tiene ${ya.map((r) => `${hhmm(r.entrada) || '…'}–${hhmm(r.salida) || '…'}`).join(', ')}` : v.cargo || 'Sin horas')))].filter(Boolean);
         }));
         contar();
       }
