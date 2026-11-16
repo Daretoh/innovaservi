@@ -1,8 +1,8 @@
 // Marcaje en tablet: la persona escribe los 4 últimos dígitos de su RUT (sin dígito verificador),
 // confirma su nombre y marca entrada o salida. La hora la pone el servidor.
 // Modo tablet: oculta el menú; para salir, mantener presionado el reloj 2 segundos.
-import { el } from '../../../core/ui/dom.js?v=528273b';
-import { icono } from '../../../core/ui/iconos.js?v=528273b';
+import { el } from '../../../core/ui/dom.js?v=47c2891';
+import { icono } from '../../../core/ui/iconos.js?v=47c2891';
 
 const MODO = 'modo-tablet';
 
@@ -91,16 +91,22 @@ export default async function vista(ctx) {
     if (error) { reiniciar(error.message); return; }
     const h = new Date(data.ts).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
     const min = data.minutos_hoy;
+    const hm = (t) => new Date(t).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+    const durTxt = (m) => `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, '0')} min`;
+    const desde = tipo === 'salida' && p.dentro && p.ultima ? hm(p.ultima) : null;   // la entrada que se cierra
     paso.replaceChildren(el('div', { class: `tab-listo ${tipo}` },
       icono('check', { tam: 56 }),
       el('p', { class: 'tab-nombre' }, data.nombre),
       el('p', { class: 'tab-hora' }, `${tipo === 'entrada' ? 'Entrada' : 'Salida'} ${h}`),
-      tipo === 'salida' && min ? el('p', { class: 'tab-instruccion' }, `Hoy trabajaste ${Math.floor(min / 60)} h ${String(min % 60).padStart(2, '0')} min`) : null,
+      // Salida: horas trabajadas bien visibles (2026-11-16, Enzo)
+      tipo === 'salida' && min ? el('div', { class: 'tab-trabajado' },
+        desde ? el('span', { class: 'texto-suave' }, `Entrada ${desde} → Salida ${h}`) : null,
+        el('span', {}, 'Hoy trabajaste'), el('strong', {}, durTxt(min))) : null,
       // Atraso (Asistencia 009): aviso solo a quien marca, unos segundos más en pantalla
       data.atraso_min > 0 ? el('p', { class: 'tab-atraso' }, icono('reloj', { tam: 18 }),
         ` Llegaste ${data.atraso_min >= 60 ? `${Math.floor(data.atraso_min / 60)} h ${String(data.atraso_min % 60).padStart(2, '0')} min` : `${data.atraso_min} min`} después de tu horario (${data.turno_ini})`) : null));
-    if (tipo === 'salida' && data.anticipada_min > 0 && data.id) { setTimeout(() => preguntarMotivo(data), 1500); return; }
-    timer = setTimeout(() => reiniciar(), data.atraso_min > 0 ? 6000 : 3500);
+    if (tipo === 'salida' && data.anticipada_min > 0 && data.id) { setTimeout(() => preguntarMotivo({ ...data, trabajado: min ? durTxt(min) : null }), 2500); return; }
+    timer = setTimeout(() => reiniciar(), data.atraso_min > 0 ? 6000 : tipo === 'salida' ? 5000 : 3500);
   };
 
   // Salida antes del fin del turno (Marcaje 004): la salida ya quedó con su hora; se pregunta el motivo con botones.
@@ -122,7 +128,7 @@ export default async function vista(ctx) {
     paso.replaceChildren(
       el('p', { class: 'tab-nombre' }, data.nombre),
       el('p', { class: 'tab-atraso' }, icono('reloj', { tam: 18 }), ` Estás saliendo ${t} antes de tu horario (${data.turno_fin})`),
-      el('p', { class: 'tab-instruccion' }, '¿Por qué sales antes? Tu salida ya quedó marcada.'),
+      el('p', { class: 'tab-instruccion' }, `${data.trabajado ? `Hoy trabajaste ${data.trabajado}. ` : ''}¿Por qué sales antes? Tu salida ya quedó marcada.`),
       el('div', { class: 'tab-motivos' }, MOTIVOS.map((m) => el('button', { type: 'button', class: 'tab-persona', onclick: (ev) => elegirMotivo(m, ev.currentTarget) }, m))),
       el('button', { type: 'button', class: 'tab-cancelar', onclick: () => reiniciar() }, 'Prefiero no decirlo'));
     timer = setTimeout(() => reiniciar(), 25000);

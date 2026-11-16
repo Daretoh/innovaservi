@@ -8,10 +8,10 @@ export default {
   rubros: ['todos'],
   acciones: ['ver', 'crear', 'editar', 'eliminar', 'exportar'],
   menu: [
-    { id: 'asistencia.horas', label: 'Registro de horas', vista: () => import('./vistas/horas.js?v=528273b') },
-    { id: 'asistencia.marcajes', label: 'Marcajes', vista: () => import('./vistas/marcajes.js?v=528273b') },
-    { id: 'asistencia.resumen', label: 'Resumen del mes', icono: 'reloj', vista: () => import('./vistas/resumen.js?v=528273b') },
-    { id: 'asistencia.atrasos', label: 'Atrasos y ausencias', icono: 'alerta', vista: () => import('./vistas/atrasos.js?v=528273b') },
+    { id: 'asistencia.horas', label: 'Registro de horas', vista: () => import('./vistas/horas.js?v=47c2891') },
+    { id: 'asistencia.marcajes', label: 'Marcajes', vista: () => import('./vistas/marcajes.js?v=47c2891') },
+    { id: 'asistencia.resumen', label: 'Resumen del mes', icono: 'reloj', vista: () => import('./vistas/resumen.js?v=47c2891') },
+    { id: 'asistencia.atrasos', label: 'Atrasos y ausencias', icono: 'alerta', vista: () => import('./vistas/atrasos.js?v=47c2891') },
   ],
   config: {
     // Atrasos (2026-11-13, Asistencia 009): minutos de gracia antes de contar un atraso o una salida anticipada

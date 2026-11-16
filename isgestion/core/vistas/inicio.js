@@ -1,9 +1,9 @@
 // Inicio: saludo con la fecha, lo que requiere atención (alertas de los módulos que el usuario puede ver)
 // indicadores de los módulos (core/vistas/indicadores.js) y accesos a los módulos agrupados por área. Las alertas llegan después, sin bloquear la pantalla.
-import { el } from '../ui/dom.js?v=528273b';
-import { icono } from '../ui/iconos.js?v=528273b';
-import { nombreEmpresa } from '../empresas.js?v=528273b';
-import { esTelefono, marcaGuardada, recordarMarca } from '../movil.js?v=528273b';
+import { el } from '../ui/dom.js?v=47c2891';
+import { icono } from '../ui/iconos.js?v=47c2891';
+import { nombreEmpresa } from '../empresas.js?v=47c2891';
+import { esTelefono, marcaGuardada, recordarMarca } from '../movil.js?v=47c2891';
 
 const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
@@ -73,7 +73,7 @@ function cabeceraMovil(ctx, { fecha, titulo, abrirNotificaciones, conTaller }) {
 function atencionTaller(ctx) {
   const nodo = el('section', { class: 'im-atencion', hidden: true });
   (async () => {
-    const [{ SELECT_ORDEN, minutosTrabajo }, m] = await Promise.all([import('../../modulos/taller/datos.js?v=528273b'), import('../../modulos/taller/movil.js?v=528273b')]);
+    const [{ SELECT_ORDEN, minutosTrabajo }, m] = await Promise.all([import('../../modulos/taller/datos.js?v=47c2891'), import('../../modulos/taller/movil.js?v=47c2891')]);
     const { data, error } = await ctx.api.from('tal_ordenes').select(SELECT_ORDEN).eq('empresa_id', ctx.empresa.id).in('estado', ['agendado', 'espera', 'proceso', 'terminado']);
     if (error) throw error;
     // Primero por tipo de motivo; dentro de cada uno, el que lleva más tiempo
@@ -88,6 +88,17 @@ function atencionTaller(ctx) {
     nodo.hidden = false;
   })().catch(() => nodo.remove());
   return nodo;
+}
+
+// Botón grande "Marcar asistencia" (2026-11-16, Enzo) para las cuentas que marcan (tablet del taller): con marcaje crear
+// y la pantalla habilitada, sin ser quien administra la asistencia (a ese le sobra)
+function botonMarcar(ctx, visibles) {
+  const conPantalla = visibles.some((m) => m.id === 'marcaje' && m.menu.some((x) => x.id === 'marcaje.tablet'));
+  if (!conPantalla || !ctx.puede('marcaje', 'crear') || ctx.puede('asistencia', 'editar')) return null;
+  return el('a', { class: 'inicio-marcar', href: '#/marcaje.tablet' },
+    el('span', { class: 'inicio-marcar-icono' }, icono('reloj', { tam: 30 })),
+    el('span', {}, el('strong', {}, 'Marcar asistencia'), el('span', { class: 'texto-chico' }, 'Entrada y salida con los 4 últimos dígitos del RUT')),
+    icono('derecha', { tam: 22 }));
 }
 
 export default function inicio(ctx, visibles, { abrirNotificaciones } = {}) {
@@ -109,12 +120,12 @@ export default function inicio(ctx, visibles, { abrirNotificaciones } = {}) {
   // Indicadores (tarjetas y paneles): llegan después, sin bloquear la pantalla
   const indicadores = el('div', { class: 'cargando-bloque', 'aria-busy': 'true', 'aria-label': 'Cargando indicadores' }, el('span', { class: 'cargador', 'aria-hidden': 'true' }));
   if (visibles.length && !tablet) {
-    import('./indicadores.js?v=528273b')
+    import('./indicadores.js?v=47c2891')
       .then(async ({ cargarIndicadores, panelIndicadores }) => { const p = panelIndicadores(ctx, await cargarIndicadores(ctx)); if (p) indicadores.replaceWith(p); else indicadores.remove(); })
       .catch(() => indicadores.remove());
   } else indicadores.remove();
   if (visibles.length && !tablet) {
-    import('../../modulos/gerencia/alertas.js?v=528273b')
+    import('../../modulos/gerencia/alertas.js?v=47c2891')
       .then(({ cargarAlertas }) => cargarAlertas(ctx))
       .then((alertas) => {
         atencion.replaceChildren(el('h2', {}, alertas.length ? `Requiere atención (${alertas.length})` : 'Requiere atención'),
@@ -138,6 +149,7 @@ export default function inicio(ctx, visibles, { abrirNotificaciones } = {}) {
         el('p', { class: 'texto-suave inicio-fecha' }, fecha[0].toUpperCase() + fecha.slice(1)),
         titulo,
         el('p', { class: 'texto-suave' }, nombreEmpresa(ctx.empresa))),
+    botonMarcar(ctx, visibles),
     conTaller ? (telefono ? atencionTaller(ctx) : resumenTaller(ctx)) : null,
     visibles.length && !tablet ? indicadores : null,
     !visibles.length ? el('p', { class: 'aviso-bandeja' }, icono('alerta', { tam: 16 }), 'Tu rol no tiene módulos habilitados en esta empresa. Pide acceso al administrador.') : !tablet ? atencion : null,

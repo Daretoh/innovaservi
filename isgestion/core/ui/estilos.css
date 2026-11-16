@@ -757,6 +757,9 @@ body.modo-tablet .contenido { padding: 16px; }
 .tab-motivos .tab-persona { padding: 14px; font-size: 1.05rem; }
 .tab-motivos .tab-persona.sugerido { border-color: var(--empresa); color: var(--empresa); }
 .tab-hora { font-size: 2rem; font-weight: 700; margin: 0; color: var(--texto); }
+/* Horas trabajadas al marcar la salida */
+.tab-trabajado { display: grid; justify-items: center; gap: 2px; margin-top: 6px; padding: 10px 22px; border-radius: 14px; background: var(--fondo-sutil); color: var(--texto); }
+.tab-trabajado strong { font-size: 1.8rem; color: var(--empresa); }
 .tab-mensaje { min-height: 1.4em; color: var(--venc); font-weight: 600; margin: 0; }
 .marca-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .marca-chip { display: inline-flex; align-items: center; gap: 2px; padding: 2px 4px 2px 8px; border-radius: 999px; font-size: .85rem; border: 1px solid var(--borde); background: var(--fondo); }
@@ -794,6 +797,12 @@ a.ger-alerta:hover { background: var(--fondo); }
 .inicio { gap: 24px; }
 .inicio-cabecera { display: grid; gap: 2px; }
 .inicio-cabecera h1 { font-size: 1.7rem; }
+/* Marcar asistencia (cuentas de tablet): botón grande con el color de la empresa */
+.inicio-marcar { display: flex; align-items: center; gap: 14px; padding: 18px 20px; border-radius: 16px; background: var(--empresa); color: var(--sobre-empresa); text-decoration: none; box-shadow: 0 6px 18px color-mix(in srgb, var(--empresa) 30%, transparent); }
+.inicio-marcar > span:nth-child(2) { display: grid; gap: 2px; flex: 1; }
+.inicio-marcar strong { font-size: 1.35rem; }
+.inicio-marcar-icono { display: grid; place-items: center; width: 52px; height: 52px; border-radius: 50%; background: color-mix(in srgb, var(--sobre-empresa) 18%, transparent); }
+.inicio-marcar:hover { filter: brightness(1.05); }
 .inicio-fecha { margin: 0; font-size: .85rem; text-transform: none; }
 .inicio-cabecera p { margin: 0; }
 .inicio-atencion { max-width: none; }

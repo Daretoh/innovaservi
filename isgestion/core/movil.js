@@ -10,12 +10,12 @@
 //   abre en abanico las opciones que el usuario puede usar (mantener y arrastrar hacia una la elige; un toque abre y otro
 //   elige); si queda una sola, la abre directo. Con 3 son tres direcciones; con más, el arco se abre y luego suma otra vuelta.
 // Sin accesos declarados, la barra usa los primeros apartados del menú. Siempre: Inicio al principio y Más al final.
-import { el } from './ui/dom.js?v=528273b';
-import { icono } from './ui/iconos.js?v=528273b';
-import { urlFirmada } from './adjuntos.js?v=528273b';
-import { nombreEmpresa } from './empresas.js?v=528273b';
-import { avisar } from './ui/aviso.js?v=528273b';
-import { guardarLogoAviso } from './push.js?v=528273b';
+import { el } from './ui/dom.js?v=47c2891';
+import { icono } from './ui/iconos.js?v=47c2891';
+import { urlFirmada } from './adjuntos.js?v=47c2891';
+import { nombreEmpresa } from './empresas.js?v=47c2891';
+import { avisar } from './ui/aviso.js?v=47c2891';
+import { guardarLogoAviso } from './push.js?v=47c2891';
 
 const MAX_ACCESOS = 2;
 
@@ -38,6 +38,7 @@ export function barraMovil({ visibles, apartados, rutas, puede, ctx }) {
   const extras = visibles.flatMap((m) => (m.movil?.extra ?? []).filter((o) => puede(...o.requiere) && (!o.ruta || rutas.has(o.ruta))));
   if (extras.length && !accion) accion = extras.length === 1 ? { ...extras[0] } : { label: 'Agregar', icono: 'mas', opciones: extras };
   else if (extras.length && accion.opciones) accion = { ...accion, opciones: [...accion.opciones, ...extras] };
+  else if (extras.some((o) => o.unir)) accion = { label: 'Agregar', icono: 'mas', opciones: [{ ...accion }, ...extras.filter((o) => o.unir)] };   // marcaje: "Marcar asistencia" 
 
   const pestana = (href, ic, texto, vista) => {
     const a = el('a', { class: 'bm-item', href }, icono(ic, { tam: 24 }), el('span', {}, texto));

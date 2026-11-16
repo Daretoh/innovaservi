@@ -6,14 +6,19 @@ export default {
   // Opción del menú (apartado) y, si se une con pantallas de otro módulo, a cuál
   apartados: { asistencia: { label: 'Asistencia', icono: 'reloj' } },
   categoria: 'RRHH',
+  // Teléfono: "Marcar asistencia" en el "+" (2026-11-16, Enzo). `unir`: también se suma a un "+" de una sola acción
+  // (Taller: Agendar vehículo), que pasa a abanico
+  movil: {
+    extra: [{ label: 'Marcar asistencia', icono: 'reloj', requiere: ['marcaje', 'crear'], ruta: 'marcaje.tablet', unir: true, abrir: () => { location.hash = '#/marcaje.tablet'; } }],
+  },
   depende: ['nucleo', 'personas', 'asistencia'],
   rubros: ['todos'],
   acciones: ['ver', 'crear'],
   menu: [
-    { id: 'marcaje.tablet', label: 'Marcar asistencia', pestana: 'Marcar en tablet', apartado: 'asistencia', vista: () => import('./vistas/tablet.js?v=528273b') },
-    { id: 'marcaje.terreno', label: 'Asistencia en terreno', pestana: 'En terreno', apartado: 'asistencia', icono: 'users', vista: () => import('./vistas/terreno.js?v=528273b') },
-    { id: 'marcaje.vueltas', label: 'Vueltas del chofer', pestana: 'Vueltas', apartado: 'asistencia', icono: 'camion', vista: () => import('./vistas/vueltas.js?v=528273b') },
-    { id: 'marcaje.mias', label: 'Mis horas', apartado: 'asistencia', vista: () => import('./vistas/mias.js?v=528273b') },
+    { id: 'marcaje.tablet', label: 'Marcar asistencia', pestana: 'Marcar en tablet', apartado: 'asistencia', vista: () => import('./vistas/tablet.js?v=47c2891') },
+    { id: 'marcaje.terreno', label: 'Asistencia en terreno', pestana: 'En terreno', apartado: 'asistencia', icono: 'users', vista: () => import('./vistas/terreno.js?v=47c2891') },
+    { id: 'marcaje.vueltas', label: 'Vueltas del chofer', pestana: 'Vueltas', apartado: 'asistencia', icono: 'camion', vista: () => import('./vistas/vueltas.js?v=47c2891') },
+    { id: 'marcaje.mias', label: 'Mis horas', apartado: 'asistencia', vista: () => import('./vistas/mias.js?v=47c2891') },
   ],
   config: {},
   migraciones: ['db/001_marcaje.sql', 'db/002_terreno.sql', 'db/003_vueltas.sql', 'db/004_motivo_salida.sql', 'db/005_solo_fijos.sql'],
