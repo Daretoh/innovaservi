@@ -2,11 +2,11 @@
 // anticipadas, ausencias, días sin marca (solo "según horario") y entradas sin salida, comparando el Registro de horas con
 // su turno de Remuneraciones → Condiciones. La base lo calcula (asis_puntualidad, permiso asistencia ver) y no entrega
 // montos. Tocar una fila muestra el detalle por día. Las horas extra están en Resumen del mes.
-import { el } from '../../../core/ui/dom.js?v=12b8bdd';
-import { icono } from '../../../core/ui/iconos.js?v=12b8bdd';
-import { boton } from '../../../core/ui/tabla.js?v=12b8bdd';
-import { avisar } from '../../../core/ui/aviso.js?v=12b8bdd';
-import { hoyISO, rangoMes, nombreMes, moverMes, fechaCorta, nombreDia, horas, hhmm } from '../../../core/ui/formato.js?v=12b8bdd';
+import { el } from '../../../core/ui/dom.js?v=528273b';
+import { icono } from '../../../core/ui/iconos.js?v=528273b';
+import { boton } from '../../../core/ui/tabla.js?v=528273b';
+import { avisar } from '../../../core/ui/aviso.js?v=528273b';
+import { hoyISO, rangoMes, nombreMes, moverMes, fechaCorta, nombreDia, horas, hhmm } from '../../../core/ui/formato.js?v=528273b';
 
 const estado = { mes: hoyISO().slice(0, 7), abierto: null };
 const ESTADOS = {
@@ -51,7 +51,7 @@ export default async function vista(ctx) {
       const abierto = estado.abierto === x.id;
       const fila = el('tr', { class: `fila-enlace${x.modo === 'fijo' ? ' fila-fijo' : ''}`, title: abierto ? 'Ocultar el detalle' : 'Ver el detalle por día', onclick: () => { estado.abierto = abierto ? null : x.id; pintar(); } },
         el('td', {}, icono(abierto ? 'abajo' : 'derecha', { tam: 14 }), ' ', el('strong', {}, x.nombre),
-          el('span', { class: 'texto-chico texto-suave' }, el('br'), `${x.modo === 'fijo' ? 'Fijo' : 'Por hora'} · turno ${x.turno}`)),
+          el('span', { class: 'texto-chico texto-suave' }, el('br'), `Fijo · turno ${x.turno}`)),
         el('td', { class: 'num' }, x.atrasos ? el('span', { class: 'chip chip-venc' }, `${x.atrasos} · ${min(x.minAtraso)}`) : '—'),
         el('td', { class: 'num' }, x.anticipadas ? el('span', { class: 'chip chip-prox' }, `${x.anticipadas} · ${min(x.minAnticipada)}`) : '—'),
         el('td', { class: 'num' }, x.ausentes ? el('span', { class: 'chip chip-venc' }, String(x.ausentes), x.justificadas ? ` (${x.justificadas} con motivo)` : '') : '—'),
@@ -73,13 +73,13 @@ export default async function vista(ctx) {
               d.nota ? el('span', { class: 'texto-chico texto-suave' }, ` ${d.nota}`) : null)))))));
       return [fila, det];
     }) : [el('tr', {}, el('td', { colspan: COLS, class: 'tabla-vacia' }, icono('reloj', { tam: 28 }),
-      'Nadie con turno en el mes. El turno de cada trabajador se pone en Remuneraciones → Condiciones.'))]));
+      'Ningún fijo con turno en el mes. El turno de cada fijo se pone en Remuneraciones → Condiciones.'))]));
   };
   buscador.addEventListener('input', pintar);
   pintar();
 
   const exportar = async () => {
-    const { exportarExcel } = await import('../../../core/excel.js?v=12b8bdd');
+    const { exportarExcel } = await import('../../../core/excel.js?v=528273b');
     await exportarExcel(ctx, {
       titulo: 'Atrasos y ausencias', subtitulo: nombreMes(estado.mes), nombre: `atrasos-${estado.mes}`,
       columnas: ['Trabajador', 'Fecha', 'Turno', 'Entrada', 'Salida', { t: 'Atraso', tipo: 'horas' }, { t: 'Salió antes', tipo: 'horas' }, 'Estado', 'Nota'],
@@ -113,5 +113,5 @@ export default async function vista(ctx) {
     el('p', { class: 'texto-suave texto-chico' },
       'Se compara la primera entrada y la última salida de cada día hábil del Registro de horas con el turno de Remuneraciones → Condiciones (el viernes, con su hora de salida). ',
       'Cuenta solo lo que pasa la tolerancia (Administración → Módulos → Asistencia). "Sin marca": el día quedó según horario porque no marcó. ',
-      'Una ausencia marcada con motivo muestra el motivo. Los trabajadores por hora solo se revisan los días que trabajaron.'));
+      'Una ausencia marcada con motivo muestra el motivo. Solo fijos con turno: los trabajadores por hora no tienen horario.'));
 }

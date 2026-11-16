@@ -5,13 +5,13 @@
 // En producción la factura queda registrada en Facturas con el PDF del SII como respaldo y la OC como referencia.
 // En pruebas se emite en el ambiente de desarrollo de Haulmer y solo se muestra el PDF de prueba.
 // Anular: nota de crédito (anularConNota), que quita la factura de Facturas (la cotización queda libre).
-import { el } from '../../core/ui/dom.js?v=12b8bdd';
-import { abrirFormulario } from '../../core/ui/modal.js?v=12b8bdd';
-import { avisar } from '../../core/ui/aviso.js?v=12b8bdd';
-import { hoyISO, sumarDias, dinero } from '../../core/ui/formato.js?v=12b8bdd';
-import { llamarDte, nuevaLlave, estadoDte, ofrecerPdf } from '../../core/dte.js?v=12b8bdd';
-import { totales, totalLinea, numeroTexto, verPatente, nombreTercero, IVA } from './datos.js?v=12b8bdd';
-import { PLAZO_PAGO } from './facturas.js?v=12b8bdd';
+import { el } from '../../core/ui/dom.js?v=528273b';
+import { abrirFormulario } from '../../core/ui/modal.js?v=528273b';
+import { avisar } from '../../core/ui/aviso.js?v=528273b';
+import { hoyISO, sumarDias, dinero } from '../../core/ui/formato.js?v=528273b';
+import { llamarDte, nuevaLlave, estadoDte, ofrecerPdf } from '../../core/dte.js?v=528273b';
+import { totales, totalLinea, numeroTexto, verPatente, nombreTercero, IVA } from './datos.js?v=528273b';
+import { PLAZO_PAGO } from './facturas.js?v=528273b';
 
 const detalleCot = (c) => c.cot_grupos.map((g) => [g.titulo, verPatente(g.patente)].filter(Boolean).join(' · ')).join(', ');
 const miles = (n) => Math.round(n).toLocaleString('es-CL');
