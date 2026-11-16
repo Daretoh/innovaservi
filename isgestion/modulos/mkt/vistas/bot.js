@@ -1,12 +1,12 @@
 // Marketing → Bot: lo que sabe el bot de clientes (fichas), cómo habla (configuración) y un simulador para probarlo
 // antes de conectarlo a WhatsApp, Messenger e Instagram. Ignacio lo entrena y lo publica (decisión de Enzo, 2026-11-10).
 // El simulador llama a la Edge Function mkt-bot, que usa Claude solo con las fichas activas de esta empresa.
-import { el } from '../../../core/ui/dom.js?v=09fc2dc';
-import { icono } from '../../../core/ui/iconos.js?v=09fc2dc';
-import { boton } from '../../../core/ui/tabla.js?v=09fc2dc';
-import { avisar } from '../../../core/ui/aviso.js?v=09fc2dc';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=09fc2dc';
-import { cargarCss } from '../datos.js?v=09fc2dc';
+import { el } from '../../../core/ui/dom.js?v=c2000db';
+import { icono } from '../../../core/ui/iconos.js?v=c2000db';
+import { boton } from '../../../core/ui/tabla.js?v=c2000db';
+import { avisar } from '../../../core/ui/aviso.js?v=c2000db';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=c2000db';
+import { cargarCss } from '../datos.js?v=c2000db';
 
 export const CATEGORIAS_BOT = [
   ['servicios', 'Servicios'], ['precios', 'Precios publicados'], ['horarios', 'Horarios'], ['ubicacion', 'Ubicación y contacto'],

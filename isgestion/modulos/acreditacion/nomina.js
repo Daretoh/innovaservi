@@ -2,11 +2,11 @@
 // quienes tuvieron horas en ese cliente en el mes (acr_nomina_mes) y se pueden agregar o quitar. El PDF lleva el
 // membrete de la empresa, los datos de la nómina, la tabla (N°, nombre, RUT, cargo, ingreso) y la firma del
 // representante (si la empresa la tiene en Prevención SST). Se guarda como el archivo del mes del requisito.
-import { abrirFormulario } from '../../core/ui/modal.js?v=09fc2dc';
-import { avisar } from '../../core/ui/aviso.js?v=09fc2dc';
-import { fechaLarga, hoyISO, nombreMes } from '../../core/ui/formato.js?v=09fc2dc';
-import { subirArchivo, eliminarArchivo } from '../../core/adjuntos.js?v=09fc2dc';
-import { nombreTercero } from './datos.js?v=09fc2dc';
+import { abrirFormulario } from '../../core/ui/modal.js?v=c2000db';
+import { avisar } from '../../core/ui/aviso.js?v=c2000db';
+import { fechaLarga, hoyISO, nombreMes } from '../../core/ui/formato.js?v=c2000db';
+import { subirArchivo, eliminarArchivo } from '../../core/adjuntos.js?v=c2000db';
+import { nombreTercero } from './datos.js?v=c2000db';
 
 export const esNomina = (r) => /n[oó]mina/i.test(r.nombre);
 
@@ -48,7 +48,7 @@ export async function generarNomina(ctx, c, r, periodo, x) {
 }
 
 async function pdfNomina(ctx, mandante, periodo, lista) {
-  const { nuevoPdf, cargarLogo } = await import('../../core/pdf.js?v=09fc2dc');
+  const { nuevoPdf, cargarLogo } = await import('../../core/pdf.js?v=c2000db');
   const e = ctx.empresa;
   const pdf = await nuevoPdf(ctx, { titulo: 'Nómina de trabajadores', subtitulo: `${mandante} · ${nombreMes(periodo)}` });
   pdf.tabla({ columnas: ['Dato', 'Detalle'], filas: [

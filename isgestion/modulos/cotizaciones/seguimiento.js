@@ -2,15 +2,15 @@
 // archivo. Pensado para Guillermo Morales (una cotización por vehículo, una OC por cotización), sirve para cualquiera.
 // Al registrar la OC la cotización queda aceptada. La factura y el cobro van en el registro de facturas (007, facturas.js),
 // que los copia en la cotización; al cobrar, las órdenes del taller ligadas quedan cobradas.
-import { el } from '../../core/ui/dom.js?v=09fc2dc';
-import { icono } from '../../core/ui/iconos.js?v=09fc2dc';
-import { boton } from '../../core/ui/tabla.js?v=09fc2dc';
-import { abrirFormulario } from '../../core/ui/modal.js?v=09fc2dc';
-import { avisar } from '../../core/ui/aviso.js?v=09fc2dc';
-import { dinero, fechaLarga, hoyISO } from '../../core/ui/formato.js?v=09fc2dc';
-import { subirArchivo, urlFirmada } from '../../core/adjuntos.js?v=09fc2dc';
-import { formFactura, formPago, anularPago, eliminarFactura } from './facturas.js?v=09fc2dc';
-import { formEmitir } from './emitir.js?v=09fc2dc';
+import { el } from '../../core/ui/dom.js?v=c2000db';
+import { icono } from '../../core/ui/iconos.js?v=c2000db';
+import { boton } from '../../core/ui/tabla.js?v=c2000db';
+import { abrirFormulario } from '../../core/ui/modal.js?v=c2000db';
+import { avisar } from '../../core/ui/aviso.js?v=c2000db';
+import { dinero, fechaLarga, hoyISO } from '../../core/ui/formato.js?v=c2000db';
+import { subirArchivo, urlFirmada } from '../../core/adjuntos.js?v=c2000db';
+import { formFactura, formPago, anularPago, eliminarFactura } from './facturas.js?v=c2000db';
+import { formEmitir } from './emitir.js?v=c2000db';
 
 export const MEDIOS = [['transferencia', 'Transferencia'], ['efectivo', 'Efectivo'], ['cheque', 'Cheque'], ['debito', 'Débito'], ['credito', 'Crédito'], ['otro', 'Otro']];
 const nombreMedio = Object.fromEntries(MEDIOS);

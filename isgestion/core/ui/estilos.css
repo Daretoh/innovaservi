@@ -806,6 +806,13 @@ a.ger-alerta:hover { background: var(--fondo); }
 .inicio-marcar strong { font-size: 1.35rem; }
 .inicio-marcar-icono { display: grid; place-items: center; width: 52px; height: 52px; border-radius: 50%; background: color-mix(in srgb, var(--sobre-empresa) 18%, transparent); }
 .inicio-marcar:hover { filter: brightness(1.05); }
+/* Trabajando hoy (quien ve la asistencia) */
+.inicio-trabajando { display: flex; align-items: center; gap: 14px; text-decoration: none; color: var(--texto); max-width: none; }
+.inicio-trabajando:hover { background: var(--hover); }
+.inicio-trabajando-icono { display: grid; place-items: center; flex: none; width: 44px; height: 44px; border-radius: 50%; background: var(--ok-fondo, var(--fondo-sutil)); color: var(--ok); }
+.inicio-trabajando-texto { display: grid; gap: 4px; flex: 1; min-width: 0; }
+.inicio-trabajando-num { font-size: 1.6rem; color: var(--ok); }
+.inicio-trabajando .chips-fila { display: flex; flex-wrap: wrap; gap: 6px; }
 .inicio-fecha { margin: 0; font-size: .85rem; text-transform: none; }
 .inicio-cabecera p { margin: 0; }
 .inicio-atencion { max-width: none; }

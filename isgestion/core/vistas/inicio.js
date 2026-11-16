@@ -1,9 +1,9 @@
 // Inicio: saludo con la fecha, lo que requiere atención (alertas de los módulos que el usuario puede ver)
 // indicadores de los módulos (core/vistas/indicadores.js) y accesos a los módulos agrupados por área. Las alertas llegan después, sin bloquear la pantalla.
-import { el } from '../ui/dom.js?v=09fc2dc';
-import { icono } from '../ui/iconos.js?v=09fc2dc';
-import { nombreEmpresa } from '../empresas.js?v=09fc2dc';
-import { esTelefono, marcaGuardada, recordarMarca } from '../movil.js?v=09fc2dc';
+import { el } from '../ui/dom.js?v=c2000db';
+import { icono } from '../ui/iconos.js?v=c2000db';
+import { nombreEmpresa } from '../empresas.js?v=c2000db';
+import { esTelefono, marcaGuardada, recordarMarca } from '../movil.js?v=c2000db';
 
 const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
@@ -73,7 +73,7 @@ function cabeceraMovil(ctx, { fecha, titulo, abrirNotificaciones, conTaller }) {
 function atencionTaller(ctx) {
   const nodo = el('section', { class: 'im-atencion', hidden: true });
   (async () => {
-    const [{ SELECT_ORDEN, minutosTrabajo }, m] = await Promise.all([import('../../modulos/taller/datos.js?v=09fc2dc'), import('../../modulos/taller/movil.js?v=09fc2dc')]);
+    const [{ SELECT_ORDEN, minutosTrabajo }, m] = await Promise.all([import('../../modulos/taller/datos.js?v=c2000db'), import('../../modulos/taller/movil.js?v=c2000db')]);
     const { data, error } = await ctx.api.from('tal_ordenes').select(SELECT_ORDEN).eq('empresa_id', ctx.empresa.id).in('estado', ['agendado', 'espera', 'proceso', 'terminado']);
     if (error) throw error;
     // Primero por tipo de motivo; dentro de cada uno, el que lleva más tiempo
@@ -101,6 +101,38 @@ function botonMarcar(ctx, visibles) {
     icono('derecha', { tam: 22 }));
 }
 
+// Trabajando hoy (2026-11-16, Enzo): para quien ve la asistencia, cuántos marcaron su entrada hoy en la tablet (o en
+// terreno) y siguen dentro, cuántos ya salieron y quiénes. Se llena después, sin frenar el Inicio.
+function trabajandoHoy(ctx, visibles) {
+  if (!visibles.some((m) => m.id === 'marcaje') || !ctx.puede('asistencia', 'ver')) return null;
+  const caja = el('a', { class: 'ficha inicio-trabajando', href: '#/asistencia.horas', 'aria-busy': 'true' },
+    el('span', { class: 'inicio-trabajando-icono' }, icono('users', { tam: 22 })),
+    el('span', { class: 'texto-suave' }, 'Trabajando hoy…'));
+  const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+  Promise.all([
+    ctx.api.from('asis_marcas').select('persona_id, tipo, ts').eq('empresa_id', ctx.empresa.id).is('anulada_at', null).gte('ts', hoy.toISOString()).order('ts'),
+    ctx.api.rpc('asis_personas', { p_empresa: ctx.empresa.id }),
+  ]).then(([m, p]) => {
+    if (m.error) throw m.error;
+    const nombres = new Map((p.data ?? []).map((x) => [x.persona_id, [x.nombres?.split(' ')[0], x.apellido_paterno].filter(Boolean).join(' ')]));
+    const ultima = new Map();
+    for (const x of m.data ?? []) ultima.set(x.persona_id, x);   // ordenadas por hora: queda la última de cada persona
+    const dentro = [...ultima.values()].filter((x) => x.tipo === 'entrada');
+    const salieron = ultima.size - dentro.length;
+    const hora = (ts) => new Date(ts).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+    caja.removeAttribute('aria-busy');
+    caja.replaceChildren(
+      el('span', { class: 'inicio-trabajando-icono' }, icono('users', { tam: 22 })),
+      el('span', { class: 'inicio-trabajando-texto' },
+        el('span', {}, el('strong', { class: 'inicio-trabajando-num' }, String(dentro.length)), ` ${dentro.length === 1 ? 'persona trabajando' : 'personas trabajando'} ahora`),
+        el('span', { class: 'texto-suave texto-chico' }, ultima.size ? `${ultima.size} marcaron hoy${salieron ? ` · ${salieron} ya ${salieron === 1 ? 'salió' : 'salieron'}` : ''}` : 'Nadie ha marcado hoy'),
+        dentro.length ? el('span', { class: 'chips-fila' }, dentro.sort((a, b) => (nombres.get(a.persona_id) ?? '').localeCompare(nombres.get(b.persona_id) ?? ''))
+          .map((x) => el('span', { class: 'chip chip-ok' }, `${nombres.get(x.persona_id) ?? 'Persona'} · ${hora(x.ts)}`))) : null),
+      icono('derecha', { tam: 18 }));
+  }).catch(() => caja.remove());
+  return caja;
+}
+
 export default function inicio(ctx, visibles, { abrirNotificaciones } = {}) {
   const hoy = new Date();
   const fecha = `${DIAS[hoy.getDay()]} ${hoy.getDate()} de ${MESES[hoy.getMonth()]}`;
@@ -120,12 +152,12 @@ export default function inicio(ctx, visibles, { abrirNotificaciones } = {}) {
   // Indicadores (tarjetas y paneles): llegan después, sin bloquear la pantalla
   const indicadores = el('div', { class: 'cargando-bloque', 'aria-busy': 'true', 'aria-label': 'Cargando indicadores' }, el('span', { class: 'cargador', 'aria-hidden': 'true' }));
   if (visibles.length && !tablet) {
-    import('./indicadores.js?v=09fc2dc')
+    import('./indicadores.js?v=c2000db')
       .then(async ({ cargarIndicadores, panelIndicadores }) => { const p = panelIndicadores(ctx, await cargarIndicadores(ctx)); if (p) indicadores.replaceWith(p); else indicadores.remove(); })
       .catch(() => indicadores.remove());
   } else indicadores.remove();
   if (visibles.length && !tablet) {
-    import('../../modulos/gerencia/alertas.js?v=09fc2dc')
+    import('../../modulos/gerencia/alertas.js?v=c2000db')
       .then(({ cargarAlertas }) => cargarAlertas(ctx))
       .then((alertas) => {
         atencion.replaceChildren(el('h2', {}, alertas.length ? `Requiere atención (${alertas.length})` : 'Requiere atención'),
@@ -150,6 +182,7 @@ export default function inicio(ctx, visibles, { abrirNotificaciones } = {}) {
         titulo,
         el('p', { class: 'texto-suave' }, nombreEmpresa(ctx.empresa))),
     botonMarcar(ctx, visibles),
+    trabajandoHoy(ctx, visibles),
     conTaller ? (telefono ? atencionTaller(ctx) : resumenTaller(ctx)) : null,
     visibles.length && !tablet ? indicadores : null,
     !visibles.length ? el('p', { class: 'aviso-bandeja' }, icono('alerta', { tam: 16 }), 'Tu rol no tiene módulos habilitados en esta empresa. Pide acceso al administrador.') : !tablet ? atencion : null,
