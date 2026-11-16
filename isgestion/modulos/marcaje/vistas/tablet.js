@@ -1,8 +1,8 @@
 // Marcaje en tablet: la persona escribe los 4 últimos dígitos de su RUT (sin dígito verificador),
 // confirma su nombre y marca entrada o salida. La hora la pone el servidor.
 // Modo tablet: oculta el menú; para salir, mantener presionado el reloj 2 segundos.
-import { el } from '../../../core/ui/dom.js?v=47c2891';
-import { icono } from '../../../core/ui/iconos.js?v=47c2891';
+import { el } from '../../../core/ui/dom.js?v=6128df5';
+import { icono } from '../../../core/ui/iconos.js?v=6128df5';
 
 const MODO = 'modo-tablet';
 
@@ -59,12 +59,14 @@ export default async function vista(ctx) {
 
   const buscar = async () => {
     ocupado = true;
-    const { data, error } = await ctx.api.rpc('mar_buscar', { p_empresa: e, p_clave: clave });
+    // Busca en todas las empresas donde la tablet puede marcar (Marcaje 006): la persona marca en la suya
+    const { data, error } = await ctx.api.rpc('mar_buscar_grupo', { p_empresa: e, p_clave: clave });
     if (error) { reiniciar(error.message); return; }
     if (!data.length) { reiniciar('No encontramos ese RUT. Inténtalo de nuevo.'); return; }
     if (data.length === 1) { elegir(data[0]); return; }
     paso.replaceChildren(el('p', { class: 'tab-instruccion' }, '¿Quién eres?'),
-      el('div', { class: 'tab-opciones' }, data.map((p) => el('button', { type: 'button', class: 'tab-persona', onclick: () => elegir(p) }, p.nombre))),
+      el('div', { class: 'tab-opciones' }, data.map((p) => el('button', { type: 'button', class: 'tab-persona', onclick: () => elegir(p) }, p.nombre,
+        new Set(data.map((x) => x.empresa_id)).size > 1 ? el('span', { class: 'tab-empresa-marca' }, p.empresa) : null))),
       el('button', { type: 'button', class: 'tab-cancelar', onclick: () => reiniciar() }, 'Cancelar'));
     timer = setTimeout(() => reiniciar(), 20000);
   };
@@ -78,6 +80,7 @@ export default async function vista(ctx) {
       icono(tipo === 'entrada' ? 'derecha' : 'salir', { tam: 28 }), texto);
     paso.replaceChildren(
       el('p', { class: 'tab-nombre' }, `Hola, ${p.nombre}`),
+      p.empresa_id && p.empresa_id !== e ? el('p', { class: 'tab-empresa-marca' }, icono('building', { tam: 16 }), ` Marca en ${p.empresa}`) : null,
       el('p', { class: 'tab-instruccion' }, p.dentro ? `Estás dentro desde ${hora}` : 'Marca tu entrada o tu salida'),
       el('div', { class: 'tab-botones' }, boton('entrada', 'Entrada'), boton('salida', 'Salida')),
       el('button', { type: 'button', class: 'tab-cancelar', onclick: () => reiniciar() }, 'No soy yo'));
@@ -87,8 +90,10 @@ export default async function vista(ctx) {
   const marcar = async (p, tipo, b) => {
     clearTimeout(timer);
     paso.querySelectorAll('button').forEach((x) => { x.disabled = true; });
-    const { data, error } = await ctx.api.rpc('mar_marcar', { p_empresa: e, p_persona: p.persona_id, p_tipo: tipo });
+    const emp = p.empresa_id ?? e;
+    const { data, error } = await ctx.api.rpc('mar_marcar', { p_empresa: emp, p_persona: p.persona_id, p_tipo: tipo });
     if (error) { reiniciar(error.message); return; }
+    data.empresa = emp;
     const h = new Date(data.ts).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
     const min = data.minutos_hoy;
     const hm = (t) => new Date(t).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
@@ -98,6 +103,7 @@ export default async function vista(ctx) {
       icono('check', { tam: 56 }),
       el('p', { class: 'tab-nombre' }, data.nombre),
       el('p', { class: 'tab-hora' }, `${tipo === 'entrada' ? 'Entrada' : 'Salida'} ${h}`),
+      emp !== e ? el('p', { class: 'tab-empresa-marca' }, icono('building', { tam: 16 }), ` Marcado en ${p.empresa}`) : null,
       // Salida: horas trabajadas bien visibles (2026-11-16, Enzo)
       tipo === 'salida' && min ? el('div', { class: 'tab-trabajado' },
         desde ? el('span', { class: 'texto-suave' }, `Entrada ${desde} → Salida ${h}`) : null,
@@ -120,7 +126,7 @@ export default async function vista(ctx) {
       clearTimeout(timer);
       paso.querySelectorAll('button').forEach((x) => { x.disabled = true; });
       b.classList.add('sugerido');
-      const { error } = await ctx.api.rpc('mar_motivo_salida', { p_empresa: e, p_marca: data.id, p_motivo: motivo });
+      const { error } = await ctx.api.rpc('mar_motivo_salida', { p_empresa: data.empresa ?? e, p_marca: data.id, p_motivo: motivo });
       if (error) { reiniciar(error.message); return; }
       paso.replaceChildren(el('div', { class: 'tab-listo salida' }, icono('check', { tam: 56 }), el('p', { class: 'tab-nombre' }, data.nombre), el('p', { class: 'tab-instruccion' }, `Motivo registrado: ${motivo}`)));
       timer = setTimeout(() => reiniciar(), 3000);

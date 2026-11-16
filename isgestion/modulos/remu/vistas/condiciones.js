@@ -1,11 +1,11 @@
 // Condiciones de pago de cada trabajador en la empresa: modo, cargo/trato, jornada o turno, sueldo y vuelta.
-import { el } from '../../../core/ui/dom.js?v=47c2891';
-import { icono } from '../../../core/ui/iconos.js?v=47c2891';
-import { listado } from '../../../core/ui/tabla.js?v=47c2891';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=47c2891';
-import { avisar } from '../../../core/ui/aviso.js?v=47c2891';
-import { dinero, hhmm, fechaLarga } from '../../../core/ui/formato.js?v=47c2891';
-import { cargarBase, nombreCompleto } from '../datos.js?v=47c2891';
+import { el } from '../../../core/ui/dom.js?v=6128df5';
+import { icono } from '../../../core/ui/iconos.js?v=6128df5';
+import { listado } from '../../../core/ui/tabla.js?v=6128df5';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=6128df5';
+import { avisar } from '../../../core/ui/aviso.js?v=6128df5';
+import { dinero, hhmm, fechaLarga } from '../../../core/ui/formato.js?v=6128df5';
+import { cargarBase, nombreCompleto } from '../datos.js?v=6128df5';
 
 export default async function vista(ctx) {
   const base = await cargarBase(ctx);
@@ -32,7 +32,7 @@ export default async function vista(ctx) {
   }
   const lista = listado({ titulo: 'Condiciones de pago', filas: activos, columnas, vacio: 'No hay trabajadores activos.' });
   lista.append(el('p', { class: 'texto-suave texto-chico' },
-    'Por hora: se pagan todas las horas. Fijo: solo lo que queda fuera del turno o sobre la jornada; fines de semana y feriados completos. Un fijo sin jornada ni turno cobra todas sus horas como trato. Un fijo con turno queda presente según su horario cada día hábil (Asistencia): solo se corrigen retrasos, ausencias y horas extra. Artículo 22: sin jornada, sin asistencia ni horas extra.'));
+    'Por hora: se pagan todas las horas. Fijo: solo lo que queda fuera del turno o sobre la jornada; fines de semana y feriados completos. Un fijo sin jornada ni turno cobra todas sus horas como trato. Un fijo con turno queda presente según su horario cada día hábil solo si la opción "asistencia automática de fijos" de Asistencia está activa; si no, marca en la tablet como todos. Artículo 22: sin jornada, sin asistencia ni horas extra.'));
   return lista;
 }
 
@@ -51,7 +51,7 @@ function editar(ctx, v, base) {
       { id: 'salida_viernes', etiqueta: 'Turno: salida del viernes (si es distinta)', tipo: 'time', valor: c.salida_viernes ? hhmm(c.salida_viernes) : '' },
       { id: 'jornada_horas', etiqueta: 'O jornada en horas por día', tipo: 'number', valor: c.jornada_horas != null ? String(c.jornada_horas) : '' },
       { id: 'art22', etiqueta: 'Artículo 22 (sin jornada)', opciones: [['no', 'No'], ['si', 'Sí: sin asistencia ni horas extra, solo su sueldo']], valor: c.art22 ? 'si' : 'no' },
-      { id: 'asistencia_desde', etiqueta: 'Asistencia automática según turno desde (vacío = desde hoy)', tipo: 'date', valor: c.asistencia_desde ?? '', ayuda: 'Cada día hábil queda presente según su turno; en Asistencia se corrigen retrasos, ausencias y horas extra.' },
+      { id: 'asistencia_desde', etiqueta: 'Asistencia automática según turno desde (vacío = desde hoy)', tipo: 'date', valor: c.asistencia_desde ?? '', ayuda: 'Solo con la asistencia automática de fijos activa (Administración → Módulos → Asistencia). Si no, marca en la tablet.' },
       { id: 'fijo_desde', etiqueta: 'Fijo desde (antes se paga por hora; vacío = siempre)', tipo: 'date', valor: c.fijo_desde ?? '' },
       { id: 'sueldo_base', etiqueta: 'Sueldo base mensual', tipo: 'number', valor: c.sueldo_base != null ? String(c.sueldo_base) : '' },
       { id: 'sueldo_desde', etiqueta: 'Sueldo rige desde', tipo: 'date', valor: c.sueldo_desde ?? '' },

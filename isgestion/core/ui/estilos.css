@@ -753,6 +753,9 @@ body.modo-tablet .contenido { padding: 16px; }
 .tab-listo.salida { color: var(--empresa); }
 /* Atraso al marcar la entrada (Asistencia 009): solo lo ve quien marca */
 .tab-atraso { display: inline-flex; align-items: center; gap: 6px; margin: 6px 0 0; padding: 6px 12px; border-radius: 999px; background: var(--prox-fondo); color: var(--prox); font-weight: 600; }
+/* Persona de otra empresa del grupo (Marcaje 006) */
+.tab-empresa-marca { display: inline-flex; align-items: center; gap: 6px; margin: 2px 0; padding: 4px 12px; border-radius: 999px; background: var(--fondo-sutil); color: var(--texto-suave); font-size: .95rem; font-weight: 600; }
+.tab-persona .tab-empresa-marca { margin-left: 8px; font-size: .8rem; }
 .tab-motivos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; width: 100%; margin-top: 6px; }
 .tab-motivos .tab-persona { padding: 14px; font-size: 1.05rem; }
 .tab-motivos .tab-persona.sugerido { border-color: var(--empresa); color: var(--empresa); }
