@@ -1,11 +1,11 @@
 // Indicadores del mes: contactos nuevos, clientes ganados, conversión, sin atender, por origen, por campaña y resultados
 // de las publicaciones. Excel con el membrete de la empresa.
-import { el } from '../../../core/ui/dom.js?v=0d7c846';
-import { icono } from '../../../core/ui/iconos.js?v=0d7c846';
-import { boton } from '../../../core/ui/tabla.js?v=0d7c846';
-import { dinero, hoyISO, rangoMes, moverMes, nombreMes } from '../../../core/ui/formato.js?v=0d7c846';
-import { nuevoExcel } from '../../../core/excel.js?v=0d7c846';
-import { cargarBase, cargarCss, nombreOrigen, diasDesde, DIAS_SIN_ATENDER } from '../datos.js?v=0d7c846';
+import { el } from '../../../core/ui/dom.js?v=fab7b11';
+import { icono } from '../../../core/ui/iconos.js?v=fab7b11';
+import { boton } from '../../../core/ui/tabla.js?v=fab7b11';
+import { dinero, hoyISO, rangoMes, moverMes, nombreMes } from '../../../core/ui/formato.js?v=fab7b11';
+import { nuevoExcel } from '../../../core/excel.js?v=fab7b11';
+import { cargarBase, cargarCss, nombreOrigen, diasDesde, DIAS_SIN_ATENDER } from '../datos.js?v=fab7b11';
 
 const estado = { mes: hoyISO().slice(0, 7) };
 

@@ -1,8 +1,8 @@
 // Trabajadores asignados a faenas de los próximos 14 días (Planificación) con documentos vencidos o pendientes
 // (como la alerta de InnovaGestión). Lo usan la vista rrhh.proximas y las alertas del Panel de gerencia.
 // Requiere ver RRHH y Faenas; si no, devuelve null.
-import { hoyISO, sumarDias } from '../../core/ui/formato.js?v=0d7c846';
-import { cargarRrhh, estadoDoc, nombreCompleto } from './datos.js?v=0d7c846';
+import { hoyISO, sumarDias } from '../../core/ui/formato.js?v=fab7b11';
+import { cargarRrhh, estadoDoc, nombreCompleto } from './datos.js?v=fab7b11';
 
 export const DIAS_PROXIMAS = 14;
 

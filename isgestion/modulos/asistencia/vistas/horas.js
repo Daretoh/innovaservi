@@ -6,14 +6,14 @@
 // Fijos con turno (2026-10-30): cada día hábil quedan presentes "según horario" solos (asis_generar_fijos); aquí solo se
 // corrigen las excepciones: retraso o salida temprana (cambiar la hora), horas extra (cambiar la salida o agregar otra
 // fila) y ausencias (botón Ausente: el día deja de contar y no se vuelve a crear).
-import { el } from '../../../core/ui/dom.js?v=0d7c846';
-import { icono } from '../../../core/ui/iconos.js?v=0d7c846';
-import { boton } from '../../../core/ui/tabla.js?v=0d7c846';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=0d7c846';
-import { arrastrarHorario } from './arrastre.js?v=0d7c846';
-import { avisar } from '../../../core/ui/aviso.js?v=0d7c846';
-import { esTelefono } from '../../../core/movil.js?v=0d7c846';
-import { hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, horas, aMin, hhmm, diaLocal } from '../../../core/ui/formato.js?v=0d7c846';
+import { el } from '../../../core/ui/dom.js?v=fab7b11';
+import { icono } from '../../../core/ui/iconos.js?v=fab7b11';
+import { boton } from '../../../core/ui/tabla.js?v=fab7b11';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=fab7b11';
+import { arrastrarHorario } from './arrastre.js?v=fab7b11';
+import { avisar } from '../../../core/ui/aviso.js?v=fab7b11';
+import { esTelefono } from '../../../core/movil.js?v=fab7b11';
+import { hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, horas, aMin, hhmm, diaLocal } from '../../../core/ui/formato.js?v=fab7b11';
 
 const DIAS_LARGOS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 export const estado = { lunes: lunesDe(hoyISO()), dia: hoyISO(), nuevas: [], abiertas: new Set(), diasAbiertos: new Set(), filtro: '', borradorLeido: new Set() };   // abiertas: faenas desplegadas (día|faena)   // nuevas: filas en blanco aún sin guardar
@@ -33,7 +33,7 @@ export function minutosRegistro(h) {
 const clave = (s) => String(s ?? '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[·—-]+/g, ' ').replace(/\s+/g, ' ');
 
 export default async function vista(ctx) {
-  if (esTelefono()) return (await import('./horas-movil.js?v=0d7c846')).default(ctx);   // en el teléfono, lista de personas en vez de planilla
+  if (esTelefono()) return (await import('./horas-movil.js?v=fab7b11')).default(ctx);   // en el teléfono, lista de personas en vez de planilla
   const desde = estado.lunes;
   const hasta = sumarDias(desde, 6);
   const hoy = hoyISO();
@@ -198,7 +198,16 @@ export default async function vista(ctx) {
     const entrada = el('input', { type: 'time', class: 'campo hz-hora', value: nueva ? nueva.entrada ?? '' : hhmm(r.entrada), disabled: !editable, 'aria-label': 'Entrada', ...hz('entrada') });
     const salida = el('input', { type: 'time', class: 'campo hz-hora', value: nueva ? nueva.salida ?? '' : hhmm(r.salida), disabled: !editable, 'aria-label': 'Salida', ...hz('salida') });
     const vueltas = el('input', { type: 'number', min: '0', class: 'campo hz-vueltas', value: nueva ? String(nueva.vueltas ?? 0) : String(r.vueltas || 0), disabled: !editable, 'aria-label': 'Vueltas', title: 'Vueltas (choferes)', ...hz('vueltas') });
-    const total = el('span', { class: 'hz-total texto-chico' }, nueva ? '' : !r.entrada ? 'Sin horario' : !r.salida ? 'Sin salida' : `${horas(minutosRegistro(r))}${aMin(r.salida) <= aMin(r.entrada) ? ' (+1 día)' : ''}`);
+    // Total con su turno Día / Noche, como InnovaGestión (2026-11-16): noche si entra desde las 18:00, antes de las 06:00
+    // o si sale al día siguiente
+    const total = el('span', { class: 'hz-total' });
+    const pintarTotal = (ent, sal) => {
+      if (!ent) { total.replaceChildren(el('span', { class: 'turno-tag turno-falta' }, 'Falta horario')); return; }
+      if (!sal) { total.replaceChildren(el('span', { class: 'turno-tag turno-falta' }, 'Sin salida')); return; }
+      const noche = aMin(ent) >= 18 * 60 || aMin(ent) < 6 * 60 || aMin(sal) <= aMin(ent);
+      total.replaceChildren(horas(minutosRegistro({ entrada: ent, salida: sal })), el('span', { class: `turno-tag turno-${noche ? 'noche' : 'dia'}` }, noche ? 'Noche' : 'Día'));
+    };
+    if (!nueva) pintarTotal(hhmm(r.entrada), hhmm(r.salida));
     const incompleta = nueva && !!nueva.persona;   // escribió un nombre que no calza con nadie: aún no se guarda
     const tr = el('tr', { class: `${pisan.has(r?.id) ? 'hz-pisa' : ''}${nueva ? ' hz-nueva' : ''}`, 'data-k': llave },
       el('td', {}, persona, incompleta ? el('span', { class: 'chip chip-pend', title: 'Se guarda apenas eliges al trabajador de la lista' }, 'Sin guardar: elige al trabajador') : null, segunHorario ? el('span', { class: 'chip chip-ok', title: 'Se creó solo según su turno. Si llegó tarde o hizo horas extra, cambia la hora; si faltó, márcalo ausente.' }, (r.notas ?? '').startsWith('Corregido') ? 'horario corregido' : 'según horario') : null, desdeMarcaje ? el('span', { class: 'chip chip-pend', title: 'Del marcaje: se cambia con Corregir (guarda la hora original y el motivo)' }, (r.notas ?? '').includes('terreno') ? 'terreno' : 'tablet') : null,
@@ -213,7 +222,7 @@ export default async function vista(ctx) {
     const anotar = () => { Object.assign(nueva, { persona: persona.value, faena: faena.value, entrada: entrada.value, salida: salida.value, vueltas: Number(vueltas.value) || 0 }); };
     filasPorLlave.set(llave, { r, nueva, tr, campos });
     const alCambiar = () => {
-      if (entrada.value && salida.value) total.textContent = horas(minutosRegistro({ entrada: entrada.value, salida: salida.value }));
+      if (entrada.value || salida.value) pintarTotal(entrada.value, salida.value);
       if (nueva) { anotar(); guardarNueva(nueva, campos); }
       else { if (segunHorario && !(r.notas ?? '').startsWith('Corregido')) { r.notas = 'Corregido (retraso u horas extra)'; ctx.api.from('asis_horas').update({ notas: r.notas }).eq('id', r.id).then(() => {}); } guardarFila(r, campos, tr); }
     };

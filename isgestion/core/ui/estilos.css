@@ -2782,3 +2782,39 @@ html[data-modo="oscuro"] { --sec-costos: #f0916b; --sec-servicios: #7fb2f0; --se
 .orden-tiempos-pie { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; padding: 0 16px 12px 20px; font-size: .88rem; color: var(--texto-suave); }
 .orden-muerto { display: inline-flex; align-items: center; gap: 6px; }
 .orden-muerto .campo { width: 80px; padding: 3px 6px; }
+
+/* ---------- Registro de horas en PC con el aspecto de InnovaGestión (2026-11-16, pedido de Innova) ----------
+   Cada línea es una tarjeta con borde y fondo propio (se distingue una de otra), nombre en recuadro, hora grande,
+   total en naranja con Día / Noche, franja de color por faena y el día abierto con línea de la empresa. */
+:root { --turno-dia-fondo: #fef3c7; --turno-dia-texto: #92400e; --turno-dia-borde: #fcd34d;
+        --turno-noche-fondo: #1e1b4b; --turno-noche-texto: #e0e7ff; --turno-noche-borde: #312e81; }
+html[data-modo="oscuro"] { --turno-dia-fondo: #4a3a12; --turno-dia-texto: #fde68a; --turno-dia-borde: #92400e;
+        --turno-noche-fondo: #312e81; --turno-noche-texto: #e0e7ff; --turno-noche-borde: #4f46e5; }
+.turno-tag { display: inline-flex; align-items: center; margin-left: 6px; padding: 1px 8px; border-radius: 20px; font-size: 11px; font-weight: 700; line-height: 1.5; white-space: nowrap; border: 1px solid; }
+.turno-dia { background: var(--turno-dia-fondo); color: var(--turno-dia-texto); border-color: var(--turno-dia-borde); }
+.turno-noche { background: var(--turno-noche-fondo); color: var(--turno-noche-texto); border-color: var(--turno-noche-borde); }
+.turno-falta { margin-left: 0; background: var(--venc-fondo); color: var(--venc); border-color: currentColor; }
+
+.hz-tabla, .hz-tabla tbody { display: block; width: 100%; }
+.hz-tabla thead { display: none; }
+.hz-tabla tbody tr { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 6px; padding: 6px 8px;
+  border: 1px solid var(--borde); border-radius: 11px; background: var(--fondo-sutil); }
+.hz-tabla tbody tr:hover { background: var(--hover); }
+.hz-tabla tbody td { display: flex; align-items: center; gap: 6px; padding: 0; border: 0; background: transparent !important; }
+.hz-tabla tbody td:first-child { flex: 1 1 200px; min-width: 160px; flex-wrap: wrap; }
+.hz-tabla .hz-nombre, .hz-tabla .hz-persona { flex: 1; font-weight: 700; font-size: 14px; padding: 7px 10px; border: 1px solid var(--borde); border-radius: 8px; background: var(--superficie); }
+.hz-tabla .hz-faena { min-width: 220px; font-weight: 600; background: var(--superficie); }
+.hz-tabla .hz-hora { width: 118px; font-weight: 700; font-size: 15px; letter-spacing: .02em; background: var(--superficie); }
+.hz-tabla .hz-total { display: inline-flex; align-items: center; min-width: 96px; color: var(--empresa); font-weight: 800; font-size: 13px; white-space: nowrap; }
+.hz-tabla .hz-vueltas { background: var(--superficie); }
+.hz-tabla .acciones-fila { margin-left: auto; }
+.hz-tabla .acciones-fila .boton-icono { border: 1px solid var(--error); color: var(--error); border-radius: 8px; width: 32px; height: 32px; }
+.hz-tabla tr.hz-pisa { border-color: var(--error); background: var(--venc-fondo); }
+.hz-tabla tr.hz-nueva { border-style: dashed; }
+.hz-tabla tr.hz-rango, .hz-tabla tr.hz-rango-origen { border-color: var(--empresa); }
+/* Franja de la faena: mayúsculas con el color del cliente */
+.hz-grupo { border-left-width: 5px; }
+.hz-grupo-cabeza strong { text-transform: uppercase; letter-spacing: .03em; font-size: 12px; color: color-mix(in srgb, var(--hz-color) 70%, var(--texto)); }
+/* Día abierto: línea de la empresa bajo la cabecera, como InnovaGestión */
+.sem-dia-cabeza[aria-expanded="true"] { border-bottom: 2px solid var(--empresa); border-radius: 14px 14px 0 0; }
+.sem-dia-cabeza strong { font-size: 15px; }
