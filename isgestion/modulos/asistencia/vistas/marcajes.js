@@ -1,11 +1,11 @@
 // Marcajes de la tablet (módulo Marcaje): marcas del día por persona, entradas sin salida, marca manual,
 // corregir hora (guarda la original y el motivo) y anular. Las parejas generan las horas del Registro.
-import { el } from '../../../core/ui/dom.js?v=63fa14d';
-import { icono } from '../../../core/ui/iconos.js?v=63fa14d';
-import { boton } from '../../../core/ui/tabla.js?v=63fa14d';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=63fa14d';
-import { avisar } from '../../../core/ui/aviso.js?v=63fa14d';
-import { horas, hoyISO, sumarDias, nombreDia, fechaLarga } from '../../../core/ui/formato.js?v=63fa14d';
+import { el } from '../../../core/ui/dom.js?v=12b8bdd';
+import { icono } from '../../../core/ui/iconos.js?v=12b8bdd';
+import { boton } from '../../../core/ui/tabla.js?v=12b8bdd';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=12b8bdd';
+import { avisar } from '../../../core/ui/aviso.js?v=12b8bdd';
+import { horas, hoyISO, sumarDias, nombreDia, fechaLarga } from '../../../core/ui/formato.js?v=12b8bdd';
 
 const estado = { dia: hoyISO() };
 const hora = (ts) => new Date(ts).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
@@ -67,8 +67,8 @@ export default async function vista(ctx) {
     textoGuardar: 'Anular',
     alGuardar: (v) => rpc('mar_anular', { p_marca: m.id, p_motivo: v.motivo }, 'Marca anulada.'),
   });
-  const chip = (m) => el('span', { class: `marca-chip ${m.tipo} ${m.anulada_at ? 'anulada' : ''}`, title: [m.origen === 'manual' ? 'Manual' : 'Tablet', m.ts_original ? `original ${hora(m.ts_original)}` : null, m.motivo].filter(Boolean).join(' · ') },
-    `${m.tipo === 'entrada' ? 'E' : 'S'} ${hora(m.ts)}${m.origen === 'manual' || m.ts_original ? ' *' : ''}`,
+  const chip = (m) => el('span', { class: `marca-chip ${m.tipo} ${m.anulada_at ? 'anulada' : ''}`, title: [m.origen === 'manual' ? 'Manual' : 'Tablet', m.ts_original ? `original ${hora(m.ts_original)}` : null, m.motivo, m.motivo_salida ? `Salida antes: ${m.motivo_salida}` : null].filter(Boolean).join(' · ') },
+    `${m.tipo === 'entrada' ? 'E' : 'S'} ${hora(m.ts)}${m.origen === 'manual' || m.ts_original ? ' *' : ''}${m.motivo_salida ? ` · ${m.motivo_salida}` : ''}`,
     editar && !m.anulada_at ? el('button', { type: 'button', class: 'boton-icono', title: 'Corregir hora', 'aria-label': 'Corregir hora', onclick: () => corregir(m) }, icono('editar', { tam: 13 })) : null,
     editar && !m.anulada_at ? el('button', { type: 'button', class: 'boton-icono', title: 'Anular', 'aria-label': 'Anular marca', onclick: () => anular(m) }, icono('cerrar', { tam: 13 })) : null);
 

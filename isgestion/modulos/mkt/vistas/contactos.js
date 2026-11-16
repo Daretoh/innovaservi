@@ -1,10 +1,10 @@
 // Oportunidades (contactos del embudo): todos en una tabla con búsqueda, filtro por etapa y Excel con el membrete de la empresa.
-import { el } from '../../../core/ui/dom.js?v=63fa14d';
-import { listado, boton } from '../../../core/ui/tabla.js?v=63fa14d';
-import { dinero, fechaLarga, diaLocal } from '../../../core/ui/formato.js?v=63fa14d';
-import { exportarExcel } from '../../../core/excel.js?v=63fa14d';
-import { cargarBase, cargarCss, nombreOrigen } from '../datos.js?v=63fa14d';
-import { formContacto } from '../formularios.js?v=63fa14d';
+import { el } from '../../../core/ui/dom.js?v=12b8bdd';
+import { listado, boton } from '../../../core/ui/tabla.js?v=12b8bdd';
+import { dinero, fechaLarga, diaLocal } from '../../../core/ui/formato.js?v=12b8bdd';
+import { exportarExcel } from '../../../core/excel.js?v=12b8bdd';
+import { cargarBase, cargarCss, nombreOrigen } from '../datos.js?v=12b8bdd';
+import { formContacto } from '../formularios.js?v=12b8bdd';
 
 const estado = { etapa: '' };
 

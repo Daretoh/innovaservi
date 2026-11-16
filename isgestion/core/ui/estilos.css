@@ -753,6 +753,9 @@ body.modo-tablet .contenido { padding: 16px; }
 .tab-listo.salida { color: var(--empresa); }
 /* Atraso al marcar la entrada (Asistencia 009): solo lo ve quien marca */
 .tab-atraso { display: inline-flex; align-items: center; gap: 6px; margin: 6px 0 0; padding: 6px 12px; border-radius: 999px; background: var(--prox-fondo); color: var(--prox); font-weight: 600; }
+.tab-motivos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; width: 100%; margin-top: 6px; }
+.tab-motivos .tab-persona { padding: 14px; font-size: 1.05rem; }
+.tab-motivos .tab-persona.sugerido { border-color: var(--empresa); color: var(--empresa); }
 .tab-hora { font-size: 2rem; font-weight: 700; margin: 0; color: var(--texto); }
 .tab-mensaje { min-height: 1.4em; color: var(--venc); font-weight: 600; margin: 0; }
 .marca-chips { display: flex; flex-wrap: wrap; gap: 6px; }

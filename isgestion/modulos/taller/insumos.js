@@ -1,15 +1,15 @@
 // Insumos usados en una orden de trabajo (si la empresa tiene Inventario): cada registro es una salida
 // del inventario ligada a la orden; anularla devuelve el stock.
-import { el } from '../../core/ui/dom.js?v=63fa14d';
-import { icono } from '../../core/ui/iconos.js?v=63fa14d';
-import { boton } from '../../core/ui/tabla.js?v=63fa14d';
-import { abrirFormulario } from '../../core/ui/modal.js?v=63fa14d';
-import { avisar } from '../../core/ui/aviso.js?v=63fa14d';
-import { dinero, fechaLarga, hoyISO } from '../../core/ui/formato.js?v=63fa14d';
+import { el } from '../../core/ui/dom.js?v=12b8bdd';
+import { icono } from '../../core/ui/iconos.js?v=12b8bdd';
+import { boton } from '../../core/ui/tabla.js?v=12b8bdd';
+import { abrirFormulario } from '../../core/ui/modal.js?v=12b8bdd';
+import { avisar } from '../../core/ui/aviso.js?v=12b8bdd';
+import { dinero, fechaLarga, hoyISO } from '../../core/ui/formato.js?v=12b8bdd';
 
 export async function seccionInsumos(ctx, o, anulada) {
   if (!ctx.puede('inventario', 'ver')) return null;
-  const inv = await import('../inventario/datos.js?v=63fa14d');
+  const inv = await import('../inventario/datos.js?v=12b8bdd');
   const [{ data: docs, error }, base] = await Promise.all([
     ctx.api.from('inv_documentos').select('id, numero, fecha, estado, almacen_id, inv_movimientos(cantidad, costo_unitario, inv_productos(nombre, udm))')
       .eq('orden_id', o.id).eq('tipo', 'salida').order('numero'),

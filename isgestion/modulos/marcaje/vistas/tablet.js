@@ -1,8 +1,8 @@
 // Marcaje en tablet: la persona escribe los 4 últimos dígitos de su RUT (sin dígito verificador),
 // confirma su nombre y marca entrada o salida. La hora la pone el servidor.
 // Modo tablet: oculta el menú; para salir, mantener presionado el reloj 2 segundos.
-import { el } from '../../../core/ui/dom.js?v=63fa14d';
-import { icono } from '../../../core/ui/iconos.js?v=63fa14d';
+import { el } from '../../../core/ui/dom.js?v=12b8bdd';
+import { icono } from '../../../core/ui/iconos.js?v=12b8bdd';
 
 const MODO = 'modo-tablet';
 
@@ -99,7 +99,33 @@ export default async function vista(ctx) {
       // Atraso (Asistencia 009): aviso solo a quien marca, unos segundos más en pantalla
       data.atraso_min > 0 ? el('p', { class: 'tab-atraso' }, icono('reloj', { tam: 18 }),
         ` Llegaste ${data.atraso_min >= 60 ? `${Math.floor(data.atraso_min / 60)} h ${String(data.atraso_min % 60).padStart(2, '0')} min` : `${data.atraso_min} min`} después de tu horario (${data.turno_ini})`) : null));
+    if (tipo === 'salida' && data.anticipada_min > 0 && data.id) { setTimeout(() => preguntarMotivo(data), 1500); return; }
     timer = setTimeout(() => reiniciar(), data.atraso_min > 0 ? 6000 : 3500);
+  };
+
+  // Salida antes del fin del turno (Marcaje 004): la salida ya quedó con su hora; se pregunta el motivo con botones.
+  // Si no elige en 25 s, la salida queda sin motivo.
+  const MOTIVOS = ['Permiso', 'Emergencia', 'Hora médica', 'Trámite personal', 'Trabajo fuera del taller', 'Autorizado por el jefe', 'Otro'];
+  const preguntarMotivo = (data) => {
+    if (!document.body.contains(paso)) return;
+    clearTimeout(timer);
+    const t = data.anticipada_min >= 60 ? `${Math.floor(data.anticipada_min / 60)} h ${String(data.anticipada_min % 60).padStart(2, '0')} min` : `${data.anticipada_min} min`;
+    const elegirMotivo = async (motivo, b) => {
+      clearTimeout(timer);
+      paso.querySelectorAll('button').forEach((x) => { x.disabled = true; });
+      b.classList.add('sugerido');
+      const { error } = await ctx.api.rpc('mar_motivo_salida', { p_empresa: e, p_marca: data.id, p_motivo: motivo });
+      if (error) { reiniciar(error.message); return; }
+      paso.replaceChildren(el('div', { class: 'tab-listo salida' }, icono('check', { tam: 56 }), el('p', { class: 'tab-nombre' }, data.nombre), el('p', { class: 'tab-instruccion' }, `Motivo registrado: ${motivo}`)));
+      timer = setTimeout(() => reiniciar(), 3000);
+    };
+    paso.replaceChildren(
+      el('p', { class: 'tab-nombre' }, data.nombre),
+      el('p', { class: 'tab-atraso' }, icono('reloj', { tam: 18 }), ` Estás saliendo ${t} antes de tu horario (${data.turno_fin})`),
+      el('p', { class: 'tab-instruccion' }, '¿Por qué sales antes? Tu salida ya quedó marcada.'),
+      el('div', { class: 'tab-motivos' }, MOTIVOS.map((m) => el('button', { type: 'button', class: 'tab-persona', onclick: (ev) => elegirMotivo(m, ev.currentTarget) }, m))),
+      el('button', { type: 'button', class: 'tab-cancelar', onclick: () => reiniciar() }, 'Prefiero no decirlo'));
+    timer = setTimeout(() => reiniciar(), 25000);
   };
 
   // Teclado físico
