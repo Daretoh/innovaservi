@@ -6,12 +6,12 @@
 // abierta tiene además "Agregar persona en esta faena".
 // Mismos datos y reglas que la planilla de escritorio (horas.js): las del marcaje se corrigen en Marcajes y los fijos con
 // turno quedan presentes "según horario".
-import { el } from '../../../core/ui/dom.js?v=6128df5';
-import { icono } from '../../../core/ui/iconos.js?v=6128df5';
-import { boton } from '../../../core/ui/tabla.js?v=6128df5';
-import { avisar } from '../../../core/ui/aviso.js?v=6128df5';
-import { hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, horas, aMin, hhmm } from '../../../core/ui/formato.js?v=6128df5';
-import { estado, minutosRegistro, ausente, eliminar, campoFiltroFaena, pasaFiltroFaena, resumenDia } from './horas.js?v=6128df5';
+import { el } from '../../../core/ui/dom.js?v=4820557';
+import { icono } from '../../../core/ui/iconos.js?v=4820557';
+import { boton } from '../../../core/ui/tabla.js?v=4820557';
+import { avisar } from '../../../core/ui/aviso.js?v=4820557';
+import { hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, horas, aMin, hhmm } from '../../../core/ui/formato.js?v=4820557';
+import { estado, minutosRegistro, ausente, eliminar, campoFiltroFaena, pasaFiltroFaena, resumenDia, vinculosAsistencia } from './horas.js?v=4820557';
 
 const pantalla = { pestana: null, buscar: '', marcados: new Set(), abiertas: new Set(), diaAbierto: null };   // abiertas: faenas desplegadas (día|faena)
 const DIAS_LARGOS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
@@ -43,8 +43,7 @@ export default async function asistenciaMovil(ctx) {
   const [regs, vinculos, ausencias, faenas, colores, planes] = await Promise.all([
     ctx.api.from('asis_horas').select('id, persona_id, fecha, entrada, salida, faena, vueltas, notas, origen')
       .eq('empresa_id', ctx.empresa.id).is('deleted_at', null).gte('fecha', desde).lte('fecha', hasta).order('entrada'),
-    ctx.api.from('persona_empresa').select('persona_id, cargo, estado, personas(nombres, apellido_paterno, apellido_materno)')
-      .eq('empresa_id', ctx.empresa.id).is('deleted_at', null),
+    vinculosAsistencia(ctx),
     ctx.api.from('asis_horas').select('id, persona_id, fecha, notas').eq('empresa_id', ctx.empresa.id).eq('origen', 'horario')
       .not('deleted_at', 'is', null).like('notas', 'Ausente%').gte('fecha', desde).lte('fecha', hasta),
     verOpe ? ctx.api.from('ope_faenas').select('id, titulo, tercero_id, fecha_inicio, fecha_fin, dias, hora_inicio, hora_fin, terceros(nombre_fantasia, razon_social), ope_sitios(nombre)')

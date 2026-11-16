@@ -6,14 +6,14 @@
 // Fijos con turno (2026-10-30): cada día hábil quedan presentes "según horario" solos (asis_generar_fijos); aquí solo se
 // corrigen las excepciones: retraso o salida temprana (cambiar la hora), horas extra (cambiar la salida o agregar otra
 // fila) y ausencias (botón Ausente: el día deja de contar y no se vuelve a crear).
-import { el } from '../../../core/ui/dom.js?v=6128df5';
-import { icono } from '../../../core/ui/iconos.js?v=6128df5';
-import { boton } from '../../../core/ui/tabla.js?v=6128df5';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=6128df5';
-import { arrastrarHorario } from './arrastre.js?v=6128df5';
-import { avisar } from '../../../core/ui/aviso.js?v=6128df5';
-import { esTelefono } from '../../../core/movil.js?v=6128df5';
-import { hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, horas, aMin, hhmm } from '../../../core/ui/formato.js?v=6128df5';
+import { el } from '../../../core/ui/dom.js?v=4820557';
+import { icono } from '../../../core/ui/iconos.js?v=4820557';
+import { boton } from '../../../core/ui/tabla.js?v=4820557';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=4820557';
+import { arrastrarHorario } from './arrastre.js?v=4820557';
+import { avisar } from '../../../core/ui/aviso.js?v=4820557';
+import { esTelefono } from '../../../core/movil.js?v=4820557';
+import { hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, horas, aMin, hhmm } from '../../../core/ui/formato.js?v=4820557';
 
 const DIAS_LARGOS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 export const estado = { lunes: lunesDe(hoyISO()), dia: hoyISO(), nuevas: [], abiertas: new Set(), diasAbiertos: new Set(), filtro: '', borradorLeido: new Set() };   // abiertas: faenas desplegadas (día|faena)   // nuevas: filas en blanco aún sin guardar
@@ -21,6 +21,9 @@ export const estado = { lunes: lunesDe(hoyISO()), dia: hoyISO(), nuevas: [], abi
 addEventListener('beforeunload', (ev) => { if (estado.nuevas.some((n) => n.persona)) { ev.preventDefault(); ev.returnValue = ''; } });
 
 const nombre = (p) => [p.nombres, p.apellido_paterno, p.apellido_materno].filter(Boolean).join(' ');
+// Trabajadores con su nombre para el registro de horas (Asistencia 013): sirve aunque el rol no tenga permiso de Personas
+export const vinculosAsistencia = (ctx) => ctx.api.rpc('asis_personas', { p_empresa: ctx.empresa.id }).then(({ data, error }) => ({ error,
+  data: (data ?? []).map((x) => ({ persona_id: x.persona_id, cargo: x.cargo, estado: x.estado, personas: { nombres: x.nombres, apellido_paterno: x.apellido_paterno, apellido_materno: x.apellido_materno } })) }));
 export function minutosRegistro(h) {
   if (!h.entrada || !h.salida) return 0;   // sin salida (Asistencia 007): no cuenta hasta completarla
   const a = aMin(h.entrada); let b = aMin(h.salida);
@@ -30,7 +33,7 @@ export function minutosRegistro(h) {
 const clave = (s) => String(s ?? '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[·—-]+/g, ' ').replace(/\s+/g, ' ');
 
 export default async function vista(ctx) {
-  if (esTelefono()) return (await import('./horas-movil.js?v=6128df5')).default(ctx);   // en el teléfono, lista de personas en vez de planilla
+  if (esTelefono()) return (await import('./horas-movil.js?v=4820557')).default(ctx);   // en el teléfono, lista de personas en vez de planilla
   const desde = estado.lunes;
   const hasta = sumarDias(desde, 6);
   const hoy = hoyISO();
@@ -76,8 +79,7 @@ export default async function vista(ctx) {
     ctx.api.from('asis_horas').select('id, persona_id, fecha, entrada, salida, faena, vueltas, notas, origen')
       .eq('empresa_id', ctx.empresa.id).is('deleted_at', null).gte('fecha', desde).lte('fecha', hasta)
       .order('fecha').order('entrada'),
-    ctx.api.from('persona_empresa').select('persona_id, cargo, estado, personas(nombres, apellido_paterno, apellido_materno)')
-      .eq('empresa_id', ctx.empresa.id).is('deleted_at', null),
+    vinculosAsistencia(ctx),
     verOpe ? ctx.api.from('ope_faenas').select('id, titulo, tercero_id, fecha_inicio, fecha_fin, dias, terceros(nombre_fantasia, razon_social), ope_sitios(nombre)')
       .eq('empresa_id', ctx.empresa.id).is('deleted_at', null).eq('estado', 'programada').lte('fecha_inicio', hasta).gte('fecha_fin', desde) : { data: [] },
     verOpe ? ctx.api.from('ope_clientes').select('tercero_id, color').eq('empresa_id', ctx.empresa.id) : { data: [] },
@@ -148,21 +150,30 @@ export default async function vista(ctx) {
     const { data, error } = await ctx.api.from('asis_horas').update(cambios).eq('id', r.id).select('id');
     tr.classList.remove('hz-guardando');
     if (error || !data?.length) { avisar(error?.message ?? 'No tienes permiso para editar.', 'error'); return; }
-    refrescar();   // sin aviso: cada cambio se guarda al tiro
+    // Sin volver a armar la pantalla (2026-11-16): rearmarla mientras se escribe la hora cortaba lo escrito
+    Object.assign(r, cambios, { entrada: cambios.entrada, salida: cambios.salida });
   };
   // Fila nueva: se guarda apenas tiene trabajador (entrada y salida se completan después y se guardan al cambiar)
+  // Una fila nueva se inserta UNA vez (2026-11-16: el mismo cambio llegaba dos veces y quedaban duplicadas): si ya
+  // se guardó (n.id), lo que cambie después se actualiza en esa misma fila.
   const guardarNueva = async (n, campos) => {
+    if (n.id) { await guardarFila(n.fila, campos, campos.persona.closest('tr')); return; }
+    if (n.guardando) { n.pendiente = true; return; }
     const persona_id = personaDeTexto(campos.persona.value);
-    if (n.guardando || !campos.persona.value.trim()) return;
+    if (!campos.persona.value.trim()) return;
     if (!persona_id) { campos.persona.classList.add('campo-error'); avisar('Elige a la persona de la lista (nombre con ficha activa).', 'error'); return; }
     if (campos.entrada.value && campos.entrada.value === campos.salida.value) { avisar('La entrada y la salida no pueden ser iguales.', 'error'); return; }
     n.guardando = true;
-    const { data, error } = await ctx.api.from('asis_horas').insert({ empresa_id: ctx.empresa.id, persona_id, fecha: n.fecha, entrada: campos.entrada.value || null, salida: campos.salida.value || null,
-      faena: campos.faena.value.trim() || null, vueltas: Math.max(0, Number(campos.vueltas.value) || 0) }).select('id');
+    const fila = { empresa_id: ctx.empresa.id, persona_id, fecha: n.fecha, entrada: campos.entrada.value || null, salida: campos.salida.value || null,
+      faena: campos.faena.value.trim() || null, vueltas: Math.max(0, Number(campos.vueltas.value) || 0) };
+    const { data, error } = await ctx.api.from('asis_horas').insert(fila).select('id, persona_id, fecha, entrada, salida, faena, vueltas, notas, origen');
     n.guardando = false;
     if (error) { avisar(error.message, 'error'); return; }
+    n.id = data[0].id; n.fila = data[0];
     estado.nuevas = estado.nuevas.filter((x) => x !== n);
-    refrescar([n.uid, data?.[0]?.id]);   // sin aviso: queda guardada al tiro
+    if (n.pendiente) { n.pendiente = false; await guardarFila(n.fila, campos, campos.persona.closest('tr')); }
+    // Se rearma la pantalla solo si no se está escribiendo en esta fila (si no, al salir de ella)
+    if (!campos.persona.closest('tr')?.contains(document.activeElement)) refrescar([n.uid, n.id]);   // sin aviso
   };
 
   const filasPorLlave = new Map();   // llave de la fila → { r, nueva, tr, campos }
@@ -197,7 +208,10 @@ export default async function vista(ctx) {
       if (nueva) { anotar(); guardarNueva(nueva, campos); }
       else { if (segunHorario && !(r.notas ?? '').startsWith('Corregido')) { r.notas = 'Corregido (retraso u horas extra)'; ctx.api.from('asis_horas').update({ notas: r.notas }).eq('id', r.id).then(() => {}); } guardarFila(r, campos, tr); }
     };
-    for (const c of [faena, entrada, salida, vueltas, nueva ? persona : null]) if (c) c.addEventListener('change', alCambiar);
+    // Las horas se guardan al salir del campo (el reloj del navegador avisa "change" con cada dígito: 20:03, 00:03…)
+    for (const c of [faena, vueltas, nueva ? persona : null]) if (c) c.addEventListener('change', alCambiar);
+    for (const c of [entrada, salida]) c.addEventListener('blur', () => { if ((nueva ? nueva[c === entrada ? 'entrada' : 'salida'] ?? '' : hhmm(r[c === entrada ? 'entrada' : 'salida'])) !== c.value || nueva?.id) alCambiar(); });
+    if (nueva) tr.addEventListener('focusout', (ev) => { if (nueva.id && !tr.contains(ev.relatedTarget)) setTimeout(() => refrescar(), 0); });
     if (nueva) { persona.addEventListener('input', () => persona.classList.remove('campo-error')); for (const x of [persona, faena, entrada, salida, vueltas]) x.addEventListener('input', anotar); }
     return tr;
   };

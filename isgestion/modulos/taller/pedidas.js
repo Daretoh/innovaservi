@@ -1,13 +1,13 @@
 // Horas pedidas en línea (Marketing 006: agenda pública /agenda/): franja arriba de la Agenda del taller con las que
 // esperan confirmación. Confirmar crea cliente (o usa el del teléfono), vehículo (por patente) y la orden agendada con
 // el servicio; se puede cambiar el día y la hora. Rechazar pide el motivo. Después, avisar al cliente por WhatsApp.
-import { el } from '../../core/ui/dom.js?v=6128df5';
-import { icono } from '../../core/ui/iconos.js?v=6128df5';
-import { boton } from '../../core/ui/tabla.js?v=6128df5';
-import { avisar } from '../../core/ui/aviso.js?v=6128df5';
-import { abrirFormulario } from '../../core/ui/modal.js?v=6128df5';
-import { nombreDia, fechaCorta, hhmm } from '../../core/ui/formato.js?v=6128df5';
-import { verPatente } from './datos.js?v=6128df5';
+import { el } from '../../core/ui/dom.js?v=4820557';
+import { icono } from '../../core/ui/iconos.js?v=4820557';
+import { boton } from '../../core/ui/tabla.js?v=4820557';
+import { avisar } from '../../core/ui/aviso.js?v=4820557';
+import { abrirFormulario } from '../../core/ui/modal.js?v=4820557';
+import { nombreDia, fechaCorta, hhmm } from '../../core/ui/formato.js?v=4820557';
+import { verPatente } from './datos.js?v=4820557';
 
 const whatsapp = (tel, texto) => {
   let d = String(tel ?? '').replace(/\D/g, '');
