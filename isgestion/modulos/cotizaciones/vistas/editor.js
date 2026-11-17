@@ -2,23 +2,23 @@
 // totales y acciones (PDF, enviar, aceptar, rechazar, reabrir, duplicar, dividir, pasar a orden de trabajo).
 // Las líneas se editan como planilla: Enter y flechas, pegar desde Excel y arrastrar filas o secciones.
 // Ruta: #/cotizaciones.editor?id=<id>
-import { el } from '../../../core/ui/dom.js?v=e104b69';
-import { icono } from '../../../core/ui/iconos.js?v=e104b69';
-import { boton } from '../../../core/ui/tabla.js?v=e104b69';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=e104b69';
-import { avisar } from '../../../core/ui/aviso.js?v=e104b69';
-import { dinero, fechaLarga } from '../../../core/ui/formato.js?v=e104b69';
+import { el } from '../../../core/ui/dom.js?v=5771c57';
+import { icono } from '../../../core/ui/iconos.js?v=5771c57';
+import { boton } from '../../../core/ui/tabla.js?v=5771c57';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=5771c57';
+import { avisar } from '../../../core/ui/aviso.js?v=5771c57';
+import { dinero, fechaLarga } from '../../../core/ui/formato.js?v=5771c57';
 import {
   nombreEstado, CHIP_ESTADO, TALLAS, totales, totalLinea, costoLinea, numeroTexto, nombreTercero, verPatente, normalizarPatente,
   cargarCotizacion, cargarCatalogo, cargarConfig, datosCliente,
-} from '../datos.js?v=e104b69';
-import { duplicar, dividir, pasarAOrden } from '../acciones.js?v=e104b69';
+} from '../datos.js?v=5771c57';
+import { duplicar, dividir, pasarAOrden } from '../acciones.js?v=5771c57';
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
 const mesTexto = (mes) => `${MESES[Number(mes.slice(5, 7)) - 1]} ${mes.slice(0, 4)}`;
-import { pasosSeguimiento, chipEtapa, etapa } from '../seguimiento.js?v=e104b69';
-import { avance } from '../../taller/seguimiento.js?v=e104b69';
-import { soloCosto, costosDeGrupos, costoFuera, sinRepetir, sumaCostos, yaTraidos } from '../costos-orden.js?v=e104b69';
-import { nombreEstado as estadoOrden } from '../../taller/datos.js?v=e104b69';
+import { pasosSeguimiento, chipEtapa, etapa } from '../seguimiento.js?v=5771c57';
+import { avance } from '../../taller/seguimiento.js?v=5771c57';
+import { soloCosto, costosDeGrupos, costoFuera, sinRepetir, sumaCostos, yaTraidos } from '../costos-orden.js?v=5771c57';
+import { nombreEstado as estadoOrden } from '../../taller/datos.js?v=5771c57';
 
 // Celda a enfocar después de recargar (ej.: la línea recién creada)
 let foco = null;
@@ -52,7 +52,7 @@ export default async function vista(ctx) {
   // Avance desde el taller (como el OS): la orden ligada a cada grupo y el ítem en verde si su trabajo está hecho
   const idsOrden = grupos.map((g) => g.orden_id).filter(Boolean);
   const [ords, svs] = conTaller && idsOrden.length ? await Promise.all([
-    ctx.api.from('tal_ordenes').select('id, numero, estado, tareas, fecha_cita, ingreso_at, entregado_at, created_at').in('id', idsOrden),
+    ctx.api.from('tal_ordenes').select('id, numero, estado, cobrado, tareas, fecha_cita, ingreso_at, entregado_at, created_at, tal_orden_servicios(nombre, precio)').in('id', idsOrden),
     ctx.api.from('tal_servicios').select('nombre, tareas').eq('empresa_id', ctx.empresa.id),
   ]) : [{ data: [] }, { data: [] }];
   const ordenDe = new Map((ords.data ?? []).map((o) => [o.id, o]));
@@ -62,6 +62,33 @@ export default async function vista(ctx) {
     if (['terminado', 'entregado'].includes(o.estado)) return true;
     const suyas = tareasDe.get((l.descripcion ?? '').trim().toLowerCase()) ?? [];
     return o.estado === 'proceso' && suyas.length > 0 && suyas.every((t) => o.tareas.some((x) => x.t === t && x.ok));
+  };
+  // La orden y la cotización van al día solas (Cotizaciones 011); si difieren (cotización enviada, sin permiso del
+  // taller u orden cobrada), se avisa con "Traer de la orden" / "Llevar a la orden"
+  const firma = (pares) => pares.map(([n, p]) => `${n.trim().toLowerCase()}|${p}`).sort().join('#');
+  const itemsCot = (g) => lineas.filter((l) => l.grupo_id === g.id && l.tipo === 'item' && (l.descripcion ?? '').trim())
+    .map((l) => [`${l.descripcion.trim()}${Number(l.cantidad) !== 1 ? ` × ${Number(l.cantidad)}` : ''}`, totalLinea(l)]);
+  const difiere = (g) => {
+    const o = ordenDe.get(g.orden_id); if (!o || !o.tal_orden_servicios?.length || c.madre_id) return null;
+    const cot = itemsCot(g); const ord = o.tal_orden_servicios.filter((x) => (x.nombre ?? '').trim()).map((x) => [x.nombre, x.precio]);
+    if (firma(cot) === firma(ord)) return null;
+    return { o, cot: cot.reduce((a, x) => a + x[1], 0), ord: ord.reduce((a, x) => a + x[1], 0) };
+  };
+  const alinear = async (g, sentido, b) => {
+    b.disabled = true;
+    const { error } = await ctx.api.rpc('cot_alinear_orden', { p_grupo: g.id, p_sentido: sentido });
+    if (error) { avisar(error.message, 'error'); b.disabled = false; return; }
+    avisar(sentido === 'traer' ? 'La cotización quedó con los servicios de la orden.' : 'La orden quedó con las líneas de la cotización.');
+    ctx.refrescar();
+  };
+  const avisoOrden = (g) => {
+    const d = difiere(g); if (!d) return null;
+    return el('div', { class: 'aviso-bandeja' }, icono('alerta', { tam: 16 }),
+      el('span', {}, `La orden N° ${d.o.numero} tiene otros servicios (${dinero(d.ord)}; aquí ${dinero(d.cot)}).`),
+      editable ? boton('Traer de la orden', { icono: 'abajo', onclick: (ev) => alinear(g, 'traer', ev.currentTarget) }) : null,
+      ctx.puede('cotizaciones', 'editar') && ctx.puede('taller', 'editar') && !d.o.cobrado && d.o.estado !== 'anulada' && d.cot > 0
+        ? boton('Llevar a la orden', { icono: 'llave', onclick: (ev) => alinear(g, 'llevar', ev.currentTarget) }) : null,
+      !editable && c.estado !== 'borrador' ? el('span', { class: 'texto-chico texto-suave' }, 'Para traerlos, reabre la cotización.') : null);
   };
   // Cotizaciones que nacieron de esta al dividirla (una por vehículo): a cuál pasó cada vehículo y en qué va (005)
   const { data: hijas } = await ctx.api.from('cot_cotizaciones').select('id, numero, estado, oc_numero, oc_fecha, factura_numero, cobro_fecha, cot_grupos(orden_id, patente)')
@@ -224,7 +251,7 @@ export default async function vista(ctx) {
     btn.disabled = true;
     try {
       await Promise.all(pendientes);
-      const { costosDeOrdenes, lineasCosto, yaTraidos } = await import('../costos-orden.js?v=e104b69');
+      const { costosDeOrdenes, lineasCosto, yaTraidos } = await import('../costos-orden.js?v=5771c57');
       const o = ordenDe.get(g.orden_id);
       const nuevas = lineasCosto((await costosDeOrdenes(ctx, [{ ...o, patente: g.patente }])).get(o.id) ?? [], yaTraidos(delGrupo(g)));
       if (!nuevas.length) { avisar('No hay costos nuevos en la orden.'); return; }
@@ -455,6 +482,7 @@ export default async function vista(ctx) {
       g.orden_id ? (ordenDe.get(g.orden_id)
         ? barraAvance(avance(ordenDe.get(g.orden_id)), el('a', { href: ctx.ruta('taller.orden', { id: g.orden_id }) }, `Orden N° ${ordenDe.get(g.orden_id).numero} · ${estadoOrden[ordenDe.get(g.orden_id).estado]} · ${avance(ordenDe.get(g.orden_id))}%`))
         : el('p', { class: 'texto-chico' }, icono('check', { tam: 14 }), ' Ligado a una ', el('a', { href: ctx.ruta('taller.orden', { id: g.orden_id }) }, 'orden de trabajo'))) : null,
+      g.orden_id ? avisoOrden(g) : null,
       hijaDe.get(g.id) ? el('p', { class: 'texto-chico cot-hija' }, 'Pasó a la ', el('a', { href: ctx.ruta('cotizaciones.editor', { id: hijaDe.get(g.id).id }) }, el('strong', {}, `N° ${numeroTexto(hijaDe.get(g.id).numero)}`)), ' ',
         el('span', { class: `chip ${CHIP_ESTADO[hijaDe.get(g.id).estado]}` }, nombreEstado[hijaDe.get(g.id).estado]), ' ', conOC && ['enviada', 'aceptada'].includes(hijaDe.get(g.id).estado) ? chipEtapa(hijaDe.get(g.id)) : null)
         : hijaDe.size ? el('p', { class: 'texto-chico texto-suave' }, 'Aún sin cotización propia.') : null,
@@ -472,7 +500,7 @@ export default async function vista(ctx) {
   // ---- Acciones según estado
   const acciones = [boton('Ver PDF', { icono: 'ojo', onclick: (ev) => pdf(ctx, c, ev.currentTarget) })];
   // Como el OS (2026-10-22): siempre queda claro que se está editando esta cotización, y se puede empezar una nueva
-  if (ctx.puede('cotizaciones', 'crear')) acciones.push(boton('Nueva cotización', { icono: 'mas', onclick: async () => { const { nueva } = await import('./lista.js?v=e104b69'); nueva(ctx); } }));
+  if (ctx.puede('cotizaciones', 'crear')) acciones.push(boton('Nueva cotización', { icono: 'mas', onclick: async () => { const { nueva } = await import('./lista.js?v=5771c57'); nueva(ctx); } }));
   const puedeEditar = ctx.puede('cotizaciones', 'editar') && !c.madre_id;
   if (puedeEditar && c.estado === 'borrador') acciones.push(boton('Marcar enviada', { icono: 'check', tipo: 'primario', onclick: () => abrirFormulario({
     titulo: `Enviar cotización N° ${numeroTexto(c.numero)}`, mensaje: 'Queda bloqueada para cambios. Si hay que corregirla, se reabre.', campos: [], textoGuardar: 'Marcar enviada',
@@ -554,8 +582,8 @@ export default async function vista(ctx) {
       if (error) avisar(error.message, 'error'); else ctx.refrescar();
     } }) : null,
     // Traer los autos que el cliente tuvo en el taller en un mes (como "Traer de Cierre GM" del OS)
-    editable && conTaller && c.tercero_id ? boton('Autos por cotizar', { icono: 'llave', title: 'Autos del cliente con servicio "Pendiente de cotización" que aún no están en una cotización', onclick: async () => { const { traerPorCotizar } = await import('../traer-mes.js?v=e104b69'); traerPorCotizar(ctx, c, grupos); } }) : null,
-    editable && conTaller && c.tercero_id ? boton('Traer autos del mes', { icono: 'llave', onclick: async () => { const { traerMes } = await import('../traer-mes.js?v=e104b69'); traerMes(ctx, c, grupos); } }) : null,
+    editable && conTaller && c.tercero_id ? boton('Autos por cotizar', { icono: 'llave', title: 'Autos del cliente con servicio "Pendiente de cotización" que aún no están en una cotización', onclick: async () => { const { traerPorCotizar } = await import('../traer-mes.js?v=5771c57'); traerPorCotizar(ctx, c, grupos); } }) : null,
+    editable && conTaller && c.tercero_id ? boton('Traer autos del mes', { icono: 'llave', onclick: async () => { const { traerMes } = await import('../traer-mes.js?v=5771c57'); traerMes(ctx, c, grupos); } }) : null,
     catalogo.tieneLista ? el('p', { class: 'texto-suave texto-chico' }, 'Este cliente tiene lista de precios: al escribir un servicio se usa su precio especial.') : null,
     editable ? el('p', { class: 'texto-suave texto-chico' }, 'Planilla: Enter baja de fila (en la última crea una línea), Mayús+Enter sube, flechas para moverse; se puede pegar un rango copiado de Excel (Descripción, Cant., Precio, Desc. %) y arrastrar filas o secciones desde el asa (también a otro vehículo).') : null,
   );
@@ -589,7 +617,7 @@ function resumenHijas(grupos, hijaDe) {
 async function pdf(ctx, c, b) {
   b.disabled = true;
   try {
-    const { pdfCotizacion } = await import('../documento.js?v=e104b69');
+    const { pdfCotizacion } = await import('../documento.js?v=5771c57');
     const doc = await pdfCotizacion(ctx, c);
     window.open(doc.output('bloburl'), '_blank', 'noopener');
   } catch (e) { avisar(`No se pudo generar: ${e.message}`, 'error'); } finally { b.disabled = false; }
