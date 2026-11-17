@@ -1,14 +1,14 @@
 // Cobros del taller: órdenes por cobrar (en proceso, terminadas o entregadas) y cobradas del mes.
 // Arriba, tarjetas de resumen; las pendientes muestran su antigüedad (desde el término) y un acceso a cobrar.
-import { el } from '../../../core/ui/dom.js?v=f240e56';
-import { icono } from '../../../core/ui/iconos.js?v=f240e56';
-import { listado } from '../../../core/ui/tabla.js?v=f240e56';
-import { avisar } from '../../../core/ui/aviso.js?v=f240e56';
-import { urlFirmada } from '../../../core/adjuntos.js?v=f240e56';
-import { dinero, fechaLarga, nombreMes, moverMes, rangoMes, diaLocal } from '../../../core/ui/formato.js?v=f240e56';
+import { el } from '../../../core/ui/dom.js?v=0e57847';
+import { icono } from '../../../core/ui/iconos.js?v=0e57847';
+import { listado } from '../../../core/ui/tabla.js?v=0e57847';
+import { avisar } from '../../../core/ui/aviso.js?v=0e57847';
+import { urlFirmada } from '../../../core/adjuntos.js?v=0e57847';
+import { dinero, fechaLarga, nombreMes, moverMes, rangoMes, diaLocal } from '../../../core/ui/formato.js?v=0e57847';
 
 const DIAS_ATRASO = 7;   // desde el término: más que esto se marca en rojo
-import { SELECT_ORDEN, verPatente, nombreVehiculo, nombreTercero, totales, TIPOS_VENTA } from '../datos.js?v=f240e56';
+import { SELECT_ORDEN, verPatente, nombreVehiculo, nombreTercero, totales, TIPOS_VENTA } from '../datos.js?v=0e57847';
 
 const estado = { tab: 'pendientes', mes: new Date().toISOString().slice(0, 7), soloAbonos: false, verExternas: false };
 
@@ -55,6 +55,8 @@ export default async function vista(ctx) {
       { titulo: 'N°', valor: (o) => el('a', { href: ctx.ruta('taller.orden', { id: o.id }) }, `N° ${o.numero}`) },
       { titulo: 'Vehículo', valor: (o) => el('span', { class: 'cobro-vehiculo' }, el('span', { class: 'tal-placa' }, verPatente(o.tal_vehiculos?.patente) || 'S/P'), nombreVehiculo(o.tal_vehiculos)) },
       { titulo: 'Cliente', valor: (o) => nombreTercero(o.terceros) },
+      // Fecha de término de la orden (pedido de Enzo, 2026-11-17)
+      { titulo: 'Término', valor: (o) => (o.termino_at ? fechaLarga(diaLocal(o.termino_at)) : el('span', { class: 'texto-suave' }, '—')) },
       { titulo: estado.tab === 'pendientes' ? 'Antigüedad' : 'Cobrado', valor: (o) => (estado.tab === 'pendientes' ? antig(o) : fechaLarga(diaLocal(o.cobrado_at))) },
       { titulo: 'Documento', valor: (o) => el('span', { class: 'cobro-doc' }, o.tipo_venta !== 'normal' ? TIPOS_VENTA.find((x) => x[0] === o.tipo_venta)[1] : o.doc_tipo === 'factura' ? 'Factura' : 'Boleta',
         // Boleta adjunta al cobro (Taller 011)
