@@ -1,11 +1,11 @@
 // Detalle de un día (como en InnovaGestión al tocar un día de la semana): faenas planificadas, trabajadores
 // agrupados por faena con sus horarios, horas y monto (real y contable editable si la empresa usa ajuste contable),
 // y totales del día. Ruta: #/remu.dia?f=<aaaa-mm-dd>
-import { el } from '../../../core/ui/dom.js?v=461b982';
-import { icono } from '../../../core/ui/iconos.js?v=461b982';
-import { dinero, horas, lunesDe, sumarDias, nombreDia, fechaCorta, fechaLarga, numSemana, hhmm, hoyISO } from '../../../core/ui/formato.js?v=461b982';
-import { cargarBase, calcularRango, nombreCompleto } from '../datos.js?v=461b982';
-import { campoContable } from './detalle.js?v=461b982';
+import { el } from '../../../core/ui/dom.js?v=c241894';
+import { icono } from '../../../core/ui/iconos.js?v=c241894';
+import { dinero, horas, lunesDe, sumarDias, nombreDia, fechaCorta, fechaLarga, numSemana, hhmm, hoyISO } from '../../../core/ui/formato.js?v=c241894';
+import { cargarBase, calcularRango, nombreCompleto } from '../datos.js?v=c241894';
+import { campoContable } from './detalle.js?v=c241894';
 
 export default async function vista(ctx) {
   const fecha = /^\d{4}-\d{2}-\d{2}$/.test(ctx.params.f ?? '') ? ctx.params.f : hoyISO();
