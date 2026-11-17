@@ -5,13 +5,13 @@
 // En producción la factura queda registrada en Facturas con el PDF del SII como respaldo y la OC como referencia.
 // En pruebas se emite en el ambiente de desarrollo de Haulmer y solo se muestra el PDF de prueba.
 // Anular: nota de crédito (anularConNota), que quita la factura de Facturas (la cotización queda libre).
-import { el } from '../../core/ui/dom.js?v=c241894';
-import { abrirFormulario } from '../../core/ui/modal.js?v=c241894';
-import { avisar } from '../../core/ui/aviso.js?v=c241894';
-import { hoyISO, sumarDias, dinero } from '../../core/ui/formato.js?v=c241894';
-import { llamarDte, nuevaLlave, estadoDte, ofrecerPdf } from '../../core/dte.js?v=c241894';
-import { totales, totalLinea, numeroTexto, verPatente, nombreTercero, IVA } from './datos.js?v=c241894';
-import { PLAZO_PAGO } from './facturas.js?v=c241894';
+import { el } from '../../core/ui/dom.js?v=9f6d6ef';
+import { abrirFormulario } from '../../core/ui/modal.js?v=9f6d6ef';
+import { avisar } from '../../core/ui/aviso.js?v=9f6d6ef';
+import { hoyISO, sumarDias, dinero } from '../../core/ui/formato.js?v=9f6d6ef';
+import { llamarDte, nuevaLlave, estadoDte, ofrecerPdf } from '../../core/dte.js?v=9f6d6ef';
+import { totales, totalLinea, numeroTexto, verPatente, nombreTercero, IVA } from './datos.js?v=9f6d6ef';
+import { PLAZO_PAGO } from './facturas.js?v=9f6d6ef';
 
 const detalleCot = (c) => c.cot_grupos.map((g) => [g.titulo, verPatente(g.patente)].filter(Boolean).join(' · ')).join(', ');
 const miles = (n) => Math.round(n).toLocaleString('es-CL');
@@ -51,6 +51,34 @@ export function leerLineas(texto) {
     const m = s.match(/^(.*?)[\s:;|=$-]+\$?\s*(\d{1,3}(?:\.\d{3})+|\d+)\s*$/);
     return m ? { nombre: m[1].trim(), monto: Number(m[2].replace(/\./g, '')) } : { nombre: s, monto: NaN };
   });
+}
+
+// Borrador (2026-11-17, pedido de Enzo): PDF local con lo mismo que se enviará al SII, marcado BORRADOR, sin emitir
+async function verBorrador(ctx, v, lineas, descuentoPct) {
+  const { nuevoPdf, rgb } = await import('../../core/pdf.js?v=9f6d6ef');
+  const suma = lineas.reduce((s, l) => s + l.monto, 0);
+  const desc = Math.round(suma * descuentoPct / 100);
+  const neto = suma - desc;
+  const exenta = v.iva === 'no';
+  const iva = exenta ? 0 : Math.round(neto * IVA);
+  const p = await nuevoPdf(ctx, { titulo: `BORRADOR · ${exenta ? 'Factura exenta' : 'Factura'} electrónica`, subtitulo: 'Sin validez tributaria: el folio lo da el SII al emitir.' });
+  const { doc } = p;
+  p.tabla({ columnas: ['Cliente', ''], filas: [['Razón social', v.razon], ['RUT', v.rut], ['Giro', v.giro], ['Dirección', [v.direccion, v.comuna].filter(Boolean).join(', ')],
+    ['Fecha de emisión', v.emision], ['Forma de pago', v.forma === '1' ? 'Contado' : 'Crédito'], ...(v.oc.trim() ? [['Referencia', `Orden de compra ${v.oc.trim()}`]] : [])] });
+  p.tabla({ columnas: ['Detalle', 'Cant.', 'Precio', 'Total'], filas: lineas.map((l) => [l.nombre, l.cant ?? 1, miles(l.precio ?? l.monto), miles(l.monto)]) });
+  p.tabla({ columnas: ['Totales', ''], filas: [...(desc ? [['Subtotal', miles(suma)], [`Descuento ${descuentoPct} %`, `-${miles(desc)}`]] : []),
+    [exenta ? 'Monto exento' : 'Neto', miles(neto)], ...(exenta ? [] : [['IVA 19 %', miles(iva)]]), ['Total', miles(neto + iva)]] });
+  const n = doc.getNumberOfPages();
+  const c = rgb(ctx.empresa.color);
+  for (let i = 1; i <= n; i++) {
+    doc.setPage(i);
+    doc.saveGraphicsState();
+    doc.setGState(new doc.GState({ opacity: 0.18 }));
+    doc.setFont('helvetica', 'bold').setFontSize(80).setTextColor(...c);
+    doc.text('BORRADOR', 105, 190, { align: 'center', angle: 35 });
+    doc.restoreGraphicsState();
+  }
+  window.open(URL.createObjectURL(p.blob()), '_blank', 'noopener');
 }
 
 // Formulario. Igual que formFactura: cotizacion (desde el editor), cotizaciones y clientes (pestaña Facturas),
@@ -97,6 +125,15 @@ export async function formEmitir(ctx, { cotizacion = null, cotizaciones = [], cl
     return `Neto ${dinero(neto)} · IVA ${dinero(Math.round(neto * IVA))} · Total ${dinero(neto + Math.round(neto * IVA))}`;
   };
 
+  // Lo que se envía al SII (lo usan "Ver borrador" y "Emitir")
+  const calcular = (v) => {
+    const conItems = v.modo === 'items' && cotActual;
+    const lineas = conItems ? itemsCotizacion(cotActual) : v.modo === 'vehiculos' && cotActual ? lineasCotizacion(cotActual) : leerLineas(v.lineas);
+    if (!lineas.length || lineas.some((l) => !l.nombre || !(l.monto > 0))) throw new Error('Revisa el detalle: cada línea debe terminar en su monto neto.');
+    if (lineas.length > 60) throw new Error('El SII acepta hasta 60 ítems: elige "Un ítem por vehículo".');
+    if (!v.rut || !v.razon || !v.giro || !v.direccion || !v.comuna) throw new Error('Completa RUT, razón social, giro, dirección y comuna.');
+    return { lineas, descuentoPct: conItems ? Number(cotActual.desc_adic_pct) || 0 : 0 };
+  };
   abrirFormulario({
     titulo: est.prueba_emision ? 'Emitir factura electrónica (prueba)' : 'Emitir factura electrónica',
     mensaje: est.prueba_emision
@@ -149,16 +186,19 @@ export async function formEmitir(ctx, { cotizacion = null, cotizaciones = [], cl
       { id: 'emision', etiqueta: 'Fecha de emisión', tipo: 'date', requerido: true, valor: fecha0,
         alCambiar: ({ valor, poner }) => { if (valor) poner('estimada', sumarDias(valor, PLAZO_PAGO)); } },
       { id: 'estimada', etiqueta: 'Fecha de pago estimada', tipo: 'date', valor: sumarDias(fecha0, PLAZO_PAGO) },
-      { id: 'ejecucion', etiqueta: 'Fecha de ejecución del trabajo', tipo: 'date', valor: cot0?.fecha ?? orden?.fecha ?? '' },
+      { id: 'ejecucion', etiqueta: 'Fecha de ejecución del trabajo', tipo: 'date', valor: cot0?.fecha ?? orden?.fecha ?? '',
+        accion: { texto: 'Ver borrador de la factura', icono: 'documento', alClic: async ({ valores, estado }) => {
+          try {
+            const { lineas, descuentoPct } = calcular(valores);
+            await verBorrador(ctx, valores, lineas, descuentoPct);
+            estado('Borrador abierto en otra pestaña. Si está bien, toca "Emitir".', 'ok');
+          } catch (err) { estado(err.message, 'error'); }
+        } } },
       { id: 'notas', etiqueta: 'Notas internas', tipo: 'textarea', valor: '' },
     ],
     textoGuardar: est.prueba_emision ? 'Emitir prueba' : 'Emitir en el SII',
     alGuardar: async (v) => {
-      const conItems = v.modo === 'items' && cotActual;
-      const lineas = conItems ? itemsCotizacion(cotActual) : v.modo === 'vehiculos' && cotActual ? lineasCotizacion(cotActual) : leerLineas(v.lineas);
-      if (!lineas.length || lineas.some((l) => !l.nombre || !(l.monto > 0))) throw new Error('Revisa el detalle: cada línea debe terminar en su monto neto.');
-      if (lineas.length > 60) throw new Error('El SII acepta hasta 60 ítems: elige "Un ítem por vehículo".');
-      const descuentoPct = conItems ? Number(cotActual.desc_adic_pct) || 0 : 0;
+      const { lineas, descuentoPct } = calcular(v);
       const suma = lineas.reduce((s, l) => s + l.monto, 0);
       const neto = suma - Math.round(suma * descuentoPct / 100);
       const tercero = clientes.find((t) => t.id === v.cliente);

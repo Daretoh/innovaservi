@@ -1,14 +1,14 @@
 // Pago mensual (IS Performance): calendario del mes, bono por autos y pago por trabajador
 // (sueldo base de los fijos, horas, vueltas, bono por autos, extras y descuentos del mes, aguinaldo y anticipo de los
 // fijos, que se agregan en Resumen mensual → Para remuneraciones). Total = a pagar (el anticipo ya se pagó).
-import { el } from '../../../core/ui/dom.js?v=c241894';
-import { icono } from '../../../core/ui/iconos.js?v=c241894';
-import { boton } from '../../../core/ui/tabla.js?v=c241894';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=c241894';
-import { avisar } from '../../../core/ui/aviso.js?v=c241894';
-import { dinero, horas, hoyISO, rangoMes, moverMes, nombreMes, sumarDias, diaSemana, fechaLarga } from '../../../core/ui/formato.js?v=c241894';
-import { cargarBase, resumenMes, nombreCompleto } from '../datos.js?v=c241894';
-import { tablaGrupo, exportarGrupos } from '../grupos.js?v=c241894';
+import { el } from '../../../core/ui/dom.js?v=9f6d6ef';
+import { icono } from '../../../core/ui/iconos.js?v=9f6d6ef';
+import { boton } from '../../../core/ui/tabla.js?v=9f6d6ef';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=9f6d6ef';
+import { avisar } from '../../../core/ui/aviso.js?v=9f6d6ef';
+import { dinero, horas, hoyISO, rangoMes, moverMes, nombreMes, sumarDias, diaSemana, fechaLarga } from '../../../core/ui/formato.js?v=9f6d6ef';
+import { cargarBase, resumenMes, nombreCompleto } from '../datos.js?v=9f6d6ef';
+import { tablaGrupo, exportarGrupos } from '../grupos.js?v=9f6d6ef';
 
 const estado = { mes: hoyISO().slice(0, 7) };
 const DIAS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
