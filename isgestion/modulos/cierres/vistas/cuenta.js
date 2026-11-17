@@ -1,15 +1,15 @@
 // Cuenta corriente: cotizaciones aceptadas del cliente, abonos con saldo corriente, OC y factura,
 // cerrar o reabrir, estado de cuenta en PDF, texto para el correo e historial.
 // Ruta: #/cierres.cuenta?id=<id>
-import { el } from '../../../core/ui/dom.js?v=9f6d6ef';
-import { icono } from '../../../core/ui/iconos.js?v=9f6d6ef';
-import { boton } from '../../../core/ui/tabla.js?v=9f6d6ef';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=9f6d6ef';
-import { avisar } from '../../../core/ui/aviso.js?v=9f6d6ef';
-import { subirArchivo, urlFirmada } from '../../../core/adjuntos.js?v=9f6d6ef';
-import { dinero, fechaLarga, hoyISO } from '../../../core/ui/formato.js?v=9f6d6ef';
-import { nombreTercero, MEDIOS, nombreMedio, ARCHIVOS, verPatente, numeroTexto, totalesCuenta, estadoCuenta, totalCotizacion, verHistorial, archivoSeguro } from '../datos.js?v=9f6d6ef';
-import { SELECT_CUENTA } from './cuentas.js?v=9f6d6ef';
+import { el } from '../../../core/ui/dom.js?v=f240e56';
+import { icono } from '../../../core/ui/iconos.js?v=f240e56';
+import { boton } from '../../../core/ui/tabla.js?v=f240e56';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=f240e56';
+import { avisar } from '../../../core/ui/aviso.js?v=f240e56';
+import { subirArchivo, urlFirmada } from '../../../core/adjuntos.js?v=f240e56';
+import { dinero, fechaLarga, hoyISO } from '../../../core/ui/formato.js?v=f240e56';
+import { nombreTercero, MEDIOS, nombreMedio, ARCHIVOS, verPatente, numeroTexto, totalesCuenta, estadoCuenta, totalCotizacion, verHistorial, archivoSeguro } from '../datos.js?v=f240e56';
+import { SELECT_CUENTA } from './cuentas.js?v=f240e56';
 
 const ESTADO_ORDEN = { agendado: 'Agendado', espera: 'En espera', proceso: 'En proceso', terminado: 'Terminado', entregado: 'Entregado', anulada: 'Anulada' };
 
@@ -164,7 +164,7 @@ export default async function vista(ctx) {
   const pdf = async (b) => {
     b.disabled = true;
     try {
-      const { pdfCuenta } = await import('../documentos.js?v=9f6d6ef');
+      const { pdfCuenta } = await import('../documentos.js?v=f240e56');
       const doc = await pdfCuenta(ctx, k, items, abonos, t, k.terceros);
       doc.save(`estado-de-cuenta-${archivoSeguro(k.nombre)}.pdf`);
     } catch (e) { avisar(e.message, 'error'); } finally { b.disabled = false; }

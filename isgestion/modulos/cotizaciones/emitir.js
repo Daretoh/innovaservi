@@ -5,13 +5,13 @@
 // En producción la factura queda registrada en Facturas con el PDF del SII como respaldo y la OC como referencia.
 // En pruebas se emite en el ambiente de desarrollo de Haulmer y solo se muestra el PDF de prueba.
 // Anular: nota de crédito (anularConNota), que quita la factura de Facturas (la cotización queda libre).
-import { el } from '../../core/ui/dom.js?v=9f6d6ef';
-import { abrirFormulario } from '../../core/ui/modal.js?v=9f6d6ef';
-import { avisar } from '../../core/ui/aviso.js?v=9f6d6ef';
-import { hoyISO, sumarDias, dinero } from '../../core/ui/formato.js?v=9f6d6ef';
-import { llamarDte, nuevaLlave, estadoDte, ofrecerPdf } from '../../core/dte.js?v=9f6d6ef';
-import { totales, totalLinea, numeroTexto, verPatente, nombreTercero, IVA } from './datos.js?v=9f6d6ef';
-import { PLAZO_PAGO } from './facturas.js?v=9f6d6ef';
+import { el } from '../../core/ui/dom.js?v=f240e56';
+import { abrirFormulario } from '../../core/ui/modal.js?v=f240e56';
+import { avisar } from '../../core/ui/aviso.js?v=f240e56';
+import { hoyISO, sumarDias, dinero } from '../../core/ui/formato.js?v=f240e56';
+import { llamarDte, nuevaLlave, estadoDte, ofrecerPdf } from '../../core/dte.js?v=f240e56';
+import { totales, totalLinea, numeroTexto, verPatente, nombreTercero, IVA } from './datos.js?v=f240e56';
+import { PLAZO_PAGO } from './facturas.js?v=f240e56';
 
 const detalleCot = (c) => c.cot_grupos.map((g) => [g.titulo, verPatente(g.patente)].filter(Boolean).join(' · ')).join(', ');
 const miles = (n) => Math.round(n).toLocaleString('es-CL');
@@ -53,32 +53,117 @@ export function leerLineas(texto) {
   });
 }
 
-// Borrador (2026-11-17, pedido de Enzo): PDF local con lo mismo que se enviará al SII, marcado BORRADOR, sin emitir
-async function verBorrador(ctx, v, lineas, descuentoPct) {
-  const { nuevoPdf, rgb } = await import('../../core/pdf.js?v=9f6d6ef');
+// Borrador (2026-11-17, pedido de Enzo): PDF local con el mismo diseño de la factura de Haulmer y lo mismo que se
+// enviará al SII, marcado BORRADOR, sin folio ni timbre. No llama al SII.
+async function verBorrador(ctx, v, lineas, descuentoPct, { emisor = null, ocFecha = null } = {}) {
+  const { cargarJsPdf, cargarLogo, rgb } = await import('../../core/pdf.js?v=f240e56');
+  const jsPDF = await cargarJsPdf();
+  const e = ctx.empresa;
+  const em = { razon: emisor?.razon ?? e.razon_social, rut: emisor?.rut ?? e.rut, giro: emisor?.giro ?? e.giro ?? '',
+    direccion: [emisor?.direccion ?? e.direccion, emisor?.comuna].filter(Boolean).join(', '), comuna: emisor?.comuna ?? '' };
   const suma = lineas.reduce((s, l) => s + l.monto, 0);
   const desc = Math.round(suma * descuentoPct / 100);
   const neto = suma - desc;
   const exenta = v.iva === 'no';
   const iva = exenta ? 0 : Math.round(neto * IVA);
-  const p = await nuevoPdf(ctx, { titulo: `BORRADOR · ${exenta ? 'Factura exenta' : 'Factura'} electrónica`, subtitulo: 'Sin validez tributaria: el folio lo da el SII al emitir.' });
-  const { doc } = p;
-  p.tabla({ columnas: ['Cliente', ''], filas: [['Razón social', v.razon], ['RUT', v.rut], ['Giro', v.giro], ['Dirección', [v.direccion, v.comuna].filter(Boolean).join(', ')],
-    ['Fecha de emisión', v.emision], ['Forma de pago', v.forma === '1' ? 'Contado' : 'Crédito'], ...(v.oc.trim() ? [['Referencia', `Orden de compra ${v.oc.trim()}`]] : [])] });
-  p.tabla({ columnas: ['Detalle', 'Cant.', 'Precio', 'Total'], filas: lineas.map((l) => [l.nombre, l.cant ?? 1, miles(l.precio ?? l.monto), miles(l.monto)]) });
-  p.tabla({ columnas: ['Totales', ''], filas: [...(desc ? [['Subtotal', miles(suma)], [`Descuento ${descuentoPct} %`, `-${miles(desc)}`]] : []),
-    [exenta ? 'Monto exento' : 'Neto', miles(neto)], ...(exenta ? [] : [['IVA 19 %', miles(iva)]]), ['Total', miles(neto + iva)]] });
-  const n = doc.getNumberOfPages();
-  const c = rgb(ctx.empresa.color);
-  for (let i = 1; i <= n; i++) {
-    doc.setPage(i);
-    doc.saveGraphicsState();
-    doc.setGState(new doc.GState({ opacity: 0.18 }));
-    doc.setFont('helvetica', 'bold').setFontSize(80).setTextColor(...c);
-    doc.text('BORRADOR', 105, 190, { align: 'center', angle: 35 });
-    doc.restoreGraphicsState();
+  const pesos = (n) => `$ ${miles(n)}`;
+  const rutPuntos = (r) => { const [c, dv] = String(r ?? '').split('-'); return c ? `${Number(c).toLocaleString('es-CL')}-${dv ?? ''}` : ''; };
+  const ROJO = [226, 0, 26];
+  const NEGRO = [20, 20, 20];
+  const doc = new jsPDF({ unit: 'mm', format: 'letter' });
+  const W = doc.internal.pageSize.getWidth();
+  const H = doc.internal.pageSize.getHeight();
+  const M = 10;
+  const punteado = (x, y0, w, h) => { doc.setLineDashPattern([0.5, 0.6], 0).setDrawColor(90).setLineWidth(0.2).rect(x, y0, w, h); doc.setLineDashPattern([], 0); };
+
+  // Emisor: logo y datos
+  const logo = await cargarLogo(ctx.api, e.logo_url);
+  if (logo) { const k = Math.min(42 / logo.ancho, 26 / logo.alto); doc.addImage(logo.dataUrl, logo.formato, M, 9, logo.ancho * k, logo.alto * k); }
+  let y = 12;
+  doc.setTextColor(...NEGRO).setFont('helvetica', 'bold').setFontSize(9.5);
+  doc.text(String(em.razon).toUpperCase(), 58, y); y += 4.6;
+  doc.setFontSize(8.5);
+  for (const t of doc.splitTextToSize(String(em.giro).toUpperCase(), 90)) { doc.text(t, 58, y); y += 4; }
+  if (em.direccion) { doc.text(em.direccion.toUpperCase(), 58, y); y += 4.4; }
+  if (e.email) doc.text(e.email, 58, y);
+
+  // Recuadro rojo
+  doc.setDrawColor(...ROJO).setLineWidth(0.6).rect(151, 8, 55, 30);
+  doc.setTextColor(...ROJO).setFont('helvetica', 'bold').setFontSize(11);
+  doc.text(`R.U.T.: ${rutPuntos(em.rut)}`, 178.5, 16, { align: 'center' });
+  doc.text(exenta ? 'FACTURA EXENTA' : 'FACTURA ELECTRÓNICA', 178.5, 24.5, { align: 'center' });
+  doc.text('N° BORRADOR', 178.5, 33, { align: 'center' });
+  if (em.comuna) doc.text(`S.I.I. ${em.comuna.toUpperCase()}`, 178.5, 44, { align: 'center' });
+  doc.setDrawColor(200).setLineWidth(0.3).line(M, 48, W - M, 48);
+
+  // Fecha, receptor y condiciones
+  const f = new Date(`${v.emision}T12:00:00`);
+  const fechaTxt = f.toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).replace(',', '').replace(/ de (\d{4})$/, ' del $1');
+  doc.setTextColor(...NEGRO).setFont('helvetica', 'normal').setFontSize(9);
+  doc.text(fechaTxt.charAt(0).toUpperCase() + fechaTxt.slice(1), W - M, 53, { align: 'right' });
+  const filasR = [['R.U.T.', rutPuntos(v.rut)], ['SEÑOR (ES)', v.razon], ['GIRO', v.giro], ['DIRECCIÓN', [v.direccion, v.comuna].filter(Boolean).join(', ')]];
+  punteado(M, 56, 113, 4 + filasR.length * 4.6);
+  filasR.forEach(([k, val], i) => {
+    const yy = 60.5 + i * 4.6;
+    doc.setFont('helvetica', 'bold').text(k, M + 2, yy);
+    doc.text(':', M + 25, yy);
+    doc.setFont('helvetica', 'normal').text(doc.splitTextToSize(String(val ?? '').toUpperCase(), 84)[0] ?? '', M + 28, yy);
+  });
+  [['Forma de pago', v.forma === '1' ? 'Contado' : 'Crédito'], ['Tipo Venta', 'Ventas del Giro.'], ['Tipo Compra', 'Compras del Giro.']].forEach(([k, val], i) => {
+    const yy = 62 + i * 5;
+    doc.setFont('helvetica', 'bold').text(`${k} :`, 140, yy);
+    const x = 140 + doc.getTextWidth(`${k} : `) + 0.5;
+    doc.setFont('helvetica', 'normal').text(val, x, yy);
+  });
+
+  // Detalle y referencias
+  const titulo = (t, yy) => {
+    doc.setDrawColor(...NEGRO).setLineWidth(0.4).line(M, yy, W - M, yy);
+    doc.setFont('helvetica', 'bold').setFontSize(9.5).setTextColor(...NEGRO).text(t, W / 2, yy + 4, { align: 'center' });
+    return yy + 5.5;
+  };
+  const tabla = (startY, head, body, columnStyles) => {
+    doc.autoTable({ startY, head: [head], body, margin: { left: M, right: M, bottom: 60 }, theme: 'grid', columnStyles,
+      styles: { font: 'helvetica', fontSize: 8.5, cellPadding: 1.2, textColor: NEGRO, lineColor: [120, 120, 120], lineWidth: 0.1, fillColor: false },
+      headStyles: { fontStyle: 'bold', halign: 'center', fillColor: false, textColor: NEGRO }, bodyStyles: { fontStyle: 'bold' } });
+    return doc.lastAutoTable.finalY;
+  };
+  y = titulo('DETALLE DE ITEMS', 81);
+  y = tabla(y, ['Item', 'Cantidad', 'Precio', 'Subtotal'],
+    lineas.map((l) => [String(l.nombre).toUpperCase(), String(l.cant ?? 1), pesos(l.precio ?? l.monto), pesos(l.monto)]),
+    { 1: { cellWidth: 24, halign: 'center' }, 2: { cellWidth: 38, halign: 'right' }, 3: { cellWidth: 34, halign: 'right' } });
+  if (v.oc && v.oc.trim()) {
+    y = titulo('REFERENCIAS', y + 3);
+    y = tabla(y, ['Documento', 'Folio', 'Fecha de emision'], [['ORDEN DE COMPRA', v.oc.trim(), ocFecha ?? '']],
+      { 0: { halign: 'center' }, 1: { halign: 'center', cellWidth: 45 }, 2: { halign: 'center', cellWidth: 80 } });
   }
-  window.open(URL.createObjectURL(p.blob()), '_blank', 'noopener');
+
+  // Pie: timbre (no existe en un borrador) y totales
+  const yp = H - 52;
+  punteado(25, yp, 70, 22);
+  doc.setFont('helvetica', 'normal').setFontSize(8).setTextColor(120);
+  doc.text(['Timbre electrónico S.I.I.', 'se genera al emitir la factura'], 60, yp + 9.5, { align: 'center' });
+  const tot = [...(desc ? [['SUBTOTAL', suma], [`DESCUENTO ${descuentoPct} %`, -desc]] : []),
+    [exenta ? 'MONTO EXENTO' : 'MONTO NETO', neto], ...(exenta ? [] : [['IVA 19%', iva]]), ['MONTO TOTAL', neto + iva]];
+  punteado(137, yp, 69, 4 + tot.length * 4.6);
+  doc.setTextColor(...NEGRO).setFontSize(9);
+  tot.forEach(([k, n], i) => {
+    const yy = yp + 4.5 + i * 4.6;
+    if (i === tot.length - 1) doc.setDrawColor(...NEGRO).setLineWidth(0.3).line(138, yy - 3.6, 205, yy - 3.6);
+    doc.text(k, 175, yy, { align: 'right' });
+    doc.text('$', 180, yy);
+    doc.text(miles(n), 204, yy, { align: 'right' });
+  });
+
+  // Marca BORRADOR
+  doc.saveGraphicsState();
+  doc.setGState(new doc.GState({ opacity: 0.16 }));
+  doc.setFont('helvetica', 'bold').setFontSize(90).setTextColor(...rgb(e.color));
+  doc.text('BORRADOR', W / 2, H / 2 + 20, { align: 'center', angle: 35 });
+  doc.restoreGraphicsState();
+  doc.setFont('helvetica', 'normal').setFontSize(7.5).setTextColor(150);
+  doc.text('Borrador sin validez tributaria: el folio y el timbre los da el SII al emitir.', W / 2, H - 8, { align: 'center' });
+  window.open(URL.createObjectURL(doc.output('blob')), '_blank', 'noopener');
 }
 
 // Formulario. Igual que formFactura: cotizacion (desde el editor), cotizaciones y clientes (pestaña Facturas),
@@ -190,7 +275,7 @@ export async function formEmitir(ctx, { cotizacion = null, cotizaciones = [], cl
         accion: { texto: 'Ver borrador de la factura', icono: 'documento', alClic: async ({ valores, estado }) => {
           try {
             const { lineas, descuentoPct } = calcular(valores);
-            await verBorrador(ctx, valores, lineas, descuentoPct);
+            await verBorrador(ctx, valores, lineas, descuentoPct, { emisor: est.emisor, ocFecha: cotActual?.oc_fecha ?? null });
             estado('Borrador abierto en otra pestaña. Si está bien, toca "Emitir".', 'ok');
           } catch (err) { estado(err.message, 'error'); }
         } } },
