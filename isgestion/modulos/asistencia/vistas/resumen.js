@@ -3,11 +3,11 @@
 // turno en día hábil (el viernes desde su salida_viernes) y todo el sábado, domingo o feriado; con Artículo 22 no hay
 // extras. Un spot cobra todas sus horas: no tiene "extras". Al tocar una fila se ve el detalle por día.
 // Las condiciones (turno, modo, valor hora) son de Remuneraciones: sin permiso de verlas solo se muestran las horas.
-import { el } from '../../../core/ui/dom.js?v=dd0b774';
-import { icono } from '../../../core/ui/iconos.js?v=dd0b774';
-import { boton } from '../../../core/ui/tabla.js?v=dd0b774';
-import { avisar } from '../../../core/ui/aviso.js?v=dd0b774';
-import { hoyISO, rangoMes, nombreMes, fechaCorta, nombreDia, horas, hhmm, dinero } from '../../../core/ui/formato.js?v=dd0b774';
+import { el } from '../../../core/ui/dom.js?v=f07c4a3';
+import { icono } from '../../../core/ui/iconos.js?v=f07c4a3';
+import { boton } from '../../../core/ui/tabla.js?v=f07c4a3';
+import { avisar } from '../../../core/ui/aviso.js?v=f07c4a3';
+import { hoyISO, rangoMes, nombreMes, fechaCorta, nombreDia, horas, hhmm, dinero } from '../../../core/ui/formato.js?v=f07c4a3';
 
 const estado = { mes: hoyISO().slice(0, 7), abierto: null };
 const nombre = (p) => [p.nombres, p.apellido_paterno, p.apellido_materno].filter(Boolean).join(' ');
@@ -17,7 +17,7 @@ export default async function vista(ctx) {
   const conRemu = ctx.puede('remu', 'ver');
   const verMonto = conRemu;
   const { desde, hasta } = rangoMes(estado.mes);
-  const d = await import('../../remu/datos.js?v=dd0b774');
+  const d = await import('../../remu/datos.js?v=f07c4a3');
   const base = await d.cargarBase(ctx);
   const R = await d.calcularRango(ctx, base, { desde, hasta, itemsMes: estado.mes });
   const filas = R.filas.filter((f) => f.totMin > 0).map((f) => {
@@ -68,7 +68,7 @@ export default async function vista(ctx) {
 
   const totalExtra = filas.reduce((s, x) => s + x.extra, 0);
   const exportar = async () => {
-    const { exportarExcel } = await import('../../../core/excel.js?v=dd0b774');
+    const { exportarExcel } = await import('../../../core/excel.js?v=f07c4a3');
     await exportarExcel(ctx, {
       titulo: 'Resumen de horas del mes', subtitulo: nombreMes(estado.mes), nombre: `horas-${estado.mes}`,
       columnas: ['Trabajador', 'Tipo', { t: 'Días', tipo: 'numero' }, { t: 'Horas', tipo: 'horas' }, { t: 'Normales', tipo: 'horas' }, { t: 'Extra hábil', tipo: 'horas' }, { t: 'Extra fin de semana y feriado', tipo: 'horas' }, { t: 'Total extra', tipo: 'horas' }, ...(verMonto ? [{ t: 'Monto extra', tipo: 'dinero' }] : [])],

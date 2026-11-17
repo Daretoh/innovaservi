@@ -1,19 +1,20 @@
 // Cierre mensual de un cliente: líneas (órdenes terminadas en el mes y manuales), emitir, OC, factura, cobro, PDF e historial.
 // El mes de una orden es el de su entrega (Cierres 005); las sin entregar se avisan y no entran solas.
 // Ruta: #/cierres.cierre?id=<id>
-import { el } from '../../../core/ui/dom.js?v=dd0b774';
-import { icono } from '../../../core/ui/iconos.js?v=dd0b774';
-import { boton } from '../../../core/ui/tabla.js?v=dd0b774';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=dd0b774';
-import { avisar } from '../../../core/ui/aviso.js?v=dd0b774';
-import { subirArchivo, urlFirmada } from '../../../core/adjuntos.js?v=dd0b774';
-import { dinero, fechaLarga, hoyISO, diaLocal } from '../../../core/ui/formato.js?v=dd0b774';
+import { el } from '../../../core/ui/dom.js?v=f07c4a3';
+import { icono } from '../../../core/ui/iconos.js?v=f07c4a3';
+import { boton } from '../../../core/ui/tabla.js?v=f07c4a3';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=f07c4a3';
+import { avisar } from '../../../core/ui/aviso.js?v=f07c4a3';
+import { subirArchivo, urlFirmada } from '../../../core/adjuntos.js?v=f07c4a3';
+import { dinero, fechaLarga, hoyISO, diaLocal } from '../../../core/ui/formato.js?v=f07c4a3';
 import {
   nombreTercero, nombreEstado, CHIP_ESTADO, indiceEstado, MEDIOS, nombreMedio, ARCHIVOS, verPatente, numeroTexto, nombreMesLargo,
   totalesCierre, verHistorial, archivoSeguro,
-} from '../datos.js?v=dd0b774';
-import { nombreEstado as estadoOrden } from '../../taller/datos.js?v=dd0b774';
-import { nombreEstado as estadoCot, CHIP_ESTADO as CHIP_COT } from '../../cotizaciones/datos.js?v=dd0b774';
+} from '../datos.js?v=f07c4a3';
+import { nombreEstado as estadoOrden } from '../../taller/datos.js?v=f07c4a3';
+import { nombreEstado as estadoCot, CHIP_ESTADO as CHIP_COT } from '../../cotizaciones/datos.js?v=f07c4a3';
+import { chipEtapa, etapa } from '../../cotizaciones/seguimiento.js?v=f07c4a3';
 
 const SELECT = '*, terceros(*), cie_lineas(*, tal_ordenes(id, numero, estado)), cot_cotizaciones(id, numero, estado, deleted_at)';
 
@@ -48,9 +49,13 @@ export default async function vista(ctx) {
   const cotDe = new Map();   // orden → cotizaciones vigentes en que está
   const idsOrden = vivas.map((l) => l.orden_id).filter(Boolean);
   if (idsOrden.length && ctx.puede('cotizaciones', 'ver')) {
-    const { data: gs } = await ctx.api.from('cot_grupos').select('orden_id, cot_cotizaciones!inner(id, numero, estado, deleted_at)').in('orden_id', idsOrden).is('cot_cotizaciones.deleted_at', null);
+    const { data: gs } = await ctx.api.from('cot_grupos').select('orden_id, cot_cotizaciones!inner(id, numero, estado, deleted_at, created_at, madre_id, oc_numero, oc_fecha, factura_numero, cobro_fecha, cobro_monto)').in('orden_id', idsOrden).is('cot_cotizaciones.deleted_at', null);
     for (const g of gs ?? []) cotDe.set(g.orden_id, [...(cotDe.get(g.orden_id) ?? []), g.cot_cotizaciones]);
   }
+  // La cotización de cada vehículo: la más nueva vigente (no rechazada ni hija), como Cotizaciones 011
+  const principal = (ordenId) => [...(cotDe.get(ordenId) ?? [])].filter((q) => q.estado !== 'rechazada' && !q.madre_id)
+    .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))[0] ?? null;
+  const porVehiculo = [...new Map(vivas.map((l) => principal(l.orden_id)).filter(Boolean).map((q) => [q.id, q])).values()].sort((a, b) => a.numero - b.numero);
   const enlaceCot = (q) => el('a', { href: ctx.ruta('cotizaciones.editor', { id: q.id }) }, `N° ${numeroTexto(q.numero)}`);
   const relacionadas = [...new Map([...cotDe.values()].flat().map((q) => [q.id, q])).values()].sort((a, b) => a.numero - b.numero);
   const sinCot = vivas.filter((l) => l.orden_id && !cotDe.has(l.orden_id));
@@ -88,7 +93,9 @@ export default async function vista(ctx) {
         el('span', { class: 'texto-suave texto-chico' }, [verPatente(l.patente), l.tal_ordenes ? `orden N° ${l.tal_ordenes.numero}` : l.plan_id ? 'faena-día' : 'manual', l.monto_manual ? 'monto ajustado' : null].filter(Boolean).join(' · ')),
         l.detalle ? el('span', { class: 'texto-chico cie-detalle' }, l.detalle) : null,
         l.orden_id && ctx.puede('cotizaciones', 'ver') ? el('span', { class: 'texto-chico' },
-          cotDe.has(l.orden_id) ? ['Cotización ', cotDe.get(l.orden_id).flatMap((q, k) => [k ? ', ' : '', enlaceCot(q)])]
+          cotDe.has(l.orden_id) ? ['Cotización ', cotDe.get(l.orden_id).flatMap((q, k) => [k ? ', ' : '', enlaceCot(q)]),
+            principal(l.orden_id) ? [' ', el('span', { class: `chip ${CHIP_COT[principal(l.orden_id).estado]}` }, estadoCot[principal(l.orden_id).estado]),
+              ['enviada', 'aceptada'].includes(principal(l.orden_id).estado) ? [' ', chipEtapa(principal(l.orden_id))] : null] : null]
             : ['Sin cotización', conTaller ? [' · ', el('a', { href: ctx.ruta('taller.orden', { id: l.orden_id }) }, 'Cotizar en la orden')] : null]) : null),
       el('div', { class: 'cie-linea-monto' }, monto,
         borrador && editar && l.orden_id && l.monto_manual ? el('button', { type: 'button', class: 'enlace texto-chico', onclick: async () => {
@@ -166,9 +173,64 @@ export default async function vista(ctx) {
     titulo: `Emitir cierre de ${nombreMesLargo(c.mes)}`,
     mensaje: `Se congelan ${vivas.length} líneas por ${dinero(t.total)}${c.afecto_iva ? ' (con IVA)' : ''} y se asigna el número. Lo que se entregue después con fecha de este mes ya no entra solo.`,
     campos: [], textoGuardar: 'Emitir',
-    alGuardar: () => rpc('cie_emitir', { p_cierre: c.id }, 'Cierre emitido.'),
+    alGuardar: async () => {
+      const { error: e } = await ctx.api.rpc('cie_emitir', { p_cierre: c.id });
+      if (e) throw new Error(e.message);
+      const n = await aceptarCotizaciones();
+      avisar(n ? `Cierre emitido. ${n} ${n === 1 ? 'cotización quedó aceptada' : 'cotizaciones quedaron aceptadas'}.` : 'Cierre emitido.');
+      ctx.refrescar();
+    },
   });
+  // Emitir el cierre es la aprobación del cliente: las cotizaciones de cada vehículo pasan a aceptadas
+  const porAceptar = porVehiculo.filter((q) => q.estado === 'enviada');
+  const aceptarCotizaciones = async () => {
+    if (!ctx.puede('cotizaciones', 'editar')) return 0;
+    let n = 0;
+    for (const q of porAceptar) {
+      const { error: e } = await ctx.api.from('cot_cotizaciones').update({ estado: 'aceptada', respondida_at: new Date().toISOString() }).eq('id', q.id);
+      if (e) avisar(`N° ${numeroTexto(q.numero)}: ${e.message}`, 'error'); else n++;
+    }
+    return n;
+  };
+  // Todas las cotizaciones del cierre en un ZIP (un PDF por cotización)
+  const zipCotizaciones = async (b) => {
+    b.disabled = true;
+    try {
+      const [{ cargarCotizacion }, { pdfCotizacion }] = await Promise.all([import('../../cotizaciones/datos.js?v=f07c4a3'), import('../../cotizaciones/documento.js?v=f07c4a3')]);
+      if (!window.JSZip) await new Promise((ok, mal) => { const sc = document.createElement('script'); sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js'; sc.onload = ok; sc.onerror = () => mal(new Error('No se pudo cargar el generador de ZIP.')); document.head.append(sc); });
+      const zip = new window.JSZip();
+      for (const q of porVehiculo) {
+        const cot = await cargarCotizacion(ctx, q.id);
+        if (!cot) continue;
+        const doc = await pdfCotizacion(ctx, cot);
+        const g = cot.cot_grupos[0];
+        zip.file(`cotizacion-${numeroTexto(q.numero)}${g?.patente ? `-${archivoSeguro(g.patente)}` : ''}.pdf`, doc.output('arraybuffer'));
+      }
+      const blob = await zip.generateAsync({ type: 'blob' });
+      const a = el('a', { href: URL.createObjectURL(blob), download: `cotizaciones-${c.mes}-${archivoSeguro(nombreTercero(c.terceros) || 'cliente')}.zip` });
+      document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+    } catch (e) { avisar(e.message, 'error'); } finally { b.disabled = false; }
+  };
 
+  // Factura y cobro por vehículo: cada cotización lleva su OC, factura y cobro (Guillermo Morales)
+  const resumenVehiculos = () => {
+    const vivasCot = porVehiculo.filter((q) => ['enviada', 'aceptada'].includes(q.estado));
+    const cuenta = (k) => vivasCot.filter((q) => etapa(q) === k).length;
+    const cobrado = porVehiculo.reduce((s, q) => s + Number(q.cobro_monto || 0), 0);
+    return el('div', { class: 'ficha doc-grupo' },
+      el('h2', {}, 'Factura y cobro por vehículo'),
+      el('div', { class: 'resumen-chips' },
+        porVehiculo.length - vivasCot.length ? el('span', { class: 'chip chip-na' }, `${porVehiculo.length - vivasCot.length} en borrador`) : null,
+        el('span', { class: 'chip chip-pend' }, `${cuenta('sin_oc')} sin OC`),
+        el('span', { class: 'chip chip-prox' }, `${cuenta('oc')} con OC sin facturar`),
+        el('span', { class: 'chip chip-venc' }, `${cuenta('facturada')} facturadas por cobrar`),
+        el('span', { class: 'chip chip-ok' }, `${cuenta('cobrada')} cobradas${cobrado ? ` · ${dinero(cobrado)}` : ''}`)),
+      !borrador && c.estado !== 'anulado' && porAceptar.length && ctx.puede('cotizaciones', 'editar')
+        ? el('p', { class: 'aviso-bandeja' }, icono('alerta', { tam: 16 }), `${porAceptar.length} ${porAceptar.length === 1 ? 'cotización sigue enviada' : 'cotizaciones siguen enviadas'}: con el cierre emitido quedan aceptadas.`,
+          boton('Marcar aceptadas', { icono: 'check', onclick: async (ev) => { ev.currentTarget.disabled = true; const n = await aceptarCotizaciones(); avisar(`${n} aceptadas.`); ctx.refrescar(); } })) : null,
+      porVehiculo.some((q) => q.estado === 'borrador') ? el('p', { class: 'texto-suave texto-chico' }, 'En borrador: ', porVehiculo.filter((q) => q.estado === 'borrador').flatMap((q, k) => [k ? ', ' : '', enlaceCot(q)]), '. Envíalas desde su cotización para registrar su OC y su factura.') : null,
+      el('p', { class: 'texto-suave texto-chico' }, 'Cada vehículo se factura y cobra en su cotización (abre el N° de cada línea: OC, "Emitir factura" y cobro). Los pasos de abajo son del cierre completo: úsalos solo si el cliente paga el mes en una sola factura.'));
+  };
   const paso = (n, titulo, hecho, activo, cuerpo, botones) => el('div', { class: `cie-paso${hecho ? ' cie-hecho' : activo ? ' cie-activo' : ''}` },
     el('div', { class: 'cie-paso-cab' }, el('span', { class: 'cie-paso-n' }, hecho ? icono('check', { tam: 14 }) : String(n)), el('strong', {}, titulo)),
     el('div', { class: 'texto-chico' }, cuerpo), el('div', { class: 'cie-paso-acc' }, botones.filter(Boolean)));
@@ -197,7 +259,7 @@ export default async function vista(ctx) {
   const pdf = async (b) => {
     b.disabled = true;
     try {
-      const { pdfCierre } = await import('../documentos.js?v=dd0b774');
+      const { pdfCierre } = await import('../documentos.js?v=f07c4a3');
       const doc = await pdfCierre(ctx, c, lineas, c.terceros, cliCfg.data?.nota);
       doc.save(`cierre-${c.mes}-${archivoSeguro(nombreTercero(c.terceros) || 'cliente')}.pdf`);
     } catch (e) { avisar(e.message, 'error'); } finally { b.disabled = false; }
@@ -210,7 +272,8 @@ export default async function vista(ctx) {
         el('p', { class: 'texto-suave' }, [c.emitido_at ? `Emitido el ${fechaLarga(diaLocal(c.emitido_at))}` : 'Sin emitir', `${vivas.length} ${vivas.length === 1 ? 'línea' : 'líneas'}`].join(' · '))),
       el('div', { class: 'listado-acciones' }, el('span', { class: `chip ${CHIP_ESTADO[c.estado]}` }, nombreEstado[c.estado]),
         conCot || c.estado === 'anulado' ? null : boton(borrador ? 'PDF de prueba' : 'PDF', { icono: 'descargar', onclick: (ev) => pdf(ev.currentTarget) }),
-        ctx.puede('cierres', 'exportar') ? boton('Excel detalle', { icono: 'descargar', onclick: async (ev) => { const b = ev.currentTarget; b.disabled = true; try { const { excelDetalleCierre } = await import('../excel.js?v=dd0b774'); await excelDetalleCierre(ctx, c, lineas); } catch (e) { avisar(e.message, 'error'); } finally { b.disabled = false; } } }) : null,
+        porVehiculo.length && !conCot ? boton(`Cotizaciones (${porVehiculo.length})`, { icono: 'descargar', title: 'Un ZIP con el PDF de la cotización de cada vehículo', onclick: (ev) => zipCotizaciones(ev.currentTarget) }) : null,
+        ctx.puede('cierres', 'exportar') ? boton('Excel detalle', { icono: 'descargar', onclick: async (ev) => { const b = ev.currentTarget; b.disabled = true; try { const { excelDetalleCierre } = await import('../excel.js?v=f07c4a3'); await excelDetalleCierre(ctx, c, lineas); } catch (e) { avisar(e.message, 'error'); } finally { b.disabled = false; } } }) : null,
         boton('Historial', { icono: 'reloj', onclick: () => verHistorial(ctx, c.id, `${nombreTercero(c.terceros)} ${c.mes}`) }))),
     agregadas ? el('p', { class: 'aviso-bandeja' }, icono('check', { tam: 16 }), `${agregadas} ${agregadas === 1 ? 'línea nueva entró' : 'líneas nuevas entraron'} al cierre (órdenes terminadas o faenas del mes).`) : null,
     nuevas.length ? el('p', { class: 'aviso-bandeja' }, icono('alerta', { tam: 16 }),
@@ -221,6 +284,7 @@ export default async function vista(ctx) {
     relacionadas.length || sinCot.length ? el('p', { class: 'aviso-bandeja' }, icono('documento', { tam: 16 }),
       relacionadas.length ? ['Cotizaciones relacionadas: ', relacionadas.flatMap((q, k) => [k ? ', ' : '', enlaceCot(q)]), '. '] : null,
       sinCot.length ? `${sinCot.length} ${sinCot.length === 1 ? 'vehículo' : 'vehículos'} sin cotización.` : null) : null,
+    !conCot && porVehiculo.length ? resumenVehiculos() : null,
     c.estado === 'anulado' ? el('p', { class: 'aviso-bandeja' }, icono('alerta', { tam: 16 }), `Cierre anulado: ${c.anulado_motivo ?? ''}`)
     : conCot ? el('div', { class: 'ficha doc-grupo' },
       el('h2', {}, 'Cotización del mes'),

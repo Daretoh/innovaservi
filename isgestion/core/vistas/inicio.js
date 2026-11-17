@@ -1,9 +1,10 @@
 // Inicio: saludo con la fecha, lo que requiere atención (alertas de los módulos que el usuario puede ver)
 // indicadores de los módulos (core/vistas/indicadores.js) y accesos a los módulos agrupados por área. Las alertas llegan después, sin bloquear la pantalla.
-import { el } from '../ui/dom.js?v=dd0b774';
-import { icono } from '../ui/iconos.js?v=dd0b774';
-import { nombreEmpresa } from '../empresas.js?v=dd0b774';
-import { esTelefono, marcaGuardada, recordarMarca } from '../movil.js?v=dd0b774';
+import { el } from '../ui/dom.js?v=f07c4a3';
+import { icono } from '../ui/iconos.js?v=f07c4a3';
+import { nombreEmpresa } from '../empresas.js?v=f07c4a3';
+import { esTelefono, marcaGuardada, recordarMarca } from '../movil.js?v=f07c4a3';
+import { diaLocal } from '../ui/formato.js?v=f07c4a3';
 
 const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
@@ -73,7 +74,7 @@ function cabeceraMovil(ctx, { fecha, titulo, abrirNotificaciones, conTaller }) {
 function atencionTaller(ctx) {
   const nodo = el('section', { class: 'im-atencion', hidden: true });
   (async () => {
-    const [{ SELECT_ORDEN, minutosTrabajo }, m] = await Promise.all([import('../../modulos/taller/datos.js?v=dd0b774'), import('../../modulos/taller/movil.js?v=dd0b774')]);
+    const [{ SELECT_ORDEN, minutosTrabajo }, m] = await Promise.all([import('../../modulos/taller/datos.js?v=f07c4a3'), import('../../modulos/taller/movil.js?v=f07c4a3')]);
     const { data, error } = await ctx.api.from('tal_ordenes').select(SELECT_ORDEN).eq('empresa_id', ctx.empresa.id).in('estado', ['agendado', 'espera', 'proceso', 'terminado']);
     if (error) throw error;
     // Primero por tipo de motivo; dentro de cada uno, el que lleva más tiempo
@@ -103,6 +104,8 @@ function botonMarcar(ctx, visibles) {
 
 // Trabajando hoy (2026-11-16, Enzo): para quien ve la asistencia, cuántos marcaron su entrada hoy en la tablet (o en
 // terreno) y siguen dentro, cuántos ya salieron y quiénes. Se llena después, sin frenar el Inicio.
+// 2026-11-17 (Enzo): también cuenta a quien no marcó en la tablet pero tiene la entrada de hoy cargada en Asistencia
+// (a mano, sin salida = sigue dentro; con salida = ya salió). Las filas "según horario" no cuentan: no son una marca.
 function trabajandoHoy(ctx, visibles) {
   if (!visibles.some((m) => m.id === 'marcaje') || !ctx.puede('asistencia', 'ver')) return null;
   const caja = el('a', { class: 'ficha inicio-trabajando', href: '#/asistencia.horas', 'aria-busy': 'true' },
@@ -112,11 +115,21 @@ function trabajandoHoy(ctx, visibles) {
   Promise.all([
     ctx.api.from('asis_marcas').select('persona_id, tipo, ts').eq('empresa_id', ctx.empresa.id).is('anulada_at', null).gte('ts', hoy.toISOString()).order('ts'),
     ctx.api.rpc('asis_personas', { p_empresa: ctx.empresa.id }),
-  ]).then(([m, p]) => {
+    ctx.api.from('asis_horas').select('persona_id, entrada, salida, origen').eq('empresa_id', ctx.empresa.id).eq('fecha', diaLocal(hoy))
+      .is('deleted_at', null).not('entrada', 'is', null),
+  ]).then(([m, p, h]) => {
     if (m.error) throw m.error;
     const nombres = new Map((p.data ?? []).map((x) => [x.persona_id, [x.nombres?.split(' ')[0], x.apellido_paterno].filter(Boolean).join(' ')]));
     const ultima = new Map();
     for (const x of m.data ?? []) ultima.set(x.persona_id, x);   // ordenadas por hora: queda la última de cada persona
+    const enTablet = new Set(ultima.keys());
+    for (const x of h.data ?? []) {                               // entradas cargadas en Asistencia, de quien no marcó hoy
+      if (enTablet.has(x.persona_id) || x.origen === 'horario') continue;
+      const [hh, mm] = x.entrada.split(':').map(Number);
+      const ts = new Date(hoy); ts.setHours(hh, mm);
+      const previa = ultima.get(x.persona_id);
+      if (!previa || x.salida == null) ultima.set(x.persona_id, { persona_id: x.persona_id, tipo: x.salida == null ? 'entrada' : 'salida', ts });
+    }
     const dentro = [...ultima.values()].filter((x) => x.tipo === 'entrada');
     const salieron = ultima.size - dentro.length;
     const hora = (ts) => new Date(ts).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
@@ -152,12 +165,12 @@ export default function inicio(ctx, visibles, { abrirNotificaciones } = {}) {
   // Indicadores (tarjetas y paneles): llegan después, sin bloquear la pantalla
   const indicadores = el('div', { class: 'cargando-bloque', 'aria-busy': 'true', 'aria-label': 'Cargando indicadores' }, el('span', { class: 'cargador', 'aria-hidden': 'true' }));
   if (visibles.length && !tablet) {
-    import('./indicadores.js?v=dd0b774')
+    import('./indicadores.js?v=f07c4a3')
       .then(async ({ cargarIndicadores, panelIndicadores }) => { const p = panelIndicadores(ctx, await cargarIndicadores(ctx)); if (p) indicadores.replaceWith(p); else indicadores.remove(); })
       .catch(() => indicadores.remove());
   } else indicadores.remove();
   if (visibles.length && !tablet) {
-    import('../../modulos/gerencia/alertas.js?v=dd0b774')
+    import('../../modulos/gerencia/alertas.js?v=f07c4a3')
       .then(({ cargarAlertas }) => cargarAlertas(ctx))
       .then((alertas) => {
         atencion.replaceChildren(el('h2', {}, alertas.length ? `Requiere atención (${alertas.length})` : 'Requiere atención'),

@@ -1,13 +1,13 @@
 // Cotizaciones: listado con filtro por estado y búsqueda; nueva cotización. Cada fila dice quién la creó y quién la
 // editó por última vez (como el OS; updated_by lo pone la base).
-import { el } from '../../../core/ui/dom.js?v=dd0b774';
-import { listado, boton } from '../../../core/ui/tabla.js?v=dd0b774';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=dd0b774';
-import { dinero, fechaLarga, fechaCorta, hoyISO, diaLocal, nombrePropio } from '../../../core/ui/formato.js?v=dd0b774';
-import { avance, colorAvance } from '../../taller/seguimiento.js?v=dd0b774';
-import { nombreEstado as estadoOrden } from '../../taller/datos.js?v=dd0b774';
-import { costosDeGrupos, costoFuera, sinRepetir, yaTraidos } from '../costos-orden.js?v=dd0b774';
-import { ESTADOS, nombreEstado, CHIP_ESTADO, SELECT_COT, totales, costoLinea, numeroTexto, nombreTercero, verPatente, siguienteNumero, cargarConfig, datosCliente } from '../datos.js?v=dd0b774';
+import { el } from '../../../core/ui/dom.js?v=f07c4a3';
+import { listado, boton } from '../../../core/ui/tabla.js?v=f07c4a3';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=f07c4a3';
+import { dinero, fechaLarga, fechaCorta, hoyISO, diaLocal, nombrePropio } from '../../../core/ui/formato.js?v=f07c4a3';
+import { avance, colorAvance } from '../../taller/seguimiento.js?v=f07c4a3';
+import { nombreEstado as estadoOrden } from '../../taller/datos.js?v=f07c4a3';
+import { costosDeGrupos, costoFuera, sinRepetir, yaTraidos } from '../costos-orden.js?v=f07c4a3';
+import { ESTADOS, nombreEstado, CHIP_ESTADO, SELECT_COT, totales, costoLinea, numeroTexto, nombreTercero, verPatente, siguienteNumero, cargarConfig, datosCliente } from '../datos.js?v=f07c4a3';
 
 const filtro = { estado: 'todas', buscar: '' };
 
@@ -72,9 +72,11 @@ export default async function vista(ctx) {
 // Nueva cotización con un primer grupo. Si no se indica el cliente (undefined), se pregunta.
 export async function nueva(ctx, { tercero = undefined, grupo = null, lineas = [], ordenId = null } = {}) {
   const crear = async (t) => {
-    const [numero, cfg] = await Promise.all([siguienteNumero(ctx), cargarConfig(ctx)]);
+    // Con o sin IVA como la última cotización del cliente (Guillermo Morales siempre con IVA, 2026-11-17)
+    const [numero, cfg, ult] = await Promise.all([siguienteNumero(ctx), cargarConfig(ctx),
+      t?.id ? ctx.api.from('cot_cotizaciones').select('con_iva').eq('empresa_id', ctx.empresa.id).eq('tercero_id', t.id).is('deleted_at', null).order('created_at', { ascending: false }).limit(1).maybeSingle() : { data: null }]);
     const { data: c, error } = await ctx.api.from('cot_cotizaciones').insert({
-      empresa_id: ctx.empresa.id, numero, fecha: hoyISO(), validez_dias: cfg.validez_dias, ...datosCliente(t),
+      empresa_id: ctx.empresa.id, numero, fecha: hoyISO(), validez_dias: cfg.validez_dias, ...datosCliente(t), ...(ult?.data ? { con_iva: ult.data.con_iva } : {}),
     }).select('id').single();
     if (error) throw new Error(error.message);
     const { data: g, error: e2 } = await ctx.api.from('cot_grupos').insert({

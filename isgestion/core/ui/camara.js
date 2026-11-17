@@ -4,8 +4,8 @@
 // devuelve todas. Si el navegador no deja usar la cámara, abre la del teléfono (una foto) como antes.
 //   const fotos = await tomarFotos({ titulo: 'Fotos: Antes', textoListo: 'Subir' });   // File[] ([] si se cancela)
 // Se usa en Reportes (parte y link de la cuadrilla) y en Costos (bandeja por cargar). Estilos .cam-* en estilos.css.
-import { el } from './dom.js?v=dd0b774';
-import { icono } from './iconos.js?v=dd0b774';
+import { el } from './dom.js?v=f07c4a3';
+import { icono } from './iconos.js?v=f07c4a3';
 
 const LADO = 2000;   // lado mayor de cada foto (después cada módulo la achica a lo suyo)
 
