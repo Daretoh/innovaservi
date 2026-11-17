@@ -3,15 +3,15 @@
 // (Costos 008) con su archivo en R2 (<empresa>/costos/…). "Cargar" abre el lector con la foto ya puesta; al registrar
 // el gasto la foto pasa a ser su archivo y el lector sigue con la siguiente de la bandeja.
 // Ruta: #/costos.bandeja
-import { el } from '../../../core/ui/dom.js?v=c2000db';
-import { icono } from '../../../core/ui/iconos.js?v=c2000db';
-import { boton } from '../../../core/ui/tabla.js?v=c2000db';
-import { avisar } from '../../../core/ui/aviso.js?v=c2000db';
-import { subirArchivo, urlsFirmadas, eliminarArchivo } from '../../../core/adjuntos.js?v=c2000db';
-import { botonesFotos, tomarFotos } from '../../../core/ui/camara.js?v=c2000db';
-import { comprimirFoto, esImagen, esPdf } from '../../../core/imagenes.js?v=c2000db';
-import { fechaLarga, diaLocal, dinero } from '../../../core/ui/formato.js?v=c2000db';
-import { llamarDte, estadoDte, NOMBRE_DTE } from '../../../core/dte.js?v=c2000db';
+import { el } from '../../../core/ui/dom.js?v=9a658ea';
+import { icono } from '../../../core/ui/iconos.js?v=9a658ea';
+import { boton } from '../../../core/ui/tabla.js?v=9a658ea';
+import { avisar } from '../../../core/ui/aviso.js?v=9a658ea';
+import { subirArchivo, urlsFirmadas, eliminarArchivo } from '../../../core/adjuntos.js?v=9a658ea';
+import { botonesFotos, tomarFotos } from '../../../core/ui/camara.js?v=9a658ea';
+import { comprimirFoto, esImagen, esPdf } from '../../../core/imagenes.js?v=9a658ea';
+import { fechaLarga, diaLocal, dinero } from '../../../core/ui/formato.js?v=9a658ea';
+import { llamarDte, estadoDte, NOMBRE_DTE } from '../../../core/dte.js?v=9a658ea';
 
 // Pendientes de la empresa en orden de llegada (RLS: quien solo carga ve las suyas)
 // Las compras del SII (origen 'sii', Núcleo 021) traen además su XML y sus datos (dte)
@@ -179,7 +179,7 @@ export default async function vista(ctx) {
   ].filter(Boolean);
   const entradas = async () => {
     zona.replaceChildren(el('p', { class: 'texto-suave' }, 'Cargando…'));
-    const { panelEmitidas } = await import('../../cotizaciones/emitidas.js?v=c2000db');
+    const { panelEmitidas } = await import('../../cotizaciones/emitidas.js?v=9a658ea');
     const [cs, ts] = await Promise.all([
       ctx.api.from('cot_cotizaciones').select('id, numero, cliente_nombre, tercero_id').eq('empresa_id', e).is('deleted_at', null).is('madre_id', null).in('estado', ['enviada', 'aceptada']).order('numero', { ascending: false }).limit(500),
       ctx.api.from('terceros').select('id, rut, razon_social, nombre_fantasia').eq('empresa_id', e).is('deleted_at', null).order('razon_social').limit(5000),

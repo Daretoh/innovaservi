@@ -1,12 +1,12 @@
 // Partes de trabajo: listado, pendientes de clientes que piden informe y creación desde las faenas.
-import { el } from '../../../core/ui/dom.js?v=c2000db';
-import { icono } from '../../../core/ui/iconos.js?v=c2000db';
-import { listado, boton } from '../../../core/ui/tabla.js?v=c2000db';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=c2000db';
-import { avisar } from '../../../core/ui/aviso.js?v=c2000db';
-import { hoyISO, sumarDias, fechaLarga } from '../../../core/ui/formato.js?v=c2000db';
-import { faenasSinParte, nombreTercero } from '../datos.js?v=c2000db';
-import { esTelefono } from '../../../core/movil.js?v=c2000db';
+import { el } from '../../../core/ui/dom.js?v=9a658ea';
+import { icono } from '../../../core/ui/iconos.js?v=9a658ea';
+import { listado, boton } from '../../../core/ui/tabla.js?v=9a658ea';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=9a658ea';
+import { avisar } from '../../../core/ui/aviso.js?v=9a658ea';
+import { hoyISO, sumarDias, fechaLarga } from '../../../core/ui/formato.js?v=9a658ea';
+import { faenasSinParte, nombreTercero, cargarClientes, cargarFaenas } from '../datos.js?v=9a658ea';
+import { esTelefono } from '../../../core/movil.js?v=9a658ea';
 
 let estado = 'todos';
 // El filtro Todos / Borradores / Confirmados repinta con lo ya cargado (antes volvía a pedir todo y tardaba 2–3 s sin
@@ -18,17 +18,25 @@ async function cargar(ctx) {
   const reusar = soloPintar && cache?.empresa === ctx.empresa.id;
   soloPintar = false;
   if (reusar) return cache;
-  const [partes, pideInforme, sinParte] = await Promise.all([
+  // Cliente y faenas con las funciones de Reportes (Reportes 010): con solo el permiso de Reportes (Capataz) los
+  // embebidos terceros(...) y ope_faenas(...) llegaban vacíos y todos los partes salían como "Interno"
+  const [partes, clientes, sinParte] = await Promise.all([
     ctx.api.from('rep_partes')
-      .select('id, fecha, estado, lugar, terceros(razon_social, nombre_fantasia), rep_parte_faenas(fecha, ope_faenas(titulo)), rep_media(id)')
+      .select('id, fecha, estado, lugar, tercero_id, rep_parte_faenas(fecha, faena_id), rep_media(id)')
       .eq('empresa_id', ctx.empresa.id).is('deleted_at', null).order('fecha', { ascending: false }).limit(500),
-    ctx.api.from('ope_clientes').select('tercero_id').eq('empresa_id', ctx.empresa.id).eq('pide_informe', true),
+    cargarClientes(ctx),
     faenasSinParte(ctx, sumarDias(hoyISO(), -30), hoyISO()),
   ]);
   if (partes.error) throw partes.error;
+  const ids = [...new Set(partes.data.flatMap((p) => p.rep_parte_faenas.map((x) => x.faena_id)))];
+  const faenas = new Map((ids.length ? await cargarFaenas(ctx, '2000-01-01', '2000-01-01', ids) : []).map((f) => [f.id, f]));
+  const cli = new Map(clientes.map((c) => [c.id, c]));
+  for (const p of partes.data) {
+    p.terceros = cli.get(p.tercero_id) ?? null;
+    for (const x of p.rep_parte_faenas) x.ope_faenas = faenas.get(x.faena_id) ?? null;
+  }
   // Faenas ya hechas (últimos 30 días) que llevan informe (marcado en la faena o, si no, por su cliente) y aún no tienen parte
-  const clientesInforme = new Set((pideInforme.data ?? []).map((c) => c.tercero_id));
-  cache = { empresa: ctx.empresa.id, partes: partes.data, pendientes: sinParte.filter((f) => f.pide_informe ?? clientesInforme.has(f.tercero_id)) };
+  cache = { empresa: ctx.empresa.id, partes: partes.data, pendientes: sinParte.filter((f) => f.pide_informe) };
   return cache;
 }
 
@@ -88,7 +96,7 @@ export default async function vista(ctx) {
 
 async function nuevo(ctx, preseleccion) {
   const disponibles = await faenasSinParte(ctx, sumarDias(hoyISO(), -45), sumarDias(hoyISO(), 14));
-  const { data: clientes } = await ctx.api.from('terceros').select('id, razon_social, nombre_fantasia').eq('empresa_id', ctx.empresa.id).contains('tipo', ['cliente']).is('deleted_at', null).order('razon_social');
+  const clientes = (await cargarClientes(ctx)).filter((c) => c.es_cliente).sort((a, b) => (a.razon_social ?? '').localeCompare(b.razon_social ?? ''));
   // La faena desde la que se creó va primera (marcada) y luego las del mismo cliente: antes quedaba marcada al fondo
   // de la lista, detrás de las futuras, y parecía que no se había elegido (Enzo, 2026-11-02)
   if (preseleccion) {

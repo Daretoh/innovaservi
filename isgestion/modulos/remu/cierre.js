@@ -13,15 +13,15 @@
 //   semanales (tratos, vueltas, extras) se resta de A pagar ("Pagado semanal"); sigue en el total (costo del mes).
 // - Personas ocultas del cierre (remu_cierres.ocultos) y mes enviado (remu_cierres.cerrado_at): no cambian pagos.
 // Columnas, su orden y las secciones que van se recuerdan en este navegador (isg.remu.cierre).
-import { el } from '../../core/ui/dom.js?v=c2000db';
-import { icono } from '../../core/ui/iconos.js?v=c2000db';
-import { boton } from '../../core/ui/tabla.js?v=c2000db';
-import { avisar } from '../../core/ui/aviso.js?v=c2000db';
-import { dinero, horas, hoyISO, moverMes, nombreMes } from '../../core/ui/formato.js?v=c2000db';
-import { abrirFormulario } from '../../core/ui/modal.js?v=c2000db';
-import { nombreEmpresa } from '../../core/empresas.js?v=c2000db';
-import { cargarBase, resumenMes, nombreCompleto, MOVIMIENTOS } from './datos.js?v=c2000db';
-import { diasDelMes } from './calculo.js?v=c2000db';
+import { el } from '../../core/ui/dom.js?v=9a658ea';
+import { icono } from '../../core/ui/iconos.js?v=9a658ea';
+import { boton } from '../../core/ui/tabla.js?v=9a658ea';
+import { avisar } from '../../core/ui/aviso.js?v=9a658ea';
+import { dinero, horas, hoyISO, moverMes, nombreMes } from '../../core/ui/formato.js?v=9a658ea';
+import { abrirFormulario } from '../../core/ui/modal.js?v=9a658ea';
+import { nombreEmpresa } from '../../core/empresas.js?v=9a658ea';
+import { cargarBase, resumenMes, nombreCompleto, MOVIMIENTOS } from './datos.js?v=9a658ea';
+import { diasDelMes } from './calculo.js?v=9a658ea';
 
 const estado = { mes: hoyISO().slice(0, 7) };
 const CLAVE = 'isg.remu.cierre';
@@ -136,7 +136,8 @@ export async function vistaCierre(ctx, { empresas, titulo = 'Cierre de remunerac
           el('div', { class: 'segmento', role: 'group', 'aria-label': 'Qué va en el cierre' }, PRESETS.map(([k, t]) => el('button', { type: 'button', 'aria-pressed': String(prefs.preset === k && !Object.keys(prefs.secs).length),
             onclick: () => { prefs.preset = k; prefs.secs = {}; guardarPrefs(prefs); pintar(); } }, t))),
           menuColumnas(prefs, () => { guardarPrefs(prefs); pintar(); }),
-          datos.some((d) => !d.error && d.puede('remu', 'crear')) ? boton('Agregar movimiento', { icono: 'mas', onclick: () => nuevoMovimiento(ctx, datos, mes) }) : null),
+          datos.some((d) => !d.error && d.puede('remu', 'crear')) ? boton('Agregar movimiento', { icono: 'mas', onclick: () => nuevoMovimiento(ctx, datos, mes) }) : null,
+          el('a', { class: 'boton boton-secundario', href: grupo ? '#/grupo.quincenas' : '#/remu.quincenas' }, icono('dinero', { tam: 16 }), 'Quincenas')),
         el('div', { class: 'cierre-secs' }, S.map((s) => el('label', { class: 'casilla cierre-sec' },
           el('input', { type: 'checkbox', checked: seccionVa(prefs, s), onchange: (ev) => { prefs.secs[s.k] = ev.target.checked; guardarPrefs(prefs); pintar(); } }),
           s.titulo, el('span', { class: 'texto-suave' }, ` (${s.filas.length})`)))))),
@@ -259,7 +260,7 @@ function tablaSeccion(ctx, s, cols, { mes, grupo, repintar }) {
     el('div', { class: 'remu-fijos' },
       (r.f.itemsFijos ?? []).map((it) => el('span', { class: `chip ${MOVIMIENTOS[it.clase]?.g === 'hab' ? 'chip-ok' : 'chip-pend'}`, title: it.concepto },
         `${MOVIMIENTOS[it.clase]?.t ?? it.clase} ${dinero(it.monto)}`,
-        d.puede('remu', 'eliminar') ? el('button', { type: 'button', class: 'chip-quitar', 'aria-label': `Quitar ${it.clase} de ${dinero(it.monto)}`, onclick: () => quitarMovimiento(ctx, it) }, icono('cerrar', { tam: 12 })) : null)),
+        d.puede('remu', 'eliminar') && !it.quincena_id ? el('button', { type: 'button', class: 'chip-quitar', 'aria-label': `Quitar ${it.clase} de ${dinero(it.monto)}`, onclick: () => quitarMovimiento(ctx, it) }, icono('cerrar', { tam: 12 })) : null)),
       d.puede('remu', 'crear') ? el('button', { type: 'button', class: 'boton-enlace texto-chico', onclick: () => movimiento(ctx, d, r.f, mes) }, '+ Movimiento') : null));
   const tot = sumar(s.filas);
   const clase = (c) => (c.tipo === 'texto' ? '' : 'num');
@@ -345,7 +346,7 @@ async function exportar(ctx, { secs, cols, mes, titulo, grupo }, formato, b) {
     const cab = ['Trabajador', ...cols.map((c) => c.t)];
     const sumar = (filas) => cols.map((c) => (c.suma ? filas.reduce((x, r) => x + (Number(c.v(r)) || 0), 0) : null));
     if (formato === 'excel') {
-      const { nuevoExcel } = await import('../../core/excel.js?v=c2000db');
+      const { nuevoExcel } = await import('../../core/excel.js?v=9a658ea');
       const x = await nuevoExcel(ctx, { titulo: tituloDoc, subtitulo });
       const valor = (c, v) => (c.tipo === 'horas' ? (v == null ? null : Math.round(v / 6) / 10) : c.neg && v ? -v : v);
       const tipo = (c) => (c.tipo === 'horas' ? 'numero' : c.tipo);
@@ -359,7 +360,7 @@ async function exportar(ctx, { secs, cols, mes, titulo, grupo }, formato, b) {
       await x.guardar(nombreArchivo);
       return;
     }
-    const { nuevoPdf } = await import('../../core/pdf.js?v=c2000db');
+    const { nuevoPdf } = await import('../../core/pdf.js?v=9a658ea');
     const pdf = await nuevoPdf(ctx, { titulo: tituloDoc, subtitulo, horizontal: true });
     const doc = pdf.doc;
     const tam = cols.length > 16 ? 6.3 : cols.length > 12 ? 7 : 8;

@@ -3,20 +3,20 @@
 // cliente, detalle, estado de pago, neto, IVA y total, y los respaldos (factura, OC, comprobante) con botón para subir
 // lo que falta. Filtros por estado, cliente, año y "sin respaldo"; totales y Excel. La fila abre la factura.
 // Busca también por patente y RUT. Arriba, los vehículos que pidieron factura y falta registrarla (008).
-import { el } from '../../../core/ui/dom.js?v=c2000db';
-import { icono } from '../../../core/ui/iconos.js?v=c2000db';
-import { boton } from '../../../core/ui/tabla.js?v=c2000db';
-import { avisar } from '../../../core/ui/aviso.js?v=c2000db';
-import { dinero, fechaLarga, hoyISO, diaLocal } from '../../../core/ui/formato.js?v=c2000db';
-import { normalizar } from '../../../core/ui/combo.js?v=c2000db';
-import { urlFirmada } from '../../../core/adjuntos.js?v=c2000db';
-import { numeroTexto, nombreTercero, verPatente, IVA } from '../datos.js?v=c2000db';
-import { totales } from '../../taller/datos.js?v=c2000db';
-import { ordenesExternas } from '../../taller/vistas/cobros.js?v=c2000db';
-import { estadoPago, ESTADOS_PAGO, RESPALDOS, formFactura, formPago, anularPago, eliminarFactura, subirRespaldo } from '../facturas.js?v=c2000db';
-import { formEmitir, anularConNota } from '../emitir.js?v=c2000db';
-import { panelEmitidas } from '../emitidas.js?v=c2000db';
-import { NOMBRE_DTE } from '../../../core/dte.js?v=c2000db';
+import { el } from '../../../core/ui/dom.js?v=9a658ea';
+import { icono } from '../../../core/ui/iconos.js?v=9a658ea';
+import { boton } from '../../../core/ui/tabla.js?v=9a658ea';
+import { avisar } from '../../../core/ui/aviso.js?v=9a658ea';
+import { dinero, fechaLarga, hoyISO, diaLocal } from '../../../core/ui/formato.js?v=9a658ea';
+import { normalizar } from '../../../core/ui/combo.js?v=9a658ea';
+import { urlFirmada } from '../../../core/adjuntos.js?v=9a658ea';
+import { numeroTexto, nombreTercero, verPatente, IVA } from '../datos.js?v=9a658ea';
+import { totales } from '../../taller/datos.js?v=9a658ea';
+import { ordenesExternas } from '../../taller/vistas/cobros.js?v=9a658ea';
+import { estadoPago, ESTADOS_PAGO, RESPALDOS, formFactura, formPago, anularPago, eliminarFactura, subirRespaldo } from '../facturas.js?v=9a658ea';
+import { formEmitir, anularConNota } from '../emitir.js?v=9a658ea';
+import { panelEmitidas } from '../emitidas.js?v=9a658ea';
+import { NOMBRE_DTE } from '../../../core/dte.js?v=9a658ea';
 
 const filtro = { estado: 'todas', cliente: '', anio: '', sinRespaldo: false, buscar: '' };
 const fecha = (d) => (d ? fechaLarga(d) : '');
@@ -212,7 +212,7 @@ export default async function vista(ctx) {
     const btn = ev.currentTarget; btn.disabled = true;
     const { filas } = calcular();
     try {
-      const { exportarExcel } = await import('../../../core/excel.js?v=c2000db');
+      const { exportarExcel } = await import('../../../core/excel.js?v=9a658ea');
       await exportarExcel(ctx, {
         titulo: 'Control de facturas', subtitulo: [filtro.anio || 'Todos los años', `${filas.length} facturas`].join(' · '), nombre: 'control-facturas',
         columnas: ['N° factura', 'Cotización', { t: 'Emisión', tipo: 'fecha' }, { t: 'Pago estimado', tipo: 'fecha' }, { t: 'Pago real', tipo: 'fecha' }, { t: 'Ejecución', tipo: 'fecha' },
@@ -247,7 +247,7 @@ export default async function vista(ctx) {
 // Anular pago y eliminar quedan en un menú aparte (poco frecuentes): se elige la factura por número
 function accionesFila(ctx, facturas, refrescar, dteDe) {
   const pagadas = facturas.filter((f) => f.fecha_pago);
-  const elegir = (titulo, lista, accion) => import('../../../core/ui/modal.js?v=c2000db').then(({ abrirFormulario }) => abrirFormulario({
+  const elegir = (titulo, lista, accion) => import('../../../core/ui/modal.js?v=9a658ea').then(({ abrirFormulario }) => abrirFormulario({
     titulo, textoGuardar: 'Seguir', campos: [{ id: 'f', etiqueta: 'Factura', requerido: true, opciones: [['', 'Elegir…'], ...lista.map((f) => [f.id, `N° ${f.numero} · ${f.cliente_nombre ?? ''} · ${dinero(f.total)}`])] }],
     alGuardar: (v) => { const f = lista.find((x) => x.id === v.f); if (f) setTimeout(() => accion(ctx, f, { alGuardar: refrescar }), 50); },
   }));

@@ -1,18 +1,18 @@
 // Consola de la plataforma (solo el equipo ISgestión, es_equipo()): clientes, empresas y módulos, uso y cobro.
 // Usa la misma sesión que la app (mismo dominio); si no hay sesión, se ingresa primero en ISgestión.
 // Rutas: #/clientes · #/cliente?id= · #/empresas · #/cobro
-import { iniciarApi, db } from '../core/api.js?v=c2000db';
-import { sesionActual, cerrarSesion } from '../core/auth.js?v=c2000db';
-import { el } from '../core/ui/dom.js?v=c2000db';
-import { icono } from '../core/ui/iconos.js?v=c2000db';
+import { iniciarApi, db } from '../core/api.js?v=9a658ea';
+import { sesionActual, cerrarSesion } from '../core/auth.js?v=9a658ea';
+import { el } from '../core/ui/dom.js?v=9a658ea';
+import { icono } from '../core/ui/iconos.js?v=9a658ea';
 
 const raiz = document.getElementById('app');
 const MENU = [
-  ['clientes', 'Clientes', 'building', () => import('./vistas/clientes.js?v=c2000db')],
-  ['empresas', 'Empresas y módulos', 'ajustes', () => import('./vistas/empresas.js?v=c2000db')],
-  ['cobro', 'Uso y cobro', 'dinero', () => import('./vistas/cobro.js?v=c2000db')],
+  ['clientes', 'Clientes', 'building', () => import('./vistas/clientes.js?v=9a658ea')],
+  ['empresas', 'Empresas y módulos', 'ajustes', () => import('./vistas/empresas.js?v=9a658ea')],
+  ['cobro', 'Uso y cobro', 'dinero', () => import('./vistas/cobro.js?v=9a658ea')],
 ];
-const OCULTAS = { cliente: ['clientes', () => import('./vistas/cliente.js?v=c2000db')] };
+const OCULTAS = { cliente: ['clientes', () => import('./vistas/cliente.js?v=9a658ea')] };
 const estado = { contenido: null, menu: null, usuario: null, vista: null };
 
 const ruta = (id, params = {}) => { const q = new URLSearchParams(params).toString(); return `#/${id}${q ? `?${q}` : ''}`; };

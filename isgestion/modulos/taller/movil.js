@@ -1,10 +1,10 @@
 // Piezas del taller para el teléfono (dirección B "Patente al centro", aprobada por Enzo el 2026-10-27): línea de etapas,
 // tarjeta de auto con la placa y lo que necesita atención. Las usan el Inicio, el Tablero y la Orden en el teléfono.
-import { el } from '../../core/ui/dom.js?v=c2000db';
-import { placa } from '../../core/ui/placa.js?v=c2000db';
-import { hhmm, fechaCorta, hoyISO } from '../../core/ui/formato.js?v=c2000db';
-import { ESTADOS, PRIORIDADES, nombreVehiculo, minutosTrabajo, textoMinutos, hora } from './datos.js?v=c2000db';
-import { avance } from './seguimiento.js?v=c2000db';
+import { el } from '../../core/ui/dom.js?v=9a658ea';
+import { placa } from '../../core/ui/placa.js?v=9a658ea';
+import { hhmm, fechaCorta, hoyISO } from '../../core/ui/formato.js?v=9a658ea';
+import { ESTADOS, PRIORIDADES, nombreVehiculo, minutosTrabajo, textoMinutos, hora } from './datos.js?v=9a658ea';
+import { avance } from './seguimiento.js?v=9a658ea';
 
 export const ETAPAS = ESTADOS.slice(0, 4);   // agendado, espera, proceso, terminado (entregado sale del tablero del teléfono)
 const ESPERA_LARGA = 60;

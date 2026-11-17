@@ -2826,3 +2826,16 @@ html[data-modo="oscuro"] { --turno-dia-fondo: #4a3a12; --turno-dia-texto: #fde68
 .sem-dia-cabeza[aria-expanded="true"] { border-bottom: 2px solid var(--empresa); border-radius: 14px 14px 0 0; }
 .sem-dia-cabeza strong { font-size: 15px; }
 .asm-gente-titulo { margin: 8px 2px 2px; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: var(--texto-suave); }
+
+/* Quincenas (Remuneraciones) */
+.quincenas { display: grid; gap: 16px; }
+.quincena { display: grid; gap: 12px; max-width: none; }
+.quincena-anulada { opacity: .7; }
+.quincena-cabecera { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.quincena-cabecera h3 { margin: 0; display: flex; align-items: center; gap: 6px; }
+.quincena-total { display: flex; align-items: center; gap: 10px; font-size: 1.15rem; }
+.quincena-tabla td.num, .quincena-tabla th.num { text-align: right; }
+.quincena-monto { width: 130px; text-align: right; margin-left: auto; }
+.quincena-pasos { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.quincena-comprobante, .quincena-acciones { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.quincena-comprobante { padding: 6px 10px; border-radius: 8px; background: var(--fondo-sutil); }

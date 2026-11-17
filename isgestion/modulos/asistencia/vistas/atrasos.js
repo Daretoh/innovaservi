@@ -2,11 +2,11 @@
 // anticipadas, ausencias, días sin marca (solo "según horario") y entradas sin salida, comparando el Registro de horas con
 // su turno de Remuneraciones → Condiciones. La base lo calcula (asis_puntualidad, permiso asistencia ver) y no entrega
 // montos. Tocar una fila muestra el detalle por día. Las horas extra están en Resumen del mes.
-import { el } from '../../../core/ui/dom.js?v=c2000db';
-import { icono } from '../../../core/ui/iconos.js?v=c2000db';
-import { boton } from '../../../core/ui/tabla.js?v=c2000db';
-import { avisar } from '../../../core/ui/aviso.js?v=c2000db';
-import { hoyISO, rangoMes, nombreMes, moverMes, fechaCorta, nombreDia, horas, hhmm } from '../../../core/ui/formato.js?v=c2000db';
+import { el } from '../../../core/ui/dom.js?v=9a658ea';
+import { icono } from '../../../core/ui/iconos.js?v=9a658ea';
+import { boton } from '../../../core/ui/tabla.js?v=9a658ea';
+import { avisar } from '../../../core/ui/aviso.js?v=9a658ea';
+import { hoyISO, rangoMes, nombreMes, moverMes, fechaCorta, nombreDia, horas, hhmm } from '../../../core/ui/formato.js?v=9a658ea';
 
 const estado = { mes: hoyISO().slice(0, 7), abierto: null };
 const ESTADOS = {
@@ -79,7 +79,7 @@ export default async function vista(ctx) {
   pintar();
 
   const exportar = async () => {
-    const { exportarExcel } = await import('../../../core/excel.js?v=c2000db');
+    const { exportarExcel } = await import('../../../core/excel.js?v=9a658ea');
     await exportarExcel(ctx, {
       titulo: 'Atrasos y ausencias', subtitulo: nombreMes(estado.mes), nombre: `atrasos-${estado.mes}`,
       columnas: ['Trabajador', 'Fecha', 'Turno', 'Entrada', 'Salida', { t: 'Atraso', tipo: 'horas' }, { t: 'Salió antes', tipo: 'horas' }, 'Estado', 'Nota'],
