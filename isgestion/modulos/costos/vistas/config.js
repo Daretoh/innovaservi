@@ -1,9 +1,9 @@
 // Categorías (con su clase: dónde van en el Estado de resultados) y centros de costo de la empresa.
-import { el } from '../../../core/ui/dom.js?v=5771c57';
-import { boton } from '../../../core/ui/tabla.js?v=5771c57';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=5771c57';
-import { avisar } from '../../../core/ui/aviso.js?v=5771c57';
-import { cargarBase, CLASES, nombreClase } from '../datos.js?v=5771c57';
+import { el } from '../../../core/ui/dom.js?v=dd0b774';
+import { boton } from '../../../core/ui/tabla.js?v=dd0b774';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=dd0b774';
+import { avisar } from '../../../core/ui/aviso.js?v=dd0b774';
+import { cargarBase, CLASES, nombreClase } from '../datos.js?v=dd0b774';
 
 // Nombres comunes del grupo (2026-11-05): los mismos en todas las empresas para que el Grupo sume bien
 const CATEGORIAS = [['Arriendo', 'gasto'], ['Servicios básicos', 'gasto'], ['Contabilidad y asesorías', 'gasto'], ['Software y servicios digitales', 'gasto'], ['Materiales e insumos', 'gasto'],

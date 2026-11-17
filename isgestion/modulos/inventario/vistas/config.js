@@ -1,9 +1,9 @@
 // Almacenes y tipos de producto de la empresa (en el OS estaban fijos en el código).
-import { el } from '../../../core/ui/dom.js?v=5771c57';
-import { boton } from '../../../core/ui/tabla.js?v=5771c57';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=5771c57';
-import { avisar } from '../../../core/ui/aviso.js?v=5771c57';
-import { cargarBase } from '../datos.js?v=5771c57';
+import { el } from '../../../core/ui/dom.js?v=dd0b774';
+import { boton } from '../../../core/ui/tabla.js?v=dd0b774';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=dd0b774';
+import { avisar } from '../../../core/ui/aviso.js?v=dd0b774';
+import { cargarBase } from '../datos.js?v=dd0b774';
 
 const ALMACENES = [['BOD', 'Bodega', false], ['MES', 'Mesón de venta', true]];
 const TIPOS = [['insumo', 'Químico', '31'], ['insumo', 'Insumo', '32'], ['insumo', 'Herramienta', '33'], ['insumo', 'Repuesto', '34'], ['venta', 'Equipamiento', '41'], ['venta', 'Accesorios', '42']];

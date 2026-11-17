@@ -1,13 +1,13 @@
 // Cotizaciones: listado con filtro por estado y búsqueda; nueva cotización. Cada fila dice quién la creó y quién la
 // editó por última vez (como el OS; updated_by lo pone la base).
-import { el } from '../../../core/ui/dom.js?v=5771c57';
-import { listado, boton } from '../../../core/ui/tabla.js?v=5771c57';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=5771c57';
-import { dinero, fechaLarga, fechaCorta, hoyISO, diaLocal, nombrePropio } from '../../../core/ui/formato.js?v=5771c57';
-import { avance, colorAvance } from '../../taller/seguimiento.js?v=5771c57';
-import { nombreEstado as estadoOrden } from '../../taller/datos.js?v=5771c57';
-import { costosDeGrupos, costoFuera, sinRepetir, yaTraidos } from '../costos-orden.js?v=5771c57';
-import { ESTADOS, nombreEstado, CHIP_ESTADO, SELECT_COT, totales, costoLinea, numeroTexto, nombreTercero, verPatente, siguienteNumero, cargarConfig, datosCliente } from '../datos.js?v=5771c57';
+import { el } from '../../../core/ui/dom.js?v=dd0b774';
+import { listado, boton } from '../../../core/ui/tabla.js?v=dd0b774';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=dd0b774';
+import { dinero, fechaLarga, fechaCorta, hoyISO, diaLocal, nombrePropio } from '../../../core/ui/formato.js?v=dd0b774';
+import { avance, colorAvance } from '../../taller/seguimiento.js?v=dd0b774';
+import { nombreEstado as estadoOrden } from '../../taller/datos.js?v=dd0b774';
+import { costosDeGrupos, costoFuera, sinRepetir, yaTraidos } from '../costos-orden.js?v=dd0b774';
+import { ESTADOS, nombreEstado, CHIP_ESTADO, SELECT_COT, totales, costoLinea, numeroTexto, nombreTercero, verPatente, siguienteNumero, cargarConfig, datosCliente } from '../datos.js?v=dd0b774';
 
 const filtro = { estado: 'todas', buscar: '' };
 
@@ -82,7 +82,7 @@ export async function nueva(ctx, { tercero = undefined, grupo = null, lineas = [
     }).select('id').single();
     if (e2) throw new Error(e2.message);
     if (lineas.length) {
-      const { error: e3 } = await ctx.api.from('cot_lineas').insert(lineas.map((l, i) => ({ ...l, grupo_id: g.id, cotizacion_id: c.id, empresa_id: ctx.empresa.id, orden: i + 1 })));
+      const { error: e3 } = await ctx.api.from('cot_lineas').insert(lineas.map((l, i) => ({ cantidad: 1, precio: 0, desc_pct: 0, costos: [], ...l, grupo_id: g.id, cotizacion_id: c.id, empresa_id: ctx.empresa.id, orden: i + 1 })));
       if (e3) throw new Error(e3.message);
     }
     location.hash = ctx.ruta('cotizaciones.editor', { id: c.id });
