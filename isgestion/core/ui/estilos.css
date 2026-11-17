@@ -2827,18 +2827,30 @@ html[data-modo="oscuro"] { --turno-dia-fondo: #4a3a12; --turno-dia-texto: #fde68
 .sem-dia-cabeza strong { font-size: 15px; }
 .asm-gente-titulo { margin: 8px 2px 2px; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: var(--texto-suave); }
 
-/* Quincenas (Remuneraciones) */
-.quincenas { display: grid; gap: 16px; }
-.quincena { display: grid; gap: 12px; max-width: none; }
-.quincena-anulada { opacity: .7; }
-.quincena-cabecera { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
-.quincena-cabecera h3 { margin: 0; display: flex; align-items: center; gap: 6px; }
-.quincena-total { display: flex; align-items: center; gap: 10px; font-size: 1.15rem; }
-.quincena-tabla td.num, .quincena-tabla th.num { text-align: right; }
-.quincena-monto { width: 130px; text-align: right; margin-left: auto; }
-.quincena-pasos { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
-.quincena-comprobante, .quincena-acciones { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.quincena-comprobante { padding: 6px 10px; border-radius: 8px; background: var(--fondo-sutil); }
+/* Quincenas (Remuneraciones): lista compacta */
+.qn-tabla td { vertical-align: middle; }
+.qn-filtros { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+.qn-filtros .campo { width: auto; max-width: 240px; }
+.qn-nowrap { white-space: nowrap; }
+.qn-nombres { max-width: 360px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.qn-tabla tr.qn-abierta { background: var(--fondo-sutil); }
+.qn-tabla tr.qn-anulada td { color: var(--texto-suave); text-decoration: line-through; }
+.qn-fila-detalle > td { background: var(--fondo-sutil); padding-top: 0; }
+.qn-detalle { display: grid; gap: 10px; padding: 4px 4px 8px 22px; }
+.qn-lineas { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; max-width: 520px; }
+.qn-lineas li { display: flex; align-items: center; gap: 10px; }
+.qn-lineas li > span:first-child { flex: 1; display: flex; gap: 6px; align-items: center; }
+.qn-monto { width: 120px; text-align: right; }
+.qn-acciones { display: flex; flex-wrap: wrap; gap: 8px; }
+.qn-modal { width: min(560px, 100%); }
+.qn-modal .modal-cuerpo { overflow-x: hidden; }
+.qn-modal .rejilla-campos { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+.qn-todos { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.qn-lista { display: grid; gap: 2px; max-height: 46vh; overflow-y: auto; border: 1px solid var(--borde); border-radius: var(--radio); padding: 4px; }
+.qn-persona { display: flex; align-items: center; gap: 10px; padding: 4px 8px; border-radius: 8px; cursor: pointer; }
+.qn-persona:hover { background: var(--hover); }
+.qn-nombre { flex: 1; min-width: 0; display: flex; gap: 6px; align-items: center; }
+.qn-total { text-align: right; }
 
 /* Estadísticas de Costos (tablero) */
 .est-barra-sup { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
