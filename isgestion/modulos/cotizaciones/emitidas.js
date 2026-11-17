@@ -5,15 +5,15 @@
 // una se puede ver (PDF y detalle) antes de registrarla, y al registrarla se sugiere la cotización que calza
 // (mismo cliente y monto, con sus patentes) para que quede tan completa como las ya registradas.
 // En el ambiente de pruebas se ven las de la empresa de pruebas de Haulmer y "Registrar" solo muestra el PDF.
-import { el } from '../../core/ui/dom.js?v=f07c4a3';
-import { icono } from '../../core/ui/iconos.js?v=f07c4a3';
-import { boton } from '../../core/ui/tabla.js?v=f07c4a3';
-import { abrirFormulario } from '../../core/ui/modal.js?v=f07c4a3';
-import { avisar } from '../../core/ui/aviso.js?v=f07c4a3';
-import { dinero, fechaLarga, sumarDias } from '../../core/ui/formato.js?v=f07c4a3';
-import { llamarDte, estadoDte, NOMBRE_DTE, ofrecerPdf } from '../../core/dte.js?v=f07c4a3';
-import { numeroTexto, nombreTercero, totales, verPatente } from './datos.js?v=f07c4a3';
-import { PLAZO_PAGO } from './facturas.js?v=f07c4a3';
+import { el } from '../../core/ui/dom.js?v=461b982';
+import { icono } from '../../core/ui/iconos.js?v=461b982';
+import { boton } from '../../core/ui/tabla.js?v=461b982';
+import { abrirFormulario } from '../../core/ui/modal.js?v=461b982';
+import { avisar } from '../../core/ui/aviso.js?v=461b982';
+import { dinero, fechaLarga, sumarDias } from '../../core/ui/formato.js?v=461b982';
+import { llamarDte, estadoDte, NOMBRE_DTE, ofrecerPdf } from '../../core/dte.js?v=461b982';
+import { numeroTexto, nombreTercero, totales, verPatente } from './datos.js?v=461b982';
+import { PLAZO_PAGO } from './facturas.js?v=461b982';
 
 const limpio = (r) => String(r ?? '').replace(/[^0-9kK]/g, '').toUpperCase();
 const REF = { 801: 'OC', 802: 'Nota de pedido', 803: 'Contrato', HES: 'HES', 33: 'Factura', 52: 'Guía' };
