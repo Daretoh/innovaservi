@@ -9,7 +9,9 @@ export default {
   acciones: ['ver', 'crear', 'editar', 'eliminar', 'aprobar', 'exportar'],
   // Teléfono: "Escanear documentos" en el abanico del "+" (cámara con varias fotos seguidas → bandeja Por cargar)
   movil: {
-    extra: [{ label: 'Escanear documentos', icono: 'camara', requiere: ['costos', 'crear'], ruta: 'costos.bandeja', abrir: (ctx) => import('./vistas/bandeja.js?v=461b982').then((m) => m.escanearABandeja(ctx)) }],
+    // unir (2026-11-17): también junto a un "+" de una sola acción, como "Agendar vehículo" del taller (Administrativa de
+    // Performance: taller.crear y costos.crear). Quien no puede crear en Costos no la ve.
+    extra: [{ label: 'Escanear documentos', icono: 'camara', requiere: ['costos', 'crear'], ruta: 'costos.bandeja', unir: true, abrir: (ctx) => import('./vistas/bandeja.js?v=461b982').then((m) => m.escanearABandeja(ctx)) }],
   },
   menu: [
     { id: 'costos.registros', label: 'Gastos e ingresos', vista: () => import('./vistas/registros.js?v=461b982') },
