@@ -9,23 +9,24 @@ export default {
   acciones: ['ver', 'crear', 'editar', 'eliminar', 'aprobar', 'exportar'],
   // Teléfono: "Escanear documentos" en el abanico del "+" (cámara con varias fotos seguidas → bandeja Por cargar)
   movil: {
-    extra: [{ label: 'Escanear documentos', icono: 'camara', requiere: ['costos', 'crear'], ruta: 'costos.bandeja', abrir: (ctx) => import('./vistas/bandeja.js?v=9a658ea').then((m) => m.escanearABandeja(ctx)) }],
+    extra: [{ label: 'Escanear documentos', icono: 'camara', requiere: ['costos', 'crear'], ruta: 'costos.bandeja', abrir: (ctx) => import('./vistas/bandeja.js?v=e20d256').then((m) => m.escanearABandeja(ctx)) }],
   },
   menu: [
-    { id: 'costos.registros', label: 'Gastos e ingresos', vista: () => import('./vistas/registros.js?v=9a658ea') },
-    { id: 'costos.registro', label: 'Registro', oculto: true, padre: 'costos.registros', vista: () => import('./vistas/registro.js?v=9a658ea') },
-    { id: 'costos.subir', label: 'Subir documentos', pestana: 'Subir', icono: 'camara', vista: () => import('./vistas/subir.js?v=9a658ea') },
-    { id: 'costos.bandeja', label: 'Bandeja de documentos', pestana: 'Bandeja', icono: 'lista', vista: () => import('./vistas/bandeja.js?v=9a658ea') },
-    { id: 'costos.pagos', label: 'Pagos', pestana: 'Pagos', icono: 'check', vista: () => import('./vistas/pagos.js?v=9a658ea') },
-    { id: 'costos.cuenta', label: 'Cuenta de contratista', oculto: true, padre: 'costos.pagos', vista: () => import('./vistas/cuenta.js?v=9a658ea') },
-    { id: 'costos.flujo', label: 'Flujo de caja', pestana: 'Flujo de caja', icono: 'grafico', vista: () => import('./vistas/flujo.js?v=9a658ea') },
-    { id: 'costos.balance', label: 'Balance de gestión', pestana: 'Balance', icono: 'columnas', vista: () => import('./vistas/balance.js?v=9a658ea') },
+    { id: 'costos.registros', label: 'Gastos e ingresos', vista: () => import('./vistas/registros.js?v=e20d256') },
+    { id: 'costos.registro', label: 'Registro', oculto: true, padre: 'costos.registros', vista: () => import('./vistas/registro.js?v=e20d256') },
+    { id: 'costos.subir', label: 'Subir documentos', pestana: 'Subir', icono: 'camara', vista: () => import('./vistas/subir.js?v=e20d256') },
+    { id: 'costos.bandeja', label: 'Bandeja de documentos', pestana: 'Bandeja', icono: 'lista', vista: () => import('./vistas/bandeja.js?v=e20d256') },
+    { id: 'costos.pagos', label: 'Pagos', pestana: 'Pagos', icono: 'check', vista: () => import('./vistas/pagos.js?v=e20d256') },
+    { id: 'costos.cuenta', label: 'Cuenta de contratista', oculto: true, padre: 'costos.pagos', vista: () => import('./vistas/cuenta.js?v=e20d256') },
+    { id: 'costos.estadisticas', label: 'Estadísticas', pestana: 'Estadísticas', icono: 'grafico', vista: () => import('./vistas/estadisticas.js?v=e20d256') },
+    { id: 'costos.flujo', label: 'Flujo de caja', pestana: 'Flujo de caja', icono: 'grafico', vista: () => import('./vistas/flujo.js?v=e20d256') },
+    { id: 'costos.balance', label: 'Balance de gestión', pestana: 'Balance', icono: 'columnas', vista: () => import('./vistas/balance.js?v=e20d256') },
     // Cuadre con el SII (OpenFactura, Núcleo 021): RCV y diferencias documento a documento; costos.aprobar
-    { id: 'costos.sii', label: 'Cuadre SII', pestana: 'Cuadre SII', icono: 'escudo', vista: () => import('./vistas/sii.js?v=9a658ea') },
-    { id: 'costos.lector', label: 'Leer boleta o factura', oculto: true, padre: 'costos.subir', compartida: true, vista: () => import('./vistas/lector.js?v=9a658ea') },
-    { id: 'costos.recurrentes', ajustes: true, label: 'Gastos recurrentes', pestana: 'Recurrentes', vista: () => import('./vistas/recurrentes.js?v=9a658ea') },
-    { id: 'costos.proveedores', ajustes: true, label: 'Proveedores', pestana: 'Proveedores', vista: () => import('./vistas/proveedores.js?v=9a658ea') },
-    { id: 'costos.config', ajustes: true, label: 'Categorías y centros', pestana: 'Categorías', vista: () => import('./vistas/config.js?v=9a658ea') },
+    { id: 'costos.sii', label: 'Cuadre SII', pestana: 'Cuadre SII', icono: 'escudo', vista: () => import('./vistas/sii.js?v=e20d256') },
+    { id: 'costos.lector', label: 'Leer boleta o factura', oculto: true, padre: 'costos.subir', compartida: true, vista: () => import('./vistas/lector.js?v=e20d256') },
+    { id: 'costos.recurrentes', ajustes: true, label: 'Gastos recurrentes', pestana: 'Recurrentes', vista: () => import('./vistas/recurrentes.js?v=e20d256') },
+    { id: 'costos.proveedores', ajustes: true, label: 'Proveedores', pestana: 'Proveedores', vista: () => import('./vistas/proveedores.js?v=e20d256') },
+    { id: 'costos.config', ajustes: true, label: 'Categorías y centros', pestana: 'Categorías', vista: () => import('./vistas/config.js?v=e20d256') },
   ],
   config: {
     // Centros de costo (2026-11-05): apagado, el gasto se ordena por categoría (y faena en Innova). Para clientes que
@@ -35,5 +36,5 @@ export default {
     // de un tercero (a su cuenta, ej. D&P), de una faena o gasto general de la empresa.
     exigir_destino: { tipo: 'bool', etiqueta: 'Al cargar un gasto, exigir a qué va (vehículo, tercero, faena o gasto general)', default: false },
   },
-  migraciones: ['db/001_costos.sql', 'db/002_lector.sql', 'db/003_estados.sql', 'db/004_pagos.sql', 'db/005_carga.sql', 'db/006_tesoreria.sql', 'db/007_a_cuenta.sql', 'db/008_bandeja.sql', 'db/009_categorias_nuevas.sql'],
+  migraciones: ['db/001_costos.sql', 'db/002_lector.sql', 'db/003_estados.sql', 'db/004_pagos.sql', 'db/005_carga.sql', 'db/006_tesoreria.sql', 'db/007_a_cuenta.sql', 'db/008_bandeja.sql', 'db/009_categorias_nuevas.sql', 'db/010_imposiciones.sql', 'db/011_declarado.sql', 'db/012_declarado_factura.sql'],
 };

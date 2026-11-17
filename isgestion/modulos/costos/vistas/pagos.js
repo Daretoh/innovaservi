@@ -2,15 +2,15 @@
 // documentos que cubre por completo. Aviso "Falta factura" para proveedores de factura mensual: pagos o compras del
 // mes sin una factura de ese proveedor. Cuentas con contratistas (2026-10-28): saldo de cada tercero con cuenta corriente
 // (trabajos − compras hechas por su cuenta − abonos); la tarjeta abre su cuenta (costos.cuenta).
-import { el } from '../../../core/ui/dom.js?v=9a658ea';
-import { icono } from '../../../core/ui/iconos.js?v=9a658ea';
-import { listado, boton } from '../../../core/ui/tabla.js?v=9a658ea';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=9a658ea';
-import { avisar } from '../../../core/ui/aviso.js?v=9a658ea';
-import { urlFirmada } from '../../../core/adjuntos.js?v=9a658ea';
-import { dinero, fechaLarga, hoyISO, rangoMes, moverMes, nombreMes, diaLocal } from '../../../core/ui/formato.js?v=9a658ea';
-import { nombreTercero, nombreMedio } from '../datos.js?v=9a658ea';
-import { comprobante } from './subir.js?v=9a658ea';
+import { el } from '../../../core/ui/dom.js?v=e20d256';
+import { icono } from '../../../core/ui/iconos.js?v=e20d256';
+import { listado, boton } from '../../../core/ui/tabla.js?v=e20d256';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=e20d256';
+import { avisar } from '../../../core/ui/aviso.js?v=e20d256';
+import { urlFirmada } from '../../../core/adjuntos.js?v=e20d256';
+import { dinero, fechaLarga, hoyISO, rangoMes, moverMes, nombreMes, diaLocal } from '../../../core/ui/formato.js?v=e20d256';
+import { nombreTercero, nombreMedio } from '../datos.js?v=e20d256';
+import { comprobante } from './subir.js?v=e20d256';
 
 const filtro = { estado: 'por_validar' };
 const ESTADOS = [['por_validar', 'Por validar'], ['validado', 'Validados'], ['rechazado', 'Rechazados']];

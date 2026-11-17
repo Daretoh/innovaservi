@@ -1,17 +1,17 @@
 // Parte de trabajo: datos del informe, fotos y videos por etapa, vista previa, confirmar y reabrir.
 // Ruta: #/reportes.parte?id=<parte_id>
-import { el } from '../../../core/ui/dom.js?v=9a658ea';
-import { icono } from '../../../core/ui/iconos.js?v=9a658ea';
-import { boton } from '../../../core/ui/tabla.js?v=9a658ea';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=9a658ea';
-import { avisar } from '../../../core/ui/aviso.js?v=9a658ea';
-import { subirArchivo, urlFirmada, eliminarArchivo, limiteVideo, megas } from '../../../core/adjuntos.js?v=9a658ea';
-import { prepararVideo } from '../../../core/video.js?v=9a658ea';
-import { panelSubida } from '../../../core/ui/subida.js?v=9a658ea';
-import { fechaLarga, nombreDia, fechaCorta } from '../../../core/ui/formato.js?v=9a658ea';
-import { botonesFotos } from '../../../core/ui/camara.js?v=9a658ea';
-import { marcarFoto } from '../../../core/ui/marcar.js?v=9a658ea';
-import { cargarParte, ETAPAS, opcionesEtapa, valorEtapa, desdeValorEtapa, nombreTercero, comprimirFoto, urlsFirmadas, faenasDistintas } from '../datos.js?v=9a658ea';
+import { el } from '../../../core/ui/dom.js?v=e20d256';
+import { icono } from '../../../core/ui/iconos.js?v=e20d256';
+import { boton } from '../../../core/ui/tabla.js?v=e20d256';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=e20d256';
+import { avisar } from '../../../core/ui/aviso.js?v=e20d256';
+import { subirArchivo, urlFirmada, eliminarArchivo, limiteVideo, megas } from '../../../core/adjuntos.js?v=e20d256';
+import { prepararVideo } from '../../../core/video.js?v=e20d256';
+import { panelSubida } from '../../../core/ui/subida.js?v=e20d256';
+import { fechaLarga, nombreDia, fechaCorta } from '../../../core/ui/formato.js?v=e20d256';
+import { botonesFotos } from '../../../core/ui/camara.js?v=e20d256';
+import { marcarFoto } from '../../../core/ui/marcar.js?v=e20d256';
+import { cargarParte, ETAPAS, opcionesEtapa, valorEtapa, desdeValorEtapa, nombreTercero, comprimirFoto, urlsFirmadas, faenasDistintas } from '../datos.js?v=e20d256';
 
 let etapaSubida = 'antes';
 
@@ -306,7 +306,7 @@ export default async function vista(ctx) {
 async function previa(ctx, datos, b) {
   b.disabled = true;
   try {
-    const { generarInforme } = await import('../informe.js?v=9a658ea');
+    const { generarInforme } = await import('../informe.js?v=e20d256');
     const doc = await generarInforme(ctx, datos);
     window.open(doc.output('bloburl'), '_blank', 'noopener');
   } catch (e) { avisar(`No se pudo generar: ${e.message}`, 'error'); } finally { b.disabled = false; }
@@ -320,7 +320,7 @@ function confirmar(ctx, datos) {
     campos: [],
     textoGuardar: 'Confirmar',
     alGuardar: async () => {
-      const { generarInforme } = await import('../informe.js?v=9a658ea');
+      const { generarInforme } = await import('../informe.js?v=e20d256');
       const doc = await generarInforme(ctx, datos);
       const archivo = new File([doc.output('blob')], `informe-${datos.parte.fecha}.pdf`, { type: 'application/pdf' });
       const { ruta } = await subirArchivo(ctx.api, { empresaId: ctx.empresa.id, modulo: 'reportes', archivo, tabla: 'rep_partes', registroId: datos.parte.id });

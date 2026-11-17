@@ -1,15 +1,15 @@
 // Gastos e ingresos: los recientes (últimos cargados, de cualquier mes), los del mes, pendientes de pago o cobro (de todos
 // los meses), resumen y Excel. "Editar como planilla" cambia la tabla por la planilla del OS (planilla.js). En el teléfono
 // las filas se ven como tarjetas.
-import { el } from '../../../core/ui/dom.js?v=9a658ea';
-import { icono } from '../../../core/ui/iconos.js?v=9a658ea';
-import { listado, boton } from '../../../core/ui/tabla.js?v=9a658ea';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=9a658ea';
-import { avisar } from '../../../core/ui/aviso.js?v=9a658ea';
-import { dinero, fechaLarga, hoyISO, nombreMes, moverMes, rangoMes, diaLocal } from '../../../core/ui/formato.js?v=9a658ea';
-import { cargarBase, nombreTercero, nombreDoc, nombreMedio, MEDIOS, traerComprasInventario, estadosDe, nombreEstado, CHIP_ESTADO, generarAutomatico } from '../datos.js?v=9a658ea';
-import { planilla } from '../planilla.js?v=9a658ea';
-import { urlFirmada } from '../../../core/adjuntos.js?v=9a658ea';
+import { el } from '../../../core/ui/dom.js?v=e20d256';
+import { icono } from '../../../core/ui/iconos.js?v=e20d256';
+import { listado, boton } from '../../../core/ui/tabla.js?v=e20d256';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=e20d256';
+import { avisar } from '../../../core/ui/aviso.js?v=e20d256';
+import { dinero, fechaLarga, hoyISO, nombreMes, moverMes, rangoMes, diaLocal } from '../../../core/ui/formato.js?v=e20d256';
+import { cargarBase, nombreTercero, nombreDoc, nombreMedio, MEDIOS, traerComprasInventario, estadosDe, nombreEstado, CHIP_ESTADO, generarAutomatico } from '../datos.js?v=e20d256';
+import { planilla } from '../planilla.js?v=e20d256';
+import { urlFirmada } from '../../../core/adjuntos.js?v=e20d256';
 
 const estado = { vista: 'recientes', mes: hoyISO().slice(0, 7), categoria: '', editar: false };
 const RECIENTES = 15;
@@ -103,7 +103,7 @@ export default async function vista(ctx) {
     el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Mes anterior', onclick: () => mover(-1) }, icono('volver')),
     el('strong', {}, nombreMes(estado.mes)),
     el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Mes siguiente', onclick: () => mover(1) }, icono('derecha'))));
-  if (ctx.puede('costos', 'exportar') && data.length) acciones.push(boton('Excel', { icono: 'descargar', onclick: () => import('../../../core/excel.js?v=9a658ea').then(({ exportarExcel }) => exportarExcel(ctx, {
+  if (ctx.puede('costos', 'exportar') && data.length) acciones.push(boton('Excel', { icono: 'descargar', onclick: () => import('../../../core/excel.js?v=e20d256').then(({ exportarExcel }) => exportarExcel(ctx, {
     titulo: pendientes ? 'Gastos e ingresos pendientes' : revisar ? 'Gastos e ingresos por revisar' : sinCentro ? 'Gastos e ingresos sin centro de costo' : recientes ? 'Gastos e ingresos recientes' : `Gastos e ingresos · ${nombreMes(estado.mes)}`, nombre: `costos-${pendientes ? 'pendientes' : recientes ? 'recientes' : estado.mes}`,
     columnas: [{ t: 'Fecha', tipo: 'fecha' }, 'Tipo', 'Concepto', 'Categoría', ...(ctx.config?.centros ? ['Centro'] : []), 'Proveedor o cliente', 'Documento', 'N°', { t: 'Neto', tipo: 'dinero' }, { t: 'IVA', tipo: 'dinero' }, { t: 'Total', tipo: 'dinero' }, 'Estado', { t: 'Fecha de pago', tipo: 'fecha' }, 'Medio', 'Patente'],
     filas: data.map((r) => [r.fecha, r.tipo === 'gasto' ? 'Gasto' : 'Ingreso', r.concepto, base.categoriaDe.get(r.categoria_id)?.nombre ?? '', ...(ctx.config?.centros ? [base.centroDe.get(r.centro_id)?.nombre ?? ''] : []), nombreTercero(r.terceros),
@@ -139,7 +139,7 @@ export default async function vista(ctx) {
     columnas: [
       { titulo: 'Fecha', valor: (r) => fechaLarga(r.fecha) },
       { titulo: 'Concepto', valor: (r) => el('div', {}, el('a', { href: ctx.ruta('costos.registro', { id: r.id }) }, el('strong', {}, r.concepto)),
-        el('div', { class: 'texto-suave texto-chico' }, [nombreTercero(r.terceros), r.faena_id ? faenaDe.get(r.faena_id) ?? 'faena' : null, r.patente ? patenteNodo(r.patente) : null, r.recurrente_id ? 'recurrente' : null, r.documento_id ? 'de Inventario' : null].filter(Boolean).flatMap((x, i) => (i ? [' · ', x] : [x])))) },
+        el('div', { class: 'texto-suave texto-chico' }, [nombreTercero(r.terceros), r.faena_id ? faenaDe.get(r.faena_id) ?? 'faena' : null, r.patente ? patenteNodo(r.patente) : null, r.recurrente_id ? 'recurrente' : null, r.documento_id ? 'de Inventario' : null, r.declarable === false ? 'no declarado' : null].filter(Boolean).flatMap((x, i) => (i ? [' · ', x] : [x])))) },
       { titulo: 'Categoría', valor: (r) => {
         const c = base.categoriaDe.get(r.categoria_id);
         return el('div', {}, el('span', { class: `chip ${r.tipo === 'ingreso' ? 'chip-ok' : c?.clase === 'inventario' ? 'chip-pend' : 'chip-prox'}` }, c?.nombre ?? ''),

@@ -2839,3 +2839,45 @@ html[data-modo="oscuro"] { --turno-dia-fondo: #4a3a12; --turno-dia-texto: #fde68
 .quincena-pasos { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
 .quincena-comprobante, .quincena-acciones { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .quincena-comprobante { padding: 6px 10px; border-radius: 8px; background: var(--fondo-sutil); }
+
+/* Estadísticas de Costos (tablero) */
+.est-barra-sup { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
+.est-barra-sup > .campo { width: auto; }
+.est-fechas { display: inline-flex; gap: 6px; align-items: center; }
+.est-fechas[hidden], .est-panel[hidden] { display: none; }
+.est-fechas .campo { width: auto; }
+.est-panel { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; padding: 12px; margin-bottom: 12px; border: 1px solid var(--borde); border-radius: var(--radio); background: var(--fondo-sutil); }
+.est-campo { display: grid; gap: 4px; }
+.est-campo-casilla { align-self: end; }
+.est-cuerpo { display: grid; gap: 16px; }
+.est-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
+.est-kpi { display: grid; gap: 2px; padding: 12px 14px; background: var(--superficie); border: 1px solid var(--borde); border-left: 4px solid var(--empresa); border-radius: var(--radio); }
+.est-kpi strong { font-size: 1.4rem; font-variant-numeric: tabular-nums; }
+.est-k-factura { border-left-color: var(--ok); } .est-k-otro { border-left-color: var(--prox); } .est-k-sin { border-left-color: var(--venc); }
+.est-tablero { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }
+.est-tarjeta { max-width: none; display: grid; gap: 10px; align-content: start; }
+.est-tarjeta h3 { margin: 0; font-size: 1rem; }
+.est-barras { display: grid; gap: 2px; }
+.est-fila { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; padding: 6px 8px; border: 0; border-radius: 8px; background: none; color: var(--texto); text-align: left; cursor: pointer; font: inherit; }
+.est-fila:hover { background: var(--hover); }
+.est-fila.activa { background: var(--fondo-hundido); box-shadow: inset 3px 0 0 var(--empresa); }
+.est-fila-nombre { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: flex; align-items: center; gap: 6px; }
+.est-fila-valor { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.est-fila-valor small { font-weight: 400; color: var(--texto-suave); }
+.est-fila-barra { grid-column: 1 / -1; height: 6px; border-radius: 3px; background: var(--fondo-hundido); overflow: hidden; }
+.est-fila-barra i { display: block; height: 100%; border-radius: 3px; background: var(--empresa); }
+.est-meses { display: flex; align-items: stretch; gap: 6px; height: 190px; overflow-x: auto; }
+.est-mes { flex: 1 0 34px; display: grid; grid-template-rows: auto 1fr auto; gap: 4px; padding: 4px 2px; border: 0; border-radius: 8px; background: none; color: var(--texto); cursor: pointer; font: inherit; }
+.est-mes:hover { background: var(--hover); }
+.est-mes.activa { background: var(--fondo-hundido); }
+.est-mes-valor { font-size: .68rem; color: var(--texto-suave); text-align: center; white-space: nowrap; }
+.est-mes-col { display: flex; align-items: flex-end; justify-content: center; }
+.est-mes-col i { display: block; width: 70%; max-width: 32px; border-radius: 4px 4px 0 0; background: var(--empresa); }
+.est-mes-nombre { font-size: .75rem; text-align: center; text-transform: capitalize; }
+.est-apilada { display: flex; height: 14px; border-radius: 7px; overflow: hidden; background: var(--fondo-hundido); }
+.est-punto { display: inline-block; flex: none; width: 10px; height: 10px; border-radius: 50%; }
+.est-r-factura { background: var(--ok); } .est-r-otro { background: var(--prox); } .est-r-sin { background: var(--venc); }
+.est-detalle { scroll-margin-top: 80px; }
+.est-detalle-cab { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; }
+.est-buscar { max-width: 320px; }
+.est-nowrap { white-space: nowrap; }

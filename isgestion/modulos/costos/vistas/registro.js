@@ -1,15 +1,15 @@
 // Gasto u otro ingreso.
 // - Nuevo:  #/costos.registro?tipo=gasto|ingreso
 // - Ver y editar: #/costos.registro?id=<id>
-import { el } from '../../../core/ui/dom.js?v=9a658ea';
-import { icono } from '../../../core/ui/iconos.js?v=9a658ea';
-import { boton } from '../../../core/ui/tabla.js?v=9a658ea';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=9a658ea';
-import { avisar } from '../../../core/ui/aviso.js?v=9a658ea';
-import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=9a658ea';
-import { dinero, hoyISO, fechaLarga, sumarDias } from '../../../core/ui/formato.js?v=9a658ea';
-import { leerConIA, iaDisponible, numIA, fechaIA, pagadoAlComprar, textoModelo } from '../../../core/lector-ia.js?v=9a658ea';
-import { cargarBase, nombreTercero, DOCS, MEDIOS, netoDe, estadosDe, estadoInicial, nombreEstado, opcionesACuenta } from '../datos.js?v=9a658ea';
+import { el } from '../../../core/ui/dom.js?v=e20d256';
+import { icono } from '../../../core/ui/iconos.js?v=e20d256';
+import { boton } from '../../../core/ui/tabla.js?v=e20d256';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=e20d256';
+import { avisar } from '../../../core/ui/aviso.js?v=e20d256';
+import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=e20d256';
+import { dinero, hoyISO, fechaLarga, sumarDias } from '../../../core/ui/formato.js?v=e20d256';
+import { leerConIA, iaDisponible, numIA, fechaIA, pagadoAlComprar, textoModelo } from '../../../core/lector-ia.js?v=e20d256';
+import { cargarBase, nombreTercero, DOCS, MEDIOS, netoDe, estadosDe, estadoInicial, nombreEstado, opcionesACuenta } from '../datos.js?v=e20d256';
 
 
 const ARCHIVOS = ['application/pdf', 'image/jpeg', 'image/png'];
@@ -49,6 +49,10 @@ export default async function vista(ctx) {
   const tercero = select('tercero', [['', esIngreso ? 'Sin cliente del maestro' : 'Sin proveedor del maestro'],
     ...base.terceros.filter((t) => t.tipo?.includes(esIngreso ? 'cliente' : 'proveedor') || t.id === r?.tercero_id).map((t) => [t.id, nombreTercero(t)])], r?.tercero_id);
   const doc = select('doc', DOCS, r?.doc_tipo ?? (esIngreso ? 'factura' : 'factura'));
+  // Tributario (Costos 011 y 012): declarado = factura a nuestro RUT; boleta, ticket, guía u otro y sin documento no
+  const tributario = select('tributario', [['si', 'Declarado (factura a nuestro RUT)'], ['no', 'No declarado']], r ? (r.declarable ? 'si' : 'no') : 'si');
+  const pintarTributario = () => { const noFactura = doc.value !== 'factura'; if (noFactura) tributario.value = 'no'; else if (tributario.disabled) tributario.value = 'si'; tributario.disabled = noFactura; };
+  doc.addEventListener('change', pintarTributario); pintarTributario();
   const docNum = campo('docnum', { placeholder: 'N° (opcional)' }, r?.doc_numero);
   const total = campo('total', { type: 'number', min: 1, step: 1, required: true }, r?.total);
   const desglose = el('span', { class: 'texto-suave texto-chico' });
@@ -118,7 +122,7 @@ export default async function vista(ctx) {
       if (archivo.files[0]) ruta = (await subirArchivo(ctx.api, { empresaId: ctx.empresa.id, modulo: 'costos', archivo: archivo.files[0], tabla: 'fin_registros', registroId: r?.id ?? null, tipos: ARCHIVOS })).ruta;
       const datos = {
         fecha: fecha.value, concepto: concepto.value.trim(), categoria_id: categoria.value, centro_id: centro.value || null, tercero_id: tercero.value || null,
-        doc_tipo: doc.value, doc_numero: docNum.value.trim() || null, total: Math.round(Number(total.value)), patente: patente.value.trim() || null,
+        doc_tipo: doc.value, declarable: doc.value === 'factura' && tributario.value === 'si', doc_numero: docNum.value.trim() || null, total: Math.round(Number(total.value)), patente: patente.value.trim() || null,
         orden_id: orden ? orden.value || null : r?.orden_id ?? null, ...(aCuenta ? { a_cuenta_de: aCuenta.value || null } : {}),
         estado_pago: estado.value, fecha_pago: estado.value === 'pagado' ? fechaPago.value || fecha.value || hoyISO() : null, medio_pago: estado.value === 'pagado' ? medio.value : null,
         vence: estado.value === 'pagado' ? r?.vence ?? null : vence.value || null, ...(faena ? { faena_id: faena.value || null } : {}),
@@ -190,7 +194,8 @@ export default async function vista(ctx) {
     el('div', { class: 'ficha doc-grupo fin-form' },
       el('div', { class: 'rejilla-campos' }, fila('Fecha', fecha), fila('Concepto', concepto)),
       el('div', { class: 'rejilla-campos' }, fila('Categoría', categoria), ctx.config?.centros ? fila('Centro de costo', centro) : null, fila(esIngreso ? 'Cliente' : 'Proveedor', tercero)),
-      el('div', { class: 'rejilla-campos' }, fila('Documento', doc), fila('N° de documento', docNum), fila('Total (con IVA si lo tiene)', total, desglose)),
+      el('div', { class: 'rejilla-campos' }, fila('Documento', doc), fila('N° de documento', docNum), fila('Total (con IVA si lo tiene)', total, desglose),
+        fila('Tributario', tributario, el('span', { class: 'texto-suave texto-chico' }, 'Solo la factura a nuestro RUT es declarada. Marca No declarado si la factura salió a otro RUT.'))),
       esIngreso ? (faena ? el('div', { class: 'rejilla-campos' }, fila('Faena', faena)) : null) : el('div', { class: 'rejilla-campos' }, faena ? fila('Faena', faena) : null, fila('Patente', patente), orden ? fila('Orden de trabajo', orden) : null),
       aCuenta ? el('div', { class: 'rejilla-campos' }, fila('¿Compra por cuenta de un tercero?', aCuenta, el('span', { class: 'texto-suave texto-chico' }, 'Ej.: materiales del pintor: se paga al local, no es gasto de la empresa y se descuenta de lo que se le paga.'))) : null,
       el('div', { class: 'rejilla-campos' }, fila('Estado', estado, el('span', { class: 'texto-suave texto-chico' }, 'Boleta o ticket: pagado al comprar. Factura: por pagar.'))),
