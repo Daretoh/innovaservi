@@ -3,12 +3,12 @@
 // Embudo. Responder pide editar y solo dentro de las 24 horas desde el último mensaje del cliente (regla de WhatsApp);
 // lo envía la Edge Function mkt-wa-enviar. Se actualiza sola cada 10 segundos mientras está abierta.
 // Ruta: #/mkt.whatsapp[?c=<conversación>]
-import { el } from '../../../core/ui/dom.js?v=cc5fdd7';
-import { icono } from '../../../core/ui/iconos.js?v=cc5fdd7';
-import { boton } from '../../../core/ui/tabla.js?v=cc5fdd7';
-import { avisar } from '../../../core/ui/aviso.js?v=cc5fdd7';
-import { diaLocal, hoyISO, fechaLarga } from '../../../core/ui/formato.js?v=cc5fdd7';
-import { cargarCss } from '../datos.js?v=cc5fdd7';
+import { el } from '../../../core/ui/dom.js?v=04accdc';
+import { icono } from '../../../core/ui/iconos.js?v=04accdc';
+import { boton } from '../../../core/ui/tabla.js?v=04accdc';
+import { avisar } from '../../../core/ui/aviso.js?v=04accdc';
+import { diaLocal, hoyISO, fechaLarga } from '../../../core/ui/formato.js?v=04accdc';
+import { cargarCss } from '../datos.js?v=04accdc';
 
 const ESTADO = { pendiente: 'Enviando…', enviado: 'Enviado', entregado: 'Entregado', leido: 'Leído', fallido: 'No se envió' };
 const hora = (ts) => new Date(ts).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });

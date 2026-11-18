@@ -2725,6 +2725,15 @@ html.cam-abierta, html.cam-abierta body { overflow: hidden; }
 .emi-items li { display: flex; justify-content: space-between; gap: 12px; padding: 2px 0; border-bottom: 1px dashed var(--borde); }
 .emi-items li span:first-child { overflow-wrap: anywhere; }
 .emi-items li span:last-child { white-space: nowrap; }
+/* Facturas del SII: varias de una vez (2026-11-18) */
+.emi-cabecera { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.emi-cabecera h2 { margin: 0; }
+.emi-celda-ligar { min-width: 240px; }
+.emi-ligar, .emi-otra { width: 100%; max-width: 420px; }
+.emi-otra { margin-top: 4px; }
+.emi-nota { display: block; margin-top: 2px; }
+.emi-nota.estado-ok { color: var(--ok); } .emi-nota.estado-error { color: var(--venc); }
+.emi-anuladas { margin-top: 8px; }
 .ban-cabeza { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; }
 /* Más → Accesos rápidos (Escanear documentos) */
 .mas-atajo { padding: 10px 16px; text-decoration: none; }

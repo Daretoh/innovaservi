@@ -3,40 +3,43 @@
 // cliente, detalle, estado de pago, neto, IVA y total, y los respaldos (factura, OC, comprobante) con botón para subir
 // lo que falta. Filtros por estado, cliente, año y "sin respaldo"; totales y Excel. La fila abre la factura.
 // Busca también por patente y RUT. Arriba, los vehículos que pidieron factura y falta registrarla (008).
-import { el } from '../../../core/ui/dom.js?v=cc5fdd7';
-import { icono } from '../../../core/ui/iconos.js?v=cc5fdd7';
-import { boton } from '../../../core/ui/tabla.js?v=cc5fdd7';
-import { avisar } from '../../../core/ui/aviso.js?v=cc5fdd7';
-import { dinero, fechaLarga, hoyISO, diaLocal } from '../../../core/ui/formato.js?v=cc5fdd7';
-import { normalizar } from '../../../core/ui/combo.js?v=cc5fdd7';
-import { urlFirmada } from '../../../core/adjuntos.js?v=cc5fdd7';
-import { numeroTexto, nombreTercero, verPatente, IVA } from '../datos.js?v=cc5fdd7';
-import { totales } from '../../taller/datos.js?v=cc5fdd7';
-import { ordenesExternas } from '../../taller/vistas/cobros.js?v=cc5fdd7';
-import { estadoPago, ESTADOS_PAGO, RESPALDOS, formFactura, formPago, anularPago, eliminarFactura, subirRespaldo } from '../facturas.js?v=cc5fdd7';
-import { formEmitir, anularConNota } from '../emitir.js?v=cc5fdd7';
-import { panelEmitidas } from '../emitidas.js?v=cc5fdd7';
-import { NOMBRE_DTE } from '../../../core/dte.js?v=cc5fdd7';
+import { el } from '../../../core/ui/dom.js?v=04accdc';
+import { icono } from '../../../core/ui/iconos.js?v=04accdc';
+import { boton } from '../../../core/ui/tabla.js?v=04accdc';
+import { avisar } from '../../../core/ui/aviso.js?v=04accdc';
+import { dinero, fechaLarga, hoyISO, diaLocal, sumarDias } from '../../../core/ui/formato.js?v=04accdc';
+import { normalizar } from '../../../core/ui/combo.js?v=04accdc';
+import { urlFirmada } from '../../../core/adjuntos.js?v=04accdc';
+import { numeroTexto, nombreTercero, verPatente, IVA } from '../datos.js?v=04accdc';
+import { totales } from '../../taller/datos.js?v=04accdc';
+import { ordenesExternas } from '../../taller/vistas/cobros.js?v=04accdc';
+import { estadoPago, ESTADOS_PAGO, RESPALDOS, formFactura, formPago, anularPago, eliminarFactura, subirRespaldo } from '../facturas.js?v=04accdc';
+import { formEmitir, anularConNota } from '../emitir.js?v=04accdc';
+import { panelEmitidas } from '../emitidas.js?v=04accdc';
+import { NOMBRE_DTE } from '../../../core/dte.js?v=04accdc';
 
 const filtro = { estado: 'todas', cliente: '', anio: '', sinRespaldo: false, buscar: '' };
 const fecha = (d) => (d ? fechaLarga(d) : '');
 const diasEntre = (a, b) => Math.round((new Date(`${b}T12:00`) - new Date(`${a}T12:00`)) / 864e5);
 
 // Órdenes del taller que se pueden facturar: sin cobrar, sin anular, sin cierre ni cuenta corriente y sin cotización
-const SELECT_OT = 'id, numero, estado, cobrado, doc_tipo, tipo_venta, descuento, abono, tercero_id, factura_tercero_id, termino_at, entregado_at, tal_vehiculos(patente, marca, modelo), terceros(razon_social, nombre_fantasia), tal_orden_servicios(precio)';
+const SELECT_OT = 'id, numero, estado, cobrado, doc_tipo, tipo_venta, descuento, abono, tercero_id, factura_tercero_id, termino_at, entregado_at, cobrado_at, modo_pago, tal_vehiculos(patente, marca, modelo), terceros(razon_social, nombre_fantasia), tal_orden_servicios(precio)';
 const sinSignos = (t) => normalizar(t).replace(/[^a-z0-9ñ ]/g, '');
 
 export default async function vista(ctx) {
   const e = ctx.empresa.id;
   const hoy = hoyISO();
   const verTaller = ctx.puede('taller', 'ver');
-  const [rf, rc, rt, ro] = await Promise.all([
+  const [rf, rc, rt, ro, rco] = await Promise.all([
     ctx.api.from('cot_facturas').select('*').eq('empresa_id', e).is('deleted_at', null).order('fecha_emision', { ascending: false }).order('numero', { ascending: false }).limit(5000),
     // Cotizaciones enviadas o aceptadas (para ligar una factura nueva y mostrar su N°)
     ctx.api.from('cot_cotizaciones').select('*, cot_grupos(*), cot_lineas(*)').eq('empresa_id', e).is('deleted_at', null).is('madre_id', null).in('estado', ['enviada', 'aceptada'])
       .order('numero', { ascending: false }).limit(1000),
     ctx.api.from('terceros').select('id, razon_social, nombre_fantasia, rut, giro, direccion').eq('empresa_id', e).is('deleted_at', null).contains('tipo', ['cliente']).order('razon_social').limit(5000),
     verTaller ? ctx.api.from('tal_ordenes').select(SELECT_OT).eq('empresa_id', e).eq('cobrado', false).eq('tipo_venta', 'normal').in('estado', ['espera', 'proceso', 'terminado', 'entregado']).order('numero', { ascending: false }).limit(500) : Promise.resolve({ data: [] }),
+    // Cobradas en el taller (último año): la factura de la TUU se trae del SII después del cobro (2026-11-18)
+    verTaller ? ctx.api.from('tal_ordenes').select(SELECT_OT).eq('empresa_id', e).eq('cobrado', true).eq('tipo_venta', 'normal').neq('estado', 'anulada')
+      .gte('cobrado_at', `${sumarDias(hoy, -365)}T00:00:00`).order('numero', { ascending: false }).limit(800) : Promise.resolve({ data: [] }),
   ]);
   if (rf.error) throw rf.error;
   if (rc.error) throw rc.error;
@@ -68,11 +71,14 @@ export default async function vista(ctx) {
     const auto = [v?.marca, v?.modelo].filter(Boolean).join(' ');
     return { id: o.id, numero: o.numero, neto: t.neto, total: t.neto + Math.round(t.neto * IVA), tercero: o.factura_tercero_id ?? o.tercero_id ?? '', pedida: !!o.factura_tercero_id, estado: o.estado,
       patente: v?.patente ?? '', auto, cliente: nombreTercero(clientes.find((c) => c.id === o.factura_tercero_id)) || nombreTercero(o.terceros),
+      cobrado: !!o.cobrado, cobradoFecha: o.cobrado ? diaLocal(o.cobrado_at) : null, modo: o.modo_pago,
       fecha: diaLocal(o.termino_at ?? o.entregado_at) || '', detalle: [auto, verPatente(v?.patente)].filter(Boolean).join(' · '),
       texto: `${verPatente(v?.patente) || 'S/P'} · ${auto || 'Vehículo'} · N° ${o.numero} · ${nombreTercero(o.terceros) || 'Sin cliente'}` };
   };
   const ordenes = (ro.data ?? []).filter((o) => !ligadasIds.has(o.id) && !externas.has(o.id) && !conCot.has(o.id)).map(armarOrden);
   const pedidas = ordenes.filter((o) => o.pedida);
+  // Para ligar una factura del SII: también las órdenes ya cobradas (sin factura ni cotización)
+  const ligables = [...ordenes, ...(rco.data ?? []).filter((o) => !ligadasIds.has(o.id) && !conCot.has(o.id)).map(armarOrden)];
   const abrir = (f) => (editar ? formFactura(ctx, { f, cotizaciones: porFacturar, clientes, ordenes, alGuardar: refrescar }) : null);
 
   // Filtros
@@ -212,7 +218,7 @@ export default async function vista(ctx) {
     const btn = ev.currentTarget; btn.disabled = true;
     const { filas } = calcular();
     try {
-      const { exportarExcel } = await import('../../../core/excel.js?v=cc5fdd7');
+      const { exportarExcel } = await import('../../../core/excel.js?v=04accdc');
       await exportarExcel(ctx, {
         titulo: 'Control de facturas', subtitulo: [filtro.anio || 'Todos los años', `${filas.length} facturas`].join(' · '), nombre: 'control-facturas',
         columnas: ['N° factura', 'Cotización', { t: 'Emisión', tipo: 'fecha' }, { t: 'Pago estimado', tipo: 'fecha' }, { t: 'Pago real', tipo: 'fecha' }, { t: 'Ejecución', tipo: 'fecha' },
@@ -233,7 +239,7 @@ export default async function vista(ctx) {
         crear ? boton('Registrar a mano', { icono: 'mas', onclick: () => formFactura(ctx, { cotizaciones: porFacturar, clientes, ordenes, alGuardar: refrescar }) }) : null,
         // Emitir desde ISgestión: para los cierres (las demás las hace la máquina y se traen del SII)
         crear ? boton('Emitir factura (cierres)', { icono: 'documento', onclick: () => formEmitir(ctx, { cotizaciones: porFacturar, clientes, ordenes, alGuardar: refrescar }) }) : null)),
-    crear ? panelEmitidas(ctx, { cotizaciones: porFacturar, clientes, ordenes, alGuardar: refrescar }) : null,
+    crear ? panelEmitidas(ctx, { cotizaciones: porFacturar, clientes, ordenes: ligables, alGuardar: refrescar }) : null,
     el('div', { class: 'listado-acciones fac-filtros' },
       el('label', { class: 'buscador' }, icono('buscar', { tam: 16 }), buscador),
       sel([['', 'Todos los clientes'], ...opcionesCliente], filtro.cliente, 'Cliente', (v) => { filtro.cliente = v; pintar(); }),
@@ -247,7 +253,7 @@ export default async function vista(ctx) {
 // Anular pago y eliminar quedan en un menú aparte (poco frecuentes): se elige la factura por número
 function accionesFila(ctx, facturas, refrescar, dteDe) {
   const pagadas = facturas.filter((f) => f.fecha_pago);
-  const elegir = (titulo, lista, accion) => import('../../../core/ui/modal.js?v=cc5fdd7').then(({ abrirFormulario }) => abrirFormulario({
+  const elegir = (titulo, lista, accion) => import('../../../core/ui/modal.js?v=04accdc').then(({ abrirFormulario }) => abrirFormulario({
     titulo, textoGuardar: 'Seguir', campos: [{ id: 'f', etiqueta: 'Factura', requerido: true, opciones: [['', 'Elegir…'], ...lista.map((f) => [f.id, `N° ${f.numero} · ${f.cliente_nombre ?? ''} · ${dinero(f.total)}`])] }],
     alGuardar: (v) => { const f = lista.find((x) => x.id === v.f); if (f) setTimeout(() => accion(ctx, f, { alGuardar: refrescar }), 50); },
   }));

@@ -5,15 +5,15 @@
 // una se puede ver (PDF y detalle) antes de registrarla, y al registrarla se sugiere la cotización que calza
 // (mismo cliente y monto, con sus patentes) para que quede tan completa como las ya registradas.
 // En el ambiente de pruebas se ven las de la empresa de pruebas de Haulmer y "Registrar" solo muestra el PDF.
-import { el } from '../../core/ui/dom.js?v=cc5fdd7';
-import { icono } from '../../core/ui/iconos.js?v=cc5fdd7';
-import { boton } from '../../core/ui/tabla.js?v=cc5fdd7';
-import { abrirFormulario } from '../../core/ui/modal.js?v=cc5fdd7';
-import { avisar } from '../../core/ui/aviso.js?v=cc5fdd7';
-import { dinero, fechaLarga, sumarDias } from '../../core/ui/formato.js?v=cc5fdd7';
-import { llamarDte, estadoDte, NOMBRE_DTE, ofrecerPdf } from '../../core/dte.js?v=cc5fdd7';
-import { numeroTexto, nombreTercero, totales, verPatente } from './datos.js?v=cc5fdd7';
-import { PLAZO_PAGO } from './facturas.js?v=cc5fdd7';
+import { el } from '../../core/ui/dom.js?v=04accdc';
+import { icono } from '../../core/ui/iconos.js?v=04accdc';
+import { boton } from '../../core/ui/tabla.js?v=04accdc';
+import { abrirFormulario } from '../../core/ui/modal.js?v=04accdc';
+import { avisar } from '../../core/ui/aviso.js?v=04accdc';
+import { dinero, fechaLarga, sumarDias } from '../../core/ui/formato.js?v=04accdc';
+import { llamarDte, estadoDte, NOMBRE_DTE, ofrecerPdf } from '../../core/dte.js?v=04accdc';
+import { numeroTexto, nombreTercero, totales, verPatente } from './datos.js?v=04accdc';
+import { PLAZO_PAGO } from './facturas.js?v=04accdc';
 
 const limpio = (r) => String(r ?? '').replace(/[^0-9kK]/g, '').toUpperCase();
 const REF = { 801: 'OC', 802: 'Nota de pedido', 803: 'Contrato', HES: 'HES', 33: 'Factura', 52: 'Guía' };
@@ -73,8 +73,8 @@ export async function formRegistrar(ctx, d, { cotizaciones, clientes, ordenes, p
       // Toda venta queda ligada a algo (pedido de Enzo): cotización, vehículo del taller u "otra venta" con detalle
       { id: 'cotizacion', etiqueta: 'Cotización', opciones: [['', 'Sin cotización'], ...cots.map((c) => [c.id, textoCot(c)])], valor: sugerida?.id ?? '',
         ayuda: sugerida ? 'Sugerida por cliente, monto u OC. Revísala.' : 'Arriba, las del mismo cliente y monto.' },
-      ...(ords.length ? [{ id: 'orden', etiqueta: 'Vehículo del taller (orden sin cobrar)', opciones: [['', 'Sin vehículo'], ...ords.map((o) => [o.id, `${o.texto}${o.neto === netoFac ? ' · mismo monto' : ''}`])],
-        ayuda: 'Al registrar el pago de la factura, la orden queda cobrada.' }] : []),
+      ...(ords.length ? [{ id: 'orden', etiqueta: 'Vehículo del taller', opciones: [['', 'Sin vehículo'], ...ords.map((o) => [o.id, `${o.texto}${o.cobrado ? ' · cobrada' : ''}${o.neto === netoFac ? ' · mismo monto' : ''}`])],
+        ayuda: 'Si la orden ya está cobrada, la factura queda pagada con esa fecha; si no, al pagar la factura la orden queda cobrada.' }] : []),
       { id: 'otra', etiqueta: 'Si no es de una cotización ni de un vehículo', opciones: [['', 'Es de una cotización o un vehículo'], ['si', 'Otra venta (escribe qué se vendió abajo)']] },
       { id: 'cliente', etiqueta: 'Cliente', opciones: [['', cliente ? 'Elegir…' : `Sin ficha (${d.razon ?? 'sin nombre'})`], ...clientes.map((t) => [t.id, nombreTercero(t)])], valor: cliente?.id ?? '' },
       { id: 'oc', etiqueta: 'OC u orden de servicio', valor: oc },
@@ -87,7 +87,10 @@ export async function formRegistrar(ctx, d, { cotizaciones, clientes, ordenes, p
       if (!prueba && !v.cotizacion && !v.orden && !(v.otra === 'si' && v.detalle?.trim().length >= 4)) {
         throw new Error('Liga la factura a una cotización o a un vehículo, o elige "Otra venta" y escribe qué se vendió.');
       }
-      const r = await llamarDte(ctx, 'registrar_emitida', { token: d.token, cotizacion_id: v.cotizacion || null, orden_id: v.orden || null, otra: v.otra === 'si',
+      // Cobro que ya consta en ISgestión (orden cobrada o cobro en la cotización): la factura entra pagada
+      const o = ordenes.find((x) => x.id === v.orden); const c = cotizaciones.find((x) => x.id === v.cotizacion);
+      const pago = cobroDe(o ? { tipo: 'o', o } : c ? { tipo: 'c', c } : null);
+      const r = await llamarDte(ctx, 'registrar_emitida', { token: d.token, pago: pago ? { fecha: pago.fecha, medio: pago.medio } : null, cotizacion_id: v.cotizacion || null, orden_id: v.orden || null, otra: v.otra === 'si',
         tercero_id: v.cliente || null, fecha_pago_estimada: v.estimada || null, detalle: v.detalle?.trim() || null, oc_numero: v.oc?.trim() || null, fecha_ejecucion: v.ejecucion || null });
       if (prueba) ofrecerPdf(r.pdf, { titulo: `Factura N° ${r.folio}`, texto: 'Ambiente de pruebas: no se registró.' });
       avisar(prueba ? `Factura de prueba N° ${r.folio}: no se registró.` : `Factura N° ${r.folio} registrada en Facturas.`);
@@ -106,47 +109,182 @@ const rangos = (ns) => {
   return out.join(', ');
 };
 
-// Panel: trae las facturas emitidas en el SII (todas o las recientes) y muestra las que faltan en Facturas
+// Medio de pago de la orden → medio de la factura
+const MEDIOS = ['transferencia', 'efectivo', 'cheque', 'debito', 'credito', 'otro'];
+const medioDe = (m) => (MEDIOS.includes(m) ? m : 'otro');
+
+// Cobro que ya consta en ISgestión para lo ligado: orden cobrada en el taller o cobro anotado en la cotización
+export function cobroDe(liga) {
+  if (!liga) return null;
+  if (liga.tipo === 'o' && liga.o.cobrado && liga.o.cobradoFecha) return { fecha: liga.o.cobradoFecha, medio: medioDe(liga.o.modo), donde: `orden N° ${liga.o.numero}` };
+  if (liga.tipo === 'c' && liga.c.cobro_fecha) return { fecha: liga.c.cobro_fecha, medio: medioDe(liga.c.cobro_medio), donde: `cotización N° ${numeroTexto(liga.c.numero)}` };
+  return null;
+}
+
+// La lista del SII queda en memoria entre visitas a Facturas (por empresa) y se vuelve a revisar sola si tiene más
+// de 3 minutos, sin tocar nada (pedido de Enzo, 2026-11-18)
+const memoria = new Map();
+const FRESCO = 3 * 60e3;
+
+// Panel (2026-11-18, pedido de Enzo): al abrir Facturas se traen solas las facturas del SII (todas, desde la N° 1);
+// las que faltan se ven con a qué van (sugerido: cotización u orden del mismo cliente y monto) y si ya están cobradas
+// según ISgestión (orden cobrada en el taller o cobro en la cotización). Se marcan varias y se registran juntas.
+// Las anuladas con nota de crédito (mismo RUT y total) se muestran aparte y no se registran.
 export function panelEmitidas(ctx, { cotizaciones = [], clientes = [], ordenes = [], alGuardar } = {}) {
+  const e = ctx.empresa.id;
   const zona = el('div', {});
-  const alcance = el('select', { class: 'campo campo-filtro', 'aria-label': 'Desde cuándo' },
-    el('option', { value: 'todas' }, 'Todas (desde la N° 1)'), el('option', { value: 'recientes' }, 'Últimos 45 días'));
-  const estado = el('p', { class: 'texto-suave texto-chico', 'aria-live': 'polite' },
-    'Las facturas que hace la máquina TUU o la plataforma de OpenFactura se traen del SII y se registran aquí con su PDF.');
+  const estado = el('p', { class: 'texto-suave texto-chico', 'aria-live': 'polite' }, 'Buscando las facturas emitidas en el SII…');
   const puedeCrear = ctx.puede('cotizaciones', 'crear');
-  const traer = async (ev) => {
-    const b = ev?.currentTarget; if (b) { b.disabled = true; b.classList.add('cargando'); }
-    estado.textContent = alcance.value === 'todas' ? 'Buscando todas las facturas emitidas en el SII… puede tardar un minuto.' : 'Buscando facturas emitidas en el SII…';
+
+  const pintar = (r) => {
+    const facturas = r.documentos.filter((d) => [33, 34].includes(d.tipo)).sort((a, b) => b.folio - a.folio);
+    const notas = r.documentos.filter((d) => d.tipo === 61);
+    // Anulada: una nota de crédito al mismo RUT, por el mismo total y desde la fecha de la factura (cada nota, una vez)
+    const usadas = new Set();
+    const anulada = new Map();
+    for (const d of [...facturas].sort((a, b) => a.folio - b.folio)) {
+      const nc = notas.find((n) => !usadas.has(n.folio) && n.rut === d.rut && n.total === d.total && n.fecha >= d.fecha);
+      if (nc) { usadas.add(nc.folio); anulada.set(d.folio, nc); }
+    }
+    const faltan = facturas.filter((d) => !d.factura_id && !anulada.has(d.folio));
+    const anuladas = facturas.filter((d) => !d.factura_id && anulada.has(d.folio));
+    const sinSii = r.folios?.no_en_sii ?? [];
+    estado.textContent = `${r.prueba ? 'Ambiente de pruebas (empresa de pruebas de Haulmer). ' : ''}${facturas.length} facturas en el SII: ${facturas.length - faltan.length - anuladas.length} ya en Facturas, ${faltan.length} por registrar${anuladas.length ? ` y ${anuladas.length} anuladas con nota de crédito` : ''}.${r.completo ? '' : ' (Se revisaron las primeras 600.)'}`;
+
+    // Opciones para ligar cada factura: primero lo del mismo cliente y monto; la sugerencia no se repite en la lista
+    const sugeridas = new Set();
+    const opcionesDe = (d) => {
+      const cli = clientes.find((t) => limpio(t.rut) === limpio(d.rut));
+      const netoFac = d.neto + d.exento;
+      const netoCot = (c) => (c.cot_grupos && c.cot_lineas ? totales(c, c.cot_grupos, c.cot_lineas).neto : null);
+      const cots = cotizaciones.map((c) => ({ c, mismo: !!cli && c.tercero_id === cli.id, monto: netoCot(c) === netoFac }))
+        .filter((x) => x.mismo || x.monto).sort((a, b) => (b.mismo * 2 + b.monto) - (a.mismo * 2 + a.monto) || b.c.numero - a.c.numero);
+      // Órdenes: neto igual al de la factura, o igual al total (precio con IVA incluido, como en la TUU)
+      const montoOrd = (o) => o.neto === netoFac || o.neto === d.total;
+      const ords = ordenes.map((o) => ({ o, mismo: !!cli && o.tercero === cli.id, monto: montoOrd(o), dias: Math.abs((new Date(o.fecha || d.fecha) - new Date(d.fecha)) / 864e5) }))
+        // De otro cliente solo con el mismo monto y cerca de la fecha ($65.000 es un precio muy común)
+        .filter((x) => x.mismo || (x.monto && x.dias <= 30)).sort((a, b) => (b.mismo * 2 + b.monto) - (a.mismo * 2 + a.monto) || a.dias - b.dias);
+      const cotSug = cots.find((x) => x.mismo && x.monto && !sugeridas.has(`c:${x.c.id}`));
+      const ordSug = ords.find((x) => x.monto && (x.mismo || !cli) && x.dias <= 20 && !sugeridas.has(`o:${x.o.id}`));
+      const sug = cotSug ? `c:${cotSug.c.id}` : ordSug ? `o:${ordSug.o.id}` : '';
+      if (sug) sugeridas.add(sug);
+      const liga = new Map([...cots.map((x) => [`c:${x.c.id}`, { tipo: 'c', c: x.c }]), ...ords.map((x) => [`o:${x.o.id}`, { tipo: 'o', o: x.o }])]);
+      const patentes = (c) => (c.cot_grupos ?? []).map((g) => verPatente(g.patente)).filter(Boolean).join(', ');
+      const opciones = [['', 'Elegir a qué va…'],
+        ...cots.slice(0, 15).map((x) => [`c:${x.c.id}`, `Cotización N° ${numeroTexto(x.c.numero)} · ${patentes(x.c) || x.c.cliente_nombre || ''} · neto ${dinero(netoCot(x.c) ?? 0)}${x.monto ? ' · mismo monto' : ''}`]),
+        ...ords.slice(0, 15).map((x) => [`o:${x.o.id}`, `Orden N° ${x.o.numero} · ${verPatente(x.o.patente) || 'S/P'} ${x.o.auto} · ${fechaLarga(x.o.fecha)} · ${dinero(x.o.neto)}${x.o.cobrado ? ' · cobrada' : ''}${x.monto ? ' · mismo monto' : ''}`]),
+        ['otra', 'Otra venta (escribir qué)']];
+      return { opciones, sug, liga, cli };
+    };
+
+    const filas = faltan.map((d) => {
+      const { opciones, sug, liga, cli } = opcionesDe(d);
+      const marca = el('input', { type: 'checkbox', 'aria-label': `Elegir la factura N° ${d.folio}` });
+      const ligar = el('select', { class: 'campo emi-ligar', 'aria-label': `A qué va la factura N° ${d.folio}` }, opciones.map(([v, t]) => el('option', { value: v, selected: v === sug }, t)));
+      const otra = el('input', { class: 'campo emi-otra', placeholder: 'Qué se vendió', 'aria-label': 'Qué se vendió' });
+      otra.hidden = true;
+      const cobro = el('span', {});
+      const nota = el('span', { class: 'texto-chico emi-nota', role: 'status' });
+      const pintarCobro = () => {
+        otra.hidden = ligar.value !== 'otra';
+        const c = cobroDe(liga.get(ligar.value));
+        cobro.replaceChildren(c ? el('span', { class: 'chip chip-ok', title: `Según la ${c.donde}` }, `Cobrada ${fechaLarga(c.fecha)}`)
+          : el('span', { class: `chip ${ligar.value ? 'chip-prox' : 'chip-pend'}` }, ligar.value ? 'Por cobrar' : 'Sin ligar'));
+      };
+      ligar.addEventListener('change', () => { pintarCobro(); if (ligar.value) marca.checked = true; contar(); });
+      marca.addEventListener('change', contar);
+      pintarCobro();
+      const tr = el('tr', {},
+        el('td', {}, puedeCrear && !r.prueba ? marca : null),
+        el('td', {}, el('strong', {}, `N° ${d.folio}`), el('span', { class: 'texto-suave texto-chico ban-linea' }, `${fechaLarga(d.fecha)}${d.tipo === 34 ? ' · exenta' : ''}`)),
+        el('td', {}, el('strong', {}, d.razon ?? 'Sin nombre'), el('span', { class: 'texto-suave texto-chico ban-linea' }, `${d.rut ?? ''}${cli ? '' : ' · sin ficha de cliente'}`)),
+        el('td', { class: 'num' }, dinero(d.total)),
+        el('td', { class: 'emi-celda-ligar' }, ligar, otra, nota),
+        el('td', {}, cobro),
+        el('td', {}, el('div', { class: 'ban-acciones-fila' },
+          boton('Ver', { icono: 'ojo', class: 'boton boton-secundario boton-chico', onclick: () => verEmitida(ctx, d) }),
+          puedeCrear ? boton(r.prueba ? 'Probar' : 'Con detalle', { class: 'boton boton-secundario boton-chico', title: 'Registrar con el formulario completo (OC, ejecución, pago estimado)',
+            onclick: () => formRegistrar(ctx, d, { cotizaciones, clientes, ordenes, prueba: r.prueba, alGuardar: () => { memoria.delete(e); alGuardar?.(); } }) }) : null)));
+      return { d, tr, marca, ligar, otra, nota, liga, cli };
+    });
+
+    const textoLote = el('span', {}, 'Registrar seleccionadas');
+    const btnLote = el('button', { type: 'button', class: 'boton boton-primario', disabled: true, onclick: () => registrarLote() }, icono('check', { tam: 16 }), textoLote);
+    const todas = el('input', { type: 'checkbox', 'aria-label': 'Elegir todas' });
+    function contar() {
+      const n = filas.filter((f) => f.marca.checked).length;
+      btnLote.disabled = !n;
+      textoLote.textContent = n ? `Registrar seleccionadas (${n})` : 'Registrar seleccionadas';
+      todas.checked = n > 0 && n === filas.filter((f) => !f.marca.disabled).length;
+    }
+    todas.addEventListener('change', () => { filas.forEach((f) => { if (!f.marca.disabled) f.marca.checked = todas.checked; }); contar(); });
+
+    async function registrarLote() {
+      const elegidas = filas.filter((f) => f.marca.checked);
+      // Revisión antes de llamar al SII: cada una ligada, y una orden o cotización en una sola factura
+      let mal = 0; const vistos = new Map();
+      for (const f of elegidas) {
+        f.nota.textContent = ''; f.nota.className = 'texto-chico emi-nota';
+        const err = !f.ligar.value ? 'Elige a qué va.' : f.ligar.value === 'otra' && f.otra.value.trim().length < 4 ? 'Escribe qué se vendió.'
+          : vistos.has(f.ligar.value) ? `Va a lo mismo que la N° ${vistos.get(f.ligar.value)}.` : null;
+        if (f.ligar.value && f.ligar.value !== 'otra') vistos.set(f.ligar.value, f.d.folio);
+        if (err) { mal++; f.nota.textContent = err; f.nota.classList.add('estado-error'); }
+      }
+      if (mal) { avisar(`Revisa ${mal === 1 ? 'la factura marcada' : `las ${mal} facturas marcadas`} en rojo.`, 'error'); return; }
+      btnLote.disabled = true; btnLote.classList.add('cargando');
+      let ok = 0;
+      for (const [i, f] of elegidas.entries()) {
+        estado.textContent = `Registrando ${i + 1} de ${elegidas.length}: factura N° ${f.d.folio}…`;
+        const l = f.liga.get(f.ligar.value);
+        const pago = cobroDe(l);
+        try {
+          await llamarDte(ctx, 'registrar_emitida', { token: f.d.token, cotizacion_id: l?.tipo === 'c' ? l.c.id : null, orden_id: l?.tipo === 'o' ? l.o.id : null,
+            otra: f.ligar.value === 'otra', detalle: f.ligar.value === 'otra' ? f.otra.value.trim() : null, tercero_id: f.cli?.id ?? null,
+            fecha_pago_estimada: sumarDias(f.d.fecha, PLAZO_PAGO), pago: pago ? { fecha: pago.fecha, medio: pago.medio } : null });
+          ok++; f.marca.checked = false; f.marca.disabled = true; f.ligar.disabled = true; f.otra.disabled = true;
+          f.nota.textContent = pago ? 'Registrada y pagada.' : 'Registrada.'; f.nota.classList.add('estado-ok');
+        } catch (err) { f.nota.textContent = err.message; f.nota.classList.add('estado-error'); }
+      }
+      btnLote.classList.remove('cargando');
+      memoria.delete(e);
+      avisar(`${ok} de ${elegidas.length} ${elegidas.length === 1 ? 'factura registrada' : 'facturas registradas'}.`, ok === elegidas.length ? 'ok' : 'error');
+      if (ok === elegidas.length) alGuardar?.(); else { estado.textContent = `${ok} registradas; las que fallaron dicen por qué.`; contar(); }
+    }
+
+    zona.replaceChildren(...[
+      faltan.length ? el('div', {},
+        puedeCrear && !r.prueba ? el('div', { class: 'listado-acciones' }, btnLote,
+          el('span', { class: 'texto-suave texto-chico' }, 'Las que ya están cobradas en ISgestión quedan pagadas con esa fecha.')) : null,
+        el('div', { class: 'tabla-contenedor' }, el('table', { class: 'tabla ban-tabla emi-tabla' },
+          el('thead', {}, el('tr', {}, el('th', {}, puedeCrear && !r.prueba ? todas : null), ...['Factura', 'Cliente', 'Total', 'A qué va', 'Cobro', ''].map((c) => el('th', { class: c === 'Total' ? 'num' : null }, c)))),
+          el('tbody', {}, filas.map((f) => f.tr)))))
+        : el('p', { class: 'texto-suave' }, 'Todas las facturas del SII ya están en Facturas.'),
+      anuladas.length ? el('details', { class: 'emi-anuladas' }, el('summary', { class: 'texto-suave texto-chico' }, `Anuladas con nota de crédito (${anuladas.length}): no se registran`),
+        anuladas.map((d) => el('p', { class: 'texto-chico' }, `Factura N° ${d.folio} · ${d.razon ?? ''} · ${fechaLarga(d.fecha)} · ${dinero(d.total)} → nota de crédito N° ${anulada.get(d.folio).folio}`))) : null,
+      sinSii.length ? el('p', { class: 'aviso-bandeja' }, icono('alerta', { tam: 16 }),
+        ` Folios del 1 al ${r.folios.max} que no están en OpenFactura: ${rangos(sinSii.map((x) => x.folio))}. `,
+        sinSii.some((x) => x.factura_id) ? `De esos, ${sinSii.filter((x) => x.factura_id).length} ya están en Facturas (registradas a mano). ` : '',
+        'Pueden haberse emitido en otra plataforma antes de OpenFactura o estar anulados.') : null].filter(Boolean));
+  };
+
+  const cargar = async ({ forzar = false } = {}) => {
+    const m = memoria.get(e);
+    if (m && !forzar) pintar(m.r);
+    if (m && !forzar && Date.now() - m.at < FRESCO) return;
+    if (!m) estado.textContent = 'Buscando las facturas emitidas en el SII… la primera vez puede tardar un poco.';
     try {
       const est = await estadoDte(ctx);
       if (!est.conectado) throw new Error(`OpenFactura no está conectado: ${est.error ?? 'falta la clave'}`);
-      const r = await llamarDte(ctx, 'emitidas', { todas: alcance.value === 'todas' });
-      const facturas = r.documentos.filter((d) => [33, 34].includes(d.tipo)).sort((a, b) => b.folio - a.folio);
-      const faltan = facturas.filter((d) => !d.factura_id);
-      const notas = r.documentos.filter((d) => d.tipo === 61);
-      const sinSii = r.folios?.no_en_sii ?? [];
-      estado.textContent = `${r.prueba ? 'Ambiente de pruebas (empresa de pruebas de Haulmer). ' : ''}${alcance.value === 'todas' ? 'Desde la primera' : `Desde el ${fechaLarga(r.desde)}`}: ${facturas.length} facturas en el SII, ${facturas.length - faltan.length} ya en Facturas y ${faltan.length} por registrar${notas.length ? `; ${notas.length} notas de crédito` : ''}.${r.completo ? '' : ' (Se revisaron las primeras 600.)'}`;
-      const fila = (d) => el('tr', {},
-        el('td', {}, el('strong', {}, `N° ${d.folio}`), d.tipo === 34 ? el('span', { class: 'texto-suave texto-chico ban-linea' }, 'Exenta') : null),
-        el('td', { class: 'fac-fecha' }, fechaLarga(d.fecha)),
-        el('td', {}, el('strong', {}, d.razon ?? 'Sin nombre'), el('span', { class: 'texto-suave texto-chico ban-linea' }, d.rut ?? '')),
-        el('td', { class: 'num' }, dinero(d.total)),
-        el('td', {}, el('div', { class: 'ban-acciones-fila' },
-          boton('Ver', { icono: 'ojo', class: 'boton boton-secundario boton-chico', onclick: () => verEmitida(ctx, d) }),
-          puedeCrear && !r.prueba ? boton('Registrar', { icono: 'mas', class: 'boton boton-primario boton-chico', onclick: () => formRegistrar(ctx, d, { cotizaciones, clientes, ordenes, prueba: r.prueba, alGuardar }) }) : null)));
-      zona.replaceChildren(
-        faltan.length ? el('div', { class: 'tabla-contenedor' }, el('table', { class: 'tabla ban-tabla' },
-          el('thead', {}, el('tr', {}, ['Factura', 'Emisión', 'Cliente', 'Total', ''].map((c, i) => el('th', { class: i === 3 ? 'num' : null }, c)))),
-          el('tbody', {}, faltan.map(fila)))) : el('p', { class: 'texto-suave' }, 'Todas las facturas del SII ya están en Facturas.'),
-        sinSii.length ? el('p', { class: 'aviso-bandeja' }, icono('alerta', { tam: 16 }),
-          ` Folios del 1 al ${r.folios.max} que no están en OpenFactura: ${rangos(sinSii.map((x) => x.folio))}. `,
-          sinSii.some((x) => x.factura_id) ? `De esos, ${sinSii.filter((x) => x.factura_id).length} ya están en Facturas (registradas a mano). ` : '',
-          'Pueden haberse emitido en otra plataforma antes de OpenFactura o estar anulados.') : null);
+      const r = await llamarDte(ctx, 'emitidas', { todas: true });
+      memoria.set(e, { r, at: Date.now() });
+      // Si ya se estaba usando la lista en memoria (algo marcado), no se repinta encima
+      if (forzar || !m || !zona.querySelector('.emi-tabla input:checked')) pintar(r);
     } catch (err) { estado.textContent = err.message; }
-    finally { if (b) { b.disabled = false; b.classList.remove('cargando'); } }
   };
+  queueMicrotask(cargar);
   return el('div', { class: 'ficha doc-grupo' },
-    el('h2', {}, 'Facturas emitidas en el SII'),
-    el('div', { class: 'listado-acciones' }, alcance, boton('Traer del SII', { icono: 'descargar', tipo: 'primario', onclick: traer })),
+    el('div', { class: 'emi-cabecera' }, el('h2', {}, 'Facturas emitidas en el SII'),
+      boton('Actualizar', { class: 'boton boton-secundario boton-chico', title: 'Volver a revisar el SII ahora',
+        onclick: async (ev) => { const b = ev.currentTarget; b.disabled = true; await cargar({ forzar: true }); b.disabled = false; } })),
     estado, zona);
 }
