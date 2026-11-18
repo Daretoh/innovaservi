@@ -3,12 +3,12 @@
 // Embudo. Responder pide editar y solo dentro de las 24 horas desde el último mensaje del cliente (regla de WhatsApp);
 // lo envía la Edge Function mkt-wa-enviar. Se actualiza sola cada 10 segundos mientras está abierta.
 // Ruta: #/mkt.whatsapp[?c=<conversación>]
-import { el } from '../../../core/ui/dom.js?v=c50b70b';
-import { icono } from '../../../core/ui/iconos.js?v=c50b70b';
-import { boton } from '../../../core/ui/tabla.js?v=c50b70b';
-import { avisar } from '../../../core/ui/aviso.js?v=c50b70b';
-import { diaLocal, hoyISO, fechaLarga } from '../../../core/ui/formato.js?v=c50b70b';
-import { cargarCss } from '../datos.js?v=c50b70b';
+import { el } from '../../../core/ui/dom.js?v=8b91c02';
+import { icono } from '../../../core/ui/iconos.js?v=8b91c02';
+import { boton } from '../../../core/ui/tabla.js?v=8b91c02';
+import { avisar } from '../../../core/ui/aviso.js?v=8b91c02';
+import { diaLocal, hoyISO, fechaLarga } from '../../../core/ui/formato.js?v=8b91c02';
+import { cargarCss } from '../datos.js?v=8b91c02';
 
 const ESTADO = { pendiente: 'Enviando…', enviado: 'Enviado', entregado: 'Entregado', leido: 'Leído', fallido: 'No se envió' };
 const hora = (ts) => new Date(ts).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
@@ -74,7 +74,7 @@ export default async function vista(ctx) {
       await refrescar();
     };
     entrada.addEventListener('keydown', (ev) => { if (ev.key === 'Enter' && !ev.shiftKey) mandar(ev); });
-    chat.replaceChildren(
+    chat.replaceChildren(...[
       el('header', { class: 'mkt-wa-cab' },
         el('div', {}, el('strong', {}, c.mkt_contactos?.nombre || c.nombre_perfil || verNumero(c.wa_id)),
           el('small', { class: 'texto-suave' }, verNumero(c.wa_id), c.nombre_perfil && c.mkt_contactos?.nombre && c.nombre_perfil !== c.mkt_contactos.nombre ? ` · perfil: ${c.nombre_perfil}` : '')),
@@ -82,7 +82,7 @@ export default async function vista(ctx) {
       caja,
       abierta ? null : el('p', { class: 'aviso-bandeja texto-chico' }, icono('alerta', { tam: 14 }),
         ' Pasaron más de 24 horas desde el último mensaje del cliente: WhatsApp solo deja escribirle con una plantilla aprobada (próximamente).'),
-      editar ? el('form', { class: 'mkt-bot-entrada', onsubmit: mandar }, entrada, enviar) : null);
+      editar ? el('form', { class: 'mkt-bot-entrada', onsubmit: mandar }, entrada, enviar) : null].filter(Boolean));
     caja.scrollTop = caja.scrollHeight;
     if (c.no_leidos && editar) {
       await ctx.api.from('mkt_wa_conversaciones').update({ no_leidos: 0 }).eq('id', c.id);
@@ -112,8 +112,18 @@ export default async function vista(ctx) {
   await cargarLista();
   if (actual) raiz.classList.add('con-chat');
   await pintarChat();
+  // La bandeja ocupa justo el alto que queda bajo la cabecera, para que la caja de respuesta siempre se vea
+  const ajustarAlto = () => {
+    if (!document.contains(raiz)) return;
+    const arriba = raiz.getBoundingClientRect().top + window.scrollY;
+    const abajo = window.matchMedia('(max-width: 760px)').matches ? (document.querySelector('.barra-movil')?.offsetHeight ?? 0) : 0;
+    raiz.style.height = `${Math.max(360, window.innerHeight - arriba - abajo - 16)}px`;
+  };
+  requestAnimationFrame(ajustarAlto);
+  setTimeout(ajustarAlto, 300);
+  window.addEventListener('resize', ajustarAlto);
   const reloj = setInterval(() => {
-    if (!document.contains(raiz)) { clearInterval(reloj); return; }
+    if (!document.contains(raiz)) { clearInterval(reloj); window.removeEventListener('resize', ajustarAlto); return; }
     if (document.hidden) return;
     refrescar().catch(() => { /* sin conexión: reintenta en el siguiente */ });
   }, 10_000);

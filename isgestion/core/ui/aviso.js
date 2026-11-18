@@ -1,6 +1,6 @@
 // Aviso breve en la esquina (toast).
-import { el } from './dom.js?v=c50b70b';
-import { icono } from './iconos.js?v=c50b70b';
+import { el } from './dom.js?v=8b91c02';
+import { icono } from './iconos.js?v=8b91c02';
 
 export function avisar(texto, tipo = 'ok') {
   const nodo = el('div', { class: `aviso aviso-${tipo}`, role: 'status' },

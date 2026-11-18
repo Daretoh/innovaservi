@@ -1,10 +1,10 @@
 // PDF del catálogo (horizontal, como el catálogo de Canva): banda con el logo y los contactos de la empresa,
 // una o más páginas por categoría con sus secciones y tarjetas (foto, nombre, descripción, material, procedencia,
 // marca y precio si corresponde), página de marcas y página de cierre. Color de la empresa en los acentos.
-import { cargarJsPdf, cargarLogo, rgb, sellar } from '../../core/pdf.js?v=c50b70b';
-import { nombreEmpresa } from '../../core/empresas.js?v=c50b70b';
-import { dinero } from '../../core/ui/formato.js?v=c50b70b';
-import { urlsFotos, agrupar } from './datos.js?v=c50b70b';
+import { cargarJsPdf, cargarLogo, rgb, sellar } from '../../core/pdf.js?v=8b91c02';
+import { nombreEmpresa } from '../../core/empresas.js?v=8b91c02';
+import { dinero } from '../../core/ui/formato.js?v=8b91c02';
+import { urlsFotos, agrupar } from './datos.js?v=8b91c02';
 
 const M = 12;                 // margen
 const OSCURO = [24, 26, 31];

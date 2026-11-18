@@ -137,7 +137,7 @@
 .mkt-tj-premio td:first-child { box-shadow: inset 3px 0 0 var(--ok); }
 
 /* ---- WhatsApp (bandeja) */
-.mkt-wa { display: grid; grid-template-columns: minmax(240px, 320px) minmax(0, 1fr); height: calc(100dvh - 190px); min-height: 420px; border: 1px solid var(--borde); border-radius: var(--radio, 10px); overflow: hidden; background: var(--superficie); }
+.mkt-wa { display: grid; grid-template-columns: minmax(240px, 320px) minmax(0, 1fr); height: calc(100dvh - 190px); min-height: 360px; border: 1px solid var(--borde); border-radius: var(--radio, 10px); overflow: hidden; background: var(--superficie); }
 .mkt-wa-lista { overflow-y: auto; border-right: 1px solid var(--borde); background: var(--fondo-sutil); }
 .mkt-wa-item { display: grid; gap: 2px; padding: 10px 12px; border-bottom: 1px solid var(--borde); color: inherit; text-decoration: none; }
 .mkt-wa-item:hover { background: var(--hover); }
@@ -167,8 +167,11 @@
 .mkt-wa-chat > form { padding: 10px; border-top: 1px solid var(--borde); }
 .mkt-wa-volver { display: none; }
 @media (max-width: 760px) {
-  .mkt-wa { grid-template-columns: 1fr; height: calc(100dvh - 210px); }
+  .mkt-wa { grid-template-columns: 1fr; }
   .mkt-wa.con-chat .mkt-wa-lista { display: none; }
   .mkt-wa:not(.con-chat) .mkt-wa-chat { display: none; }
   .mkt-wa-volver { display: inline-flex; }
 }
+/* La fila de la bandeja no crece con los mensajes: el chat se desplaza por dentro y la caja de respuesta queda a la vista */
+.mkt-wa { grid-template-rows: minmax(0, 1fr); }
+.mkt-wa-lista, .mkt-wa-chat { min-height: 0; }
