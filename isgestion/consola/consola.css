@@ -89,3 +89,17 @@
 .sal-tecnico > summary h2 { display: inline; font-size: 1rem; color: var(--texto-suave); }
 .sal-tecnico-acciones { display: flex; justify-content: flex-end; margin: 4px 0 12px; }
 .sal-despues > svg { color: var(--texto-suave); }
+
+/* Almacenamiento (Consola 004) */
+.alm .listado-cabecera h1 { display: flex; align-items: center; gap: 8px; }
+.alm-resumen { margin-bottom: 14px; padding: 10px 16px; }
+.alm-resumen summary h2 { display: inline; font-size: 1rem; }
+.alm-filtros { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; margin-bottom: 10px; }
+.alm-filtros .campo { width: auto; min-width: 150px; }
+.alm-antes { display: flex; flex-direction: column; gap: 2px; }
+.alm-barra { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 8px 0; position: sticky; top: 0; background: var(--fondo); z-index: 2; }
+.alm-nombre { display: flex; flex-direction: column; max-width: 340px; word-break: break-all; }
+.alm-num { text-align: right; white-space: nowrap; }
+.alm-tabla td { vertical-align: top; }
+.alm-mas { display: flex; justify-content: center; padding: 12px; }
+@media (max-width: 760px) { .alm-filtros .campo { min-width: 0; flex: 1 1 140px; } }

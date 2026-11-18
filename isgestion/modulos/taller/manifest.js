@@ -10,22 +10,23 @@ export default {
   // Teléfono (core/movil.js): Taller y Agenda en la barra de abajo; el "+" del centro agenda un vehículo (recepción)
   movil: {
     accesos: [{ id: 'taller.tablero', label: 'Taller', icono: 'auto' }, { id: 'taller.agenda', label: 'Agenda', icono: 'calendario' }],
-    accion: { label: 'Agendar vehículo', icono: 'mas', requiere: 'crear', abrir: (ctx) => import('./recepcion.js?v=547e6e2').then((m) => m.recepcion(ctx)) },
+    accion: { label: 'Agendar vehículo', icono: 'mas', requiere: 'crear', abrir: (ctx) => import('./recepcion.js?v=c50b70b').then((m) => m.recepcion(ctx)) },
   },
   menu: [
-    { id: 'taller.tablero', label: 'Tablero del taller', pestana: 'Tablero', vista: () => import('./vistas/tablero.js?v=547e6e2') },
-    { id: 'taller.orden', label: 'Orden de trabajo', oculto: true, padre: 'taller.tablero', vista: () => import('./vistas/orden.js?v=547e6e2') },
-    { id: 'taller.calendario', label: 'Calendario', vista: () => import('./vistas/calendario.js?v=547e6e2') },
-    { id: 'taller.agenda', label: 'Agenda', vista: () => import('./vistas/agenda.js?v=547e6e2') },
-    { id: 'taller.cobros', label: 'Cobros', requiere: 'editar', vista: () => import('./vistas/cobros.js?v=547e6e2') },
-    { id: 'taller.clientes', label: 'Clientes', pestana: 'Clientes', vista: () => import('./vistas/clientes.js?v=547e6e2') },
-    { id: 'taller.vehiculos', label: 'Vehículos de clientes', pestana: 'Vehículos', vista: () => import('./vistas/vehiculos.js?v=547e6e2') },
-    { id: 'taller.vehiculo', label: 'Vehículo', oculto: true, padre: 'taller.vehiculos', vista: () => import('./vistas/vehiculo.js?v=547e6e2') },
-    { id: 'taller.servicios', label: 'Servicios y precios', pestana: 'Servicios y precios', apartado: 'catalogo', icono: 'llave', vista: () => import('./vistas/servicios.js?v=547e6e2') },
+    { id: 'taller.tablero', label: 'Tablero del taller', pestana: 'Tablero', vista: () => import('./vistas/tablero.js?v=c50b70b') },
+    { id: 'taller.orden', label: 'Orden de trabajo', oculto: true, padre: 'taller.tablero', vista: () => import('./vistas/orden.js?v=c50b70b') },
+    { id: 'taller.calendario', label: 'Calendario', vista: () => import('./vistas/calendario.js?v=c50b70b') },
+    { id: 'taller.agenda', label: 'Agenda', vista: () => import('./vistas/agenda.js?v=c50b70b') },
+    { id: 'taller.cobros', label: 'Cobros', requiere: 'editar', vista: () => import('./vistas/cobros.js?v=c50b70b') },
+    { id: 'taller.clientes', label: 'Clientes', pestana: 'Clientes', vista: () => import('./vistas/clientes.js?v=c50b70b') },
+    { id: 'taller.vehiculos', label: 'Vehículos de clientes', pestana: 'Vehículos', vista: () => import('./vistas/vehiculos.js?v=c50b70b') },
+    { id: 'taller.vehiculo', label: 'Vehículo', oculto: true, padre: 'taller.vehiculos', vista: () => import('./vistas/vehiculo.js?v=c50b70b') },
+    { id: 'taller.servicios', label: 'Servicios y precios', pestana: 'Servicios y precios', apartado: 'catalogo', icono: 'llave', vista: () => import('./vistas/servicios.js?v=c50b70b') },
+    { id: 'taller.servicio', label: 'Servicio', oculto: true, padre: 'taller.servicios', vista: () => import('./vistas/servicio.js?v=c50b70b') },
   ],
   config: {
     // VB del jefe de taller (flujo comercial y taller): el operador llega hasta Terminado; Entregado solo con VB y PIN
     vb_entrega: { tipo: 'bool', etiqueta: 'Entregar solo con VB del jefe de taller (permiso aprobar y PIN)', default: false },
   },
-  migraciones: ['db/001_taller.sql', 'db/002_vb.sql', 'db/003_clientes.sql', 'db/004_prioridad_manual.sql', 'db/005_por_cotizar.sql', 'db/006_catalogo_aprobar.sql', 'db/007_roles_tablet.sql', 'db/008_operador_agenda.sql', 'db/009_unir_eliminar.sql', 'db/010_unir_vehiculos.sql', 'db/011_boleta_cobro.sql', 'db/012_abonos.sql'],
+  migraciones: ['db/001_taller.sql', 'db/002_vb.sql', 'db/003_clientes.sql', 'db/004_prioridad_manual.sql', 'db/005_por_cotizar.sql', 'db/006_catalogo_aprobar.sql', 'db/007_roles_tablet.sql', 'db/008_operador_agenda.sql', 'db/009_unir_eliminar.sql', 'db/010_unir_vehiculos.sql', 'db/011_boleta_cobro.sql', 'db/012_abonos.sql', 'db/014_pasos_quimicos.sql'],
 };

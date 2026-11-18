@@ -1,9 +1,9 @@
 // Almacenes y tipos de producto de la empresa (en el OS estaban fijos en el código).
-import { el } from '../../../core/ui/dom.js?v=547e6e2';
-import { boton } from '../../../core/ui/tabla.js?v=547e6e2';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=547e6e2';
-import { avisar } from '../../../core/ui/aviso.js?v=547e6e2';
-import { cargarBase } from '../datos.js?v=547e6e2';
+import { el } from '../../../core/ui/dom.js?v=c50b70b';
+import { boton } from '../../../core/ui/tabla.js?v=c50b70b';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=c50b70b';
+import { avisar } from '../../../core/ui/aviso.js?v=c50b70b';
+import { cargarBase } from '../datos.js?v=c50b70b';
 
 const ALMACENES = [['BOD', 'Bodega', false], ['MES', 'Mesón de venta', true]];
 const TIPOS = [['insumo', 'Químico', '31'], ['insumo', 'Insumo', '32'], ['insumo', 'Herramienta', '33'], ['insumo', 'Repuesto', '34'], ['venta', 'Equipamiento', '41'], ['venta', 'Accesorios', '42']];
@@ -28,10 +28,16 @@ export default async function vista(ctx) {
       ...(a ? [] : [{ id: 'codigo', etiqueta: 'Código (2 a 8 letras o números)', requerido: true }]),
       { id: 'nombre', etiqueta: 'Nombre', requerido: true, valor: a?.nombre ?? '' },
       { id: 'es_venta', etiqueta: '¿Se vende desde aquí (POS)?', opciones: [['no', 'No'], ['si', 'Sí']], valor: a?.es_venta ? 'si' : 'no' },
+      { id: 'es_taller', etiqueta: '¿El taller usa los químicos desde aquí?', opciones: [['no', 'No'], ['si', 'Sí (uno por empresa)']], valor: a?.es_taller ? 'si' : 'no',
+        ayuda: 'Las compras entran a la Bodega y se pasan al taller con un traslado; la estadística de químicos mira lo que entra y se da de baja aquí.' },
       ...(a ? [{ id: 'activo', etiqueta: 'Estado', opciones: [['true', 'Activo'], ['false', 'Inactivo']], valor: String(a.activo) }] : []),
     ],
     alGuardar: async (v) => {
-      const datos = { nombre: v.nombre.trim(), es_venta: v.es_venta === 'si', ...(a ? { activo: v.activo === 'true' } : {}) };
+      const datos = { nombre: v.nombre.trim(), es_venta: v.es_venta === 'si', es_taller: v.es_taller === 'si', ...(a ? { activo: v.activo === 'true' } : {}) };
+      if (datos.es_taller) {   // uno por empresa: se quita del anterior
+        const otro = base.almacenes.find((x) => x.es_taller && x.id !== a?.id);
+        if (otro) { const r0 = await ctx.api.from('inv_almacenes').update({ es_taller: false }).eq('id', otro.id); if (r0.error) throw new Error(r0.error.message); }
+      }
       const r = a ? await ctx.api.from('inv_almacenes').update(datos).eq('id', a.id)
         : await ctx.api.from('inv_almacenes').insert({ ...datos, empresa_id: ctx.empresa.id, codigo: v.codigo.trim().toUpperCase(), orden: base.almacenes.length + 1 });
       if (r.error) throw new Error(r.error.code === '23505' ? 'Ya existe un almacén con ese código.' : r.error.code === '23514' ? 'El código va en mayúsculas, sin espacios (2 a 8).' : r.error.message);
@@ -64,7 +70,7 @@ export default async function vista(ctx) {
         el('div', { class: 'listado-cabecera' }, el('h2', {}, 'Almacenes'), crear ? boton('Nuevo', { icono: 'mas', onclick: () => almacen(null) }) : null),
         base.almacenes.length ? base.almacenes.map((a) => el('div', { class: 'doc-fila' },
           el('div', { class: 'doc-nombre' }, editar ? el('a', { href: '#', onclick: (ev) => { ev.preventDefault(); almacen(a); } }, el('strong', {}, a.nombre)) : el('strong', {}, a.nombre),
-            el('span', { class: 'texto-suave texto-chico' }, [a.codigo, a.es_venta ? 'vende el POS' : null, a.activo ? null : 'inactivo'].filter(Boolean).join(' · ')))))
+            el('span', { class: 'texto-suave texto-chico' }, [a.codigo, a.es_venta ? 'vende el POS' : null, a.es_taller ? 'químicos del taller' : null, a.activo ? null : 'inactivo'].filter(Boolean).join(' · ')))))
           : el('p', { class: 'texto-suave' }, 'Sin almacenes.')),
       el('div', { class: 'ficha doc-grupo' },
         el('div', { class: 'listado-cabecera' }, el('h2', {}, 'Tipos de producto'), crear ? boton('Nuevo', { icono: 'mas', onclick: () => tipo(null) }) : null),

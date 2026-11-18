@@ -2903,3 +2903,8 @@ html[data-modo="oscuro"] { --turno-dia-fondo: #4a3a12; --turno-dia-texto: #fde68
 .est-detalle-cab { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; }
 .est-buscar { max-width: 320px; }
 .est-nowrap { white-space: nowrap; }
+
+/* Taller 014: pasos y químicos del servicio */
+.tal-pasos { display: grid; gap: 8px; }
+.tal-paso-cuerpo { display: grid; gap: 10px; padding-top: 4px; }
+.tal-paso-botones { display: flex; flex-wrap: wrap; gap: 8px; }

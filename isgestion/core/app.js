@@ -1,19 +1,19 @@
 // Arranque de ISgestión: sesión → empresas y permisos → barra con selector → menú → vista.
-import { iniciarApi, db, urlApp } from './api.js?v=547e6e2';
-import { sesionActual, iniciarSesion, cerrarSesion, alCambiarSesion, recuperarClave, errorAuth } from './auth.js?v=547e6e2';
-import { cargarPermisos, crearPuede } from './permisos.js?v=547e6e2';
-import { cargarEmpresas, cargarModulosEmpresa, elegirEmpresa, recordarEmpresa, nombreEmpresa } from './empresas.js?v=547e6e2';
-import { cargarManifiestos, modulosVisibles, apartadosPorCategoria, configModulo } from './modulos.js?v=547e6e2';
-import { el } from './ui/dom.js?v=547e6e2';
-import { activarCombos } from './ui/combo.js?v=547e6e2';
-import { icono } from './ui/iconos.js?v=547e6e2';
-import { boton } from './ui/tabla.js?v=547e6e2';
-import inicio from './vistas/inicio.js?v=547e6e2';
-import mas from './vistas/mas.js?v=547e6e2';
-import { franja, botonNotificaciones, desactivar } from './push.js?v=547e6e2';
-import { barraMovil, marcarBarraMovil, bienvenidaInicial, recordarMarca, marcaGuardada, CORTE_TELEFONO } from './movil.js?v=547e6e2';
-import { botonSoporte } from './soporte.js?v=547e6e2';
-import { vigilarVersion } from './version.js?v=547e6e2';
+import { iniciarApi, db, urlApp } from './api.js?v=c50b70b';
+import { sesionActual, iniciarSesion, cerrarSesion, alCambiarSesion, recuperarClave, errorAuth } from './auth.js?v=c50b70b';
+import { cargarPermisos, crearPuede } from './permisos.js?v=c50b70b';
+import { cargarEmpresas, cargarModulosEmpresa, elegirEmpresa, recordarEmpresa, nombreEmpresa } from './empresas.js?v=c50b70b';
+import { cargarManifiestos, modulosVisibles, apartadosPorCategoria, configModulo } from './modulos.js?v=c50b70b';
+import { el } from './ui/dom.js?v=c50b70b';
+import { activarCombos } from './ui/combo.js?v=c50b70b';
+import { icono } from './ui/iconos.js?v=c50b70b';
+import { boton } from './ui/tabla.js?v=c50b70b';
+import inicio from './vistas/inicio.js?v=c50b70b';
+import mas from './vistas/mas.js?v=c50b70b';
+import { franja, botonNotificaciones, desactivar } from './push.js?v=c50b70b';
+import { barraMovil, marcarBarraMovil, bienvenidaInicial, recordarMarca, marcaGuardada, CORTE_TELEFONO } from './movil.js?v=c50b70b';
+import { botonSoporte } from './soporte.js?v=c50b70b';
+import { vigilarVersion } from './version.js?v=c50b70b';
 
 const COLOR_BASE = '#1f4e8c';
 const CLAVE_MINIMA = 10;   // 08 Seguridad §4
@@ -293,7 +293,7 @@ function pintarApp() {
         el('div', { class: 'barra-espacio' }),
         el('div', { class: 'usuario' },
           (estado.consola = el('a', { class: 'boton boton-secundario boton-chico solo-escritorio', href: 'consola/', hidden: true, title: 'Consola de la plataforma (equipo ISgestión)' }, icono('ajustes', { tam: 14 }), 'Consola')),
-          el('button', { type: 'button', class: 'correo solo-escritorio', title: 'Mi PIN personal (crear o cambiar)', onclick: () => import('./pin.js?v=547e6e2').then((m) => m.miPin(db())) }, estado.usuario.email),
+          el('button', { type: 'button', class: 'correo solo-escritorio', title: 'Mi PIN personal (crear o cambiar)', onclick: () => import('./pin.js?v=c50b70b').then((m) => m.miPin(db())) }, estado.usuario.email),
           (estado.botonNotif = botonNotificaciones(estado.usuario.id, () => (estado.empresa?.grupo ? estado.empresas[0]?.id : estado.empresa?.id))),
           botonModo(),
           el('button', { type: 'button', class: 'boton-icono solo-escritorio', title: 'Cerrar sesión', 'aria-label': 'Cerrar sesión', onclick: () => salir() }, icono('salir')))),
