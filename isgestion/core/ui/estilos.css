@@ -2728,8 +2728,9 @@ html.cam-abierta, html.cam-abierta body { overflow: hidden; }
 /* Facturas del SII: varias de una vez (2026-11-18) */
 .emi-cabecera { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .emi-cabecera h2 { margin: 0; }
-.emi-celda-ligar { min-width: 240px; }
-.emi-ligar, .emi-otra { width: 100%; max-width: 420px; }
+.emi-celda-ligar { min-width: 340px; }
+.combo-opcion > span { min-width: 0; }   /* el texto largo se parte en líneas en vez de cortarse */
+.emi-ligar, .emi-otra { width: 100%; max-width: 520px; }
 .emi-otra { margin-top: 4px; }
 .emi-nota { display: block; margin-top: 2px; }
 .emi-nota.estado-ok { color: var(--ok); } .emi-nota.estado-error { color: var(--venc); }

@@ -5,15 +5,15 @@
 // una se puede ver (PDF y detalle) antes de registrarla, y al registrarla se sugiere la cotización que calza
 // (mismo cliente y monto, con sus patentes) para que quede tan completa como las ya registradas.
 // En el ambiente de pruebas se ven las de la empresa de pruebas de Haulmer y "Registrar" solo muestra el PDF.
-import { el } from '../../core/ui/dom.js?v=04accdc';
-import { icono } from '../../core/ui/iconos.js?v=04accdc';
-import { boton } from '../../core/ui/tabla.js?v=04accdc';
-import { abrirFormulario } from '../../core/ui/modal.js?v=04accdc';
-import { avisar } from '../../core/ui/aviso.js?v=04accdc';
-import { dinero, fechaLarga, sumarDias } from '../../core/ui/formato.js?v=04accdc';
-import { llamarDte, estadoDte, NOMBRE_DTE, ofrecerPdf } from '../../core/dte.js?v=04accdc';
-import { numeroTexto, nombreTercero, totales, verPatente } from './datos.js?v=04accdc';
-import { PLAZO_PAGO } from './facturas.js?v=04accdc';
+import { el } from '../../core/ui/dom.js?v=8e7e327';
+import { icono } from '../../core/ui/iconos.js?v=8e7e327';
+import { boton } from '../../core/ui/tabla.js?v=8e7e327';
+import { abrirFormulario } from '../../core/ui/modal.js?v=8e7e327';
+import { avisar } from '../../core/ui/aviso.js?v=8e7e327';
+import { dinero, fechaLarga, fechaCorta, sumarDias } from '../../core/ui/formato.js?v=8e7e327';
+import { llamarDte, estadoDte, NOMBRE_DTE, ofrecerPdf } from '../../core/dte.js?v=8e7e327';
+import { numeroTexto, nombreTercero, totales, verPatente } from './datos.js?v=8e7e327';
+import { PLAZO_PAGO } from './facturas.js?v=8e7e327';
 
 const limpio = (r) => String(r ?? '').replace(/[^0-9kK]/g, '').toUpperCase();
 const REF = { 801: 'OC', 802: 'Nota de pedido', 803: 'Contrato', HES: 'HES', 33: 'Factura', 52: 'Guía' };
@@ -153,26 +153,29 @@ export function panelEmitidas(ctx, { cotizaciones = [], clientes = [], ordenes =
 
     // Opciones para ligar cada factura: primero lo del mismo cliente y monto; la sugerencia no se repite en la lista
     const sugeridas = new Set();
+    // 2026-11-18 (Enzo): solo lo que puede ser de esa factura: cerca de su fecha (órdenes de 60 días antes a 15
+    // después; cotizaciones de 120 días antes, porque se aceptan después de enviarlas) y con su monto o del mismo cliente.
+    // Primero lo que tiene el mismo monto, después lo del mismo cliente; los cierres van como su cotización del mes.
     const opcionesDe = (d) => {
       const cli = clientes.find((t) => limpio(t.rut) === limpio(d.rut));
       const netoFac = d.neto + d.exento;
+      const dias = (f) => (f ? Math.round((new Date(`${f}T12:00`) - new Date(`${d.fecha}T12:00`)) / 864e5) : null);
       const netoCot = (c) => (c.cot_grupos && c.cot_lineas ? totales(c, c.cot_grupos, c.cot_lineas).neto : null);
-      const cots = cotizaciones.map((c) => ({ c, mismo: !!cli && c.tercero_id === cli.id, monto: netoCot(c) === netoFac }))
-        .filter((x) => x.mismo || x.monto).sort((a, b) => (b.mismo * 2 + b.monto) - (a.mismo * 2 + a.monto) || b.c.numero - a.c.numero);
+      const orden = (a, b) => (b.monto * 2 + b.mismo) - (a.monto * 2 + a.mismo) || Math.abs(a.dias) - Math.abs(b.dias);
+      const cots = cotizaciones.map((c) => ({ c, mismo: !!cli && c.tercero_id === cli.id, monto: netoCot(c) === netoFac, dias: dias(c.fecha) ?? 0 }))
+        .filter((x) => (x.monto || x.mismo) && x.dias >= -120 && x.dias <= 15).sort(orden);
       // Órdenes: neto igual al de la factura, o igual al total (precio con IVA incluido, como en la TUU)
-      const montoOrd = (o) => o.neto === netoFac || o.neto === d.total;
-      const ords = ordenes.map((o) => ({ o, mismo: !!cli && o.tercero === cli.id, monto: montoOrd(o), dias: Math.abs((new Date(o.fecha || d.fecha) - new Date(d.fecha)) / 864e5) }))
-        // De otro cliente solo con el mismo monto y cerca de la fecha ($65.000 es un precio muy común)
-        .filter((x) => x.mismo || (x.monto && x.dias <= 30)).sort((a, b) => (b.mismo * 2 + b.monto) - (a.mismo * 2 + a.monto) || a.dias - b.dias);
-      const cotSug = cots.find((x) => x.mismo && x.monto && !sugeridas.has(`c:${x.c.id}`));
-      const ordSug = ords.find((x) => x.monto && (x.mismo || !cli) && x.dias <= 20 && !sugeridas.has(`o:${x.o.id}`));
+      const ords = ordenes.map((o) => ({ o, mismo: !!cli && o.tercero === cli.id, monto: o.neto === netoFac || o.neto === d.total, dias: dias(o.fecha || o.cobradoFecha) }))
+        .filter((x) => (x.monto || x.mismo) && x.dias != null && x.dias >= -60 && x.dias <= 15).sort(orden);
+      const cotSug = cots.find((x) => x.monto && (x.mismo || !cli) && !sugeridas.has(`c:${x.c.id}`));
+      const ordSug = ords.find((x) => x.monto && (x.mismo || !cli) && x.dias >= -20 && !sugeridas.has(`o:${x.o.id}`));
       const sug = cotSug ? `c:${cotSug.c.id}` : ordSug ? `o:${ordSug.o.id}` : '';
       if (sug) sugeridas.add(sug);
       const liga = new Map([...cots.map((x) => [`c:${x.c.id}`, { tipo: 'c', c: x.c }]), ...ords.map((x) => [`o:${x.o.id}`, { tipo: 'o', o: x.o }])]);
       const patentes = (c) => (c.cot_grupos ?? []).map((g) => verPatente(g.patente)).filter(Boolean).join(', ');
-      const opciones = [['', 'Elegir a qué va…'],
-        ...cots.slice(0, 15).map((x) => [`c:${x.c.id}`, `Cotización N° ${numeroTexto(x.c.numero)} · ${patentes(x.c) || x.c.cliente_nombre || ''} · neto ${dinero(netoCot(x.c) ?? 0)}${x.monto ? ' · mismo monto' : ''}`]),
-        ...ords.slice(0, 15).map((x) => [`o:${x.o.id}`, `Orden N° ${x.o.numero} · ${verPatente(x.o.patente) || 'S/P'} ${x.o.auto} · ${fechaLarga(x.o.fecha)} · ${dinero(x.o.neto)}${x.o.cobrado ? ' · cobrada' : ''}${x.monto ? ' · mismo monto' : ''}`]),
+      const opciones = [['', cots.length || ords.length ? 'Elegir a qué va…' : 'Nada con ese monto cerca de la fecha'],
+        ...cots.slice(0, 12).map((x) => [`c:${x.c.id}`, [`Cot. ${numeroTexto(x.c.numero)}`, patentes(x.c) || x.c.cliente_nombre, fechaCorta(x.c.fecha), dinero(netoCot(x.c) ?? 0), x.monto ? 'mismo monto' : 'otro monto'].filter(Boolean).join(' · ')]),
+        ...ords.slice(0, 12).map((x) => [`o:${x.o.id}`, [`Orden ${x.o.numero}`, `${verPatente(x.o.patente) || 'S/P'} ${x.o.auto}`.trim(), (x.o.fecha || x.o.cobradoFecha) ? fechaCorta(x.o.fecha || x.o.cobradoFecha) : null, dinero(x.o.neto), x.o.cobrado ? 'cobrada' : 'por cobrar', x.monto ? 'mismo monto' : 'otro monto'].filter(Boolean).join(' · ')]),
         ['otra', 'Otra venta (escribir qué)']];
       return { opciones, sug, liga, cli };
     };
@@ -188,7 +191,7 @@ export function panelEmitidas(ctx, { cotizaciones = [], clientes = [], ordenes =
       const pintarCobro = () => {
         otra.hidden = ligar.value !== 'otra';
         const c = cobroDe(liga.get(ligar.value));
-        cobro.replaceChildren(c ? el('span', { class: 'chip chip-ok', title: `Según la ${c.donde}` }, `Cobrada ${fechaLarga(c.fecha)}`)
+        cobro.replaceChildren(c ? el('span', { class: 'chip chip-ok', title: `Según la ${c.donde}` }, `Cobrada ${fechaCorta(c.fecha)}`)
           : el('span', { class: `chip ${ligar.value ? 'chip-prox' : 'chip-pend'}` }, ligar.value ? 'Por cobrar' : 'Sin ligar'));
       };
       ligar.addEventListener('change', () => { pintarCobro(); if (ligar.value) marca.checked = true; contar(); });

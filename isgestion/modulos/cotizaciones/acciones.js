@@ -1,9 +1,9 @@
 // Acciones sobre una cotización: duplicar, dividir por vehículo, pasar a orden de trabajo (Taller) y, al cobrarla,
 // dejar cobradas las órdenes ligadas (005).
-import { avisar } from '../../core/ui/aviso.js?v=04accdc';
-import { abrirFormulario } from '../../core/ui/modal.js?v=04accdc';
-import { hoyISO, diaLocal } from '../../core/ui/formato.js?v=04accdc';
-import { totalLinea, numeroTexto, siguienteNumero, verPatente } from './datos.js?v=04accdc';
+import { avisar } from '../../core/ui/aviso.js?v=8e7e327';
+import { abrirFormulario } from '../../core/ui/modal.js?v=8e7e327';
+import { hoyISO, diaLocal } from '../../core/ui/formato.js?v=8e7e327';
+import { totalLinea, numeroTexto, siguienteNumero, verPatente } from './datos.js?v=8e7e327';
 
 const CAMPOS_COT = ['fecha_hasta', 'validez_dias', 'tercero_id', 'cliente_nombre', 'cliente_rut', 'cliente_giro', 'cliente_contacto', 'cliente_correo', 'cliente_telefono', 'con_iva', 'desc_adic_pct', 'mostrar_valores', 'agrupar_secciones'];
 const CAMPOS_GRUPO = ['titulo', 'patente', 'anio', 'talla', 'vehiculo_id'];

@@ -1,11 +1,11 @@
 // Servicios y precios por talla (S/M/L/XL), con las tareas que incluye cada uno.
-import { el } from '../../../core/ui/dom.js?v=04accdc';
-import { listado, boton } from '../../../core/ui/tabla.js?v=04accdc';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=04accdc';
-import { avisar } from '../../../core/ui/aviso.js?v=04accdc';
-import { dinero } from '../../../core/ui/formato.js?v=04accdc';
-import { cargarServicios, TALLAS } from '../datos.js?v=04accdc';
-import { SERVICIOS } from '../sugeridos.js?v=04accdc';
+import { el } from '../../../core/ui/dom.js?v=8e7e327';
+import { listado, boton } from '../../../core/ui/tabla.js?v=8e7e327';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=8e7e327';
+import { avisar } from '../../../core/ui/aviso.js?v=8e7e327';
+import { dinero } from '../../../core/ui/formato.js?v=8e7e327';
+import { cargarServicios, TALLAS } from '../datos.js?v=8e7e327';
+import { SERVICIOS } from '../sugeridos.js?v=8e7e327';
 
 export default async function vista(ctx) {
   const servicios = await cargarServicios(ctx, { todos: true });

@@ -1,12 +1,12 @@
 // Uso y cobro: por cliente, trabajadores y usuarios activos y el cobro mensual estimado según su plan
 // (UF base + UF por trabajador activo sobre los incluidos). El valor de la UF lo escribe el equipo.
 // También los planes (crear y editar).
-import { el } from '../../core/ui/dom.js?v=04accdc';
-import { listado, boton } from '../../core/ui/tabla.js?v=04accdc';
-import { abrirFormulario } from '../../core/ui/modal.js?v=04accdc';
-import { avisar } from '../../core/ui/aviso.js?v=04accdc';
-import { dinero } from '../../core/ui/formato.js?v=04accdc';
-import { cargarTodo, nombreEstado, cobroUF, leerUF, guardarUF, uf } from './datos.js?v=04accdc';
+import { el } from '../../core/ui/dom.js?v=8e7e327';
+import { listado, boton } from '../../core/ui/tabla.js?v=8e7e327';
+import { abrirFormulario } from '../../core/ui/modal.js?v=8e7e327';
+import { avisar } from '../../core/ui/aviso.js?v=8e7e327';
+import { dinero } from '../../core/ui/formato.js?v=8e7e327';
+import { cargarTodo, nombreEstado, cobroUF, leerUF, guardarUF, uf } from './datos.js?v=8e7e327';
 
 export default async function vista(ctx) {
   const d = await cargarTodo(ctx);
