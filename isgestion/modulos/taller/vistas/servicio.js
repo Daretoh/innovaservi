@@ -4,15 +4,15 @@
 // Permisos (módulo "Servicios, pasos y químicos"): editar = pasos y químicos; aprobar = datos y precios del servicio.
 // Un paso se define una vez por empresa: si está en varios servicios, sus químicos valen para todos.
 // Ruta: #/taller.servicio?id=<id>
-import { el } from '../../../core/ui/dom.js?v=8b91c02';
-import { icono } from '../../../core/ui/iconos.js?v=8b91c02';
-import { boton } from '../../../core/ui/tabla.js?v=8b91c02';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=8b91c02';
-import { avisar } from '../../../core/ui/aviso.js?v=8b91c02';
-import { plegable } from '../../../core/ui/plegable.js?v=8b91c02';
-import { dinero } from '../../../core/ui/formato.js?v=8b91c02';
-import { TALLAS } from '../datos.js?v=8b91c02';
-import { formulario } from './servicios.js?v=8b91c02';
+import { el } from '../../../core/ui/dom.js?v=c6bc088';
+import { icono } from '../../../core/ui/iconos.js?v=c6bc088';
+import { boton } from '../../../core/ui/tabla.js?v=c6bc088';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=c6bc088';
+import { avisar } from '../../../core/ui/aviso.js?v=c6bc088';
+import { plegable } from '../../../core/ui/plegable.js?v=c6bc088';
+import { dinero } from '../../../core/ui/formato.js?v=c6bc088';
+import { TALLAS } from '../datos.js?v=c6bc088';
+import { formulario } from './servicios.js?v=c6bc088';
 
 export default async function vista(ctx) {
   const e = ctx.empresa.id;
@@ -22,7 +22,7 @@ export default async function vista(ctx) {
     ctx.api.from('tal_servicios').select('id, nombre, tareas').eq('empresa_id', e),
     ctx.api.from('tal_pasos').select('*').eq('empresa_id', e).order('nombre'),
     ctx.api.from('tal_paso_quimicos').select('*').eq('empresa_id', e),
-    conInv ? import('../../inventario/datos.js?v=8b91c02').then((m) => m.cargarProductos(ctx)) : Promise.resolve([]),
+    conInv ? import('../../inventario/datos.js?v=c6bc088').then((m) => m.cargarProductos(ctx)) : Promise.resolve([]),
   ]);
   if (error) throw error;
   for (const r of [servicios, pasos, quimicos]) if (r.error) throw r.error;
@@ -173,7 +173,7 @@ export default async function vista(ctx) {
 
 // Producto nuevo del inventario (tipo Químico si existe) agregado al paso
 async function nuevoQuimico(ctx, paso) {
-  const inv = await import('../../inventario/datos.js?v=8b91c02');
+  const inv = await import('../../inventario/datos.js?v=c6bc088');
   const base = await inv.cargarBase(ctx);
   const tipos = base.tipos.filter((t) => t.activo && t.categoria === 'insumo');
   const quimico = tipos.find((t) => /qu[ií]mic/i.test(t.nombre));

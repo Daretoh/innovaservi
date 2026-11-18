@@ -1,19 +1,19 @@
 // Registro de horas tipo planilla (como InnovaGestión): la semana y, abajo, los días con horas cargadas (se abren al tocarlos),
 // cada uno agrupado por faena con el color del cliente, con filtro por faena; cada fila se edita ahí mismo y se guarda sola al cambiar
 // (persona con búsqueda por teclado, faena, entrada, salida, vueltas), "+ persona en esta faena", aviso en rojo de
-// horas que se pisan y, abajo, los vehículos y la preparación del día (desde Planificación).
+// horas que se pisan. (El recuadro "Vehículos y preparación del día" se quitó el 2026-11-18, pedido de Enzo.)
 // Las horas del marcaje (tablet o terreno) se corrigen en Marcajes. "Agregar horas" carga el mismo horario a varios.
 // Fijos con turno (2026-10-30): cada día hábil quedan presentes "según horario" solos (asis_generar_fijos); aquí solo se
 // corrigen las excepciones: retraso o salida temprana (cambiar la hora), horas extra (cambiar la salida o agregar otra
 // fila) y ausencias (botón Ausente: el día deja de contar y no se vuelve a crear).
-import { el } from '../../../core/ui/dom.js?v=8b91c02';
-import { icono } from '../../../core/ui/iconos.js?v=8b91c02';
-import { boton } from '../../../core/ui/tabla.js?v=8b91c02';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=8b91c02';
-import { arrastrarHorario } from './arrastre.js?v=8b91c02';
-import { avisar } from '../../../core/ui/aviso.js?v=8b91c02';
-import { esTelefono } from '../../../core/movil.js?v=8b91c02';
-import { hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, horas, aMin, hhmm, diaLocal } from '../../../core/ui/formato.js?v=8b91c02';
+import { el } from '../../../core/ui/dom.js?v=c6bc088';
+import { icono } from '../../../core/ui/iconos.js?v=c6bc088';
+import { boton } from '../../../core/ui/tabla.js?v=c6bc088';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=c6bc088';
+import { arrastrarHorario } from './arrastre.js?v=c6bc088';
+import { avisar } from '../../../core/ui/aviso.js?v=c6bc088';
+import { esTelefono } from '../../../core/movil.js?v=c6bc088';
+import { hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, horas, aMin, hhmm, diaLocal } from '../../../core/ui/formato.js?v=c6bc088';
 
 const DIAS_LARGOS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 export const estado = { lunes: lunesDe(hoyISO()), dia: hoyISO(), nuevas: [], abiertas: new Set(), diasAbiertos: new Set(), filtro: '', borradorLeido: new Set() };   // abiertas: faenas desplegadas (día|faena)   // nuevas: filas en blanco aún sin guardar
@@ -33,7 +33,7 @@ export function minutosRegistro(h) {
 const clave = (s) => String(s ?? '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[·—-]+/g, ' ').replace(/\s+/g, ' ');
 
 export default async function vista(ctx) {
-  if (esTelefono()) return (await import('./horas-movil.js?v=8b91c02')).default(ctx);   // en el teléfono, lista de personas en vez de planilla
+  if (esTelefono()) return (await import('./horas-movil.js?v=c6bc088')).default(ctx);   // en el teléfono, lista de personas en vez de planilla
   const desde = estado.lunes;
   const hasta = sumarDias(desde, 6);
   const hoy = hoyISO();
@@ -83,7 +83,7 @@ export default async function vista(ctx) {
     verOpe ? ctx.api.from('ope_faenas').select('id, titulo, tercero_id, fecha_inicio, fecha_fin, dias, terceros(nombre_fantasia, razon_social), ope_sitios(nombre)')
       .eq('empresa_id', ctx.empresa.id).is('deleted_at', null).eq('estado', 'programada').lte('fecha_inicio', hasta).gte('fecha_fin', desde) : { data: [] },
     verOpe ? ctx.api.from('ope_clientes').select('tercero_id, color').eq('empresa_id', ctx.empresa.id) : { data: [] },
-    verOpe ? ctx.api.from('ope_plan').select('id, faena_id, fecha, ope_plan_vehiculos(vehiculo, personas(nombres, apellido_paterno))').eq('empresa_id', ctx.empresa.id).gte('fecha', desde).lte('fecha', hasta) : { data: [] },
+    { data: [] },
     ctx.api.from('asis_horas').select('id, persona_id, fecha, notas').eq('empresa_id', ctx.empresa.id).eq('origen', 'horario').not('deleted_at', 'is', null).like('notas', 'Ausente%').gte('fecha', desde).lte('fecha', hasta),
     // Entradas del marcaje (tablet o terreno) que aún no tienen salida: se ven aquí como filas "sin salida" (2026-11-16,
     // Enzo: Marcajes y Registro de horas en una sola pantalla). Sin el módulo Marcaje la consulta falla y no hay nada.
@@ -125,8 +125,9 @@ export default async function vista(ctx) {
   // ya tenga horas con faena escrita (2026-11-05)
   const conFaena = verOpe || regs.data.some((r) => r.faena);
   estado.conFaena = conFaena;
-  // Vueltas: solo donde hay choferes (cargo) o la semana ya tiene vueltas; en Performance no aplica (2026-11-16)
-  const conVueltas = regs.data.some((r) => Number(r.vueltas) > 0) || vinculos.data.some((v) => v.estado === 'activo' && /chofer|conductor/i.test(v.cargo ?? ''));
+  // Vueltas: donde hay Faenas (Innova) a cualquiera de la planilla (2026-11-18, Enzo); en las demás solo si hay choferes
+  // (cargo) o la semana ya tiene vueltas; en Performance no aplica (2026-11-16)
+  const conVueltas = verOpe || regs.data.some((r) => Number(r.vueltas) > 0) || vinculos.data.some((v) => v.estado === 'activo' && /chofer|conductor/i.test(v.cargo ?? ''));
   estado.conVueltas = conVueltas;
   const filtro = campoFiltroFaena(regs.data, () => ctx.refrescar());
   // Horas que se pisan: misma persona, mismo día, horarios solapados
@@ -393,16 +394,6 @@ export default async function vista(ctx) {
       return el('div', { class: 'hz-grupo', style: color ? `--hz-color:${color}` : '' }, cabeza, cuerpo);
     });
 
-    // Vehículos y preparación del día (desde Planificación)
-    const planesDia = (planes.data ?? []).filter((p) => p.fecha === d && faenasDia.some((f) => f.id === p.faena_id));
-    const vehiculos = planesDia.flatMap((p) => (p.ope_plan_vehiculos ?? []).map((v) => ({ p, v })));
-    const jornada = verOpe ? el('div', { class: 'ficha hz-jornada' },
-      el('h2', {}, 'Vehículos y preparación del día'),
-      vehiculos.length ? el('div', { class: 'chips-fila' }, vehiculos.map(({ p, v }) => el('span', { class: 'chip chip-na' }, icono('camion', { tam: 12 }),
-        ` ${v.vehiculo}${v.personas ? ` · ${v.personas.nombres.split(' ')[0]} ${v.personas.apellido_paterno}` : ''}${faenasDia.find((f) => f.id === p.faena_id) ? ` · ${faenasDia.find((f) => f.id === p.faena_id).texto}` : ''}`)))
-        : el('p', { class: 'texto-suave' }, 'Sin vehículos planificados este día.'),
-      planesDia.length ? el('div', { class: 'chips-fila' }, planesDia.map((p) => el('a', { class: 'boton-enlace', href: ctx.ruta('ope.plan', { f: p.faena_id, d }) },
-        icono('check', { tam: 14 }), `Preparación · ${faenasDia.find((f) => f.id === p.faena_id)?.texto ?? 'faena'}`))) : null) : null;
     const aus = ausentesDe(d);
 
     return [
@@ -410,7 +401,6 @@ export default async function vista(ctx) {
       aus.length ? el('div', { class: 'ficha hz-jornada' }, el('h2', {}, 'Ausentes'),
         aus.map((a) => el('div', { class: 'doc-fila' }, el('span', { class: 'doc-nombre' }, el('strong', {}, personas.get(a.persona_id) ? nombre(personas.get(a.persona_id).personas) : 'Persona'), el('span', { class: 'texto-suave texto-chico' }, a.notas)),
           puedeEditar ? el('button', { type: 'button', class: 'boton boton-secundario boton-chico', title: 'Vuelve a quedar presente según su horario', onclick: async () => { const { error } = await ctx.api.from('asis_horas').update({ deleted_at: null, notas: 'Según horario' }).eq('id', a.id); if (error) avisar(error.message, 'error'); else ctx.refrescar(); } }, 'Deshacer') : null))) : null,
-      jornada,
     ].flat().filter(Boolean);
   }
 

@@ -6,12 +6,12 @@
 // abierta tiene además "Agregar persona en esta faena".
 // Mismos datos y reglas que la planilla de escritorio (horas.js): las del marcaje se corrigen en Marcajes y los fijos con
 // turno quedan presentes "según horario".
-import { el } from '../../../core/ui/dom.js?v=8b91c02';
-import { icono } from '../../../core/ui/iconos.js?v=8b91c02';
-import { boton } from '../../../core/ui/tabla.js?v=8b91c02';
-import { avisar } from '../../../core/ui/aviso.js?v=8b91c02';
-import { hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, horas, aMin, hhmm, diaLocal } from '../../../core/ui/formato.js?v=8b91c02';
-import { estado, minutosRegistro, ausente, eliminar, campoFiltroFaena, pasaFiltroFaena, resumenDia, vinculosAsistencia, horaTs, registrarSalida, anularEntrada } from './horas.js?v=8b91c02';
+import { el } from '../../../core/ui/dom.js?v=c6bc088';
+import { icono } from '../../../core/ui/iconos.js?v=c6bc088';
+import { boton } from '../../../core/ui/tabla.js?v=c6bc088';
+import { avisar } from '../../../core/ui/aviso.js?v=c6bc088';
+import { hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, horas, aMin, hhmm, diaLocal } from '../../../core/ui/formato.js?v=c6bc088';
+import { estado, minutosRegistro, ausente, eliminar, campoFiltroFaena, pasaFiltroFaena, resumenDia, vinculosAsistencia, horaTs, registrarSalida, anularEntrada } from './horas.js?v=c6bc088';
 
 const pantalla = { pestana: null, buscar: '', marcados: new Set(), abiertas: new Set(), diaAbierto: null };   // abiertas: faenas desplegadas (día|faena)
 const DIAS_LARGOS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
@@ -251,7 +251,7 @@ export default async function asistenciaMovil(ctx) {
     const listaFaenas = el('datalist', { id: 'asm-faenas' }, faenasDe(d).map((t) => el('option', { value: t })));
     const conFaena = verOpe || !!r?.faena;
     const faena = el('input', { class: 'campo', list: 'asm-faenas', placeholder: 'Elige o escribe', autocomplete: 'off', disabled: !editable, value: r?.faena ?? plan?.faena ?? '' });
-    const conVueltas = !varias && (Number(r?.vueltas) > 0 || /chofer|conductor/i.test(v?.cargo ?? ''));
+    const conVueltas = !varias && (verOpe || Number(r?.vueltas) > 0 || /chofer|conductor/i.test(v?.cargo ?? ''));
     const vueltas = el('input', { type: 'number', class: 'campo', min: '0', max: '50', inputmode: 'numeric', disabled: !editable, value: String(r?.vueltas ?? 0) });
     const error = el('p', { class: 'asm-error', role: 'alert', hidden: true });
 

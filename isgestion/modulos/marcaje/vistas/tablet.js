@@ -1,8 +1,8 @@
 // Marcaje en tablet: la persona escribe los 4 últimos dígitos de su RUT (sin dígito verificador),
 // confirma su nombre y marca entrada o salida. La hora la pone el servidor.
 // Modo tablet: oculta el menú; para salir, mantener presionado el reloj 2 segundos.
-import { el } from '../../../core/ui/dom.js?v=8b91c02';
-import { icono } from '../../../core/ui/iconos.js?v=8b91c02';
+import { el } from '../../../core/ui/dom.js?v=c6bc088';
+import { icono } from '../../../core/ui/iconos.js?v=c6bc088';
 
 const MODO = 'modo-tablet';
 
