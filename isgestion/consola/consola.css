@@ -25,3 +25,67 @@
 .con-celda { display: flex; align-items: center; gap: 6px; }
 .con-pantallas { font-size: .78rem; padding: 2px 6px; }
 .con-pantallas-parcial { background: color-mix(in srgb, var(--empresa) 12%, transparent); font-weight: 600; }
+
+/* Salud de la plataforma (Supervisor) */
+.sal .listado-cabecera h1 { display: flex; align-items: center; gap: 8px; }
+.sal-filtro { margin: 4px 0 14px; }
+.sal-areas { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 520px), 1fr)); align-items: start; }
+.sal-area { padding: 12px 16px; border-left: 4px solid var(--borde); max-width: none; }
+.sal-area.sal-error { border-left-color: var(--venc); }
+.sal-area.sal-aviso { border-left-color: var(--prox); }
+.sal-area.sal-ok { border-left-color: var(--ok); }
+.sal-area-cabecera { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+.sal-area-cabecera h2 { margin: 0; font-size: 1rem; }
+.sal-lista { list-style: none; margin: 0; padding: 0; display: grid; }
+.sal-lista > li { border-top: 1px solid var(--borde); }
+.sal-lista > li:first-child { border-top: 0; }
+.sal-fila { display: grid; grid-template-columns: 64px 1fr auto; gap: 10px; align-items: start; padding: 8px 0; }
+.sal-fila .chip { justify-self: start; }
+.sal-texto { display: grid; gap: 2px; min-width: 0; overflow-wrap: anywhere; }
+.sal-texto .texto-suave { font-size: .85rem; }
+.sal-cuando { white-space: nowrap; }
+.sal-lista details > summary { list-style: none; cursor: pointer; }
+.sal-lista details > summary::-webkit-details-marker { display: none; }
+.sal-lista details > summary:hover { background: var(--hover); }
+.sal-lista details[open] > summary .sal-texto strong::after { content: ' ▴'; color: var(--texto-suave); }
+.sal-lista details:not([open]) > summary .sal-texto strong::after { content: ' ▾'; color: var(--texto-suave); }
+.sal-detalle { padding: 0 0 10px 74px; }
+.sal-tabla { font-size: .8rem; }
+.sal-tabla td { overflow-wrap: anywhere; max-width: 360px; }
+.sal-pares { display: grid; grid-template-columns: max-content 1fr; gap: 4px 12px; margin: 0; font-size: .85rem; }
+.sal-pares dt { color: var(--texto-suave); }
+.sal-pares dd { margin: 0; overflow-wrap: anywhere; }
+.sal-aviso { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 8px 12px; border-radius: 8px; background: var(--fondo-sutil); margin: 0 0 12px; }
+.sal-aviso-fuerte { background: var(--venc-fondo); color: var(--venc); }
+.sal-historial { margin-top: 16px; padding: 8px 16px; max-width: none; }
+.sal-historial > summary { cursor: pointer; }
+.sal-historial > summary h2 { display: inline; font-size: 1rem; }
+.sal-historial .resaltada td { background: var(--fondo-sutil); }
+@media (max-width: 640px) {
+  .sal-fila { grid-template-columns: 1fr; gap: 4px; }
+  .sal-detalle { padding-left: 0; }
+}
+
+/* Salud: resumen en palabras simples */
+.sal-simple { display: grid; gap: 12px; margin-bottom: 20px; max-width: 900px; }
+.sal-titular { display: flex; align-items: center; gap: 14px; padding: 16px 20px; border-left: 6px solid var(--ok); max-width: none; }
+.sal-titular.sal-aviso { border-left-color: var(--prox); }
+.sal-titular.sal-error { border-left-color: var(--venc); }
+.sal-titular > svg { flex: none; color: var(--ok); }
+.sal-titular.sal-aviso > svg { color: var(--prox); }
+.sal-titular.sal-error > svg { color: var(--venc); }
+.sal-titular > div { display: grid; gap: 2px; }
+.sal-titular strong { font-size: 1.15rem; }
+.sal-simple-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.sal-simple-item { display: block; padding: 12px 16px; border-left: 4px solid var(--prox); max-width: none; }
+.sal-simple-item.sal-error { border-left-color: var(--venc); }
+.sal-simple-item p { margin: 4px 0 0; }
+.sal-simple-cabeza { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.sal-hacer { color: var(--texto-suave); }
+.sal-en-orden { display: flex; align-items: flex-start; gap: 6px; margin: 0; }
+.sal-en-orden > svg { flex: none; margin-top: 2px; color: var(--ok); }
+.sal-tecnico { margin-top: 8px; }
+.sal-tecnico > summary { cursor: pointer; padding: 8px 0; }
+.sal-tecnico > summary h2 { display: inline; font-size: 1rem; color: var(--texto-suave); }
+.sal-tecnico-acciones { display: flex; justify-content: flex-end; margin: 4px 0 12px; }
+.sal-despues > svg { color: var(--texto-suave); }
