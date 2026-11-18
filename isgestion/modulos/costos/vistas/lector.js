@@ -9,18 +9,18 @@
 // Bandeja "Por cargar" (Costos 008, 2026-11-10): con ?bandeja=<id> abre un documento ya subido a la bandeja, lo lee
 // igual y al registrar lo marca registrado y sigue con el siguiente pendiente (Saltar / Descartar de la bandeja).
 // Ruta: #/costos.lector · #/costos.lector?bandeja=<id>
-import { el } from '../../../core/ui/dom.js?v=9eb8eef';
-import { icono } from '../../../core/ui/iconos.js?v=9eb8eef';
-import { boton } from '../../../core/ui/tabla.js?v=9eb8eef';
-import { avisar } from '../../../core/ui/aviso.js?v=9eb8eef';
-import { subirArchivo, almacen, urlFirmada } from '../../../core/adjuntos.js?v=9eb8eef';
-import { pendientesBandeja, descartarDeBandeja } from './bandeja.js?v=9eb8eef';
-import { dinero, hoyISO, sumarDias, fechaLarga, lunesDe } from '../../../core/ui/formato.js?v=9eb8eef';
-import { TIPOS_DTE, docTipoDe, CAMPOS_DTE, leerParte, combinar, validar, escanearCamara, aJPEG, fmtRut, limpioRut, rutValido, num } from '../../../core/lector-dte.js?v=9eb8eef';
-import { cargarBase, nombreTercero, opcionesACuenta } from '../datos.js?v=9eb8eef';
-import { leerConIA, iaDisponible, numIA, fechaIA, pagadoAlComprar, textoModelo } from '../../../core/lector-ia.js?v=9eb8eef';
-import { esImagen } from '../../../core/imagenes.js?v=9eb8eef';
-import { tomarFotos } from '../../../core/ui/camara.js?v=9eb8eef';
+import { el } from '../../../core/ui/dom.js?v=2ac97af';
+import { icono } from '../../../core/ui/iconos.js?v=2ac97af';
+import { boton } from '../../../core/ui/tabla.js?v=2ac97af';
+import { avisar } from '../../../core/ui/aviso.js?v=2ac97af';
+import { subirArchivo, almacen, urlFirmada } from '../../../core/adjuntos.js?v=2ac97af';
+import { pendientesBandeja, descartarDeBandeja } from './bandeja.js?v=2ac97af';
+import { dinero, hoyISO, sumarDias, fechaLarga, lunesDe } from '../../../core/ui/formato.js?v=2ac97af';
+import { TIPOS_DTE, docTipoDe, CAMPOS_DTE, leerParte, combinar, validar, escanearCamara, aJPEG, fmtRut, limpioRut, rutValido, num } from '../../../core/lector-dte.js?v=2ac97af';
+import { cargarBase, nombreTercero, opcionesACuenta } from '../datos.js?v=2ac97af';
+import { leerConIA, iaDisponible, numIA, fechaIA, pagadoAlComprar, textoModelo } from '../../../core/lector-ia.js?v=2ac97af';
+import { esImagen } from '../../../core/imagenes.js?v=2ac97af';
+import { tomarFotos } from '../../../core/ui/camara.js?v=2ac97af';
 
 const ETIQUETA = { timbre: ['Timbre SII', 'chip-ok'], xml: ['XML', 'chip-ok'], ia: ['IA', 'chip-ok'], ocr: ['Revisar', 'chip-prox'], calc: ['Calculado', 'chip-pend'] };
 
@@ -204,6 +204,22 @@ export default async function vista(ctx) {
     neto: num(campos.neto.value), iva: num(campos.iva.value), exento: num(campos.exento.value), otros: num(campos.otros.value), total: num(campos.total.value),
   });
   let duplicado = null;
+  // Posibles duplicados (2026-11-18, pedido de Enzo): del mismo proveedor (RUT del documento o ficha) con el mismo
+  // total cerca de la fecha, o el mismo N° aunque esté anotado con otro tipo de documento. No impide guardar: avisa y
+  // pide tocar Guardar otra vez.
+  let parecidos = [];
+  let confirmado = '';
+  const buscarParecidos = async (v) => {
+    if (!v.rut || (!v.total && !v.folio)) return [];
+    const t = terceroPorRut.get(limpioRut(v.rut));
+    const quien = [`dte->>rut.eq.${fmtRut(v.rut)}`, t ? `tercero_id.eq.${t.id}` : null].filter(Boolean).join(',');
+    let q = ctx.api.from('fin_registros').select('id, concepto, fecha, total, doc_tipo, doc_numero, dte').eq('empresa_id', e).is('deleted_at', null).eq('tipo', 'gasto').or(quien).limit(50);
+    if (v.fecha) q = q.gte('fecha', sumarDias(v.fecha, -60)).lte('fecha', sumarDias(v.fecha, 60));
+    const { data } = await q;
+    const sinCeros = (x) => String(x ?? '').replace(/\D/g, '').replace(/^0+/, '');
+    return (data ?? []).filter((r) => (v.folio && [r.doc_numero, r.dte?.folio].some((n) => n && sinCeros(n) === sinCeros(v.folio)))
+      || (v.total && Number(r.total) === v.total && (!v.fecha || Math.abs(new Date(r.fecha) - new Date(v.fecha)) <= 45 * 864e5)));
+  };
   const revisar = async () => {
     const v = valores();
     const t = v.rut ? terceroPorRut.get(limpioRut(v.rut)) : null;
@@ -218,9 +234,14 @@ export default async function vista(ctx) {
       duplicado = data?.[0] ?? null;
       if (duplicado) avisos.push('Este documento ya está registrado (mismo emisor, tipo y folio).');
     }
+    parecidos = duplicado ? [] : await buscarParecidos(v);
+    if (parecidos.length) avisos.push(`Posible duplicado: ya hay ${parecidos.length === 1 ? 'un gasto' : `${parecidos.length} gastos`} de este proveedor con el mismo total o el mismo N°.`);
     if (v.total == null && partes.length && !partes.some((p) => /Buscando|Leyendo|cola/.test(p.estado))) avisos.push('No se encontró el total: escríbelo a mano.');
     cuadre.replaceChildren(avisos.length ? el('p', { class: 'aviso-bandeja lec-mal' }, avisos.join(' ')) : v.total != null ? el('p', { class: 'aviso-bandeja lec-ok' }, icono('check', { tam: 16 }), 'Montos y RUT cuadran.') : '');
     if (duplicado) cuadre.append(el('a', { href: ctx.ruta('costos.registro', { id: duplicado.id }) }, `Ver el registro: ${duplicado.concepto}`));
+    if (parecidos.length) cuadre.append(el('ul', { class: 'lec-parecidos' }, parecidos.map((r) => el('li', {},
+      el('a', { href: ctx.ruta('costos.registro', { id: r.id }), target: '_blank', rel: 'noopener' }, r.concepto),
+      ` · ${fechaLarga(r.fecha)} · ${dinero(r.total)} · ${r.doc_numero ? `N° ${r.doc_numero}` : 'sin N°'}`))));
   };
   concepto.addEventListener('input', () => { concepto.dataset.editado = '1'; });
 
@@ -231,6 +252,13 @@ export default async function vista(ctx) {
     const v = valores();
     if (!v.total || v.total <= 0) { avisar('Falta el total.', 'error'); return; }
     if (duplicado) { avisar('Este documento ya está registrado.', 'error'); return; }
+    const clave = parecidos.map((r) => r.id).join();
+    if (parecidos.length && confirmado !== clave) {
+      confirmado = clave;
+      avisar('Posible duplicado: revisa la lista bajo los montos. Si es otro documento, toca Guardar otra vez.', 'error');
+      cuadre.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
     if (exigirDestino) {
       const d = destino.value;
       const falta = !d ? 'Elige a qué va este gasto.' : d === 'vehiculo' && !vehiculo.value ? 'Elige el vehículo (patente).'

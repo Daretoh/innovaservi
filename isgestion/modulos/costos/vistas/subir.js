@@ -3,14 +3,14 @@
 // 2. Gasto sin ningún papel → registro sin documento, no declarable, pagado.
 // 3. Comprobante de pago (transferencia, depósito…) → fin_pagos "por validar"; cubre facturas por pagar del proveedor.
 // 4. Factura emitida (a un cliente) → ingreso por cobrar.
-import { el } from '../../../core/ui/dom.js?v=9eb8eef';
-import { icono } from '../../../core/ui/iconos.js?v=9eb8eef';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=9eb8eef';
-import { avisar } from '../../../core/ui/aviso.js?v=9eb8eef';
-import { subirArchivo, eliminarArchivo } from '../../../core/adjuntos.js?v=9eb8eef';
-import { dinero, hoyISO, fechaLarga, sumarDias } from '../../../core/ui/formato.js?v=9eb8eef';
-import { cargarBase, nombreTercero, MEDIOS } from '../datos.js?v=9eb8eef';
-import { leerConIA, iaDisponible, numIA, fechaIA, medioIA, textoModelo } from '../../../core/lector-ia.js?v=9eb8eef';
+import { el } from '../../../core/ui/dom.js?v=2ac97af';
+import { icono } from '../../../core/ui/iconos.js?v=2ac97af';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=2ac97af';
+import { avisar } from '../../../core/ui/aviso.js?v=2ac97af';
+import { subirArchivo, eliminarArchivo } from '../../../core/adjuntos.js?v=2ac97af';
+import { dinero, hoyISO, fechaLarga, sumarDias } from '../../../core/ui/formato.js?v=2ac97af';
+import { cargarBase, nombreTercero, MEDIOS } from '../datos.js?v=2ac97af';
+import { leerConIA, iaDisponible, numIA, fechaIA, medioIA, textoModelo } from '../../../core/lector-ia.js?v=2ac97af';
 
 // Lee con IA al elegir la foto (como InnovaGestión) y llena el formulario con aplicar(datos, poner)
 export const leerAlElegir = (ctx, modo, aplicar) => async ({ archivos, estado, poner, opciones }) => {

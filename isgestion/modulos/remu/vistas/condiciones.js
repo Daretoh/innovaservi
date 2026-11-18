@@ -1,11 +1,11 @@
 // Condiciones de pago de cada trabajador en la empresa: modo, cargo/trato, jornada o turno, sueldo y vuelta.
-import { el } from '../../../core/ui/dom.js?v=9eb8eef';
-import { icono } from '../../../core/ui/iconos.js?v=9eb8eef';
-import { listado } from '../../../core/ui/tabla.js?v=9eb8eef';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=9eb8eef';
-import { avisar } from '../../../core/ui/aviso.js?v=9eb8eef';
-import { dinero, hhmm, fechaLarga } from '../../../core/ui/formato.js?v=9eb8eef';
-import { cargarBase, nombreCompleto } from '../datos.js?v=9eb8eef';
+import { el } from '../../../core/ui/dom.js?v=2ac97af';
+import { icono } from '../../../core/ui/iconos.js?v=2ac97af';
+import { listado } from '../../../core/ui/tabla.js?v=2ac97af';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=2ac97af';
+import { avisar } from '../../../core/ui/aviso.js?v=2ac97af';
+import { dinero, hhmm, fechaLarga } from '../../../core/ui/formato.js?v=2ac97af';
+import { cargarBase, nombreCompleto } from '../datos.js?v=2ac97af';
 
 export default async function vista(ctx) {
   const base = await cargarBase(ctx);

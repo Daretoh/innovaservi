@@ -1,10 +1,10 @@
 // Parámetros de remuneraciones y feriados de la empresa (antes fijos en el código de InnovaGestión).
-import { el } from '../../../core/ui/dom.js?v=9eb8eef';
-import { icono } from '../../../core/ui/iconos.js?v=9eb8eef';
-import { boton } from '../../../core/ui/tabla.js?v=9eb8eef';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=9eb8eef';
-import { avisar } from '../../../core/ui/aviso.js?v=9eb8eef';
-import { dinero, fechaLarga, nombreDia, hoyISO } from '../../../core/ui/formato.js?v=9eb8eef';
+import { el } from '../../../core/ui/dom.js?v=2ac97af';
+import { icono } from '../../../core/ui/iconos.js?v=2ac97af';
+import { boton } from '../../../core/ui/tabla.js?v=2ac97af';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=2ac97af';
+import { avisar } from '../../../core/ui/aviso.js?v=2ac97af';
+import { dinero, fechaLarga, nombreDia, hoyISO } from '../../../core/ui/formato.js?v=2ac97af';
 
 let anio = Number(hoyISO().slice(0, 4));
 

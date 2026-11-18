@@ -1,17 +1,17 @@
 // Gastos e ingresos: los recientes (últimos cargados, de cualquier mes), los del mes, pendientes de pago o cobro (de todos
 // los meses), resumen y Excel. "Editar como planilla" cambia la tabla por la planilla del OS (planilla.js). En el teléfono
 // las filas se ven como tarjetas.
-import { el } from '../../../core/ui/dom.js?v=9eb8eef';
-import { icono } from '../../../core/ui/iconos.js?v=9eb8eef';
-import { listado, boton } from '../../../core/ui/tabla.js?v=9eb8eef';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=9eb8eef';
-import { avisar } from '../../../core/ui/aviso.js?v=9eb8eef';
-import { dinero, fechaLarga, hoyISO, nombreMes, moverMes, rangoMes, diaLocal } from '../../../core/ui/formato.js?v=9eb8eef';
-import { cargarBase, nombreTercero, nombreDoc, nombreMedio, MEDIOS, traerComprasInventario, estadosDe, nombreEstado, CHIP_ESTADO, generarAutomatico } from '../datos.js?v=9eb8eef';
-import { planilla } from '../planilla.js?v=9eb8eef';
-import { urlFirmada } from '../../../core/adjuntos.js?v=9eb8eef';
-import { pendientesBandeja, traerSiHaceFalta } from './bandeja.js?v=9eb8eef';
-import { NOMBRE_DTE } from '../../../core/dte.js?v=9eb8eef';
+import { el } from '../../../core/ui/dom.js?v=2ac97af';
+import { icono } from '../../../core/ui/iconos.js?v=2ac97af';
+import { listado, boton } from '../../../core/ui/tabla.js?v=2ac97af';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=2ac97af';
+import { avisar } from '../../../core/ui/aviso.js?v=2ac97af';
+import { dinero, fechaLarga, hoyISO, nombreMes, moverMes, rangoMes, diaLocal } from '../../../core/ui/formato.js?v=2ac97af';
+import { cargarBase, nombreTercero, nombreDoc, nombreMedio, MEDIOS, traerComprasInventario, estadosDe, nombreEstado, CHIP_ESTADO, generarAutomatico } from '../datos.js?v=2ac97af';
+import { planilla } from '../planilla.js?v=2ac97af';
+import { urlFirmada } from '../../../core/adjuntos.js?v=2ac97af';
+import { pendientesBandeja, traerSiHaceFalta } from './bandeja.js?v=2ac97af';
+import { NOMBRE_DTE } from '../../../core/dte.js?v=2ac97af';
 
 const estado = { vista: 'recientes', mes: hoyISO().slice(0, 7), categoria: '', editar: false };
 const RECIENTES = 15;
@@ -105,7 +105,7 @@ export default async function vista(ctx) {
     el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Mes anterior', onclick: () => mover(-1) }, icono('volver')),
     el('strong', {}, nombreMes(estado.mes)),
     el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Mes siguiente', onclick: () => mover(1) }, icono('derecha'))));
-  if (ctx.puede('costos', 'exportar') && data.length) acciones.push(boton('Excel', { icono: 'descargar', onclick: () => import('../../../core/excel.js?v=9eb8eef').then(({ exportarExcel }) => exportarExcel(ctx, {
+  if (ctx.puede('costos', 'exportar') && data.length) acciones.push(boton('Excel', { icono: 'descargar', onclick: () => import('../../../core/excel.js?v=2ac97af').then(({ exportarExcel }) => exportarExcel(ctx, {
     titulo: pendientes ? 'Gastos e ingresos pendientes' : revisar ? 'Gastos e ingresos por revisar' : sinCentro ? 'Gastos e ingresos sin centro de costo' : recientes ? 'Gastos e ingresos recientes' : `Gastos e ingresos · ${nombreMes(estado.mes)}`, nombre: `costos-${pendientes ? 'pendientes' : recientes ? 'recientes' : estado.mes}`,
     columnas: [{ t: 'Fecha', tipo: 'fecha' }, 'Tipo', 'Concepto', 'Categoría', ...(ctx.config?.centros ? ['Centro'] : []), 'Proveedor o cliente', 'Documento', 'N°', { t: 'Neto', tipo: 'dinero' }, { t: 'IVA', tipo: 'dinero' }, { t: 'Total', tipo: 'dinero' }, 'Estado', { t: 'Fecha de pago', tipo: 'fecha' }, 'Medio', 'Patente'],
     filas: data.map((r) => [r.fecha, r.tipo === 'gasto' ? 'Gasto' : 'Ingreso', r.concepto, base.categoriaDe.get(r.categoria_id)?.nombre ?? '', ...(ctx.config?.centros ? [base.centroDe.get(r.centro_id)?.nombre ?? ''] : []), nombreTercero(r.terceros),
@@ -194,24 +194,31 @@ export default async function vista(ctx) {
 function comprasSii(ctx) {
   const caja = el('div', {});
   const pintar = async (nota = '') => {
-    const { data } = await pendientesBandeja(ctx);
+    const [{ data }, par] = await Promise.all([pendientesBandeja(ctx),
+      ctx.puede('costos', 'editar') ? ctx.api.rpc('fin_bandeja_parecido', { p_empresa: ctx.empresa.id }) : Promise.resolve({ data: [] })]);
+    // Posible duplicado: ya hay un gasto del mismo proveedor con el mismo total cerca de la fecha (aunque tenga otro N°)
+    const parecido = new Map((par.data ?? []).map((x) => [x.bandeja_id, x]));
     const sii = (data ?? []).filter((f) => f.origen === 'sii' && f.dte);
+    const dudosas = sii.filter((f) => parecido.has(f.id)).length;
     const otras = (data ?? []).length - sii.length;
     if (!sii.length && !nota) { caja.replaceChildren(); caja.className = ''; return; }
     caja.className = 'ficha doc-grupo fin-sii';
-    caja.replaceChildren(
+    caja.replaceChildren(...[
       el('div', { class: 'emi-cabecera' }, el('h2', {}, sii.length ? `Facturas de compra del SII por cargar (${sii.length})` : 'Facturas de compra del SII'),
         el('a', { class: 'boton boton-secundario boton-chico', href: ctx.ruta('costos.bandeja') }, `Bandeja${otras ? ` (+${otras} subidas)` : ''}`, icono('derecha', { tam: 14 }))),
       nota ? el('p', { class: 'texto-suave texto-chico', 'aria-live': 'polite' }, nota) : null,
+      dudosas ? el('p', { class: 'aviso-bandeja' }, icono('alerta', { tam: 16 }), ` ${dudosas === 1 ? '1 parece estar' : `${dudosas} parecen estar`} ya en Costos con otro N° o tipo de documento: revísalas antes de cargarlas.`) : null,
       sii.length ? el('div', { class: 'tabla-contenedor' }, el('table', { class: 'tabla ban-tabla' },
         el('thead', {}, el('tr', {}, ['Proveedor', 'Documento', 'Fecha', 'Total', ''].map((c, i) => el('th', { class: i === 3 ? 'num' : null }, c)))),
         el('tbody', {}, sii.slice(0, 10).map((f) => el('tr', {},
-          el('td', {}, el('strong', {}, f.dte.razon ?? 'Sin nombre'), el('span', { class: 'texto-suave texto-chico ban-linea' }, f.dte.rut ?? '')),
+          el('td', {}, el('strong', {}, f.dte.razon ?? 'Sin nombre'), el('span', { class: 'texto-suave texto-chico ban-linea' }, f.dte.rut ?? ''),
+            parecido.has(f.id) ? el('a', { class: 'ban-aviso texto-chico', href: ctx.ruta('costos.registro', { id: parecido.get(f.id).registro_id }) },
+              icono('alerta', { tam: 14 }), ` Posible duplicado: ${parecido.get(f.id).concepto} (${fechaLarga(parecido.get(f.id).fecha)}${parecido.get(f.id).folio ? `, N° ${parecido.get(f.id).folio}` : ''})`) : null),
           el('td', {}, `${NOMBRE_DTE[Number(f.dte.td)] ?? 'Documento'} ${f.dte.folio ?? ''}`),
           el('td', {}, f.dte.fecha ? fechaLarga(f.dte.fecha) : ''),
           el('td', { class: 'num' }, f.dte.total != null ? dinero(Number(f.dte.total)) : ''),
           el('td', {}, el('a', { class: 'boton boton-primario boton-chico', href: ctx.ruta('costos.lector', { bandeja: f.id }) }, 'Cargar', icono('derecha', { tam: 14 })))))))) : null,
-      sii.length > 10 ? el('p', { class: 'texto-suave texto-chico' }, `y ${sii.length - 10} más en la Bandeja.`) : null);
+      sii.length > 10 ? el('p', { class: 'texto-suave texto-chico' }, `y ${sii.length - 10} más en la Bandeja.`) : null].filter(Boolean));
   };
   pintar().then(async () => {
     try {
