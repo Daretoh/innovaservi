@@ -1,14 +1,14 @@
 // Planificar una faena en un día: horario, dotación del día, cuadrilla, vehículos, notas,
 // enviar / reabrir y generar las horas en Asistencia.
 // Ruta: #/ope.plan?f=<faena_id>&d=<fecha>
-import { el } from '../../../core/ui/dom.js?v=8e7e327';
-import { icono } from '../../../core/ui/iconos.js?v=8e7e327';
-import { boton } from '../../../core/ui/tabla.js?v=8e7e327';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=8e7e327';
-import { avisar } from '../../../core/ui/aviso.js?v=8e7e327';
-import { hhmm, nombreDia, fechaLarga, hoyISO, sumarDias } from '../../../core/ui/formato.js?v=8e7e327';
-import { seccionPreparacion } from './preparacion.js?v=8e7e327';
-import { cargarBase, cargarSemana, etiquetaFaena, horarioDe, dotacionDe, dotTotal, dotTexto, ocupacion, ROLES, nombreRol, nombreCompleto, partesDeRango, estadoParte, pideInformeFaena } from '../datos.js?v=8e7e327';
+import { el } from '../../../core/ui/dom.js?v=9eb8eef';
+import { icono } from '../../../core/ui/iconos.js?v=9eb8eef';
+import { boton } from '../../../core/ui/tabla.js?v=9eb8eef';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=9eb8eef';
+import { avisar } from '../../../core/ui/aviso.js?v=9eb8eef';
+import { hhmm, nombreDia, fechaLarga, hoyISO, sumarDias } from '../../../core/ui/formato.js?v=9eb8eef';
+import { seccionPreparacion } from './preparacion.js?v=9eb8eef';
+import { cargarBase, cargarSemana, etiquetaFaena, horarioDe, dotacionDe, dotTotal, dotTexto, ocupacion, ROLES, nombreRol, nombreCompleto, partesDeRango, estadoParte, pideInformeFaena } from '../datos.js?v=9eb8eef';
 
 export default async function vista(ctx) {
   const { f: faenaId, d: fecha } = ctx.params;
@@ -295,7 +295,7 @@ function ajustarDotacion(ctx, f, p, asegurarPlan) {
 // Vehículos de la flota (si la empresa tiene el módulo Flota) con sus avisos: en taller o documentos vencidos
 async function cargarFlotaOpe(ctx) {
   if (!ctx.puede('flota', 'ver')) return null;
-  const { cargarFlota, alertas, textoVence, etiquetaVehiculo } = await import('../../flota/datos.js?v=8e7e327');
+  const { cargarFlota, alertas, textoVence, etiquetaVehiculo } = await import('../../flota/datos.js?v=9eb8eef');
   const lista = await cargarFlota(ctx);
   const avisos = (v) => [...(v.estado === 'taller' ? ['En taller'] : []), ...alertas(v.registros).filter((a) => a.k === 'venc').map(textoVence)];
   return { lista, de: new Map(lista.map((v) => [v.id, v])), avisos, etiqueta: etiquetaVehiculo };

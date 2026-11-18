@@ -3,15 +3,15 @@
 // (Costos 008) con su archivo en R2 (<empresa>/costos/…). "Cargar" abre el lector con la foto ya puesta; al registrar
 // el gasto la foto pasa a ser su archivo y el lector sigue con la siguiente de la bandeja.
 // Ruta: #/costos.bandeja
-import { el } from '../../../core/ui/dom.js?v=8e7e327';
-import { icono } from '../../../core/ui/iconos.js?v=8e7e327';
-import { boton } from '../../../core/ui/tabla.js?v=8e7e327';
-import { avisar } from '../../../core/ui/aviso.js?v=8e7e327';
-import { subirArchivo, urlsFirmadas, eliminarArchivo } from '../../../core/adjuntos.js?v=8e7e327';
-import { botonesFotos, tomarFotos } from '../../../core/ui/camara.js?v=8e7e327';
-import { comprimirFoto, esImagen, esPdf } from '../../../core/imagenes.js?v=8e7e327';
-import { fechaLarga, diaLocal, dinero } from '../../../core/ui/formato.js?v=8e7e327';
-import { llamarDte, estadoDte, NOMBRE_DTE } from '../../../core/dte.js?v=8e7e327';
+import { el } from '../../../core/ui/dom.js?v=9eb8eef';
+import { icono } from '../../../core/ui/iconos.js?v=9eb8eef';
+import { boton } from '../../../core/ui/tabla.js?v=9eb8eef';
+import { avisar } from '../../../core/ui/aviso.js?v=9eb8eef';
+import { subirArchivo, urlsFirmadas, eliminarArchivo } from '../../../core/adjuntos.js?v=9eb8eef';
+import { botonesFotos, tomarFotos } from '../../../core/ui/camara.js?v=9eb8eef';
+import { comprimirFoto, esImagen, esPdf } from '../../../core/imagenes.js?v=9eb8eef';
+import { fechaLarga, diaLocal, dinero } from '../../../core/ui/formato.js?v=9eb8eef';
+import { llamarDte, estadoDte, NOMBRE_DTE } from '../../../core/dte.js?v=9eb8eef';
 
 // Pendientes de la empresa en orden de llegada (RLS: quien solo carga ve las suyas)
 // Las compras del SII (origen 'sii', Núcleo 021) traen además su XML y sus datos (dte)
@@ -65,6 +65,18 @@ export async function traerComprasSii(ctx) {
     r.faltan ? `faltan ${r.faltan}: vuelve a traer en un momento` : null,
     r.limpiadas ? `se sacaron ${r.limpiadas} que ya estaban registradas en Costos` : null].filter(Boolean);
   return `${partes.join(' · ')}.`;
+}
+
+// Trae las compras del SII si la última revisión tiene más de `minutos` (2026-11-18, pedido de Enzo: que lleguen
+// solas, sin subirlas). Una sola búsqueda a la vez. Devuelve el texto del resultado, o null si no hizo falta.
+export async function traerSiHaceFalta(ctx, minutos = 30) {
+  if (!ctx.puede('costos', 'editar')) return null;
+  const est = await estadoDte(ctx);
+  if (!est.conectado || est.prueba) return null;
+  const hace = est.compras_at ? Date.now() - Date.parse(est.compras_at) : Infinity;
+  if (hace < minutos * 60e3 && !trayendo) return null;
+  trayendo ??= traerComprasSii(ctx).finally(() => { trayendo = null; });
+  return trayendo;
 }
 
 // Bandeja de documentos (2026-11-12, pedido de Enzo): un listado, con pestañas
@@ -143,7 +155,7 @@ export default async function vista(ctx) {
       el('tbody', {}, filas.map(fila))))
     : el('p', { class: 'texto-suave' }, 'No hay documentos por cargar.');
 
-  // ---- Compras del SII: botón y, en producción, solas al abrir si pasaron 6 horas (nunca dos a la vez)
+  // ---- Compras del SII: botón y, en producción, solas al abrir si pasaron 30 minutos (nunca dos a la vez)
   const estadoSii = el('p', { class: 'texto-suave texto-chico', 'aria-live': 'polite' });
   const traer = async (ev) => {
     const b = ev?.currentTarget; if (b) { b.disabled = true; b.classList.add('cargando'); }
@@ -161,7 +173,7 @@ export default async function vista(ctx) {
       if (!est.conectado) { estadoSii.textContent = `OpenFactura no está conectado${est.error ? `: ${est.error}` : ''}.`; return; }
       const hace = est.compras_at ? Date.now() - Date.parse(est.compras_at) : Infinity;
       estadoSii.textContent = `${est.prueba ? 'Ambiente de pruebas de OpenFactura. ' : ''}${est.compras_at ? `Última revisión del SII: ${fechaLarga(diaLocal(est.compras_at))} ${new Date(est.compras_at).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}.` : 'Todavía no se han traído facturas del SII.'} Las que ya están en Costos no se repiten.`;
-      if (!est.prueba && hace > 6 * 36e5) traer();
+      if (!est.prueba && hace > 30 * 60e3) traer();
     });
   }
 
@@ -179,7 +191,7 @@ export default async function vista(ctx) {
   ].filter(Boolean);
   const entradas = async () => {
     zona.replaceChildren(el('p', { class: 'texto-suave' }, 'Cargando…'));
-    const { panelEmitidas } = await import('../../cotizaciones/emitidas.js?v=8e7e327');
+    const { panelEmitidas } = await import('../../cotizaciones/emitidas.js?v=9eb8eef');
     const [cs, ts] = await Promise.all([
       ctx.api.from('cot_cotizaciones').select('id, numero, cliente_nombre, tercero_id').eq('empresa_id', e).is('deleted_at', null).is('madre_id', null).in('estado', ['enviada', 'aceptada']).order('numero', { ascending: false }).limit(500),
       ctx.api.from('terceros').select('id, rut, razon_social, nombre_fantasia').eq('empresa_id', e).is('deleted_at', null).order('razon_social').limit(5000),

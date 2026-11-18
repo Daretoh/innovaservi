@@ -11,7 +11,7 @@ export default {
   acciones: ['ver', 'crear', 'editar', 'eliminar', 'exportar'],
   menu: [
     // Solo para quien edita clientes: el operador del taller ya los ve en Taller → Clientes (pedido de Enzo, 2026-10-27)
-    { id: 'terceros.listado', label: 'Clientes y proveedores', apartado: 'maestros', requiere: 'editar', vista: () => import('./vistas/listado.js?v=8e7e327') },
+    { id: 'terceros.listado', label: 'Clientes y proveedores', apartado: 'maestros', requiere: 'editar', vista: () => import('./vistas/listado.js?v=9eb8eef') },
   ],
   config: {},
   migraciones: [],   // su tabla está en db/nucleo/001_nucleo.sql

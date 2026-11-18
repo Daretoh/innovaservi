@@ -1,15 +1,17 @@
 // Gastos e ingresos: los recientes (últimos cargados, de cualquier mes), los del mes, pendientes de pago o cobro (de todos
 // los meses), resumen y Excel. "Editar como planilla" cambia la tabla por la planilla del OS (planilla.js). En el teléfono
 // las filas se ven como tarjetas.
-import { el } from '../../../core/ui/dom.js?v=8e7e327';
-import { icono } from '../../../core/ui/iconos.js?v=8e7e327';
-import { listado, boton } from '../../../core/ui/tabla.js?v=8e7e327';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=8e7e327';
-import { avisar } from '../../../core/ui/aviso.js?v=8e7e327';
-import { dinero, fechaLarga, hoyISO, nombreMes, moverMes, rangoMes, diaLocal } from '../../../core/ui/formato.js?v=8e7e327';
-import { cargarBase, nombreTercero, nombreDoc, nombreMedio, MEDIOS, traerComprasInventario, estadosDe, nombreEstado, CHIP_ESTADO, generarAutomatico } from '../datos.js?v=8e7e327';
-import { planilla } from '../planilla.js?v=8e7e327';
-import { urlFirmada } from '../../../core/adjuntos.js?v=8e7e327';
+import { el } from '../../../core/ui/dom.js?v=9eb8eef';
+import { icono } from '../../../core/ui/iconos.js?v=9eb8eef';
+import { listado, boton } from '../../../core/ui/tabla.js?v=9eb8eef';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=9eb8eef';
+import { avisar } from '../../../core/ui/aviso.js?v=9eb8eef';
+import { dinero, fechaLarga, hoyISO, nombreMes, moverMes, rangoMes, diaLocal } from '../../../core/ui/formato.js?v=9eb8eef';
+import { cargarBase, nombreTercero, nombreDoc, nombreMedio, MEDIOS, traerComprasInventario, estadosDe, nombreEstado, CHIP_ESTADO, generarAutomatico } from '../datos.js?v=9eb8eef';
+import { planilla } from '../planilla.js?v=9eb8eef';
+import { urlFirmada } from '../../../core/adjuntos.js?v=9eb8eef';
+import { pendientesBandeja, traerSiHaceFalta } from './bandeja.js?v=9eb8eef';
+import { NOMBRE_DTE } from '../../../core/dte.js?v=9eb8eef';
 
 const estado = { vista: 'recientes', mes: hoyISO().slice(0, 7), categoria: '', editar: false };
 const RECIENTES = 15;
@@ -103,7 +105,7 @@ export default async function vista(ctx) {
     el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Mes anterior', onclick: () => mover(-1) }, icono('volver')),
     el('strong', {}, nombreMes(estado.mes)),
     el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Mes siguiente', onclick: () => mover(1) }, icono('derecha'))));
-  if (ctx.puede('costos', 'exportar') && data.length) acciones.push(boton('Excel', { icono: 'descargar', onclick: () => import('../../../core/excel.js?v=8e7e327').then(({ exportarExcel }) => exportarExcel(ctx, {
+  if (ctx.puede('costos', 'exportar') && data.length) acciones.push(boton('Excel', { icono: 'descargar', onclick: () => import('../../../core/excel.js?v=9eb8eef').then(({ exportarExcel }) => exportarExcel(ctx, {
     titulo: pendientes ? 'Gastos e ingresos pendientes' : revisar ? 'Gastos e ingresos por revisar' : sinCentro ? 'Gastos e ingresos sin centro de costo' : recientes ? 'Gastos e ingresos recientes' : `Gastos e ingresos · ${nombreMes(estado.mes)}`, nombre: `costos-${pendientes ? 'pendientes' : recientes ? 'recientes' : estado.mes}`,
     columnas: [{ t: 'Fecha', tipo: 'fecha' }, 'Tipo', 'Concepto', 'Categoría', ...(ctx.config?.centros ? ['Centro'] : []), 'Proveedor o cliente', 'Documento', 'N°', { t: 'Neto', tipo: 'dinero' }, { t: 'IVA', tipo: 'dinero' }, { t: 'Total', tipo: 'dinero' }, 'Estado', { t: 'Fecha de pago', tipo: 'fecha' }, 'Medio', 'Patente'],
     filas: data.map((r) => [r.fecha, r.tipo === 'gasto' ? 'Gasto' : 'Ingreso', r.concepto, base.categoriaDe.get(r.categoria_id)?.nombre ?? '', ...(ctx.config?.centros ? [base.centroDe.get(r.centro_id)?.nombre ?? ''] : []), nombreTercero(r.terceros),
@@ -176,6 +178,7 @@ export default async function vista(ctx) {
   tabla.querySelector('.listado-cabecera').after(contadores, ...(ctx.puede('costos', 'aprobar') ? [resumen] : []));
   tabla.classList.add('fin-lista');
   if (recientes) resumen.after(el('p', { class: 'texto-suave texto-chico' }, `Los ${RECIENTES} últimos cargados, de cualquier mes. Para ver un mes completo usa "Del mes".`));
+  if (ctx.puede('costos', 'crear')) tabla.querySelector('.listado-cabecera').after(comprasSii(ctx));
   if (estado.editar && data.length) {
     hoja = planilla(ctx, data, base);
     tabla.querySelector('.tabla-contenedor').replaceWith(hoja.nodo);
@@ -183,4 +186,38 @@ export default async function vista(ctx) {
     setTimeout(() => hoja.enfocar(0, 1));
   }
   return tabla;
+}
+
+// Facturas de compra recibidas en el SII que faltan en Costos (2026-11-18, pedido de Enzo): aparecen aquí solas, sin
+// subirlas. Al abrir la pantalla se revisa el SII si pasaron 30 minutos y el recuadro se actualiza sin recargar.
+// Cada una se carga en el lector con su PDF y su XML (categoría y a qué va); las fotos subidas siguen en la Bandeja.
+function comprasSii(ctx) {
+  const caja = el('div', {});
+  const pintar = async (nota = '') => {
+    const { data } = await pendientesBandeja(ctx);
+    const sii = (data ?? []).filter((f) => f.origen === 'sii' && f.dte);
+    const otras = (data ?? []).length - sii.length;
+    if (!sii.length && !nota) { caja.replaceChildren(); caja.className = ''; return; }
+    caja.className = 'ficha doc-grupo fin-sii';
+    caja.replaceChildren(
+      el('div', { class: 'emi-cabecera' }, el('h2', {}, sii.length ? `Facturas de compra del SII por cargar (${sii.length})` : 'Facturas de compra del SII'),
+        el('a', { class: 'boton boton-secundario boton-chico', href: ctx.ruta('costos.bandeja') }, `Bandeja${otras ? ` (+${otras} subidas)` : ''}`, icono('derecha', { tam: 14 }))),
+      nota ? el('p', { class: 'texto-suave texto-chico', 'aria-live': 'polite' }, nota) : null,
+      sii.length ? el('div', { class: 'tabla-contenedor' }, el('table', { class: 'tabla ban-tabla' },
+        el('thead', {}, el('tr', {}, ['Proveedor', 'Documento', 'Fecha', 'Total', ''].map((c, i) => el('th', { class: i === 3 ? 'num' : null }, c)))),
+        el('tbody', {}, sii.slice(0, 10).map((f) => el('tr', {},
+          el('td', {}, el('strong', {}, f.dte.razon ?? 'Sin nombre'), el('span', { class: 'texto-suave texto-chico ban-linea' }, f.dte.rut ?? '')),
+          el('td', {}, `${NOMBRE_DTE[Number(f.dte.td)] ?? 'Documento'} ${f.dte.folio ?? ''}`),
+          el('td', {}, f.dte.fecha ? fechaLarga(f.dte.fecha) : ''),
+          el('td', { class: 'num' }, f.dte.total != null ? dinero(Number(f.dte.total)) : ''),
+          el('td', {}, el('a', { class: 'boton boton-primario boton-chico', href: ctx.ruta('costos.lector', { bandeja: f.id }) }, 'Cargar', icono('derecha', { tam: 14 })))))))) : null,
+      sii.length > 10 ? el('p', { class: 'texto-suave texto-chico' }, `y ${sii.length - 10} más en la Bandeja.`) : null);
+  };
+  pintar().then(async () => {
+    try {
+      const texto = await traerSiHaceFalta(ctx);
+      if (texto && caja.isConnected) await pintar(/^No hay/.test(texto) ? '' : texto);
+    } catch (err) { if (caja.isConnected) pintar(`No se pudo revisar el SII: ${err.message}`); }
+  });
+  return caja;
 }

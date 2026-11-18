@@ -1,6 +1,6 @@
 // Carga lo necesario para calcular pagos de la empresa activa en un rango.
-import { calcular, sueldoDelMes, semanaEnMes } from './calculo.js?v=8e7e327';
-import { sumarDias, rangoMes, lunesDe } from '../../core/ui/formato.js?v=8e7e327';
+import { calcular, sueldoDelMes, semanaEnMes } from './calculo.js?v=9eb8eef';
+import { sumarDias, rangoMes, lunesDe } from '../../core/ui/formato.js?v=9eb8eef';
 
 export const nombreCompleto = (p) => [p.nombres, p.apellido_paterno, p.apellido_materno].filter(Boolean).join(' ');
 
