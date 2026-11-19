@@ -299,3 +299,8 @@
 /* ---- Avisos automáticos */
 .mkt-av { max-width: 820px; margin: 0 0 16px; }
 .mkt-av-hist summary { cursor: pointer; font-weight: 600; margin-top: 10px; }
+
+/* ---- Indicadores de los canales */
+.mkt-ind-titulo { margin: 22px 0 10px; font-size: 1.05rem; }
+.mkt-cifra-mal strong { color: var(--error); }
+.ind-paneles .ficha h3 { margin: 6px 0 2px; font-weight: 600; }

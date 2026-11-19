@@ -1,19 +1,19 @@
 // Documentos preventivos con control de versiones: lista por tipo con la versión vigente y la próxima
 // revisión; detalle con el historial de versiones, subir nueva versión y ver cualquiera.
 // Rutas: #/sst.documentos · #/sst.documentos?id=<documento>
-import { el } from '../../../core/ui/dom.js?v=53cc3d2';
-import { icono } from '../../../core/ui/iconos.js?v=53cc3d2';
-import { boton } from '../../../core/ui/tabla.js?v=53cc3d2';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=53cc3d2';
-import { avisar } from '../../../core/ui/aviso.js?v=53cc3d2';
-import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=53cc3d2';
-import { fechaLarga, hoyISO } from '../../../core/ui/formato.js?v=53cc3d2';
+import { el } from '../../../core/ui/dom.js?v=3c78c55';
+import { icono } from '../../../core/ui/iconos.js?v=3c78c55';
+import { boton } from '../../../core/ui/tabla.js?v=3c78c55';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=3c78c55';
+import { avisar } from '../../../core/ui/aviso.js?v=3c78c55';
+import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=3c78c55';
+import { fechaLarga, hoyISO } from '../../../core/ui/formato.js?v=3c78c55';
 
 export const TIPOS_DOC = [['pts', 'Procedimiento de trabajo seguro (PTS)'], ['iper', 'Matriz IPER y procedimiento'], ['programa', 'Programa preventivo'],
   ['ley_karin', 'Protocolo Ley Karin'], ['matriz_epp', 'Matriz de EPP'], ['capacitacion', 'Material de capacitación'], ['evaluacion', 'Evaluación de aprendizaje'],
   ['irl', 'Información de riesgos laborales (IRL)'], ['otro', 'Otro documento preventivo']];
 const nombreTipo = Object.fromEntries(TIPOS_DOC);
-export const ARCHIVOS = ['application/pdf', 'image/jpeg', 'image/png', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.openxmlformats-officedocument.presentationml.presentation'];
+const ARCHIVOS = ['application/pdf', 'image/jpeg', 'image/png', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.openxmlformats-officedocument.presentationml.presentation'];
 
 // Vigente = la versión más reciente; próxima revisión = fecha vigente + revisar_meses
 export function estadoDocumento(d) {
@@ -25,8 +25,7 @@ export function estadoDocumento(d) {
   const dias = Math.round((new Date(`${revisar}T12:00`) - new Date(`${hoyISO()}T12:00`)) / 864e5);
   return { vigente: v, revisar, k: dias < 0 ? 'venc' : dias <= 30 ? 'prox' : 'ok', texto: dias < 0 ? `Revisión vencida (${fechaLarga(revisar)})` : `Revisar el ${fechaLarga(revisar)}` };
 }
-export const CHIP = { venc: 'chip-venc', prox: 'chip-prox', ok: 'chip-ok', sin: 'chip-pend' };
-const puedeIA = (ctx) => ctx.puede('sst', 'crear') || ctx.puede('sst', 'editar');
+const CHIP = { venc: 'chip-venc', prox: 'chip-prox', ok: 'chip-ok', sin: 'chip-pend' };
 
 export default async function vista(ctx) {
   return ctx.params.id ? detalle(ctx) : lista(ctx);
@@ -64,7 +63,7 @@ function formDocumento(ctx, d = null) {
   });
 }
 
-export async function guardarVersion(ctx, documentoId, v) {
+async function guardarVersion(ctx, documentoId, v) {
   const { ruta } = await subirArchivo(ctx.api, { empresaId: ctx.empresa.id, modulo: 'sst', archivo: v.archivo, tabla: 'sst_documento_versiones', registroId: documentoId, tipos: ARCHIVOS });
   const { error } = await ctx.api.from('sst_documento_versiones').insert({ documento_id: documentoId, empresa_id: ctx.empresa.id, version: String(v.version).trim(), fecha: v.fecha || hoyISO(),
     aprobado_por: v.aprobado?.trim() || null, cambios: v.cambios?.trim() || null, archivo: ruta });
@@ -85,9 +84,7 @@ async function lista(ctx) {
   };
   return el('section', { class: 'listado' },
     el('header', { class: 'listado-cabecera' }, el('h1', {}, 'Documentos preventivos'),
-      el('div', { class: 'listado-acciones' },
-        puedeIA(ctx) ? el('a', { class: 'boton', href: ctx.ruta('sst.revisar') }, icono('revisar', { tam: 16 }), 'Revisar con IA') : null,
-        ctx.puede('sst', 'crear') ? boton('Nuevo documento', { icono: 'mas', tipo: 'primario', onclick: () => formDocumento(ctx) }) : null)),
+      ctx.puede('sst', 'crear') ? el('div', { class: 'listado-acciones' }, boton('Nuevo documento', { icono: 'mas', tipo: 'primario', onclick: () => formDocumento(ctx) })) : null),
     data.length ? el('div', { class: 'fin-tarjetas' },
       el('div', { class: 'ficha doc-grupo fin-tarjeta' }, el('span', { class: 'texto-suave texto-chico' }, 'Documentos en uso'), el('strong', {}, String(est.length))),
       el('div', { class: `ficha doc-grupo fin-tarjeta ${est.some((s) => s.k === 'venc') ? 'fin-alerta' : ''}` }, el('span', { class: 'texto-suave texto-chico' }, 'Revisión vencida'), el('strong', {}, String(est.filter((s) => s.k === 'venc').length))),
@@ -127,7 +124,6 @@ async function detalle(ctx) {
       el('div', { class: 'listado-acciones' },
         el('span', { class: `chip ${d.activo ? CHIP[s.k] : 'chip-na'}` }, d.activo ? s.texto : 'Obsoleto'),
         s.vigente ? boton('Ver vigente', { icono: 'ojo', onclick: () => abrir(ctx, s.vigente.archivo) }) : null,
-        puedeIA(ctx) ? el('a', { class: 'boton', href: ctx.ruta('sst.revisar', s.vigente && /\.(pdf|docx)$/i.test(s.vigente.archivo) ? { documento: d.id, version: s.vigente.id } : { documento: d.id }) }, icono('revisar', { tam: 16 }), 'Revisar con IA') : null,
         ctx.puede('sst', 'crear') ? boton('Nueva versión', { icono: 'mas', tipo: 'primario', onclick: nueva }) : null,
         ctx.puede('sst', 'editar') ? boton('Editar', { icono: 'editar', onclick: () => formDocumento(ctx, d) }) : null)),
     el('div', { class: 'ficha doc-grupo' },

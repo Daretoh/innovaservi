@@ -1,12 +1,12 @@
 // Usuarios con acceso a la empresa activa: rol, ficha de trabajador y estado.
 // Acceso con fecha de vencimiento y nota (como Accesos de InnovaGestión): vencido = sin acceso (acceso_vigente en la base).
-import { urlApp } from '../../../core/api.js?v=53cc3d2';
-import { recuperarClave } from '../../../core/auth.js?v=53cc3d2';
-import { el } from '../../../core/ui/dom.js?v=53cc3d2';
-import { icono } from '../../../core/ui/iconos.js?v=53cc3d2';
-import { listado, boton } from '../../../core/ui/tabla.js?v=53cc3d2';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=53cc3d2';
-import { avisar } from '../../../core/ui/aviso.js?v=53cc3d2';
+import { urlApp } from '../../../core/api.js?v=3c78c55';
+import { recuperarClave } from '../../../core/auth.js?v=3c78c55';
+import { el } from '../../../core/ui/dom.js?v=3c78c55';
+import { icono } from '../../../core/ui/iconos.js?v=3c78c55';
+import { listado, boton } from '../../../core/ui/tabla.js?v=3c78c55';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=3c78c55';
+import { avisar } from '../../../core/ui/aviso.js?v=3c78c55';
 
 export default async function vista(ctx) {
   const empresa = ctx.empresa.id;

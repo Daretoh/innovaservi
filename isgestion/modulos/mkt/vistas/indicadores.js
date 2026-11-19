@@ -1,11 +1,12 @@
 // Indicadores del mes: contactos nuevos, clientes ganados, conversión, sin atender, por origen, por campaña y resultados
-// de las publicaciones. Excel con el membrete de la empresa.
-import { el } from '../../../core/ui/dom.js?v=53cc3d2';
-import { icono } from '../../../core/ui/iconos.js?v=53cc3d2';
-import { boton } from '../../../core/ui/tabla.js?v=53cc3d2';
-import { dinero, hoyISO, rangoMes, moverMes, nombreMes } from '../../../core/ui/formato.js?v=53cc3d2';
-import { nuevoExcel } from '../../../core/excel.js?v=53cc3d2';
-import { cargarBase, cargarCss, nombreOrigen, diasDesde, DIAS_SIN_ATENDER } from '../datos.js?v=53cc3d2';
+// de las publicaciones; abajo WhatsApp, bot, agenda en línea, tarjeta y avisos (canales-ind.js). Excel con el membrete de la empresa.
+import { el } from '../../../core/ui/dom.js?v=3c78c55';
+import { icono } from '../../../core/ui/iconos.js?v=3c78c55';
+import { boton } from '../../../core/ui/tabla.js?v=3c78c55';
+import { dinero, hoyISO, rangoMes, moverMes, nombreMes } from '../../../core/ui/formato.js?v=3c78c55';
+import { nuevoExcel } from '../../../core/excel.js?v=3c78c55';
+import { cargarCanales, panelesCanales, filasCanales } from '../canales-ind.js?v=3c78c55';
+import { cargarBase, cargarCss, nombreOrigen, diasDesde, DIAS_SIN_ATENDER } from '../datos.js?v=3c78c55';
 
 const estado = { mes: hoyISO().slice(0, 7) };
 
@@ -16,11 +17,12 @@ export default async function vista(ctx) {
   const { desde, hasta } = rangoMes(estado.mes);
   const ini = new Date(`${desde}T00:00`).toISOString();
   const finTs = new Date(`${moverMes(estado.mes, 1)}-01T00:00`).toISOString();
-  const [rc, rv, rp] = await Promise.all([
+  const [rc, rv, rp, canales] = await Promise.all([
     ctx.api.from('mkt_contactos').select('id, created_at, origen, campana_id, etapa_id, tercero_id, valor_estimado, ultimo_contacto_at, responsable_id').eq('empresa_id', e).is('deleted_at', null).limit(10000),
     // Pasos a una etapa ganada o perdida durante el mes
     ctx.api.from('mkt_eventos').select('contacto_id, etapa_despues, created_at').eq('empresa_id', e).eq('tipo', 'etapa').gte('created_at', ini).lt('created_at', finTs).limit(10000),
-    ctx.api.from('mkt_publicaciones').select('estado, alcance, interacciones, clics, leads, redes').eq('empresa_id', e).is('deleted_at', null).gte('fecha', desde).lte('fecha', hasta)]);
+    ctx.api.from('mkt_publicaciones').select('estado, alcance, interacciones, clics, leads, redes').eq('empresa_id', e).is('deleted_at', null).gte('fecha', desde).lte('fecha', hasta),
+    cargarCanales(ctx, ini, finTs)]);
   for (const r of [rc, rv, rp]) if (r.error) throw r.error;
   const tipo = new Map(base.etapas.map((x) => [x.id, x.tipo]));
   const primera = base.etapas[0]?.id;
@@ -62,7 +64,7 @@ export default async function vista(ctx) {
     x.tabla({ titulo: 'Resumen', columnas: ['Indicador', { t: 'Valor', tipo: 'numero' }], filas: [
       ['Contactos nuevos', nuevos.length], ['Pasaron a cliente en el mes', ganadosMes.size], ['Perdidos en el mes', perdidosMes.size],
       ['Conversión de los nuevos (%)', conversion ?? 0], ['Sin atender hoy', sinAtender], ['Contactos en curso', enCurso.length], ['Valor estimado en curso', valorCurso],
-      ['Gasto en campañas del mes', gastoMes], ['Publicaciones publicadas', publicadas.length], ['Alcance', suma('alcance')], ['Interacciones', suma('interacciones')], ['Contactos desde publicaciones', suma('leads')]] });
+      ['Gasto en campañas del mes', gastoMes], ['Publicaciones publicadas', publicadas.length], ['Alcance', suma('alcance')], ['Interacciones', suma('interacciones')], ['Contactos desde publicaciones', suma('leads')], ...filasCanales(canales)] });
     x.tabla({ titulo: 'Por origen', columnas: ['Origen', { t: 'Contactos', tipo: 'numero' }, { t: 'Clientes', tipo: 'numero' }], filas: porOrigen.map(([k, a]) => [nombreOrigen[k] ?? k, a.n, a.ganados]) });
     x.tabla({ titulo: 'Por campaña', columnas: ['Campaña', { t: 'Contactos', tipo: 'numero' }, { t: 'Clientes', tipo: 'numero' }], filas: porCampana.map(([k, a]) => [nombreCampana.get(k)?.nombre ?? '', a.n, a.ganados]) });
     await x.guardar(`indicadores-marketing-${estado.mes}`);
@@ -91,5 +93,7 @@ export default async function vista(ctx) {
           ['Interacciones', suma('interacciones').toLocaleString('es-CL')], ['Clics o mensajes', suma('clics').toLocaleString('es-CL')], ['Contactos generados', suma('leads')]]
           .map(([t, v]) => el('div', {}, el('span', { class: 'texto-suave texto-chico' }, t), el('strong', {}, String(v))))),
         el('p', { class: 'texto-suave texto-chico' }, 'Los resultados se anotan en cada publicación (desde Metricool o las estadísticas de Instagram y Facebook).'))),
+    canales.wa || canales.agenda || canales.tarjeta ? el('h2', { class: 'mkt-ind-titulo' }, 'Canales: WhatsApp, agenda y tarjeta') : null,
+    el('div', { class: 'ind-paneles' }, panelesCanales(canales)),
     el('p', { class: 'texto-suave texto-chico' }, `Sin atender: contactos en "${base.etapas[0]?.nombre ?? 'la primera etapa'}" sin actividad registrada en ${DIAS_SIN_ATENDER} días o más.`));
 }
