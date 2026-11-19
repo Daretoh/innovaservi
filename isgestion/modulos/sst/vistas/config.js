@@ -1,11 +1,11 @@
 // Firma y mandantes: datos del representante (con firma y timbre para los documentos) y
 // los clientes que piden el informe mensual de accidentes.
-import { el } from '../../../core/ui/dom.js?v=3c78c55';
-import { icono } from '../../../core/ui/iconos.js?v=3c78c55';
-import { boton } from '../../../core/ui/tabla.js?v=3c78c55';
-import { avisar } from '../../../core/ui/aviso.js?v=3c78c55';
-import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=3c78c55';
-import { cargarConfig, cargarClientes } from '../datos.js?v=3c78c55';
+import { el } from '../../../core/ui/dom.js?v=53cc3d2';
+import { icono } from '../../../core/ui/iconos.js?v=53cc3d2';
+import { boton } from '../../../core/ui/tabla.js?v=53cc3d2';
+import { avisar } from '../../../core/ui/aviso.js?v=53cc3d2';
+import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=53cc3d2';
+import { cargarConfig, cargarClientes } from '../datos.js?v=53cc3d2';
 
 const IMAGENES = ['image/png', 'image/jpeg'];   // formatos que el PDF puede estampar
 
