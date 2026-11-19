@@ -3,8 +3,8 @@
 // Columna: { t: título, tipo: 'texto' | 'dinero' | 'horas' | 'numero', v: (fila) => valor, suma?: true, neg?: true (se
 // muestra con signo menos), fuerte?: true, celda?: (fila) => contenido propio en pantalla, soloExport?: true (no se
 // muestra en pantalla) }.
-import { el } from '../../core/ui/dom.js?v=a4b8195';
-import { dinero, horas } from '../../core/ui/formato.js?v=a4b8195';
+import { el } from '../../core/ui/dom.js?v=574ba64';
+import { dinero, horas } from '../../core/ui/formato.js?v=574ba64';
 
 const texto = (c, v) => {
   if (c.tipo === 'dinero') return v ? `${c.neg ? '−' : ''}${dinero(v)}` : '—';
@@ -39,7 +39,7 @@ export async function exportarGrupos(ctx, { formato, titulo, subtitulo, grupos, 
   const con = grupos.filter((g) => g.filas.length);
   const exp = (c) => c.exp ?? c.v;
   if (formato === 'excel') {
-    const { nuevoExcel } = await import('../../core/excel.js?v=a4b8195');
+    const { nuevoExcel } = await import('../../core/excel.js?v=574ba64');
     const x = await nuevoExcel(ctx, { titulo, subtitulo });
     con.forEach((g) => x.tabla({
       titulo: g.titulo,
@@ -52,7 +52,7 @@ export async function exportarGrupos(ctx, { formato, titulo, subtitulo, grupos, 
     await x.guardar(nombre);
     return;
   }
-  const { nuevoPdf } = await import('../../core/pdf.js?v=a4b8195');
+  const { nuevoPdf } = await import('../../core/pdf.js?v=574ba64');
   const pdf = await nuevoPdf(ctx, { titulo, subtitulo, horizontal: true });
   con.forEach((g) => {
     pdf.doc.setFont('helvetica', 'bold').setFontSize(11).setTextColor(28, 35, 48).text(g.titulo, 15, pdf.y);

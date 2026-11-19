@@ -196,8 +196,10 @@ module EnviarAISgestion
   end
 
   def self.pedir_codigo(model, motivo = nil)
-    texto = (motivo ? "#{motivo}\n\n" : '') + 'Pega el código de conexión del proyecto (ISgestión → Proyectos → Modelo SketchUp → Conectar SketchUp).'
-    r = UI.inputbox(['Código de conexión'], [''], texto)
+    # El título de la ventana va corto: en Windows un título largo con saltos de línea puede dejarla sin mostrarse
+    UI.messagebox("#{motivo}\n\nPega de nuevo el código de conexión.") if motivo
+    puts 'Enviar a ISgestión: pega el código de conexión en la ventana que se abrió.'
+    r = UI.inputbox(['Código de conexión (ISgestión > Proyectos > Modelo SketchUp > Conectar SketchUp)'], [''], 'Enviar a ISgestión')
     return nil unless r
     c = r[0].to_s.strip
     return nil if c.empty?
@@ -222,8 +224,10 @@ module EnviarAISgestion
   class ErrorCodigo < StandardError; end
 
   def self.enviar
+    puts 'Enviar a ISgestión: comenzando…'
     model = Sketchup.active_model
     return UI.messagebox('Guarda el modelo antes de enviarlo a ISgestión.') if model.path.to_s.empty?
+    puts "Enviar a ISgestión: modelo #{File.basename(model.path)}"
     codigo_conexion = Sketchup.read_default(PREF, clave_pref(model), '').to_s
     codigo_conexion = pedir_codigo(model) if codigo_conexion.empty?
     return UI.messagebox('Envío cancelado: no se cambió nada.') unless codigo_conexion
@@ -232,6 +236,7 @@ module EnviarAISgestion
     items = {}
     @m3d = {}
     Sketchup.status_text = 'Leyendo el modelo para ISgestión…'
+    puts 'Enviar a ISgestión: leyendo el modelo (puede tardar un poco)…'
     recorrer(model.entities, Geom::Transformation.new, [], items)
     lista = items.values.sort_by { |i| [i['recinto'], i['grupo_modelo'], i['padre'], i['nombre']] }
     fecha = Time.now.strftime('%d-%m-%Y %H:%M')
@@ -251,9 +256,11 @@ module EnviarAISgestion
         inicio = post(h, { t: codigo_conexion, accion: 'inicio', codigo: @codigo, archivo: model.path, fecha: fecha })
       end
       ya = inicio['mallas'].to_a
+      puts "Enviar a ISgestión: conectado al proyecto \"#{inicio['proyecto']}\" (#{ya.size} muebles 3D ya estaban)"
       faltan = @m3d.reject { |id, _| ya.include?(id) }
       faltan.each_with_index do |(id, c), k|
         Sketchup.status_text = "Enviando 3D a ISgestión: #{k + 1} de #{faltan.size} (#{c['nombre']})"
+        puts "  3D #{k + 1} de #{faltan.size}: #{c['nombre']}" if (k % 10).zero? || k + 1 == faltan.size
         acc = {}
         mallas(c['def'].entities, c['escala'], nil, acc, [0])
         datos = { 'v' => 2, 'u' => 'cm', 'mats' => acc.values.reject { |g| g['p'].empty? } }
@@ -274,6 +281,7 @@ module EnviarAISgestion
     Sketchup.status_text = ''
     msg = err.message.to_s
     msg = "No se pudo conectar con ISgestión (revisa internet). #{msg}" if err.is_a?(SocketError) || err.is_a?(OpenSSL::SSL::SSLError) || err.is_a?(Net::OpenTimeout)
+    puts "Enviar a ISgestión: error #{err.class}: #{msg}"
     UI.messagebox("No se pudo enviar a ISgestión.\n#{msg}")
   end
 

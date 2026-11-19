@@ -1,10 +1,10 @@
 // Solicitudes de pedido (SolPed): pendiente → comprada → recibida (al registrar la entrada) o rechazada.
-import { el } from '../../../core/ui/dom.js?v=a4b8195';
-import { boton } from '../../../core/ui/tabla.js?v=a4b8195';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=a4b8195';
-import { avisar } from '../../../core/ui/aviso.js?v=a4b8195';
-import { fechaLarga, diaLocal } from '../../../core/ui/formato.js?v=a4b8195';
-import { cargarProductos, cant } from '../datos.js?v=a4b8195';
+import { el } from '../../../core/ui/dom.js?v=574ba64';
+import { boton } from '../../../core/ui/tabla.js?v=574ba64';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=574ba64';
+import { avisar } from '../../../core/ui/aviso.js?v=574ba64';
+import { fechaLarga, diaLocal } from '../../../core/ui/formato.js?v=574ba64';
+import { cargarProductos, cant } from '../datos.js?v=574ba64';
 
 const COLUMNAS = [['pendiente', 'Pendientes', 'Comprada'], ['comprada', 'Compradas', null], ['recibida', 'Recibidas', null], ['rechazada', 'Rechazadas', null]];
 

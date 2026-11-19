@@ -4,12 +4,12 @@
 // referencias en la base (con_archivos_quitar: adjuntos con borrado lógico, filas de galería fuera) y después el
 // archivo en R2 (Worker /eliminar-equipo). Solo se pueden eliminar huérfanos o archivos de galerías y adjuntos; lo que
 // usa otra tabla (boletas, facturas, documentos de RRHH…) se borra desde su módulo. Solo el equipo (es_equipo()).
-import { el } from '../../core/ui/dom.js?v=a4b8195';
-import { icono } from '../../core/ui/iconos.js?v=a4b8195';
-import { boton } from '../../core/ui/tabla.js?v=a4b8195';
-import { avisar } from '../../core/ui/aviso.js?v=a4b8195';
-import { abrirFormulario } from '../../core/ui/modal.js?v=a4b8195';
-import { urlFirmada, megas } from '../../core/adjuntos.js?v=a4b8195';
+import { el } from '../../core/ui/dom.js?v=574ba64';
+import { icono } from '../../core/ui/iconos.js?v=574ba64';
+import { boton } from '../../core/ui/tabla.js?v=574ba64';
+import { avisar } from '../../core/ui/aviso.js?v=574ba64';
+import { abrirFormulario } from '../../core/ui/modal.js?v=574ba64';
+import { urlFirmada, megas } from '../../core/adjuntos.js?v=574ba64';
 
 const BORRABLES = new Set(['adjuntos', 'tal_media', 'rep_media', 'cat_fotos', 'tar_adjuntos']);
 const TIPOS = { video: 'Video', foto: 'Foto', pdf: 'PDF', otro: 'Otro' };
