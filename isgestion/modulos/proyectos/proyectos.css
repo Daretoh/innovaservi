@@ -176,3 +176,26 @@ dialog.pro-v3 { width: min(980px, calc(100vw - 24px)); max-width: none; padding:
   .pro-doc { padding: 20px 14px; }
   .pro-doc-meta { text-align: left; }
 }
+
+/* ---------- modelo completo en 3D ---------- */
+.pro-m3-todo { display: flex; flex-direction: column; gap: 12px; }
+.pro-m3 { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 12px; align-items: stretch; }
+.pro-m3.sin-lado { grid-template-columns: minmax(0, 1fr); }
+.pro-m3-lado { background: var(--superficie); border: var(--tarjeta-borde); border-radius: var(--radio); padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; max-height: 76vh; overflow: auto; }
+.pro-m3-lado[hidden] { display: none; }
+.pro-m3-lado-cab { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding-bottom: 6px; border-bottom: 1px solid var(--borde); margin-bottom: 4px; }
+.pro-m3-recinto { display: grid; grid-template-columns: auto 1fr auto; gap: 6px; align-items: center; font-size: .82rem; padding: 2px 0; }
+.pro-enlace { background: none; border: 0; padding: 0; color: var(--empresa); cursor: pointer; font: inherit; }
+.pro-m3-centro { display: flex; flex-direction: column; background: var(--superficie); border: var(--tarjeta-borde); border-radius: var(--radio); overflow: hidden; min-width: 0; }
+.pro-m3-barra { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 8px 10px; border-bottom: 1px solid var(--borde); }
+.pro-m3-barra[hidden], .pro-m3-ficha[hidden] { display: none; }
+.pro-m3-medida { margin-left: auto; font-variant-numeric: tabular-nums; font-weight: 600; color: var(--empresa); font-size: .84rem; }
+.pro-m3-visor { position: relative; height: min(70vh, 720px); background: var(--fondo-sutil); }
+.pro-m3-ficha { padding: 10px 14px; border-top: 1px solid var(--borde); min-height: 48px; font-size: .86rem; }
+.pro-m3-lista { display: flex; flex-direction: column; gap: 10px; }
+.pro-m3-lista[hidden] { display: none; }
+@media (max-width: 800px) { .pro-m3 { grid-template-columns: minmax(0, 1fr); } .pro-m3-lado { max-height: 180px; } .pro-m3-visor { height: 60vh; } }
+.pro-pasos { margin: 10px 0; padding-left: 20px; line-height: 1.6; font-size: .88rem; }
+.pro-codigo { display: block; background: var(--fondo-hundido); padding: 6px 8px; border-radius: 5px; font-size: .78rem; word-break: break-all; margin: 4px 0; user-select: all; }
+.pro-codigo-fila { display: flex; gap: 8px; align-items: center; }
+.pro-codigo-campo { font-family: ui-monospace, monospace; font-size: .8rem; }

@@ -2,11 +2,11 @@
 // pantalla abierta, texto, urgencia y pantallazos con Ctrl+V, arrastrar o adjuntar) y "Mis sugerencias" con el estado y
 // la respuesta de cada punto. Los pantallazos se achican en el navegador y van a R2 privado
 // (<empresa>/soporte/<usuario>/…); la sugerencia se crea con sug_enviar. Solo el equipo las ve todas (Consola).
-import { el } from './ui/dom.js?v=9619ac3';
-import { icono } from './ui/iconos.js?v=9619ac3';
-import { avisar } from './ui/aviso.js?v=9619ac3';
-import { almacen, urlsFirmadas } from './adjuntos.js?v=9619ac3';
-import { comprimirFoto, esImagen } from './imagenes.js?v=9619ac3';
+import { el } from './ui/dom.js?v=32a213c';
+import { icono } from './ui/iconos.js?v=32a213c';
+import { avisar } from './ui/aviso.js?v=32a213c';
+import { almacen, urlsFirmadas } from './adjuntos.js?v=32a213c';
+import { comprimirFoto, esImagen } from './imagenes.js?v=32a213c';
 
 export const TIPOS = [['mejora', 'Mejora'], ['error', 'Algo no funciona'], ['idea', 'Idea nueva']];
 export const ESTADOS = { recibida: ['Recibida', 'chip-na'], revision: ['En revisión', 'chip-prox'], planificada: ['Planificada', 'chip-prox'], hecha: ['Hecha', 'chip-ok'], descartada: ['Descartada', 'chip-venc'] };

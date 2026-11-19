@@ -2,19 +2,19 @@
 // totales) y se edita como planilla: se escribe en las celdas, Enter baja, Esc deshace, se pega desde Excel en Ítem
 // y se arrastra una fila por sus puntos a otra área. En pantallas anchas, panel lateral con el 3D del mueble.
 // Ruta: #/proyectos.hoja?p=<proyecto>
-import { el } from '../../../core/ui/dom.js?v=9619ac3';
-import { icono } from '../../../core/ui/iconos.js?v=9619ac3';
-import { boton } from '../../../core/ui/tabla.js?v=9619ac3';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=9619ac3';
-import { avisar } from '../../../core/ui/aviso.js?v=9619ac3';
+import { el } from '../../../core/ui/dom.js?v=32a213c';
+import { icono } from '../../../core/ui/iconos.js?v=32a213c';
+import { boton } from '../../../core/ui/tabla.js?v=32a213c';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=32a213c';
+import { avisar } from '../../../core/ui/aviso.js?v=32a213c';
 import {
   ESTADOS, NOMBRE_ESTADO, NO_SUMA, UNIDADES, clp, subtotal, suma, sinPrecioN, vigentes, tienePrecio, gDe, alerta, esArchivo, neto,
   ordenGrupos, zonasDe, leerNum, fmtNum, hoyISO, fechaCL, hoyLargo, plegado, cargarTodo, cargarEstilos, selectorProyecto, sinProyectos,
   guardarPartida, guardarProyecto, insertarPartidas, ordenEntre, renumerar, mapasInv, estadoModelo, m3dDe, chipModelo, modeloDe,
-  cargarInventario, abrirLink, urlsImagenes, fichaPartida,
-} from '../datos.js?v=9619ac3';
-import { ventana3d, asegurarThree, cargarMallas, crearVisor, ponerMueble, camara } from '../visor3d.js?v=9619ac3';
-import { excelProyecto } from '../exportar.js?v=9619ac3';
+  cargarInventario, abrirLink, urlsImagenes, fichaPartida, guardarActual,
+} from '../datos.js?v=32a213c';
+import { ventana3d, asegurarThree, cargarMallas, crearVisor, ponerMueble, camara } from '../visor3d.js?v=32a213c';
+import { excelProyecto } from '../exportar.js?v=32a213c';
 
 const filtro = { texto: '', zona: '', pend: false };   // se mantiene al refrescar
 
@@ -489,6 +489,11 @@ export default async function vista(ctx) {
     el('label', { class: 'buscador' }, icono('buscar', { tam: 16 }), buscador), zonaSel,
     el('label', { class: 'casilla' }, pend, 'Solo sin precio'),
     boton('Desplegar todo', { onclick: todo(true) }), boton('Plegar todo', { onclick: todo(false) }),
+    ctx.puede('proyectos', 'eliminar') ? boton('Eliminar proyecto', { icono: 'basura', title: 'Eliminar este proyecto', onclick: async () => {
+      if (!window.confirm(`¿Eliminar el proyecto "${d.proyecto.nombre}" con sus ${d.partidas.length} partidas? Deja de verse en ISgestión.`)) return;
+      try { await guardarProyecto(ctx, d.proyecto, { deleted_at: new Date().toISOString() }); guardarActual(ctx, null); avisar('Proyecto eliminado'); location.hash = ctx.ruta('proyectos.hoja'); }
+      catch (e) { avisar(e.message, 'error'); }
+    } }) : null,
     ctx.puede('proyectos', 'exportar') ? boton('Excel', { icono: 'descargar', onclick: async (ev) => {
       const b = ev.currentTarget; b.classList.add('cargando'); b.disabled = true;
       try { await excelProyecto(ctx, d); } catch (e) { avisar(e.message, 'error'); } finally { b.classList.remove('cargando'); b.disabled = false; }

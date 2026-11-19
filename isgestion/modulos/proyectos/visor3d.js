@@ -1,11 +1,11 @@
 // Visor 3D de Proyectos: muebles (mallas del exportador de SketchUp, en R2) y áreas completas con cada objeto en su
 // posición real. three.js 0.147.0 (jsDelivr, versión fija) se carga solo al abrir un 3D.
 // SketchUp (cm, Z arriba) → visor (m, Y arriba): (x, y, z) → (x/100, z/100, -y/100).
-import { el } from '../../core/ui/dom.js?v=9619ac3';
-import { icono } from '../../core/ui/iconos.js?v=9619ac3';
-import { boton } from '../../core/ui/tabla.js?v=9619ac3';
-import { urlsFirmadas } from '../../core/adjuntos.js?v=9619ac3';
-import { instanciasDe, subtotal, tienePrecio, clp, fmtNum } from './datos.js?v=9619ac3';
+import { el } from '../../core/ui/dom.js?v=32a213c';
+import { icono } from '../../core/ui/iconos.js?v=32a213c';
+import { boton } from '../../core/ui/tabla.js?v=32a213c';
+import { urlsFirmadas } from '../../core/adjuntos.js?v=32a213c';
+import { instanciasDe, subtotal, tienePrecio, clp, fmtNum } from './datos.js?v=32a213c';
 
 const CDN3 = 'https://cdn.jsdelivr.net/npm/three@0.147.0/';
 const cargarScript = (src) => new Promise((ok, mal) => {
@@ -89,11 +89,15 @@ export function crearVisor(cont) {
   let abajo = null;
   renderer.domElement.addEventListener('pointerdown', (e) => { abajo = [e.clientX, e.clientY]; });
   renderer.domElement.addEventListener('pointerup', (e) => {
-    if (!abajo || Math.hypot(e.clientX - abajo[0], e.clientY - abajo[1]) > 4 || !v.obj || !v.alElegir) return;
+    if (!abajo || Math.hypot(e.clientX - abajo[0], e.clientY - abajo[1]) > 4 || !v.obj || !(v.alElegir || v.alMedir)) return;
     const r = renderer.domElement.getBoundingClientRect();
     const ray = new THREE.Raycaster();
     ray.setFromCamera(new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1), camera);
-    let o = ray.intersectObject(v.obj, true).find((h) => h.object.isMesh)?.object;
+    // three.js no salta lo oculto: solo cuenta lo que se ve (recintos apagados)
+    const seVe = (q) => { for (; q; q = q.parent) if (!q.visible) return false; return true; };
+    const hit = ray.intersectObject(v.obj, true).find((h) => h.object.isMesh && seVe(h.object));
+    if (v.alMedir) { if (hit) v.alMedir(hit.point.clone()); return; }
+    let o = hit?.object;
     while (o && !o.userData.fila) o = o.parent;
     v.marcados.forEach((m) => m.emissive?.setHex(0x000000));
     v.marcados = [];
@@ -260,4 +264,99 @@ export async function ventana3d(ctx, titulo, opciones) {
     }
     msg.remove();
   } catch (e) { msg.textContent = `No se pudo mostrar el 3D: ${e.message}`; }
+}
+
+// ---------------------------------------------------------------- Modelo completo
+// Todo el modelo en su lugar, agrupado por recinto (para mostrar u ocultar), con clic para ver qué es y medir.
+// Devuelve { recintos: [{ nombre, n }], mostrar(recinto, on), camara(modo), medir(on), sinPosiciones }
+export async function vistaModelo(ctx, cont, { modeloId, inv, alElegir, alMedida, alProgreso }) {
+  await asegurarThree();
+  const { THREE } = window;
+  const items = inv.items.filter((it) => (it.m3d && it.pos?.length) || it.cajas?.length);
+  if (!items.length) return { sinPosiciones: true };
+  const ids = [...new Set(items.filter((it) => it.m3d && it.pos?.length).map((it) => it.m3d))];
+  alProgreso?.(`Cargando ${ids.length} muebles en 3D…`);
+  const mallas = await cargarMallas(ctx, modeloId, ids);
+  const C = new THREE.Matrix4().set(0.01, 0, 0, 0, 0, 0, 0.01, 0, 0, -0.01, 0, 0, 0, 0, 0, 1); const Ci = C.clone().invert();
+  const raiz = new THREE.Group();
+  const grupos = new Map();
+  const grupoDe = (r) => { if (!grupos.has(r)) { const g = new THREE.Group(); g.userData.recinto = r; grupos.set(r, { g, n: 0, lineas: [] }); raiz.add(g); } return grupos.get(r); };
+  for (const it of items) {
+    const gr = grupoDe(it.recinto || 'General');
+    if (it.m3d && it.pos?.length) {
+      const d = mallas.get(it.m3d);
+      if (!d) continue;
+      const base = mallasAThree(d);
+      for (const a of it.pos) {
+        const o = base.clone(); o.matrixAutoUpdate = false;
+        o.matrix.multiplyMatrices(C, matrizSU(a)).multiply(Ci);
+        o.userData.fila = it; gr.g.add(o); gr.n++;
+      }
+    } else if (it.cajas?.length) {
+      const c = it.color || [196, 196, 190];
+      const geo = new THREE.BoxGeometry(1, 1, 1); geo.translate(0.5, 0.5, 0.5);
+      const im = new THREE.InstancedMesh(geo, new THREE.MeshLambertMaterial({ color: new THREE.Color(c[0] / 255, c[1] / 255, c[2] / 255), side: THREE.DoubleSide }), it.cajas.length);
+      it.cajas.forEach((a, i) => {
+        im.setMatrixAt(i, new THREE.Matrix4().multiplyMatrices(C, matrizSU(a)));
+        const q = (u) => [(a[0] + a[3] * u[0] + a[6] * u[1] + a[9] * u[2]) / 100, (a[2] + a[5] * u[0] + a[8] * u[1] + a[11] * u[2]) / 100, -(a[1] + a[4] * u[0] + a[7] * u[1] + a[10] * u[2]) / 100];
+        [[0, 0, 0, 1, 0, 0], [0, 0, 0, 0, 1, 0], [0, 0, 0, 0, 0, 1], [1, 1, 0, 0, 1, 0], [1, 1, 0, 1, 0, 0], [1, 1, 0, 1, 1, 1],
+          [1, 0, 1, 0, 0, 1], [1, 0, 1, 1, 1, 1], [1, 0, 1, 1, 0, 0], [0, 1, 1, 0, 0, 1], [0, 1, 1, 1, 1, 1], [0, 1, 1, 0, 1, 0]]
+          .forEach((e) => gr.lineas.push(...q(e.slice(0, 3)), ...q(e.slice(3))));
+      });
+      im.instanceMatrix.needsUpdate = true; im.frustumCulled = false;
+      im.userData.fila = it; gr.g.add(im); gr.n += it.cajas.length;
+    }
+  }
+  for (const gr of grupos.values()) {
+    if (!gr.lineas.length) continue;
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(gr.lineas, 3));
+    const l = new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color: 0x2b2f2d, transparent: true, opacity: 0.3 }));
+    l.userData.arista = true; gr.g.add(l);
+  }
+  const v = crearVisor(cont);
+  poner(v, raiz, false);
+  v.alElegir = (it) => alElegir?.(it);
+  // Medir: dos clics en el modelo dan la distancia (en cm); cada medida nueva reemplaza la anterior
+  let puntos = []; let marcas = [];
+  const limpiar = () => { marcas.forEach((m) => v.scene.remove(m)); marcas = []; puntos = []; };
+  const punto = (p) => {
+    const s = new THREE.Mesh(new THREE.SphereGeometry(v.radio / 120, 12, 8), new THREE.MeshBasicMaterial({ color: 0xff6b00, depthTest: false }));
+    s.position.copy(p); s.renderOrder = 10; v.scene.add(s); marcas.push(s);
+  };
+  const alMedir = (p) => {
+    if (puntos.length === 2) limpiar();
+    puntos.push(p); punto(p);
+    if (puntos.length === 2) {
+      const g = new THREE.BufferGeometry().setFromPoints(puntos);
+      const l = new THREE.Line(g, new THREE.LineBasicMaterial({ color: 0xff6b00, depthTest: false }));
+      l.renderOrder = 10; v.scene.add(l); marcas.push(l);
+      const [a, b] = puntos;
+      const cm = (n) => Math.round(Math.abs(n) * 1000) / 10;
+      alMedida?.({ total: cm(a.distanceTo(b)), x: cm(b.x - a.x), y: cm(b.z - a.z), z: cm(b.y - a.y) });
+    } else alMedida?.(null);
+  };
+  return {
+    recintos: [...grupos.entries()].map(([nombre, gr]) => ({ nombre, n: gr.n })).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es')),
+    mostrar: (r, on) => { const gr = grupos.get(r); if (gr) gr.g.visible = on; },
+    camara: (m) => camara(v, m),
+    aristas: (on) => aristas(v, on),
+    medir: (on) => { v.alMedir = on ? alMedir : null; if (!on) limpiar(); },
+    // Centra la cámara en un objeto (al elegirlo en la lista)
+    enfocar: (it) => {
+      const caja = new THREE.Box3(); const b = new THREE.Box3(); const mi = new THREE.Matrix4();
+      v.obj.updateMatrixWorld(true);
+      v.obj.traverse((o) => {
+        if (o.userData.fila !== it) return;
+        o.traverse((w) => {
+          if (!w.isMesh) return;
+          if (!w.geometry.boundingBox) w.geometry.computeBoundingBox();
+          if (w.isInstancedMesh) for (let i = 0; i < w.count; i++) { w.getMatrixAt(i, mi); caja.union(b.copy(w.geometry.boundingBox).applyMatrix4(mi).applyMatrix4(w.matrixWorld)); }
+          else caja.union(b.copy(w.geometry.boundingBox).applyMatrix4(w.matrixWorld));
+        });
+      });
+      if (caja.isEmpty()) return;
+      const c = caja.getCenter(new THREE.Vector3()); const r = Math.max(caja.getSize(new THREE.Vector3()).length(), 0.6);
+      v.controls.target.copy(c); v.camera.position.set(c.x + r * 1.4, c.y + r * 1.1, c.z + r * 1.4); v.controls.update();
+    },
+  };
 }

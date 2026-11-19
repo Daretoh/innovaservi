@@ -1,15 +1,17 @@
-// Proyectos → Modelo SketchUp: inventario del modelo ligado al proyecto, por recinto (o por grupo del modelo, o todo
+// Proyectos → Modelo SketchUp: el modelo completo en 3D (recintos para mostrar u ocultar, clic para ver qué es y
+// agregarlo, medir con dos clics) y, plegada, la lista del inventario por recinto (o por grupo del modelo, o todo
 // sumado). Los conjuntos se despliegan con sus piezas y lo que no tiene conjunto va en "Sueltos". Cada fila tiene 3D y
 // "Agregar", que crea una partida ligada a ese objeto. Aquí se sube la exportación de SketchUp y el respaldo del prototipo.
 // Ruta: #/proyectos.modelo?p=<proyecto>
-import { el } from '../../../core/ui/dom.js?v=9619ac3';
-import { icono } from '../../../core/ui/iconos.js?v=9619ac3';
-import { boton } from '../../../core/ui/tabla.js?v=9619ac3';
+import { el } from '../../../core/ui/dom.js?v=32a213c';
+import { icono } from '../../../core/ui/iconos.js?v=32a213c';
+import { boton } from '../../../core/ui/tabla.js?v=32a213c';
 import {
   plegado, cargarTodo, cargarEstilos, selectorProyecto, llave2, mapasInv, medTxt, zonasDe, fichaPartida, subirExportacion, traerRespaldo, guardarProyecto,
-} from '../datos.js?v=9619ac3';
-import { avisar } from '../../../core/ui/aviso.js?v=9619ac3';
-import { ventana3d, olvidarMallas } from '../visor3d.js?v=9619ac3';
+} from '../datos.js?v=32a213c';
+import { avisar } from '../../../core/ui/aviso.js?v=32a213c';
+import { ventana3d, olvidarMallas, vistaModelo } from '../visor3d.js?v=32a213c';
+import { conectarSketchup } from '../sketchup.js?v=32a213c';
 
 const filtro = { texto: '', agrupar: 'recinto', recinto: '', tipo: '', falta: false };
 const TIPO = { componente: 'Mueble', conjunto: 'Conjunto', pieza: 'Pieza' };
@@ -24,15 +26,14 @@ export default async function vista(ctx) {
   const puedeCrear = ctx.puede('proyectos', 'crear');
 
   const acciones = [
-    puedeCrear ? boton('Subir exportación', { icono: 'descargar', tipo: 'primario', onclick: () => subirExportacion(ctx, d, (m) => { olvidarMallas(m.id); ctx.refrescar(); }) }) : null,
+    d.proyecto && ctx.puede('proyectos', 'editar') ? boton('Conectar SketchUp', { icono: 'enlace', tipo: 'primario', onclick: () => conectarSketchup(ctx, d) }) : null,
+    puedeCrear ? boton('Subir archivos', { icono: 'descargar', title: 'Subir a mano el inventario y la carpeta de mallas del exportador antiguo', onclick: () => subirExportacion(ctx, d, (m) => { olvidarMallas(m.id); ctx.refrescar(); }) }) : null,
     puedeCrear ? boton('Traer respaldo del prototipo', { icono: 'carpeta', onclick: () => traerRespaldo(ctx, d, () => ctx.refrescar()) }) : null,
   ];
   const cabecera = el('header', { class: 'listado-cabecera' }, el('h1', {}, 'Modelo SketchUp'), el('div', { class: 'listado-acciones' }, acciones));
   const base = (contenido) => el('section', { class: 'listado pro' }, cabecera, d.proyecto ? selectorProyecto(ctx, d, 'proyectos.modelo') : null, contenido);
   const instrucciones = (titulo) => el('div', { class: 'pro-instr' }, el('b', {}, titulo),
-    el('p', {}, 'Abre el modelo en SketchUp y en la Consola de Ruby pega:'),
-    el('code', {}, "load 'C:/Users/Acer/Documents/COTIZADOR PROYECTOS/exportar_al_cotizador.rb'"),
-    el('p', {}, 'Después usa "Subir exportación" y elige el inventario_<id>.json y la carpeta modelos3d_<id>. Si el proyecto se llama igual que el modelo, queda ligado solo; si no, elígelo en "Modelo SketchUp", arriba de la hoja Proyecto.'),
+    el('p', {}, 'Para traer el modelo: aprieta "Conectar SketchUp", descarga el script y córrelo en SketchUp con el modelo abierto. Envía el inventario y los muebles en 3D directo a este proyecto; las veces siguientes basta con Extensiones → Enviar a ISgestión.'),
     d.modelos.length ? el('p', { class: 'texto-suave' }, 'Modelos subidos:') : null,
     d.modelos.length ? el('div', { class: 'listado-acciones' }, d.modelos.map((m) => (d.proyecto && ctx.puede('proyectos', 'editar') && m.id !== d.modelo?.id
       ? boton(`Ligar a ${m.nombre}${m.fecha ? ` (${m.fecha})` : ''}`, { icono: 'enlace', onclick: async () => {
@@ -61,7 +62,7 @@ export default async function vista(ctx) {
         categoria: it.tipo === 'pieza' ? 'Material' : 'Mueble', estado: 'por_cotizar', fuente: 'modelo',
         cantidad: todo ? (mp.m2.get(llave2(it.clave)) || it.cant) : it.cant, unidad: 'un', clave: todo ? `~|${llave2(it.clave)}` : it.clave,
       },
-      alGuardar: (f) => { d.partidas.push(f); sumar(f.clave); sumar(`~${llave2(f.clave)}`); dibujar(); },
+      alGuardar: (f) => { d.partidas.push(f); sumar(f.clave); sumar(`~${llave2(f.clave)}`); dibujar(); mostrarFicha(it); },
     });
   }
 
@@ -144,14 +145,72 @@ export default async function vista(ctx) {
   buscador.addEventListener('input', () => { filtro.texto = buscador.value; dibujar(); });
   const falta = el('input', { type: 'checkbox', checked: filtro.falta });
   falta.addEventListener('change', () => { filtro.falta = falta.checked; dibujar(); });
-  dibujar();
-  return base(el('div', {},
-    el('p', { class: 'texto-suave pro-info-modelo' }, `${d.modelo.nombre} · exportado el ${I.fecha || d.modelo.fecha || '-'} · ${I.items.length} tipos de objetos`),
-    el('div', { class: 'listado-acciones pro-herr' }, el('label', { class: 'buscador' }, icono('buscar', { tam: 16 }), buscador),
-      sel('agrupar', 'Agrupar', [['recinto', 'Por recinto'], ['grupo', 'Por grupo del modelo'], ['todo', 'Todo sumado']]),
-      sel('recinto', 'Recinto', [['', 'Todos los recintos'], ...recintos.map((r) => [r, r])]),
-      sel('tipo', 'Tipo', [['', 'Muebles, conjuntos y piezas'], ['componente', 'Solo componentes (muebles)'], ['conjunto', 'Solo conjuntos'], ['pieza', 'Solo piezas']]),
-      el('label', { class: 'casilla' }, falta, 'Solo lo que no está cotizado')),
-    cuerpo));
-}
+  // ---- Vista 3D del modelo completo
+  const visor = el('div', { class: 'pro-m3-visor' }, el('div', { class: 'pro-v3-msg' }, 'Cargando el modelo en 3D…'));
+  const lado = el('aside', { class: 'pro-m3-lado' });
+  const ficha = el('div', { class: 'pro-m3-ficha texto-suave' }, 'Haz clic en un objeto para ver qué es.');
+  const medida = el('span', { class: 'pro-m3-medida' });
+  let ctl = null;
+  const medir = el('input', { type: 'checkbox' });
+  medir.addEventListener('change', () => { ctl?.medir(medir.checked); medida.textContent = medir.checked ? 'Haz clic en dos puntos del modelo.' : ''; });
+  const aristasChk = el('input', { type: 'checkbox' });
+  aristasChk.addEventListener('change', () => ctl?.aristas(aristasChk.checked));
+  const coma = (n) => String(n).replace('.', ',');
+  const barra = el('div', { class: 'pro-m3-barra' },
+    ['iso', 'frente', 'lado', 'arriba'].map((m, i) => boton(['3D', 'Frente', 'Lado', 'Arriba'][i], { class: 'boton boton-secundario boton-chico', onclick: () => ctl?.camara(m) })),
+    el('label', { class: 'casilla pro-m3-medir' }, medir, 'Medir'),
+    el('label', { class: 'casilla' }, aristasChk, 'Aristas'), medida);
+  function mostrarFicha(it) {
+    if (!it) { ficha.replaceChildren('Haz clic en un objeto para ver qué es.'); ficha.className = 'pro-m3-ficha texto-suave'; return; }
+    const n = ya(it);
+    ficha.className = 'pro-m3-ficha';
+    ficha.replaceChildren(el('b', {}, it.nombre),
+      el('div', { class: 'texto-suave texto-chico' }, [TIPO[it.tipo] || it.tipo, medTxt(it.medidas_cm), it.recinto, `${it.cant} en el modelo`].filter(Boolean).join(' · ')),
+      it.material ? el('div', { class: 'texto-suave texto-chico' }, it.material) : null,
+      el('div', { class: 'pro-pv-acc' },
+        n ? el('span', { class: 'chip chip-ok' }, `En la cotización${n > 1 ? ` (${n})` : ''}`)
+          : puedeCrear ? boton('Agregar a la cotización', { icono: 'mas', class: 'boton boton-secundario boton-chico', onclick: () => agregar(it) }) : null,
+        it.m3d ? boton('Ver el mueble', { icono: 'caja', class: 'boton boton-secundario boton-chico', onclick: () => ventana3d(ctx, it.nombre, { modeloId: d.modelo.id, m3d: it.m3d }) }) : null));
+  }
+  const tres = el('section', { class: 'pro-m3' }, lado, el('div', { class: 'pro-m3-centro' }, barra, visor, ficha));
+  const mensaje = (t) => visor.querySelector('.pro-v3-msg')?.replaceChildren(t);
+  (async () => {
+    try {
+      ctl = await vistaModelo(ctx, visor, {
+        modeloId: d.modelo.id, inv: I, alElegir: mostrarFicha, alProgreso: mensaje,
+        alMedida: (m) => { medida.textContent = m ? `${coma(m.total)} cm  (ancho ${coma(m.x)} · fondo ${coma(m.y)} · alto ${coma(m.z)})` : 'Ahora el segundo punto.'; },
+      });
+      if (ctl.sinPosiciones) {
+        mensaje('Este modelo se exportó antes de que se guardara dónde está cada objeto. Envíalo de nuevo desde SketchUp con "Conectar SketchUp" para verlo completo en 3D.');
+        barra.hidden = true; ficha.hidden = true; lado.hidden = true; tres.classList.add('sin-lado');
+        return;
+      }
+      visor.querySelector('.pro-v3-msg')?.remove();
+      const marcar = (on) => () => { lado.querySelectorAll('input[type=checkbox]').forEach((c) => { c.checked = on; ctl.mostrar(c.value, on); }); };
+      lado.replaceChildren(el('div', { class: 'pro-m3-lado-cab' }, el('b', {}, 'Recintos'),
+        el('span', { class: 'texto-chico' }, el('button', { type: 'button', class: 'pro-enlace', onclick: marcar(true) }, 'Todos'), ' · ',
+          el('button', { type: 'button', class: 'pro-enlace', onclick: marcar(false) }, 'Ninguno'))),
+        ...ctl.recintos.map((r) => {
+          const c = el('input', { type: 'checkbox', value: r.nombre, checked: true });
+          c.addEventListener('change', () => ctl.mostrar(r.nombre, c.checked));
+          return el('label', { class: 'casilla pro-m3-recinto' }, c, el('span', {}, r.nombre), el('span', { class: 'texto-suave texto-chico' }, r.n));
+        }));
+    } catch (e) { mensaje(`No se pudo mostrar el modelo: ${e.message}`); }
+  })();
 
+  // ---- Lista del inventario (plegada)
+  const lista = el('div', { class: 'pro-m3-lista', hidden: true });
+  const verLista = boton('Ver lista del inventario', { icono: 'lista', onclick: () => {
+    lista.hidden = !lista.hidden;
+    verLista.lastChild.textContent = lista.hidden ? 'Ver lista del inventario' : 'Ocultar lista';
+    if (!lista.hidden) dibujar();
+  } });
+  lista.append(el('div', { class: 'listado-acciones pro-herr' }, el('label', { class: 'buscador' }, icono('buscar', { tam: 16 }), buscador),
+    sel('agrupar', 'Agrupar', [['recinto', 'Por recinto'], ['grupo', 'Por grupo del modelo'], ['todo', 'Todo sumado']]),
+    sel('recinto', 'Recinto', [['', 'Todos los recintos'], ...recintos.map((r) => [r, r])]),
+    sel('tipo', 'Tipo', [['', 'Muebles, conjuntos y piezas'], ['componente', 'Solo componentes (muebles)'], ['conjunto', 'Solo conjuntos'], ['pieza', 'Solo piezas']]),
+    el('label', { class: 'casilla' }, falta, 'Solo lo que no está cotizado')), cuerpo);
+  return base(el('div', { class: 'pro-m3-todo' },
+    el('p', { class: 'texto-suave pro-info-modelo' }, `${d.modelo.nombre} · enviado el ${I.fecha || d.modelo.fecha || '-'} · ${I.items.length} tipos de objetos`),
+    tres, el('div', {}, verLista), lista));
+}
