@@ -1,15 +1,15 @@
 // Un documento de empresa: versiones (la vigente arriba), subir una nueva y ajustes del documento.
 // Ruta: #/acreditacion.tipo?id=<tipo>
-import { el } from '../../../core/ui/dom.js?v=7105220';
-import { icono } from '../../../core/ui/iconos.js?v=7105220';
-import { boton } from '../../../core/ui/tabla.js?v=7105220';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=7105220';
-import { leerVence } from '../../../core/ui/leer-vence.js?v=7105220';
-import { avisar } from '../../../core/ui/aviso.js?v=7105220';
-import { subirArchivo, eliminarArchivo } from '../../../core/adjuntos.js?v=7105220';
-import { fechaLarga, hoyISO } from '../../../core/ui/formato.js?v=7105220';
-import { cargarDocumentos, estadoVersion, vigentes, CHIP, textoEstado } from '../datos.js?v=7105220';
-import { abrir } from './documentos.js?v=7105220';
+import { el } from '../../../core/ui/dom.js?v=3c78c55';
+import { icono } from '../../../core/ui/iconos.js?v=3c78c55';
+import { boton } from '../../../core/ui/tabla.js?v=3c78c55';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=3c78c55';
+import { leerVence } from '../../../core/ui/leer-vence.js?v=3c78c55';
+import { avisar } from '../../../core/ui/aviso.js?v=3c78c55';
+import { subirArchivo, eliminarArchivo } from '../../../core/adjuntos.js?v=3c78c55';
+import { fechaLarga, hoyISO } from '../../../core/ui/formato.js?v=3c78c55';
+import { cargarDocumentos, estadoVersion, vigentes, CHIP, textoEstado } from '../datos.js?v=3c78c55';
+import { abrir } from './documentos.js?v=3c78c55';
 
 const ARCHIVOS = ['application/pdf', 'image/jpeg', 'image/png',
   'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',

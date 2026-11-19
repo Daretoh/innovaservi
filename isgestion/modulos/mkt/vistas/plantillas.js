@@ -2,13 +2,13 @@
 // después de 24 horas (hora confirmada, recordatorio, premio de la tarjeta, promociones). Se escriben con datos con
 // nombre ({nombre}, {fecha}…), se ven como quedarán y se mandan a aprobación de Meta (permiso aprobar). "Actualizar
 // estados" trae de Meta si quedaron aprobadas o rechazadas (con el motivo). Las aprobadas se usan desde la bandeja.
-import { el } from '../../../core/ui/dom.js?v=7105220';
-import { icono } from '../../../core/ui/iconos.js?v=7105220';
-import { boton } from '../../../core/ui/tabla.js?v=7105220';
-import { avisar } from '../../../core/ui/aviso.js?v=7105220';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=7105220';
-import { cargarCss } from '../datos.js?v=7105220';
-import { DATOS, USOS, nombreUso, CATEGORIAS, ESTADOS, SUGERIDAS, aMeta, deMeta, armar, nombreMeta } from '../plantillas-wa.js?v=7105220';
+import { el } from '../../../core/ui/dom.js?v=3c78c55';
+import { icono } from '../../../core/ui/iconos.js?v=3c78c55';
+import { boton } from '../../../core/ui/tabla.js?v=3c78c55';
+import { avisar } from '../../../core/ui/aviso.js?v=3c78c55';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=3c78c55';
+import { cargarCss } from '../datos.js?v=3c78c55';
+import { DATOS, USOS, nombreUso, CATEGORIAS, ESTADOS, SUGERIDAS, aMeta, deMeta, armar, nombreMeta } from '../plantillas-wa.js?v=3c78c55';
 
 export default async function vista(ctx) {
   cargarCss();
@@ -16,7 +16,11 @@ export default async function vista(ctx) {
   const editar = ctx.puede('mkt', 'editar');
   const aprobar = ctx.puede('mkt', 'aprobar');
   const eliminar = ctx.puede('mkt', 'eliminar');
-  const { data, error } = await ctx.api.from('mkt_wa_plantillas').select('*').eq('empresa_id', eid).is('deleted_at', null).order('created_at');
+  const [{ data, error }, { data: cfgBot }, { data: avisos }] = await Promise.all([
+    ctx.api.from('mkt_wa_plantillas').select('*').eq('empresa_id', eid).is('deleted_at', null).order('created_at'),
+    ctx.api.from('mkt_bot_config').select('avisos').eq('empresa_id', eid).maybeSingle(),
+    ctx.api.from('mkt_wa_avisos').select('tipo, nombre, wa_id, estado, motivo, programado_para, enviado_at').eq('empresa_id', eid).order('created_at', { ascending: false }).limit(15),
+  ]);
   if (error) throw error;
   const nombres = new Set(data.map((t) => t.nombre));
   const empresa = ctx.empresa.nombre_fantasia || ctx.empresa.razon_social || '';
@@ -89,6 +93,40 @@ export default async function vista(ctx) {
         eliminar ? el('button', { type: 'button', class: 'boton-icono', title: 'Eliminar', 'aria-label': 'Eliminar', onclick: () => quitar(t) }, icono('basura', { tam: 16 })) : null));
   };
 
+  // ---- Avisos automáticos (Marketing 013): cada uno sale solo si está encendido y su plantilla está aprobada
+  const cfgAv = cfgBot?.avisos ?? {};
+  const AVISOS = [['hora_confirmada', 'Hora confirmada', 'Al confirmar una hora pedida en Taller → Agenda.'],
+    ['recordatorio', 'Recordatorio', 'El día anterior a la hora, a la hora que elijas.'],
+    ['hora_rechazada', 'Hora no disponible', 'Al rechazar una hora pedida.'],
+    ['premio', 'Premio de la tarjeta', 'Cuando el cliente completa los sellos.']];
+  const guardarAvisos = async (cambio) => {
+    const nuevo = { ...cfgAv, ...cambio };
+    const { error: e } = cfgBot ? await ctx.api.from('mkt_bot_config').update({ avisos: nuevo }).eq('empresa_id', eid) : await ctx.api.from('mkt_bot_config').insert({ avisos: nuevo, empresa_id: eid });
+    if (e) { avisar(e.message, 'error'); return; }
+    avisar('Avisos guardados.'); ctx.refrescar();
+  };
+  const horaRec = () => abrirFormulario({ titulo: 'Hora del recordatorio', textoGuardar: 'Guardar', campos: [{ id: 'h', etiqueta: 'Hora (del día anterior)', tipo: 'time', valor: cfgAv.recordatorio_hora ?? '18:00', requerido: true }],
+    alGuardar: (v) => guardarAvisos({ recordatorio_hora: v.h.slice(0, 5) }) });
+  const ESTADO_AV = { pendiente: ['Programado', 'chip-pend'], enviado: ['Enviado', 'chip-ok'], fallido: ['Falló', 'chip-venc'], omitido: ['Omitido', 'chip-na'], anulado: ['Anulado', 'chip-na'] };
+  const tarjetaAvisos = el('div', { class: 'ficha mkt-av' },
+    el('div', { class: 'listado-cabecera' }, el('h2', {}, 'Avisos automáticos'), el('span', { class: 'texto-suave texto-chico' }, aprobar ? '' : 'Encenderlos pide el permiso aprobar.')),
+    el('ul', { class: 'mkt-ajustes-lista' }, AVISOS.map(([k, n, d]) => {
+      const pl = data.find((t) => t.uso === k && t.estado === 'aprobada');
+      const on = !!cfgAv[k];
+      return el('li', {},
+        el('span', { class: 'mkt-respuesta' }, el('strong', {}, n), el('span', { class: 'texto-suave texto-chico' }, d, k === 'recordatorio' ? ` (${cfgAv.recordatorio_hora ?? '18:00'}) ` : '',
+          k === 'recordatorio' && aprobar ? el('button', { type: 'button', class: 'mkt-wa-reintentar', onclick: horaRec }, 'Cambiar hora') : null),
+          pl ? null : el('span', { class: 'mkt-wa-error texto-chico' }, 'Falta su plantilla aprobada por Meta')),
+        el('span', { class: 'listado-acciones' },
+          el('span', { class: `chip ${on ? 'chip-ok' : 'chip-pend'}` }, on ? 'Encendido' : 'Apagado'),
+          aprobar ? boton(on ? 'Apagar' : 'Encender', { class: `boton boton-${on ? 'secundario' : 'primario'} boton-chico`, onclick: () => guardarAvisos({ [k]: !on }) }) : null));
+    })),
+    avisos?.length ? el('details', { class: 'mkt-av-hist' }, el('summary', {}, `Últimos avisos (${avisos.length})`),
+      el('ul', { class: 'mkt-ajustes-lista' }, avisos.map((a) => el('li', {},
+        el('span', { class: 'mkt-respuesta' }, el('strong', {}, `${AVISOS.find((x) => x[0] === a.tipo)?.[1] ?? a.tipo} · ${a.nombre || `+${a.wa_id}`}`),
+          el('span', { class: 'texto-suave texto-chico' }, new Date(a.enviado_at || a.programado_para).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' }), a.motivo ? ` · ${a.motivo}` : '')),
+        el('span', { class: `chip ${(ESTADO_AV[a.estado] ?? ['', 'chip-pend'])[1]}` }, (ESTADO_AV[a.estado] ?? [a.estado])[0]))))) : null);
+
   const btnSync = boton('Actualizar estados', { icono: 'circulo', onclick: (ev) => sincronizar(ev.currentTarget) });
   return el('section', { class: 'listado' },
     el('header', { class: 'listado-cabecera' }, el('h1', {}, 'Plantillas de WhatsApp'),
@@ -98,6 +136,7 @@ export default async function vista(ctx) {
     el('p', { class: 'texto-suave texto-chico mkt-pl-ayuda' },
       'WhatsApp solo deja escribirle primero a un cliente, o después de 24 horas desde su último mensaje, con una plantilla aprobada por Meta. ',
       'Cada envío de plantilla tiene un costo pequeño (utilidad es más barata que marketing). Responder dentro de las 24 horas es gratis y no necesita plantilla.'),
+    tarjetaAvisos,
     data.length ? el('div', { class: 'mkt-pl-lista' }, data.map(tarjeta))
       : el('div', { class: 'ficha' }, el('p', {}, 'Todavía no hay plantillas.'),
         editar ? boton(`Cargar ${SUGERIDAS.length} sugeridas para el taller`, { icono: 'mas', tipo: 'primario', onclick: cargarSugeridas }) : null),
