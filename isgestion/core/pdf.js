@@ -4,8 +4,8 @@
 //   pdf.tabla({ columnas: ['RUT', 'Nombre'], filas: [['1-9', 'Ana']] });
 //   pdf.guardar('nomina-personas');
 // Librerías con versión fija desde CDN (08 Seguridad §5); se cargan solo al generar un PDF.
-import { urlFirmada } from './adjuntos.js?v=2f8695b';
-import { nombreEmpresa } from './empresas.js?v=2f8695b';
+import { urlFirmada } from './adjuntos.js?v=548645c';
+import { nombreEmpresa } from './empresas.js?v=548645c';
 
 const JSPDF = 'https://cdn.jsdelivr.net/npm/jspdf@2.5.2/+esm';
 const AUTOTABLE = 'https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.4/+esm';

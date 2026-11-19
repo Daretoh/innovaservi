@@ -7,13 +7,15 @@
 // - Derecha (se oculta): el contacto del Embudo (etapa, cliente, vehículos del taller y accesos).
 // Se actualiza sola cada 10 segundos sin perder lo que se está escribiendo ni mover el chat si se está leyendo arriba.
 // Ruta: #/mkt.whatsapp[?c=<conversación>]
-import { el } from '../../../core/ui/dom.js?v=2f8695b';
-import { icono } from '../../../core/ui/iconos.js?v=2f8695b';
-import { boton } from '../../../core/ui/tabla.js?v=2f8695b';
-import { avisar } from '../../../core/ui/aviso.js?v=2f8695b';
-import { diaLocal, hoyISO, fechaLarga, fechaCorta, nombreDia } from '../../../core/ui/formato.js?v=2f8695b';
-import { cargarCss } from '../datos.js?v=2f8695b';
-import { tarjetaHora } from '../hora-bot.js?v=2f8695b';
+import { el } from '../../../core/ui/dom.js?v=548645c';
+import { icono } from '../../../core/ui/iconos.js?v=548645c';
+import { boton } from '../../../core/ui/tabla.js?v=548645c';
+import { avisar } from '../../../core/ui/aviso.js?v=548645c';
+import { diaLocal, hoyISO, fechaLarga, fechaCorta, nombreDia } from '../../../core/ui/formato.js?v=548645c';
+import { cargarCss } from '../datos.js?v=548645c';
+import { tarjetaHora } from '../hora-bot.js?v=548645c';
+import { DATOS, nombreUso, armar } from '../plantillas-wa.js?v=548645c';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=548645c';
 
 const ESTADO = { pendiente: 'Enviando', enviado: 'Enviado', entregado: 'Entregado', leido: 'Leído', fallido: 'No se envió' };
 const hora = (ts) => new Date(ts).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
@@ -59,6 +61,7 @@ export default async function vista(ctx) {
   if (rn.error) throw rn.error;
   const etapas = re.data ?? [];
   const respuestas = rr.data ?? [];
+  const { data: plantillas } = await ctx.api.from('mkt_wa_plantillas').select('id, nombre, uso, cuerpo, variables, ejemplos').eq('empresa_id', eid).eq('estado', 'aprobada').is('deleted_at', null).order('uso');
   const empresa = ctx.empresa.nombre_fantasia || ctx.empresa.razon_social || '';
   let actual = ctx.params?.c ?? null;
   let convs = [];
@@ -211,6 +214,29 @@ export default async function vista(ctx) {
         btnBot.disabled = false; btnBot.classList.remove('pensando');
       } }, icono('auto', { tam: 18 }));
 
+    // Plantilla aprobada: se puede mandar aunque la ventana de 24 horas esté cerrada
+    const usarPlantilla = () => {
+      if (!plantillas?.length) { avisar('No hay plantillas aprobadas todavía. Créalas en Marketing → Plantillas.', 'error'); return; }
+      const sugerido = { nombre: primerNombre, empresa };
+      const campos = [{ id: 'plantilla', etiqueta: 'Plantilla', opciones: plantillas.map((t) => [t.id, nombreUso[t.uso] ?? t.nombre]), valor: plantillas[0].id,
+        alCambiar: ({ valor, poner }) => { const t = plantillas.find((x) => x.id === valor); t?.variables.forEach((k, i) => poner(`v${i}`, sugerido[k] ?? '')); } }];
+      const maxVars = Math.max(...plantillas.map((t) => t.variables.length));
+      for (let i = 0; i < maxVars; i++) {
+        const k = plantillas[0].variables[i];
+        campos.push({ id: `v${i}`, etiqueta: `Dato ${i + 1}${k ? ` (${DATOS[k]?.etiqueta ?? k})` : ''}`, valor: k ? sugerido[k] ?? '' : '', ayuda: 'Se ignora si la plantilla elegida no lo usa.' });
+      }
+      abrirFormulario({ titulo: 'Enviar plantilla', textoGuardar: 'Enviar', mensaje: 'Las plantillas sirven para escribirle aunque hayan pasado más de 24 horas. Cada envío tiene un costo pequeño en Meta.', campos,
+        alGuardar: async (v) => {
+          const t = plantillas.find((x) => x.id === v.plantilla);
+          const valores = t.variables.map((_, i) => String(v[`v${i}`] ?? '').trim());
+          if (valores.some((x) => !x)) throw new Error(`Completa los datos: ${t.variables.map((k) => DATOS[k]?.etiqueta ?? k).join(', ')}.`);
+          const { error: e } = await ctx.api.functions.invoke('mkt-wa-enviar', { body: { conversacion_id: c.id, plantilla_id: t.id, valores } });
+          if (e) { let j = null; try { j = await e.context?.json?.(); } catch { /* sin cuerpo */ } avisar(j?.error || e.message, 'error'); }
+          pintarMensajes(await traerMensajes(c), true); cargarLista().catch(() => {});
+        } });
+    };
+    const btnPlantilla = el('button', { type: 'button', class: 'mkt-wa-herr', title: 'Enviar plantilla (sirve con la ventana cerrada)', 'aria-label': 'Enviar plantilla', disabled: !editar, onclick: usarPlantilla }, icono('documento', { tam: 18 }));
+
     const etapa = etapas.find((x) => x.id === c.mkt_contactos?.etapa_id);
     chat.replaceChildren(...[
       el('header', { class: 'mkt-wa-cab' },
@@ -225,9 +251,10 @@ export default async function vista(ctx) {
           icono('users', { tam: 18 }))),
       caja,
       abierta ? null : el('p', { class: 'mkt-wa-cerrada' }, icono('alerta', { tam: 14 }),
-        ' Pasaron más de 24 horas desde el último mensaje del cliente: WhatsApp solo deja escribirle con una plantilla aprobada (próximamente).'),
+        ' Pasaron más de 24 horas desde el último mensaje del cliente: WhatsApp solo deja escribirle con una plantilla aprobada. ',
+        editar ? el('button', { type: 'button', class: 'mkt-wa-reintentar', onclick: usarPlantilla }, 'Enviar plantilla') : null),
       editar ? el('form', { class: 'mkt-wa-compositor', onsubmit: mandar }, menuResp, nota,
-        el('div', { class: 'mkt-wa-fila' }, btnResp, btnBot, entrada, btnEnviar)) : null,
+        el('div', { class: 'mkt-wa-fila' }, btnResp, btnBot, btnPlantilla, entrada, btnEnviar)) : null,
     ].filter(Boolean));
     pintarMensajes(msjs, true);
     pintarPanel(c);
