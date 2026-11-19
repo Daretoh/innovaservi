@@ -1,5 +1,5 @@
 // Empresas del usuario y la empresa activa (se recuerda la última usada).
-import { db } from './api.js?v=ef673ba';
+import { db } from './api.js?v=2f8695b';
 
 const CLAVE = 'isg.empresa';
 

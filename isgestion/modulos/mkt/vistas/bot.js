@@ -1,12 +1,13 @@
 // Marketing → Bot: lo que sabe el bot de clientes (fichas), cómo habla (configuración) y un simulador para probarlo
 // antes de conectarlo a WhatsApp, Messenger e Instagram. Ignacio lo entrena y lo publica (decisión de Enzo, 2026-11-10).
 // El simulador llama a la Edge Function mkt-bot, que usa Claude solo con las fichas activas de esta empresa.
-import { el } from '../../../core/ui/dom.js?v=ef673ba';
-import { icono } from '../../../core/ui/iconos.js?v=ef673ba';
-import { boton } from '../../../core/ui/tabla.js?v=ef673ba';
-import { avisar } from '../../../core/ui/aviso.js?v=ef673ba';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=ef673ba';
-import { cargarCss } from '../datos.js?v=ef673ba';
+import { el } from '../../../core/ui/dom.js?v=2f8695b';
+import { icono } from '../../../core/ui/iconos.js?v=2f8695b';
+import { boton } from '../../../core/ui/tabla.js?v=2f8695b';
+import { avisar } from '../../../core/ui/aviso.js?v=2f8695b';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=2f8695b';
+import { cargarCss } from '../datos.js?v=2f8695b';
+import { tarjetaHora } from '../hora-bot.js?v=2f8695b';
 
 export const CATEGORIAS_BOT = [
   ['servicios', 'Servicios'], ['precios', 'Precios publicados'], ['horarios', 'Horarios'], ['ubicacion', 'Ubicación y contacto'],
@@ -132,7 +133,8 @@ export default async function vista(ctx) {
   const pintar = () => {
     lista.replaceChildren(...(charla.length ? charla.map((m) => el('div', { class: `mkt-bot-msj ${m.rol === 'cliente' ? 'es-cliente' : 'es-bot'}${m.error ? ' es-error' : ''}` },
       el('div', { class: 'mkt-bot-burbuja' }, m.texto),
-      m.derivar ? el('div', { class: 'mkt-bot-derivar' }, icono('alerta', { tam: 14 }), `Pasaría a una persona: ${m.derivar}`) : null))
+      m.derivar ? el('div', { class: 'mkt-bot-derivar' }, icono('alerta', { tam: 14 }), `Pasaría a una persona: ${m.derivar}`) : null,
+      m.pedir ? tarjetaHora(m.pedir, 'Simulación: en WhatsApp esta hora quedaría pedida en Taller → Agenda (por confirmar). Aquí no se guarda nada.') : null))
       : [el('p', { class: 'texto-suave texto-chico mkt-bot-vacio' }, 'Prueba preguntas reales: "¿cuánto sale un lavado?", "¿atienden el sábado?", "quiero agendar para el jueves". Las respuestas usan solo las fichas activas.')]));
     lista.scrollTop = lista.scrollHeight;
   };
@@ -149,7 +151,7 @@ export default async function vista(ctx) {
       const mensajes = charla.filter((m) => m !== escribiendo && !m.error).map(({ rol, texto: t }) => ({ rol, texto: t }));
       const { data, error } = await ctx.api.functions.invoke('mkt-bot', { body: { empresa_id: eid, mensajes } });
       if (error) { let j = null; try { j = await error.context?.json?.(); } catch { /* sin cuerpo */ } throw new Error(j?.error || error.message || 'El bot no respondió'); }
-      Object.assign(escribiendo, { texto: data.respuesta || '(sin respuesta)', derivar: data.derivar });
+      Object.assign(escribiendo, { texto: data.respuesta || '(sin respuesta)', derivar: data.derivar, pedir: data.pedir_hora });
     } catch (e) {
       Object.assign(escribiendo, { texto: e.message, error: true });
     } finally {

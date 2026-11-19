@@ -7,12 +7,13 @@
 // - Derecha (se oculta): el contacto del Embudo (etapa, cliente, vehículos del taller y accesos).
 // Se actualiza sola cada 10 segundos sin perder lo que se está escribiendo ni mover el chat si se está leyendo arriba.
 // Ruta: #/mkt.whatsapp[?c=<conversación>]
-import { el } from '../../../core/ui/dom.js?v=ef673ba';
-import { icono } from '../../../core/ui/iconos.js?v=ef673ba';
-import { boton } from '../../../core/ui/tabla.js?v=ef673ba';
-import { avisar } from '../../../core/ui/aviso.js?v=ef673ba';
-import { diaLocal, hoyISO, fechaLarga, fechaCorta, nombreDia } from '../../../core/ui/formato.js?v=ef673ba';
-import { cargarCss } from '../datos.js?v=ef673ba';
+import { el } from '../../../core/ui/dom.js?v=2f8695b';
+import { icono } from '../../../core/ui/iconos.js?v=2f8695b';
+import { boton } from '../../../core/ui/tabla.js?v=2f8695b';
+import { avisar } from '../../../core/ui/aviso.js?v=2f8695b';
+import { diaLocal, hoyISO, fechaLarga, fechaCorta, nombreDia } from '../../../core/ui/formato.js?v=2f8695b';
+import { cargarCss } from '../datos.js?v=2f8695b';
+import { tarjetaHora } from '../hora-bot.js?v=2f8695b';
 
 const ESTADO = { pendiente: 'Enviando', enviado: 'Enviado', entregado: 'Entregado', leido: 'Leído', fallido: 'No se envió' };
 const hora = (ts) => new Date(ts).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
@@ -196,6 +197,16 @@ export default async function vista(ctx) {
           if (error) { let j = null; try { j = await error.context?.json?.(); } catch { /* sin cuerpo */ } throw new Error(j?.error || error.message); }
           entrada.value = data.respuesta || ''; crecer(); entrada.focus();
           nota.replaceChildren(icono('chat', { tam: 13 }), data.derivar ? ` Sugerencia del bot. Ojo: el bot pasaría esto a una persona (${data.derivar}).` : ' Sugerencia del bot: revísala antes de enviar.');
+          if (data.pedir_hora) {
+            const pedir = async (btn) => {
+              btn.disabled = true;
+              const { data: r, error: er } = await ctx.api.functions.invoke('mkt-bot', { body: { accion: 'reservar', empresa_id: eid, conversacion_id: c.id, datos: data.pedir_hora } });
+              if (er) { let j = null; try { j = await er.context?.json?.(); } catch { /* sin cuerpo */ } avisar(j?.error || er.message, 'error'); btn.disabled = false; return; }
+              avisar(`Hora pedida para el ${r.fecha} a las ${r.hora}: queda por confirmar en Taller → Agenda.`);
+              nota.replaceChildren(icono('check', { tam: 13 }), ' Hora pedida en la agenda. Envía la respuesta al cliente para avisarle.');
+            };
+            nota.append(tarjetaHora(data.pedir_hora, 'El bot juntó estos datos. Revísalos y pide la hora: queda por confirmar en Taller → Agenda.', { textoBoton: 'Pedir hora en la agenda', alPedir: pedir }));
+          }
         } catch (e) { nota.replaceChildren(el('span', { class: 'mkt-wa-error' }, e.message)); }
         btnBot.disabled = false; btnBot.classList.remove('pensando');
       } }, icono('auto', { tam: 18 }));

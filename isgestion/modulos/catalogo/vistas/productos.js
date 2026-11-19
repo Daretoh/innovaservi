@@ -2,14 +2,14 @@
 // de Canva), con filtros (también por camioneta), PDF del catálogo, Excel y traer un producto desde el enlace de otra
 // página. Cada tarjeta abre la ficha del producto (vistas/producto.js).
 // Ruta: #/catalogo.productos
-import { el } from '../../../core/ui/dom.js?v=ef673ba';
-import { icono } from '../../../core/ui/iconos.js?v=ef673ba';
-import { boton } from '../../../core/ui/tabla.js?v=ef673ba';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=ef673ba';
-import { avisar } from '../../../core/ui/aviso.js?v=ef673ba';
-import { dinero } from '../../../core/ui/formato.js?v=ef673ba';
-import { cargarCatalogo, urlsFotos, subirFoto, agrupar, cargarEstilos, nombreVersion, traerDesdeEnlace, MARCAS_VEHICULO, CABINAS } from '../datos.js?v=ef673ba';
-import { elegirFotos } from './producto.js?v=ef673ba';
+import { el } from '../../../core/ui/dom.js?v=2f8695b';
+import { icono } from '../../../core/ui/iconos.js?v=2f8695b';
+import { boton } from '../../../core/ui/tabla.js?v=2f8695b';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=2f8695b';
+import { avisar } from '../../../core/ui/aviso.js?v=2f8695b';
+import { dinero } from '../../../core/ui/formato.js?v=2f8695b';
+import { cargarCatalogo, urlsFotos, subirFoto, agrupar, cargarEstilos, nombreVersion, traerDesdeEnlace, MARCAS_VEHICULO, CABINAS } from '../datos.js?v=2f8695b';
+import { elegirFotos } from './producto.js?v=2f8695b';
 
 const filtro = { categoria: '', marca: '', texto: '', inactivos: false };   // se mantiene al refrescar
 
@@ -207,7 +207,7 @@ function elegirPdf(ctx, datos) {
     textoGuardar: 'Descargar PDF',
     alGuardar: async (v) => {
       if (!v.categorias.length) throw new Error('Elige al menos una categoría.');
-      const { pdfCatalogo } = await import('../pdf.js?v=ef673ba');
+      const { pdfCatalogo } = await import('../pdf.js?v=2f8695b');
       await pdfCatalogo(ctx, datos, { categorias: v.categorias, precios: v.precios === 'si', marcas: v.marcas === 'si' });
       avisar('PDF descargado.');
     },
@@ -215,7 +215,7 @@ function elegirPdf(ctx, datos) {
 }
 
 async function excel(ctx, datos) {
-  const { exportarExcel } = await import('../../../core/excel.js?v=ef673ba');
+  const { exportarExcel } = await import('../../../core/excel.js?v=2f8695b');
   const filas = agrupar(datos, datos.productos).flatMap((g) => g.secciones.flatMap((s) => s.productos.map((p) => [
     g.categoria.nombre, s.nombre, p.nombre, datos.marcaDe.get(p.marca_id)?.nombre ?? '', p.descripcion ?? '', p.material ?? '', p.procedencia ?? '',
     p.precio, p.activo ? 'Sí' : 'No'])));

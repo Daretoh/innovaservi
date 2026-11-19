@@ -252,3 +252,15 @@
   .mkt-wa-msj { max-width: 86%; }
   .mkt-wa-ventana { display: none; }
 }
+
+/* ---- Hora propuesta por el bot (simulador y bandeja) */
+.mkt-hora-bot { display: grid; gap: 6px; margin-top: 6px; padding: 10px 12px; border-radius: 10px; border: 1px solid color-mix(in srgb, var(--empresa) 40%, var(--borde));
+  background: color-mix(in srgb, var(--empresa) 7%, var(--superficie)); max-width: 420px; }
+.mkt-hora-bot-cab { display: flex; align-items: center; gap: 6px; color: var(--empresa); }
+.mkt-hora-bot-datos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 12px; }
+.mkt-hora-bot-datos > div { display: grid; gap: 1px; min-width: 0; }
+.mkt-hora-bot-datos span { font-size: .68rem; color: var(--texto-suave); text-transform: uppercase; letter-spacing: .04em; }
+.mkt-hora-bot-datos strong { font-size: .85rem; overflow-wrap: anywhere; }
+.mkt-hora-bot p { margin: 0; }
+.mkt-hora-bot .boton { justify-self: start; }
+.mkt-wa-nota:has(.mkt-hora-bot) { display: grid; }
