@@ -1,19 +1,20 @@
 // Arranque de ISgestión: sesión → empresas y permisos → barra con selector → menú → vista.
-import { iniciarApi, db, urlApp } from './api.js?v=574ba64';
-import { sesionActual, iniciarSesion, cerrarSesion, alCambiarSesion, recuperarClave, errorAuth } from './auth.js?v=574ba64';
-import { cargarPermisos, crearPuede } from './permisos.js?v=574ba64';
-import { cargarEmpresas, cargarModulosEmpresa, elegirEmpresa, recordarEmpresa, nombreEmpresa } from './empresas.js?v=574ba64';
-import { cargarManifiestos, modulosVisibles, apartadosPorCategoria, configModulo } from './modulos.js?v=574ba64';
-import { el } from './ui/dom.js?v=574ba64';
-import { activarCombos } from './ui/combo.js?v=574ba64';
-import { icono } from './ui/iconos.js?v=574ba64';
-import { boton } from './ui/tabla.js?v=574ba64';
-import inicio from './vistas/inicio.js?v=574ba64';
-import mas from './vistas/mas.js?v=574ba64';
-import { franja, botonNotificaciones, desactivar } from './push.js?v=574ba64';
-import { barraMovil, marcarBarraMovil, bienvenidaInicial, recordarMarca, marcaGuardada, CORTE_TELEFONO } from './movil.js?v=574ba64';
-import { botonSoporte } from './soporte.js?v=574ba64';
-import { vigilarVersion } from './version.js?v=574ba64';
+import { iniciarApi, db, urlApp } from './api.js?v=a610b70';
+import { sesionActual, iniciarSesion, cerrarSesion, alCambiarSesion, recuperarClave, errorAuth } from './auth.js?v=a610b70';
+import { cargarPermisos, crearPuede } from './permisos.js?v=a610b70';
+import { cargarEmpresas, cargarModulosEmpresa, elegirEmpresa, recordarEmpresa, nombreEmpresa } from './empresas.js?v=a610b70';
+import { cargarManifiestos, modulosVisibles, apartadosPorCategoria, configModulo } from './modulos.js?v=a610b70';
+import { el } from './ui/dom.js?v=a610b70';
+import { activarCombos } from './ui/combo.js?v=a610b70';
+import { icono } from './ui/iconos.js?v=a610b70';
+import { boton } from './ui/tabla.js?v=a610b70';
+import inicio from './vistas/inicio.js?v=a610b70';
+import mas from './vistas/mas.js?v=a610b70';
+import { franja, botonNotificaciones, desactivar } from './push.js?v=a610b70';
+import { barraMovil, marcarBarraMovil, bienvenidaInicial, recordarMarca, marcaGuardada, CORTE_TELEFONO } from './movil.js?v=a610b70';
+import { botonSoporte } from './soporte.js?v=a610b70';
+import { contarNoLeidas, alCambiarContador } from './novedades.js?v=a610b70';
+import { vigilarVersion } from './version.js?v=a610b70';
 
 const COLOR_BASE = '#1f4e8c';
 const CLAVE_MINIMA = 10;   // 08 Seguridad §4
@@ -293,7 +294,7 @@ function pintarApp() {
         el('div', { class: 'barra-espacio' }),
         el('div', { class: 'usuario' },
           (estado.consola = el('a', { class: 'boton boton-secundario boton-chico solo-escritorio', href: 'consola/', hidden: true, title: 'Consola de la plataforma (equipo ISgestión)' }, icono('ajustes', { tam: 14 }), 'Consola')),
-          el('button', { type: 'button', class: 'correo solo-escritorio', title: 'Mi PIN personal (crear o cambiar)', onclick: () => import('./pin.js?v=574ba64').then((m) => m.miPin(db())) }, estado.usuario.email),
+          el('button', { type: 'button', class: 'correo solo-escritorio', title: 'Mi PIN personal (crear o cambiar)', onclick: () => import('./pin.js?v=a610b70').then((m) => m.miPin(db())) }, estado.usuario.email),
           (estado.botonNotif = botonNotificaciones(estado.usuario.id, () => (estado.empresa?.grupo ? estado.empresas[0]?.id : estado.empresa?.id))),
           botonModo(),
           el('button', { type: 'button', class: 'boton-icono solo-escritorio', title: 'Cerrar sesión', 'aria-label': 'Cerrar sesión', onclick: () => salir() }, icono('salir')))),
@@ -359,7 +360,14 @@ function pintarMenu() {
         el('span', {}, categoria), icono('abajo', { tam: 14 }))),
       enlaces(apartados)));
   // En el Grupo no hay Inicio: su primera pantalla hace de inicio
-  const arriba = [...(estado.empresa.grupo ? [] : [enlace('#/', 'inicio', 'Inicio')]), ...enlaces(fijos)];
+  // Novedades (Núcleo 025): fija debajo de Tareas, con el contador de no leídas
+  const novedades = enlace('#/novedades', 'brillo', 'Novedades');
+  const contador = el('span', { class: 'menu-contador', hidden: true });
+  novedades.append(contador);
+  const ponerContador = (n) => { contador.hidden = !n; contador.textContent = n > 9 ? '9+' : String(n); novedades.title = n ? `Novedades (${n} sin leer)` : 'Novedades'; };
+  alCambiarContador(ponerContador);
+  contarNoLeidas(db()).then(ponerContador).catch(() => {});
+  const arriba = [...(estado.empresa.grupo ? [] : [enlace('#/', 'inicio', 'Inicio')]), ...enlaces(fijos), novedades];
   estado.menu.replaceChildren(...(arriba.length ? [el('div', { class: 'menu-grupo' }, arriba)] : []), ...grupos);
 }
 
@@ -483,6 +491,13 @@ async function navegar() {
   anotarHistorial(id);
   const turno = ++estado.render;
   const ctx = contexto(query);
+
+  if (id === 'novedades') {
+    const nodo = await import('./novedades.js?v=a610b70').then((m) => m.default(ctx)).catch((e) => estadoVacio('alerta', 'No se pudieron cargar las novedades', e.message));
+    if (turno !== estado.render) return;
+    if (estado.vistaActual !== location.hash) nodo.classList.add('vista-entra');
+    estado.contenido.replaceChildren(nodo); estado.vistaActual = location.hash; return;
+  }
 
   if (id === 'mas') {
     const nodo = mas(ctx, {

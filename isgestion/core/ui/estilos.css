@@ -2955,3 +2955,22 @@ html[data-modo="oscuro"] { --turno-dia-fondo: #4a3a12; --turno-dia-texto: #fde68
 .sug-foto-ver { all: unset; display: block; width: 100%; height: 100%; cursor: pointer; }
 .sug-foto-ver:focus-visible { outline: 2px solid var(--empresa); outline-offset: -2px; }
 .sug-foto-lapiz { position: absolute; left: 3px; bottom: 3px; width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; background: var(--empresa); color: var(--sobre-empresa); pointer-events: none; }
+/* Novedades (core/novedades.js, Núcleo 025): contador del menú, pantalla y tarjeta del Inicio */
+.menu-contador { margin-left: auto; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; box-sizing: border-box; display: inline-grid; place-items: center; font-size: .7rem; font-weight: 700; background: var(--empresa); color: var(--sobre-empresa); }
+.menu-contador[hidden] { display: none; }
+.menu-compacto .menu:not(:hover) .menu-contador { position: absolute; top: 4px; right: 6px; min-width: 8px; width: 8px; height: 8px; padding: 0; font-size: 0; }
+.menu a:has(.menu-contador) { position: relative; }
+.nov-lista { display: flex; flex-direction: column; gap: 14px; max-width: 760px; }
+.nov-item { background: var(--superficie); border: var(--tarjeta-borde); border-radius: var(--radio); padding: 16px 18px; display: flex; flex-direction: column; gap: 8px; box-shadow: var(--sombra-suave); }
+.nov-item.nueva { border-left: 3px solid var(--empresa); }
+.nov-cabeza { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.nov-titulo { margin: 0; font-size: 1.1rem; }
+.nov-texto p { margin: 0 0 6px; line-height: 1.5; }
+.nov-texto ul { margin: 0 0 6px; padding-left: 20px; }
+.nov-imagen { display: block; border-radius: var(--radio-control); overflow: hidden; border: 1px solid var(--borde); max-width: 520px; }
+.nov-imagen img { display: block; width: 100%; height: auto; }
+.nov-mencion { margin: 0; display: flex; align-items: center; gap: 6px; font-size: .85rem; color: var(--texto-suave); }
+.nov-ir { align-self: flex-start; display: inline-flex; align-items: center; gap: 4px; }
+.nov-inicio h2 { display: flex; align-items: center; gap: 8px; }
+.nov-inicio h2 svg { color: var(--empresa); }
+.nov-ver-todas { display: inline-block; margin-top: 6px; color: var(--empresa); }

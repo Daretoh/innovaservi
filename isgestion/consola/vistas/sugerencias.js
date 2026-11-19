@@ -1,11 +1,11 @@
 // Sugerencias de todas las empresas (Núcleo 024): solo el equipo (es_equipo(), hoy Enzo). Filtros por estado, empresa,
 // tipo y urgentes; cada sugerencia con sus puntos (área y pestaña, texto, pantallazos) y, por punto, el estado y la
 // respuesta que ve quien la envió (le llega un aviso al guardar).
-import { el } from '../../core/ui/dom.js?v=574ba64';
-import { icono } from '../../core/ui/iconos.js?v=574ba64';
-import { avisar } from '../../core/ui/aviso.js?v=574ba64';
-import { urlsFirmadas } from '../../core/adjuntos.js?v=574ba64';
-import { TIPOS, ESTADOS } from '../../core/sugerencias.js?v=574ba64';
+import { el } from '../../core/ui/dom.js?v=a610b70';
+import { icono } from '../../core/ui/iconos.js?v=a610b70';
+import { avisar } from '../../core/ui/aviso.js?v=a610b70';
+import { urlsFirmadas } from '../../core/adjuntos.js?v=a610b70';
+import { TIPOS, ESTADOS } from '../../core/sugerencias.js?v=a610b70';
 
 const ABIERTOS = ['recibida', 'revision', 'planificada'];
 
@@ -46,7 +46,8 @@ export default async function vista(ctx) {
       p.sug_imagenes.length ? el('div', { class: 'sug-fotos' }, ...p.sug_imagenes.map((x) => urls.get(x.ruta)
         ? el('a', { class: 'sug-foto sug-foto-grande', href: urls.get(x.ruta), target: '_blank', rel: 'noopener', title: 'Ver en grande' }, el('img', { src: urls.get(x.ruta), alt: x.nombre ?? 'Pantallazo' }))
         : null)) : null,
-      el('div', { class: 'sug-b-acciones' }, est, resp, guardar));
+      el('div', { class: 'sug-b-acciones' }, est, resp, el('div', { class: 'sug-b-botones' }, guardar,
+        el('a', { class: 'boton boton-secundario boton-chico', href: `#/novedades?punto=${p.id}`, title: 'Anunciar en Novedades lo que se hizo con este punto' }, 'Crear novedad'))));
   }
 
   function pintar() {

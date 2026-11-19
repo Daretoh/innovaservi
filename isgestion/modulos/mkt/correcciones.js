@@ -2,11 +2,11 @@
 // tarjeta de la pestaña Bot para revisarlas: crear una ficha con la corrección, sumarla a una ficha que ya existe o
 // descartarla. La base copia la pregunta y la respuesta cuando viene de un mensaje real (mensaje_id).
 // También el horario de atención del bot (cuándo responde solo).
-import { el } from '../../core/ui/dom.js?v=574ba64';
-import { icono } from '../../core/ui/iconos.js?v=574ba64';
-import { boton } from '../../core/ui/tabla.js?v=574ba64';
-import { avisar } from '../../core/ui/aviso.js?v=574ba64';
-import { abrirFormulario } from '../../core/ui/modal.js?v=574ba64';
+import { el } from '../../core/ui/dom.js?v=a610b70';
+import { icono } from '../../core/ui/iconos.js?v=a610b70';
+import { boton } from '../../core/ui/tabla.js?v=a610b70';
+import { avisar } from '../../core/ui/aviso.js?v=a610b70';
+import { abrirFormulario } from '../../core/ui/modal.js?v=a610b70';
 
 const corto = (t, n) => { const s = String(t ?? '').replace(/\s+/g, ' ').trim(); return s.length > n ? `${s.slice(0, n - 1)}…` : s; };
 

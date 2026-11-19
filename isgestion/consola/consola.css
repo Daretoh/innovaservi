@@ -120,3 +120,18 @@
 .sug-b > header.sug-b-cabeza { margin: 0; padding: 0; justify-content: flex-start; }
 .sug-b-punto { margin: 0; }
 .sug-b { align-items: stretch; }
+.sug-b-botones { display: flex; flex-direction: column; gap: 6px; }
+/* Novedades (vistas/novedades.js) */
+.nov-c-barra { margin: 12px 0; }
+.nov-c-lista { display: flex; flex-direction: column; gap: 8px; }
+.nov-c-fila { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px 14px; text-decoration: none; color: inherit; }
+.nov-c-editor { display: flex; flex-direction: column; gap: 12px; padding: 16px 18px; max-width: 820px; }
+.nov-c-editor .campo { display: flex; flex-direction: column; gap: 6px; }
+.nov-c-editor .campo > span { font-weight: 600; font-size: .88rem; }
+.nov-c-editor input[type="text"], .nov-c-editor textarea, .nov-c-editor select, .nov-c-editor input[type="search"] { font: inherit; padding: 7px 10px; border: 1px solid var(--borde); border-radius: var(--radio-control); background: var(--superficie); color: var(--texto); }
+.nov-c-empresas { display: flex; flex-wrap: wrap; gap: 14px; }
+.nov-c-empresas label, .nov-c-punto { display: flex; gap: 8px; align-items: flex-start; cursor: pointer; }
+.nov-c-img { display: flex; align-items: center; gap: 10px; }
+.nov-c-img img { max-width: 240px; max-height: 140px; border-radius: var(--radio-control); border: 1px solid var(--borde); }
+.nov-c-puntos { display: flex; flex-direction: column; gap: 8px; max-height: 280px; overflow-y: auto; border: 1px solid var(--borde); border-radius: var(--radio-control); padding: 8px 10px; font-size: .88rem; }
+.nov-c-acciones { display: flex; justify-content: flex-end; gap: 8px; }

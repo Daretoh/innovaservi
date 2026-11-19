@@ -1,7 +1,7 @@
 // Por cobrar (órdenes terminadas sin cobrar y otros ingresos pendientes) y por pagar (gastos pendientes).
 // Montos totales, con IVA: es lo que se cobra o se paga.
-import { el } from '../../../core/ui/dom.js?v=574ba64';
-import { dinero, fechaLarga, hoyISO } from '../../../core/ui/formato.js?v=574ba64';
+import { el } from '../../../core/ui/dom.js?v=a610b70';
+import { dinero, fechaLarga, hoyISO } from '../../../core/ui/formato.js?v=a610b70';
 
 export default async function vista(ctx) {
   const { data, error } = await ctx.api.rpc('res_pendientes', { p_empresa: ctx.empresa.id });

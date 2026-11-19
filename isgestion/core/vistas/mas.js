@@ -1,9 +1,9 @@
 // "Más" en el teléfono (pestaña de la barra de abajo): la cuenta y la empresa, todos los módulos que el rol ve,
 // la apariencia (claro, oscuro o como el sistema), notificaciones y cerrar sesión. En pantallas grandes también se
 // puede abrir (#/mas), pero ahí el menú lateral ya lo tiene todo.
-import { el } from '../ui/dom.js?v=574ba64';
-import { icono } from '../ui/iconos.js?v=574ba64';
-import { nombreEmpresa } from '../empresas.js?v=574ba64';
+import { el } from '../ui/dom.js?v=a610b70';
+import { icono } from '../ui/iconos.js?v=a610b70';
+import { nombreEmpresa } from '../empresas.js?v=a610b70';
 
 const TEMAS = [['claro', 'Claro', 'sol'], ['oscuro', 'Oscuro', 'luna'], ['sistema', 'Sistema', 'pantalla']];
 const AYUDA = { claro: 'Fondo claro: mejor a pleno sol.', oscuro: 'Fondo oscuro: descansa la vista y ahorra batería.', sistema: 'Sigue el modo del teléfono o del computador.' };
@@ -63,6 +63,7 @@ export default function mas(ctx, { empresas, cambiarEmpresa, apartados, modo, ca
     modulos,
     el('section', { class: 'mas-seccion' }, el('h2', {}, 'Apariencia'), grupo, ayuda),
     el('div', { class: 'mas-lista ficha' },
+      el('a', { class: 'mas-fila', href: '#/novedades' }, icono('brillo', { tam: 18 }), el('span', { class: 'mas-fila-texto' }, 'Novedades'), icono('derecha', { tam: 16 })),
       el('button', { type: 'button', class: 'mas-fila', onclick: abrirNotificaciones }, icono('campana', { tam: 18 }), el('span', { class: 'mas-fila-texto' }, 'Notificaciones'), icono('derecha', { tam: 16 })),
       el('button', { type: 'button', class: 'mas-fila mas-salir', onclick: salir }, icono('salir', { tam: 18 }), el('span', { class: 'mas-fila-texto' }, 'Cerrar sesión'))));
 }
