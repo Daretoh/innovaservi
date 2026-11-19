@@ -1,11 +1,11 @@
 // Visor 3D de Proyectos: muebles (mallas del exportador de SketchUp, en R2) y áreas completas con cada objeto en su
 // posición real. three.js 0.147.0 (jsDelivr, versión fija) se carga solo al abrir un 3D.
 // SketchUp (cm, Z arriba) → visor (m, Y arriba): (x, y, z) → (x/100, z/100, -y/100).
-import { el } from '../../core/ui/dom.js?v=a610b70';
-import { icono } from '../../core/ui/iconos.js?v=a610b70';
-import { boton } from '../../core/ui/tabla.js?v=a610b70';
-import { urlsFirmadas } from '../../core/adjuntos.js?v=a610b70';
-import { instanciasDe, subtotal, tienePrecio, clp, fmtNum } from './datos.js?v=a610b70';
+import { el } from '../../core/ui/dom.js?v=90ea3be';
+import { icono } from '../../core/ui/iconos.js?v=90ea3be';
+import { boton } from '../../core/ui/tabla.js?v=90ea3be';
+import { urlsFirmadas } from '../../core/adjuntos.js?v=90ea3be';
+import { instanciasDe, subtotal, tienePrecio, clp, fmtNum } from './datos.js?v=90ea3be';
 
 const CDN3 = 'https://cdn.jsdelivr.net/npm/three@0.147.0/';
 const cargarScript = (src) => new Promise((ok, mal) => {
@@ -85,6 +85,7 @@ export function crearVisor(cont) {
   const camera = new THREE.PerspectiveCamera(38, 1, 0.01, 400);
   const controls = new THREE.OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
+  controls.minDistance = 0.05; controls.screenSpacePanning = true; controls.zoomSpeed = 1.4;
   const v = { cont, renderer, scene, camera, controls, obj: null, grid: null, radio: 1, raf: 0, alElegir: null, marcados: [] };
   let abajo = null;
   renderer.domElement.addEventListener('pointerdown', (e) => { abajo = [e.clientX, e.clientY]; });
@@ -106,6 +107,15 @@ export function crearVisor(cont) {
     if (fila) v.obj.traverse((q) => { if (q.userData.fila === fila) q.traverse((w) => { if (w.isMesh) [].concat(w.material).forEach((m) => { if (m.emissive) { m.emissive.setHex(0x0b3a5c); v.marcados.push(m); } }); }); });
     v.alElegir(fila);
   });
+  renderer.domElement.addEventListener('dblclick', (e) => {
+    if (v.paso || !v.obj) return;
+    const r = renderer.domElement.getBoundingClientRect(); const ray = new THREE.Raycaster();
+    ray.setFromCamera(new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1), camera);
+    const hit = ray.intersectObject(v.obj, true).find((h) => h.object.isMesh);
+    if (!hit) return;
+    const mover = hit.point.clone().sub(controls.target);
+    controls.target.add(mover); camera.position.add(mover.multiplyScalar(0.6)); controls.update();
+  });
   new ResizeObserver(() => tam(v)).observe(cont);
   return v;
 }
@@ -115,8 +125,10 @@ function tam(v) {
   v.renderer.setSize(w, h, false); v.camera.aspect = w / h; v.camera.updateProjectionMatrix();
 }
 function bucle(v) {
-  if (!v.renderer.domElement.isConnected) { v.raf = 0; v.renderer.dispose(); return; }   // se dejó la vista
-  v.controls.update(); v.renderer.render(v.scene, v.camera);
+  if (!v.renderer.domElement.isConnected) { v.raf = 0; v.renderer.dispose(); v.alSalir?.(); return; }   // se dejó la vista
+  const ahora = performance.now(); const dt = Math.min(0.1, (ahora - (v.antes ?? ahora)) / 1000); v.antes = ahora;
+  if (v.paso) v.paso(dt); else v.controls.update();
+  v.renderer.render(v.scene, v.camera);
   v.raf = requestAnimationFrame(() => bucle(v));
 }
 export function camara(v, modo) {
@@ -125,6 +137,79 @@ export function camara(v, modo) {
   const pos = { iso: [d * 0.8, d * 0.55, d * 0.9], frente: [0, d * 0.12, d * 1.15], lado: [d * 1.15, d * 0.12, 0], arriba: [0, d * 1.2, 0.0001] }[modo] || [d, d, d];
   v.camera.position.set(...pos); v.controls.target.set(0, 0, 0); v.controls.update();
 }
+// Recorrido (como D5 o un juego): W A S D o flechas para caminar, arrastrar para mirar, Q / E para bajar y subir,
+// Shift para ir más rápido, la rueda avanza o retrocede y el doble clic lleva hasta ese punto. Parte a la altura de
+// una persona (1,60 m sobre el piso del modelo).
+const ALTURA = 1.6;
+export function recorrer(v, on) {
+  const { THREE } = window;
+  const lienzo = v.renderer.domElement;
+  if (!on) { v.limpiarRecorrido?.(); return; }
+  if (v.paso) return;
+  v.controls.enabled = false;
+  v.fovOrbita = v.camera.fov; v.camera.fov = 65; v.camera.updateProjectionMatrix();   // ángulo amplio, como al caminar
+  const dir = new THREE.Vector3(); v.camera.getWorldDirection(dir);
+  let yaw = Math.atan2(-dir.x, -dir.z); let pitch = 0;
+  // Parte en el centro del modelo, a la altura de los ojos
+  const desde = v.inicio ?? v.controls.target;
+  v.camera.position.set(desde.x, (v.piso ?? 0) + ALTURA, desde.z);
+  const teclas = new Set();
+  const enCampo = (e) => /INPUT|TEXTAREA|SELECT/.test(e.target?.tagName ?? '');
+  const abajo = (e) => { if (enCampo(e)) return; const k = e.key.toLowerCase(); if (['w', 'a', 's', 'd', 'q', 'e', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'shift'].includes(k)) { teclas.add(k); e.preventDefault(); } };
+  const arriba = (e) => teclas.delete(e.key.toLowerCase());
+  let arrastre = null;
+  const pd = (e) => { arrastre = [e.clientX, e.clientY]; lienzo.setPointerCapture?.(e.pointerId); };
+  const pm = (e) => {
+    if (!arrastre) return;
+    yaw -= (e.clientX - arrastre[0]) * 0.004; pitch -= (e.clientY - arrastre[1]) * 0.004;
+    pitch = Math.max(-1.45, Math.min(1.45, pitch)); arrastre = [e.clientX, e.clientY];
+  };
+  const pu = () => { arrastre = null; };
+  const rueda = (e) => { e.preventDefault(); const f = new THREE.Vector3(-Math.sin(yaw), 0, -Math.cos(yaw)); v.camera.position.addScaledVector(f, -Math.sign(e.deltaY) * 0.5); };
+  const doble = (e) => {
+    const r = lienzo.getBoundingClientRect(); const ray = new THREE.Raycaster();
+    ray.setFromCamera(new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1), v.camera);
+    const hit = ray.intersectObject(v.obj, true).find((h) => h.object.isMesh);
+    if (!hit) return;
+    // Va hasta ese punto, quedando a la altura de los ojos sobre lo que tocó (piso) o frente a él (muro)
+    const p = hit.point; const desde = v.camera.position.clone();
+    const hacia = new THREE.Vector3(p.x, Math.max((v.piso ?? 0) + ALTURA, Math.min(p.y + ALTURA, desde.y)), p.z);
+    const atras = hacia.clone().sub(desde).setY(0).normalize().multiplyScalar(0.4);
+    if (Math.abs(hit.face?.normal?.y ?? 0) < 0.5) hacia.sub(atras);
+    v.camera.position.copy(hacia);
+  };
+  window.addEventListener('keydown', abajo); window.addEventListener('keyup', arriba);
+  lienzo.addEventListener('pointerdown', pd); lienzo.addEventListener('pointermove', pm); lienzo.addEventListener('pointerup', pu);
+  lienzo.addEventListener('wheel', rueda, { passive: false }); lienzo.addEventListener('dblclick', doble);
+  lienzo.style.cursor = 'grab';
+  v.paso = (dt) => {
+    const rapido = teclas.has('shift') ? 4 : 1.4;
+    const f = new THREE.Vector3(-Math.sin(yaw), 0, -Math.cos(yaw)); const der = new THREE.Vector3(-f.z, 0, f.x);
+    const m = new THREE.Vector3();
+    if (teclas.has('w') || teclas.has('arrowup')) m.add(f);
+    if (teclas.has('s') || teclas.has('arrowdown')) m.sub(f);
+    if (teclas.has('d') || teclas.has('arrowright')) m.add(der);
+    if (teclas.has('a') || teclas.has('arrowleft')) m.sub(der);
+    if (m.lengthSq()) v.camera.position.addScaledVector(m.normalize(), rapido * dt);
+    if (teclas.has('e')) v.camera.position.y += rapido * dt;
+    if (teclas.has('q')) v.camera.position.y -= rapido * dt;
+    const mira = new THREE.Vector3(-Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch), -Math.cos(yaw) * Math.cos(pitch));
+    v.camera.lookAt(v.camera.position.clone().add(mira));
+  };
+  v.limpiarRecorrido = () => {
+    window.removeEventListener('keydown', abajo); window.removeEventListener('keyup', arriba);
+    lienzo.removeEventListener('pointerdown', pd); lienzo.removeEventListener('pointermove', pm); lienzo.removeEventListener('pointerup', pu);
+    lienzo.removeEventListener('wheel', rueda); lienzo.removeEventListener('dblclick', doble);
+    lienzo.style.cursor = '';
+    // Vuelve a la órbita mirando hacia donde estaba mirando
+    const d = new THREE.Vector3(); v.camera.getWorldDirection(d);
+    v.controls.target.copy(v.camera.position).addScaledVector(d, 2);
+    v.camera.fov = v.fovOrbita ?? 38; v.camera.updateProjectionMatrix();
+    v.paso = null; v.limpiarRecorrido = null; v.alSalir = null; v.controls.enabled = true; v.controls.update();
+  };
+  v.alSalir = v.limpiarRecorrido;
+}
+
 export function aristas(v, on) { v?.obj?.traverse((o) => { if (o.userData.arista) o.visible = on; }); }
 
 // Pone un objeto en el visor (centrado, con grilla) y devuelve el texto de medidas
@@ -158,6 +243,7 @@ function poner(v, escena, conAristas) {
   v.radio = Math.max(t.x, t.y, t.z) / 2 || 0.5;
   const g = new THREE.GridHelper(Math.max(t.x, t.z) * 2.2 || 1, 12, new THREE.Color(css('--borde', '#dde1e7')), new THREE.Color(css('--fondo-hundido', '#eef1f5')));
   g.position.y = -t.y / 2; v.grid = g; v.scene.add(g);
+  v.piso = -t.y / 2;
   aristas(v, conAristas);
   tam(v); camara(v, 'iso');
   if (!v.raf) bucle(v);
@@ -315,6 +401,12 @@ export async function vistaModelo(ctx, cont, { modeloId, inv, alElegir, alMedida
   }
   const v = crearVisor(cont);
   poner(v, raiz, false);
+  // Dónde parte el recorrido: donde se juntan los muebles (mediana de sus posiciones), que cae dentro de un recinto
+  const os = items.flatMap((it) => it.pos ?? []);
+  if (os.length) {
+    const med = (l) => [...l].sort((a, b) => a - b)[Math.floor(l.length / 2)];
+    v.inicio = new THREE.Vector3(med(os.map((a) => a[0])) / 100, 0, -med(os.map((a) => a[1])) / 100).add(raiz.position);
+  }
   v.alElegir = (it) => alElegir?.(it);
   // Medir: dos clics en el modelo dan la distancia (en cm); cada medida nueva reemplaza la anterior
   let puntos = []; let marcas = [];
@@ -340,6 +432,7 @@ export async function vistaModelo(ctx, cont, { modeloId, inv, alElegir, alMedida
     mostrar: (r, on) => { const gr = grupos.get(r); if (gr) gr.g.visible = on; },
     camara: (m) => camara(v, m),
     aristas: (on) => aristas(v, on),
+    recorrer: (on) => recorrer(v, on),
     medir: (on) => { v.alMedir = on ? alMedir : null; if (!on) limpiar(); },
     // Centra la cámara en un objeto (al elegirlo en la lista)
     enfocar: (it) => {

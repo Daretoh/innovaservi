@@ -1,9 +1,9 @@
 // "Más" en el teléfono (pestaña de la barra de abajo): la cuenta y la empresa, todos los módulos que el rol ve,
 // la apariencia (claro, oscuro o como el sistema), notificaciones y cerrar sesión. En pantallas grandes también se
 // puede abrir (#/mas), pero ahí el menú lateral ya lo tiene todo.
-import { el } from '../ui/dom.js?v=a610b70';
-import { icono } from '../ui/iconos.js?v=a610b70';
-import { nombreEmpresa } from '../empresas.js?v=a610b70';
+import { el } from '../ui/dom.js?v=90ea3be';
+import { icono } from '../ui/iconos.js?v=90ea3be';
+import { nombreEmpresa } from '../empresas.js?v=90ea3be';
 
 const TEMAS = [['claro', 'Claro', 'sol'], ['oscuro', 'Oscuro', 'luna'], ['sistema', 'Sistema', 'pantalla']];
 const AYUDA = { claro: 'Fondo claro: mejor a pleno sol.', oscuro: 'Fondo oscuro: descansa la vista y ahorra batería.', sistema: 'Sigue el modo del teléfono o del computador.' };

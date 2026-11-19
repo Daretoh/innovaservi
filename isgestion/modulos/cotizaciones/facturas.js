@@ -3,14 +3,14 @@
 // Si la factura está ligada a una cotización, la base copia en ella la factura y el pago; al pagar, las órdenes del
 // taller ligadas quedan cobradas (cobrarOrdenes) y al anular el pago vuelven a quedar por cobrar.
 // Con una orden del taller ligada directo (008, orden_id), lo hace la base: ver db/008_factura_orden.sql.
-import { el } from '../../core/ui/dom.js?v=a610b70';
-import { abrirFormulario } from '../../core/ui/modal.js?v=a610b70';
-import { avisar } from '../../core/ui/aviso.js?v=a610b70';
-import { hoyISO, sumarDias, dinero } from '../../core/ui/formato.js?v=a610b70';
-import { subirArchivo } from '../../core/adjuntos.js?v=a610b70';
-import { cobrarOrdenes, descobrarOrdenes } from './acciones.js?v=a610b70';
-import { totales, numeroTexto, verPatente, nombreTercero, cargarCotizacion, IVA } from './datos.js?v=a610b70';
-import { MEDIOS } from './seguimiento.js?v=a610b70';
+import { el } from '../../core/ui/dom.js?v=90ea3be';
+import { abrirFormulario } from '../../core/ui/modal.js?v=90ea3be';
+import { avisar } from '../../core/ui/aviso.js?v=90ea3be';
+import { hoyISO, sumarDias, dinero } from '../../core/ui/formato.js?v=90ea3be';
+import { subirArchivo } from '../../core/adjuntos.js?v=90ea3be';
+import { cobrarOrdenes, descobrarOrdenes } from './acciones.js?v=90ea3be';
+import { totales, numeroTexto, verPatente, nombreTercero, cargarCotizacion, IVA } from './datos.js?v=90ea3be';
+import { MEDIOS } from './seguimiento.js?v=90ea3be';
 
 export const PLAZO_PAGO = 30;   // días entre la emisión y el pago estimado (como en la planilla de Performance)
 export const TIPOS_ARCHIVO = ['application/pdf', 'image/jpeg', 'image/png'];

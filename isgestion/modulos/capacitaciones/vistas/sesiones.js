@@ -1,11 +1,11 @@
 // Capacitaciones → Sesiones: capacitaciones hechas o programadas, con asistentes, evaluación y respaldo firmado.
 // Ruta: #/capacitaciones.sesiones
-import { el } from '../../../core/ui/dom.js?v=a610b70';
-import { boton, listado } from '../../../core/ui/tabla.js?v=a610b70';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=a610b70';
-import { exportarExcel } from '../../../core/excel.js?v=a610b70';
-import { fechaLarga, hoyISO } from '../../../core/ui/formato.js?v=a610b70';
-import { cargarEstilos, cargarBiblioteca, conCarga, duracion } from '../datos.js?v=a610b70';
+import { el } from '../../../core/ui/dom.js?v=90ea3be';
+import { boton, listado } from '../../../core/ui/tabla.js?v=90ea3be';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=90ea3be';
+import { exportarExcel } from '../../../core/excel.js?v=90ea3be';
+import { fechaLarga, hoyISO } from '../../../core/ui/formato.js?v=90ea3be';
+import { cargarEstilos, cargarBiblioteca, conCarga, duracion } from '../datos.js?v=90ea3be';
 
 export default async function vista(ctx) {
   cargarEstilos();

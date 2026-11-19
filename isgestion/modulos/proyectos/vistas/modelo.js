@@ -3,15 +3,15 @@
 // sumado). Los conjuntos se despliegan con sus piezas y lo que no tiene conjunto va en "Sueltos". Cada fila tiene 3D y
 // "Agregar", que crea una partida ligada a ese objeto. Aquí se sube la exportación de SketchUp y el respaldo del prototipo.
 // Ruta: #/proyectos.modelo?p=<proyecto>
-import { el } from '../../../core/ui/dom.js?v=a610b70';
-import { icono } from '../../../core/ui/iconos.js?v=a610b70';
-import { boton } from '../../../core/ui/tabla.js?v=a610b70';
+import { el } from '../../../core/ui/dom.js?v=90ea3be';
+import { icono } from '../../../core/ui/iconos.js?v=90ea3be';
+import { boton } from '../../../core/ui/tabla.js?v=90ea3be';
 import {
   plegado, cargarTodo, cargarEstilos, selectorProyecto, llave2, mapasInv, medTxt, zonasDe, fichaPartida, subirExportacion, traerRespaldo, guardarProyecto,
-} from '../datos.js?v=a610b70';
-import { avisar } from '../../../core/ui/aviso.js?v=a610b70';
-import { ventana3d, olvidarMallas, vistaModelo } from '../visor3d.js?v=a610b70';
-import { conectarSketchup } from '../sketchup.js?v=a610b70';
+} from '../datos.js?v=90ea3be';
+import { avisar } from '../../../core/ui/aviso.js?v=90ea3be';
+import { ventana3d, olvidarMallas, vistaModelo } from '../visor3d.js?v=90ea3be';
+import { conectarSketchup } from '../sketchup.js?v=90ea3be';
 
 const filtro = { texto: '', agrupar: 'recinto', recinto: '', tipo: '', falta: false };
 const TIPO = { componente: 'Mueble', conjunto: 'Conjunto', pieza: 'Pieza' };
@@ -156,8 +156,23 @@ export default async function vista(ctx) {
   const aristasChk = el('input', { type: 'checkbox' });
   aristasChk.addEventListener('change', () => ctl?.aristas(aristasChk.checked));
   const coma = (n) => String(n).replace('.', ',');
+  // Recorrer: caminar por dentro del modelo (W A S D, mirar arrastrando, doble clic para ir a un punto)
+  const ayudaRecorrido = el('div', { class: 'pro-m3-ayuda', hidden: true },
+    el('b', {}, 'Recorrido: '), 'W A S D o flechas para caminar · arrastra para mirar · Q / E bajar y subir · Shift más rápido · rueda avanza · doble clic para ir a ese punto');
+  const ayudaOrbita = el('div', { class: 'pro-m3-ayuda' }, 'Arrastra para girar · clic derecho para desplazar · rueda para acercar · doble clic para centrar ahí · "Recorrer" para caminar por dentro');
+  const recorrer = boton('Recorrer', { icono: 'play', class: 'boton boton-secundario boton-chico', 'aria-pressed': 'false', onclick: () => {
+    const on = recorrer.getAttribute('aria-pressed') !== 'true';
+    recorrer.setAttribute('aria-pressed', String(on)); recorrer.classList.toggle('boton-primario', on); recorrer.classList.toggle('boton-secundario', !on);
+    ayudaRecorrido.hidden = !on; ayudaOrbita.hidden = on;
+    ctl?.recorrer(on);
+    if (on) visor.querySelector('canvas')?.focus();
+  } });
   const barra = el('div', { class: 'pro-m3-barra' },
-    ['iso', 'frente', 'lado', 'arriba'].map((m, i) => boton(['3D', 'Frente', 'Lado', 'Arriba'][i], { class: 'boton boton-secundario boton-chico', onclick: () => ctl?.camara(m) })),
+    ['iso', 'frente', 'lado', 'arriba'].map((m, i) => boton(['3D', 'Frente', 'Lado', 'Arriba'][i], { class: 'boton boton-secundario boton-chico', onclick: () => {
+      if (recorrer.getAttribute('aria-pressed') === 'true') recorrer.click();
+      ctl?.camara(m);
+    } })),
+    recorrer,
     el('label', { class: 'casilla pro-m3-medir' }, medir, 'Medir'),
     el('label', { class: 'casilla' }, aristasChk, 'Aristas'), medida);
   function mostrarFicha(it) {
@@ -172,7 +187,7 @@ export default async function vista(ctx) {
           : puedeCrear ? boton('Agregar a la cotización', { icono: 'mas', class: 'boton boton-secundario boton-chico', onclick: () => agregar(it) }) : null,
         it.m3d ? boton('Ver el mueble', { icono: 'caja', class: 'boton boton-secundario boton-chico', onclick: () => ventana3d(ctx, it.nombre, { modeloId: d.modelo.id, m3d: it.m3d }) }) : null));
   }
-  const tres = el('section', { class: 'pro-m3' }, lado, el('div', { class: 'pro-m3-centro' }, barra, visor, ficha));
+  const tres = el('section', { class: 'pro-m3' }, lado, el('div', { class: 'pro-m3-centro' }, barra, ayudaOrbita, ayudaRecorrido, visor, ficha));
   const mensaje = (t) => visor.querySelector('.pro-v3-msg')?.replaceChildren(t);
   (async () => {
     try {
@@ -182,7 +197,7 @@ export default async function vista(ctx) {
       });
       if (ctl.sinPosiciones) {
         mensaje('Este modelo se exportó antes de que se guardara dónde está cada objeto. Envíalo de nuevo desde SketchUp con "Conectar SketchUp" para verlo completo en 3D.');
-        barra.hidden = true; ficha.hidden = true; lado.hidden = true; tres.classList.add('sin-lado');
+        barra.hidden = true; ficha.hidden = true; ayudaOrbita.hidden = true; lado.hidden = true; tres.classList.add('sin-lado');
         return;
       }
       visor.querySelector('.pro-v3-msg')?.remove();

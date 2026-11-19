@@ -199,3 +199,6 @@ dialog.pro-v3 { width: min(980px, calc(100vw - 24px)); max-width: none; padding:
 .pro-codigo { display: block; background: var(--fondo-hundido); padding: 6px 8px; border-radius: 5px; font-size: .78rem; word-break: break-all; margin: 4px 0; user-select: all; }
 .pro-codigo-fila { display: flex; gap: 8px; align-items: center; }
 .pro-codigo-campo { font-family: ui-monospace, monospace; font-size: .8rem; }
+.pro-m3-ayuda { padding: 5px 10px; font-size: .76rem; color: var(--texto-suave); background: var(--fondo-sutil); border-bottom: 1px solid var(--borde); }
+.pro-m3-ayuda[hidden] { display: none; }
+.pro-m3-visor canvas { outline: none; }
