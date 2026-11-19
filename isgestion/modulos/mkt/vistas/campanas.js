@@ -1,15 +1,15 @@
 // Campañas: presupuesto y gasto, contactos y clientes que trajo cada una, costo por contacto y por cliente, publicaciones
 // ligadas y el enlace con UTM por red (para medir cuántos llegan desde cada publicación o anuncio).
-import { el } from '../../../core/ui/dom.js?v=90ea3be';
-import { icono } from '../../../core/ui/iconos.js?v=90ea3be';
-import { boton } from '../../../core/ui/tabla.js?v=90ea3be';
-import { avisar } from '../../../core/ui/aviso.js?v=90ea3be';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=90ea3be';
-import { dinero, fechaCorta } from '../../../core/ui/formato.js?v=90ea3be';
-import { exportarExcel } from '../../../core/excel.js?v=90ea3be';
-import { cargarBase, cargarCss, nombreCanal, nombreEstadoCampana, CHIP_CAMPANA, enlaceUtm, REDES, CANALES } from '../datos.js?v=90ea3be';
-import { formCampana } from '../formularios.js?v=90ea3be';
-import { cargarFormulario, enlaceFormulario, descargarQr } from '../formulario-web.js?v=90ea3be';
+import { el } from '../../../core/ui/dom.js?v=75c4885';
+import { icono } from '../../../core/ui/iconos.js?v=75c4885';
+import { boton } from '../../../core/ui/tabla.js?v=75c4885';
+import { avisar } from '../../../core/ui/aviso.js?v=75c4885';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=75c4885';
+import { dinero, fechaCorta } from '../../../core/ui/formato.js?v=75c4885';
+import { exportarExcel } from '../../../core/excel.js?v=75c4885';
+import { cargarBase, cargarCss, nombreCanal, nombreEstadoCampana, CHIP_CAMPANA, enlaceUtm, REDES, CANALES } from '../datos.js?v=75c4885';
+import { formCampana } from '../formularios.js?v=75c4885';
+import { cargarFormulario, enlaceFormulario, descargarQr } from '../formulario-web.js?v=75c4885';
 
 const estado = { ver: 'vigentes' };
 

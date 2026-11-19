@@ -18,6 +18,9 @@
 require 'json'
 require 'net/http'
 require 'uri'
+require 'zlib'
+require 'base64'
+require 'stringio'
 
 module EnviarAISgestion
   URL = URI('https://qipfzftvojxfsecjqdzh.supabase.co/functions/v1/proyectos-sketchup')
@@ -190,6 +193,63 @@ module EnviarAISgestion
     end
   end
 
+  # ---------------------------------------------------------------- Construcción (todo lo que no es mueble)
+  # Muros, pisos, cielos, piezas y la geometría suelta, con su forma real y sus líneas, en coordenadas del modelo
+  # (cm). Los muebles no van aquí: se envían aparte (una malla por mueble) para poder hacerles clic y cotizarlos.
+  # Se envía en partes de hasta TRIS_PARTE triángulos, comprimidas (gzip).
+  TRIS_PARTE = 250_000
+
+  # ¿Este grupo o componente se envía como mueble (malla propia)? Mismo criterio que recorrer y anotar.
+  def self.mueble?(e, t)
+    med = medidas(e, t)
+    hijos = e.definition.entities.any? { |h| contenedor?(h) }
+    if e.is_a?(Sketchup::ComponentInstance)
+      return false if med.max > 400 && hijos
+      med.max.between?(15, 400)
+    else
+      hijos && !e.name.to_s.strip.empty? && med.max.between?(15, 400)
+    end
+  end
+
+  def self.pt(q)
+    [r1(q.x.to_cm), r1(q.y.to_cm), r1(q.z.to_cm)]
+  end
+
+  def self.escena(ents, tr, mat_padre)
+    ents.each do |e|
+      if e.is_a?(Sketchup::Face)
+        next if e.hidden? || !e.layer.visible?
+        m = e.material || e.back_material || mat_padre
+        grupo = @esc_acc[m ? m.name : ''] ||= { 'c' => m ? [m.color.red, m.color.green, m.color.blue] : [225, 225, 220],
+                                                'a' => m ? m.alpha.round(2) : 1.0, 'p' => [] }
+        malla = e.mesh(0)
+        pts = malla.points.map { |q| pt(q.transform(tr)) }
+        malla.polygons.each do |pol|
+          next unless pol.size == 3
+          pol.each { |i| grupo['p'].concat(pts[i.abs - 1]) }
+          @esc_tris += 1
+        end
+        @esc_enviar.call if @esc_tris >= TRIS_PARTE
+      elsif e.is_a?(Sketchup::Edge)
+        next if e.hidden? || e.soft? || e.smooth? || !e.layer.visible?
+        @esc_lineas.concat(pt(e.start.position.transform(tr)), pt(e.end.position.transform(tr)))
+      elsif contenedor?(e)
+        next if e.hidden? || !e.layer.visible?
+        t = tr * e.transformation
+        next if mueble?(e, t)
+        escena(e.definition.entities, t, e.material || mat_padre)
+      end
+    end
+  end
+
+  def self.gzip64(texto)
+    io = StringIO.new
+    gz = Zlib::GzipWriter.new(io)
+    gz.write(texto)
+    gz.close
+    Base64.strict_encode64(io.string)
+  end
+
   # ---------------------------------------------------------------- Envío
   def self.clave_pref(model)
     'codigo_' + slug(model.path.to_s.empty? ? 'sin-guardar' : model.path.to_s)
@@ -268,14 +328,38 @@ module EnviarAISgestion
         post(h, { t: codigo_conexion, accion: 'malla', modelo_id: inicio['modelo_id'], m3d: id, nombre: c['nombre'], datos: datos })
         nuevas += 1
       end
+      # Construcción completa (muros, pisos, cielos, piezas), en partes comprimidas
+      partes = []
+      @esc_acc = {}
+      @esc_lineas = []
+      @esc_tris = 0
+      @esc_enviar = lambda do
+        return if @esc_acc.empty? && @esc_lineas.empty?
+        n = partes.size + 1
+        Sketchup.status_text = "Enviando la construcción a ISgestión: parte #{n}…"
+        puts "  Construcción, parte #{n}: #{@esc_tris} triángulos"
+        datos = { 'v' => 2, 'u' => 'cm', 'mats' => @esc_acc.values.reject { |g| g['p'].empty? }, 'lineas' => @esc_lineas }
+        id = format('escena-%03d', n)
+        post(h, { t: codigo_conexion, accion: 'escena', modelo_id: inicio['modelo_id'], parte: id, gz: gzip64(JSON.generate(datos)) })
+        partes << { 'id' => id, 'tris' => @esc_tris }
+        @esc_acc = {}
+        @esc_lineas = []
+        @esc_tris = 0
+      end
+      puts 'Enviar a ISgestión: enviando la construcción (muros, pisos, cielos)…'
+      escena(model.entities, Geom::Transformation.new, nil)
+      @esc_enviar.call
       Sketchup.status_text = 'Enviando el inventario a ISgestión…'
       post(h, { t: codigo_conexion, accion: 'inventario', modelo_id: inicio['modelo_id'],
-                datos: { 'proyecto' => @codigo, 'nombre' => inicio['proyecto'], 'archivo' => model.path, 'fecha' => fecha, 'items' => lista } })
+                datos: { 'proyecto' => @codigo, 'nombre' => inicio['proyecto'], 'archivo' => model.path, 'fecha' => fecha, 'items' => lista,
+                         'escena' => partes } })
+      @partes = partes
     end
     Sketchup.status_text = ''
     comps = lista.count { |i| i['tipo'] == 'componente' }
     UI.messagebox("Listo: el modelo quedó en ISgestión, proyecto \"#{inicio['proyecto']}\".\n" \
-                  "#{lista.size} tipos de objetos (#{comps} de muebles); 3D: #{@m3d.size} muebles, #{nuevas} enviados ahora.\n\n" \
+                  "#{lista.size} tipos de objetos (#{comps} de muebles); 3D: #{@m3d.size} muebles, #{nuevas} enviados ahora.\n" \
+                  "Construcción (muros, pisos, cielos): #{@partes.to_a.sum { |x| x['tris'] }} triángulos en #{@partes.to_a.size} partes.\n\n" \
                   'En ISgestión abre (o actualiza) Proyectos → Modelo SketchUp.')
   rescue StandardError => err
     Sketchup.status_text = ''

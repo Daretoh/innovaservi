@@ -1,11 +1,11 @@
 // Visor 3D de Proyectos: muebles (mallas del exportador de SketchUp, en R2) y áreas completas con cada objeto en su
 // posición real. three.js 0.147.0 (jsDelivr, versión fija) se carga solo al abrir un 3D.
 // SketchUp (cm, Z arriba) → visor (m, Y arriba): (x, y, z) → (x/100, z/100, -y/100).
-import { el } from '../../core/ui/dom.js?v=90ea3be';
-import { icono } from '../../core/ui/iconos.js?v=90ea3be';
-import { boton } from '../../core/ui/tabla.js?v=90ea3be';
-import { urlsFirmadas } from '../../core/adjuntos.js?v=90ea3be';
-import { instanciasDe, subtotal, tienePrecio, clp, fmtNum } from './datos.js?v=90ea3be';
+import { el } from '../../core/ui/dom.js?v=75c4885';
+import { icono } from '../../core/ui/iconos.js?v=75c4885';
+import { boton } from '../../core/ui/tabla.js?v=75c4885';
+import { urlsFirmadas } from '../../core/adjuntos.js?v=75c4885';
+import { instanciasDe, subtotal, tienePrecio, clp, fmtNum } from './datos.js?v=75c4885';
 
 const CDN3 = 'https://cdn.jsdelivr.net/npm/three@0.147.0/';
 const cargarScript = (src) => new Promise((ok, mal) => {
@@ -47,7 +47,9 @@ export async function cargarMallas(ctx, modeloId, ids) {
       await Promise.all(trozo.map(async (id) => {
         const u = urls.get(r.get(id)); if (!u) return;
         const resp = await fetch(u).catch(() => null);
-        if (resp?.ok) cache.set(`${modeloId}:${id}`, await resp.json());
+        if (!resp?.ok) return;
+        const datos = /\.gz$/.test(r.get(id)) ? await new Response(resp.body.pipeThrough(new DecompressionStream('gzip'))).json() : await resp.json();
+        cache.set(`${modeloId}:${id}`, datos);
       }));
     }
   }
@@ -98,8 +100,9 @@ export function crearVisor(cont) {
     const seVe = (q) => { for (; q; q = q.parent) if (!q.visible) return false; return true; };
     const hit = ray.intersectObject(v.obj, true).find((h) => h.object.isMesh && seVe(h.object));
     if (v.alMedir) { if (hit) v.alMedir(hit.point.clone()); return; }
-    let o = hit?.object;
-    while (o && !o.userData.fila) o = o.parent;
+    const filaDe = (q) => { while (q && !q.userData.fila) q = q.parent; return q; };
+    let o = filaDe(hit?.object);
+    if (!o && hit) o = filaDe(ray.intersectObject(v.obj, true).find((h) => h.object.isMesh && seVe(h.object) && h.distance - hit.distance < 0.05 && filaDe(h.object))?.object);
     v.marcados.forEach((m) => m.emissive?.setHex(0x000000));
     v.marcados = [];
     const fila = o?.userData.fila ?? null;
@@ -355,12 +358,14 @@ export async function ventana3d(ctx, titulo, opciones) {
 // ---------------------------------------------------------------- Modelo completo
 // Todo el modelo en su lugar, agrupado por recinto (para mostrar u ocultar), con clic para ver qué es y medir.
 // Devuelve { recintos: [{ nombre, n }], mostrar(recinto, on), camara(modo), medir(on), sinPosiciones }
+const CONSTRUCCION = 'Construcción (muros, pisos, cielos)';
 export async function vistaModelo(ctx, cont, { modeloId, inv, alElegir, alMedida, alProgreso }) {
   await asegurarThree();
   const { THREE } = window;
   const items = inv.items.filter((it) => (it.m3d && it.pos?.length) || it.cajas?.length);
-  if (!items.length) return { sinPosiciones: true };
-  const ids = [...new Set(items.filter((it) => it.m3d && it.pos?.length).map((it) => it.m3d))];
+  const partesEscena = (inv.escena ?? []).map((x) => x.id);
+  if (!items.length && !partesEscena.length) return { sinPosiciones: true };
+  const ids = [...new Set(items.filter((it) => it.m3d && it.pos?.length).map((it) => it.m3d)), ...partesEscena];
   alProgreso?.(`Cargando ${ids.length} muebles en 3D…`);
   const mallas = await cargarMallas(ctx, modeloId, ids);
   const C = new THREE.Matrix4().set(0.01, 0, 0, 0, 0, 0, 0.01, 0, 0, -0.01, 0, 0, 0, 0, 0, 1); const Ci = C.clone().invert();
@@ -391,6 +396,29 @@ export async function vistaModelo(ctx, cont, { modeloId, inv, alElegir, alMedida
       });
       im.instanceMatrix.needsUpdate = true; im.frustumCulled = false;
       im.userData.fila = it; gr.g.add(im); gr.n += it.cajas.length;
+    }
+  }
+  // Construcción (muros, pisos, cielos, piezas) con su forma real y sus líneas, ya en coordenadas del modelo
+  if (partesEscena.length) {
+    const gr = grupoDe(CONSTRUCCION);
+    const lineas = [];
+    for (const id of partesEscena) {
+      const d = mallas.get(id); if (!d) continue;
+      const g = mallasAThree(d); g.userData.construccion = true; gr.g.add(g);
+      gr.n += (d.mats ?? []).reduce((t, m) => t + m.p.length / 9, 0);
+      const l = d.lineas ?? [];
+      for (let i = 0; i < l.length; i += 3) lineas.push(l[i] / 100, l[i + 2] / 100, -l[i + 1] / 100);
+    }
+    if (lineas.length) {
+      const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(lineas, 3));
+      gr.g.add(new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color: 0x1f2321, transparent: true, opacity: 0.55 })));
+    }
+    gr.n = Math.round(gr.n);
+    // Las piezas ya se ven con su forma real: sus cajas quedan invisibles, solo para el clic
+    for (const otro of grupos.values()) {
+      if (otro === gr) continue;
+      otro.lineas = [];
+      otro.g.traverse((o) => { if (o.isInstancedMesh) o.material.visible = false; });
     }
   }
   for (const gr of grupos.values()) {
