@@ -1,9 +1,9 @@
 // Agenda en línea (Marketing): el cliente elige servicio, día y hora con cupo, deja sus datos y su vehículo, y puede
 // inscribirse como cliente. URL: /agenda/?t=<token del formulario web>. La hora queda pedida: el taller la confirma.
 // Envía todo a la Edge Function pública mkt-agenda. Mismo estilo que la ficha de ingreso y el formulario de contacto.
-import { el } from '../core/ui/dom.js?v=548645c';
-import { icono } from '../core/ui/iconos.js?v=548645c';
-import { revisarTelefono, nombreDia, fechaCorta } from '../core/ui/formato.js?v=548645c';
+import { el } from '../core/ui/dom.js?v=92e612c';
+import { icono } from '../core/ui/iconos.js?v=92e612c';
+import { revisarTelefono, nombreDia, fechaCorta } from '../core/ui/formato.js?v=92e612c';
 
 const raiz = document.getElementById('app');
 const token = new URLSearchParams(location.search).get('t') ?? '';
@@ -41,8 +41,41 @@ async function iniciar() {
   document.title = `Agenda tu hora · ${a.empresa}`;
 
   // Paso 1: servicio · Paso 2: día y hora · Paso 3: datos
-  const servicios = a.servicios.length ? el('fieldset', { class: 'fc-intereses' }, el('legend', { class: 'fp-obligatorio' }, '¿Qué servicio necesitas?'),
-    el('div', { class: 'fc-opciones' }, a.servicios.map((s) => opcion('servicio', s.id, s.nombre, s.duracion ? el('small', { class: 'ag-dur' }, ` · ${s.duracion}`) : null)))) : null;
+  // Servicios por categoría, con su explicación, duración, precio desde y "Ver qué incluye"; y "No sé cuál elegir"
+  const pesos = (n) => `${Number(n).toLocaleString('es-CL')}`;
+  const evaluacionTexto = el('textarea', { id: 'evaluacion', class: 'campo', rows: 3, maxlength: 500,
+    placeholder: 'Ej.: mi camioneta tiene rayones en las puertas y quiero que el interior quede como nuevo' });
+  const cajaEval = el('div', { class: 'ag-eval', hidden: true },
+    el('label', { for: 'evaluacion', class: 'fp-obligatorio' }, 'Cuéntanos qué necesita tu vehículo'), evaluacionTexto,
+    el('span', { class: 'texto-chico texto-suave' }, 'Te agendamos una evaluación y te recomendamos el servicio que te conviene.'));
+  const tarjetaServicio = (sv) => {
+    const input = el('input', { type: 'radio', name: 'servicio', value: sv.id, required: true });
+    input.addEventListener('change', () => { cajaEval.hidden = true; evaluacionTexto.required = false; });
+    return el('label', { class: 'ag-serv' }, input,
+      el('span', { class: 'ag-serv-cuerpo' },
+        el('span', { class: 'ag-serv-cab' }, el('strong', {}, sv.nombre), sv.desde ? el('span', { class: 'ag-serv-precio' }, `desde ${pesos(sv.desde)}`) : null),
+        sv.descripcion ? el('span', { class: 'ag-serv-desc' }, sv.descripcion) : null,
+        sv.duracion ? el('span', { class: 'ag-serv-dur' }, `Duración aprox.: ${sv.duracion}`) : null,
+        sv.pasos?.length ? el('details', { class: 'ag-serv-pasos', onclick: (ev) => ev.stopPropagation() },
+          el('summary', {}, 'Ver qué incluye'), el('ul', {}, sv.pasos.map((x) => el('li', {}, x)))) : null));
+  };
+  const grupos = [];
+  for (const sv of a.servicios) {
+    const cat = sv.categoria || 'Servicios';
+    let g = grupos.find((x) => x.cat === cat);
+    if (!g) { g = { cat, items: [] }; grupos.push(g); }
+    g.items.push(sv);
+  }
+  const noSe = a.evaluacion ? (() => {
+    const input = el('input', { type: 'radio', name: 'servicio', value: '', required: true });
+    input.addEventListener('change', () => { cajaEval.hidden = false; evaluacionTexto.required = true; evaluacionTexto.focus(); });
+    return el('label', { class: 'ag-serv ag-serv-nose' }, input,
+      el('span', { class: 'ag-serv-cuerpo' }, el('span', { class: 'ag-serv-cab' }, el('strong', {}, 'No sé cuál elegir')),
+        el('span', { class: 'ag-serv-desc' }, 'Cuéntanos qué quieres lograr y te agendamos una evaluación sin compromiso.')));
+  })() : null;
+  const servicios = a.servicios.length ? el('fieldset', { class: 'ag-servicios' }, el('legend', { class: 'fp-obligatorio' }, '¿Qué servicio necesitas?'),
+    grupos.map((g) => el('div', { class: 'ag-grupo' }, grupos.length > 1 ? el('h3', {}, g.cat) : null, el('div', { class: 'ag-serv-lista' }, g.items.map(tarjetaServicio)))),
+    noSe, cajaEval) : null;
 
   const horas = el('div', { class: 'fc-opciones ag-horas', 'aria-live': 'polite' });
   const pintarHoras = (fecha) => {
@@ -117,8 +150,10 @@ async function iniciar() {
     try {
       const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
         t: token, servicio_id: elegido(form, 'servicio') || null, fecha: elegido(form, 'fecha'), hora: elegido(form, 'hora'),
+        nota: nota.value,
+        ...(cajaEval.hidden ? {} : { nota: `Evaluación (no sabe qué servicio): ${evaluacionTexto.value.trim()}${nota.value.trim() ? ` · ${nota.value.trim()}` : ''}` }),
         nombre: nombre.value, telefono: telefono.value, correo: correo.value, marca: marca.value, modelo: modelo.value, anio: anio.value, patente: patente.value,
-        nota: nota.value, inscribirse: inscribirse.checked, promociones: promociones.checked, privacidad: privacidad.checked, sitio_web: trampa.value,
+        inscribirse: inscribirse.checked, promociones: promociones.checked, privacidad: privacidad.checked, sitio_web: trampa.value,
       }) });
       const c = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(c.error ?? 'No se pudo agendar. Intenta de nuevo.');

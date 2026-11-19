@@ -276,3 +276,15 @@
 .mkt-pl-burbuja { border-radius: 0 10px 10px 10px; max-width: 92%; }
 .mkt-pl-pie { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .mkt-pl p { margin: 0; }
+
+/* ---- Menú y botones del bot (simulador y bandeja) */
+.mkt-bot-menu-cab { margin-top: 10px; }
+.mkt-bot-opciones { display: grid; gap: 6px; max-width: 85%; }
+.mkt-bot-opciones.botones { grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); }
+.mkt-bot-lista-tit { display: inline-flex; align-items: center; gap: 4px; font-size: .78rem; color: var(--empresa); font-weight: 700; }
+.mkt-bot-opcion { display: grid; gap: 1px; text-align: left; padding: 8px 12px; border: 1px solid color-mix(in srgb, var(--empresa) 35%, var(--borde)); border-radius: 10px;
+  background: var(--superficie); color: inherit; font: inherit; cursor: pointer; }
+.mkt-bot-opciones.botones .mkt-bot-opcion { text-align: center; color: var(--empresa); font-weight: 700; }
+.mkt-bot-opcion:hover { background: color-mix(in srgb, var(--empresa) 8%, var(--superficie)); }
+.mkt-bot-opcion small { font-size: .74rem; color: var(--texto-suave); font-weight: 400; }
+.mkt-wa-opc { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }

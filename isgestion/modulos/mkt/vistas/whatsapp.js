@@ -7,15 +7,15 @@
 // - Derecha (se oculta): el contacto del Embudo (etapa, cliente, vehículos del taller y accesos).
 // Se actualiza sola cada 10 segundos sin perder lo que se está escribiendo ni mover el chat si se está leyendo arriba.
 // Ruta: #/mkt.whatsapp[?c=<conversación>]
-import { el } from '../../../core/ui/dom.js?v=548645c';
-import { icono } from '../../../core/ui/iconos.js?v=548645c';
-import { boton } from '../../../core/ui/tabla.js?v=548645c';
-import { avisar } from '../../../core/ui/aviso.js?v=548645c';
-import { diaLocal, hoyISO, fechaLarga, fechaCorta, nombreDia } from '../../../core/ui/formato.js?v=548645c';
-import { cargarCss } from '../datos.js?v=548645c';
-import { tarjetaHora } from '../hora-bot.js?v=548645c';
-import { DATOS, nombreUso, armar } from '../plantillas-wa.js?v=548645c';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=548645c';
+import { el } from '../../../core/ui/dom.js?v=92e612c';
+import { icono } from '../../../core/ui/iconos.js?v=92e612c';
+import { boton } from '../../../core/ui/tabla.js?v=92e612c';
+import { avisar } from '../../../core/ui/aviso.js?v=92e612c';
+import { diaLocal, hoyISO, fechaLarga, fechaCorta, nombreDia } from '../../../core/ui/formato.js?v=92e612c';
+import { cargarCss } from '../datos.js?v=92e612c';
+import { tarjetaHora } from '../hora-bot.js?v=92e612c';
+import { DATOS, nombreUso, armar } from '../plantillas-wa.js?v=92e612c';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=92e612c';
 
 const ESTADO = { pendiente: 'Enviando', enviado: 'Enviado', entregado: 'Entregado', leido: 'Leído', fallido: 'No se envió' };
 const hora = (ts) => new Date(ts).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
@@ -158,11 +158,13 @@ export default async function vista(ctx) {
     entrada.addEventListener('input', crecer);
     const btnEnviar = el('button', { type: 'submit', class: 'mkt-wa-enviar', 'aria-label': 'Enviar', title: 'Enviar (Enter)', disabled: !editar || !abierta }, icono('derecha', { tam: 18 }));
     const nota = el('div', { class: 'mkt-wa-nota', 'aria-live': 'polite' });
+    let opcionesPendientes = null;   // botones o lista que propuso el bot para el próximo envío
     enviarTexto = async (texto) => {
       texto = String(texto ?? '').trim();
       if (!texto || btnEnviar.disabled) return false;
       btnEnviar.disabled = true;
-      const { error: e } = await ctx.api.functions.invoke('mkt-wa-enviar', { body: { conversacion_id: c.id, texto } });
+      const opciones = opcionesPendientes; opcionesPendientes = null;
+      const { error: e } = await ctx.api.functions.invoke('mkt-wa-enviar', { body: { conversacion_id: c.id, texto, ...(opciones ? { opciones } : {}) } });
       btnEnviar.disabled = false;
       if (e) { let msj = null; try { msj = (await e.context?.json?.())?.error; } catch { /* sin cuerpo */ } avisar(msj || e.message, 'error'); }
       pintarMensajes(await traerMensajes(c), true);
@@ -199,7 +201,13 @@ export default async function vista(ctx) {
           const { data, error } = await ctx.api.functions.invoke('mkt-bot', { body: { empresa_id: eid, mensajes: historial } });
           if (error) { let j = null; try { j = await error.context?.json?.(); } catch { /* sin cuerpo */ } throw new Error(j?.error || error.message); }
           entrada.value = data.respuesta || ''; crecer(); entrada.focus();
+          opcionesPendientes = data.opciones || null;
           nota.replaceChildren(icono('chat', { tam: 13 }), data.derivar ? ` Sugerencia del bot. Ojo: el bot pasaría esto a una persona (${data.derivar}).` : ' Sugerencia del bot: revísala antes de enviar.');
+          if (data.opciones) {
+            nota.append(el('div', { class: 'mkt-wa-opc' }, el('span', {}, data.opciones.tipo === 'lista' ? 'Se enviará con el menú:' : 'Se enviará con botones:'),
+              ...data.opciones.opciones.map((o) => el('span', { class: 'chip' }, o.titulo)),
+              el('button', { type: 'button', class: 'mkt-wa-reintentar', onclick: (ev) => { opcionesPendientes = null; ev.currentTarget.parentElement.remove(); } }, 'Quitar')));
+          }
           if (data.pedir_hora) {
             const pedir = async (btn) => {
               btn.disabled = true;

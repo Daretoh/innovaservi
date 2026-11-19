@@ -1,13 +1,13 @@
 // Marketing → Bot: lo que sabe el bot de clientes (fichas), cómo habla (configuración) y un simulador para probarlo
 // antes de conectarlo a WhatsApp, Messenger e Instagram. Ignacio lo entrena y lo publica (decisión de Enzo, 2026-11-10).
 // El simulador llama a la Edge Function mkt-bot, que usa Claude solo con las fichas activas de esta empresa.
-import { el } from '../../../core/ui/dom.js?v=548645c';
-import { icono } from '../../../core/ui/iconos.js?v=548645c';
-import { boton } from '../../../core/ui/tabla.js?v=548645c';
-import { avisar } from '../../../core/ui/aviso.js?v=548645c';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=548645c';
-import { cargarCss } from '../datos.js?v=548645c';
-import { tarjetaHora } from '../hora-bot.js?v=548645c';
+import { el } from '../../../core/ui/dom.js?v=92e612c';
+import { icono } from '../../../core/ui/iconos.js?v=92e612c';
+import { boton } from '../../../core/ui/tabla.js?v=92e612c';
+import { avisar } from '../../../core/ui/aviso.js?v=92e612c';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=92e612c';
+import { cargarCss } from '../datos.js?v=92e612c';
+import { tarjetaHora } from '../hora-bot.js?v=92e612c';
 
 export const CATEGORIAS_BOT = [
   ['servicios', 'Servicios'], ['precios', 'Precios publicados'], ['horarios', 'Horarios'], ['ubicacion', 'Ubicación y contacto'],
@@ -114,11 +114,45 @@ export default async function vista(ctx) {
       return guardar(cfg ? ctx.api.from('mkt_bot_config').update(datos).eq('empresa_id', eid) : ctx.api.from('mkt_bot_config').insert({ ...datos, empresa_id: eid }), 'Configuración guardada.');
     },
   });
+  // Menú de bienvenida (Marketing 011): lista que el bot manda en su primera respuesta
+  const MENU_BASE = { activo: true, texto: '¿En qué te podemos ayudar? Elige una opción o escríbenos tu consulta.', boton: 'Ver opciones', opciones: [
+    { titulo: 'Agendar una hora', descripcion: 'Elige servicio, día y hora' },
+    { titulo: 'Servicios y precios', descripcion: 'Qué hacemos y cuánto cuesta' },
+    { titulo: 'Estado de mi vehículo', descripcion: 'Cómo va tu auto en el taller' },
+    { titulo: 'Tarjeta de cliente', descripcion: 'Tus sellos y premios' },
+    { titulo: 'Hablar con una persona', descripcion: 'Te atiende alguien del equipo' }] };
+  const menu = cfg?.menu ?? null;
+  const formMenu = () => abrirFormulario({
+    titulo: 'Menú de bienvenida', textoGuardar: 'Guardar',
+    mensaje: 'En su primera respuesta, el bot manda esta lista para que el cliente elija tocando (como el "tipo de atención" de otros soportes). Lo que el cliente elige le llega al bot como si lo hubiera escrito.',
+    campos: [
+      { id: 'activo', etiqueta: 'Estado', tipo: 'checks', opciones: [['si', 'Mandar el menú en la primera respuesta']], valor: (menu?.activo ?? true) ? ['si'] : [] },
+      { id: 'texto', etiqueta: 'Texto sobre la lista', valor: menu?.texto ?? MENU_BASE.texto },
+      { id: 'boton', etiqueta: 'Texto del botón que abre la lista (máx. 20)', valor: menu?.boton ?? MENU_BASE.boton },
+      { id: 'opciones', etiqueta: 'Opciones (una por línea: Título | descripción). Hasta 10; título de máx. 24 letras.', tipo: 'textarea', filas: 8,
+        valor: (menu?.opciones ?? MENU_BASE.opciones).map((o) => (o.descripcion ? `${o.titulo} | ${o.descripcion}` : o.titulo)).join('\n') },
+    ],
+    alGuardar: (v) => {
+      const opciones = v.opciones.split('\n').map((l) => l.trim()).filter(Boolean).map((l) => { const [t, ...d] = l.split('|'); return { titulo: t.trim(), descripcion: d.join('|').trim() || undefined }; });
+      if (!opciones.length) throw new Error('Agrega al menos una opción.');
+      if (opciones.length > 10) throw new Error('WhatsApp acepta hasta 10 opciones.');
+      const larga = opciones.find((o) => o.titulo.length > 24 || (o.descripcion ?? '').length > 72);
+      if (larga) throw new Error(`"${larga.titulo}" es muy largo: título hasta 24 letras y descripción hasta 72.`);
+      if (v.boton.trim().length > 20) throw new Error('El texto del botón puede tener hasta 20 letras.');
+      const datos = { menu: { activo: v.activo.includes('si'), texto: v.texto.trim().slice(0, 300), boton: v.boton.trim() || 'Ver opciones', opciones } };
+      return guardar(cfg ? ctx.api.from('mkt_bot_config').update(datos).eq('empresa_id', eid) : ctx.api.from('mkt_bot_config').insert({ ...datos, empresa_id: eid }), 'Menú guardado.');
+    },
+  });
   const dato = (etq, v) => el('div', { class: 'mkt-bot-dato' }, el('span', { class: 'texto-suave texto-chico' }, etq), el('span', {}, v || el('span', { class: 'texto-suave' }, 'Sin definir')));
   const canal = (nombre, on) => el('li', {}, el('span', {}, nombre), el('span', { class: 'chip' }, on ? 'Encendido' : 'Sin conectar'));
   const tarjetaConfig = el('div', { class: 'ficha' },
     el('div', { class: 'listado-cabecera' }, el('h2', {}, 'Cómo habla'), editar ? boton('Editar', { icono: 'editar', onclick: formConfig }) : null),
     dato('Nombre', cfg?.nombre), dato('Saludo', cfg?.saludo), dato('Tono', cfg?.tono || 'Cercano y profesional, sin emojis (por defecto)'), dato('Pasa a una persona además cuando', cfg?.derivar),
+    el('div', { class: 'listado-cabecera mkt-bot-menu-cab' }, el('h3', { class: 'mkt-bot-cat' }, 'Menú de bienvenida'),
+      editar ? boton(menu ? 'Editar menú' : 'Crear menú', { icono: 'lista', class: 'boton boton-secundario boton-chico', onclick: formMenu }) : null),
+    menu?.opciones?.length
+      ? el('p', { class: 'texto-chico' }, el('span', { class: `chip ${menu.activo ? 'chip-ok' : 'chip-pend'}` }, menu.activo ? 'Activo' : 'Apagado'), ' ', menu.opciones.map((o) => o.titulo).join(' · '))
+      : el('p', { class: 'texto-suave texto-chico' }, 'Sin menú: el bot responde solo con texto.'),
     el('h3', { class: 'mkt-bot-cat' }, 'Canales'),
     el('ul', { class: 'mkt-ajustes-lista' }, canal('WhatsApp', cfg?.whatsapp), canal('Messenger', cfg?.messenger), canal('Instagram', cfg?.instagram)),
     el('p', { class: 'texto-suave texto-chico' }, 'Los canales se conectan cuando Meta habilite la cuenta de la empresa. ',
@@ -134,12 +168,16 @@ export default async function vista(ctx) {
     lista.replaceChildren(...(charla.length ? charla.map((m) => el('div', { class: `mkt-bot-msj ${m.rol === 'cliente' ? 'es-cliente' : 'es-bot'}${m.error ? ' es-error' : ''}` },
       el('div', { class: 'mkt-bot-burbuja' }, m.texto),
       m.derivar ? el('div', { class: 'mkt-bot-derivar' }, icono('alerta', { tam: 14 }), `Pasaría a una persona: ${m.derivar}`) : null,
+      m.opciones && m === charla.at(-1) ? el('div', { class: `mkt-bot-opciones ${m.opciones.tipo}` },
+        m.opciones.tipo === 'lista' ? el('span', { class: 'mkt-bot-lista-tit' }, icono('lista', { tam: 14 }), ` ${m.opciones.boton || 'Ver opciones'}`) : null,
+        m.opciones.opciones.map((o) => el('button', { type: 'button', class: 'mkt-bot-opcion', onclick: () => { entrada.value = o.titulo; preguntar(new Event('submit')); } },
+          el('strong', {}, o.titulo), o.descripcion ? el('small', {}, o.descripcion) : null))) : null,
       m.pedir ? tarjetaHora(m.pedir, 'Simulación: en WhatsApp esta hora quedaría pedida en Taller → Agenda (por confirmar). Aquí no se guarda nada.') : null))
       : [el('p', { class: 'texto-suave texto-chico mkt-bot-vacio' }, 'Prueba preguntas reales: "¿cuánto sale un lavado?", "¿atienden el sábado?", "quiero agendar para el jueves". Las respuestas usan solo las fichas activas.')]));
     lista.scrollTop = lista.scrollHeight;
   };
   const preguntar = async (ev) => {
-    ev.preventDefault();
+    ev?.preventDefault?.();
     const texto = entrada.value.trim();
     if (!texto || enviar.disabled) return;
     charla.push({ rol: 'cliente', texto });
@@ -151,7 +189,7 @@ export default async function vista(ctx) {
       const mensajes = charla.filter((m) => m !== escribiendo && !m.error).map(({ rol, texto: t }) => ({ rol, texto: t }));
       const { data, error } = await ctx.api.functions.invoke('mkt-bot', { body: { empresa_id: eid, mensajes } });
       if (error) { let j = null; try { j = await error.context?.json?.(); } catch { /* sin cuerpo */ } throw new Error(j?.error || error.message || 'El bot no respondió'); }
-      Object.assign(escribiendo, { texto: data.respuesta || '(sin respuesta)', derivar: data.derivar, pedir: data.pedir_hora });
+      Object.assign(escribiendo, { texto: data.respuesta || '(sin respuesta)', derivar: data.derivar, pedir: data.pedir_hora, opciones: data.opciones });
     } catch (e) {
       Object.assign(escribiendo, { texto: e.message, error: true });
     } finally {

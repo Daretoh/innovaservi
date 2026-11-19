@@ -1,13 +1,13 @@
 // Agenda en línea (Marketing 006): tarjeta de Ajustes para activar la página pública /agenda/?t=<token del formulario
 // web>, elegir días, horas y cupos, el texto, los beneficios de inscribirse y qué servicios se ofrecen; copiar el enlace
 // y descargar el QR. Las horas pedidas se confirman en Taller → Agenda.
-import { el } from '../../core/ui/dom.js?v=548645c';
-import { icono } from '../../core/ui/iconos.js?v=548645c';
-import { boton } from '../../core/ui/tabla.js?v=548645c';
-import { avisar } from '../../core/ui/aviso.js?v=548645c';
-import { abrirFormulario } from '../../core/ui/modal.js?v=548645c';
-import { urlApp } from '../../core/api.js?v=548645c';
-import { descargarQr } from './formulario-web.js?v=548645c';
+import { el } from '../../core/ui/dom.js?v=92e612c';
+import { icono } from '../../core/ui/iconos.js?v=92e612c';
+import { boton } from '../../core/ui/tabla.js?v=92e612c';
+import { avisar } from '../../core/ui/aviso.js?v=92e612c';
+import { abrirFormulario } from '../../core/ui/modal.js?v=92e612c';
+import { urlApp } from '../../core/api.js?v=92e612c';
+import { descargarQr } from './formulario-web.js?v=92e612c';
 
 const DIAS = [['1', 'Lunes'], ['2', 'Martes'], ['3', 'Miércoles'], ['4', 'Jueves'], ['5', 'Viernes'], ['6', 'Sábado'], ['7', 'Domingo']];
 export const enlaceAgenda = (token) => urlApp(`agenda/?t=${token}`);
@@ -18,7 +18,7 @@ const copiar = async (texto) => { try { await navigator.clipboard.writeText(text
 export async function cargarAgenda(ctx) {
   const [c, s, p] = await Promise.all([
     ctx.api.from('mkt_agenda_config').select('*').eq('empresa_id', ctx.empresa.id).maybeSingle(),
-    ctx.api.from('tal_servicios').select('id, nombre').eq('empresa_id', ctx.empresa.id).eq('activo', true).order('orden').order('nombre'),
+    ctx.api.from('tal_servicios').select('id, nombre, categoria, duracion, tareas').eq('empresa_id', ctx.empresa.id).eq('activo', true).order('orden').order('nombre'),
     ctx.api.from('mkt_reservas').select('estado', { count: 'exact', head: true }).eq('empresa_id', ctx.empresa.id).eq('estado', 'pendiente'),
   ]);
   if (c.error) throw c.error;
@@ -48,6 +48,8 @@ export function tarjetaAgenda(ctx, formWeb, { config: c, servicios, pendientes }
       { id: 'titulo', etiqueta: 'Texto bajo el nombre de la empresa', valor: c?.titulo ?? '', ayuda: 'Vacío = "Elige el servicio, el día y la hora. Te confirmamos por WhatsApp."' },
       { id: 'beneficios', etiqueta: 'Qué gana al inscribirse como cliente', tipo: 'textarea', filas: 3, valor: c?.beneficios ?? '',
         ayuda: 'Ej.: "Tarjeta de cliente: cada 5 lavados, el 6.º gratis. Recordatorio de mantención y promociones exclusivas."' },
+      { id: 'opciones', etiqueta: 'Qué ve el cliente', tipo: 'checks', opciones: [['precio', 'Precio "desde $…" de cada servicio'], ['pasos', '"Ver qué incluye" con los pasos del servicio'], ['evaluacion', 'Opción "No sé cuál elegir" (pide una evaluación)']],
+        valor: [c?.mostrar_precio ? 'precio' : null, (c?.mostrar_pasos ?? true) ? 'pasos' : null, (c?.evaluacion ?? true) ? 'evaluacion' : null].filter(Boolean) },
       servicios.length ? { id: 'servicios', etiqueta: 'Servicios que se pueden pedir (ninguno marcado = todos)', tipo: 'checks', opciones: servicios.map((s) => [s.id, s.nombre]), valor: c?.servicios ?? [] } : null,
     ].filter(Boolean),
     alGuardar: (v) => {
@@ -56,8 +58,21 @@ export function tarjetaAgenda(ctx, formWeb, { config: c, servicios, pendientes }
         dias: v.dias.map(Number), horas: horas(v.horas), horas_sabado: horas(v.sabado),
         cupos_hora: n(v.cupos_hora, 1, 20), cupos_dia: n(v.cupos_dia, 1, 50), anticipacion: n(v.anticipacion, 0, 14), horizonte: n(v.horizonte, 3, 90),
         titulo: v.titulo.trim() || null, beneficios: v.beneficios.trim() || null,
+        mostrar_precio: v.opciones.includes('precio'), mostrar_pasos: v.opciones.includes('pasos'), evaluacion: v.opciones.includes('evaluacion'),
         ...(servicios.length ? { servicios: v.servicios.length ? v.servicios : null } : {}),
       }, 'Agenda guardada.');
+    },
+  });
+  // Explicación de cada servicio para quien no los conoce (máx. 300 caracteres)
+  const descripciones = () => abrirFormulario({
+    titulo: 'Explicación de los servicios', textoGuardar: 'Guardar',
+    mensaje: 'Una o dos frases por servicio: qué es y para quién conviene, sin términos técnicos. Lo ve el cliente al elegir en la agenda. Los vacíos muestran solo el nombre.',
+    campos: servicios.map((sv) => ({ id: `d_${sv.id}`, etiqueta: `${sv.nombre}${sv.categoria ? ` · ${sv.categoria}` : ''}`, tipo: 'textarea', filas: 2,
+      valor: c?.descripciones?.[sv.id] ?? '', ayuda: (sv.tareas ?? []).length ? `Incluye: ${(sv.tareas ?? []).slice(0, 5).join(', ')}${sv.tareas.length > 5 ? '…' : ''}` : (sv.duracion ? `Duración: ${sv.duracion}` : null) })),
+    alGuardar: (v) => {
+      const d = {};
+      for (const sv of servicios) { const t = String(v[`d_${sv.id}`] ?? '').trim(); if (t) { if (t.length > 300) throw new Error(`La explicación de ${sv.nombre} pasa de 300 caracteres.`); d[sv.id] = t; } }
+      return guardar({ descripciones: d }, 'Explicaciones guardadas.');
     },
   });
   const alternar = () => guardar({ activo: !c?.activo }, c?.activo ? 'Agenda en línea desactivada.' : 'Agenda en línea activada.').catch((e) => avisar(e.message, 'error'));
@@ -78,7 +93,9 @@ export function tarjetaAgenda(ctx, formWeb, { config: c, servicios, pendientes }
     c ? el('div', { class: 'texto-chico' }, el('strong', {}, 'Atención: '), `${nombresDias} · ${c.horas.join(', ')}`,
       c.dias.includes(6) ? ` · sábado ${c.horas_sabado.join(', ') || 'sin horas'}` : '', ` · ${c.cupos_hora} por hora, ${c.cupos_dia} por día`) : null,
     pendientes ? el('p', { class: 'texto-chico' }, el('span', { class: 'chip chip-prox' }, `${pendientes} por confirmar`), ' en Taller → Agenda') : null,
+    c && servicios.length ? el('p', { class: 'texto-chico texto-suave' }, `Servicios explicados: ${Object.keys(c.descripciones ?? {}).length} de ${servicios.length}.`) : null,
     editar ? el('div', { class: 'listado-acciones' },
       boton('Configurar', { icono: 'editar', onclick: configurar }),
+      servicios.length ? boton('Explicar los servicios', { icono: 'texto', onclick: descripciones }) : null,
       boton(c?.activo ? 'Desactivar' : 'Activar', { tipo: c?.activo ? 'secundario' : 'primario', onclick: alternar })) : null);
 }
