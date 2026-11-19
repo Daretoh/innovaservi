@@ -304,3 +304,10 @@
 .mkt-ind-titulo { margin: 22px 0 10px; font-size: 1.05rem; }
 .mkt-cifra-mal strong { color: var(--error); }
 .ind-paneles .ficha h3 { margin: 6px 0 2px; font-weight: 600; }
+
+/* ---- Correcciones del bot (Marketing 014) */
+.mkt-corr { align-items: flex-start; flex-wrap: wrap; gap: 8px; }
+.mkt-corr-txt { display: grid; gap: 3px; min-width: 0; flex: 1 1 260px; }
+.mkt-corr-bien { color: var(--texto); background: var(--fondo-sutil); border-left: 3px solid var(--empresa); padding: 4px 8px; border-radius: 4px; white-space: pre-wrap; }
+.mkt-bot-marcar { margin-top: 2px; }
+.mkt-wa-corregir { display: flex; justify-content: flex-end; margin: 2px 4px 0; }

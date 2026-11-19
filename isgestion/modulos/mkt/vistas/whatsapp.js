@@ -7,15 +7,16 @@
 // - Derecha (se oculta): el contacto del Embudo (etapa, cliente, vehículos del taller y accesos).
 // Se actualiza sola cada 10 segundos sin perder lo que se está escribiendo ni mover el chat si se está leyendo arriba.
 // Ruta: #/mkt.whatsapp[?c=<conversación>]
-import { el } from '../../../core/ui/dom.js?v=27dcd06';
-import { icono } from '../../../core/ui/iconos.js?v=27dcd06';
-import { boton } from '../../../core/ui/tabla.js?v=27dcd06';
-import { avisar } from '../../../core/ui/aviso.js?v=27dcd06';
-import { diaLocal, hoyISO, fechaLarga, fechaCorta, nombreDia } from '../../../core/ui/formato.js?v=27dcd06';
-import { cargarCss } from '../datos.js?v=27dcd06';
-import { tarjetaHora } from '../hora-bot.js?v=27dcd06';
-import { DATOS, nombreUso, armar } from '../plantillas-wa.js?v=27dcd06';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=27dcd06';
+import { el } from '../../../core/ui/dom.js?v=40804ef';
+import { icono } from '../../../core/ui/iconos.js?v=40804ef';
+import { boton } from '../../../core/ui/tabla.js?v=40804ef';
+import { avisar } from '../../../core/ui/aviso.js?v=40804ef';
+import { diaLocal, hoyISO, fechaLarga, fechaCorta, nombreDia } from '../../../core/ui/formato.js?v=40804ef';
+import { cargarCss } from '../datos.js?v=40804ef';
+import { tarjetaHora } from '../hora-bot.js?v=40804ef';
+import { marcarMala } from '../correcciones.js?v=40804ef';
+import { DATOS, nombreUso, armar } from '../plantillas-wa.js?v=40804ef';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=40804ef';
 
 const ESTADO = { pendiente: 'Enviando', enviado: 'Enviado', entregado: 'Entregado', leido: 'Leído', fallido: 'No se envió' };
 const hora = (ts) => new Date(ts).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
@@ -59,6 +60,8 @@ export default async function vista(ctx) {
     ctx.api.from('mkt_respuestas').select('titulo, texto').eq('empresa_id', eid).is('deleted_at', null).order('orden').order('titulo'),
   ]);
   const { data: botCfg } = await ctx.api.from('mkt_bot_config').select('whatsapp, pausa_horas').eq('empresa_id', eid).maybeSingle();
+  const { data: corrs } = await ctx.api.from('mkt_bot_correcciones').select('mensaje_id').eq('empresa_id', eid).not('mensaje_id', 'is', null).limit(2000);
+  const corregidos = new Set((corrs ?? []).map((x) => x.mensaje_id));
   const botOn = !!botCfg?.whatsapp;
   if (rn.error) throw rn.error;
   const etapas = re.data ?? [];
@@ -127,7 +130,12 @@ export default async function vista(ctx) {
           el('span', { class: 'mkt-wa-texto' }, m.texto || `[${m.tipo}]`),
           el('span', { class: 'mkt-wa-meta' }, hora(m.created_at), sale ? tick(m.estado) : null)),
         sale && m.estado === 'fallido' ? el('div', { class: 'mkt-wa-fallo' }, icono('alerta', { tam: 13 }), ` ${ESTADO.fallido}${m.error ? `: ${m.error}` : ''}`,
-          editar ? el('button', { type: 'button', class: 'mkt-wa-reintentar', onclick: () => enviarTexto(m.texto) }, 'Reintentar') : null) : null));
+          editar ? el('button', { type: 'button', class: 'mkt-wa-reintentar', onclick: () => enviarTexto(m.texto) }, 'Reintentar') : null) : null,
+        // Marketing 014: marcar una respuesta del bot para corregirla en la pestaña Bot
+        m.autor === 'bot' && editar ? el('div', { class: 'mkt-wa-corregir' }, corregidos.has(m.id)
+          ? el('span', { class: 'texto-suave texto-chico' }, 'Marcada para corregir')
+          : el('button', { type: 'button', class: 'mkt-wa-reintentar', onclick: () => marcarMala(ctx, { mensajeId: m.id, respuesta: m.texto,
+            alListo: () => { corregidos.add(m.id); firmaMsjs = ''; pintarMensajes(msjs); } }) }, 'Estuvo mal')) : null));
     }
     caja.replaceChildren(...(filas.length ? filas : [el('p', { class: 'mkt-wa-sin' }, 'Sin mensajes todavía.')]));
     if (abajo) caja.scrollTop = caja.scrollHeight;

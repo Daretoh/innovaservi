@@ -1,13 +1,14 @@
 // Marketing → Bot: lo que sabe el bot de clientes (fichas), cómo habla (configuración) y un simulador para probarlo
 // antes de conectarlo a WhatsApp, Messenger e Instagram. Ignacio lo entrena y lo publica (decisión de Enzo, 2026-11-10).
 // El simulador llama a la Edge Function mkt-bot, que usa Claude solo con las fichas activas de esta empresa.
-import { el } from '../../../core/ui/dom.js?v=27dcd06';
-import { icono } from '../../../core/ui/iconos.js?v=27dcd06';
-import { boton } from '../../../core/ui/tabla.js?v=27dcd06';
-import { avisar } from '../../../core/ui/aviso.js?v=27dcd06';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=27dcd06';
-import { cargarCss } from '../datos.js?v=27dcd06';
-import { tarjetaHora } from '../hora-bot.js?v=27dcd06';
+import { el } from '../../../core/ui/dom.js?v=40804ef';
+import { icono } from '../../../core/ui/iconos.js?v=40804ef';
+import { boton } from '../../../core/ui/tabla.js?v=40804ef';
+import { avisar } from '../../../core/ui/aviso.js?v=40804ef';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=40804ef';
+import { cargarCss } from '../datos.js?v=40804ef';
+import { tarjetaHora } from '../hora-bot.js?v=40804ef';
+import { marcarMala, tarjetaCorrecciones, formHorario, textoAtencion } from '../correcciones.js?v=40804ef';
 
 export const CATEGORIAS_BOT = [
   ['servicios', 'Servicios'], ['precios', 'Precios publicados'], ['horarios', 'Horarios'], ['ubicacion', 'Ubicación y contacto'],
@@ -30,15 +31,18 @@ const charlas = new Map();
 export default async function vista(ctx) {
   cargarCss();
   const eid = ctx.empresa.id;
-  const [rf, rc, rr] = await Promise.all([
+  const [rf, rc, rr, rk, rh] = await Promise.all([
     ctx.api.from('mkt_bot_fichas').select('*').eq('empresa_id', eid).is('deleted_at', null).order('categoria').order('orden').order('titulo'),
     ctx.api.from('mkt_bot_config').select('*').eq('empresa_id', eid).maybeSingle(),
     ctx.api.from('mkt_respuestas').select('titulo, texto').eq('empresa_id', eid).is('deleted_at', null).order('orden'),
+    ctx.api.from('mkt_bot_correcciones').select('*').eq('empresa_id', eid).order('created_at', { ascending: false }).limit(100),
+    ctx.api.rpc('mkt_bot_horario', { p_empresa: eid }),
   ]);
   if (rf.error) throw rf.error;
   if (rc.error) throw rc.error;
   const fichas = rf.data ?? [];
   const cfg = rc.data;
+  const horario = rh.error ? null : rh.data;
   const editar = ctx.puede('mkt', 'editar');
   const eliminar = ctx.puede('mkt', 'eliminar');
   const aprobar = ctx.puede('mkt', 'aprobar');
@@ -173,7 +177,18 @@ export default async function vista(ctx) {
     el('ul', { class: 'mkt-ajustes-lista' }, filaWa, canal('Messenger', cfg?.messenger), canal('Instagram', cfg?.instagram)),
     el('p', { class: 'texto-suave texto-chico' }, `Encendido, el bot responde solo a cada mensaje de WhatsApp. Si una persona responde desde la bandeja, el bot se pausa ${cfg?.pausa_horas ?? 12} h en esa conversación. `,
       editar ? el('button', { type: 'button', class: 'mkt-wa-reintentar', onclick: formPausa }, 'Cambiar') : null,
-      ' Messenger e Instagram se conectan cuando Meta apruebe los permisos de la app. ', aprobar ? '' : 'Encender pide el permiso aprobar de Marketing.'));
+      ' Messenger e Instagram se conectan cuando Meta apruebe los permisos de la app. ', aprobar ? '' : 'Encender pide el permiso aprobar de Marketing.'),
+    // Horario (Marketing 014): siempre o solo fuera del horario de atención
+    el('div', { class: 'listado-cabecera mkt-bot-menu-cab' }, el('h3', { class: 'mkt-bot-cat' }, 'Horario'),
+      aprobar ? boton('Editar horario', { icono: 'calendario', class: 'boton boton-secundario boton-chico', onclick: () => formHorario(ctx, cfg, ctx.refrescar) }) : null),
+    el('p', { class: 'texto-chico' },
+      el('span', { class: 'chip' }, (cfg?.horario_modo ?? 'siempre') === 'fuera' ? 'Solo fuera de horario' : 'Responde siempre'), ' ',
+      textoAtencion(cfg?.atencion ?? { 1: ['09:00', '18:30'], 2: ['09:00', '18:30'], 3: ['09:00', '18:30'], 4: ['09:00', '18:30'], 5: ['09:00', '18:30'], 6: ['09:00', '13:00'] })),
+    el('p', { class: 'texto-suave texto-chico' }, horario
+      ? (horario.en_horario ? `Ahora: en horario de atención (hasta las ${horario.cierra}).${horario.modo === 'fuera' ? ' El bot no responde en WhatsApp: atiende el equipo.' : ''}`
+        : `Ahora: fuera de horario${horario.proxima ? `; abre ${horario.proxima}` : ''}. Si el bot pasa a una persona, le dice al cliente cuándo le responden.`) : '',
+      aprobar ? '' : ' Cambiar el horario pide el permiso aprobar.'));
+  const tarjetaCorr = tarjetaCorrecciones(ctx, { correcciones: rk.data ?? [], fichas, categorias: CATEGORIAS_BOT, editar, alCambiar: ctx.refrescar });
 
   // ---- Simulador
   if (!charlas.has(eid)) charlas.set(eid, []);
@@ -189,7 +204,15 @@ export default async function vista(ctx) {
         m.opciones.tipo === 'lista' ? el('span', { class: 'mkt-bot-lista-tit' }, icono('lista', { tam: 14 }), ` ${m.opciones.boton || 'Ver opciones'}`) : null,
         m.opciones.opciones.map((o) => el('button', { type: 'button', class: 'mkt-bot-opcion', onclick: () => { entrada.value = o.titulo; preguntar(new Event('submit')); } },
           el('strong', {}, o.titulo), o.descripcion ? el('small', {}, o.descripcion) : null))) : null,
-      m.pedir ? tarjetaHora(m.pedir, 'Simulación: en WhatsApp esta hora quedaría pedida en Taller → Agenda (por confirmar). Aquí no se guarda nada.') : null))
+      m.pedir ? tarjetaHora(m.pedir, 'Simulación: en WhatsApp esta hora quedaría pedida en Taller → Agenda (por confirmar). Aquí no se guarda nada.') : null,
+      m.enHorario ? el('div', { class: 'mkt-bot-derivar' }, icono('alerta', { tam: 14 }), 'En WhatsApp el bot no habría respondido ahora: es horario de atención y está en "solo fuera de horario".') : null,
+      m.rol === 'bot' && !m.error && !m.esperando && editar ? el('div', { class: 'mkt-bot-marcar' },
+        m.marcada ? el('span', { class: 'texto-suave texto-chico' }, 'Marcada para corregir')
+          : el('button', { type: 'button', class: 'mkt-wa-reintentar', onclick: () => {
+            const i = charla.indexOf(m);
+            const pregunta = charla.slice(0, i).reverse().find((x) => x.rol === 'cliente')?.texto ?? null;
+            marcarMala(ctx, { pregunta, respuesta: m.texto, alListo: () => { m.marcada = true; ctx.refrescar(); } });
+          } }, 'Estuvo mal')) : null))
       : [el('p', { class: 'texto-suave texto-chico mkt-bot-vacio' }, 'Prueba preguntas reales: "¿cuánto sale un lavado?", "¿atienden el sábado?", "quiero agendar para el jueves". Las respuestas usan solo las fichas activas.')]));
     lista.scrollTop = lista.scrollHeight;
   };
@@ -199,16 +222,17 @@ export default async function vista(ctx) {
     if (!texto || enviar.disabled) return;
     charla.push({ rol: 'cliente', texto });
     entrada.value = '';
-    const escribiendo = { rol: 'bot', texto: 'Escribiendo…' };
+    const escribiendo = { rol: 'bot', texto: 'Escribiendo…', esperando: true };
     charla.push(escribiendo); pintar();
     enviar.disabled = true;
     try {
       const mensajes = charla.filter((m) => m !== escribiendo && !m.error).map(({ rol, texto: t }) => ({ rol, texto: t }));
       const { data, error } = await ctx.api.functions.invoke('mkt-bot', { body: { empresa_id: eid, mensajes } });
       if (error) { let j = null; try { j = await error.context?.json?.(); } catch { /* sin cuerpo */ } throw new Error(j?.error || error.message || 'El bot no respondió'); }
-      Object.assign(escribiendo, { texto: data.respuesta || '(sin respuesta)', derivar: data.derivar, pedir: data.pedir_hora, opciones: data.opciones });
+      Object.assign(escribiendo, { texto: data.respuesta || '(sin respuesta)', derivar: data.derivar, pedir: data.pedir_hora, opciones: data.opciones, esperando: false,
+        enHorario: data.horario_modo === 'fuera' && data.horario?.en_horario });
     } catch (e) {
-      Object.assign(escribiendo, { texto: e.message, error: true });
+      Object.assign(escribiendo, { texto: e.message, error: true, esperando: false });
     } finally {
       enviar.disabled = false; pintar(); entrada.focus();
     }
@@ -224,5 +248,5 @@ export default async function vista(ctx) {
 
   return el('section', { class: 'listado' },
     el('header', { class: 'listado-cabecera' }, el('h1', {}, 'Bot de clientes')),
-    el('div', { class: 'mkt-bot' }, el('div', { class: 'mkt-bot-col' }, tarjetaFichas, tarjetaConfig), simulador));
+    el('div', { class: 'mkt-bot' }, el('div', { class: 'mkt-bot-col' }, tarjetaCorr, tarjetaFichas, tarjetaConfig), simulador));
 }

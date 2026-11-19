@@ -1,6 +1,6 @@
 // Indicadores de los canales de Marketing (WhatsApp, bot, agenda en línea, tarjeta de cliente y avisos) para un mes.
 // Todo se calcula en el navegador con lo que la persona puede ver (permiso mkt ver). Lo usa vistas/indicadores.js.
-import { el } from '../../core/ui/dom.js?v=27dcd06';
+import { el } from '../../core/ui/dom.js?v=40804ef';
 
 const UNA_HORA = 3600_000;
 const FRANJAS = [[0, 8, 'Antes de las 8'], [8, 12, '8 a 12'], [12, 15, '12 a 15'], [15, 19, '15 a 19'], [19, 24, 'Después de las 19']];
@@ -9,20 +9,23 @@ const DIAS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', '
 export async function cargarCanales(ctx, ini, finTs) {
   const e = ctx.empresa.id;
   const rango = (q, col = 'created_at') => q.eq('empresa_id', e).gte(col, ini).lt(col, finTs).limit(20000);
-  const [rm, rc, rr, rs, rl, ra] = await Promise.all([
+  const [rm, rc, rr, rs, rl, ra, rk] = await Promise.all([
     rango(ctx.api.from('mkt_wa_mensajes').select('conversacion_id, direccion, autor, estado, tipo, created_at').order('created_at')),
     rango(ctx.api.from('mkt_wa_conversaciones').select('id, created_at')),
     rango(ctx.api.from('mkt_reservas').select('estado, origen, orden_id, created_at, resuelta_at')),
     rango(ctx.api.from('mkt_socios').select('origen, created_at').is('deleted_at', null)),
     rango(ctx.api.from('mkt_sellos').select('cantidad, motivo, created_at')),
-    rango(ctx.api.from('mkt_wa_avisos').select('tipo, estado, created_at'))]);
+    rango(ctx.api.from('mkt_wa_avisos').select('tipo, estado, created_at')),
+    rango(ctx.api.from('mkt_bot_correcciones').select('estado, origen, created_at'))]);
   // Si alguna tabla no está (módulo sin migrar) o no hay permiso, ese bloque queda vacío en vez de romper la pantalla
   const d = (r) => (r.error ? null : r.data);
-  return calcular({ mensajes: d(rm), convs: d(rc), reservas: d(rr), socios: d(rs), sellos: d(rl), avisos: d(ra) });
+  return calcular({ mensajes: d(rm), convs: d(rc), reservas: d(rr), socios: d(rs), sellos: d(rl), avisos: d(ra), correcciones: d(rk) });
 }
 
-export function calcular({ mensajes, convs, reservas, socios, sellos, avisos }) {
+export function calcular({ mensajes, convs, reservas, socios, sellos, avisos, correcciones }) {
   const r = {};
+  // Respuestas del bot marcadas como malas en el mes (Marketing 014)
+  r.corr = correcciones ? { total: correcciones.length, pendientes: correcciones.filter((x) => x.estado === 'pendiente').length } : null;
   if (mensajes) {
     const entradas = mensajes.filter((m) => m.direccion === 'entrada');
     const salidas = mensajes.filter((m) => m.direccion === 'salida');
@@ -146,7 +149,8 @@ export function panelesCanales(c) {
       w.fallidos ? el('p', { class: 'mkt-wa-error texto-chico' }, `${w.fallidos} mensaje${w.fallidos === 1 ? '' : 's'} no se ${w.fallidos === 1 ? 'pudo' : 'pudieron'} enviar.`) : null,
       el('p', { class: 'texto-suave texto-chico' }, `Tiempo de respuesta: desde que el cliente escribe hasta la primera respuesta (de una persona: ${duracion(w.medianaPersona)}). "Esperando respuesta": conversaciones cuyo último mensaje del cliente en el mes no tiene respuesta.`)));
     p.push(el('div', { class: 'ficha' }, el('h2', {}, 'El bot'),
-      cifras([['Conversaciones que atendió', w.conBot], ['Resueltas solo por el bot', `${w.soloBot} · ${pct(w.soloBot, w.conBot)}`], ['Pasaron a una persona', `${w.pasadas} · ${pct(w.pasadas, w.conBot)}`]]),
+      cifras([['Conversaciones que atendió', w.conBot], ['Resueltas solo por el bot', `${w.soloBot} · ${pct(w.soloBot, w.conBot)}`], ['Pasaron a una persona', `${w.pasadas} · ${pct(w.pasadas, w.conBot)}`],
+        ...(c.corr ? [['Respuestas marcadas como malas', c.corr.total], ['Sin revisar', c.corr.pendientes, c.corr.pendientes ? 'mkt-cifra-mal' : '']] : [])]),
       el('p', { class: 'texto-suave texto-chico' }, '"Pasaron a una persona": conversaciones del mes en las que el bot respondió y después también respondió alguien del equipo.')));
     p.push(el('div', { class: 'ficha' }, el('h2', {}, 'Cuándo escriben'), el('h3', { class: 'texto-chico' }, 'Por hora'), barras(w.franjas), el('h3', { class: 'texto-chico' }, 'Por día'), barras(w.dias)));
   }
@@ -181,6 +185,7 @@ export function filasCanales(c) {
       ['WhatsApp: mensajes que no se enviaron', w.fallidos], ['WhatsApp: tiempo de respuesta, mediana (min)', w.mediana == null ? '' : Math.round(w.mediana / 60000)],
       ['WhatsApp: respondidos en menos de 1 hora (%)', w.enUnaHora ?? ''], ['WhatsApp: esperando respuesta', w.sinRespuesta],
       ['Bot: conversaciones que atendió', w.conBot], ['Bot: resueltas solo por el bot', w.soloBot], ['Bot: pasaron a una persona', w.pasadas]);
+    if (c.corr) f.push(['Bot: respuestas marcadas como malas', c.corr.total], ['Bot: correcciones sin revisar', c.corr.pendientes]);
   }
   if (c.agenda) {
     const a = c.agenda;
