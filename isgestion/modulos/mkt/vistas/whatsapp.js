@@ -7,16 +7,16 @@
 // - Derecha (se oculta): el contacto del Embudo (etapa, cliente, vehículos del taller y accesos).
 // Se actualiza sola cada 10 segundos sin perder lo que se está escribiendo ni mover el chat si se está leyendo arriba.
 // Ruta: #/mkt.whatsapp[?c=<conversación>]
-import { el } from '../../../core/ui/dom.js?v=32a213c';
-import { icono } from '../../../core/ui/iconos.js?v=32a213c';
-import { boton } from '../../../core/ui/tabla.js?v=32a213c';
-import { avisar } from '../../../core/ui/aviso.js?v=32a213c';
-import { diaLocal, hoyISO, fechaLarga, fechaCorta, nombreDia } from '../../../core/ui/formato.js?v=32a213c';
-import { cargarCss } from '../datos.js?v=32a213c';
-import { tarjetaHora } from '../hora-bot.js?v=32a213c';
-import { marcarMala } from '../correcciones.js?v=32a213c';
-import { DATOS, nombreUso, armar } from '../plantillas-wa.js?v=32a213c';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=32a213c';
+import { el } from '../../../core/ui/dom.js?v=a4b8195';
+import { icono } from '../../../core/ui/iconos.js?v=a4b8195';
+import { boton } from '../../../core/ui/tabla.js?v=a4b8195';
+import { avisar } from '../../../core/ui/aviso.js?v=a4b8195';
+import { diaLocal, hoyISO, fechaLarga, fechaCorta, nombreDia } from '../../../core/ui/formato.js?v=a4b8195';
+import { cargarCss } from '../datos.js?v=a4b8195';
+import { tarjetaHora } from '../hora-bot.js?v=a4b8195';
+import { marcarMala } from '../correcciones.js?v=a4b8195';
+import { DATOS, nombreUso, armar } from '../plantillas-wa.js?v=a4b8195';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=a4b8195';
 
 const ESTADO = { pendiente: 'Enviando', enviado: 'Enviado', entregado: 'Entregado', leido: 'Leído', fallido: 'No se envió' };
 const hora = (ts) => new Date(ts).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });

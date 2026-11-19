@@ -1,12 +1,13 @@
 // Sugerencias desde el chat de Ayuda (Núcleo 024, 2026-11-19): formulario por puntos (área y pestaña sugeridas según la
 // pantalla abierta, texto, urgencia y pantallazos con Ctrl+V, arrastrar o adjuntar) y "Mis sugerencias" con el estado y
-// la respuesta de cada punto. Los pantallazos se achican en el navegador y van a R2 privado
+// la respuesta de cada punto. Cada pantallazo se puede rayar antes de enviar (marcarFoto, el editor de Reportes). Los pantallazos se achican en el navegador y van a R2 privado
 // (<empresa>/soporte/<usuario>/…); la sugerencia se crea con sug_enviar. Solo el equipo las ve todas (Consola).
-import { el } from './ui/dom.js?v=32a213c';
-import { icono } from './ui/iconos.js?v=32a213c';
-import { avisar } from './ui/aviso.js?v=32a213c';
-import { almacen, urlsFirmadas } from './adjuntos.js?v=32a213c';
-import { comprimirFoto, esImagen } from './imagenes.js?v=32a213c';
+import { el } from './ui/dom.js?v=a4b8195';
+import { icono } from './ui/iconos.js?v=a4b8195';
+import { avisar } from './ui/aviso.js?v=a4b8195';
+import { almacen, urlsFirmadas } from './adjuntos.js?v=a4b8195';
+import { comprimirFoto, esImagen } from './imagenes.js?v=a4b8195';
+import { marcarFoto } from './ui/marcar.js?v=a4b8195';
 
 export const TIPOS = [['mejora', 'Mejora'], ['error', 'Algo no funciona'], ['idea', 'Idea nueva']];
 export const ESTADOS = { recibida: ['Recibida', 'chip-na'], revision: ['En revisión', 'chip-prox'], planificada: ['Planificada', 'chip-prox'], hecha: ['Hecha', 'chip-ok'], descartada: ['Descartada', 'chip-venc'] };
@@ -48,6 +49,17 @@ export function formularioSugerencia({ db, empresaId, usuarioId, pantallas, actu
     pintar();
   }
 
+  // Rayar el pantallazo: la versión marcada reemplaza a la original (todavía no se ha subido)
+  async function marcar(f) {
+    let archivo;
+    const color = getComputedStyle(document.documentElement).getPropertyValue('--empresa').trim() || null;
+    try { archivo = await marcarFoto(f.blob, { titulo: 'Marcar pantallazo', colorEmpresa: color, textoGuardar: 'Listo' }); } catch (e) { avisar(e.message, 'error'); return; }
+    if (!archivo) return;
+    URL.revokeObjectURL(f.url);
+    f.blob = archivo; f.url = URL.createObjectURL(archivo);
+    pintar();
+  }
+
   function tarjeta(p, i) {
     const opciones = lista().filter((x) => !x.oculto || x.id === p.pantalla);
     const grupos = new Map();
@@ -64,7 +76,8 @@ export function formularioSugerencia({ db, empresaId, usuarioId, pantallas, actu
     archivo.addEventListener('change', () => { agregarFotos(i, [...archivo.files]); archivo.value = ''; });
     const fotos = el('div', { class: 'sug-fotos' },
       ...p.fotos.map((f, k) => el('span', { class: 'sug-foto' },
-        el('img', { src: f.url, alt: f.nombre }),
+        el('button', { type: 'button', class: 'sug-foto-ver', title: 'Marcar o rayar este pantallazo', 'aria-label': `Marcar ${f.nombre}`, onclick: () => marcar(f) }, el('img', { src: f.url, alt: f.nombre })),
+        el('span', { class: 'sug-foto-lapiz', 'aria-hidden': 'true' }, icono('lapiz', { tam: 11 })),
         el('button', { type: 'button', class: 'sug-foto-quitar', title: 'Quitar', 'aria-label': `Quitar ${f.nombre}`, onclick: () => { URL.revokeObjectURL(f.url); p.fotos.splice(k, 1); pintar(); } }, icono('cerrar', { tam: 12 })))),
       el('button', { type: 'button', class: 'sug-foto-agregar', title: 'Adjuntar pantallazo o foto', onclick: () => archivo.click() }, icono('camara', { tam: 16 }), el('span', {}, 'Pantallazo')),
       archivo);
@@ -87,7 +100,7 @@ export function formularioSugerencia({ db, empresaId, usuarioId, pantallas, actu
 
   const enviar = el('button', { type: 'submit', class: 'boton boton-primario' }, 'Enviar sugerencia');
   const form = el('form', { class: 'sug-form' },
-    el('p', { class: 'sug-ayuda' }, 'Sepárala en puntos: uno por cosa. Puedes pegar pantallazos con Ctrl+V, arrastrarlos o adjuntarlos.'),
+    el('p', { class: 'sug-ayuda' }, 'Sepárala en puntos: uno por cosa. Puedes pegar pantallazos con Ctrl+V, arrastrarlos o adjuntarlos, y tocarlos para rayarlos.'),
     tipos, cont,
     el('button', { type: 'button', class: 'boton boton-secundario boton-chico sug-mas', onclick: () => { estado.puntos.push(nuevoPunto()); estado.foco = estado.puntos.length - 1; guardar(); pintar(); cont.lastElementChild?.querySelector('textarea')?.focus(); } }, icono('mas', { tam: 14 }), 'Agregar otro punto'),
     el('div', { class: 'sug-pie' }, enviar));

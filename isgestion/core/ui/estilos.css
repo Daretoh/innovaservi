@@ -2951,3 +2951,7 @@ html[data-modo="oscuro"] { --turno-dia-fondo: #4a3a12; --turno-dia-texto: #fde68
 .sug-respuesta { font-size: .88rem; padding: 6px 10px; border-radius: var(--radio-control); background: color-mix(in srgb, var(--empresa) 8%, var(--superficie)); }
 .sug-vacio { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 30px 10px; color: var(--texto-suave); text-align: center; }
 @media (max-width: 760px) { .sop-panel { height: min(90dvh, 700px); } }
+/* Sugerencias: tocar el pantallazo abre el editor para rayarlo (core/ui/marcar.js) */
+.sug-foto-ver { all: unset; display: block; width: 100%; height: 100%; cursor: pointer; }
+.sug-foto-ver:focus-visible { outline: 2px solid var(--empresa); outline-offset: -2px; }
+.sug-foto-lapiz { position: absolute; left: 3px; bottom: 3px; width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; background: var(--empresa); color: var(--sobre-empresa); pointer-events: none; }

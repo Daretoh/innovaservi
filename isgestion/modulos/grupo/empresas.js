@@ -1,7 +1,7 @@
 // Empresas del Grupo donde el usuario puede usar un módulo (activo en la empresa y con el permiso), y el contexto de
 // cada una (ctx con su empresa y sus permisos) para usar las funciones de los módulos tal cual.
-import { el } from '../../core/ui/dom.js?v=32a213c';
-import { nombreEmpresa } from '../../core/empresas.js?v=32a213c';
+import { el } from '../../core/ui/dom.js?v=a4b8195';
+import { nombreEmpresa } from '../../core/empresas.js?v=a4b8195';
 
 export const empresasCon = (ctx, modulo, accion = 'ver') => (ctx.grupo ?? []).filter((g) => g.modulos.has(modulo) && g.puede(modulo, accion));
 export const ctxDe = (ctx, g) => ({ ...ctx, empresa: g.empresa, puede: g.puede });
