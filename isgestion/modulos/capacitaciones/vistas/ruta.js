@@ -1,11 +1,11 @@
 // Ficha de una ruta: sus contenidos (en orden), los trabajadores asignados y el avance de cada uno (visto / aprobado).
 // Ruta: #/capacitaciones.ruta?id=<id>
-import { el } from '../../../core/ui/dom.js?v=66a4b1f';
-import { icono } from '../../../core/ui/iconos.js?v=66a4b1f';
-import { boton } from '../../../core/ui/tabla.js?v=66a4b1f';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=66a4b1f';
-import { avisar } from '../../../core/ui/aviso.js?v=66a4b1f';
-import { cargarBiblioteca, cargarPersonas, cargarEstilos, conCarga, TIPO_CORTO, ICONO_TIPO } from '../datos.js?v=66a4b1f';
+import { el } from '../../../core/ui/dom.js?v=27dcd06';
+import { icono } from '../../../core/ui/iconos.js?v=27dcd06';
+import { boton } from '../../../core/ui/tabla.js?v=27dcd06';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=27dcd06';
+import { avisar } from '../../../core/ui/aviso.js?v=27dcd06';
+import { cargarBiblioteca, cargarPersonas, cargarEstilos, conCarga, TIPO_CORTO, ICONO_TIPO } from '../datos.js?v=27dcd06';
 
 // Rutas, sus contenidos y personas, y el avance visible para quien consulta (Map "contenido|persona" → fila)
 export async function cargarRutas(ctx) {
