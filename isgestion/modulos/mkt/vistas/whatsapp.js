@@ -1,112 +1,287 @@
-// Marketing → WhatsApp (Marketing 008): bandeja de conversaciones del número de WhatsApp de la empresa (API de la nube
-// de Meta). A la izquierda las conversaciones (no leídas primero en negrita), a la derecha el chat con su contacto del
-// Embudo. Responder pide editar y solo dentro de las 24 horas desde el último mensaje del cliente (regla de WhatsApp);
-// lo envía la Edge Function mkt-wa-enviar. Se actualiza sola cada 10 segundos mientras está abierta.
+// Marketing → WhatsApp (Marketing 008): bandeja del número de WhatsApp de la empresa (API de la nube de Meta).
+// - Izquierda: conversaciones con búsqueda y filtros (todas, no leídas, ventana abierta), avatar y no leídos.
+// - Centro: chat con burbujas, separadores por día, estado de cada envío (enviado, entregado, leído, falló con
+//   Reintentar) y caja de respuesta que crece; respuestas guardadas y "Sugerir con el bot" (Edge Function mkt-bot con
+//   la conversación: llena la caja, no envía). Responder pide editar y solo dentro de las 24 horas desde el último
+//   mensaje del cliente (regla de WhatsApp); lo envía la Edge Function mkt-wa-enviar.
+// - Derecha (se oculta): el contacto del Embudo (etapa, cliente, vehículos del taller y accesos).
+// Se actualiza sola cada 10 segundos sin perder lo que se está escribiendo ni mover el chat si se está leyendo arriba.
 // Ruta: #/mkt.whatsapp[?c=<conversación>]
-import { el } from '../../../core/ui/dom.js?v=c6bc088';
-import { icono } from '../../../core/ui/iconos.js?v=c6bc088';
-import { boton } from '../../../core/ui/tabla.js?v=c6bc088';
-import { avisar } from '../../../core/ui/aviso.js?v=c6bc088';
-import { diaLocal, hoyISO, fechaLarga } from '../../../core/ui/formato.js?v=c6bc088';
-import { cargarCss } from '../datos.js?v=c6bc088';
+import { el } from '../../../core/ui/dom.js?v=ef673ba';
+import { icono } from '../../../core/ui/iconos.js?v=ef673ba';
+import { boton } from '../../../core/ui/tabla.js?v=ef673ba';
+import { avisar } from '../../../core/ui/aviso.js?v=ef673ba';
+import { diaLocal, hoyISO, fechaLarga, fechaCorta, nombreDia } from '../../../core/ui/formato.js?v=ef673ba';
+import { cargarCss } from '../datos.js?v=ef673ba';
 
-const ESTADO = { pendiente: 'Enviando…', enviado: 'Enviado', entregado: 'Entregado', leido: 'Leído', fallido: 'No se envió' };
+const ESTADO = { pendiente: 'Enviando', enviado: 'Enviado', entregado: 'Entregado', leido: 'Leído', fallido: 'No se envió' };
 const hora = (ts) => new Date(ts).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
-const cuando = (ts) => (diaLocal(ts) === hoyISO() ? hora(ts) : fechaLarga(diaLocal(ts)));
+const cuando = (ts) => {
+  const d = diaLocal(ts);
+  if (d === hoyISO()) return hora(ts);
+  const dias = Math.round((new Date(hoyISO()) - new Date(d)) / 86400000);
+  return dias === 1 ? 'Ayer' : dias < 7 ? nombreDia(d) : fechaCorta(d);
+};
+const tituloDia = (d) => {
+  if (d === hoyISO()) return 'Hoy';
+  const dias = Math.round((new Date(hoyISO()) - new Date(d)) / 86400000);
+  return dias === 1 ? 'Ayer' : `${nombreDia(d)} ${fechaLarga(d)}`;
+};
 const verNumero = (wa) => (wa?.startsWith('56') && wa.length === 11 ? `+56 ${wa.slice(2, 3)} ${wa.slice(3, 7)} ${wa.slice(7)}` : `+${wa}`);
-const enVentana = (c) => c.ultimo_cliente_at && Date.now() - new Date(c.ultimo_cliente_at).getTime() < 24 * 3600 * 1000;
+const horasVentana = (c) => (c.ultimo_cliente_at ? 24 - (Date.now() - new Date(c.ultimo_cliente_at).getTime()) / 3600000 : -1);
+const nombreDe = (c) => c.mkt_contactos?.nombre || c.nombre_perfil || verNumero(c.wa_id);
+const iniciales = (t) => String(t).replace(/^\+/, '').split(/\s+/).filter(Boolean).slice(0, 2).map((x) => x[0]).join('').toUpperCase() || '?';
+const avatar = (c, clase = '') => el('span', { class: `mkt-wa-avatar ${clase}`, 'aria-hidden': 'true' }, /^\+?\d/.test(nombreDe(c)) ? icono('users', { tam: 18 }) : iniciales(nombreDe(c)));
+
+// Ticks de estado (SVG propio, sin emojis)
+const NS = 'http://www.w3.org/2000/svg';
+function tick(estado) {
+  const s = document.createElementNS(NS, 'svg');
+  s.setAttribute('viewBox', '0 0 18 12'); s.setAttribute('class', `mkt-wa-tick ${estado}`); s.setAttribute('aria-hidden', 'true');
+  const linea = (d) => { const p = document.createElementNS(NS, 'path'); p.setAttribute('d', d); s.append(p); };
+  if (estado === 'pendiente') { linea('M9 2.5a3.5 3.5 0 1 0 0 7a3.5 3.5 0 1 0 0-7M9 4v2.2l1.4 1'); }
+  else if (estado === 'fallido') { linea('M9 2v5M9 9.4v.6'); }
+  else { linea('M1.5 6.5l3 3L10.5 3'); if (estado !== 'enviado') linea('M7 9.5l6-6.5'); }
+  return s;
+}
 
 export default async function vista(ctx) {
   cargarCss();
   const eid = ctx.empresa.id;
   const editar = ctx.puede('mkt', 'editar');
-  const { data: numeros, error: en } = await ctx.api.from('mkt_wa_numeros').select('*').eq('empresa_id', eid).eq('activo', true);
-  if (en) throw en;
+  const conTaller = ctx.puede('taller', 'ver');
+  const [rn, re, rr] = await Promise.all([
+    ctx.api.from('mkt_wa_numeros').select('*').eq('empresa_id', eid).eq('activo', true),
+    ctx.api.from('mkt_etapas').select('id, nombre, tipo, orden').eq('empresa_id', eid).is('deleted_at', null).order('orden'),
+    ctx.api.from('mkt_respuestas').select('titulo, texto').eq('empresa_id', eid).is('deleted_at', null).order('orden').order('titulo'),
+  ]);
+  if (rn.error) throw rn.error;
+  const etapas = re.data ?? [];
+  const respuestas = rr.data ?? [];
+  const empresa = ctx.empresa.nombre_fantasia || ctx.empresa.razon_social || '';
   let actual = ctx.params?.c ?? null;
   let convs = [];
+  let filtro = 'todas';
+  let buscar = '';
+  let firmaMsjs = '';
+  let panelAbierto = (() => { try { return localStorage.getItem('isg.wa.panel') !== '0'; } catch { return true; } })();
 
-  const lista = el('nav', { class: 'mkt-wa-lista', 'aria-label': 'Conversaciones' });
-  const chat = el('section', { class: 'mkt-wa-chat' });
-  const raiz = el('div', { class: 'mkt-wa' }, lista, chat);
+  // ---------------------------------------------------------------- Lista de conversaciones
+  const items = el('div', { class: 'mkt-wa-items' });
+  const campoBuscar = el('input', { type: 'search', class: 'campo', placeholder: 'Buscar nombre o número', 'aria-label': 'Buscar conversación' });
+  campoBuscar.addEventListener('input', () => { buscar = campoBuscar.value.trim().toLowerCase(); pintarLista(); });
+  const chips = [['todas', 'Todas'], ['no_leidas', 'No leídas'], ['abiertas', 'Ventana abierta']].map(([k, t]) => el('button', {
+    type: 'button', class: 'mkt-wa-chip', 'aria-pressed': String(k === filtro), onclick: () => { filtro = k; chips.forEach((b, i) => b.setAttribute('aria-pressed', String(['todas', 'no_leidas', 'abiertas'][i] === filtro))); pintarLista(); },
+  }, t));
+  const lista = el('nav', { class: 'mkt-wa-lista', 'aria-label': 'Conversaciones' },
+    el('div', { class: 'mkt-wa-lista-cab' }, el('label', { class: 'buscador' }, icono('buscar', { tam: 16 }), campoBuscar), el('div', { class: 'mkt-wa-chips' }, chips)),
+    items);
 
-  const cargarLista = async () => {
-    const { data, error } = await ctx.api.from('mkt_wa_conversaciones').select('*, mkt_contactos(id, nombre)').eq('empresa_id', eid).eq('archivada', false)
-      .order('ultimo_at', { ascending: false }).limit(200);
-    if (error) throw error;
-    convs = data;
-    lista.replaceChildren(...(convs.length ? convs.map((c) => el('a', {
+  const pintarLista = () => {
+    const visibles = convs.filter((c) => (filtro === 'no_leidas' ? c.no_leidos > 0 : filtro === 'abiertas' ? horasVentana(c) > 0 : true))
+      .filter((c) => !buscar || `${nombreDe(c)} ${c.nombre_perfil ?? ''} ${c.wa_id}`.toLowerCase().includes(buscar.replace(/[\s+]/g, '')) || nombreDe(c).toLowerCase().includes(buscar));
+    items.replaceChildren(...(visibles.length ? visibles.map((c) => el('a', {
       class: `mkt-wa-item${c.id === actual ? ' activa' : ''}${c.no_leidos ? ' no-leida' : ''}`, href: ctx.ruta('mkt.whatsapp', { c: c.id }),
       onclick: (ev) => { ev.preventDefault(); abrir(c.id); },
     },
-      el('span', { class: 'mkt-wa-item-cab' }, el('strong', {}, c.mkt_contactos?.nombre || c.nombre_perfil || verNumero(c.wa_id)), el('small', {}, cuando(c.ultimo_at))),
-      el('span', { class: 'mkt-wa-item-pie' }, el('span', { class: 'mkt-wa-prev' }, c.ultimo_texto || ''), c.no_leidos ? el('span', { class: 'mkt-wa-cuenta' }, String(c.no_leidos)) : null)))
-      : [el('p', { class: 'texto-suave texto-chico mkt-wa-vacio' }, 'Todavía no hay conversaciones. Cuando un cliente escriba al WhatsApp de la empresa aparecerá aquí.')]));
+      avatar(c),
+      el('span', { class: 'mkt-wa-item-txt' },
+        el('span', { class: 'mkt-wa-item-cab' }, el('strong', {}, nombreDe(c)), el('small', {}, cuando(c.ultimo_at))),
+        el('span', { class: 'mkt-wa-item-pie' }, el('span', { class: 'mkt-wa-prev' }, c.ultimo_texto || ''),
+          c.no_leidos ? el('span', { class: 'mkt-wa-cuenta' }, String(c.no_leidos)) : horasVentana(c) > 0 ? el('span', { class: 'mkt-wa-punto', title: 'Ventana de 24 horas abierta' }) : null))))
+      : [el('div', { class: 'mkt-wa-vacio' }, icono('chat', { tam: 28 }),
+        el('p', {}, convs.length ? 'Nada coincide con la búsqueda o el filtro.' : 'Todavía no hay conversaciones. Cuando un cliente escriba al WhatsApp de la empresa aparecerá aquí.'))]));
   };
+  const cargarLista = async () => {
+    const { data, error } = await ctx.api.from('mkt_wa_conversaciones').select('*, mkt_contactos(id, nombre, etapa_id, tercero_id, interes, origen, correo)').eq('empresa_id', eid)
+      .eq('archivada', false).order('ultimo_at', { ascending: false }).limit(300);
+    if (error) throw error;
+    convs = data;
+    pintarLista();
+  };
+
+  // ---------------------------------------------------------------- Chat
+  const chat = el('section', { class: 'mkt-wa-chat' });
+  const panel = el('aside', { class: 'mkt-wa-panel', 'aria-label': 'Contacto' });
+  const raiz = el('div', { class: `mkt-wa${panelAbierto ? ' con-panel' : ''}` }, lista, chat, panel);
+  let caja = null;
+
+  const pintarMensajes = (msjs, forzarAbajo = false) => {
+    if (!caja) return;
+    const abajo = forzarAbajo || caja.scrollHeight - caja.scrollTop - caja.clientHeight < 80;
+    let dia = '';
+    const filas = [];
+    for (const m of msjs) {
+      const d = diaLocal(m.created_at);
+      if (d !== dia) { dia = d; filas.push(el('div', { class: 'mkt-wa-dia' }, el('span', {}, tituloDia(d)))); }
+      const sale = m.direccion === 'salida';
+      filas.push(el('div', { class: `mkt-wa-msj ${m.direccion}${m.estado === 'fallido' ? ' fallido' : ''}` },
+        el('div', { class: 'mkt-wa-burbuja' },
+          m.autor === 'bot' ? el('span', { class: 'mkt-wa-autor' }, 'Bot') : null,
+          el('span', { class: 'mkt-wa-texto' }, m.texto || `[${m.tipo}]`),
+          el('span', { class: 'mkt-wa-meta' }, hora(m.created_at), sale ? tick(m.estado) : null)),
+        sale && m.estado === 'fallido' ? el('div', { class: 'mkt-wa-fallo' }, icono('alerta', { tam: 13 }), ` ${ESTADO.fallido}${m.error ? `: ${m.error}` : ''}`,
+          editar ? el('button', { type: 'button', class: 'mkt-wa-reintentar', onclick: () => enviarTexto(m.texto) }, 'Reintentar') : null) : null));
+    }
+    caja.replaceChildren(...(filas.length ? filas : [el('p', { class: 'mkt-wa-sin' }, 'Sin mensajes todavía.')]));
+    if (abajo) caja.scrollTop = caja.scrollHeight;
+  };
+  const traerMensajes = async (c) => {
+    const { data, error } = await ctx.api.from('mkt_wa_mensajes').select('id, direccion, tipo, texto, estado, error, autor, created_at').eq('conversacion_id', c.id).order('created_at').limit(500);
+    if (error) throw error;
+    return data;
+  };
+  let enviarTexto = async () => {};
 
   const pintarChat = async () => {
     const c = convs.find((x) => x.id === actual);
-    if (!c) { chat.replaceChildren(el('div', { class: 'mkt-wa-nada' }, icono('chat', { tam: 40 }), el('p', { class: 'texto-suave' }, 'Elige una conversación.'))); return; }
-    const { data: msjs, error } = await ctx.api.from('mkt_wa_mensajes').select('*').eq('conversacion_id', c.id).order('created_at').limit(500);
-    if (error) throw error;
-    let dia = '';
-    const burbujas = [];
-    for (const m of msjs) {
-      const d = diaLocal(m.created_at);
-      if (d !== dia) { dia = d; burbujas.push(el('div', { class: 'mkt-wa-dia' }, d === hoyISO() ? 'Hoy' : fechaLarga(d))); }
-      burbujas.push(el('div', { class: `mkt-wa-msj ${m.direccion}${m.estado === 'fallido' ? ' fallido' : ''}` },
-        el('div', { class: 'mkt-wa-burbuja' }, m.texto || `[${m.tipo}]`),
-        el('small', {}, hora(m.created_at), m.direccion === 'salida' ? ` · ${m.autor === 'bot' ? 'Bot · ' : ''}${ESTADO[m.estado] ?? m.estado}` : '',
-          m.error ? el('span', { class: 'mkt-wa-error' }, ` (${m.error})`) : null)));
+    if (!c) {
+      caja = null;
+      chat.replaceChildren(el('div', { class: 'mkt-wa-nada' }, el('span', { class: 'mkt-wa-nada-ico' }, icono('chat', { tam: 34 })),
+        el('strong', {}, 'WhatsApp de la empresa'), el('p', { class: 'texto-suave' }, 'Elige una conversación para leerla y responder.')));
+      panel.replaceChildren();
+      return;
     }
-    const caja = el('div', { class: 'mkt-wa-mensajes' }, burbujas);
-    const abierta = enVentana(c);
-    const entrada = el('textarea', { class: 'campo', rows: 2, maxlength: 4096, placeholder: 'Escribe una respuesta…', disabled: !editar || !abierta });
-    const enviar = boton('Enviar', { icono: 'derecha', tipo: 'primario', type: 'submit', disabled: !editar || !abierta });
-    const mandar = async (ev) => {
-      ev.preventDefault();
-      const texto = entrada.value.trim();
-      if (!texto || enviar.disabled) return;
-      enviar.disabled = true;
+    const msjs = await traerMensajes(c);
+    firmaMsjs = msjs.map((m) => `${m.id}:${m.estado}`).join('|');
+    const horas = horasVentana(c);
+    const abierta = horas > 0;
+    caja = el('div', { class: 'mkt-wa-mensajes', 'aria-live': 'polite' });
+
+    // Caja de respuesta
+    const entrada = el('textarea', { class: 'mkt-wa-entrada', rows: 1, maxlength: 4096, placeholder: abierta ? 'Escribe un mensaje' : 'Ventana de 24 horas cerrada', disabled: !editar || !abierta });
+    const crecer = () => { entrada.style.height = 'auto'; entrada.style.height = `${Math.min(entrada.scrollHeight, 140)}px`; };
+    entrada.addEventListener('input', crecer);
+    const btnEnviar = el('button', { type: 'submit', class: 'mkt-wa-enviar', 'aria-label': 'Enviar', title: 'Enviar (Enter)', disabled: !editar || !abierta }, icono('derecha', { tam: 18 }));
+    const nota = el('div', { class: 'mkt-wa-nota', 'aria-live': 'polite' });
+    enviarTexto = async (texto) => {
+      texto = String(texto ?? '').trim();
+      if (!texto || btnEnviar.disabled) return false;
+      btnEnviar.disabled = true;
       const { error: e } = await ctx.api.functions.invoke('mkt-wa-enviar', { body: { conversacion_id: c.id, texto } });
-      let msj = null;
-      if (e) { try { msj = (await e.context?.json?.())?.error; } catch { /* sin cuerpo */ } avisar(msj || e.message, 'error'); } else entrada.value = '';
-      enviar.disabled = false;
-      await refrescar();
+      btnEnviar.disabled = false;
+      if (e) { let msj = null; try { msj = (await e.context?.json?.())?.error; } catch { /* sin cuerpo */ } avisar(msj || e.message, 'error'); }
+      pintarMensajes(await traerMensajes(c), true);
+      cargarLista().catch(() => {});
+      return !e;
+    };
+    const mandar = async (ev) => {
+      ev?.preventDefault();
+      const texto = entrada.value;
+      if (!texto.trim()) return;
+      entrada.value = ''; crecer(); nota.replaceChildren();
+      const ok = await enviarTexto(texto);
+      if (!ok && !entrada.value) { entrada.value = texto; crecer(); }
+      entrada.focus();
     };
     entrada.addEventListener('keydown', (ev) => { if (ev.key === 'Enter' && !ev.shiftKey) mandar(ev); });
+
+    // Respuestas guardadas ({nombre}, {empresa})
+    const primerNombre = String(c.mkt_contactos?.nombre || c.nombre_perfil || '').trim().split(/\s+/)[0] ?? '';
+    const menuResp = el('div', { class: 'mkt-wa-menu', hidden: true },
+      respuestas.length ? respuestas.map((r) => el('button', { type: 'button', onclick: () => {
+        entrada.value = r.texto.replaceAll('{nombre}', primerNombre).replaceAll('{empresa}', empresa); crecer(); menuResp.hidden = true; entrada.focus();
+      } }, el('strong', {}, r.titulo), el('span', {}, r.texto))) : el('p', { class: 'texto-suave texto-chico' }, 'No hay respuestas guardadas. Se crean en Marketing → Ajustes.'));
+    const btnResp = el('button', { type: 'button', class: 'mkt-wa-herr', title: 'Respuestas guardadas', 'aria-label': 'Respuestas guardadas', disabled: !editar || !abierta,
+      onclick: () => { menuResp.hidden = !menuResp.hidden; } }, icono('lista', { tam: 18 }));
+    // Sugerir con el bot (no envía: deja el borrador en la caja)
+    const btnBot = el('button', { type: 'button', class: 'mkt-wa-herr', title: 'Sugerir respuesta con el bot', 'aria-label': 'Sugerir respuesta con el bot', disabled: !editar || !abierta,
+      onclick: async () => {
+        btnBot.disabled = true; btnBot.classList.add('pensando');
+        nota.replaceChildren(el('span', { class: 'texto-suave' }, 'El bot está pensando una respuesta…'));
+        try {
+          const historial = (await traerMensajes(c)).filter((m) => m.texto && m.estado !== 'fallido').slice(-20)
+            .map((m) => ({ rol: m.direccion === 'entrada' ? 'cliente' : 'bot', texto: m.texto }));
+          const { data, error } = await ctx.api.functions.invoke('mkt-bot', { body: { empresa_id: eid, mensajes: historial } });
+          if (error) { let j = null; try { j = await error.context?.json?.(); } catch { /* sin cuerpo */ } throw new Error(j?.error || error.message); }
+          entrada.value = data.respuesta || ''; crecer(); entrada.focus();
+          nota.replaceChildren(icono('chat', { tam: 13 }), data.derivar ? ` Sugerencia del bot. Ojo: el bot pasaría esto a una persona (${data.derivar}).` : ' Sugerencia del bot: revísala antes de enviar.');
+        } catch (e) { nota.replaceChildren(el('span', { class: 'mkt-wa-error' }, e.message)); }
+        btnBot.disabled = false; btnBot.classList.remove('pensando');
+      } }, icono('auto', { tam: 18 }));
+
+    const etapa = etapas.find((x) => x.id === c.mkt_contactos?.etapa_id);
     chat.replaceChildren(...[
       el('header', { class: 'mkt-wa-cab' },
-        el('div', {}, el('strong', {}, c.mkt_contactos?.nombre || c.nombre_perfil || verNumero(c.wa_id)),
-          el('small', { class: 'texto-suave' }, verNumero(c.wa_id), c.nombre_perfil && c.mkt_contactos?.nombre && c.nombre_perfil !== c.mkt_contactos.nombre ? ` · perfil: ${c.nombre_perfil}` : '')),
-        c.contacto_id ? el('a', { class: 'boton boton-secundario boton-chico', href: ctx.ruta('mkt.contacto', { id: c.contacto_id }) }, icono('users', { tam: 14 }), 'Ficha') : null),
+        el('button', { type: 'button', class: 'mkt-wa-volver boton-icono', 'aria-label': 'Volver a las conversaciones', onclick: () => raiz.classList.remove('con-chat') }, icono('volver', { tam: 18 })),
+        avatar(c),
+        el('div', { class: 'mkt-wa-cab-txt' }, el('strong', {}, nombreDe(c)),
+          el('small', {}, verNumero(c.wa_id), etapa ? ` · ${etapa.nombre}` : '', c.nombre_perfil && c.nombre_perfil !== nombreDe(c) ? ` · perfil: ${c.nombre_perfil}` : '')),
+        el('span', { class: `mkt-wa-ventana${abierta ? ' abierta' : ''}`, title: 'WhatsApp permite responder libremente hasta 24 horas después del último mensaje del cliente' },
+          icono('reloj', { tam: 13 }), abierta ? ` Ventana abierta · ${horas >= 1 ? `${Math.floor(horas)} h` : `${Math.max(1, Math.round(horas * 60))} min`}` : ' Ventana cerrada'),
+        el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Mostrar u ocultar el contacto', title: 'Contacto', 'aria-pressed': String(panelAbierto),
+          onclick: (ev) => { panelAbierto = !panelAbierto; raiz.classList.toggle('con-panel', panelAbierto); ev.currentTarget.setAttribute('aria-pressed', String(panelAbierto)); try { localStorage.setItem('isg.wa.panel', panelAbierto ? '1' : '0'); } catch { /* sin almacenamiento */ } } },
+          icono('users', { tam: 18 }))),
       caja,
-      abierta ? null : el('p', { class: 'aviso-bandeja texto-chico' }, icono('alerta', { tam: 14 }),
+      abierta ? null : el('p', { class: 'mkt-wa-cerrada' }, icono('alerta', { tam: 14 }),
         ' Pasaron más de 24 horas desde el último mensaje del cliente: WhatsApp solo deja escribirle con una plantilla aprobada (próximamente).'),
-      editar ? el('form', { class: 'mkt-bot-entrada', onsubmit: mandar }, entrada, enviar) : null].filter(Boolean));
-    caja.scrollTop = caja.scrollHeight;
+      editar ? el('form', { class: 'mkt-wa-compositor', onsubmit: mandar }, menuResp, nota,
+        el('div', { class: 'mkt-wa-fila' }, btnResp, btnBot, entrada, btnEnviar)) : null,
+    ].filter(Boolean));
+    pintarMensajes(msjs, true);
+    pintarPanel(c);
+    if (abierta && editar) setTimeout(() => entrada.focus(), 50);
     if (c.no_leidos && editar) {
       await ctx.api.from('mkt_wa_conversaciones').update({ no_leidos: 0 }).eq('id', c.id);
       c.no_leidos = 0;
-      lista.querySelector('.mkt-wa-item.activa')?.classList.remove('no-leida');
-      lista.querySelector('.mkt-wa-item.activa .mkt-wa-cuenta')?.remove();
+      pintarLista();
     }
   };
 
+  // ---------------------------------------------------------------- Panel del contacto
+  const pintarPanel = async (c) => {
+    const k = c.mkt_contactos;
+    const filas = [];
+    filas.push(el('div', { class: 'mkt-wa-panel-cab' }, avatar(c, 'grande'), el('strong', {}, nombreDe(c)), el('span', { class: 'texto-suave' }, verNumero(c.wa_id))));
+    if (k) {
+      const sel = el('select', { class: 'campo', disabled: !editar, 'aria-label': 'Etapa del embudo' },
+        etapas.map((e) => el('option', { value: e.id, selected: e.id === k.etapa_id }, e.nombre)));
+      sel.addEventListener('change', async () => {
+        const { error } = await ctx.api.from('mkt_contactos').update({ etapa_id: sel.value }).eq('id', k.id);
+        if (error) { avisar(error.message, 'error'); sel.value = k.etapa_id; return; }
+        k.etapa_id = sel.value; avisar('Etapa cambiada.');
+      });
+      filas.push(el('div', { class: 'mkt-wa-dato' }, el('span', {}, 'Etapa del embudo'), sel));
+      if (k.interes) filas.push(el('div', { class: 'mkt-wa-dato' }, el('span', {}, 'Le interesa'), el('strong', {}, k.interes)));
+      if (k.correo) filas.push(el('div', { class: 'mkt-wa-dato' }, el('span', {}, 'Correo'), el('strong', {}, k.correo)));
+    }
+    const acciones = el('div', { class: 'mkt-wa-acciones' },
+      k ? el('a', { class: 'boton boton-secundario boton-chico', href: ctx.ruta('mkt.contacto', { id: k.id }) }, icono('users', { tam: 14 }), 'Ficha del contacto') : null,
+      el('button', { type: 'button', class: 'boton boton-secundario boton-chico', onclick: async () => { try { await navigator.clipboard.writeText(`+${c.wa_id}`); avisar('Número copiado.'); } catch { avisar('No se pudo copiar.', 'error'); } } }, icono('copiar', { tam: 14 }), 'Copiar número'),
+      conTaller ? el('a', { class: 'boton boton-secundario boton-chico', href: ctx.ruta('taller.agenda') }, icono('calendario', { tam: 14 }), 'Agenda del taller') : null);
+    const vehiculos = el('div', { class: 'mkt-wa-vehiculos' });
+    panel.replaceChildren(...filas, vehiculos, acciones);
+    if (k?.tercero_id && conTaller) {
+      const [{ data: t }, { data: vs }] = await Promise.all([
+        ctx.api.from('terceros').select('razon_social, nombre_fantasia').eq('id', k.tercero_id).maybeSingle(),
+        ctx.api.from('tal_vehiculos').select('id, marca, modelo, anio, patente').eq('tercero_id', k.tercero_id).is('deleted_at', null).limit(6),
+      ]);
+      if (actual !== c.id) return;   // se cambió de conversación mientras cargaba
+      vehiculos.replaceChildren(
+        el('div', { class: 'mkt-wa-dato' }, el('span', {}, 'Cliente'), el('strong', {}, t?.nombre_fantasia || t?.razon_social || 'Cliente vinculado')),
+        ...(vs?.length ? [el('span', { class: 'mkt-wa-sub' }, 'Vehículos'), ...vs.map((v) => el('a', { class: 'mkt-wa-vehiculo', href: ctx.ruta('taller.vehiculo', { id: v.id }) },
+          icono('camion', { tam: 15 }), el('span', {}, [v.marca, v.modelo, v.anio].filter(Boolean).join(' ') || 'Vehículo'), el('small', {}, v.patente || '')))] : []));
+    } else if (k && !k.tercero_id) {
+      vehiculos.replaceChildren(el('p', { class: 'texto-suave texto-chico' }, 'Todavía no está vinculado a un cliente. Se vincula desde la ficha del contacto.'));
+    }
+  };
+
+  // ---------------------------------------------------------------- Navegación y actualización
   const abrir = async (id) => {
     actual = id;
     history.replaceState(null, '', ctx.ruta('mkt.whatsapp', { c: id }));
-    lista.querySelectorAll('.mkt-wa-item').forEach((a) => a.classList.toggle('activa', a.getAttribute('href') === ctx.ruta('mkt.whatsapp', { c: id })));
     raiz.classList.add('con-chat');
+    pintarLista();
     await pintarChat();
   };
   const refrescar = async () => {
-    const escribiendo = chat.querySelector('textarea');
-    const borrador = escribiendo?.value ?? '';
-    const tenia = document.activeElement === escribiendo;
     await cargarLista();
-    await pintarChat();
-    const nueva = chat.querySelector('textarea');
-    if (nueva && borrador) { nueva.value = borrador; if (tenia) nueva.focus(); }
+    const c = convs.find((x) => x.id === actual);
+    if (!c || !caja) return;
+    const msjs = await traerMensajes(c);
+    const firma = msjs.map((m) => `${m.id}:${m.estado}`).join('|');
+    if (firma !== firmaMsjs) { firmaMsjs = firma; pintarMensajes(msjs); }
+    if (c.no_leidos && editar && document.hasFocus()) { await ctx.api.from('mkt_wa_conversaciones').update({ no_leidos: 0 }).eq('id', c.id); c.no_leidos = 0; pintarLista(); }
   };
 
   await cargarLista();
@@ -128,10 +303,9 @@ export default async function vista(ctx) {
     refrescar().catch(() => { /* sin conexión: reintenta en el siguiente */ });
   }, 10_000);
 
-  const numero = numeros[0];
-  return el('section', { class: 'listado' },
+  const numero = rn.data[0];
+  return el('section', { class: 'listado mkt-wa-vista' },
     el('header', { class: 'listado-cabecera' }, el('h1', {}, 'WhatsApp'),
-      el('span', { class: 'texto-suave texto-chico' }, numero ? `${numero.nombre || 'Número'} · ${numero.numero || numero.phone_number_id}` : 'Sin número conectado'),
-      el('button', { type: 'button', class: 'boton boton-secundario boton-chico mkt-wa-volver', onclick: () => raiz.classList.remove('con-chat') }, icono('volver', { tam: 14 }), 'Conversaciones')),
+      el('span', { class: 'mkt-wa-numero' }, icono('chat', { tam: 14 }), numero ? ` ${numero.nombre || 'Número'} · ${numero.numero || numero.phone_number_id}` : ' Sin número conectado')),
     numero ? raiz : el('p', { class: 'texto-suave' }, 'Esta empresa todavía no tiene un número de WhatsApp conectado.'));
 }

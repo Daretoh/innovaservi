@@ -1,12 +1,12 @@
 // Capacitaciones → Rutas: listas de contenidos que debe ver un grupo de trabajadores (ej.: "Inducción pulidor").
 // Muestra cuántos contenidos y personas tiene cada una y su avance (visto / aprobado).
 // Ruta: #/capacitaciones.rutas
-import { el } from '../../../core/ui/dom.js?v=c6bc088';
-import { boton, listado } from '../../../core/ui/tabla.js?v=c6bc088';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=c6bc088';
-import { avisar } from '../../../core/ui/aviso.js?v=c6bc088';
-import { cargarEstilos } from '../datos.js?v=c6bc088';
-import { cargarRutas, barraAvance } from './ruta.js?v=c6bc088';
+import { el } from '../../../core/ui/dom.js?v=ef673ba';
+import { boton, listado } from '../../../core/ui/tabla.js?v=ef673ba';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=ef673ba';
+import { avisar } from '../../../core/ui/aviso.js?v=ef673ba';
+import { cargarEstilos } from '../datos.js?v=ef673ba';
+import { cargarRutas, barraAvance } from './ruta.js?v=ef673ba';
 
 export default async function vista(ctx) {
   cargarEstilos();

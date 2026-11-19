@@ -2,8 +2,8 @@
 // Los dibujos son SVG propios (no capturas): pantalla del teléfono simplificada con el botón a tocar resaltado en el
 // color de la empresa. Abre la pestaña del teléfono que se detecta; en el computador muestra un QR para abrirla en el
 // celular. Si la página ya se abrió desde el ícono de inicio, no se muestra.
-import { el } from '../core/ui/dom.js?v=c6bc088';
-import { icono } from '../core/ui/iconos.js?v=c6bc088';
+import { el } from '../core/ui/dom.js?v=ef673ba';
+import { icono } from '../core/ui/iconos.js?v=ef673ba';
 
 const QR_JS = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
 
