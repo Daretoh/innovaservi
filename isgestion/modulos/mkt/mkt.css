@@ -288,3 +288,10 @@
 .mkt-bot-opcion:hover { background: color-mix(in srgb, var(--empresa) 8%, var(--superficie)); }
 .mkt-bot-opcion small { font-size: .74rem; color: var(--texto-suave); font-weight: 400; }
 .mkt-wa-opc { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+
+/* ---- Bot automático por conversación */
+.mkt-wa-bot-estado { flex: none; display: inline-flex; align-items: center; gap: 3px; font: inherit; font-size: .72rem; padding: 3px 9px; border-radius: 999px; cursor: pointer;
+  border: 1px solid color-mix(in srgb, var(--empresa) 45%, var(--borde)); background: color-mix(in srgb, var(--empresa) 12%, var(--superficie)); color: var(--texto); }
+.mkt-wa-bot-estado.pausado { border-color: var(--borde); background: var(--fondo-sutil); color: var(--texto-suave); }
+.mkt-wa-bot-estado:disabled { cursor: default; }
+@media (max-width: 760px) { .mkt-wa-bot-estado { padding: 3px 6px; } }

@@ -1,11 +1,11 @@
 // Procesos de selección: vacante o cargo, cupos, requisitos (lista que se marca en cada postulante), abrir o cerrar.
-import { el } from '../../../core/ui/dom.js?v=92e612c';
-import { icono } from '../../../core/ui/iconos.js?v=92e612c';
-import { listado, boton } from '../../../core/ui/tabla.js?v=92e612c';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=92e612c';
-import { avisar } from '../../../core/ui/aviso.js?v=92e612c';
-import { fechaLarga } from '../../../core/ui/formato.js?v=92e612c';
-import { cargarBase } from '../datos.js?v=92e612c';
+import { el } from '../../../core/ui/dom.js?v=7105220';
+import { icono } from '../../../core/ui/iconos.js?v=7105220';
+import { listado, boton } from '../../../core/ui/tabla.js?v=7105220';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=7105220';
+import { avisar } from '../../../core/ui/aviso.js?v=7105220';
+import { fechaLarga } from '../../../core/ui/formato.js?v=7105220';
+import { cargarBase } from '../datos.js?v=7105220';
 
 export default async function vista(ctx) {
   const base = await cargarBase(ctx);

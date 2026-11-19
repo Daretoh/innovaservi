@@ -7,15 +7,15 @@
 // - Derecha (se oculta): el contacto del Embudo (etapa, cliente, vehículos del taller y accesos).
 // Se actualiza sola cada 10 segundos sin perder lo que se está escribiendo ni mover el chat si se está leyendo arriba.
 // Ruta: #/mkt.whatsapp[?c=<conversación>]
-import { el } from '../../../core/ui/dom.js?v=92e612c';
-import { icono } from '../../../core/ui/iconos.js?v=92e612c';
-import { boton } from '../../../core/ui/tabla.js?v=92e612c';
-import { avisar } from '../../../core/ui/aviso.js?v=92e612c';
-import { diaLocal, hoyISO, fechaLarga, fechaCorta, nombreDia } from '../../../core/ui/formato.js?v=92e612c';
-import { cargarCss } from '../datos.js?v=92e612c';
-import { tarjetaHora } from '../hora-bot.js?v=92e612c';
-import { DATOS, nombreUso, armar } from '../plantillas-wa.js?v=92e612c';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=92e612c';
+import { el } from '../../../core/ui/dom.js?v=7105220';
+import { icono } from '../../../core/ui/iconos.js?v=7105220';
+import { boton } from '../../../core/ui/tabla.js?v=7105220';
+import { avisar } from '../../../core/ui/aviso.js?v=7105220';
+import { diaLocal, hoyISO, fechaLarga, fechaCorta, nombreDia } from '../../../core/ui/formato.js?v=7105220';
+import { cargarCss } from '../datos.js?v=7105220';
+import { tarjetaHora } from '../hora-bot.js?v=7105220';
+import { DATOS, nombreUso, armar } from '../plantillas-wa.js?v=7105220';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=7105220';
 
 const ESTADO = { pendiente: 'Enviando', enviado: 'Enviado', entregado: 'Entregado', leido: 'Leído', fallido: 'No se envió' };
 const hora = (ts) => new Date(ts).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
@@ -58,6 +58,8 @@ export default async function vista(ctx) {
     ctx.api.from('mkt_etapas').select('id, nombre, tipo, orden').eq('empresa_id', eid).is('deleted_at', null).order('orden'),
     ctx.api.from('mkt_respuestas').select('titulo, texto').eq('empresa_id', eid).is('deleted_at', null).order('orden').order('titulo'),
   ]);
+  const { data: botCfg } = await ctx.api.from('mkt_bot_config').select('whatsapp, pausa_horas').eq('empresa_id', eid).maybeSingle();
+  const botOn = !!botCfg?.whatsapp;
   if (rn.error) throw rn.error;
   const etapas = re.data ?? [];
   const respuestas = rr.data ?? [];
@@ -254,6 +256,18 @@ export default async function vista(ctx) {
           el('small', {}, verNumero(c.wa_id), etapa ? ` · ${etapa.nombre}` : '', c.nombre_perfil && c.nombre_perfil !== nombreDe(c) ? ` · perfil: ${c.nombre_perfil}` : '')),
         el('span', { class: `mkt-wa-ventana${abierta ? ' abierta' : ''}`, title: 'WhatsApp permite responder libremente hasta 24 horas después del último mensaje del cliente' },
           icono('reloj', { tam: 13 }), abierta ? ` Ventana abierta · ${horas >= 1 ? `${Math.floor(horas)} h` : `${Math.max(1, Math.round(horas * 60))} min`}` : ' Ventana cerrada'),
+        botOn ? (() => {
+          const pausado = c.bot_pausado_hasta && new Date(c.bot_pausado_hasta) > new Date();
+          const cambiar = async () => {
+            const hasta = pausado ? null : new Date(Date.now() + (botCfg.pausa_horas ?? 12) * 3600e3).toISOString();
+            const { error: e } = await ctx.api.from('mkt_wa_conversaciones').update({ bot_pausado_hasta: hasta }).eq('id', c.id);
+            if (e) { avisar(e.message, 'error'); return; }
+            c.bot_pausado_hasta = hasta; avisar(pausado ? 'El bot vuelve a responder en esta conversación.' : 'Bot pausado en esta conversación: respondes tú.'); pintarChat();
+          };
+          return el('button', { type: 'button', class: `mkt-wa-bot-estado${pausado ? ' pausado' : ''}`, disabled: !editar, onclick: cambiar,
+            title: pausado ? `Pausado hasta ${new Date(c.bot_pausado_hasta).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' })}. Toca para que vuelva a responder.` : 'El bot responde solo. Toca para pausarlo en esta conversación.' },
+            icono('auto', { tam: 13 }), pausado ? ' Bot pausado' : ' Bot activo');
+        })() : null,
         el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Mostrar u ocultar el contacto', title: 'Contacto', 'aria-pressed': String(panelAbierto),
           onclick: (ev) => { panelAbierto = !panelAbierto; raiz.classList.toggle('con-panel', panelAbierto); ev.currentTarget.setAttribute('aria-pressed', String(panelAbierto)); try { localStorage.setItem('isg.wa.panel', panelAbierto ? '1' : '0'); } catch { /* sin almacenamiento */ } } },
           icono('users', { tam: 18 }))),

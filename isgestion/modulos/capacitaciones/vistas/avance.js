@@ -2,14 +2,14 @@
 // uno (?p=<persona>) se ven sus rutas contenido por contenido, con aprobar / no aprobado. Excel con todo.
 // Quien solo ve el módulo (sin editar ni aprobar) ve su propio avance.
 // Ruta: #/capacitaciones.avance
-import { el } from '../../../core/ui/dom.js?v=92e612c';
-import { icono } from '../../../core/ui/iconos.js?v=92e612c';
-import { boton } from '../../../core/ui/tabla.js?v=92e612c';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=92e612c';
-import { exportarExcel } from '../../../core/excel.js?v=92e612c';
-import { fechaLarga, diaLocal } from '../../../core/ui/formato.js?v=92e612c';
-import { cargarPersonas, miPersona, cargarEstilos, conCarga, TIPO_CORTO, ICONO_TIPO } from '../datos.js?v=92e612c';
-import { cargarRutas, barraAvance } from './ruta.js?v=92e612c';
+import { el } from '../../../core/ui/dom.js?v=7105220';
+import { icono } from '../../../core/ui/iconos.js?v=7105220';
+import { boton } from '../../../core/ui/tabla.js?v=7105220';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=7105220';
+import { exportarExcel } from '../../../core/excel.js?v=7105220';
+import { fechaLarga, diaLocal } from '../../../core/ui/formato.js?v=7105220';
+import { cargarPersonas, miPersona, cargarEstilos, conCarga, TIPO_CORTO, ICONO_TIPO } from '../datos.js?v=7105220';
+import { cargarRutas, barraAvance } from './ruta.js?v=7105220';
 
 const estadoDe = (a) => (a?.aprobado === true ? 'Aprobado' : a?.aprobado === false ? 'No aprobado' : a?.visto_at ? 'Visto' : 'Pendiente');
 const CHIP = { Aprobado: 'chip-ok', 'No aprobado': 'chip-venc', Visto: 'chip-ok', Pendiente: 'chip-pend' };

@@ -1,13 +1,13 @@
 // Marketing → Bot: lo que sabe el bot de clientes (fichas), cómo habla (configuración) y un simulador para probarlo
 // antes de conectarlo a WhatsApp, Messenger e Instagram. Ignacio lo entrena y lo publica (decisión de Enzo, 2026-11-10).
 // El simulador llama a la Edge Function mkt-bot, que usa Claude solo con las fichas activas de esta empresa.
-import { el } from '../../../core/ui/dom.js?v=92e612c';
-import { icono } from '../../../core/ui/iconos.js?v=92e612c';
-import { boton } from '../../../core/ui/tabla.js?v=92e612c';
-import { avisar } from '../../../core/ui/aviso.js?v=92e612c';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=92e612c';
-import { cargarCss } from '../datos.js?v=92e612c';
-import { tarjetaHora } from '../hora-bot.js?v=92e612c';
+import { el } from '../../../core/ui/dom.js?v=7105220';
+import { icono } from '../../../core/ui/iconos.js?v=7105220';
+import { boton } from '../../../core/ui/tabla.js?v=7105220';
+import { avisar } from '../../../core/ui/aviso.js?v=7105220';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=7105220';
+import { cargarCss } from '../datos.js?v=7105220';
+import { tarjetaHora } from '../hora-bot.js?v=7105220';
 
 export const CATEGORIAS_BOT = [
   ['servicios', 'Servicios'], ['precios', 'Precios publicados'], ['horarios', 'Horarios'], ['ubicacion', 'Ubicación y contacto'],
@@ -145,6 +145,22 @@ export default async function vista(ctx) {
   });
   const dato = (etq, v) => el('div', { class: 'mkt-bot-dato' }, el('span', { class: 'texto-suave texto-chico' }, etq), el('span', {}, v || el('span', { class: 'texto-suave' }, 'Sin definir')));
   const canal = (nombre, on) => el('li', {}, el('span', {}, nombre), el('span', { class: 'chip' }, on ? 'Encendido' : 'Sin conectar'));
+  // WhatsApp ya está conectado (Marketing 008): se enciende y apaga aquí (aprobar). La pausa es por conversación.
+  const encenderWa = async () => {
+    const on = !cfg?.whatsapp;
+    const datos = { whatsapp: on };
+    const { error: e } = cfg ? await ctx.api.from('mkt_bot_config').update(datos).eq('empresa_id', eid) : await ctx.api.from('mkt_bot_config').insert({ ...datos, empresa_id: eid });
+    if (e) { avisar(e.message, 'error'); return; }
+    avisar(on ? 'Bot encendido en WhatsApp: responde solo a los clientes.' : 'Bot apagado en WhatsApp: solo responden personas.'); ctx.refrescar();
+  };
+  const formPausa = () => abrirFormulario({ titulo: 'Pausa del bot', textoGuardar: 'Guardar',
+    mensaje: 'Cuando una persona responde desde la bandeja, o el bot pasa la conversación a una persona, el bot deja de responder en esa conversación por este tiempo. Se puede reactivar antes desde la bandeja.',
+    campos: [{ id: 'horas', etiqueta: 'Horas de pausa', tipo: 'number', valor: cfg?.pausa_horas ?? 12 }],
+    alGuardar: (v) => { const h = Math.round(Number(v.horas)); if (!(h >= 1 && h <= 168)) throw new Error('Entre 1 y 168 horas.'); return guardar(cfg ? ctx.api.from('mkt_bot_config').update({ pausa_horas: h }).eq('empresa_id', eid) : ctx.api.from('mkt_bot_config').insert({ pausa_horas: h, empresa_id: eid }), 'Pausa guardada.'); } });
+  const filaWa = el('li', {}, el('span', {}, 'WhatsApp'),
+    el('span', { class: 'listado-acciones' },
+      el('span', { class: `chip ${cfg?.whatsapp ? 'chip-ok' : 'chip-pend'}` }, cfg?.whatsapp ? 'Responde solo' : 'Apagado'),
+      aprobar ? boton(cfg?.whatsapp ? 'Apagar' : 'Encender', { tipo: cfg?.whatsapp ? 'secundario' : 'primario', class: `boton boton-${cfg?.whatsapp ? 'secundario' : 'primario'} boton-chico`, onclick: encenderWa }) : null));
   const tarjetaConfig = el('div', { class: 'ficha' },
     el('div', { class: 'listado-cabecera' }, el('h2', {}, 'Cómo habla'), editar ? boton('Editar', { icono: 'editar', onclick: formConfig }) : null),
     dato('Nombre', cfg?.nombre), dato('Saludo', cfg?.saludo), dato('Tono', cfg?.tono || 'Cercano y profesional, sin emojis (por defecto)'), dato('Pasa a una persona además cuando', cfg?.derivar),
@@ -154,9 +170,10 @@ export default async function vista(ctx) {
       ? el('p', { class: 'texto-chico' }, el('span', { class: `chip ${menu.activo ? 'chip-ok' : 'chip-pend'}` }, menu.activo ? 'Activo' : 'Apagado'), ' ', menu.opciones.map((o) => o.titulo).join(' · '))
       : el('p', { class: 'texto-suave texto-chico' }, 'Sin menú: el bot responde solo con texto.'),
     el('h3', { class: 'mkt-bot-cat' }, 'Canales'),
-    el('ul', { class: 'mkt-ajustes-lista' }, canal('WhatsApp', cfg?.whatsapp), canal('Messenger', cfg?.messenger), canal('Instagram', cfg?.instagram)),
-    el('p', { class: 'texto-suave texto-chico' }, 'Los canales se conectan cuando Meta habilite la cuenta de la empresa. ',
-      aprobar ? 'Tu cuenta podrá encenderlos (permiso aprobar).' : 'Encenderlos pide el permiso aprobar de Marketing.'));
+    el('ul', { class: 'mkt-ajustes-lista' }, filaWa, canal('Messenger', cfg?.messenger), canal('Instagram', cfg?.instagram)),
+    el('p', { class: 'texto-suave texto-chico' }, `Encendido, el bot responde solo a cada mensaje de WhatsApp. Si una persona responde desde la bandeja, el bot se pausa ${cfg?.pausa_horas ?? 12} h en esa conversación. `,
+      editar ? el('button', { type: 'button', class: 'mkt-wa-reintentar', onclick: formPausa }, 'Cambiar') : null,
+      ' Messenger e Instagram se conectan cuando Meta apruebe los permisos de la app. ', aprobar ? '' : 'Encender pide el permiso aprobar de Marketing.'));
 
   // ---- Simulador
   if (!charlas.has(eid)) charlas.set(eid, []);

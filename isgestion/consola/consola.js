@@ -1,20 +1,20 @@
 // Consola de la plataforma (solo el equipo ISgestión, es_equipo()): clientes, empresas y módulos, uso y cobro.
 // Usa la misma sesión que la app (mismo dominio); si no hay sesión, se ingresa primero en ISgestión.
 // Rutas: #/clientes · #/cliente?id= · #/empresas · #/cobro · #/salud (?e= una revisión, ?ver=problemas) · #/almacenamiento
-import { iniciarApi, db } from '../core/api.js?v=92e612c';
-import { sesionActual, cerrarSesion } from '../core/auth.js?v=92e612c';
-import { el } from '../core/ui/dom.js?v=92e612c';
-import { icono } from '../core/ui/iconos.js?v=92e612c';
+import { iniciarApi, db } from '../core/api.js?v=7105220';
+import { sesionActual, cerrarSesion } from '../core/auth.js?v=7105220';
+import { el } from '../core/ui/dom.js?v=7105220';
+import { icono } from '../core/ui/iconos.js?v=7105220';
 
 const raiz = document.getElementById('app');
 const MENU = [
-  ['clientes', 'Clientes', 'building', () => import('./vistas/clientes.js?v=92e612c')],
-  ['empresas', 'Empresas y módulos', 'ajustes', () => import('./vistas/empresas.js?v=92e612c')],
-  ['cobro', 'Uso y cobro', 'dinero', () => import('./vistas/cobro.js?v=92e612c')],
-  ['salud', 'Salud', 'escudo', () => import('./vistas/salud.js?v=92e612c')],
-  ['almacenamiento', 'Almacenamiento', 'carpeta', () => import('./vistas/almacenamiento.js?v=92e612c')],
+  ['clientes', 'Clientes', 'building', () => import('./vistas/clientes.js?v=7105220')],
+  ['empresas', 'Empresas y módulos', 'ajustes', () => import('./vistas/empresas.js?v=7105220')],
+  ['cobro', 'Uso y cobro', 'dinero', () => import('./vistas/cobro.js?v=7105220')],
+  ['salud', 'Salud', 'escudo', () => import('./vistas/salud.js?v=7105220')],
+  ['almacenamiento', 'Almacenamiento', 'carpeta', () => import('./vistas/almacenamiento.js?v=7105220')],
 ];
-const OCULTAS = { cliente: ['clientes', () => import('./vistas/cliente.js?v=92e612c')] };
+const OCULTAS = { cliente: ['clientes', () => import('./vistas/cliente.js?v=7105220')] };
 const estado = { contenido: null, menu: null, usuario: null, vista: null };
 
 const ruta = (id, params = {}) => { const q = new URLSearchParams(params).toString(); return `#/${id}${q ? `?${q}` : ''}`; };
