@@ -103,3 +103,20 @@
 .alm-tabla td { vertical-align: top; }
 .alm-mas { display: flex; justify-content: center; padding: 12px; }
 @media (max-width: 760px) { .alm-filtros .campo { min-width: 0; flex: 1 1 140px; } }
+/* Sugerencias (vistas/sugerencias.js); el resto de .sug-* viene de core/ui/estilos.css */
+.sug-filtros { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 12px 0; }
+.sug-filtros input[type="search"] { flex: 1; min-width: 200px; }
+.sug-bandeja { display: flex; flex-direction: column; gap: 12px; }
+.sug-b { display: flex; flex-direction: column; gap: 10px; }
+.sug-b-cabeza { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.sug-b-punto { border-top: 1px solid var(--borde); padding-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+.sug-b-punto.urgente { border-left: 3px solid var(--error); padding-left: 10px; }
+.sug-b-texto { margin: 0; white-space: pre-wrap; }
+.sug-foto-grande { width: 120px; height: 90px; }
+.sug-b-acciones { display: grid; grid-template-columns: 170px 1fr auto; gap: 8px; align-items: start; }
+.sug-b-acciones textarea { font: inherit; padding: 6px 8px; border: 1px solid var(--borde); border-radius: var(--radio-control); background: var(--superficie); color: var(--texto); resize: vertical; }
+@media (max-width: 760px) { .sug-b-acciones { grid-template-columns: 1fr; } }
+.sug-b { padding: 14px 16px; }
+.sug-b > header.sug-b-cabeza { margin: 0; padding: 0; justify-content: flex-start; }
+.sug-b-punto { margin: 0; }
+.sug-b { align-items: stretch; }

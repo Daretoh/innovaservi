@@ -5,13 +5,13 @@
 // En producción la factura queda registrada en Facturas con el PDF del SII como respaldo y la OC como referencia.
 // En pruebas se emite en el ambiente de desarrollo de Haulmer y solo se muestra el PDF de prueba.
 // Anular: nota de crédito (anularConNota), que quita la factura de Facturas (la cotización queda libre).
-import { el } from '../../core/ui/dom.js?v=40804ef';
-import { abrirFormulario } from '../../core/ui/modal.js?v=40804ef';
-import { avisar } from '../../core/ui/aviso.js?v=40804ef';
-import { hoyISO, sumarDias, dinero } from '../../core/ui/formato.js?v=40804ef';
-import { llamarDte, nuevaLlave, estadoDte, ofrecerPdf } from '../../core/dte.js?v=40804ef';
-import { totales, totalLinea, numeroTexto, verPatente, nombreTercero, IVA } from './datos.js?v=40804ef';
-import { PLAZO_PAGO } from './facturas.js?v=40804ef';
+import { el } from '../../core/ui/dom.js?v=9619ac3';
+import { abrirFormulario } from '../../core/ui/modal.js?v=9619ac3';
+import { avisar } from '../../core/ui/aviso.js?v=9619ac3';
+import { hoyISO, sumarDias, dinero } from '../../core/ui/formato.js?v=9619ac3';
+import { llamarDte, nuevaLlave, estadoDte, ofrecerPdf } from '../../core/dte.js?v=9619ac3';
+import { totales, totalLinea, numeroTexto, verPatente, nombreTercero, IVA } from './datos.js?v=9619ac3';
+import { PLAZO_PAGO } from './facturas.js?v=9619ac3';
 
 const detalleCot = (c) => c.cot_grupos.map((g) => [g.titulo, verPatente(g.patente)].filter(Boolean).join(' · ')).join(', ');
 const miles = (n) => Math.round(n).toLocaleString('es-CL');
@@ -56,7 +56,7 @@ export function leerLineas(texto) {
 // Borrador (2026-11-17, pedido de Enzo): PDF local con el mismo diseño de la factura de Haulmer y lo mismo que se
 // enviará al SII, marcado BORRADOR, sin folio ni timbre. No llama al SII.
 async function verBorrador(ctx, v, lineas, descuentoPct, { emisor = null, ocFecha = null } = {}) {
-  const { cargarJsPdf, cargarLogo, rgb } = await import('../../core/pdf.js?v=40804ef');
+  const { cargarJsPdf, cargarLogo, rgb } = await import('../../core/pdf.js?v=9619ac3');
   const jsPDF = await cargarJsPdf();
   const e = ctx.empresa;
   const em = { razon: emisor?.razon ?? e.razon_social, rut: emisor?.rut ?? e.rut, giro: emisor?.giro ?? e.giro ?? '',

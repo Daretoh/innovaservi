@@ -2,8 +2,9 @@
 // Pregunta a la Edge Function `soporte` (Claude, con la clave solo en el servidor), que responde con el manual de los
 // módulos que la cuenta puede ver y enlaces #/<modulo>.<vista>. La respuesta se arma con nodos de texto (sin innerHTML):
 // solo **negrita**, listas y enlaces a rutas de la app. La conversación vive en la pestaña hasta cambiar de empresa.
-import { el } from './ui/dom.js?v=40804ef';
-import { icono } from './ui/iconos.js?v=40804ef';
+import { el } from './ui/dom.js?v=9619ac3';
+import { icono } from './ui/iconos.js?v=9619ac3';
+import { formularioSugerencia, misSugerencias } from './sugerencias.js?v=9619ac3';
 
 const RUTA = /^#\/[a-z]+\.[a-z0-9_]+(\?[\w=&%.-]*)?$/;
 const SUGERENCIAS = ['¿Cómo agrego a un usuario nuevo?', '¿Dónde veo lo que tengo pendiente?', '¿Cómo descargo esta pantalla en Excel?'];
@@ -43,8 +44,9 @@ function respuestaNodos(txt) {
   return out;
 }
 
-// db: cliente de Supabase · empresaId(): empresa real activa · pantallas(): [{ id, nombre }] que muestra el menú
-export function botonSoporte({ db, empresaId, pantallas }) {
+// db: cliente de Supabase · empresaId(): empresa real activa · usuarioId · pantallas(): [{ id, nombre, modulo, moduloNombre, oculto }]
+// Pestañas: Preguntar (asistente), Sugerir (core/sugerencias.js, Núcleo 024) y Mis sugerencias.
+export function botonSoporte({ db, empresaId, usuarioId, pantallas }) {
   const historial = [];   // { p, r, id }
   let enviando = false, cerradoAntes = false;
 
@@ -53,11 +55,38 @@ export function botonSoporte({ db, empresaId, pantallas }) {
   const enviar = el('button', { type: 'submit', class: 'boton boton-chico', 'aria-label': 'Enviar' }, icono('derecha', { tam: 16 }));
   const pie = el('div', { class: 'sop-quedan' });
   const form = el('form', { class: 'sop-form' }, entrada, enviar);
+  const actual = () => (location.hash.match(/^#\/([a-z]+\.[a-z0-9_]+)/) ?? [])[1] ?? null;
+  const visibles = () => pantallas().filter((p) => !p.oculto).map(({ id, nombre }) => ({ id, nombre }));
+  const preguntarCaja = el('div', { class: 'sop-cuerpo' }, mensajes, form, pie);
+  const sugerirCaja = el('div', { class: 'sop-cuerpo sop-desliza', hidden: true });
+  const miasCaja = el('div', { class: 'sop-cuerpo sop-desliza', hidden: true });
+  let sugerir = null;
+  const pestanas = [['preguntar', 'Preguntar', preguntarCaja], ['sugerir', 'Sugerir', sugerirCaja], ['mias', 'Mis sugerencias', miasCaja]];
+  const barra = el('div', { class: 'sop-pestanas', role: 'tablist' });
+  async function verPestana(id) {
+    for (const [k, , caja] of pestanas) caja.hidden = k !== id;
+    for (const b of barra.children) { const si = b.dataset.p === id; b.classList.toggle('activa', si); b.setAttribute('aria-selected', String(si)); }
+    if (id === 'sugerir') {
+      // La pantalla abierta se sugiere sola en el primer punto si todavía está vacío
+      sugerir ??= formularioSugerencia({ db, empresaId, usuarioId, pantallas, actual, alEnviar: (n) => { avisarEnviada(n); miasCaja.dataset.listo = ''; verPestana('mias'); } });
+      if (!sugerirCaja.firstChild) sugerirCaja.append(sugerir);
+    }
+    if (id === 'mias' && !miasCaja.dataset.listo) {
+      miasCaja.dataset.listo = '1';
+      miasCaja.replaceChildren(el('div', { class: 'cargador', 'aria-label': 'Cargando' }));
+      miasCaja.replaceChildren(...[aviso, await misSugerencias(db)].filter(Boolean));
+      aviso = null;
+    }
+    if (id === 'preguntar') setTimeout(() => entrada.focus(), 30);
+  }
+  let aviso = null;
+  const avisarEnviada = (n) => { aviso = el('div', { class: 'sug-enviada' }, icono('check', { tam: 16 }), n ? `Sugerencia N° ${n} enviada. Te avisaremos cuando la revisemos.` : 'Sugerencia enviada.'); };
+  barra.append(...pestanas.map(([k, t]) => el('button', { type: 'button', role: 'tab', class: 'sop-pestana', 'data-p': k, onclick: () => verPestana(k) }, t)));
   const panel = el('section', { class: 'sop-panel', hidden: true, role: 'dialog', 'aria-label': 'Ayuda de ISgestión' },
     el('header', { class: 'sop-cabeza' },
       el('span', { class: 'sop-titulo' }, icono('chat', { tam: 16 }), 'Ayuda'),
       el('button', { type: 'button', class: 'boton-icono', title: 'Cerrar', 'aria-label': 'Cerrar ayuda', onclick: () => abrir(false) }, icono('cerrar'))),
-    mensajes, form, pie);
+    barra, preguntarCaja, sugerirCaja, miasCaja);
   const boton = el('button', { type: 'button', class: 'sop-boton', title: 'Ayuda: pregúntale al asistente', 'aria-label': 'Abrir la ayuda', onclick: () => abrir(panel.hidden) }, icono('chat', { tam: 22 }));
 
   const bajar = () => { mensajes.scrollTop = mensajes.scrollHeight; };
@@ -84,7 +113,7 @@ export function botonSoporte({ db, empresaId, pantallas }) {
     try {
       const pantalla = (location.hash.match(/^#\/([a-z]+\.[a-z0-9_]+)/) ?? [])[1] ?? null;
       const { data, error } = await db.functions.invoke('soporte', {
-        body: { empresa_id: empresaId(), pregunta: q, pantalla, pantallas: pantallas(), historial: historial.slice(-4).map(({ p, r }) => ({ p, r })) },
+        body: { empresa_id: empresaId(), pregunta: q, pantalla, pantallas: visibles(), historial: historial.slice(-4).map(({ p, r }) => ({ p, r })) },
       });
       if (error) {
         let j = null; try { j = await error.context?.json?.(); } catch { /* sin cuerpo */ }
@@ -122,10 +151,16 @@ export function botonSoporte({ db, empresaId, pantallas }) {
     boton.classList.toggle('abierto', si);
     boton.setAttribute('aria-expanded', String(si));
     if (si) {
-      if (!cerradoAntes && !historial.length) bienvenida();
+      if (!cerradoAntes && !historial.length) { bienvenida(); verPestana('preguntar'); }
       cerradoAntes = true;
-      setTimeout(() => entrada.focus(), 30);
+      if (!preguntarCaja.hidden) setTimeout(() => entrada.focus(), 30);
     }
+  }
+
+  // Desde el aviso "Tu sugerencia N° …" (./?ayuda=sugerencias): abre Mis sugerencias
+  if (new URLSearchParams(location.search).get('ayuda') === 'sugerencias') {
+    history.replaceState(null, '', location.pathname + location.hash);
+    setTimeout(() => { abrir(true); verPestana('mias'); }, 600);
   }
 
   return el('div', { class: 'sop' }, panel, boton);

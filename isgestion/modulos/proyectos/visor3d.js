@@ -1,11 +1,11 @@
 // Visor 3D de Proyectos: muebles (mallas del exportador de SketchUp, en R2) y áreas completas con cada objeto en su
 // posición real. three.js 0.147.0 (jsDelivr, versión fija) se carga solo al abrir un 3D.
 // SketchUp (cm, Z arriba) → visor (m, Y arriba): (x, y, z) → (x/100, z/100, -y/100).
-import { el } from '../../core/ui/dom.js?v=40804ef';
-import { icono } from '../../core/ui/iconos.js?v=40804ef';
-import { boton } from '../../core/ui/tabla.js?v=40804ef';
-import { urlsFirmadas } from '../../core/adjuntos.js?v=40804ef';
-import { instanciasDe, subtotal, tienePrecio, clp, fmtNum } from './datos.js?v=40804ef';
+import { el } from '../../core/ui/dom.js?v=9619ac3';
+import { icono } from '../../core/ui/iconos.js?v=9619ac3';
+import { boton } from '../../core/ui/tabla.js?v=9619ac3';
+import { urlsFirmadas } from '../../core/adjuntos.js?v=9619ac3';
+import { instanciasDe, subtotal, tienePrecio, clp, fmtNum } from './datos.js?v=9619ac3';
 
 const CDN3 = 'https://cdn.jsdelivr.net/npm/three@0.147.0/';
 const cargarScript = (src) => new Promise((ok, mal) => {

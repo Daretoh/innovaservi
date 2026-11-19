@@ -2908,3 +2908,46 @@ html[data-modo="oscuro"] { --turno-dia-fondo: #4a3a12; --turno-dia-texto: #fde68
 .tal-pasos { display: grid; gap: 8px; }
 .tal-paso-cuerpo { display: grid; gap: 10px; padding-top: 4px; }
 .tal-paso-botones { display: flex; flex-wrap: wrap; gap: 8px; }
+/* Ayuda: pestañas Preguntar / Sugerir / Mis sugerencias (core/soporte.js, core/sugerencias.js) */
+@media (min-width: 761px) { .sop-panel { width: min(420px, calc(100vw - 32px)); height: min(620px, calc(100dvh - 110px)); } }
+.sop-pestanas { display: flex; gap: 2px; padding: 6px 8px 0; border-bottom: 1px solid var(--borde); background: var(--fondo-sutil); }
+.sop-pestana { flex: 1; border: 0; background: none; color: var(--texto-suave); font: inherit; font-size: .85rem; font-weight: 600; padding: 8px 6px; border-bottom: 2px solid transparent; cursor: pointer; }
+.sop-pestana:hover { color: var(--texto); }
+.sop-pestana.activa { color: var(--empresa); border-bottom-color: var(--empresa); }
+.sop-cuerpo { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.sop-cuerpo[hidden] { display: none; }
+.sop-desliza { overflow-y: auto; overscroll-behavior: contain; padding: 12px; }
+.sug-form { display: flex; flex-direction: column; gap: 10px; }
+.sug-ayuda { margin: 0; font-size: .82rem; color: var(--texto-suave); }
+.sug-tipos { display: flex; gap: 6px; flex-wrap: wrap; }
+.sug-tipo { border: 1px solid var(--borde); background: var(--superficie); color: var(--texto); border-radius: 999px; padding: 4px 12px; font: inherit; font-size: .85rem; cursor: pointer; }
+.sug-tipo.activo { background: var(--empresa); border-color: var(--empresa); color: var(--sobre-empresa); }
+.sug-puntos { display: flex; flex-direction: column; gap: 10px; }
+.sug-punto { border: 1px solid var(--borde); border-radius: var(--radio); padding: 10px; display: flex; flex-direction: column; gap: 8px; background: var(--superficie); transition: border-color var(--transicion); }
+.sug-punto.urgente { border-left: 3px solid var(--error); }
+.sug-punto.soltar { border-color: var(--empresa); background: color-mix(in srgb, var(--empresa) 6%, var(--superficie)); }
+.sug-punto-cabeza { display: flex; align-items: center; gap: 8px; }
+.sug-num { flex: none; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: .78rem; font-weight: 700; background: var(--fondo-hundido); color: var(--texto-suave); }
+.sug-pantalla { flex: 1; min-width: 0; font: inherit; font-size: .85rem; padding: 5px 8px; border: 1px solid var(--borde); border-radius: var(--radio-control); background: var(--superficie); color: var(--texto); }
+.sug-punto-cabeza .combo { flex: 1; min-width: 0; }
+.sug-texto { width: 100%; box-sizing: border-box; resize: vertical; font: inherit; font-size: .9rem; padding: 7px 10px; border: 1px solid var(--borde); border-radius: var(--radio-control); background: var(--superficie); color: var(--texto); }
+.sug-texto:focus, .sug-pantalla:focus { outline: none; border-color: var(--empresa); }
+.sug-fotos { display: flex; flex-wrap: wrap; gap: 6px; }
+.sug-foto { position: relative; width: 64px; height: 64px; border-radius: var(--radio-control); overflow: hidden; border: 1px solid var(--borde); background: var(--fondo-hundido); display: block; }
+.sug-foto img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.sug-foto-quitar { position: absolute; top: 2px; right: 2px; width: 20px; height: 20px; border-radius: 50%; border: 0; display: grid; place-items: center; padding: 0; cursor: pointer; background: var(--superficie); color: var(--texto); box-shadow: var(--sombra-suave); }
+.sug-foto-agregar { width: 64px; height: 64px; border: 1px dashed var(--borde); border-radius: var(--radio-control); background: none; color: var(--texto-suave); font: inherit; font-size: .7rem; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; cursor: pointer; }
+.sug-foto-agregar:hover { color: var(--empresa); border-color: var(--empresa); }
+.sug-urgente { display: inline-flex; align-items: center; gap: 6px; font-size: .82rem; color: var(--texto-suave); align-self: flex-start; cursor: pointer; }
+.sug-mas { align-self: flex-start; display: inline-flex; align-items: center; gap: 4px; }
+.sug-pie { position: sticky; bottom: -12px; margin: 0 -12px -12px; padding: 10px 12px; background: var(--superficie); border-top: 1px solid var(--borde); display: flex; justify-content: flex-end; }
+.sug-enviada { display: flex; align-items: center; gap: 8px; padding: 8px 10px; margin-bottom: 10px; border-radius: var(--radio); background: var(--ok-fondo); color: var(--ok); font-size: .88rem; }
+.sug-mias { display: flex; flex-direction: column; gap: 10px; }
+.sug-mia { border: 1px solid var(--borde); border-radius: var(--radio); padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+.sug-mia header { font-size: .88rem; }
+.sug-mia-punto { border-top: 1px solid var(--borde); padding-top: 8px; display: flex; flex-direction: column; gap: 6px; }
+.sug-mia-punto p { margin: 0; font-size: .9rem; white-space: pre-wrap; }
+.sug-mia-fila { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.sug-respuesta { font-size: .88rem; padding: 6px 10px; border-radius: var(--radio-control); background: color-mix(in srgb, var(--empresa) 8%, var(--superficie)); }
+.sug-vacio { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 30px 10px; color: var(--texto-suave); text-align: center; }
+@media (max-width: 760px) { .sop-panel { height: min(90dvh, 700px); } }

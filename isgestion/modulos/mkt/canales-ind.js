@@ -1,6 +1,6 @@
 // Indicadores de los canales de Marketing (WhatsApp, bot, agenda en línea, tarjeta de cliente y avisos) para un mes.
 // Todo se calcula en el navegador con lo que la persona puede ver (permiso mkt ver). Lo usa vistas/indicadores.js.
-import { el } from '../../core/ui/dom.js?v=40804ef';
+import { el } from '../../core/ui/dom.js?v=9619ac3';
 
 const UNA_HORA = 3600_000;
 const FRANJAS = [[0, 8, 'Antes de las 8'], [8, 12, '8 a 12'], [12, 15, '12 a 15'], [15, 19, '15 a 19'], [19, 24, 'Después de las 19']];
