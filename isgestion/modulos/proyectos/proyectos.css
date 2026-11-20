@@ -114,6 +114,12 @@ tr.pro-fila:hover .pro-asa, tr.pro-fila:focus-within .pro-asa, tr.pro-fila:hover
 .pro-v3-med { margin-right: auto; font-variant-numeric: tabular-nums; font-size: .8rem; }
 .pro-pv-info { padding: 12px 14px 14px; border-top: 1px solid var(--borde); }
 .pro-pv-info h4 { margin: 0 0 2px; font-size: .92rem; }
+.pro-quees { margin: 10px 0 0; padding: 8px 10px; border-left: 3px solid var(--empresa); border-radius: 0 6px 6px 0;
+  background: color-mix(in srgb, var(--empresa) 8%, var(--superficie)); font-size: .82rem; line-height: 1.4; }
+.pro-quees b { display: block; font-size: .7rem; text-transform: uppercase; letter-spacing: .04em; color: var(--texto-suave); margin-bottom: 2px; }
+.pro-quees p { margin: 0; }
+.pro-pv-modo { width: 100%; }
+.pro-pv-modo button { flex: 1; }
 .pro-pv-dl { display: grid; grid-template-columns: auto 1fr; gap: 3px 12px; margin: 10px 0 0; font-size: .8rem; }
 .pro-pv-dl dt { color: var(--texto-suave); }
 .pro-pv-dl dd { margin: 0; }
@@ -230,8 +236,25 @@ dialog.pro-v3 { width: min(980px, calc(100vw - 24px)); max-width: none; padding:
 .pro-m3-centro.pro-m3-max { position: fixed; inset: 0; z-index: 800; width: 100vw; height: 100vh; height: 100dvh; border-radius: 0; border: 0;
   padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); box-sizing: border-box; }
 .pro-m3-max .pro-m3-visor { height: auto; flex: 1 1 auto; min-height: 0; }
-.pro-m3-max .pro-m3-ficha { max-height: 28dvh; overflow-y: auto; }
 .pro-m3-max .pro-m3-ayuda { display: none; }
+/* Pantalla completa: barra y ficha encima del 3D (no le quitan alto), "Ocultar" y "Salir" flotando arriba a la derecha */
+.pro-m3-flot, .pro-m3-ficha-x { display: none; }
+.pro-m3-max .pro-m3-pantalla { display: none; }
+.pro-m3-max .pro-m3-flot { display: flex; gap: 6px; position: absolute; z-index: 4;
+  top: calc(7px + env(safe-area-inset-top)); right: calc(10px + env(safe-area-inset-right)); }
+.pro-m3-max .pro-m3-flot .boton, .pro-m3-max .pro-m3-barra { background: color-mix(in srgb, var(--superficie) 86%, transparent); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.pro-m3-max .pro-m3-flot .boton { box-shadow: var(--sombra-suave); }
+.pro-m3-max .pro-m3-barra { position: absolute; z-index: 3; top: env(safe-area-inset-top); left: env(safe-area-inset-left); right: env(safe-area-inset-right);
+  flex-wrap: nowrap; overflow-x: auto; padding-right: 200px; border-bottom: 0; scrollbar-width: none; }
+.pro-m3-max .pro-m3-barra::-webkit-scrollbar { display: none; }
+.pro-m3-max .pro-m3-barra > * { flex: none; }
+.pro-m3-max .pro-m3-ficha { position: absolute; z-index: 3; left: 50%; transform: translateX(-50%); bottom: calc(10px + env(safe-area-inset-bottom));
+  width: min(460px, calc(100% - 330px)); min-width: min(280px, calc(100% - 24px)); max-height: 42%; overflow-y: auto; padding-right: 38px;
+  border: 1px solid var(--borde); border-radius: var(--radio); background: color-mix(in srgb, var(--superficie) 92%, transparent);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); box-shadow: var(--sombra); }
+.pro-m3-max .pro-m3-ficha.texto-suave { display: none; }
+.pro-m3-max .pro-m3-ficha-x { display: inline-flex; position: absolute; top: 4px; right: 4px; }
+.pro-m3-limpio .pro-m3-barra, .pro-m3-limpio .pro-m3-ficha, .pro-m3-limpio .pro-m3-ayuda { display: none !important; }
 html.pro-m3-bloqueo, html.pro-m3-bloqueo body { overflow: hidden; overscroll-behavior: none; }
 /* En el visor no se selecciona texto ni se arrastra nada: si no, el arrastre para mirar se corta */
 .pro-m3-visor, .pro-m3-visor *, .pro-mando, .pro-mando * { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }

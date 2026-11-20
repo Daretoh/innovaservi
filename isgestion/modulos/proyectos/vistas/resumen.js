@@ -1,12 +1,12 @@
 // Proyectos → Resumen: documento formal (cabecera, indicadores, resumen por área, lista de compra consolidada, detalle
 // por área y pendientes), filtrable por zona, y su PDF con el membrete de la empresa.
 // Ruta: #/proyectos.resumen?p=<proyecto>
-import { el } from '../../../core/ui/dom.js?v=2c59c76';
-import { icono } from '../../../core/ui/iconos.js?v=2c59c76';
-import { boton } from '../../../core/ui/tabla.js?v=2c59c76';
-import { avisar } from '../../../core/ui/aviso.js?v=2c59c76';
-import { NOMBRE_ESTADO, clp, subtotal, tienePrecio, neto, fmtNum, hoyLargo, zonasDe, cargarTodo, cargarEstilos, selectorProyecto, sinProyectos, esArchivo } from '../datos.js?v=2c59c76';
-import { calcularResumen, pdfResumen } from '../exportar.js?v=2c59c76';
+import { el } from '../../../core/ui/dom.js?v=2d5c9ea';
+import { icono } from '../../../core/ui/iconos.js?v=2d5c9ea';
+import { boton } from '../../../core/ui/tabla.js?v=2d5c9ea';
+import { avisar } from '../../../core/ui/aviso.js?v=2d5c9ea';
+import { NOMBRE_ESTADO, clp, subtotal, tienePrecio, neto, fmtNum, hoyLargo, zonasDe, cargarTodo, cargarEstilos, selectorProyecto, sinProyectos, esArchivo } from '../datos.js?v=2d5c9ea';
+import { calcularResumen, pdfResumen } from '../exportar.js?v=2d5c9ea';
 
 const filtro = { zona: '', alt: false };
 const n = (v) => fmtNum(v, 'cantidad');

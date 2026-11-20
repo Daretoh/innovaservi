@@ -1,10 +1,10 @@
 // Tarjeta de cliente (Marketing 007): sellos, premio, hora pedida y visitas del cliente, sin app ni cuenta.
 // URL: /tarjeta/?t=<token de la tarjeta>. Lee la Edge Function pública mkt-tarjeta. El cliente la guarda en la pantalla
 // de inicio del celular (se explica cómo según el teléfono).
-import { el } from '../core/ui/dom.js?v=2c59c76';
-import { icono } from '../core/ui/iconos.js?v=2c59c76';
-import { nombreDia, fechaCorta, fechaLarga, dinero } from '../core/ui/formato.js?v=2c59c76';
-import { comoGuardar } from './guardar.js?v=2c59c76';
+import { el } from '../core/ui/dom.js?v=2d5c9ea';
+import { icono } from '../core/ui/iconos.js?v=2d5c9ea';
+import { nombreDia, fechaCorta, fechaLarga, dinero } from '../core/ui/formato.js?v=2d5c9ea';
+import { comoGuardar } from './guardar.js?v=2d5c9ea';
 
 const raiz = document.getElementById('app');
 const token = new URLSearchParams(location.search).get('t') ?? '';

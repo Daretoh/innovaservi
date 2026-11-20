@@ -1,12 +1,12 @@
 // Proyectos: datos compartidos de las vistas (proyectos, partidas, modelos de SketchUp), cálculos (totales con IVA),
 // vínculo con el inventario del modelo y el selector de proyecto. Migrado del prototipo cotizador.html.
-import { el } from '../../core/ui/dom.js?v=2c59c76';
-import { icono } from '../../core/ui/iconos.js?v=2c59c76';
-import { boton } from '../../core/ui/tabla.js?v=2c59c76';
-import { abrirFormulario } from '../../core/ui/modal.js?v=2c59c76';
-import { avisar } from '../../core/ui/aviso.js?v=2c59c76';
-import { dinero } from '../../core/ui/formato.js?v=2c59c76';
-import { urlFirmada, urlsFirmadas, subirArchivo, almacen } from '../../core/adjuntos.js?v=2c59c76';
+import { el } from '../../core/ui/dom.js?v=2d5c9ea';
+import { icono } from '../../core/ui/iconos.js?v=2d5c9ea';
+import { boton } from '../../core/ui/tabla.js?v=2d5c9ea';
+import { abrirFormulario } from '../../core/ui/modal.js?v=2d5c9ea';
+import { avisar } from '../../core/ui/aviso.js?v=2d5c9ea';
+import { dinero } from '../../core/ui/formato.js?v=2d5c9ea';
+import { urlFirmada, urlsFirmadas, subirArchivo, almacen } from '../../core/adjuntos.js?v=2d5c9ea';
 
 export const ESTADOS = [['por_cotizar', 'Por cotizar'], ['cotizado', 'Cotizado'], ['aprobado', 'Aprobado'],
   ['comprado', 'Comprado'], ['alternativa', 'Alternativa'], ['descartado', 'Descartado']];
@@ -193,6 +193,67 @@ export function instanciasDe(x, inv) {
 }
 export const medTxt = (m) => `${(m || []).map((v) => String(v).replace('.', ',')).join(' x ')} cm`;
 
+// ---------------------------------------------------------------- "Qué es": la pieza en palabras simples
+// Lo escrito en la partida (`que_es`, Proyectos 003) manda; si está vacío se usa este glosario de obra, que sirve para
+// todos los proyectos. Se busca en este orden: conjunto del modelo, ítem, nombre de la pieza en el modelo y su grupo
+// padre (de la clave). Gana la primera regla específica; las genéricas (tubo, perfil) solo si no hay otra.
+const GLOSARIO = [
+  [/placa de cabeza/, 'Placa de acero soldada arriba del pilar, donde se apoya y se aperna la viga.'],
+  [/placa base/, 'Placa de acero soldada abajo del pilar. Se fija al piso de hormigón con pernos de anclaje.'],
+  [/placa poste|^placa\b.*anclaje/, 'Placa de acero bajo el poste del muro; se fija al piso con pernos de anclaje.'],
+  [/cartela/, 'Refuerzo de acero (una plancha chica, normalmente triangular) soldado entre el pilar y su placa para que la unión no se doble.'],
+  [/anclaje/, 'Perno que se mete en una perforación del piso de hormigón y se pega con adhesivo químico; sujeta la placa base al piso.'],
+  [/esparrago/, 'Barra con hilo en todo su largo (un perno sin cabeza) que se aprieta con tuerca y golilla.'],
+  [/tornillo/, 'Tornillo con punta de broca: perfora el acero y se atornilla solo, sin perforar antes. Su golilla con goma sella contra el agua.'],
+  [/\bperno/, 'Perno con tuerca y golilla que une dos piezas de acero atravesándolas.'],
+  [/golilla|arandela/, 'Golilla (arandela): disco con hoyo que va bajo la tuerca para repartir el apriete.'],
+  [/viga de techo/, 'Viga inclinada que va del frente al apoyo y le da la pendiente al techo. Sobre ellas van las costaneras.'],
+  [/viga de apoyo/, 'Viga apoyada sobre el módulo (contenedor) que sostiene el lado de atrás del techo.'],
+  [/viga frontal/, 'Viga horizontal del frente, apoyada en los pilares; sostiene el lado de adelante del techo.'],
+  [/\bviga\b/, 'Pieza horizontal de acero que se apoya en pilares o muros y sostiene el techo.'],
+  [/costanera de muro|costaneras de muro/, 'Perfil horizontal del bastidor del muro; ahí se atornillan las planchas del muro.'],
+  [/costanera/, 'Perfil liviano que cruza sobre las vigas del techo, de lado a lado; ahí se atornillan las planchas de la cubierta.'],
+  [/tapacanto/, 'Cinta que cubre el canto (el borde) de un tablero de melamina.'],
+  [/tapacan|forro lateral/, 'Tapacán: plancha doblada que cierra el borde lateral del techo y tapa el canto de las planchas y costaneras.'],
+  [/remate/, 'Forro de remate: plancha doblada que tapa un borde o encuentro del techo (por ejemplo, donde la cubierta llega al muro) para que no entre agua.'],
+  [/soporte.*canaleta|gancho/, 'Gancho que sostiene la canaleta y la fija al borde del techo.'],
+  [/tapa.*canaleta/, 'Tapa que cierra los extremos de la canaleta para que el agua no se salga por ahí.'],
+  [/salida/, 'Pieza que se une al fondo de la canaleta para conectar la bajada.'],
+  [/canaleta/, 'Canal que recibe el agua lluvia en el borde bajo del techo y la lleva hasta la bajada.'],
+  [/\bcodo/, 'Unión curva que cambia la dirección del tubo; aquí desvía el agua al salir de la bajada.'],
+  [/abrazadera/, 'Anillo que sujeta la bajada al pilar o al muro.'],
+  [/bajada|pvc/, 'Tubo vertical que baja el agua de la canaleta hasta el piso.'],
+  [/cierre sobre modulo/, 'Franjas de plancha que cierran el espacio entre el techo del módulo y la cubierta nueva.'],
+  [/sellante|sellador/, 'Sellador elástico en cartucho que se aplica en juntas y traslapos para que no pase el agua.'],
+  [/anticorrosivo/, 'Pintura base que protege el acero del óxido; va antes del esmalte.'],
+  [/esmalte/, 'Pintura de terminación que va sobre el anticorrosivo y da el color final.'],
+  [/soldadura/, 'Lo que se gasta al soldar y cortar el acero: electrodos o alambre y discos de corte y de desbaste.'],
+  [/trapezoidal/, 'Plancha metálica con pliegues en forma de trapecio que forma el techo (la cubierta).'],
+  [/zocalo/, 'Forro doblado que tapa la parte baja del muro, donde se junta con el piso.'],
+  [/esquinero/, 'Forro en ángulo que tapa la esquina donde se juntan dos muros.'],
+  [/plancha.*(prepintad|nervio)/, 'Plancha metálica pintada, con nervios, que forma el muro (el revestimiento por fuera).'],
+  [/\bposte/, 'Poste vertical del bastidor (el esqueleto) del muro; ahí se fijan las costaneras de muro.'],
+  [/bastidor/, 'Esqueleto de perfiles de acero donde se fijan las planchas del muro.'],
+  [/\bpilar/, 'Pilar: columna vertical de acero que sostiene el techo. Abajo lleva la placa base y arriba la placa de cabeza.'],
+  [/palillaje|liston/, 'Listones de madera puestos en hilera, separados, como revestimiento o celosía.'],
+  [/\btubo (cuadrado|rectangular)|\btubo \d/, 'Perfil de acero hueco. Las medidas son ancho x alto x espesor de la pared, en mm.', true],
+  [/perfil c\b|perfil c\d/, 'Perfil de acero galvanizado con forma de C, liviano.', true],
+];
+export function queEsGlosario(x) {
+  const [, padre = '', nombre = ''] = String(x?.clave || '').split('|');
+  let generico = null;
+  for (const t of [x?.modelo, x?.item, nombre, padre].map(normTxt)) {
+    if (!t) continue;
+    for (const [re, texto, gen] of GLOSARIO) {
+      if (!re.test(t)) continue;
+      if (!gen) return texto;
+      generico ??= texto;
+    }
+  }
+  return generico;
+}
+export const queEsDe = (x) => (x?.que_es || '').trim() || queEsGlosario(x);
+
 // Texto y botón del vínculo con el modelo bajo el ítem
 export function chipModelo(em, alUsar) {
   if (!em) return null;
@@ -207,7 +268,7 @@ export function chipModelo(em, alUsar) {
 // ---------------------------------------------------------------- Interfaz común
 export function cargarEstilos() {
   if (document.getElementById('proyectos-css')) return;
-  document.head.append(el('link', { id: 'proyectos-css', rel: 'stylesheet', href: new URL('./proyectos.css?v=2c59c76', import.meta.url).href }));
+  document.head.append(el('link', { id: 'proyectos-css', rel: 'stylesheet', href: new URL('./proyectos.css?v=2d5c9ea', import.meta.url).href }));
 }
 
 // Pestañas de proyecto (arriba de cada vista) y "Nuevo proyecto"
@@ -258,6 +319,8 @@ export function fichaPartida(ctx, d, x, { prellenado = null, alGuardar } = {}) {
   const base = x ?? prellenado ?? { zona: zonasDe(d.proyecto, d.partidas)[0] ?? 'General', estado: 'por_cotizar', fuente: 'usuario', unidad: 'un', cantidad: 1 };
   const unicos = (k) => [...new Set(d.partidas.map((y) => y[k]).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es'));
   const editable = x ? ctx.puede('proyectos', 'editar') : ctx.puede('proyectos', 'crear');
+  // "Qué es" solo si la base ya tiene la columna (Proyectos 003): sin ella la ficha sigue como antes
+  const conQueEs = 'que_es' in base || d.partidas.some((y) => 'que_es' in y);
   abrirFormulario({
     titulo: x ? 'Ficha de la partida' : 'Nueva partida',
     textoGuardar: editable ? 'Guardar' : 'Cerrar',
@@ -279,11 +342,13 @@ export function fichaPartida(ctx, d, x, { prellenado = null, alGuardar } = {}) {
       { id: 'archivo', etiqueta: 'O subir un archivo (plano PDF)', tipo: 'file', accept: 'application/pdf,image/*', multiple: false },
       { id: 'img', etiqueta: 'Imagen (link)', valor: esArchivo(base.img) ? '' : base.img ?? '', ayuda: esArchivo(base.img) ? 'Tiene una imagen subida; escribe un link para reemplazarla.' : 'https://…' },
       { id: 'imagen', etiqueta: 'O subir una imagen', tipo: 'file', accept: 'image/jpeg,image/png,image/webp', multiple: false },
+      conQueEs ? { id: 'que_es', etiqueta: 'Qué es (en palabras simples)', tipo: 'textarea', filas: 2, valor: base.que_es ?? '',
+        ayuda: queEsGlosario(base) ? `Vacío = la explicación general: "${queEsGlosario(base)}"` : 'Se muestra arriba de los datos en el panel de la hoja.' } : null,
       { id: 'nota', etiqueta: 'Nota', tipo: 'textarea', filas: 2, valor: base.nota ?? '', ayuda: 'Con "revisar", "confirmar" o "medir" se muestra como alerta.' },
       { id: 'fuente', etiqueta: 'La cantidad sale de', opciones: FUENTES, valor: base.fuente ?? 'usuario' },
       { id: 'factor', etiqueta: 'Unidades por objeto del modelo', valor: fmtNum(base.factor, 'cantidad'), ayuda: 'Ej.: 3 listones por hilera. Vacío = 1.' },
       { id: 'fija', etiqueta: 'Cantidad fija', opciones: [['no', 'Se compara con el modelo'], ['si', 'Se mantiene la mía aunque el modelo cambie']], valor: base.fija ? 'si' : 'no' },
-    ],
+    ].filter(Boolean),
     alGuardar: async (v) => {
       if (!editable) return;
       const cantidad = leerNum(v.cantidad, 'cantidad'); const precio = leerNum(v.precio, 'precio'); const factor = leerNum(v.factor, 'cantidad');
@@ -295,6 +360,7 @@ export function fichaPartida(ctx, d, x, { prellenado = null, alGuardar } = {}) {
         item: v.item.trim(), detalle: v.detalle.trim(), sku: v.sku.trim(), material: v.material.trim(), zona: v.zona.trim() || 'General',
         grupo: v.grupo.trim() === 'General' ? '' : v.grupo.trim(), categoria: v.categoria.trim(), estado: v.estado, cantidad, unidad: v.unidad.trim(),
         precio, tienda: v.tienda.trim(), nota: v.nota.trim(), fuente: v.fuente, factor, fija: v.fija === 'si',
+        ...(conQueEs ? { que_es: (v.que_es ?? '').trim() || null } : {}),
         fecha_precio: v.fecha_precio || (precio && precio !== Number(base.precio) ? hoyISO() : base.fecha_precio ?? null),
         url: link(v.url) || (esArchivo(base.url) ? base.url : ''), img: link(v.img) || (esArchivo(base.img) ? base.img : ''),
       };

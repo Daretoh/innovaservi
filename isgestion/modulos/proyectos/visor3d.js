@@ -3,11 +3,11 @@
 // Modos: órbita, Recorrer (como D5: teclado o joystick en pantalla), Mirar con la tablet (giroscopio) y realidad
 // aumentada en Android (WebXR). three.js 0.147.0 (jsDelivr, versión fija) se carga solo al abrir un 3D.
 // SketchUp (cm, Z arriba) → visor (m, Y arriba): (x, y, z) → (x/100, z/100, -y/100).
-import { el } from '../../core/ui/dom.js?v=2c59c76';
-import { icono } from '../../core/ui/iconos.js?v=2c59c76';
-import { boton } from '../../core/ui/tabla.js?v=2c59c76';
-import { urlsFirmadas } from '../../core/adjuntos.js?v=2c59c76';
-import { instanciasDe, subtotal, tienePrecio, clp, fmtNum } from './datos.js?v=2c59c76';
+import { el } from '../../core/ui/dom.js?v=2d5c9ea';
+import { icono } from '../../core/ui/iconos.js?v=2d5c9ea';
+import { boton } from '../../core/ui/tabla.js?v=2d5c9ea';
+import { urlsFirmadas } from '../../core/adjuntos.js?v=2d5c9ea';
+import { instanciasDe, subtotal, tienePrecio, clp, fmtNum } from './datos.js?v=2d5c9ea';
 
 const CDN3 = 'https://cdn.jsdelivr.net/npm/three@0.147.0/';
 const cargarScript = (src) => new Promise((ok, mal) => {
@@ -158,7 +158,7 @@ export function crearVisor(cont) {
     const fila = o?.userData.fila ?? null;
     if (fila) {
       // Resalta todas las copias del mismo ítem
-      v.obj.traverse((q) => { if (q.userData.fila === fila) q.traverse((w) => { if (w.isMesh) [].concat(w.material).forEach((m) => { if (m.emissive) { m.emissive.setHex(0x0b3a5c); v.marcados.push(m); } }); }); });
+      v.obj.traverse((q) => { if (q.userData.fila === fila) q.traverse((w) => { if (w.isMesh) [].concat(w.material).forEach((m) => { if (m.emissive && !m.userData.foco) { m.emissive.setHex(0x0b3a5c); v.marcados.push(m); } }); }); });
       v.alElegir?.(fila);
     } else if (hit?.object.userData.escena) {
       const info = piezaDeEscena(v, hit);
@@ -210,6 +210,7 @@ function tam(v) {
 function bucle(v) {
   if (!v.renderer.domElement.isConnected) { v.raf = 0; v.renderer.dispose(); v.alSalir?.(); return; }   // se dejó la vista
   if (v.ar) { v.raf = 0; return; }   // en realidad aumentada dibuja la sesión XR
+  if (v.pausado) { v.antes = null; v.raf = requestAnimationFrame(() => bucle(v)); return; }   // oculto: no dibuja
   const ahora = performance.now(); const dt = Math.min(0.1, (ahora - (v.antes ?? ahora)) / 1000); v.antes = ahora;
   if (v.paso) v.paso(dt); else v.controls.update();
   v.renderer.render(v.scene, v.camera);
@@ -479,25 +480,33 @@ async function armarArea(ctx, modeloId, filas, inv) {
 }
 
 // ---------------------------------------------------------------- Ventana grande
-// opciones: { modeloId, m3d } (un mueble) o { modeloId, filas, inv, alElegir } (un área o zona)
+// opciones: { modeloId, m3d } (un mueble), { modeloId, filas, inv, alElegir } (un área o zona) o
+// { modeloId, inv, foco } (todo el modelo con las piezas de la partida `foco` resaltadas)
 export async function ventana3d(ctx, titulo, opciones) {
   const msg = el('div', { class: 'pro-v3-msg' }, 'Cargando…');
   const cuerpo = el('div', { class: 'pro-v3-cuerpo' }, msg);
   const pie = el('span', { class: 'pro-v3-med texto-suave' });
   const chk = el('input', { type: 'checkbox', checked: true });
-  let v = null;
+  let v = null; let vm = null;
   const vistas = ['iso', 'frente', 'lado', 'arriba'].map((m, i) => boton(['3D', 'Frente', 'Lado', 'Arriba'][i], { class: 'boton boton-secundario boton-chico', onclick: () => camara(v, m) }));
+  const pieza = opciones.foco ? boton('La pieza', { icono: 'buscar', class: 'boton boton-secundario boton-chico', title: 'Volver a acercar la cámara a la pieza', onclick: () => vm?.encuadrar() }) : null;
   chk.addEventListener('change', () => aristas(v, chk.checked));
   const dialogo = el('dialog', { class: 'modal pro-v3', 'aria-label': titulo },
     el('header', { class: 'modal-cabecera' }, el('h2', {}, titulo),
       el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Cerrar', onclick: () => { dialogo.close(); dialogo.remove(); } }, icono('cerrar'))),
     cuerpo,
-    el('div', { class: 'pro-v3-pie' }, pie, vistas, el('label', { class: 'casilla' }, chk, 'Aristas')));
+    el('div', { class: 'pro-v3-pie' }, pie, pieza, vistas, opciones.foco ? null : el('label', { class: 'casilla' }, chk, 'Aristas')));
   document.body.append(dialogo);
   dialogo.showModal();
   try { await asegurarThree(); } catch { msg.textContent = 'No se pudo cargar el visor 3D. Revisa la conexión a internet.'; return; }
   try {
-    if (opciones.m3d) {
+    if (opciones.foco) {
+      vm = await vistaModelo(ctx, cuerpo, { modeloId: opciones.modeloId, inv: opciones.inv, alProgreso: (t) => { msg.textContent = t; } });
+      if (vm.sinPosiciones) { msg.textContent = 'Para ubicar piezas, vuelve a enviar el modelo desde SketchUp: ahora guarda dónde está cada objeto.'; return; }
+      v = vm.visor;
+      const n = vm.resaltar(opciones.foco);
+      pie.textContent = n ? `${n} ${n === 1 ? 'pieza resaltada' : 'piezas resaltadas'} en el modelo · arrastra para girar, rueda para acercar` : 'Esta partida no se encontró en el 3D del modelo.';
+    } else if (opciones.m3d) {
       const datos = (await cargarMallas(ctx, opciones.modeloId, [opciones.m3d])).get(opciones.m3d);
       if (!datos) { msg.textContent = 'Este mueble todavía no tiene su archivo 3D: envía de nuevo el modelo desde SketchUp.'; return; }
       const texturas = await texturasPara(ctx, opciones.modeloId, [datos]).catch(() => new Map());
@@ -642,7 +651,13 @@ export async function vistaModelo(ctx, cont, { modeloId, inv, alElegir, alMedida
     } else alMedida?.(null);
   };
   const visEt = new Map([...etiquetas.keys()].map((k) => [k, true]));
+  const foco = resaltador(v, raiz, inv);
   return {
+    visor: v,
+    // Pinta las piezas de una partida con el color de la empresa, atenúa el resto y encuadra la cámara en ellas.
+    // Devuelve cuántas piezas encontró (0 = no están en el 3D). Con null vuelve a la vista normal.
+    resaltar: (x, opciones) => foco.resaltar(x, opciones),
+    encuadrar: () => foco.encuadrar(),
     recintos: [...grupos.entries()].map(([nombre, gr]) => ({ nombre, n: gr.n })).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es')),
     etiquetas: [...etiquetas.entries()].map(([nombre, e]) => ({ nombre, n: Math.round(e.n) })).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es')),
     mostrar: (r, on) => { const gr = grupos.get(r); if (gr) gr.g.visible = on; },
@@ -672,6 +687,143 @@ export async function vistaModelo(ctx, cont, { modeloId, inv, alElegir, alMedida
       v.controls.target.copy(c); v.camera.position.set(c.x + r * 1.4, c.y + r * 1.1, c.z + r * 1.4); v.controls.update();
     },
   };
+}
+
+// ---------------------------------------------------------------- Piezas de una partida dentro del modelo
+// Para que se entienda dónde va un material: sus piezas en el color de la empresa y todo lo demás atenuado.
+// Se buscan así (todo en el inventario y la construcción que ya están cargados):
+//   - muebles y conjuntos con malla (`pos`): sus copias en el modelo;
+//   - piezas: los triángulos de la construcción del mismo nombre, medidas y grupo padre que estén dentro de sus cajas;
+//     si la construcción no las trae (por ejemplo, piezas dentro de un mueble), sus cajas;
+//   - conjuntos sin malla: todo lo que la construcción tiene dentro de ellos y las piezas hijas del inventario.
+const igualMed = (a, b) => Array.isArray(a) && Array.isArray(b) && a.length === b.length && a.every((n, i) => Math.abs(n - b[i]) < 0.06);
+const ultimo = (r) => String(r || '').split(' > ').at(-1);
+// ¿Punto del visor (m) dentro de alguna caja de SketchUp (esquina y 3 lados, en cm)? Con 1 cm de holgura.
+function dentroDeCajas(cajas, x, y, z) {
+  const p = [x * 100, -z * 100, y * 100];
+  return cajas.some((a) => {
+    const d = [p[0] - a[0], p[1] - a[1], p[2] - a[2]];
+    for (let k = 3; k < 12; k += 3) {
+      const l2 = a[k] * a[k] + a[k + 1] * a[k + 1] + a[k + 2] * a[k + 2];
+      if (!l2) continue;
+      const t = (d[0] * a[k] + d[1] * a[k + 1] + d[2] * a[k + 2]) / l2; const h = 1 / Math.sqrt(l2);
+      if (t < -h || t > 1 + h) return false;
+    }
+    return true;
+  });
+}
+function resaltador(v, raiz, inv) {
+  const { THREE } = window;
+  let actual = null;   // { capa, cambiados, caja }
+  const quitar = () => {
+    if (!actual) return;
+    actual.capa.parent?.remove(actual.capa);
+    actual.capa.traverse((o) => { if (o.geometry) o.geometry.dispose(); });
+    actual.cambiados.forEach(([o, m]) => { o.material = m; });
+    actual = null;
+  };
+  const encuadrar = () => {
+    const caja = actual?.caja; if (!caja || caja.isEmpty()) return;
+    const c = caja.getCenter(new THREE.Vector3()); const s = caja.getSize(new THREE.Vector3()).length();
+    // Lo bastante lejos para ver la pieza y lo que la rodea (en qué parte del modelo está)
+    const dist = Math.max(s * 1.6, Math.min(v.radio * 1.6, 6), 1.2);
+    if (v.paso) v.limpiarRecorrido?.();
+    v.controls.target.copy(c);
+    v.camera.position.copy(c).add(new THREE.Vector3(0.62, 0.5, 0.6).normalize().multiplyScalar(dist));
+    v.controls.update();
+  };
+  const resaltar = (x, { encuadrar: enc = true } = {}) => {
+    quitar();
+    if (!x) return 0;
+    let its = instanciasDe(x, inv);
+    if (!its.length && x.modelo) its = [{ tipo: 'conjunto', nombre: x.modelo }];
+    // Conjuntos sin malla: sus piezas hijas también (cajas por si la construcción no las trae)
+    const sinMalla = its.filter((it) => it.tipo !== 'pieza' && !it.pos?.length);
+    const hijos = sinMalla.flatMap((it) => (inv?.items ?? []).filter((i) => i.padre === it.nombre && i.tipo === 'pieza'));
+    const piezas = [...its, ...hijos.filter((h) => !its.includes(h))];
+    const enSet = new Set(piezas);
+    const conjuntos = new Set(sinMalla.map((it) => it.nombre));
+    const acento = new THREE.Color(css('--empresa', '#ff6b00')).convertSRGBToLinear();
+    const mAcento = new THREE.MeshLambertMaterial({ color: acento, emissive: acento.clone().multiplyScalar(0.35), side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });
+    const mTenue = new THREE.MeshLambertMaterial({ color: 0xb4b8be, transparent: true, opacity: 0.3, depthWrite: false, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 });
+    const lTenue = new THREE.LineBasicMaterial({ color: 0x80868e, transparent: true, opacity: 0.32, depthWrite: false });
+    mAcento.userData.foco = true; mTenue.userData.foco = true;
+    const capa = new THREE.Group(); capa.userData.foco = true;
+    const cambiados = []; const caja = new THREE.Box3(); const b = new THREE.Box3(); const mi = new THREE.Matrix4();
+    const poner = (o, m) => { cambiados.push([o, o.material]); o.material = m; };
+    const filaDe = (q) => { while (q && !q.userData.fila) q = q.parent; return q?.userData.fila; };
+    const hechas = new Set(); let n = 0;
+    raiz.updateMatrixWorld(true);
+    // 1. Muebles de la partida en el color; todo lo demás atenuado (las cajas invisibles siguen invisibles)
+    const copias = new Set();
+    raiz.traverse((o) => {
+      if (o.userData.foco || !(o.isMesh || o.isLine)) return;
+      if ([].concat(o.material).some((m) => m?.visible === false)) return;
+      const fila = filaDe(o);
+      if (o.isMesh && !o.isInstancedMesh && fila && enSet.has(fila)) {
+        poner(o, mAcento); hechas.add(fila);
+        let g = o; while (g.parent && !g.userData.fila) g = g.parent; copias.add(g);
+        if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
+        caja.union(b.copy(o.geometry.boundingBox).applyMatrix4(o.matrixWorld));
+      } else poner(o, o.isMesh ? mTenue : lTenue);
+    });
+    n += copias.size;
+    // 2. Piezas y conjuntos de la construcción: sus triángulos en una capa aparte
+    const buscadas = piezas.filter((it) => it.tipo === 'pieza' && !hechas.has(it));
+    const pos = [];
+    raiz.traverse((o) => {
+      const w = o.userData.escena;
+      if (!o.isMesh || !w?.o || !w.objetos?.length || (!buscadas.length && !conjuntos.size)) return;
+      const m = new Map();   // índice de objeto → piezas del inventario que calzan (o true si es parte de un conjunto)
+      w.objetos.forEach((ob, i) => {
+        const its = buscadas.filter((p) => ob.n === p.nombre && ultimo(ob.r) === (p.padre ?? '') && igualMed(ob.m, p.medidas_cm));
+        if (its.length) m.set(i, its);
+        else if (conjuntos.size && (conjuntos.has(ob.n) || String(ob.r || '').split(' > ').some((r) => conjuntos.has(r)))) m.set(i, true);
+      });
+      if (!m.size) return;
+      const p = o.geometry.attributes.position.array; const vistos = new Set();
+      for (let t = 0; t < w.o.length; t++) {
+        const its = m.get(w.o[t]); if (!its) continue;
+        // Si las piezas traen todas sus cajas, solo cuenta lo que cae dentro (una pieza igual en otro recinto no)
+        if (its !== true && its.every((it) => it.cajas?.length >= it.cant)) {
+          const i = t * 9; const cx = (p[i] + p[i + 3] + p[i + 6]) / 3; const cy = (p[i + 1] + p[i + 4] + p[i + 7]) / 3; const cz = (p[i + 2] + p[i + 5] + p[i + 8]) / 3;
+          if (!its.some((it) => dentroDeCajas(it.cajas, cx, cy, cz))) continue;
+        }
+        for (let k = 0; k < 9; k++) pos.push(p[t * 9 + k]);
+        if (its !== true) its.forEach((it) => hechas.add(it));
+        vistos.add(w.o[t]);
+      }
+      n += vistos.size;
+    });
+    if (pos.length) {
+      const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.computeVertexNormals();
+      const malla = new THREE.Mesh(g, mAcento); malla.renderOrder = 3; capa.add(malla);
+      const l = new THREE.LineSegments(new THREE.EdgesGeometry(g, 28), new THREE.LineBasicMaterial({ color: acento.clone().multiplyScalar(0.45) }));
+      l.renderOrder = 4; capa.add(l);
+    }
+    // 3. Piezas que la construcción no trae: sus cajas
+    const C = new THREE.Matrix4().set(0.01, 0, 0, 0, 0, 0, 0.01, 0, 0, -0.01, 0, 0, 0, 0, 0, 1);
+    for (const it of piezas) {
+      if (hechas.has(it) || !it.cajas?.length) continue;
+      const geo = new THREE.BoxGeometry(1, 1, 1); geo.translate(0.5, 0.5, 0.5);
+      const im = new THREE.InstancedMesh(geo, mAcento, it.cajas.length);
+      it.cajas.forEach((a, i) => im.setMatrixAt(i, new THREE.Matrix4().multiplyMatrices(C, matrizSU(a))));
+      im.instanceMatrix.needsUpdate = true; im.frustumCulled = false; im.renderOrder = 3;
+      capa.add(im); n += it.cajas.length;
+    }
+    raiz.add(capa); capa.updateMatrixWorld(true);
+    capa.traverse((o) => {
+      if (!o.isMesh) return;
+      if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
+      if (o.isInstancedMesh) for (let i = 0; i < o.count; i++) { o.getMatrixAt(i, mi); caja.union(b.copy(o.geometry.boundingBox).applyMatrix4(mi).applyMatrix4(o.matrixWorld)); }
+      else caja.union(b.copy(o.geometry.boundingBox).applyMatrix4(o.matrixWorld));
+    });
+    actual = { capa, cambiados, caja };
+    if (!n) { quitar(); return 0; }
+    if (enc) encuadrar();
+    return n;
+  };
+  return { resaltar, encuadrar, quitar };
 }
 
 // ---------------------------------------------------------------- Realidad aumentada (Android, WebXR)

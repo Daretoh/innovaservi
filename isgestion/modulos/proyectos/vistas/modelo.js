@@ -3,15 +3,15 @@
 // sumado). Los conjuntos se despliegan con sus piezas y lo que no tiene conjunto va en "Sueltos". Cada fila tiene 3D y
 // "Agregar", que crea una partida ligada a ese objeto. Aquí se sube la exportación de SketchUp y el respaldo del prototipo.
 // Ruta: #/proyectos.modelo?p=<proyecto>
-import { el } from '../../../core/ui/dom.js?v=2c59c76';
-import { icono } from '../../../core/ui/iconos.js?v=2c59c76';
-import { boton } from '../../../core/ui/tabla.js?v=2c59c76';
+import { el } from '../../../core/ui/dom.js?v=2d5c9ea';
+import { icono } from '../../../core/ui/iconos.js?v=2d5c9ea';
+import { boton } from '../../../core/ui/tabla.js?v=2d5c9ea';
 import {
   plegado, cargarTodo, cargarEstilos, selectorProyecto, llave2, mapasInv, medTxt, zonasDe, fichaPartida, subirExportacion, traerRespaldo, guardarProyecto,
-} from '../datos.js?v=2c59c76';
-import { avisar } from '../../../core/ui/aviso.js?v=2c59c76';
-import { ventana3d, olvidarMallas, vistaModelo } from '../visor3d.js?v=2c59c76';
-import { conectarSketchup } from '../sketchup.js?v=2c59c76';
+} from '../datos.js?v=2d5c9ea';
+import { avisar } from '../../../core/ui/aviso.js?v=2d5c9ea';
+import { ventana3d, olvidarMallas, vistaModelo } from '../visor3d.js?v=2d5c9ea';
+import { conectarSketchup } from '../sketchup.js?v=2d5c9ea';
 
 const filtro = { texto: '', agrupar: 'recinto', recinto: '', tipo: '', falta: false };
 const TIPO = { componente: 'Mueble', conjunto: 'Conjunto', pieza: 'Pieza' };
@@ -191,9 +191,21 @@ export default async function vista(ctx) {
     } });
   // Pantalla completa: el visor ocupa toda la ventana siempre (también en teléfonos sin la función del navegador,
   // como el iPhone) y, si el navegador lo permite, además oculta sus barras. Esc o el mismo botón para salir.
-  let grande = false; let porApi = false;
+  // En pantalla completa la barra y la ficha van encima del 3D (no le quitan alto); "Ocultar" deja solo el modelo y en
+  // teléfonos se gira a lo horizontal (Android con Chrome lo hace solo; en iPhone se avisa que lo gire).
+  let grande = false; let porApi = false; let sinControles = false;
   const enApi = () => document.fullscreenElement || document.webkitFullscreenElement;
-  const pantalla = boton('Pantalla completa', { icono: 'expandir', class: 'boton boton-secundario boton-chico', 'aria-pressed': 'false', onclick: () => agrandar(!grande) });
+  const esTelefono = () => esTactil && Math.min(screen.width, screen.height) < 600;
+  const pantalla = boton('Pantalla completa', { icono: 'expandir', class: 'boton boton-secundario boton-chico pro-m3-pantalla', 'aria-pressed': 'false', onclick: () => agrandar(!grande) });
+  const bControles = boton('Ocultar', { icono: 'ojo', class: 'boton boton-secundario boton-chico', title: 'Ocultar los botones y la ficha para ver solo el modelo', onclick: () => controles(sinControles) });
+  const flotante = el('div', { class: 'pro-m3-flot' }, bControles,
+    boton('Salir', { icono: 'cerrar', class: 'boton boton-secundario boton-chico', title: 'Salir de pantalla completa', onclick: () => agrandar(false) }));
+  function controles(ver) {
+    sinControles = !ver;
+    visor.parentElement?.classList.toggle('pro-m3-limpio', sinControles);
+    bControles.lastChild.textContent = ver ? 'Ocultar' : 'Controles';
+    bControles.title = ver ? 'Ocultar los botones y la ficha para ver solo el modelo' : 'Mostrar los botones y la ficha';
+  }
   function agrandar(on) {
     const centro = visor.parentElement;
     if (!centro) return;
@@ -201,11 +213,22 @@ export default async function vista(ctx) {
     centro.classList.toggle('pro-m3-max', on);
     document.documentElement.classList.toggle('pro-m3-bloqueo', on);
     activo(pantalla, on); pantalla.lastChild.textContent = on ? 'Salir de pantalla completa' : 'Pantalla completa';
+    if (!on) controles(true);
+    const girar = () => {
+      if (!esTelefono()) return;
+      Promise.resolve(screen.orientation?.lock?.('landscape')).catch(() => {
+        if (window.matchMedia('(orientation: portrait)').matches) avisar('Gira el teléfono para verlo a lo ancho.');
+      });
+    };
     try {
       if (on && !enApi()) {
         const pedir = centro.requestFullscreen || centro.webkitRequestFullscreen;
-        Promise.resolve(pedir?.call(centro, { navigationUI: 'hide' })).catch(() => {});
-      } else if (!on && enApi()) Promise.resolve((document.exitFullscreen || document.webkitExitFullscreen)?.call(document)).catch(() => {});
+        if (pedir) Promise.resolve(pedir.call(centro, { navigationUI: 'hide' })).then(girar, girar);
+        else girar();
+      } else if (!on) {
+        try { screen.orientation?.unlock?.(); } catch { /* sin bloqueo de giro */ }
+        if (enApi()) Promise.resolve((document.exitFullscreen || document.webkitExitFullscreen)?.call(document)).catch(() => {});
+      }
     } catch { /* sin la función del navegador queda igual a toda la ventana */ }
   }
   // Al dejar la vista se quitan las escuchas (visor ya mostrado y fuera de la página)
@@ -239,7 +262,10 @@ export default async function vista(ctx) {
     el('label', { class: 'casilla pro-m3-medir' }, medir, 'Medir'),
     el('label', { class: 'casilla' }, aristasChk, 'Aristas'), medida);
   // replaceChildren no salta los null (los escribe como texto): se filtran
-  const llenarFicha = (...partes) => ficha.replaceChildren(...partes.filter(Boolean));
+  // La X solo se ve en pantalla completa, donde la ficha va encima del modelo
+  const llenarFicha = (...partes) => ficha.replaceChildren(
+    el('button', { type: 'button', class: 'boton-icono pro-m3-ficha-x', 'aria-label': 'Cerrar la ficha', title: 'Cerrar', onclick: () => mostrarFicha(null) }, icono('cerrar', { tam: 16 })),
+    ...partes.filter(Boolean));
   function mostrarFicha(it) {
     if (!it) { ficha.replaceChildren('Toca un objeto para ver qué es.'); ficha.className = 'pro-m3-ficha texto-suave'; return; }
     ficha.className = 'pro-m3-ficha';
@@ -263,7 +289,7 @@ export default async function vista(ctx) {
           : puedeCrear ? boton('Agregar a la cotización', { icono: 'mas', class: 'boton boton-secundario boton-chico', onclick: () => agregar(it) }) : null,
         it.m3d ? boton('Ver el mueble', { icono: 'caja', class: 'boton boton-secundario boton-chico', onclick: () => ventana3d(ctx, it.nombre, { modeloId: d.modelo.id, m3d: it.m3d }) }) : null));
   }
-  const tres = el('section', { class: 'pro-m3' }, lado, el('div', { class: 'pro-m3-centro' }, barra, ayudaOrbita, ayudaRecorrido, ayudaGiro, visor, ficha));
+  const tres = el('section', { class: 'pro-m3' }, lado, el('div', { class: 'pro-m3-centro' }, barra, ayudaOrbita, ayudaRecorrido, ayudaGiro, visor, ficha, flotante));
   const mensaje = (t) => visor.querySelector('.pro-v3-msg')?.replaceChildren(t);
   // Panel lateral: recintos o etiquetas (como en SketchUp), con Todos / Ninguno
   let pestanaLado = 'recintos';

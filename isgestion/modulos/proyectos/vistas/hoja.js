@@ -2,19 +2,19 @@
 // totales) y se edita como planilla: se escribe en las celdas, Enter baja, Esc deshace, se pega desde Excel en Ítem
 // y se arrastra una fila por sus puntos a otra área. En pantallas anchas, panel lateral con el 3D del mueble.
 // Ruta: #/proyectos.hoja?p=<proyecto>
-import { el } from '../../../core/ui/dom.js?v=2c59c76';
-import { icono } from '../../../core/ui/iconos.js?v=2c59c76';
-import { boton } from '../../../core/ui/tabla.js?v=2c59c76';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=2c59c76';
-import { avisar } from '../../../core/ui/aviso.js?v=2c59c76';
+import { el } from '../../../core/ui/dom.js?v=2d5c9ea';
+import { icono } from '../../../core/ui/iconos.js?v=2d5c9ea';
+import { boton } from '../../../core/ui/tabla.js?v=2d5c9ea';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=2d5c9ea';
+import { avisar } from '../../../core/ui/aviso.js?v=2d5c9ea';
 import {
   ESTADOS, NOMBRE_ESTADO, NO_SUMA, UNIDADES, clp, subtotal, suma, sinPrecioN, vigentes, tienePrecio, gDe, alerta, esArchivo, neto,
   ordenGrupos, zonasDe, leerNum, fmtNum, hoyISO, fechaCL, hoyLargo, plegado, cargarTodo, cargarEstilos, selectorProyecto, sinProyectos,
   guardarPartida, guardarProyecto, insertarPartidas, ordenEntre, renumerar, mapasInv, estadoModelo, m3dDe, chipModelo, modeloDe,
-  cargarInventario, abrirLink, urlsImagenes, fichaPartida, guardarActual,
-} from '../datos.js?v=2c59c76';
-import { ventana3d, asegurarThree, cargarMallas, crearVisor, ponerMueble, camara, texturasPara } from '../visor3d.js?v=2c59c76';
-import { excelProyecto } from '../exportar.js?v=2c59c76';
+  cargarInventario, abrirLink, urlsImagenes, fichaPartida, guardarActual, instanciasDe, queEsDe,
+} from '../datos.js?v=2d5c9ea';
+import { ventana3d, asegurarThree, cargarMallas, crearVisor, ponerMueble, camara, texturasPara, vistaModelo } from '../visor3d.js?v=2d5c9ea';
+import { excelProyecto } from '../exportar.js?v=2d5c9ea';
 
 const filtro = { texto: '', zona: '', pend: false };   // se mantiene al refrescar
 
@@ -37,6 +37,9 @@ export default async function vista(ctx) {
   const deshacer = el('div', { class: 'pro-deshacer', role: 'status', hidden: true });
   const ancho = window.matchMedia('(min-width: 1280px)');
   const panelVisible = () => ancho.matches && panel.isConnected;
+  // ¿La fila está ligada a piezas que el 3D del modelo puede mostrar? (clave exacta, ~| o conjunto)
+  const conModelo3d = () => !!(d.modelo && d.inventario && (d.inventario.escena?.length || d.inventario.items.some((it) => (it.m3d && it.pos?.length) || it.cajas?.length)));
+  const ligadaAlModelo = (x) => conModelo3d() && (instanciasDe(x, d.inventario).length > 0 || !!estadoModelo(x, mp)?.presente);
 
   // ---------------------------------------------------------------- Guardar
   const fallo = (e) => { avisar(e.message, 'error'); ctx.refrescar(); };
@@ -72,7 +75,8 @@ export default async function vista(ctx) {
     const m3 = m3dDe(x, mp);
     const img = imagen(x.img);
     const acciones = el('div', { class: 'pro-acc-in' },
-      m3 ? el('button', { type: 'button', class: 'boton-icono', title: 'Ver en 3D', 'aria-label': 'Ver en 3D', onclick: () => { seleccionar(x.id); if (!panelVisible()) ventana3d(ctx, x.item || 'Vista 3D', { modeloId: d.modelo.id, m3d: m3 }); } }, icono('caja', { tam: 16 })) : null,
+      m3 ? el('button', { type: 'button', class: 'boton-icono', title: 'Ver en 3D', 'aria-label': 'Ver en 3D', onclick: () => { seleccionar(x.id); if (!panelVisible()) ventana3d(ctx, x.item || 'Vista 3D', { modeloId: d.modelo.id, m3d: m3 }); } }, icono('caja', { tam: 16 }))
+        : ligadaAlModelo(x) ? el('button', { type: 'button', class: 'boton-icono', title: 'Ver dónde va en el modelo', 'aria-label': 'Ver dónde va en el modelo', onclick: () => { seleccionar(x.id); if (!panelVisible()) ventana3d(ctx, x.item || 'Vista 3D', { modeloId: d.modelo.id, inv: d.inventario, foco: x }); } }, icono('caja', { tam: 16 })) : null,
       el('button', { type: 'button', class: 'boton-icono', title: 'Ficha completa (link, imagen, código, nota)', 'aria-label': 'Ficha completa', onclick: () => ficha(x) }, icono('editar', { tam: 16 })),
       puedeCrear ? el('button', { type: 'button', class: 'boton-icono', title: 'Duplicar fila', 'aria-label': 'Duplicar fila', onclick: () => duplicar(x) }, icono('copiar', { tam: 16 })) : null,
       puedeEliminar ? el('button', { type: 'button', class: 'boton-icono', title: 'Eliminar fila', 'aria-label': 'Eliminar fila', onclick: () => borrar(x) }, icono('basura', { tam: 16 })) : null);
@@ -414,14 +418,26 @@ export default async function vista(ctx) {
   hoja.addEventListener('dragend', () => { arrastrando = null; limpiar(); hoja.querySelectorAll('.arrastrando').forEach((r) => r.classList.remove('arrastrando')); });
 
   // ---------------------------------------------------------------- Panel lateral: 3D, imagen y datos de la fila
+  // Fila de un mueble: el mueble solo ("Objeto"). Fila ligada a piezas del modelo (clave o conjunto): el modelo completo
+  // con sus piezas resaltadas ("En el modelo"), para ver dónde va. Con las dos, se elige arriba del pie (se recuerda).
   const pMsg = el('div', { class: 'pro-v3-msg' }, 'Selecciona una fila');
   const pImg = el('img', { class: 'pro-pv-img', alt: '', hidden: true });
   const pVisor = el('div', { class: 'pro-pv' }, pImg, pMsg);
   const pMed = el('span', { class: 'pro-v3-med texto-suave' });
   let vp = null; let panelId = null; let tok = 0;
-  const pPie = el('div', { class: 'pro-pv-pie', hidden: true }, pMed,
-    ['iso', 'frente', 'lado', 'arriba'].map((m, i) => boton(['3D', 'Frente', 'Lado', 'Arriba'][i], { class: 'boton boton-secundario boton-chico', onclick: () => camara(vp, m) })),
-    boton('Ampliar', { class: 'boton boton-secundario boton-chico', title: 'Ver en grande', onclick: () => { const x = d.partidas.find((y) => y.id === sel); if (x) ventana3d(ctx, x.item, { modeloId: d.modelo.id, m3d: m3dDe(x, mp) }); } }));
+  let vm = null; let vmModelo = null; let cargaVm = null;   // el modelo completo del panel (se arma una vez)
+  let modoPanel = 'objeto'; let vistaPanel = null;
+  const activo = () => (vistaPanel === 'modelo' ? vm?.visor : vp);
+  const bModo = (m, t) => el('button', { type: 'button', 'data-m': m, 'aria-pressed': 'false', onclick: () => { modoPanel = m; pintarPanel(); } }, t);
+  const pModo = el('div', { class: 'segmento pro-pv-modo', role: 'group', 'aria-label': 'Qué mostrar en el 3D' }, bModo('objeto', 'Objeto'), bModo('modelo', 'En el modelo'));
+  const pPieza = boton('La pieza', { icono: 'buscar', class: 'boton boton-secundario boton-chico', title: 'Volver a acercar la cámara a la pieza', onclick: () => vm?.encuadrar() });
+  const pPie = el('div', { class: 'pro-pv-pie', hidden: true }, pModo, pMed, pPieza,
+    ['iso', 'frente', 'lado', 'arriba'].map((m, i) => boton(['3D', 'Frente', 'Lado', 'Arriba'][i], { class: 'boton boton-secundario boton-chico', onclick: () => camara(activo(), m) })),
+    boton('Ampliar', { class: 'boton boton-secundario boton-chico', title: 'Ver en grande', onclick: () => {
+      const x = d.partidas.find((y) => y.id === sel); if (!x) return;
+      if (vistaPanel === 'modelo') ventana3d(ctx, x.item || 'Vista 3D', { modeloId: d.modelo.id, inv: d.inventario, foco: x });
+      else ventana3d(ctx, x.item, { modeloId: d.modelo.id, m3d: m3dDe(x, mp) });
+    } }));
   const pInfo = el('div', { class: 'pro-pv-info' });
   panel.append(pVisor, pPie, pInfo);
 
@@ -433,10 +449,12 @@ export default async function vista(ctx) {
   }
   function pintarPanel() {
     const x = sel && d.partidas.find((y) => y.id === sel);
-    if (!x) { pInfo.replaceChildren(el('p', { class: 'texto-suave texto-chico' }, 'Haz clic en una fila para ver aquí su mueble en 3D, su imagen y su link.')); mostrar3d(null, null); return; }
+    if (!x) { pInfo.replaceChildren(el('p', { class: 'texto-suave texto-chico' }, 'Haz clic en una fila para ver aquí su 3D (o dónde va en el modelo), su imagen y su link.')); mostrar3d(null); return; }
     const em = estadoModelo(x, mp);
     const dato = (t, v) => (v ? [el('dt', {}, t), el('dd', {}, v)] : []);
+    const qe = queEsDe(x);
     pInfo.replaceChildren(el('h4', {}, x.item || 'Nuevo ítem'), x.detalle ? el('div', { class: 'texto-suave texto-chico' }, x.detalle) : null,
+      qe ? el('div', { class: 'pro-quees' }, el('b', {}, 'Qué es'), el('p', {}, qe)) : null,
       el('dl', { class: 'pro-pv-dl' },
         dato('Zona', x.zona), dato('Área', gDe(x)),
         dato('Cantidad', `${fmtNum(x.cantidad, 'cantidad')} ${x.unidad || ''}${em?.cant !== undefined ? ` (modelo: ${em.cant})` : ''}`),
@@ -445,34 +463,70 @@ export default async function vista(ctx) {
       el('div', { class: 'pro-pv-acc' },
         x.url ? boton(esArchivo(x.url) ? 'Abrir archivo' : 'Abrir link', { icono: esArchivo(x.url) ? 'documento' : 'enlace', class: 'boton boton-secundario boton-chico', onclick: () => abrirLink(ctx, x.url).catch((e) => avisar(e.message, 'error')) }) : null,
         boton('Ficha completa', { icono: 'editar', class: 'boton boton-secundario boton-chico', onclick: () => ficha(x) })));
-    mostrar3d(m3dDe(x, mp), x);
+    mostrar3d(x);
   }
-  async function mostrar3d(id, x) {
+  // Muestra un lienzo (el del mueble o el del modelo) y pausa el otro
+  function lienzos(cual) {
+    if (vp) { vp.renderer.domElement.style.display = cual === 'objeto' ? 'block' : 'none'; vp.pausado = cual !== 'objeto'; }
+    if (vm?.visor) { vm.visor.renderer.domElement.style.display = cual === 'modelo' ? 'block' : 'none'; vm.visor.pausado = cual !== 'modelo'; }
+  }
+  async function mostrar3d(x) {
     const t = ++tok;
-    pPie.hidden = !id;
-    const lienzo = (on) => { if (vp) vp.renderer.domElement.style.display = on ? 'block' : 'none'; };
-    if (!id || !panelVisible()) {
-      lienzo(false);
+    const id = x ? m3dDe(x, mp) : null;
+    const enModelo = !!x && ligadaAlModelo(x);
+    const vista = id && (!enModelo || modoPanel === 'objeto') ? 'objeto' : enModelo ? 'modelo' : null;
+    vistaPanel = vista;
+    pPie.hidden = !vista;
+    pModo.style.display = id && enModelo ? '' : 'none';
+    pModo.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.m === vista)));
+    pPieza.style.display = vista === 'modelo' ? '' : 'none';
+    if (!vista || !panelVisible()) {
+      lienzos(null);
       const img = x && imagen(x.img);
       if (img) { pImg.src = img; pImg.hidden = false; pMsg.hidden = true; } else {
         pImg.hidden = true; pMsg.hidden = false;
-        pMsg.textContent = x ? (id ? 'Usa el botón 3D de la fila para verlo.' : 'Esta fila no tiene 3D ni imagen. Para ligarla a un mueble del modelo, agrégala desde la vista Modelo SketchUp.') : 'Selecciona una fila';
+        pMsg.textContent = x ? (vista ? 'Usa el botón 3D de la fila para verlo.' : 'Esta fila no tiene 3D ni imagen. Para ligarla al modelo, agrégala desde la vista Modelo SketchUp.') : 'Selecciona una fila';
       }
       return;
     }
     pImg.hidden = true;
-    if (id === panelId && vp?.obj) { lienzo(true); pMsg.hidden = true; return; }
-    lienzo(false); pMsg.hidden = false; pMsg.textContent = 'Cargando 3D…';
+    if (vista === 'modelo') { await mostrarEnModelo(x, t); return; }
+    if (id === panelId && vp?.obj) { lienzos('objeto'); pMsg.hidden = true; return; }
+    lienzos(null); pMsg.hidden = false; pMsg.textContent = 'Cargando 3D…';
     try { await asegurarThree(); } catch { if (t === tok) pMsg.textContent = 'No se pudo cargar el visor 3D (usa internet solo para eso).'; return; }
     const datos = (await cargarMallas(ctx, d.modelo.id, [id]).catch(() => new Map())).get(id);
     if (t !== tok) return;
     if (!datos) { pMsg.textContent = 'Este mueble aún no tiene su archivo 3D: sube de nuevo la exportación con la carpeta de mallas.'; return; }
     if (!vp || !vp.renderer.domElement.isConnected) vp = crearVisor(pVisor);
-    lienzo(true);
+    lienzos('objeto');
     const tex = await texturasPara(ctx, d.modelo.id, [datos]).catch(() => new Map());
     if (t !== tok) return;
-    try { pMed.textContent = ponerMueble(vp, datos, true, tex); } catch { pMsg.textContent = 'No se pudo leer el 3D de este mueble.'; lienzo(false); return; }
+    try { pMed.textContent = ponerMueble(vp, datos, true, tex); } catch { pMsg.textContent = 'No se pudo leer el 3D de este mueble.'; lienzos(null); return; }
     panelId = id; pMsg.hidden = true;
+  }
+  // El modelo completo con las piezas de la fila resaltadas y el resto atenuado
+  async function mostrarEnModelo(x, t) {
+    if (vmModelo !== d.modelo.id || !cargaVm) {
+      vm?.visor?.renderer.domElement.remove();   // otro modelo ligado: el lienzo anterior se suelta solo
+      vm = null; vmModelo = d.modelo.id;
+      cargaVm = vistaModelo(ctx, pVisor, { modeloId: d.modelo.id, inv: d.inventario, alProgreso: (txt) => { if (vistaPanel === 'modelo') pMsg.textContent = txt; } });
+    }
+    if (!vm) {
+      lienzos(null); pMsg.hidden = false; pMsg.textContent = 'Cargando el modelo…'; pMed.textContent = '';
+      try { vm = await cargaVm; } catch (e) {
+        cargaVm = null;
+        if (t === tok) pMsg.textContent = `No se pudo mostrar el modelo en 3D: ${e.message}`;
+        return;
+      }
+      if (vm.sinPosiciones) { if (t === tok) pMsg.textContent = 'Para ubicar piezas, vuelve a enviar el modelo desde SketchUp: ahora guarda dónde está cada objeto.'; return; }
+      if (t !== tok) { if (vistaPanel !== 'modelo') lienzos(vistaPanel); return; }
+    }
+    if (vm.sinPosiciones) { pMsg.hidden = false; pMsg.textContent = 'Para ubicar piezas, vuelve a enviar el modelo desde SketchUp: ahora guarda dónde está cada objeto.'; return; }
+    lienzos('modelo');
+    const n = vm.resaltar(x);
+    pMsg.hidden = !!n;
+    if (!n) pMsg.textContent = 'Esta partida no se encontró en el 3D del modelo.';
+    pMed.textContent = n ? `${n} ${n === 1 ? 'pieza' : 'piezas'} en el modelo` : '';
   }
 
   // ---------------------------------------------------------------- Barra de herramientas
