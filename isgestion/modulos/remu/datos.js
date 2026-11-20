@@ -1,6 +1,9 @@
 // Carga lo necesario para calcular pagos de la empresa activa en un rango.
-import { calcular, sueldoDelMes, semanaEnMes } from './calculo.js?v=39dc32b';
-import { sumarDias, rangoMes, lunesDe } from '../../core/ui/formato.js?v=39dc32b';
+import { calcular, sueldoDelMes, semanaEnMes } from './calculo.js?v=34a2438';
+import { sumarDias, rangoMes, lunesDe } from '../../core/ui/formato.js?v=34a2438';
+
+// Externo: trabaja como cualquiera (horas, faenas) pero cobra con factura, no por planilla (Remuneraciones 010)
+export const esExterno = (v) => v.condicion?.modo === 'externo';
 
 export const nombreCompleto = (p) => [p.nombres, p.apellido_paterno, p.apellido_materno].filter(Boolean).join(' ');
 
@@ -23,10 +26,12 @@ export async function cargarBase(ctx) {
   for (const v of [...vinculos.data].sort((a, b) => (a.estado === 'activo' ? -1 : 1) - (b.estado === 'activo' ? -1 : 1))) {
     if (!vistos.has(v.persona_id)) vistos.set(v.persona_id, { ...v, condicion: porVinculo.get(v.id) ?? null, licencias: licDe(v.persona_id) });
   }
-  // Socios de la empresa (remu_condiciones.socio): fuera de los pagos; Condiciones los muestra en `todos`
+  // Socios de la empresa (remu_condiciones.socio) y externos que facturan (modo 'externo', Remuneraciones 010):
+  // fuera de los pagos; Condiciones los muestra en `todos` y los externos van aparte en `externos`
   const todos = [...vistos.values()];
   return {
-    vinculos: todos.filter((v) => !v.condicion?.socio),
+    vinculos: todos.filter((v) => !v.condicion?.socio && !esExterno(v)),
+    externos: todos.filter((v) => !v.condicion?.socio && esExterno(v)),
     todos,
     cargos: new Map(cargos.data.map((c) => [c.id, c])),
     listaCargos: cargos.data,
@@ -144,6 +149,34 @@ export async function resumenMes(ctx, base, mes) {
       totalMes: total, realMes: f.realMes + x.hab - x.des, aPagar: total - x.pag };
   });
   return { ...P, filas, total: filas.reduce((s, f) => s + f.totalMes, 0) };
+}
+
+// Externos del mes: lo esperado (horas reales × valor hora, como un spot, más vueltas) y lo que facturó su proveedor en
+// Costos (neto de sus facturas del mes; null si no hay permiso para ver Costos). Devuelve { R, filas: [{ f, terceroId,
+// esperado, facturado, docs }] }. No es parte del costo de Remuneraciones: su costo entra por Costos.
+export async function externosMes(ctx, base, mes) {
+  if (!base.externos?.length) return { R: null, filas: [] };
+  const { desde, hasta } = rangoMes(mes);
+  const R = await calcularRango(ctx, { ...base, vinculos: base.externos }, { desde, hasta, itemsMes: mes });
+  const terceros = [...new Set(base.externos.map((v) => v.condicion?.tercero_id).filter(Boolean))];
+  let docs = null;
+  if (ctx.puede('costos', 'ver')) {
+    docs = [];
+    if (terceros.length) {
+      const r = await ctx.api.from('fin_registros').select('id, fecha, tercero_id, doc_tipo, doc_numero, neto, total, concepto')
+        .eq('empresa_id', ctx.empresa.id).eq('tipo', 'gasto').in('tercero_id', terceros).is('deleted_at', null).gte('fecha', desde).lte('fecha', hasta).order('fecha');
+      docs = r.error ? null : r.data;
+    }
+  }
+  const porPersona = new Map(R.filas.map((f) => [f.vinculo.persona_id, f]));
+  const filas = base.externos.map((v) => {
+    const f = porPersona.get(v.persona_id) ?? filaVacia(v, base);
+    const tid = v.condicion?.tercero_id ?? null;
+    const suyos = docs && tid ? docs.filter((d) => d.tercero_id === tid) : [];
+    // Lo esperado sale de sus horas reales (no de ajustes de pago, que son de la planilla)
+    return { f, terceroId: tid, esperado: f.real || 0, facturado: docs ? suyos.reduce((s, d) => s + (d.neto || 0), 0) : null, docs: suyos };
+  });
+  return { R, filas };
 }
 
 // Total (costo) del mes: lo usa el Estado de resultados.

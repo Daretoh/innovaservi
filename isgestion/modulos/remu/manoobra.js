@@ -6,8 +6,10 @@
 //  · sueldo base de los fijos (su), vueltas del chofer en Vehículos, extras y bono por autos (ex) y descuentos (de)
 //    → según las horas de la persona en el mes; si no trabajó horas, a "Sin faena asignada" en los días del mes.
 // Mes en curso: el sueldo base se cuenta devengado a hoy (días transcurridos del mes). Sin leyes sociales.
-import { hoyISO, rangoMes, moverMes, sumarDias, lunesDe } from '../../core/ui/formato.js?v=39dc32b';
-import { resumenMes } from './datos.js?v=39dc32b';
+// Externos que facturan (Remuneraciones 010): sus horas × valor hora van en "Horas trabajadas" de cada faena (lo
+// esperado, no su factura); no están en el total de Remuneraciones porque su costo entra por Costos.
+import { hoyISO, rangoMes, moverMes, sumarDias, lunesDe } from '../../core/ui/formato.js?v=34a2438';
+import { resumenMes, calcularRango } from './datos.js?v=34a2438';
 
 export const COMPONENTES = [
   ['tr', 'Horas trabajadas', 'tratos y valor hora'],
@@ -43,7 +45,12 @@ export function periodo(per, ref) {
 }
 
 // Filas del mes con el mismo cálculo del total mensual (datos.resumenMes)
-const filasMes = async (ctx, base, mes) => (await resumenMes(ctx, base, mes)).filas;
+const filasMes = async (ctx, base, mes) => {
+  const { desde, hasta } = rangoMes(mes);
+  const [RM, RX] = await Promise.all([resumenMes(ctx, base, mes),
+    base.externos?.length ? calcularRango(ctx, { ...base, vinculos: base.externos }, { desde, hasta, itemsMes: mes }) : { filas: [] }]);
+  return [...RM.filas, ...RX.filas.map((f) => ({ ...f, externo: true }))];
+};
 
 // Libro de un mes
 export async function libroMes(ctx, base, mes) {
@@ -64,11 +71,11 @@ export async function libroMes(ctx, base, mes) {
     const push = (fecha, faena, c, monto, min = 0) => { if (monto || min) out.push({ fecha, faena, cliente: clienteDe(faena), pid, c, m: monto, min }); };
     const celdas = []; let minTot = 0; let vuAsignado = 0;
     for (const d of f.detalle) {
-      const monto = contable ? d.contable : d.real;
+      const monto = contable && !f.externo ? d.contable : d.real;   // externo: horas reales (sin ajustes de planilla)
       const totF = d.faenas.reduce((s, x) => s + x.min, 0);
       d.faenas.forEach((x) => {
         const min = totF ? (x.min * d.min) / totF : 0;   // horas sin solapes, por faena
-        const parte = d.porFaena ? (contable ? x.contable : x.real) : totF ? (monto * x.min) / totF : monto / d.faenas.length;
+        const parte = d.porFaena ? (contable && !f.externo ? x.contable : x.real) : totF ? (monto * x.min) / totF : monto / d.faenas.length;
         push(d.fecha, x.faena, 'tr', parte, min);
         if (min > 0) { celdas.push({ fecha: d.fecha, faena: x.faena, min }); minTot += min; }
       });

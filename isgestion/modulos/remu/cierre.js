@@ -13,15 +13,15 @@
 //   semanales (tratos, vueltas, extras) se resta de A pagar ("Pagado semanal"); sigue en el total (costo del mes).
 // - Personas ocultas del cierre (remu_cierres.ocultos) y mes enviado (remu_cierres.cerrado_at): no cambian pagos.
 // Columnas, su orden y las secciones que van se recuerdan en este navegador (isg.remu.cierre).
-import { el } from '../../core/ui/dom.js?v=39dc32b';
-import { icono } from '../../core/ui/iconos.js?v=39dc32b';
-import { boton } from '../../core/ui/tabla.js?v=39dc32b';
-import { avisar } from '../../core/ui/aviso.js?v=39dc32b';
-import { dinero, horas, hoyISO, moverMes, nombreMes } from '../../core/ui/formato.js?v=39dc32b';
-import { abrirFormulario } from '../../core/ui/modal.js?v=39dc32b';
-import { nombreEmpresa } from '../../core/empresas.js?v=39dc32b';
-import { cargarBase, resumenMes, nombreCompleto, MOVIMIENTOS } from './datos.js?v=39dc32b';
-import { diasDelMes } from './calculo.js?v=39dc32b';
+import { el } from '../../core/ui/dom.js?v=34a2438';
+import { icono } from '../../core/ui/iconos.js?v=34a2438';
+import { boton } from '../../core/ui/tabla.js?v=34a2438';
+import { avisar } from '../../core/ui/aviso.js?v=34a2438';
+import { dinero, horas, hoyISO, moverMes, nombreMes } from '../../core/ui/formato.js?v=34a2438';
+import { abrirFormulario } from '../../core/ui/modal.js?v=34a2438';
+import { nombreEmpresa } from '../../core/empresas.js?v=34a2438';
+import { cargarBase, resumenMes, externosMes, nombreCompleto, MOVIMIENTOS } from './datos.js?v=34a2438';
+import { diasDelMes } from './calculo.js?v=34a2438';
 
 const estado = { mes: hoyISO().slice(0, 7) };
 const CLAVE = 'isg.remu.cierre';
@@ -85,12 +85,13 @@ async function cargar(ctx, empresas, mes) {
     const ctxE = { ...ctx, empresa: g.empresa, puede: g.puede };
     try {
       const base = await cargarBase(ctxE);
-      const [RM, cierre] = await Promise.all([resumenMes(ctxE, base, mes),
-        ctx.api.from('remu_cierres').select('*').eq('empresa_id', g.empresa.id).eq('mes', mes).maybeSingle()]);
+      const [RM, cierre, RX] = await Promise.all([resumenMes(ctxE, base, mes),
+        ctx.api.from('remu_cierres').select('*').eq('empresa_id', g.empresa.id).eq('mes', mes).maybeSingle(),
+        externosMes(ctxE, base, mes)]);
       const mensual = base.config.periodo === 'mensual';
       const horasTrato = Number(base.config.horas_trato) || 8;
       const filas = RM.filas.map((f) => ({ f, e: g.empresa, i, ctxE, mes, mensual, horasTrato, autos: RM.autos.length }));
-      return { ...g, i, ctxE, base, RM, mensual, filas, cierre: cierre.error ? null : cierre.data, sinCierres: !!cierre.error,
+      return { ...g, i, ctxE, base, RM, RX, mensual, filas, cierre: cierre.error ? null : cierre.data, sinCierres: !!cierre.error,
         ocultos: new Set(cierre.data?.ocultos ?? []), repetidos: RM.R?.diasRepetidos ?? 0 };
     } catch (err) { return { ...g, i, error: err.message, filas: [] }; }
   }));
@@ -151,6 +152,7 @@ export async function vistaCierre(ctx, { empresas, titulo = 'Cierre de remunerac
             boton('Excel', { icono: 'descargar', onclick: (ev) => exportar(ctx, { secs, cols, mes, titulo, grupo: varias }, 'excel', ev.currentTarget) })] : null,
           marcarEnviado(ctx, datos, mes)))),
       ...(secs.length ? secs.map((s) => tablaSeccion(ctx, s, cols, { mes, grupo, repintar: pintar })) : [el('p', { class: 'tabla-vacia' }, 'Nada que mostrar con lo elegido en Ajustar.')]),
+      tablaExternos(datos, varias),
       el('p', { class: 'texto-suave texto-chico' }, cols.filter((c) => c.nota).map((c) => c.nota).join(' ')));
   };
   pintar();
@@ -164,6 +166,41 @@ export async function vistaCierre(ctx, { empresas, titulo = 'Cierre de remunerac
         el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Mes siguiente', onclick: () => mover(1) }, icono('derecha')))),
     datos.filter((d) => d.error).map((d) => el('p', { class: 'aviso-bandeja' }, icono('alerta', { tam: 16 }), `${nombreEmpresa(d.empresa)}: ${d.error}`)),
     cont);
+}
+
+// Externos que facturan (Remuneraciones 010): no van en el cierre ni en A pagar; se compara lo esperado (horas ×
+// valor hora, más vueltas) con el neto de sus facturas del mes en Costos.
+function tablaExternos(datos, varias) {
+  const filas = datos.flatMap((d) => (d.RX?.filas ?? []).map((x) => ({ ...x, d })));
+  if (!filas.length) return null;
+  const celdaFact = (x) => {
+    if (x.facturado == null) return el('span', { class: 'texto-suave', title: 'Sin permiso para ver Costos' }, '—');
+    if (!x.terceroId) return el('span', { class: 'texto-suave', title: 'Indica su proveedor en Condiciones de pago' }, 'Sin proveedor');
+    return el('span', { title: x.docs.map((dc) => `${dc.doc_tipo === 'factura' ? 'Factura' : 'Doc.'}${dc.doc_numero ? ` N° ${dc.doc_numero}` : ''} · ${dc.fecha} · ${dinero(dc.neto)} neto`).join('\n') || 'Sin facturas del mes en Costos' },
+      dinero(x.facturado), x.docs.length ? el('span', { class: 'texto-suave texto-chico' }, ` (${x.docs.length})`) : null);
+  };
+  const celdaDif = (x) => {
+    if (x.facturado == null || !x.terceroId) return '—';
+    const dif = x.facturado - x.esperado;
+    if (!x.facturado && x.esperado) return el('span', { class: 'chip chip-pend' }, 'Falta su factura');
+    if (Math.abs(dif) < 1) return el('span', { class: 'chip chip-ok' }, 'Cuadra');
+    return el('span', { class: dif > 0 ? 'pct-mal' : 'texto-suave' }, `${dif > 0 ? '+' : '−'}${dinero(Math.abs(dif))}`);
+  };
+  return el('div', { class: 'ficha' },
+    el('h2', {}, icono('documento', { tam: 18 }), ' Externos con factura'),
+    el('p', { class: 'texto-suave texto-chico' }, 'No van en el cierre ni en A pagar: cobran con factura, que se carga en Costos a nombre de su proveedor (ahí cuenta su costo). Esperado = horas del mes × valor hora, más vueltas, en neto.'),
+    el('div', { class: 'tabla-contenedor' }, el('table', { class: 'tabla' },
+      el('thead', {}, el('tr', {}, [...(varias ? ['Empresa'] : []), 'Persona', 'Días', 'Horas', 'Valor hora', 'Esperado', 'Facturado (neto)', 'Diferencia']
+        .map((t, i) => el('th', { class: i >= (varias ? 2 : 1) ? 'num' : '' }, t)))),
+      el('tbody', {}, filas.map((x) => el('tr', {},
+        varias ? el('td', {}, nombreEmpresa(x.d.empresa)) : null,
+        el('td', {}, el('strong', {}, nombreCompleto(x.f.persona))),
+        el('td', { class: 'num' }, String(x.f.dias)),
+        el('td', { class: 'num' }, horas(x.f.totMin)),
+        el('td', { class: 'num' }, x.f.vh ? dinero(x.f.vh) : el('span', { class: 'pct-mal', title: 'Sin valor hora: indícalo en Condiciones de pago' }, 'Sin valor')),
+        el('td', { class: 'num' }, el('strong', {}, dinero(x.esperado))),
+        el('td', { class: 'num' }, celdaFact(x)),
+        el('td', { class: 'num' }, celdaDif(x))))))));
 }
 
 // Paso 1: lo que conviene revisar antes de enviar
@@ -346,7 +383,7 @@ async function exportar(ctx, { secs, cols, mes, titulo, grupo }, formato, b) {
     const cab = ['Trabajador', ...cols.map((c) => c.t)];
     const sumar = (filas) => cols.map((c) => (c.suma ? filas.reduce((x, r) => x + (Number(c.v(r)) || 0), 0) : null));
     if (formato === 'excel') {
-      const { nuevoExcel } = await import('../../core/excel.js?v=39dc32b');
+      const { nuevoExcel } = await import('../../core/excel.js?v=34a2438');
       const x = await nuevoExcel(ctx, { titulo: tituloDoc, subtitulo });
       const valor = (c, v) => (c.tipo === 'horas' ? (v == null ? null : Math.round(v / 6) / 10) : c.neg && v ? -v : v);
       const tipo = (c) => (c.tipo === 'horas' ? 'numero' : c.tipo);
@@ -360,7 +397,7 @@ async function exportar(ctx, { secs, cols, mes, titulo, grupo }, formato, b) {
       await x.guardar(nombreArchivo);
       return;
     }
-    const { nuevoPdf } = await import('../../core/pdf.js?v=39dc32b');
+    const { nuevoPdf } = await import('../../core/pdf.js?v=34a2438');
     const pdf = await nuevoPdf(ctx, { titulo: tituloDoc, subtitulo, horizontal: true });
     const doc = pdf.doc;
     const tam = cols.length > 16 ? 6.3 : cols.length > 12 ? 7 : 8;

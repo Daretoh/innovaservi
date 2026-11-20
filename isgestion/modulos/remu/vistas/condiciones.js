@@ -1,14 +1,19 @@
 // Condiciones de pago de cada trabajador en la empresa: modo, cargo/trato, jornada o turno, sueldo y vuelta.
-import { el } from '../../../core/ui/dom.js?v=39dc32b';
-import { icono } from '../../../core/ui/iconos.js?v=39dc32b';
-import { listado } from '../../../core/ui/tabla.js?v=39dc32b';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=39dc32b';
-import { avisar } from '../../../core/ui/aviso.js?v=39dc32b';
-import { dinero, hhmm, fechaLarga } from '../../../core/ui/formato.js?v=39dc32b';
-import { cargarBase, nombreCompleto } from '../datos.js?v=39dc32b';
+import { el } from '../../../core/ui/dom.js?v=34a2438';
+import { icono } from '../../../core/ui/iconos.js?v=34a2438';
+import { listado } from '../../../core/ui/tabla.js?v=34a2438';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=34a2438';
+import { avisar } from '../../../core/ui/aviso.js?v=34a2438';
+import { dinero, hhmm, fechaLarga } from '../../../core/ui/formato.js?v=34a2438';
+import { cargarBase, nombreCompleto } from '../datos.js?v=34a2438';
+
+const MODOS = [['hora', 'Por hora (spot): se pagan todas las horas'], ['fijo', 'Fijo: solo extras, findes y feriados'],
+  ['externo', 'Factura sus servicios (externo): no se paga por planilla']];
 
 export default async function vista(ctx) {
-  const base = await cargarBase(ctx);
+  const [base, terc] = await Promise.all([cargarBase(ctx),
+    ctx.api.from('terceros').select('id, razon_social, nombre_fantasia, rut, tipo').eq('empresa_id', ctx.empresa.id).is('deleted_at', null).order('razon_social')]);
+  base.proveedores = (terc.data ?? []).filter((t) => (t.tipo ?? []).includes('proveedor'));
   const activos = base.todos.filter((v) => v.estado === 'activo')
     .sort((a, b) => nombreCompleto(a.personas).localeCompare(nombreCompleto(b.personas)));
   const editable = ctx.puede('remu', 'editar') && ctx.puede('remu', 'crear');
@@ -18,7 +23,8 @@ export default async function vista(ctx) {
   const columnas = [
     { titulo: 'Trabajador', valor: (v) => el('span', {}, nombreCompleto(v.personas), !v.condicion ? el('span', { class: 'etiqueta etiqueta-apagada', title: 'Usa los valores generales' }, 'Sin configurar') : null,
       v.condicion?.socio ? el('span', { class: 'chip chip-na', title: 'No aparece en los pagos ni en el resumen mensual' }, 'Socio') : null) },
-    { titulo: 'Modo', valor: (v) => (modoDe(v) === 'fijo' ? `Fijo${v.condicion?.fijo_desde ? ` desde ${fechaLarga(v.condicion.fijo_desde)}` : ''}` : 'Por hora') },
+    { titulo: 'Modo', valor: (v) => (modoDe(v) === 'fijo' ? `Fijo${v.condicion?.fijo_desde ? ` desde ${fechaLarga(v.condicion.fijo_desde)}` : ''}`
+      : modoDe(v) === 'externo' ? el('span', { class: 'chip chip-na', title: 'Cobra con factura: no aparece en los pagos; se cuadra en el Cierre del mes' }, 'Externo (factura)') : 'Por hora') },
     { titulo: 'Cargo', valor: (v) => { const c = v.condicion?.cargo_id ? base.cargos.get(v.condicion.cargo_id) : null; return c ? c.nombre : '—'; } },
     { titulo: 'Valor hora', valor: (v) => { const c = v.condicion?.cargo_id ? base.cargos.get(v.condicion.cargo_id) : null; const vh = c?.trato ? Math.round(c.trato / ht) : (v.condicion?.valor_hora || base.config.valor_hora); return vh ? dinero(vh) : el('span', { class: 'pct-mal' }, 'Sin valor'); } },
     { titulo: 'Jornada', valor: (v) => { const c = v.condicion; if (modoDe(v) !== 'fijo') return '—'; if (c?.art22) return el('span', { class: 'chip chip-na', title: 'Sin jornada: sin asistencia ni horas extra' }, 'Artículo 22');
@@ -32,7 +38,7 @@ export default async function vista(ctx) {
   }
   const lista = listado({ titulo: 'Condiciones de pago', filas: activos, columnas, vacio: 'No hay trabajadores activos.' });
   lista.append(el('p', { class: 'texto-suave texto-chico' },
-    'Por hora: se pagan todas las horas. Fijo: solo lo que queda fuera del turno o sobre la jornada; fines de semana y feriados completos. Un fijo sin jornada ni turno cobra todas sus horas como trato. Un fijo con turno queda presente según su horario cada día hábil solo si la opción "asistencia automática de fijos" de Asistencia está activa; si no, marca en la tablet como todos. Artículo 22: sin jornada, sin asistencia ni horas extra.'));
+    'Por hora: se pagan todas las horas. Externo: trabaja y registra horas como cualquiera, pero cobra con factura (se carga en Costos a nombre de su proveedor): no aparece en los pagos ni en las quincenas, y el Cierre del mes compara lo esperado (horas × valor hora) con lo facturado. Fijo: solo lo que queda fuera del turno o sobre la jornada; fines de semana y feriados completos. Un fijo sin jornada ni turno cobra todas sus horas como trato. Un fijo con turno queda presente según su horario cada día hábil solo si la opción "asistencia automática de fijos" de Asistencia está activa; si no, marca en la tablet como todos. Artículo 22: sin jornada, sin asistencia ni horas extra.'));
   return lista;
 }
 
@@ -43,7 +49,10 @@ function editar(ctx, v, base) {
     titulo: `Condiciones de ${nombreCompleto(v.personas)}`,
     mensaje: 'Para un fijo, usa turno (hora de inicio y fin) o jornada en horas por día, no ambos.',
     campos: [
-      { id: 'modo', etiqueta: 'Modo de pago', opciones: [['hora', 'Por hora (spot): se pagan todas las horas'], ['fijo', 'Fijo: solo extras, findes y feriados']], valor: c.modo ?? (v.tipo_vinculo === 'contrato' ? 'fijo' : 'hora') },
+      { id: 'modo', etiqueta: 'Modo de pago', opciones: MODOS, valor: c.modo ?? (v.tipo_vinculo === 'contrato' ? 'fijo' : v.tipo_vinculo === 'externo' ? 'externo' : 'hora') },
+      { id: 'tercero_id', etiqueta: 'Externo: proveedor que factura (Clientes y proveedores)', opciones: [['', 'Sin proveedor'],
+        ...base.proveedores.map((t) => [t.id, `${t.nombre_fantasia || t.razon_social}${t.rut ? ` · ${t.rut}` : ''}`])], valor: c.tercero_id ?? '',
+        ayuda: 'Solo para el modo externo: sus facturas en Costos se comparan con lo esperado en el Cierre del mes. Si no está, créalo en Clientes y proveedores como proveedor.' },
       { id: 'cargo_id', etiqueta: 'Cargo (define el valor hora)', opciones: [['', 'Sin cargo'], ...base.listaCargos.filter((x) => x.activo || x.id === c.cargo_id).map((x) => [x.id, `${x.nombre}${x.trato ? ` · ${dinero(Math.round(x.trato / ht))} la hora` : ''}`])], valor: c.cargo_id ?? '' },
       { id: 'valor_hora', etiqueta: 'Valor hora propio (si el cargo no tiene valor hora)', tipo: 'number', valor: c.valor_hora != null ? String(c.valor_hora) : '' },
       { id: 'jornada_ini', etiqueta: 'Turno: inicio', tipo: 'time', valor: c.jornada_ini ? hhmm(c.jornada_ini) : '' },
@@ -69,6 +78,7 @@ function editar(ctx, v, base) {
         jornada_ini: f.jornada_ini || null, jornada_fin: f.jornada_fin || null, jornada_horas: num(f.jornada_horas),
         sueldo_base: num(f.sueldo_base), sueldo_desde: f.sueldo_desde || null, valor_vuelta: num(f.valor_vuelta), fijo_desde: f.fijo_desde || null,
         salida_viernes: f.salida_viernes || null, art22: f.art22 === 'si', asistencia_desde: f.asistencia_desde || null, socio: f.socio === 'si',
+        tercero_id: f.modo === 'externo' ? (f.tercero_id || null) : null,
       };
       const r = v.condicion
         ? await ctx.api.from('remu_condiciones').update(datos).eq('vinculo_id', v.id).select('vinculo_id')

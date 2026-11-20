@@ -5,14 +5,14 @@
 // El reparto está en ../manoobra.js; el total de cada mes cuadra con Remuneraciones.
 // Grupo → Mano de obra del grupo usa la misma vista con todas las empresas (vistaManoObra con empresas; Enzo,
 // 2026-11-02): suma Innova y Performance, cada una con sus permisos, con filtro y tarjeta por empresa.
-import { el } from '../../../core/ui/dom.js?v=39dc32b';
-import { nombreEmpresa } from '../../../core/empresas.js?v=39dc32b';
-import { icono } from '../../../core/ui/iconos.js?v=39dc32b';
-import { boton } from '../../../core/ui/tabla.js?v=39dc32b';
-import { avisar } from '../../../core/ui/aviso.js?v=39dc32b';
-import { dinero, horas, hoyISO, rangoMes, sumarDias, lunesDe, numSemana, nombreDia, fechaCorta, fechaLarga, moverMes, nombreMes } from '../../../core/ui/formato.js?v=39dc32b';
-import { cargarBase, nombreCompleto } from '../datos.js?v=39dc32b';
-import { COMPONENTES, SIN_FAENA, periodo, libroPeriodo, sumar, agrupar } from '../manoobra.js?v=39dc32b';
+import { el } from '../../../core/ui/dom.js?v=34a2438';
+import { nombreEmpresa } from '../../../core/empresas.js?v=34a2438';
+import { icono } from '../../../core/ui/iconos.js?v=34a2438';
+import { boton } from '../../../core/ui/tabla.js?v=34a2438';
+import { avisar } from '../../../core/ui/aviso.js?v=34a2438';
+import { dinero, horas, hoyISO, rangoMes, sumarDias, lunesDe, numSemana, nombreDia, fechaCorta, fechaLarga, moverMes, nombreMes } from '../../../core/ui/formato.js?v=34a2438';
+import { cargarBase, nombreCompleto } from '../datos.js?v=34a2438';
+import { COMPONENTES, SIN_FAENA, periodo, libroPeriodo, sumar, agrupar } from '../manoobra.js?v=34a2438';
 
 const estado = { per: 'mes', ref: hoyISO().slice(0, 7), cliente: '', empresa: '', tabla: 'faenas', q: '', orden: { faenas: ['m', -1], personas: ['m', -1] }, abierto: null };
 const MES3 = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
@@ -37,13 +37,14 @@ export async function vistaManoObra(ctx, { empresas = null } = {}) {
 
   // Personas: nombre, cargo y si es fijo (en el Grupo, la misma persona en dos empresas aparece una vez)
   const personas = new Map();
-  for (const { base } of cargados) for (const v of base.vinculos) {
+  for (const { base } of cargados) for (const v of [...base.vinculos, ...(base.externos ?? [])]) {
     if (personas.has(v.persona_id)) continue;
     const c = v.condicion;
     const cargo = (c?.cargo_id ? base.cargos.get(c.cargo_id)?.nombre : null) ?? v.cargo ?? '';
-    personas.set(v.persona_id, { nombre: nombreCompleto(v.personas), cargo, fijo: (c?.modo ?? (v.tipo_vinculo === 'contrato' ? 'fijo' : 'hora')) === 'fijo' });
+    const modo = c?.modo ?? (v.tipo_vinculo === 'contrato' ? 'fijo' : 'hora');
+    personas.set(v.persona_id, { nombre: nombreCompleto(v.personas), cargo, fijo: modo === 'fijo', etq: modo === 'fijo' ? 'Fijo' : modo === 'externo' ? 'Externo' : 'Spot' });
   }
-  const persona = (pid) => personas.get(pid) ?? { nombre: '—', cargo: '', fijo: false };
+  const persona = (pid) => personas.get(pid) ?? { nombre: '—', cargo: '', fijo: false, etq: 'Spot' };
 
   // Período actual y anterior (en curso: el mismo tramo del anterior)
   const pasa = (r) => (!estado.cliente || r.cliente === estado.cliente) && (!estado.empresa || r.emp === estado.empresa);
@@ -158,7 +159,7 @@ export async function vistaManoObra(ctx, { empresas = null } = {}) {
     const modo = estado.tabla;
     let filas = modo === 'faenas'
       ? agrupar(cur, (r) => r.faena).map((g) => ({ ...g, nombre: g.k ? tituloFaena(g.k) : SIN_FAENA, sub: g.k ? [g.rows[0].cliente, sitioFaena(g.k)].filter(Boolean).join(' · ') : 'sueldos, extras y descuentos de días sin faena', n: g.nPer }))
-      : agrupar(cur, (r) => r.pid).map((g) => { const p = persona(g.k); return { ...g, nombre: p.nombre, sub: `${p.fijo ? 'Fijo' : 'Spot'}${p.cargo ? ` · ${p.cargo}` : ''}`, n: g.nFae }; });
+      : agrupar(cur, (r) => r.pid).map((g) => { const p = persona(g.k); return { ...g, nombre: p.nombre, sub: `${p.etq}${p.cargo ? ` · ${p.cargo}` : ''}`, n: g.nFae }; });
     const q = estado.q.trim().toLowerCase();
     if (q) filas = filas.filter((g) => `${g.nombre} ${g.sub}`.toLowerCase().includes(q));
     const [k, dir] = estado.orden[modo];
@@ -253,7 +254,7 @@ function panelDetalle(modo, g, P, S, persona) {
       el('thead', {}, el('tr', {}, [modo === 'faenas' ? 'Trabajador' : 'Faena', 'Días', 'Horas', 'Horas $', 'Vueltas', 'Otros', 'Costo'].map((t, i) => el('th', { class: i ? 'num' : '' }, t)))),
       el('tbody', {}, otro.map((o) => {
         const nombre = modo === 'faenas' ? persona(o.k).nombre : o.k ? tituloFaena(o.k) : SIN_FAENA;
-        const sub = modo === 'faenas' ? `${persona(o.k).fijo ? 'Fijo' : 'Spot'}${persona(o.k).cargo ? ` · ${persona(o.k).cargo}` : ''}` : o.k ? o.rows[0].cliente : '';
+        const sub = modo === 'faenas' ? `${persona(o.k).etq}${persona(o.k).cargo ? ` · ${persona(o.k).cargo}` : ''}` : o.k ? o.rows[0].cliente : '';
         const otros = o.c.su + o.c.ex + o.c.de;
         return el('tr', {}, el('td', {}, el('strong', {}, nombre), el('small', { class: 'texto-suave' }, sub)),
           el('td', { class: 'num' }, String(o.nDias)), el('td', { class: 'num' }, horas(Math.round(o.min))), el('td', { class: 'num' }, dinero(o.c.tr)),
@@ -263,7 +264,7 @@ function panelDetalle(modo, g, P, S, persona) {
 
 // Excel: cada movimiento del período (filtro de cliente incluido) y el resumen por componente
 async function exportar(ctx, rows, P, persona, nombreEmp = null) {
-  const { nuevoExcel } = await import('../../../core/excel.js?v=39dc32b');
+  const { nuevoExcel } = await import('../../../core/excel.js?v=34a2438');
   const nombres = Object.fromEntries([...COMPONENTES.map(([k, t]) => [k, t]), ['de', 'Descuentos']]);
   const S = sumar(rows);
   const x = await nuevoExcel(ctx, { titulo: nombreEmp ? 'Mano de obra del grupo' : 'Costos de mano de obra', subtitulo: P.etiqueta });
@@ -272,7 +273,7 @@ async function exportar(ctx, rows, P, persona, nombreEmp = null) {
   x.tabla({ titulo: 'Detalle', columnas: [{ t: 'Fecha', tipo: 'fecha' }, ...(nombreEmp ? ['Empresa'] : []), 'Cliente', 'Faena', 'Trabajador', 'Cargo', 'Modalidad', 'Componente', { t: 'Horas', tipo: 'horas' }, { t: 'Monto', tipo: 'dinero' }],
     filas: [...rows].sort((a, b) => a.fecha.localeCompare(b.fecha) || a.faena.localeCompare(b.faena)).map((r) => {
       const p = persona(r.pid);
-      return [r.fecha, ...(nombreEmp ? [nombreEmp.get(r.emp) ?? ''] : []), r.cliente, r.faena || SIN_FAENA, p.nombre, p.cargo, p.fijo ? 'Fijo' : 'Spot', nombres[r.c], Math.round(r.min || 0), Math.round(r.m)];
+      return [r.fecha, ...(nombreEmp ? [nombreEmp.get(r.emp) ?? ''] : []), r.cliente, r.faena || SIN_FAENA, p.nombre, p.cargo, p.etq, nombres[r.c], Math.round(r.min || 0), Math.round(r.m)];
     }), total: ['Total', ...(nombreEmp ? [''] : []), '', '', '', '', '', '', Math.round(S.min), Math.round(S.m)] });
   await x.guardar(`costos-mano-de-obra-${P.meses[0]}${P.n > 1 ? `-a-${P.meses[P.n - 1]}` : ''}`);
   avisar('Excel descargado.');

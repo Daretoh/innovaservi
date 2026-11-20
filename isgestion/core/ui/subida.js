@@ -1,7 +1,7 @@
 // Panel fijo con el avance de una subida larga (videos): nombre, tamaño, barra y porcentaje.
 // const p = panelSubida(); p.estado('Subiendo video.mp4 (84 MB)', 0.4); … p.cerrar();
-import { el } from './dom.js?v=39dc32b';
-import { icono } from './iconos.js?v=39dc32b';
+import { el } from './dom.js?v=34a2438';
+import { icono } from './iconos.js?v=34a2438';
 
 export function panelSubida() {
   const texto = el('span', { class: 'subida-texto' });
