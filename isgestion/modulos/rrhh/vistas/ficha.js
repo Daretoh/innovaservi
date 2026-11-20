@@ -1,15 +1,16 @@
 // Ficha de un trabajador: documentación (con archivos privados) y datos personales.
 // Ruta: #/rrhh.ficha?p=<persona_id>
-import { el } from '../../../core/ui/dom.js?v=0e0b56e';
-import { icono } from '../../../core/ui/iconos.js?v=0e0b56e';
-import { boton } from '../../../core/ui/tabla.js?v=0e0b56e';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=0e0b56e';
-import { leerVence } from '../../../core/ui/leer-vence.js?v=0e0b56e';
-import { avisar } from '../../../core/ui/aviso.js?v=0e0b56e';
-import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=0e0b56e';
-import { cargarActividad, resumen, panelActividad } from '../actividad.js?v=0e0b56e';
-import { cargarLicencias, filaLicencia, formularioLicencia, diasLicencia, puedeLicencias } from '../../../core/licencias.js?v=0e0b56e';
-import { cargarRrhh, cumplimiento, estadoDoc, chipEstado, avatar, nombreCompleto, nivel, VINCULOS, nombreVinculo } from '../datos.js?v=0e0b56e';
+import { el } from '../../../core/ui/dom.js?v=a90bd70';
+import { icono } from '../../../core/ui/iconos.js?v=a90bd70';
+import { boton } from '../../../core/ui/tabla.js?v=a90bd70';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=a90bd70';
+import { leerVence } from '../../../core/ui/leer-vence.js?v=a90bd70';
+import { avisar } from '../../../core/ui/aviso.js?v=a90bd70';
+import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=a90bd70';
+import { cargarActividad, resumen, panelActividad } from '../actividad.js?v=a90bd70';
+import { panelPractica } from '../practica.js?v=a90bd70';
+import { cargarLicencias, filaLicencia, formularioLicencia, diasLicencia, puedeLicencias } from '../../../core/licencias.js?v=a90bd70';
+import { cargarRrhh, cumplimiento, estadoDoc, chipEstado, avatar, nombreCompleto, nivel, VINCULOS, nombreVinculo } from '../datos.js?v=a90bd70';
 
 const TIPOS_ARCHIVO = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
 const MAX_ARCHIVO = 10 * 1024 * 1024;
@@ -29,7 +30,9 @@ export default async function vista(ctx) {
   const p = v.personas;
   const c = cumplimiento(datos, personaId);
 
-  const pestanas = [['docs', 'Documentación'], ['licencias', 'Licencias'], ['actividad', 'Actividad'], ['datos', 'Datos personales']];
+  const pestanas = [['docs', 'Documentación'], ...(v.tipo_vinculo === 'practica' ? [['practica', 'Práctica']] : []),
+    ['licencias', 'Licencias'], ['actividad', 'Actividad'], ['datos', 'Datos personales']];
+  if (pestana === 'practica' && v.tipo_vinculo !== 'practica') pestana = 'docs';
   const barra = el('div', { class: 'pestanas', role: 'tablist' }, pestanas.map(([id, t]) =>
     el('button', {
       type: 'button', role: 'tab', 'aria-selected': String(pestana === id),
@@ -53,6 +56,7 @@ export default async function vista(ctx) {
         el('span', { class: `chip ${v.estado === 'activo' ? 'chip-ok' : 'chip-na'}` }, v.estado === 'activo' ? 'Activo' : 'Inactivo'))),
     barra,
     pestana === 'docs' ? documentacion(ctx, datos, v)
+      : pestana === 'practica' ? await panelPractica(ctx, v)
       : pestana === 'licencias' ? await licencias(ctx, personaId)
       : pestana === 'actividad' ? panelActividad(resumen((await cargarActividad(ctx, { persona: personaId })).get(personaId)))
         : datosPersonales(ctx, v),
@@ -122,7 +126,7 @@ function filaDoc(ctx, tipo, doc, v, puede) {
         type: 'button', class: 'boton-icono', title: 'Generar con el formato de la empresa', 'aria-label': `Generar ${tipo.nombre}`,
         onclick: async () => {
           try {
-            const { generarParaTrabajador, sePuedeGenerar } = await import('../../documentos/integracion.js?v=0e0b56e');
+            const { generarParaTrabajador, sePuedeGenerar } = await import('../../documentos/integracion.js?v=a90bd70');
             if (!sePuedeGenerar(ctx, tipo.slug)) { avisar('No hay formato para este documento.', 'error'); return; }
             await generarParaTrabajador(ctx, tipo.slug, v.persona_id);
           } catch (err) { avisar(err.message, 'error'); }

@@ -1,6 +1,6 @@
 // Cierre del mes de la empresa (Remuneraciones → Cierre): el mismo cierre del Grupo, solo con esta empresa
 // (modulos/remu/cierre.js). Reemplaza al Resumen mensual "Para remuneraciones" (Enzo, 2026-10-31).
-import { vistaCierre } from '../cierre.js?v=0e0b56e';
+import { vistaCierre } from '../cierre.js?v=a90bd70';
 
 export default function vista(ctx) {
   return vistaCierre(ctx, { empresas: [{ empresa: ctx.empresa, puede: ctx.puede }], titulo: 'Cierre del mes' });
