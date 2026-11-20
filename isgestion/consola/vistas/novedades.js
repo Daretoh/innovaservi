@@ -2,13 +2,13 @@
 // pantalla (módulo y pestaña; vacío = general), empresas (ninguna marcada = todas), imagen (R2, <uuid>/novedades/<uuid>.jpg) y
 // puntos de sugerencias que resuelve. Publicar los deja Hecha con respuesta y avisa a quien los envió.
 // ?punto=<id> abre una nueva con ese punto ligado y su pantalla (desde Sugerencias → "Crear novedad").
-import { el } from '../../core/ui/dom.js?v=a90bd70';
-import { icono } from '../../core/ui/iconos.js?v=a90bd70';
-import { avisar } from '../../core/ui/aviso.js?v=a90bd70';
-import { almacen, urlsFirmadas } from '../../core/adjuntos.js?v=a90bd70';
-import { comprimirFoto, esImagen } from '../../core/imagenes.js?v=a90bd70';
-import { cargarManifiestos } from '../../core/modulos.js?v=a90bd70';
-import { ESTADOS } from '../../core/sugerencias.js?v=a90bd70';
+import { el } from '../../core/ui/dom.js?v=394625e';
+import { icono } from '../../core/ui/iconos.js?v=394625e';
+import { avisar } from '../../core/ui/aviso.js?v=394625e';
+import { almacen, urlsFirmadas } from '../../core/adjuntos.js?v=394625e';
+import { comprimirFoto, esImagen } from '../../core/imagenes.js?v=394625e';
+import { cargarManifiestos } from '../../core/modulos.js?v=394625e';
+import { ESTADOS } from '../../core/sugerencias.js?v=394625e';
 
 const fecha = (iso) => (iso ? new Date(iso).toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '');
 

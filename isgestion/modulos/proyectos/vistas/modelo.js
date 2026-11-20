@@ -3,15 +3,15 @@
 // sumado). Los conjuntos se despliegan con sus piezas y lo que no tiene conjunto va en "Sueltos". Cada fila tiene 3D y
 // "Agregar", que crea una partida ligada a ese objeto. Aquí se sube la exportación de SketchUp y el respaldo del prototipo.
 // Ruta: #/proyectos.modelo?p=<proyecto>
-import { el } from '../../../core/ui/dom.js?v=a90bd70';
-import { icono } from '../../../core/ui/iconos.js?v=a90bd70';
-import { boton } from '../../../core/ui/tabla.js?v=a90bd70';
+import { el } from '../../../core/ui/dom.js?v=394625e';
+import { icono } from '../../../core/ui/iconos.js?v=394625e';
+import { boton } from '../../../core/ui/tabla.js?v=394625e';
 import {
   plegado, cargarTodo, cargarEstilos, selectorProyecto, llave2, mapasInv, medTxt, zonasDe, fichaPartida, subirExportacion, traerRespaldo, guardarProyecto,
-} from '../datos.js?v=a90bd70';
-import { avisar } from '../../../core/ui/aviso.js?v=a90bd70';
-import { ventana3d, olvidarMallas, vistaModelo } from '../visor3d.js?v=a90bd70';
-import { conectarSketchup } from '../sketchup.js?v=a90bd70';
+} from '../datos.js?v=394625e';
+import { avisar } from '../../../core/ui/aviso.js?v=394625e';
+import { ventana3d, olvidarMallas, vistaModelo } from '../visor3d.js?v=394625e';
+import { conectarSketchup } from '../sketchup.js?v=394625e';
 
 const filtro = { texto: '', agrupar: 'recinto', recinto: '', tipo: '', falta: false };
 const TIPO = { componente: 'Mueble', conjunto: 'Conjunto', pieza: 'Pieza' };
@@ -189,16 +189,53 @@ export default async function vista(ctx) {
     onclick: async () => {
       try { await ctl.ar.iniciar({ conConstruccion: false }); } catch (e) { avisar(e.message, 'error'); }
     } });
+  // Pantalla completa: el visor ocupa toda la ventana siempre (también en teléfonos sin la función del navegador,
+  // como el iPhone) y, si el navegador lo permite, además oculta sus barras. Esc o el mismo botón para salir.
+  let grande = false; let porApi = false;
+  const enApi = () => document.fullscreenElement || document.webkitFullscreenElement;
+  const pantalla = boton('Pantalla completa', { icono: 'expandir', class: 'boton boton-secundario boton-chico', 'aria-pressed': 'false', onclick: () => agrandar(!grande) });
+  function agrandar(on) {
+    const centro = visor.parentElement;
+    if (!centro) return;
+    grande = on;
+    centro.classList.toggle('pro-m3-max', on);
+    document.documentElement.classList.toggle('pro-m3-bloqueo', on);
+    activo(pantalla, on); pantalla.lastChild.textContent = on ? 'Salir de pantalla completa' : 'Pantalla completa';
+    try {
+      if (on && !enApi()) {
+        const pedir = centro.requestFullscreen || centro.webkitRequestFullscreen;
+        Promise.resolve(pedir?.call(centro, { navigationUI: 'hide' })).catch(() => {});
+      } else if (!on && enApi()) Promise.resolve((document.exitFullscreen || document.webkitExitFullscreen)?.call(document)).catch(() => {});
+    } catch { /* sin la función del navegador queda igual a toda la ventana */ }
+  }
+  // Al dejar la vista se quitan las escuchas (visor ya mostrado y fuera de la página)
+  let visto = false;
+  const fuera = () => { if (visor.isConnected) visto = true; return visto && !visor.isConnected; };
+  const vigia = setInterval(() => { if (fuera()) quitarEscuchas(); }, 1500);
+  const alCambiarApi = () => {
+    if (fuera()) { quitarEscuchas(); return; }
+    if (enApi()) porApi = true;
+    else if (porApi) { porApi = false; if (grande) agrandar(false); }   // salió con Esc del navegador
+  };
+  const alTecla = (e) => {
+    if (fuera()) { quitarEscuchas(); return; }
+    if (e.key === 'Escape' && grande && !enApi()) agrandar(false);
+  };
+  const quitarEscuchas = () => {
+    clearInterval(vigia);
+    document.removeEventListener('fullscreenchange', alCambiarApi); document.removeEventListener('webkitfullscreenchange', alCambiarApi);
+    window.removeEventListener('keydown', alTecla);
+    document.documentElement.classList.remove('pro-m3-bloqueo');
+  };
+  document.addEventListener('fullscreenchange', alCambiarApi); document.addEventListener('webkitfullscreenchange', alCambiarApi);
+  window.addEventListener('keydown', alTecla);
   const barra = el('div', { class: 'pro-m3-barra' },
     ['iso', 'frente', 'lado', 'arriba'].map((m, i) => boton(['3D', 'Frente', 'Lado', 'Arriba'][i], { class: 'boton boton-secundario boton-chico', onclick: () => {
       if (recorrer.getAttribute('aria-pressed') === 'true') recorrer.click();
       ctl?.camara(m);
     } })),
     recorrer, tablet, recalibrar, ra,
-    document.fullscreenEnabled ? boton('Pantalla completa', { icono: 'expandir', class: 'boton boton-secundario boton-chico', onclick: () => {
-      const centro = visor.parentElement;
-      if (document.fullscreenElement) document.exitFullscreen(); else centro.requestFullscreen?.().catch(() => {});
-    } }) : null,
+    pantalla,
     el('label', { class: 'casilla pro-m3-medir' }, medir, 'Medir'),
     el('label', { class: 'casilla' }, aristasChk, 'Aristas'), medida);
   // replaceChildren no salta los null (los escribe como texto): se filtran

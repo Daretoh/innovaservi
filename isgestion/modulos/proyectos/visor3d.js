@@ -3,11 +3,11 @@
 // Modos: órbita, Recorrer (como D5: teclado o joystick en pantalla), Mirar con la tablet (giroscopio) y realidad
 // aumentada en Android (WebXR). three.js 0.147.0 (jsDelivr, versión fija) se carga solo al abrir un 3D.
 // SketchUp (cm, Z arriba) → visor (m, Y arriba): (x, y, z) → (x/100, z/100, -y/100).
-import { el } from '../../core/ui/dom.js?v=a90bd70';
-import { icono } from '../../core/ui/iconos.js?v=a90bd70';
-import { boton } from '../../core/ui/tabla.js?v=a90bd70';
-import { urlsFirmadas } from '../../core/adjuntos.js?v=a90bd70';
-import { instanciasDe, subtotal, tienePrecio, clp, fmtNum } from './datos.js?v=a90bd70';
+import { el } from '../../core/ui/dom.js?v=394625e';
+import { icono } from '../../core/ui/iconos.js?v=394625e';
+import { boton } from '../../core/ui/tabla.js?v=394625e';
+import { urlsFirmadas } from '../../core/adjuntos.js?v=394625e';
+import { instanciasDe, subtotal, tienePrecio, clp, fmtNum } from './datos.js?v=394625e';
 
 const CDN3 = 'https://cdn.jsdelivr.net/npm/three@0.147.0/';
 const cargarScript = (src) => new Promise((ok, mal) => {
@@ -140,6 +140,9 @@ export function crearVisor(cont) {
   controls.minDistance = 0.05; controls.screenSpacePanning = true; controls.zoomSpeed = 1.4;
   const v = { cont, renderer, scene, camera, controls, obj: null, grid: null, radio: 1, raf: 0, alElegir: null, marcados: [], resaltado: null };
   let abajo = null;
+  // Sin selección de texto ni arrastre nativo desde el lienzo (cortaban el movimiento con el mouse)
+  ['selectstart', 'dragstart', 'contextmenu'].forEach((t) => renderer.domElement.addEventListener(t, (e) => e.preventDefault()));
+  renderer.domElement.addEventListener('mousedown', (e) => { e.preventDefault(); renderer.domElement.focus({ preventScroll: true }); });
   renderer.domElement.addEventListener('pointerdown', (e) => { abajo = [e.clientX, e.clientY]; });
   renderer.domElement.addEventListener('pointerup', (e) => {
     if (!abajo || Math.hypot(e.clientX - abajo[0], e.clientY - abajo[1]) > 6 || !v.obj || !(v.alElegir || v.alMedir)) return;
@@ -239,12 +242,13 @@ export function recorrer(v, on) {
   v.camera.position.set(desde.x, (v.piso ?? 0) + ALTURA, desde.z);
   const teclas = new Set();
   const joy = { x: 0, y: 0 };
-  const enCampo = (e) => /INPUT|TEXTAREA|SELECT/.test(e.target?.tagName ?? '');
+  // Solo se ignoran las teclas al escribir en un campo de texto (no en casillas ni botones de la barra)
+  const enCampo = (e) => { const t = e.target; return t?.isContentEditable || /TEXTAREA|SELECT/.test(t?.tagName ?? '') || (t?.tagName === 'INPUT' && !/checkbox|radio|button|range/.test(t.type)); };
   const abajo = (e) => { if (enCampo(e)) return; const k = e.key.toLowerCase(); if (['w', 'a', 's', 'd', 'q', 'e', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'shift'].includes(k)) { teclas.add(k); e.preventDefault(); } };
   const arriba = (e) => teclas.delete(e.key.toLowerCase());
   let arrastre = null;
   const capturar = (n, id) => { try { n.setPointerCapture(id); } catch { /* sin captura */ } };
-  const pd = (e) => { arrastre = [e.clientX, e.clientY]; capturar(lienzo, e.pointerId); };
+  const pd = (e) => { if (e.button > 0) return; arrastre = [e.clientX, e.clientY]; capturar(lienzo, e.pointerId); };
   const pm = (e) => {
     if (!arrastre || giro.activo) return;
     const f = e.pointerType === 'touch' ? 0.006 : 0.004;
@@ -252,8 +256,10 @@ export function recorrer(v, on) {
     pitch = Math.max(-1.45, Math.min(1.45, pitch)); arrastre = [e.clientX, e.clientY];
   };
   const pu = () => { arrastre = null; };
+  const soltarTodo = () => { arrastre = null; teclas.clear(); };   // al cambiar de ventana no quedan teclas pegadas
   const rueda = (e) => { e.preventDefault(); const f = new THREE.Vector3(-Math.sin(yaw), 0, -Math.cos(yaw)); v.camera.position.addScaledVector(f, -Math.sign(e.deltaY) * 0.5); };
   const doble = (e) => {
+    e.preventDefault();
     const hit = rayoDesde(v, e).intersectObject(v.obj, true).find((h) => h.object.isMesh && seVe(h.object));
     if (!hit) return;
     // Va hasta ese punto, a la altura de los ojos sobre lo que tocó (piso) o frente a él (muro)
@@ -265,6 +271,7 @@ export function recorrer(v, on) {
   };
   window.addEventListener('keydown', abajo); window.addEventListener('keyup', arriba);
   lienzo.addEventListener('pointerdown', pd); lienzo.addEventListener('pointermove', pm); lienzo.addEventListener('pointerup', pu);
+  lienzo.addEventListener('pointercancel', pu); lienzo.addEventListener('lostpointercapture', pu); window.addEventListener('blur', soltarTodo);
   lienzo.addEventListener('wheel', rueda, { passive: false }); lienzo.addEventListener('dblclick', doble);
   lienzo.style.cursor = 'grab';
 
@@ -354,6 +361,7 @@ export function recorrer(v, on) {
     window.removeEventListener('keydown', abajo); window.removeEventListener('keyup', arriba);
     window.removeEventListener('deviceorientation', alGirar);
     lienzo.removeEventListener('pointerdown', pd); lienzo.removeEventListener('pointermove', pm); lienzo.removeEventListener('pointerup', pu);
+    lienzo.removeEventListener('pointercancel', pu); lienzo.removeEventListener('lostpointercapture', pu); window.removeEventListener('blur', soltarTodo);
     lienzo.removeEventListener('wheel', rueda); lienzo.removeEventListener('dblclick', doble);
     lienzo.style.cursor = '';
     mando?.remove();

@@ -1,5 +1,5 @@
 // Remuneraciones → Quincenas: las quincenas de esta empresa (modulos/remu/quincenas.js).
-import { vistaQuincenas } from '../quincenas.js?v=a90bd70';
+import { vistaQuincenas } from '../quincenas.js?v=394625e';
 
 export default function vista(ctx) {
   return vistaQuincenas(ctx, { empresas: [{ empresa: ctx.empresa, puede: ctx.puede }], cierre: '#/remu.mes' });

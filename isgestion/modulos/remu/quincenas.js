@@ -6,16 +6,16 @@
 // Al confirmar, la base crea un movimiento "Quincena" del mes por persona, que el Cierre de remuneraciones resta de
 // A pagar (ya se pagó; no cambia el costo). Anular con motivo quita esos movimientos.
 // La usan Remuneraciones → Quincenas (una empresa) y Grupo → Quincenas (todas las empresas con Remuneraciones).
-import { el } from '../../core/ui/dom.js?v=a90bd70';
-import { icono } from '../../core/ui/iconos.js?v=a90bd70';
-import { boton } from '../../core/ui/tabla.js?v=a90bd70';
-import { avisar } from '../../core/ui/aviso.js?v=a90bd70';
-import { dinero, hoyISO, nombreMes, fechaLarga } from '../../core/ui/formato.js?v=a90bd70';
-import { abrirFormulario } from '../../core/ui/modal.js?v=a90bd70';
-import { nombreEmpresa } from '../../core/empresas.js?v=a90bd70';
-import { subirArchivo, urlFirmada } from '../../core/adjuntos.js?v=a90bd70';
-import { comprimirFoto, prepararArchivos } from '../../core/imagenes.js?v=a90bd70';
-import { cargarBase, nombreCompleto } from './datos.js?v=a90bd70';
+import { el } from '../../core/ui/dom.js?v=394625e';
+import { icono } from '../../core/ui/iconos.js?v=394625e';
+import { boton } from '../../core/ui/tabla.js?v=394625e';
+import { avisar } from '../../core/ui/aviso.js?v=394625e';
+import { dinero, hoyISO, nombreMes, fechaLarga } from '../../core/ui/formato.js?v=394625e';
+import { abrirFormulario } from '../../core/ui/modal.js?v=394625e';
+import { nombreEmpresa } from '../../core/empresas.js?v=394625e';
+import { subirArchivo, urlFirmada } from '../../core/adjuntos.js?v=394625e';
+import { comprimirFoto, prepararArchivos } from '../../core/imagenes.js?v=394625e';
+import { cargarBase, nombreCompleto } from './datos.js?v=394625e';
 
 const estado = { mes: hoyISO().slice(0, 7), abierta: null, f: { mes: '', estado: '', empresa: '', buscar: '' } };
 const TIPOS = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
