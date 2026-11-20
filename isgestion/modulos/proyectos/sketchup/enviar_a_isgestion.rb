@@ -21,6 +21,8 @@ require 'uri'
 require 'zlib'
 require 'base64'
 require 'stringio'
+require 'digest'
+require 'tmpdir'
 
 module EnviarAISgestion
   URL = URI('https://qipfzftvojxfsecjqdzh.supabase.co/functions/v1/proyectos-sketchup')
@@ -116,10 +118,10 @@ module EnviarAISgestion
     clave = [rec, padre, n, med.sort.reverse.join('x')].join('|')
     it = items[clave] ||= { 'clave' => clave, 'recinto' => rec, 'grupo_modelo' => ruta.first.to_s, 'padre' => padre,
                             'nombre' => n, 'tipo' => tipo, 'medidas_cm' => med.sort.reverse, 'cant' => 0,
-                            'etiqueta' => e.layer.name, 'material' => (e.material ? e.material.display_name : nil) }
+                            'etiqueta' => capa(e, @capa_ruta), 'material' => (e.material ? e.material.display_name : nil) }
     it['cant'] += 1
     if tipo != 'pieza' && med.max.between?(15, 400)
-      id = ('m' + e.definition.guid.gsub(/[^0-9A-Za-z]/, '')[0, 24]).downcase
+      id = ('m' + e.definition.guid.gsub(/[^0-9A-Za-z]/, '')[0, 24]).downcase + 'v3'
       it['m3d'] ||= id
       @m3d[id] ||= { 'def' => e.definition, 'escala' => escala(t), 'nombre' => n }
       it['pos'] ||= []
@@ -167,25 +169,91 @@ module EnviarAISgestion
                                  Geom::Vector3d.new(0, 0, 1).transform(t).length)
   end
 
-  # Triángulos de un mueble por color, en cm y en coordenadas propias del mueble
+  # ---------------------------------------------------------------- Caras, materiales y texturas
+  def self.r4(v)
+    (v * 10_000).round / 10_000.0
+  end
+
+  # Etiqueta efectiva de una entidad: la suya o, si no tiene (capa 0), la de quien la contiene
+  def self.capa(e, padre)
+    l = e.layer
+    l.nil? || l == @capa0 ? (padre || 'Sin etiqueta') : l.name
+  end
+
+  # Material de una cara: el del frente, el del reverso o el heredado del grupo que la contiene
+  def self.material_de(e, mat_padre)
+    return [e.material, :frente] if e.material
+    return [e.back_material, :reverso] if e.back_material
+    [mat_padre, :heredado]
+  end
+
+  def self.textura_id(m)
+    id = 'tx' + Digest::MD5.hexdigest(m.name.to_s)[0, 16]
+    @texturas[id] ||= m
+    id
+  end
+
+  # Grupo de triángulos de un material (con 't' y 'uv' si tiene textura)
+  def self.grupo_material(acc, clave, m, gris)
+    acc[clave] ||= begin
+      g = { 'c' => m ? [m.color.red, m.color.green, m.color.blue] : gris, 'a' => m ? m.alpha.round(2) : 1.0, 'p' => [] }
+      if m&.texture
+        g['t'] = textura_id(m)
+        g['uv'] = []
+      end
+      g
+    end
+  end
+
+  # Agrega los triángulos de una cara al grupo (posiciones en cm con conv y, si hay textura, sus coordenadas).
+  # Devuelve cuántos triángulos agregó.
+  def self.agregar_cara(e, tr, m, modo, g)
+    con_uv = g.key?('uv')
+    flags = con_uv && modo != :heredado ? (modo == :reverso ? 2 : 1) : 0
+    malla = e.mesh(flags)
+    pts = malla.points.map { |q| pt(q.transform(tr)) }
+    uvs = nil
+    if con_uv
+      if modo == :heredado
+        # Material del grupo: la cara no trae coordenadas de textura; se proyecta sobre su propio plano
+        t = m.texture
+        ejes = e.normal.axes
+        uvs = malla.points.map do |q|
+          v = Geom::Vector3d.new(q.x, q.y, q.z)
+          [r4(v.dot(ejes[0]) / t.width), r4(v.dot(ejes[1]) / t.height)]
+        end
+      else
+        frente = modo != :reverso
+        uvs = (1..malla.count_points).map do |k|
+          u = malla.uv_at(k, frente)
+          q = u.z.zero? ? 1.0 : u.z
+          [r4(u.x / q), r4(u.y / q)]
+        end
+      end
+    end
+    n = 0
+    malla.polygons.each do |pol|
+      next unless pol.size == 3
+      pol.each do |k|
+        g['p'].concat(pts[k.abs - 1])
+        g['uv'].concat(uvs[k.abs - 1]) if uvs
+      end
+      n += 1
+    end
+    n
+  rescue StandardError
+    0
+  end
+
+  # Triángulos de un mueble por material, en cm y en coordenadas propias del mueble
   def self.mallas(ents, tr, mat_padre, acc, cuenta)
     ents.each do |e|
       if e.is_a?(Sketchup::Face)
         next if e.hidden? || !e.layer.visible?
-        m = e.material || e.back_material || mat_padre
-        grupo = acc[m ? m.name : ''] ||= { 'c' => m ? [m.color.red, m.color.green, m.color.blue] : [205, 205, 200],
-                                           'a' => m ? m.alpha.round(2) : 1.0, 'p' => [] }
-        malla = e.mesh(0)
-        pts = malla.points.map { |q| q.transform(tr) }
-        malla.polygons.each do |pol|
-          next unless pol.size == 3
-          pol.each do |i|
-            q = pts[i.abs - 1]
-            grupo['p'].push(r1(q.x.to_cm), r1(q.y.to_cm), r1(q.z.to_cm))
-          end
-          cuenta[0] += 1
-          return if cuenta[0] > MAX_TRIANGULOS
-        end
+        m, modo = material_de(e, mat_padre)
+        g = grupo_material(acc, m ? m.name : '', m, [205, 205, 200])
+        cuenta[0] += agregar_cara(e, tr, m, modo, g)
+        return if cuenta[0] > MAX_TRIANGULOS
       elsif contenedor?(e)
         next if e.hidden? || !e.layer.visible?
         mallas(e.definition.entities, tr * e.transformation, e.material || mat_padre, acc, cuenta)
@@ -215,31 +283,46 @@ module EnviarAISgestion
     [r1(q.x.to_cm), r1(q.y.to_cm), r1(q.z.to_cm)]
   end
 
-  def self.escena(ents, tr, mat_padre)
+  # obj: { 'n' => nombre, 'm' => medidas, 'r' => ruta, 'k' => llave única } del grupo o componente más cercano
+  def self.escena(ents, tr, mat_padre, etiqueta, obj, ruta)
     ents.each do |e|
       if e.is_a?(Sketchup::Face)
         next if e.hidden? || !e.layer.visible?
-        m = e.material || e.back_material || mat_padre
-        grupo = @esc_acc[m ? m.name : ''] ||= { 'c' => m ? [m.color.red, m.color.green, m.color.blue] : [225, 225, 220],
-                                                'a' => m ? m.alpha.round(2) : 1.0, 'p' => [] }
-        malla = e.mesh(0)
-        pts = malla.points.map { |q| pt(q.transform(tr)) }
-        malla.polygons.each do |pol|
-          next unless pol.size == 3
-          pol.each { |i| grupo['p'].concat(pts[i.abs - 1]) }
-          @esc_tris += 1
-        end
+        m, modo = material_de(e, mat_padre)
+        cap = capa(e, etiqueta)
+        g = grupo_material(@esc_acc, "#{cap}|#{m ? m.name : ''}", m, [225, 225, 220])
+        g['e'] = cap
+        g['o'] ||= []
+        idx = (@esc_obj_idx[obj['k']] ||= (@esc_objs << { 'n' => obj['n'], 'm' => obj['m'], 'e' => cap, 'r' => obj['r'] }).size - 1)
+        n = agregar_cara(e, tr, m, modo, g)
+        n.times { g['o'] << idx }
+        @esc_tris += n
         @esc_enviar.call if @esc_tris >= TRIS_PARTE
       elsif e.is_a?(Sketchup::Edge)
         next if e.hidden? || e.soft? || e.smooth? || !e.layer.visible?
-        @esc_lineas.concat(pt(e.start.position.transform(tr)), pt(e.end.position.transform(tr)))
+        (@esc_lineas[capa(e, etiqueta)] ||= []).concat(pt(e.start.position.transform(tr)), pt(e.end.position.transform(tr)))
       elsif contenedor?(e)
         next if e.hidden? || !e.layer.visible?
         t = tr * e.transformation
         next if mueble?(e, t)
-        escena(e.definition.entities, t, e.material || mat_padre)
+        n = nombre(e)
+        hijo = { 'n' => n, 'm' => medidas(e, t).sort.reverse, 'r' => ruta.join(' > '), 'k' => "#{obj['k']}/#{e.persistent_id}" }
+        escena(e.definition.entities, t, e.material || mat_padre, capa(e, etiqueta), hijo, ruta + [n])
       end
     end
+  end
+
+  # Imagen de una textura (archivo temporal que se borra al leerlo). nil si SketchUp no la puede escribir.
+  def self.imagen_textura(m)
+    ext = File.extname(m.texture.filename.to_s).downcase
+    ext = '.png' unless %w[.jpg .jpeg .png].include?(ext)
+    ruta = File.join(Dir.tmpdir, "isg-#{Digest::MD5.hexdigest(m.name.to_s)}#{ext}")
+    return nil unless m.texture.write(ruta, false)
+    datos = File.binread(ruta)
+    File.delete(ruta) rescue nil
+    [datos, ext == '.png' ? 'png' : 'jpg']
+  rescue StandardError
+    nil
   end
 
   def self.gzip64(texto)
@@ -293,6 +376,9 @@ module EnviarAISgestion
     return UI.messagebox('Envío cancelado: no se cambió nada.') unless codigo_conexion
 
     @codigo = codigo(model)
+    @capa0 = model.layers[0]
+    @capa_ruta = nil
+    @texturas = {}
     items = {}
     @m3d = {}
     Sketchup.status_text = 'Leyendo el modelo para ISgestión…'
@@ -331,28 +417,53 @@ module EnviarAISgestion
       # Construcción completa (muros, pisos, cielos, piezas), en partes comprimidas
       partes = []
       @esc_acc = {}
-      @esc_lineas = []
+      @esc_lineas = {}
+      @esc_objs = []
+      @esc_obj_idx = {}
       @esc_tris = 0
       @esc_enviar = lambda do
         return if @esc_acc.empty? && @esc_lineas.empty?
         n = partes.size + 1
         Sketchup.status_text = "Enviando la construcción a ISgestión: parte #{n}…"
         puts "  Construcción, parte #{n}: #{@esc_tris} triángulos"
-        datos = { 'v' => 2, 'u' => 'cm', 'mats' => @esc_acc.values.reject { |g| g['p'].empty? }, 'lineas' => @esc_lineas }
+        datos = { 'v' => 3, 'u' => 'cm', 'mats' => @esc_acc.values.reject { |g| g['p'].empty? },
+                  'lineas' => @esc_lineas.map { |cap, l| { 'e' => cap, 'p' => l } }, 'objetos' => @esc_objs }
         id = format('escena-%03d', n)
         post(h, { t: codigo_conexion, accion: 'escena', modelo_id: inicio['modelo_id'], parte: id, gz: gzip64(JSON.generate(datos)) })
         partes << { 'id' => id, 'tris' => @esc_tris }
         @esc_acc = {}
-        @esc_lineas = []
+        @esc_lineas = {}
+        @esc_objs = []
+        @esc_obj_idx = {}
         @esc_tris = 0
       end
       puts 'Enviar a ISgestión: enviando la construcción (muros, pisos, cielos)…'
-      escena(model.entities, Geom::Transformation.new, nil)
+      escena(model.entities, Geom::Transformation.new, nil, nil, { 'n' => 'Geometría suelta', 'm' => nil, 'r' => '', 'k' => 'suelta' }, [])
       @esc_enviar.call
+      # Texturas de los materiales usados (las que ya están en ISgestión no se repiten)
+      texturas = []
+      @texturas.each_with_index do |(id, m), k|
+        ext = nil
+        if ya.include?(id)
+          ext = (File.extname(m.texture.filename.to_s).downcase == '.png' ? 'png' : 'jpg')
+        else
+          Sketchup.status_text = "Enviando texturas a ISgestión: #{k + 1} de #{@texturas.size}"
+          img = imagen_textura(m)
+          next unless img
+          if img[0].bytesize > 8 * 1024 * 1024
+            puts "  Textura #{m.display_name} muy pesada (#{img[0].bytesize / 1024 / 1024} MB): se ve solo su color"
+            next
+          end
+          ext = img[1]
+          post(h, { t: codigo_conexion, accion: 'textura', modelo_id: inicio['modelo_id'], id: id, ext: ext, nombre: m.display_name, b64: Base64.strict_encode64(img[0]) })
+        end
+        texturas << { 'id' => id, 'ext' => ext, 'nombre' => m.display_name }
+      end
+      puts "Enviar a ISgestión: #{texturas.size} texturas" 
       Sketchup.status_text = 'Enviando el inventario a ISgestión…'
       post(h, { t: codigo_conexion, accion: 'inventario', modelo_id: inicio['modelo_id'],
                 datos: { 'proyecto' => @codigo, 'nombre' => inicio['proyecto'], 'archivo' => model.path, 'fecha' => fecha, 'items' => lista,
-                         'escena' => partes } })
+                         'escena' => partes, 'texturas' => texturas } })
       @partes = partes
     end
     Sketchup.status_text = ''

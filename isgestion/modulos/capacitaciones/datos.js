@@ -1,14 +1,14 @@
 // Datos comunes de Capacitaciones: biblioteca (áreas y contenidos), enlaces incrustables (YouTube, Instagram, TikTok),
 // subida de archivos (videos hasta 200 MB por partes a R2, se achican si pesan más), nombres de trabajadores
 // (cap_personas, sin RUT) y "Marcar como visto" (cuenta propia o los 4 últimos dígitos del RUT en la tablet).
-import { el } from '../../core/ui/dom.js?v=75c4885';
-import { icono } from '../../core/ui/iconos.js?v=75c4885';
-import { boton } from '../../core/ui/tabla.js?v=75c4885';
-import { avisar } from '../../core/ui/aviso.js?v=75c4885';
-import { subirArchivo, urlsFirmadas, limiteVideo, megas } from '../../core/adjuntos.js?v=75c4885';
-import { comprimirFoto, esImagen } from '../../core/imagenes.js?v=75c4885';
-import { prepararVideo } from '../../core/video.js?v=75c4885';
-import { panelSubida } from '../../core/ui/subida.js?v=75c4885';
+import { el } from '../../core/ui/dom.js?v=0e0b56e';
+import { icono } from '../../core/ui/iconos.js?v=0e0b56e';
+import { boton } from '../../core/ui/tabla.js?v=0e0b56e';
+import { avisar } from '../../core/ui/aviso.js?v=0e0b56e';
+import { subirArchivo, urlsFirmadas, limiteVideo, megas } from '../../core/adjuntos.js?v=0e0b56e';
+import { comprimirFoto, esImagen } from '../../core/imagenes.js?v=0e0b56e';
+import { prepararVideo } from '../../core/video.js?v=0e0b56e';
+import { panelSubida } from '../../core/ui/subida.js?v=0e0b56e';
 
 export const TIPOS = [['video', 'Video'], ['enlace', 'Enlace (YouTube, Instagram, TikTok…)'], ['documento', 'PDF o documento'], ['imagen', 'Imagen'], ['guia', 'Guía escrita']];
 export const TIPO_CORTO = { video: 'Video', enlace: 'Enlace', documento: 'PDF', imagen: 'Imagen', guia: 'Guía' };
@@ -164,5 +164,5 @@ export async function conCarga(ev, fn) {
 
 export function cargarEstilos() {
   if (document.getElementById('capacitaciones-css')) return;
-  document.head.append(el('link', { id: 'capacitaciones-css', rel: 'stylesheet', href: new URL('./capacitaciones.css?v=75c4885', import.meta.url).href }));
+  document.head.append(el('link', { id: 'capacitaciones-css', rel: 'stylesheet', href: new URL('./capacitaciones.css?v=0e0b56e', import.meta.url).href }));
 }

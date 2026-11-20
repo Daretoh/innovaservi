@@ -202,3 +202,27 @@ dialog.pro-v3 { width: min(980px, calc(100vw - 24px)); max-width: none; padding:
 .pro-m3-ayuda { padding: 5px 10px; font-size: .76rem; color: var(--texto-suave); background: var(--fondo-sutil); border-bottom: 1px solid var(--borde); }
 .pro-m3-ayuda[hidden] { display: none; }
 .pro-m3-visor canvas { outline: none; }
+
+/* ---------- etiquetas, joystick, tablet y realidad aumentada ---------- */
+.pro-m3-pestanas { display: flex; margin-bottom: 6px; }
+.pro-m3-pestanas button { flex: 1; }
+.pro-m3-barra button[hidden] { display: none; }
+.pro-m3-ayuda-giro { background: color-mix(in srgb, var(--empresa) 10%, var(--superficie)); color: var(--texto); }
+.pro-mando { position: absolute; left: 14px; right: 14px; bottom: 14px; display: flex; justify-content: space-between; align-items: flex-end; pointer-events: none; z-index: 2; }
+.pro-joy { pointer-events: auto; width: 120px; height: 120px; border-radius: 50%; background: color-mix(in srgb, var(--superficie) 55%, transparent);
+  border: 2px solid color-mix(in srgb, var(--texto) 25%, transparent); display: grid; place-items: center; touch-action: none; backdrop-filter: blur(3px); }
+.pro-joy-perilla { width: 52px; height: 52px; border-radius: 50%; background: var(--empresa); box-shadow: var(--sombra-suave); transition: transform 60ms linear; }
+.pro-joy-alturas { pointer-events: auto; display: flex; flex-direction: column; gap: 10px; }
+.pro-joy-alt { width: 52px; height: 52px; border-radius: 50%; border: 0; background: color-mix(in srgb, var(--superficie) 70%, transparent); color: var(--texto);
+  box-shadow: var(--sombra-suave); display: grid; place-items: center; touch-action: none; }
+.pro-ar { position: fixed; inset: 0; display: flex; flex-direction: column; justify-content: space-between; padding: 14px; pointer-events: none; font-family: system-ui, sans-serif; z-index: 9999; }
+.pro-ar-arriba, .pro-ar-abajo { pointer-events: auto; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.pro-ar-arriba { justify-content: space-between; }
+.pro-ar-abajo { flex-direction: column; align-items: center; }
+.pro-ar-fila { display: flex; gap: 8px; }
+.pro-ar-estado { flex: 1 1 200px; color: #fff; background: rgba(0, 0, 0, .55); padding: 8px 12px; border-radius: 10px; font-size: 14px; }
+.pro-ar-casilla { color: #fff; background: rgba(0, 0, 0, .55); padding: 8px 12px; border-radius: 10px; display: inline-flex; gap: 6px; align-items: center; font-size: 14px; }
+.pro-ar-boton { min-width: 52px; height: 52px; padding: 0 14px; border-radius: 26px; border: 0; background: rgba(255, 255, 255, .9); color: #1c2330; font-size: 15px;
+  font-weight: 600; display: inline-flex; gap: 6px; align-items: center; justify-content: center; }
+.pro-m3-centro:fullscreen { border-radius: 0; border: 0; }
+.pro-m3-centro:fullscreen .pro-m3-visor { height: auto; flex: 1; }

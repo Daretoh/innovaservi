@@ -1,12 +1,12 @@
 // Grupo → Alertas y pendientes: lo que requiere atención en cada empresa (las alertas de todos sus módulos, las mismas del
 // Inicio de cada empresa) y el cierre de remuneraciones del mes anterior si aún no se marcó como enviado.
 // Cada alerta abre su pantalla en la empresa que corresponde.
-import { el } from '../../../core/ui/dom.js?v=75c4885';
-import { icono } from '../../../core/ui/iconos.js?v=75c4885';
-import { boton } from '../../../core/ui/tabla.js?v=75c4885';
-import { hoyISO, moverMes, nombreMes } from '../../../core/ui/formato.js?v=75c4885';
-import { cargarAlertas } from '../../gerencia/alertas.js?v=75c4885';
-import { ctxDe, marcaEmpresa, enlaceEmpresa } from '../empresas.js?v=75c4885';
+import { el } from '../../../core/ui/dom.js?v=0e0b56e';
+import { icono } from '../../../core/ui/iconos.js?v=0e0b56e';
+import { boton } from '../../../core/ui/tabla.js?v=0e0b56e';
+import { hoyISO, moverMes, nombreMes } from '../../../core/ui/formato.js?v=0e0b56e';
+import { cargarAlertas } from '../../gerencia/alertas.js?v=0e0b56e';
+import { ctxDe, marcaEmpresa, enlaceEmpresa } from '../empresas.js?v=0e0b56e';
 
 // Fila de alerta que abre su pantalla en la empresa
 const fila = (...x) => { const a = enlaceEmpresa(...x); a.className = 'doc-fila ger-alerta'; return a; };

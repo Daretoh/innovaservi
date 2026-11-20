@@ -1,11 +1,13 @@
-// Visor 3D de Proyectos: muebles (mallas del exportador de SketchUp, en R2) y áreas completas con cada objeto en su
-// posición real. three.js 0.147.0 (jsDelivr, versión fija) se carga solo al abrir un 3D.
+// Visor 3D de Proyectos: muebles (mallas del exportador de SketchUp, en R2), la construcción completa (muros, pisos,
+// cielos y piezas, con sus líneas, texturas y etiquetas) y áreas con cada objeto en su posición real.
+// Modos: órbita, Recorrer (como D5: teclado o joystick en pantalla), Mirar con la tablet (giroscopio) y realidad
+// aumentada en Android (WebXR). three.js 0.147.0 (jsDelivr, versión fija) se carga solo al abrir un 3D.
 // SketchUp (cm, Z arriba) → visor (m, Y arriba): (x, y, z) → (x/100, z/100, -y/100).
-import { el } from '../../core/ui/dom.js?v=75c4885';
-import { icono } from '../../core/ui/iconos.js?v=75c4885';
-import { boton } from '../../core/ui/tabla.js?v=75c4885';
-import { urlsFirmadas } from '../../core/adjuntos.js?v=75c4885';
-import { instanciasDe, subtotal, tienePrecio, clp, fmtNum } from './datos.js?v=75c4885';
+import { el } from '../../core/ui/dom.js?v=0e0b56e';
+import { icono } from '../../core/ui/iconos.js?v=0e0b56e';
+import { boton } from '../../core/ui/tabla.js?v=0e0b56e';
+import { urlsFirmadas } from '../../core/adjuntos.js?v=0e0b56e';
+import { instanciasDe, subtotal, tienePrecio, clp, fmtNum } from './datos.js?v=0e0b56e';
 
 const CDN3 = 'https://cdn.jsdelivr.net/npm/three@0.147.0/';
 const cargarScript = (src) => new Promise((ok, mal) => {
@@ -22,9 +24,10 @@ export function asegurarThree() {
   return cargaThree;
 }
 
-// ---------------------------------------------------------------- Mallas (R2, con caché)
-const cache = new Map();   // modelo_id:m3d → datos
-const rutas = new Map();   // modelo_id → Map(m3d → ruta)
+// ---------------------------------------------------------------- Mallas y texturas (R2, con caché)
+const cache = new Map();     // modelo_id:id → datos
+const rutas = new Map();     // modelo_id → Map(id → ruta)
+const texCache = new Map();  // modelo_id:id → THREE.Texture
 async function rutasDe(ctx, modeloId) {
   if (rutas.has(modeloId)) return rutas.get(modeloId);
   const { data, error } = await ctx.api.from('pro_mallas').select('m3d, ruta').eq('modelo_id', modeloId).is('deleted_at', null);
@@ -48,6 +51,7 @@ export async function cargarMallas(ctx, modeloId, ids) {
         const u = urls.get(r.get(id)); if (!u) return;
         const resp = await fetch(u).catch(() => null);
         if (!resp?.ok) return;
+        // Las partes de la construcción vienen comprimidas (gzip)
         const datos = /\.gz$/.test(r.get(id)) ? await new Response(resp.body.pipeThrough(new DecompressionStream('gzip'))).json() : await resp.json();
         cache.set(`${modeloId}:${id}`, datos);
       }));
@@ -55,66 +59,112 @@ export async function cargarMallas(ctx, modeloId, ids) {
   }
   return new Map(ids.filter((id) => cache.has(`${modeloId}:${id}`)).map((id) => [id, cache.get(`${modeloId}:${id}`)]));
 }
-
-function mallasAThree(d) {
+// Texturas que usan unas mallas (Map id → THREE.Texture). Las que no están subidas se ven con su color.
+export async function texturasPara(ctx, modeloId, datos) {
   const { THREE } = window;
-  const g = new THREE.Group();
-  for (const m of d.mats || []) {
-    const p = m.p; const arr = new Float32Array(p.length);
-    for (let i = 0; i < p.length; i += 3) { arr[i] = p[i] / 100; arr[i + 1] = p[i + 2] / 100; arr[i + 2] = -p[i + 1] / 100; }
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.BufferAttribute(arr, 3));
-    geo.computeVertexNormals();
-    const a = m.a ?? 1;
-    g.add(new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ color: new THREE.Color(m.c[0] / 255, m.c[1] / 255, m.c[2] / 255),
-      transparent: a < 1, opacity: a, side: THREE.DoubleSide, depthWrite: a >= 1 })));
+  const ids = [...new Set(datos.flatMap((d) => (d?.mats ?? []).map((m) => m.t).filter(Boolean)))];
+  const faltan = ids.filter((id) => !texCache.has(`${modeloId}:${id}`));
+  if (faltan.length) {
+    const r = await rutasDe(ctx, modeloId);
+    const conRuta = faltan.filter((id) => r.has(id));
+    const urls = conRuta.length ? await urlsFirmadas(ctx.api, conRuta.map((id) => r.get(id)), 3600).catch(() => new Map()) : new Map();
+    const cargador = new THREE.TextureLoader(); cargador.setCrossOrigin('anonymous');
+    await Promise.all(conRuta.map((id) => new Promise((ok) => {
+      const u = urls.get(r.get(id)); if (!u) { ok(); return; }
+      cargador.load(u, (t) => {
+        t.wrapS = THREE.RepeatWrapping; t.wrapT = THREE.RepeatWrapping; t.encoding = THREE.sRGBEncoding; t.anisotropy = 4;
+        texCache.set(`${modeloId}:${id}`, t); ok();
+      }, undefined, () => ok());
+    })));
   }
+  return new Map(ids.filter((id) => texCache.has(`${modeloId}:${id}`)).map((id) => [id, texCache.get(`${modeloId}:${id}`)]));
+}
+
+const colorDe = (c) => new window.THREE.Color(c[0] / 255, c[1] / 255, c[2] / 255).convertSRGBToLinear();
+// Materiales compartidos dentro de un mismo grupo (cache): un mueble resalta solo sus copias, no todo lo del mismo color
+function material(m, texturas, materiales = new Map()) {
+  const { THREE } = window;
+  const a = m.a ?? 1;
+  const tex = m.t && Array.isArray(m.uv) ? texturas?.get(m.t) : null;
+  const clave = `${m.c?.join(',')}|${a}|${tex ? m.t : ''}`;
+  if (!materiales.has(clave)) {
+    materiales.set(clave, new THREE.MeshLambertMaterial({ color: tex ? 0xffffff : colorDe(m.c ?? [205, 205, 200]), map: tex ?? null,
+      transparent: a < 1, opacity: a, side: THREE.DoubleSide, depthWrite: a >= 1, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 }));
+  }
+  return materiales.get(clave);
+}
+function geometria(m) {
+  const { THREE } = window;
+  const p = m.p; const arr = new Float32Array(p.length);
+  for (let i = 0; i < p.length; i += 3) { arr[i] = p[i] / 100; arr[i + 1] = p[i + 2] / 100; arr[i + 2] = -p[i + 1] / 100; }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(arr, 3));
+  if (m.t && Array.isArray(m.uv) && m.uv.length === (p.length / 3) * 2) geo.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(m.uv), 2));
+  geo.computeVertexNormals();
+  return geo;
+}
+function mallasAThree(d, texturas) {
+  const { THREE } = window;
+  const g = new THREE.Group(); const cache = new Map();
+  for (const m of d.mats || []) if (m.p?.length) g.add(new THREE.Mesh(geometria(m), material(m, texturas, cache)));
   return g;
 }
 
 // ---------------------------------------------------------------- Visor reutilizable
 const css = (v, d) => getComputedStyle(document.body).getPropertyValue(v).trim() || d;
+const rayoDesde = (v, e) => {
+  const { THREE } = window;
+  const r = v.renderer.domElement.getBoundingClientRect(); const ray = new THREE.Raycaster();
+  ray.setFromCamera(new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1), v.camera);
+  return ray;
+};
+// three.js no salta lo oculto: solo cuenta lo que se ve (recintos o etiquetas apagadas, cajas invisibles para el clic)
+const seVe = (q) => { for (; q; q = q.parent) if (!q.visible) return false; return true; };
 export function crearVisor(cont) {
   const { THREE } = window;
-  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.xr.enabled = true;
   renderer.domElement.classList.add('pro-lienzo');
+  renderer.domElement.tabIndex = 0;
   cont.append(renderer.domElement);
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(css('--fondo-sutil', '#fafbfc'));
-  scene.add(new THREE.HemisphereLight(0xffffff, 0x8a8f8c, 0.95));
-  const sol = new THREE.DirectionalLight(0xffffff, 0.7); sol.position.set(3, 5, 4); scene.add(sol);
-  const camera = new THREE.PerspectiveCamera(38, 1, 0.01, 400);
+  scene.background = new THREE.Color(css('--fondo-sutil', '#fafbfc')).convertSRGBToLinear();
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x9a9488, 0.85));
+  const sol = new THREE.DirectionalLight(0xfff6e8, 0.75); sol.position.set(4, 7, 3); scene.add(sol);
+  const relleno = new THREE.DirectionalLight(0xe8f0ff, 0.25); relleno.position.set(-5, 3, -4); scene.add(relleno);
+  const camera = new THREE.PerspectiveCamera(38, 1, 0.01, 500);
   const controls = new THREE.OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
   controls.minDistance = 0.05; controls.screenSpacePanning = true; controls.zoomSpeed = 1.4;
-  const v = { cont, renderer, scene, camera, controls, obj: null, grid: null, radio: 1, raf: 0, alElegir: null, marcados: [] };
+  const v = { cont, renderer, scene, camera, controls, obj: null, grid: null, radio: 1, raf: 0, alElegir: null, marcados: [], resaltado: null };
   let abajo = null;
   renderer.domElement.addEventListener('pointerdown', (e) => { abajo = [e.clientX, e.clientY]; });
   renderer.domElement.addEventListener('pointerup', (e) => {
-    if (!abajo || Math.hypot(e.clientX - abajo[0], e.clientY - abajo[1]) > 4 || !v.obj || !(v.alElegir || v.alMedir)) return;
-    const r = renderer.domElement.getBoundingClientRect();
-    const ray = new THREE.Raycaster();
-    ray.setFromCamera(new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1), camera);
-    // three.js no salta lo oculto: solo cuenta lo que se ve (recintos apagados)
-    const seVe = (q) => { for (; q; q = q.parent) if (!q.visible) return false; return true; };
-    const hit = ray.intersectObject(v.obj, true).find((h) => h.object.isMesh && seVe(h.object));
+    if (!abajo || Math.hypot(e.clientX - abajo[0], e.clientY - abajo[1]) > 6 || !v.obj || !(v.alElegir || v.alMedir)) return;
+    const ray = rayoDesde(v, e);
+    const hits = ray.intersectObject(v.obj, true).filter((h) => h.object.isMesh && seVe(h.object));
+    const hit = hits[0];
     if (v.alMedir) { if (hit) v.alMedir(hit.point.clone()); return; }
     const filaDe = (q) => { while (q && !q.userData.fila) q = q.parent; return q; };
+    // Lo primero que toca; si es la construcción, un objeto del inventario justo detrás (piezas dentro de muros)
     let o = filaDe(hit?.object);
-    if (!o && hit) o = filaDe(ray.intersectObject(v.obj, true).find((h) => h.object.isMesh && seVe(h.object) && h.distance - hit.distance < 0.05 && filaDe(h.object))?.object);
-    v.marcados.forEach((m) => m.emissive?.setHex(0x000000));
-    v.marcados = [];
+    if (!o && hit && !hit.object.userData.escena) o = filaDe(hits.find((h) => h.distance - hit.distance < 0.05 && filaDe(h.object))?.object);
+    limpiarMarcas(v);
     const fila = o?.userData.fila ?? null;
-    // Resalta todas las copias del mismo ítem
-    if (fila) v.obj.traverse((q) => { if (q.userData.fila === fila) q.traverse((w) => { if (w.isMesh) [].concat(w.material).forEach((m) => { if (m.emissive) { m.emissive.setHex(0x0b3a5c); v.marcados.push(m); } }); }); });
-    v.alElegir(fila);
+    if (fila) {
+      // Resalta todas las copias del mismo ítem
+      v.obj.traverse((q) => { if (q.userData.fila === fila) q.traverse((w) => { if (w.isMesh) [].concat(w.material).forEach((m) => { if (m.emissive) { m.emissive.setHex(0x0b3a5c); v.marcados.push(m); } }); }); });
+      v.alElegir?.(fila);
+    } else if (hit?.object.userData.escena) {
+      const info = piezaDeEscena(v, hit);
+      v.alElegir?.(info);
+    } else v.alElegir?.(null);
   });
   renderer.domElement.addEventListener('dblclick', (e) => {
     if (v.paso || !v.obj) return;
-    const r = renderer.domElement.getBoundingClientRect(); const ray = new THREE.Raycaster();
-    ray.setFromCamera(new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1), camera);
-    const hit = ray.intersectObject(v.obj, true).find((h) => h.object.isMesh);
+    const hit = rayoDesde(v, e).intersectObject(v.obj, true).find((h) => h.object.isMesh && seVe(h.object));
     if (!hit) return;
     const mover = hit.point.clone().sub(controls.target);
     controls.target.add(mover); camera.position.add(mover.multiplyScalar(0.6)); controls.update();
@@ -122,13 +172,41 @@ export function crearVisor(cont) {
   new ResizeObserver(() => tam(v)).observe(cont);
   return v;
 }
+function limpiarMarcas(v) {
+  v.marcados.forEach((m) => m.emissive?.setHex(0x000000));
+  v.marcados = [];
+  if (v.resaltado) { v.resaltado.parent?.remove(v.resaltado); v.resaltado.geometry.dispose(); v.resaltado = null; }
+}
+// Pieza de la construcción tocada: su nombre, medidas, etiqueta y ruta; se resaltan todos sus triángulos
+function piezaDeEscena(v, hit) {
+  const { THREE } = window;
+  const u = hit.object.userData.escena;
+  const idx = u.o?.[hit.faceIndex];
+  const obj = idx != null ? u.objetos?.[idx] : null;
+  if (!obj) return { escena: true, nombre: 'Construcción', etiqueta: u.etiqueta };
+  const pos = [];
+  hit.object.parent.parent?.traverse((q) => {
+    const w = q.userData.escena;
+    if (!q.isMesh || !w || w.parte !== u.parte || !w.o) return;
+    const p = q.geometry.attributes.position.array;
+    for (let t = 0; t < w.o.length; t++) if (w.o[t] === idx) for (let k = 0; k < 9; k++) pos.push(p[t * 9 + k]);
+  });
+  if (pos.length) {
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    v.resaltado = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color: 0x1f7ae0, transparent: true, opacity: 0.35, depthWrite: false, side: THREE.DoubleSide }));
+    v.resaltado.renderOrder = 5;
+    hit.object.parent.add(v.resaltado);
+  }
+  return { escena: true, nombre: obj.n, medidas_cm: obj.m, etiqueta: obj.e, ruta: obj.r };
+}
 function tam(v) {
   const w = v.cont.clientWidth; const h = v.cont.clientHeight;
-  if (!w || !h) return;
+  if (!w || !h || v.renderer.xr.isPresenting) return;
   v.renderer.setSize(w, h, false); v.camera.aspect = w / h; v.camera.updateProjectionMatrix();
 }
 function bucle(v) {
   if (!v.renderer.domElement.isConnected) { v.raf = 0; v.renderer.dispose(); v.alSalir?.(); return; }   // se dejó la vista
+  if (v.ar) { v.raf = 0; return; }   // en realidad aumentada dibuja la sesión XR
   const ahora = performance.now(); const dt = Math.min(0.1, (ahora - (v.antes ?? ahora)) / 1000); v.antes = ahora;
   if (v.paso) v.paso(dt); else v.controls.update();
   v.renderer.render(v.scene, v.camera);
@@ -140,10 +218,14 @@ export function camara(v, modo) {
   const pos = { iso: [d * 0.8, d * 0.55, d * 0.9], frente: [0, d * 0.12, d * 1.15], lado: [d * 1.15, d * 0.12, 0], arriba: [0, d * 1.2, 0.0001] }[modo] || [d, d, d];
   v.camera.position.set(...pos); v.controls.target.set(0, 0, 0); v.controls.update();
 }
-// Recorrido (como D5 o un juego): W A S D o flechas para caminar, arrastrar para mirar, Q / E para bajar y subir,
-// Shift para ir más rápido, la rueda avanza o retrocede y el doble clic lleva hasta ese punto. Parte a la altura de
-// una persona (1,60 m sobre el piso del modelo).
+
+// ---------------------------------------------------------------- Recorrer
+// Como D5 o un juego: W A S D o flechas para caminar, arrastrar para mirar, Q / E para bajar y subir, Shift para ir
+// más rápido, la rueda avanza o retrocede y el doble clic lleva hasta ese punto. En pantallas táctiles, un joystick
+// para caminar y el dedo para mirar. Con "Mirar con la tablet" la vista sigue al giroscopio. Parte a la altura de una
+// persona (1,60 m sobre el piso del modelo).
 const ALTURA = 1.6;
+const tactil = () => window.matchMedia?.('(pointer: coarse)').matches || 'ontouchstart' in window;
 export function recorrer(v, on) {
   const { THREE } = window;
   const lienzo = v.renderer.domElement;
@@ -153,31 +235,31 @@ export function recorrer(v, on) {
   v.fovOrbita = v.camera.fov; v.camera.fov = 65; v.camera.updateProjectionMatrix();   // ángulo amplio, como al caminar
   const dir = new THREE.Vector3(); v.camera.getWorldDirection(dir);
   let yaw = Math.atan2(-dir.x, -dir.z); let pitch = 0;
-  // Parte en el centro del modelo, a la altura de los ojos
   const desde = v.inicio ?? v.controls.target;
   v.camera.position.set(desde.x, (v.piso ?? 0) + ALTURA, desde.z);
   const teclas = new Set();
+  const joy = { x: 0, y: 0 };
   const enCampo = (e) => /INPUT|TEXTAREA|SELECT/.test(e.target?.tagName ?? '');
   const abajo = (e) => { if (enCampo(e)) return; const k = e.key.toLowerCase(); if (['w', 'a', 's', 'd', 'q', 'e', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'shift'].includes(k)) { teclas.add(k); e.preventDefault(); } };
   const arriba = (e) => teclas.delete(e.key.toLowerCase());
   let arrastre = null;
-  const pd = (e) => { arrastre = [e.clientX, e.clientY]; lienzo.setPointerCapture?.(e.pointerId); };
+  const capturar = (n, id) => { try { n.setPointerCapture(id); } catch { /* sin captura */ } };
+  const pd = (e) => { arrastre = [e.clientX, e.clientY]; capturar(lienzo, e.pointerId); };
   const pm = (e) => {
-    if (!arrastre) return;
-    yaw -= (e.clientX - arrastre[0]) * 0.004; pitch -= (e.clientY - arrastre[1]) * 0.004;
+    if (!arrastre || giro.activo) return;
+    const f = e.pointerType === 'touch' ? 0.006 : 0.004;
+    yaw -= (e.clientX - arrastre[0]) * f; pitch -= (e.clientY - arrastre[1]) * f;
     pitch = Math.max(-1.45, Math.min(1.45, pitch)); arrastre = [e.clientX, e.clientY];
   };
   const pu = () => { arrastre = null; };
   const rueda = (e) => { e.preventDefault(); const f = new THREE.Vector3(-Math.sin(yaw), 0, -Math.cos(yaw)); v.camera.position.addScaledVector(f, -Math.sign(e.deltaY) * 0.5); };
   const doble = (e) => {
-    const r = lienzo.getBoundingClientRect(); const ray = new THREE.Raycaster();
-    ray.setFromCamera(new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1), v.camera);
-    const hit = ray.intersectObject(v.obj, true).find((h) => h.object.isMesh);
+    const hit = rayoDesde(v, e).intersectObject(v.obj, true).find((h) => h.object.isMesh && seVe(h.object));
     if (!hit) return;
-    // Va hasta ese punto, quedando a la altura de los ojos sobre lo que tocó (piso) o frente a él (muro)
-    const p = hit.point; const desde = v.camera.position.clone();
-    const hacia = new THREE.Vector3(p.x, Math.max((v.piso ?? 0) + ALTURA, Math.min(p.y + ALTURA, desde.y)), p.z);
-    const atras = hacia.clone().sub(desde).setY(0).normalize().multiplyScalar(0.4);
+    // Va hasta ese punto, a la altura de los ojos sobre lo que tocó (piso) o frente a él (muro)
+    const p = hit.point; const de = v.camera.position.clone();
+    const hacia = new THREE.Vector3(p.x, Math.max((v.piso ?? 0) + ALTURA, Math.min(p.y + ALTURA, de.y)), p.z);
+    const atras = hacia.clone().sub(de).setY(0).normalize().multiplyScalar(0.4);
     if (Math.abs(hit.face?.normal?.y ?? 0) < 0.5) hacia.sub(atras);
     v.camera.position.copy(hacia);
   };
@@ -185,8 +267,74 @@ export function recorrer(v, on) {
   lienzo.addEventListener('pointerdown', pd); lienzo.addEventListener('pointermove', pm); lienzo.addEventListener('pointerup', pu);
   lienzo.addEventListener('wheel', rueda, { passive: false }); lienzo.addEventListener('dblclick', doble);
   lienzo.style.cursor = 'grab';
+
+  // Joystick en pantalla (tablet y teléfono): caminar con el pulgar; dos botones para subir y bajar
+  let mando = null;
+  if (tactil()) {
+    const perilla = el('div', { class: 'pro-joy-perilla' });
+    const base = el('div', { class: 'pro-joy', 'aria-label': 'Caminar' }, perilla);
+    const subir = el('button', { type: 'button', class: 'pro-joy-alt', 'aria-label': 'Subir' }, icono('arriba', { tam: 18 }));
+    const bajar = el('button', { type: 'button', class: 'pro-joy-alt', 'aria-label': 'Bajar' }, icono('abajo', { tam: 18 }));
+    const alto = (k) => ({ onpointerdown: () => teclas.add(k), onpointerup: () => teclas.delete(k), onpointerleave: () => teclas.delete(k) });
+    Object.entries(alto('e')).forEach(([ev, f]) => subir.addEventListener(ev.slice(2), f));
+    Object.entries(alto('q')).forEach(([ev, f]) => bajar.addEventListener(ev.slice(2), f));
+    let id = null;
+    const mover = (e) => {
+      const r = base.getBoundingClientRect(); const cx = r.left + r.width / 2; const cy = r.top + r.height / 2; const rad = r.width / 2;
+      let dx = (e.clientX - cx) / rad; let dy = (e.clientY - cy) / rad; const l = Math.hypot(dx, dy);
+      if (l > 1) { dx /= l; dy /= l; }
+      joy.x = dx; joy.y = dy; perilla.style.transform = `translate(${dx * rad * 0.6}px, ${dy * rad * 0.6}px)`;
+    };
+    base.addEventListener('pointerdown', (e) => { id = e.pointerId; capturar(base, id); mover(e); e.stopPropagation(); });
+    base.addEventListener('pointermove', (e) => { if (e.pointerId === id) mover(e); });
+    const soltar = () => { id = null; joy.x = 0; joy.y = 0; perilla.style.transform = ''; };
+    base.addEventListener('pointerup', soltar); base.addEventListener('pointercancel', soltar);
+    mando = el('div', { class: 'pro-mando' }, base, el('div', { class: 'pro-joy-alturas' }, subir, bajar));
+    v.cont.append(mando);
+  }
+
+  // Mirar con la tablet: el giroscopio gira la vista (la posición sigue con el joystick o el doble toque)
+  const giro = { activo: false, q: null, ajuste: null };
+  const zee = new THREE.Vector3(0, 0, 1); const euler = new THREE.Euler(); const q0 = new THREE.Quaternion();
+  const q1 = new THREE.Quaternion(-Math.sqrt(0.5), 0, 0, Math.sqrt(0.5));
+  const alGirar = (e) => {
+    if (e.alpha == null) return;
+    const g = THREE.MathUtils.DEG2RAD;
+    const orient = (screen.orientation?.angle ?? window.orientation ?? 0) * g;
+    const q = new THREE.Quaternion();
+    euler.set(e.beta * g, e.alpha * g, -e.gamma * g, 'YXZ'); q.setFromEuler(euler); q.multiply(q1); q.multiply(q0.setFromAxisAngle(zee, -orient));
+    if (!giro.ajuste) {
+      // La primera lectura deja la vista mirando hacia donde ya miraba (calibrar)
+      const f = new THREE.Vector3(0, 0, -1).applyQuaternion(q);
+      giro.ajuste = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), yaw - Math.atan2(-f.x, -f.z));
+    }
+    giro.q = giro.ajuste.clone().multiply(q);
+  };
+  v.giroscopio = async (activar) => {
+    if (!activar) {
+      window.removeEventListener('deviceorientation', alGirar);
+      giro.activo = false; giro.q = null; giro.ajuste = null;
+      const d = new THREE.Vector3(); v.camera.getWorldDirection(d);
+      yaw = Math.atan2(-d.x, -d.z); pitch = Math.asin(Math.max(-1, Math.min(1, d.y)));
+      return true;
+    }
+    if (typeof DeviceOrientationEvent === 'undefined') throw new Error('Este equipo no tiene giroscopio.');
+    if (typeof DeviceOrientationEvent.requestPermission === 'function') {   // iPad y iPhone piden permiso
+      const r = await DeviceOrientationEvent.requestPermission();
+      if (r !== 'granted') throw new Error('Sin permiso para usar el movimiento del equipo.');
+    }
+    giro.ajuste = null; giro.activo = true;
+    window.addEventListener('deviceorientation', alGirar);
+    return true;
+  };
+  v.recalibrar = () => { giro.ajuste = null; };
+
   v.paso = (dt) => {
     const rapido = teclas.has('shift') ? 4 : 1.4;
+    if (giro.activo && giro.q) {
+      v.camera.quaternion.copy(giro.q);
+      const d = new THREE.Vector3(); v.camera.getWorldDirection(d); yaw = Math.atan2(-d.x, -d.z);
+    }
     const f = new THREE.Vector3(-Math.sin(yaw), 0, -Math.cos(yaw)); const der = new THREE.Vector3(-f.z, 0, f.x);
     const m = new THREE.Vector3();
     if (teclas.has('w') || teclas.has('arrowup')) m.add(f);
@@ -194,21 +342,26 @@ export function recorrer(v, on) {
     if (teclas.has('d') || teclas.has('arrowright')) m.add(der);
     if (teclas.has('a') || teclas.has('arrowleft')) m.sub(der);
     if (m.lengthSq()) v.camera.position.addScaledVector(m.normalize(), rapido * dt);
+    if (joy.x || joy.y) v.camera.position.addScaledVector(f, -joy.y * 1.4 * dt).addScaledVector(der, joy.x * 1.4 * dt);
     if (teclas.has('e')) v.camera.position.y += rapido * dt;
     if (teclas.has('q')) v.camera.position.y -= rapido * dt;
-    const mira = new THREE.Vector3(-Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch), -Math.cos(yaw) * Math.cos(pitch));
-    v.camera.lookAt(v.camera.position.clone().add(mira));
+    if (!(giro.activo && giro.q)) {
+      const mira = new THREE.Vector3(-Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch), -Math.cos(yaw) * Math.cos(pitch));
+      v.camera.lookAt(v.camera.position.clone().add(mira));
+    }
   };
   v.limpiarRecorrido = () => {
     window.removeEventListener('keydown', abajo); window.removeEventListener('keyup', arriba);
+    window.removeEventListener('deviceorientation', alGirar);
     lienzo.removeEventListener('pointerdown', pd); lienzo.removeEventListener('pointermove', pm); lienzo.removeEventListener('pointerup', pu);
     lienzo.removeEventListener('wheel', rueda); lienzo.removeEventListener('dblclick', doble);
     lienzo.style.cursor = '';
+    mando?.remove();
     // Vuelve a la órbita mirando hacia donde estaba mirando
     const d = new THREE.Vector3(); v.camera.getWorldDirection(d);
     v.controls.target.copy(v.camera.position).addScaledVector(d, 2);
     v.camera.fov = v.fovOrbita ?? 38; v.camera.updateProjectionMatrix();
-    v.paso = null; v.limpiarRecorrido = null; v.alSalir = null; v.controls.enabled = true; v.controls.update();
+    v.paso = null; v.limpiarRecorrido = null; v.alSalir = null; v.giroscopio = null; v.recalibrar = null; v.controls.enabled = true; v.controls.update();
   };
   v.alSalir = v.limpiarRecorrido;
 }
@@ -218,13 +371,13 @@ export function aristas(v, on) { v?.obj?.traverse((o) => { if (o.userData.arista
 // Pone un objeto en el visor (centrado, con grilla) y devuelve el texto de medidas
 function poner(v, escena, conAristas) {
   const { THREE } = window;
-  v.marcados = [];
+  limpiarMarcas(v);
   if (v.obj) v.scene.remove(v.obj);
   if (v.grid) v.scene.remove(v.grid);
   const raiz = new THREE.Group(); raiz.add(escena);
   const linea = new THREE.LineBasicMaterial({ color: 0x2b2f2d, transparent: true, opacity: 0.5 });
   const mallas = [];
-  escena.traverse((o) => { if (o.isMesh && !o.isInstancedMesh) mallas.push(o); });
+  escena.traverse((o) => { if (o.isMesh && !o.isInstancedMesh && !o.userData.escena) mallas.push(o); });
   for (const o of mallas) {
     const g = o.geometry;
     const eg = g.userData.aristas || (g.userData.aristas = new THREE.EdgesGeometry(g, 28));
@@ -253,7 +406,7 @@ function poner(v, escena, conAristas) {
   const cm = (n) => String(Math.round(n * 1000) / 10).replace('.', ',');
   return `Ancho ${cm(Math.max(t.x, t.z))} · Fondo ${cm(Math.min(t.x, t.z))} · Alto ${cm(t.y)} cm`;
 }
-export const ponerMueble = (v, datos, conAristas = true) => poner(v, mallasAThree(datos), conAristas);
+export const ponerMueble = (v, datos, conAristas = true, texturas = null) => poner(v, mallasAThree(datos, texturas), conAristas);
 
 // Matriz SketchUp (origen y ejes, en cm) a la del visor
 const matrizSU = (a) => new window.THREE.Matrix4().set(a[3], a[6], a[9], a[0], a[4], a[7], a[10], a[1], a[5], a[8], a[11], a[2], 0, 0, 0, 1);
@@ -270,7 +423,7 @@ async function armarArea(ctx, modeloId, filas, inv) {
       else if (it.cajas?.length) partes.push({ fila: x, it, lista: it.cajas });
     }
   }
-  if (!partes.length) return { vacio: ligadas ? 'Para ver áreas completas en 3D vuelve a exportar el modelo desde SketchUp: ahora guarda dónde está cada objeto.' : 'Ninguna fila de aquí está ligada a objetos del modelo. Agrégalas desde la vista Modelo SketchUp.' };
+  if (!partes.length) return { vacio: ligadas ? 'Para ver áreas completas en 3D vuelve a enviar el modelo desde SketchUp: ahora guarda dónde está cada objeto.' : 'Ninguna fila de aquí está ligada a objetos del modelo. Agrégalas desde la vista Modelo SketchUp.' };
   // Las partidas que suman todo el modelo pueden traer objetos de otras salas: se dejan los que están juntos
   const os = partes.flatMap((pp) => pp.lista);
   const mediana = (l) => [...l].sort((a, b) => a - b)[Math.floor(l.length / 2)];
@@ -278,6 +431,7 @@ async function armarArea(ctx, modeloId, filas, inv) {
   const lim = Math.max(600, 3 * mediana(os.map((a) => Math.hypot(a[0] - mx, a[1] - my))));
   const cerca = (a) => Math.hypot(a[0] - mx, a[1] - my) <= lim;
   const mallas = await cargarMallas(ctx, modeloId, partes.filter((pp) => pp.m3d).map((pp) => pp.m3d));
+  const texturas = await texturasPara(ctx, modeloId, [...mallas.values()]).catch(() => new Map());
   const C = new THREE.Matrix4().set(0.01, 0, 0, 0, 0, 0, 0.01, 0, 0, -0.01, 0, 0, 0, 0, 0, 1); const Ci = C.clone().invert();
   const raiz = new THREE.Group(); const lineas = [];
   let n = 0; let fuera = 0;
@@ -286,7 +440,7 @@ async function armarArea(ctx, modeloId, filas, inv) {
     if (!lista.length) continue;
     if (pp.m3d) {
       const d = mallas.get(pp.m3d); if (!d) continue;
-      const base = mallasAThree(d);
+      const base = mallasAThree(d, texturas);
       for (const a of lista) {
         const o = base.clone(); o.matrixAutoUpdate = false;
         o.matrix.multiplyMatrices(C, matrizSU(a)).multiply(Ci);
@@ -295,7 +449,7 @@ async function armarArea(ctx, modeloId, filas, inv) {
     } else {
       const c = pp.it.color || [196, 196, 190];
       const geo = new THREE.BoxGeometry(1, 1, 1); geo.translate(0.5, 0.5, 0.5);
-      const im = new THREE.InstancedMesh(geo, new THREE.MeshLambertMaterial({ color: new THREE.Color(c[0] / 255, c[1] / 255, c[2] / 255), side: THREE.DoubleSide }), lista.length);
+      const im = new THREE.InstancedMesh(geo, new THREE.MeshLambertMaterial({ color: colorDe(c), side: THREE.DoubleSide }), lista.length);
       lista.forEach((a, i) => {
         im.setMatrixAt(i, new THREE.Matrix4().multiplyMatrices(C, matrizSU(a)));
         const q = (u) => { const x = a[0] + a[3] * u[0] + a[6] * u[1] + a[9] * u[2]; const y = a[1] + a[4] * u[0] + a[7] * u[1] + a[10] * u[2]; const z = a[2] + a[5] * u[0] + a[8] * u[1] + a[11] * u[2]; return [x / 100, z / 100, -y / 100]; };
@@ -337,8 +491,9 @@ export async function ventana3d(ctx, titulo, opciones) {
   try {
     if (opciones.m3d) {
       const datos = (await cargarMallas(ctx, opciones.modeloId, [opciones.m3d])).get(opciones.m3d);
-      if (!datos) { msg.textContent = 'Este mueble todavía no tiene su archivo 3D: sube de nuevo la exportación con la carpeta de mallas.'; return; }
-      v = crearVisor(cuerpo); pie.textContent = ponerMueble(v, datos, chk.checked);
+      if (!datos) { msg.textContent = 'Este mueble todavía no tiene su archivo 3D: envía de nuevo el modelo desde SketchUp.'; return; }
+      const texturas = await texturasPara(ctx, opciones.modeloId, [datos]).catch(() => new Map());
+      v = crearVisor(cuerpo); pie.textContent = ponerMueble(v, datos, chk.checked, texturas);
     } else {
       msg.textContent = 'Armando el área en 3D…';
       const a = await armarArea(ctx, opciones.modeloId, opciones.filas, opciones.inv);
@@ -347,6 +502,7 @@ export async function ventana3d(ctx, titulo, opciones) {
       const texto = `${a.n} objetos de ${a.ligadas} ${a.ligadas === 1 ? 'partida' : 'partidas'}${a.fuera ? ` · ${a.fuera} lejos de aquí no se muestran` : ''} · Clic en un objeto para ver qué es`;
       pie.textContent = texto;
       v.alElegir = (x) => {
+        if (x?.escena) return;
         pie.textContent = x ? [x.item, x.detalle, `${fmtNum(x.cantidad, 'cantidad')} ${x.unidad || ''}`.trim(), tienePrecio(x) ? clp(subtotal(x)) : null].filter(Boolean).join(' · ') : texto;
         if (x) opciones.alElegir?.(x);
       };
@@ -356,9 +512,10 @@ export async function ventana3d(ctx, titulo, opciones) {
 }
 
 // ---------------------------------------------------------------- Modelo completo
-// Todo el modelo en su lugar, agrupado por recinto (para mostrar u ocultar), con clic para ver qué es y medir.
-// Devuelve { recintos: [{ nombre, n }], mostrar(recinto, on), camara(modo), medir(on), sinPosiciones }
-const CONSTRUCCION = 'Construcción (muros, pisos, cielos)';
+// Todo el modelo en su lugar: muebles por recinto y la construcción por etiqueta (para mostrar u ocultar), con clic
+// para ver qué es, medir, recorrer, mirar con la tablet y realidad aumentada.
+export const CONSTRUCCION = 'Construcción (muros, pisos, cielos)';
+const nombreEtiqueta = (e) => (!e || e === 'Layer0' || e === 'Untagged' ? 'Sin etiqueta' : e);
 export async function vistaModelo(ctx, cont, { modeloId, inv, alElegir, alMedida, alProgreso }) {
   await asegurarThree();
   const { THREE } = window;
@@ -366,27 +523,32 @@ export async function vistaModelo(ctx, cont, { modeloId, inv, alElegir, alMedida
   const partesEscena = (inv.escena ?? []).map((x) => x.id);
   if (!items.length && !partesEscena.length) return { sinPosiciones: true };
   const ids = [...new Set(items.filter((it) => it.m3d && it.pos?.length).map((it) => it.m3d)), ...partesEscena];
-  alProgreso?.(`Cargando ${ids.length} muebles en 3D…`);
+  alProgreso?.(`Cargando el modelo (${ids.length} partes)…`);
   const mallas = await cargarMallas(ctx, modeloId, ids);
+  alProgreso?.('Cargando las texturas…');
+  const texturas = await texturasPara(ctx, modeloId, [...mallas.values()]).catch(() => new Map());
   const C = new THREE.Matrix4().set(0.01, 0, 0, 0, 0, 0, 0.01, 0, 0, -0.01, 0, 0, 0, 0, 0, 1); const Ci = C.clone().invert();
   const raiz = new THREE.Group();
-  const grupos = new Map();
+  const grupos = new Map();   // recinto → { g, n, lineas }
   const grupoDe = (r) => { if (!grupos.has(r)) { const g = new THREE.Group(); g.userData.recinto = r; grupos.set(r, { g, n: 0, lineas: [] }); raiz.add(g); } return grupos.get(r); };
+  const etiquetas = new Map();   // etiqueta → { objetos: [], n }
+  const deEtiqueta = (e) => { const k = nombreEtiqueta(e); if (!etiquetas.has(k)) etiquetas.set(k, { objetos: [], n: 0 }); return etiquetas.get(k); };
   for (const it of items) {
     const gr = grupoDe(it.recinto || 'General');
+    const et = deEtiqueta(it.etiqueta);
     if (it.m3d && it.pos?.length) {
       const d = mallas.get(it.m3d);
       if (!d) continue;
-      const base = mallasAThree(d);
+      const base = mallasAThree(d, texturas);
       for (const a of it.pos) {
         const o = base.clone(); o.matrixAutoUpdate = false;
         o.matrix.multiplyMatrices(C, matrizSU(a)).multiply(Ci);
-        o.userData.fila = it; gr.g.add(o); gr.n++;
+        o.userData.fila = it; gr.g.add(o); gr.n++; et.objetos.push(o); et.n++;
       }
     } else if (it.cajas?.length) {
       const c = it.color || [196, 196, 190];
       const geo = new THREE.BoxGeometry(1, 1, 1); geo.translate(0.5, 0.5, 0.5);
-      const im = new THREE.InstancedMesh(geo, new THREE.MeshLambertMaterial({ color: new THREE.Color(c[0] / 255, c[1] / 255, c[2] / 255), side: THREE.DoubleSide }), it.cajas.length);
+      const im = new THREE.InstancedMesh(geo, new THREE.MeshLambertMaterial({ color: colorDe(c), side: THREE.DoubleSide }), it.cajas.length);
       it.cajas.forEach((a, i) => {
         im.setMatrixAt(i, new THREE.Matrix4().multiplyMatrices(C, matrizSU(a)));
         const q = (u) => [(a[0] + a[3] * u[0] + a[6] * u[1] + a[9] * u[2]) / 100, (a[2] + a[5] * u[0] + a[8] * u[1] + a[11] * u[2]) / 100, -(a[1] + a[4] * u[0] + a[7] * u[1] + a[10] * u[2]) / 100];
@@ -395,23 +557,39 @@ export async function vistaModelo(ctx, cont, { modeloId, inv, alElegir, alMedida
           .forEach((e) => gr.lineas.push(...q(e.slice(0, 3)), ...q(e.slice(3))));
       });
       im.instanceMatrix.needsUpdate = true; im.frustumCulled = false;
-      im.userData.fila = it; gr.g.add(im); gr.n += it.cajas.length;
+      im.userData.fila = it; gr.g.add(im); gr.n += it.cajas.length; et.objetos.push(im); et.n += it.cajas.length;
     }
   }
-  // Construcción (muros, pisos, cielos, piezas) con su forma real y sus líneas, ya en coordenadas del modelo
+  // Construcción (muros, pisos, cielos, piezas) con su forma real, texturas y líneas, por etiqueta
   if (partesEscena.length) {
     const gr = grupoDe(CONSTRUCCION);
-    const lineas = [];
+    const porEtiqueta = new Map();   // etiqueta → THREE.Group
+    const matsEscena = new Map();
+    const grupoEt = (e) => {
+      const k = nombreEtiqueta(e);
+      if (!porEtiqueta.has(k)) { const g = new THREE.Group(); g.userData.etiqueta = k; porEtiqueta.set(k, g); gr.g.add(g); deEtiqueta(k).objetos.push(g); }
+      return porEtiqueta.get(k);
+    };
     for (const id of partesEscena) {
       const d = mallas.get(id); if (!d) continue;
-      const g = mallasAThree(d); g.userData.construccion = true; gr.g.add(g);
-      gr.n += (d.mats ?? []).reduce((t, m) => t + m.p.length / 9, 0);
-      const l = d.lineas ?? [];
-      for (let i = 0; i < l.length; i += 3) lineas.push(l[i] / 100, l[i + 2] / 100, -l[i + 1] / 100);
-    }
-    if (lineas.length) {
-      const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(lineas, 3));
-      gr.g.add(new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color: 0x1f2321, transparent: true, opacity: 0.55 })));
+      for (const m of d.mats ?? []) {
+        if (!m.p?.length) continue;
+        const malla = new THREE.Mesh(geometria(m), material(m, texturas, matsEscena));
+        malla.userData.escena = { parte: id, o: m.o ?? null, objetos: d.objetos ?? [], etiqueta: nombreEtiqueta(m.e) };
+        grupoEt(m.e).add(malla);
+        const tris = m.p.length / 9; gr.n += tris; deEtiqueta(m.e).n += tris;
+      }
+      // Líneas: v3 por etiqueta [{ e, p }]; v2 una sola lista
+      const conjuntos = Array.isArray(d.lineas) && d.lineas.length && typeof d.lineas[0] === 'object' ? d.lineas : [{ e: null, p: d.lineas ?? [] }];
+      for (const c of conjuntos) {
+        const l = c.p ?? []; if (!l.length) continue;
+        const arr = new Float32Array(l.length);
+        for (let i = 0; i < l.length; i += 3) { arr[i] = l[i] / 100; arr[i + 1] = l[i + 2] / 100; arr[i + 2] = -l[i + 1] / 100; }
+        const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(arr, 3));
+        const ls = new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color: 0x1f2321, transparent: true, opacity: 0.5 }));
+        ls.userData.linea = true;
+        grupoEt(c.e).add(ls);
+      }
     }
     gr.n = Math.round(gr.n);
     // Las piezas ya se ven con su forma real: sus cajas quedan invisibles, solo para el clic
@@ -440,7 +618,7 @@ export async function vistaModelo(ctx, cont, { modeloId, inv, alElegir, alMedida
   let puntos = []; let marcas = [];
   const limpiar = () => { marcas.forEach((m) => v.scene.remove(m)); marcas = []; puntos = []; };
   const punto = (p) => {
-    const s = new THREE.Mesh(new THREE.SphereGeometry(v.radio / 120, 12, 8), new THREE.MeshBasicMaterial({ color: 0xff6b00, depthTest: false }));
+    const s = new THREE.Mesh(new THREE.SphereGeometry(Math.min(v.radio / 120, 0.03), 12, 8), new THREE.MeshBasicMaterial({ color: 0xff6b00, depthTest: false }));
     s.position.copy(p); s.renderOrder = 10; v.scene.add(s); marcas.push(s);
   };
   const alMedir = (p) => {
@@ -455,13 +633,19 @@ export async function vistaModelo(ctx, cont, { modeloId, inv, alElegir, alMedida
       alMedida?.({ total: cm(a.distanceTo(b)), x: cm(b.x - a.x), y: cm(b.z - a.z), z: cm(b.y - a.y) });
     } else alMedida?.(null);
   };
+  const visEt = new Map([...etiquetas.keys()].map((k) => [k, true]));
   return {
     recintos: [...grupos.entries()].map(([nombre, gr]) => ({ nombre, n: gr.n })).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es')),
+    etiquetas: [...etiquetas.entries()].map(([nombre, e]) => ({ nombre, n: Math.round(e.n) })).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es')),
     mostrar: (r, on) => { const gr = grupos.get(r); if (gr) gr.g.visible = on; },
+    mostrarEtiqueta: (e, on) => { visEt.set(e, on); etiquetas.get(e)?.objetos.forEach((o) => { o.visible = on; }); },
     camara: (m) => camara(v, m),
     aristas: (on) => aristas(v, on),
     recorrer: (on) => recorrer(v, on),
+    giroscopio: (on) => (v.giroscopio ? v.giroscopio(on) : Promise.reject(new Error('Primero entra a Recorrer.'))),
+    recalibrar: () => v.recalibrar?.(),
     medir: (on) => { v.alMedir = on ? alMedir : null; if (!on) limpiar(); },
+    ar: realidadAumentada(v),
     // Centra la cámara en un objeto (al elegirlo en la lista)
     enfocar: (it) => {
       const caja = new THREE.Box3(); const b = new THREE.Box3(); const mi = new THREE.Matrix4();
@@ -478,6 +662,110 @@ export async function vistaModelo(ctx, cont, { modeloId, inv, alElegir, alMedida
       if (caja.isEmpty()) return;
       const c = caja.getCenter(new THREE.Vector3()); const r = Math.max(caja.getSize(new THREE.Vector3()).length(), 0.6);
       v.controls.target.copy(c); v.camera.position.set(c.x + r * 1.4, c.y + r * 1.1, c.z + r * 1.4); v.controls.update();
+    },
+  };
+}
+
+// ---------------------------------------------------------------- Realidad aumentada (Android, WebXR)
+// El diseño se pone a escala real sobre la cámara. Se ubica así: en Recorrer te paras en el modelo donde estás parado
+// en la obra y miras hacia donde miras en la obra; al entrar, ese punto queda bajo tus pies y esa dirección al frente.
+// Después se afina con los botones (girar, mover, subir o bajar). Por omisión muestra solo los muebles (la obra real
+// pone los muros); "Construcción" la agrega.
+function realidadAumentada(v) {
+  const { THREE } = window;
+  return {
+    soportada: async () => {
+      try { return !!(navigator.xr && await navigator.xr.isSessionSupported('immersive-ar')); } catch { return false; }
+    },
+    async iniciar({ conConstruccion = false, alSalir } = {}) {
+      if (!navigator.xr) throw new Error('Este navegador no tiene realidad aumentada. En Android usa Chrome.');
+      // Punto y dirección del modelo que quedan donde estás: los de Recorrer (o el inicio del recorrido)
+      const enRecorrido = !!v.paso;
+      const dir = new THREE.Vector3(); v.camera.getWorldDirection(dir);
+      const yawModelo = Math.atan2(-dir.x, -dir.z);
+      const pie = enRecorrido ? v.camera.position.clone() : (v.inicio ?? v.controls.target).clone();
+      const piso = v.piso ?? 0;
+      const ajuste = { giro: 0, x: 0, z: 0, y: 0 };
+      let base = null;   // { x, z, yaw } del equipo al ubicar
+      let reubicar = true;
+
+      // Controles sobre la cámara (DOM overlay)
+      const estado = el('div', { class: 'pro-ar-estado' }, 'Mueve el teléfono despacio para que reconozca el piso…');
+      const paso = (k, d) => () => { ajuste[k] += d; };
+      const b = (txt, ic, f, t) => el('button', { type: 'button', class: 'pro-ar-boton', title: t, 'aria-label': t, onclick: f }, ic ? icono(ic, { tam: 18 }) : null, txt);
+      const constr = el('input', { type: 'checkbox', checked: conConstruccion });
+      const capa = el('div', { class: 'pro-ar' },
+        el('div', { class: 'pro-ar-arriba' }, estado,
+          el('label', { class: 'pro-ar-casilla' }, constr, 'Construcción'),
+          b('Salir', 'cerrar', () => sesion?.end(), 'Salir de la realidad aumentada')),
+        el('div', { class: 'pro-ar-abajo' },
+          el('div', { class: 'pro-ar-fila' },
+            b('', 'deshacer', paso('giro', 2 * Math.PI / 180), 'Girar a la izquierda'),
+            b('Aquí', 'enlace', () => { reubicar = true; Object.assign(ajuste, { giro: 0, x: 0, z: 0, y: 0 }); }, 'Volver a ubicar el diseño donde estoy'),
+            b('', 'flecha', paso('giro', -2 * Math.PI / 180), 'Girar a la derecha')),
+          el('div', { class: 'pro-ar-fila' },
+            b('', 'volver', () => mover(-0.05, 0), 'Mover a la izquierda'),
+            b('', 'arriba', () => mover(0, 0.05), 'Mover hacia adelante'),
+            b('', 'abajo', () => mover(0, -0.05), 'Mover hacia atrás'),
+            b('', 'derecha', () => mover(0.05, 0), 'Mover a la derecha')),
+          el('div', { class: 'pro-ar-fila' },
+            b('Subir', null, paso('y', 0.02), 'Subir 2 cm'), b('Bajar', null, paso('y', -0.02), 'Bajar 2 cm'))));
+      document.body.append(capa);
+      // Mover en la dirección en que mira el teléfono (más natural que los ejes del modelo)
+      let yawEquipo = 0;
+      const mover = (dx, dz) => {
+        const f = new THREE.Vector3(-Math.sin(yawEquipo), 0, -Math.cos(yawEquipo)); const der = new THREE.Vector3(-f.z, 0, f.x);
+        ajuste.x += f.x * dz + der.x * dx; ajuste.z += f.z * dz + der.z * dx;
+      };
+
+      let sesion = null;
+      try {
+        sesion = await navigator.xr.requestSession('immersive-ar', { requiredFeatures: ['local-floor'], optionalFeatures: ['dom-overlay'], domOverlay: { root: capa } });
+      } catch (e) {
+        capa.remove();
+        throw new Error(`No se pudo abrir la realidad aumentada (${e.message}). Necesita Android con Chrome y ARCore (Servicios de Google Play para RA).`);
+      }
+      // Pausa el visor normal y arma el contenedor que se ubica sobre la cámara
+      v.ar = true;
+      const fondo = v.scene.background; v.scene.background = null;
+      if (v.grid) v.grid.visible = false;
+      const ancla = new THREE.Group(); ancla.matrixAutoUpdate = false;
+      v.scene.add(ancla); ancla.add(v.obj);
+      const construccion = []; v.obj.traverse((o) => { if (o.userData.recinto === CONSTRUCCION) construccion.push(o); });
+      const verConstr = () => construccion.forEach((o) => { o.userData.visibleAntes ??= o.visible; o.visible = constr.checked; });
+      constr.addEventListener('change', verConstr); verConstr();
+      v.renderer.xr.setReferenceSpaceType('local-floor');
+      await v.renderer.xr.setSession(sesion);
+      const rep = v.renderer.xr.getReferenceSpace();
+      const T = new THREE.Matrix4(); const R = new THREE.Matrix4(); const S = new THREE.Matrix4();
+      v.renderer.setAnimationLoop((t, frame) => {
+        const pose = frame?.getViewerPose(rep);
+        if (pose) {
+          const p = pose.transform.position; const o = pose.transform.orientation;
+          const f = new THREE.Vector3(0, 0, -1).applyQuaternion(new THREE.Quaternion(o.x, o.y, o.z, o.w));
+          yawEquipo = Math.atan2(-f.x, -f.z);
+          if (reubicar) { base = { x: p.x, z: p.z, yaw: yawEquipo }; reubicar = false; estado.textContent = 'Diseño ubicado donde estás. Afina con los botones si no calza.'; }
+        }
+        if (base) {
+          // ancla = T(equipo + ajuste) · Ry(giro) · T(-punto del modelo bajo los pies)
+          S.makeTranslation(-pie.x, -piso, -pie.z);
+          R.makeRotationY(base.yaw - yawModelo + ajuste.giro);
+          T.makeTranslation(base.x + ajuste.x, ajuste.y, base.z + ajuste.z);
+          ancla.matrix.copy(T).multiply(R).multiply(S);
+          ancla.matrixWorldNeedsUpdate = true;
+        }
+        v.renderer.render(v.scene, v.camera);
+      });
+      sesion.addEventListener('end', () => {
+        v.renderer.setAnimationLoop(null);
+        construccion.forEach((o) => { o.visible = o.userData.visibleAntes ?? true; delete o.userData.visibleAntes; });
+        v.scene.add(v.obj); v.scene.remove(ancla);
+        v.scene.background = fondo; if (v.grid) v.grid.visible = true;
+        capa.remove();
+        v.ar = false; v.antes = null;
+        tam(v); if (!v.raf) bucle(v);
+        alSalir?.();
+      });
     },
   };
 }

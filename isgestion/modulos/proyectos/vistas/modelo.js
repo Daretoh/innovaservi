@@ -3,15 +3,15 @@
 // sumado). Los conjuntos se despliegan con sus piezas y lo que no tiene conjunto va en "Sueltos". Cada fila tiene 3D y
 // "Agregar", que crea una partida ligada a ese objeto. Aquí se sube la exportación de SketchUp y el respaldo del prototipo.
 // Ruta: #/proyectos.modelo?p=<proyecto>
-import { el } from '../../../core/ui/dom.js?v=75c4885';
-import { icono } from '../../../core/ui/iconos.js?v=75c4885';
-import { boton } from '../../../core/ui/tabla.js?v=75c4885';
+import { el } from '../../../core/ui/dom.js?v=0e0b56e';
+import { icono } from '../../../core/ui/iconos.js?v=0e0b56e';
+import { boton } from '../../../core/ui/tabla.js?v=0e0b56e';
 import {
   plegado, cargarTodo, cargarEstilos, selectorProyecto, llave2, mapasInv, medTxt, zonasDe, fichaPartida, subirExportacion, traerRespaldo, guardarProyecto,
-} from '../datos.js?v=75c4885';
-import { avisar } from '../../../core/ui/aviso.js?v=75c4885';
-import { ventana3d, olvidarMallas, vistaModelo } from '../visor3d.js?v=75c4885';
-import { conectarSketchup } from '../sketchup.js?v=75c4885';
+} from '../datos.js?v=0e0b56e';
+import { avisar } from '../../../core/ui/aviso.js?v=0e0b56e';
+import { ventana3d, olvidarMallas, vistaModelo } from '../visor3d.js?v=0e0b56e';
+import { conectarSketchup } from '../sketchup.js?v=0e0b56e';
 
 const filtro = { texto: '', agrupar: 'recinto', recinto: '', tipo: '', falta: false };
 const TIPO = { componente: 'Mueble', conjunto: 'Conjunto', pieza: 'Pieza' };
@@ -148,38 +148,77 @@ export default async function vista(ctx) {
   // ---- Vista 3D del modelo completo
   const visor = el('div', { class: 'pro-m3-visor' }, el('div', { class: 'pro-v3-msg' }, 'Cargando el modelo en 3D…'));
   const lado = el('aside', { class: 'pro-m3-lado' });
-  const ficha = el('div', { class: 'pro-m3-ficha texto-suave' }, 'Haz clic en un objeto para ver qué es.');
+  const ficha = el('div', { class: 'pro-m3-ficha texto-suave' }, 'Toca un objeto para ver qué es.');
   const medida = el('span', { class: 'pro-m3-medida' });
   let ctl = null;
   const medir = el('input', { type: 'checkbox' });
-  medir.addEventListener('change', () => { ctl?.medir(medir.checked); medida.textContent = medir.checked ? 'Haz clic en dos puntos del modelo.' : ''; });
+  medir.addEventListener('change', () => { ctl?.medir(medir.checked); medida.textContent = medir.checked ? 'Toca dos puntos del modelo.' : ''; });
   const aristasChk = el('input', { type: 'checkbox' });
   aristasChk.addEventListener('change', () => ctl?.aristas(aristasChk.checked));
   const coma = (n) => String(n).replace('.', ',');
-  // Recorrer: caminar por dentro del modelo (W A S D, mirar arrastrando, doble clic para ir a un punto)
-  const ayudaRecorrido = el('div', { class: 'pro-m3-ayuda', hidden: true },
-    el('b', {}, 'Recorrido: '), 'W A S D o flechas para caminar · arrastra para mirar · Q / E bajar y subir · Shift más rápido · rueda avanza · doble clic para ir a ese punto');
-  const ayudaOrbita = el('div', { class: 'pro-m3-ayuda' }, 'Arrastra para girar · clic derecho para desplazar · rueda para acercar · doble clic para centrar ahí · "Recorrer" para caminar por dentro');
+  const esTactil = window.matchMedia?.('(pointer: coarse)').matches || 'ontouchstart' in window;
+  // Recorrer: caminar por dentro del modelo (teclado o joystick, mirar arrastrando, doble clic para ir a un punto)
+  const ayudaRecorrido = el('div', { class: 'pro-m3-ayuda', hidden: true }, el('b', {}, 'Recorrido: '),
+    esTactil ? 'joystick para caminar · arrastra para mirar · flechas para subir y bajar · doble toque para ir a ese punto'
+      : 'W A S D o flechas para caminar · arrastra para mirar · Q / E bajar y subir · Shift más rápido · rueda avanza · doble clic para ir a ese punto');
+  const ayudaOrbita = el('div', { class: 'pro-m3-ayuda' }, esTactil ? 'Un dedo para girar · dos dedos para desplazar y acercar · doble toque para centrar ahí · "Recorrer" para caminar por dentro'
+    : 'Arrastra para girar · clic derecho para desplazar · rueda para acercar · doble clic para centrar ahí · "Recorrer" para caminar por dentro');
+  const ayudaGiro = el('div', { class: 'pro-m3-ayuda pro-m3-ayuda-giro', hidden: true }, el('b', {}, 'Mirar con la tablet: '),
+    'párate en la obra, ubícate en el modelo en el mismo punto (doble toque en el piso) y apunta con la tablet. Si no calza, mira hacia el mismo lado que en el modelo y toca "Recalibrar".');
+  const activo = (b, on) => { b.setAttribute('aria-pressed', String(on)); b.classList.toggle('boton-primario', on); b.classList.toggle('boton-secundario', !on); };
+  const recalibrar = boton('Recalibrar', { class: 'boton boton-secundario boton-chico', hidden: true, onclick: () => ctl?.recalibrar() });
+  const tablet = boton('Mirar con la tablet', { icono: 'pantalla', class: 'boton boton-secundario boton-chico', hidden: true, 'aria-pressed': 'false', onclick: async () => {
+    const on = tablet.getAttribute('aria-pressed') !== 'true';
+    try {
+      await ctl?.giroscopio(on);
+      activo(tablet, on); recalibrar.hidden = !on; ayudaGiro.hidden = !on;
+    } catch (e) { avisar(e.message, 'error'); }
+  } });
   const recorrer = boton('Recorrer', { icono: 'play', class: 'boton boton-secundario boton-chico', 'aria-pressed': 'false', onclick: () => {
     const on = recorrer.getAttribute('aria-pressed') !== 'true';
-    recorrer.setAttribute('aria-pressed', String(on)); recorrer.classList.toggle('boton-primario', on); recorrer.classList.toggle('boton-secundario', !on);
+    activo(recorrer, on);
     ayudaRecorrido.hidden = !on; ayudaOrbita.hidden = on;
+    if (!on) { activo(tablet, false); recalibrar.hidden = true; ayudaGiro.hidden = true; }
+    tablet.hidden = !on || typeof DeviceOrientationEvent === 'undefined' || !esTactil;
     ctl?.recorrer(on);
     if (on) visor.querySelector('canvas')?.focus();
   } });
+  // Realidad aumentada (Android con Chrome): solo aparece si el equipo la soporta
+  const ra = boton('Realidad aumentada', { icono: 'camara', class: 'boton boton-secundario boton-chico', hidden: true,
+    title: 'Ver el diseño a escala real sobre la cámara. Antes, en Recorrer, ubícate en el modelo donde estás parado y mira hacia el mismo lado.',
+    onclick: async () => {
+      try { await ctl.ar.iniciar({ conConstruccion: false }); } catch (e) { avisar(e.message, 'error'); }
+    } });
   const barra = el('div', { class: 'pro-m3-barra' },
     ['iso', 'frente', 'lado', 'arriba'].map((m, i) => boton(['3D', 'Frente', 'Lado', 'Arriba'][i], { class: 'boton boton-secundario boton-chico', onclick: () => {
       if (recorrer.getAttribute('aria-pressed') === 'true') recorrer.click();
       ctl?.camara(m);
     } })),
-    recorrer,
+    recorrer, tablet, recalibrar, ra,
+    document.fullscreenEnabled ? boton('Pantalla completa', { icono: 'expandir', class: 'boton boton-secundario boton-chico', onclick: () => {
+      const centro = visor.parentElement;
+      if (document.fullscreenElement) document.exitFullscreen(); else centro.requestFullscreen?.().catch(() => {});
+    } }) : null,
     el('label', { class: 'casilla pro-m3-medir' }, medir, 'Medir'),
     el('label', { class: 'casilla' }, aristasChk, 'Aristas'), medida);
+  // replaceChildren no salta los null (los escribe como texto): se filtran
+  const llenarFicha = (...partes) => ficha.replaceChildren(...partes.filter(Boolean));
   function mostrarFicha(it) {
-    if (!it) { ficha.replaceChildren('Haz clic en un objeto para ver qué es.'); ficha.className = 'pro-m3-ficha texto-suave'; return; }
-    const n = ya(it);
+    if (!it) { ficha.replaceChildren('Toca un objeto para ver qué es.'); ficha.className = 'pro-m3-ficha texto-suave'; return; }
     ficha.className = 'pro-m3-ficha';
-    ficha.replaceChildren(el('b', {}, it.nombre),
+    if (it.escena) {
+      // Pieza de la construcción (muro, piso, listón, tabla…): nombre, medidas, etiqueta y dónde está
+      llenarFicha(el('b', {}, it.nombre || 'Construcción'),
+        el('div', { class: 'texto-suave texto-chico' }, [it.medidas_cm ? medTxt(it.medidas_cm) : null, it.etiqueta ? `Etiqueta: ${it.etiqueta}` : null].filter(Boolean).join(' · ')),
+        it.ruta ? el('div', { class: 'texto-suave texto-chico' }, `En: ${it.ruta}`) : null,
+        puedeCrear && it.medidas_cm ? el('div', { class: 'pro-pv-acc' }, boton('Agregar a la cotización', { icono: 'mas', class: 'boton boton-secundario boton-chico', onclick: () => fichaPartida(ctx, d, null, {
+          prellenado: { item: it.nombre, detalle: medTxt(it.medidas_cm), zona: zonasDe(d.proyecto, d.partidas)[0] ?? 'General', grupo: '', categoria: 'Material', estado: 'por_cotizar', fuente: 'modelo', cantidad: 1, unidad: 'un' },
+          alGuardar: (f) => { d.partidas.push(f); },
+        }) })) : null);
+      return;
+    }
+    const n = ya(it);
+    llenarFicha(el('b', {}, it.nombre),
       el('div', { class: 'texto-suave texto-chico' }, [TIPO[it.tipo] || it.tipo, medTxt(it.medidas_cm), it.recinto, `${it.cant} en el modelo`].filter(Boolean).join(' · ')),
       it.material ? el('div', { class: 'texto-suave texto-chico' }, it.material) : null,
       el('div', { class: 'pro-pv-acc' },
@@ -187,8 +226,28 @@ export default async function vista(ctx) {
           : puedeCrear ? boton('Agregar a la cotización', { icono: 'mas', class: 'boton boton-secundario boton-chico', onclick: () => agregar(it) }) : null,
         it.m3d ? boton('Ver el mueble', { icono: 'caja', class: 'boton boton-secundario boton-chico', onclick: () => ventana3d(ctx, it.nombre, { modeloId: d.modelo.id, m3d: it.m3d }) }) : null));
   }
-  const tres = el('section', { class: 'pro-m3' }, lado, el('div', { class: 'pro-m3-centro' }, barra, ayudaOrbita, ayudaRecorrido, visor, ficha));
+  const tres = el('section', { class: 'pro-m3' }, lado, el('div', { class: 'pro-m3-centro' }, barra, ayudaOrbita, ayudaRecorrido, ayudaGiro, visor, ficha));
   const mensaje = (t) => visor.querySelector('.pro-v3-msg')?.replaceChildren(t);
+  // Panel lateral: recintos o etiquetas (como en SketchUp), con Todos / Ninguno
+  let pestanaLado = 'recintos';
+  function pintarLado() {
+    const lista = pestanaLado === 'recintos' ? ctl.recintos : ctl.etiquetas;
+    const accion = pestanaLado === 'recintos' ? ctl.mostrar : ctl.mostrarEtiqueta;
+    const estado = pestanaLado === 'recintos' ? visRec : visEt;
+    const marcar = (on) => () => { lista.forEach((r) => { estado.set(r.nombre, on); accion(r.nombre, on); }); pintarLado(); };
+    const pestana = (id, t) => el('button', { type: 'button', 'aria-pressed': String(pestanaLado === id), onclick: () => { pestanaLado = id; pintarLado(); } }, t);
+    lado.replaceChildren(
+      ctl.etiquetas.length > 1 ? el('div', { class: 'segmento pro-m3-pestanas' }, pestana('recintos', 'Recintos'), pestana('etiquetas', 'Etiquetas')) : null,
+      el('div', { class: 'pro-m3-lado-cab' }, el('b', {}, pestanaLado === 'recintos' ? 'Recintos' : 'Etiquetas'),
+        el('span', { class: 'texto-chico' }, el('button', { type: 'button', class: 'pro-enlace', onclick: marcar(true) }, 'Todos'), ' · ',
+          el('button', { type: 'button', class: 'pro-enlace', onclick: marcar(false) }, 'Ninguno'))),
+      ...lista.map((r) => {
+        const c = el('input', { type: 'checkbox', value: r.nombre, checked: estado.get(r.nombre) !== false });
+        c.addEventListener('change', () => { estado.set(r.nombre, c.checked); accion(r.nombre, c.checked); });
+        return el('label', { class: 'casilla pro-m3-recinto' }, c, el('span', {}, r.nombre), el('span', { class: 'texto-suave texto-chico' }, r.n.toLocaleString('es-CL')));
+      }));
+  }
+  const visRec = new Map(); const visEt = new Map();
   (async () => {
     try {
       ctl = await vistaModelo(ctx, visor, {
@@ -201,15 +260,8 @@ export default async function vista(ctx) {
         return;
       }
       visor.querySelector('.pro-v3-msg')?.remove();
-      const marcar = (on) => () => { lado.querySelectorAll('input[type=checkbox]').forEach((c) => { c.checked = on; ctl.mostrar(c.value, on); }); };
-      lado.replaceChildren(el('div', { class: 'pro-m3-lado-cab' }, el('b', {}, 'Recintos'),
-        el('span', { class: 'texto-chico' }, el('button', { type: 'button', class: 'pro-enlace', onclick: marcar(true) }, 'Todos'), ' · ',
-          el('button', { type: 'button', class: 'pro-enlace', onclick: marcar(false) }, 'Ninguno'))),
-        ...ctl.recintos.map((r) => {
-          const c = el('input', { type: 'checkbox', value: r.nombre, checked: true });
-          c.addEventListener('change', () => ctl.mostrar(r.nombre, c.checked));
-          return el('label', { class: 'casilla pro-m3-recinto' }, c, el('span', {}, r.nombre), el('span', { class: 'texto-suave texto-chico' }, r.n));
-        }));
+      pintarLado();
+      if (await ctl.ar.soportada()) ra.hidden = false;
     } catch (e) { mensaje(`No se pudo mostrar el modelo: ${e.message}`); }
   })();
 

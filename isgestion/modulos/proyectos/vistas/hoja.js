@@ -2,19 +2,19 @@
 // totales) y se edita como planilla: se escribe en las celdas, Enter baja, Esc deshace, se pega desde Excel en Ítem
 // y se arrastra una fila por sus puntos a otra área. En pantallas anchas, panel lateral con el 3D del mueble.
 // Ruta: #/proyectos.hoja?p=<proyecto>
-import { el } from '../../../core/ui/dom.js?v=75c4885';
-import { icono } from '../../../core/ui/iconos.js?v=75c4885';
-import { boton } from '../../../core/ui/tabla.js?v=75c4885';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=75c4885';
-import { avisar } from '../../../core/ui/aviso.js?v=75c4885';
+import { el } from '../../../core/ui/dom.js?v=0e0b56e';
+import { icono } from '../../../core/ui/iconos.js?v=0e0b56e';
+import { boton } from '../../../core/ui/tabla.js?v=0e0b56e';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=0e0b56e';
+import { avisar } from '../../../core/ui/aviso.js?v=0e0b56e';
 import {
   ESTADOS, NOMBRE_ESTADO, NO_SUMA, UNIDADES, clp, subtotal, suma, sinPrecioN, vigentes, tienePrecio, gDe, alerta, esArchivo, neto,
   ordenGrupos, zonasDe, leerNum, fmtNum, hoyISO, fechaCL, hoyLargo, plegado, cargarTodo, cargarEstilos, selectorProyecto, sinProyectos,
   guardarPartida, guardarProyecto, insertarPartidas, ordenEntre, renumerar, mapasInv, estadoModelo, m3dDe, chipModelo, modeloDe,
   cargarInventario, abrirLink, urlsImagenes, fichaPartida, guardarActual,
-} from '../datos.js?v=75c4885';
-import { ventana3d, asegurarThree, cargarMallas, crearVisor, ponerMueble, camara } from '../visor3d.js?v=75c4885';
-import { excelProyecto } from '../exportar.js?v=75c4885';
+} from '../datos.js?v=0e0b56e';
+import { ventana3d, asegurarThree, cargarMallas, crearVisor, ponerMueble, camara, texturasPara } from '../visor3d.js?v=0e0b56e';
+import { excelProyecto } from '../exportar.js?v=0e0b56e';
 
 const filtro = { texto: '', zona: '', pend: false };   // se mantiene al refrescar
 
@@ -469,7 +469,9 @@ export default async function vista(ctx) {
     if (!datos) { pMsg.textContent = 'Este mueble aún no tiene su archivo 3D: sube de nuevo la exportación con la carpeta de mallas.'; return; }
     if (!vp || !vp.renderer.domElement.isConnected) vp = crearVisor(pVisor);
     lienzo(true);
-    try { pMed.textContent = ponerMueble(vp, datos, true); } catch { pMsg.textContent = 'No se pudo leer el 3D de este mueble.'; lienzo(false); return; }
+    const tex = await texturasPara(ctx, d.modelo.id, [datos]).catch(() => new Map());
+    if (t !== tok) return;
+    try { pMed.textContent = ponerMueble(vp, datos, true, tex); } catch { pMsg.textContent = 'No se pudo leer el 3D de este mueble.'; lienzo(false); return; }
     panelId = id; pMsg.hidden = true;
   }
 
