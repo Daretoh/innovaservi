@@ -6,13 +6,13 @@
 //   boleta → su PDF queda como boleta de la orden (y el cobro se registra si faltaba);
 //   factura → queda en Cotizaciones → Facturas, ligada a la orden y pagada (la base deja la orden cobrada).
 // En el ambiente de pruebas solo se muestra el PDF (documentos de la empresa de pruebas de Haulmer).
-import { el } from '../../core/ui/dom.js?v=2d5c9ea';
-import { icono } from '../../core/ui/iconos.js?v=2d5c9ea';
-import { boton } from '../../core/ui/tabla.js?v=2d5c9ea';
-import { abrirFormulario } from '../../core/ui/modal.js?v=2d5c9ea';
-import { avisar } from '../../core/ui/aviso.js?v=2d5c9ea';
-import { dinero, diaLocal, hoyISO, fechaLarga, sumarDias } from '../../core/ui/formato.js?v=2d5c9ea';
-import { llamarDte, estadoDte, ofrecerPdf } from '../../core/dte.js?v=2d5c9ea';
+import { el } from '../../core/ui/dom.js?v=39dc32b';
+import { icono } from '../../core/ui/iconos.js?v=39dc32b';
+import { boton } from '../../core/ui/tabla.js?v=39dc32b';
+import { abrirFormulario } from '../../core/ui/modal.js?v=39dc32b';
+import { avisar } from '../../core/ui/aviso.js?v=39dc32b';
+import { dinero, diaLocal, hoyISO, fechaLarga, sumarDias } from '../../core/ui/formato.js?v=39dc32b';
+import { llamarDte, estadoDte, ofrecerPdf } from '../../core/dte.js?v=39dc32b';
 
 const limpio = (r) => String(r ?? '').replace(/[^0-9kK]/g, '').toUpperCase();
 

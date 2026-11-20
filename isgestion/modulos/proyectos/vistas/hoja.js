@@ -2,19 +2,20 @@
 // totales) y se edita como planilla: se escribe en las celdas, Enter baja, Esc deshace, se pega desde Excel en Ítem
 // y se arrastra una fila por sus puntos a otra área. En pantallas anchas, panel lateral con el 3D del mueble.
 // Ruta: #/proyectos.hoja?p=<proyecto>
-import { el } from '../../../core/ui/dom.js?v=2d5c9ea';
-import { icono } from '../../../core/ui/iconos.js?v=2d5c9ea';
-import { boton } from '../../../core/ui/tabla.js?v=2d5c9ea';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=2d5c9ea';
-import { avisar } from '../../../core/ui/aviso.js?v=2d5c9ea';
+import { el } from '../../../core/ui/dom.js?v=39dc32b';
+import { icono } from '../../../core/ui/iconos.js?v=39dc32b';
+import { boton } from '../../../core/ui/tabla.js?v=39dc32b';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=39dc32b';
+import { avisar } from '../../../core/ui/aviso.js?v=39dc32b';
 import {
   ESTADOS, NOMBRE_ESTADO, NO_SUMA, UNIDADES, clp, subtotal, suma, sinPrecioN, vigentes, tienePrecio, gDe, alerta, esArchivo, neto,
   ordenGrupos, zonasDe, leerNum, fmtNum, hoyISO, fechaCL, hoyLargo, plegado, cargarTodo, cargarEstilos, selectorProyecto, sinProyectos,
   guardarPartida, guardarProyecto, insertarPartidas, ordenEntre, renumerar, mapasInv, estadoModelo, m3dDe, chipModelo, modeloDe,
   cargarInventario, abrirLink, urlsImagenes, fichaPartida, guardarActual, instanciasDe, queEsDe,
-} from '../datos.js?v=2d5c9ea';
-import { ventana3d, asegurarThree, cargarMallas, crearVisor, ponerMueble, camara, texturasPara, vistaModelo } from '../visor3d.js?v=2d5c9ea';
-import { excelProyecto } from '../exportar.js?v=2d5c9ea';
+  insertarReferencia, guardarReferencia, usarReferencia,
+} from '../datos.js?v=39dc32b';
+import { ventana3d, asegurarThree, cargarMallas, crearVisor, ponerMueble, camara, texturasPara, vistaModelo } from '../visor3d.js?v=39dc32b';
+import { excelProyecto } from '../exportar.js?v=39dc32b';
 
 const filtro = { texto: '', zona: '', pend: false };   // se mantiene al refrescar
 
@@ -78,6 +79,7 @@ export default async function vista(ctx) {
       m3 ? el('button', { type: 'button', class: 'boton-icono', title: 'Ver en 3D', 'aria-label': 'Ver en 3D', onclick: () => { seleccionar(x.id); if (!panelVisible()) ventana3d(ctx, x.item || 'Vista 3D', { modeloId: d.modelo.id, m3d: m3 }); } }, icono('caja', { tam: 16 }))
         : ligadaAlModelo(x) ? el('button', { type: 'button', class: 'boton-icono', title: 'Ver dónde va en el modelo', 'aria-label': 'Ver dónde va en el modelo', onclick: () => { seleccionar(x.id); if (!panelVisible()) ventana3d(ctx, x.item || 'Vista 3D', { modeloId: d.modelo.id, inv: d.inventario, foco: x }); } }, icono('caja', { tam: 16 })) : null,
       el('button', { type: 'button', class: 'boton-icono', title: 'Ficha completa (link, imagen, código, nota)', 'aria-label': 'Ficha completa', onclick: () => ficha(x) }, icono('editar', { tam: 16 })),
+      conRefs() ? el('button', { type: 'button', class: 'boton-icono', title: 'Referencias de precio (comparar cotizaciones)', 'aria-label': 'Referencias de precio', onclick: () => verReferencias(x) }, icono('dinero', { tam: 16 })) : null,
       puedeCrear ? el('button', { type: 'button', class: 'boton-icono', title: 'Duplicar fila', 'aria-label': 'Duplicar fila', onclick: () => duplicar(x) }, icono('copiar', { tam: 16 })) : null,
       puedeEliminar ? el('button', { type: 'button', class: 'boton-icono', title: 'Eliminar fila', 'aria-label': 'Eliminar fila', onclick: () => borrar(x) }, icono('basura', { tam: 16 })) : null);
     return el('tr', { class: `pro-fila${x.id === sel ? ' sel' : ''}${NO_SUMA.has(x.estado) ? ' off' : ''}`, 'data-id': x.id },
@@ -86,7 +88,8 @@ export default async function vista(ctx) {
         el('div', { class: 'pro-it' }, img ? el('img', { class: 'pro-mini', src: img, alt: '', loading: 'lazy', onerror: (ev) => ev.target.remove() }) : null, celda(x, 'item')),
         celda(x, 'detalle'),
         x.nota ? el('div', { class: `pro-nota${alerta(x) ? ' alerta' : ''}` }, x.nota) : null,
-        chipModelo(em && !em.presente ? em : null, puedeEditar ? (c) => { cambiar(x, { cantidad: c }); avisar('Cantidad actualizada desde el modelo'); } : null)),
+        chipModelo(em && !em.presente ? em : null, puedeEditar ? (c) => { cambiar(x, { cantidad: c }); avisar('Cantidad actualizada desde el modelo'); } : null),
+        chipRefs(x)),
       el('td', {}, celda(x, 'cantidad', { label: 'Cantidad' })),
       el('td', {}, celda(x, 'unidad', { list: 'pro-unidades', label: 'Unidad' })),
       el('td', {}, celda(x, 'precio', { label: 'Precio unitario con IVA' })),
@@ -417,6 +420,117 @@ export default async function vista(ctx) {
   });
   hoja.addEventListener('dragend', () => { arrastrando = null; limpiar(); hoja.querySelectorAll('.arrastrando').forEach((r) => r.classList.remove('arrastrando')); });
 
+  // ---------------------------------------------------------------- Referencias de precio (Proyectos 004)
+  // Varias cotizaciones por partida para compararlas sin llenar la hoja: la fila muestra solo un chip ("3 ref. · desde
+  // $X") y el detalle va en el panel (o en una ventana en pantallas angostas). "Usar" deja una vigente y copia su
+  // precio, tienda, fecha y link a la partida. Sin la migración (d.referencias null) no aparece nada de esto.
+  const conRefs = () => Array.isArray(d.referencias);
+  const refsDe = (x) => (d.referencias ?? []).filter((r) => r.partida_id === x.id)
+    .sort((a, b) => Number(a.precio) - Number(b.precio) || String(b.fecha).localeCompare(String(a.fecha)));
+  function chipRefs(x) {
+    const l = refsDe(x); if (!l.length) return null;
+    return el('button', { type: 'button', class: 'pro-ref-chip', title: 'Ver y comparar las referencias de precio', onclick: () => verReferencias(x) },
+      icono('lista', { tam: 12 }), `${l.length} ref. · desde ${clp(l[0].precio)}`);
+  }
+  function verReferencias(x) {
+    seleccionar(x.id);
+    if (panelVisible()) {
+      requestAnimationFrame(() => panel.querySelector('.pro-refs')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }));
+      return;
+    }
+    const cuerpoDlg = el('div', { class: 'pro-refs-dlg-cuerpo' });
+    const dlg = el('dialog', { class: 'modal pro-refs-dlg', 'aria-label': 'Referencias de precio' },
+      el('header', { class: 'modal-cabecera' }, el('h2', {}, x.item || 'Referencias de precio'),
+        el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Cerrar', onclick: () => { dlg.close(); dlg.remove(); } }, icono('cerrar'))),
+      cuerpoDlg);
+    const pintar = () => cuerpoDlg.replaceChildren(bloqueRefs(x, pintar));
+    pintar();
+    document.body.append(dlg);
+    dlg.addEventListener('close', () => dlg.remove());
+    dlg.showModal();
+  }
+  function formRef(x, r, alListo) {
+    const tiendas = [...new Set([...(d.referencias ?? []).map((y) => y.tienda), ...d.partidas.map((y) => y.tienda)].filter(Boolean))]
+      .sort((a, b) => a.localeCompare(b, 'es'));
+    abrirFormulario({
+      titulo: r ? 'Editar referencia' : 'Nueva referencia de precio',
+      campos: [
+        { id: 'tienda', etiqueta: 'Tienda o proveedor', requerido: true, valor: r?.tienda ?? '', sugerencias: tiendas },
+        { id: 'precio', etiqueta: 'Precio unitario (con IVA)', requerido: true, valor: r ? fmtNum(r.precio, 'precio') : '', ayuda: `Precio de una unidad (${x.unidad || 'un'}), igual que en la hoja.` },
+        { id: 'url', etiqueta: 'Link', valor: r?.url ?? '', ayuda: 'https://…' },
+        { id: 'fecha', etiqueta: 'Fecha de la cotización', tipo: 'date', valor: r?.fecha ?? hoyISO() },
+        { id: 'nota', etiqueta: 'Nota', tipo: 'textarea', filas: 2, valor: r?.nota ?? '', ayuda: 'Despacho, stock, marca, formato…' },
+        r ? null : { id: 'usar', etiqueta: 'Precio de la partida', opciones: [['si', 'Usar este precio en la partida'], ['no', 'Solo guardar para comparar']], valor: tienePrecio(x) ? 'no' : 'si' },
+      ].filter(Boolean),
+      alGuardar: async (v) => {
+        const precio = leerNum(v.precio, 'precio');
+        if (precio == null) throw new Error('Escribe el precio: un número mayor o igual a 0.');
+        const url = (v.url || '').trim();
+        if (url && !/^https?:\/\//i.test(url)) throw new Error('El link debe empezar con https://');
+        const datos = { tienda: v.tienda.trim(), precio: Math.round(precio), url: url || null, fecha: v.fecha || hoyISO(), nota: (v.nota || '').trim() || null };
+        let ref;
+        if (r) ref = await guardarReferencia(ctx, r, datos);
+        else { ref = await insertarReferencia(ctx, { partida_id: x.id, ...datos }); d.referencias.push(ref); }
+        // Nueva con "Usar", o la que ya estaba en uso y se corrigió: la partida queda con sus datos
+        if (v.usar === 'si' || r?.vigente) {
+          Object.assign(x, await usarReferencia(ctx, ref));
+          refsDe(x).forEach((y) => { y.vigente = y.id === ref.id; });
+        }
+        avisar(r ? 'Referencia guardada' : 'Referencia agregada');
+        alListo();
+      },
+    });
+  }
+  function bloqueRefs(x, alCambiar) {
+    const l = refsDe(x);
+    const cambio = () => { dibujar(); alCambiar?.(); };   // dibujar() vuelve a pintar también el panel
+    const min = l.length ? Number(l[0].precio) : null; const max = l.length ? Number(l.at(-1).precio) : null;
+    const enUso = l.find((r) => r.vigente);
+    const usar = async (r) => {
+      try {
+        Object.assign(x, await usarReferencia(ctx, r));
+        l.forEach((y) => { y.vigente = y === r; });
+        avisar(`La partida queda con el precio de ${r.tienda || 'esa referencia'}`);
+        cambio();
+      } catch (e) { avisar(e.message, 'error'); }
+    };
+    const quitar = async (r) => {
+      if (!window.confirm(`¿Eliminar la referencia de ${r.tienda || 'esta tienda'}?${r.vigente ? ' La partida conserva su precio.' : ''}`)) return;
+      try {
+        await guardarReferencia(ctx, r, { deleted_at: new Date().toISOString() });
+        d.referencias = d.referencias.filter((y) => y !== r);
+        avisar('Referencia eliminada'); cambio();
+      } catch (e) { avisar(e.message, 'error'); }
+    };
+    const filaRef = (r) => {
+      const p = Number(r.precio);
+      const dif = min && p > min ? Math.round((p / min - 1) * 100) : 0;
+      return el('li', { class: `pro-ref${r.vigente ? ' en-uso' : ''}` },
+        el('div', { class: 'pro-ref-l1' },
+          el('b', { class: 'pro-ref-tienda' }, r.tienda || 'Sin tienda'),
+          r.vigente ? el('span', { class: 'chip chip-ok' }, 'En uso') : null,
+          el('span', { class: 'pro-ref-precio' }, clp(p))),
+        el('div', { class: 'pro-ref-l2 texto-suave' },
+          [fechaCL(r.fecha), l.length > 1 ? (dif ? `+${dif} % sobre la más barata` : 'La más barata') : null].filter(Boolean).join(' · ')),
+        r.nota ? el('div', { class: 'pro-ref-nota' }, r.nota) : null,
+        el('div', { class: 'pro-ref-acc' },
+          r.url ? el('button', { type: 'button', class: 'boton-icono', title: 'Abrir link', 'aria-label': 'Abrir link', onclick: () => abrirLink(ctx, r.url).catch((e) => avisar(e.message, 'error')) }, icono('enlace', { tam: 15 })) : null,
+          puedeEditar ? el('button', { type: 'button', class: 'boton-icono', title: 'Editar', 'aria-label': 'Editar referencia', onclick: () => formRef(x, r, cambio) }, icono('editar', { tam: 15 })) : null,
+          puedeEliminar ? el('button', { type: 'button', class: 'boton-icono', title: 'Eliminar', 'aria-label': 'Eliminar referencia', onclick: () => quitar(r) }, icono('basura', { tam: 15 })) : null,
+          puedeEditar && !r.vigente ? boton('Usar', { class: 'boton boton-secundario boton-chico', title: 'Pasar este precio, tienda y link a la partida', onclick: () => usar(r) }) : null));
+    };
+    const ahorro = enUso && min != null && Number(enUso.precio) > min ? (Number(enUso.precio) - min) * (Number(x.cantidad) || 0) : 0;
+    return el('section', { class: 'pro-refs' },
+      el('div', { class: 'pro-refs-cab' },
+        el('b', {}, 'Referencias de precio'), l.length ? el('span', { class: 'texto-suave texto-chico' }, String(l.length)) : null,
+        puedeCrear ? boton('Agregar', { icono: 'mas', class: 'boton boton-secundario boton-chico', onclick: () => formRef(x, null, cambio) }) : null),
+      l.length ? el('ul', { class: 'pro-refs-lista' }, l.map(filaRef))
+        : el('p', { class: 'texto-suave texto-chico pro-refs-vacio' }, 'Anota cotizaciones de distintas tiendas para compararlas. La que elijas pasa a la partida y suma en el total.'),
+      l.length > 1 ? el('p', { class: 'texto-suave texto-chico pro-refs-res' },
+        `Entre la más barata y la más cara hay ${clp(max - min)} de diferencia por unidad (${Math.round((max / (min || 1) - 1) * 100)} %).`,
+        ahorro > 0 ? el('b', {}, ` Con la más barata ahorras ${clp(ahorro)} en esta partida.`) : null) : null);
+  }
+
   // ---------------------------------------------------------------- Panel lateral: 3D, imagen y datos de la fila
   // Fila de un mueble: el mueble solo ("Objeto"). Fila ligada a piezas del modelo (clave o conjunto): el modelo completo
   // con sus piezas resaltadas ("En el modelo"), para ver dónde va. Con las dos, se elige arriba del pie (se recuerda).
@@ -460,6 +574,7 @@ export default async function vista(ctx) {
         dato('Cantidad', `${fmtNum(x.cantidad, 'cantidad')} ${x.unidad || ''}${em?.cant !== undefined ? ` (modelo: ${em.cant})` : ''}`),
         dato('Subtotal', tienePrecio(x) ? clp(subtotal(x)) : 'Por cotizar'), dato('Estado', NOMBRE_ESTADO[x.estado]),
         dato('Código', x.sku), dato('Precio al', fechaCL(x.fecha_precio)), dato('Nota', x.nota)),
+      conRefs() ? bloqueRefs(x) : null,
       el('div', { class: 'pro-pv-acc' },
         x.url ? boton(esArchivo(x.url) ? 'Abrir archivo' : 'Abrir link', { icono: esArchivo(x.url) ? 'documento' : 'enlace', class: 'boton boton-secundario boton-chico', onclick: () => abrirLink(ctx, x.url).catch((e) => avisar(e.message, 'error')) }) : null,
         boton('Ficha completa', { icono: 'editar', class: 'boton boton-secundario boton-chico', onclick: () => ficha(x) })));

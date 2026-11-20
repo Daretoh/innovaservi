@@ -1,12 +1,12 @@
 // Proyectos: datos compartidos de las vistas (proyectos, partidas, modelos de SketchUp), cálculos (totales con IVA),
 // vínculo con el inventario del modelo y el selector de proyecto. Migrado del prototipo cotizador.html.
-import { el } from '../../core/ui/dom.js?v=2d5c9ea';
-import { icono } from '../../core/ui/iconos.js?v=2d5c9ea';
-import { boton } from '../../core/ui/tabla.js?v=2d5c9ea';
-import { abrirFormulario } from '../../core/ui/modal.js?v=2d5c9ea';
-import { avisar } from '../../core/ui/aviso.js?v=2d5c9ea';
-import { dinero } from '../../core/ui/formato.js?v=2d5c9ea';
-import { urlFirmada, urlsFirmadas, subirArchivo, almacen } from '../../core/adjuntos.js?v=2d5c9ea';
+import { el } from '../../core/ui/dom.js?v=39dc32b';
+import { icono } from '../../core/ui/iconos.js?v=39dc32b';
+import { boton } from '../../core/ui/tabla.js?v=39dc32b';
+import { abrirFormulario } from '../../core/ui/modal.js?v=39dc32b';
+import { avisar } from '../../core/ui/aviso.js?v=39dc32b';
+import { dinero } from '../../core/ui/formato.js?v=39dc32b';
+import { urlFirmada, urlsFirmadas, subirArchivo, almacen } from '../../core/adjuntos.js?v=39dc32b';
 
 export const ESTADOS = [['por_cotizar', 'Por cotizar'], ['cotizado', 'Cotizado'], ['aprobado', 'Aprobado'],
   ['comprado', 'Comprado'], ['alternativa', 'Alternativa'], ['descartado', 'Descartado']];
@@ -90,8 +90,36 @@ export async function cargarTodo(ctx) {
   if (proyecto) guardarActual(ctx, proyecto.id);
   const partidas = proyecto ? await cargarPartidas(ctx, proyecto.id) : [];
   const modelo = modeloDe(proyecto, modelos);
-  const inventario = modelo ? await cargarInventario(ctx, modelo).catch(() => null) : null;
-  return { proyectos, modelos, proyecto, partidas, modelo, inventario };
+  const [inventario, referencias] = await Promise.all([
+    modelo ? cargarInventario(ctx, modelo).catch(() => null) : null,
+    proyecto ? cargarReferencias(ctx, proyecto.id) : [],
+  ]);
+  return { proyectos, modelos, proyecto, partidas, modelo, inventario, referencias };
+}
+
+// ---------------------------------------------------------------- Referencias de precio (Proyectos 004)
+// Varias cotizaciones por partida; la vigente es la que copió su precio a la partida. null = la base aún no tiene la
+// tabla (sin la migración la hoja sigue igual, sin referencias).
+export async function cargarReferencias(ctx, proyectoId) {
+  const r = await ctx.api.from('pro_referencias').select('*, pro_partidas!inner(proyecto_id)')
+    .eq('empresa_id', ctx.empresa.id).eq('pro_partidas.proyecto_id', proyectoId).is('deleted_at', null)
+    .order('precio').order('fecha', { ascending: false });
+  if (r.error) return null;
+  return r.data.map(({ pro_partidas: _p, ...ref }) => ref);
+}
+export async function insertarReferencia(ctx, datos) {
+  const [ref] = revisar(await ctx.api.from('pro_referencias').insert({ empresa_id: ctx.empresa.id, ...datos }).select('*'));
+  return ref;
+}
+export async function guardarReferencia(ctx, ref, cambios) {
+  const r = await ctx.api.from('pro_referencias').update(cambios).eq('id', ref.id).select('*').single();
+  Object.assign(ref, revisar(r));
+  return ref;
+}
+// Deja vigente la referencia y copia su precio, tienda, fecha y link a la partida. Devuelve la partida al día.
+export async function usarReferencia(ctx, ref) {
+  const [partida] = revisar(await ctx.api.rpc('pro_usar_referencia', { p_ref: ref.id }));
+  return partida;
 }
 
 export async function guardarPartida(ctx, x, cambios) {
@@ -268,7 +296,7 @@ export function chipModelo(em, alUsar) {
 // ---------------------------------------------------------------- Interfaz común
 export function cargarEstilos() {
   if (document.getElementById('proyectos-css')) return;
-  document.head.append(el('link', { id: 'proyectos-css', rel: 'stylesheet', href: new URL('./proyectos.css?v=2d5c9ea', import.meta.url).href }));
+  document.head.append(el('link', { id: 'proyectos-css', rel: 'stylesheet', href: new URL('./proyectos.css?v=39dc32b', import.meta.url).href }));
 }
 
 // Pestañas de proyecto (arriba de cada vista) y "Nuevo proyecto"

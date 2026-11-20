@@ -7,7 +7,8 @@
 #   load 'C:/Users/Acer/Documents/ISgestion/modulos/proyectos/sketchup/enviar_a_isgestion.rb'
 # La primera vez pide el código de conexión del proyecto (ISgestión → Proyectos → Modelo SketchUp → Conectar SketchUp)
 # y lo recuerda para ese archivo .skp (en las preferencias de SketchUp, no en el modelo). Después queda en el menú
-# Extensiones → Enviar a ISgestión. Las mallas que ya están en ISgestión no se vuelven a enviar.
+# Extensiones → Enviar a ISgestión. Las mallas que ya están en ISgestión no se vuelven a enviar, salvo que el mueble
+# haya cambiado: cada malla lleva una firma (MD5 de su contenido) y se reenvía la que no coincide (Proyectos 005).
 #
 # Cómo cuenta:
 #   - Cada componente (muebles de biblioteca, IKEA, sillas, etc.) cuenta como 1 unidad.
@@ -402,18 +403,28 @@ module EnviarAISgestion
         inicio = post(h, { t: codigo_conexion, accion: 'inicio', codigo: @codigo, archivo: model.path, fecha: fecha })
       end
       ya = inicio['mallas'].to_a
+      # Firma de cada malla en ISgestión (nil: ISgestión sin firmas; entonces solo se envían las que faltan)
+      firmas = inicio['firmas'].is_a?(Hash) ? inicio['firmas'] : nil
       puts "Enviar a ISgestión: conectado al proyecto \"#{inicio['proyecto']}\" (#{ya.size} muebles 3D ya estaban)"
-      faltan = @m3d.reject { |id, _| ya.include?(id) }
-      faltan.each_with_index do |(id, c), k|
-        Sketchup.status_text = "Enviando 3D a ISgestión: #{k + 1} de #{faltan.size} (#{c['nombre']})"
-        puts "  3D #{k + 1} de #{faltan.size}: #{c['nombre']}" if (k % 10).zero? || k + 1 == faltan.size
+      # El guid de la definición no cambia al editar un mueble: se arma la malla, se calcula su firma y se envía solo
+      # si falta o no coincide con la de ISgestión (forma, medidas, materiales o texturas distintas)
+      revisar = firmas ? @m3d.to_a : @m3d.reject { |id, _| ya.include?(id) }.to_a
+      cambiadas = 0
+      revisar.each_with_index do |(id, c), k|
+        Sketchup.status_text = "Revisando 3D para ISgestión: #{k + 1} de #{revisar.size} (#{c['nombre']})"
         acc = {}
         mallas(c['def'].entities, c['escala'], nil, acc, [0])
         datos = { 'v' => 2, 'u' => 'cm', 'mats' => acc.values.reject { |g| g['p'].empty? } }
         next if datos['mats'].empty?
-        post(h, { t: codigo_conexion, accion: 'malla', modelo_id: inicio['modelo_id'], m3d: id, nombre: c['nombre'], datos: datos })
+        firma = Digest::MD5.hexdigest(JSON.generate(datos))
+        next if firmas && firmas[id] == firma
+        cambio = ya.include?(id)
+        puts "  3D #{cambio ? 'cambiado' : 'nuevo'}: #{c['nombre']}"
+        post(h, { t: codigo_conexion, accion: 'malla', modelo_id: inicio['modelo_id'], m3d: id, nombre: c['nombre'], datos: datos, firma: firma })
         nuevas += 1
+        cambiadas += 1 if cambio
       end
+      @cambiadas = cambiadas
       # Construcción completa (muros, pisos, cielos, piezas), en partes comprimidas
       partes = []
       @esc_acc = {}
@@ -469,7 +480,7 @@ module EnviarAISgestion
     Sketchup.status_text = ''
     comps = lista.count { |i| i['tipo'] == 'componente' }
     UI.messagebox("Listo: el modelo quedó en ISgestión, proyecto \"#{inicio['proyecto']}\".\n" \
-                  "#{lista.size} tipos de objetos (#{comps} de muebles); 3D: #{@m3d.size} muebles, #{nuevas} enviados ahora.\n" \
+                  "#{lista.size} tipos de objetos (#{comps} de muebles); 3D: #{@m3d.size} muebles, #{nuevas} enviados ahora#{@cambiadas.to_i.positive? ? " (#{@cambiadas} porque cambiaron o no tenían firma)" : ''}.\n" \
                   "Construcción (muros, pisos, cielos): #{@partes.to_a.sum { |x| x['tris'] }} triángulos en #{@partes.to_a.size} partes.\n\n" \
                   'En ISgestión abre (o actualiza) Proyectos → Modelo SketchUp.')
   rescue StandardError => err
