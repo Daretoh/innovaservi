@@ -1,8 +1,8 @@
 // Datos de la empresa activa. El RUT y el estado los administra la plataforma.
-import { el } from '../../../core/ui/dom.js?v=394625e';
-import { boton } from '../../../core/ui/tabla.js?v=394625e';
-import { avisar } from '../../../core/ui/aviso.js?v=394625e';
-import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=394625e';
+import { el } from '../../../core/ui/dom.js?v=2c59c76';
+import { boton } from '../../../core/ui/tabla.js?v=2c59c76';
+import { avisar } from '../../../core/ui/aviso.js?v=2c59c76';
+import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=2c59c76';
 
 const TIPOS_LOGO = ['image/png', 'image/jpeg'];
 

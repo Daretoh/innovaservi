@@ -2,12 +2,12 @@
 // pantalla abierta, texto, urgencia y pantallazos con Ctrl+V, arrastrar o adjuntar) y "Mis sugerencias" con el estado y
 // la respuesta de cada punto. Cada pantallazo se puede rayar antes de enviar (marcarFoto, el editor de Reportes). Los pantallazos se achican en el navegador y van a R2 privado
 // (<empresa>/soporte/<usuario>/…); la sugerencia se crea con sug_enviar. Solo el equipo las ve todas (Consola).
-import { el } from './ui/dom.js?v=394625e';
-import { icono } from './ui/iconos.js?v=394625e';
-import { avisar } from './ui/aviso.js?v=394625e';
-import { almacen, urlsFirmadas } from './adjuntos.js?v=394625e';
-import { comprimirFoto, esImagen } from './imagenes.js?v=394625e';
-import { marcarFoto } from './ui/marcar.js?v=394625e';
+import { el } from './ui/dom.js?v=2c59c76';
+import { icono } from './ui/iconos.js?v=2c59c76';
+import { avisar } from './ui/aviso.js?v=2c59c76';
+import { almacen, urlsFirmadas } from './adjuntos.js?v=2c59c76';
+import { comprimirFoto, esImagen } from './imagenes.js?v=2c59c76';
+import { marcarFoto } from './ui/marcar.js?v=2c59c76';
 
 export const TIPOS = [['mejora', 'Mejora'], ['error', 'Algo no funciona'], ['idea', 'Idea nueva']];
 export const ESTADOS = { recibida: ['Recibida', 'chip-na'], revision: ['En revisión', 'chip-prox'], planificada: ['Planificada', 'chip-prox'], hecha: ['Hecha', 'chip-ok'], descartada: ['Descartada', 'chip-venc'] };

@@ -1,11 +1,11 @@
 // Seguimiento de práctica (RRHH 005): horas hechas / exigidas desde el Registro de horas de la empresa (tablet o a
 // mano, sin descontar colación), lo que falta, ritmo de las últimas 4 semanas y fecha estimada de término con ese
 // ritmo y con el horario planificado desde una fecha. Pestaña "Práctica" de la ficha (vínculo de tipo práctica).
-import { el } from '../../core/ui/dom.js?v=394625e';
-import { boton } from '../../core/ui/tabla.js?v=394625e';
-import { abrirFormulario } from '../../core/ui/modal.js?v=394625e';
-import { avisar } from '../../core/ui/aviso.js?v=394625e';
-import { horas, fechaLarga, nombreDia, sumarDias } from '../../core/ui/formato.js?v=394625e';
+import { el } from '../../core/ui/dom.js?v=2c59c76';
+import { boton } from '../../core/ui/tabla.js?v=2c59c76';
+import { abrirFormulario } from '../../core/ui/modal.js?v=2c59c76';
+import { avisar } from '../../core/ui/aviso.js?v=2c59c76';
+import { horas, fechaLarga, nombreDia, sumarDias } from '../../core/ui/formato.js?v=2c59c76';
 
 const DIAS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 const hh = (min) => { const m = Math.round(min || 0); return `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`; };   // 1335 → "22:15"
@@ -105,12 +105,16 @@ export async function panelPractica(ctx, v) {
         'Si viene más horas, la fecha se adelanta sola.') : null),
     el('div', { class: 'ficha' },
       el('h2', {}, 'Ritmo y horario'),
-      el('div', { class: 'pra-dias' }, DIAS.map((d, i) => el('div', {},
-        el('strong', {}, d.slice(0, 3)),
-        el('span', {}, pr.ritmo_dia[i] ? hh(pr.ritmo_dia[i]) : '—'),
-        pr.plan_desde ? el('span', { class: 'texto-suave texto-chico' }, plan[i + 1] ? `${plan[i + 1][0]}–${plan[i + 1][1]}` : 'no viene') : null))),
-      el('p', { class: 'texto-suave texto-chico' }, 'Arriba: horas promedio de cada día en las últimas 4 semanas.',
-        pr.plan_desde ? ` Abajo: horario desde el ${fechaLarga(pr.plan_desde)} (${hh(pr.plan_semana)} h por semana).` : ''),
+      el('div', { class: 'pra-dias' }, DIAS.map((d, i) => {
+        const ahora = (pr.horario_dia ?? {})[i + 1];
+        return el('div', {},
+          el('strong', {}, d.slice(0, 3)),
+          el('span', {}, pr.ritmo_dia[i] ? hh(pr.ritmo_dia[i]) : '—'),
+          el('span', { class: 'texto-suave texto-chico' }, ahora ? `${ahora[0]}–${ahora[1]}` : 'no viene'),
+          pr.plan_desde ? el('span', { class: 'pra-plan texto-chico' }, plan[i + 1] ? `${plan[i + 1][0]}–${plan[i + 1][1]}` : 'no viene') : null);
+      })),
+      el('p', { class: 'texto-suave texto-chico' }, 'Arriba: horas promedio de cada día y el horario que viene (entrada y salida más frecuentes) en las últimas 4 semanas.',
+        pr.plan_desde ? ` En color: horario desde el ${fechaLarga(pr.plan_desde)} (${hh(pr.plan_semana)} h por semana).` : ''),
       pr.notas ? el('p', {}, pr.notas) : null),
     el('div', { class: 'ficha' },
       el('h2', {}, 'Horas por semana'),

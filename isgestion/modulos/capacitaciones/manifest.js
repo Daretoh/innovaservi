@@ -12,14 +12,14 @@ export default {
   rubros: ['todos'],
   acciones: ['ver', 'crear', 'editar', 'eliminar', 'aprobar', 'exportar'],   // aprobar: evaluar (aprobado / no aprobado)
   menu: [
-    { id: 'capacitaciones.biblioteca', label: 'Capacitaciones', pestana: 'Biblioteca', icono: 'birrete', vista: () => import('./vistas/biblioteca.js?v=394625e') },
-    { id: 'capacitaciones.contenido', label: 'Contenido', oculto: true, padre: 'capacitaciones.biblioteca', compartida: true, vista: () => import('./vistas/contenido.js?v=394625e') },
-    { id: 'capacitaciones.sesiones', label: 'Sesiones de capacitación', pestana: 'Sesiones', icono: 'calendario', vista: () => import('./vistas/sesiones.js?v=394625e') },
-    { id: 'capacitaciones.sesion', label: 'Sesión', oculto: true, padre: 'capacitaciones.sesiones', vista: () => import('./vistas/sesion.js?v=394625e') },
-    { id: 'capacitaciones.rutas', label: 'Rutas de capacitación', pestana: 'Rutas', icono: 'lista', vista: () => import('./vistas/rutas.js?v=394625e') },
-    { id: 'capacitaciones.ruta', label: 'Ruta', oculto: true, padre: 'capacitaciones.rutas', vista: () => import('./vistas/ruta.js?v=394625e') },
-    { id: 'capacitaciones.avance', label: 'Avance por trabajador', pestana: 'Avance', icono: 'users', vista: () => import('./vistas/avance.js?v=394625e') },
-    { id: 'capacitaciones.areas', label: 'Áreas', pestana: 'Áreas', icono: 'ajustes', ajustes: true, vista: () => import('./vistas/areas.js?v=394625e') },
+    { id: 'capacitaciones.biblioteca', label: 'Capacitaciones', pestana: 'Biblioteca', icono: 'birrete', vista: () => import('./vistas/biblioteca.js?v=2c59c76') },
+    { id: 'capacitaciones.contenido', label: 'Contenido', oculto: true, padre: 'capacitaciones.biblioteca', compartida: true, vista: () => import('./vistas/contenido.js?v=2c59c76') },
+    { id: 'capacitaciones.sesiones', label: 'Sesiones de capacitación', pestana: 'Sesiones', icono: 'calendario', vista: () => import('./vistas/sesiones.js?v=2c59c76') },
+    { id: 'capacitaciones.sesion', label: 'Sesión', oculto: true, padre: 'capacitaciones.sesiones', vista: () => import('./vistas/sesion.js?v=2c59c76') },
+    { id: 'capacitaciones.rutas', label: 'Rutas de capacitación', pestana: 'Rutas', icono: 'lista', vista: () => import('./vistas/rutas.js?v=2c59c76') },
+    { id: 'capacitaciones.ruta', label: 'Ruta', oculto: true, padre: 'capacitaciones.rutas', vista: () => import('./vistas/ruta.js?v=2c59c76') },
+    { id: 'capacitaciones.avance', label: 'Avance por trabajador', pestana: 'Avance', icono: 'users', vista: () => import('./vistas/avance.js?v=2c59c76') },
+    { id: 'capacitaciones.areas', label: 'Áreas', pestana: 'Áreas', icono: 'ajustes', ajustes: true, vista: () => import('./vistas/areas.js?v=2c59c76') },
   ],
   migraciones: ['db/001_capacitaciones.sql'],
 };

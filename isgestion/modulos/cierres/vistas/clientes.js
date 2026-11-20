@@ -1,11 +1,11 @@
 // Clientes con cierre mensual: sus órdenes del taller se cobran en un cierre por mes (no una a una).
 // Los precios salen de la lista de precios del cliente (Cotizaciones → Listas de precios).
-import { el } from '../../../core/ui/dom.js?v=394625e';
-import { icono } from '../../../core/ui/iconos.js?v=394625e';
-import { boton } from '../../../core/ui/tabla.js?v=394625e';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=394625e';
-import { avisar } from '../../../core/ui/aviso.js?v=394625e';
-import { nombreTercero } from '../datos.js?v=394625e';
+import { el } from '../../../core/ui/dom.js?v=2c59c76';
+import { icono } from '../../../core/ui/iconos.js?v=2c59c76';
+import { boton } from '../../../core/ui/tabla.js?v=2c59c76';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=2c59c76';
+import { avisar } from '../../../core/ui/aviso.js?v=2c59c76';
+import { nombreTercero } from '../datos.js?v=2c59c76';
 
 export default async function vista(ctx) {
   const e = ctx.empresa.id;

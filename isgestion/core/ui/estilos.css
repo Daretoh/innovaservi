@@ -1519,6 +1519,7 @@ body.hz-arrastrando, body.hz-arrastrando * { cursor: ns-resize !important; user-
 .pra-dias { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; margin-bottom: 8px; }
 .pra-dias > div { display: grid; gap: 2px; text-align: center; padding: 8px 4px; border: 1px solid var(--borde); border-radius: var(--radio); background: var(--fondo-sutil); font-variant-numeric: tabular-nums; }
 .pra-dias strong { font-size: .74rem; color: var(--texto-suave); text-transform: uppercase; }
+.pra-dias .pra-plan { margin-top: 4px; padding-top: 4px; border-top: 1px dashed var(--borde); color: var(--empresa); font-weight: 600; }
 @media (max-width: 560px) { .pra-dias { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 
 /* Nómina para clientes (rrhh.nomina) */
