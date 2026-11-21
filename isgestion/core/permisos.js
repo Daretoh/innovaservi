@@ -1,6 +1,6 @@
 // Permisos del usuario en todas sus empresas, desde mis_permisos().
 // La interfaz solo oculta; quien protege es la RLS en la base.
-import { db } from './api.js?v=34a2438';
+import { db } from './api.js?v=731bc1d';
 
 let porEmpresa = new Map();   // empresa_id -> Set('modulo:accion')
 

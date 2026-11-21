@@ -1,11 +1,11 @@
 // PDF de la cotización (diseño del OS de IS Performance, con la marca de cada empresa):
 // encabezado con N° y fecha, cajas Cliente y Contacto, tabla por grupo con secciones y subtotal,
 // información de pago, totales, firma, nota de validez, contactos y sello de ISgestión.
-import { cargarJsPdf, cargarLogo, rgb, sellar } from '../../core/pdf.js?v=34a2438';
-import { nombreEmpresa } from '../../core/empresas.js?v=34a2438';
-import { sumarDias } from '../../core/ui/formato.js?v=34a2438';
-import { totales, totalLinea, numeroTexto, verPatente, cargarConfig, IVA } from './datos.js?v=34a2438';
-import { soloCosto } from './costos-orden.js?v=34a2438';
+import { cargarJsPdf, cargarLogo, rgb, sellar } from '../../core/pdf.js?v=731bc1d';
+import { nombreEmpresa } from '../../core/empresas.js?v=731bc1d';
+import { sumarDias } from '../../core/ui/formato.js?v=731bc1d';
+import { totales, totalLinea, numeroTexto, verPatente, cargarConfig, IVA } from './datos.js?v=731bc1d';
+import { soloCosto } from './costos-orden.js?v=731bc1d';
 
 const M = 15;
 const TEXTO = [28, 35, 48];

@@ -1,11 +1,12 @@
 // Detalle de un día (como en InnovaGestión al tocar un día de la semana): faenas planificadas, trabajadores
 // agrupados por faena con sus horarios, horas y monto (real y contable editable si la empresa usa ajuste contable),
 // y totales del día. Ruta: #/remu.dia?f=<aaaa-mm-dd>
-import { el } from '../../../core/ui/dom.js?v=34a2438';
-import { icono } from '../../../core/ui/iconos.js?v=34a2438';
-import { dinero, horas, lunesDe, sumarDias, nombreDia, fechaCorta, fechaLarga, numSemana, hhmm, hoyISO } from '../../../core/ui/formato.js?v=34a2438';
-import { cargarBase, calcularRango, nombreCompleto } from '../datos.js?v=34a2438';
-import { campoContable } from './detalle.js?v=34a2438';
+import { coloresFaenas } from '../../../core/ui/faena-color.js?v=731bc1d';
+import { el } from '../../../core/ui/dom.js?v=731bc1d';
+import { icono } from '../../../core/ui/iconos.js?v=731bc1d';
+import { dinero, horas, lunesDe, sumarDias, nombreDia, fechaCorta, fechaLarga, numSemana, hhmm, hoyISO } from '../../../core/ui/formato.js?v=731bc1d';
+import { cargarBase, calcularRango, nombreCompleto } from '../datos.js?v=731bc1d';
+import { campoContable } from './detalle.js?v=731bc1d';
 
 export default async function vista(ctx) {
   const fecha = /^\d{4}-\d{2}-\d{2}$/.test(ctx.params.f ?? '') ? ctx.params.f : hoyISO();
@@ -27,6 +28,7 @@ export default async function vista(ctx) {
   const filas = R.filas.map((f) => ({ f, d: f.detalle.find((x) => x.fecha === fecha) })).filter((x) => x.d && (x.d.min > 0 || x.d.vueltas));
   const grupos = new Map();
   for (const x of filas) { const k = x.d.faenas[0]?.faena || 'Sin faena asignada'; if (!grupos.has(k)) grupos.set(k, []); grupos.get(k).push(x); }
+  const colorFaena = coloresFaenas(filas.flatMap((x) => x.d.registros.map((r) => r.faena)));
   const orden = [...grupos.keys()].sort((a, b) => (a === 'Sin faena asignada') - (b === 'Sin faena asignada') || a.localeCompare(b));
 
   const persona = ({ f, d }) => {
@@ -45,8 +47,8 @@ export default async function vista(ctx) {
           d.registros.map((r) => `${hhmm(r.entrada)}–${hhmm(r.salida)}${r.vueltas ? ` · ${r.vueltas} vuelta${r.vueltas > 1 ? 's' : ''}` : ''}`).join(', '), d.min ? ` · ${horas(d.min)}` : '',
           d.vueltasFlota.map((x) => el('span', { class: 'texto-suave' }, ` · ${x.cantidad} vuelta${x.cantidad > 1 ? 's' : ''} en ${x.vehiculo}`)),
           fijo ? el('span', { class: 'texto-suave' }, ` · fijo: ${horas(d.pagoMin)} pagables`) : null,
-          varias ? el('span', { class: 'texto-suave' }, ` · también: ${d.faenas.slice(1).map((x) => x.faena || 'sin faena').join(' · ')}`) : null)),
-      el('div', { class: 'remu-dia-monto' }, contable ? el('span', { class: 'texto-suave texto-chico' }, `real ${dinero(d.real)}`) : null, monto));
+          varias ? el('span', { class: 'texto-suave' }, ' · también: ', d.faenas.slice(1).map((x) => el('span', { class: 'faena-tag', style: `--faena:${colorFaena(x.faena)}` }, ` ${x.faena || 'sin faena'} `))) : null)),
+      el('div', { class: 'remu-dia-monto' }, contable ? el('span', { class: 'texto-suave texto-chico' }, `calculado ${dinero(d.real)}`) : null, monto));
   };
 
   const totMin = filas.reduce((a, x) => a + x.d.min, 0);
@@ -74,8 +76,8 @@ export default async function vista(ctx) {
       el('h2', {}, `Trabajadores por faena (${filas.length})`),
       filas.length ? orden.map((k) => {
         const g = grupos.get(k);
-        return el('div', { class: 'remu-dia-grupo' },
-          el('div', { class: 'remu-dia-cabeza' }, el('strong', {}, k), el('span', { class: 'chip chip-na' }, `${g.length} pers.`),
+        return el('div', { class: 'remu-dia-grupo', style: `--faena:${colorFaena(k)}` },
+          el('div', { class: 'remu-dia-cabeza' }, el('strong', { class: 'faena-tag' }, k), el('span', { class: 'chip chip-na' }, `${g.length} pers.`),
             el('span', { class: 'texto-suave texto-chico' }, `${horas(g.reduce((a, x) => a + x.d.min, 0))} · ${dinero(g.reduce((a, x) => a + (contable ? x.d.contable : x.d.real), 0))}`)),
           g.map(persona));
       }) : el('p', { class: 'texto-suave' }, 'Nadie registró horas este día.')),

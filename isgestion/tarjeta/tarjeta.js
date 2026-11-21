@@ -1,10 +1,10 @@
 // Tarjeta de cliente (Marketing 007): sellos, premio, hora pedida y visitas del cliente, sin app ni cuenta.
 // URL: /tarjeta/?t=<token de la tarjeta>. Lee la Edge Function pública mkt-tarjeta. El cliente la guarda en la pantalla
 // de inicio del celular (se explica cómo según el teléfono).
-import { el } from '../core/ui/dom.js?v=34a2438';
-import { icono } from '../core/ui/iconos.js?v=34a2438';
-import { nombreDia, fechaCorta, fechaLarga, dinero } from '../core/ui/formato.js?v=34a2438';
-import { comoGuardar } from './guardar.js?v=34a2438';
+import { el } from '../core/ui/dom.js?v=731bc1d';
+import { icono } from '../core/ui/iconos.js?v=731bc1d';
+import { nombreDia, fechaCorta, fechaLarga, dinero } from '../core/ui/formato.js?v=731bc1d';
+import { comoGuardar } from './guardar.js?v=731bc1d';
 
 const raiz = document.getElementById('app');
 const token = new URLSearchParams(location.search).get('t') ?? '';
@@ -14,6 +14,16 @@ async function urlFuncion(nombre) {
   const org = Object.values(organizaciones).find((o) => o.dominios.includes(location.hostname));
   if (!org) throw new Error('Este sitio no está configurado.');
   return `${org.supabaseUrl}/functions/v1/${nombre}`;
+}
+// Sesión de ISgestión en este navegador (mismo sitio: Supabase la guarda como sb-<proyecto>-auth-token)
+function haySesion() {
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (/^sb-.+-auth-token$/.test(k) && JSON.parse(localStorage.getItem(k) || 'null')?.access_token) return true;
+    }
+  } catch { /* sin almacenamiento */ }
+  return false;
 }
 const verPatente = (p) => (p && p.length === 6 ? `${p.slice(0, 4)}-${p.slice(4)}` : p ?? '');
 
@@ -33,6 +43,30 @@ function iconoInicio(empresa) {
   } catch { /* sin ícono propio */ }
 }
 
+// Google Wallet (Marketing 015): en Android y PC; en iPhone se guarda en la pantalla de inicio (Apple Wallet es aparte)
+function botonWallet() {
+  if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) return null;
+  const NS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24'); svg.setAttribute('width', '22'); svg.setAttribute('height', '22'); svg.setAttribute('aria-hidden', 'true');
+  for (const [d, c] of [['M3 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v1H3z', '#4285f4'], ['M3 9h16v2H3z', '#34a853'], ['M3 12h16v2H3z', '#fbbc04'], ['M3 15h18v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z', '#ea4335']]) {
+    const p = document.createElementNS(NS, 'path'); p.setAttribute('d', d); p.setAttribute('fill', c); svg.append(p);
+  }
+  const estado = el('p', { class: 'texto-chico tj-wallet-estado', 'aria-live': 'polite' });
+  const b = el('button', { type: 'button', class: 'tj-wallet' }, svg, el('span', {}, 'Agregar a Google Wallet'));
+  b.addEventListener('click', async () => {
+    b.disabled = true; estado.textContent = 'Preparando tu tarjeta…';
+    try {
+      const r = await fetch(await urlFuncion('mkt-wallet'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ t: token }) });
+      const d = await r.json();
+      if (!r.ok || !d.url) throw new Error(d.error ?? 'No se pudo preparar la tarjeta.');
+      estado.textContent = '';
+      location.href = d.url;
+    } catch (e) { estado.textContent = e.message; } finally { b.disabled = false; }
+  });
+  return el('div', { class: 'tj-wallet-caja' }, b, estado);
+}
+
 async function iniciar() {
   let t;
   try {
@@ -43,50 +77,104 @@ async function iniciar() {
     raiz.replaceChildren(el('main', { class: 'pantalla-centro' }, el('h1', {}, 'Tarjeta de cliente'), el('p', { class: 'texto-error' }, e.message)));
     return;
   }
+  // QR escaneado en el taller (&q=1): si en este navegador hay sesión de ISgestión, se abre la ficha del cliente en la
+  // app (Taller → Tarjeta de cliente) en su empresa. El cliente, sin sesión, sigue viendo su tarjeta.
+  if (new URLSearchParams(location.search).get('q') === '1' && haySesion()) {
+    try { localStorage.setItem('isg.empresa', t.empresa_id); } catch { /* sin almacenamiento */ }
+    location.replace(`../#/taller.tarjeta?t=${encodeURIComponent(token)}`);
+    return;
+  }
   if (t.color) document.documentElement.style.setProperty('--empresa', t.color);
-  if (t.tema) document.documentElement.dataset.tema = t.tema;   // Performance (taller): grafito y naranja, sin el azul de Innova
+  if (t.tema) document.documentElement.dataset.tema = t.tema;
+  // Diseño oscuro tipo tarjeta de socio (pedido de Enzo 2026-11-20: más negro que naranja, más trabajado)
+  document.documentElement.classList.add('tj-oscuro');
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#0a0a0b');
   document.title = `Mi tarjeta · ${t.empresa}`;
   iconoInicio(t.empresa);
 
   const llena = t.sellos >= t.meta;
-  const enTarjeta = llena ? t.meta : t.sellos;
-  const circulos = Array.from({ length: t.meta }, (_, i) => {
+  const enTarjeta = Math.min(t.sellos, t.meta);
+  const faltan = Math.max(0, t.meta - t.sellos);
+  const regla = t.modo === 'monto' ? `1 sello por cada ${dinero(t.monto_por_sello)} en servicios` : '1 sello por cada visita';
+  const numero = String(t.numero ?? '').replace(/(.{4})(?=.)/g, '$1 ');
+  const mesAnio = new Date(`${t.desde}T12:00:00`).toLocaleDateString('es-CL', { month: 'short', year: 'numeric' }).replace('.', '');
+
+  // 1 · Tarjeta de socio (proporción de tarjeta física)
+  const logo = el('img', { class: 'tj-logo', alt: '', src: `${await urlFuncion('mkt-wallet')}?logo=${t.empresa_id}` });
+  logo.addEventListener('error', () => logo.replaceWith(el('span', { class: 'tj-logo tj-logo-letras' }, t.empresa.split(/\s+/).map((x) => x[0]).join('').slice(0, 2).toUpperCase())));
+  const club = el('section', { class: `tj-club${llena ? ' completa' : ''}`, 'aria-label': 'Tarjeta de cliente' },
+    el('div', { class: 'tj-club-cab' }, logo,
+      el('div', { class: 'tj-club-marca' }, el('strong', {}, t.empresa), el('span', {}, 'Tarjeta de cliente')),
+      el('span', { class: 'tj-club-cuenta' }, el('strong', {}, String(enTarjeta)), el('small', {}, `/${t.meta}`))),
+    el('div', { class: 'tj-club-pie' },
+      el('div', {}, el('small', {}, 'Socio'), el('strong', { class: 'tj-club-nombre' }, t.nombre)),
+      el('div', { class: 'tj-club-der' }, el('small', {}, `Desde ${mesAnio}`), el('span', { class: 'tj-club-num' }, numero))));
+
+  // 2 · Sellos
+  const sellos = Array.from({ length: t.meta }, (_, i) => {
     const ultimo = i === t.meta - 1;
     const puesto = i < enTarjeta;
-    return el('span', { class: `tj-sello${puesto ? ' puesto' : ''}${ultimo ? ' premio' : ''}${!llena && i === enTarjeta ? ' siguiente' : ''}`, 'aria-hidden': 'true' },
-      puesto ? icono('check', { tam: 22 }) : ultimo ? el('small', {}, 'Premio') : el('small', {}, String(i + 1)));
+    return el('span', { class: `tj-sello${puesto ? ' puesto' : ''}${ultimo ? ' premio' : ''}${!llena && i === enTarjeta ? ' siguiente' : ''}`, style: `--i:${i}`, 'aria-hidden': 'true' },
+      puesto ? icono('check', { tam: 22 }) : ultimo ? estrella() : el('small', {}, String(i + 1)));
   });
-  const regla = t.modo === 'monto' ? `1 sello por cada ${dinero(t.monto_por_sello)} en servicios` : '1 sello por cada visita';
-  const faltan = t.meta - t.sellos;
-
-  const tarjeta = el('section', { class: `tj-tarjeta${llena ? ' completa' : ''}` },
-    el('div', { class: 'tj-cab' },
-      el('div', {}, el('span', { class: 'fp-sobre' }, 'Tarjeta de cliente'), el('h1', {}, t.empresa)),
-      el('div', { class: 'tj-quien' }, el('strong', {}, t.nombre), el('small', {}, `Cliente desde ${fechaLarga(t.desde)}`))),
-    el('div', { class: 'tj-sellos', style: `grid-template-columns:repeat(${t.meta <= 6 ? t.meta : t.meta <= 10 ? Math.ceil(t.meta / 2) : 5}, 1fr)`, role: 'img', 'aria-label': `${Math.min(t.sellos, t.meta)} de ${t.meta} sellos` }, circulos),
+  const cols = t.meta <= 5 ? t.meta : t.meta <= 8 ? 4 : 5;
+  const panelSellos = el('section', { class: 'tj-panel tj-progreso' },
+    el('div', { class: 'tj-panel-cab' },
+      el('h2', {}, 'Tus sellos'),
+      el('span', { class: 'tj-cifra' }, el('strong', {}, String(enTarjeta)), ` de ${t.meta}`)),
+    el('div', { class: 'tj-sellos', style: `grid-template-columns:repeat(${cols}, 1fr)`, role: 'img', 'aria-label': `${enTarjeta} de ${t.meta} sellos` }, sellos),
     el('div', { class: 'tj-barra', 'aria-hidden': 'true' }, el('span', { style: `width:${Math.min(100, (t.sellos / t.meta) * 100)}%` })),
-    el('p', { class: 'tj-estado' }, llena
-      ? [el('strong', {}, '¡Tienes tu premio!'), ` ${t.premio}. Muestra esta tarjeta en el mesón.`]
-      : [el('strong', {}, `${t.sellos} de ${t.meta} sellos.`), ` Te ${faltan === 1 ? 'falta 1 sello' : `faltan ${faltan} sellos`} para: ${t.premio}.`]),
-    el('p', { class: 'tj-regla' }, regla, t.vence_meses ? ` · los sellos duran ${t.vence_meses} meses` : '', t.canjes ? ` · premios canjeados: ${t.canjes}` : ''));
+    el('p', { class: 'tj-estado' }, llena ? [el('strong', {}, '¡Completaste tu tarjeta!'), ' Muéstrala en el mesón y canjea tu premio.']
+      : faltan === 1 ? [el('strong', {}, '¡Te falta solo 1 sello!'), ' Tu próxima visita trae el premio.']
+        : [el('strong', {}, `Te faltan ${faltan} sellos`), ' para tu premio.']));
 
-  const pedida = t.pedida ? el('section', { class: 'fp-seccion' },
-    el('h2', {}, t.pedida.estado === 'confirmada' ? 'Tu próxima hora' : 'Hora pedida, por confirmar'),
-    el('p', {}, el('strong', {}, `${nombreDia(t.pedida.fecha)} ${fechaCorta(t.pedida.fecha)} a las ${t.pedida.hora}`))) : null;
-  const agendar = t.agenda ? el('a', { class: 'boton boton-primario fp-enviar', href: `../agenda/?t=${t.agenda}` }, icono('calendario', { tam: 18 }), 'Agendar una hora') : null;
+  // 3 · Premio
+  const premio = el('section', { class: `tj-panel tj-premio${llena ? ' listo' : ''}` },
+    el('span', { class: 'tj-premio-icono', 'aria-hidden': 'true' }, estrella()),
+    el('div', {}, el('small', {}, llena ? 'Premio disponible' : 'Tu premio'), el('strong', {}, t.premio),
+      el('span', { class: 'tj-premio-regla' }, regla, t.vence_meses ? ` · los sellos duran ${t.vence_meses} meses` : '', t.canjes ? ` · canjeados: ${t.canjes}` : '')));
 
-  const visitas = el('section', { class: 'fp-seccion' },
+  // 4 · Hora pedida y acciones
+  const pedida = t.pedida ? el('section', { class: 'tj-panel tj-hora' },
+    el('span', { class: 'tj-hora-icono', 'aria-hidden': 'true' }, icono('calendario', { tam: 20 })),
+    el('div', {}, el('small', {}, t.pedida.estado === 'confirmada' ? 'Tu próxima hora' : 'Hora pedida, por confirmar'),
+      el('strong', {}, `${nombreDia(t.pedida.fecha)} ${fechaCorta(t.pedida.fecha)} · ${t.pedida.hora}`))) : null;
+  const acciones = el('div', { class: 'tj-acciones' },
+    t.agenda ? el('a', { class: 'tj-boton tj-boton-principal', href: `../agenda/?t=${t.agenda}` }, icono('calendario', { tam: 18 }), 'Agendar una hora') : null,
+    botonWallet());
+
+  // 5 · Visitas
+  const visitas = el('section', { class: 'tj-panel' },
     el('h2', {}, 'Tus visitas'),
-    t.visitas.length ? el('ul', { class: 'tj-visitas' }, t.visitas.map((v) => el('li', {},
-      el('div', {}, el('strong', {}, fechaLarga(v.fecha)), el('span', { class: 'texto-suave texto-chico' }, [v.vehiculo, verPatente(v.patente)].filter(Boolean).join(' · '))),
-      el('div', { class: 'tj-visita-der' }, el('span', { class: 'texto-chico' }, v.servicios || ''),
-        v.sellos ? el('span', { class: 'tj-mas' }, `+${v.sellos} ${v.sellos === 1 ? 'sello' : 'sellos'}`) : null))))
-      : el('p', { class: 'texto-suave' }, 'Aún no hay visitas. Tus sellos aparecen aquí cada vez que te atendemos.'));
+    t.visitas.length ? el('ol', { class: 'tj-visitas' }, t.visitas.map((v) => el('li', {},
+      el('span', { class: 'tj-visita-punto', 'aria-hidden': 'true' }),
+      el('div', { class: 'tj-visita-txt' }, el('strong', {}, fechaLarga(v.fecha)),
+        el('span', {}, [v.servicios, [v.vehiculo, verPatente(v.patente)].filter(Boolean).join(' · ')].filter(Boolean).join(' — '))),
+      v.sellos ? el('span', { class: 'tj-mas' }, `+${v.sellos}`) : null)))
+      : el('p', { class: 'tj-vacio' }, 'Aún no hay visitas. Cada vez que te atendamos, tu sello aparece aquí.'));
+
+  // Quien escanea en el taller sin sesión en este navegador (por ejemplo, la cámara del iPhone abre Safari)
+  const taller = new URLSearchParams(location.search).get('q') === '1'
+    ? el('a', { class: 'tj-taller', href: `../#/taller.tarjeta?t=${encodeURIComponent(token)}`, onclick: () => { try { localStorage.setItem('isg.empresa', t.empresa_id); } catch { /* nada */ } } },
+      '¿Eres del taller? Abrir en ISgestión') : null;
 
   raiz.replaceChildren(el('div', { class: 'ficha-publica tj' },
-    tarjeta, pedida, agendar, visitas, comoGuardar(),
-    t.condiciones ? el('details', { class: 'fp-seccion' }, el('summary', {}, 'Condiciones'), el('p', { class: 'texto-chico' }, t.condiciones)) : null,
-    el('p', { class: 'texto-chico texto-suave tj-pie' }, 'Esta tarjeta es personal: no compartas el enlace.')));
+    club, panelSellos, premio, pedida, acciones, visitas, comoGuardar(),
+    t.condiciones ? el('details', { class: 'tj-panel' }, el('summary', {}, 'Condiciones'), el('p', { class: 'texto-chico' }, t.condiciones)) : null,
+    taller,
+    el('p', { class: 'tj-pie' }, 'Esta tarjeta es personal: no compartas el enlace.')));
+}
+
+// Estrella del premio (SVG propio)
+function estrella() {
+  const NS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24'); svg.setAttribute('width', '22'); svg.setAttribute('height', '22'); svg.setAttribute('aria-hidden', 'true');
+  const p = document.createElementNS(NS, 'path');
+  p.setAttribute('d', 'M12 2.8l2.75 5.57 6.15.9-4.45 4.33 1.05 6.12L12 16.83l-5.5 2.9 1.05-6.13L3.1 9.27l6.15-.9z');
+  p.setAttribute('fill', 'currentColor');
+  svg.append(p);
+  return svg;
 }
 
 iniciar();

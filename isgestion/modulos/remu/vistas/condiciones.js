@@ -1,11 +1,11 @@
 // Condiciones de pago de cada trabajador en la empresa: modo, cargo/trato, jornada o turno, sueldo y vuelta.
-import { el } from '../../../core/ui/dom.js?v=34a2438';
-import { icono } from '../../../core/ui/iconos.js?v=34a2438';
-import { listado } from '../../../core/ui/tabla.js?v=34a2438';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=34a2438';
-import { avisar } from '../../../core/ui/aviso.js?v=34a2438';
-import { dinero, hhmm, fechaLarga } from '../../../core/ui/formato.js?v=34a2438';
-import { cargarBase, nombreCompleto } from '../datos.js?v=34a2438';
+import { el } from '../../../core/ui/dom.js?v=731bc1d';
+import { icono } from '../../../core/ui/iconos.js?v=731bc1d';
+import { listado } from '../../../core/ui/tabla.js?v=731bc1d';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=731bc1d';
+import { avisar } from '../../../core/ui/aviso.js?v=731bc1d';
+import { dinero, hhmm, fechaLarga } from '../../../core/ui/formato.js?v=731bc1d';
+import { cargarBase, nombreCompleto } from '../datos.js?v=731bc1d';
 
 const MODOS = [['hora', 'Por hora (spot): se pagan todas las horas'], ['fijo', 'Fijo: solo extras, findes y feriados'],
   ['externo', 'Factura sus servicios (externo): no se paga por planilla']];
@@ -28,7 +28,7 @@ export default async function vista(ctx) {
     { titulo: 'Cargo', valor: (v) => { const c = v.condicion?.cargo_id ? base.cargos.get(v.condicion.cargo_id) : null; return c ? c.nombre : '—'; } },
     { titulo: 'Valor hora', valor: (v) => { const c = v.condicion?.cargo_id ? base.cargos.get(v.condicion.cargo_id) : null; const vh = c?.trato ? Math.round(c.trato / ht) : (v.condicion?.valor_hora || base.config.valor_hora); return vh ? dinero(vh) : el('span', { class: 'pct-mal' }, 'Sin valor'); } },
     { titulo: 'Jornada', valor: (v) => { const c = v.condicion; if (modoDe(v) !== 'fijo') return '—'; if (c?.art22) return el('span', { class: 'chip chip-na', title: 'Sin jornada: sin asistencia ni horas extra' }, 'Artículo 22');
-      return c?.jornada_ini ? el('span', {}, `Turno ${hhmm(c.jornada_ini)}–${hhmm(c.jornada_fin)}${c.salida_viernes ? ` (vie ${hhmm(c.salida_viernes)})` : ''}`, c.asistencia_desde ? el('div', { class: 'texto-suave texto-chico' }, `Asistencia automática desde ${fechaLarga(c.asistencia_desde)}`) : null)
+      return c?.jornada_ini ? el('span', {}, `Turno ${hhmm(c.jornada_ini)}–${hhmm(c.jornada_fin)}${c.salida_viernes ? ` (vie ${hhmm(c.salida_viernes)})` : ''}${c.turno_desde ? ` desde ${fechaLarga(c.turno_desde)}${c.jornada_horas ? ` (antes ${Number(c.jornada_horas)} h/día)` : ''}` : ''}`, c.asistencia_desde ? el('div', { class: 'texto-suave texto-chico' }, `Asistencia automática desde ${fechaLarga(c.asistencia_desde)}`) : null)
         : c?.jornada_horas ? `${Number(c.jornada_horas)} h/día` : el('span', { class: 'texto-suave' }, 'Sin jornada'); } },
     { titulo: 'Sueldo base', valor: (v) => (v.condicion?.sueldo_base ? `${dinero(v.condicion.sueldo_base)}${v.condicion.sueldo_desde ? ` desde ${fechaLarga(v.condicion.sueldo_desde)}` : ''}` : '—') },
     { titulo: 'Vuelta', valor: (v) => (v.condicion?.valor_vuelta != null ? dinero(v.condicion.valor_vuelta) : el('span', { class: 'texto-suave' }, 'General')) },
@@ -58,6 +58,7 @@ function editar(ctx, v, base) {
       { id: 'jornada_ini', etiqueta: 'Turno: inicio', tipo: 'time', valor: c.jornada_ini ? hhmm(c.jornada_ini) : '' },
       { id: 'jornada_fin', etiqueta: 'Turno: fin', tipo: 'time', valor: c.jornada_fin ? hhmm(c.jornada_fin) : '' },
       { id: 'salida_viernes', etiqueta: 'Turno: salida del viernes (si es distinta)', tipo: 'time', valor: c.salida_viernes ? hhmm(c.salida_viernes) : '' },
+      { id: 'turno_desde', etiqueta: 'Turno desde (vacío = siempre)', tipo: 'date', valor: c.turno_desde ?? '', ayuda: 'Antes de esta fecha se calcula con la jornada en horas por día (si la tiene).' },
       { id: 'jornada_horas', etiqueta: 'O jornada en horas por día', tipo: 'number', valor: c.jornada_horas != null ? String(c.jornada_horas) : '' },
       { id: 'art22', etiqueta: 'Artículo 22 (sin jornada)', opciones: [['no', 'No'], ['si', 'Sí: sin asistencia ni horas extra, solo su sueldo']], valor: c.art22 ? 'si' : 'no' },
       { id: 'asistencia_desde', etiqueta: 'Asistencia automática según turno desde (vacío = desde hoy)', tipo: 'date', valor: c.asistencia_desde ?? '', ayuda: 'Solo con la asistencia automática de fijos activa (Administración → Módulos → Asistencia). Si no, marca en la tablet.' },
@@ -71,13 +72,14 @@ function editar(ctx, v, base) {
       const num = (x) => (x === '' || x == null ? null : Number(x));
       if (!!f.jornada_ini !== !!f.jornada_fin) throw new Error('Indica inicio y fin del turno, o deja ambos vacíos.');
       if (f.jornada_ini && f.jornada_fin <= f.jornada_ini) throw new Error('El fin del turno debe ser después del inicio.');
-      if (f.jornada_ini && f.jornada_horas) throw new Error('Usa turno o jornada en horas, no ambos.');
+      if (f.jornada_ini && f.jornada_horas && !f.turno_desde) throw new Error('Usa turno o jornada en horas, no ambos (o indica desde cuándo rige el turno: antes se usa la jornada en horas).');
+      if (f.turno_desde && !f.jornada_ini) throw new Error('"Turno desde" necesita el turno (inicio y fin).');
       if (f.salida_viernes && !f.jornada_ini) throw new Error('La salida del viernes necesita el turno (inicio y fin).');
       const datos = {
         modo: f.modo, cargo_id: f.cargo_id || null, valor_hora: num(f.valor_hora),
         jornada_ini: f.jornada_ini || null, jornada_fin: f.jornada_fin || null, jornada_horas: num(f.jornada_horas),
         sueldo_base: num(f.sueldo_base), sueldo_desde: f.sueldo_desde || null, valor_vuelta: num(f.valor_vuelta), fijo_desde: f.fijo_desde || null,
-        salida_viernes: f.salida_viernes || null, art22: f.art22 === 'si', asistencia_desde: f.asistencia_desde || null, socio: f.socio === 'si',
+        salida_viernes: f.salida_viernes || null, turno_desde: f.jornada_ini ? (f.turno_desde || null) : null, art22: f.art22 === 'si', asistencia_desde: f.asistencia_desde || null, socio: f.socio === 'si',
         tercero_id: f.modo === 'externo' ? (f.tercero_id || null) : null,
       };
       const r = v.condicion

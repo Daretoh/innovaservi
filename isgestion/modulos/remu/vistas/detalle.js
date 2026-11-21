@@ -3,14 +3,15 @@
 // tiene varias y la suma cuadra) y se guardan al salir del campo; extras y descuentos se editan en la lista.
 // El ajuste contable (real vs. contable) es una opción de la empresa (Parámetros); apagada, se paga lo calculado.
 // Rutas: #/remu.detalle?p=<persona_id>&s=<lunes> (semanal) · #/remu.detalle?p=<persona_id>&m=<aaaa-mm> (mensual)
-import { el } from '../../../core/ui/dom.js?v=34a2438';
-import { icono } from '../../../core/ui/iconos.js?v=34a2438';
-import { boton } from '../../../core/ui/tabla.js?v=34a2438';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=34a2438';
-import { avisar } from '../../../core/ui/aviso.js?v=34a2438';
-import { dinero, horas, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, hhmm, hoyISO, rangoMes, moverMes, nombreMes } from '../../../core/ui/formato.js?v=34a2438';
-import { cargarBase, calcularRango, pagoMensual, nombreCompleto } from '../datos.js?v=34a2438';
-import { sueldoDelMes, semanaEnMes } from '../calculo.js?v=34a2438';
+import { el } from '../../../core/ui/dom.js?v=731bc1d';
+import { icono } from '../../../core/ui/iconos.js?v=731bc1d';
+import { boton } from '../../../core/ui/tabla.js?v=731bc1d';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=731bc1d';
+import { avisar } from '../../../core/ui/aviso.js?v=731bc1d';
+import { dinero, horas, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, hhmm, hoyISO, rangoMes, moverMes, nombreMes } from '../../../core/ui/formato.js?v=731bc1d';
+import { cargarBase, calcularRango, pagoMensual, nombreCompleto } from '../datos.js?v=731bc1d';
+import { sueldoDelMes, semanaEnMes } from '../calculo.js?v=731bc1d';
+import { coloresFaenas } from '../../../core/ui/faena-color.js?v=731bc1d';
 
 export default async function vista(ctx) {
   const personaId = ctx.params.p;
@@ -47,23 +48,39 @@ export default async function vista(ctx) {
   const c = v.condicion;
   // Fijo: lo pagable son las horas fuera del turno (o fines de semana y feriados), es decir, horas extra
   const esFijo = f?.modo === 'fijo';
-  const pagables = esFijo ? 'Horas extra' : 'Pagables';
+  const pagables = esFijo ? 'Fuera de su turno' : 'Pagables';
   const cargo = c?.cargo_id ? base.cargos.get(c.cargo_id) : null;
+  // Quién corrigió a mano cada monto (para mostrarlo junto al naranjo)
+  const nombresQuien = new Map();
+  if (contable && (f?.detalle ?? []).some((d) => d.ajuste || d.faenas.some((x) => x.ajuste))) {
+    const { data } = await ctx.api.rpc('nombres_usuarios', { p_empresa: ctx.empresa.id });
+    for (const x of data ?? []) nombresQuien.set(x.user_id, x.nombre);
+  }
+  const quien = (aj) => (aj?.created_by ? nombresQuien.get(aj.created_by) ?? null : null);
+  const sinTurno = esFijo && !c?.jornada_ini && !c?.art22;
+  // Periodo (o parte) anterior a "turno desde": esos días se calculan con la jornada en horas
+  const antesDelTurno = esFijo && !c?.art22 && c?.jornada_ini && c?.turno_desde && (mes ? rm.desde : lunes) < c.turno_desde;
 
   const irSemana = (n) => { location.hash = mes ? ctx.ruta('remu.detalle', { p: personaId, m: moverMes(mes, n) }) : ctx.ruta('remu.detalle', { p: personaId, s: sumarDias(lunes, n * 7) }); };
   const condTexto = [
     (c?.modo ?? (v.tipo_vinculo === 'contrato' ? 'fijo' : 'hora')) === 'fijo'
-      ? `Fijo${c?.jornada_ini ? ` · turno ${hhmm(c.jornada_ini)}–${hhmm(c.jornada_fin)}` : c?.jornada_horas ? ` · ${Number(c.jornada_horas)} h/día` : ' · sin jornada (todas sus horas se pagan)'}`
+      ? `Fijo${c?.sueldo_base ? ` · sueldo ${dinero(c.sueldo_base)}` : ''}${c?.jornada_ini ? ` · turno ${hhmm(c.jornada_ini)}–${hhmm(c.jornada_fin)}${c.salida_viernes ? ` (viernes hasta ${hhmm(c.salida_viernes)})` : ''}${c.turno_desde ? ` desde el ${fechaCorta(c.turno_desde)}${c.jornada_horas ? ` (antes ${Number(c.jornada_horas)} h/día)` : ''}` : ''}` : c?.jornada_horas ? ` · ${Number(c.jornada_horas)} h/día, sin turno` : ' · sin jornada (todas sus horas se pagan)'}`
       : 'Por hora (spot)',
     cargo ? cargo.nombre : null,
     f ? `valor hora ${dinero(f.vh)}` : null,
     c?.valor_vuelta != null ? `vuelta ${dinero(c.valor_vuelta)}` : null,
   ].filter(Boolean).join(' · ');
+  // Qué se paga, en palabras (fijos)
+  const queSePaga = !esFijo || !f ? null
+    : c?.art22 ? 'Artículo 22: solo el sueldo. No se pagan horas aparte, tampoco fines de semana ni feriados.'
+      : `El sueldo ya incluye su turno. Se paga aparte, a ${dinero(f.vh)} la hora: lo que trabaje fuera del turno, los fines de semana y los feriados.`;
 
   // Semana: los 7 días. Mes: solo los días con registros o feriados.
   const fechas = mes ? (() => { const { desde, hasta } = rangoMes(mes); const out = []; for (let x = desde; x <= hasta; x = sumarDias(x, 1)) if (porFecha.has(x) || R.feriados.has(x)) out.push(x); return out; })()
     : [0, 1, 2, 3, 4, 5, 6].map((i) => sumarDias(lunes, i));
-  const campoAjuste = (d, faena, real, ajuste) => campoContable(ctx, personaId, d.fecha, faena, real, ajuste);
+  // Un color por faena (en el orden en que aparecen) para distinguirlas
+  const colorFaena = coloresFaenas((f?.detalle ?? []).flatMap((d) => d.registros.map((r) => r.faena)));
+  const campoAjuste = (d, faena, real, ajuste) => campoContable(ctx, personaId, d.fecha, faena, real, ajuste, quien(ajuste));
   const plural = (n) => (n > 1 ? 's' : '');
   const filasDias = fechas.map((fecha) => {
     const d = porFecha.get(fecha);
@@ -71,23 +88,25 @@ export default async function vista(ctx) {
     const varias = d && d.faenas.length > 1;
     const editarFaenas = contable && puedeEditar && varias && d.porFaena;
     const registros = d ? (varias
-      ? d.faenas.map((x) => el('div', { class: 'remu-faena' },
-        el('div', {}, el('strong', { class: 'texto-chico' }, x.faena || 'Sin faena'),
+      ? d.faenas.map((x) => el('div', { class: 'remu-faena', style: `--faena:${colorFaena(x.faena)}` },
+        el('div', {}, el('strong', { class: 'texto-chico faena-tag' }, x.faena || 'Sin faena'),
           el('div', { class: 'texto-suave texto-chico' }, d.registros.filter((r) => String(r.faena ?? '').trim() === x.faena)
             .map((r) => `${hhmm(r.entrada)}–${hhmm(r.salida)}${r.vueltas ? ` · ${r.vueltas} vuelta${plural(r.vueltas)}` : ''}`).join(', '), ` · ${horas(x.min)}`)),
-        editarFaenas ? el('div', { class: 'remu-faena-monto' }, el('span', { class: 'texto-suave texto-chico' }, `real ${dinero(x.real)}`), campoAjuste(d, x.faena, x.real, x.ajuste))
+        editarFaenas ? el('div', { class: 'remu-faena-monto' }, el('span', { class: 'texto-suave texto-chico' }, `calculado ${dinero(x.real)}`), campoAjuste(d, x.faena, x.real, x.ajuste))
           : el('span', { class: 'texto-chico' }, dinero(contable ? x.contable : x.real))))
-      : [...d.registros.map((r) => el('div', { class: 'texto-chico' }, `${hhmm(r.entrada)}–${hhmm(r.salida)}${r.faena ? ` · ${r.faena}` : ''}${r.vueltas ? ` · ${r.vueltas} vuelta${plural(r.vueltas)}` : ''}`)),
+      : [...d.registros.map((r) => el('div', { class: 'texto-chico' }, r.faena ? el('div', { class: 'faena-tag', style: `--faena:${colorFaena(r.faena)}` }, r.faena) : null,
+          `${hhmm(r.entrada)}–${hhmm(r.salida)}${r.vueltas ? ` · ${r.vueltas} vuelta${plural(r.vueltas)}` : ''}`)),
         ...d.vueltasFlota.map((x) => el('div', { class: 'texto-chico texto-suave' }, `${x.cantidad} vuelta${plural(x.cantidad)} en ${x.vehiculo} (chofer)`))])
       : el('span', { class: 'texto-suave' }, '—');
     let celdaContable = '';
     if (d && contable) {
       celdaContable = puedeEditar && !editarFaenas ? campoAjuste(d, '', d.real, d.ajuste)
         : el('div', {}, el('strong', { class: d.contable !== d.real ? 'pct-medio' : '' }, dinero(d.contable)),
-          editarFaenas ? el('div', { class: 'texto-suave texto-chico' }, 'suma de las faenas') : d.ajuste?.obs ? el('div', { class: 'texto-suave texto-chico' }, d.ajuste.obs) : null);
+          editarFaenas ? el('div', { class: 'texto-suave texto-chico' }, 'suma de las faenas')
+            : d.ajuste ? el('div', { class: 'texto-suave texto-chico' }, [`Corregido a mano${quien(d.ajuste) ? ` por ${quien(d.ajuste)}` : ''}`, d.ajuste.obs].filter(Boolean).join(': ')) : null);
       if (d.ajDiaManda && varias) celdaContable = el('div', {}, celdaContable, el('div', { class: 'texto-chico pct-medio' }, 'ajuste del día (no cuadra con las faenas)'));
     }
-    return el('tr', { class: d?.especial ? 'fila-especial' : '' },
+    return el('tr', { class: [d?.especial ? 'fila-especial' : '', d ? 'fila-dia' : 'fila-sin'].filter(Boolean).join(' ') },
       el('td', {}, el('strong', {}, `${nombreDia(fecha)} ${fechaCorta(fecha)}`),
         feriado ? el('div', { class: 'texto-suave texto-chico' }, feriado) : null),
       el('td', {}, registros),
@@ -139,12 +158,13 @@ export default async function vista(ctx) {
     el('header', { class: 'listado-cabecera' },
       el('div', {},
         el('h1', {}, nombreCompleto(v.personas)),
-        el('p', { class: 'texto-suave' }, condTexto)),
+        el('p', { class: 'texto-suave' }, condTexto),
+        queSePaga ? el('p', { class: 'texto-chico' }, queSePaga) : null),
       el('div', { class: 'listado-acciones' },
         !mes && f ? boton('Liquidación PDF', { icono: 'descargar', title: 'Descargar la liquidación de la semana en PDF', onclick: async (ev) => {
           const b = ev.currentTarget; b.classList.add('cargando');
           try {
-            const { liquidacionPdf } = await import('../liquidacion.js?v=34a2438');
+            const { liquidacionPdf } = await import('../liquidacion.js?v=731bc1d');
             await liquidacionPdf(ctx, { f, persona: v.personas, cargo: cargo?.nombre ?? v.cargo, lunes, domingo, contable });
           } catch (e) { avisar(`No se pudo generar el PDF: ${e.message}`, 'error'); } finally { b.classList.remove('cargando'); }
         } }) : null,
@@ -154,17 +174,29 @@ export default async function vista(ctx) {
       el('strong', {}, mes ? nombreMes(mes) : `Semana ${numSemana(lunes)} · ${fechaCorta(lunes)} – ${fechaCorta(domingo)}`),
       el('button', { type: 'button', class: 'boton-icono', 'aria-label': mes ? 'Mes siguiente' : 'Semana siguiente', onclick: () => irSemana(1) }, icono('derecha'))),
     !c ? el('p', { class: 'aviso-bandeja' }, icono('alerta', { tam: 16 }), 'Esta persona no tiene condiciones de pago: se usan los valores generales. Configúralas en "Condiciones de pago".') : null,
-    el('div', { class: 'tabla-contenedor' },
+    sinTurno && c ? el('p', { class: 'aviso-bandeja' }, icono('alerta', { tam: 16 }),
+      c.jornada_horas
+        ? `No tiene turno (hora de entrada y salida), solo ${Number(c.jornada_horas)} h por día. En días hábiles solo se paga lo que pase de ${Number(c.jornada_horas)} h en el día: las horas de la tarde o la noche después de su horario no se cuentan como extra. `
+        : 'No tiene turno ni jornada: en días hábiles se pagan todas sus horas. ',
+      ctx.hayVista?.('remu.condiciones') === false ? null : el('a', { href: ctx.ruta('remu.condiciones') }, 'Poner su turno en Condiciones de pago')) : null,
+    antesDelTurno ? el('p', { class: 'aviso-bandeja' }, icono('alerta', { tam: 16 }),
+      `Su turno rige desde el ${fechaCorta(c.turno_desde)}. Los días anteriores se calculan como antes${c.jornada_horas ? ` (${Number(c.jornada_horas)} h por día: solo se paga lo que pase de ${Number(c.jornada_horas)} h en el día)` : ' (todas sus horas se pagan)'}.`) : null,
+    el('div', { class: 'tabla-contenedor tabla-tarjetas' },
       el('table', { class: 'tabla' },
-        el('thead', {}, el('tr', {}, (contable ? ['Día', 'Registros', 'Horas', pagables, 'Real', 'Contable'] : ['Día', 'Registros', 'Horas', pagables, 'Monto']).map((t, i) => el('th', { class: i >= 4 ? 'num' : '' }, t)))),
+        el('thead', {}, el('tr', {}, (contable ? ['Día', 'Registros', 'Horas', pagables, 'Calculado', 'A pagar'] : ['Día', 'Registros', 'Horas', pagables, 'A pagar']).map((t, i) => el('th', { class: i >= 4 ? 'num' : '' }, t)))),
         el('tbody', {}, filasDias.length ? filasDias : el('tr', {}, el('td', { colspan: contable ? 6 : 5, class: 'tabla-vacia' }, 'Sin registros.'))))),
+    el('p', { class: 'texto-suave texto-chico' },
+      esFijo ? 'Horas: todo lo registrado en el día. Fuera de su turno: la parte que se paga aparte del sueldo (en fin de semana o feriado, todo el día). ' : 'Horas: todo lo registrado en el día. Pagables: las que se pagan. ',
+      contable ? 'Calculado: lo que da el sistema con sus condiciones. A pagar: lo que se paga; si alguien lo cambió a mano queda destacado con el color de la empresa y dice quién lo cambió y por qué.' : ''),
     el('div', { class: 'ficha resumen-pago' },
       el('h2', {}, 'Resumen'),
       el('dl', { class: 'datos-lista' },
         ...(mes ? [el('dt', {}, 'Sueldo base'), el('dd', {}, f?.sueldo ? dinero(f.sueldo) : '—'),
           ...(P ? [el('dt', {}, 'Bono por autos')] : []), ...(P ? [el('dd', {}, !P.valorAuto ? 'Sin bono' : f?.sinBono ? 'Excluido este mes' : (f?.dias || f?.condicion?.art22) ? `${P.autos.length} × ${dinero(P.valorAuto)} = ${dinero(f.bonoAutos)}` : 'No trabajó este mes',
             P.valorAuto && ctx.puede('remu', 'editar') ? el('button', { type: 'button', class: 'boton-enlace', onclick: () => alternarBono(ctx, personaId, mes, f?.sinBono) }, f?.sinBono ? ' Incluir' : ' Excluir') : null)] : [])] : []),
-        el('dt', {}, `${esFijo ? 'Horas extra' : 'Base'}${contable ? ' (contable)' : ''}`), el('dd', {}, esFijo && f?.pagoMin ? `${horas(f.pagoMin)} × ${dinero(f.vh)} = ` : '', dinero(f?.baseContable ?? 0), contable && f?.hayAjuste ? el('span', { class: 'texto-suave' }, ` · real ${dinero(f.base)}`) : null),
+        el('dt', {}, esFijo ? 'Horas fuera de su turno' : 'Base'), el('dd', {}, contable && f?.hayAjuste && f.baseContable !== f.base
+          ? [el('strong', {}, dinero(f.baseContable)), el('span', { class: 'texto-suave' }, ` · corregido a mano (calculado: ${esFijo && f.pagoMin ? `${horas(f.pagoMin)} × ${dinero(f.vh)} = ` : ''}${dinero(f.base)})`)]
+          : [esFijo && f?.pagoMin ? `${horas(f.pagoMin)} × ${dinero(f.vh)} = ` : '', dinero(f?.baseContable ?? 0)]),
         el('dt', {}, esFijo ? 'Otros extras' : 'Extras'), el('dd', {}, dinero(f?.extra ?? 0)),
         el('dt', {}, 'Vueltas'), el('dd', {}, f?.vueltas ? `${f.vueltas} × ${dinero(f.vv)} = ${dinero(f.montoVueltas)}` : '—', vueltasDia.length ? el('div', { class: 'remu-vueltas' }, vueltasDia) : null),
         el('dt', {}, 'Descuentos'), el('dd', {}, f?.descuento ? `−${dinero(f.descuento)}` : dinero(0)),
@@ -179,13 +211,15 @@ export default async function vista(ctx) {
 }
 
 // Campo de monto contable + motivo de un día (faena '') o de una faena; guarda al salir del campo
-export function campoContable(ctx, personaId, fecha, faena, real, ajuste) {
+export function campoContable(ctx, personaId, fecha, faena, real, ajuste, quien = null) {
   const monto = el('input', { type: 'number', min: '0', step: '1', class: `campo campo-num${ajuste ? ' campo-ajustado' : ''}`, value: String(ajuste ? ajuste.monto : real),
-    'aria-label': `Monto contable ${faena || 'del día'} ${fechaCorta(fecha)}`, title: `Real ${dinero(real)}` });
-  const obs = el('input', { type: 'text', class: 'campo campo-motivo', value: ajuste?.obs ?? '', placeholder: 'motivo (si ajustas)', 'aria-label': `Motivo ${faena || 'del día'} ${fechaCorta(fecha)}` });
+    'aria-label': `Monto a pagar ${faena || 'del día'} ${fechaCorta(fecha)}`, title: `Calculado ${dinero(real)}` });
+  const obs = el('input', { type: 'text', class: 'campo campo-motivo', value: ajuste?.obs ?? '', placeholder: ajuste ? 'motivo de la corrección' : 'motivo (si lo cambias)', 'aria-label': `Motivo ${faena || 'del día'} ${fechaCorta(fecha)}` });
   const guardar = () => guardarAjuste(ctx, personaId, fecha, faena, real, ajuste, monto.value, obs.value);
   monto.addEventListener('change', guardar); obs.addEventListener('change', guardar);
-  return el('div', { class: 'remu-ajuste' }, monto, obs);
+  const nota = ajuste && ajuste.monto !== real
+    ? el('div', { class: 'texto-chico pct-medio remu-ajuste-nota' }, `Corregido a mano${quien ? ` por ${quien}` : ''}${ajuste.obs ? '' : ', sin motivo'}`) : null;
+  return el('div', { class: 'remu-ajuste' }, monto, obs, nota);
 }
 
 // Guarda el monto contable de un día (faena '') o de una faena: igual al real y sin motivo = se quita el ajuste

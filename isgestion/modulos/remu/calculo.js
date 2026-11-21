@@ -4,10 +4,11 @@
 // - Modo 'hora' (spot): se pagan todas las horas.
 // - Modo 'fijo': fines de semana y feriados se pagan completos; los demás días solo lo que queda (Artículo 22: nada)
 //   fuera del turno (inicio–fin) o lo que excede la jornada en horas. Sin jornada ni turno, todo cuenta.
+//   Con turno_desde, el turno rige desde esa fecha y antes se usa la jornada en horas.
 // - Registros que se pisan el mismo día se unen (el tiempo repetido cuenta una vez).
 // - Vueltas × valor (propio o general). Extras y descuentos por semana.
 // - Ajuste contable por día: reemplaza el monto de ese día (se muestra real y contable).
-import { aMin, diaSemana, sumarDias } from '../../core/ui/formato.js?v=34a2438';
+import { aMin, diaSemana, sumarDias } from '../../core/ui/formato.js?v=731bc1d';
 
 // Intervalos [inicio, fin] en minutos del día; si la salida es <= entrada, termina al día siguiente.
 function intervalo(h) {
@@ -110,7 +111,9 @@ export function calcular(D) {
       const fijoHoy = modo === 'fijo' && !(c.fijo_desde && fecha < c.fijo_desde);
       if (fijoHoy && !especial) {
         // El viernes el turno puede terminar antes (salida_viernes): lo que pasa de esa hora es extra
-        const v = ventana && diaSemana(fecha) === 4 && c.salida_viernes ? [ventana[0], aMin(c.salida_viernes)] : ventana;
+        // Turno desde (Remuneraciones 011): antes de esa fecha rige la jornada en horas
+        const vHoy = ventana && !(c.turno_desde && fecha < c.turno_desde) ? ventana : null;
+        const v = vHoy && diaSemana(fecha) === 4 && c.salida_viernes ? [vHoy[0], aMin(c.salida_viernes)] : vHoy;
         pmin = v ? min - minEnVentana(unidos, v[0], v[1]) : Math.max(0, min - jornadaMin);
       }
       // Artículo 22 (sin jornada): no se pagan horas extra, ni en fines de semana o feriados; solo el sueldo

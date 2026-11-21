@@ -1377,6 +1377,7 @@ a.ind-barra-fila:hover .ind-nombre { color: var(--empresa); }
 /* ---------- Remuneraciones: detalle con montos contables editables ---------- */
 .remu-ajuste { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
 .remu-ajuste .campo-num { width: 110px; }
+.remu-ajuste-nota { max-width: 190px; text-align: right; white-space: normal; line-height: 1.3; }
 .campo-motivo { width: 170px; font-size: .8rem; padding: 4px 8px; }
 .campo-ajustado { border-color: var(--empresa); background: color-mix(in srgb, var(--empresa) 8%, var(--superficie)); font-weight: 600; }
 .remu-faena { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; padding: 4px 0 4px 8px; margin: 2px 0; border-left: 3px solid var(--borde); }
@@ -2985,3 +2986,58 @@ html[data-modo="oscuro"] { --turno-dia-fondo: #4a3a12; --turno-dia-texto: #fde68
 .nov-inicio h2 { display: flex; align-items: center; gap: 8px; }
 .nov-inicio h2 svg { color: var(--empresa); }
 .nov-ver-todas { display: inline-block; margin-top: 6px; color: var(--empresa); }
+
+/* ---- Taller → Tarjeta de cliente (abre el QR, Marketing 016): negro con acento de la empresa */
+.tal-tj-tarjeta { display: grid; gap: 16px; padding: 20px; border-radius: 14px; color: #fff; max-width: 640px; margin-bottom: 16px;
+  background: radial-gradient(120% 90% at 100% 0%, color-mix(in srgb, var(--empresa) 22%, transparent) 0%, transparent 55%), linear-gradient(160deg, #1c1d20 0%, #0b0b0c 75%);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, .28); border: 1px solid rgba(255, 255, 255, .06); }
+.tal-tj-cab { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.tal-tj-cab > div { display: grid; gap: 2px; }
+.tal-tj-nombre { font-size: 1.25rem; }
+.tal-tj-cab .texto-chico { opacity: .7; }
+.tal-tj-cuenta { justify-items: end; text-align: right; }
+.tal-tj-cuenta strong { font-size: 1.6rem; color: var(--empresa); line-height: 1; }
+.tal-tj-sellos { display: grid; grid-template-columns: repeat(auto-fill, minmax(44px, 1fr)); gap: 10px; }
+.tal-tj-sello { aspect-ratio: 1; display: grid; place-items: center; border-radius: 50%; border: 2px dashed rgba(255, 255, 255, .25); font-size: .8rem; font-weight: 700; color: rgba(255, 255, 255, .55); }
+.tal-tj-sello.puesto { border: 0; background: var(--empresa); color: #fff; box-shadow: 0 3px 10px color-mix(in srgb, var(--empresa) 40%, transparent); }
+.tal-tj-sello.premio:not(.puesto) { border: 2px solid var(--empresa); color: var(--empresa); }
+.tal-tj-estado { margin: 0; }
+.tal-tj-tarjeta.completa .tal-tj-estado strong { color: var(--empresa); }
+.tal-tj-tarjeta .boton-secundario { background: rgba(255, 255, 255, .08); color: #fff; border-color: rgba(255, 255, 255, .18); }
+
+/* ---------- Tablas en tarjetas (Remuneraciones): cada fila con fondo, borde y sombra propios, para no perder la fila ----------
+   Uso: el contenedor lleva "tabla-contenedor tabla-tarjetas". tr.fila-sin = fila sin datos (gris, más baja). */
+.tabla-tarjetas { background: transparent; border: 0; box-shadow: none; }
+.tabla-tarjetas:hover { box-shadow: none; transform: none; }
+.tabla-tarjetas > .tabla { border-collapse: separate; border-spacing: 0 8px; margin-top: -8px; }
+.tabla-tarjetas > .tabla thead th { background: transparent; border: 0; padding-bottom: 2px; }
+.tabla-tarjetas > .tabla tbody td, .tabla-tarjetas > .tabla tfoot td { background: var(--superficie); border-top: 1px solid var(--borde); border-bottom: 1px solid var(--borde); vertical-align: middle; }
+.tabla-tarjetas > .tabla tbody td:first-child, .tabla-tarjetas > .tabla tfoot td:first-child { border-left: 4px solid var(--borde); border-radius: var(--radio) 0 0 var(--radio); box-shadow: none; }
+.tabla-tarjetas > .tabla tbody td:last-child, .tabla-tarjetas > .tabla tfoot td:last-child { border-right: 1px solid var(--borde); border-radius: 0 var(--radio) var(--radio) 0; }
+.tabla-tarjetas > .tabla tbody tr:not(.fila-sin) td { box-shadow: var(--sombra-suave); clip-path: inset(-20px 0 -20px 0); }
+.tabla-tarjetas > .tabla tbody tr:not(.fila-sin) td:first-child { clip-path: inset(-20px 0 -20px -20px); }
+.tabla-tarjetas > .tabla tbody tr:not(.fila-sin) td:last-child { clip-path: inset(-20px -20px -20px 0); }
+.tabla-tarjetas > .tabla tbody tr:hover { background: transparent; }
+.tabla-tarjetas > .tabla tbody tr:not(.fila-sin):hover td { background: color-mix(in srgb, var(--empresa) 5%, var(--superficie)); border-color: color-mix(in srgb, var(--empresa) 45%, var(--borde)); }
+.tabla-tarjetas > .tabla tbody tr:not(.fila-sin):is(:hover, :focus-within) td:first-child { border-left-color: var(--empresa); }
+.tabla-tarjetas > .tabla tbody tr.fila-fijo td { background: color-mix(in srgb, var(--fijo) 9%, var(--superficie)); }
+.tabla-tarjetas > .tabla tbody tr.fila-fijo td:first-child { border-left-color: var(--fijo); }
+.tabla-tarjetas > .tabla tbody tr.fila-especial td { background: color-mix(in srgb, var(--prox-fondo) 70%, var(--superficie)); }
+.tabla-tarjetas > .tabla tbody tr.fila-especial td:first-child { border-left-color: var(--prox); }
+.tabla-tarjetas > .tabla tbody tr.fila-sin td { background: var(--fondo-sutil); color: var(--texto-suave); padding-top: 6px; padding-bottom: 6px; }
+.tabla-tarjetas > .tabla tbody tr.fila-sin td strong { font-weight: 500; }
+.tabla-tarjetas > .tabla tbody td.tabla-vacia { border-left-width: 1px; }
+.tabla-tarjetas > .tabla tfoot td { background: var(--fondo-sutil); }
+.tabla-tarjetas .remu-faena { background: var(--fondo-sutil); border-radius: var(--radio-control); padding: 6px 8px 6px 10px; margin: 4px 0; }
+
+/* Paleta para distinguir faenas (core/ui/faena-color.js) */
+:root { --faena-1: #2f6fb3; --faena-2: #c2410c; --faena-3: #15803d; --faena-4: #7e3fb0; --faena-5: #0f8a8a; --faena-6: #b5367a; --faena-7: #8a6d00; --faena-8: #4b5563; }
+html[data-modo="oscuro"] { --faena-1: #6ea8e8; --faena-2: #f0894f; --faena-3: #5cc489; --faena-4: #b48ae0; --faena-5: #4fc4c4; --faena-6: #e87ab5; --faena-7: #d4b24a; --faena-8: #a3acb9; }
+.faena-tag { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; color: var(--texto); }
+.faena-tag::before { content: ""; width: 10px; height: 10px; border-radius: 3px; background: var(--faena, var(--borde)); flex: none; }
+.tabla-tarjetas .remu-faena { border-left-color: var(--faena, var(--borde)); background: color-mix(in srgb, var(--faena, var(--borde)) 7%, var(--superficie)); }
+/* Detalle del día: cada faena como bloque con su color y cada persona como tarjeta */
+.remu-dia-grupo { border-left: 4px solid var(--faena, var(--borde)); background: color-mix(in srgb, var(--faena, var(--borde)) 6%, var(--superficie)); border-radius: var(--radio); padding: 8px 12px; margin: 10px 0; }
+.remu-dia-grupo .remu-dia-fila { background: var(--superficie); border: 1px solid var(--borde); border-radius: var(--radio-control); box-shadow: var(--sombra-suave); padding: 10px 12px; margin: 8px 0; transition: border-color var(--transicion); }
+.remu-dia-grupo .remu-dia-fila:is(:hover, :focus-within) { border-color: var(--faena, var(--empresa)); }
+.tabla-tarjetas .remu-faena, .tabla-tarjetas .faena-tag { white-space: normal; }
