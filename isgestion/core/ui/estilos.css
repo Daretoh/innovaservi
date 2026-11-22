@@ -3041,3 +3041,147 @@ html[data-modo="oscuro"] { --faena-1: #6ea8e8; --faena-2: #f0894f; --faena-3: #5
 .remu-dia-grupo .remu-dia-fila { background: var(--superficie); border: 1px solid var(--borde); border-radius: var(--radio-control); box-shadow: var(--sombra-suave); padding: 10px 12px; margin: 8px 0; transition: border-color var(--transicion); }
 .remu-dia-grupo .remu-dia-fila:is(:hover, :focus-within) { border-color: var(--faena, var(--empresa)); }
 .tabla-tarjetas .remu-faena, .tabla-tarjetas .faena-tag { white-space: normal; }
+
+/* ---------- Remuneraciones: Pago semanal y detalle de una persona como InnovaGestión (2026-11-21) ---------- */
+.remu-semanal h1 .rs-cnt { margin-left: 10px; font-size: .85rem; font-weight: 600; color: var(--texto-suave); }
+.rs-semana { display: flex; align-items: center; gap: 8px; padding: 9px 10px; background: var(--superficie); border: 1px solid var(--borde); border-radius: var(--radio); }
+.rs-semana-txt { flex: 1; display: grid; text-align: center; }
+.rs-semana-txt span { font-size: .8rem; font-weight: 800; color: var(--fijo); }
+.rs-semana-txt strong { font-size: .9rem; font-weight: 600; }
+.rs-total { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; border-radius: var(--radio); background: color-mix(in srgb, var(--empresa) 10%, var(--superficie)); color: var(--empresa); }
+.rs-total span { font-weight: 600; font-size: .85rem; }
+.rs-total strong { font-size: 1.3rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.rs-dias { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; }
+.rs-dia { flex: 1 0 92px; min-width: 92px; display: grid; justify-items: center; gap: 2px; padding: 10px; text-align: center; text-decoration: none; color: var(--texto);
+  background: var(--superficie); border: 1px solid var(--borde); border-radius: var(--radio); box-shadow: var(--sombra-suave); transition: border-color var(--transicion), transform var(--transicion); }
+.rs-dia:hover { border-color: color-mix(in srgb, var(--empresa) 50%, var(--borde)); transform: translateY(-1px); }
+.rs-dia.hoy { border-color: var(--empresa); }
+.rs-dia.cero { opacity: .55; }
+.rs-dia.feriado { background: var(--prox-fondo); }
+.rs-dia-nom { font-size: .65rem; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: var(--texto-suave); display: grid; }
+.rs-dia-nom b { font-size: 1rem; color: var(--texto); letter-spacing: 0; }
+.rs-dia-monto { margin-top: 4px; font-size: .85rem; font-weight: 800; color: var(--empresa); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.rs-dia-h { font-size: .65rem; color: var(--texto-suave); }
+.rs-scroll { overflow-x: auto; border: 1px solid var(--borde); border-radius: var(--radio); background: var(--superficie); }
+.rs-tabla { width: 100%; border-collapse: collapse; white-space: nowrap; font-size: .85rem; font-variant-numeric: tabular-nums; }
+.rs-tabla th { background: var(--fondo-sutil); color: var(--texto-suave); font-size: .68rem; font-weight: 800; text-transform: uppercase; letter-spacing: .03em; padding: 9px 11px; text-align: right; border-bottom: 1px solid var(--borde); }
+.rs-tabla td { padding: 9px 11px; border-bottom: 1px solid var(--borde); text-align: right; vertical-align: top; }
+.rs-tabla tbody tr { cursor: pointer; }
+.rs-tabla tbody tr:last-child td { border-bottom: none; }
+.rs-tabla tbody tr:hover td { background: var(--hover); }
+.rs-tabla th:first-child, .rs-tabla td.rs-nombre { text-align: left; position: sticky; left: 0; z-index: 1; }
+.rs-tabla th:first-child { background: var(--fondo-sutil); z-index: 2; }
+.rs-tabla td.rs-nombre { background: var(--superficie); min-width: 180px; white-space: normal; font-weight: 800; }
+.rs-tabla td.rs-nombre > a { color: var(--texto) !important; text-decoration: none; }
+.rs-tabla td.rs-nombre > a:hover { color: var(--empresa) !important; text-decoration: underline; }
+.rs-sub { font-size: .68rem; font-weight: 500; color: var(--texto-suave); }
+.rs-sub-fijo { color: var(--fijo); }
+.rs-tot { font-weight: 800; color: var(--empresa); }
+.rs-cero { color: var(--borde); }
+.rs-pago { text-align: left !important; }
+.rs-tabla tr.rs-fijo td { background: color-mix(in srgb, var(--fijo) 8%, var(--superficie)); }
+.rs-tabla tr.rs-fijo td.rs-nombre { background: color-mix(in srgb, var(--fijo) 13%, var(--superficie)); box-shadow: inset 3px 0 0 var(--fijo); }
+.rs-tabla tr.rs-fijo .rs-sub { color: var(--fijo); font-weight: 700; }
+.rs-faenas { margin-top: 6px; font-weight: 500; }
+.rs-faenas summary { list-style: none; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; font-size: .62rem; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; color: var(--texto-suave); }
+.rs-faenas summary::-webkit-details-marker { display: none; }
+.rs-faenas summary svg { transform: rotate(-90deg); transition: transform var(--transicion); }
+.rs-faenas[open] summary svg { transform: none; }
+.rs-faenas-lista { display: grid; gap: 4px; margin-top: 4px; max-width: 300px; }
+.rs-faena { display: grid; border-left: 3px solid var(--faena, var(--borde)); background: color-mix(in srgb, var(--faena, var(--borde)) 9%, var(--superficie)); border-radius: 6px; padding: 3px 9px; }
+.rs-faena strong { font-size: .68rem; line-height: 1.25; color: var(--texto); }
+.rs-faena span { font-size: .62rem; color: var(--texto-suave); }
+.rs-vacio { display: grid; gap: 4px; padding: 28px 12px; text-align: center; color: var(--texto-suave); border: 1px dashed var(--borde); border-radius: var(--radio); }
+.rs-vacio span { font-size: .82rem; }
+/* Detalle de una persona */
+.remu-detalle .rd-tarjeta { max-width: 860px; gap: 6px; }
+.rd-tarjeta h2 { display: flex; align-items: center; gap: 6px; margin: 0 0 4px; font-size: .95rem; }
+.rd-h2-nota { font-weight: 600; }
+.rd-tarjeta-cabeza { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.rd-dia { display: flex; gap: 12px; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid var(--borde); }
+.rd-dia:last-child { border-bottom: none; }
+.rd-dia-cuerpo { flex: 1; min-width: 0; display: grid; gap: 4px; }
+.rd-vueltas { margin-left: 6px; font-size: .68rem; font-weight: 700; padding: 1px 7px; border-radius: 999px; color: var(--empresa); background: color-mix(in srgb, var(--empresa) 10%, var(--superficie)); }
+.rd-faenas { display: grid; gap: 4px; }
+.rd-faena { display: flex; justify-content: space-between; align-items: center; gap: 8px; border-left: 3px solid var(--faena, var(--borde)); background: color-mix(in srgb, var(--faena, var(--borde)) 9%, var(--superficie)); border-radius: 7px; padding: 4px 9px; }
+.rd-faena-txt { display: grid; min-width: 0; }
+.rd-faena-txt strong { font-size: .78rem; line-height: 1.3; }
+.rd-faena-txt span { font-size: .72rem; color: var(--texto-suave); font-variant-numeric: tabular-nums; }
+.rd-faena-txt .rd-faena-fijo { color: var(--fijo); font-weight: 600; }
+.rd-faena-monto { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; font-variant-numeric: tabular-nums; }
+.rd-nota { font-size: .72rem; color: var(--texto-suave); }
+.rd-nota-fijo { color: var(--fijo); }
+.rd-col { flex: none; width: 140px; display: flex; flex-direction: column; align-items: flex-end; gap: 3px; text-align: right; }
+.rd-real { font-size: .65rem; font-weight: 600; color: var(--texto-suave); }
+.rd-real.rd-ajustado { text-decoration: line-through; color: var(--prox); }
+.rd-monto { font-size: .9rem; color: var(--empresa); font-variant-numeric: tabular-nums; }
+.rd-col .remu-ajuste .campo-num { width: 120px; color: var(--empresa); font-weight: 800; text-align: right; }
+.rd-col .remu-ajuste .campo-motivo { width: 120px; font-size: .72rem; }
+.rd-lin { display: flex; justify-content: space-between; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--borde); font-size: .86rem; }
+.rd-lin > strong { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rd-lin-titulo { border-bottom: none; padding-bottom: 0; }
+.rd-lin-nota { margin: 0 0 4px; }
+.rd-lin-total { border-bottom: none; border-top: 2px solid var(--borde); margin-top: 2px; font-weight: 800; font-size: 1rem; }
+.rd-total-valor { color: var(--empresa); }
+.rd-vu { margin: -2px 0 6px 12px; padding-left: 10px; border-left: 2px solid var(--borde); font-size: .74rem; }
+.rd-vu-fila { display: flex; justify-content: space-between; gap: 10px; padding: 2px 0; }
+.rd-item { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--borde); }
+.rd-item-txt { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.rd-item-txt .campo { max-width: 280px; }
+.rd-item-form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px; margin-top: 8px; }
+.rd-item-form .campo-etiqueta { display: grid; gap: 4px; font-size: .78rem; font-weight: 600; }
+.rd-item-form .rd-item-obs { flex: 1; min-width: 200px; }
+@media (max-width: 760px) {
+  .rd-dia { flex-direction: column; }
+  .rd-col { width: 100%; flex-direction: row; flex-wrap: wrap; justify-content: flex-end; align-items: center; }
+}
+.rs-pago .remu-pago { display: flex; flex-wrap: nowrap; align-items: center; gap: 6px; }
+/* Pago semanal: cada persona como una tarjeta (filas separadas con sombra) */
+.rs-tabla td.rs-nombre > .rs-persona a { color: var(--texto) !important; text-decoration: none; font-size: .92rem; }
+.rs-tabla td.rs-nombre > .rs-persona a:hover { color: var(--empresa) !important; text-decoration: underline; }
+.rs-scroll { border: 0; background: transparent; padding: 0 4px 6px; }
+.rs-tabla { border-collapse: separate; border-spacing: 0 8px; margin-top: -8px; }
+.rs-tabla th { border-bottom: 0; background: transparent; }
+.rs-tabla th:first-child { background: var(--fondo); }
+.rs-tabla tbody td { background: var(--superficie); border-top: 1px solid var(--borde); border-bottom: 1px solid var(--borde) !important;
+  box-shadow: 0 6px 14px -10px color-mix(in srgb, var(--texto) 45%, transparent); }
+.rs-tabla tbody td:first-child { border-left: 1px solid var(--borde); border-radius: 12px 0 0 12px; }
+.rs-tabla tbody td:last-child { border-right: 1px solid var(--borde); border-radius: 0 12px 12px 0; }
+.rs-tabla tbody tr:hover td { background: color-mix(in srgb, var(--empresa) 5%, var(--superficie)); border-color: color-mix(in srgb, var(--empresa) 35%, var(--borde)); }
+.rs-tabla tr.rs-fijo td.rs-nombre { box-shadow: inset 4px 0 0 var(--fijo), 0 6px 14px -10px color-mix(in srgb, var(--texto) 45%, transparent); }
+/* Asistencia en el teléfono como InnovaGestión: cada faena es un bloque con su color y la gente adentro */
+.asm .asm-pestanas { gap: 6px; }
+.asm .asm-pestana { min-height: 42px; flex-direction: row; gap: 6px; padding: 6px; border-radius: 10px; font-size: 12px; }
+.asm .asm-pestana strong { font-size: 16px; line-height: 20px; }
+.asm .asm-grupo { gap: 0; border: 1px solid var(--borde); border-left: 4px solid var(--asm-color, var(--texto-suave)); border-radius: 12px; overflow: hidden; background: var(--superficie); }
+.asm .asm-grupo-cabeza { min-height: 42px; border: 0; border-radius: 0; background: color-mix(in srgb, var(--asm-color, var(--texto-suave)) 13%, var(--superficie));
+  color: var(--texto); font-size: 11.5px; text-transform: uppercase; letter-spacing: .03em; }
+.asm .asm-grupo-cabeza i { display: none; }
+.asm .asm-grupo-cabeza small { text-transform: none; letter-spacing: 0; }
+.asm .asm-grupo-cuerpo { gap: 0; padding: 2px 10px 10px; }
+.asm .asm-grupo-cuerpo .asm-persona { min-height: 54px; padding: 8px 2px; border: 0; border-bottom: 1px solid var(--borde); border-radius: 0; background: transparent; }
+.asm .asm-grupo-cuerpo .asm-persona.pisa { background: var(--venc-fondo); }
+.asm .asm-grupo-cuerpo .asm-avatar { width: 34px; height: 34px; border-radius: 10px; font-size: 12px; }
+.asm .asm-grupo-cuerpo .asm-persona-texto strong { font-size: 14px; }
+.asm .asm-grupo-cuerpo .asm-planificados { margin-top: 8px; }
+/* Agregar en el teléfono: el horario va abajo y es opcional */
+.asm-horario-opcional { border: 1px dashed var(--borde); border-radius: 12px; padding: 10px 12px; display: grid; gap: 10px; }
+.asm-horario-opcional > summary { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; cursor: pointer; font-weight: 700; list-style: none; }
+.asm-horario-opcional > summary::-webkit-details-marker { display: none; }
+.asm-destino { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0; padding: 10px 12px; border-radius: 12px; font-size: 13px;
+  background: color-mix(in srgb, var(--empresa) 9%, var(--superficie)); color: var(--texto); }
+.asm-destino > svg { color: var(--empresa); flex: none; }
+/* Asistencia en el teléfono: filas en línea como el PC (nombre y, en la misma fila, entrada → salida) */
+.asm .asm-fila { display: grid; gap: 6px; padding: 10px 2px; border-bottom: 1px solid var(--borde); }
+.asm .asm-fila:last-of-type { border-bottom: 0; }
+.asm .asm-fila.pisa { background: var(--venc-fondo); }
+.asm .asm-fila-nombre { display: flex; align-items: center; gap: 8px; width: 100%; padding: 0; border: 0; background: transparent; color: var(--texto); font: inherit; text-align: left; cursor: pointer; }
+.asm .asm-fila-nombre strong { flex: 1; min-width: 0; font-size: 14px; overflow-wrap: anywhere; }
+.asm .asm-fila-nombre > svg { flex: none; color: var(--texto-suave); }
+.asm .asm-fila-nueva .asm-fila-nombre { cursor: default; }
+.asm .asm-fila-nueva .asm-fila-nombre .campo { flex: 1; min-width: 0; }
+.asm .asm-fila-horas { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) 64px; align-items: center; gap: 6px; }
+.asm .asm-fila-horas .campo { min-width: 0; padding: 8px 6px; font-size: 15px; font-weight: 700; text-align: center; font-variant-numeric: tabular-nums; }
+.asm .asm-fila-horas .asm-flecha { color: var(--texto-suave); font-weight: 800; }
+.asm .asm-fila-total { font-size: 12px; font-weight: 800; color: var(--empresa); text-align: right; white-space: nowrap; }
+.asm .asm-fila-nueva { background: color-mix(in srgb, var(--empresa) 5%, var(--superficie)); border-radius: 10px; padding: 10px 8px; }

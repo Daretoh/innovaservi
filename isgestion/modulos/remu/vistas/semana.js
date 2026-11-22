@@ -2,13 +2,14 @@
 // Confirmar el pago (Remuneraciones 008, 2026-11-02): la semana se paga la semana siguiente; al pagar se confirma y
 // queda lo pagado a cada uno. Si después cambia algo de esa semana o faltó un saldo, la diferencia se lleva a la semana
 // actual o a la siguiente como extra o descuento con su motivo (remu_items.origen_semana), y la semana queda cuadrada.
-import { el } from '../../../core/ui/dom.js?v=731bc1d';
-import { icono } from '../../../core/ui/iconos.js?v=731bc1d';
-import { boton } from '../../../core/ui/tabla.js?v=731bc1d';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=731bc1d';
-import { avisar } from '../../../core/ui/aviso.js?v=731bc1d';
-import { dinero, horas, hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, fechaLarga, numSemana } from '../../../core/ui/formato.js?v=731bc1d';
-import { cargarBase, calcularRango, nombreCompleto } from '../datos.js?v=731bc1d';
+import { el } from '../../../core/ui/dom.js?v=4b574d1';
+import { icono } from '../../../core/ui/iconos.js?v=4b574d1';
+import { boton } from '../../../core/ui/tabla.js?v=4b574d1';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=4b574d1';
+import { avisar } from '../../../core/ui/aviso.js?v=4b574d1';
+import { dinero, horas, hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, fechaLarga, numSemana } from '../../../core/ui/formato.js?v=4b574d1';
+import { cargarBase, calcularRango, nombreCompleto } from '../datos.js?v=4b574d1';
+import { coloresFaenas } from '../../../core/ui/faena-color.js?v=4b574d1';
 
 const estado = { lunes: lunesDe(hoyISO()) };
 
@@ -32,50 +33,58 @@ export default async function vista(ctx) {
   };
 
   const mover = (n) => { estado.lunes = sumarDias(estado.lunes, n * 7); ctx.refrescar(); };
-  const nav = el('div', { class: 'nav-periodo' },
+  // Como InnovaGestión: la semana en una tarjeta, la franja con el total a pagar, los 7 días y una sola tabla
+  // (spot primero y fijos al final, con su fila destacada).
+  const nav = el('div', { class: 'rs-semana' },
     el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Semana anterior', onclick: () => mover(-1) }, icono('volver')),
-    el('strong', {}, `Semana ${numSemana(lunes)} · ${fechaCorta(lunes)} – ${fechaCorta(domingo)}`),
-    el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Semana siguiente', onclick: () => mover(1) }, icono('derecha')),
-    boton('Hoy', { onclick: () => { estado.lunes = lunesDe(hoyISO()); ctx.refrescar(); } }));
+    el('div', { class: 'rs-semana-txt' }, el('span', {}, `Semana ${numSemana(lunes)}`), el('strong', {}, `${fechaCorta(lunes)} – ${fechaCorta(domingo)}`)),
+    boton('Hoy', { onclick: () => { estado.lunes = lunesDe(hoyISO()); ctx.refrescar(); } }),
+    el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Semana siguiente', onclick: () => mover(1) }, icono('derecha')));
 
-  const dias = el('div', { class: 'dias-semana' }, [0, 1, 2, 3, 4, 5, 6].map((i) => {
+  const totalBanda = el('div', { class: 'rs-total' }, el('span', {}, 'Total a pagar'), el('strong', {}, dinero(R.total)));
+
+  const dias = el('div', { class: 'rs-dias' }, [0, 1, 2, 3, 4, 5, 6].map((i) => {
     const f = sumarDias(lunes, i);
     const d = R.porDia[f];
     const feriado = R.feriados.get(f);
-    return el('a', { class: `dia-tarjeta dia-enlace ${f === hoyISO() ? 'hoy' : ''} ${feriado ? 'feriado' : ''}`, href: ctx.ruta('remu.dia', { f }), title: `${feriado ? `${feriado} · ` : ''}Ver el detalle del día` },
-      el('span', {}, `${nombreDia(f)} ${Number(f.slice(8))}`),
-      el('strong', {}, d?.monto ? dinero(d.monto) : '—'),
-      el('span', { class: 'texto-suave texto-chico' }, feriado ? 'Feriado' : d?.min ? horas(d.min) : ''));
+    return el('a', { class: `rs-dia${f === hoyISO() ? ' hoy' : ''}${d?.monto ? '' : ' cero'}${feriado ? ' feriado' : ''}`, href: ctx.ruta('remu.dia', { f }), title: `${feriado ? `${feriado} · ` : ''}Ver el detalle del día` },
+      el('span', { class: 'rs-dia-nom' }, nombreDia(f), el('b', {}, String(Number(f.slice(8))))),
+      el('span', { class: 'rs-dia-monto' }, d?.monto ? dinero(d.monto) : '—'),
+      feriado ? el('span', { class: 'rs-dia-h' }, 'Feriado') : d?.min ? el('span', { class: 'rs-dia-h' }, horas(d.min)) : null);
   }));
 
-  // Faenas del trabajador en la semana (plegadas): faena, días y horas en cada una
+  // Faenas del trabajador en la semana (plegadas): una tarjeta por faena con el color de la faena, días y horas
+  const colorFaena = coloresFaenas(R.filas.flatMap((f) => f.detalle.flatMap((d) => (d.faenas ?? []).map((x) => x.faena))));
   const faenasDe = (f) => {
     const por = new Map();
     for (const d of f.detalle) for (const x of d.faenas ?? []) { const o = por.get(x.faena) ?? []; o.push(`${nombreDia(d.fecha)} ${Number(d.fecha.slice(8))} · ${horas(x.min)}`); por.set(x.faena, o); }
     if (!por.size) return null;
-    return el('details', { class: 'remu-faenas', onclick: (ev) => ev.stopPropagation() },
-      el('summary', {}, `ver ${por.size} faena${por.size > 1 ? 's' : ''}`),
-      [...por].map(([fa, ds]) => el('div', { class: 'remu-faenas-item' }, el('strong', {}, fa || 'Sin faena'), el('span', { class: 'texto-suave' }, ds.join(' · ')))));
+    return el('details', { class: 'rs-faenas', onclick: (ev) => ev.stopPropagation() },
+      el('summary', {}, icono('abajo', { tam: 12 }), `ver ${por.size} faena${por.size > 1 ? 's' : ''}`),
+      el('div', { class: 'rs-faenas-lista' }, [...por].map(([fa, ds]) => el('div', { class: 'rs-faena', style: `--faena:${colorFaena(fa)}` },
+        el('strong', {}, fa || 'Sin faena'), el('span', {}, ds.join('  ·  '))))));
   };
+  const m = (v, neg) => (v ? `${neg ? '−' : ''}${dinero(v)}` : el('span', { class: 'rs-cero' }, '—'));
 
   const filas = R.filas.map((f) => {
     const href = ctx.ruta('remu.detalle', { p: f.vinculo.persona_id, s: lunes });
-    const desc = [f.cargo?.nombre ?? f.vinculo.cargo, f.modo === 'fijo' ? `fijo${f.ventana ? ` ${f.ventana}` : f.jornadaHoras ? ` ${f.jornadaHoras} h/día` : ''}` : 'por hora']
-      .filter(Boolean).join(' · ');
-    const fila = el('tr', { class: `fila-enlace${f.modo === 'fijo' ? ' fila-fijo' : ''}`, title: 'Ver el detalle, ajustar días y extras' },
-      el('td', {}, el('a', { href }, nombreCompleto(f.persona)), f.modo === 'fijo' ? el('span', { class: 'chip chip-fijo' }, 'Fijo') : null, el('div', { class: 'texto-suave texto-chico' }, desc), faenasDe(f)),
-      el('td', { class: 'centro' }, f.dias),
-      el('td', {}, horas(f.totMin), f.modo === 'fijo' ? el('div', { class: 'texto-suave texto-chico' }, `${horas(f.pagoMin)} pagables`) : null),
-      el('td', { class: 'num' }, f.vh ? dinero(f.vh) : el('span', { class: 'pct-mal', title: 'Sin trato ni valor hora' }, 'Sin valor')),
-      el('td', { class: 'num' }, dinero(f.baseContable)),
-      el('td', { class: 'num' }, f.montoVueltas ? dinero(f.montoVueltas) : '—'),
-      el('td', { class: 'num pct-bien' }, f.extra ? dinero(f.extra) : '—'),
-      el('td', { class: 'num pct-mal' }, f.descuento ? `−${dinero(f.descuento)}` : '—'),
-      el('td', { class: 'num' }, el('strong', {}, dinero(f.total)),
-        f.hayAjuste ? el('div', { class: 'texto-suave texto-chico', title: 'Hay días con ajuste contable' }, `real ${dinero(f.real)}`) : null),
-      el('td', {}, celdaPago(ctx, f, estadoPago(f), lunes, editar)),
-      el('td', { class: 'acciones-fila' }, el('a', { class: 'boton boton-secundario boton-chico', href }, icono('editar', { tam: 14 }), ctx.puede('remu', 'editar') ? 'Editar' : 'Ver')));
-    fila.addEventListener('click', (ev) => { if (!ev.target.closest('a, button, input')) location.hash = href; });
+    const fijo = f.modo === 'fijo';
+    const desc = [f.cargo?.nombre ?? f.vinculo.cargo, fijo ? `fijo${f.ventana ? ` ${f.ventana}` : f.jornadaHoras ? ` ${f.jornadaHoras}h/día` : ''}` : null].filter(Boolean).join(' · ');
+    const fila = el('tr', { class: fijo ? 'rs-fijo' : '', title: 'Ver el detalle, ajustar días y extras' },
+      el('td', { class: 'rs-nombre' },
+        el('div', { class: 'rs-persona' },
+          el('div', {}, el('a', { href }, nombreCompleto(f.persona)),
+            el('div', { class: 'rs-sub' }, desc || '—', f.vh ? null : el('span', { class: 'pct-mal', title: 'Sin trato ni valor hora' }, ' · sin valor hora')))),
+        faenasDe(f)),
+      el('td', {}, String(f.dias)),
+      el('td', {}, horas(f.totMin), fijo ? el('div', { class: 'rs-sub rs-sub-fijo' }, `− ${horas(f.totMin - f.pagoMin)} = ${horas(f.pagoMin)} extra`) : null),
+      el('td', {}, m(f.baseContable)),
+      el('td', {}, m(f.montoVueltas)),
+      el('td', { class: 'pct-bien' }, m(f.extra)),
+      el('td', { class: 'pct-mal' }, m(f.descuento, true)),
+      el('td', { class: 'rs-tot' }, dinero(f.total), f.hayAjuste ? el('div', { class: 'rs-sub', title: 'Hay días con ajuste contable' }, `real ${dinero(f.real)}`) : null),
+      el('td', { class: 'rs-pago' }, celdaPago(ctx, f, estadoPago(f), lunes, editar)));
+    fila.addEventListener('click', (ev) => { if (!ev.target.closest('a, button, input, details')) location.hash = href; });
     return fila;
   });
 
@@ -88,12 +97,13 @@ export default async function vista(ctx) {
     acciones.push(boton('PDF', { icono: 'descargar', onclick: (ev) => exportarPdf(ctx, R, lunes, domingo, ev.currentTarget) }));
   }
 
-  return el('section', { class: 'listado' },
+  return el('section', { class: 'listado remu-semanal' },
     el('header', { class: 'listado-cabecera' },
-      el('h1', {}, 'Pago semanal'),
-      el('div', { class: 'listado-acciones' }, el('span', { class: 'total-grande' }, dinero(R.total)), acciones)),
+      el('h1', {}, 'Remuneraciones', el('span', { class: 'rs-cnt' }, `${R.filas.length} ${R.filas.length === 1 ? 'trabajador' : 'trabajadores'}`)),
+      el('div', { class: 'listado-acciones' }, acciones)),
     base.config.periodo === 'mensual' ? el('p', { class: 'aviso-bandeja' }, icono('alerta', { tam: 16 }), 'Esta empresa paga mensual: el pago (con bono por autos y extras del mes) está en ', ctx.hayVista?.('remu.pagomes') ? el('a', { href: ctx.ruta('remu.pagomes') }, 'Pago mensual') : el('a', { href: ctx.ruta('remu.mes') }, 'Cierre del mes'), '.') : null,
     nav,
+    totalBanda,
     pasada ? el('p', { class: 'aviso-bandeja' }, icono('alerta', { tam: 16 }), `La semana pasada tiene ${pasada} pago${pasada === 1 ? '' : 's'} sin confirmar. `,
       el('a', { href: '#', onclick: (ev) => { ev.preventDefault(); mover(-1); } }, 'Ver semana pasada')) : null,
     pagadas.length ? el('p', { class: `aviso-bandeja${conDif.length ? '' : ' aviso-ok'}` }, icono(conDif.length ? 'alerta' : 'check', { tam: 16 }),
@@ -101,15 +111,12 @@ export default async function vista(ctx) {
       conDif.length ? ` · ${conDif.length} con diferencia por llevar a otra semana.` : '.') : null,
     dias,
     R.diasRepetidos ? el('p', { class: 'aviso-bandeja' }, icono('alerta', { tam: 16 }),
-      `${R.diasRepetidos} ${R.diasRepetidos === 1 ? 'día con horas que se pisan' : 'días con horas que se pisan'}: se contaron una sola vez.`) : null,
-    el('div', { class: 'tabla-contenedor tabla-tarjetas' },
-      el('table', { class: 'tabla' },
-        el('thead', {}, el('tr', {}, ['Trabajador', 'Días', 'Horas', 'Valor hora', 'Base', 'Vueltas', 'Extras', 'Desc.', 'Total', 'Pago', '']
-          .map((t, i) => el('th', { class: i >= 3 ? 'num' : i === 1 ? 'centro' : '' }, t)))),
-        el('tbody', {}, filas.length ? filas
-          : el('tr', {}, el('td', { colspan: 11, class: 'tabla-vacia' }, 'Sin horas ni pagos esta semana. Las horas se cargan en Asistencia → Registro de horas.'))))),
-    el('p', { class: 'texto-suave texto-chico' }, 'Pago: la semana se paga la semana siguiente. "Confirmar pago" deja registrado lo pagado a cada uno; si después cambia algo de la semana o faltó un saldo, "Llevar" o "Saldo" lo agrega como extra o descuento (con su motivo) a la semana en que se paga.'),
-    el('p', { class: 'texto-suave texto-chico' }, 'Fijos: solo se pagan las horas fuera de su turno o sobre su jornada; fines de semana y feriados se pagan completos. Haz clic en una fila (o en Editar) para ver el detalle, ajustar días y agregar o editar extras y descuentos.'),
+      `${R.diasRepetidos} ${R.diasRepetidos === 1 ? 'día con horas repetidas o solapadas' : 'días con horas repetidas o solapadas'} (contadas una vez).`) : null,
+    filas.length
+      ? el('div', { class: 'rs-scroll' }, el('table', { class: 'rs-tabla' },
+        el('thead', {}, el('tr', {}, ['Trabajador', 'Días', 'Horas', 'Base', 'Vueltas', 'Extras', 'Desc.', 'Total', 'Pago'].map((t) => el('th', {}, t)))),
+        el('tbody', {}, filas)))
+      : el('div', { class: 'rs-vacio' }, 'Sin horas ni pagos esta semana.', el('span', {}, 'Cambia de semana o revisa las horas en Asistencia → Registro de horas.')),
   );
 }
 
@@ -229,7 +236,7 @@ function verPago(ctx, f, p, editar) {
 async function exportarPdf(ctx, R, lunes, domingo, b) {
   b.disabled = true;
   try {
-    const { nuevoPdf } = await import('../../../core/pdf.js?v=731bc1d');
+    const { nuevoPdf } = await import('../../../core/pdf.js?v=4b574d1');
     const pdf = await nuevoPdf(ctx, { titulo: `Pago semanal · semana ${numSemana(lunes)}`, subtitulo: `${fechaCorta(lunes)} al ${fechaCorta(domingo)} · total ${dinero(R.total)}`, horizontal: true });
     pdf.tabla({
       columnas: ['Trabajador', 'RUT', 'Modo', 'Días', 'Horas', 'Base', 'Vueltas', 'Extras', 'Descuentos', 'Total'],

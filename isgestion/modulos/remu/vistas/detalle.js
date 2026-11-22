@@ -3,15 +3,14 @@
 // tiene varias y la suma cuadra) y se guardan al salir del campo; extras y descuentos se editan en la lista.
 // El ajuste contable (real vs. contable) es una opción de la empresa (Parámetros); apagada, se paga lo calculado.
 // Rutas: #/remu.detalle?p=<persona_id>&s=<lunes> (semanal) · #/remu.detalle?p=<persona_id>&m=<aaaa-mm> (mensual)
-import { el } from '../../../core/ui/dom.js?v=731bc1d';
-import { icono } from '../../../core/ui/iconos.js?v=731bc1d';
-import { boton } from '../../../core/ui/tabla.js?v=731bc1d';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=731bc1d';
-import { avisar } from '../../../core/ui/aviso.js?v=731bc1d';
-import { dinero, horas, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, hhmm, hoyISO, rangoMes, moverMes, nombreMes } from '../../../core/ui/formato.js?v=731bc1d';
-import { cargarBase, calcularRango, pagoMensual, nombreCompleto } from '../datos.js?v=731bc1d';
-import { sueldoDelMes, semanaEnMes } from '../calculo.js?v=731bc1d';
-import { coloresFaenas } from '../../../core/ui/faena-color.js?v=731bc1d';
+import { el } from '../../../core/ui/dom.js?v=4b574d1';
+import { icono } from '../../../core/ui/iconos.js?v=4b574d1';
+import { boton } from '../../../core/ui/tabla.js?v=4b574d1';
+import { avisar } from '../../../core/ui/aviso.js?v=4b574d1';
+import { dinero, horas, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, hhmm, hoyISO, rangoMes, moverMes, nombreMes } from '../../../core/ui/formato.js?v=4b574d1';
+import { cargarBase, calcularRango, pagoMensual, nombreCompleto } from '../datos.js?v=4b574d1';
+import { sueldoDelMes, semanaEnMes } from '../calculo.js?v=4b574d1';
+import { coloresFaenas } from '../../../core/ui/faena-color.js?v=4b574d1';
 
 export default async function vista(ctx) {
   const personaId = ctx.params.p;
@@ -75,71 +74,101 @@ export default async function vista(ctx) {
     : c?.art22 ? 'Artículo 22: solo el sueldo. No se pagan horas aparte, tampoco fines de semana ni feriados.'
       : `El sueldo ya incluye su turno. Se paga aparte, a ${dinero(f.vh)} la hora: lo que trabaje fuera del turno, los fines de semana y los feriados.`;
 
-  // Semana: los 7 días. Mes: solo los días con registros o feriados.
-  const fechas = mes ? (() => { const { desde, hasta } = rangoMes(mes); const out = []; for (let x = desde; x <= hasta; x = sumarDias(x, 1)) if (porFecha.has(x) || R.feriados.has(x)) out.push(x); return out; })()
-    : [0, 1, 2, 3, 4, 5, 6].map((i) => sumarDias(lunes, i));
+  // Como InnovaGestión: solo los días con registros (cada uno con sus faenas y el monto a la derecha), después el
+  // Desglose y al final los montos, extras y descuentos.
+  const fechas = (f?.detalle ?? []).map((d) => d.fecha);
   // Un color por faena (en el orden en que aparecen) para distinguirlas
   const colorFaena = coloresFaenas((f?.detalle ?? []).flatMap((d) => d.registros.map((r) => r.faena)));
   const campoAjuste = (d, faena, real, ajuste) => campoContable(ctx, personaId, d.fecha, faena, real, ajuste, quien(ajuste));
   const plural = (n) => (n > 1 ? 's' : '');
+  const vh = f?.vh || 0;
   const filasDias = fechas.map((fecha) => {
     const d = porFecha.get(fecha);
     const feriado = R.feriados.get(fecha);
-    const varias = d && d.faenas.length > 1;
-    const editarFaenas = contable && puedeEditar && varias && d.porFaena;
-    const registros = d ? (varias
-      ? d.faenas.map((x) => el('div', { class: 'remu-faena', style: `--faena:${colorFaena(x.faena)}` },
-        el('div', {}, el('strong', { class: 'texto-chico faena-tag' }, x.faena || 'Sin faena'),
-          el('div', { class: 'texto-suave texto-chico' }, d.registros.filter((r) => String(r.faena ?? '').trim() === x.faena)
-            .map((r) => `${hhmm(r.entrada)}–${hhmm(r.salida)}${r.vueltas ? ` · ${r.vueltas} vuelta${plural(r.vueltas)}` : ''}`).join(', '), ` · ${horas(x.min)}`)),
-        editarFaenas ? el('div', { class: 'remu-faena-monto' }, el('span', { class: 'texto-suave texto-chico' }, `calculado ${dinero(x.real)}`), campoAjuste(d, x.faena, x.real, x.ajuste))
-          : el('span', { class: 'texto-chico' }, dinero(contable ? x.contable : x.real))))
-      : [...d.registros.map((r) => el('div', { class: 'texto-chico' }, r.faena ? el('div', { class: 'faena-tag', style: `--faena:${colorFaena(r.faena)}` }, r.faena) : null,
-          `${hhmm(r.entrada)}–${hhmm(r.salida)}${r.vueltas ? ` · ${r.vueltas} vuelta${plural(r.vueltas)}` : ''}`)),
-        ...d.vueltasFlota.map((x) => el('div', { class: 'texto-chico texto-suave' }, `${x.cantidad} vuelta${plural(x.cantidad)} en ${x.vehiculo} (chofer)`))])
-      : el('span', { class: 'texto-suave' }, '—');
-    let celdaContable = '';
-    if (d && contable) {
-      celdaContable = puedeEditar && !editarFaenas ? campoAjuste(d, '', d.real, d.ajuste)
-        : el('div', {}, el('strong', { class: d.contable !== d.real ? 'pct-medio' : '' }, dinero(d.contable)),
-          editarFaenas ? el('div', { class: 'texto-suave texto-chico' }, 'suma de las faenas')
-            : d.ajuste ? el('div', { class: 'texto-suave texto-chico' }, [`Corregido a mano${quien(d.ajuste) ? ` por ${quien(d.ajuste)}` : ''}`, d.ajuste.obs].filter(Boolean).join(': ')) : null);
-      if (d.ajDiaManda && varias) celdaContable = el('div', {}, celdaContable, el('div', { class: 'texto-chico pct-medio' }, 'ajuste del día (no cuadra con las faenas)'));
+    const editarFaenas = contable && puedeEditar && d.faenas.length > 1 && d.porFaena;
+    const faenas = d.faenas.map((x) => {
+      const regs = d.registros.filter((r) => String(r.faena ?? '').trim() === x.faena);
+      const horarios = regs.map((r) => `${hhmm(r.entrada)}→${hhmm(r.salida)}${r.vueltas ? ` (${r.vueltas} vuelta${plural(r.vueltas)})` : ''}`).join(', ');
+      const completo = Math.round((x.min / 60) * vh);
+      return el('div', { class: 'rd-faena', style: `--faena:${colorFaena(x.faena)}` },
+        el('div', { class: 'rd-faena-txt' },
+          el('strong', {}, x.faena || 'Sin faena asignada'),
+          el('span', {}, `${horarios} · ${horas(x.min)}`),
+          esFijo && completo > x.real ? el('span', { class: 'rd-faena-fijo' }, `valor trato ${dinero(completo)} · ${x.real ? `se paga ${dinero(x.real)} (horas fuera del turno)` : 'cubierto por el sueldo'}`) : null),
+        editarFaenas
+          ? el('div', { class: 'rd-faena-monto' }, el('span', { class: 'texto-suave texto-chico' }, `real ${dinero(x.real)}`), campoAjuste(d, x.faena, x.real, x.ajuste))
+          : el('strong', { class: 'rd-faena-monto' }, dinero(contable ? x.contable : x.real)));
+    });
+    const flota = d.vueltasFlota.map((x) => el('div', { class: 'rd-nota' }, `${x.cantidad} vuelta${plural(x.cantidad)} en ${x.vehiculo} (registradas por el chofer)`));
+    // Fijo: cuánto del día se paga aparte del sueldo
+    const completoDia = Math.round((d.min / 60) * vh);
+    const notaFijo = !esFijo ? null : d.especial
+      ? el('div', { class: 'rd-nota rd-nota-fijo' }, `${feriado ? 'feriado' : 'fin de semana'} · ${horas(d.min)} como trato · ${dinero(d.real)}`)
+      : el('div', { class: 'rd-nota rd-nota-fijo' }, `fijo · ${horas(d.min)} − ${horas(d.min - d.pagoMin)} ${c?.jornada_ini ? 'en turno' : 'de jornada'} = ${horas(d.pagoMin)} trato · real ${dinero(d.real)} `,
+        el('span', { class: 'texto-suave' }, `(si spot ${dinero(completoDia)} · −${dinero(completoDia - d.real)})`));
+    let derecha;
+    if (contable && puedeEditar && !editarFaenas) {
+      derecha = el('div', { class: 'rd-col' }, el('span', { class: `rd-real${d.contable !== d.real ? ' rd-ajustado' : ''}` }, `real ${dinero(d.real)}`), campoAjuste(d, '', d.real, d.ajuste));
+    } else {
+      derecha = el('div', { class: 'rd-col' },
+        contable && d.contable !== d.real ? el('span', { class: 'rd-real rd-ajustado' }, `real ${dinero(d.real)}`) : null,
+        el('strong', { class: 'rd-monto' }, dinero(contable ? d.contable : d.real)),
+        editarFaenas ? el('span', { class: 'texto-suave texto-chico' }, 'suma de las faenas')
+          : contable && d.ajuste ? el('span', { class: 'texto-suave texto-chico' }, [`Corregido a mano${quien(d.ajuste) ? ` por ${quien(d.ajuste)}` : ''}`, d.ajuste.obs].filter(Boolean).join(': ')) : null);
     }
-    return el('tr', { class: [d?.especial ? 'fila-especial' : '', d ? 'fila-dia' : 'fila-sin'].filter(Boolean).join(' ') },
-      el('td', {}, el('strong', {}, `${nombreDia(fecha)} ${fechaCorta(fecha)}`),
-        feriado ? el('div', { class: 'texto-suave texto-chico' }, feriado) : null),
-      el('td', {}, registros),
-      el('td', {}, d ? horas(d.min) : ''),
-      el('td', {}, d ? horas(d.pagoMin) : ''),
-      el('td', { class: 'num' }, d ? el('span', { class: contable && d.contable !== d.real ? 'texto-suave' : '' }, dinero(d.real)) : ''),
-      contable ? el('td', { class: 'num' }, celdaContable) : null);
+    return el('div', { class: 'rd-dia' },
+      el('div', { class: 'rd-dia-cuerpo' },
+        el('div', { class: 'rd-dia-cabeza' }, el('strong', {}, `${nombreDia(fecha)} ${fechaCorta(fecha)}`), el('span', { class: 'texto-suave' }, ` · ${horas(d.min)}`),
+          d.vueltas ? el('span', { class: 'rd-vueltas' }, `${d.vueltas} vuelta${plural(d.vueltas)}`) : null,
+          feriado ? el('span', { class: 'texto-suave texto-chico' }, ` · ${feriado}`) : null),
+        faenas.length ? el('div', { class: 'rd-faenas' }, faenas) : null, flota, notaFijo,
+        contable && d.ajDiaManda && d.faenas.length > 1 ? el('div', { class: 'rd-nota pct-medio' }, `Monto del día ajustado a ${dinero(d.contable)}${d.ajuste?.obs ? ` · ${d.ajuste.obs}` : ''}: no cuadra con la suma de las faenas.`) : null),
+      derecha);
   });
 
   const editarItems = ctx.puede('remu', 'editar');
   const items = (f?.items ?? []).map((it) => {
-    const tipo = el('span', { class: `chip ${it.tipo === 'extra' ? 'chip-ok' : 'chip-venc'}` }, it.tipo === 'extra' ? 'Extra' : 'Descuento');
+    const neg = it.tipo === 'descuento';
+    const tipo = el('span', { class: 'texto-suave texto-chico' }, neg ? 'Descuento' : 'Extra');
     if (!editarItems) {
-      return el('div', { class: 'doc-fila' }, el('div', { class: 'doc-nombre' }, tipo, el('strong', {}, it.concepto), it.nota ? el('span', { class: 'texto-suave texto-chico' }, it.nota) : null),
-        el('strong', {}, `${it.tipo === 'descuento' ? '−' : ''}${dinero(it.monto)}`));
+      return el('div', { class: 'rd-item' }, el('div', { class: 'rd-item-txt' }, el('strong', { class: neg ? 'pct-mal' : 'pct-bien' }, `${neg ? '− ' : ''}${dinero(it.monto)}`), ' ', tipo,
+        el('div', { class: 'texto-suave texto-chico' }, it.concepto, it.nota ? ` · ${it.nota}` : '')));
     }
     const concepto = el('input', { type: 'text', class: 'campo', value: it.concepto, 'aria-label': 'Concepto' });
     const monto = el('input', { type: 'number', min: '1', step: '1', class: 'campo campo-num', value: String(it.monto), 'aria-label': `Monto de ${it.concepto}` });
     const guardar = () => guardarItem(ctx, it, concepto.value, monto.value);
     concepto.addEventListener('change', guardar); monto.addEventListener('change', guardar);
-    return el('div', { class: 'doc-fila remu-item' },
-      el('div', { class: 'doc-nombre' }, tipo, concepto, it.nota ? el('span', { class: 'texto-suave texto-chico', title: 'Motivo' }, it.nota) : null),
-      el('div', { class: 'remu-item-monto' }, it.tipo === 'descuento' ? el('span', { class: 'texto-suave' }, '−') : null, monto),
-      ctx.puede('remu', 'eliminar') ? el('div', { class: 'doc-acciones' }, el('button', {
-        type: 'button', class: 'boton-icono', title: 'Eliminar', 'aria-label': `Eliminar ${it.concepto}`, onclick: () => quitarItem(ctx, it),
-      }, icono('basura', { tam: 16 }))) : null);
+    return el('div', { class: 'rd-item' },
+      el('div', { class: 'rd-item-txt' }, el('span', { class: `chip ${neg ? 'chip-venc' : 'chip-ok'}` }, neg ? 'Descuento' : 'Extra'), concepto, it.nota ? el('span', { class: 'texto-suave texto-chico', title: 'Motivo' }, it.nota) : null),
+      el('div', { class: 'remu-item-monto' }, neg ? el('span', { class: 'texto-suave' }, '−') : null, monto),
+      ctx.puede('remu', 'eliminar') ? el('button', {
+        type: 'button', class: 'boton-icono', title: 'Quitar', 'aria-label': `Quitar ${it.concepto}`, onclick: () => quitarItem(ctx, it),
+      }, icono('basura', { tam: 16 })) : null);
   });
+  // Agregar en la misma tarjeta (como InnovaGestión): tipo, monto y observación
+  const puedeAgregar = ctx.puede('remu', 'crear') && (!mes || P);
+  const formItem = puedeAgregar ? (() => {
+    const tipo = el('select', { class: 'campo', 'aria-label': 'Tipo' }, el('option', { value: 'extra' }, 'Extra'), el('option', { value: 'descuento' }, 'Descuento'));
+    const monto = el('input', { type: 'number', min: '1', step: '1', class: 'campo campo-num', placeholder: '0', 'aria-label': 'Monto ($)' });
+    const obs = el('input', { type: 'text', class: 'campo', placeholder: 'Ej: anticipo, extra de producción, colación…', 'aria-label': 'Observación' });
+    const agregar = boton('Agregar', { icono: 'mas', tipo: 'primario', onclick: async (ev) => {
+      const b = ev.currentTarget;
+      if (b.disabled) return;
+      b.disabled = true;
+      try { await insertarItem(ctx, personaId, mes ? { mes } : { semana: lunes }, tipo.value, obs.value, monto.value); } finally { b.disabled = false; }
+    } });
+    return el('div', { class: 'rd-item-form' },
+      el('label', { class: 'campo-etiqueta' }, el('span', {}, 'Tipo'), tipo),
+      el('label', { class: 'campo-etiqueta' }, el('span', {}, 'Monto ($)'), monto),
+      el('label', { class: 'campo-etiqueta rd-item-obs' }, el('span', {}, 'Observación (por qué es este monto)'), obs),
+      agregar);
+  })() : null;
 
   // De dónde salen las vueltas: por día, del Registro de horas (con su faena) y de Vehículos (las que registró el chofer)
-  const vueltasDia = (f?.detalle ?? []).filter((d) => d.vueltas).map((d) => el('div', { class: 'texto-chico' },
-    el('strong', {}, `${nombreDia(d.fecha)} ${fechaCorta(d.fecha)}`), ` · ${d.vueltas} vuelta${plural(d.vueltas)} `,
-    el('span', { class: 'texto-suave' }, `(${[...[...new Set(d.registros.filter((r) => r.vueltas).map((r) => `Registro de horas: ${r.faena || 'sin faena'}`))],
-      ...d.vueltasFlota.map((x) => `Vehículos: ${x.cantidad} en ${x.vehiculo}`)].join(' · ')})`)));
+  const vueltasDia = (f?.detalle ?? []).filter((d) => d.vueltas).map((d) => el('div', { class: 'rd-vu-fila' },
+    el('span', {}, el('strong', {}, `${nombreDia(d.fecha)} ${fechaCorta(d.fecha)}`), el('span', { class: 'texto-suave' }, ` · ${[...[...new Set(d.registros.filter((r) => r.vueltas).map((r) => `Registro de horas${r.faena ? ` (${r.faena})` : ''}`))],
+      ...d.vueltasFlota.map((x) => `${x.cantidad} en Vehículos (${x.vehiculo})`)].join(' + ')}`)),
+    el('strong', {}, String(d.vueltas))));
 
   // Por faena (en el mes): días, horas y monto de cada faena
   const porFaena = new Map();
@@ -147,31 +176,52 @@ export default async function vista(ctx) {
     const o = porFaena.get(x.faena) ?? { dias: new Set(), min: 0, monto: 0 };
     o.dias.add(d.fecha); o.min += x.min; o.monto += base.config.ajuste_contable ? x.contable : x.real; porFaena.set(x.faena, o);
   }
-  const resumenFaenas = porFaena.size ? el('div', { class: 'ficha doc-grupo' }, el('h2', {}, 'Por faena'),
-    [...porFaena].sort((a, b) => b[1].min - a[1].min).map(([fa, o]) => el('div', { class: 'doc-fila' },
-      el('div', { class: 'doc-nombre' }, el('strong', {}, fa || 'Sin faena')),
-      el('span', { class: 'texto-suave texto-chico' }, `${o.dias.size} día${o.dias.size > 1 ? 's' : ''} · ${horas(o.min)}`),
+  const resumenFaenas = porFaena.size ? el('div', { class: 'ficha rd-tarjeta' }, el('h2', {}, 'Por faena'),
+    [...porFaena].sort((a, b) => b[1].min - a[1].min).map(([fa, o]) => el('div', { class: 'rd-lin' },
+      el('span', {}, el('strong', {}, fa || 'Sin faena'), el('span', { class: 'texto-suave texto-chico' }, ` · ${o.dias.size} día${o.dias.size > 1 ? 's' : ''} · ${horas(o.min)}`)),
       el('strong', {}, dinero(o.monto))))) : null;
 
-  return el('section', { class: 'listado' },
+  // Desglose (como InnovaGestión): en fijos, el trato completo si fuera spot y lo que cubre el sueldo
+  const lin = (txt, valor, clase = '') => el('div', { class: `rd-lin ${clase}` }, el('span', {}, txt), el('strong', {}, valor));
+  const completoTot = Math.round(((f?.totMin || 0) / 60) * vh);
+  const desglose = [
+    ...(esFijo && f ? [
+      el('div', { class: 'rd-lin rd-lin-titulo' }, el('strong', { class: 'pct-bien' }, c?.art22 ? 'Contrato fijo · Artículo 22' : 'Contrato fijo · renta fija')),
+      queSePaga ? el('p', { class: 'texto-suave texto-chico rd-lin-nota' }, queSePaga) : null,
+      lin(`Trato completo (si fuera spot · ${horas(f.totMin)})`, el('span', { class: 'texto-suave' }, dinero(completoTot))),
+      lin(c?.jornada_ini ? 'Cubierto por el sueldo (horas del turno)' : 'Descontado por jornada fija', el('span', { class: 'pct-mal' }, `− ${dinero(completoTot - f.base)}`)),
+    ] : []),
+    ...(mes ? [lin('Sueldo base', f?.sueldo ? dinero(f.sueldo) : '—')] : []),
+    ...(P ? [el('div', { class: 'rd-lin' }, el('span', {}, 'Bono por autos'), el('strong', {}, !P.valorAuto ? 'Sin bono' : f?.sinBono ? 'Excluido este mes' : (f?.dias || f?.condicion?.art22) ? `${P.autos.length} × ${dinero(P.valorAuto)} = ${dinero(f.bonoAutos)}` : 'No trabajó este mes',
+      P.valorAuto && ctx.puede('remu', 'editar') ? el('button', { type: 'button', class: 'boton-enlace', onclick: () => alternarBono(ctx, personaId, mes, f?.sinBono) }, f?.sinBono ? ' Incluir' : ' Excluir') : null))] : []),
+    lin(`${esFijo ? 'Horas extra pagadas' : 'Horas'} (${horas(f?.pagoMin ?? 0)}${vh ? ` × ${dinero(vh)}` : ''})`, dinero(f?.base ?? 0)),
+    contable && f?.hayAjuste && f.baseContable !== f.base ? lin('Corregido a mano (días o faenas)', dinero(f.baseContable - f.base)) : null,
+    f?.vueltas ? lin(`${f.vueltas} vuelta${plural(f.vueltas)} × ${dinero(f.vv)}`, dinero(f.montoVueltas)) : null,
+    vueltasDia.length ? el('div', { class: 'rd-vu' }, vueltasDia) : null,
+    f?.extra ? lin('Extras', el('span', { class: 'pct-bien' }, dinero(f.extra))) : null,
+    f?.descuento ? lin('Descuentos', el('span', { class: 'pct-mal' }, `− ${dinero(f.descuento)}`)) : null,
+    contable ? lin('Total real (por horas)', dinero(mes ? f?.realMes ?? ((f?.real ?? 0) + (f?.sueldo ?? 0)) : f?.real ?? 0)) : null,
+    lin(contable ? 'Total a pagar (contable)' : 'Total a pagar', el('span', { class: 'rd-total-valor' }, dinero(totalPago)), 'rd-lin-total'),
+  ];
+
+  const liquidacion = !mes && f ? boton('Liquidación PDF', { icono: 'descargar', title: 'Descargar la liquidación de la semana en PDF', onclick: async (ev) => {
+    const b = ev.currentTarget; b.classList.add('cargando');
+    try {
+      const { liquidacionPdf } = await import('../liquidacion.js?v=4b574d1');
+      await liquidacionPdf(ctx, { f, persona: v.personas, cargo: cargo?.nombre ?? v.cargo, lunes, domingo, contable });
+    } catch (e) { avisar(`No se pudo generar el PDF: ${e.message}`, 'error'); } finally { b.classList.remove('cargando'); }
+  } }) : null;
+
+  return el('section', { class: 'listado remu-detalle' },
     volver,
     el('header', { class: 'listado-cabecera' },
       el('div', {},
-        el('h1', {}, nombreCompleto(v.personas)),
-        el('p', { class: 'texto-suave' }, condTexto),
-        queSePaga ? el('p', { class: 'texto-chico' }, queSePaga) : null),
-      el('div', { class: 'listado-acciones' },
-        !mes && f ? boton('Liquidación PDF', { icono: 'descargar', title: 'Descargar la liquidación de la semana en PDF', onclick: async (ev) => {
-          const b = ev.currentTarget; b.classList.add('cargando');
-          try {
-            const { liquidacionPdf } = await import('../liquidacion.js?v=731bc1d');
-            await liquidacionPdf(ctx, { f, persona: v.personas, cargo: cargo?.nombre ?? v.cargo, lunes, domingo, contable });
-          } catch (e) { avisar(`No se pudo generar el PDF: ${e.message}`, 'error'); } finally { b.classList.remove('cargando'); }
-        } }) : null,
-        el('span', { class: 'total-grande' }, dinero(totalPago)))),
-    el('div', { class: 'nav-periodo' },
+        el('h1', {}, `${nombreCompleto(v.personas)} · ${mes ? nombreMes(mes) : `Semana ${numSemana(lunes)}`}`),
+        el('p', { class: 'texto-suave' }, condTexto)),
+      el('div', { class: 'listado-acciones' }, el('span', { class: 'total-grande' }, dinero(totalPago)))),
+    el('div', { class: 'rs-semana' },
       el('button', { type: 'button', class: 'boton-icono', 'aria-label': mes ? 'Mes anterior' : 'Semana anterior', onclick: () => irSemana(-1) }, icono('volver')),
-      el('strong', {}, mes ? nombreMes(mes) : `Semana ${numSemana(lunes)} · ${fechaCorta(lunes)} – ${fechaCorta(domingo)}`),
+      el('div', { class: 'rs-semana-txt' }, el('span', {}, mes ? 'Mes' : `Semana ${numSemana(lunes)}`), el('strong', {}, mes ? nombreMes(mes) : `${fechaCorta(lunes)} – ${fechaCorta(domingo)}`)),
       el('button', { type: 'button', class: 'boton-icono', 'aria-label': mes ? 'Mes siguiente' : 'Semana siguiente', onclick: () => irSemana(1) }, icono('derecha'))),
     !c ? el('p', { class: 'aviso-bandeja' }, icono('alerta', { tam: 16 }), 'Esta persona no tiene condiciones de pago: se usan los valores generales. Configúralas en "Condiciones de pago".') : null,
     sinTurno && c ? el('p', { class: 'aviso-bandeja' }, icono('alerta', { tam: 16 }),
@@ -181,32 +231,17 @@ export default async function vista(ctx) {
       ctx.hayVista?.('remu.condiciones') === false ? null : el('a', { href: ctx.ruta('remu.condiciones') }, 'Poner su turno en Condiciones de pago')) : null,
     antesDelTurno ? el('p', { class: 'aviso-bandeja' }, icono('alerta', { tam: 16 }),
       `Su turno rige desde el ${fechaCorta(c.turno_desde)}. Los días anteriores se calculan como antes${c.jornada_horas ? ` (${Number(c.jornada_horas)} h por día: solo se paga lo que pase de ${Number(c.jornada_horas)} h en el día)` : ' (todas sus horas se pagan)'}.`) : null,
-    el('div', { class: 'tabla-contenedor tabla-tarjetas' },
-      el('table', { class: 'tabla' },
-        el('thead', {}, el('tr', {}, (contable ? ['Día', 'Registros', 'Horas', pagables, 'Calculado', 'A pagar'] : ['Día', 'Registros', 'Horas', pagables, 'A pagar']).map((t, i) => el('th', { class: i >= 4 ? 'num' : '' }, t)))),
-        el('tbody', {}, filasDias.length ? filasDias : el('tr', {}, el('td', { colspan: contable ? 6 : 5, class: 'tabla-vacia' }, 'Sin registros.'))))),
-    el('p', { class: 'texto-suave texto-chico' },
-      esFijo ? 'Horas: todo lo registrado en el día. Fuera de su turno: la parte que se paga aparte del sueldo (en fin de semana o feriado, todo el día). ' : 'Horas: todo lo registrado en el día. Pagables: las que se pagan. ',
-      contable ? 'Calculado: lo que da el sistema con sus condiciones. A pagar: lo que se paga; si alguien lo cambió a mano queda destacado con el color de la empresa y dice quién lo cambió y por qué.' : ''),
-    el('div', { class: 'ficha resumen-pago' },
-      el('h2', {}, 'Resumen'),
-      el('dl', { class: 'datos-lista' },
-        ...(mes ? [el('dt', {}, 'Sueldo base'), el('dd', {}, f?.sueldo ? dinero(f.sueldo) : '—'),
-          ...(P ? [el('dt', {}, 'Bono por autos')] : []), ...(P ? [el('dd', {}, !P.valorAuto ? 'Sin bono' : f?.sinBono ? 'Excluido este mes' : (f?.dias || f?.condicion?.art22) ? `${P.autos.length} × ${dinero(P.valorAuto)} = ${dinero(f.bonoAutos)}` : 'No trabajó este mes',
-            P.valorAuto && ctx.puede('remu', 'editar') ? el('button', { type: 'button', class: 'boton-enlace', onclick: () => alternarBono(ctx, personaId, mes, f?.sinBono) }, f?.sinBono ? ' Incluir' : ' Excluir') : null)] : [])] : []),
-        el('dt', {}, esFijo ? 'Horas fuera de su turno' : 'Base'), el('dd', {}, contable && f?.hayAjuste && f.baseContable !== f.base
-          ? [el('strong', {}, dinero(f.baseContable)), el('span', { class: 'texto-suave' }, ` · corregido a mano (calculado: ${esFijo && f.pagoMin ? `${horas(f.pagoMin)} × ${dinero(f.vh)} = ` : ''}${dinero(f.base)})`)]
-          : [esFijo && f?.pagoMin ? `${horas(f.pagoMin)} × ${dinero(f.vh)} = ` : '', dinero(f?.baseContable ?? 0)]),
-        el('dt', {}, esFijo ? 'Otros extras' : 'Extras'), el('dd', {}, dinero(f?.extra ?? 0)),
-        el('dt', {}, 'Vueltas'), el('dd', {}, f?.vueltas ? `${f.vueltas} × ${dinero(f.vv)} = ${dinero(f.montoVueltas)}` : '—', vueltasDia.length ? el('div', { class: 'remu-vueltas' }, vueltasDia) : null),
-        el('dt', {}, 'Descuentos'), el('dd', {}, f?.descuento ? `−${dinero(f.descuento)}` : dinero(0)),
-        el('dt', {}, el('strong', {}, 'Total')), el('dd', {}, el('strong', {}, dinero(totalPago))))),
+    el('div', { class: 'ficha rd-tarjeta' },
+      el('h2', {}, icono('calendario', { tam: 18 }), ' Días trabajados', contable && puedeEditar ? el('span', { class: 'texto-suave texto-chico rd-h2-nota' }, ' · editas el monto a pagar por día →') : null),
+      filasDias.length ? filasDias : el('p', { class: 'texto-suave' }, mes ? 'Sin días registrados este mes.' : 'Sin días registrados esta semana.')),
+    el('div', { class: 'ficha rd-tarjeta' },
+      el('div', { class: 'rd-tarjeta-cabeza' }, el('h2', {}, icono('dinero', { tam: 18 }), ' Desglose'), liquidacion),
+      desglose),
     resumenFaenas,
-    el('div', { class: 'ficha doc-grupo' },
-      el('div', { class: 'listado-cabecera' },
-        el('h2', {}, P ? 'Extras y descuentos del mes' : mes ? 'Extras y descuentos de las semanas del mes' : 'Extras y descuentos de la semana'),
-        ctx.puede('remu', 'crear') && (!mes || P) ? boton('Agregar', { icono: 'mas', onclick: () => agregarItem(ctx, personaId, mes ? { mes } : { semana: lunes }) }) : null),
-      items.length ? items : el('p', { class: 'texto-suave' }, 'Sin extras ni descuentos.')),
+    el('div', { class: 'ficha rd-tarjeta' },
+      el('h2', {}, P ? 'Montos, extras y descuentos del mes' : mes ? 'Montos, extras y descuentos de las semanas del mes' : 'Montos, extras y descuentos'),
+      items.length ? items : el('p', { class: 'texto-suave' }, P || !mes ? `Sin montos adicionales ${mes ? 'este mes' : 'esta semana'}.` : 'Sin extras ni descuentos.'),
+      formItem),
   );
 }
 
@@ -263,24 +298,15 @@ async function alternarBono(ctx, personaId, mes, excluido) {
   ctx.refrescar();
 }
 
-function agregarItem(ctx, personaId, periodo) {
-  abrirFormulario({
-    titulo: 'Agregar extra o descuento',
-    campos: [
-      { id: 'tipo', etiqueta: 'Tipo', opciones: [['extra', 'Extra (bono, viático…)'], ['descuento', 'Descuento (anticipo, préstamo…)']] },
-      { id: 'concepto', etiqueta: 'Concepto', requerido: true },
-      { id: 'monto', etiqueta: 'Monto', tipo: 'number', requerido: true },
-    ],
-    textoGuardar: 'Agregar',
-    alGuardar: async (v) => {
-      const monto = Number(v.monto);
-      if (!(monto > 0)) throw new Error('El monto debe ser mayor que cero.');
-      const { error } = await ctx.api.from('remu_items').insert({ empresa_id: ctx.empresa.id, persona_id: personaId, ...periodo, tipo: v.tipo, concepto: v.concepto.trim(), monto });
-      if (error) throw new Error(error.message);
-      avisar('Agregado.');
-      ctx.refrescar();
-    },
-  });
+// Agrega un extra o descuento desde el formulario de la tarjeta (como InnovaGestión)
+async function insertarItem(ctx, personaId, periodo, tipo, concepto, valorMonto) {
+  const monto = Math.round(Number(valorMonto));
+  if (!(monto > 0)) { avisar('Pon el monto.', 'error'); return; }
+  if (!concepto.trim()) { avisar('Escribe la observación (por qué es este monto).', 'error'); return; }
+  const { error } = await ctx.api.from('remu_items').insert({ empresa_id: ctx.empresa.id, persona_id: personaId, ...periodo, tipo, concepto: concepto.trim(), monto });
+  if (error) { avisar(error.message, 'error'); return; }
+  avisar('Agregado.');
+  ctx.refrescar();
 }
 
 async function quitarItem(ctx, it) {

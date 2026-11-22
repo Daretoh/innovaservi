@@ -13,15 +13,15 @@
 //   semanales (tratos, vueltas, extras) se resta de A pagar ("Pagado semanal"); sigue en el total (costo del mes).
 // - Personas ocultas del cierre (remu_cierres.ocultos) y mes enviado (remu_cierres.cerrado_at): no cambian pagos.
 // Columnas, su orden y las secciones que van se recuerdan en este navegador (isg.remu.cierre).
-import { el } from '../../core/ui/dom.js?v=731bc1d';
-import { icono } from '../../core/ui/iconos.js?v=731bc1d';
-import { boton } from '../../core/ui/tabla.js?v=731bc1d';
-import { avisar } from '../../core/ui/aviso.js?v=731bc1d';
-import { dinero, horas, hoyISO, moverMes, nombreMes } from '../../core/ui/formato.js?v=731bc1d';
-import { abrirFormulario } from '../../core/ui/modal.js?v=731bc1d';
-import { nombreEmpresa } from '../../core/empresas.js?v=731bc1d';
-import { cargarBase, resumenMes, externosMes, nombreCompleto, MOVIMIENTOS } from './datos.js?v=731bc1d';
-import { diasDelMes } from './calculo.js?v=731bc1d';
+import { el } from '../../core/ui/dom.js?v=4b574d1';
+import { icono } from '../../core/ui/iconos.js?v=4b574d1';
+import { boton } from '../../core/ui/tabla.js?v=4b574d1';
+import { avisar } from '../../core/ui/aviso.js?v=4b574d1';
+import { dinero, horas, hoyISO, moverMes, nombreMes } from '../../core/ui/formato.js?v=4b574d1';
+import { abrirFormulario } from '../../core/ui/modal.js?v=4b574d1';
+import { nombreEmpresa } from '../../core/empresas.js?v=4b574d1';
+import { cargarBase, resumenMes, externosMes, nombreCompleto, MOVIMIENTOS } from './datos.js?v=4b574d1';
+import { diasDelMes } from './calculo.js?v=4b574d1';
 
 const estado = { mes: hoyISO().slice(0, 7) };
 const CLAVE = 'isg.remu.cierre';
@@ -383,7 +383,7 @@ async function exportar(ctx, { secs, cols, mes, titulo, grupo }, formato, b) {
     const cab = ['Trabajador', ...cols.map((c) => c.t)];
     const sumar = (filas) => cols.map((c) => (c.suma ? filas.reduce((x, r) => x + (Number(c.v(r)) || 0), 0) : null));
     if (formato === 'excel') {
-      const { nuevoExcel } = await import('../../core/excel.js?v=731bc1d');
+      const { nuevoExcel } = await import('../../core/excel.js?v=4b574d1');
       const x = await nuevoExcel(ctx, { titulo: tituloDoc, subtitulo });
       const valor = (c, v) => (c.tipo === 'horas' ? (v == null ? null : Math.round(v / 6) / 10) : c.neg && v ? -v : v);
       const tipo = (c) => (c.tipo === 'horas' ? 'numero' : c.tipo);
@@ -397,7 +397,7 @@ async function exportar(ctx, { secs, cols, mes, titulo, grupo }, formato, b) {
       await x.guardar(nombreArchivo);
       return;
     }
-    const { nuevoPdf } = await import('../../core/pdf.js?v=731bc1d');
+    const { nuevoPdf } = await import('../../core/pdf.js?v=4b574d1');
     const pdf = await nuevoPdf(ctx, { titulo: tituloDoc, subtitulo, horizontal: true });
     const doc = pdf.doc;
     const tam = cols.length > 16 ? 6.3 : cols.length > 12 ? 7 : 8;
