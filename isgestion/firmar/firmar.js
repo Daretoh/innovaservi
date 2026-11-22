@@ -1,8 +1,8 @@
 // Firma electrónica simple desde el teléfono (Núcleo 026). URL: /firmar/?t=<enlace personal>.
 // 1. Confirmar identidad (RUT y fecha de nacimiento de la ficha) · 2. Leer el documento · 3. Firmar con el dedo.
 // Todo pasa por la Edge Function pública `firmar`; la página no toca la base.
-import { el } from '../core/ui/dom.js?v=4a56f8d';
-import { icono } from '../core/ui/iconos.js?v=4a56f8d';
+import { el } from '../core/ui/dom.js?v=fce4a19';
+import { icono } from '../core/ui/iconos.js?v=fce4a19';
 
 const raiz = document.getElementById('app');
 const token = new URLSearchParams(location.search).get('t') ?? '';

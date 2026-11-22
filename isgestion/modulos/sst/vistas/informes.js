@@ -1,13 +1,13 @@
 // Informe mensual de accidentes por mandante: estado de cada mes y generación del formulario
 // (sin accidentes o con los accidentes registrados ese mes en ese mandante).
-import { el } from '../../../core/ui/dom.js?v=4a56f8d';
-import { icono } from '../../../core/ui/iconos.js?v=4a56f8d';
-import { boton } from '../../../core/ui/tabla.js?v=4a56f8d';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=4a56f8d';
-import { avisar } from '../../../core/ui/aviso.js?v=4a56f8d';
-import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=4a56f8d';
-import { moverMes, nombreMes, rangoMes } from '../../../core/ui/formato.js?v=4a56f8d';
-import { mesActual, cargarClientes, cargarConfig, cargarPersonas } from '../datos.js?v=4a56f8d';
+import { el } from '../../../core/ui/dom.js?v=fce4a19';
+import { icono } from '../../../core/ui/iconos.js?v=fce4a19';
+import { boton } from '../../../core/ui/tabla.js?v=fce4a19';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=fce4a19';
+import { avisar } from '../../../core/ui/aviso.js?v=fce4a19';
+import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=fce4a19';
+import { moverMes, nombreMes, rangoMes } from '../../../core/ui/formato.js?v=fce4a19';
+import { mesActual, cargarClientes, cargarConfig, cargarPersonas } from '../datos.js?v=fce4a19';
 
 const MESES = 6;   // meses que se muestran hacia atrás (desde el anterior)
 
@@ -60,7 +60,7 @@ function generar(ctx, c, periodo, actual, n) {
     campos: [{ id: 'servicio', etiqueta: 'Servicio (texto del formulario)', tipo: 'textarea', valor: actual?.servicio ?? c.mandante?.servicio ?? '' }],
     textoGuardar: 'Generar y guardar',
     alGuardar: async (v) => {
-      const [{ pdfInformeAccidentes, cargarFirmas }, cfg, personas] = await Promise.all([import('../documentos.js?v=4a56f8d'), cargarConfig(ctx), cargarPersonas(ctx, { todas: true })]);
+      const [{ pdfInformeAccidentes, cargarFirmas }, cfg, personas] = await Promise.all([import('../documentos.js?v=fce4a19'), cargarConfig(ctx), cargarPersonas(ctx, { todas: true })]);
       if (!cfg.representante) throw new Error('Falta el nombre del representante en "Firma y mandantes".');
       const { desde, hasta } = rangoMes(periodo);
       const { data: accidentes, error } = await ctx.api.from('sst_accidentes').select('*').eq('empresa_id', ctx.empresa.id).eq('tercero_id', c.id)

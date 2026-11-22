@@ -1,10 +1,10 @@
 // Estado documental: por documento (desplegables con quién lo tiene y a quién le falta, como en InnovaGestión) o
 // matriz persona × tipo de documento, con resumen y filtros.
-import { el } from '../../../core/ui/dom.js?v=4a56f8d';
-import { icono } from '../../../core/ui/iconos.js?v=4a56f8d';
-import { asignadosConPendientes, DIAS_PROXIMAS } from '../proximas.js?v=4a56f8d';
-import { cargarRrhh, cumplimiento, estadoDoc, iconoEstado, nombreCompleto, nivel } from '../datos.js?v=4a56f8d';
-import { plegable } from '../../../core/ui/plegable.js?v=4a56f8d';
+import { el } from '../../../core/ui/dom.js?v=fce4a19';
+import { icono } from '../../../core/ui/iconos.js?v=fce4a19';
+import { asignadosConPendientes, DIAS_PROXIMAS } from '../proximas.js?v=fce4a19';
+import { cargarRrhh, cumplimiento, estadoDoc, iconoEstado, nombreCompleto, nivel } from '../datos.js?v=fce4a19';
+import { plegable } from '../../../core/ui/plegable.js?v=fce4a19';
 
 const filtro = { categoria: '', problemas: false, modo: 'documento' };
 const ORDEN = { venc: 0, pend: 1, prox: 2, ok: 3, na: 4 };

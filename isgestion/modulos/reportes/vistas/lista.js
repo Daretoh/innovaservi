@@ -1,12 +1,13 @@
 // Partes de trabajo: listado, pendientes de clientes que piden informe y creación desde las faenas.
-import { el } from '../../../core/ui/dom.js?v=4a56f8d';
-import { icono } from '../../../core/ui/iconos.js?v=4a56f8d';
-import { listado, boton } from '../../../core/ui/tabla.js?v=4a56f8d';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=4a56f8d';
-import { avisar } from '../../../core/ui/aviso.js?v=4a56f8d';
-import { hoyISO, sumarDias, fechaLarga } from '../../../core/ui/formato.js?v=4a56f8d';
-import { faenasSinParte, nombreTercero, cargarClientes, cargarFaenas } from '../datos.js?v=4a56f8d';
-import { esTelefono } from '../../../core/movil.js?v=4a56f8d';
+import { el } from '../../../core/ui/dom.js?v=fce4a19';
+import { icono } from '../../../core/ui/iconos.js?v=fce4a19';
+import { listado, boton } from '../../../core/ui/tabla.js?v=fce4a19';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=fce4a19';
+import { avisar } from '../../../core/ui/aviso.js?v=fce4a19';
+import { hoyISO, sumarDias, fechaLarga } from '../../../core/ui/formato.js?v=fce4a19';
+import { faenasSinParte, nombreTercero, cargarClientes, cargarFaenas } from '../datos.js?v=fce4a19';
+import { esTelefono } from '../../../core/movil.js?v=fce4a19';
+import { calendario } from './calendario.js?v=fce4a19';
 
 let estado = 'todos';
 // El filtro Todos / Borradores / Confirmados repinta con lo ya cargado (antes volvía a pedir todo y tardaba 2–3 s sin
@@ -40,7 +41,18 @@ async function cargar(ctx) {
   return cache;
 }
 
+// Arriba el calendario del mes (solo lo que lleva informe, por estado) y abajo el listado de partes (Enzo, 2026-11-22)
 export default async function vista(ctx) {
+  const [cal, lista] = await Promise.all([
+    calendario(ctx, { refrescar: () => { soloPintar = true; ctx.refrescar(); } }),
+    listadoPartes(ctx),
+  ]);
+  lista.classList.add('rep-bajo-calendario');
+  const h1 = lista.querySelector('h1'); if (h1) h1.replaceWith(el('h2', {}, h1.textContent));
+  return el('div', { class: 'rep-con-calendario' }, cal, lista);
+}
+
+async function listadoPartes(ctx) {
   const { partes: todas, pendientes } = await cargar(ctx);
   const partes = { data: estado === 'todos' ? todas : todas.filter((p) => p.estado === estado) };
 
@@ -48,16 +60,14 @@ export default async function vista(ctx) {
     [['todos', `Todos (${todas.length})`], ['borrador', `Borradores (${todas.filter((p) => p.estado === 'borrador').length})`], ['confirmado', `Confirmados (${todas.filter((p) => p.estado === 'confirmado').length})`]].map(([v, t]) =>
       el('button', { type: 'button', 'aria-pressed': String(estado === v), onclick: () => { estado = v; soloPintar = true; ctx.refrescar(); } }, t)));
 
-  const acciones = [segmento];
-  if (ctx.puede('reportes', 'crear')) acciones.push(boton('Nuevo parte', { icono: 'mas', tipo: 'primario', onclick: () => nuevo(ctx, null) }));
+  const acciones = [segmento];   // "Nuevo parte" va arriba, en el calendario
 
   // Teléfono (para subir las fotos en terreno): tarjetas en vez de la tabla; las faenas sin parte, plegadas
   if (esTelefono()) {
     const puedeCrear = ctx.puede('reportes', 'crear');
     return el('section', { class: 'listado rep-movil' },
-      el('h1', {}, 'Reportes de trabajo'),
+      el('h1', {}, 'Partes de trabajo'),
       segmento,
-      puedeCrear ? boton('Nuevo parte', { icono: 'mas', tipo: 'primario', onclick: () => nuevo(ctx, null) }) : null,
       pendientes.length ? el('details', { class: 'ficha rep-pendientes' },
         el('summary', {}, icono('alerta', { tam: 16 }), ` Faenas sin parte (${pendientes.length})`),
         pendientes.map((f) => el('div', { class: 'doc-fila' }, el('span', { class: 'doc-nombre' }, f.etiqueta),
@@ -94,7 +104,7 @@ export default async function vista(ctx) {
   return lista;
 }
 
-async function nuevo(ctx, preseleccion) {
+export async function nuevo(ctx, preseleccion) {
   const disponibles = await faenasSinParte(ctx, sumarDias(hoyISO(), -45), sumarDias(hoyISO(), 14));
   const clientes = (await cargarClientes(ctx)).filter((c) => c.es_cliente).sort((a, b) => (a.razon_social ?? '').localeCompare(b.razon_social ?? ''));
   // La faena desde la que se creó va primera (marcada) y luego las del mismo cliente: antes quedaba marcada al fondo

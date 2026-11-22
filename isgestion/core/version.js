@@ -1,8 +1,8 @@
 // Aviso de versión nueva (2026-11-13, pedido de Enzo): al publicar, publicar.mjs escribe version.json con el commit y
 // cada archivo lleva ?v=<commit>. La app compara su versión con version.json al volver a la pestaña y cada 5 minutos;
 // si cambió, muestra un aviso fijo con "Actualizar" (recarga la página). En local (sin ?v) no hace nada.
-import { el } from './ui/dom.js?v=4a56f8d';
-import { icono } from './ui/iconos.js?v=4a56f8d';
+import { el } from './ui/dom.js?v=fce4a19';
+import { icono } from './ui/iconos.js?v=fce4a19';
 
 const actual = new URL(import.meta.url).searchParams.get('v');
 let mostrado = false;
@@ -10,7 +10,7 @@ let mostrado = false;
 async function revisar() {
   if (!actual || mostrado || document.visibilityState === 'hidden') return;
   try {
-    const url = new URL('../version.json?v=4a56f8d', import.meta.url);
+    const url = new URL('../version.json?v=fce4a19', import.meta.url);
     url.search = `?t=${Date.now()}`;
     const r = await fetch(url, { cache: 'no-store' });
     if (!r.ok) return;
