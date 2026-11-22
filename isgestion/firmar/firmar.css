@@ -1,0 +1,15 @@
+/* Firma electrónica simple desde el teléfono (usa las clases fp-* de ficha.css) */
+.fi-pasos { display: flex; gap: 6px; margin: 0 0 14px; }
+.fi-pasos span { flex: 1; height: 4px; border-radius: 4px; background: var(--fp-borde); }
+.fi-pasos span.on { background: var(--empresa); }
+.fi-doc { display: flex; align-items: center; gap: 12px; padding: 14px; border: 1px solid var(--fp-borde); border-radius: 12px; background: var(--fondo-sutil); text-decoration: none; color: inherit; font-weight: 600; }
+.fi-doc .icono { color: var(--empresa); flex: none; }
+.fi-lienzo { position: relative; border: 2px dashed var(--fp-borde); border-radius: 12px; background: var(--superficie); touch-action: none; }
+.fi-lienzo canvas { display: block; width: 100%; height: 200px; cursor: crosshair; }
+.fi-lienzo .fi-guia { position: absolute; left: 16px; right: 16px; bottom: 44px; border-bottom: 1px solid var(--borde); pointer-events: none; }
+.fi-lienzo .fi-ph { position: absolute; inset: 0; display: grid; place-items: center; color: var(--texto-suave); pointer-events: none; font-size: .95rem; }
+.fi-lienzo .fi-ph[hidden] { display: none; }
+.fi-fila { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.fi-legal { font-size: .8rem; color: var(--texto-suave); line-height: 1.45; }
+.fi-error { color: var(--error); font-weight: 600; }
+.fp-cabecera h1 { color: #fff; }   /* sobre la cabecera oscura, como el resto del texto de ficha.css */
