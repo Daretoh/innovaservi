@@ -1,12 +1,12 @@
 // Proyectos: datos compartidos de las vistas (proyectos, partidas, modelos de SketchUp), cálculos (totales con IVA),
 // vínculo con el inventario del modelo y el selector de proyecto. Migrado del prototipo cotizador.html.
-import { el } from '../../core/ui/dom.js?v=fce4a19';
-import { icono } from '../../core/ui/iconos.js?v=fce4a19';
-import { boton } from '../../core/ui/tabla.js?v=fce4a19';
-import { abrirFormulario } from '../../core/ui/modal.js?v=fce4a19';
-import { avisar } from '../../core/ui/aviso.js?v=fce4a19';
-import { dinero } from '../../core/ui/formato.js?v=fce4a19';
-import { urlFirmada, urlsFirmadas, subirArchivo, almacen } from '../../core/adjuntos.js?v=fce4a19';
+import { el } from '../../core/ui/dom.js?v=65230b8';
+import { icono } from '../../core/ui/iconos.js?v=65230b8';
+import { boton } from '../../core/ui/tabla.js?v=65230b8';
+import { abrirFormulario } from '../../core/ui/modal.js?v=65230b8';
+import { avisar } from '../../core/ui/aviso.js?v=65230b8';
+import { dinero } from '../../core/ui/formato.js?v=65230b8';
+import { urlFirmada, urlsFirmadas, subirArchivo, almacen } from '../../core/adjuntos.js?v=65230b8';
 
 export const ESTADOS = [['por_cotizar', 'Por cotizar'], ['cotizado', 'Cotizado'], ['aprobado', 'Aprobado'],
   ['comprado', 'Comprado'], ['alternativa', 'Alternativa'], ['descartado', 'Descartado']];
@@ -296,7 +296,7 @@ export function chipModelo(em, alUsar) {
 // ---------------------------------------------------------------- Interfaz común
 export function cargarEstilos() {
   if (document.getElementById('proyectos-css')) return;
-  document.head.append(el('link', { id: 'proyectos-css', rel: 'stylesheet', href: new URL('./proyectos.css?v=fce4a19', import.meta.url).href }));
+  document.head.append(el('link', { id: 'proyectos-css', rel: 'stylesheet', href: new URL('./proyectos.css?v=65230b8', import.meta.url).href }));
 }
 
 // Pestañas de proyecto (arriba de cada vista) y "Nuevo proyecto"

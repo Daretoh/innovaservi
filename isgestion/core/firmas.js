@@ -2,13 +2,13 @@
 // ver quién firmó. La persona firma en /firmar/?t=… (Edge Function pública `firmar`).
 //   enviarAFirmar(ctx, { origen, id, personas: [{ id, nombre, telefono }], titulo, alTerminar })
 //   seccionFirmasEntrega(ctx, ent, participantes) → bloque para Prevención SST → registro de entrega
-import { el } from './ui/dom.js?v=fce4a19';
-import { icono } from './ui/iconos.js?v=fce4a19';
-import { boton } from './ui/tabla.js?v=fce4a19';
-import { avisar } from './ui/aviso.js?v=fce4a19';
-import { telefono } from './ui/formato.js?v=fce4a19';
-import { urlApp } from './api.js?v=fce4a19';
-import { urlFirmada } from './adjuntos.js?v=fce4a19';
+import { el } from './ui/dom.js?v=65230b8';
+import { icono } from './ui/iconos.js?v=65230b8';
+import { boton } from './ui/tabla.js?v=65230b8';
+import { avisar } from './ui/aviso.js?v=65230b8';
+import { telefono } from './ui/formato.js?v=65230b8';
+import { urlApp } from './api.js?v=65230b8';
+import { urlFirmada } from './adjuntos.js?v=65230b8';
 
 const hora = (t) => new Date(t).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' });
 export function enlaceWhatsapp(tel, texto) {
@@ -19,7 +19,7 @@ export function enlaceWhatsapp(tel, texto) {
 }
 const mensaje = (ctx, nombre, titulo, enlace) =>
   `Hola ${String(nombre ?? '').split(' ')[0]}, ${ctx.empresa.nombre_fantasia || ctx.empresa.razon_social} te envía "${titulo}" para firmar desde tu teléfono. `
-  + `Ábrelo aquí, confirma tu RUT y firma con el dedo: ${enlace}`;
+  + `Ábrelo aquí, confirma tu RUT y firma (sin imprimir ni dibujar): ${enlace}`;
 
 // Crea los enlaces (uno por persona; reenviar anula el anterior) y muestra una ventana con el botón de WhatsApp de cada uno
 export async function enviarAFirmar(ctx, { origen, id, personas, titulo, casillas = null, alTerminar }) {
