@@ -20,12 +20,12 @@ export const mesTexto = (p) => {
 
 // Personas con vínculo en la empresa (activas primero), con cargo y RUT
 export async function cargarPersonas(ctx, { todas = false } = {}) {
-  let q = ctx.api.from('persona_empresa').select('persona_id, cargo, estado, personas(nombres, apellido_paterno, apellido_materno, rut)')
+  let q = ctx.api.from('persona_empresa').select('persona_id, cargo, estado, personas(nombres, apellido_paterno, apellido_materno, rut, telefono)')
     .eq('empresa_id', ctx.empresa.id).is('deleted_at', null);
   if (!todas) q = q.eq('estado', 'activo');
   const { data, error } = await q;
   if (error) throw error;
-  const lista = data.map((v) => ({ id: v.persona_id, cargo: v.cargo, estado: v.estado, rut: v.personas?.rut, nombre: nombreCompleto(v.personas) }))
+  const lista = data.map((v) => ({ id: v.persona_id, cargo: v.cargo, estado: v.estado, rut: v.personas?.rut, telefono: v.personas?.telefono, nombre: nombreCompleto(v.personas) }))
     .sort((a, b) => a.nombre.localeCompare(b.nombre));
   return { lista, de: new Map(lista.map((p) => [p.id, p])) };
 }

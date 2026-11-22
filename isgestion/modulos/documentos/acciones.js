@@ -2,8 +2,8 @@
 // - documento de un trabajador → su documentación de RRHH (tipo con el mismo slug; si la empresa no lo tiene, se crea
 //   sin contar para el % al día, como los "firmados" de InnovaGestión) y queda entregado con el PDF.
 // - documento de la empresa → nueva versión del documento preventivo en Prevención SST (se crea si no existe).
-import { subirArchivo, eliminarArchivo } from '../../core/adjuntos.js?v=4b574d1';
-import { hoyISO } from '../../core/ui/formato.js?v=4b574d1';
+import { subirArchivo, eliminarArchivo } from '../../core/adjuntos.js?v=4a56f8d';
+import { hoyISO } from '../../core/ui/formato.js?v=4a56f8d';
 
 const NOMBRES_RRHH = {
   contrato: 'Contrato', perfil: 'Perfil de cargo', datos: 'Ficha de datos del trabajador', epp: 'Registro de entrega de EPP',
@@ -13,7 +13,8 @@ const NOMBRES_RRHH = {
 export const puedeGuardarRrhh = (ctx) => ctx.puede('rrhh', 'crear') && ctx.puede('rrhh', 'editar');
 export const puedeGuardarSst = (ctx) => ctx.puede('sst', 'crear') && ctx.puede('sst', 'ver');
 
-export async function guardarEnRrhh(ctx, slug, personaId, blob, nombreArchivo, nombreDoc) {
+// porFirmar: queda pendiente (nota 'Por firmar por WhatsApp') hasta que la persona firma. Devuelve el id del documento.
+export async function guardarEnRrhh(ctx, slug, personaId, blob, nombreArchivo, nombreDoc, { porFirmar = false } = {}) {
   const e = ctx.empresa.id;
   let { data: tipo, error } = await ctx.api.from('rrhh_tipos_doc').select('slug, ambito').eq('empresa_id', e).eq('slug', slug).maybeSingle();
   if (error) throw new Error(error.message);
@@ -29,7 +30,8 @@ export async function guardarEnRrhh(ctx, slug, personaId, blob, nombreArchivo, n
   let q = ctx.api.from('rrhh_documentos').select('id, archivo').eq('persona_id', personaId).eq('tipo_slug', slug).is('deleted_at', null);
   q = personal ? q.is('empresa_id', null) : q.eq('empresa_id', e);
   const { data: previo } = await q.maybeSingle();
-  const cambios = { estado: 'entregado', fecha: hoyISO(), archivo: ruta, nota: 'Generado con ISgestión' };
+  const cambios = porFirmar ? { estado: 'pendiente', fecha: hoyISO(), archivo: ruta, nota: 'Por firmar por WhatsApp' }
+    : { estado: 'entregado', fecha: hoyISO(), archivo: ruta, nota: 'Generado con ISgestión' };
   const r = previo
     ? await ctx.api.from('rrhh_documentos').update(cambios).eq('id', previo.id).select('id')
     : await ctx.api.from('rrhh_documentos').insert({ empresa_id: personal ? null : e, persona_id: personaId, tipo_slug: slug, ...cambios }).select('id');
@@ -37,6 +39,7 @@ export async function guardarEnRrhh(ctx, slug, personaId, blob, nombreArchivo, n
     await eliminarArchivo(ctx.api, ruta).catch(() => {});
     throw new Error(r.error?.message ?? 'No tienes permiso para guardar en la documentación del trabajador.');
   }
+  return r.data[0].id;
 }
 
 // Registro en terreno (charla diaria, checklist) → Prevención SST → Registros de entrega, por firmar y con su PDF; al
@@ -45,7 +48,8 @@ export async function guardarRegistro(ctx, r, blob, nombreArchivo) {
   const e = ctx.empresa.id, id = crypto.randomUUID();
   const archivo = new File([blob], nombreArchivo, { type: 'application/pdf' });
   const { ruta } = await subirArchivo(ctx.api, { empresaId: e, modulo: 'sst', archivo, tabla: 'sst_entregas', registroId: id, tipos: ['application/pdf'] });
-  const { error } = await ctx.api.from('sst_entregas').insert({ id, empresa_id: e, tipo: r.tipo, tema: r.tema, fecha: r.fecha, relator: r.relator || null, contenido: r.contenido || null, archivo: ruta });
+  const { error } = await ctx.api.from('sst_entregas').insert({ id, empresa_id: e, tipo: r.tipo, tema: r.tema, fecha: r.fecha, relator: r.relator || null, contenido: r.contenido || null, archivo: ruta,
+    firma_casillas: r.casillas?.length ? r.casillas : null });
   if (error) { await eliminarArchivo(ctx.api, ruta).catch(() => {}); throw new Error(error.message); }
   if (r.personas.length) {
     const p = await ctx.api.from('sst_entrega_personas').insert(r.personas.map((t) => ({ entrega_id: id, empresa_id: e, persona_id: t.id, cargo: t.cargo || null })));

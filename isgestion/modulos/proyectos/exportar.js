@@ -1,10 +1,10 @@
 // Proyectos: cálculo del resumen formal (lo usan la pantalla y el PDF), Excel con el membrete de la empresa y PDF del
 // resumen ("Resumen de materiales y mobiliario", como el que se imprimía desde el prototipo).
-import { nuevoExcel } from '../../core/excel.js?v=4b574d1';
-import { nuevoPdf, rgb } from '../../core/pdf.js?v=4b574d1';
+import { nuevoExcel } from '../../core/excel.js?v=4a56f8d';
+import { nuevoPdf, rgb } from '../../core/pdf.js?v=4a56f8d';
 import {
   NOMBRE_ESTADO, NO_SUMA, FUENTES, clp, subtotal, suma, tienePrecio, gDe, ordenGrupos, neto, fmtNum, hoyLargo,
-} from './datos.js?v=4b574d1';
+} from './datos.js?v=4a56f8d';
 
 const n = (v) => fmtNum(v, 'cantidad');
 

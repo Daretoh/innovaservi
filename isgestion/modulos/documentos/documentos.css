@@ -128,3 +128,5 @@
 .dg-pag-fir{position:absolute;left:10%;bottom:12%;width:28%;height:0;} .dg-pag-fir.dg-pag-rep{left:58%;}
 .dg-pag-fir img{position:absolute;left:50%;bottom:0;transform:translateX(-50%);width:75%;height:auto;max-width:none;}
 .dg-pag-fir img.rs-tim{left:95%;width:60%;}
+/* Al generar el PDF el documento toma siempre el ancho de la hoja, aunque la pantalla sea angosta (teléfono o panel) */
+.dg-doc.dg-capturando{width:820px!important;max-width:none!important;box-sizing:border-box;margin-left:0;margin-right:0;}

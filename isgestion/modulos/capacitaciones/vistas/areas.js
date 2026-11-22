@@ -1,12 +1,12 @@
 // Capacitaciones → Áreas: las agrupaciones de la biblioteca (ej.: Pulido, Cerámicos, Lavados; Seguridad, Operación).
 // Cada empresa crea las suyas. Eliminar un área deja sus contenidos "Sin área".
 // Ruta: #/capacitaciones.areas
-import { el } from '../../../core/ui/dom.js?v=4b574d1';
-import { icono } from '../../../core/ui/iconos.js?v=4b574d1';
-import { boton } from '../../../core/ui/tabla.js?v=4b574d1';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=4b574d1';
-import { avisar } from '../../../core/ui/aviso.js?v=4b574d1';
-import { cargarBiblioteca, cargarEstilos } from '../datos.js?v=4b574d1';
+import { el } from '../../../core/ui/dom.js?v=4a56f8d';
+import { icono } from '../../../core/ui/iconos.js?v=4a56f8d';
+import { boton } from '../../../core/ui/tabla.js?v=4a56f8d';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=4a56f8d';
+import { avisar } from '../../../core/ui/aviso.js?v=4a56f8d';
+import { cargarBiblioteca, cargarEstilos } from '../datos.js?v=4a56f8d';
 
 export default async function vista(ctx) {
   cargarEstilos();

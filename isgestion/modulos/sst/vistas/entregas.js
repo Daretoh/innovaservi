@@ -1,10 +1,10 @@
 // Registros de entrega (capacitación, charla, EPP, PTS): se arma la lista, se imprime para firmar y
 // se sube el escaneo; al subirlo, cada persona queda con el documento de RRHH entregado.
-import { el } from '../../../core/ui/dom.js?v=4b574d1';
-import { listado, boton } from '../../../core/ui/tabla.js?v=4b574d1';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=4b574d1';
-import { fechaLarga, hoyISO } from '../../../core/ui/formato.js?v=4b574d1';
-import { TIPOS_ENTREGA, nombreDe, cargarPersonas } from '../datos.js?v=4b574d1';
+import { el } from '../../../core/ui/dom.js?v=4a56f8d';
+import { listado, boton } from '../../../core/ui/tabla.js?v=4a56f8d';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=4a56f8d';
+import { fechaLarga, hoyISO } from '../../../core/ui/formato.js?v=4a56f8d';
+import { TIPOS_ENTREGA, nombreDe, cargarPersonas } from '../datos.js?v=4a56f8d';
 
 let filtro = 'todos';
 const nombreTipo = nombreDe(TIPOS_ENTREGA);
@@ -34,7 +34,13 @@ export default async function vista(ctx) {
     [['todos', 'Todos'], ['pendiente', 'Por firmar'], ['firmado', 'Firmados']].map(([v, t]) =>
       el('button', { type: 'button', 'aria-pressed': String(filtro === v), onclick: () => { filtro = v; ctx.refrescar(); } }, t)));
   const acciones = [segmento];
-  if (ctx.puede('sst', 'crear')) acciones.push(boton('Nuevo registro', { icono: 'mas', tipo: 'primario', onclick: () => nuevo(ctx) }));
+  // Con el generador de documentos: elegir plantilla (charla, checklist) o registro libre
+  const nuevoRegistro = async () => {
+    if (!ctx.puede('documentos', 'ver')) { nuevo(ctx); return; }
+    const { elegirRegistro } = await import('../../documentos/elegir.js?v=4a56f8d');
+    elegirRegistro(ctx, { libre: () => nuevo(ctx) });
+  };
+  if (ctx.puede('sst', 'crear')) acciones.push(boton('Nuevo registro', { icono: 'mas', tipo: 'primario', onclick: nuevoRegistro }));
 
   const lista = listado({
     titulo: 'Registros de entrega',
@@ -49,7 +55,7 @@ export default async function vista(ctx) {
       { titulo: 'Estado', valor: (r) => el('span', { class: `chip ${r.estado === 'firmado' ? 'chip-ok' : 'chip-prox'}` }, r.estado === 'firmado' ? 'Firmado' : 'Por firmar') },
     ],
   });
-  lista.append(el('p', { class: 'texto-suave texto-chico' }, 'Imprime el registro, hazlo firmar y sube el escaneo: si elegiste un documento de RRHH, queda entregado en la ficha de cada persona con ese archivo.'));
+  lista.append(el('p', { class: 'texto-suave texto-chico' }, 'Se firma por WhatsApp (o se imprime y se sube el escaneo). Cada persona que firma queda con el registro en su ficha de RRHH.'));
   return lista;
 }
 

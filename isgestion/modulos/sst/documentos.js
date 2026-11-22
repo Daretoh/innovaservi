@@ -1,10 +1,10 @@
 // Documentos PDF de Prevención SST con el membrete de la empresa: salida a atención médica,
 // formulario de investigación de accidentes (informe mensual) y registro de entrega para firmar.
 // Formatos tomados de InnovaGestión; los datos de la empresa salen de la empresa y de sst_config.
-import { cargarJsPdf, cargarLogo, rgb, sellar, contactoEmpresa } from '../../core/pdf.js?v=4b574d1';
-import { nombreEmpresa } from '../../core/empresas.js?v=4b574d1';
-import { fechaLarga, hhmm } from '../../core/ui/formato.js?v=4b574d1';
-import { SINTOMAS, TIPOS_ACC, GRAVEDAD, mesTexto, nombreDe } from './datos.js?v=4b574d1';
+import { cargarJsPdf, cargarLogo, rgb, sellar, contactoEmpresa } from '../../core/pdf.js?v=4a56f8d';
+import { nombreEmpresa } from '../../core/empresas.js?v=4a56f8d';
+import { fechaLarga, hhmm } from '../../core/ui/formato.js?v=4a56f8d';
+import { SINTOMAS, TIPOS_ACC, GRAVEDAD, mesTexto, nombreDe } from './datos.js?v=4a56f8d';
 
 const M = 15;
 const TEXTO = [28, 35, 48];
@@ -217,9 +217,15 @@ export async function pdfEntrega(ctx, ent, personas) {
     u.tabla(['Elemento', 'Cantidad'], ent.items.map((x) => [x.item, String(x.cantidad ?? 1)]), { columnStyles: { 1: { cellWidth: 25, halign: 'center' } } });
   }
   u.seccion('Participantes');
+  // Casilla de firma de cada participante (mm desde arriba a la izquierda): ahí se estampa su firma electrónica
+  u.doc.__firmas = [];
   u.tabla(['N°', 'Nombre', 'RUT', 'Cargo', 'Firma'], personas.map((p, i) => [String(i + 1), p.nombre, p.rut ?? '', p.cargo ?? '', '']),
     { styles: { font: 'helvetica', fontSize: 9, cellPadding: 2, textColor: TEXTO, lineColor: LINEA, lineWidth: 0.2, minCellHeight: 10 },
-      columnStyles: { 0: { cellWidth: 9, halign: 'center' }, 2: { cellWidth: 26 }, 3: { cellWidth: 36 }, 4: { cellWidth: 38 } } });
+      columnStyles: { 0: { cellWidth: 9, halign: 'center' }, 2: { cellWidth: 26 }, 3: { cellWidth: 36 }, 4: { cellWidth: 38 } },
+      didDrawCell: (d) => {
+        if (d.section !== 'body' || d.column.index !== 4 || !personas[d.row.index]?.id) return;
+        u.doc.__firmas.push({ persona_id: personas[d.row.index].id, pagina: u.doc.internal.getCurrentPageInfo().pageNumber - 1, x: +d.cell.x.toFixed(2), y: +d.cell.y.toFixed(2), w: +d.cell.width.toFixed(2), h: +d.cell.height.toFixed(2) });
+      } });
   const decl = ent.tipo === 'epp'
     ? 'Los trabajadores individualizados declaran recibir los elementos de protección personal indicados, en buen estado, y haber sido instruidos en su uso correcto, cuidado y reposición, comprometiéndose a usarlos durante su trabajo (D.S. N° 44 y artículo 68 de la Ley N° 16.744).'
     : ent.tipo === 'pts'

@@ -2,21 +2,21 @@
 // a pantalla completa (como en InnovaGestión): los campos subrayados se escriben ahí mismo, los bloques opcionales se
 // quitan con la ×, se elige el formato (variante) y los trabajadores que firman; luego se imprime, se descarga en PDF
 // o se guarda donde corresponde (RRHH o Prevención SST), según lo que pase quien abre el documento.
-import { el } from '../../core/ui/dom.js?v=4b574d1';
-import { icono } from '../../core/ui/iconos.js?v=4b574d1';
-import { boton } from '../../core/ui/tabla.js?v=4b574d1';
-import { avisar } from '../../core/ui/aviso.js?v=4b574d1';
-import { cargarJsPdf, cargarLogo, sellar } from '../../core/pdf.js?v=4b574d1';
-import { crearPlantillas } from './plantillas.js?v=4b574d1';
-import { pdfDesde } from './pdf.js?v=4b574d1';
-import { fmtRut } from '../../core/lector-dte.js?v=4b574d1';
-import { activarCampos } from './campos.js?v=4b574d1';
+import { el } from '../../core/ui/dom.js?v=4a56f8d';
+import { icono } from '../../core/ui/iconos.js?v=4a56f8d';
+import { boton } from '../../core/ui/tabla.js?v=4a56f8d';
+import { avisar } from '../../core/ui/aviso.js?v=4a56f8d';
+import { cargarJsPdf, cargarLogo, sellar } from '../../core/pdf.js?v=4a56f8d';
+import { crearPlantillas } from './plantillas.js?v=4a56f8d';
+import { pdfDesde } from './pdf.js?v=4a56f8d';
+import { fmtRut } from '../../core/lector-dte.js?v=4a56f8d';
+import { activarCampos } from './campos.js?v=4a56f8d';
 
 let estilos = null;
 function cargarEstilos() {
   estilos ??= new Promise((ok) => {
     const l = document.createElement('link');
-    l.rel = 'stylesheet'; l.href = new URL('./documentos.css?v=4b574d1', import.meta.url).href;
+    l.rel = 'stylesheet'; l.href = new URL('./documentos.css?v=4a56f8d', import.meta.url).href;
     l.onload = ok; l.onerror = ok;
     document.head.append(l);
   });
@@ -83,7 +83,7 @@ export function trabajador(v, extra = {}) {
 }
 
 // Abre un documento. o: { titulo, construir(variante, personas) → html, variantes?: [{v, n}], variante?,
-//   personas?: 'una' | 'lista', elegibles?: [trabajador], elegidos?: [trabajador], guardar?: { texto, validar?(hoja) → boolean, alGuardar(blob, { variante, personas, hoja }) },
+//   personas?: 'una' | 'lista', elegibles?: [trabajador], elegidos?: [trabajador], guardar?: { texto, validar?(hoja) → boolean, alGuardar(blob, { variante, personas, hoja }) }, firmar?: { texto, alFirmar(blob, …) }, firmaDe?: persona (su casilla de firma),
 //   campos?: opciones de activarCampos (campos.js: ítems marcables, listas de datos cargados, lecturas de gases), nombreArchivo }
 export async function abrirDocumento(o) {
   await cargarEstilos();
@@ -105,6 +105,7 @@ export async function abrirDocumento(o) {
     for (const img of hoja.querySelectorAll('img')) if (!img.getAttribute('src')) img.remove();
     firmaMovible(hoja);
     aplicarFirmas();
+    if (o.firmaDe) marcarFirmaTrabajador(hoja, o.firmaDe);
   };
   // Quitar bloques opcionales; recordar lo escrito en campos con data-ls (relator, horario…)
   hoja.addEventListener('click', (ev) => { const x = ev.target.closest('.dg-x'); if (x) x.closest('.dg-opt')?.remove(); });
@@ -153,9 +154,15 @@ export async function abrirDocumento(o) {
     el('span', { class: 'dg-barra-acc' },
       boton('Imprimir', { icono: 'documento', onclick: accion(async () => window.open(URL.createObjectURL((await pdf()).output('blob')), '_blank')) }),
       boton('Descargar PDF', { icono: 'descargar', onclick: accion(async () => (await pdf()).save(nombre())) }),
+      o.firmar ? boton(o.firmar.texto ?? 'Enviar a firmar', { icono: 'chat', onclick: accion(async () => {
+        const d = await pdf();
+        await o.firmar.alFirmar(d.output('blob'), { variante, personas, nombre: nombre(), hoja, casillas: d.__firmas ?? [] });
+        cerrar();
+      }) }) : null,
       o.guardar ? boton(o.guardar.texto ?? 'Guardar', { icono: 'check', tipo: 'primario', onclick: accion(async () => {
         if (o.guardar.validar && !o.guardar.validar(hoja)) return;
-        await o.guardar.alGuardar((await pdf()).output('blob'), { variante, personas, nombre: nombre(), hoja });
+        const d = await pdf();
+        await o.guardar.alGuardar(d.output('blob'), { variante, personas, nombre: nombre(), hoja, casillas: d.__firmas ?? [] });
         cerrar();
       }) }) : null));
   const capa = el('div', { class: 'dg-capa', role: 'dialog', 'aria-modal': 'true', 'aria-label': o.titulo },
@@ -205,6 +212,13 @@ function elegirPersonas(o, actuales, listo) {
         } }))));
   document.body.append(dialogo);
   dialogo.showModal();
+}
+
+// Documento de un trabajador: su firma electrónica va justo arriba de "Firma del trabajador" (o "Toma de conocimiento")
+function marcarFirmaTrabajador(hoja, personaId) {
+  for (const d of hoja.querySelectorAll('.dg-firmas > div')) {
+    if (/^\s*(firma (del )?trabajador|toma de conocimiento)/i.test(d.textContent || '')) { d.setAttribute('data-firma', personaId); d.setAttribute('data-encima', ''); }
+  }
 }
 
 // Firma y timbre editables en el documento (como InnovaGestión): arrastrar para mover, rueda del mouse para agrandar o

@@ -2,13 +2,13 @@
 // ver quién firmó. La persona firma en /firmar/?t=… (Edge Function pública `firmar`).
 //   enviarAFirmar(ctx, { origen, id, personas: [{ id, nombre, telefono }], titulo, alTerminar })
 //   seccionFirmasEntrega(ctx, ent, participantes) → bloque para Prevención SST → registro de entrega
-import { el } from './ui/dom.js?v=4b574d1';
-import { icono } from './ui/iconos.js?v=4b574d1';
-import { boton } from './ui/tabla.js?v=4b574d1';
-import { avisar } from './ui/aviso.js?v=4b574d1';
-import { telefono } from './ui/formato.js?v=4b574d1';
-import { urlApp } from './api.js?v=4b574d1';
-import { urlFirmada } from './adjuntos.js?v=4b574d1';
+import { el } from './ui/dom.js?v=4a56f8d';
+import { icono } from './ui/iconos.js?v=4a56f8d';
+import { boton } from './ui/tabla.js?v=4a56f8d';
+import { avisar } from './ui/aviso.js?v=4a56f8d';
+import { telefono } from './ui/formato.js?v=4a56f8d';
+import { urlApp } from './api.js?v=4a56f8d';
+import { urlFirmada } from './adjuntos.js?v=4a56f8d';
 
 const hora = (t) => new Date(t).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' });
 export function enlaceWhatsapp(tel, texto) {
@@ -22,8 +22,8 @@ const mensaje = (ctx, nombre, titulo, enlace) =>
   + `Ábrelo aquí, confirma tu RUT y firma con el dedo: ${enlace}`;
 
 // Crea los enlaces (uno por persona; reenviar anula el anterior) y muestra una ventana con el botón de WhatsApp de cada uno
-export async function enviarAFirmar(ctx, { origen, id, personas, titulo, alTerminar }) {
-  const { data, error } = await ctx.api.rpc('firma_crear', { p_empresa: ctx.empresa.id, p_origen: origen, p_id: id, p_personas: personas.map((p) => p.id) });
+export async function enviarAFirmar(ctx, { origen, id, personas, titulo, casillas = null, alTerminar }) {
+  const { data, error } = await ctx.api.rpc('firma_crear', { p_empresa: ctx.empresa.id, p_origen: origen, p_id: id, p_personas: personas.map((p) => p.id), p_casillas: casillas?.length ? casillas : null });
   if (error) throw new Error(error.message);
   const de = new Map(personas.map((p) => [p.id, p]));
   const filas = data.map((x) => {
@@ -48,6 +48,23 @@ export async function enviarAFirmar(ctx, { origen, id, personas, titulo, alTermi
       el('div', { class: 'modal-pie' }, boton('Listo', { tipo: 'primario', onclick: cerrar }))));
   document.body.append(dialogo);
   dialogo.showModal();
+}
+
+// Ver el PDF de un registro de entrega: firmado, con las firmas que haya (se arma de nuevo) o el original sin firmas
+export async function verPdf(ctx, ent) {
+  const ventana = window.open('', '_blank');   // abierta al tocar: después de esperar, el navegador la bloquearía
+  try {
+    let ruta = ent.archivo;
+    if (ent.estado !== 'firmado') {
+      const { count } = await ctx.api.from('firma_solicitudes').select('id', { count: 'exact', head: true }).eq('entrega_id', ent.id).eq('estado', 'firmada');
+      if (count) {
+        const { data: r, error: e } = await ctx.api.functions.invoke('firmar', { body: { accion: 'armar', entrega_id: ent.id, solo_ver: true } });
+        if (!e && !r?.error && r?.archivo) ruta = r.archivo;   // si no se pudo armar, se ve el original
+      }
+    }
+    const u = await urlFirmada(ctx.api, ruta, 300);
+    if (ventana) ventana.location = u; else window.open(u, '_blank', 'noopener');
+  } catch (e) { ventana?.close(); avisar(e.message, 'error'); }
 }
 
 // Estado de firma de cada participante de un registro de entrega, con enviar, reenviar y terminar
@@ -86,17 +103,6 @@ export async function seccionFirmasEntrega(ctx, ent, participantes) {
     if (e || r?.error) throw new Error(r?.error || e.message);
     return r;
   };
-  // PDF con las firmas que hay, aunque falte gente (se arma de nuevo para incluir las últimas)
-  const verConFirmas = boton(`Ver con las firmas (${firmaron.length})`, { icono: 'ojo', onclick: async (ev) => {
-    const b = ev.currentTarget; b.disabled = true;
-    const ventana = window.open('', '_blank');   // abierta al tocar: después de esperar, el navegador la bloquearía
-    try {
-      const r = await armar(true);
-      if (!r.archivo) throw new Error('Nadie de los participantes ha firmado todavía.');
-      const u = await urlFirmada(ctx.api, r.archivo, 300);
-      if (ventana) ventana.location = u; else window.open(u, '_blank', 'noopener');
-    } catch (e) { ventana?.close(); avisar(e.message, 'error'); } finally { b.disabled = false; }
-  } });
   // Si se quitó de la lista a quien faltaba, ya firmaron todos: se cierra aquí
   const cerrarYa = boton('Cerrar como firmado', { icono: 'check', tipo: 'primario', onclick: async (ev) => {
     const b = ev.currentTarget; b.disabled = true;
@@ -115,7 +121,6 @@ export async function seccionFirmasEntrega(ctx, ent, participantes) {
     }) : el('p', { class: 'texto-suave' }, 'Agrega participantes para enviar a firmar.'),
     puede && faltan.length > 1 ? boton(`Enviar a los ${faltan.length} que faltan`, { icono: 'chat', tipo: 'primario', onclick: enviar(faltan) }) : null,
     el('div', { class: 'doc-acciones' },
-      !firmado && firmaron.length ? verConFirmas : null,
       puede && firmaron.length && !faltan.length ? cerrarYa : null,
       puede && firmaron.length && faltan.length ? terminar : null));
 }

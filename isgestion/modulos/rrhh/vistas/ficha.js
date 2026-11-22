@@ -1,16 +1,16 @@
 // Ficha de un trabajador: documentación (con archivos privados) y datos personales.
 // Ruta: #/rrhh.ficha?p=<persona_id>
-import { el } from '../../../core/ui/dom.js?v=4b574d1';
-import { icono } from '../../../core/ui/iconos.js?v=4b574d1';
-import { boton } from '../../../core/ui/tabla.js?v=4b574d1';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=4b574d1';
-import { leerVence } from '../../../core/ui/leer-vence.js?v=4b574d1';
-import { avisar } from '../../../core/ui/aviso.js?v=4b574d1';
-import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=4b574d1';
-import { cargarActividad, resumen, panelActividad } from '../actividad.js?v=4b574d1';
-import { panelPractica } from '../practica.js?v=4b574d1';
-import { cargarLicencias, filaLicencia, formularioLicencia, diasLicencia, puedeLicencias } from '../../../core/licencias.js?v=4b574d1';
-import { cargarRrhh, cumplimiento, estadoDoc, chipEstado, avatar, nombreCompleto, nivel, VINCULOS, nombreVinculo } from '../datos.js?v=4b574d1';
+import { el } from '../../../core/ui/dom.js?v=4a56f8d';
+import { icono } from '../../../core/ui/iconos.js?v=4a56f8d';
+import { boton } from '../../../core/ui/tabla.js?v=4a56f8d';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=4a56f8d';
+import { leerVence } from '../../../core/ui/leer-vence.js?v=4a56f8d';
+import { avisar } from '../../../core/ui/aviso.js?v=4a56f8d';
+import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=4a56f8d';
+import { cargarActividad, resumen, panelActividad } from '../actividad.js?v=4a56f8d';
+import { panelPractica } from '../practica.js?v=4a56f8d';
+import { cargarLicencias, filaLicencia, formularioLicencia, diasLicencia, puedeLicencias } from '../../../core/licencias.js?v=4a56f8d';
+import { cargarRrhh, cumplimiento, estadoDoc, chipEstado, avatar, nombreCompleto, nivel, VINCULOS, nombreVinculo } from '../datos.js?v=4a56f8d';
 
 const TIPOS_ARCHIVO = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
 const MAX_ARCHIVO = 10 * 1024 * 1024;
@@ -86,13 +86,40 @@ function documentacion(ctx, datos, v) {
     return el('p', { class: 'texto-suave' }, 'No hay tipos de documento configurados en esta empresa.');
   }
   const grupos = [['documento', 'Documentos'], ['capacitacion', 'Capacitaciones y cursos']];
-  return el('div', { class: 'doc-grupos' }, grupos.map(([cat, titulo]) => {
+  // Registros de Prevención SST en que participa (charlas, checklist, capacitaciones…), con su firma
+  const registros = ctx.puede('sst', 'ver') ? el('div', { class: 'ficha doc-grupo' }, el('h2', {}, 'Registros de Prevención'), el('p', { class: 'texto-suave texto-chico' }, 'Cargando…')) : null;
+  if (registros) registrosSst(ctx, v.persona_id).then((x) => registros.replaceWith(x)).catch(() => registros.remove());
+  return el('div', { class: 'doc-grupos' }, registros, grupos.map(([cat, titulo]) => {
     const tipos = datos.tiposActivos.filter((t) => t.categoria === cat);
     if (!tipos.length) return null;
     return el('div', { class: 'ficha doc-grupo' },
       el('h2', {}, titulo),
       tipos.map((t) => filaDoc(ctx, t, datos.doc(v.persona_id, t.slug), v, puede)));
   }));
+}
+
+async function registrosSst(ctx, personaId) {
+  const [{ data: regs }, { data: sols }] = await Promise.all([
+    ctx.api.from('sst_entrega_personas').select('entrega_id, sst_entregas!inner(id, tema, fecha, tipo, estado, archivo, deleted_at)')
+      .eq('empresa_id', ctx.empresa.id).eq('persona_id', personaId).is('sst_entregas.deleted_at', null).limit(200),
+    ctx.api.from('firma_solicitudes').select('entrega_id, estado, firmado_at, archivo_firmado').eq('empresa_id', ctx.empresa.id).eq('persona_id', personaId)
+      .eq('origen', 'sst_entrega').neq('estado', 'anulada'),
+  ]);
+  const firma = new Map((sols ?? []).filter((x) => x.estado === 'firmada').map((x) => [x.entrega_id, x]));
+  const lista = (regs ?? []).map((r) => r.sst_entregas).sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)));
+  const ver = (ruta) => el('button', { type: 'button', class: 'boton-enlace', onclick: async () => {
+    try { window.open(await urlFirmada(ctx.api, ruta, 120), '_blank', 'noopener'); } catch (err) { avisar(err.message, 'error'); }
+  } }, icono('ojo', { tam: 15 }), 'Ver');
+  return el('div', { class: 'ficha doc-grupo' },
+    el('h2', {}, `Registros de Prevención (${lista.length})`),
+    lista.length ? lista.map((e) => {
+      const f = firma.get(e.id); const firmo = !!f || e.estado === 'firmado';
+      const ruta = e.estado === 'firmado' ? e.archivo : f?.archivo_firmado ?? e.archivo;
+      return el('div', { class: 'doc-fila' },
+        el('div', { class: 'doc-nombre' }, el('a', { href: ctx.ruta('sst.entrega', { id: e.id }) }, e.tema), el('span', { class: 'texto-suave texto-chico' }, fecha(e.fecha))),
+        el('span', { class: `chip ${firmo ? 'chip-ok' : 'chip-prox'}` }, f ? 'Firmó por WhatsApp' : firmo ? 'Firmado' : 'Por firmar'),
+        el('div', { class: 'doc-acciones' }, ruta ? ver(ruta) : null));
+    }) : el('p', { class: 'texto-suave' }, 'No participa en registros de Prevención.'));
 }
 
 function filaDoc(ctx, tipo, doc, v, puede) {
@@ -126,7 +153,7 @@ function filaDoc(ctx, tipo, doc, v, puede) {
         type: 'button', class: 'boton-icono', title: 'Generar con el formato de la empresa', 'aria-label': `Generar ${tipo.nombre}`,
         onclick: async () => {
           try {
-            const { generarParaTrabajador, sePuedeGenerar } = await import('../../documentos/integracion.js?v=4b574d1');
+            const { generarParaTrabajador, sePuedeGenerar } = await import('../../documentos/integracion.js?v=4a56f8d');
             if (!sePuedeGenerar(ctx, tipo.slug)) { avisar('No hay formato para este documento.', 'error'); return; }
             await generarParaTrabajador(ctx, tipo.slug, v.persona_id);
           } catch (err) { avisar(err.message, 'error'); }

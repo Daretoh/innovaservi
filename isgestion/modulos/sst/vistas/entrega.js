@@ -1,14 +1,15 @@
 // Registro de entrega: participantes, imprimir para firmar, subir el escaneo firmado (marca RRHH) y reabrir.
 // Ruta: #/sst.entrega?id=<id>
-import { el } from '../../../core/ui/dom.js?v=4b574d1';
-import { icono } from '../../../core/ui/iconos.js?v=4b574d1';
-import { boton } from '../../../core/ui/tabla.js?v=4b574d1';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=4b574d1';
-import { avisar } from '../../../core/ui/aviso.js?v=4b574d1';
-import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=4b574d1';
-import { fechaLarga } from '../../../core/ui/formato.js?v=4b574d1';
-import { TIPOS_ENTREGA, nombreDe, cargarPersonas } from '../datos.js?v=4b574d1';
-import { tiposRrhh } from './entregas.js?v=4b574d1';
+import { el } from '../../../core/ui/dom.js?v=4a56f8d';
+import { icono } from '../../../core/ui/iconos.js?v=4a56f8d';
+import { boton } from '../../../core/ui/tabla.js?v=4a56f8d';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=4a56f8d';
+import { avisar } from '../../../core/ui/aviso.js?v=4a56f8d';
+import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=4a56f8d';
+import { fechaLarga } from '../../../core/ui/formato.js?v=4a56f8d';
+import { TIPOS_ENTREGA, nombreDe, cargarPersonas } from '../datos.js?v=4a56f8d';
+import { tiposRrhh } from './entregas.js?v=4a56f8d';
+import { seccionFirmasEntrega, verPdf } from '../../../core/firmas.js?v=4a56f8d';
 
 const ESCANEOS = ['application/pdf', 'image/jpeg', 'image/png'];
 
@@ -45,7 +46,8 @@ export default async function vista(ctx) {
   // ---- Acciones
   // Los registros del generador (charla, checklist) ya traen su PDF: ese es el que se imprime para firmar
   const acciones = firmado || !ent.archivo ? [boton('Imprimir para firmar', { icono: 'descargar', onclick: (ev) => imprimir(ctx, ent, participantes, ev.currentTarget) })] : [];
-  if (ent.archivo) acciones.push(boton(firmado ? 'Ver firmado' : 'Ver e imprimir PDF', { icono: 'ojo', onclick: async () => { try { window.open(await urlFirmada(ctx.api, ent.archivo, 300), '_blank', 'noopener'); } catch (e) { avisar(e.message, 'error'); } } }));
+  // El PDF con las firmas que haya (las electrónicas se estampan en su casilla, aunque falte gente por firmar)
+  if (ent.archivo) acciones.push(boton(firmado ? 'Ver firmado' : 'Ver PDF', { icono: 'ojo', onclick: () => verPdf(ctx, ent) }));
   if (!firmado && ctx.puede('sst', 'editar')) acciones.push(boton('Subir registro firmado', { icono: 'check', tipo: 'primario', onclick: () => subirFirmado(ctx, ent, participantes, tipoDoc) }));
   if (firmado && ctx.puede('sst', 'editar')) acciones.push(boton('Volver a por firmar', { icono: 'editar', onclick: () => reabrir(ctx, ent) }));
   if (!firmado && ctx.puede('sst', 'eliminar')) acciones.push(boton('Eliminar', { icono: 'basura', onclick: () => abrirFormulario({
@@ -57,6 +59,12 @@ export default async function vista(ctx) {
     },
   }) }));
 
+  // Firma por WhatsApp: necesita el PDF del registro (el del generador, o el que se arma aquí)
+  const bloqueFirmas = ent.archivo || firmado ? await seccionFirmasEntrega(ctx, ent, participantes)
+    : editable ? el('div', { class: 'ficha doc-grupo' }, el('h2', {}, 'Firma por WhatsApp'),
+      el('p', { class: 'texto-suave texto-chico' }, 'Cada participante firma desde su teléfono, sin imprimir. Primero se arma el PDF del registro con los participantes de ahora.'),
+      boton('Preparar para firmar por WhatsApp', { icono: 'chat', tipo: 'primario', onclick: (ev) => prepararPdf(ctx, ent, participantes, ev.currentTarget) }))
+    : null;
   const puntos = (ent.contenido ?? '').split('\n').map((t) => t.trim()).filter(Boolean);
   return el('section', { class: 'listado' },
     volver,
@@ -81,16 +89,32 @@ export default async function vista(ctx) {
         el('p', { class: tipoDoc ? '' : 'texto-suave' }, tipoDoc
           ? `Al subir el registro firmado, cada participante queda con "${tipoDoc.nombre}" entregado${ent.vence ? ` (vence ${fechaLarga(ent.vence)})` : ''}.`
           : ent.tipo_doc ? 'El documento elegido no está disponible (revisa Tipos de documento en RRHH).' : 'No marca ningún documento en RRHH.'))),
+    bloqueFirmas,
   );
 }
 
 async function imprimir(ctx, ent, participantes, b) {
   b.disabled = true;
   try {
-    const { pdfEntrega } = await import('../documentos.js?v=4b574d1');
+    const { pdfEntrega } = await import('../documentos.js?v=4a56f8d');
     const doc = await pdfEntrega(ctx, ent, participantes);
     window.open(doc.output('bloburl'), '_blank', 'noopener');
   } catch (e) { avisar(`No se pudo generar: ${e.message}`, 'error'); } finally { b.disabled = false; }
+}
+
+// Arma el PDF del registro y lo deja como el documento por firmar (en SST: aún no es documentación de RRHH)
+async function prepararPdf(ctx, ent, participantes, b) {
+  if (!participantes.length) { avisar('Agrega los participantes antes de enviar a firmar.', 'error'); return; }
+  b.disabled = true;
+  try {
+    const { pdfEntrega } = await import('../documentos.js?v=4a56f8d');
+    const doc = await pdfEntrega(ctx, ent, participantes);
+    const archivo = new File([doc.output('blob')], `registro-${ent.id}.pdf`, { type: 'application/pdf' });
+    const { ruta } = await subirArchivo(ctx.api, { empresaId: ctx.empresa.id, modulo: 'sst', archivo, tabla: 'sst_entregas', registroId: ent.id, tipos: ['application/pdf'] });
+    const { error } = await ctx.api.from('sst_entregas').update({ archivo: ruta, firma_casillas: doc.__firmas?.length ? doc.__firmas : null }).eq('id', ent.id);
+    if (error) { await eliminarArchivo(ctx.api, ruta).catch(() => {}); throw new Error(error.message); }
+    ctx.refrescar();
+  } catch (e) { avisar(`No se pudo preparar: ${e.message}`, 'error'); b.disabled = false; }
 }
 
 function subirFirmado(ctx, ent, participantes, tipoDoc) {
@@ -117,7 +141,9 @@ function subirFirmado(ctx, ent, participantes, tipoDoc) {
       const { error } = await ctx.api.from('sst_entregas').update({ archivo: ruta, estado: 'firmado', vence: ent.vence ?? null }).eq('id', ent.id);
       if (error) { await eliminarArchivo(ctx.api, ruta).catch(() => {}); throw new Error(error.message); }
       // El PDF del generador queda reemplazado por el firmado (por firmar no lo usa ninguna ficha de RRHH)
-      if (ent.archivo && ent.estado === 'pendiente') await eliminarArchivo(ctx.api, ent.archivo).catch(() => {});
+      // (salvo que se haya enviado a firmar por WhatsApp: las solicitudes lo citan como el documento firmado)
+      const { count: enviadas } = await ctx.api.from('firma_solicitudes').select('id', { count: 'exact', head: true }).eq('entrega_id', ent.id);
+      if (ent.archivo && ent.estado === 'pendiente' && !enviadas) await eliminarArchivo(ctx.api, ent.archivo).catch(() => {});
       let marcadas = 0;
       if (marcaRrhh) {
         for (const p of participantes) if (await marcarDocumento(ctx, p.id, tipoDoc, ent, ruta)) marcadas += 1;
