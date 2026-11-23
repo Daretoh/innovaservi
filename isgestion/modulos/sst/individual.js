@@ -4,15 +4,14 @@
 // por trabajador y se envía a firmar por WhatsApp: con una sola firma su sello queda bajo cada documento (función firmar).
 // Los documentos salen de Prevención SST → Documentos preventivos (última versión en PDF) o de un PDF que se sube aquí.
 // pdf-lib 1.17.1 fijo desde cdnjs, se carga solo al usarlo.
-import { el } from '../../core/ui/dom.js?v=5a49f77';
-import { icono } from '../../core/ui/iconos.js?v=5a49f77';
-import { boton } from '../../core/ui/tabla.js?v=5a49f77';
-import { avisar } from '../../core/ui/aviso.js?v=5a49f77';
-import { hoyISO, fechaLarga } from '../../core/ui/formato.js?v=5a49f77';
-import { urlFirmada } from '../../core/adjuntos.js?v=5a49f77';
-import { enviarVarios } from '../../core/firmas.js?v=5a49f77';
-import { guardarRegistro } from '../documentos/acciones.js?v=5a49f77';
-import { cargarPlantillas, pdfDePlantilla } from '../documentos/editor.js?v=5a49f77';
+import { el } from '../../core/ui/dom.js?v=6ccf11a';
+import { icono } from '../../core/ui/iconos.js?v=6ccf11a';
+import { boton } from '../../core/ui/tabla.js?v=6ccf11a';
+import { avisar } from '../../core/ui/aviso.js?v=6ccf11a';
+import { hoyISO, fechaLarga } from '../../core/ui/formato.js?v=6ccf11a';
+import { urlFirmada, subirArchivo, eliminarArchivo } from '../../core/adjuntos.js?v=6ccf11a';
+import { enviarVarios } from '../../core/firmas.js?v=6ccf11a';
+import { cargarPlantillas, pdfDePlantilla } from '../documentos/editor.js?v=6ccf11a';
 
 const PDFLIB = 'https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js';
 const MM = 72 / 25.4;
@@ -121,6 +120,31 @@ async function armarPdf(t, docs, rel, fecha, colorHex) {
   return { bytes: await salida.save(), casillas };
 }
 
+// Un registro de entrega por trabajador, con un PDF por documento (SST 005: columna documentos). El registro guarda el
+// primero como su archivo; la función firmar sella cada uno con la casilla de la persona.
+async function guardarEntrega(ctx, { id, t, ds, rel, fecha, tipo, tema, contenido }) {
+  const e = ctx.empresa.id, subidos = [], documentos = [];
+  try {
+    for (const [k, d] of ds.entries()) {
+      avisar(`${t.nombre}: documento ${k + 1} de ${ds.length}…`);
+      const { bytes, casillas } = await armarPdf(t, [d], rel, fecha, ctx.empresa.color);
+      const nombre = `${[d.codigo, d.titulo].filter(Boolean).join(' ')} - ${t.nombre}`.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 120);
+      const { ruta } = await subirArchivo(ctx.api, { empresaId: e, modulo: 'sst', archivo: new File([bytes], `${nombre}.pdf`, { type: 'application/pdf' }), tabla: 'sst_entregas', registroId: id, tipos: ['application/pdf'] });
+      subidos.push(ruta);
+      documentos.push({ titulo: [d.codigo, d.titulo].filter(Boolean).join(' · ').slice(0, 300), codigo: d.codigo || null, version: d.version || null, archivo: ruta, casillas });
+    }
+    const { error } = await ctx.api.from('sst_entregas').insert({ id, empresa_id: e, tipo, tema, fecha, relator: rel?.nombre || null, contenido, archivo: documentos[0].archivo,
+      firma_casillas: documentos[0].casillas, documentos });
+    if (error) throw new Error(error.message);
+  } catch (err) {
+    for (const r of subidos) await eliminarArchivo(ctx.api, r).catch(() => {});
+    throw err;
+  }
+  const p = await ctx.api.from('sst_entrega_personas').insert({ entrega_id: id, empresa_id: e, persona_id: t.id, cargo: t.cargo || null });
+  if (p.error) throw new Error(`El registro quedó guardado, pero sin el trabajador: ${p.error.message}. Agrégalo en el registro.`);
+  return id;
+}
+
 const bajar = async (ctx, ruta) => {
   const r = await fetch(await urlFirmada(ctx.api, ruta, 300));
   if (!r.ok) throw new Error('No se pudo descargar un documento.');
@@ -128,7 +152,7 @@ const bajar = async (ctx, ruta) => {
 };
 
 export async function abrirEntregaIndividual(ctx, { alGuardado = null } = {}) {
-  if (!document.getElementById('sst-individual-css')) document.head.append(el('link', { id: 'sst-individual-css', rel: 'stylesheet', href: new URL('./individual.css?v=5a49f77', import.meta.url).href }));
+  if (!document.getElementById('sst-individual-css')) document.head.append(el('link', { id: 'sst-individual-css', rel: 'stylesheet', href: new URL('./individual.css?v=6ccf11a', import.meta.url).href }));
   const e = ctx.empresa.id;
   const [vinc, docsR, gen] = await Promise.all([
     ctx.api.from('persona_empresa').select('persona_id, cargo, estado, personas(nombres, apellido_paterno, apellido_materno, rut, telefono)').eq('empresa_id', e).is('deleted_at', null),
@@ -240,12 +264,10 @@ export async function abrirEntregaIndividual(ctx, { alGuardado = null } = {}) {
       const lotes = []; let primero = null;
       for (const t of gente.filter((p) => elegidosT.has(p.id))) {
         avisar(`Armando el documento de ${t.nombre}…`);
-        const { bytes, casillas } = await armarPdf(t, await conDatos(ds, t), rel, f, ctx.empresa.color);
-        const id = await guardarRegistro(ctx, { tipo, tema, fecha: f, relator: rel?.nombre || null, personas: [t], casillas,
-          contenido: ds.map((d) => [d.codigo, d.titulo, d.version ? `versión ${d.version}` : ''].filter(Boolean).join(' · ')).join('\n') },
-          new Blob([bytes], { type: 'application/pdf' }), `entrega-individual-${norm(t.nombre).replace(/ /g, '-')}.pdf`);
+        const id = await guardarEntrega(ctx, { id: crypto.randomUUID(), t, ds: await conDatos(ds, t), rel, fecha: f, tipo, tema,
+          contenido: ds.map((d) => [d.codigo, d.titulo, d.version ? `versión ${d.version}` : ''].filter(Boolean).join(' · ')).join('\n') });
         primero ??= id;
-        lotes.push({ origen: 'sst_entrega', id, personas: [t], titulo: tema, casillas });
+        lotes.push({ origen: 'sst_entrega', id, personas: [t], titulo: tema });
       }
       cerrar();
       avisar(`${lotes.length} registro${lotes.length === 1 ? '' : 's'} guardado${lotes.length === 1 ? '' : 's'} en Prevención SST → Registros de entrega.`);

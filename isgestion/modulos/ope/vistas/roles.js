@@ -1,8 +1,8 @@
 // Rol operativo de cada trabajador (para la dotación de las faenas).
-import { el } from '../../../core/ui/dom.js?v=5a49f77';
-import { listado } from '../../../core/ui/tabla.js?v=5a49f77';
-import { avisar } from '../../../core/ui/aviso.js?v=5a49f77';
-import { cargarBase, olvidarBase, ROLES, nombreCompleto } from '../datos.js?v=5a49f77';
+import { el } from '../../../core/ui/dom.js?v=6ccf11a';
+import { listado } from '../../../core/ui/tabla.js?v=6ccf11a';
+import { avisar } from '../../../core/ui/aviso.js?v=6ccf11a';
+import { cargarBase, olvidarBase, ROLES, nombreCompleto } from '../datos.js?v=6ccf11a';
 
 export default async function vista(ctx) {
   const base = await cargarBase(ctx);

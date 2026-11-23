@@ -13,3 +13,10 @@
 .fi-sello > div:last-child { display: flex; flex-direction: column; gap: 1px; font-size: .85rem; line-height: 1.3; color: var(--texto-suave); min-width: 0; }
 .fi-sello strong { color: var(--texto); overflow-wrap: anywhere; }
 .fi-sello .fi-sello-tit { color: var(--empresa); font-size: .8rem; }
+/* Varios documentos (entrega individual): cada uno se abre y queda marcado como leído */
+.fi-docs { display: grid; gap: 8px; }
+.fi-docs .fi-doc { padding: 11px 12px; font-weight: 600; }
+.fi-doc-t { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.fi-estado { flex: none; font-size: .78rem; font-weight: 700; color: var(--empresa); }
+.fi-doc.fi-leido { border-color: var(--exito, #16a34a); }
+.fi-doc.fi-leido .fi-estado { color: var(--exito, #16a34a); }

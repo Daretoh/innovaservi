@@ -1,6 +1,6 @@
 // Carga lo necesario para calcular pagos de la empresa activa en un rango.
-import { calcular, sueldoDelMes, semanaEnMes } from './calculo.js?v=5a49f77';
-import { sumarDias, rangoMes, lunesDe } from '../../core/ui/formato.js?v=5a49f77';
+import { calcular, sueldoDelMes, semanaEnMes } from './calculo.js?v=6ccf11a';
+import { sumarDias, rangoMes, lunesDe } from '../../core/ui/formato.js?v=6ccf11a';
 
 // Externo: trabaja como cualquiera (horas, faenas) pero cobra con factura, no por planilla (Remuneraciones 010)
 export const esExterno = (v) => v.condicion?.modo === 'externo';

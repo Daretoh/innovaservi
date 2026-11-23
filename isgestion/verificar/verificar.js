@@ -1,8 +1,8 @@
 // Verificación pública de una firma electrónica (Núcleo 028). URL: /verificar/?c=<código del sello>.
 // El QR de cada sello lleva aquí. Muestra quién firmó qué documento y cuándo, sin mostrar el documento.
 // Todo pasa por la Edge Function pública `firmar` (acción `comprobar`); la página no toca la base.
-import { el } from '../core/ui/dom.js?v=5a49f77';
-import { icono } from '../core/ui/iconos.js?v=5a49f77';
+import { el } from '../core/ui/dom.js?v=6ccf11a';
+import { icono } from '../core/ui/iconos.js?v=6ccf11a';
 
 const raiz = document.getElementById('app');
 let URL_FN = null;

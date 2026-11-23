@@ -1,15 +1,15 @@
 // Registro de entrega: participantes, imprimir para firmar, subir el escaneo firmado (marca RRHH) y reabrir.
 // Ruta: #/sst.entrega?id=<id>
-import { el } from '../../../core/ui/dom.js?v=5a49f77';
-import { icono } from '../../../core/ui/iconos.js?v=5a49f77';
-import { boton } from '../../../core/ui/tabla.js?v=5a49f77';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=5a49f77';
-import { avisar } from '../../../core/ui/aviso.js?v=5a49f77';
-import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=5a49f77';
-import { fechaLarga } from '../../../core/ui/formato.js?v=5a49f77';
-import { TIPOS_ENTREGA, nombreDe, cargarPersonas } from '../datos.js?v=5a49f77';
-import { tiposRrhh } from './entregas.js?v=5a49f77';
-import { seccionFirmasEntrega, verPdf } from '../../../core/firmas.js?v=5a49f77';
+import { el } from '../../../core/ui/dom.js?v=6ccf11a';
+import { icono } from '../../../core/ui/iconos.js?v=6ccf11a';
+import { boton } from '../../../core/ui/tabla.js?v=6ccf11a';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=6ccf11a';
+import { avisar } from '../../../core/ui/aviso.js?v=6ccf11a';
+import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=6ccf11a';
+import { fechaLarga } from '../../../core/ui/formato.js?v=6ccf11a';
+import { TIPOS_ENTREGA, nombreDe, cargarPersonas } from '../datos.js?v=6ccf11a';
+import { tiposRrhh } from './entregas.js?v=6ccf11a';
+import { seccionFirmasEntrega, verPdf } from '../../../core/firmas.js?v=6ccf11a';
 
 const ESCANEOS = ['application/pdf', 'image/jpeg', 'image/png'];
 
@@ -23,7 +23,9 @@ export default async function vista(ctx) {
   const volver = el('a', { class: 'volver', href: ctx.ruta('sst.entregas') }, icono('volver', { tam: 16 }), 'Registros de entrega');
   if (!ent || ent.deleted_at) return el('section', { class: 'listado' }, volver, el('h1', {}, 'Registro no encontrado'));
   const firmado = ent.estado === 'firmado';
-  const editable = ctx.puede('sst', 'editar') && !firmado;
+  // Entrega individual (SST 005): un PDF por documento con la casilla de una sola persona; no se agregan participantes
+  const docs = Array.isArray(ent.documentos) && ent.documentos.length ? ent.documentos : null;
+  const editable = ctx.puede('sst', 'editar') && !firmado && !docs;
   const participantes = ent.sst_entrega_personas.map((x) => ({ ...personas.de.get(x.persona_id), id: x.persona_id, cargo: x.cargo ?? personas.de.get(x.persona_id)?.cargo }))
     .sort((a, b) => (a.nombre ?? '').localeCompare(b.nombre ?? ''));
   const tipoDoc = tipos.find((t) => t.slug === ent.tipo_doc);
@@ -47,7 +49,17 @@ export default async function vista(ctx) {
   // Los registros del generador (charla, checklist) ya traen su PDF: ese es el que se imprime para firmar
   const acciones = firmado || !ent.archivo ? [boton('Imprimir para firmar', { icono: 'descargar', onclick: (ev) => imprimir(ctx, ent, participantes, ev.currentTarget) })] : [];
   // El PDF con las firmas que haya (las electrónicas se estampan en su casilla, aunque falte gente por firmar)
-  if (ent.archivo) acciones.push(boton(firmado ? 'Ver firmado' : 'Ver PDF', { icono: 'ojo', onclick: () => verPdf(ctx, ent) }));
+  if (ent.archivo && !docs) acciones.push(boton(firmado ? 'Ver firmado' : 'Ver PDF', { icono: 'ojo', onclick: () => verPdf(ctx, ent) }));
+  const verDoc = async (d) => {
+    const v = window.open('', '_blank');
+    try { const u = await urlFirmada(ctx.api, d.archivo_firmado || d.archivo, 300); if (v) v.location = u; else window.open(u, '_blank', 'noopener'); }
+    catch (e) { v?.close(); avisar(e.message, 'error'); }
+  };
+  const listaDocs = docs ? el('div', {}, el('h3', {}, `Documentos (${docs.length})`),
+    el('p', { class: 'texto-suave texto-chico' }, 'Cada uno es un PDF aparte con la firma al pie. Se firma una sola vez y el sello queda en todos.'),
+    docs.map((d, k) => el('div', { class: 'doc-fila' },
+      el('div', { class: 'doc-nombre' }, el('strong', {}, `${k + 1}. ${d.titulo}`), d.archivo_firmado ? el('span', { class: 'texto-suave texto-chico' }, 'Con firma') : null),
+      el('div', { class: 'doc-acciones' }, boton(d.archivo_firmado ? 'Ver firmado' : 'Ver PDF', { icono: 'ojo', onclick: () => verDoc(d) }))))) : null;
   if (!firmado && ctx.puede('sst', 'editar')) acciones.push(boton('Subir registro firmado', { icono: 'check', tipo: 'primario', onclick: () => subirFirmado(ctx, ent, participantes, tipoDoc) }));
   if (firmado && ctx.puede('sst', 'editar')) acciones.push(boton('Volver a por firmar', { icono: 'editar', onclick: () => reabrir(ctx, ent) }));
   if (!firmado && ctx.puede('sst', 'eliminar')) acciones.push(boton('Eliminar', { icono: 'basura', onclick: () => abrirFormulario({
@@ -83,7 +95,7 @@ export default async function vista(ctx) {
       el('div', { class: 'ficha doc-grupo' },
         el('h2', {}, 'Detalle'),
         ent.duracion ? el('p', {}, `Duración: ${ent.duracion}`) : null,
-        puntos.length ? el('ul', {}, puntos.map((t) => el('li', {}, t))) : el('p', { class: 'texto-suave' }, 'Sin contenido.'),
+        docs ? listaDocs : puntos.length ? el('ul', {}, puntos.map((t) => el('li', {}, t))) : el('p', { class: 'texto-suave' }, 'Sin contenido.'),
         ent.items?.length ? el('div', {}, el('h3', {}, 'Elementos entregados'), el('ul', {}, ent.items.map((x) => el('li', {}, `${x.item} × ${x.cantidad}`)))) : null,
         el('h3', {}, 'Documento de RRHH'),
         el('p', { class: tipoDoc ? '' : 'texto-suave' }, tipoDoc
@@ -96,7 +108,7 @@ export default async function vista(ctx) {
 async function imprimir(ctx, ent, participantes, b) {
   b.disabled = true;
   try {
-    const { pdfEntrega } = await import('../documentos.js?v=5a49f77');
+    const { pdfEntrega } = await import('../documentos.js?v=6ccf11a');
     const doc = await pdfEntrega(ctx, ent, participantes);
     window.open(doc.output('bloburl'), '_blank', 'noopener');
   } catch (e) { avisar(`No se pudo generar: ${e.message}`, 'error'); } finally { b.disabled = false; }
@@ -107,7 +119,7 @@ async function prepararPdf(ctx, ent, participantes, b) {
   if (!participantes.length) { avisar('Agrega los participantes antes de enviar a firmar.', 'error'); return; }
   b.disabled = true;
   try {
-    const { pdfEntrega } = await import('../documentos.js?v=5a49f77');
+    const { pdfEntrega } = await import('../documentos.js?v=6ccf11a');
     const doc = await pdfEntrega(ctx, ent, participantes);
     const archivo = new File([doc.output('blob')], `registro-${ent.id}.pdf`, { type: 'application/pdf' });
     const { ruta } = await subirArchivo(ctx.api, { empresaId: ctx.empresa.id, modulo: 'sst', archivo, tabla: 'sst_entregas', registroId: ent.id, tipos: ['application/pdf'] });
