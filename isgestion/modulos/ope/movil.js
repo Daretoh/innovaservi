@@ -12,7 +12,7 @@ export function registrarHoras(ctx) {
 
 export async function nuevaTareaMovil(ctx) {
   const [{ nuevaTarea }, { data, error }] = await Promise.all([
-    import('../tareas/vistas/nueva.js?v=6ccf11a'),
+    import('../tareas/vistas/nueva.js?v=64d5fd1'),
     ctx.api.rpc('nombres_usuarios', { p_empresa: ctx.empresa.id }),
   ]);
   if (error) throw error;

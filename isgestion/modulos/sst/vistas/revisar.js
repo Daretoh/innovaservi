@@ -3,22 +3,22 @@
 // obtiene la versión corregida, que puede retocar aquí y descargar en Word o PDF con el logo y el color de la empresa,
 // o guardar como nueva versión en Documentos preventivos.
 // Rutas: #/sst.revisar · ?documento=<id>&version=<id> · ?revision=<id> (reabrir una revisión anterior)
-import { el } from '../../../core/ui/dom.js?v=6ccf11a';
-import { icono } from '../../../core/ui/iconos.js?v=6ccf11a';
-import { boton } from '../../../core/ui/tabla.js?v=6ccf11a';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=6ccf11a';
-import { avisar } from '../../../core/ui/aviso.js?v=6ccf11a';
-import { urlFirmada } from '../../../core/adjuntos.js?v=6ccf11a';
-import { fechaLarga, hoyISO, diaLocal } from '../../../core/ui/formato.js?v=6ccf11a';
-import { TIPOS_DOC, guardarVersion, estadoDocumento } from './documentos.js?v=6ccf11a';
-import { leerContenido, pedirIA, exportarWord, exportarPdf, descargar, nombreArchivo, esDocx, esPdf, MIME_DOCX } from '../revisar-ia.js?v=6ccf11a';
+import { el } from '../../../core/ui/dom.js?v=64d5fd1';
+import { icono } from '../../../core/ui/iconos.js?v=64d5fd1';
+import { boton } from '../../../core/ui/tabla.js?v=64d5fd1';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=64d5fd1';
+import { avisar } from '../../../core/ui/aviso.js?v=64d5fd1';
+import { urlFirmada } from '../../../core/adjuntos.js?v=64d5fd1';
+import { fechaLarga, hoyISO, diaLocal } from '../../../core/ui/formato.js?v=64d5fd1';
+import { TIPOS_DOC, guardarVersion, estadoDocumento } from './documentos.js?v=64d5fd1';
+import { leerContenido, pedirIA, exportarWord, exportarPdf, descargar, nombreArchivo, esDocx, esPdf, MIME_DOCX } from '../revisar-ia.js?v=64d5fd1';
 
 const CATEGORIA = { formato: 'Formato', redaccion: 'Redacción', normativa: 'Normativa', riesgo_faltante: 'Riesgo que falta', clasificacion: 'Mal clasificado', epp: 'EPP', coherencia: 'Coherencia', otro: 'Otro' };
 const GRAVEDAD = { alta: ['Alta', 'chip-venc'], media: ['Media', 'chip-prox'], baja: ['Baja', 'chip-pend'] };
 
 function cargarCss() {
   if (document.getElementById('sst-revisar-css')) return;
-  document.head.append(el('link', { id: 'sst-revisar-css', rel: 'stylesheet', href: new URL('../revisar.css?v=6ccf11a', import.meta.url).href }));
+  document.head.append(el('link', { id: 'sst-revisar-css', rel: 'stylesheet', href: new URL('../revisar.css?v=64d5fd1', import.meta.url).href }));
 }
 
 export default async function vista(ctx) {

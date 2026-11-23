@@ -1,11 +1,11 @@
 // Seguimiento de práctica (RRHH 005): horas hechas / exigidas desde el Registro de horas de la empresa (tablet o a
 // mano, sin descontar colación), lo que falta, ritmo de las últimas 4 semanas y fecha estimada de término con ese
 // ritmo y con el horario planificado desde una fecha. Pestaña "Práctica" de la ficha (vínculo de tipo práctica).
-import { el } from '../../core/ui/dom.js?v=6ccf11a';
-import { boton } from '../../core/ui/tabla.js?v=6ccf11a';
-import { abrirFormulario } from '../../core/ui/modal.js?v=6ccf11a';
-import { avisar } from '../../core/ui/aviso.js?v=6ccf11a';
-import { horas, fechaLarga, nombreDia, sumarDias } from '../../core/ui/formato.js?v=6ccf11a';
+import { el } from '../../core/ui/dom.js?v=64d5fd1';
+import { boton } from '../../core/ui/tabla.js?v=64d5fd1';
+import { abrirFormulario } from '../../core/ui/modal.js?v=64d5fd1';
+import { avisar } from '../../core/ui/aviso.js?v=64d5fd1';
+import { horas, fechaLarga, nombreDia, sumarDias } from '../../core/ui/formato.js?v=64d5fd1';
 
 const DIAS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 const hh = (min) => { const m = Math.round(min || 0); return `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`; };   // 1335 → "22:15"

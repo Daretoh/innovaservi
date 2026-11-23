@@ -2,12 +2,12 @@
 // Cada faena-día que lleva informe (marcado en la faena o por su cliente) y cada parte aparecen en su día:
 // Falta parte (ya pasó y no tiene), Programada (hoy o más adelante, sin parte), Borrador y Confirmado.
 // Tocar un parte lo abre; tocar una faena sin parte crea el parte con esa faena marcada.
-import { el } from '../../../core/ui/dom.js?v=6ccf11a';
-import { icono } from '../../../core/ui/iconos.js?v=6ccf11a';
-import { boton } from '../../../core/ui/tabla.js?v=6ccf11a';
-import { hoyISO, sumarDias, rangoMes, moverMes, nombreMes, nombreDia, diaSemana, fechaLarga } from '../../../core/ui/formato.js?v=6ccf11a';
-import { faenasSinParte, nombreTercero, cargarClientes, cargarFaenas } from '../datos.js?v=6ccf11a';
-import { nuevo } from './lista.js?v=6ccf11a';
+import { el } from '../../../core/ui/dom.js?v=64d5fd1';
+import { icono } from '../../../core/ui/iconos.js?v=64d5fd1';
+import { boton } from '../../../core/ui/tabla.js?v=64d5fd1';
+import { hoyISO, sumarDias, rangoMes, moverMes, nombreMes, nombreDia, diaSemana, fechaLarga } from '../../../core/ui/formato.js?v=64d5fd1';
+import { faenasSinParte, nombreTercero, cargarClientes, cargarFaenas } from '../datos.js?v=64d5fd1';
+import { nuevo } from './lista.js?v=64d5fd1';
 
 const DIAS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 const ESTADOS = [

@@ -4,14 +4,14 @@
 // Una orden usa un químico si alguno de sus pasos (los marcados; si no marcó ninguno, todos) lo tiene en la ficha del
 // servicio (Taller → Servicios y precios). Baja = salida o ajuste negativo del almacén del taller (no los traslados).
 // Ruta: #/inventario.consumo?p=<mes|3m|anio>
-import { el } from '../../../core/ui/dom.js?v=6ccf11a';
-import { icono } from '../../../core/ui/iconos.js?v=6ccf11a';
-import { boton } from '../../../core/ui/tabla.js?v=6ccf11a';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=6ccf11a';
-import { avisar } from '../../../core/ui/aviso.js?v=6ccf11a';
-import { plegable } from '../../../core/ui/plegable.js?v=6ccf11a';
-import { dinero, hoyISO, sumarDias, diaLocal, fechaLarga } from '../../../core/ui/formato.js?v=6ccf11a';
-import { cargarBase, cargarProductos, cargarStock, registrar, cant } from '../datos.js?v=6ccf11a';
+import { el } from '../../../core/ui/dom.js?v=64d5fd1';
+import { icono } from '../../../core/ui/iconos.js?v=64d5fd1';
+import { boton } from '../../../core/ui/tabla.js?v=64d5fd1';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=64d5fd1';
+import { avisar } from '../../../core/ui/aviso.js?v=64d5fd1';
+import { plegable } from '../../../core/ui/plegable.js?v=64d5fd1';
+import { dinero, hoyISO, sumarDias, diaLocal, fechaLarga } from '../../../core/ui/formato.js?v=64d5fd1';
+import { cargarBase, cargarProductos, cargarStock, registrar, cant } from '../datos.js?v=64d5fd1';
 
 const PERIODOS = [['mes', 'Este mes'], ['3m', 'Últimos 3 meses'], ['anio', 'Este año']];
 const ord = (n) => `${n} ${n === 1 ? 'orden' : 'órdenes'}`;
@@ -143,7 +143,7 @@ export default async function vista(ctx) {
   });
 
   const exportar = async () => {
-    const { exportarExcel } = await import('../../../core/excel.js?v=6ccf11a');
+    const { exportarExcel } = await import('../../../core/excel.js?v=64d5fd1');
     await exportarExcel(ctx, { titulo: 'Consumo de químicos', subtitulo: `${fechaLarga(desde)} a ${fechaLarga(hasta)}`, nombre: 'consumo-quimicos',
       columnas: ['Químico', 'Unidad', { t: 'Órdenes que lo usaron', tipo: 'numero' }, { t: 'Entró al taller', tipo: 'numero' }, { t: 'De baja', tipo: 'numero' },
         { t: 'Órdenes por unidad', tipo: 'numero' }, { t: 'Costo de las bajas', tipo: 'dinero' }, { t: 'Costo por orden', tipo: 'dinero' },

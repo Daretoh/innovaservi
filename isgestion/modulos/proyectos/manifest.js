@@ -9,10 +9,10 @@ export default {
   rubros: ['servicios'],
   acciones: ['ver', 'crear', 'editar', 'eliminar', 'exportar'],
   menu: [
-    { id: 'proyectos.hoja', label: 'Proyectos', pestana: 'Proyecto', icono: 'building', vista: () => import('./vistas/hoja.js?v=6ccf11a') },
-    { id: 'proyectos.modelo', label: 'Modelo SketchUp', pestana: 'Modelo SketchUp', icono: 'caja', vista: () => import('./vistas/modelo.js?v=6ccf11a') },
-    { id: 'proyectos.resumen', label: 'Resumen para imprimir', pestana: 'Resumen', icono: 'documento', vista: () => import('./vistas/resumen.js?v=6ccf11a') },
-    { id: 'proyectos.lista', label: 'Lista detallada', pestana: 'Lista detallada', icono: 'lista', vista: () => import('./vistas/lista.js?v=6ccf11a') },
+    { id: 'proyectos.hoja', label: 'Proyectos', pestana: 'Proyecto', icono: 'building', vista: () => import('./vistas/hoja.js?v=64d5fd1') },
+    { id: 'proyectos.modelo', label: 'Modelo SketchUp', pestana: 'Modelo SketchUp', icono: 'caja', vista: () => import('./vistas/modelo.js?v=64d5fd1') },
+    { id: 'proyectos.resumen', label: 'Resumen para imprimir', pestana: 'Resumen', icono: 'documento', vista: () => import('./vistas/resumen.js?v=64d5fd1') },
+    { id: 'proyectos.lista', label: 'Lista detallada', pestana: 'Lista detallada', icono: 'lista', vista: () => import('./vistas/lista.js?v=64d5fd1') },
   ],
   migraciones: ['db/001_proyectos.sql'],
 };

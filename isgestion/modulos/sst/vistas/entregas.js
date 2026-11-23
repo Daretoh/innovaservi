@@ -1,10 +1,10 @@
 // Registros de entrega (capacitación, charla, EPP, PTS): se arma la lista, se imprime para firmar y
 // se sube el escaneo; al subirlo, cada persona queda con el documento de RRHH entregado.
-import { el } from '../../../core/ui/dom.js?v=6ccf11a';
-import { listado, boton } from '../../../core/ui/tabla.js?v=6ccf11a';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=6ccf11a';
-import { fechaLarga, hoyISO } from '../../../core/ui/formato.js?v=6ccf11a';
-import { TIPOS_ENTREGA, nombreDe, cargarPersonas } from '../datos.js?v=6ccf11a';
+import { el } from '../../../core/ui/dom.js?v=64d5fd1';
+import { listado, boton } from '../../../core/ui/tabla.js?v=64d5fd1';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=64d5fd1';
+import { fechaLarga, hoyISO } from '../../../core/ui/formato.js?v=64d5fd1';
+import { TIPOS_ENTREGA, nombreDe, cargarPersonas } from '../datos.js?v=64d5fd1';
 
 let filtro = 'todos';
 const nombreTipo = nombreDe(TIPOS_ENTREGA);
@@ -37,9 +37,15 @@ export default async function vista(ctx) {
   // Con el generador de documentos: elegir plantilla (charla, checklist) o registro libre
   const nuevoRegistro = async () => {
     if (!ctx.puede('documentos', 'ver')) { nuevo(ctx); return; }
-    const { elegirRegistro } = await import('../../documentos/elegir.js?v=6ccf11a');
+    const { elegirRegistro } = await import('../../documentos/elegir.js?v=64d5fd1');
     elegirRegistro(ctx, { libre: () => nuevo(ctx) });
   };
+  // ZIP de los registros que se ven (según Todos / Por firmar / Firmados): una carpeta por trabajador, partes de 19 MB
+  if (data.length) acciones.push(boton('Descargar ZIP', { icono: 'descargar', title: 'Los registros de esta lista, en partes de hasta 19 MB para adjuntar en Outlook', onclick: async (ev) => {
+    const b = ev.currentTarget;
+    const { descargarEntregasZip } = await import('../zip.js?v=64d5fd1');
+    await descargarEntregasZip(ctx, data.map((r) => r.id), { nombre: { todos: 'Registros de entrega', pendiente: 'Registros por firmar', firmado: 'Registros firmados' }[filtro], boton: b });
+  } }));
   if (ctx.puede('sst', 'crear')) acciones.push(boton('Nuevo registro', { icono: 'mas', tipo: 'primario', onclick: nuevoRegistro }));
 
   const lista = listado({

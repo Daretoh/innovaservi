@@ -1,15 +1,15 @@
 // Gasto u otro ingreso.
 // - Nuevo:  #/costos.registro?tipo=gasto|ingreso
 // - Ver y editar: #/costos.registro?id=<id>
-import { el } from '../../../core/ui/dom.js?v=6ccf11a';
-import { icono } from '../../../core/ui/iconos.js?v=6ccf11a';
-import { boton } from '../../../core/ui/tabla.js?v=6ccf11a';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=6ccf11a';
-import { avisar } from '../../../core/ui/aviso.js?v=6ccf11a';
-import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=6ccf11a';
-import { dinero, hoyISO, fechaLarga, sumarDias } from '../../../core/ui/formato.js?v=6ccf11a';
-import { leerConIA, iaDisponible, numIA, fechaIA, pagadoAlComprar, textoModelo } from '../../../core/lector-ia.js?v=6ccf11a';
-import { cargarBase, nombreTercero, DOCS, MEDIOS, netoDe, estadosDe, estadoInicial, nombreEstado, opcionesACuenta } from '../datos.js?v=6ccf11a';
+import { el } from '../../../core/ui/dom.js?v=64d5fd1';
+import { icono } from '../../../core/ui/iconos.js?v=64d5fd1';
+import { boton } from '../../../core/ui/tabla.js?v=64d5fd1';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=64d5fd1';
+import { avisar } from '../../../core/ui/aviso.js?v=64d5fd1';
+import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=64d5fd1';
+import { dinero, hoyISO, fechaLarga, sumarDias } from '../../../core/ui/formato.js?v=64d5fd1';
+import { leerConIA, iaDisponible, numIA, fechaIA, pagadoAlComprar, textoModelo } from '../../../core/lector-ia.js?v=64d5fd1';
+import { cargarBase, nombreTercero, DOCS, MEDIOS, netoDe, estadosDe, estadoInicial, nombreEstado, opcionesACuenta } from '../datos.js?v=64d5fd1';
 
 
 const ARCHIVOS = ['application/pdf', 'image/jpeg', 'image/png'];

@@ -4,17 +4,20 @@
 // por trabajador y se envía a firmar por WhatsApp: con una sola firma su sello queda bajo cada documento (función firmar).
 // Los documentos salen de Prevención SST → Documentos preventivos (última versión en PDF) o de un PDF que se sube aquí.
 // pdf-lib 1.17.1 fijo desde cdnjs, se carga solo al usarlo.
-import { el } from '../../core/ui/dom.js?v=6ccf11a';
-import { icono } from '../../core/ui/iconos.js?v=6ccf11a';
-import { boton } from '../../core/ui/tabla.js?v=6ccf11a';
-import { avisar } from '../../core/ui/aviso.js?v=6ccf11a';
-import { hoyISO, fechaLarga } from '../../core/ui/formato.js?v=6ccf11a';
-import { urlFirmada, subirArchivo, eliminarArchivo } from '../../core/adjuntos.js?v=6ccf11a';
-import { enviarVarios } from '../../core/firmas.js?v=6ccf11a';
-import { cargarPlantillas, pdfDePlantilla } from '../documentos/editor.js?v=6ccf11a';
+import { el } from '../../core/ui/dom.js?v=64d5fd1';
+import { icono } from '../../core/ui/iconos.js?v=64d5fd1';
+import { boton } from '../../core/ui/tabla.js?v=64d5fd1';
+import { avisar } from '../../core/ui/aviso.js?v=64d5fd1';
+import { hoyISO, fechaLarga } from '../../core/ui/formato.js?v=64d5fd1';
+import { urlFirmada, subirArchivo, eliminarArchivo } from '../../core/adjuntos.js?v=64d5fd1';
+import { enviarVarios } from '../../core/firmas.js?v=64d5fd1';
+import { cargarPlantillas, pdfDePlantilla } from '../documentos/editor.js?v=64d5fd1';
 
 const PDFLIB = 'https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js';
 const MM = 72 / 25.4;
+// Alto de la franja de recepción (pt por cada 612 pt de ancho). Bajo las casillas queda libre el pie, donde la función
+// firmar escribe la nota de la firma electrónica (a 8,8 mm del borde).
+const ALTO_FRANJA = 178;
 const norm = (s) => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
 const nombreDe = (p) => [p?.nombres, p?.apellido_paterno, p?.apellido_materno].filter(Boolean).join(' ');
 const rutDe = (r) => {
@@ -63,7 +66,7 @@ async function agregarDocumento(L, salida, bytes, doc, t, rel, F, fecha, color) 
   let pg = copias[n - 1];
   const mb = pg.getMediaBox();
   let W = mb.width, H = mb.height;
-  const k0 = W / 612, S0 = 150 * k0;
+  const k0 = W / 612, S0 = ALTO_FRANJA * k0;
   if ((pg.getRotation()?.angle ?? 0) % 360 === 0) {
     pg.setMediaBox(0, 0, W, H + S0); pg.setCropBox(0, 0, W, H + S0);
     pg.translateContent(-mb.x, S0 - mb.y);
@@ -74,10 +77,10 @@ async function agregarDocumento(L, salida, bytes, doc, t, rel, F, fecha, color) 
     salida.removePage(salida.getPageCount() - 1);
     const [emb] = await salida.embedPdf(fuente, [n - 1]);
     W = emb.width; H = emb.height;
-    pg = salida.addPage([W, H + W / 612 * 150]);
-    pg.drawPage(emb, { x: 0, y: W / 612 * 150, width: W, height: H });
+    pg = salida.addPage([W, H + W / 612 * ALTO_FRANJA]);
+    pg.drawPage(emb, { x: 0, y: W / 612 * ALTO_FRANJA, width: W, height: H });
   }
-  const k = W / 612, S = 150 * k;
+  const k = W / 612, S = ALTO_FRANJA * k;
   const m = 22 * k, gris = L.rgb(0.3, 0.32, 0.38), negro = L.rgb(0.08, 0.08, 0.1), blanco = L.rgb(1, 1, 1);
   // Banda con el nombre del documento
   pg.drawRectangle({ x: m, y: S - 22 * k, width: W - 2 * m, height: 15 * k, color });
@@ -87,7 +90,7 @@ async function agregarDocumento(L, salida, bytes, doc, t, rel, F, fecha, color) 
   let y = S - 31 * k;
   for (const l of partir(decl, F.r, 7 * k, W - 2 * m - 12 * k)) { pg.drawText(l, { x: m + 6 * k, y, size: 7 * k, font: F.r, color: gris }); y -= 8.6 * k; }
   // Dos casillas: trabajador (su sello va arriba de la línea) y relator
-  const gap = 16 * k, bw = (W - 2 * m - gap) / 2, top = y - 2 * k, bot = 8 * k, bh = top - bot;
+  const gap = 16 * k, bw = (W - 2 * m - gap) / 2, top = y - 2 * k, bot = Math.max(34, 12 * k), bh = top - bot;
   const caja = (x0, titulo, nom, rut, cargo) => {
     pg.drawRectangle({ x: x0, y: bot, width: bw, height: bh, borderColor: color, borderWidth: 0.8 * k });
     pg.drawText(ansi(titulo), { x: x0 + 5 * k, y: top - 9 * k, size: 6.8 * k, font: F.b, color });
@@ -152,7 +155,7 @@ const bajar = async (ctx, ruta) => {
 };
 
 export async function abrirEntregaIndividual(ctx, { alGuardado = null } = {}) {
-  if (!document.getElementById('sst-individual-css')) document.head.append(el('link', { id: 'sst-individual-css', rel: 'stylesheet', href: new URL('./individual.css?v=6ccf11a', import.meta.url).href }));
+  if (!document.getElementById('sst-individual-css')) document.head.append(el('link', { id: 'sst-individual-css', rel: 'stylesheet', href: new URL('./individual.css?v=64d5fd1', import.meta.url).href }));
   const e = ctx.empresa.id;
   const [vinc, docsR, gen] = await Promise.all([
     ctx.api.from('persona_empresa').select('persona_id, cargo, estado, personas(nombres, apellido_paterno, apellido_materno, rut, telefono)').eq('empresa_id', e).is('deleted_at', null),

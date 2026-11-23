@@ -1,11 +1,11 @@
 // Servicios y precios por talla (S/M/L/XL), con los pasos que incluye cada uno (la ficha tiene pasos y químicos).
-import { el } from '../../../core/ui/dom.js?v=6ccf11a';
-import { listado, boton } from '../../../core/ui/tabla.js?v=6ccf11a';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=6ccf11a';
-import { avisar } from '../../../core/ui/aviso.js?v=6ccf11a';
-import { dinero } from '../../../core/ui/formato.js?v=6ccf11a';
-import { cargarServicios, TALLAS } from '../datos.js?v=6ccf11a';
-import { SERVICIOS } from '../sugeridos.js?v=6ccf11a';
+import { el } from '../../../core/ui/dom.js?v=64d5fd1';
+import { listado, boton } from '../../../core/ui/tabla.js?v=64d5fd1';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=64d5fd1';
+import { avisar } from '../../../core/ui/aviso.js?v=64d5fd1';
+import { dinero } from '../../../core/ui/formato.js?v=64d5fd1';
+import { cargarServicios, TALLAS } from '../datos.js?v=64d5fd1';
+import { SERVICIOS } from '../sugeridos.js?v=64d5fd1';
 
 export default async function vista(ctx) {
   const [servicios, pq] = await Promise.all([

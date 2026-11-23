@@ -1,9 +1,9 @@
 // Novedades de la plataforma (Núcleo 025): pantalla #/novedades (opción fija del menú, debajo de Tareas), contador de no
 // leídas en el menú y tarjeta en el Inicio. Las escribe el equipo en Consola → Novedades; cada uno ve las de sus empresas
 // y módulos (nov_visibles). Al abrir la pantalla quedan leídas. Texto con nodos (sin innerHTML).
-import { el } from './ui/dom.js?v=6ccf11a';
-import { icono } from './ui/iconos.js?v=6ccf11a';
-import { urlsFirmadas } from './adjuntos.js?v=6ccf11a';
+import { el } from './ui/dom.js?v=64d5fd1';
+import { icono } from './ui/iconos.js?v=64d5fd1';
+import { urlsFirmadas } from './adjuntos.js?v=64d5fd1';
 
 const RUTA = /^[a-z]+\.[a-z0-9_]+$/;
 const fecha = (iso) => new Date(iso).toLocaleDateString('es-CL', { day: 'numeric', month: 'long', year: 'numeric' });
