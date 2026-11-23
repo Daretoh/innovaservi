@@ -2,12 +2,12 @@
 // tienen fecha de vencimiento se leen una tras otra en este equipo (gratis, sin enviar las imágenes a nadie). Las
 // fechas del reverso (zona MRZ, con dígito de control y RUN igual a la ficha) quedan marcadas; las del frente se
 // comparan con la imagen antes de marcarlas. Solo se guardan las marcadas.
-import { el } from '../../../core/ui/dom.js?v=3f2661d';
-import { icono } from '../../../core/ui/iconos.js?v=3f2661d';
-import { boton } from '../../../core/ui/tabla.js?v=3f2661d';
-import { avisar } from '../../../core/ui/aviso.js?v=3f2661d';
-import { urlFirmada } from '../../../core/adjuntos.js?v=3f2661d';
-import { cargarRrhh, nombreCompleto } from '../datos.js?v=3f2661d';
+import { el } from '../../../core/ui/dom.js?v=f6c1abb';
+import { icono } from '../../../core/ui/iconos.js?v=f6c1abb';
+import { boton } from '../../../core/ui/tabla.js?v=f6c1abb';
+import { avisar } from '../../../core/ui/aviso.js?v=f6c1abb';
+import { urlFirmada } from '../../../core/adjuntos.js?v=f6c1abb';
+import { cargarRrhh, nombreCompleto } from '../datos.js?v=f6c1abb';
 
 export default async function vista(ctx) {
   const datos = await cargarRrhh(ctx);
@@ -36,7 +36,7 @@ export default async function vista(ctx) {
   const comenzar = async (ev) => {
     if (corriendo) return; corriendo = true;
     const b = ev.currentTarget; b.disabled = true;
-    const L = await import('../../../core/lector-venc.js?v=3f2661d');
+    const L = await import('../../../core/lector-venc.js?v=f6c1abb');
     for (const f of filas) {
       if (!document.body.contains(b)) return;   // se salió de la vista
       f.estado.className = 'texto-chico lec-estado'; f.estado.textContent = 'Leyendo…';

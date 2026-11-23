@@ -3,15 +3,15 @@
 // sumado). Los conjuntos se despliegan con sus piezas y lo que no tiene conjunto va en "Sueltos". Cada fila tiene 3D y
 // "Agregar", que crea una partida ligada a ese objeto. Aquí se sube la exportación de SketchUp y el respaldo del prototipo.
 // Ruta: #/proyectos.modelo?p=<proyecto>
-import { el } from '../../../core/ui/dom.js?v=3f2661d';
-import { icono } from '../../../core/ui/iconos.js?v=3f2661d';
-import { boton } from '../../../core/ui/tabla.js?v=3f2661d';
+import { el } from '../../../core/ui/dom.js?v=f6c1abb';
+import { icono } from '../../../core/ui/iconos.js?v=f6c1abb';
+import { boton } from '../../../core/ui/tabla.js?v=f6c1abb';
 import {
   plegado, cargarTodo, cargarEstilos, selectorProyecto, llave2, mapasInv, medTxt, zonasDe, fichaPartida, subirExportacion, traerRespaldo, guardarProyecto,
-} from '../datos.js?v=3f2661d';
-import { avisar } from '../../../core/ui/aviso.js?v=3f2661d';
-import { ventana3d, olvidarMallas, vistaModelo } from '../visor3d.js?v=3f2661d';
-import { conectarSketchup } from '../sketchup.js?v=3f2661d';
+} from '../datos.js?v=f6c1abb';
+import { avisar } from '../../../core/ui/aviso.js?v=f6c1abb';
+import { ventana3d, olvidarMallas, vistaModelo } from '../visor3d.js?v=f6c1abb';
+import { conectarSketchup } from '../sketchup.js?v=f6c1abb';
 
 const filtro = { texto: '', agrupar: 'recinto', recinto: '', tipo: '', falta: false };
 const TIPO = { componente: 'Mueble', conjunto: 'Conjunto', pieza: 'Pieza' };

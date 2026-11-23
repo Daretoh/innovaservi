@@ -2,14 +2,14 @@
 // datos, entrega de EPP, IRL y registros de entrega de PTS), formatos para firmar (registro de capacitación,
 // evaluación de aprendizaje, entrega de EPP e IRL en blanco) y documentos de la empresa (PTS, matriz e instructivo
 // IPER, programa preventivo, Ley Karin, emergencias y accidentes, matriz de EPP y capacitaciones).
-import { el } from '../../../core/ui/dom.js?v=3f2661d';
-import { icono } from '../../../core/ui/iconos.js?v=3f2661d';
-import { boton } from '../../../core/ui/tabla.js?v=3f2661d';
-import { avisar } from '../../../core/ui/aviso.js?v=3f2661d';
-import { abrirDocumento } from '../editor.js?v=3f2661d';
-import { generador } from '../servicios.js?v=3f2661d';
-import { enviarAFirmar } from '../../../core/firmas.js?v=3f2661d';
-import { guardarEnRrhh, puedeGuardarRrhh, puedeGuardarSst } from '../acciones.js?v=3f2661d';
+import { el } from '../../../core/ui/dom.js?v=f6c1abb';
+import { icono } from '../../../core/ui/iconos.js?v=f6c1abb';
+import { boton } from '../../../core/ui/tabla.js?v=f6c1abb';
+import { avisar } from '../../../core/ui/aviso.js?v=f6c1abb';
+import { abrirDocumento } from '../editor.js?v=f6c1abb';
+import { generador } from '../servicios.js?v=f6c1abb';
+import { enviarAFirmar } from '../../../core/firmas.js?v=f6c1abb';
+import { guardarEnRrhh, puedeGuardarRrhh, puedeGuardarSst } from '../acciones.js?v=f6c1abb';
 
 const estado = { persona: '' };
 const DEL_TRABAJADOR = ['contrato', 'perfil', 'datos', 'epp', 'odi'];

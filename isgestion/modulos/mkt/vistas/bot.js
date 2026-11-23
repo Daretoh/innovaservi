@@ -1,14 +1,14 @@
 // Marketing → Bot: lo que sabe el bot de clientes (fichas), cómo habla (configuración) y un simulador para probarlo
 // antes de conectarlo a WhatsApp, Messenger e Instagram. Ignacio lo entrena y lo publica (decisión de Enzo, 2026-11-10).
 // El simulador llama a la Edge Function mkt-bot, que usa Claude solo con las fichas activas de esta empresa.
-import { el } from '../../../core/ui/dom.js?v=3f2661d';
-import { icono } from '../../../core/ui/iconos.js?v=3f2661d';
-import { boton } from '../../../core/ui/tabla.js?v=3f2661d';
-import { avisar } from '../../../core/ui/aviso.js?v=3f2661d';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=3f2661d';
-import { cargarCss } from '../datos.js?v=3f2661d';
-import { tarjetaHora } from '../hora-bot.js?v=3f2661d';
-import { marcarMala, tarjetaCorrecciones, formHorario, textoAtencion } from '../correcciones.js?v=3f2661d';
+import { el } from '../../../core/ui/dom.js?v=f6c1abb';
+import { icono } from '../../../core/ui/iconos.js?v=f6c1abb';
+import { boton } from '../../../core/ui/tabla.js?v=f6c1abb';
+import { avisar } from '../../../core/ui/aviso.js?v=f6c1abb';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=f6c1abb';
+import { cargarCss } from '../datos.js?v=f6c1abb';
+import { tarjetaHora } from '../hora-bot.js?v=f6c1abb';
+import { marcarMala, tarjetaCorrecciones, formHorario, textoAtencion } from '../correcciones.js?v=f6c1abb';
 
 export const CATEGORIAS_BOT = [
   ['servicios', 'Servicios'], ['precios', 'Precios publicados'], ['horarios', 'Horarios'], ['ubicacion', 'Ubicación y contacto'],

@@ -1,0 +1,80 @@
+/* Remates. Solo variables del tema (sin colores fijos) para que funcione con todos los temas y el modo oscuro. */
+
+.rem-aviso { margin: 0 0 4px; }
+.rem-indicadores { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 190px), 1fr)); gap: 10px; margin: 8px 0 12px; }
+.rem-ind { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 12px 14px; text-align: left; cursor: pointer;
+  background: var(--superficie); border: 1px solid var(--borde); border-radius: var(--radio); color: var(--texto); font: inherit; }
+.rem-ind:hover { border-color: var(--empresa); }
+.rem-ind strong { font-size: 1.5rem; line-height: 1.1; color: var(--empresa); }
+.rem-segmento { flex-wrap: wrap; align-self: flex-start; margin-bottom: 8px; }
+.rem-filtros > .buscador { flex: 1 1 240px; }
+.rem-filtros > select.campo { width: auto; flex: 0 1 200px; }
+.rem-tabla td.num { text-align: right; white-space: nowrap; }
+.rem-tabla td:first-child { white-space: nowrap; }
+.rem-pasada { opacity: .6; }
+.rem-pronto { color: var(--venc); font-weight: 600; }
+.rem-bueno { color: var(--ok); font-weight: 600; }
+.rem-sobre { color: var(--venc); }
+.rem-agente { margin-left: 6px; font-size: .7rem; }
+.rem-puntaje { min-width: 34px; justify-content: center; font-weight: 700; }
+
+.rem-ficha .listado-cabecera { align-items: flex-start; }
+.rem-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.rem-numeros { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 170px), 1fr)); gap: 8px; margin: 12px 0; }
+.rem-num { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; background: var(--fondo-sutil); border: 1px solid var(--borde); border-radius: var(--radio); }
+.rem-num strong { font-size: 1.05rem; }
+.rem-num-total { border-color: var(--empresa); }
+.rem-num-puntaje { grid-row: span 2; }
+.rem-partes { margin: 4px 0 0; padding-left: 16px; }
+.rem-num.rem-bueno strong { color: var(--ok); }
+.rem-num.rem-sobre strong { color: var(--venc); }
+
+.rem-columnas { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 14px; align-items: start; }
+.rem-columnas-iguales { grid-template-columns: 1fr 1fr; }
+@media (max-width: 900px) { .rem-columnas, .rem-columnas-iguales { grid-template-columns: 1fr; } }
+.rem-lateral { display: flex; flex-direction: column; gap: 14px; }
+.rem-bloque { padding: 14px 16px; background: var(--superficie); border: 1px solid var(--borde); border-radius: var(--radio); }
+.rem-bloque h2 { margin: 0 0 10px; font-size: 1rem; }
+.rem-bloque h3 { margin: 0 0 6px; font-size: .85rem; color: var(--texto-suave); text-transform: uppercase; letter-spacing: .04em; }
+.rem-grilla { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); gap: 10px 12px; }
+.rem-grilla .form-fila { display: flex; flex-direction: column; gap: 4px; margin: 0; }
+.rem-grilla .form-fila > span:first-child { font-size: .82rem; color: var(--texto-suave); }
+.rem-ancho { grid-column: 1 / -1; }
+.rem-revision { display: flex; flex-direction: column; gap: 12px; }
+.rem-revision > div { display: flex; flex-direction: column; gap: 6px; }
+.rem-riesgo { color: var(--venc); }
+.rem-enlaces { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.rem-enlaces a { display: inline-flex; align-items: center; gap: 4px; }
+.rem-docs { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
+.rem-doc { display: inline-flex; align-items: center; gap: 6px; padding: 6px 8px; text-align: left; cursor: pointer;
+  background: var(--fondo-sutil); border: 1px solid var(--borde); border-radius: 8px; color: var(--texto); font: inherit; }
+.rem-doc:hover { border-color: var(--empresa); }
+.rem-eliminar { color: var(--venc); }
+.rem-ficha .rem-bloque .form-fila textarea { width: 100%; }
+
+.rem-guia .rem-bloque { margin-bottom: 14px; }
+.rem-pasos { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
+.rem-pasos li { line-height: 1.4; }
+
+/* Orden por columnas */
+.rem-tabla th { padding: 0; }
+.rem-tabla th.num .rem-orden { justify-content: flex-end; }
+.rem-orden { display: flex; align-items: center; gap: 4px; width: 100%; padding: 10px 12px; border: 0; background: none; cursor: pointer;
+  font: inherit; color: inherit; text-transform: inherit; letter-spacing: inherit; text-align: left; white-space: nowrap; }
+.rem-orden:hover { color: var(--empresa); }
+.rem-orden.activa { color: var(--empresa); }
+.rem-orden-vacio { display: inline-block; width: 12px; }
+
+/* Ubicación y mapa */
+.rem-barra { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.rem-barra .rem-segmento { margin-bottom: 0; }
+.rem-distancia { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+.rem-mapa-lienzo { width: 100%; height: min(70vh, 560px); border: 1px solid var(--borde); border-radius: var(--radio); overflow: hidden; z-index: 0; }
+.rem-mapa-ficha { height: 320px; }
+.rem-ubicacion { margin-bottom: 14px; }
+.rem-ubicacion-cabecera { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; margin-bottom: 10px; }
+.rem-ubicacion-cabecera h2 { margin: 0; }
+.rem-ubicacion-cabecera .rem-distancia { flex-direction: row; align-items: center; gap: 6px; }
+.rem-ubicacion-cabecera .listado-acciones { margin-left: auto; }
+.rem-popup { display: flex; flex-direction: column; gap: 2px; font-size: .85rem; }
+.leaflet-container { font: inherit; }

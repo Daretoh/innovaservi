@@ -1,17 +1,17 @@
 // Proyectos → Lista detallada: tabla clásica por zona y área con miniatura, filtros (zona, categoría, estado, solo
 // cambios del modelo), ficha completa, duplicar, eliminar y Excel.
 // Ruta: #/proyectos.lista?p=<proyecto>
-import { el } from '../../../core/ui/dom.js?v=3f2661d';
-import { icono } from '../../../core/ui/iconos.js?v=3f2661d';
-import { boton } from '../../../core/ui/tabla.js?v=3f2661d';
-import { avisar } from '../../../core/ui/aviso.js?v=3f2661d';
+import { el } from '../../../core/ui/dom.js?v=f6c1abb';
+import { icono } from '../../../core/ui/iconos.js?v=f6c1abb';
+import { boton } from '../../../core/ui/tabla.js?v=f6c1abb';
+import { avisar } from '../../../core/ui/aviso.js?v=f6c1abb';
 import {
   ESTADOS, FUENTES, NO_SUMA, clp, subtotal, suma, sinPrecioN, tienePrecio, gDe, alerta, esArchivo, ordenGrupos, zonasDe, fmtNum, leerNum, hoyISO, fechaCL,
   plegado, cargarTodo, cargarEstilos, selectorProyecto, sinProyectos, guardarPartida, insertarPartidas, mapasInv, estadoModelo, m3dDe, chipModelo,
   abrirLink, urlsImagenes, fichaPartida, ordenEntre,
-} from '../datos.js?v=3f2661d';
-import { ventana3d } from '../visor3d.js?v=3f2661d';
-import { excelProyecto } from '../exportar.js?v=3f2661d';
+} from '../datos.js?v=f6c1abb';
+import { ventana3d } from '../visor3d.js?v=f6c1abb';
+import { excelProyecto } from '../exportar.js?v=f6c1abb';
 
 const filtro = { texto: '', zona: '', cat: '', estado: '', cambios: false };
 

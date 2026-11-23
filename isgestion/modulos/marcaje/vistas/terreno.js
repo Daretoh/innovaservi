@@ -2,11 +2,11 @@
 // marca con los 4 últimos dígitos del RUT. La primera marca del día es la entrada y la siguiente la salida (la hora
 // la pone el servidor); la pareja genera la hora en Registro de horas con esa faena. Cuadrilla planificada con su
 // estado, quitar una marca propia de hoy y bitácora de la faena.
-import { el } from '../../../core/ui/dom.js?v=3f2661d';
-import { icono } from '../../../core/ui/iconos.js?v=3f2661d';
-import { boton } from '../../../core/ui/tabla.js?v=3f2661d';
-import { avisar } from '../../../core/ui/aviso.js?v=3f2661d';
-import { hoyISO, fechaLarga, nombreDia, hhmm } from '../../../core/ui/formato.js?v=3f2661d';
+import { el } from '../../../core/ui/dom.js?v=f6c1abb';
+import { icono } from '../../../core/ui/iconos.js?v=f6c1abb';
+import { boton } from '../../../core/ui/tabla.js?v=f6c1abb';
+import { avisar } from '../../../core/ui/aviso.js?v=f6c1abb';
+import { hoyISO, fechaLarga, nombreDia, hhmm } from '../../../core/ui/formato.js?v=f6c1abb';
 
 const CLAVE = 'isg.terreno.faena';
 const hora = (ts) => new Date(ts).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });

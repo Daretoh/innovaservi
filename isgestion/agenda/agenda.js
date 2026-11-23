@@ -1,9 +1,9 @@
 // Agenda en línea (Marketing): el cliente elige servicio, día y hora con cupo, deja sus datos y su vehículo, y puede
 // inscribirse como cliente. URL: /agenda/?t=<token del formulario web>. La hora queda pedida: el taller la confirma.
 // Envía todo a la Edge Function pública mkt-agenda. Mismo estilo que la ficha de ingreso y el formulario de contacto.
-import { el } from '../core/ui/dom.js?v=3f2661d';
-import { icono } from '../core/ui/iconos.js?v=3f2661d';
-import { revisarTelefono, nombreDia, fechaCorta } from '../core/ui/formato.js?v=3f2661d';
+import { el } from '../core/ui/dom.js?v=f6c1abb';
+import { icono } from '../core/ui/iconos.js?v=f6c1abb';
+import { revisarTelefono, nombreDia, fechaCorta } from '../core/ui/formato.js?v=f6c1abb';
 
 const raiz = document.getElementById('app');
 const token = new URLSearchParams(location.search).get('t') ?? '';

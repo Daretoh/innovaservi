@@ -2,14 +2,14 @@
 // el premio, premio, vencimiento, condiciones; cambiarlas pide aprobar), y los clientes inscritos con sus sellos.
 // Por cliente: enviar la tarjeta por WhatsApp, copiar el enlace, canjear el premio, sello a mano (aprobar) y dar de baja.
 // Los sellos los pone la base al cobrar una orden del Taller de un cliente inscrito.
-import { el } from '../../../core/ui/dom.js?v=3f2661d';
-import { icono } from '../../../core/ui/iconos.js?v=3f2661d';
-import { boton, listado } from '../../../core/ui/tabla.js?v=3f2661d';
-import { avisar } from '../../../core/ui/aviso.js?v=3f2661d';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=3f2661d';
-import { dinero, fechaLarga, diaLocal } from '../../../core/ui/formato.js?v=3f2661d';
-import { urlApp } from '../../../core/api.js?v=3f2661d';
-import { cargarCss, enlaceWhatsapp } from '../datos.js?v=3f2661d';
+import { el } from '../../../core/ui/dom.js?v=f6c1abb';
+import { icono } from '../../../core/ui/iconos.js?v=f6c1abb';
+import { boton, listado } from '../../../core/ui/tabla.js?v=f6c1abb';
+import { avisar } from '../../../core/ui/aviso.js?v=f6c1abb';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=f6c1abb';
+import { dinero, fechaLarga, diaLocal } from '../../../core/ui/formato.js?v=f6c1abb';
+import { urlApp } from '../../../core/api.js?v=f6c1abb';
+import { cargarCss, enlaceWhatsapp } from '../datos.js?v=f6c1abb';
 
 const enlaceTarjeta = (token) => urlApp(`tarjeta/?t=${token}`);
 const enlaceLocal = (token) => `${location.origin}${location.pathname.replace(/[^/]*$/, '')}tarjeta/?t=${token}`;
