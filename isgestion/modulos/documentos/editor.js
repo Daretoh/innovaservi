@@ -2,25 +2,42 @@
 // a pantalla completa (como en InnovaGestión): los campos subrayados se escriben ahí mismo, los bloques opcionales se
 // quitan con la ×, se elige el formato (variante) y los trabajadores que firman; luego se imprime, se descarga en PDF
 // o se guarda donde corresponde (RRHH o Prevención SST), según lo que pase quien abre el documento.
-import { el } from '../../core/ui/dom.js?v=591477d';
-import { icono } from '../../core/ui/iconos.js?v=591477d';
-import { boton } from '../../core/ui/tabla.js?v=591477d';
-import { avisar } from '../../core/ui/aviso.js?v=591477d';
-import { cargarJsPdf, cargarLogo, sellar } from '../../core/pdf.js?v=591477d';
-import { crearPlantillas } from './plantillas.js?v=591477d';
-import { pdfDesde } from './pdf.js?v=591477d';
-import { fmtRut } from '../../core/lector-dte.js?v=591477d';
-import { activarCampos } from './campos.js?v=591477d';
+import { el } from '../../core/ui/dom.js?v=5a49f77';
+import { icono } from '../../core/ui/iconos.js?v=5a49f77';
+import { boton } from '../../core/ui/tabla.js?v=5a49f77';
+import { avisar } from '../../core/ui/aviso.js?v=5a49f77';
+import { cargarJsPdf, cargarLogo, sellar } from '../../core/pdf.js?v=5a49f77';
+import { crearPlantillas } from './plantillas.js?v=5a49f77';
+import { pdfDesde } from './pdf.js?v=5a49f77';
+import { fmtRut } from '../../core/lector-dte.js?v=5a49f77';
+import { activarCampos } from './campos.js?v=5a49f77';
 
 let estilos = null;
 function cargarEstilos() {
   estilos ??= new Promise((ok) => {
     const l = document.createElement('link');
-    l.rel = 'stylesheet'; l.href = new URL('./documentos.css?v=591477d', import.meta.url).href;
+    l.rel = 'stylesheet'; l.href = new URL('./documentos.css?v=5a49f77', import.meta.url).href;
     l.onload = ok; l.onerror = ok;
     document.head.append(l);
   });
   return estilos;
+}
+
+// PDF de una plantilla sin abrir el editor (p. ej. la entrega individual de documentos de Prevención SST): se arma fuera
+// de la pantalla con los mismos estilos y el mismo corte de páginas que "Descargar PDF". Devuelve los bytes del PDF.
+export async function pdfDePlantilla(html, { titulo = '', autor = '' } = {}) {
+  await cargarEstilos();
+  const hoja = el('div', { class: 'dg-doc dg-capturando', style: 'position:absolute;left:-12000px;top:0' });
+  hoja.innerHTML = html;   // plantillas: todo dato pasa por esc()/ce()
+  for (const img of hoja.querySelectorAll('img[onerror]')) img.removeAttribute('onerror');
+  for (const img of hoja.querySelectorAll('img')) if (!img.getAttribute('src')) img.remove();
+  document.body.append(hoja);
+  try {
+    await Promise.all([...hoja.querySelectorAll('img')].map((i) => (i.complete ? null : new Promise((ok) => { i.onload = ok; i.onerror = ok; }))));
+    const jsPDF = await cargarJsPdf();
+    const d = sellar(await pdfDesde(hoja, jsPDF, { escala: 1.6, calidad: 0.72 }), { autor, titulo });
+    return new Uint8Array(d.output('arraybuffer'));
+  } finally { hoja.remove(); }
 }
 
 // Las ediciones de PTS se insertan como texto del documento: sin < ni > (aunque alguien las guarde por la API)

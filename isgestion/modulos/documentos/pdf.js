@@ -3,12 +3,14 @@
 /* eslint-disable */
 const H2C = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
 function cargarH2C(){ if(window.html2canvas) return Promise.resolve(); return new Promise(function(res,rej){ var s=document.createElement('script'); s.src=H2C; s.onload=function(){res();}; s.onerror=function(){rej(new Error('No se pudo cargar el generador de PDF. Revisa la conexión.'));}; document.head.appendChild(s); }); }
-import { pdfFirmado } from './firmarpdf.js?v=591477d';
-export function pdfDesde(el, jsPDF){
+import { pdfFirmado } from './firmarpdf.js?v=5a49f77';
+// o: { escala, calidad } (por omisión 2 y 0.92; la entrega individual de SST usa menos para que el PDF pese poco)
+export function pdfDesde(el, jsPDF, o){
+    var ESC=(o&&o.escala)||2, CAL=(o&&o.calidad)||0.92;
     if(el.querySelector('.dg-pag')) return cargarH2C().then(function(){ return pdfFirmado(el, jsPDF); });   // PDF subido para firmar
     return cargarH2C().then(function(){
       var doc=new jsPDF({unit:'mm',format:'letter',compress:true}), A4W=215.9, A4H=279.4;
-      return window.html2canvas(el,{scale:2,useCORS:true,backgroundColor:'#ffffff',logging:false}).then(function(cv){
+      return window.html2canvas(el,{scale:ESC,useCORS:true,backgroundColor:'#ffffff',logging:false}).then(function(cv){
         var imgH=cv.height*A4W/cv.width, partes=el.querySelectorAll(':scope > .dg-una'), R0=el.getBoundingClientRect(), segs=[0];
         Array.prototype.forEach.call(partes,function(p,i){ if(i>0) segs.push(Math.round((p.getBoundingClientRect().top-R0.top)*cv.height/R0.height)); }); segs.push(cv.height);
         // Casillas de firma ([data-firma] = persona): dónde quedan en el PDF (mm desde arriba a la izquierda) para estampar ahí la firma electrónica
@@ -18,7 +20,7 @@ export function pdfDesde(el, jsPDF){
             doc.__firmas.push({ persona_id:c.getAttribute('data-firma'), pagina:i, x:+((r.left-R0.left)*kx*mm).toFixed(2), y:+(((y0-pg.y0)*mm)+pg.top).toFixed(2), w:+(r.width*kx*mm).toFixed(2), h:+(r.height*kpx*mm).toFixed(2), encima:c.hasAttribute('data-encima') }); break; } } });
           return doc; }
         var kpx=cv.height/R0.height;
-        if(imgH<=A4H){ doc.addImage(cv.toDataURL('image/jpeg',0.92),'JPEG',0,0,A4W,imgH); pags.push({y0:0,h:cv.height,top:0}); return casillas(); }
+        if(imgH<=A4H){ doc.addImage(cv.toDataURL('image/jpeg',CAL),'JPEG',0,0,A4W,imgH); pags.push({y0:0,h:cv.height,top:0}); return casillas(); }
         var MT=10, MB=8, srcPageH=Math.floor(cv.width*(A4H-MB)/A4W), srcPageH2=Math.floor(cv.width*(A4H-MT-MB)/A4W), y=0, first=true, ctx=cv.getContext('2d');
         // Bloques que no se pueden partir (filas, párrafos, títulos, firmas…), en px del canvas: el corte de página se hace entre ellos.
         var bloques=[];
@@ -55,7 +57,7 @@ export function pdfDesde(el, jsPDF){
           var sl=document.createElement('canvas'); sl.width=cv.width; sl.height=h;
           sl.getContext('2d').drawImage(cv,0,y,cv.width,h,0,0,cv.width,h);
           var top=first?0:MT; if(!first) doc.addPage(); first=false;
-          doc.addImage(sl.toDataURL('image/jpeg',0.92),'JPEG',0,top,A4W,h*A4W/cv.width);
+          doc.addImage(sl.toDataURL('image/jpeg',CAL),'JPEG',0,top,A4W,h*A4W/cv.width);
           pags.push({y0:y,h:h,top:top});
           y+=h;
         }

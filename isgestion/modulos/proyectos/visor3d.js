@@ -3,11 +3,11 @@
 // Modos: órbita, Recorrer (como D5: teclado o joystick en pantalla), Mirar con la tablet (giroscopio) y realidad
 // aumentada en Android (WebXR). three.js 0.147.0 (jsDelivr, versión fija) se carga solo al abrir un 3D.
 // SketchUp (cm, Z arriba) → visor (m, Y arriba): (x, y, z) → (x/100, z/100, -y/100).
-import { el } from '../../core/ui/dom.js?v=591477d';
-import { icono } from '../../core/ui/iconos.js?v=591477d';
-import { boton } from '../../core/ui/tabla.js?v=591477d';
-import { urlsFirmadas } from '../../core/adjuntos.js?v=591477d';
-import { instanciasDe, subtotal, tienePrecio, clp, fmtNum } from './datos.js?v=591477d';
+import { el } from '../../core/ui/dom.js?v=5a49f77';
+import { icono } from '../../core/ui/iconos.js?v=5a49f77';
+import { boton } from '../../core/ui/tabla.js?v=5a49f77';
+import { urlsFirmadas } from '../../core/adjuntos.js?v=5a49f77';
+import { instanciasDe, subtotal, tienePrecio, clp, fmtNum } from './datos.js?v=5a49f77';
 
 const CDN3 = 'https://cdn.jsdelivr.net/npm/three@0.147.0/';
 const cargarScript = (src) => new Promise((ok, mal) => {

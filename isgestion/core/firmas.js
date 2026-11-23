@@ -2,13 +2,13 @@
 // ver quién firmó. La persona firma en /firmar/?t=… (Edge Function pública `firmar`).
 //   enviarAFirmar(ctx, { origen, id, personas: [{ id, nombre, telefono }], titulo, alTerminar })
 //   seccionFirmasEntrega(ctx, ent, participantes) → bloque para Prevención SST → registro de entrega
-import { el } from './ui/dom.js?v=591477d';
-import { icono } from './ui/iconos.js?v=591477d';
-import { boton } from './ui/tabla.js?v=591477d';
-import { avisar } from './ui/aviso.js?v=591477d';
-import { telefono } from './ui/formato.js?v=591477d';
-import { urlApp } from './api.js?v=591477d';
-import { urlFirmada } from './adjuntos.js?v=591477d';
+import { el } from './ui/dom.js?v=5a49f77';
+import { icono } from './ui/iconos.js?v=5a49f77';
+import { boton } from './ui/tabla.js?v=5a49f77';
+import { avisar } from './ui/aviso.js?v=5a49f77';
+import { telefono } from './ui/formato.js?v=5a49f77';
+import { urlApp } from './api.js?v=5a49f77';
+import { urlFirmada } from './adjuntos.js?v=5a49f77';
 
 const hora = (t) => new Date(t).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' });
 export function enlaceWhatsapp(tel, texto) {
@@ -23,10 +23,21 @@ const mensaje = (ctx, nombre, titulo, enlace) =>
 
 // Crea los enlaces (uno por persona; reenviar devuelve el mismo mientras siga vigente, Núcleo 029) y muestra una ventana con el botón de WhatsApp de cada uno
 export async function enviarAFirmar(ctx, { origen, id, personas, titulo, casillas = null, alTerminar }) {
+  return enviarVarios(ctx, [{ origen, id, personas, titulo, casillas }], alTerminar);
+}
+
+// Varios registros de una vez (p. ej. un registro individual por trabajador): una sola ventana con el WhatsApp de cada uno
+export async function enviarVarios(ctx, lotes, alTerminar) {
+  const filas = [];
+  for (const lote of lotes) filas.push(...await filasDeLote(ctx, lote));
+  mostrarEnvio(filas, alTerminar);
+}
+
+async function filasDeLote(ctx, { origen, id, personas, titulo, casillas = null }) {
   const { data, error } = await ctx.api.rpc('firma_crear', { p_empresa: ctx.empresa.id, p_origen: origen, p_id: id, p_personas: personas.map((p) => p.id), p_casillas: casillas?.length ? casillas : null });
   if (error) throw new Error(error.message);
   const de = new Map(personas.map((p) => [p.id, p]));
-  const filas = data.map((x) => {
+  return data.map((x) => {
     const p = de.get(x.persona_id) ?? {};
     const enlace = urlApp(`firmar/?t=${x.token}`);
     const wa = enlaceWhatsapp(p.telefono, mensaje(ctx, p.nombre, titulo, enlace));
@@ -38,6 +49,9 @@ export async function enviarAFirmar(ctx, { origen, id, personas, titulo, casilla
       el('div', { class: 'doc-acciones' }, copiar,
         wa ? el('a', { class: 'boton boton-primario', href: wa, target: '_blank', rel: 'noopener' }, icono('chat', { tam: 16 }), 'WhatsApp') : null));
   });
+}
+
+function mostrarEnvio(filas, alTerminar) {
   const cerrar = () => { dialogo.remove(); alTerminar?.(); };
   const dialogo = el('dialog', { class: 'modal', 'aria-label': 'Enviar a firmar' },
     el('header', { class: 'modal-cabecera' }, el('h2', {}, 'Enviar a firmar por WhatsApp'),
