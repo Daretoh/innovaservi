@@ -1,11 +1,11 @@
 // Inicio: saludo con la fecha, lo que requiere atención (alertas de los módulos que el usuario puede ver)
 // indicadores de los módulos (core/vistas/indicadores.js) y accesos a los módulos agrupados por área. Las alertas llegan después, sin bloquear la pantalla.
-import { tarjetaInicio } from '../novedades.js?v=65230b8';
-import { el } from '../ui/dom.js?v=65230b8';
-import { icono } from '../ui/iconos.js?v=65230b8';
-import { nombreEmpresa } from '../empresas.js?v=65230b8';
-import { esTelefono, marcaGuardada, recordarMarca } from '../movil.js?v=65230b8';
-import { diaLocal } from '../ui/formato.js?v=65230b8';
+import { tarjetaInicio } from '../novedades.js?v=b490b0f';
+import { el } from '../ui/dom.js?v=b490b0f';
+import { icono } from '../ui/iconos.js?v=b490b0f';
+import { nombreEmpresa } from '../empresas.js?v=b490b0f';
+import { esTelefono, marcaGuardada, recordarMarca } from '../movil.js?v=b490b0f';
+import { diaLocal } from '../ui/formato.js?v=b490b0f';
 
 const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
@@ -49,7 +49,7 @@ function resumenTaller(ctx) {
 
 // Teléfono (dirección B): cabecera con el color de la empresa (logo, campana, fecha, saludo y, con Taller, los números
 // del día) y "Necesitan atención" con los autos del taller. Debajo, lo mismo que en pantalla grande.
-function cabeceraMovil(ctx, { fecha, titulo, abrirNotificaciones, conTaller }) {
+function cabeceraMovil(ctx, { fecha, titulo, abrirNotificaciones, elegirEmpresa, conTaller }) {
   const marca = marcaGuardada(ctx.empresa.id);
   const cifras = el('div', { class: 'im-cifras', hidden: true });
   if (conTaller) {
@@ -60,7 +60,11 @@ function cabeceraMovil(ctx, { fecha, titulo, abrirNotificaciones, conTaller }) {
       cifras.hidden = false;
     });
   }
-  const pastilla = el('span', { class: 'im-marca' }, marca?.logo ? el('img', { src: marca.logo, alt: '' }) : null, nombreEmpresa(ctx.empresa));
+  // Con más de una empresa, la pastilla es el botón para cambiar de empresa (como el selector de la barra en el PC)
+  const pastilla = elegirEmpresa
+    ? el('button', { type: 'button', class: 'im-marca im-marca-boton', 'aria-label': `${nombreEmpresa(ctx.empresa)}: cambiar empresa`, onclick: elegirEmpresa },
+      marca?.logo ? el('img', { src: marca.logo, alt: '' }) : null, nombreEmpresa(ctx.empresa), icono('abajo', { tam: 16 }))
+    : el('span', { class: 'im-marca' }, marca?.logo ? el('img', { src: marca.logo, alt: '' }) : null, nombreEmpresa(ctx.empresa));
   // Sin logo guardado aún en este teléfono (recién abierto o recién subido): se trae y se guarda
   if (!marca?.logo && ctx.empresa.logo_url) recordarMarca(ctx.api, ctx.empresa).then((logo) => { if (logo && pastilla.isConnected) pastilla.prepend(el('img', { src: logo, alt: '' })); });
   return el('header', { class: 'im-cab' },
@@ -75,7 +79,7 @@ function cabeceraMovil(ctx, { fecha, titulo, abrirNotificaciones, conTaller }) {
 function atencionTaller(ctx) {
   const nodo = el('section', { class: 'im-atencion', hidden: true });
   (async () => {
-    const [{ SELECT_ORDEN, minutosTrabajo }, m] = await Promise.all([import('../../modulos/taller/datos.js?v=65230b8'), import('../../modulos/taller/movil.js?v=65230b8')]);
+    const [{ SELECT_ORDEN, minutosTrabajo }, m] = await Promise.all([import('../../modulos/taller/datos.js?v=b490b0f'), import('../../modulos/taller/movil.js?v=b490b0f')]);
     const { data, error } = await ctx.api.from('tal_ordenes').select(SELECT_ORDEN).eq('empresa_id', ctx.empresa.id).in('estado', ['agendado', 'espera', 'proceso', 'terminado']);
     if (error) throw error;
     // Primero por tipo de motivo; dentro de cada uno, el que lleva más tiempo
@@ -147,7 +151,7 @@ function trabajandoHoy(ctx, visibles) {
   return caja;
 }
 
-export default function inicio(ctx, visibles, { abrirNotificaciones } = {}) {
+export default function inicio(ctx, visibles, { abrirNotificaciones, elegirEmpresa } = {}) {
   const hoy = new Date();
   const fecha = `${DIAS[hoy.getDay()]} ${hoy.getDate()} de ${MESES[hoy.getMonth()]}`;
   const telefono = esTelefono();
@@ -166,12 +170,12 @@ export default function inicio(ctx, visibles, { abrirNotificaciones } = {}) {
   // Indicadores (tarjetas y paneles): llegan después, sin bloquear la pantalla
   const indicadores = el('div', { class: 'cargando-bloque', 'aria-busy': 'true', 'aria-label': 'Cargando indicadores' }, el('span', { class: 'cargador', 'aria-hidden': 'true' }));
   if (visibles.length && !tablet) {
-    import('./indicadores.js?v=65230b8')
+    import('./indicadores.js?v=b490b0f')
       .then(async ({ cargarIndicadores, panelIndicadores }) => { const p = panelIndicadores(ctx, await cargarIndicadores(ctx)); if (p) indicadores.replaceWith(p); else indicadores.remove(); })
       .catch(() => indicadores.remove());
   } else indicadores.remove();
   if (visibles.length && !tablet) {
-    import('../../modulos/gerencia/alertas.js?v=65230b8')
+    import('../../modulos/gerencia/alertas.js?v=b490b0f')
       .then(({ cargarAlertas }) => cargarAlertas(ctx))
       .then((alertas) => {
         atencion.replaceChildren(el('h2', {}, alertas.length ? `Requiere atención (${alertas.length})` : 'Requiere atención'),
@@ -190,7 +194,7 @@ export default function inicio(ctx, visibles, { abrirNotificaciones } = {}) {
   const grupos = new Map();
   for (const m of visibles) { const c = m.categoria || 'Gestión'; if (!grupos.has(c)) grupos.set(c, []); grupos.get(c).push(m); }
   return el('section', { class: `listado inicio${telefono ? ' inicio-movil' : ''}` },
-    telefono ? cabeceraMovil(ctx, { fecha, titulo, abrirNotificaciones, conTaller })
+    telefono ? cabeceraMovil(ctx, { fecha, titulo, abrirNotificaciones, elegirEmpresa, conTaller })
       : el('header', { class: 'inicio-cabecera' },
         el('p', { class: 'texto-suave inicio-fecha' }, fecha[0].toUpperCase() + fecha.slice(1)),
         titulo,

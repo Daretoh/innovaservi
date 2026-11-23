@@ -2,14 +2,14 @@
 // Confirmar el pago (Remuneraciones 008, 2026-11-02): la semana se paga la semana siguiente; al pagar se confirma y
 // queda lo pagado a cada uno. Si después cambia algo de esa semana o faltó un saldo, la diferencia se lleva a la semana
 // actual o a la siguiente como extra o descuento con su motivo (remu_items.origen_semana), y la semana queda cuadrada.
-import { el } from '../../../core/ui/dom.js?v=65230b8';
-import { icono } from '../../../core/ui/iconos.js?v=65230b8';
-import { boton } from '../../../core/ui/tabla.js?v=65230b8';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=65230b8';
-import { avisar } from '../../../core/ui/aviso.js?v=65230b8';
-import { dinero, horas, hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, fechaLarga, numSemana } from '../../../core/ui/formato.js?v=65230b8';
-import { cargarBase, calcularRango, nombreCompleto } from '../datos.js?v=65230b8';
-import { coloresFaenas } from '../../../core/ui/faena-color.js?v=65230b8';
+import { el } from '../../../core/ui/dom.js?v=b490b0f';
+import { icono } from '../../../core/ui/iconos.js?v=b490b0f';
+import { boton } from '../../../core/ui/tabla.js?v=b490b0f';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=b490b0f';
+import { avisar } from '../../../core/ui/aviso.js?v=b490b0f';
+import { dinero, horas, hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, fechaLarga, numSemana } from '../../../core/ui/formato.js?v=b490b0f';
+import { cargarBase, calcularRango, nombreCompleto } from '../datos.js?v=b490b0f';
+import { coloresFaenas } from '../../../core/ui/faena-color.js?v=b490b0f';
 
 const estado = { lunes: lunesDe(hoyISO()) };
 
@@ -236,7 +236,7 @@ function verPago(ctx, f, p, editar) {
 async function exportarPdf(ctx, R, lunes, domingo, b) {
   b.disabled = true;
   try {
-    const { nuevoPdf } = await import('../../../core/pdf.js?v=65230b8');
+    const { nuevoPdf } = await import('../../../core/pdf.js?v=b490b0f');
     const pdf = await nuevoPdf(ctx, { titulo: `Pago semanal · semana ${numSemana(lunes)}`, subtitulo: `${fechaCorta(lunes)} al ${fechaCorta(domingo)} · total ${dinero(R.total)}`, horizontal: true });
     pdf.tabla({
       columnas: ['Trabajador', 'RUT', 'Modo', 'Días', 'Horas', 'Base', 'Vueltas', 'Extras', 'Descuentos', 'Total'],

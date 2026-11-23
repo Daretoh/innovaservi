@@ -1,20 +1,20 @@
 // Arranque de ISgestión: sesión → empresas y permisos → barra con selector → menú → vista.
-import { iniciarApi, db, urlApp } from './api.js?v=65230b8';
-import { sesionActual, iniciarSesion, cerrarSesion, alCambiarSesion, recuperarClave, errorAuth } from './auth.js?v=65230b8';
-import { cargarPermisos, crearPuede } from './permisos.js?v=65230b8';
-import { cargarEmpresas, cargarModulosEmpresa, elegirEmpresa, recordarEmpresa, nombreEmpresa } from './empresas.js?v=65230b8';
-import { cargarManifiestos, modulosVisibles, apartadosPorCategoria, configModulo } from './modulos.js?v=65230b8';
-import { el } from './ui/dom.js?v=65230b8';
-import { activarCombos } from './ui/combo.js?v=65230b8';
-import { icono } from './ui/iconos.js?v=65230b8';
-import { boton } from './ui/tabla.js?v=65230b8';
-import inicio from './vistas/inicio.js?v=65230b8';
-import mas from './vistas/mas.js?v=65230b8';
-import { franja, botonNotificaciones, desactivar } from './push.js?v=65230b8';
-import { barraMovil, marcarBarraMovil, bienvenidaInicial, recordarMarca, marcaGuardada, CORTE_TELEFONO } from './movil.js?v=65230b8';
-import { botonSoporte } from './soporte.js?v=65230b8';
-import { contarNoLeidas, alCambiarContador } from './novedades.js?v=65230b8';
-import { vigilarVersion } from './version.js?v=65230b8';
+import { iniciarApi, db, urlApp } from './api.js?v=b490b0f';
+import { sesionActual, iniciarSesion, cerrarSesion, alCambiarSesion, recuperarClave, errorAuth } from './auth.js?v=b490b0f';
+import { cargarPermisos, crearPuede } from './permisos.js?v=b490b0f';
+import { cargarEmpresas, cargarModulosEmpresa, elegirEmpresa, recordarEmpresa, nombreEmpresa } from './empresas.js?v=b490b0f';
+import { cargarManifiestos, modulosVisibles, apartadosPorCategoria, configModulo } from './modulos.js?v=b490b0f';
+import { el } from './ui/dom.js?v=b490b0f';
+import { activarCombos } from './ui/combo.js?v=b490b0f';
+import { icono } from './ui/iconos.js?v=b490b0f';
+import { boton } from './ui/tabla.js?v=b490b0f';
+import inicio from './vistas/inicio.js?v=b490b0f';
+import mas from './vistas/mas.js?v=b490b0f';
+import { franja, botonNotificaciones, desactivar } from './push.js?v=b490b0f';
+import { barraMovil, marcarBarraMovil, bienvenidaInicial, recordarMarca, marcaGuardada, CORTE_TELEFONO } from './movil.js?v=b490b0f';
+import { botonSoporte } from './soporte.js?v=b490b0f';
+import { contarNoLeidas, alCambiarContador } from './novedades.js?v=b490b0f';
+import { vigilarVersion } from './version.js?v=b490b0f';
 
 const COLOR_BASE = '#1f4e8c';
 const CLAVE_MINIMA = 10;   // 08 Seguridad §4
@@ -22,6 +22,13 @@ const raiz = document.getElementById('app');
 
 // Modo claro u oscuro (preferencia de este navegador, isg.modo: claro | oscuro | sistema; por omisión claro, para que se vea el tema de la empresa). Se aplica como
 // data-modo en <html>; el modo oscuro solo cambia las variables de color (core/ui/estilos.css), sobre cualquier tema.
+function temaLocal() {
+  try {
+    const q = new URLSearchParams(location.search).get('tema');
+    if (q === 'empresa') localStorage.removeItem('isg.tema'); else if (q) localStorage.setItem('isg.tema', q);
+    return localStorage.getItem('isg.tema');
+  } catch { return null; }
+}
 const MODOS = { sistema: ['Modo: como el sistema', 'pantalla'], claro: ['Modo claro', 'sol'], oscuro: ['Modo oscuro', 'luna'] };
 const modoGuardado = () => { try { return localStorage.getItem('isg.modo') || 'claro'; } catch { return 'claro'; } };
 function aplicarModo() {
@@ -253,7 +260,10 @@ function montar(empresa) {
 
   document.documentElement.style.setProperty('--empresa', empresa.color || COLOR_BASE);
   // Tema visual de la empresa (Administración → Empresa): clasico (sin atributo), taller o moderno
-  const tema = empresa.config?.tema;
+  // Para probar un tema sin cambiarlo en la empresa: ?tema=vidrio en la dirección (queda en este navegador, isg.tema;
+  // ?tema=empresa vuelve al de la empresa)
+  // El espacio Grupo va con el tema Vidrio (pedido de Enzo, 2026-11-23); cada empresa, con el suyo
+  const tema = temaLocal() || (empresa.grupo ? 'vidrio' : empresa.config?.tema);
   if (tema && tema !== 'clasico') document.documentElement.dataset.tema = tema; else delete document.documentElement.dataset.tema;
   document.title = `${nombreEmpresa(empresa)} · ISgestión`;
   const conLogo = empresa.grupo ? Promise.resolve(null) : recordarMarca(db(), empresa);   // logo y color para la próxima bienvenida (core/movil.js)
@@ -294,7 +304,7 @@ function pintarApp() {
         el('div', { class: 'barra-espacio' }),
         el('div', { class: 'usuario' },
           (estado.consola = el('a', { class: 'boton boton-secundario boton-chico solo-escritorio', href: 'consola/', hidden: true, title: 'Consola de la plataforma (equipo ISgestión)' }, icono('ajustes', { tam: 14 }), 'Consola')),
-          el('button', { type: 'button', class: 'correo solo-escritorio', title: 'Mi PIN personal (crear o cambiar)', onclick: () => import('./pin.js?v=65230b8').then((m) => m.miPin(db())) }, estado.usuario.email),
+          el('button', { type: 'button', class: 'correo solo-escritorio', title: 'Mi PIN personal (crear o cambiar)', onclick: () => import('./pin.js?v=b490b0f').then((m) => m.miPin(db())) }, estado.usuario.email),
           (estado.botonNotif = botonNotificaciones(estado.usuario.id, () => (estado.empresa?.grupo ? estado.empresas[0]?.id : estado.empresa?.id))),
           botonModo(),
           el('button', { type: 'button', class: 'boton-icono solo-escritorio', title: 'Cerrar sesión', 'aria-label': 'Cerrar sesión', onclick: () => salir() }, icono('salir')))),
@@ -376,6 +386,25 @@ function ponerLogo(logo) {
   const punto = estado.selector?.querySelector('.punto, .selector-logo');
   if (!logo || !punto) return;
   punto.replaceWith(el('img', { class: 'selector-logo', src: logo, alt: '' }));
+}
+
+// Teléfono: tocar el logo de la cabecera del Inicio abre esta hoja para cambiar de empresa o pasar al Grupo
+function elegirEmpresaMovil() {
+  const dlg = el('dialog', { class: 'modal elegir-empresa' });
+  const ir = (accion) => () => { dlg.close(); history.replaceState(null, '', `${location.pathname}${location.search}#/`); accion(); };
+  const fila = (punto, texto, sub, actual, accion) => el('button', { type: 'button', class: `mas-fila${actual ? ' actual' : ''}`, 'aria-current': String(actual), onclick: actual ? () => dlg.close() : ir(accion) },
+    punto, el('span', { class: 'mas-fila-texto' }, el('strong', {}, texto), sub ? el('span', { class: 'texto-suave texto-chico' }, sub) : null),
+    actual ? icono('check', { tam: 18 }) : icono('derecha', { tam: 16 }));
+  dlg.append(
+    el('div', { class: 'modal-cabecera' }, el('h2', {}, 'Cambiar empresa'),
+      el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Cerrar', onclick: () => dlg.close() }, icono('cerrar'))),
+    el('div', { class: 'modal-cuerpo' }, el('div', { class: 'mas-lista' },
+      fila(el('span', { class: 'selector-grupo-icono' }, icono('building', { tam: 14 })), 'Grupo', 'todas las empresas', !!estado.empresa.grupo, () => activarGrupo()),
+      estado.empresas.map((e) => fila(el('span', { class: 'punto', style: `background:${e.color || COLOR_BASE}` }), nombreEmpresa(e), e.rut, e.id === estado.empresa.id, () => activarEmpresa(e))))));
+  dlg.addEventListener('close', () => dlg.remove());
+  dlg.addEventListener('click', (ev) => { if (ev.target === dlg) dlg.close(); });
+  document.body.append(dlg);
+  dlg.showModal();
 }
 
 // Selector de empresa en la barra (02 Arquitectura §7). Oculto si tiene una sola.
@@ -493,7 +522,7 @@ async function navegar() {
   const ctx = contexto(query);
 
   if (id === 'novedades') {
-    const nodo = await import('./novedades.js?v=65230b8').then((m) => m.default(ctx)).catch((e) => estadoVacio('alerta', 'No se pudieron cargar las novedades', e.message));
+    const nodo = await import('./novedades.js?v=b490b0f').then((m) => m.default(ctx)).catch((e) => estadoVacio('alerta', 'No se pudieron cargar las novedades', e.message));
     if (turno !== estado.render) return;
     if (estado.vistaActual !== location.hash) nodo.classList.add('vista-entra');
     estado.contenido.replaceChildren(nodo); estado.vistaActual = location.hash; return;
@@ -514,7 +543,7 @@ async function navegar() {
     if (primera) { history.replaceState(null, '', `${location.pathname}${location.search}#/${primera.id}`); navegar(); return; }
   }
   if (!id) {
-    const nodo = inicio(ctx, estado.visibles, { abrirNotificaciones: () => estado.botonNotif?.click() });
+    const nodo = inicio(ctx, estado.visibles, { abrirNotificaciones: () => estado.botonNotif?.click(), elegirEmpresa: estado.empresas.length > 1 ? elegirEmpresaMovil : null });
     if (estado.vistaActual !== '') nodo.classList.add('vista-entra');
     estado.contenido.replaceChildren(nodo); estado.vistaActual = ''; return;
   }

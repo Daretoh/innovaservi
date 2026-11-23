@@ -1,10 +1,10 @@
 // Registros de entrega (capacitación, charla, EPP, PTS): se arma la lista, se imprime para firmar y
 // se sube el escaneo; al subirlo, cada persona queda con el documento de RRHH entregado.
-import { el } from '../../../core/ui/dom.js?v=65230b8';
-import { listado, boton } from '../../../core/ui/tabla.js?v=65230b8';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=65230b8';
-import { fechaLarga, hoyISO } from '../../../core/ui/formato.js?v=65230b8';
-import { TIPOS_ENTREGA, nombreDe, cargarPersonas } from '../datos.js?v=65230b8';
+import { el } from '../../../core/ui/dom.js?v=b490b0f';
+import { listado, boton } from '../../../core/ui/tabla.js?v=b490b0f';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=b490b0f';
+import { fechaLarga, hoyISO } from '../../../core/ui/formato.js?v=b490b0f';
+import { TIPOS_ENTREGA, nombreDe, cargarPersonas } from '../datos.js?v=b490b0f';
 
 let filtro = 'todos';
 const nombreTipo = nombreDe(TIPOS_ENTREGA);
@@ -37,7 +37,7 @@ export default async function vista(ctx) {
   // Con el generador de documentos: elegir plantilla (charla, checklist) o registro libre
   const nuevoRegistro = async () => {
     if (!ctx.puede('documentos', 'ver')) { nuevo(ctx); return; }
-    const { elegirRegistro } = await import('../../documentos/elegir.js?v=65230b8');
+    const { elegirRegistro } = await import('../../documentos/elegir.js?v=b490b0f');
     elegirRegistro(ctx, { libre: () => nuevo(ctx) });
   };
   if (ctx.puede('sst', 'crear')) acciones.push(boton('Nuevo registro', { icono: 'mas', tipo: 'primario', onclick: nuevoRegistro }));

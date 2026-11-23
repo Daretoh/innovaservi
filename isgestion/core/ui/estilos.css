@@ -3236,3 +3236,354 @@ span.rcal-item { cursor: default; }
 /* Reportes: el listado de partes debajo del calendario */
 .rep-con-calendario .rep-bajo-calendario { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--borde); }
 .rep-con-calendario .rep-bajo-calendario h2 { margin: 0; }
+
+/* ---------- Tema "vidrio" (glassy, propuesta para ISgroup, 2026-11-23) ----------
+   Fondo con manchas de color suaves (el color de la empresa, azul y turquesa) y superficies translúcidas con desenfoque:
+   barra, menú, fichas, tablas, tarjetas y ventanas son vidrio esmerilado. Casi todo son variables: lo demás (que usa
+   --superficie, --borde, etc.) queda igual de legible. Lo que flota (ventanas, listas) va casi opaco. */
+[data-tema="vidrio"] {
+  font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --fondo: #eef2f9; --texto: #14203a; --texto-suave: #586682;
+  --superficie: rgba(255, 255, 255, .62); --vidrio-fuerte: rgba(255, 255, 255, .88);
+  --borde: rgba(24, 40, 80, .10); --borde-vidrio: rgba(255, 255, 255, .7);
+  --fondo-sutil: rgba(255, 255, 255, .38); --fondo-hundido: rgba(226, 232, 245, .55); --hover: rgba(24, 40, 80, .06);
+  --radio: 16px; --radio-control: 10px;
+  --desenfoque: blur(18px) saturate(170%);
+  --sombra-suave: 0 1px 1px rgba(20, 30, 60, .03), 0 8px 28px rgba(20, 30, 60, .07);
+  --sombra: 0 24px 60px rgba(20, 30, 60, .18);
+  --barra-fondo: rgba(255, 255, 255, .55); --barra-texto: var(--texto);
+  --menu-fondo: rgba(255, 255, 255, .45); --menu-texto: #26324d; --menu-titulo: #7b87a1; --menu-hover: rgba(255, 255, 255, .6);
+  --menu-activo-fondo: linear-gradient(135deg, var(--empresa), color-mix(in srgb, var(--empresa) 70%, #6d28d9)); --menu-activo-texto: #fff;
+  --ok: #15965c; --ok-fondo: rgba(21, 150, 92, .12); --prox: #a66300; --prox-fondo: rgba(240, 160, 30, .16);
+  --venc: #d6293e; --venc-fondo: rgba(214, 41, 62, .11); --pend: #5b6780; --pend-fondo: rgba(91, 103, 128, .12);
+  --mancha-1: color-mix(in srgb, var(--empresa) 38%, transparent); --mancha-2: rgba(59, 130, 246, .30); --mancha-3: rgba(20, 184, 166, .24);
+  --fijo: #3b4a8c;
+}
+[data-tema="vidrio"] body {
+  background:
+    radial-gradient(42vw 42vw at 8% 0%, var(--mancha-1), transparent 70%),
+    radial-gradient(38vw 38vw at 100% 18%, var(--mancha-2), transparent 70%),
+    radial-gradient(46vw 46vw at 55% 110%, var(--mancha-3), transparent 70%),
+    var(--fondo);
+  background-attachment: fixed;
+}
+[data-tema="vidrio"] .barra, [data-tema="vidrio"] .menu, [data-tema="vidrio"] .ficha, [data-tema="vidrio"] .tabla-contenedor,
+[data-tema="vidrio"] .tarjeta, [data-tema="vidrio"] .fin-tarjeta, [data-tema="vidrio"] .barra-movil,
+[data-tema="vidrio"] .tarjeta-persona, [data-tema="vidrio"] .plan-tarjeta, [data-tema="vidrio"] .tal-tarjeta {
+  -webkit-backdrop-filter: var(--desenfoque); backdrop-filter: var(--desenfoque);
+}
+[data-tema="vidrio"] .ficha, [data-tema="vidrio"] .tabla-contenedor, [data-tema="vidrio"] .tarjeta, [data-tema="vidrio"] .fin-tarjeta,
+[data-tema="vidrio"] .tarjeta-persona, [data-tema="vidrio"] .plan-tarjeta, [data-tema="vidrio"] .tal-tarjeta {
+  border-color: var(--borde-vidrio); box-shadow: var(--sombra-suave), inset 0 1px 0 rgba(255, 255, 255, .6);
+}
+[data-tema="vidrio"] .tarjeta:hover, [data-tema="vidrio"] .tarjeta-persona:hover, [data-tema="vidrio"] .tal-tarjeta:hover {
+  transform: translateY(-2px); box-shadow: 0 14px 36px rgba(20, 30, 60, .12), inset 0 1px 0 rgba(255, 255, 255, .7);
+}
+[data-tema="vidrio"] .modal, [data-tema="vidrio"] .combo-lista, [data-tema="vidrio"] .selector-lista {
+  background: var(--vidrio-fuerte); border: 1px solid var(--borde-vidrio);
+  -webkit-backdrop-filter: blur(28px) saturate(180%); backdrop-filter: blur(28px) saturate(180%);
+}
+[data-tema="vidrio"] .modal { border-radius: 20px; }
+[data-tema="vidrio"] .modal::backdrop { background: rgba(20, 30, 60, .25); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+[data-tema="vidrio"] .barra { border-top: 0; border-bottom: 1px solid var(--borde-vidrio); box-shadow: 0 1px 0 rgba(24, 40, 80, .05); }
+[data-tema="vidrio"] .barra .marca { color: var(--texto); }
+[data-tema="vidrio"] .barra .selector-boton { background: rgba(255, 255, 255, .6); border-color: var(--borde-vidrio); border-radius: 999px; padding: 6px 14px; }
+[data-tema="vidrio"] .menu { border-right: 1px solid var(--borde-vidrio); padding: 14px 10px; }
+[data-tema="vidrio"] .menu-grupo h3 { font-size: .66rem; font-weight: 700; letter-spacing: .12em; }
+[data-tema="vidrio"] .menu a { border-radius: 12px; font-weight: 500; }
+[data-tema="vidrio"] .menu a[aria-current="page"] { box-shadow: 0 6px 16px color-mix(in srgb, var(--empresa) 35%, transparent); }
+[data-tema="vidrio"] .campo, [data-tema="vidrio"] .combo-entrada:not(.campo) { background-color: rgba(255, 255, 255, .7); border-color: rgba(24, 40, 80, .12); }
+[data-tema="vidrio"] .campo:focus { border-color: var(--empresa); box-shadow: 0 0 0 3px color-mix(in srgb, var(--empresa) 18%, transparent); }
+[data-tema="vidrio"] .boton-primario { background: linear-gradient(135deg, var(--empresa), color-mix(in srgb, var(--empresa) 78%, #6d28d9)); border-color: transparent;
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--empresa) 32%, transparent), inset 0 1px 0 rgba(255, 255, 255, .25); }
+[data-tema="vidrio"] .tabla th { background: rgba(255, 255, 255, .3); text-transform: uppercase; letter-spacing: .05em; font-size: .72rem; }
+[data-tema="vidrio"] .tabla tbody tr:hover td { background: rgba(255, 255, 255, .45); }
+[data-tema="vidrio"] h1 { font-weight: 750; letter-spacing: -.02em; }
+
+html[data-tema="vidrio"][data-modo="oscuro"] {
+  --fondo: #0a0f1d; --texto: #e7ecf6; --texto-suave: #9aa6bf;
+  --superficie: rgba(28, 36, 58, .55); --vidrio-fuerte: rgba(24, 31, 50, .92);
+  --borde: rgba(255, 255, 255, .08); --borde-vidrio: rgba(255, 255, 255, .12);
+  --fondo-sutil: rgba(255, 255, 255, .04); --fondo-hundido: rgba(0, 0, 0, .25); --hover: rgba(255, 255, 255, .07);
+  --barra-fondo: rgba(14, 20, 36, .55); --menu-fondo: rgba(14, 20, 36, .45); --menu-texto: #cdd5e6; --menu-titulo: #7783a0; --menu-hover: rgba(255, 255, 255, .07);
+  --mancha-1: color-mix(in srgb, var(--empresa) 30%, transparent); --mancha-2: rgba(59, 130, 246, .22); --mancha-3: rgba(139, 92, 246, .2);
+  --sombra-suave: 0 8px 28px rgba(0, 0, 0, .35); --sombra: 0 24px 60px rgba(0, 0, 0, .55);
+}
+html[data-tema="vidrio"][data-modo="oscuro"] body {
+  background:
+    radial-gradient(42vw 42vw at 8% 0%, var(--mancha-1), transparent 70%),
+    radial-gradient(38vw 38vw at 100% 18%, var(--mancha-2), transparent 70%),
+    radial-gradient(46vw 46vw at 55% 110%, var(--mancha-3), transparent 70%), var(--fondo);
+  background-attachment: fixed;
+}
+html[data-tema="vidrio"][data-modo="oscuro"] .ficha, html[data-tema="vidrio"][data-modo="oscuro"] .tabla-contenedor,
+html[data-tema="vidrio"][data-modo="oscuro"] .tarjeta, html[data-tema="vidrio"][data-modo="oscuro"] .fin-tarjeta { box-shadow: var(--sombra-suave), inset 0 1px 0 rgba(255, 255, 255, .06); }
+html[data-tema="vidrio"][data-modo="oscuro"] .campo, html[data-tema="vidrio"][data-modo="oscuro"] .barra .selector-boton { background-color: rgba(255, 255, 255, .06); color: var(--texto); }
+html[data-tema="vidrio"][data-modo="oscuro"] .tabla th { background: rgba(255, 255, 255, .03); }
+html[data-tema="vidrio"][data-modo="oscuro"] .tabla tbody tr:hover td { background: rgba(255, 255, 255, .04); }
+
+/* Teléfono: la pastilla del Inicio cambia de empresa (core/app.js elegirEmpresaMovil) */
+.im-marca-boton { font: inherit; border: 0; cursor: pointer; }
+.im-marca-boton .icono { opacity: .8; margin-left: -2px; }
+.elegir-empresa .mas-fila { width: 100%; }
+.elegir-empresa .mas-fila.actual { background: color-mix(in srgb, var(--empresa) 10%, transparent); }
+
+/* Vidrio más vidrio (Enzo, 2026-11-23: "lo veo blanco"): el efecto se nota solo con color detrás, así que el fondo pasa a
+   una malla de colores vivos (naranja de la empresa, índigo, turquesa y rosa) y las superficies quedan bastante más
+   transparentes, con borde claro y brillo arriba. */
+[data-tema="vidrio"] {
+  --superficie: rgba(255, 255, 255, .30); --vidrio-fuerte: rgba(255, 255, 255, .80);
+  --fondo-sutil: rgba(255, 255, 255, .16); --fondo-hundido: rgba(255, 255, 255, .14);
+  --borde: rgba(255, 255, 255, .45); --borde-vidrio: rgba(255, 255, 255, .55);
+  --hover: rgba(255, 255, 255, .25);
+  --barra-fondo: rgba(255, 255, 255, .26); --menu-fondo: rgba(255, 255, 255, .22); --menu-hover: rgba(255, 255, 255, .35);
+  --desenfoque: blur(24px) saturate(180%);
+  --texto: #0f1a33; --texto-suave: #33415e; --menu-texto: #15203a; --menu-titulo: #3e4b69;
+  --sombra-suave: 0 8px 32px rgba(31, 38, 135, .12);
+}
+[data-tema="vidrio"] body {
+  background:
+    radial-gradient(55vw 55vw at 0% 0%, color-mix(in srgb, var(--empresa) 65%, transparent), transparent 62%),
+    radial-gradient(50vw 50vw at 100% 8%, rgba(99, 102, 241, .60), transparent 62%),
+    radial-gradient(60vw 60vw at 85% 100%, rgba(20, 184, 166, .55), transparent 62%),
+    radial-gradient(45vw 45vw at 8% 95%, rgba(236, 72, 153, .40), transparent 62%),
+    linear-gradient(135deg, #dbe4ff, #efe4ff 55%, #dff7f2);
+  background-attachment: fixed;
+}
+[data-tema="vidrio"] .ficha, [data-tema="vidrio"] .tabla-contenedor, [data-tema="vidrio"] .tarjeta, [data-tema="vidrio"] .fin-tarjeta,
+[data-tema="vidrio"] .tarjeta-persona, [data-tema="vidrio"] .plan-tarjeta, [data-tema="vidrio"] .tal-tarjeta {
+  box-shadow: var(--sombra-suave), inset 0 1px 0 rgba(255, 255, 255, .75), inset 0 0 0 1px rgba(255, 255, 255, .18);
+}
+[data-tema="vidrio"] .tabla th { background: rgba(255, 255, 255, .18); }
+[data-tema="vidrio"] .tabla th, [data-tema="vidrio"] .tabla td { border-bottom-color: rgba(255, 255, 255, .35); }
+[data-tema="vidrio"] .tabla tbody tr:hover td { background: rgba(255, 255, 255, .22); }
+[data-tema="vidrio"] .campo, [data-tema="vidrio"] .combo-entrada:not(.campo) { background-color: rgba(255, 255, 255, .45); border-color: rgba(255, 255, 255, .6); }
+[data-tema="vidrio"] .barra .selector-boton { background: rgba(255, 255, 255, .35); }
+
+html[data-tema="vidrio"][data-modo="oscuro"] {
+  --superficie: rgba(255, 255, 255, .07); --vidrio-fuerte: rgba(20, 24, 45, .88);
+  --fondo-sutil: rgba(255, 255, 255, .04); --fondo-hundido: rgba(0, 0, 0, .2);
+  --borde: rgba(255, 255, 255, .12); --borde-vidrio: rgba(255, 255, 255, .16); --hover: rgba(255, 255, 255, .08);
+  --barra-fondo: rgba(10, 14, 30, .35); --menu-fondo: rgba(10, 14, 30, .3); --menu-hover: rgba(255, 255, 255, .08);
+  --texto: #eef2fb; --texto-suave: #b3bdd4; --menu-texto: #dfe5f3; --menu-titulo: #8e9abb;
+}
+html[data-tema="vidrio"][data-modo="oscuro"] body {
+  background:
+    radial-gradient(55vw 55vw at 0% 0%, color-mix(in srgb, var(--empresa) 45%, transparent), transparent 62%),
+    radial-gradient(50vw 50vw at 100% 8%, rgba(99, 102, 241, .45), transparent 62%),
+    radial-gradient(60vw 60vw at 85% 100%, rgba(20, 184, 166, .35), transparent 62%),
+    radial-gradient(45vw 45vw at 8% 95%, rgba(236, 72, 153, .3), transparent 62%),
+    linear-gradient(135deg, #0b1024, #160f2e 55%, #071a1f);
+  background-attachment: fixed;
+}
+html[data-tema="vidrio"][data-modo="oscuro"] .ficha, html[data-tema="vidrio"][data-modo="oscuro"] .tabla-contenedor,
+html[data-tema="vidrio"][data-modo="oscuro"] .tarjeta, html[data-tema="vidrio"][data-modo="oscuro"] .fin-tarjeta {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, .35), inset 0 1px 0 rgba(255, 255, 255, .12);
+}
+html[data-tema="vidrio"][data-modo="oscuro"] .tabla th, html[data-tema="vidrio"][data-modo="oscuro"] .tabla td { border-bottom-color: rgba(255, 255, 255, .08); }
+html[data-tema="vidrio"][data-modo="oscuro"] .campo { background-color: rgba(255, 255, 255, .06); border-color: rgba(255, 255, 255, .14); }
+
+/* Vidrio azul (Enzo, 2026-11-23, con una imagen de referencia): fondo degradado azul profundo → azul → turquesa,
+   texto claro, paneles blancos muy transparentes con borde fino y el elegido como píldora clara. Igual en claro y oscuro. */
+[data-tema="vidrio"], html[data-tema="vidrio"][data-modo="oscuro"] {
+  color-scheme: dark;
+  --fondo: #06208a; --texto: #f3f7ff; --texto-suave: rgba(226, 236, 255, .72);
+  --superficie: rgba(255, 255, 255, .08); --vidrio-fuerte: rgba(18, 52, 150, .82);
+  --fondo-sutil: rgba(255, 255, 255, .05); --fondo-hundido: rgba(0, 10, 50, .22);
+  --borde: rgba(255, 255, 255, .16); --borde-vidrio: rgba(255, 255, 255, .24); --hover: rgba(255, 255, 255, .10);
+  --barra-fondo: rgba(255, 255, 255, .06); --barra-texto: var(--texto);
+  --menu-fondo: rgba(255, 255, 255, .05); --menu-texto: rgba(240, 245, 255, .9); --menu-titulo: rgba(220, 232, 255, .55);
+  --menu-hover: rgba(255, 255, 255, .10);
+  --menu-activo-fondo: linear-gradient(90deg, rgba(120, 170, 255, .38), rgba(120, 170, 255, .16)); --menu-activo-texto: #fff;
+  --vidrio-acento: #5b9dff;
+  --ok: #5eead4; --ok-fondo: rgba(94, 234, 212, .14); --prox: #fcd34d; --prox-fondo: rgba(252, 211, 77, .14);
+  --venc: #fca5a5; --venc-fondo: rgba(252, 165, 165, .15); --pend: #c7d2fe; --pend-fondo: rgba(199, 210, 254, .13); --error: #fca5a5;
+  --sombra-suave: 0 10px 34px rgba(0, 12, 60, .28); --sombra: 0 24px 60px rgba(0, 10, 50, .5); --velo: rgba(0, 10, 50, .45);
+  --desenfoque: blur(22px) saturate(150%);
+  --fijo: #93b4ff;
+}
+[data-tema="vidrio"] body, html[data-tema="vidrio"][data-modo="oscuro"] body {
+  background:
+    radial-gradient(70vw 60vw at 100% 35%, rgba(45, 212, 191, .55), transparent 60%),
+    radial-gradient(60vw 50vw at 75% 110%, rgba(56, 189, 248, .45), transparent 60%),
+    linear-gradient(160deg, #031a6e 0%, #0a2fa8 45%, #0b56c9 75%, #1386c9 100%);
+  background-attachment: fixed;
+}
+[data-tema="vidrio"] .ficha, [data-tema="vidrio"] .tabla-contenedor, [data-tema="vidrio"] .tarjeta, [data-tema="vidrio"] .fin-tarjeta,
+[data-tema="vidrio"] .tarjeta-persona, [data-tema="vidrio"] .plan-tarjeta, [data-tema="vidrio"] .tal-tarjeta,
+html[data-tema="vidrio"][data-modo="oscuro"] .ficha, html[data-tema="vidrio"][data-modo="oscuro"] .tabla-contenedor,
+html[data-tema="vidrio"][data-modo="oscuro"] .tarjeta, html[data-tema="vidrio"][data-modo="oscuro"] .fin-tarjeta {
+  border-color: var(--borde-vidrio);
+  background: linear-gradient(160deg, rgba(255, 255, 255, .13), rgba(255, 255, 255, .05));
+  box-shadow: var(--sombra-suave), inset 0 1px 0 rgba(255, 255, 255, .18);
+}
+[data-tema="vidrio"] .menu a[aria-current="page"] { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .22); }
+[data-tema="vidrio"] .barra .marca, [data-tema="vidrio"] .barra .usuario { color: var(--texto); }
+[data-tema="vidrio"] .barra .selector-boton, html[data-tema="vidrio"][data-modo="oscuro"] .barra .selector-boton {
+  background: rgba(255, 255, 255, .10); color: var(--texto); border-color: var(--borde-vidrio);
+}
+[data-tema="vidrio"] .campo, [data-tema="vidrio"] .combo-entrada:not(.campo), [data-tema="vidrio"] input, [data-tema="vidrio"] select, [data-tema="vidrio"] textarea,
+html[data-tema="vidrio"][data-modo="oscuro"] .campo {
+  background-color: rgba(255, 255, 255, .08); color: var(--texto); border-color: rgba(255, 255, 255, .22);
+}
+[data-tema="vidrio"] .campo::placeholder { color: rgba(226, 236, 255, .5); }
+[data-tema="vidrio"] .campo:focus { border-color: var(--vidrio-acento); box-shadow: 0 0 0 3px rgba(91, 157, 255, .28); }
+[data-tema="vidrio"] .boton-primario {
+  background: linear-gradient(135deg, rgba(110, 165, 255, .55), rgba(70, 130, 255, .35)); color: #fff; border: 1px solid rgba(255, 255, 255, .35);
+  box-shadow: 0 6px 18px rgba(0, 20, 80, .3), inset 0 1px 0 rgba(255, 255, 255, .3);
+}
+[data-tema="vidrio"] .boton-primario:hover { background: linear-gradient(135deg, rgba(130, 180, 255, .65), rgba(90, 145, 255, .45)); }
+[data-tema="vidrio"] .boton:not(.boton-primario) { background: rgba(255, 255, 255, .08); color: var(--texto); border-color: rgba(255, 255, 255, .22); }
+[data-tema="vidrio"] .boton:not(.boton-primario):hover { background: rgba(255, 255, 255, .16); }
+[data-tema="vidrio"] .tabla th, html[data-tema="vidrio"][data-modo="oscuro"] .tabla th { background: rgba(255, 255, 255, .06); color: var(--texto-suave); }
+[data-tema="vidrio"] .tabla th, [data-tema="vidrio"] .tabla td { border-bottom-color: rgba(255, 255, 255, .10); }
+[data-tema="vidrio"] .tabla tbody tr:hover td { background: rgba(255, 255, 255, .07); }
+[data-tema="vidrio"] a { color: #bcd4ff; }
+[data-tema="vidrio"] .menu a, [data-tema="vidrio"] a.tarjeta, [data-tema="vidrio"] a.boton { color: inherit; }
+[data-tema="vidrio"] .modal, [data-tema="vidrio"] .combo-lista, [data-tema="vidrio"] .selector-lista {
+  background: var(--vidrio-fuerte); color: var(--texto); border-color: rgba(255, 255, 255, .22);
+}
+[data-tema="vidrio"] .selector-opcion:hover, [data-tema="vidrio"] .combo-opcion:hover, [data-tema="vidrio"] .combo-opcion[aria-selected="true"] { background: rgba(255, 255, 255, .12); }
+[data-tema="vidrio"] .modal::backdrop { background: rgba(0, 10, 50, .35); }
+[data-tema="vidrio"] .titulo-icono { background: rgba(255, 255, 255, .12); color: #fff; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .22); }
+[data-tema="vidrio"] .barra .punto { background: #7fb2ff; box-shadow: 0 0 8px rgba(127, 178, 255, .8); }
+[data-tema="vidrio"] .boton-icono { color: var(--texto); }
+
+/* Vidrio con los colores de ISgroup (Enzo, 2026-11-23): azul marino de Innova (#1a1f6e) de base y el naranja
+   (#ff6b00) como luz de fondo y acento: píldora del menú, botón principal, foco y punto del Grupo. */
+[data-tema="vidrio"], html[data-tema="vidrio"][data-modo="oscuro"] {
+  --fondo: #11154f; --vidrio-fuerte: rgba(24, 29, 98, .88); --vidrio-acento: #ff8a3d;
+  --menu-activo-fondo: linear-gradient(90deg, rgba(255, 107, 0, .42), rgba(255, 107, 0, .14)); --fijo: #ffb27a;
+}
+[data-tema="vidrio"] body, html[data-tema="vidrio"][data-modo="oscuro"] body {
+  background:
+    radial-gradient(55vw 50vw at 100% 100%, rgba(255, 107, 0, .55), transparent 60%),
+    radial-gradient(40vw 35vw at 0% 0%, rgba(255, 138, 61, .22), transparent 60%),
+    radial-gradient(60vw 50vw at 70% 20%, rgba(60, 72, 190, .55), transparent 60%),
+    linear-gradient(160deg, #0b0e3d 0%, #1a1f6e 50%, #23288a 100%);
+  background-attachment: fixed;
+}
+[data-tema="vidrio"] .menu a[aria-current="page"] { box-shadow: inset 0 0 0 1px rgba(255, 160, 90, .45), 0 6px 18px rgba(255, 107, 0, .22); }
+[data-tema="vidrio"] .boton-primario {
+  background: linear-gradient(135deg, rgba(255, 120, 20, .85), rgba(255, 107, 0, .55)); border: 1px solid rgba(255, 190, 140, .55);
+  box-shadow: 0 6px 20px rgba(255, 107, 0, .32), inset 0 1px 0 rgba(255, 255, 255, .3);
+}
+[data-tema="vidrio"] .boton-primario:hover { background: linear-gradient(135deg, rgba(255, 135, 45, .95), rgba(255, 115, 15, .7)); }
+[data-tema="vidrio"] .campo:focus { box-shadow: 0 0 0 3px rgba(255, 107, 0, .3); }
+[data-tema="vidrio"] .barra .punto { background: #ff6b00; box-shadow: 0 0 8px rgba(255, 107, 0, .8); }
+[data-tema="vidrio"] a { color: #ffc49a; }
+
+/* ===== Vidrio líquido con los colores de ISgroup (Enzo, 2026-11-23, referencia "Liquid Glass") =====
+   Fondo: ondas de naranja (#ff6b00), coral y azul marino (#1a1f6e). Modo claro = vidrio esmerilado blanco con texto
+   azul marino; modo oscuro = vidrio ahumado con texto claro. Paneles redondeados, borde fino claro y brillo arriba.
+   Este bloque manda sobre los anteriores del tema vidrio. */
+[data-tema="vidrio"] {
+  color-scheme: light;
+  --fondo: #f3eef0; --texto: #161a52; --texto-suave: #545a86;
+  --superficie: rgba(255, 255, 255, .58); --vidrio-fuerte: rgba(255, 255, 255, .9);
+  --fondo-sutil: rgba(255, 255, 255, .35); --fondo-hundido: rgba(26, 31, 110, .06);
+  --borde: rgba(26, 31, 110, .10); --borde-vidrio: rgba(255, 255, 255, .85); --hover: rgba(26, 31, 110, .06);
+  --barra-fondo: rgba(255, 255, 255, .5); --barra-texto: var(--texto);
+  --menu-fondo: rgba(255, 255, 255, .42); --menu-texto: #1d2160; --menu-titulo: #7a7fa6; --menu-hover: rgba(255, 255, 255, .7);
+  --menu-activo-fondo: rgba(255, 255, 255, .92); --menu-activo-texto: #1a1f6e;
+  --vidrio-acento: #ff6b00; --radio: 22px; --radio-control: 12px;
+  --ok: #15965c; --ok-fondo: rgba(21, 150, 92, .12); --prox: #b45f00; --prox-fondo: rgba(255, 140, 30, .16);
+  --venc: #d6293e; --venc-fondo: rgba(214, 41, 62, .10); --pend: #5b6185; --pend-fondo: rgba(91, 97, 133, .12); --error: #d6293e;
+  --sombra-suave: 0 10px 36px rgba(26, 31, 110, .10); --sombra: 0 28px 70px rgba(26, 31, 110, .22); --velo: rgba(26, 31, 110, .25);
+  --desenfoque: blur(28px) saturate(180%); --fijo: #1a1f6e;
+}
+[data-tema="vidrio"] body {
+  background:
+    radial-gradient(60vw 40vw at 105% 0%, rgba(255, 107, 0, .45), transparent 60%),
+    radial-gradient(50vw 45vw at 75% 105%, rgba(255, 77, 90, .30), transparent 60%),
+    radial-gradient(55vw 45vw at -5% 90%, rgba(26, 31, 110, .30), transparent 60%),
+    radial-gradient(45vw 35vw at 25% 10%, rgba(120, 130, 220, .25), transparent 60%),
+    linear-gradient(150deg, #eef0f8, #f7efe9 55%, #f3e9f0);
+  background-attachment: fixed;
+}
+html[data-tema="vidrio"][data-modo="oscuro"] {
+  color-scheme: dark;
+  --fondo: #120f2a; --texto: #fbf7f5; --texto-suave: rgba(245, 235, 235, .7);
+  --superficie: rgba(30, 14, 34, .34); --vidrio-fuerte: rgba(36, 20, 42, .9);
+  --fondo-sutil: rgba(255, 255, 255, .05); --fondo-hundido: rgba(0, 0, 0, .2);
+  --borde: rgba(255, 255, 255, .13); --borde-vidrio: rgba(255, 255, 255, .26); --hover: rgba(255, 255, 255, .08);
+  --barra-fondo: rgba(20, 10, 30, .32); --menu-fondo: rgba(20, 10, 30, .28); --menu-texto: rgba(255, 245, 240, .9);
+  --menu-titulo: rgba(255, 230, 220, .5); --menu-hover: rgba(255, 255, 255, .08);
+  --menu-activo-fondo: rgba(255, 255, 255, .16); --menu-activo-texto: #fff;
+  --ok: #5eead4; --ok-fondo: rgba(94, 234, 212, .14); --prox: #fcd34d; --prox-fondo: rgba(252, 211, 77, .14);
+  --venc: #fca5a5; --venc-fondo: rgba(252, 165, 165, .15); --pend: #e0d6f0; --pend-fondo: rgba(224, 214, 240, .12); --error: #fca5a5;
+  --sombra-suave: 0 10px 36px rgba(0, 0, 0, .28); --sombra: 0 28px 70px rgba(0, 0, 0, .5); --velo: rgba(10, 5, 20, .45);
+  --fijo: #ffb27a;
+}
+html[data-tema="vidrio"][data-modo="oscuro"] body {
+  background:
+    radial-gradient(70vw 45vw at 100% 10%, rgba(255, 107, 0, .85), transparent 60%),
+    radial-gradient(55vw 50vw at 60% 55%, rgba(255, 70, 85, .55), transparent 60%),
+    radial-gradient(60vw 50vw at 0% 100%, rgba(26, 31, 110, .95), transparent 62%),
+    radial-gradient(50vw 40vw at 90% 100%, rgba(120, 90, 220, .55), transparent 60%),
+    linear-gradient(150deg, #1a1f6e, #3a1640 50%, #6a1e2a);
+  background-attachment: fixed;
+}
+/* Paneles */
+[data-tema="vidrio"] .ficha, [data-tema="vidrio"] .tabla-contenedor, [data-tema="vidrio"] .tarjeta, [data-tema="vidrio"] .fin-tarjeta,
+[data-tema="vidrio"] .tarjeta-persona, [data-tema="vidrio"] .plan-tarjeta, [data-tema="vidrio"] .tal-tarjeta {
+  background: var(--superficie); border: 1px solid var(--borde-vidrio); border-radius: var(--radio);
+  box-shadow: var(--sombra-suave), inset 0 1px 0 rgba(255, 255, 255, .9);
+}
+html[data-tema="vidrio"][data-modo="oscuro"] .ficha, html[data-tema="vidrio"][data-modo="oscuro"] .tabla-contenedor,
+html[data-tema="vidrio"][data-modo="oscuro"] .tarjeta, html[data-tema="vidrio"][data-modo="oscuro"] .fin-tarjeta,
+html[data-tema="vidrio"][data-modo="oscuro"] .tarjeta-persona, html[data-tema="vidrio"][data-modo="oscuro"] .tal-tarjeta {
+  background: var(--superficie); box-shadow: var(--sombra-suave), inset 0 1px 0 rgba(255, 255, 255, .16);
+}
+/* Menú: la elegida como píldora */
+[data-tema="vidrio"] .menu a[aria-current="page"] { box-shadow: 0 4px 14px rgba(26, 31, 110, .12), inset 0 0 0 1px rgba(255, 255, 255, .9); }
+html[data-tema="vidrio"][data-modo="oscuro"] .menu a[aria-current="page"] { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .25); }
+/* Barra */
+[data-tema="vidrio"] .barra .selector-boton { background: rgba(255, 255, 255, .6); color: var(--texto); border-color: var(--borde-vidrio); }
+html[data-tema="vidrio"][data-modo="oscuro"] .barra .selector-boton { background: rgba(255, 255, 255, .1); border-color: rgba(255, 255, 255, .22); }
+/* Controles */
+[data-tema="vidrio"] .campo, [data-tema="vidrio"] .combo-entrada:not(.campo), [data-tema="vidrio"] input, [data-tema="vidrio"] select, [data-tema="vidrio"] textarea {
+  background-color: rgba(255, 255, 255, .65); color: var(--texto); border-color: rgba(26, 31, 110, .14);
+}
+[data-tema="vidrio"] .campo::placeholder { color: #8a8fb0; }
+html[data-tema="vidrio"][data-modo="oscuro"] .campo, html[data-tema="vidrio"][data-modo="oscuro"] input,
+html[data-tema="vidrio"][data-modo="oscuro"] select, html[data-tema="vidrio"][data-modo="oscuro"] textarea {
+  background-color: rgba(255, 255, 255, .08); color: var(--texto); border-color: rgba(255, 255, 255, .2);
+}
+[data-tema="vidrio"] .boton:not(.boton-primario) { background: rgba(255, 255, 255, .6); color: var(--texto); border-color: var(--borde-vidrio); }
+[data-tema="vidrio"] .boton:not(.boton-primario):hover { background: rgba(255, 255, 255, .85); }
+html[data-tema="vidrio"][data-modo="oscuro"] .boton:not(.boton-primario) { background: rgba(255, 255, 255, .08); border-color: rgba(255, 255, 255, .22); }
+html[data-tema="vidrio"][data-modo="oscuro"] .boton:not(.boton-primario):hover { background: rgba(255, 255, 255, .16); }
+/* Tablas */
+[data-tema="vidrio"] .tabla th { background: rgba(255, 255, 255, .35); color: var(--texto-suave); }
+[data-tema="vidrio"] .tabla th, [data-tema="vidrio"] .tabla td { border-bottom-color: rgba(26, 31, 110, .08); }
+[data-tema="vidrio"] .tabla tbody tr:hover td { background: rgba(255, 255, 255, .45); }
+html[data-tema="vidrio"][data-modo="oscuro"] .tabla th { background: rgba(255, 255, 255, .05); }
+html[data-tema="vidrio"][data-modo="oscuro"] .tabla th, html[data-tema="vidrio"][data-modo="oscuro"] .tabla td { border-bottom-color: rgba(255, 255, 255, .10); }
+html[data-tema="vidrio"][data-modo="oscuro"] .tabla tbody tr:hover td { background: rgba(255, 255, 255, .06); }
+/* Enlaces, íconos y ventanas */
+[data-tema="vidrio"] a { color: #c24f00; }
+html[data-tema="vidrio"][data-modo="oscuro"] a { color: #ffc49a; }
+[data-tema="vidrio"] .menu a, [data-tema="vidrio"] a.tarjeta, [data-tema="vidrio"] a.boton { color: inherit; }
+[data-tema="vidrio"] .titulo-icono { background: rgba(255, 255, 255, .7); color: #ff6b00; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .9), 0 4px 12px rgba(26, 31, 110, .08); }
+html[data-tema="vidrio"][data-modo="oscuro"] .titulo-icono { background: rgba(255, 255, 255, .12); color: #ffb27a; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .22); }
+[data-tema="vidrio"] .modal, [data-tema="vidrio"] .combo-lista, [data-tema="vidrio"] .selector-lista { background: var(--vidrio-fuerte); color: var(--texto); border-color: var(--borde-vidrio); border-radius: var(--radio); }
+[data-tema="vidrio"] .selector-opcion:hover, [data-tema="vidrio"] .combo-opcion:hover, [data-tema="vidrio"] .combo-opcion[aria-selected="true"] { background: var(--hover); }
+[data-tema="vidrio"] .modal::backdrop { background: var(--velo); }
+html[data-tema="vidrio"][data-modo="oscuro"] .menu a, html[data-tema="vidrio"][data-modo="oscuro"] a.tarjeta, html[data-tema="vidrio"][data-modo="oscuro"] a.boton { color: var(--menu-texto); }
+html[data-tema="vidrio"][data-modo="oscuro"] .menu a[aria-current="page"] { color: #fff; }
+
+/* Pestañas hechas con enlaces (ej.: Grupo → Administración): igual que las del apartado */
+.pestanas a.pestana {
+  flex: none; padding: 10px 14px; margin-bottom: -1px; border-bottom: 2px solid transparent; white-space: nowrap;
+  color: var(--texto-suave) !important; text-decoration: none !important; font-size: .93rem; transition: color 150ms ease, border-color 150ms ease;
+}
+.pestanas a.pestana:hover { color: var(--texto) !important; border-bottom-color: var(--borde); }
+.pestanas a.pestana[aria-current="page"] { color: var(--empresa) !important; border-bottom-color: var(--empresa); font-weight: 600; }
+/* En vidrio, las pestañas van como píldoras */
+[data-tema="vidrio"] .pestanas { border-bottom: 0; gap: 6px; flex-wrap: wrap; }
+[data-tema="vidrio"] .pestanas a.pestana, [data-tema="vidrio"] .pestanas button { border: 1px solid transparent; border-radius: 999px; padding: 7px 14px; margin: 0; }
+[data-tema="vidrio"] .pestanas a.pestana:hover, [data-tema="vidrio"] .pestanas button:hover { background: var(--hover); border-color: transparent; }
+[data-tema="vidrio"] .pestanas a.pestana[aria-current="page"], [data-tema="vidrio"] .pestanas button[aria-selected="true"] {
+  background: var(--menu-activo-fondo); color: var(--menu-activo-texto) !important; border-color: var(--borde-vidrio); box-shadow: 0 4px 12px rgba(26, 31, 110, .10);
+}
