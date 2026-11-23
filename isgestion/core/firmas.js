@@ -2,13 +2,13 @@
 // ver quién firmó. La persona firma en /firmar/?t=… (Edge Function pública `firmar`).
 //   enviarAFirmar(ctx, { origen, id, personas: [{ id, nombre, telefono }], titulo, alTerminar })
 //   seccionFirmasEntrega(ctx, ent, participantes) → bloque para Prevención SST → registro de entrega
-import { el } from './ui/dom.js?v=41cf283';
-import { icono } from './ui/iconos.js?v=41cf283';
-import { boton } from './ui/tabla.js?v=41cf283';
-import { avisar } from './ui/aviso.js?v=41cf283';
-import { telefono } from './ui/formato.js?v=41cf283';
-import { urlApp } from './api.js?v=41cf283';
-import { urlFirmada } from './adjuntos.js?v=41cf283';
+import { el } from './ui/dom.js?v=591477d';
+import { icono } from './ui/iconos.js?v=591477d';
+import { boton } from './ui/tabla.js?v=591477d';
+import { avisar } from './ui/aviso.js?v=591477d';
+import { telefono } from './ui/formato.js?v=591477d';
+import { urlApp } from './api.js?v=591477d';
+import { urlFirmada } from './adjuntos.js?v=591477d';
 
 const hora = (t) => new Date(t).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' });
 export function enlaceWhatsapp(tel, texto) {
@@ -21,7 +21,7 @@ const mensaje = (ctx, nombre, titulo, enlace) =>
   `Hola ${String(nombre ?? '').split(' ')[0]}, ${ctx.empresa.nombre_fantasia || ctx.empresa.razon_social} te envía "${titulo}" para firmar desde tu teléfono. `
   + `Ábrelo aquí, confirma tu RUT y firma (sin imprimir ni dibujar): ${enlace}`;
 
-// Crea los enlaces (uno por persona; reenviar anula el anterior) y muestra una ventana con el botón de WhatsApp de cada uno
+// Crea los enlaces (uno por persona; reenviar devuelve el mismo mientras siga vigente, Núcleo 029) y muestra una ventana con el botón de WhatsApp de cada uno
 export async function enviarAFirmar(ctx, { origen, id, personas, titulo, casillas = null, alTerminar }) {
   const { data, error } = await ctx.api.rpc('firma_crear', { p_empresa: ctx.empresa.id, p_origen: origen, p_id: id, p_personas: personas.map((p) => p.id), p_casillas: casillas?.length ? casillas : null });
   if (error) throw new Error(error.message);
@@ -43,7 +43,7 @@ export async function enviarAFirmar(ctx, { origen, id, personas, titulo, casilla
     el('header', { class: 'modal-cabecera' }, el('h2', {}, 'Enviar a firmar por WhatsApp'),
       el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Cerrar', onclick: cerrar }, icono('cerrar'))),
     el('div', { class: 'modal-cuerpo' },
-      el('p', { class: 'texto-suave texto-chico' }, `Toca WhatsApp en cada persona y envía el mensaje. El enlace es personal, vale 30 días y pide su RUT y su fecha de nacimiento (si está en su ficha). Si lo vuelves a enviar, el enlace anterior deja de servir.`),
+      el('p', { class: 'texto-suave texto-chico' }, `Toca WhatsApp en cada persona y envía el mensaje. El enlace es personal, vale 30 días y pide su RUT y su fecha de nacimiento (si está en su ficha). Si lo vuelves a enviar, va el mismo enlace.`),
       filas,
       el('div', { class: 'modal-pie' }, boton('Listo', { tipo: 'primario', onclick: cerrar }))));
   document.body.append(dialogo);
@@ -109,10 +109,10 @@ export async function seccionFirmasEntrega(ctx, ent, participantes) {
     try { const r = await armar(); avisar(r.listo ? 'Registro firmado con las firmas electrónicas.' : 'Aún falta alguien por firmar.'); ctx.refrescar(); }
     catch (e) { avisar(e.message, 'error'); b.disabled = false; }
   } });
-  return el('div', { class: 'ficha doc-grupo' },
+  const bloque = el('div', { class: 'ficha doc-grupo' },
     el('h2', {}, 'Firma por WhatsApp'),
     el('p', { class: 'texto-suave texto-chico' }, firmado ? 'Registro cerrado.'
-      : `Cada participante firma desde su teléfono. Cuando firman todos, el registro queda firmado solo (con la hoja de constancia) y marca RRHH. ${firmaron.length} de ${participantes.length} firmaron.`),
+      : `Cada participante firma desde su teléfono. Cuando firman todos, el registro queda firmado solo y marca RRHH. Esta pantalla se pone al día sola cuando alguien firma. ${firmaron.length} de ${participantes.length} firmaron.`),
     participantes.length ? participantes.map((p) => {
       const s = ultima.get(p.id);
       return el('div', { class: 'doc-fila' },
@@ -123,4 +123,21 @@ export async function seccionFirmasEntrega(ctx, ent, participantes) {
     el('div', { class: 'doc-acciones' },
       puede && firmaron.length && !faltan.length ? cerrarYa : null,
       puede && firmaron.length && faltan.length ? terminar : null));
+  // Mientras falte alguien, se revisa cada 15 s (con la pestaña a la vista) y al volver a la pestaña: si alguien firmó,
+  // la pantalla se pone al día sola
+  if (!firmado && faltan.length && data?.some((s) => s.estado === 'pendiente')) {
+    const antes = firmaron.length;
+    const revisar = async () => {
+      if (!bloque.isConnected) { clearInterval(t); document.removeEventListener('visibilitychange', alVolver); return; }
+      if (document.hidden) return;
+      const { count } = await ctx.api.from('firma_solicitudes').select('id', { count: 'exact', head: true }).eq('entrega_id', ent.id).eq('estado', 'firmada')
+        .in('persona_id', participantes.map((p) => p.id));
+      const { data: e2 } = await ctx.api.from('sst_entregas').select('estado').eq('id', ent.id).maybeSingle();
+      if ((count ?? antes) !== antes || e2?.estado === 'firmado') { clearInterval(t); document.removeEventListener('visibilitychange', alVolver); ctx.refrescar(); }
+    };
+    const alVolver = () => { if (!document.hidden) revisar(); };
+    const t = setInterval(revisar, 15000);
+    document.addEventListener('visibilitychange', alVolver);
+  }
+  return bloque;
 }

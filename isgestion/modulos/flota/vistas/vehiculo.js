@@ -1,14 +1,14 @@
 // Ficha del vehículo: datos, documentos con vencimiento, mantenciones programadas, historial de pagos y gastos, y archivos.
 // Ruta: #/flota.vehiculo?id=<id>
-import { el } from '../../../core/ui/dom.js?v=41cf283';
-import { icono } from '../../../core/ui/iconos.js?v=41cf283';
-import { boton } from '../../../core/ui/tabla.js?v=41cf283';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=41cf283';
-import { leerVence } from '../../../core/ui/leer-vence.js?v=41cf283';
-import { avisar } from '../../../core/ui/aviso.js?v=41cf283';
-import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=41cf283';
-import { dinero, fechaLarga, hoyISO, diaLocal } from '../../../core/ui/formato.js?v=41cf283';
-import { CATEGORIAS, CON_VENCE, nombreCat, TIPOS, ESTADOS, vencimientos, normalizarPatente, estadoMantencion } from '../datos.js?v=41cf283';
+import { el } from '../../../core/ui/dom.js?v=591477d';
+import { icono } from '../../../core/ui/iconos.js?v=591477d';
+import { boton } from '../../../core/ui/tabla.js?v=591477d';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=591477d';
+import { leerVence } from '../../../core/ui/leer-vence.js?v=591477d';
+import { avisar } from '../../../core/ui/aviso.js?v=591477d';
+import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=591477d';
+import { dinero, fechaLarga, hoyISO, diaLocal } from '../../../core/ui/formato.js?v=591477d';
+import { CATEGORIAS, CON_VENCE, nombreCat, TIPOS, ESTADOS, vencimientos, normalizarPatente, estadoMantencion } from '../datos.js?v=591477d';
 
 const ARCHIVOS = ['application/pdf', 'image/jpeg', 'image/png'];
 let filtroCat = '';

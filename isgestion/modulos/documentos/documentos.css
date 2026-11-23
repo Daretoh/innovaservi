@@ -130,3 +130,5 @@
 .dg-pag-fir img.rs-tim{left:95%;width:60%;}
 /* Al generar el PDF el documento toma siempre el ancho de la hoja, aunque la pantalla sea angosta (teléfono o panel) */
 .dg-doc.dg-capturando{width:820px!important;max-width:none!important;box-sizing:border-box;margin-left:0;margin-right:0;}
+/* Filas de quien firma por WhatsApp: más altas, para que el sello y su QR se lean (Núcleo 028) */
+.asis-tb tr:has(td[data-firma]) td, .dg-reg .asis-tb tr:has(td[data-firma]) td { height: 50px; }

@@ -1,10 +1,10 @@
 // Documentos PDF de Prevención SST con el membrete de la empresa: salida a atención médica,
 // formulario de investigación de accidentes (informe mensual) y registro de entrega para firmar.
 // Formatos tomados de InnovaGestión; los datos de la empresa salen de la empresa y de sst_config.
-import { cargarJsPdf, cargarLogo, rgb, sellar, contactoEmpresa } from '../../core/pdf.js?v=41cf283';
-import { nombreEmpresa } from '../../core/empresas.js?v=41cf283';
-import { fechaLarga, hhmm } from '../../core/ui/formato.js?v=41cf283';
-import { SINTOMAS, TIPOS_ACC, GRAVEDAD, mesTexto, nombreDe } from './datos.js?v=41cf283';
+import { cargarJsPdf, cargarLogo, rgb, sellar, contactoEmpresa } from '../../core/pdf.js?v=591477d';
+import { nombreEmpresa } from '../../core/empresas.js?v=591477d';
+import { fechaLarga, hhmm } from '../../core/ui/formato.js?v=591477d';
+import { SINTOMAS, TIPOS_ACC, GRAVEDAD, mesTexto, nombreDe } from './datos.js?v=591477d';
 
 const M = 15;
 const TEXTO = [28, 35, 48];
@@ -220,7 +220,7 @@ export async function pdfEntrega(ctx, ent, personas) {
   // Casilla de firma de cada participante (mm desde arriba a la izquierda): ahí se estampa su firma electrónica
   u.doc.__firmas = [];
   u.tabla(['N°', 'Nombre', 'RUT', 'Cargo', 'Firma'], personas.map((p, i) => [String(i + 1), p.nombre, p.rut ?? '', p.cargo ?? '', '']),
-    { styles: { font: 'helvetica', fontSize: 9, cellPadding: 2, textColor: TEXTO, lineColor: LINEA, lineWidth: 0.2, minCellHeight: 10 },
+    { styles: { font: 'helvetica', fontSize: 9, cellPadding: 2, textColor: TEXTO, lineColor: LINEA, lineWidth: 0.2, minCellHeight: 14 },
       columnStyles: { 0: { cellWidth: 9, halign: 'center' }, 2: { cellWidth: 26 }, 3: { cellWidth: 36 }, 4: { cellWidth: 38 } },
       didDrawCell: (d) => {
         if (d.section !== 'body' || d.column.index !== 4 || !personas[d.row.index]?.id) return;

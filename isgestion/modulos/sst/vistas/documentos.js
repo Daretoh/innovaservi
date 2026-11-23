@@ -1,13 +1,13 @@
 // Documentos preventivos con control de versiones: lista por tipo con la versión vigente y la próxima
 // revisión; detalle con el historial de versiones, subir nueva versión y ver cualquiera.
 // Rutas: #/sst.documentos · #/sst.documentos?id=<documento>
-import { el } from '../../../core/ui/dom.js?v=41cf283';
-import { icono } from '../../../core/ui/iconos.js?v=41cf283';
-import { boton } from '../../../core/ui/tabla.js?v=41cf283';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=41cf283';
-import { avisar } from '../../../core/ui/aviso.js?v=41cf283';
-import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=41cf283';
-import { fechaLarga, hoyISO } from '../../../core/ui/formato.js?v=41cf283';
+import { el } from '../../../core/ui/dom.js?v=591477d';
+import { icono } from '../../../core/ui/iconos.js?v=591477d';
+import { boton } from '../../../core/ui/tabla.js?v=591477d';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=591477d';
+import { avisar } from '../../../core/ui/aviso.js?v=591477d';
+import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=591477d';
+import { fechaLarga, hoyISO } from '../../../core/ui/formato.js?v=591477d';
 
 export const TIPOS_DOC = [['pts', 'Procedimiento de trabajo seguro (PTS)'], ['iper', 'Matriz IPER y procedimiento'], ['programa', 'Programa preventivo'],
   ['ley_karin', 'Protocolo Ley Karin'], ['matriz_epp', 'Matriz de EPP'], ['capacitacion', 'Material de capacitación'], ['evaluacion', 'Evaluación de aprendizaje'],
@@ -88,7 +88,7 @@ async function lista(ctx) {
       el('div', { class: 'listado-acciones' },
         puedeIA(ctx) ? el('a', { class: 'boton', href: ctx.ruta('sst.revisar') }, icono('revisar', { tam: 16 }), 'Revisar con IA') : null,
         ctx.puede('sst', 'crear') && ctx.puede('documentos', 'ver') ? boton('Generar desde plantilla', { icono: 'documento', onclick: async () => {
-          const { elegirPlantillaEmpresa } = await import('../../documentos/elegir.js?v=41cf283'); elegirPlantillaEmpresa(ctx);
+          const { elegirPlantillaEmpresa } = await import('../../documentos/elegir.js?v=591477d'); elegirPlantillaEmpresa(ctx);
         } }) : null,
         ctx.puede('sst', 'crear') ? boton('Nuevo documento', { icono: 'mas', tipo: 'primario', onclick: () => formDocumento(ctx) }) : null)),
     data.length ? el('div', { class: 'fin-tarjetas' },
