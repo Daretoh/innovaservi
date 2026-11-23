@@ -1,9 +1,9 @@
 // Cuentas corrientes: cotizaciones aceptadas de un cliente con sus abonos y saldo.
-import { el } from '../../../core/ui/dom.js?v=b490b0f';
-import { listado, boton } from '../../../core/ui/tabla.js?v=b490b0f';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=b490b0f';
-import { dinero } from '../../../core/ui/formato.js?v=b490b0f';
-import { nombreTercero, totalesCuenta, estadoCuenta } from '../datos.js?v=b490b0f';
+import { el } from '../../../core/ui/dom.js?v=41cf283';
+import { listado, boton } from '../../../core/ui/tabla.js?v=41cf283';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=41cf283';
+import { dinero } from '../../../core/ui/formato.js?v=41cf283';
+import { nombreTercero, totalesCuenta, estadoCuenta } from '../datos.js?v=41cf283';
 
 const estado = { ver: 'abiertas' };
 export const SELECT_CUENTA = '*, terceros(*), cie_cuenta_cotizaciones(*, cot_cotizaciones(id, numero, fecha, estado, con_iva, desc_adic_pct, tercero_id, cot_grupos(id, titulo, patente, orden_id), cot_lineas(tipo, cantidad, precio, desc_pct))), cie_abonos(*)';

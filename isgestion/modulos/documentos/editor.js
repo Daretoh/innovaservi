@@ -2,21 +2,21 @@
 // a pantalla completa (como en InnovaGestión): los campos subrayados se escriben ahí mismo, los bloques opcionales se
 // quitan con la ×, se elige el formato (variante) y los trabajadores que firman; luego se imprime, se descarga en PDF
 // o se guarda donde corresponde (RRHH o Prevención SST), según lo que pase quien abre el documento.
-import { el } from '../../core/ui/dom.js?v=b490b0f';
-import { icono } from '../../core/ui/iconos.js?v=b490b0f';
-import { boton } from '../../core/ui/tabla.js?v=b490b0f';
-import { avisar } from '../../core/ui/aviso.js?v=b490b0f';
-import { cargarJsPdf, cargarLogo, sellar } from '../../core/pdf.js?v=b490b0f';
-import { crearPlantillas } from './plantillas.js?v=b490b0f';
-import { pdfDesde } from './pdf.js?v=b490b0f';
-import { fmtRut } from '../../core/lector-dte.js?v=b490b0f';
-import { activarCampos } from './campos.js?v=b490b0f';
+import { el } from '../../core/ui/dom.js?v=41cf283';
+import { icono } from '../../core/ui/iconos.js?v=41cf283';
+import { boton } from '../../core/ui/tabla.js?v=41cf283';
+import { avisar } from '../../core/ui/aviso.js?v=41cf283';
+import { cargarJsPdf, cargarLogo, sellar } from '../../core/pdf.js?v=41cf283';
+import { crearPlantillas } from './plantillas.js?v=41cf283';
+import { pdfDesde } from './pdf.js?v=41cf283';
+import { fmtRut } from '../../core/lector-dte.js?v=41cf283';
+import { activarCampos } from './campos.js?v=41cf283';
 
 let estilos = null;
 function cargarEstilos() {
   estilos ??= new Promise((ok) => {
     const l = document.createElement('link');
-    l.rel = 'stylesheet'; l.href = new URL('./documentos.css?v=b490b0f', import.meta.url).href;
+    l.rel = 'stylesheet'; l.href = new URL('./documentos.css?v=41cf283', import.meta.url).href;
     l.onload = ok; l.onerror = ok;
     document.head.append(l);
   });
@@ -106,6 +106,8 @@ export async function abrirDocumento(o) {
     firmaMovible(hoja);
     aplicarFirmas();
     if (o.firmaDe) marcarFirmaTrabajador(hoja, o.firmaDe);
+    // Documentos de uno por trabajador (EPP, IRL, evaluación): la casilla de cada hoja es de su trabajador
+    for (const u of hoja.querySelectorAll('.dg-una[data-persona]')) marcarFirmaTrabajador(u, u.dataset.persona, true);
   };
   // Quitar bloques opcionales; recordar lo escrito en campos con data-ls (relator, horario…)
   hoja.addEventListener('click', (ev) => { const x = ev.target.closest('.dg-x'); if (x) x.closest('.dg-opt')?.remove(); });
@@ -215,9 +217,13 @@ function elegirPersonas(o, actuales, listo) {
 }
 
 // Documento de un trabajador: su firma electrónica va justo arriba de "Firma del trabajador" (o "Toma de conocimiento")
-function marcarFirmaTrabajador(hoja, personaId) {
+// soloPrimera: solo la primera casilla (un documento con dos firmas del trabajador lleva el sello en la primera)
+function marcarFirmaTrabajador(hoja, personaId, soloPrimera = false) {
   for (const d of hoja.querySelectorAll('.dg-firmas > div')) {
-    if (/^\s*(firma (del )?trabajador|toma de conocimiento)/i.test(d.textContent || '')) { d.setAttribute('data-firma', personaId); d.setAttribute('data-encima', ''); }
+    if (/^\s*(firma (del )?trabajador|toma de conocimiento)/i.test(d.textContent || '')) {
+      d.setAttribute('data-firma', personaId); d.setAttribute('data-encima', '');
+      if (soloPrimera) return;
+    }
   }
 }
 

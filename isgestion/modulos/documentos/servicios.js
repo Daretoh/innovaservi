@@ -1,14 +1,15 @@
 // Servicios del generador, para usarlos donde corresponde cada documento (Prevención SST, RRHH) y en Generar documentos:
 // plantillas con los datos de la empresa, registros en terreno (charla diaria, checklist) que se guardan en Prevención SST
 // y se envían a firmar por WhatsApp, y documentos de la empresa (PTS, IPER, programa…) que se guardan como versión.
-// generador(ctx) → { P, faltan, config, todos, elegibles, guardadaDe, formato, evaluaciones, abrirCharla, abrirChecklist, firmarPdf, docEmpresa, lineaVersion, carpetasEmpresa }
-import { el } from '../../core/ui/dom.js?v=b490b0f';
-import { avisar } from '../../core/ui/aviso.js?v=b490b0f';
-import { hoyISO } from '../../core/ui/formato.js?v=b490b0f';
-import { cargarPlantillas, trabajador, abrirDocumento, sueldosBase } from './editor.js?v=b490b0f';
-import { leerPaginas, paginaFirmas, htmlFirmado } from './firmarpdf.js?v=b490b0f';
-import { enviarAFirmar } from '../../core/firmas.js?v=b490b0f';
-import { guardarEnSst, guardarRegistro, puedeGuardarSst } from './acciones.js?v=b490b0f';
+// generador(ctx) → { P, faltan, config, todos, elegibles, guardadaDe, formato, evaluaciones, abrirCharla, abrirChecklist, abrirCapacitacion,
+//   abrirEPP, abrirIRL, abrirEvaluacion, hayEvaluaciones, abrirCarta, firmarPdf, docEmpresa, lineaVersion, carpetasEmpresa }
+import { el } from '../../core/ui/dom.js?v=41cf283';
+import { avisar } from '../../core/ui/aviso.js?v=41cf283';
+import { hoyISO } from '../../core/ui/formato.js?v=41cf283';
+import { cargarPlantillas, trabajador, abrirDocumento, sueldosBase } from './editor.js?v=41cf283';
+import { leerPaginas, paginaFirmas, htmlFirmado } from './firmarpdf.js?v=41cf283';
+import { enviarAFirmar } from '../../core/firmas.js?v=41cf283';
+import { guardarEnSst, guardarRegistro, puedeGuardarSst } from './acciones.js?v=41cf283';
 
 // alGuardado(id): al guardar un registro en terreno (p. ej. para abrirlo después)
 export async function generador(ctx, { alGuardado = null } = {}) {
@@ -102,6 +103,72 @@ export async function generador(ctx, { alGuardado = null } = {}) {
           alGuardado?.(id);
         } } : null });
   };
+  // ---- Formatos firmables (registro de capacitación o entrega de PTS, EPP, IRL, evaluación, carta de compromiso):
+  // se completan, se eligen los trabajadores y se guardan como registro de Prevención SST; al guardar se envían a firmar.
+  // Si el registro corresponde a un documento de RRHH sin vencimiento (EPP, IRL, entrega de un PTS…), cada firma lo marca
+  // en la ficha de quien firma.
+  let tiposDoc = null;
+  const tipoDocDe = async (slug) => {
+    if (!slug || !ctx.puede('rrhh', 'ver')) return null;
+    tiposDoc ??= ctx.api.from('rrhh_tipos_doc').select('slug, vence').eq('empresa_id', e).then(({ data }) => new Map((data ?? []).map((t) => [t.slug, t])));
+    const t = (await tiposDoc).get(slug);
+    return t && !t.vence ? slug : null;
+  };
+  const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+  // "21 de noviembre de 2026" o "21-11-2026" → ISO; si no se entiende, hoy
+  const fechaLibre = (t) => {
+    const m = /(\d{1,2}) de ([a-záéíóú]+) de (\d{4})/i.exec(t || '');
+    const k = m ? MESES.indexOf(m[2].toLowerCase()) : -1;
+    return k >= 0 ? `${m[3]}-${String(k + 1).padStart(2, '0')}-${m[1].padStart(2, '0')}` : fechaDe(t || '');
+  };
+  const textoCelda = (td) => (td?.textContent ?? '').replace(/^\s*(Tema|Fecha|Horario|Lugar \/ faena|Duración|Relator)\s*/, '').replace(/\s+/g, ' ').trim();
+  const firmable = (titulo, { nombreArchivo, variantes, variante, construir, registro, aviso }) => formato(titulo, {
+    nombreArchivo, variantes, variante, personas: 'lista', construir,
+    guardar: puedeGuardarSst(ctx) ? { texto: 'Guardar y enviar a firmar', alGuardar: async (blob, x) => {
+      if (!x.personas?.length) throw new Error('Elige a los trabajadores que firman.');
+      const r = registro(x);
+      const id = await guardarRegistro(ctx, { ...r, tipo_doc: await tipoDocDe(r.tipo_doc), personas: x.personas, casillas: x.casillas }, blob, x.nombre);
+      avisar(aviso ?? `${titulo} guardado en Prevención SST → Registros de entrega.`);
+      await firmarAhora(id, r.tema, x.personas);
+      alGuardado?.(id);
+    } } : null,
+  });
+  const relatorPrev = () => config.prevencionista || null;
+  const abrirCapacitacion = () => firmable('Registro de capacitación', {
+    nombreArchivo: 'registro-capacitacion', variantes: P.opcionesRegistro(),
+    construir: (v, PER) => P.docAsistencia(v, PER),
+    registro: (x) => {
+      const h = x.hoja, [tipo, id] = String(x.variante || 'libre').split(':');
+      const f1 = h.querySelectorAll('.asis-info tr:nth-child(1) td'), f2 = h.querySelectorAll('.asis-info tr:nth-child(2) td');
+      const temario = [...h.querySelectorAll('.asis-tem li')].map((li) => li.textContent.trim()).filter(Boolean);
+      const libre = h.querySelector('.dg-box[contenteditable]')?.innerText.trim();
+      const horario = textoCelda(f2[1]).replace(/^a hrs\.$/, '');
+      return {
+        tipo: tipo === 'pts' ? 'pts' : tipo === 'libre' ? 'charla' : 'capacitacion',
+        tema: textoCelda(f1[0]) || 'Capacitación', fecha: fechaLibre(textoCelda(f2[0])),
+        relator: h.querySelector('[data-ls="dg_rel_nom"]')?.textContent.trim() || relatorPrev(),
+        contenido: [horario && /\d/.test(horario) ? `Horario: ${horario}` : '', ...temario, libre].filter(Boolean).join('\n'),
+        tipo_doc: tipo === 'pts' || tipo === 'cap' ? id : null,
+      };
+    },
+  });
+  const unoPorTrabajador = (titulo, { tipo, tema, tipo_doc, construir, nombreArchivo }) => firmable(titulo, {
+    nombreArchivo, construir: (v, PER) => P.porPersona(PER, (t) => construir(t)),
+    registro: () => ({ tipo, tema, fecha: hoyISO(), relator: relatorPrev(), tipo_doc }),
+  });
+  const abrirEPP = () => unoPorTrabajador('Entrega de EPP', { nombreArchivo: 'entrega-epp', tipo: 'epp', tema: 'Entrega de elementos de protección personal', tipo_doc: 'epp', construir: (t) => P.docEPP(t) });
+  const abrirIRL = () => unoPorTrabajador('Información de riesgos laborales (IRL)', { nombreArchivo: 'irl', tipo: 'otro', tema: 'Información de riesgos laborales (IRL)', tipo_doc: 'odi', construir: (t) => P.docODI(t) });
+  const evaluables = evaluaciones.filter((x) => !x.v.endsWith('|pauta'));
+  const abrirEvaluacion = () => firmable('Evaluación de aprendizaje', {
+    nombreArchivo: 'evaluacion', variantes: evaluables,
+    construir: (v, PER) => P.porPersona(PER, (t) => P.docEvaluacion(v, t)),
+    registro: (x) => ({ tipo: 'capacitacion', tema: `Evaluación: ${P.CAP_DOC[x.variante]?.n ?? 'capacitación'}`, fecha: hoyISO(), relator: relatorPrev() }),
+  });
+  const abrirCarta = () => firmable('Carta de compromiso', {
+    nombreArchivo: 'carta-compromiso', construir: (v, PER) => P.docCarta('compromiso', PER),
+    registro: () => ({ tipo: 'otro', tema: 'Carta de compromiso', fecha: hoyISO(), relator: relatorPrev() }),
+  });
+
   // Firmar un PDF: se elige el archivo y se abre con las firmas guardadas encima de la página elegida
   const firmarPdf = () => {
     const inp = el('input', { type: 'file', accept: 'application/pdf,.pdf' });
@@ -162,5 +229,6 @@ export async function generador(ctx, { alGuardado = null } = {}) {
   // Documentos de la empresa por carpeta: [{ titulo, docs: [{ slug, nombre }] }]
   const carpetasEmpresa = () => P.EMP_CARPETAS.filter((c) => c.k !== 'legal').map((c) => ({ titulo: c.n,
     docs: c.tipos.filter(([slug]) => P.EMP_GEN[slug] || P.PTS_DOC[slug] || slug === 'pts_funciones').map(([slug, nombre]) => ({ slug, nombre })) }));
-  return { P, faltan, config, todos, elegibles, actualDe: (id) => todos.find((x) => x.v.persona_id === id) ?? null, guardadaDe, formato, evaluaciones, abrirCharla, abrirChecklist, firmarPdf, docEmpresa, lineaVersion, carpetasEmpresa };
+  return { P, faltan, config, todos, elegibles, actualDe: (id) => todos.find((x) => x.v.persona_id === id) ?? null, guardadaDe, formato, evaluaciones, abrirCharla, abrirChecklist,
+    abrirCapacitacion, abrirEPP, abrirIRL, abrirEvaluacion, hayEvaluaciones: evaluables.length > 0, abrirCarta, firmarPdf, docEmpresa, lineaVersion, carpetasEmpresa };
 }

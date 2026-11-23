@@ -27,7 +27,7 @@ export function crearPlantillas(D) {
   ];
   // ---- porPersona (ISgestión, líneas 8173–8174)
   function porPersona(PER, f){ if(!PER||!PER.length) return f({nombre:'',rut:'',cargo:''});
-    return PER.map(function(t){ return '<div class="dg-una">'+f(t)+'</div>'; }).join(''); }
+    return PER.map(function(t){ return '<div class="dg-una"'+(t.id?' data-persona="'+esc(t.id)+'"':'')+'>'+f(t)+'</div>'; }).join(''); }
   // ---- registro, asistencia y PTS acorde a funciones (ISgestión, líneas 8233–8307)
   function opcionesRegistro(){
     var L=Object.keys(CAP_DOC).map(function(k){ return {v:'cap:'+k, n:'Capacitación · '+CAP_DOC[k].n}; });
@@ -1546,7 +1546,7 @@ export function crearPlantillas(D) {
       ed('De igual forma, nos comprometemos a que '+(varios?'los trabajadores no realizarán':'el trabajador no realizará')+' labores que requieran trabajar en altura ni en espacios confinados mientras no cuente'+(varios?'n':'')+' con el examen ocupacional vigente.')+
       ed('La empresa coordina la solicitud del examen ocupacional para el mes de [mes y año].'):
       ed('[Escriba aquí el motivo de la carta. Puede usar uno o más párrafos.]')+lista+ed('[Párrafo final: compromiso, solicitud o información adicional.]');
-    var firmasTrab=(comp&&PER.length)?'<div class="carta-firmas">'+PER.map(function(t){ return '<div>Firma del trabajador<br><b>'+esc(t.nombre||'')+'</b><br>RUT '+esc(t.rut||'')+'</div>'; }).join('')+'</div>':'';
+    var firmasTrab=(comp&&PER.length)?'<div class="carta-firmas">'+PER.map(function(t){ return '<div'+(t.id?' data-firma="'+esc(t.id)+'" data-encima':'')+'>Firma del trabajador<br><b>'+esc(t.nombre||'')+'</b><br>RUT '+esc(t.rut||'')+'</div>'; }).join('')+'</div>':'';
     return '<div class="carta-hdr"><img src="'+(EMP.logo||'')+'"></div>'+
       '<div class="carta-tit" contenteditable>'+(comp?'CARTA DE COMPROMISO':'[TÍTULO DE LA CARTA]')+'</div>'+
       '<p class="carta-fecha">'+esc(EMP.ciudad||'')+', '+ce(fLarga(todayISO()))+'</p>'+

@@ -1,11 +1,11 @@
 // Ventanas para abrir plantillas del generador desde donde corresponde cada documento:
 //   elegirRegistro(ctx, { libre }) → Prevención SST → Registros de entrega → Nuevo registro (charla, checklist o libre)
 //   elegirPlantillaEmpresa(ctx)    → Prevención SST → Documentos preventivos (PTS, IPER, programa, Ley Karin…)
-import { el } from '../../core/ui/dom.js?v=b490b0f';
-import { icono } from '../../core/ui/iconos.js?v=b490b0f';
-import { boton } from '../../core/ui/tabla.js?v=b490b0f';
-import { avisar } from '../../core/ui/aviso.js?v=b490b0f';
-import { generador } from './servicios.js?v=b490b0f';
+import { el } from '../../core/ui/dom.js?v=41cf283';
+import { icono } from '../../core/ui/iconos.js?v=41cf283';
+import { boton } from '../../core/ui/tabla.js?v=41cf283';
+import { avisar } from '../../core/ui/aviso.js?v=41cf283';
+import { generador } from './servicios.js?v=41cf283';
 
 function ventana(titulo, contenido) {
   const cerrar = () => d.remove();
@@ -27,14 +27,24 @@ export function elegirRegistro(ctx, { libre }) {
       cerrar();
       try {
         const G = await generador(ctx, { alGuardado: (id) => { location.hash = ctx.ruta('sst.entrega', { id }); } });
-        await (cual === 'charla' ? G.abrirCharla() : G.abrirChecklist());
+        await G[cual]();
       } catch (e) { avisar(e.message, 'error'); }
     };
+    const grupo = (titulo, ...ops) => el('div', { class: 'doc-grupo' }, el('h3', { class: 'doc-sub' }, titulo), ops);
     return [
-      el('p', { class: 'texto-suave texto-chico' }, 'Con plantilla se completa en pantalla, eliges a los trabajadores y al guardar se envía a firmar por WhatsApp.'),
-      opcion('Charla diaria de autocuidado', 'Una de las 30 charlas, con lista de asistencia; propone la que sigue', usar('charla')),
-      opcion('Checklist de seguridad · diluidores de sal', 'Ítems marcables, medición de gases y firmas', usar('checklist')),
-      opcion('Registro libre', 'Capacitación, entrega de EPP o PTS con tu propio tema y temario', () => { cerrar(); libre(); }),
+      el('p', { class: 'texto-suave texto-chico' }, 'Con plantilla se completa en pantalla, eliges a los trabajadores y al guardar se envía a firmar por WhatsApp. Cada firma queda en la ficha de quien firma.'),
+      grupo('En terreno',
+        opcion('Charla diaria de autocuidado', 'Una de las 30 charlas, con lista de asistencia; propone la que sigue', usar('abrirCharla')),
+        opcion('Checklist de seguridad · diluidores de sal', 'Ítems marcables, medición de gases y firmas', usar('abrirChecklist'))),
+      grupo('Capacitación y procedimientos',
+        opcion('Registro de capacitación o entrega de PTS', 'Cada capacitación del catálogo o la entrega de cada PTS, con su temario y lista de asistencia', usar('abrirCapacitacion')),
+        opcion('Evaluación de aprendizaje', 'Una por trabajador, de la capacitación que elijas', usar('abrirEvaluacion'))),
+      grupo('Del trabajador (una hoja por persona)',
+        opcion('Entrega de elementos de protección personal', 'Queda la entrega de EPP en la ficha de cada uno', usar('abrirEPP')),
+        opcion('Información de riesgos laborales (IRL)', 'Queda la IRL en la ficha de cada uno', usar('abrirIRL')),
+        opcion('Carta de compromiso', 'Sin examen de altura / espacios confinados, con la firma de cada trabajador', usar('abrirCarta'))),
+      grupo('Sin plantilla',
+        opcion('Registro libre', 'Tu propio tema y temario, con la lista de participantes', () => { cerrar(); libre(); })),
     ];
   });
 }
