@@ -2,31 +2,31 @@
 // Cabecera con placa y línea de avance por estado (con la hora de cada paso); checklist táctil con avance;
 // fotos con zona para arrastrar y soltar.
 // Ruta: #/taller.orden?id=<id>
-import { el } from '../../../core/ui/dom.js?v=64d5fd1';
-import { icono } from '../../../core/ui/iconos.js?v=64d5fd1';
-import { boton } from '../../../core/ui/tabla.js?v=64d5fd1';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=64d5fd1';
-import { avisar } from '../../../core/ui/aviso.js?v=64d5fd1';
-import { subirArchivo, eliminarArchivo, urlsFirmadas, urlFirmada, limiteVideo, megas } from '../../../core/adjuntos.js?v=64d5fd1';
-import { prepararVideo } from '../../../core/video.js?v=64d5fd1';
-import { panelSubida } from '../../../core/ui/subida.js?v=64d5fd1';
-import { comprimirFoto } from '../../../core/imagenes.js?v=64d5fd1';
-import { dinero, fechaLarga, fechaCorta, hhmm, diaLocal } from '../../../core/ui/formato.js?v=64d5fd1';
+import { el } from '../../../core/ui/dom.js?v=3f2661d';
+import { icono } from '../../../core/ui/iconos.js?v=3f2661d';
+import { boton } from '../../../core/ui/tabla.js?v=3f2661d';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=3f2661d';
+import { avisar } from '../../../core/ui/aviso.js?v=3f2661d';
+import { subirArchivo, eliminarArchivo, urlsFirmadas, urlFirmada, limiteVideo, megas } from '../../../core/adjuntos.js?v=3f2661d';
+import { prepararVideo } from '../../../core/video.js?v=3f2661d';
+import { panelSubida } from '../../../core/ui/subida.js?v=3f2661d';
+import { comprimirFoto } from '../../../core/imagenes.js?v=3f2661d';
+import { dinero, fechaLarga, fechaCorta, hhmm, diaLocal } from '../../../core/ui/formato.js?v=3f2661d';
 import {
   ESTADOS, nombreEstado, PRIORIDADES, TIPOS_VENTA, MODOS_PAGO, CATEGORIAS_MEDIA, SELECT_ORDEN,
   verPatente, nombreVehiculo, nombreTercero, precioTalla, totales, minutosTrabajo, textoMinutos, cargarServicios, cargarTrabajadores, hora,
-} from '../datos.js?v=64d5fd1';
-import { mover, textoAvance, puedeVolver, esperaPagoFactura } from '../acciones.js?v=64d5fd1';
-import { formPedirFactura, quitarPedido } from '../factura.js?v=64d5fd1';
-import { tarjetaTuu, traerDeTuu } from '../boleta-tuu.js?v=64d5fd1';
-import { cargarAbonos, seccionAbonos } from '../abonos.js?v=64d5fd1';
-import { seccionInsumos } from '../insumos.js?v=64d5fd1';
-import { seccionCostosPatente } from '../costos.js?v=64d5fd1';
-import { pasosEtapa, tiempoOrden } from '../movil.js?v=64d5fd1';
-import { avisoTarjeta } from '../pedidas.js?v=64d5fd1';
-import { avance as avanceOrden, detalleVehiculo } from '../seguimiento.js?v=64d5fd1';
-import { placa } from '../../../core/ui/placa.js?v=64d5fd1';
-import { esTelefono } from '../../../core/movil.js?v=64d5fd1';
+} from '../datos.js?v=3f2661d';
+import { mover, textoAvance, puedeVolver, esperaPagoFactura } from '../acciones.js?v=3f2661d';
+import { formPedirFactura, quitarPedido } from '../factura.js?v=3f2661d';
+import { tarjetaTuu, traerDeTuu } from '../boleta-tuu.js?v=3f2661d';
+import { cargarAbonos, seccionAbonos } from '../abonos.js?v=3f2661d';
+import { seccionInsumos } from '../insumos.js?v=3f2661d';
+import { seccionCostosPatente } from '../costos.js?v=3f2661d';
+import { pasosEtapa, tiempoOrden } from '../movil.js?v=3f2661d';
+import { avisoTarjeta } from '../pedidas.js?v=3f2661d';
+import { avance as avanceOrden, detalleVehiculo } from '../seguimiento.js?v=3f2661d';
+import { placa } from '../../../core/ui/placa.js?v=3f2661d';
+import { esTelefono } from '../../../core/movil.js?v=3f2661d';
 
 let categoriaSubida = 'exterior';
 
@@ -54,7 +54,7 @@ export default async function vista(ctx) {
     // Lista de precios del cliente (Cotizaciones): manda sobre el precio del catálogo
     o.tercero_id && ctx.puede('cotizaciones', 'ver') ? ctx.api.from('cot_precios').select('*').eq('tercero_id', o.tercero_id) : Promise.resolve({ data: [] }),
     // ¿Se cobra en un cierre mensual o una cuenta corriente?
-    ctx.puede('cierres', 'ver') ? import('../../cierres/taller.js?v=64d5fd1').then((m) => m.cobroExterno(ctx, o)) : Promise.resolve(null),
+    ctx.puede('cierres', 'ver') ? import('../../cierres/taller.js?v=3f2661d').then((m) => m.cobroExterno(ctx, o)) : Promise.resolve(null),
   ]);
   // Factura ligada a la orden, cliente y a quién se factura (Cotizaciones 008)
   const [{ data: factura }, { data: datosCliente }] = await Promise.all([
@@ -557,18 +557,18 @@ export default async function vista(ctx) {
 async function cotizar(ctx, o, lineas, b) {
   b.disabled = true;
   try {
-    const { nueva } = await import('../../cotizaciones/vistas/lista.js?v=64d5fd1');
+    const { nueva } = await import('../../cotizaciones/vistas/lista.js?v=3f2661d');
     const { data: t } = o.tercero_id ? await ctx.api.from('terceros').select('*').eq('id', o.tercero_id).maybeSingle() : { data: null };
     const v = o.tal_vehiculos;
     // Sin servicios con precio ("Pendiente de cotización"): las tareas, con la lista de precios del cliente y la talla
-    const { trabajosOrden, listaCliente } = await import('../../cotizaciones/trabajos-orden.js?v=64d5fd1');
+    const { trabajosOrden, listaCliente } = await import('../../cotizaciones/trabajos-orden.js?v=3f2661d');
     const trabajos = trabajosOrden(o, lineas, await listaCliente(ctx, o.tercero_id), v.talla);
     await nueva(ctx, {
       tercero: t ?? null,
       grupo: { titulo: [v.marca, v.modelo].filter(Boolean).join(' ') || null, patente: v.patente, anio: v.anio, talla: v.talla, vehiculo_id: v.id },
       // Más los costos de la orden (trabajo de terceros, compras con la patente, insumos) como ítems con costo y precio 0
       lineas: [...trabajos.map((x) => ({ tipo: 'item', descripcion: x.descripcion, cantidad: 1, precio: x.precio })),
-        ...await import('../../cotizaciones/costos-orden.js?v=64d5fd1').then(async (m) => m.lineasCosto((await m.costosDeOrdenes(ctx, [{ ...o, patente: v.patente }])).get(o.id) ?? []))],
+        ...await import('../../cotizaciones/costos-orden.js?v=3f2661d').then(async (m) => m.lineasCosto((await m.costosDeOrdenes(ctx, [{ ...o, patente: v.patente }])).get(o.id) ?? []))],
       ordenId: o.id,
     });
   } catch (e) { avisar(e.message, 'error'); b.disabled = false; }

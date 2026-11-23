@@ -2,17 +2,17 @@
 // de cada empresa (Empresa, Usuarios, Roles y permisos, Módulos, Auditoría y Clientes y proveedores). Se elige la
 // empresa y la pantalla; cada pantalla es la del módulo (modulos/nucleo, modulos/terceros) con el contexto y los permisos
 // del usuario en esa empresa. Los enlaces a pantallas de la empresa (p. ej. los ajustes de un módulo) se abren en ella.
-import { el } from '../../../core/ui/dom.js?v=64d5fd1';
-import { nombreEmpresa } from '../../../core/empresas.js?v=64d5fd1';
-import { empresasCon, ctxDe, marcaEmpresa } from '../empresas.js?v=64d5fd1';
+import { el } from '../../../core/ui/dom.js?v=3f2661d';
+import { nombreEmpresa } from '../../../core/empresas.js?v=3f2661d';
+import { empresasCon, ctxDe, marcaEmpresa } from '../empresas.js?v=3f2661d';
 
 const PANTALLAS = [
-  ['nucleo.empresa', 'Empresa', 'nucleo', 'ver', () => import('../../nucleo/vistas/empresa.js?v=64d5fd1')],
-  ['nucleo.usuarios', 'Usuarios', 'nucleo', 'ver', () => import('../../nucleo/vistas/usuarios.js?v=64d5fd1')],
-  ['nucleo.roles', 'Roles y permisos', 'nucleo', 'ver', () => import('../../nucleo/vistas/roles.js?v=64d5fd1')],
-  ['nucleo.modulos', 'Módulos', 'nucleo', 'ver', () => import('../../nucleo/vistas/modulos.js?v=64d5fd1')],
-  ['nucleo.auditoria', 'Auditoría', 'nucleo', 'ver', () => import('../../nucleo/vistas/auditoria.js?v=64d5fd1')],
-  ['terceros.listado', 'Clientes y proveedores', 'terceros', 'editar', () => import('../../terceros/vistas/listado.js?v=64d5fd1')],
+  ['nucleo.empresa', 'Empresa', 'nucleo', 'ver', () => import('../../nucleo/vistas/empresa.js?v=3f2661d')],
+  ['nucleo.usuarios', 'Usuarios', 'nucleo', 'ver', () => import('../../nucleo/vistas/usuarios.js?v=3f2661d')],
+  ['nucleo.roles', 'Roles y permisos', 'nucleo', 'ver', () => import('../../nucleo/vistas/roles.js?v=3f2661d')],
+  ['nucleo.modulos', 'Módulos', 'nucleo', 'ver', () => import('../../nucleo/vistas/modulos.js?v=3f2661d')],
+  ['nucleo.auditoria', 'Auditoría', 'nucleo', 'ver', () => import('../../nucleo/vistas/auditoria.js?v=3f2661d')],
+  ['terceros.listado', 'Clientes y proveedores', 'terceros', 'editar', () => import('../../terceros/vistas/listado.js?v=3f2661d')],
 ];
 const estado = { empresa: '', pantalla: 'nucleo.usuarios' };
 

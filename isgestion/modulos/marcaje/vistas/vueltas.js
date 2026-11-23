@@ -1,13 +1,13 @@
 // Vueltas del chofer (como la "Pantalla del chofer" de InnovaGestión): desde el celular elige el vehículo y el chofer,
 // cuenta las vueltas de hoy (ida y vuelta o solo ida) y, si pagó peaje, el monto y la foto del voucher. Se guarda en el
 // vehículo (Flota) y las vueltas se suman en Remuneraciones. Los peajes no se reembolsan: quedan como gasto del vehículo.
-import { el } from '../../../core/ui/dom.js?v=64d5fd1';
-import { icono } from '../../../core/ui/iconos.js?v=64d5fd1';
-import { boton } from '../../../core/ui/tabla.js?v=64d5fd1';
-import { avisar } from '../../../core/ui/aviso.js?v=64d5fd1';
-import { hoyISO, fechaLarga, nombreDia, dinero } from '../../../core/ui/formato.js?v=64d5fd1';
-import { subirArchivo } from '../../../core/adjuntos.js?v=64d5fd1';
-import { comprimirFoto } from '../../../core/imagenes.js?v=64d5fd1';
+import { el } from '../../../core/ui/dom.js?v=3f2661d';
+import { icono } from '../../../core/ui/iconos.js?v=3f2661d';
+import { boton } from '../../../core/ui/tabla.js?v=3f2661d';
+import { avisar } from '../../../core/ui/aviso.js?v=3f2661d';
+import { hoyISO, fechaLarga, nombreDia, dinero } from '../../../core/ui/formato.js?v=3f2661d';
+import { subirArchivo } from '../../../core/adjuntos.js?v=3f2661d';
+import { comprimirFoto } from '../../../core/imagenes.js?v=3f2661d';
 
 const CLAVE = 'isg.chofer.vehiculo';
 

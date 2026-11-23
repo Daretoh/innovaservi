@@ -4,14 +4,14 @@
 // por trabajador y se envía a firmar por WhatsApp: con una sola firma su sello queda bajo cada documento (función firmar).
 // Los documentos salen de Prevención SST → Documentos preventivos (última versión en PDF) o de un PDF que se sube aquí.
 // pdf-lib 1.17.1 fijo desde cdnjs, se carga solo al usarlo.
-import { el } from '../../core/ui/dom.js?v=64d5fd1';
-import { icono } from '../../core/ui/iconos.js?v=64d5fd1';
-import { boton } from '../../core/ui/tabla.js?v=64d5fd1';
-import { avisar } from '../../core/ui/aviso.js?v=64d5fd1';
-import { hoyISO, fechaLarga } from '../../core/ui/formato.js?v=64d5fd1';
-import { urlFirmada, subirArchivo, eliminarArchivo } from '../../core/adjuntos.js?v=64d5fd1';
-import { enviarVarios } from '../../core/firmas.js?v=64d5fd1';
-import { cargarPlantillas, pdfDePlantilla } from '../documentos/editor.js?v=64d5fd1';
+import { el } from '../../core/ui/dom.js?v=3f2661d';
+import { icono } from '../../core/ui/iconos.js?v=3f2661d';
+import { boton } from '../../core/ui/tabla.js?v=3f2661d';
+import { avisar } from '../../core/ui/aviso.js?v=3f2661d';
+import { hoyISO, fechaLarga } from '../../core/ui/formato.js?v=3f2661d';
+import { urlFirmada, subirArchivo, eliminarArchivo } from '../../core/adjuntos.js?v=3f2661d';
+import { enviarVarios } from '../../core/firmas.js?v=3f2661d';
+import { cargarPlantillas, pdfDePlantilla } from '../documentos/editor.js?v=3f2661d';
 
 const PDFLIB = 'https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js';
 const MM = 72 / 25.4;
@@ -155,7 +155,7 @@ const bajar = async (ctx, ruta) => {
 };
 
 export async function abrirEntregaIndividual(ctx, { alGuardado = null } = {}) {
-  if (!document.getElementById('sst-individual-css')) document.head.append(el('link', { id: 'sst-individual-css', rel: 'stylesheet', href: new URL('./individual.css?v=64d5fd1', import.meta.url).href }));
+  if (!document.getElementById('sst-individual-css')) document.head.append(el('link', { id: 'sst-individual-css', rel: 'stylesheet', href: new URL('./individual.css?v=3f2661d', import.meta.url).href }));
   const e = ctx.empresa.id;
   const [vinc, docsR, gen] = await Promise.all([
     ctx.api.from('persona_empresa').select('persona_id, cargo, estado, personas(nombres, apellido_paterno, apellido_materno, rut, telefono)').eq('empresa_id', e).is('deleted_at', null),
