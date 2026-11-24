@@ -2,16 +2,16 @@
 // Toda la tarjeta abre la orden; buscador por patente, vehículo o cliente; la tarjeta recién movida queda
 // resaltada; se actualiza solo cada 2 minutos (pensado para la tablet del taller). Arriba, el resumen del Seguimiento
 // del OS (avance y arrastrar para priorizar); el botón de pantalla completa abre el detalle para la tablet.
-import { el } from '../../../core/ui/dom.js?v=9dd99fc';
-import { icono } from '../../../core/ui/iconos.js?v=9dd99fc';
-import { boton } from '../../../core/ui/tabla.js?v=9dd99fc';
-import { fechaCorta, hhmm, hoyISO } from '../../../core/ui/formato.js?v=9dd99fc';
-import { ESTADOS, PRIORIDADES, CHIP_PRIORIDAD, SELECT_ORDEN, verPatente, nombreVehiculo, nombreTercero, minutosTrabajo, textoMinutos, hora, cargarTrabajadores } from '../datos.js?v=9dd99fc';
-import { mover, textoAvance, puedeVolver, esperaPagoFactura } from '../acciones.js?v=9dd99fc';
-import { recepcion } from '../recepcion.js?v=9dd99fc';
-import { avance, ordenarActivos, marcaCotizar, resumenTaller, detalleVehiculo } from '../seguimiento.js?v=9dd99fc';
-import { ETAPAS, tarjetaAuto } from '../movil.js?v=9dd99fc';
-import { esTelefono } from '../../../core/movil.js?v=9dd99fc';
+import { el } from '../../../core/ui/dom.js?v=190b5a4';
+import { icono } from '../../../core/ui/iconos.js?v=190b5a4';
+import { boton } from '../../../core/ui/tabla.js?v=190b5a4';
+import { fechaCorta, hhmm, hoyISO } from '../../../core/ui/formato.js?v=190b5a4';
+import { ESTADOS, PRIORIDADES, CHIP_PRIORIDAD, SELECT_ORDEN, verPatente, nombreVehiculo, nombreTercero, minutosTrabajo, textoMinutos, hora, cargarTrabajadores } from '../datos.js?v=190b5a4';
+import { mover, textoAvance, puedeVolver, esperaPagoFactura } from '../acciones.js?v=190b5a4';
+import { recepcion } from '../recepcion.js?v=190b5a4';
+import { avance, ordenarActivos, marcaCotizar, resumenTaller, detalleVehiculo } from '../seguimiento.js?v=190b5a4';
+import { ETAPAS, tarjetaAuto } from '../movil.js?v=190b5a4';
+import { esTelefono } from '../../../core/movil.js?v=190b5a4';
 
 const MAX_ENTREGADOS = 6;
 const ESPERA_LARGA = 60;   // minutos en espera para avisar
@@ -39,13 +39,16 @@ export default async function vista(ctx) {
   const inicioMes = `${hoyISO().slice(0, 7)}-01`;
   // En curso, y terminados o entregados del mes (o aún sin cobrar)
   const base = () => ctx.api.from('tal_ordenes').select(SELECT_ORDEN.replace('orden)', 'orden, tal_servicios(variable))')).eq('empresa_id', ctx.empresa.id).order('fecha_cita', { nullsFirst: false }).order('hora_cita', { nullsFirst: false });
-  const [enCurso, cerradas, trabajadores, cot] = await Promise.all([
+  const [enCurso, cerradas, trabajadores, cot, cuentas] = await Promise.all([
     base().in('estado', ['agendado', 'espera', 'proceso']),
     base().in('estado', ['terminado', 'entregado']).or(`termino_at.gte.${inicioMes},cobrado.eq.false`),
     cargarTrabajadores(ctx),
     ctx.puede('cotizaciones', 'ver') ? ctx.api.from('cot_grupos').select('orden_id, cot_cotizaciones!inner(id)').eq('empresa_id', ctx.empresa.id).not('orden_id', 'is', null).is('cot_cotizaciones.deleted_at', null) : Promise.resolve({ data: [] }),
+    ctx.api.rpc('nombres_usuarios', { p_empresa: ctx.empresa.id }),
   ]);
   const cotizadas = new Set((cot.data ?? []).map((g) => g.orden_id));
+  // Quién dio el VB (Taller 016): nombre de la cuenta
+  const nombreCuenta = new Map((cuentas?.data ?? []).map((u) => [u.user_id, u.nombre]));
   if (enCurso.error) throw enCurso.error;
   if (cerradas.error) throw cerradas.error;
   const data = [...enCurso.data, ...cerradas.data];
@@ -92,6 +95,7 @@ export default async function vista(ctx) {
       espera != null ? el('span', { class: `chip ${espera >= ESPERA_LARGA ? 'chip-prox' : 'chip-pend'}` }, icono('reloj', { tam: 12 }), ` Esperando ${largo(espera)}`) : null,
       dur != null ? el('span', { class: 'texto-chico' }, icono('reloj', { tam: 12 }), ` ${ci === 2 ? 'Lleva' : 'Demoró'} ${textoMinutos(dur)}`) : null,
       o.trabajador_id ? el('span', { class: 'texto-chico tal-trabajador' }, icono('users', { tam: 12 }), ` ${trabajadores.de.get(o.trabajador_id)?.nombre ?? ''}`) : null,
+      o.vb_at ? el('span', { class: 'texto-chico texto-suave', title: `VB ${hora(o.vb_at)}` }, icono('check', { tam: 12 }), ` VB de ${nombreCuenta.get(o.vb_por) ?? 'administración'}`) : null,
       ci >= 3 && !o.cobrado ? el('span', { class: 'chip chip-venc' }, 'Por cobrar') : null,
       puedeMover ? el('div', { class: 'tal-botones' },
         ci > 0 && puedeVolver(ctx, o) ? el('button', { type: 'button', class: 'boton boton-secundario boton-chico', onclick: async () => { if (await mover(ctx, o, -1)) { estado.movida = o.id; ctx.refrescar(); } } }, icono('volver', { tam: 14 }), 'Volver') : el('span'),

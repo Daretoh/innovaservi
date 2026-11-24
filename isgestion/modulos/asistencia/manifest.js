@@ -8,10 +8,10 @@ export default {
   rubros: ['todos'],
   acciones: ['ver', 'crear', 'editar', 'eliminar', 'exportar'],
   menu: [
-    { id: 'asistencia.horas', label: 'Registro de horas', vista: () => import('./vistas/horas.js?v=9dd99fc') },
-    { id: 'asistencia.marcajes', label: 'Marcajes', oculto: true, padre: 'asistencia.horas', vista: () => import('./vistas/marcajes.js?v=9dd99fc') },
-    { id: 'asistencia.resumen', label: 'Resumen del mes', icono: 'reloj', vista: () => import('./vistas/resumen.js?v=9dd99fc') },
-    { id: 'asistencia.atrasos', label: 'Atrasos y ausencias', icono: 'alerta', vista: () => import('./vistas/atrasos.js?v=9dd99fc') },
+    { id: 'asistencia.horas', label: 'Registro de horas', vista: () => import('./vistas/horas.js?v=190b5a4') },
+    { id: 'asistencia.marcajes', label: 'Marcajes', oculto: true, padre: 'asistencia.horas', vista: () => import('./vistas/marcajes.js?v=190b5a4') },
+    { id: 'asistencia.resumen', label: 'Resumen del mes', icono: 'reloj', vista: () => import('./vistas/resumen.js?v=190b5a4') },
+    { id: 'asistencia.atrasos', label: 'Atrasos y ausencias', icono: 'alerta', vista: () => import('./vistas/atrasos.js?v=190b5a4') },
   ],
   config: {
     // Atrasos (2026-11-13, Asistencia 009): minutos de gracia antes de contar un atraso o una salida anticipada

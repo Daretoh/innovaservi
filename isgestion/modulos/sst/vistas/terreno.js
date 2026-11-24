@@ -2,14 +2,14 @@
 // una: la carpeta a terreno (AST, permiso de trabajo, reporte) y la lista de carga (EPP, herramientas, maquinaria y
 // materiales) de la Preparación de Faenas; si la faena-día aún no se prepara, lo que pide su Matriz de trabajos.
 // Lee las tablas de Faenas (necesita ver Faenas, como la prevencionista).
-import { el } from '../../../core/ui/dom.js?v=9dd99fc';
-import { icono } from '../../../core/ui/iconos.js?v=9dd99fc';
-import { boton } from '../../../core/ui/tabla.js?v=9dd99fc';
-import { avisar } from '../../../core/ui/aviso.js?v=9dd99fc';
-import { hoyISO, lunesDe, sumarDias, fechaLarga, nombreDia, hhmm, numSemana } from '../../../core/ui/formato.js?v=9dd99fc';
-import { plegable } from '../../../core/ui/plegable.js?v=9dd99fc';
-import { navSemana, cabeceraDia } from '../../../core/ui/semana.js?v=9dd99fc';
-import { cargarDocsTerreno, bloqueDocsTerreno, estadoCarpeta, chipsCarpeta } from '../../ope/terreno-docs.js?v=9dd99fc';
+import { el } from '../../../core/ui/dom.js?v=190b5a4';
+import { icono } from '../../../core/ui/iconos.js?v=190b5a4';
+import { boton } from '../../../core/ui/tabla.js?v=190b5a4';
+import { avisar } from '../../../core/ui/aviso.js?v=190b5a4';
+import { hoyISO, lunesDe, sumarDias, fechaLarga, nombreDia, hhmm, numSemana } from '../../../core/ui/formato.js?v=190b5a4';
+import { plegable } from '../../../core/ui/plegable.js?v=190b5a4';
+import { navSemana, cabeceraDia } from '../../../core/ui/semana.js?v=190b5a4';
+import { cargarDocsTerreno, bloqueDocsTerreno, estadoCarpeta, chipsCarpeta } from '../../ope/terreno-docs.js?v=190b5a4';
 
 const estado = { lunes: null };
 const TIPOS = [['epp', 'EPP'], ['herramienta', 'Herramientas'], ['maquinaria', 'Maquinaria'], ['material', 'Materiales'], ['ropa', 'Ropa de trabajo']];
@@ -18,7 +18,7 @@ export default async function vista(ctx) {
   const titulo = el('header', { class: 'listado-cabecera' }, el('div', {}, el('h1', {}, 'Faenas en terreno'),
     el('p', { class: 'texto-suave' }, 'Lo que lleva cada faena: la carpeta a terreno (AST, permiso de trabajo) y la carga (EPP, herramientas, maquinaria y materiales).')));
   if (!ctx.puede('ope', 'ver')) return el('section', { class: 'listado' }, titulo, el('p', { class: 'texto-suave' }, 'Necesitas permiso para ver Faenas y planificación.'));
-  const { cargarBase, cargarSemana, faenasDelDia, etiquetaFaena, carpetaTerreno, dotacionDe, dotTotal, horarioDe } = await import('../../ope/datos.js?v=9dd99fc');
+  const { cargarBase, cargarSemana, faenasDelDia, etiquetaFaena, carpetaTerreno, dotacionDe, dotTotal, horarioDe } = await import('../../ope/datos.js?v=190b5a4');
   const lunes = estado.lunes ?? lunesDe(hoyISO());
   const domingo = sumarDias(lunes, 6);
   const [base, semana, matrices, docs] = await Promise.all([
@@ -94,7 +94,7 @@ export default async function vista(ctx) {
                 return ya
                   ? el('a', { class: 'boton boton-secundario boton-chico', href: ctx.ruta('sst.formatos', { id: fm.id, l: ya.id }) }, icono(ya.archivo ? 'check' : 'editar', { tam: 14 }), `${fm.nombre}${ya.archivo ? ' (listo)' : ' (borrador)'}`)
                   : ctx.puede('sst', 'crear') || ctx.puede('ope', 'crear') ? boton(`Rellenar ${fm.nombre}`, { icono: 'editar', onclick: async () => {
-                    try { const { abrirLlenado } = await import('./formatos.js?v=9dd99fc'); await abrirLlenado(ctx, fm, { faenaId: f.id, fecha: d }); } catch (e) { avisar(e.message, 'error'); }
+                    try { const { abrirLlenado } = await import('./formatos.js?v=190b5a4'); await abrirLlenado(ctx, fm, { faenaId: f.id, fecha: d }); } catch (e) { avisar(e.message, 'error'); }
                   } }) : null;
               })) : null,
             bloqueDocsTerreno(ctx, { f, fecha: d, docs: lista, alCambiar: () => ctx.refrescar() }),

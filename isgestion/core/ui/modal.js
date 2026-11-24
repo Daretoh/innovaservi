@@ -7,10 +7,10 @@
 // sugerencias (en un campo de texto): lista que aparece al escribir (datalist).
 // alCambiar({ valor, valores, poner(id, valor), opciones(id, [[v, t]]) }) en un campo: se llama al cambiarlo (ej.: elegir un
 // cliente llena su teléfono y sus vehículos). poner en un campo 'checks' marca los valores dados.
-import { el } from './dom.js?v=9dd99fc';
-import { icono } from './iconos.js?v=9dd99fc';
-import { boton } from './tabla.js?v=9dd99fc';
-import { prepararArchivos } from '../imagenes.js?v=9dd99fc';
+import { el } from './dom.js?v=190b5a4';
+import { icono } from './iconos.js?v=190b5a4';
+import { boton } from './tabla.js?v=190b5a4';
+import { prepararArchivos } from '../imagenes.js?v=190b5a4';
 
 // Si acepta JPEG, también fotos de iPhone (HEIC): se convierten a JPEG al guardar
 const aceptar = (a) => (a && /image\/(jpeg|\*)/.test(a) ? `${a},.heic,.heif,image/heic,image/heif` : a);
@@ -112,7 +112,9 @@ export function abrirFormulario({ titulo, mensaje, campos, textoGuardar = 'Guard
       for (const c of campos) {
         if (c.tipo !== 'file') continue;
         const lista = form.elements[c.id]?.files ?? [];
-        if (lista.length) valores[c.id] = await prepararArchivos(lista);
+        // Sin archivo elegido FormData trae un File vacío (nombre "", 0 bytes): queda null, para que un archivo
+        // opcional vacío no se intente subir (2026-11-24: Registrar cobro de la N° 280 fallaba así)
+        valores[c.id] = lista.length ? await prepararArchivos(lista) : null;
       }
       await alGuardar(valores);
       cerrar();
