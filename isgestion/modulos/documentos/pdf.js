@@ -3,7 +3,7 @@
 /* eslint-disable */
 const H2C = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
 function cargarH2C(){ if(window.html2canvas) return Promise.resolve(); return new Promise(function(res,rej){ var s=document.createElement('script'); s.src=H2C; s.onload=function(){res();}; s.onerror=function(){rej(new Error('No se pudo cargar el generador de PDF. Revisa la conexión.'));}; document.head.appendChild(s); }); }
-import { pdfFirmado } from './firmarpdf.js?v=0eddacc';
+import { pdfFirmado } from './firmarpdf.js?v=8467046';
 // o: { escala, calidad } (por omisión 2 y 0.92; la entrega individual de SST usa menos para que el PDF pese poco)
 export function pdfDesde(el, jsPDF, o){
     var ESC=(o&&o.escala)||2, CAL=(o&&o.calidad)||0.92;

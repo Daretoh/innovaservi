@@ -1,11 +1,11 @@
 // Ventanas para abrir plantillas del generador desde donde corresponde cada documento:
 //   elegirRegistro(ctx, { libre }) → Prevención SST → Registros de entrega → Nuevo registro (charla, checklist o libre)
 //   elegirPlantillaEmpresa(ctx)    → Prevención SST → Documentos preventivos (PTS, IPER, programa, Ley Karin…)
-import { el } from '../../core/ui/dom.js?v=0eddacc';
-import { icono } from '../../core/ui/iconos.js?v=0eddacc';
-import { boton } from '../../core/ui/tabla.js?v=0eddacc';
-import { avisar } from '../../core/ui/aviso.js?v=0eddacc';
-import { generador } from './servicios.js?v=0eddacc';
+import { el } from '../../core/ui/dom.js?v=8467046';
+import { icono } from '../../core/ui/iconos.js?v=8467046';
+import { boton } from '../../core/ui/tabla.js?v=8467046';
+import { avisar } from '../../core/ui/aviso.js?v=8467046';
+import { generador } from './servicios.js?v=8467046';
 
 function ventana(titulo, contenido) {
   const cerrar = () => d.remove();
@@ -42,7 +42,7 @@ export function elegirRegistro(ctx, { libre }) {
       grupo('Documentos con firma individual',
         opcion('Entrega individual de documentos', 'Matriz IPER, Inventario de riesgos, cada PTS, PTS por cargo o la IRL: cada documento con la firma del trabajador abajo (nombre, RUT y cargo)', async () => {
           cerrar();
-          try { const { abrirEntregaIndividual } = await import('../sst/individual.js?v=0eddacc'); await abrirEntregaIndividual(ctx, { alGuardado: (id) => { location.hash = ctx.ruta('sst.entrega', { id }); } }); }
+          try { const { abrirEntregaIndividual } = await import('../sst/individual.js?v=8467046'); await abrirEntregaIndividual(ctx, { alGuardado: (id) => { location.hash = ctx.ruta('sst.entrega', { id }); } }); }
           catch (e) { avisar(e.message, 'error'); }
         })),
       grupo('Del trabajador (una hoja por persona)',

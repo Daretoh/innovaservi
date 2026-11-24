@@ -4,12 +4,12 @@
 // vehículos; si es primera vez se escribe nombre y teléfono. La patente conocida trae el vehículo, su dueño y cuántas
 // veces vino. Un cliente "siempre por cotizar" (terceros.por_cotizar) marca el servicio a convenir y queda con Factura.
 // Devuelve una promesa que se cumple al cerrar la hoja (la barra del teléfono anima el "+" mientras está abierta).
-import { el } from '../../core/ui/dom.js?v=0eddacc';
-import { icono } from '../../core/ui/iconos.js?v=0eddacc';
-import { avisar } from '../../core/ui/aviso.js?v=0eddacc';
-import { placa } from '../../core/ui/placa.js?v=0eddacc';
-import { hoyISO, telefono, dinero, nombrePropio } from '../../core/ui/formato.js?v=0eddacc';
-import { PRIORIDADES, TALLAS, normalizarPatente, verPatente, nombreTercero, precioTalla, cargarServicios, cargarTrabajadores, siguienteNumero, esEmpresa } from './datos.js?v=0eddacc';
+import { el } from '../../core/ui/dom.js?v=8467046';
+import { icono } from '../../core/ui/iconos.js?v=8467046';
+import { avisar } from '../../core/ui/aviso.js?v=8467046';
+import { placa } from '../../core/ui/placa.js?v=8467046';
+import { hoyISO, telefono, dinero, nombrePropio } from '../../core/ui/formato.js?v=8467046';
+import { PRIORIDADES, TALLAS, normalizarPatente, verPatente, nombreTercero, precioTalla, cargarServicios, cargarTrabajadores, siguienteNumero, esEmpresa } from './datos.js?v=8467046';
 
 const AYUDA_TALLA = { S: 'City car', M: 'Sedán o hatchback', L: 'SUV', XL: 'Camioneta o van' };
 const soloDigitos = (t) => (t ?? '').replace(/\D/g, '');
@@ -152,9 +152,12 @@ export async function recepcion(ctx, { fecha = hoyISO(), vehiculo = null } = {})
     const consultadas = new Map();
     let espera = null;
     const VALIDA = /^([A-Z]{4}\d{2}|[A-Z]{2}\d{4}|[A-Z]{3}\d{2,3})$/;
+    // Apagada el 2026-11-24 (pedido de Enzo): la clave de GetAPI fue rechazada ("Invalid or blocked apiKey"). Para
+    // volver a usarla: renovar el secreto GETAPI_KEY (node supabase/secreto.mjs GETAPI_KEY) y dejar esto en true.
+    const BUSCAR_PATENTE = false;
     const consultarPatente = (p) => {
       clearTimeout(espera);
-      if (!p || !VALIDA.test(p)) { if (e.info) { e.info = null; refrescarVehiculo(); } return; }
+      if (!BUSCAR_PATENTE || !p || !VALIDA.test(p)) { if (e.info) { e.info = null; refrescarVehiculo(); } return; }
       espera = setTimeout(async () => {
         if (!consultadas.has(p)) {
           e.info = { clase: 'buscando', texto: 'Buscando los datos de la patente…' }; refrescarVehiculo();
@@ -216,7 +219,7 @@ export async function recepcion(ctx, { fecha = hoyISO(), vehiculo = null } = {})
       return seccion('Vehículo',
         suyos.length ? el('div', { class: 'agh-suyos' }, el('span', { class: 'texto-suave texto-chico' }, 'Elige uno de sus vehículos o escribe uno nuevo'),
           el('div', {}, suyos.map((x) => el('button', { type: 'button', class: 'agh-suyo', onclick: () => { e.vehiculo = x; pintar(); } }, placa(x.patente, { tam: 'chica' }), el('small', {}, nombreAuto(x)))))) : null,
-        el('div', { class: 'agh-fila agh-fila-placa' }, vista, campo('Patente', patente, 'Si es nueva, se buscan sus datos solos')),
+        el('div', { class: 'agh-fila agh-fila-placa' }, vista, campo('Patente', patente, BUSCAR_PATENTE ? 'Si es nueva, se buscan sus datos solos' : null)),
         aviso,
         info,
         el('div', { class: 'agh-fila' },
