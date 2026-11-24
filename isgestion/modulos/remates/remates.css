@@ -78,3 +78,68 @@
 .rem-ubicacion-cabecera .listado-acciones { margin-left: auto; }
 .rem-popup { display: flex; flex-direction: column; gap: 2px; font-size: .85rem; }
 .leaflet-container { font: inherit; }
+
+/* Estrella (de interés), estudio y pastillas del mapa */
+.rem-col-estrella { width: 36px; padding-left: 6px !important; padding-right: 0 !important; }
+.rem-estrella { color: var(--texto-suave); }
+.rem-estrella.activa { color: var(--empresa); }
+.rem-estrella.activa svg, .rem-col-estrella > svg { fill: currentColor; }
+.rem-col-estrella > svg { color: var(--empresa); }
+.rem-chips-fila { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px; }
+.rem-chips-fila .rem-agente { margin-left: 0; }
+.rem-motivo { max-width: 340px; color: var(--texto-suave); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rem-estudio { margin-bottom: 14px; border-color: var(--empresa); }
+.rem-estudio > p { margin: 0 0 10px; }
+.rem-guia-ojv { margin-top: 12px; }
+.rem-guia-ojv summary { cursor: pointer; font-weight: 600; font-size: .9rem; }
+.rem-guia-ojv ol { margin-top: 8px; }
+.rem-mapa-barra { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-bottom: 8px; }
+.rem-mapa-barra select.campo { width: auto; }
+.rem-pin-caja { background: none; border: 0; }
+.rem-pin { display: inline-block; transform: translate(-50%, -50%); padding: 3px 8px; border-radius: 999px; white-space: nowrap;
+  font: 700 12px/1.2 system-ui, sans-serif; color: var(--sobre-empresa); background: var(--pin); border: 2px solid var(--superficie); box-shadow: var(--sombra-suave); cursor: pointer; }
+
+/* Aprender */
+.rem-aprender .rem-bloque { margin-bottom: 14px; scroll-margin-top: 70px; }
+.rem-indice { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 14px; }
+.rem-indice a { padding: 6px 12px; border-radius: 999px; border: 1px solid var(--borde); background: var(--superficie); color: var(--texto); text-decoration: none; font-size: .88rem; }
+.rem-indice a:hover { border-color: var(--empresa); color: var(--empresa); }
+.rem-apr h2 { display: flex; align-items: center; gap: 10px; }
+.rem-apr-n { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--empresa); color: var(--sobre-empresa); font-size: .85rem; }
+.rem-palabras { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 8px; }
+.rem-palabra { border: 1px solid var(--borde); border-radius: var(--radio); background: var(--fondo-sutil); padding: 10px 12px; }
+.rem-palabra[open] { border-color: var(--empresa); }
+.rem-palabra summary { cursor: pointer; display: flex; flex-direction: column; gap: 2px; list-style: none; }
+.rem-palabra summary::-webkit-details-marker { display: none; }
+.rem-palabra dl { margin: 8px 0 0; font-size: .86rem; }
+.rem-palabra dt { font-weight: 600; margin-top: 6px; }
+.rem-palabra dd { margin: 2px 0 0; color: var(--texto-suave); }
+.rem-calc { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 900px) { .rem-calc { grid-template-columns: 1fr; } }
+.rem-calc-entradas { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)); gap: 10px; }
+.rem-calc-entradas .form-fila { display: flex; flex-direction: column; gap: 4px; margin: 0; }
+.rem-calc-checks { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 4px; }
+.rem-calc-salida { display: flex; flex-direction: column; gap: 6px; position: sticky; top: 70px; }
+.rem-paso { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; padding: 8px 10px; border-radius: 8px; background: var(--fondo-sutil); border: 1px solid var(--borde); }
+.rem-paso > span:first-child { font-size: .88rem; }
+.rem-paso > span.texto-chico { grid-column: 1 / -1; }
+.rem-paso-puntaje { border-color: var(--empresa); }
+.rem-paso-puntaje ul { grid-column: 1 / -1; margin: 4px 0 0; padding-left: 18px; }
+.rem-ejemplo { margin-top: 10px; }
+.rem-ejemplo-lista { margin: 0 0 10px; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; line-height: 1.45; }
+.rem-pasos-pagina { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 8px; }
+.rem-pasos-pagina li { line-height: 1.4; }
+.rem-pasos-pagina li > span { display: block; color: var(--texto-suave); font-size: .9rem; }
+.rem-prueba { display: flex; flex-direction: column; gap: 14px; }
+.rem-pregunta { display: flex; flex-direction: column; gap: 6px; }
+.rem-opciones { display: flex; flex-wrap: wrap; gap: 6px; }
+.rem-opcion { padding: 7px 12px; border-radius: 8px; border: 1px solid var(--borde); background: var(--superficie); color: var(--texto); cursor: pointer; font: inherit; text-align: left; }
+.rem-opcion:hover:not(:disabled) { border-color: var(--empresa); }
+.rem-opcion:disabled { cursor: default; }
+.rem-opcion.bien { border-color: var(--ok); background: var(--ok-fondo); color: var(--ok); }
+.rem-opcion.mal { border-color: var(--venc); background: var(--venc-fondo); color: var(--venc); }
+.rem-prueba-fb { margin: 0; color: var(--texto-suave); }
+.rem-prueba-resultado { font-weight: 600; margin: 0; }
+
+.rem-aprende { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; margin: 0 0 10px; color: var(--texto-suave); }
+.rem-aprende a { font-weight: 600; }

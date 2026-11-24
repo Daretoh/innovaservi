@@ -2,12 +2,12 @@
 // subtemas, riesgos y medidas, EPP, plan de rescate y registros. Cada guardado es una versión nueva (03, 04…) con la
 // descripción del cambio, que queda en el control de cambios del documento. "Volver al original" borra las ediciones.
 // Ruta: #/documentos.pts?s=<slug>
-import { el } from '../../../core/ui/dom.js?v=f6c1abb';
-import { icono } from '../../../core/ui/iconos.js?v=f6c1abb';
-import { boton } from '../../../core/ui/tabla.js?v=f6c1abb';
-import { avisar } from '../../../core/ui/aviso.js?v=f6c1abb';
-import { fechaLarga, hoyISO } from '../../../core/ui/formato.js?v=f6c1abb';
-import { cargarPlantillas, abrirDocumento } from '../editor.js?v=f6c1abb';
+import { el } from '../../../core/ui/dom.js?v=0eddacc';
+import { icono } from '../../../core/ui/iconos.js?v=0eddacc';
+import { boton } from '../../../core/ui/tabla.js?v=0eddacc';
+import { avisar } from '../../../core/ui/aviso.js?v=0eddacc';
+import { fechaLarga, hoyISO } from '../../../core/ui/formato.js?v=0eddacc';
+import { cargarPlantillas, abrirDocumento } from '../editor.js?v=0eddacc';
 
 // Sin etiquetas HTML posibles (igual que InnovaGestión): < y > pasan a ‹ ›
 const limpio = (s) => String(s ?? '').replace(/</g, '‹').replace(/>/g, '›').trim();

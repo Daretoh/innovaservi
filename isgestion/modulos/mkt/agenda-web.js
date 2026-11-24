@@ -1,13 +1,13 @@
 // Agenda en línea (Marketing 006): tarjeta de Ajustes para activar la página pública /agenda/?t=<token del formulario
 // web>, elegir días, horas y cupos, el texto, los beneficios de inscribirse y qué servicios se ofrecen; copiar el enlace
 // y descargar el QR. Las horas pedidas se confirman en Taller → Agenda.
-import { el } from '../../core/ui/dom.js?v=f6c1abb';
-import { icono } from '../../core/ui/iconos.js?v=f6c1abb';
-import { boton } from '../../core/ui/tabla.js?v=f6c1abb';
-import { avisar } from '../../core/ui/aviso.js?v=f6c1abb';
-import { abrirFormulario } from '../../core/ui/modal.js?v=f6c1abb';
-import { urlApp } from '../../core/api.js?v=f6c1abb';
-import { descargarQr } from './formulario-web.js?v=f6c1abb';
+import { el } from '../../core/ui/dom.js?v=0eddacc';
+import { icono } from '../../core/ui/iconos.js?v=0eddacc';
+import { boton } from '../../core/ui/tabla.js?v=0eddacc';
+import { avisar } from '../../core/ui/aviso.js?v=0eddacc';
+import { abrirFormulario } from '../../core/ui/modal.js?v=0eddacc';
+import { urlApp } from '../../core/api.js?v=0eddacc';
+import { descargarQr } from './formulario-web.js?v=0eddacc';
 
 const DIAS = [['1', 'Lunes'], ['2', 'Martes'], ['3', 'Miércoles'], ['4', 'Jueves'], ['5', 'Viernes'], ['6', 'Sábado'], ['7', 'Domingo']];
 export const enlaceAgenda = (token) => urlApp(`agenda/?t=${token}`);

@@ -1,9 +1,9 @@
 // Revisión de documentos preventivos con IA (SST 004): leer el Word o PDF, pedir la revisión y la versión corregida a
 // la Edge Function revisar-documento (Claude) y exportar el documento corregido a Word y PDF con el logo y el color de
 // la empresa. Librerías con versión fija desde CDN (08 Seguridad §5), solo al usarlas.
-import { textoDocx } from './texto-docx.js?v=f6c1abb';
-import { cargarJsPdf, cargarLogo, rgb, sellar } from '../../core/pdf.js?v=f6c1abb';
-import { nombreEmpresa } from '../../core/empresas.js?v=f6c1abb';
+import { textoDocx } from './texto-docx.js?v=0eddacc';
+import { cargarJsPdf, cargarLogo, rgb, sellar } from '../../core/pdf.js?v=0eddacc';
+import { nombreEmpresa } from '../../core/empresas.js?v=0eddacc';
 
 const DOCX_LIB = 'https://cdn.jsdelivr.net/npm/docx@9.0.2/+esm';
 const JSZIP = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';

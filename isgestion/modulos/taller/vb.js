@@ -1,11 +1,11 @@
 // VB de entrega (Taller 002): con la opción "Entregar solo con VB" el encargado lleva la orden hasta Terminado y
 // quien tiene taller.aprobar la pasa a Entregado después de revisar lo cargado, con su PIN personal. También
 // devuelve a Terminado una entregada sin cobrar, con motivo. La base lo exige (tal_vb); aquí está la ventana.
-import { abrirFormulario } from '../../core/ui/modal.js?v=f6c1abb';
-import { avisar } from '../../core/ui/aviso.js?v=f6c1abb';
-import { dinero } from '../../core/ui/formato.js?v=f6c1abb';
-import { estadoPin, formularioPin } from '../../core/pin.js?v=f6c1abb';
-import { SELECT_ORDEN, totales, verPatente, nombreVehiculo } from './datos.js?v=f6c1abb';
+import { abrirFormulario } from '../../core/ui/modal.js?v=0eddacc';
+import { avisar } from '../../core/ui/aviso.js?v=0eddacc';
+import { dinero } from '../../core/ui/formato.js?v=0eddacc';
+import { estadoPin, formularioPin } from '../../core/pin.js?v=0eddacc';
+import { SELECT_ORDEN, totales, verPatente, nombreVehiculo } from './datos.js?v=0eddacc';
 
 export const pideVb = (ctx) => ctx.config?.vb_entrega === true;
 export const puedeVb = (ctx) => ctx.puede('taller', 'aprobar');

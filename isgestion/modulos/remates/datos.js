@@ -1,9 +1,10 @@
 // Datos compartidos de Remates: listas de valores, carga de oportunidades, costo total, descuento y puntaje,
 // casillas de revisión por tipo y enlaces útiles (SII, Poder Judicial, CBR, mapa, portales).
-import { el } from '../../core/ui/dom.js?v=f6c1abb';
-import { configModulo } from '../../core/modulos.js?v=f6c1abb';
-import { empresasCon, ctxDe } from '../grupo/empresas.js?v=f6c1abb';
-import manifiesto from './manifest.js?v=f6c1abb';
+import { el } from '../../core/ui/dom.js?v=0eddacc';
+import { icono } from '../../core/ui/iconos.js?v=0eddacc';
+import { configModulo } from '../../core/modulos.js?v=0eddacc';
+import { empresasCon, ctxDe } from '../grupo/empresas.js?v=0eddacc';
+import manifiesto from './manifest.js?v=0eddacc';
 
 export const TIPOS = [['inmueble', 'Inmueble'], ['vehiculo', 'Vehículo'], ['maquinaria', 'Maquinaria y activos'], ['otro', 'Otro']];
 export const ORIGENES = [
@@ -24,6 +25,48 @@ export const SUBTIPOS = {
   maquinaria: ['Embarcación', 'Balsas-jaula y pontones', 'Maquinaria pesada', 'Equipos de planta', 'Generadores', 'Herramientas'],
   otro: ['Derechos de agua', 'Concesión', 'Acciones o derechos sociales', 'Lote de bienes'],
 };
+// ---- Estudio del caso (Remates 003)
+export const TIPOS_JUICIO = [
+  ['hipotecario', 'Hipotecario (banco o mutuaria)'], ['ejecutivo', 'Ejecutivo (pagaré, crédito)'], ['particion', 'Partición de bienes (herencia, sociedad)'],
+  ['tesoreria', 'Tesorería (contribuciones)'], ['concursal', 'Liquidación concursal'], ['gasto_comun', 'Cobro de gastos comunes'], ['otro', 'Otro'],
+];
+export const OCUPACIONES = [['desconocida', 'No se sabe'], ['desocupada', 'Desocupada'], ['deudor', 'La ocupa el deudor'], ['arrendatario', 'Arrendada'], ['terceros', 'Ocupada por terceros']];
+export const ESTUDIO_ESTADOS = [['sin_estudio', 'Sin estudiar'], ['pedido', 'Pedido al agente'], ['en_curso', 'En curso'], ['listo', 'Listo']];
+export const ESTUDIO_CAMPOS = ['tipo_juicio', 'demandante', 'deuda_monto', 'deuda_desde', 'causa_inicio', 'contribuciones_deuda', 'ocupacion',
+  'remates_previos', 'motivo_precio', 'estudio_resumen', 'estudio_pendiente'];
+export function chipEstudio(o) {
+  const clase = { sin_estudio: 'chip-na', pedido: 'chip-pend', en_curso: 'chip-prox', listo: 'chip-ok' }[o.estudio_estado] ?? 'chip-na';
+  const quien = o.estudio_por === 'agente' ? ' · agente' : o.estudio_por === 'persona' ? '' : '';
+  return el('span', { class: `chip ${clase}`, title: o.estudio_at ? `Actualizado el ${new Date(o.estudio_at).toLocaleString('es-CL')}` : 'Estudio de la causa' },
+    `Estudio: ${nombreDe(ESTUDIO_ESTADOS, o.estudio_estado).toLowerCase()}${quien}`);
+}
+// Mínimo como fracción del avalúo fiscal (muchos remates parten del avalúo; bajo 1 = bajo el avalúo)
+export const minimoSobreAvaluo = (o) => (o.minimo && o.avaluo_fiscal ? o.minimo / o.avaluo_fiscal : null);
+export const millones = (n) => (n == null ? '—' : `$${(n / 1e6).toLocaleString('es-CL', { maximumFractionDigits: n < 1e7 ? 1 : 0 })} M`);
+
+// Estrella para guardar una oportunidad de interés: marca el estado "Interesa" (o lo devuelve a "En estudio").
+// guardar(cambios) → true/false; alCambiar() se llama después de guardar.
+export const INTERESAN = ['interesa', 'postulada', 'ganada'];
+export function botonEstrella(o, guardar, alCambiar = null) {
+  const b = el('button', { type: 'button', class: 'boton-icono rem-estrella' }, icono('estrella', { tam: 18 }));
+  const pintar = () => {
+    const on = INTERESAN.includes(o.estado);
+    b.classList.toggle('activa', on);
+    b.title = on ? 'Te interesa (tocar para quitar)' : 'Guardar como de interés';
+    b.setAttribute('aria-pressed', String(on)); b.setAttribute('aria-label', b.title);
+  };
+  b.addEventListener('click', async (ev) => {
+    ev.stopPropagation();
+    if (['postulada', 'ganada'].includes(o.estado)) return;
+    b.disabled = true;
+    const nuevo = o.estado === 'interesa' ? 'estudiando' : 'interesa';
+    if (await guardar({ estado: nuevo })) { o.estado = nuevo; pintar(); alCambiar?.(); }
+    b.disabled = false;
+  });
+  pintar();
+  return b;
+}
+
 export const nombreDe = (lista, v) => lista.find(([k]) => k === v)?.[1] ?? v ?? '';
 
 // Casillas de revisión: lo que hay que mirar antes de postular. 'riesgo' marca algo malo (resta puntaje).
@@ -213,7 +256,11 @@ export async function mapa(nodo, puntos, cfg = {}, { zoom = 12 } = {}) {
   L.circleMarker(centro(cfg), { radius: 6, color: color('--texto'), weight: 2, fillOpacity: 0.2 }).addTo(m).bindTooltip(cfg.centro_nombre || 'Centro');
   const capas = [];
   for (const p of puntos) {
-    const c = L.circleMarker([p.lat, p.lng], { radius: 9, color: color(p.color ?? '--empresa'), weight: 2, fillColor: color(p.color ?? '--empresa'), fillOpacity: 0.55 }).addTo(m);
+    // Con etiqueta: una "pastilla" con el valor (ej. "$11,9 M") del color del dato; sin etiqueta, un círculo
+    const c = p.etiqueta != null
+      ? L.marker([p.lat, p.lng], { icon: L.divIcon({ className: 'rem-pin-caja', iconSize: null,
+          html: `<span class="rem-pin" style="--pin: ${color(p.color ?? '--empresa')}">${String(p.etiqueta).replace(/[<>&"]/g, '')}</span>` }) }).addTo(m)
+      : L.circleMarker([p.lat, p.lng], { radius: 9, color: color(p.color ?? '--empresa'), weight: 2, fillColor: color(p.color ?? '--empresa'), fillOpacity: 0.55 }).addTo(m);
     if (p.html) c.bindPopup(p.html);
     if (p.titulo) c.bindTooltip(p.titulo);
     if (p.alClic) c.on('click', p.alClic);
@@ -236,5 +283,5 @@ export async function geocodificar(texto) {
 
 export function cargarEstilos() {
   if (document.getElementById('remates-css')) return;
-  document.head.append(el('link', { id: 'remates-css', rel: 'stylesheet', href: new URL('./remates.css?v=f6c1abb', import.meta.url).href }));
+  document.head.append(el('link', { id: 'remates-css', rel: 'stylesheet', href: new URL('./remates.css?v=0eddacc', import.meta.url).href }));
 }
