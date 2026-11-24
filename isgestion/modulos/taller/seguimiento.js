@@ -4,11 +4,11 @@
 //   cronómetro desde la recepción y barra de avance, que se arrastra para priorizar (tal_ordenes.orden_manual)
 // - flujo de los "por cotizar": P.C → COTIZADO → PAGADO
 // - detalle a pantalla completa (tablet): cronómetro grande, avance, tareas para marcar, tiempos por etapa y avanzar/volver.
-import { el } from '../../core/ui/dom.js?v=8467046';
-import { icono } from '../../core/ui/iconos.js?v=8467046';
-import { avisar } from '../../core/ui/aviso.js?v=8467046';
-import { ESTADOS, PRIORIDADES, nombreEstado, verPatente, nombreVehiculo, nombreTercero, textoMinutos } from './datos.js?v=8467046';
-import { mover } from './acciones.js?v=8467046';
+import { el } from '../../core/ui/dom.js?v=3015db6';
+import { icono } from '../../core/ui/iconos.js?v=3015db6';
+import { avisar } from '../../core/ui/aviso.js?v=3015db6';
+import { ESTADOS, PRIORIDADES, nombreEstado, verPatente, nombreVehiculo, nombreTercero, textoMinutos } from './datos.js?v=3015db6';
+import { mover } from './acciones.js?v=3015db6';
 
 const ORDEN_PRIO = { urgente: 0, prioridad: 1, normal: 2, programado: 3 };
 const hoyLocal = () => new Date().toLocaleDateString('sv');
@@ -43,9 +43,11 @@ export function cronometro(desde, clase = 'tal-cron') {
 
 // "Por cotizar" (servicio a convenir) → COTIZADO (tiene cotización) → PAGADO (cobrado)
 export function marcaCotizar(o, cotizadas) {
+  // Orden cobrada: PAGADO si pasó por cotización, COBRADO si no (Enzo, 2026-11-24: la 274 pagada no mostraba nada)
   const porCotizar = o.tal_orden_servicios.some((s) => s.tal_servicios?.variable || /cotiz/i.test(s.nombre));
-  if (!porCotizar && !cotizadas.has(o.id)) return null;
-  if (o.cobrado) return el('span', { class: 'tcal-pc ec-pago', title: 'Cobrado' }, 'PAGADO');
+  const conCotizacion = porCotizar || cotizadas.has(o.id);
+  if (o.cobrado) return el('span', { class: 'tcal-pc ec-pago', title: conCotizacion ? 'Cotizada y pagada' : 'Cobrada en el taller' }, conCotizacion ? 'PAGADO' : 'COBRADO');
+  if (!conCotizacion) return null;
   if (cotizadas.has(o.id)) return el('span', { class: 'tcal-pc ec-cot', title: 'Tiene cotización' }, 'COTIZADO');
   return el('span', { class: 'tcal-pc', title: 'Por cotizar' }, 'P.C');
 }

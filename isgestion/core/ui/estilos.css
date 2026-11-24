@@ -859,6 +859,11 @@ a.ger-alerta:hover { background: var(--fondo); }
 .tal-tarjeta { cursor: pointer; gap: 6px; padding: 12px; }
 .tal-tarjeta[hidden] { display: none; }
 .tal-tarjeta:hover { box-shadow: var(--sombra-suave); transform: translateY(-1px); }
+/* Servicios de la orden en el tablero: una viñeta por servicio, cada una en 2 líneas como máximo; 3 y "Ver N más" */
+.tal-servicios { list-style: none; margin: 2px 0; padding: 0; display: grid; gap: 3px; font-size: .8rem; color: var(--texto-suave); }
+.tal-servicios li:not(.tal-servicios-mas) { position: relative; padding-left: 12px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.3; }
+.tal-servicios li:not(.tal-servicios-mas)::before { content: ''; position: absolute; left: 2px; top: .5em; width: 5px; height: 5px; border-radius: 50%; background: var(--empresa); }
+.tal-servicios-mas .boton-enlace { padding: 2px 0; font-size: .8rem; font-weight: 600; }
 .tal-vehiculo { font-size: 1.02rem; }
 .tal-placa {
   align-self: flex-start; font-family: ui-monospace, "Cascadia Mono", monospace; font-size: .86rem; font-weight: 700; letter-spacing: .08em;

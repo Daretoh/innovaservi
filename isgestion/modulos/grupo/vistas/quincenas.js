@@ -1,6 +1,6 @@
 // Grupo → Quincenas: las quincenas de todas las empresas con Remuneraciones (modulos/remu/quincenas.js).
-import { vistaQuincenas } from '../../remu/quincenas.js?v=8467046';
-import { empresasCon } from '../empresas.js?v=8467046';
+import { vistaQuincenas } from '../../remu/quincenas.js?v=3015db6';
+import { empresasCon } from '../empresas.js?v=3015db6';
 
 export default function vista(ctx) {
   return vistaQuincenas(ctx, { empresas: empresasCon(ctx, 'remu'), cierre: '#/grupo.remu' });

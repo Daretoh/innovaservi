@@ -2,20 +2,38 @@
 // Toda la tarjeta abre la orden; buscador por patente, vehículo o cliente; la tarjeta recién movida queda
 // resaltada; se actualiza solo cada 2 minutos (pensado para la tablet del taller). Arriba, el resumen del Seguimiento
 // del OS (avance y arrastrar para priorizar); el botón de pantalla completa abre el detalle para la tablet.
-import { el } from '../../../core/ui/dom.js?v=8467046';
-import { icono } from '../../../core/ui/iconos.js?v=8467046';
-import { boton } from '../../../core/ui/tabla.js?v=8467046';
-import { fechaCorta, hhmm, hoyISO } from '../../../core/ui/formato.js?v=8467046';
-import { ESTADOS, PRIORIDADES, CHIP_PRIORIDAD, SELECT_ORDEN, verPatente, nombreVehiculo, nombreTercero, minutosTrabajo, textoMinutos, hora, cargarTrabajadores } from '../datos.js?v=8467046';
-import { mover, textoAvance, puedeVolver, esperaPagoFactura } from '../acciones.js?v=8467046';
-import { recepcion } from '../recepcion.js?v=8467046';
-import { avance, ordenarActivos, marcaCotizar, resumenTaller, detalleVehiculo } from '../seguimiento.js?v=8467046';
-import { ETAPAS, tarjetaAuto } from '../movil.js?v=8467046';
-import { esTelefono } from '../../../core/movil.js?v=8467046';
+import { el } from '../../../core/ui/dom.js?v=3015db6';
+import { icono } from '../../../core/ui/iconos.js?v=3015db6';
+import { boton } from '../../../core/ui/tabla.js?v=3015db6';
+import { fechaCorta, hhmm, hoyISO } from '../../../core/ui/formato.js?v=3015db6';
+import { ESTADOS, PRIORIDADES, CHIP_PRIORIDAD, SELECT_ORDEN, verPatente, nombreVehiculo, nombreTercero, minutosTrabajo, textoMinutos, hora, cargarTrabajadores } from '../datos.js?v=3015db6';
+import { mover, textoAvance, puedeVolver, esperaPagoFactura } from '../acciones.js?v=3015db6';
+import { recepcion } from '../recepcion.js?v=3015db6';
+import { avance, ordenarActivos, marcaCotizar, resumenTaller, detalleVehiculo } from '../seguimiento.js?v=3015db6';
+import { ETAPAS, tarjetaAuto } from '../movil.js?v=3015db6';
+import { esTelefono } from '../../../core/movil.js?v=3015db6';
 
 const MAX_ENTREGADOS = 6;
 const ESPERA_LARGA = 60;   // minutos en espera para avisar
-const estado = { buscar: '', movida: null, timer: null, scroll: 0, etapa: null };
+const estado = { buscar: '', movida: null, timer: null, scroll: 0, etapa: null, abiertas: new Set() };
+const SERVICIOS_VISIBLES = 3;
+
+// Servicios de la orden como lista: los 3 primeros y "Ver N más" (queda abierto aunque el tablero se actualice)
+function listaServicios(id, nombres) {
+  const lista = el('ul', { class: 'tal-servicios' });
+  const pintar = () => {
+    const abierta = estado.abiertas.has(id) || nombres.length <= SERVICIOS_VISIBLES + 1;
+    const mostrar = abierta ? nombres : nombres.slice(0, SERVICIOS_VISIBLES);
+    const resto = nombres.length - mostrar.length;
+    lista.replaceChildren(...mostrar.map((n) => el('li', { title: n }, n)),
+      nombres.length > SERVICIOS_VISIBLES + 1 ? el('li', { class: 'tal-servicios-mas' }, el('button', { type: 'button', class: 'boton-enlace', onclick: () => {
+        if (abierta) estado.abiertas.delete(id); else estado.abiertas.add(id);
+        pintar();
+      } }, resto ? `Ver ${resto} más` : 'Ver menos')) : null);
+  };
+  pintar();
+  return lista;
+}
 
 export default async function vista(ctx) {
   const inicioMes = `${hoyISO().slice(0, 7)}-01`;
@@ -66,7 +84,7 @@ export default async function vista(ctx) {
       el('a', { class: 'tal-vehiculo', href: ctx.ruta('taller.orden', { id: o.id }) }, nombreVehiculo(v)),
       el('span', { class: 'tal-placa' }, verPatente(v?.patente) || 'Sin patente'),
       o.terceros ? el('span', { class: 'texto-chico' }, nombreTercero(o.terceros)) : null,
-      o.tal_orden_servicios.length ? el('span', { class: 'texto-suave texto-chico' }, o.tal_orden_servicios.sort((a, b) => a.orden - b.orden).map((s) => s.nombre).join(' + ')) : null,
+      o.tal_orden_servicios.length ? listaServicios(o.id, o.tal_orden_servicios.sort((a, b) => a.orden - b.orden).map((s) => s.nombre)) : null,
       o.tareas.length ? el('div', { class: 'tal-progreso', title: pend ? `Faltan ${pend} de ${o.tareas.length} tareas` : 'Tareas listas' },
         el('span', { class: 'tal-progreso-barra' }, el('i', { style: `width:${Math.round(((o.tareas.length - pend) / o.tareas.length) * 100)}%` })),
         el('span', { class: 'texto-chico texto-suave' }, `${o.tareas.length - pend}/${o.tareas.length} tareas · ${avance(o)}%`)) : null,
