@@ -1,7 +1,7 @@
 // Datos y utilidades compartidas de Reportes de trabajo.
-import { nombreDia, fechaCorta } from '../../core/ui/formato.js?v=6df4ca6';
+import { nombreDia, fechaCorta } from '../../core/ui/formato.js?v=9dd99fc';
 
-export const ETAPAS = [['antes', 'Antes'], ['proceso', 'Proceso'], ['despues', 'Después'], ['doc', 'Registro documental'], ['sin', 'Sin ordenar']];
+export const ETAPAS = [['antes', 'Antes'], ['proceso', 'Proceso'], ['despues', 'Después'], ['doc', 'Registro documental'], ['terreno', 'AST y permiso de trabajo (no van al informe)'], ['sin', 'Sin ordenar']];
 export const nombreEtapa = Object.fromEntries(ETAPAS);
 
 // Procesos personalizados del parte (rep_partes.procesos): pasos con nombre dentro de la etapa Proceso. En los selectores cada
@@ -71,10 +71,10 @@ export async function faenasSinParte(ctx, desde, hasta) {
 }
 
 // Achica una foto antes de subirla (vive en core para que la usen otros módulos)
-export { comprimirFoto } from '../../core/imagenes.js?v=6df4ca6';
+export { comprimirFoto } from '../../core/imagenes.js?v=9dd99fc';
 
 // URL firmadas de varias rutas a la vez (10 minutos): vive en core/adjuntos.js
-export { urlsFirmadas } from '../../core/adjuntos.js?v=6df4ca6';
+export { urlsFirmadas } from '../../core/adjuntos.js?v=9dd99fc';
 
 // Una faena de varios días aparece una vez por día en el parte; para clasificar fotos basta una por faena.
 export const faenasDistintas = (faenas) => [...new Map(faenas.map((f) => [f.faena_id, f])).values()];

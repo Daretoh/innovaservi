@@ -30,10 +30,17 @@ export async function cargarPersonas(ctx, { todas = false } = {}) {
   return { lista, de: new Map(lista.map((p) => [p.id, p])) };
 }
 
-export async function cargarConfig(ctx) {
-  const { data, error } = await ctx.api.from('sst_config').select('*').eq('empresa_id', ctx.empresa.id).maybeSingle();
-  if (error) throw error;
-  return data ?? { cargo_rep: 'Representante legal' };
+// Representante, firma y timbre: los de "Datos y firmas" (gen_config, lo mismo que usan los documentos del generador);
+// lo que falte ahí sale de la configuración antigua de Prevención (sst_config). Sin permiso para leer una, se usa la otra.
+export async function cargarConfig(ctx, empresaId = ctx.empresa.id) {
+  const [sst, gen] = await Promise.all([
+    ctx.api.from('sst_config').select('*').eq('empresa_id', empresaId).maybeSingle().then((r) => r, () => ({ data: null })),
+    ctx.api.from('gen_config').select('representante, rep_cargo, firma_ruta, timbre_ruta, prevencionista, prev_cargo, firma_prev_ruta').eq('empresa_id', empresaId).maybeSingle().then((r) => r, () => ({ data: null })),
+  ]);
+  const a = sst.data ?? {}; const g = gen.data ?? {};
+  return { ...a, representante: g.representante || a.representante || null, cargo_rep: g.rep_cargo || a.cargo_rep || 'Representante legal',
+    firma_ruta: g.firma_ruta || a.firma_ruta || null, timbre_ruta: g.timbre_ruta || a.timbre_ruta || null,
+    prevencionista: g.prevencionista || null, prev_cargo: g.prev_cargo || null, firma_prev_ruta: g.firma_prev_ruta || null };
 }
 
 export async function cargarClientes(ctx) {

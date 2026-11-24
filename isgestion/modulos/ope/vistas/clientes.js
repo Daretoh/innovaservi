@@ -1,13 +1,13 @@
 // Clientes (del maestro de Clientes y proveedores) con su color en el calendario y sus sitios de faena. Arriba, como
 // InnovaGestión, un gráfico circular con el % de faenas por cliente en los últimos 12 meses (6 mayores + Otros).
-import { el } from '../../../core/ui/dom.js?v=6df4ca6';
-import { icono } from '../../../core/ui/iconos.js?v=6df4ca6';
-import { boton } from '../../../core/ui/tabla.js?v=6df4ca6';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=6df4ca6';
-import { avisar } from '../../../core/ui/aviso.js?v=6df4ca6';
-import { cargarBase, olvidarBase } from '../datos.js?v=6df4ca6';
-import { hoyISO, sumarDias } from '../../../core/ui/formato.js?v=6df4ca6';
-import { fichaTercero } from '../../terceros/formulario.js?v=6df4ca6';
+import { el } from '../../../core/ui/dom.js?v=9dd99fc';
+import { icono } from '../../../core/ui/iconos.js?v=9dd99fc';
+import { boton } from '../../../core/ui/tabla.js?v=9dd99fc';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=9dd99fc';
+import { avisar } from '../../../core/ui/aviso.js?v=9dd99fc';
+import { cargarBase, olvidarBase } from '../datos.js?v=9dd99fc';
+import { hoyISO, sumarDias } from '../../../core/ui/formato.js?v=9dd99fc';
+import { fichaTercero } from '../../terceros/formulario.js?v=9dd99fc';
 
 export default async function vista(ctx) {
   const [base, fae] = await Promise.all([cargarBase(ctx),
@@ -27,10 +27,20 @@ export default async function vista(ctx) {
       if (await guardarCliente(ctx, c, { pide_informe: pide.checked })) avisar(pide.checked ? 'Sus faenas llevan informe por omisión.' : 'Sus faenas no llevan informe por omisión.');
       else pide.checked = !pide.checked;
     });
+    // Carpeta a terreno (Faenas 006): AST y permiso de trabajo por omisión en sus faenas (ej.: Cermaq pide AST en todas)
+    const interruptor = (campo, clave, texto, si, no) => {
+      const i = el('input', { type: 'checkbox', class: 'interruptor', checked: !!c[clave], disabled: !editable });
+      i.addEventListener('change', async () => {
+        if (await guardarCliente(ctx, c, { [campo]: i.checked })) { c[clave] = i.checked; avisar(i.checked ? si : no); } else i.checked = !i.checked;
+      });
+      return el('label', { class: 'casilla', title: 'Valor inicial de sus faenas; en cada faena se puede cambiar en el Calendario' }, i, texto);
+    };
     return el('div', { class: 'ficha doc-grupo' },
       el('div', { class: 'listado-cabecera' },
         el('div', { class: 'caja-enlace-titulo' }, color, el('h2', {}, c.nombre)),
         pide ? el('label', { class: 'casilla', title: 'Valor inicial de sus faenas; en cada faena se puede cambiar (Editor de la faena → Parte de trabajo)' }, pide, 'Pide informe por omisión') : null,
+        interruptor('pide_ast', 'pideAst', 'Lleva AST', 'Sus faenas llevan AST por omisión.', 'Sus faenas no llevan AST por omisión.'),
+        interruptor('pide_permiso', 'pidePermiso', 'Exige permiso de trabajo', 'Sus faenas exigen permiso de trabajo por omisión.', 'Sus faenas no exigen permiso de trabajo por omisión.'),
         el('div', { class: 'listado-acciones' },
           ctx.puede('terceros', 'editar') ? boton('Datos del cliente', { icono: 'editar', onclick: () => editarCliente(ctx, c) }) : null,
           editable ? boton('Agregar sitio', { icono: 'mas', onclick: () => sitio(ctx, c, null) }) : null)),

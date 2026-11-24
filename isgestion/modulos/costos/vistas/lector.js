@@ -9,18 +9,18 @@
 // Bandeja "Por cargar" (Costos 008, 2026-11-10): con ?bandeja=<id> abre un documento ya subido a la bandeja, lo lee
 // igual y al registrar lo marca registrado y sigue con el siguiente pendiente (Saltar / Descartar de la bandeja).
 // Ruta: #/costos.lector · #/costos.lector?bandeja=<id>
-import { el } from '../../../core/ui/dom.js?v=6df4ca6';
-import { icono } from '../../../core/ui/iconos.js?v=6df4ca6';
-import { boton } from '../../../core/ui/tabla.js?v=6df4ca6';
-import { avisar } from '../../../core/ui/aviso.js?v=6df4ca6';
-import { subirArchivo, almacen, urlFirmada } from '../../../core/adjuntos.js?v=6df4ca6';
-import { pendientesBandeja, descartarDeBandeja } from './bandeja.js?v=6df4ca6';
-import { dinero, hoyISO, sumarDias, fechaLarga, lunesDe } from '../../../core/ui/formato.js?v=6df4ca6';
-import { TIPOS_DTE, docTipoDe, CAMPOS_DTE, leerParte, combinar, validar, escanearCamara, aJPEG, fmtRut, limpioRut, rutValido, num } from '../../../core/lector-dte.js?v=6df4ca6';
-import { cargarBase, nombreTercero, opcionesACuenta } from '../datos.js?v=6df4ca6';
-import { leerConIA, iaDisponible, numIA, fechaIA, pagadoAlComprar, textoModelo } from '../../../core/lector-ia.js?v=6df4ca6';
-import { esImagen } from '../../../core/imagenes.js?v=6df4ca6';
-import { tomarFotos } from '../../../core/ui/camara.js?v=6df4ca6';
+import { el } from '../../../core/ui/dom.js?v=9dd99fc';
+import { icono } from '../../../core/ui/iconos.js?v=9dd99fc';
+import { boton } from '../../../core/ui/tabla.js?v=9dd99fc';
+import { avisar } from '../../../core/ui/aviso.js?v=9dd99fc';
+import { subirArchivo, almacen, urlFirmada } from '../../../core/adjuntos.js?v=9dd99fc';
+import { pendientesBandeja, descartarDeBandeja } from './bandeja.js?v=9dd99fc';
+import { dinero, hoyISO, sumarDias, fechaLarga, lunesDe } from '../../../core/ui/formato.js?v=9dd99fc';
+import { TIPOS_DTE, docTipoDe, CAMPOS_DTE, leerParte, combinar, validar, escanearCamara, aJPEG, fmtRut, limpioRut, rutValido, num } from '../../../core/lector-dte.js?v=9dd99fc';
+import { cargarBase, nombreTercero, opcionesACuenta } from '../datos.js?v=9dd99fc';
+import { leerConIA, iaDisponible, numIA, fechaIA, pagadoAlComprar, textoModelo } from '../../../core/lector-ia.js?v=9dd99fc';
+import { esImagen } from '../../../core/imagenes.js?v=9dd99fc';
+import { tomarFotos } from '../../../core/ui/camara.js?v=9dd99fc';
 
 const ETIQUETA = { timbre: ['Timbre SII', 'chip-ok'], xml: ['XML', 'chip-ok'], ia: ['IA', 'chip-ok'], ocr: ['Revisar', 'chip-prox'], calc: ['Calculado', 'chip-pend'] };
 
@@ -40,7 +40,7 @@ export default async function vista(ctx) {
     conTaller ? ctx.api.from('tal_ordenes').select('id, vehiculo_id').eq('empresa_id', e).not('estado', 'in', '(entregado,anulada)') : Promise.resolve({ data: [] }),
   ]);
   const mensual = remuCfg.data?.periodo === 'mensual';
-  const volver = el('a', { class: 'volver', href: ctx.ruta('costos.registros') }, icono('volver', { tam: 16 }), 'Gastos e ingresos');
+  const volver = el('a', { class: 'volver', href: ctx.ruta('costos.registros') }, icono('volver', { tam: 16 }), 'Gastos');
   const categorias = base.categorias.filter((c) => c.activo && c.clase !== 'ingreso');
   if (!categorias.length) return el('section', { class: 'listado' }, volver, el('h1', {}, 'Primero crea una categoría de gasto en Categorías y centros'));
   const terceroPorRut = new Map((ruts.data ?? []).map((t) => [limpioRut(t.rut), t]));

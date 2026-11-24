@@ -1,10 +1,11 @@
 // Registros de entrega (capacitación, charla, EPP, PTS): se arma la lista, se imprime para firmar y
 // se sube el escaneo; al subirlo, cada persona queda con el documento de RRHH entregado.
-import { el } from '../../../core/ui/dom.js?v=6df4ca6';
-import { listado, boton } from '../../../core/ui/tabla.js?v=6df4ca6';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=6df4ca6';
-import { fechaLarga, hoyISO } from '../../../core/ui/formato.js?v=6df4ca6';
-import { TIPOS_ENTREGA, nombreDe, cargarPersonas } from '../datos.js?v=6df4ca6';
+import { el } from '../../../core/ui/dom.js?v=9dd99fc';
+import { listado, boton } from '../../../core/ui/tabla.js?v=9dd99fc';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=9dd99fc';
+import { fechaLarga, hoyISO } from '../../../core/ui/formato.js?v=9dd99fc';
+import { TIPOS_ENTREGA, nombreDe, cargarPersonas } from '../datos.js?v=9dd99fc';
+import { cargarDestinos, agrupar, barraAvance } from '../acreditacion.js?v=9dd99fc';
 
 let filtro = 'todos';
 const nombreTipo = nombreDe(TIPOS_ENTREGA);
@@ -24,11 +25,19 @@ export async function tiposRrhh(ctx) {
 }
 
 export default async function vista(ctx) {
-  let q = ctx.api.from('sst_entregas').select('id, tipo, tema, fecha, relator, estado, tipo_doc, sst_entrega_personas(persona_id)')
-    .eq('empresa_id', ctx.empresa.id).is('deleted_at', null).order('fecha', { ascending: false }).limit(300);
-  if (filtro !== 'todos') q = q.eq('estado', filtro);
-  const { data, error } = await q;
-  if (error) throw error;
+  const [res, dest] = await Promise.all([
+    ctx.api.from('sst_entregas').select('id, tipo, tema, fecha, relator, estado, tipo_doc, lote_id, acr_tercero_id, acr_sitio_id, documentos, sst_entrega_personas(persona_id)')
+      .eq('empresa_id', ctx.empresa.id).is('deleted_at', null).order('fecha', { ascending: false }).order('created_at').limit(500),
+    cargarDestinos(ctx).catch(() => null),
+  ]);
+  if (res.error) throw res.error;
+  // Una fila por documento: una entrega individual (lote, un registro por trabajador) se abre en sus documentos, cada uno
+  // con quiénes lo recibieron y cuántos lo firmaron; los registros grupales (charla, capacitación…) son una fila
+  const filasDe = (g) => g.lote && g.documentos.length
+    ? g.documentos.map((d) => ({ ...g, doc: d, clave: `${g.clave}|${d.clave}`, personas: d.total, firmados: d.firmados, total: d.total, estado: d.firmados === d.total ? 'firmado' : 'pendiente' }))
+    : [{ ...g, doc: null }];
+  const todas = agrupar(res.data).flatMap(filasDe);
+  const data = todas.filter((g) => filtro === 'todos' || g.estado === filtro);
 
   const segmento = el('div', { class: 'segmento', role: 'group', 'aria-label': 'Estado' },
     [['todos', 'Todos'], ['pendiente', 'Por firmar'], ['firmado', 'Firmados']].map(([v, t]) =>
@@ -37,31 +46,38 @@ export default async function vista(ctx) {
   // Con el generador de documentos: elegir plantilla (charla, checklist) o registro libre
   const nuevoRegistro = async () => {
     if (!ctx.puede('documentos', 'ver')) { nuevo(ctx); return; }
-    const { elegirRegistro } = await import('../../documentos/elegir.js?v=6df4ca6');
+    const { elegirRegistro } = await import('../../documentos/elegir.js?v=9dd99fc');
     elegirRegistro(ctx, { libre: () => nuevo(ctx) });
   };
-  // ZIP de los registros que se ven (según Todos / Por firmar / Firmados): una carpeta por trabajador, partes de 19 MB
-  if (data.length) acciones.push(boton('Descargar ZIP', { icono: 'descargar', title: 'Los registros de esta lista, en partes de hasta 19 MB para adjuntar en Outlook', onclick: async (ev) => {
+  // ZIP de las entregas que se ven (según Todos / Por firmar / Firmados): una carpeta por trabajador, partes de 19 MB
+  if (data.length) acciones.push(boton('Descargar ZIP', { icono: 'descargar', title: 'Las entregas de esta lista, en partes de hasta 19 MB para adjuntar en Outlook', onclick: async (ev) => {
     const b = ev.currentTarget;
-    const { descargarEntregasZip } = await import('../zip.js?v=6df4ca6');
-    await descargarEntregasZip(ctx, data.map((r) => r.id), { nombre: { todos: 'Registros de entrega', pendiente: 'Registros por firmar', firmado: 'Registros firmados' }[filtro], boton: b });
+    const { descargarEntregasZip } = await import('../zip.js?v=9dd99fc');
+    await descargarEntregasZip(ctx, [...new Set(data.flatMap((g) => g.registros.map((r) => r.id)))], { nombre: { todos: 'Registros de entrega', pendiente: 'Registros por firmar', firmado: 'Registros firmados' }[filtro], boton: b });
   } }));
   if (ctx.puede('sst', 'crear')) acciones.push(boton('Nuevo registro', { icono: 'mas', tipo: 'primario', onclick: nuevoRegistro }));
 
+  const enlace = (g) => g.doc ? ctx.ruta('sst.lote', { id: g.lote, doc: g.doc.clave }) : g.lote ? ctx.ruta('sst.lote', { id: g.lote }) : ctx.ruta('sst.entrega', { id: g.primero.id });
+  const paraDe = (g) => (g.acr === 'varias' ? 'Varias acreditaciones' : g.acr ? dest?.texto(...g.acr.split('|')) ?? '' : '');
+  // Documento (o tema) y, debajo, para qué acreditación es
+  const tema = (g) => el('div', { class: 'sst-doc-celda' },
+    el('a', { href: enlace(g) }, g.doc ? (g.doc.codigo ? `${g.doc.codigo} · ${g.doc.nombre}` : g.doc.nombre) : g.primero.tema),
+    paraDe(g) ? el('div', { class: 'texto-suave texto-chico' }, `Para ${paraDe(g)}`) : null);
   const lista = listado({
     titulo: 'Registros de entrega',
     filas: data,
     acciones,
     vacio: 'No hay registros.',
     columnas: [
-      { titulo: 'Fecha', valor: (r) => fechaLarga(r.fecha) },
-      { titulo: 'Tipo', valor: (r) => nombreTipo[r.tipo] },
-      { titulo: 'Tema', valor: (r) => el('a', { href: ctx.ruta('sst.entrega', { id: r.id }) }, r.tema) },
-      { titulo: 'Personas', valor: (r) => r.sst_entrega_personas.length },
-      { titulo: 'Estado', valor: (r) => el('span', { class: `chip ${r.estado === 'firmado' ? 'chip-ok' : 'chip-prox'}` }, r.estado === 'firmado' ? 'Firmado' : 'Por firmar') },
+      { titulo: 'Fecha', valor: (g) => fechaLarga(g.fecha) },
+      { titulo: 'Tipo', valor: (g) => (g.doc ? 'Entrega individual' : nombreTipo[g.primero.tipo]) },
+      { titulo: 'Documento o tema', valor: tema },
+      { titulo: 'Personas', valor: (g) => g.personas },
+      { titulo: 'Firmas', valor: (g) => g.total > 1 ? barraAvance(g.firmados, g.total) : null },
+      { titulo: 'Estado', valor: (g) => el('span', { class: `chip ${g.estado === 'firmado' ? 'chip-ok' : 'chip-prox'}` }, g.estado === 'firmado' ? 'Firmado' : g.firmados ? `Faltan ${g.total - g.firmados}` : 'Por firmar') },
     ],
   });
-  lista.append(el('p', { class: 'texto-suave texto-chico' }, 'Se firma por WhatsApp (o se imprime y se sube el escaneo). Cada persona que firma queda con el registro en su ficha de RRHH.'));
+  lista.append(el('p', { class: 'texto-suave texto-chico' }, 'Se firma por WhatsApp (o se imprime y se sube el escaneo). Cada persona que firma queda con el registro en su ficha de RRHH. En una entrega individual cada documento es una fila: ábrelo para ver quién lo firmó y descargar su ZIP.'));
   return lista;
 }
 

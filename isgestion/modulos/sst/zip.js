@@ -1,9 +1,9 @@
 // Descargar registros de entrega en ZIP (pedido de Enzo, 2026-11-23): una carpeta por trabajador con cada documento
 // (firmado si ya se firmó), en partes de hasta 19 MB para adjuntarlas en Outlook (límite de 20 MB por correo).
 // JSZip 3.10.1 fijo desde cdnjs, se carga solo al usarlo.
-import { avisar } from '../../core/ui/aviso.js?v=6df4ca6';
-import { hoyISO, fechaLarga } from '../../core/ui/formato.js?v=6df4ca6';
-import { urlsFirmadas } from '../../core/adjuntos.js?v=6df4ca6';
+import { avisar } from '../../core/ui/aviso.js?v=9dd99fc';
+import { hoyISO, fechaLarga } from '../../core/ui/formato.js?v=9dd99fc';
+import { urlsFirmadas } from '../../core/adjuntos.js?v=9dd99fc';
 
 const MAX_PARTE = 19 * 1024 * 1024;
 let jszip = null;
@@ -22,7 +22,8 @@ const limpio = (t, n = 80) => String(t ?? '').normalize('NFD').replace(/[̀-ͯ]/
 const nombreDe = (p) => [p?.apellido_paterno, p?.apellido_materno, p?.nombres].filter(Boolean).join(' ');
 
 // ids: registros de entrega a incluir; nombre: para el archivo ZIP
-export async function descargarEntregasZip(ctx, ids, { nombre = 'Registros de entrega', boton = null } = {}) {
+// soloDoc (opcional): (documento) => boolean, para bajar un solo documento de una entrega individual
+export async function descargarEntregasZip(ctx, ids, { nombre = 'Registros de entrega', boton = null, soloDoc = null } = {}) {
   if (!ids?.length) { avisar('No hay registros para descargar.'); return; }
   boton?.classList.add('cargando'); if (boton) boton.disabled = true;
   try {
@@ -38,10 +39,12 @@ export async function descargarEntregasZip(ctx, ids, { nombre = 'Registros de en
       const firmado = ent.estado === 'firmado';
       if (Array.isArray(ent.documentos) && ent.documentos.length && gente.length === 1) {
         // Entrega individual: carpeta del trabajador, un PDF por documento
+        const lista = soloDoc ? ent.documentos.filter(soloDoc) : ent.documentos;
+        if (!lista.length) continue;
         const p = gente[0]; const carpeta = limpio(`${nombreDe(p)} (${p.rut ?? 'sin RUT'})`);
-        const firmados = ent.documentos.filter((d) => d.archivo_firmado).length;
-        leeme.push(`${nombreDe(p)} (${p.rut ?? 'sin RUT'}): ${ent.documentos.length} documentos, ${firmados === ent.documentos.length ? 'firmados' : firmados ? `${firmados} con firma` : 'por firmar'}`);
-        ent.documentos.forEach((d, k) => archivos.push({ ruta: d.archivo_firmado || d.archivo, destino: `${carpeta}/${String(k + 1).padStart(2, '0')} ${limpio(d.titulo, 90)}${d.archivo_firmado ? '' : ' (por firmar)'}.pdf` }));
+        const firmados = lista.filter((d) => d.archivo_firmado).length;
+        leeme.push(`${nombreDe(p)} (${p.rut ?? 'sin RUT'}): ${lista.length} documento${lista.length === 1 ? '' : 's'}, ${firmados === lista.length ? 'firmado' + (lista.length === 1 ? '' : 's') : firmados ? `${firmados} con firma` : 'por firmar'}`);
+        lista.forEach((d, k) => archivos.push({ ruta: d.archivo_firmado || d.archivo, destino: `${carpeta}/${String(k + 1).padStart(2, '0')} ${limpio(d.titulo, 90)}${d.archivo_firmado ? '' : ' (por firmar)'}.pdf` }));
       } else if (ent.archivo) {
         // Registro grupal (charla, capacitación…): un PDF con la lista
         const ext = (ent.archivo.match(/\.(\w+)$/)?.[1] ?? 'pdf').toLowerCase();

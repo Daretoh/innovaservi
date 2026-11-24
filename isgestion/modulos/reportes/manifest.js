@@ -8,11 +8,11 @@ export default {
   rubros: ['todos'],
   acciones: ['ver', 'crear', 'editar', 'eliminar', 'exportar'],
   menu: [
-    { id: 'reportes.lista', label: 'Partes de trabajo', pestana: 'Partes', vista: () => import('./vistas/lista.js?v=6df4ca6') },
-    { id: 'reportes.calendario', label: 'Calendario de reportes', oculto: true, padre: 'reportes.lista', vista: () => import('./vistas/calendario.js?v=6df4ca6') },
-    { id: 'reportes.parte', label: 'Parte de trabajo', oculto: true, padre: 'reportes.lista', vista: () => import('./vistas/parte.js?v=6df4ca6') },
-    { id: 'reportes.config', ajustes: true, label: 'Diseño del informe', vista: () => import('./vistas/config.js?v=6df4ca6') },
+    { id: 'reportes.lista', label: 'Partes de trabajo', pestana: 'Partes', vista: () => import('./vistas/lista.js?v=9dd99fc') },
+    { id: 'reportes.calendario', label: 'Calendario de reportes', oculto: true, padre: 'reportes.lista', vista: () => import('./vistas/calendario.js?v=9dd99fc') },
+    { id: 'reportes.parte', label: 'Parte de trabajo', oculto: true, padre: 'reportes.lista', vista: () => import('./vistas/parte.js?v=9dd99fc') },
+    { id: 'reportes.config', ajustes: true, label: 'Diseño del informe', vista: () => import('./vistas/config.js?v=9dd99fc') },
   ],
   config: {},
-  migraciones: ['db/001_reportes.sql', 'db/002_recordar_cliente.sql', 'db/003_portada.sql', 'db/004_informe_faena.sql', 'db/005_secciones.sql', 'db/006_mandante.sql', 'db/007_procesos.sql'],
+  migraciones: ['db/001_reportes.sql', 'db/002_recordar_cliente.sql', 'db/003_portada.sql', 'db/004_informe_faena.sql', 'db/005_secciones.sql', 'db/006_mandante.sql', 'db/007_procesos.sql', 'db/008_fotos_observaciones.sql', 'db/009_fotos_marcadas.sql', 'db/010_datos_para_reportes.sql', 'db/011_documentos_terreno.sql'],
 };

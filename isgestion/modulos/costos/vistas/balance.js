@@ -1,14 +1,14 @@
 // Balance de gestión (como Finanzas de InnovaGestión): cuentas (banco, caja, tarjetas) con su último saldo, por cobrar,
 // por pagar, deudas y préstamos con otras empresas del grupo. No es el balance tributario: sirve para saber cuánto se
 // tiene y cuánto se debe hoy. Solo con costos.aprobar.
-import { el } from '../../../core/ui/dom.js?v=6df4ca6';
-import { icono } from '../../../core/ui/iconos.js?v=6df4ca6';
-import { boton } from '../../../core/ui/tabla.js?v=6df4ca6';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=6df4ca6';
-import { avisar } from '../../../core/ui/aviso.js?v=6df4ca6';
-import { dinero, fechaLarga, hoyISO } from '../../../core/ui/formato.js?v=6df4ca6';
-import { cargarCuentas, cargarPendientes, cargarDeudas } from '../tesoreria.js?v=6df4ca6';
-import { sinPermiso } from './flujo.js?v=6df4ca6';
+import { el } from '../../../core/ui/dom.js?v=9dd99fc';
+import { icono } from '../../../core/ui/iconos.js?v=9dd99fc';
+import { boton } from '../../../core/ui/tabla.js?v=9dd99fc';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=9dd99fc';
+import { avisar } from '../../../core/ui/aviso.js?v=9dd99fc';
+import { dinero, fechaLarga, hoyISO } from '../../../core/ui/formato.js?v=9dd99fc';
+import { calcularBalance } from '../tesoreria.js?v=9dd99fc';
+import { sinPermiso } from './flujo.js?v=9dd99fc';
 
 const TIPOS_CUENTA = [['banco', 'Banco'], ['caja', 'Caja'], ['tarjeta', 'Tarjeta de crédito'], ['otro', 'Otra']];
 const TIPOS_DEUDA = [['prestamo', 'Préstamo'], ['leasing', 'Leasing'], ['linea', 'Línea de crédito'], ['otro', 'Otra']];
@@ -16,23 +16,7 @@ const TIPOS_DEUDA = [['prestamo', 'Préstamo'], ['leasing', 'Leasing'], ['linea'
 export default async function vista(ctx) {
   if (!ctx.puede('costos', 'aprobar')) return sinPermiso();
   const e = ctx.empresa.id;
-  const [cuentas, pend, deudas, pres] = await Promise.all([cargarCuentas(ctx), cargarPendientes(ctx), cargarDeudas(ctx),
-    ctx.api.from('fin_prestamos').select('*').eq('empresa_id', e).is('deleted_at', null).order('fecha', { ascending: false })]);
-  const prestamos = pres.data ?? [];
-  const activas = cuentas.filter((c) => c.activo);
-  const saldo = (c) => Number(c.ultimo?.saldo ?? 0);
-  const enCaja = activas.filter((c) => c.tipo !== 'tarjeta').reduce((s, c) => s + saldo(c), 0);
-  const tarjetas = activas.filter((c) => c.tipo === 'tarjeta').reduce((s, c) => s + saldo(c), 0);
-  const porCobrar = pend.filter((p) => p.lado === 'cobrar').reduce((s, p) => s + p.monto, 0);
-  const porPagar = pend.filter((p) => p.lado === 'pagar').reduce((s, p) => s + p.monto, 0);
-  const deuda = deudas.filter((d) => d.activo).reduce((s, d) => s + Number(d.saldo), 0);
-  // Préstamos del grupo: neto por contraparte (positivo = nos deben)
-  const porContraparte = new Map();
-  for (const p of prestamos) porContraparte.set(p.contraparte, (porContraparte.get(p.contraparte) ?? 0) + (p.sentido === 'otorgado' ? 1 : -1) * Number(p.monto));
-  const nosDeben = [...porContraparte.values()].filter((v) => v > 0).reduce((s, v) => s + v, 0);
-  const debemos = -[...porContraparte.values()].filter((v) => v < 0).reduce((s, v) => s + v, 0);
-  const activos = enCaja + porCobrar + nosDeben;
-  const pasivos = tarjetas + porPagar + deuda + debemos;
+  const { pend, deudas, prestamos, activas, saldo, porCobrar, porPagar, porContraparte, nosDeben, debemos, activos, pasivos } = await calcularBalance(ctx);
 
   // ---- Formularios
   const cuenta = (c) => abrirFormulario({

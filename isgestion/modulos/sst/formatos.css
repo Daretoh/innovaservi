@@ -1,0 +1,26 @@
+/* Formatos del cliente (SST 009): la hoja del PDF con los campos encima */
+.fm-grid { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px; align-items: start; }
+.fm-paginas { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; }
+.fm-pag { align-self: flex-start; }
+.fm-hoja { position: relative; background: #fff; box-shadow: var(--sombra-suave); border: 1px solid var(--borde); max-width: 100%; }
+.fm-lienzo { display: block; }
+.fm-capa { position: absolute; inset: 0; cursor: text; }
+.fm-ajustar { cursor: crosshair; }
+.fm-campo { position: absolute; box-sizing: border-box; margin: 0; padding: 0 2px; border: 1px dashed transparent; background: rgba(255, 214, 102, .18); color: #0d1a59; font-family: Helvetica, Arial, sans-serif; line-height: 1.15; border-radius: 2px; resize: none; overflow: hidden; }
+.fm-campo:hover, .fm-campo:focus { border-color: #e88a00; background: rgba(255, 214, 102, .35); outline: none; }
+.fm-texto { width: 100%; }
+textarea.fm-campo { padding-top: 1px; }
+.fm-marca { display: grid; place-items: center; cursor: pointer; font-weight: 700; padding: 0; }
+.fm-lleno { background: rgba(80, 160, 90, .15); }
+.fm-extra { background: rgba(120, 170, 255, .2); border-color: #6c9cf0; }
+.fm-ajustar .fm-campo { cursor: pointer; border: 1.5px solid #1f6feb; background: rgba(31, 111, 235, .12); }
+.fm-ajustar .fm-marca { border-color: #d0342c; background: rgba(208, 52, 44, .12); }
+.fm-ajustar .fm-multilinea { border-color: #1a8f3c; background: rgba(26, 143, 60, .10); }
+.fm-ajustar .fm-sel { outline: 3px solid #e88a00; z-index: 2; }
+.fm-guia { border: 2px dashed #e88a00 !important; background: rgba(232, 138, 0, .12) !important; }
+.fm-dato { position: absolute; left: 0; top: -14px; font-size: 10px; background: #1f6feb; color: #fff; padding: 0 4px; border-radius: 3px; white-space: nowrap; pointer-events: none; }
+.fm-panel { position: sticky; top: 72px; width: 260px; display: grid; gap: 6px; padding: 12px; }
+.fm-panel[hidden] { display: none; }
+.fm-flechas { display: flex; flex-wrap: wrap; gap: 4px; }
+.fm-flechas .boton { padding: 4px 8px; }
+@media (max-width: 900px) { .fm-grid { grid-template-columns: 1fr; } .fm-panel { position: static; width: auto; } }

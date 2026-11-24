@@ -3,19 +3,19 @@
 // en mapa. Filtros por tipo, comuna (por defecto la primera comuna de interés), estado y región; las pasadas y
 // descartadas se ocultan salvo que se pidan.
 // Ruta: #/remates.lista
-import { el } from '../../../core/ui/dom.js?v=6df4ca6';
-import { icono } from '../../../core/ui/iconos.js?v=6df4ca6';
-import { boton } from '../../../core/ui/tabla.js?v=6df4ca6';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=6df4ca6';
-import { avisar } from '../../../core/ui/aviso.js?v=6df4ca6';
-import { dinero } from '../../../core/ui/formato.js?v=6df4ca6';
-import { exportarExcel } from '../../../core/excel.js?v=6df4ca6';
+import { el } from '../../../core/ui/dom.js?v=9dd99fc';
+import { icono } from '../../../core/ui/iconos.js?v=9dd99fc';
+import { boton } from '../../../core/ui/tabla.js?v=9dd99fc';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=9dd99fc';
+import { avisar } from '../../../core/ui/aviso.js?v=9dd99fc';
+import { dinero } from '../../../core/ui/formato.js?v=9dd99fc';
+import { exportarExcel } from '../../../core/excel.js?v=9dd99fc';
 import {
   TIPOS, ORIGENES, ESTADOS, OBJETIVOS, REGIONES, SUBTIPOS, nombreDe, cargarOportunidades, calcular, puntaje, pct,
   chipPuntaje, chipEstado, diasHasta, fechaRemate, cargarEstilos, contexto, distanciaKm, chipDistancia, km, cercania, mapa,
   botonEstrella, INTERESAN, chipEstudio, minimoSobreAvaluo, millones,
-} from '../datos.js?v=6df4ca6';
-import { marcaEmpresa } from '../../grupo/empresas.js?v=6df4ca6';
+} from '../datos.js?v=9dd99fc';
+import { marcaEmpresa } from '../../grupo/empresas.js?v=9dd99fc';
 
 // Se mantiene al refrescar; comuna = null hasta la primera vez (toma la primera comuna de interés de la configuración)
 const filtro = { tipo: '', estado: '', region: '', comuna: null, avaluo: '', texto: '', todas: false, orden: 'fecha', dir: 1, modo: 'lista', metrica: 'minimo' };

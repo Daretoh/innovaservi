@@ -2,13 +2,13 @@
 // ver quién firmó. La persona firma en /firmar/?t=… (Edge Function pública `firmar`).
 //   enviarAFirmar(ctx, { origen, id, personas: [{ id, nombre, telefono }], titulo, alTerminar })
 //   seccionFirmasEntrega(ctx, ent, participantes) → bloque para Prevención SST → registro de entrega
-import { el } from './ui/dom.js?v=6df4ca6';
-import { icono } from './ui/iconos.js?v=6df4ca6';
-import { boton } from './ui/tabla.js?v=6df4ca6';
-import { avisar } from './ui/aviso.js?v=6df4ca6';
-import { telefono } from './ui/formato.js?v=6df4ca6';
-import { urlApp } from './api.js?v=6df4ca6';
-import { urlFirmada } from './adjuntos.js?v=6df4ca6';
+import { el } from './ui/dom.js?v=9dd99fc';
+import { icono } from './ui/iconos.js?v=9dd99fc';
+import { boton } from './ui/tabla.js?v=9dd99fc';
+import { avisar } from './ui/aviso.js?v=9dd99fc';
+import { telefono } from './ui/formato.js?v=9dd99fc';
+import { urlApp } from './api.js?v=9dd99fc';
+import { urlFirmada } from './adjuntos.js?v=9dd99fc';
 
 const hora = (t) => new Date(t).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' });
 export function enlaceWhatsapp(tel, texto) {
@@ -40,14 +40,16 @@ async function filasDeLote(ctx, { origen, id, personas, titulo, casillas = null 
   return data.map((x) => {
     const p = de.get(x.persona_id) ?? {};
     const enlace = urlApp(`firmar/?t=${x.token}`);
-    const wa = enlaceWhatsapp(p.telefono, mensaje(ctx, p.nombre, titulo, enlace));
+    // Sin teléfono en la ficha, WhatsApp se abre con el mensaje listo y se elige el chat a mano
+    const conTel = enlaceWhatsapp(p.telefono, mensaje(ctx, p.nombre, titulo, enlace));
+    const wa = conTel ?? `https://wa.me/?text=${encodeURIComponent(mensaje(ctx, p.nombre, titulo, enlace))}`;
     const copiar = boton('Copiar enlace', { icono: 'copiar', onclick: async () => {
       try { await navigator.clipboard.writeText(mensaje(ctx, p.nombre, titulo, enlace)); avisar('Mensaje con el enlace copiado.'); } catch { avisar(enlace); }
     } });
     return el('div', { class: 'doc-fila' },
-      el('div', { class: 'doc-nombre' }, el('strong', {}, p.nombre ?? 'Persona'), el('span', { class: 'texto-suave texto-chico' }, wa ? telefono(p.telefono) : 'Sin teléfono en su ficha: copia el enlace y envíalo tú')),
+      el('div', { class: 'doc-nombre' }, el('strong', {}, p.nombre ?? 'Persona'), el('span', { class: 'texto-suave texto-chico' }, conTel ? telefono(p.telefono) : 'Sin teléfono en su ficha: en WhatsApp elige su chat')),
       el('div', { class: 'doc-acciones' }, copiar,
-        wa ? el('a', { class: 'boton boton-primario', href: wa, target: '_blank', rel: 'noopener' }, icono('chat', { tam: 16 }), 'WhatsApp') : null));
+        el('a', { class: 'boton boton-primario', href: wa, target: '_blank', rel: 'noopener' }, icono('chat', { tam: 16 }), 'WhatsApp')));
   });
 }
 

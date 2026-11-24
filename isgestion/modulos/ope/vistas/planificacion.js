@@ -2,13 +2,14 @@
 // Como InnovaGestión: "Disponibles" de cada día se arrastran a una faena (o se toca la persona y luego la faena);
 // un asignado arrastrado a Disponibles se quita; "Copiar día" replica el personal, vehículos, horario y preparador
 // a otros días; los días se pueden plegar (se recuerda en este equipo).
-import { el } from '../../../core/ui/dom.js?v=6df4ca6';
-import { icono } from '../../../core/ui/iconos.js?v=6df4ca6';
-import { boton } from '../../../core/ui/tabla.js?v=6df4ca6';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=6df4ca6';
-import { avisar } from '../../../core/ui/aviso.js?v=6df4ca6';
-import { hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, hhmm, esFinde } from '../../../core/ui/formato.js?v=6df4ca6';
-import { cargarBase, cargarSemana, faenasDelDia, etiquetaFaena, horarioDe, dotacionDe, dotTotal, turno, ocupacion, resumenWhatsApp, nombreCorto, partesDeRango, estadoParte } from '../datos.js?v=6df4ca6';
+import { el } from '../../../core/ui/dom.js?v=9dd99fc';
+import { icono } from '../../../core/ui/iconos.js?v=9dd99fc';
+import { boton } from '../../../core/ui/tabla.js?v=9dd99fc';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=9dd99fc';
+import { avisar } from '../../../core/ui/aviso.js?v=9dd99fc';
+import { hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, hhmm, esFinde } from '../../../core/ui/formato.js?v=9dd99fc';
+import { cargarBase, cargarSemana, faenasDelDia, etiquetaFaena, horarioDe, dotacionDe, dotTotal, turno, ocupacion, resumenWhatsApp, nombreCorto, partesDeRango, estadoParte } from '../datos.js?v=9dd99fc';
+import { navSemana } from '../../../core/ui/semana.js?v=9dd99fc';
 
 const estado = { lunes: lunesDe(hoyISO()), sel: null };   // sel: { persona_id, fecha } elegido para asignar tocando
 const PLEGADOS = 'isg.plan.plegados';
@@ -41,7 +42,7 @@ async function cargarDatos(ctx, lunes, domingo) {
     fresco && cache.obsAnt ? cache.obsAnt : ctx.api.from('ope_faena_obs').select('faena_id, ope_faenas(tercero_id, sitio_id, titulo, fecha_inicio)').eq('empresa_id', e).limit(3000),
     // Acreditación: asignados sin validar en el cliente de la faena (si el cliente pide documentos a los trabajadores)
     fresco && 'acr' in cache ? cache.acr : ctx.puede('acreditacion', 'ver') && ctx.puede('rrhh', 'ver')
-      ? import('../../acreditacion/trabajadores.js?v=6df4ca6').then(async (m) => ({ m, d: await m.cargarAcreditacion(ctx) })).catch(() => null) : null,
+      ? import('../../acreditacion/trabajadores.js?v=9dd99fc').then(async (m) => ({ m, d: await m.cargarAcreditacion(ctx) })).catch(() => null) : null,
   ]);
   cache = { empresa: e, lunes, base, semana, partes, obsAnt, acr, hora: fresco ? cache.hora : Date.now() };
   return cache;
@@ -185,11 +186,7 @@ export default async function vista(ctx) {
 
   return el('section', { class: 'listado' },
     el('header', { class: 'listado-cabecera' }, el('h1', {}, 'Planificación semanal'), el('div', { class: 'listado-acciones' }, acciones)),
-    el('div', { class: 'nav-periodo' },
-      el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Semana anterior', onclick: () => mover(-1) }, icono('volver')),
-      el('strong', {}, `Semana ${numSemana(lunes)} · ${fechaCorta(lunes)} – ${fechaCorta(domingo)}`),
-      el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Semana siguiente', onclick: () => mover(1) }, icono('derecha')),
-      boton('Hoy', { onclick: () => { estado.lunes = lunesDe(hoyISO()); if (leerDia() !== 'todos') guardarDia(hoyISO()); ctx.refrescar(); } })),
+    navSemana({ lunes, alMover: mover, alHoy: () => { estado.lunes = lunesDe(hoyISO()); if (leerDia() !== 'todos') guardarDia(hoyISO()); ctx.refrescar(); } }),
     tot.n ? el('div', { class: 'resumen-chips' },
       el('span', { class: 'chip chip-pend' }, `${tot.nec} necesarias`),
       el('span', { class: 'chip chip-ok' }, `${tot.asg} asignadas`),

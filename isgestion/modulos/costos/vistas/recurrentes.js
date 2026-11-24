@@ -1,17 +1,17 @@
-// Gastos recurrentes (arriendo, servicios básicos, asesorías, suscripciones): próximo cobro con semáforo,
-// equivalente mensual, costo por persona y "Generar el mes" (crea los gastos del mes por pagar).
-import { el } from '../../../core/ui/dom.js?v=6df4ca6';
-import { icono } from '../../../core/ui/iconos.js?v=6df4ca6';
-import { boton } from '../../../core/ui/tabla.js?v=6df4ca6';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=6df4ca6';
-import { avisar } from '../../../core/ui/aviso.js?v=6df4ca6';
-import { dinero, fechaLarga, hoyISO, nombreMes, sumarDias } from '../../../core/ui/formato.js?v=6df4ca6';
-import { cargarBase, nombreTercero, DOCS, proximoCobro, mensualCLP, tocaEnMes, generarMes, fechaEnMes } from '../datos.js?v=6df4ca6';
+// Pagos de cada mes (antes "Gastos recurrentes"; 2026-11-24, pedido de Enzo): recordatorio de lo que se paga todos los
+// meses (arriendo, servicios básicos, asesorías, suscripciones, colaciones) con un monto aproximado, porque cambia mes a
+// mes. Ya no se generan gastos con un botón: cada mes se carga el documento real en la Bandeja y aquí se ve si ya está
+// (un gasto del mes ligado al recordatorio o del mismo proveedor). Equivalente mensual y costo por persona.
+import { el } from '../../../core/ui/dom.js?v=9dd99fc';
+import { boton } from '../../../core/ui/tabla.js?v=9dd99fc';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=9dd99fc';
+import { avisar } from '../../../core/ui/aviso.js?v=9dd99fc';
+import { dinero, fechaLarga, hoyISO, nombreMes, sumarDias, rangoMes } from '../../../core/ui/formato.js?v=9dd99fc';
+import { cargarBase, nombreTercero, DOCS, proximoCobro, mensualCLP, tocaEnMes, fechaEnMes } from '../datos.js?v=9dd99fc';
 
 const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 const TC_KEY = 'isg.costos.dolar';
 const leerTc = () => { try { return Number(localStorage.getItem(TC_KEY)) || 0; } catch { return 0; } };
-const guardarTc = (v) => { try { localStorage.setItem(TC_KEY, String(v)); } catch { /* sin almacenamiento */ } };
 
 export default async function vista(ctx) {
   const e = ctx.empresa.id;
@@ -20,45 +20,48 @@ export default async function vista(ctx) {
     cargarBase(ctx),
     ctx.api.from('fin_recurrentes').select('*').eq('empresa_id', e).order('activo', { ascending: false }).order('orden').order('concepto'),
     ctx.api.from('persona_empresa').select('persona_id, personas(nombres, apellido_paterno)').eq('empresa_id', e).is('deleted_at', null).eq('estado', 'activo'),
-    ctx.api.from('fin_registros').select('recurrente_id').eq('empresa_id', e).eq('periodo', mes).is('deleted_at', null),
+    ctx.api.from('fin_registros').select('recurrente_id, tercero_id').eq('empresa_id', e).eq('tipo', 'gasto').gte('fecha', rangoMes(mes).desde).lte('fecha', rangoMes(mes).hasta).is('deleted_at', null),
   ]);
   if (rec.error) throw rec.error;
   const lista = rec.data;
   const personas = (per.data ?? []).map((p) => [p.persona_id, [p.personas?.nombres, p.personas?.apellido_paterno].filter(Boolean).join(' ')]);
   const nombrePersona = new Map(personas);
   const gastosCat = base.categorias.filter((c) => c.clase !== 'ingreso' && c.activo);
-  const ya = new Set((hechos.data ?? []).map((h) => h.recurrente_id));
-  const faltan = lista.filter((r) => tocaEnMes(r, mes) && !ya.has(r.id));
-  let tc = leerTc() || Math.round((await import('../../../core/economia.js?v=6df4ca6').then((m) => m.dolarDelDia()).catch(() => 0)) ?? 0);
+  // ¿Ya está en Gastos este mes? Un gasto ligado al recordatorio o del mismo proveedor
+  const conRec = new Set((hechos.data ?? []).map((h) => h.recurrente_id).filter(Boolean));
+  const conTer = new Set((hechos.data ?? []).map((h) => h.tercero_id).filter(Boolean));
+  const ya = { has: (id) => { const r = lista.find((x) => x.id === id); return conRec.has(id) || (!!r?.tercero_id && conTer.has(r.tercero_id)); } };
+  const faltan = lista.filter((r) => r.activo && tocaEnMes(r, mes) && !ya.has(r.id) && fechaEnMes(mes, r.dia) <= hoyISO());
+  const tc = leerTc() || Math.round((await import('../../../core/economia.js?v=9dd99fc').then((m) => m.dolarDelDia()).catch(() => 0)) ?? 0);
 
   const hoy = hoyISO();
   const semaforo = (r) => {
     if (!r.activo) return el('span', { class: 'chip chip-na' }, 'Inactivo');
-    // Si el cobro de este mes aún no se genera, se muestra ese (aunque la fecha ya pasó)
+    // Si el pago de este mes aún no está en Gastos, se muestra ese (aunque la fecha ya pasó)
     const pendienteMes = tocaEnMes(r, mes) && !ya.has(r.id);
     const f = pendienteMes ? fechaEnMes(mes, r.dia) : proximoCobro(r);
     if (!f) return el('span', { class: 'chip chip-na' }, 'Sin próximo cobro');
     const dias = Math.round((new Date(`${f}T12:00`) - new Date(`${hoy}T12:00`)) / 864e5);
     const generado = f.slice(0, 7) === mes && ya.has(r.id);
-    if (pendienteMes && dias < 0) return el('span', { class: 'chip chip-venc' }, `${fechaLarga(f)} · por generar`);
+    if (pendienteMes && dias < 0) return el('span', { class: 'chip chip-venc' }, `${fechaLarga(f)} · falta cargarlo`);
     return el('span', { class: `chip ${generado ? 'chip-ok' : dias <= 5 ? 'chip-prox' : 'chip-pend'}` },
-      `${fechaLarga(f)}${generado ? ' · generado' : dias === 0 ? ' · hoy' : dias <= 5 ? ` · en ${dias} d` : ''}`);
+      `${fechaLarga(f)}${generado ? ' · ya está en Gastos' : dias === 0 ? ' · hoy' : dias <= 5 ? ` · en ${dias} d` : ''}`);
   };
 
   const editar = (r) => abrirFormulario({
-    titulo: r ? r.concepto : 'Nuevo gasto recurrente',
+    titulo: r ? r.concepto : 'Nuevo pago de cada mes',
     campos: [
       { id: 'concepto', etiqueta: 'Concepto', requerido: true, valor: r?.concepto ?? '' },
       { id: 'categoria', etiqueta: 'Categoría', opciones: gastosCat.map((c) => [c.id, c.nombre]), valor: r?.categoria_id ?? gastosCat[0]?.id },
       ...(ctx.config?.centros ? [{ id: 'centro', etiqueta: 'Centro de costo', opciones: [['', 'Sin centro'], ...base.centros.filter((c) => c.activo).map((c) => [c.id, c.nombre])], valor: r?.centro_id ?? '' }] : []),
       { id: 'tercero', etiqueta: 'Proveedor', opciones: [['', 'Sin proveedor del maestro'], ...base.terceros.filter((t) => t.tipo?.includes('proveedor')).map((t) => [t.id, nombreTercero(t)])], valor: r?.tercero_id ?? '' },
-      { id: 'monto', etiqueta: 'Monto (total del documento)', tipo: 'number', requerido: true, valor: r?.monto ?? '' },
+      { id: 'monto', etiqueta: 'Monto aproximado (cambia mes a mes)', tipo: 'number', requerido: true, valor: r?.monto ?? '' },
       { id: 'moneda', etiqueta: 'Moneda', opciones: [['CLP', 'Pesos (CLP)'], ['USD', 'Dólares (USD)']], valor: r?.moneda ?? 'CLP' },
       { id: 'ciclo', etiqueta: 'Ciclo', opciones: [['mensual', 'Mensual'], ['anual', 'Anual']], valor: r?.ciclo ?? 'mensual' },
       { id: 'dia', etiqueta: 'Día de cobro', tipo: 'number', valor: r?.dia ?? '' },
       { id: 'mes_anual', etiqueta: 'Mes de cobro (si es anual)', opciones: [['', '—'], ...MESES.map((m, i) => [String(i + 1), m])], valor: r?.mes_anual ? String(r.mes_anual) : '' },
       { id: 'doc', etiqueta: 'Documento', opciones: DOCS.filter(([k]) => k !== 'guia'), valor: r?.doc_tipo ?? 'factura' },
-      { id: 'autopago', etiqueta: 'Pago automático (queda pagado al generarlo)', opciones: [['no', 'No'], ['si', 'Sí']], valor: r?.autopago ? 'si' : 'no' },
+      { id: 'autopago', etiqueta: 'Se paga solo (cargo automático o PAC)', opciones: [['no', 'No'], ['si', 'Sí']], valor: r?.autopago ? 'si' : 'no' },
       { id: 'asignado', etiqueta: 'Asignado a (costo por persona)', opciones: [['', 'Empresa'], ...personas], valor: r?.asignado_a ?? '' },
       { id: 'desde', etiqueta: 'Rige desde', tipo: 'date', requerido: true, valor: r?.desde ?? hoyISO() },
       { id: 'hasta', etiqueta: 'Hasta (opcional)', tipo: 'date', valor: r?.hasta ?? '' },
@@ -77,25 +80,9 @@ export default async function vista(ctx) {
       const res = r ? await ctx.api.from('fin_recurrentes').update(datos).eq('id', r.id)
         : await ctx.api.from('fin_recurrentes').insert({ ...datos, empresa_id: e, orden: lista.length + 1 });
       if (res.error) throw new Error(res.error.message);
-      avisar('Guardado. Los meses ya generados no cambian.'); ctx.refrescar();
+      avisar('Guardado.'); ctx.refrescar();
     },
   });
-
-  const generar = () => {
-    const usd = faltan.some((r) => r.moneda === 'USD');
-    abrirFormulario({
-      titulo: `Generar los gastos de ${nombreMes(mes)}`,
-      mensaje: faltan.length ? `Se crearán ${faltan.length} gastos (${faltan.map((r) => r.concepto).join(', ')}), por pagar salvo los de pago automático.`
-        : 'Todos los recurrentes del mes ya están generados.',
-      campos: usd ? [{ id: 'tc', etiqueta: 'Valor del dólar (CLP)', tipo: 'number', requerido: true, valor: tc || '' }] : [],
-      textoGuardar: 'Generar',
-      alGuardar: async (v) => {
-        if (usd) { tc = Number(v.tc); guardarTc(tc); }
-        const n = await generarMes(ctx, lista, mes, tc);
-        avisar(n ? `${n} ${n === 1 ? 'gasto generado' : 'gastos generados'}.` : 'No había nada por generar.'); ctx.refrescar();
-      },
-    });
-  };
 
   const activos = lista.filter((r) => r.activo);
   const total = activos.reduce((s, r) => s + mensualCLP(r, tc), 0);
@@ -106,18 +93,18 @@ export default async function vista(ctx) {
 
   const acciones = [];
   if (ctx.puede('costos', 'crear')) {
-    acciones.push(boton(`Generar ${nombreMes(mes)}${faltan.length ? ` (${faltan.length})` : ''}`, { icono: 'calendario', tipo: faltan.length ? 'primario' : 'secundario', onclick: generar }));
-    acciones.push(boton('Nuevo recurrente', { icono: 'mas', onclick: () => (gastosCat.length ? editar(null) : avisar('Primero crea una categoría de gasto.', 'error')) }));
+    acciones.push(boton('Nuevo pago de cada mes', { icono: 'mas', onclick: () => (gastosCat.length ? editar(null) : avisar('Primero crea una categoría de gasto.', 'error')) }));
   }
   const puedeEditar = ctx.puede('costos', 'editar');
 
   return el('section', { class: 'listado' },
-    el('header', { class: 'listado-cabecera' }, el('h1', {}, 'Gastos recurrentes'), el('div', { class: 'listado-acciones' }, acciones)),
+    el('header', { class: 'listado-cabecera' }, el('div', {}, el('h1', {}, 'Pagos de cada mes'),
+      el('p', { class: 'texto-suave' }, 'Recordatorio de lo que se paga todos los meses. El monto es aproximado: cada mes se carga el documento real (o el gasto sin papel) en la Bandeja, y aquí se marca solo cuando ya está.')), el('div', { class: 'listado-acciones' }, acciones)),
     el('div', { class: 'fin-tarjetas' },
       el('div', { class: 'ficha doc-grupo fin-tarjeta' }, el('span', { class: 'texto-suave texto-chico' }, 'Mensual estimado'), el('strong', {}, dinero(total)),
         el('span', { class: 'texto-suave texto-chico' }, `${activos.length} activos · anuales / 12${sinTc ? ' · USD sin valor del dólar' : tc ? ` · dólar ${dinero(tc)}` : ''}`)),
       el('div', { class: `ficha doc-grupo fin-tarjeta ${proximos ? 'fin-alerta' : ''}` }, el('span', { class: 'texto-suave texto-chico' }, 'Cobros en los próximos 7 días'), el('strong', {}, String(proximos))),
-      el('div', { class: `ficha doc-grupo fin-tarjeta ${faltan.length ? 'fin-alerta' : ''}` }, el('span', { class: 'texto-suave texto-chico' }, `Por generar en ${nombreMes(mes)}`), el('strong', {}, String(faltan.length)))),
+      el('div', { class: `ficha doc-grupo fin-tarjeta ${faltan.length ? 'fin-alerta' : ''}` }, el('span', { class: 'texto-suave texto-chico' }, `Faltan cargar de ${nombreMes(mes)}`), el('strong', {}, String(faltan.length)))),
     el('div', { class: 'tabla-contenedor' }, el('table', { class: 'tabla' },
       el('thead', {}, el('tr', {}, ['Concepto', 'Categoría', 'Monto', 'Ciclo', 'Próximo cobro', 'Asignado'].map((t, i) => el('th', { class: i === 2 ? 'num' : '' }, t)))),
       el('tbody', {}, lista.length ? lista.map((r) => el('tr', { class: r.activo ? '' : 'fila-inactiva' },
@@ -128,8 +115,8 @@ export default async function vista(ctx) {
         el('td', {}, r.ciclo === 'anual' ? `Anual (${MESES[r.mes_anual - 1]})` : `Mensual${r.dia ? `, día ${r.dia}` : ''}`),
         el('td', {}, semaforo(r)),
         el('td', {}, r.asignado_a ? nombrePersona.get(r.asignado_a) ?? 'Persona' : 'Empresa')))
-        : el('tr', {}, el('td', { colspan: 6, class: 'tabla-vacia' }, 'Sin gastos recurrentes. Agrega el arriendo, internet, asesorías y suscripciones.'))))),
+        : el('tr', {}, el('td', { colspan: 6, class: 'tabla-vacia' }, 'Sin pagos de cada mes. Agrega el arriendo, internet, asesorías, suscripciones o colaciones.'))))),
     porPersona.size ? el('div', { class: 'ficha doc-grupo' }, el('h2', {}, 'Costo mensual por persona'),
       [...porPersona].map(([id, m]) => el('div', { class: 'doc-fila' }, el('span', { class: 'doc-nombre' }, nombrePersona.get(id) ?? 'Persona'), el('strong', {}, dinero(m))))) : null,
-    el('p', { class: 'texto-suave texto-chico' }, icono('alerta', { tam: 14 }), ' Cambiar un monto no reescribe los meses ya generados: corrige el gasto de ese mes en Gastos e ingresos.'));
+    el('p', { class: 'texto-suave texto-chico' }, 'Un pago sin boleta ni factura (ej.: solo transferencia) se carga en la Bandeja como "Gasto sin papel", con el comprobante como foto: queda como no declarado.'));
 }

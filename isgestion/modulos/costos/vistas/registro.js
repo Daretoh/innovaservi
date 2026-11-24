@@ -1,21 +1,21 @@
 // Gasto u otro ingreso.
 // - Nuevo:  #/costos.registro?tipo=gasto|ingreso
 // - Ver y editar: #/costos.registro?id=<id>
-import { el } from '../../../core/ui/dom.js?v=6df4ca6';
-import { icono } from '../../../core/ui/iconos.js?v=6df4ca6';
-import { boton } from '../../../core/ui/tabla.js?v=6df4ca6';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=6df4ca6';
-import { avisar } from '../../../core/ui/aviso.js?v=6df4ca6';
-import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=6df4ca6';
-import { dinero, hoyISO, fechaLarga, sumarDias } from '../../../core/ui/formato.js?v=6df4ca6';
-import { leerConIA, iaDisponible, numIA, fechaIA, pagadoAlComprar, textoModelo } from '../../../core/lector-ia.js?v=6df4ca6';
-import { cargarBase, nombreTercero, DOCS, MEDIOS, netoDe, estadosDe, estadoInicial, nombreEstado, opcionesACuenta } from '../datos.js?v=6df4ca6';
+import { el } from '../../../core/ui/dom.js?v=9dd99fc';
+import { icono } from '../../../core/ui/iconos.js?v=9dd99fc';
+import { boton } from '../../../core/ui/tabla.js?v=9dd99fc';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=9dd99fc';
+import { avisar } from '../../../core/ui/aviso.js?v=9dd99fc';
+import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=9dd99fc';
+import { dinero, hoyISO, fechaLarga, sumarDias } from '../../../core/ui/formato.js?v=9dd99fc';
+import { leerConIA, iaDisponible, numIA, fechaIA, pagadoAlComprar, textoModelo } from '../../../core/lector-ia.js?v=9dd99fc';
+import { cargarBase, nombreTercero, DOCS, MEDIOS, netoDe, estadosDe, estadoInicial, nombreEstado, opcionesACuenta } from '../datos.js?v=9dd99fc';
 
 
 const ARCHIVOS = ['application/pdf', 'image/jpeg', 'image/png'];
 
 export default async function vista(ctx) {
-  const volver = el('a', { class: 'volver', href: ctx.ruta('costos.registros') }, icono('volver', { tam: 16 }), 'Gastos e ingresos');
+  const volver = el('a', { class: 'volver', href: ctx.ruta('costos.registros') }, icono('volver', { tam: 16 }), 'Gastos');
   const conTaller = ctx.puede('taller', 'ver');
   const conFaenas = ctx.puede('ope', 'ver');
   const [base, reg, ordenes, faenas] = await Promise.all([

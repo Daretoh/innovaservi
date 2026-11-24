@@ -4,14 +4,15 @@
 // por trabajador y se envía a firmar por WhatsApp: con una sola firma su sello queda bajo cada documento (función firmar).
 // Los documentos salen de Prevención SST → Documentos preventivos (última versión en PDF) o de un PDF que se sube aquí.
 // pdf-lib 1.17.1 fijo desde cdnjs, se carga solo al usarlo.
-import { el } from '../../core/ui/dom.js?v=6df4ca6';
-import { icono } from '../../core/ui/iconos.js?v=6df4ca6';
-import { boton } from '../../core/ui/tabla.js?v=6df4ca6';
-import { avisar } from '../../core/ui/aviso.js?v=6df4ca6';
-import { hoyISO, fechaLarga } from '../../core/ui/formato.js?v=6df4ca6';
-import { urlFirmada, subirArchivo, eliminarArchivo } from '../../core/adjuntos.js?v=6df4ca6';
-import { enviarVarios } from '../../core/firmas.js?v=6df4ca6';
-import { cargarPlantillas, pdfDePlantilla } from '../documentos/editor.js?v=6df4ca6';
+import { el } from '../../core/ui/dom.js?v=9dd99fc';
+import { icono } from '../../core/ui/iconos.js?v=9dd99fc';
+import { boton } from '../../core/ui/tabla.js?v=9dd99fc';
+import { avisar } from '../../core/ui/aviso.js?v=9dd99fc';
+import { hoyISO, fechaLarga } from '../../core/ui/formato.js?v=9dd99fc';
+import { urlFirmada, subirArchivo, eliminarArchivo } from '../../core/adjuntos.js?v=9dd99fc';
+import { enviarVarios } from '../../core/firmas.js?v=9dd99fc';
+import { cargarPlantillas, pdfDePlantilla } from '../documentos/editor.js?v=9dd99fc';
+import { cargarDestinos, selectDestino, leerDestino } from './acreditacion.js?v=9dd99fc';
 
 const PDFLIB = 'https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js';
 const MM = 72 / 25.4;
@@ -125,7 +126,7 @@ async function armarPdf(t, docs, rel, fecha, colorHex) {
 
 // Un registro de entrega por trabajador, con un PDF por documento (SST 005: columna documentos). El registro guarda el
 // primero como su archivo; la función firmar sella cada uno con la casilla de la persona.
-async function guardarEntrega(ctx, { id, t, ds, rel, fecha, tipo, tema, contenido }) {
+async function guardarEntrega(ctx, { id, t, ds, rel, fecha, tipo, tema, contenido, lote, destino }) {
   const e = ctx.empresa.id, subidos = [], documentos = [];
   try {
     for (const [k, d] of ds.entries()) {
@@ -137,7 +138,7 @@ async function guardarEntrega(ctx, { id, t, ds, rel, fecha, tipo, tema, contenid
       documentos.push({ titulo: [d.codigo, d.titulo].filter(Boolean).join(' · ').slice(0, 300), codigo: d.codigo || null, version: d.version || null, archivo: ruta, casillas });
     }
     const { error } = await ctx.api.from('sst_entregas').insert({ id, empresa_id: e, tipo, tema, fecha, relator: rel?.nombre || null, contenido, archivo: documentos[0].archivo,
-      firma_casillas: documentos[0].casillas, documentos });
+      firma_casillas: documentos[0].casillas, documentos, lote_id: lote, ...destino });
     if (error) throw new Error(error.message);
   } catch (err) {
     for (const r of subidos) await eliminarArchivo(ctx.api, r).catch(() => {});
@@ -155,11 +156,11 @@ const bajar = async (ctx, ruta) => {
 };
 
 export async function abrirEntregaIndividual(ctx, { alGuardado = null } = {}) {
-  if (!document.getElementById('sst-individual-css')) document.head.append(el('link', { id: 'sst-individual-css', rel: 'stylesheet', href: new URL('./individual.css?v=6df4ca6', import.meta.url).href }));
+  if (!document.getElementById('sst-individual-css')) document.head.append(el('link', { id: 'sst-individual-css', rel: 'stylesheet', href: new URL('./individual.css?v=9dd99fc', import.meta.url).href }));
   const e = ctx.empresa.id;
   const [vinc, docsR, gen] = await Promise.all([
     ctx.api.from('persona_empresa').select('persona_id, cargo, estado, personas(nombres, apellido_paterno, apellido_materno, rut, telefono)').eq('empresa_id', e).is('deleted_at', null),
-    ctx.api.from('sst_documentos').select('id, codigo, titulo, tipo, sst_documento_versiones(version, fecha, archivo, created_at)').eq('empresa_id', e),
+    ctx.api.from('sst_documentos').select('id, codigo, titulo, tipo, sst_documento_versiones(version, fecha, archivo, created_at)').eq('empresa_id', e).is('deleted_at', null),
     ctx.api.from('gen_config').select('prevencionista, prev_cargo, firma_prev_ruta').eq('empresa_id', e).maybeSingle(),
   ]);
   if (vinc.error) throw vinc.error;
@@ -214,6 +215,9 @@ export async function abrirEntregaIndividual(ctx, { alGuardado = null } = {}) {
   const selRel = el('select', { class: 'campo', id: 'ind-rel' }, el('option', { value: '' }, 'Sin relator'),
     gente.map((p) => el('option', { value: p.id, selected: prev?.id === p.id }, p.nombre)));
   const fecha = el('input', { type: 'date', class: 'campo', id: 'ind-fecha', value: hoyISO() });
+  // Para qué acreditación es (SST 006): la entrega queda en ese mandante en Acreditación
+  const dest = await cargarDestinos(ctx).catch(() => null);
+  const selDest = dest ? selectDestino(dest, '', 'ind-acr') : null;
 
   // Relator con su firma (si es la prevencionista con su firma guardada)
   let firmaPrev;
@@ -264,10 +268,10 @@ export async function abrirEntregaIndividual(ctx, { alGuardado = null } = {}) {
       const nombres = ds.map((d) => d.codigo || d.titulo);
       const tema = `Entrega individual: ${nombres.join(', ')}`.slice(0, 200);
       const tipo = ds.every((d) => d.tipo === 'pts') ? 'pts' : 'otro';
-      const lotes = []; let primero = null;
+      const lotes = []; let primero = null; const lote = crypto.randomUUID(); const destino = leerDestino(selDest?.value);
       for (const t of gente.filter((p) => elegidosT.has(p.id))) {
         avisar(`Armando el documento de ${t.nombre}…`);
-        const id = await guardarEntrega(ctx, { id: crypto.randomUUID(), t, ds: await conDatos(ds, t), rel, fecha: f, tipo, tema,
+        const id = await guardarEntrega(ctx, { id: crypto.randomUUID(), t, ds: await conDatos(ds, t), rel, fecha: f, tipo, tema, lote, destino,
           contenido: ds.map((d) => [d.codigo, d.titulo, d.version ? `versión ${d.version}` : ''].filter(Boolean).join(' · ')).join('\n') });
         primero ??= id;
         lotes.push({ origen: 'sst_entrega', id, personas: [t], titulo: tema });
@@ -302,6 +306,7 @@ export async function abrirEntregaIndividual(ctx, { alGuardado = null } = {}) {
       el('div', { class: 'ind-fila' },
         el('div', { class: 'form-fila' }, el('label', { for: 'ind-rel' }, 'Relator'), selRel),
         el('div', { class: 'form-fila' }, el('label', { for: 'ind-fecha' }, 'Fecha de entrega'), fecha)),
+      selDest ? el('div', { class: 'form-fila' }, el('label', { for: 'ind-acr' }, 'Para la acreditación de (mandante y lugar)'), selDest) : null,
       el('div', { class: 'modal-pie' }, boton('Vista previa', { icono: 'documento', onclick: verPrevia }), bGuardar)));
   document.body.append(d);
   d.showModal();

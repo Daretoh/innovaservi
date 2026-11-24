@@ -1,37 +1,48 @@
 // Requisitos de un mandante: tabla de requisitos mensuales por mes, requisitos únicos y su configuración.
 // Ruta: #/acreditacion.mandante?id=<tercero>
-import { el } from '../../../core/ui/dom.js?v=6df4ca6';
-import { icono } from '../../../core/ui/iconos.js?v=6df4ca6';
-import { boton } from '../../../core/ui/tabla.js?v=6df4ca6';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=6df4ca6';
-import { avisar } from '../../../core/ui/aviso.js?v=6df4ca6';
-import { subirArchivo, eliminarArchivo } from '../../../core/adjuntos.js?v=6df4ca6';
-import { fechaLarga, hoyISO, moverMes, nombreMes } from '../../../core/ui/formato.js?v=6df4ca6';
-import { cargarDocumentos, cumplimientoMandante, nombreTercero, mesActual, CHIP, textoEstado } from '../datos.js?v=6df4ca6';
-import { REQUISITOS } from '../sugeridos.js?v=6df4ca6';
-import { abrir } from './documentos.js?v=6df4ca6';
-import { esNomina, generarNomina } from '../nomina.js?v=6df4ca6';
-import { seccionTrabajadores } from '../trabajadores.js?v=6df4ca6';
+import { el } from '../../../core/ui/dom.js?v=9dd99fc';
+import { icono } from '../../../core/ui/iconos.js?v=9dd99fc';
+import { boton } from '../../../core/ui/tabla.js?v=9dd99fc';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=9dd99fc';
+import { avisar } from '../../../core/ui/aviso.js?v=9dd99fc';
+import { subirArchivo, eliminarArchivo } from '../../../core/adjuntos.js?v=9dd99fc';
+import { fechaLarga, hoyISO, moverMes, nombreMes } from '../../../core/ui/formato.js?v=9dd99fc';
+import { cargarDocumentos, cumplimientoMandante, nombreTercero, mesActual, CHIP, textoEstado } from '../datos.js?v=9dd99fc';
+import { REQUISITOS } from '../sugeridos.js?v=9dd99fc';
+import { abrir } from './documentos.js?v=9dd99fc';
+import { esNomina, generarNomina } from '../nomina.js?v=9dd99fc';
+import { seccionTrabajadores } from '../trabajadores.js?v=9dd99fc';
+import { seccionEntregas } from '../entregas.js?v=9dd99fc';
+import { barraAvance } from '../../sst/acreditacion.js?v=9dd99fc';
 
 const ARCHIVOS = ['application/pdf', 'image/jpeg', 'image/png',
   'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
-const estado = { fin: null };   // último mes visible (por defecto el actual)
+const estado = { fin: null, lugar: {} };   // último mes visible (por defecto el actual) y lugar elegido por mandante
 
 export default async function vista(ctx) {
   const terceroId = ctx.params.id;
-  const [{ data: c }, req, cum, docs] = await Promise.all([
+  const [{ data: c }, reqTodos, cum, docs, sit] = await Promise.all([
     ctx.api.from('terceros').select('id, razon_social, nombre_fantasia').eq('id', terceroId).maybeSingle(),
     ctx.api.from('acr_requisitos').select('*').eq('tercero_id', terceroId).order('orden').order('nombre'),
     ctx.api.from('acr_cumplimientos').select('*').eq('empresa_id', ctx.empresa.id),
     cargarDocumentos(ctx),
+    ctx.api.from('ope_sitios').select('id, nombre').eq('empresa_id', ctx.empresa.id).eq('tercero_id', terceroId).order('nombre').then((r) => r, () => ({ data: [] })),
   ]);
   const volver = el('a', { class: 'volver', href: ctx.ruta('acreditacion.mandantes') }, icono('volver', { tam: 16 }), 'Requisitos por mandante');
   if (!c) return el('section', { class: 'listado' }, volver, el('h1', {}, 'Mandante no encontrado'));
-  if (req.error) throw req.error;
+  if (reqTodos.error) throw reqTodos.error;
+  // Lugares del mandante (Faenas): SAL LOBOS → Camanchaca, Salmones Austral, Aquachile… Cada uno pide lo suyo (Acreditación 004)
+  const sitios = sit.error ? [] : (sit.data ?? []);
+  let lugar = estado.lugar[terceroId] ?? '';
+  if (lugar && !sitios.some((x) => x.id === lugar)) lugar = '';
+  const deLugar = (sid) => reqTodos.data.filter((r) => !r.sitio_id || (sid && r.sitio_id === sid));
+  const req = { data: deLugar(lugar) };
+  const nombreLugar = (sid) => sitios.find((x) => x.id === sid)?.nombre ?? '';
   if (cum.error) throw cum.error;
   const ids = new Set(req.data.map((r) => r.id));
   const propios = cum.data.filter((x) => ids.has(x.requisito_id));
   const k = cumplimientoMandante(req.data, propios, docs.tipos);
+  const kDe = (sid) => { const rs = deLugar(sid); const is = new Set(rs.map((r) => r.id)); return rs.length ? cumplimientoMandante(rs, cum.data.filter((x) => is.has(x.requisito_id)), docs.tipos) : null; };
   const puede = { crear: ctx.puede('acreditacion', 'crear'), editar: ctx.puede('acreditacion', 'editar') };
 
   // Meses visibles: 6 hasta el mes actual (el actual se puede ir subiendo antes de que se exija)
@@ -58,8 +69,9 @@ export default async function vista(ctx) {
         : null);
   };
   const nombreReq = (r) => el('div', {},
-    puede.editar ? el('a', { href: '#', onclick: (ev) => { ev.preventDefault(); requisito(ctx, c, r, docs.tipos); } }, r.nombre) : r.nombre,
+    puede.editar ? el('a', { href: '#', onclick: (ev) => { ev.preventDefault(); requisito(ctx, c, r, docs.tipos, sitios, lugar); } }, r.nombre) : r.nombre,
     r.nota ? el('div', { class: 'texto-suave texto-chico' }, r.nota) : null,
+    lugar && !r.sitio_id ? el('span', { class: 'chip chip-na' }, 'Todos los lugares') : null,
     r.activo ? null : el('span', { class: 'chip chip-na' }, 'Inactivo'));
 
   const mensuales = req.data.filter((r) => r.periodicidad === 'mensual');
@@ -80,14 +92,25 @@ export default async function vista(ctx) {
   };
 
   const acciones = [];
-  if (puede.crear) acciones.push(boton('Agregar requisito', { icono: 'mas', onclick: () => requisito(ctx, c, null, docs.tipos) }));
-  if (puede.crear && !req.data.length) acciones.push(boton('Cargar requisitos sugeridos', { icono: 'mas', tipo: 'primario', onclick: (ev) => sugeridos(ctx, c, docs.tipos, ev.currentTarget) }));
+  if (puede.crear) acciones.push(boton(lugar ? `Agregar requisito de ${nombreLugar(lugar)}` : 'Agregar requisito', { icono: 'mas', onclick: () => requisito(ctx, c, null, docs.tipos, sitios, lugar) }));
+  if (puede.crear && !reqTodos.data.length) acciones.push(boton('Cargar requisitos sugeridos', { icono: 'mas', tipo: 'primario', onclick: (ev) => sugeridos(ctx, c, docs.tipos, ev.currentTarget) }));
+
+  // Pestañas: General (lo que piden todos los lugares) y cada lugar (lo general + lo propio), con su % al día
+  const pct = (x) => (x ? el('span', { class: `chip ${x.pct === 100 ? 'chip-ok' : x.pct >= 80 ? 'chip-prox' : 'chip-venc'}` }, `${x.pct}%`) : null);
+  const pestanas = sitios.length ? el('div', { class: 'acr-lugares', role: 'tablist', 'aria-label': 'Lugar' },
+    [['', 'General (todos los lugares)'], ...sitios.map((x) => [x.id, x.nombre])].map(([sid, t]) =>
+      el('button', { type: 'button', role: 'tab', class: 'acr-lugar-tab', 'aria-selected': String(sid === lugar),
+        onclick: () => { estado.lugar[terceroId] = sid; ctx.refrescar(); } }, t, pct(kDe(sid)),
+        sid && !reqTodos.data.some((r) => r.sitio_id === sid) ? el('span', { class: 'texto-suave texto-chico' }, 'sin propios') : null))) : null;
 
   return el('section', { class: 'listado' },
     volver,
     el('header', { class: 'listado-cabecera' },
-      el('div', {}, el('h1', {}, nombreTercero(c)), el('p', { class: 'texto-suave' }, req.data.length ? `${k.pct}% al día · ${k.pendientes ? `${k.pendientes} ${k.pendientes === 1 ? 'pendiente' : 'pendientes'}` : 'nada pendiente'}` : 'Sin requisitos configurados')),
+      el('div', {}, el('h1', {}, lugar ? `${nombreTercero(c)} → ${nombreLugar(lugar)}` : nombreTercero(c)), el('p', { class: 'texto-suave' }, req.data.length ? `${k.pct}% al día · ${k.pendientes ? `${k.pendientes} ${k.pendientes === 1 ? 'pendiente' : 'pendientes'}` : 'nada pendiente'}` : 'Sin requisitos configurados')),
       el('div', { class: 'listado-acciones' }, acciones)),
+    pestanas,
+    lugar ? el('p', { class: 'texto-suave texto-chico' }, `Lo que pide ${nombreLugar(lugar)}: los requisitos generales del mandante más los propios de este lugar.`) : sitios.length ? el('p', { class: 'texto-suave texto-chico' }, 'Requisitos que piden todos los lugares de este mandante. Elige un lugar para ver o agregar lo que pide solo ese cliente.') : null,
+    req.data.length ? barraAvance(k.pct, 100, `Requisitos de empresa: ${k.pct}% al día`) : null,
     mensuales.length ? el('div', { class: 'nav-periodo' },
       el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Meses anteriores', onclick: () => mover(-6) }, icono('volver')),
       el('strong', {}, `${nombreMes(meses[0])} – ${nombreMes(meses[5])}`),
@@ -95,8 +118,9 @@ export default async function vista(ctx) {
       estado.fin ? boton('Hoy', { onclick: () => { estado.fin = null; ctx.refrescar(); } }) : null) : null,
     tablaMensual,
     unicos.length ? el('div', { class: 'ficha doc-grupo' }, el('h2', {}, 'Requisitos únicos'), unicos.map(filaUnica)) : null,
-    !req.data.length ? el('p', { class: 'texto-suave' }, 'Agrega lo que pide este mandante (F30-1, Previred, nómina, etc.) o carga los sugeridos.') : null,
+    !req.data.length ? el('p', { class: 'texto-suave' }, lugar ? `Agrega lo que pide ${nombreLugar(lugar)}.` : 'Agrega lo que pide este mandante (F30-1, Previred, nómina, etc.) o carga los sugeridos.') : null,
     el('p', { class: 'texto-suave texto-chico' }, 'Un mes se exige desde el mes siguiente (el pendiente en rojo es lo que ya debería estar subido). Los requisitos únicos ligados a un documento de empresa se cumplen con su versión vigente.'),
+    await seccionEntregas(ctx, c, { sitio: lugar || null }).catch((err) => el('p', { class: 'texto-error' }, `Documentos firmados: ${err.message}`)),
     ctx.puede('rrhh', 'ver') ? await seccionTrabajadores(ctx, c).catch((err) => el('p', { class: 'texto-error' }, `Acreditación de trabajadores: ${err.message}`)) : null);
 }
 
@@ -132,11 +156,12 @@ function marcar(ctx, r, periodo, x) {
   });
 }
 
-function requisito(ctx, c, r, tipos) {
+function requisito(ctx, c, r, tipos, sitios = [], lugar = '') {
   abrirFormulario({
     titulo: r ? 'Requisito' : `Nuevo requisito · ${nombreTercero(c)}`,
     campos: [
       { id: 'nombre', etiqueta: 'Nombre', requerido: true, valor: r?.nombre ?? '', ayuda: 'Ej.: Certificado F30-1, Planillas Previred, Nómina de trabajadores, o un documento propio del cliente como el contrato o la OC (único, se sube al marcarlo).' },
+      ...(sitios.length ? [{ id: 'sitio_id', etiqueta: 'Lo pide', opciones: [['', 'Todos los lugares del mandante'], ...sitios.map((x) => [x.id, `Solo ${x.nombre}`])], valor: r ? r.sitio_id ?? '' : lugar }] : []),
       { id: 'periodicidad', etiqueta: 'Periodicidad', opciones: [['mensual', 'Mensual'], ['unica', 'Una vez (o según su vencimiento)']], valor: r?.periodicidad ?? 'mensual' },
       { id: 'tipo_id', etiqueta: 'Si es único: documento de empresa que lo cumple', opciones: [['', 'Ninguno (se marca a mano)'], ...tipos.filter((t) => t.activo).map((t) => [t.id, t.nombre])], valor: r?.tipo_id ?? '' },
       { id: 'desde', etiqueta: 'Se exige desde el mes', tipo: 'month', requerido: true, valor: r?.desde ?? mesActual() },
@@ -153,12 +178,12 @@ function requisito(ctx, c, r, tipos) {
       }
       const datos = {
         nombre: v.nombre.trim(), periodicidad: v.periodicidad, tipo_id: v.periodicidad === 'unica' ? v.tipo_id || null : null,
-        desde: v.desde, nota: v.nota.trim() || null, orden: Number(v.orden) || 0, ...(r ? { activo: v.activo === 'true' } : {}),
+        desde: v.desde, nota: v.nota.trim() || null, orden: Number(v.orden) || 0, ...(sitios.length ? { sitio_id: v.sitio_id || null } : {}), ...(r ? { activo: v.activo === 'true' } : {}),
       };
       const res = r
         ? await ctx.api.from('acr_requisitos').update(datos).eq('id', r.id)
         : await ctx.api.from('acr_requisitos').insert({ ...datos, empresa_id: ctx.empresa.id, tercero_id: c.id });
-      if (res.error) throw new Error(res.error.code === '23505' ? 'Este mandante ya tiene un requisito con ese nombre.' : res.error.message);
+      if (res.error) throw new Error(res.error.code === '23505' ? 'Ya hay un requisito con ese nombre para ese lugar.' : res.error.message);
       avisar('Guardado.'); ctx.refrescar();
     },
   });

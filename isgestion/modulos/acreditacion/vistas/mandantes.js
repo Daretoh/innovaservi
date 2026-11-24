@@ -1,10 +1,12 @@
 // Requisitos por mandante: resumen de cumplimiento de cada cliente que acredita a la empresa.
-import { el } from '../../../core/ui/dom.js?v=6df4ca6';
-import { icono } from '../../../core/ui/iconos.js?v=6df4ca6';
-import { nombreMes, moverMes } from '../../../core/ui/formato.js?v=6df4ca6';
-import { cargarDocumentos, cumplimientoMandante, nombreTercero, mesActual } from '../datos.js?v=6df4ca6';
-import { aQuienValidar } from '../trabajadores.js?v=6df4ca6';
-import { fechaLarga } from '../../../core/ui/formato.js?v=6df4ca6';
+import { el } from '../../../core/ui/dom.js?v=9dd99fc';
+import { icono } from '../../../core/ui/iconos.js?v=9dd99fc';
+import { nombreMes, moverMes } from '../../../core/ui/formato.js?v=9dd99fc';
+import { cargarDocumentos, cumplimientoMandante, nombreTercero, mesActual } from '../datos.js?v=9dd99fc';
+import { aQuienValidar } from '../trabajadores.js?v=9dd99fc';
+import { avancePorMandante } from '../entregas.js?v=9dd99fc';
+import { barraAvance, cargarDestinos } from '../../sst/acreditacion.js?v=9dd99fc';
+import { fechaLarga } from '../../../core/ui/formato.js?v=9dd99fc';
 
 export default async function vista(ctx) {
   const e = ctx.empresa.id;
@@ -15,6 +17,15 @@ export default async function vista(ctx) {
     cargarDocumentos(ctx),
   ]);
   for (const r of [clientes, req, cum]) if (r.error) throw r.error;
+  const firmas = await avancePorMandante(ctx);
+  const dest = firmas?.size || req.data.some((r) => r.sitio_id) ? await cargarDestinos(ctx).catch(() => null) : null;
+  // Documentos firmados en Prevención para este mandante, y por lugar (ej.: SAL LOBOS → Camanchaca, Ensenada)
+  const barraFirmas = (c) => {
+    const f = firmas?.get(c.id); if (!f) return null;
+    const lugares = [...f.lugares.entries()].filter(([s]) => s);
+    return el('div', {}, el('span', { class: 'texto-chico texto-suave' }, 'Documentos firmados'), barraAvance(f.firmados, f.total),
+      lugares.map(([s, l]) => el('div', { class: 'texto-chico' }, `${dest?.sitios.find((x) => x.id === s)?.nombre ?? 'Lugar'}: ${l.firmados} de ${l.total}`)));
+  };
   const validar = ctx.puede('rrhh', 'ver') ? await aQuienValidar(ctx).catch(() => null) : null;
   const nomCli = (id) => nombreTercero(clientes.data.find((c) => c.id === id) ?? {});
   const anterior = moverMes(mesActual(), -1);
@@ -24,21 +35,30 @@ export default async function vista(ctx) {
     const href = ctx.ruta('acreditacion.mandante', { id: c.id });
     if (!propios.length) {
       return el('a', { class: 'ficha doc-grupo tarjeta-enlace', href },
-        el('h2', {}, nombreTercero(c)), el('p', { class: 'texto-suave' }, 'Sin requisitos configurados.'));
+        el('h2', {}, nombreTercero(c)), el('p', { class: 'texto-suave' }, 'Sin requisitos configurados.'), barraFirmas(c));
     }
-    const ids = new Set(propios.map((r) => r.id));
-    const k = cumplimientoMandante(propios, cum.data.filter((x) => ids.has(x.requisito_id)), docs.tipos);
+    // % general (lo que piden todos sus lugares) y el de cada lugar con requisitos propios (general + propios)
+    const calc = (rs) => { const is = new Set(rs.map((r) => r.id)); return cumplimientoMandante(rs, cum.data.filter((x) => is.has(x.requisito_id)), docs.tipos); };
+    const generales = propios.filter((r) => !r.sitio_id);
+    const k = calc(generales.length ? generales : propios);
+    const lugares = [...new Set(propios.filter((r) => r.sitio_id).map((r) => r.sitio_id))]
+      .map((sid) => ({ sid, nombre: dest?.sitios.find((x) => x.id === sid)?.nombre ?? 'Lugar', k: calc(propios.filter((r) => !r.sitio_id || r.sitio_id === sid)) }))
+      .sort((a, b) => a.nombre.localeCompare(b.nombre));
     const faltaAnterior = k.filas.filter((f) => f.meses?.includes(anterior) && !f.de.some((x) => x.periodo === anterior)).length;
     return el('a', { class: 'ficha doc-grupo tarjeta-enlace', href },
       el('div', { class: 'listado-cabecera' },
         el('h2', {}, nombreTercero(c)),
         el('span', { class: `chip ${k.pct === 100 ? 'chip-ok' : k.pct >= 80 ? 'chip-prox' : 'chip-venc'}` }, `${k.pct}% al día`)),
-      el('p', { class: 'texto-suave' }, `${k.filas.length} requisitos · ${k.pendientes ? `${k.pendientes} ${k.pendientes === 1 ? 'pendiente' : 'pendientes'}` : 'nada pendiente'}`),
+      el('div', {}, el('span', { class: 'texto-chico texto-suave' }, lugares.length ? 'Requisitos generales' : 'Requisitos de empresa'), barraAvance(k.pct, 100, `${k.pct}%`)),
+      lugares.map((l) => el('div', {}, el('span', { class: 'texto-chico texto-suave' }, l.nombre), barraAvance(l.k.pct, 100, `${l.k.pct}%`))),
+      barraFirmas(c),
+      el('p', { class: 'texto-suave' }, `${propios.filter((r) => r.activo).length} requisitos${lugares.length ? ` (${lugares.length} lugar${lugares.length === 1 ? "" : "es"} con propios)` : ""} · ${k.pendientes ? `${k.pendientes} ${k.pendientes === 1 ? 'pendiente' : 'pendientes'}` : 'nada pendiente'}`),
       faltaAnterior ? el('p', { class: 'texto-chico' }, icono('alerta', { tam: 14 }), ` Faltan ${faltaAnterior} de ${nombreMes(anterior)}`) : null);
   };
 
-  const con = clientes.data.filter((c) => req.data.some((r) => r.tercero_id === c.id));
-  const sin = clientes.data.filter((c) => !req.data.some((r) => r.tercero_id === c.id));
+  const activo = (c) => req.data.some((r) => r.tercero_id === c.id) || firmas?.has(c.id);
+  const con = clientes.data.filter(activo);
+  const sin = clientes.data.filter((c) => !activo(c));
   return el('section', { class: 'listado' },
     el('header', { class: 'listado-cabecera' }, el('h1', {}, 'Requisitos por mandante')),
     el('p', { class: 'texto-suave' }, 'Lo que pide cada cliente para acreditar a la empresa, mes a mes. Entra a un mandante para configurar sus requisitos y marcar lo subido.'),

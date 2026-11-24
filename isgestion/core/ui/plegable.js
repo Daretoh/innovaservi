@@ -1,8 +1,8 @@
 // Sección desplegable (como las de InnovaGestión, 2026-11-04): cabecera con icono, título, resumen, barra de avance
 // y flecha; al tocarla se abre o cierra. Recuerda cuáles quedaron abiertas mientras dura la sesión (por clave), así
 // al refrescar la vista no se cierran. `abierta: true` la fuerza abierta (por ejemplo, al buscar).
-import { el } from './dom.js?v=6df4ca6';
-import { icono } from './iconos.js?v=6df4ca6';
+import { el } from './dom.js?v=9dd99fc';
+import { icono } from './iconos.js?v=9dd99fc';
 
 const abiertas = new Set();
 

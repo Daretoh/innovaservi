@@ -2,16 +2,16 @@
 // la patente del vehículo: los de esta visita (entre el ingreso y la entrega, o ligados a la orden), los de otras
 // visitas y lo que queda por pagar. Cada uno abre su registro. Requiere permiso de ver Costos.
 // Trabajo de un tercero (2026-10-28): p. ej. desabolladura y pintura de un contratista, que cobra su parte; queda como
-// gasto suyo ligado a la orden y entra en su cuenta (Costos → Pagos). Las compras hechas por cuenta de un tercero
+// gasto suyo ligado a la orden, por pagar (y en su cuenta si la lleva: Costos → Proveedores y cuentas). Las compras hechas por cuenta de un tercero
 // (fin_registros.a_cuenta_de) se muestran aparte: no son costo de la empresa, se le descuentan a él.
 // Cada fila dice qué es (Mano de obra del contratista o Material) y cómo se paga; "A servicios" la cobra en la orden con nuestro margen.
-import { el } from '../../core/ui/dom.js?v=6df4ca6';
-import { boton } from '../../core/ui/tabla.js?v=6df4ca6';
-import { abrirFormulario } from '../../core/ui/modal.js?v=6df4ca6';
-import { avisar } from '../../core/ui/aviso.js?v=6df4ca6';
-import { dinero, fechaLarga, diaLocal, hoyISO } from '../../core/ui/formato.js?v=6df4ca6';
-import { nombreVehiculo } from './datos.js?v=6df4ca6';
-import { botonesCompra } from './abonos.js?v=6df4ca6';
+import { el } from '../../core/ui/dom.js?v=9dd99fc';
+import { boton } from '../../core/ui/tabla.js?v=9dd99fc';
+import { abrirFormulario } from '../../core/ui/modal.js?v=9dd99fc';
+import { avisar } from '../../core/ui/aviso.js?v=9dd99fc';
+import { dinero, fechaLarga, diaLocal, hoyISO } from '../../core/ui/formato.js?v=9dd99fc';
+import { nombreVehiculo } from './datos.js?v=9dd99fc';
+import { botonesCompra } from './abonos.js?v=9dd99fc';
 
 const nombreT = (t) => t?.nombre_fantasia || t?.razon_social || '';
 
@@ -106,7 +106,7 @@ async function trabajoTercero(ctx, o, v) {
   const catSugerida = cats.find((c) => /desabol|pintura|d&p|tercer|servicio/i.test(c.nombre)) ?? cats[0];
   abrirFormulario({
     titulo: `Trabajo de un tercero · ${nombreVehiculo(v)}`,
-    mensaje: 'Lo que cobra el contratista por su parte del trabajo. Queda por pagar en su cuenta (Costos → Pagos), donde se le descuentan las compras hechas por su cuenta.',
+    mensaje: 'Lo que cobra el tercero por su parte del trabajo. Queda por pagar; si lleva cuenta (como un contratista al que se le descuentan compras), se ve en Costos → Proveedores y cuentas.',
     campos: [
       { id: 'tercero', etiqueta: 'Contratista', requerido: true, opciones: [['', terceros.length ? 'Elige al contratista' : 'Primero créalo en Clientes y proveedores (tipo Proveedor)'], ...terceros.map((t) => [t.id, nombreT(t)])], valor: terceros.find((t) => conCuenta.has(t.id))?.id ?? '' },
       { id: 'detalle', etiqueta: 'Detalle del trabajo', requerido: true, tipo: 'textarea', ayuda: 'Ej.: parachoque trasero, guardabarro lateral y puerta.' },
@@ -126,9 +126,8 @@ async function trabajoTercero(ctx, o, v) {
         notas: x.piezas ? `Piezas: ${x.piezas}` : null,
       });
       if (error) throw new Error(error.message);
-      // El contratista queda con cuenta corriente
-      await ctx.api.from('fin_proveedores').upsert({ empresa_id: e, tercero_id: x.tercero, modalidad: 'cuenta' }, { onConflict: 'empresa_id,tercero_id', ignoreDuplicates: true });
-      avisar('Trabajo registrado en la cuenta del contratista.'); ctx.refrescar();
+      // (2026-11-24, pedido de Enzo) Ya no se le abre cuenta corriente solo: eso se marca en Costos → Todos los proveedores
+      avisar(conCuenta.has(x.tercero) ? 'Trabajo registrado en su cuenta.' : 'Trabajo registrado: queda por pagar.'); ctx.refrescar();
     },
   });
 }

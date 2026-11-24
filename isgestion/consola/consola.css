@@ -135,3 +135,24 @@
 .nov-c-img img { max-width: 240px; max-height: 140px; border-radius: var(--radio-control); border: 1px solid var(--borde); }
 .nov-c-puntos { display: flex; flex-direction: column; gap: 8px; max-height: 280px; overflow-y: auto; border: 1px solid var(--borde); border-radius: var(--radio-control); padding: 8px 10px; font-size: .88rem; }
 .nov-c-acciones { display: flex; justify-content: flex-end; gap: 8px; }
+
+/* Consumo de IA (Consola 005) */
+.ia .listado-cabecera h1 { display: flex; align-items: center; gap: 8px; }
+.ia-intro { margin: 0 0 12px; max-width: 900px; }
+.ia-meses { margin: 0 0 14px; flex-wrap: wrap; }
+.ia-tendencia { max-width: none; padding: 12px 16px; margin-bottom: 12px; }
+.ia-tendencia h2, .ia-reparto h2 { margin: 0 0 8px; font-size: 1rem; }
+.ia-grafico { width: 100%; height: auto; display: block; }
+.ia-grafico .ia-dia { fill: var(--empresa); }
+.ia-grafico .ia-dia:hover { fill: color-mix(in srgb, var(--empresa) 70%, var(--texto)); }
+.ia-grafico .ia-guia { stroke: var(--borde); stroke-width: 1; }
+.ia-grafico .ia-eje { fill: var(--texto-suave); font-size: 11px; font-variant-numeric: tabular-nums; }
+.ia-repartos { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 460px), 1fr)); align-items: start; margin-bottom: 12px; }
+.ia-reparto { max-width: none; padding: 12px 16px; }
+.ia-reparto td.num, .ia-reparto th.num { white-space: nowrap; }
+.ia-barra-celda { width: 22%; min-width: 60px; }
+.ia-barra { display: block; height: 8px; border-radius: 4px; background: var(--empresa); }
+.fin-tarjeta.ia-ok strong { color: var(--ok); }
+.fin-tarjeta.ia-mal strong { color: var(--venc); }
+.ia-precios td code { font-size: .8rem; }
+.ia-precios-acciones { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0 4px; }

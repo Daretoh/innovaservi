@@ -1,12 +1,12 @@
 // Carga los manifiestos y arma el menú según la empresa activa.
-import ids from './config/modulos.js?v=6df4ca6';
+import ids from './config/modulos.js?v=9dd99fc';
 
 let manifiestos = null;
 
 export async function cargarManifiestos() {
   if (manifiestos) return manifiestos;
   manifiestos = await Promise.all(
-    ids.map((id) => import(`../modulos/${id}/manifest.js?v=6df4ca6`).then((m) => m.default)),
+    ids.map((id) => import(`../modulos/${id}/manifest.js?v=9dd99fc`).then((m) => m.default)),
   );
   return manifiestos;
 }
@@ -46,6 +46,11 @@ export function apartadosPorCategoria(visibles) {
       }
       porId.get(id).items.push({ ...item, modulo: m });
     }
+  }
+  // `orden` en el ítem (opcional, 2026-11-24): fija el lugar de la pestaña en su apartado aunque venga de otro módulo
+  // (p. ej. Facturas de Cotizaciones primero en Ventas y cobros). Sin orden, quedan como llegaron.
+  for (const ap of porId.values()) if (ap.items.some((it) => it.orden != null)) {
+    ap.items = ap.items.map((it, i) => [it, it.orden ?? 100 + i]).sort((a, b) => a[1] - b[1]).map(([it]) => it);
   }
   return { grupos, porId };
 }

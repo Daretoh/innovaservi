@@ -11,24 +11,36 @@ export default {
   movil: {
     // unir (2026-11-17): también junto a un "+" de una sola acción, como "Agendar vehículo" del taller (Administrativa de
     // Performance: taller.crear y costos.crear). Quien no puede crear en Costos no la ve.
-    extra: [{ label: 'Escanear documentos', icono: 'camara', requiere: ['costos', 'crear'], ruta: 'costos.bandeja', unir: true, abrir: (ctx) => import('./vistas/bandeja.js?v=6df4ca6').then((m) => m.escanearABandeja(ctx)) }],
+    extra: [{ label: 'Escanear documentos', icono: 'camara', requiere: ['costos', 'crear'], ruta: 'costos.bandeja', unir: true, abrir: (ctx) => import('./vistas/bandeja.js?v=9dd99fc').then((m) => m.escanearABandeja(ctx)) }],
   },
+  // Orden de Finanzas (2026-11-24, pedido de Enzo), separado como el SII:
+  // - Compras y gastos (este módulo): todo entra por la Bandeja → queda en Gastos → se sigue a los proveedores que
+  //   importan → Cada mes y Estadísticas. Flujo de caja y Balance pasaron al Grupo (Caja del grupo): aquí quedan
+  //   como pantallas ocultas, que abre esa vista para anotar saldos y deudas.
+  // - Ventas y cobros (apartado `finventas`): Facturas (de Cotizaciones, orden 1; arriba trae las ventas del SII por registrar)
+  //   y Otros ingresos.
+  // - Cuadre SII (apartado `finsii`): compras y ventas del mes contra el SII.
+  etiqueta: 'Compras y gastos',
+  apartados: { finventas: { label: 'Ventas y cobros', icono: 'documento' }, finsii: { label: 'Cuadre SII', icono: 'escudo' } },
   menu: [
-    { id: 'costos.registros', label: 'Gastos e ingresos', vista: () => import('./vistas/registros.js?v=6df4ca6') },
-    { id: 'costos.registro', label: 'Registro', oculto: true, padre: 'costos.registros', vista: () => import('./vistas/registro.js?v=6df4ca6') },
-    { id: 'costos.subir', label: 'Subir documentos', pestana: 'Subir', icono: 'camara', vista: () => import('./vistas/subir.js?v=6df4ca6') },
-    { id: 'costos.bandeja', label: 'Bandeja de documentos', pestana: 'Bandeja', icono: 'lista', vista: () => import('./vistas/bandeja.js?v=6df4ca6') },
-    { id: 'costos.pagos', label: 'Pagos', pestana: 'Pagos', icono: 'check', vista: () => import('./vistas/pagos.js?v=6df4ca6') },
-    { id: 'costos.cuenta', label: 'Cuenta de contratista', oculto: true, padre: 'costos.pagos', vista: () => import('./vistas/cuenta.js?v=6df4ca6') },
-    { id: 'costos.estadisticas', label: 'Estadísticas', pestana: 'Estadísticas', icono: 'grafico', vista: () => import('./vistas/estadisticas.js?v=6df4ca6') },
-    { id: 'costos.flujo', label: 'Flujo de caja', pestana: 'Flujo de caja', icono: 'grafico', vista: () => import('./vistas/flujo.js?v=6df4ca6') },
-    { id: 'costos.balance', label: 'Balance de gestión', pestana: 'Balance', icono: 'columnas', vista: () => import('./vistas/balance.js?v=6df4ca6') },
+    { id: 'costos.bandeja', label: 'Bandeja de compras', pestana: 'Bandeja', icono: 'lista', vista: () => import('./vistas/bandeja.js?v=9dd99fc') },
+    { id: 'costos.registros', label: 'Gastos', pestana: 'Gastos', vista: () => import('./vistas/registros.js?v=9dd99fc') },
+    { id: 'costos.registro', label: 'Registro', oculto: true, padre: 'costos.registros', compartida: true, vista: () => import('./vistas/registro.js?v=9dd99fc') },
+    { id: 'costos.pagos', label: 'Proveedores y cuentas', pestana: 'Proveedores', icono: 'users', vista: () => import('./vistas/pagos.js?v=9dd99fc') },
+    { id: 'costos.cuenta', label: 'Cuenta del proveedor', oculto: true, padre: 'costos.pagos', vista: () => import('./vistas/cuenta.js?v=9dd99fc') },
+    { id: 'costos.proveedores', ajustes: true, oculto: true, padre: 'costos.pagos', label: 'Todos los proveedores', vista: () => import('./vistas/proveedores.js?v=9dd99fc') },
+    { id: 'costos.recurrentes', ajustes: true, label: 'Pagos de cada mes', pestana: 'Cada mes', vista: () => import('./vistas/recurrentes.js?v=9dd99fc') },
+    { id: 'costos.estadisticas', label: 'Estadísticas', pestana: 'Estadísticas', icono: 'grafico', vista: () => import('./vistas/estadisticas.js?v=9dd99fc') },
+    { id: 'costos.config', ajustes: true, label: 'Categorías y centros', pestana: 'Categorías', vista: () => import('./vistas/config.js?v=9dd99fc') },
+    // Las ventas del SII por registrar ya salen arriba en Facturas: esta ruta (antes pestaña Ventas de la Bandeja) lleva allá
+    { id: 'costos.ventas', oculto: true, padre: 'costos.ingresos', compartida: true, label: 'Ventas por registrar', vista: () => import('./vistas/bandeja.js?v=9dd99fc').then((m) => ({ default: m.vistaVentas })) },
+    { id: 'costos.ingresos', apartado: 'finventas', orden: 3, label: 'Otros ingresos', pestana: 'Otros ingresos', icono: 'dinero', vista: () => import('./vistas/ingresos.js?v=9dd99fc') },
     // Cuadre con el SII (OpenFactura, Núcleo 021): RCV y diferencias documento a documento; costos.aprobar
-    { id: 'costos.sii', label: 'Cuadre SII', pestana: 'Cuadre SII', icono: 'escudo', vista: () => import('./vistas/sii.js?v=6df4ca6') },
-    { id: 'costos.lector', label: 'Leer boleta o factura', oculto: true, padre: 'costos.subir', compartida: true, vista: () => import('./vistas/lector.js?v=6df4ca6') },
-    { id: 'costos.recurrentes', ajustes: true, label: 'Gastos recurrentes', pestana: 'Recurrentes', vista: () => import('./vistas/recurrentes.js?v=6df4ca6') },
-    { id: 'costos.proveedores', ajustes: true, label: 'Proveedores', pestana: 'Proveedores', vista: () => import('./vistas/proveedores.js?v=6df4ca6') },
-    { id: 'costos.config', ajustes: true, label: 'Categorías y centros', pestana: 'Categorías', vista: () => import('./vistas/config.js?v=6df4ca6') },
+    { id: 'costos.sii', apartado: 'finsii', label: 'Cuadre SII', pestana: 'Cuadre SII', icono: 'escudo', vista: () => import('./vistas/sii.js?v=9dd99fc') },
+    { id: 'costos.flujo', label: 'Flujo de caja', oculto: true, padre: 'costos.registros', icono: 'grafico', vista: () => import('./vistas/flujo.js?v=9dd99fc') },
+    { id: 'costos.balance', label: 'Balance de gestión', oculto: true, padre: 'costos.registros', icono: 'columnas', vista: () => import('./vistas/balance.js?v=9dd99fc') },
+    { id: 'costos.subir', label: 'Subir documentos', oculto: true, padre: 'costos.bandeja', vista: () => import('./vistas/subir.js?v=9dd99fc') },
+    { id: 'costos.lector', label: 'Leer boleta o factura', oculto: true, padre: 'costos.bandeja', compartida: true, vista: () => import('./vistas/lector.js?v=9dd99fc') },
   ],
   config: {
     // Centros de costo (2026-11-05): apagado, el gasto se ordena por categoría (y faena en Innova). Para clientes que

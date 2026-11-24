@@ -1,13 +1,13 @@
 // Vueltas del chofer (como la "Pantalla del chofer" de InnovaGestión): desde el celular elige el vehículo y el chofer,
 // cuenta las vueltas de hoy (ida y vuelta o solo ida) y, si pagó peaje, el monto y la foto del voucher. Se guarda en el
 // vehículo (Flota) y las vueltas se suman en Remuneraciones. Los peajes no se reembolsan: quedan como gasto del vehículo.
-import { el } from '../../../core/ui/dom.js?v=6df4ca6';
-import { icono } from '../../../core/ui/iconos.js?v=6df4ca6';
-import { boton } from '../../../core/ui/tabla.js?v=6df4ca6';
-import { avisar } from '../../../core/ui/aviso.js?v=6df4ca6';
-import { hoyISO, fechaLarga, nombreDia, dinero } from '../../../core/ui/formato.js?v=6df4ca6';
-import { subirArchivo } from '../../../core/adjuntos.js?v=6df4ca6';
-import { comprimirFoto } from '../../../core/imagenes.js?v=6df4ca6';
+import { el } from '../../../core/ui/dom.js?v=9dd99fc';
+import { icono } from '../../../core/ui/iconos.js?v=9dd99fc';
+import { boton } from '../../../core/ui/tabla.js?v=9dd99fc';
+import { avisar } from '../../../core/ui/aviso.js?v=9dd99fc';
+import { hoyISO, fechaLarga, nombreDia, dinero } from '../../../core/ui/formato.js?v=9dd99fc';
+import { subirArchivo } from '../../../core/adjuntos.js?v=9dd99fc';
+import { comprimirFoto } from '../../../core/imagenes.js?v=9dd99fc';
 
 const CLAVE = 'isg.chofer.vehiculo';
 
@@ -33,7 +33,8 @@ export default async function vista(ctx) {
     d.vehiculos.map((v) => el('option', { value: v.id, selected: v.id === guardado }, `${v.nombre}${v.patente ? ` · ${v.patente}` : ''}`)));
   const chofer = el('select', { class: 'campo', 'aria-label': 'Chofer' },
     el('option', { value: '' }, 'Elige el chofer…'),
-    d.personas.map((p) => el('option', { value: p.id, selected: p.id === d.yo }, p.nombre)));
+    // Solo quien tiene la licencia de conducir vigente en su ficha (Marcaje 008); el resto aparece sin poder elegirse
+    d.personas.map((p) => el('option', { value: p.id, selected: p.id === d.yo && p.licencia !== false, disabled: p.licencia === false }, p.licencia === false ? `${p.nombre} (sin licencia vigente)` : p.nombre)));
 
   // ---- Contador de vueltas
   let vueltas = 0;

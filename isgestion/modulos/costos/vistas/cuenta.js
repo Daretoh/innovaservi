@@ -4,14 +4,14 @@
 // Pestañas: Resumen mensual (solo lectura, como la planilla "Resumen D&P": por mes sus trabajos, compras y pagos con
 // saldo acumulado) y Movimientos (registrar pago, dejar al día). Se abre desde Pagos (sin opción nueva en el menú).
 // Ruta: #/costos.cuenta?t=<tercero>
-import { el } from '../../../core/ui/dom.js?v=6df4ca6';
-import { icono } from '../../../core/ui/iconos.js?v=6df4ca6';
-import { boton } from '../../../core/ui/tabla.js?v=6df4ca6';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=6df4ca6';
-import { avisar } from '../../../core/ui/aviso.js?v=6df4ca6';
-import { subirArchivo } from '../../../core/adjuntos.js?v=6df4ca6';
-import { dinero, fechaLarga, hoyISO, nombreMes } from '../../../core/ui/formato.js?v=6df4ca6';
-import { nombreTercero, nombreMedio, MEDIOS } from '../datos.js?v=6df4ca6';
+import { el } from '../../../core/ui/dom.js?v=9dd99fc';
+import { icono } from '../../../core/ui/iconos.js?v=9dd99fc';
+import { boton } from '../../../core/ui/tabla.js?v=9dd99fc';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=9dd99fc';
+import { avisar } from '../../../core/ui/aviso.js?v=9dd99fc';
+import { subirArchivo } from '../../../core/adjuntos.js?v=9dd99fc';
+import { dinero, fechaLarga, hoyISO, nombreMes } from '../../../core/ui/formato.js?v=9dd99fc';
+import { nombreTercero, nombreMedio, MEDIOS } from '../datos.js?v=9dd99fc';
 
 let pestana = 'resumen', tercero = null, mesFiltro = '', buscar = '';   // vuelve al resumen (todos los meses) al abrir otra cuenta
 const TIPO = { trabajo: ['Factura o trabajo', 'chip-ok'], compra: ['Compra a su cuenta', 'chip-prox'], abono: ['Pago', 'chip-pend'] };
@@ -20,7 +20,7 @@ export default async function vista(ctx) {
   const e = ctx.empresa.id;
   const t = ctx.params.t;
   if (t !== tercero) { tercero = t; pestana = 'resumen'; mesFiltro = ''; buscar = ''; }
-  const volver = el('a', { class: 'volver', href: ctx.ruta('costos.pagos') }, icono('volver', { tam: 16 }), 'Pagos');
+  const volver = el('a', { class: 'volver', href: ctx.ruta('costos.pagos') }, icono('volver', { tam: 16 }), 'Proveedores y cuentas');
   const [{ data: ter }, mov] = await Promise.all([
     ctx.api.from('terceros').select('id, razon_social, nombre_fantasia, rut').eq('id', t).maybeSingle(),
     ctx.api.rpc('fin_cuenta_tercero', { p_empresa: e, p_tercero: t }),
@@ -93,7 +93,7 @@ export default async function vista(ctx) {
       const { error } = await ctx.api.from('fin_pagos').insert({ empresa_id: e, fecha: x.fecha, monto, medio: x.medio, tercero_id: t, archivo: ruta, notas: x.notas.trim() || null,
         estado: ctx.puede('costos', 'aprobar') ? 'validado' : 'por_validar' });
       if (error) throw new Error(error.message);
-      avisar(ctx.puede('costos', 'aprobar') ? 'Pago registrado.' : 'Pago registrado: queda por validar en Pagos.'); ctx.refrescar();
+      avisar(ctx.puede('costos', 'aprobar') ? 'Pago registrado.' : 'Pago registrado: queda por validar en Proveedores y cuentas.'); ctx.refrescar();
     },
   });
   // Al dejar la cuenta al día, sus trabajos dejan de figurar "por pagar" (el saldo no cambia)
@@ -109,7 +109,7 @@ export default async function vista(ctx) {
       avisar('Cuenta al día.'); ctx.refrescar();
     },
   });
-  const excel = () => import('../../../core/excel.js?v=6df4ca6').then(({ nuevoExcel }) => nuevoExcel(ctx, { titulo: `Cuenta de ${nombreTercero(ter)}`, subtitulo: `Saldo ${saldo >= 0 ? 'a pagarle' : 'a favor de la empresa'}: ${dinero(Math.abs(saldo))}` }))
+  const excel = () => import('../../../core/excel.js?v=9dd99fc').then(({ nuevoExcel }) => nuevoExcel(ctx, { titulo: `Cuenta de ${nombreTercero(ter)}`, subtitulo: `Saldo ${saldo >= 0 ? 'a pagarle' : 'a favor de la empresa'}: ${dinero(Math.abs(saldo))}` }))
     .then(async (x) => {
       x.tabla({ titulo: 'Resumen mensual (saldo)', columnas: ['Mes', { t: 'Saldo inicial', tipo: 'dinero' }, { t: 'Trabajos', tipo: 'dinero' }, { t: 'Compras a su cuenta', tipo: 'dinero' }, { t: 'Pagos', tipo: 'dinero' }, { t: 'Saldo final', tipo: 'dinero' }],
         filas: resumen.map((r) => [nombreMes(r.m), r.saldo - r.neto, r.trabajos, -r.compras, -r.abonos, r.saldo]) });
@@ -186,7 +186,7 @@ export default async function vista(ctx) {
         el('th', { class: 'num' }, menos(suma('abono'))), el('th', { class: 'num' }, dinero(saldo)), el('th', {}, ''))))));
   const vistaMovimientos = () => el('div', { class: 'ficha doc-grupo' }, el('h2', {}, 'Movimientos'),
     buscar.trim() ? (movs.some(coincide) ? movs.filter(coincide).reverse().map(fila) : el('p', { class: 'texto-suave' }, 'Nada coincide con la búsqueda.')) :
-    movs.length ? [...movs].reverse().map(fila) : el('p', { class: 'texto-suave' }, 'Sin movimientos. Las facturas se suben como gasto con este proveedor (Subir documentos); los pagos, con Registrar pago o como comprobante. Los trabajos de un contratista se registran desde la orden del taller (Costos con la patente → Trabajo de un tercero) o como gasto con este proveedor; las compras, marcando "por cuenta de" en el gasto o al leer la boleta.'));
+    movs.length ? [...movs].reverse().map(fila) : el('p', { class: 'texto-suave' }, 'Sin movimientos. Las facturas llegan del SII a la Bandeja (o se suben ahí) y se cargan con este proveedor; los pagos, con Registrar pago o como comprobante. Los trabajos de un contratista se registran desde la orden del taller (Costos con la patente → Trabajo de un tercero) o como gasto con este proveedor; las compras, marcando "por cuenta de" en el gasto o al leer la boleta.'));
   const VISTAS = {
     resumen: vistaResumen,
     trabajos: () => porMes('Trabajos', enFiltro('trabajo'), COL_TRABAJOS),
@@ -216,9 +216,9 @@ export default async function vista(ctx) {
       el('div', { class: 'listado-acciones' }, acciones)),
     el('div', { class: 'fin-tarjetas' },
       tarjeta('Facturas o trabajos', suma('trabajo'), `${movs.filter((m) => m.tipo === 'trabajo').length} documentos`),
-      tarjeta('Compras por su cuenta', suma('compra'), 'se le descuentan'),
+      suma('compra') ? tarjeta('Compras por su cuenta', suma('compra'), 'se le descuentan') : null,
       tarjeta('Pagos', suma('abono'), 'transferencias y abonos'),
-      tarjeta(saldo >= 0 ? 'Saldo a pagarle' : 'Pagado a cuenta (falta su factura)', Math.abs(saldo), 'facturas − compras − pagos', saldo > 0 ? 'fin-alerta' : '')),
+      tarjeta(saldo > 0 ? 'Le debemos' : saldo < 0 ? 'Pagado de más: falta su factura' : 'Al día', Math.abs(saldo), suma('compra') ? 'facturas − compras − pagos' : 'facturas − pagos', saldo !== 0 ? 'fin-alerta' : '')),
     barra,
     cuerpo,
     el('p', { class: 'texto-suave texto-chico' }, 'Las compras por su cuenta se pagan al local como cualquier gasto, pero no son costo de la empresa: no entran al Estado de resultados ni a la utilidad por orden.'));

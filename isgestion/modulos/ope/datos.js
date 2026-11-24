@@ -1,5 +1,5 @@
 // Datos y reglas compartidas de Faenas y planificación.
-import { aMin, hhmm, sumarDias, numSemana, fechaCorta } from '../../core/ui/formato.js?v=6df4ca6';
+import { aMin, hhmm, sumarDias, numSemana, fechaCorta } from '../../core/ui/formato.js?v=9dd99fc';
 
 export const ROLES = [['op', 'Operario', 'Operarios'], ['sup', 'Supervisor', 'Supervisores'], ['prev', 'Prevencionista', 'Prevencionistas']];
 export const nombreRol = Object.fromEntries(ROLES.map(([k, s]) => [k, s]));
@@ -40,7 +40,7 @@ async function leerBase(ctx) {
   const e = ctx.empresa.id;
   const [clientes, colores, sitios, vinculos, roles] = await Promise.all([
     ctx.api.from('terceros').select('id, razon_social, nombre_fantasia, tipo').eq('empresa_id', e).is('deleted_at', null).contains('tipo', ['cliente']).order('razon_social'),
-    ctx.api.from('ope_clientes').select('tercero_id, color, pide_informe').eq('empresa_id', e),
+    ctx.api.from('ope_clientes').select('tercero_id, color, pide_informe, pide_ast, pide_permiso').eq('empresa_id', e),
     ctx.api.from('ope_sitios').select('*').eq('empresa_id', e).order('nombre'),
     ctx.api.from('persona_empresa').select('id, persona_id, cargo, estado, personas(nombres, apellido_paterno, apellido_materno, rut, tallas)').eq('empresa_id', e).is('deleted_at', null),
     ctx.api.from('ope_roles').select('vinculo_id, rol').eq('empresa_id', e),
@@ -48,12 +48,13 @@ async function leerBase(ctx) {
   for (const r of [clientes, colores, sitios, vinculos, roles]) if (r.error) throw r.error;
   const color = new Map(colores.data.map((c) => [c.tercero_id, c.color]));
   const pide = new Set(colores.data.filter((c) => c.pide_informe).map((c) => c.tercero_id));
+  const cfgCli = new Map(colores.data.map((c) => [c.tercero_id, c]));
   const rolDe = new Map(roles.data.map((r) => [r.vinculo_id, r.rol]));
   const activos = vinculos.data.filter((v) => v.estado === 'activo')
     .map((v) => ({ ...v, rol: rolDe.get(v.id) ?? rolPorCargo(v.cargo), rolElegido: rolDe.has(v.id) }))
     .sort((a, b) => nombreCompleto(a.personas).localeCompare(nombreCompleto(b.personas)));
   return {
-    clientes: clientes.data.map((c) => ({ ...c, color: color.get(c.id) ?? '#5b6576', pideInforme: pide.has(c.id), nombre: c.nombre_fantasia || c.razon_social })),
+    clientes: clientes.data.map((c) => ({ ...c, color: color.get(c.id) ?? '#5b6576', pideInforme: pide.has(c.id), pideAst: !!cfgCli.get(c.id)?.pide_ast, pidePermiso: !!cfgCli.get(c.id)?.pide_permiso, nombre: c.nombre_fantasia || c.razon_social })),
     sitios: sitios.data,
     activos,
     personas: new Map(vinculos.data.map((v) => [v.persona_id, v])),
@@ -87,6 +88,14 @@ export async function partesDeRango(ctx, desde, hasta) {
 
 // ¿La faena lleva informe? Lo marcado en la faena; si no se marcó, lo del cliente (Clientes y sitios)
 export const pideInformeFaena = (f, base) => f.pide_informe ?? !!base.clientes.find((c) => c.id === f.tercero_id)?.pideInforme;
+
+// Carpeta a terreno (Faenas 006): lo que hay que imprimir y llevar. En la faena, nulo = lo que diga el cliente.
+export function carpetaTerreno(f, base) {
+  const cli = base.clientes.find((c) => c.id === f.tercero_id);
+  const ast = f.pide_ast ?? !!cli?.pideAst;
+  const permiso = f.pide_permiso ?? !!cli?.pidePermiso;
+  return { ast, permiso, informe: pideInformeFaena(f, base), lista: [ast ? 'AST' : null, permiso ? 'Permiso de trabajo' : null].filter(Boolean) };
+}
 
 // Chip con el estado del parte de una faena-día (null si no corresponde mostrar nada)
 export function estadoParte(partes, f, fecha, base, hoy) {

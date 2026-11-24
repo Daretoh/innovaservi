@@ -1,14 +1,15 @@
 // Agenda del taller: citas de la semana por día, con su estado. Hoy destacado; en tablet las columnas se
 // deslizan y parte mostrando el día de hoy; "+" para agendar en un día (aparece al pasar el mouse).
-import { el } from '../../../core/ui/dom.js?v=6df4ca6';
-import { icono } from '../../../core/ui/iconos.js?v=6df4ca6';
-import { boton } from '../../../core/ui/tabla.js?v=6df4ca6';
-import { hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, hhmm, esFinde, nombreMes } from '../../../core/ui/formato.js?v=6df4ca6';
-import { placa } from '../../../core/ui/placa.js?v=6df4ca6';
-import { esTelefono } from '../../../core/movil.js?v=6df4ca6';
-import { SELECT_ORDEN, CHIP_PRIORIDAD, nombreEstado, verPatente, nombreVehiculo, nombreTercero } from '../datos.js?v=6df4ca6';
-import { recepcion } from '../recepcion.js?v=6df4ca6';
-import { franjaPedidas } from '../pedidas.js?v=6df4ca6';
+import { el } from '../../../core/ui/dom.js?v=9dd99fc';
+import { navSemana } from '../../../core/ui/semana.js?v=9dd99fc';
+import { icono } from '../../../core/ui/iconos.js?v=9dd99fc';
+import { boton } from '../../../core/ui/tabla.js?v=9dd99fc';
+import { hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, hhmm, esFinde, nombreMes } from '../../../core/ui/formato.js?v=9dd99fc';
+import { placa } from '../../../core/ui/placa.js?v=9dd99fc';
+import { esTelefono } from '../../../core/movil.js?v=9dd99fc';
+import { SELECT_ORDEN, CHIP_PRIORIDAD, nombreEstado, verPatente, nombreVehiculo, nombreTercero } from '../datos.js?v=9dd99fc';
+import { recepcion } from '../recepcion.js?v=9dd99fc';
+import { franjaPedidas } from '../pedidas.js?v=9dd99fc';
 
 const estado = { lunes: lunesDe(hoyISO()), dia: null };
 
@@ -57,11 +58,7 @@ export default async function vista(ctx) {
   return el('section', { class: 'listado' },
     el('header', { class: 'listado-cabecera' }, el('h1', {}, 'Agenda'),
       el('div', { class: 'listado-acciones' },
-        el('div', { class: 'nav-periodo' },
-          el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Semana anterior', onclick: () => mover(-1) }, icono('volver')),
-          el('strong', {}, `Semana ${numSemana(lunes)} · ${fechaCorta(lunes)} – ${fechaCorta(domingo)}`),
-          el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Semana siguiente', onclick: () => mover(1) }, icono('derecha'))),
-        lunes !== lunesDe(hoy) ? boton('Hoy', { onclick: () => { estado.lunes = lunesDe(hoy); ctx.refrescar(); } }) : null,
+        navSemana({ lunes, alMover: mover, alHoy: () => { estado.lunes = lunesDe(hoy); ctx.refrescar(); } }),
         crear ? boton('Agendar vehículo', { icono: 'mas', tipo: 'primario', onclick: () => recepcion(ctx) }) : null)),
     pedidas,
     el('p', { class: 'texto-suave' }, total ? `${total} ${total === 1 ? 'cita' : 'citas'} esta semana` : 'Sin citas esta semana.'),

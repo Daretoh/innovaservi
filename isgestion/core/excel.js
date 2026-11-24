@@ -5,11 +5,12 @@
 //   const x = await nuevoExcel(ctx, { titulo: 'Pago mensual', subtitulo: 'Octubre 2026' });
 //   x.tabla({ titulo: 'Fijos', columnas: ['Trabajador', { t: 'Sueldo', tipo: 'dinero' }], filas: [['Ana', 600000]], total: ['Total', 600000] });
 //   await x.guardar('pago-mensual-2026-10');
-// Tipos de columna: 'texto' (por omisión), 'dinero', 'numero', 'decimal', 'horas' (minutos → h:mm), 'fecha' (ISO), 'pct' (0 a 1).
+// Tipos de columna: 'texto' (por omisión), 'dinero', 'numero', 'decimal', 'horas' (minutos → h:mm), 'fecha' (ISO), 'pct' (0 a 1),
+// 'usd' (dólares con 2 decimales).
 // Varias tablas van una debajo de otra en la misma hoja; { hoja: 'Otra' } abre otra hoja con su membrete.
 // ExcelJS 4.4.0 (cdnjs, versión fija; 08 Seguridad §5) se carga solo al exportar.
-import { cargarLogo, contactoEmpresa } from './pdf.js?v=6df4ca6';
-import { nombreEmpresa } from './empresas.js?v=6df4ca6';
+import { cargarLogo, contactoEmpresa } from './pdf.js?v=9dd99fc';
+import { nombreEmpresa } from './empresas.js?v=9dd99fc';
 
 const EXCELJS = 'https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js';
 let carga = null;
@@ -26,7 +27,7 @@ export function cargarExcelJS() {
 
 export const argb = (hex) => `FF${String(hex || '#1f4e8c').replace('#', '').toUpperCase()}`;
 const TINTA = 'FF1C2330'; const GRIS = 'FF5B6576'; const ALT = 'FFF7F8FA'; const LINEA = 'FFDDE1E7';
-const FORMATO = { dinero: '"$"#,##0;-"$"#,##0;"—"', numero: '#,##0.##;-#,##0.##;"—"', decimal: '#,##0.0', horas: '[h]:mm', fecha: 'dd-mm-yyyy', pct: '0.0%' };
+const FORMATO = { dinero: '"$"#,##0;-"$"#,##0;"—"', numero: '#,##0.##;-#,##0.##;"—"', decimal: '#,##0.0', horas: '[h]:mm', fecha: 'dd-mm-yyyy', pct: '0.0%', usd: '"US$" #,##0.00;-"US$" #,##0.00;"—"' };
 const relleno = (c) => ({ type: 'pattern', pattern: 'solid', fgColor: { argb: c } });
 const borde = { bottom: { style: 'thin', color: { argb: LINEA } } };
 

@@ -3,11 +3,11 @@
 // varios días (⟶), ventana del día, detalle, formulario de trabajo (cliente, sitio sugerido, descripción, tareas,
 // fechas, horario con atajos, personas necesarias por rol, repetir) y borrar uno o toda la serie.
 // Los datos son las faenas (ope_faenas): lo que se pone aquí aparece en Planificación al armar la faena.
-import { el } from '../../../core/ui/dom.js?v=6df4ca6';
-import { avisar } from '../../../core/ui/aviso.js?v=6df4ca6';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=6df4ca6';
-import { hhmm } from '../../../core/ui/formato.js?v=6df4ca6';
-import { cargarBase } from '../datos.js?v=6df4ca6';
+import { el } from '../../../core/ui/dom.js?v=9dd99fc';
+import { avisar } from '../../../core/ui/aviso.js?v=9dd99fc';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=9dd99fc';
+import { hhmm } from '../../../core/ui/formato.js?v=9dd99fc';
+import { cargarBase } from '../datos.js?v=9dd99fc';
 
 const MES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
 const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
@@ -51,7 +51,7 @@ const SVG = {
 function cargarEstilos() {
   if (document.getElementById('igcal-css')) return;
   const l = document.createElement('link');
-  l.id = 'igcal-css'; l.rel = 'stylesheet'; l.href = new URL('../calendario.css?v=6df4ca6', import.meta.url).href;
+  l.id = 'igcal-css'; l.rel = 'stylesheet'; l.href = new URL('../calendario.css?v=9dd99fc', import.meta.url).href;
   document.head.append(l);
 }
 
@@ -59,7 +59,7 @@ function cargarEstilos() {
 // Todas las faenas en páginas de 1.000, pedidas de a 3 a la vez (antes una tras otra: ~1 s con 1.500 faenas)
 async function cargarFaenas(ctx) {
   const pagina = (desde) => ctx.api.from('ope_faenas')
-    .select('id, titulo, tercero_id, sitio_id, fecha_inicio, fecha_fin, dias, hora_inicio, hora_fin, descripcion, tareas, tareas_check, dotacion, serie_id, pide_informe')
+    .select('id, titulo, tercero_id, sitio_id, fecha_inicio, fecha_fin, dias, hora_inicio, hora_fin, descripcion, tareas, tareas_check, dotacion, serie_id, pide_informe, pide_ast, pide_permiso')
     .eq('empresa_id', ctx.empresa.id).is('deleted_at', null).neq('estado', 'cancelada')
     .order('fecha_inicio').order('id').range(desde, desde + 999);
   const todas = [];
@@ -273,7 +273,7 @@ export default async function vista(ctx) {
     grid.querySelectorAll('[data-anio]').forEach((b) => b.addEventListener('click', () => { estado.anio = b.dataset.anio; render(); }));
     grid.querySelector('.igcal-bexcel').addEventListener('click', async () => {
       try {
-        const { nuevoExcel } = await import('../../../core/excel.js?v=6df4ca6');
+        const { nuevoExcel } = await import('../../../core/excel.js?v=9dd99fc');
         const x = await nuevoExcel(ctx, { titulo: 'Trabajos', subtitulo: `Búsqueda: "${buscador.value.trim()}"${estado.anio ? ` · ${estado.anio}` : ''} · ${res.length} trabajos` });
         x.tabla({ columnas: [{ t: 'Fecha', tipo: 'fecha' }, { t: 'Hasta', tipo: 'fecha' }, { t: 'Días', tipo: 'numero' }, 'Cliente', 'Sitio', 'Trabajo', 'Descripción'],
           filas: [...res].reverse().map((e) => [e.fecha, evFin(e), dias(e), e.ubic, e.sitio, e.titulo, e.desc]) });
@@ -469,6 +469,8 @@ export default async function vista(ctx) {
               <datalist id="igcal-sitios"></datalist>
               <span class="full igcal-hint" style="margin-top:-6px">Solo clientes registrados. ¿Falta uno? Agrégalo en Clientes y proveedores. El sitio sugiere los ya usados por ese cliente.</span>
               ${conReportes ? '<label class="full igcal-check"><input type="checkbox" name="informe"><span>Lleva reporte de trabajo</span></label>' : ''}
+              <label class="full igcal-check"><input type="checkbox" name="ast"><span>Lleva AST (imprimir y llevar a terreno)</span></label>
+              <label class="full igcal-check"><input type="checkbox" name="permiso"><span>Exige permiso de trabajo (imprimir y llevar a terreno)</span></label>
               <label class="full">${e ? 'Nueva observación' : 'Observación'} <span class="igcal-opt">(queda con tu nombre y la fecha; las anteriores se ven en el detalle)</span><textarea name="desc" rows="3" placeholder="Detalle, materiales, accesos, contacto en sitio…"></textarea></label>
             </div></section>
           <section class="igcal-ffsec igcal-o4"><h4><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Tareas <span class="igcal-fcnt" data-a="tcnt"></span></h4>
@@ -525,6 +527,16 @@ export default async function vista(ctx) {
       informe.checked = e?.raw.pide_informe ?? informeCliente();
       informe.addEventListener('change', () => { informeTocado = true; });
       campo('cliente').addEventListener('change', () => { if (!informeTocado && e?.raw.pide_informe == null) informe.checked = informeCliente(); });
+    }
+
+    // AST y permiso de trabajo (Faenas 006): igual que "Lleva reporte", según el cliente hasta que se cambie a mano
+    const tocados = new Set();
+    const deCliente = (k) => !!base.clientes.find((c) => c.id === campo('cliente').value)?.[k];
+    for (const [nombre, col, k] of [['ast', 'pide_ast', 'pideAst'], ['permiso', 'pide_permiso', 'pidePermiso']]) {
+      const i = campo(nombre); if (!i) continue;
+      i.checked = e?.raw[col] ?? deCliente(k);
+      i.addEventListener('change', () => tocados.add(col));
+      campo('cliente').addEventListener('change', () => { if (!tocados.has(col) && e?.raw[col] == null) i.checked = deCliente(k); });
     }
 
     // Sitios sugeridos: los del cliente y los ya usados en sus trabajos
@@ -671,6 +683,8 @@ export default async function vista(ctx) {
           tareas: [...tareas, ...(pendiente ? [pendiente] : [])].map((t) => String(t ?? '').trim()).filter(Boolean),
           dotacion: dotForm(),
           ...(informe && informeTocado ? { pide_informe: informe.checked } : {}),
+          ...(tocados.has('pide_ast') ? { pide_ast: campo('ast').checked } : {}),
+          ...(tocados.has('pide_permiso') ? { pide_permiso: campo('permiso').checked } : {}),
         };
         const rep = campo('repetir').value;
         const veces = Math.min(parseInt(campo('veces').value, 10) || 0, 52);

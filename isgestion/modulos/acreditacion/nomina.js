@@ -2,11 +2,11 @@
 // quienes tuvieron horas en ese cliente en el mes (acr_nomina_mes) y se pueden agregar o quitar. El PDF lleva el
 // membrete de la empresa, los datos de la nómina, la tabla (N°, nombre, RUT, cargo, ingreso) y la firma del
 // representante (si la empresa la tiene en Prevención SST). Se guarda como el archivo del mes del requisito.
-import { abrirFormulario } from '../../core/ui/modal.js?v=6df4ca6';
-import { avisar } from '../../core/ui/aviso.js?v=6df4ca6';
-import { fechaLarga, hoyISO, nombreMes } from '../../core/ui/formato.js?v=6df4ca6';
-import { subirArchivo, eliminarArchivo } from '../../core/adjuntos.js?v=6df4ca6';
-import { nombreTercero } from './datos.js?v=6df4ca6';
+import { abrirFormulario } from '../../core/ui/modal.js?v=9dd99fc';
+import { avisar } from '../../core/ui/aviso.js?v=9dd99fc';
+import { fechaLarga, hoyISO, nombreMes } from '../../core/ui/formato.js?v=9dd99fc';
+import { subirArchivo, eliminarArchivo } from '../../core/adjuntos.js?v=9dd99fc';
+import { nombreTercero } from './datos.js?v=9dd99fc';
 
 export const esNomina = (r) => /n[oó]mina/i.test(r.nombre);
 
@@ -48,7 +48,7 @@ export async function generarNomina(ctx, c, r, periodo, x) {
 }
 
 async function pdfNomina(ctx, mandante, periodo, lista) {
-  const { nuevoPdf, cargarLogo } = await import('../../core/pdf.js?v=6df4ca6');
+  const { nuevoPdf, cargarLogo } = await import('../../core/pdf.js?v=9dd99fc');
   const e = ctx.empresa;
   const pdf = await nuevoPdf(ctx, { titulo: 'Nómina de trabajadores', subtitulo: `${mandante} · ${nombreMes(periodo)}` });
   pdf.tabla({ columnas: ['Dato', 'Detalle'], filas: [
@@ -58,8 +58,8 @@ async function pdfNomina(ctx, mandante, periodo, lista) {
   pdf.tabla({ columnas: ['N°', 'Nombre completo', 'RUT', 'Cargo', 'Fecha de ingreso'],
     filas: lista.map((p, i) => [i + 1, p.nombre, p.rut, p.cargo || '', p.fecha_ingreso ? fechaLarga(p.fecha_ingreso) : '']) });
 
-  // Firma del representante legal (de la configuración de Prevención SST, si existe y se puede leer)
-  const { data: cfg } = await ctx.api.from('sst_config').select('representante, cargo_rep, firma_ruta, timbre_ruta').eq('empresa_id', e.id).maybeSingle().then((r) => r, () => ({ data: null }));
+  // Firma del representante legal (Datos y firmas de Prevención SST, si existe y se puede leer)
+  const cfg = await import('../sst/datos.js?v=9dd99fc').then((m) => m.cargarConfig(ctx, e.id)).catch(() => null);
   const [firma, timbre] = cfg ? await Promise.all([cargarLogo(ctx.api, cfg.firma_ruta), cargarLogo(ctx.api, cfg.timbre_ruta)]) : [null, null];
   const doc = pdf.doc;
   const ancho = doc.internal.pageSize.getWidth();

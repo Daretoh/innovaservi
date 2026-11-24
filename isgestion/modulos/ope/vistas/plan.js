@@ -1,14 +1,14 @@
 // Planificar una faena en un día: horario, dotación del día, cuadrilla, vehículos, notas,
 // enviar / reabrir y generar las horas en Asistencia.
 // Ruta: #/ope.plan?f=<faena_id>&d=<fecha>
-import { el } from '../../../core/ui/dom.js?v=6df4ca6';
-import { icono } from '../../../core/ui/iconos.js?v=6df4ca6';
-import { boton } from '../../../core/ui/tabla.js?v=6df4ca6';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=6df4ca6';
-import { avisar } from '../../../core/ui/aviso.js?v=6df4ca6';
-import { hhmm, nombreDia, fechaLarga, hoyISO, sumarDias } from '../../../core/ui/formato.js?v=6df4ca6';
-import { seccionPreparacion } from './preparacion.js?v=6df4ca6';
-import { cargarBase, cargarSemana, etiquetaFaena, horarioDe, dotacionDe, dotTotal, dotTexto, ocupacion, ROLES, nombreRol, nombreCompleto, partesDeRango, estadoParte, pideInformeFaena } from '../datos.js?v=6df4ca6';
+import { el } from '../../../core/ui/dom.js?v=9dd99fc';
+import { icono } from '../../../core/ui/iconos.js?v=9dd99fc';
+import { boton } from '../../../core/ui/tabla.js?v=9dd99fc';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=9dd99fc';
+import { avisar } from '../../../core/ui/aviso.js?v=9dd99fc';
+import { hhmm, nombreDia, fechaLarga, hoyISO, sumarDias } from '../../../core/ui/formato.js?v=9dd99fc';
+import { seccionPreparacion } from './preparacion.js?v=9dd99fc';
+import { cargarBase, cargarSemana, etiquetaFaena, horarioDe, dotacionDe, dotTotal, dotTexto, ocupacion, ROLES, nombreRol, nombreCompleto, partesDeRango, estadoParte, pideInformeFaena, carpetaTerreno } from '../datos.js?v=9dd99fc';
 
 export default async function vista(ctx) {
   const { f: faenaId, d: fecha } = ctx.params;
@@ -192,9 +192,37 @@ export default async function vista(ctx) {
         f.tareas?.length ? el('ol', {}, f.tareas.map((t) => { const ok = (f.tareas_check ?? []).some((x) => x.ok && String(x.t).trim().toLowerCase() === t.trim().toLowerCase()); return el('li', { class: ok ? 'tarea-ok' : '' }, t); })) : el('p', { class: 'texto-suave' }, 'Sin tareas.'),
         await observaciones(ctx, f),
         el('p', { class: 'texto-suave texto-chico' }, diasFaena.length > 1 ? (f.dias?.length ? `Faena de ${diasFaena.length} días a elección (${diasFaena.map((d) => fechaLarga(d)).join(', ')}): cada día se planifica por separado.` : `Faena del ${fechaLarga(f.fecha_inicio)} al ${fechaLarga(f.fecha_fin)}: cada día se planifica por separado.`) : ''),
+        await seccionCarpeta(ctx, f, base, fecha),
         partes ? seccionParte(ctx, f, fecha, base, estadoParte(partes, f, fecha, base, hoyISO()), partes) : null)),
     await seccionPreparacion(ctx, { f, p, base, asegurarPlan }),
   );
+}
+
+// Carpeta a terreno (Faenas 006): AST y permiso de trabajo que hay que imprimir y llevar. Por omisión, lo del cliente.
+async function seccionCarpeta(ctx, f, base, fecha) {
+  const { cargarDocsTerreno, bloqueDocsTerreno } = await import('../terreno-docs.js?v=9dd99fc');
+  const docs = (await cargarDocsTerreno(ctx, fecha, fecha).catch(() => new Map())).get(`${f.id}|${fecha}`) ?? [];
+  const cli = base.clientes.find((c) => c.id === f.tercero_id) ?? {};
+  const editable = ctx.puede('ope', 'editar');
+  const casilla = (col, k, texto) => {
+    const porCliente = !!cli[k];
+    const i = el('input', { type: 'checkbox', class: 'interruptor', checked: f[col] ?? porCliente, disabled: !editable });
+    i.addEventListener('change', async () => {
+      const valor = i.checked === porCliente ? null : i.checked;
+      const { data, error } = await ctx.api.from('ope_faenas').update({ [col]: valor }).eq('id', f.id).select('id');
+      if (error || !data?.length) { i.checked = !i.checked; avisar(error?.message ?? 'Sin permiso para cambiar la faena.', 'error'); return; }
+      f[col] = valor;
+      avisar(`${texto}: ${i.checked ? 'sí' : 'no'}.`);
+    });
+    return el('label', { class: 'casilla' }, i, texto, el('span', { class: 'texto-suave texto-chico' }, ` (el cliente, por omisión: ${porCliente ? 'sí' : 'no'})`));
+  };
+  return el('div', {},
+    el('h2', {}, 'Carpeta a terreno'),
+    el('p', { class: 'texto-suave texto-chico' }, 'Lo que hay que imprimir y llevar a la faena. Se ve también en Prevención SST → En terreno.'),
+    casilla('pide_ast', 'pideAst', 'Lleva AST'),
+    casilla('pide_permiso', 'pidePermiso', 'Exige permiso de trabajo'),
+    el('p', { class: 'texto-suave texto-chico' }, 'Firmados en terreno, se adjuntan aquí (foto o PDF):'),
+    bloqueDocsTerreno(ctx, { f, fecha, docs, alCambiar: () => ctx.refrescar() }));
 }
 
 // Parte de trabajo de esta faena-día (módulo Reportes): estado y acceso, o crearlo
@@ -295,7 +323,7 @@ function ajustarDotacion(ctx, f, p, asegurarPlan) {
 // Vehículos de la flota (si la empresa tiene el módulo Flota) con sus avisos: en taller o documentos vencidos
 async function cargarFlotaOpe(ctx) {
   if (!ctx.puede('flota', 'ver')) return null;
-  const { cargarFlota, alertas, textoVence, etiquetaVehiculo } = await import('../../flota/datos.js?v=6df4ca6');
+  const { cargarFlota, alertas, textoVence, etiquetaVehiculo } = await import('../../flota/datos.js?v=9dd99fc');
   const lista = await cargarFlota(ctx);
   const avisos = (v) => [...(v.estado === 'taller' ? ['En taller'] : []), ...alertas(v.registros).filter((a) => a.k === 'venc').map(textoVence)];
   return { lista, de: new Map(lista.map((v) => [v.id, v])), avisos, etiqueta: etiquetaVehiculo };

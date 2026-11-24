@@ -1,15 +1,15 @@
 // Checklist de carga para la cuadrilla (sin cuenta). URL: /checklist/?t=<token>
 // Todo pasa por la Edge Function checklist-faena: ver, marcar, subir fotos de la carga y fotos del parte por etapa.
-import { el } from '../core/ui/dom.js?v=6df4ca6';
-import { icono } from '../core/ui/iconos.js?v=6df4ca6';
-import { comprimirFoto } from '../core/imagenes.js?v=6df4ca6';
-import { botonesFotos } from '../core/ui/camara.js?v=6df4ca6';
+import { el } from '../core/ui/dom.js?v=9dd99fc';
+import { icono } from '../core/ui/iconos.js?v=9dd99fc';
+import { comprimirFoto } from '../core/imagenes.js?v=9dd99fc';
+import { botonesFotos } from '../core/ui/camara.js?v=9dd99fc';
 
 const raiz = document.getElementById('app');
 const token = new URLSearchParams(location.search).get('t') ?? '';
 const SECCIONES = [['epp', 'EPP'], ['ropa', 'Ropa de trabajo'], ['herramienta', 'Herramientas'], ['maquinaria', 'Maquinaria'], ['material', 'Materiales']];
 const ROL = { op: 'Operario', sup: 'Supervisor', prev: 'Prevencionista' };
-const ETAPAS = [['antes', 'Antes'], ['proceso', 'Proceso'], ['despues', 'Después'], ['doc', 'Registro documental']];
+const ETAPAS = [['antes', 'Antes'], ['proceso', 'Proceso'], ['despues', 'Después'], ['doc', 'Registro documental'], ['terreno', 'AST / permiso de trabajo (no va al informe)']];
 let url = '';
 let etapa = 'antes';
 

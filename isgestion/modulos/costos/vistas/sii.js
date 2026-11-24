@@ -3,14 +3,14 @@
 // - Documento a documento: facturas en el SII que no están en ISgestión, al revés y con montos distintos.
 // "Sincronizar con el SII" pide a OpenFactura actualizar el RCV desde el SII (tarda unos minutos; el SII limita
 // cuántas veces). Las boletas (de la TUU) se comparan solo por totales. Solo con costos.aprobar.
-import { el } from '../../../core/ui/dom.js?v=6df4ca6';
-import { icono } from '../../../core/ui/iconos.js?v=6df4ca6';
-import { boton } from '../../../core/ui/tabla.js?v=6df4ca6';
-import { avisar } from '../../../core/ui/aviso.js?v=6df4ca6';
-import { dinero, fechaLarga, hoyISO } from '../../../core/ui/formato.js?v=6df4ca6';
-import { llamarDte, estadoDte, avisoPrueba, NOMBRE_DTE } from '../../../core/dte.js?v=6df4ca6';
-import { sinPermiso } from './flujo.js?v=6df4ca6';
-import { formRegistrar } from '../../cotizaciones/emitidas.js?v=6df4ca6';
+import { el } from '../../../core/ui/dom.js?v=9dd99fc';
+import { icono } from '../../../core/ui/iconos.js?v=9dd99fc';
+import { boton } from '../../../core/ui/tabla.js?v=9dd99fc';
+import { avisar } from '../../../core/ui/aviso.js?v=9dd99fc';
+import { dinero, fechaLarga, hoyISO } from '../../../core/ui/formato.js?v=9dd99fc';
+import { llamarDte, estadoDte, avisoPrueba, NOMBRE_DTE } from '../../../core/dte.js?v=9dd99fc';
+import { sinPermiso } from './flujo.js?v=9dd99fc';
+import { formRegistrar } from '../../cotizaciones/emitidas.js?v=9dd99fc';
 
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
 const nombreMes = (p) => `${MESES[(p % 100) - 1]} ${Math.floor(p / 100)}`;
@@ -88,14 +88,14 @@ export default async function vista(ctx) {
     const aPorCargar = (ev, d) => {
       const b = ev.currentTarget; b.disabled = true; b.classList.add('cargando');
       llamarDte(ctx, 'compra_a_bandeja', { rut: d.rut, tipo: d.tipo, folio: d.folio })
-        .then(() => { b.replaceWith(el('a', { href: ctx.ruta('costos.bandeja') }, 'En Por cargar')); avisar(`${nombreTipo(d.tipo)} N° ${d.folio} quedó en Por cargar.`); })
+        .then(() => { b.replaceWith(el('a', { href: ctx.ruta('costos.bandeja') }, 'En la Bandeja')); avisar(`${nombreTipo(d.tipo)} N° ${d.folio} quedó en la Bandeja.`); })
         .catch((err) => { avisar(err.message, 'error'); b.disabled = false; b.classList.remove('cargando'); });
     };
     const linkGasto = { titulo: '', celda: (d) => (d.registro_id ? el('span', {}, el('a', { href: ctx.ruta('costos.registro', { id: d.registro_id }) }, 'Ver gasto'),
         d.sugerencia ? el('span', { class: 'texto-chico sii-sugerencia' }, ` · ¿Folio mal anotado? En el SII es ${nombreTipo(d.sugerencia.tipo).toLowerCase()} N° ${d.sugerencia.folio} por el mismo monto.`) : null)
       : d.sugerido ? el('span', { class: 'texto-chico sii-sugerencia' }, 'Parece estar en Costos con otro folio: ', el('a', { href: ctx.ruta('costos.registro', { id: d.sugerido }) }, 'ver gasto'))
-      : d.en_bandeja ? el('a', { href: ctx.ruta('costos.bandeja') }, 'En Por cargar')
-      : !r.prueba && [33, 34, 46].includes(Number(d.tipo)) && ctx.puede('costos', 'editar') ? boton('A Por cargar', { icono: 'descargar', class: 'boton boton-secundario boton-chico', onclick: (ev) => aPorCargar(ev, d) }) : '') };
+      : d.en_bandeja ? el('a', { href: ctx.ruta('costos.bandeja') }, 'En la Bandeja')
+      : !r.prueba && [33, 34, 46].includes(Number(d.tipo)) && ctx.puede('costos', 'editar') ? boton('A la Bandeja', { icono: 'descargar', class: 'boton boton-secundario boton-chico', onclick: (ev) => aPorCargar(ev, d) }) : '') };
     const difGasto = { titulo: 'En ISgestión', celda: (d) => el('span', {}, dinero(d.isg_total), ' ', el('a', { href: ctx.ruta('costos.registro', { id: d.registro_id }) }, 'Ver')) };
     const linkFac = { titulo: '', celda: (d) => (d.factura_id ? el('a', { href: ctx.ruta('cotizaciones.oc') }, 'Ver en Facturas') : '') };
     const difFac = { titulo: 'En ISgestión', celda: (d) => dinero(d.isg_total) };
@@ -110,41 +110,54 @@ export default async function vista(ctx) {
     };
     const accionVenta = { titulo: '', celda: (d) => (d.token && [33, 34].includes(Number(d.tipo)) && ctx.puede('cotizaciones', 'crear')
       ? boton(r.prueba ? 'Ver' : 'Registrar', { icono: 'mas', class: 'boton boton-secundario boton-chico', onclick: () => registrar(d) }) : '') };
-    // Resumen arriba: lo que falta revisar
-    const pend = r.compras.solo_sii.filter((d) => !d.en_bandeja).length;
+    // (2026-11-24, pedido de Enzo: "no se entiende a simple vista") Arriba, dos respuestas: ¿cuadran las compras? y
+    // ¿cuadran las ventas?, con lo que dice el SII contra lo que hay en ISgestión en palabras. Después, solo lo que hay
+    // que hacer (cada lista con su acción). Las tablas por tipo de documento quedan plegadas.
+    const pend = r.compras.solo_sii.filter((d) => !d.en_bandeja);
+    const enBandeja = r.compras.solo_sii.length - pend.length;
     const boletasSii = (tv.get(39)?.total ?? 0) + (tv.get(41)?.total ?? 0);
-    const chip = (ok, texto) => el('span', { class: `chip ${ok ? 'chip-ok' : 'chip-venc'}` }, texto);
-    const resumen = el('div', { class: 'ficha doc-grupo' },
-      el('h2', {}, `Resumen · ${nombreMes(r.periodo)}`),
-      el('div', { class: 'resumen-chips' },
-        chip(!pend, pend ? `Compras sin cargar: ${pend}` : 'Compras: todo en Costos'),
-        r.compras.solo_sii.length - pend ? el('span', { class: 'chip chip-prox' }, `En Por cargar: ${r.compras.solo_sii.length - pend}`) : null,
-        r.compras.distinto.length ? chip(false, `Compras con montos distintos: ${r.compras.distinto.length}`) : null,
-        r.compras.solo_isg.length ? chip(false, `Gastos con folio que el SII no tiene: ${r.compras.solo_isg.length}`) : null,
-        chip(!r.ventas.solo_sii.length, r.ventas.solo_sii.length ? `Facturas sin registrar: ${r.ventas.solo_sii.length}` : 'Ventas: todas las facturas registradas'),
-        r.ventas.distinto.length ? chip(false, `Facturas con montos distintos: ${r.ventas.distinto.length}`) : null,
-        r.ventas.solo_isg.length + r.ventas.sin_numero.length ? chip(false, `En Facturas y no en el SII: ${r.ventas.solo_isg.length + r.ventas.sin_numero.length}`) : null,
-        boletasSii ? el('span', { class: 'chip chip-prox' }, `Boletas del mes en el SII: ${dinero(boletasSii)} · ligadas a órdenes: ${r.boletas?.ligadas ?? 0} (${dinero(r.boletas?.total_ligadas ?? 0)})`) : null));
-    zona.replaceChildren(
-      resumen,
-      el('div', { class: 'ficha doc-grupo' },
-        el('h2', {}, `Compras · ${nombreMes(r.periodo)}`),
+    const suma = (m, tipos) => tipos.reduce((s, t) => s + signo(t) * (m instanceof Map ? m.get(t)?.total ?? 0 : m[t]?.total ?? 0), 0);
+    const cuenta = (m, tipos) => tipos.reduce((s, t) => s + (m instanceof Map ? m.get(t)?.cant ?? 0 : m[t]?.cant ?? 0), 0);
+    const TC = [33, 34, 46, 56, 61]; const TV = [33, 34];
+    const probCompras = pend.length + r.compras.distinto.length + r.compras.solo_isg.length;
+    const probVentas = r.ventas.solo_sii.length + r.ventas.distinto.length + r.ventas.solo_isg.length + r.ventas.sin_numero.length;
+    const tarjeta = (titulo, problemas, siiTotal, siiCant, isgTotal, isgDonde, extra) => el('div', { class: `ficha doc-grupo sii-respuesta ${problemas ? 'sii-mal' : 'sii-bien'}` },
+      el('span', { class: 'texto-suave texto-chico' }, titulo),
+      el('strong', {}, problemas ? `Falta revisar ${problemas === 1 ? '1 documento' : `${problemas} documentos`}` : 'Cuadra'),
+      el('span', { class: 'texto-chico' }, `El SII tiene ${siiCant === 1 ? '1 factura' : `${siiCant} facturas`} por ${dinero(siiTotal)}; en ${isgDonde} hay ${dinero(isgTotal)}.`),
+      extra);
+    const respuestas = el('div', { class: 'sii-respuestas' },
+      tarjeta(`¿Cuadran las compras de ${nombreMes(r.periodo)}?`, probCompras, suma(tc, TC), cuenta(tc, TC), suma(r.isg.compras, TC), 'Gastos',
+        enBandeja ? el('span', { class: 'texto-chico texto-suave' }, `${enBandeja} ya ${enBandeja === 1 ? 'está' : 'están'} en la Bandeja: falta cargarlas.`) : null),
+      tarjeta(`¿Cuadran las ventas con factura de ${nombreMes(r.periodo)}?`, probVentas, suma(tv, TV), cuenta(tv, TV), suma(r.isg.ventas, TV), 'Facturas', null),
+      boletasSii ? el('div', { class: 'ficha doc-grupo sii-respuesta' },
+        el('span', { class: 'texto-suave texto-chico' }, 'Ventas con boleta (máquina TUU)'),
+        el('strong', {}, dinero(boletasSii)),
+        el('span', { class: 'texto-chico' }, `Son ventas del mes con boleta según el SII. ${r.boletas?.ligadas ?? 0} boletas (${dinero(r.boletas?.total_ligadas ?? 0)}) están ligadas a órdenes del taller.`)) : null);
+    const que = [
+      pend.length ? tablaDocs('Compras que están en el SII y no en Gastos', pend, { extra: linkGasto, vacio: '' }) : null,
+      r.compras.distinto.length ? tablaDocs('Compras con un monto distinto en Gastos', r.compras.distinto, { extra: difGasto, vacio: '' }) : null,
+      r.compras.solo_isg.length ? tablaDocs('Gastos con N° de factura que el SII no tiene (¿N° mal anotado?)', r.compras.solo_isg, { extra: linkGasto, vacio: '' }) : null,
+      r.ventas.solo_sii.length ? tablaDocs('Facturas emitidas que faltan en Facturas', r.ventas.solo_sii, { extra: accionVenta, vacio: '' }) : null,
+      r.ventas.distinto.length ? tablaDocs('Facturas con un monto distinto', r.ventas.distinto, { extra: difFac, vacio: '' }) : null,
+      r.ventas.solo_isg.length + r.ventas.sin_numero.length ? tablaDocs('En Facturas y no en el SII', [...r.ventas.solo_isg, ...r.ventas.sin_numero], { extra: linkFac, vacio: '' }) : null,
+    ].filter(Boolean);
+    zona.replaceChildren(...[
+      respuestas,
+      el('div', { class: 'ficha doc-grupo' }, el('h2', {}, 'Qué hay que hacer'),
+        que.length ? que : el('p', { class: 'texto-suave' }, 'Nada: todo lo del SII está en ISgestión y con el mismo monto.')),
+      el('details', { class: 'ficha doc-grupo sii-detalle' }, el('summary', {}, 'Ver el detalle por tipo de documento'),
+        el('h3', {}, 'Compras'),
         r.totales.purchase?.error ? el('p', { class: 'texto-suave' }, `Registro de compras: ${r.totales.purchase.error}`) : null,
         sync('purchase')?.sync_at ? el('p', { class: 'texto-suave texto-chico' }, `Última sincronización pedida: ${new Date(sync('purchase').sync_at).toLocaleString('es-CL')}. ${sync('purchase').sync_mensaje ?? ''}`) : null,
         tablaTotales(tc, r.isg.compras, true),
         el('p', { class: 'texto-suave texto-chico' }, `Cuadran documento a documento: ${r.compras.cuadran}.${r.completo.compras ? '' : ' Solo se revisaron los primeros 300 documentos del mes.'}`),
-        tablaDocs('En el SII y no en Costos', r.compras.solo_sii, { extra: linkGasto, vacio: 'Todo lo del SII está en Costos.' }),
-        tablaDocs('Con montos distintos', r.compras.distinto, { extra: difGasto, vacio: 'Ninguno.' }),
-        tablaDocs('En Costos y no en el SII', r.compras.solo_isg, { extra: linkGasto, vacio: 'Ninguno: todo lo registrado con folio está en el SII.' })),
-      el('div', { class: 'ficha doc-grupo' },
-        el('h2', {}, `Ventas · ${nombreMes(r.periodo)}`),
+        el('h3', {}, 'Ventas'),
         r.totales.sales?.error ? el('p', { class: 'texto-suave' }, `Registro de ventas: ${r.totales.sales.error}`) : null,
         tablaTotales(tv, r.isg.ventas, false),
-        el('p', { class: 'texto-suave texto-chico' }, `Facturas que cuadran: ${r.ventas.cuadran}. Las boletas se comparan solo por el total del SII.${r.completo.ventas ? '' : ' Solo se revisaron los primeros 300 documentos del mes.'}`),
-        tablaDocs('En el SII y no en Facturas', r.ventas.solo_sii, { extra: accionVenta, vacio: 'Todas las facturas del SII están en Facturas.' }),
-        tablaDocs('Con montos distintos', r.ventas.distinto, { extra: difFac, vacio: 'Ninguna.' }),
-        tablaDocs('En Facturas y no en el SII', [...r.ventas.solo_isg, ...r.ventas.sin_numero], { extra: linkFac, vacio: 'Ninguna.' }),
-        r.ventas.otros.length ? tablaDocs('Notas de crédito, guías y otros emitidos', r.ventas.otros, { vacio: '' }) : null));
+        el('p', { class: 'texto-suave texto-chico' }, `Facturas que cuadran: ${r.ventas.cuadran}. "Solo SII" = documentos que ISgestión no compara uno a uno (boletas, guías).${r.completo.ventas ? '' : ' Solo se revisaron los primeros 300 documentos del mes.'}`),
+        r.ventas.otros.length ? tablaDocs('Notas de crédito, guías y otros emitidos', r.ventas.otros, { vacio: '' }) : null),
+    ].filter(Boolean));
   };
   const cuadrar = async (ev) => {
     const b = ev?.currentTarget; if (b) { b.disabled = true; b.classList.add('cargando'); }
@@ -154,14 +167,17 @@ export default async function vista(ctx) {
     finally { if (b) { b.disabled = false; b.classList.remove('cargando'); } }
   };
 
+  // Se cuadra solo al abrir y al cambiar el mes
+  mes.addEventListener('change', () => cuadrar());
+  if (est.conectado) cuadrar();
   return el('section', { class: 'listado' },
     el('header', { class: 'listado-cabecera' },
       el('div', {}, el('h1', {}, 'Cuadre con el SII'),
-        el('p', { class: 'texto-suave' }, 'Lo que el SII tiene del mes contra Costos (compras) y Facturas (ventas).'))),
+        el('p', { class: 'texto-suave' }, 'Revisa que lo que el SII tiene del mes (Registro de Compras y Ventas) esté en ISgestión: las compras en Gastos y las ventas en Facturas.'))),
     estado,
     est.conectado ? el('div', { class: 'listado-acciones' }, mes,
-      boton('Cuadrar', { icono: 'check', tipo: 'primario', onclick: cuadrar }),
-      boton('Sincronizar con el SII', { icono: 'descargar', title: 'Pide al SII el registro de compras y ventas actualizado (tarda unos minutos)', onclick: sincronizar })) : null,
-    est.conectado ? el('p', { class: 'texto-suave texto-chico' }, 'Si el SII muestra algo reciente que aquí no aparece, toca "Sincronizar con el SII", espera unos minutos y vuelve a cuadrar.') : null,
+      boton('Volver a revisar', { icono: 'check', onclick: cuadrar }),
+      boton('Pedir datos nuevos al SII', { icono: 'descargar', title: 'Pide al SII el registro de compras y ventas actualizado (tarda unos minutos; el SII limita cuántas veces)', onclick: sincronizar })) : null,
+    est.conectado ? el('p', { class: 'texto-suave texto-chico' }, 'Si algo reciente del SII no aparece, toca "Pedir datos nuevos al SII", espera unos minutos y vuelve a revisar.') : null,
     zona);
 }

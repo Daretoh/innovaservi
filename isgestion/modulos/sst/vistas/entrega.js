@@ -1,26 +1,29 @@
 // Registro de entrega: participantes, imprimir para firmar, subir el escaneo firmado (marca RRHH) y reabrir.
 // Ruta: #/sst.entrega?id=<id>
-import { el } from '../../../core/ui/dom.js?v=6df4ca6';
-import { icono } from '../../../core/ui/iconos.js?v=6df4ca6';
-import { boton } from '../../../core/ui/tabla.js?v=6df4ca6';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=6df4ca6';
-import { avisar } from '../../../core/ui/aviso.js?v=6df4ca6';
-import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=6df4ca6';
-import { fechaLarga } from '../../../core/ui/formato.js?v=6df4ca6';
-import { TIPOS_ENTREGA, nombreDe, cargarPersonas } from '../datos.js?v=6df4ca6';
-import { tiposRrhh } from './entregas.js?v=6df4ca6';
-import { seccionFirmasEntrega, verPdf } from '../../../core/firmas.js?v=6df4ca6';
+import { el } from '../../../core/ui/dom.js?v=9dd99fc';
+import { icono } from '../../../core/ui/iconos.js?v=9dd99fc';
+import { boton } from '../../../core/ui/tabla.js?v=9dd99fc';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=9dd99fc';
+import { avisar } from '../../../core/ui/aviso.js?v=9dd99fc';
+import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=9dd99fc';
+import { fechaLarga } from '../../../core/ui/formato.js?v=9dd99fc';
+import { TIPOS_ENTREGA, nombreDe, cargarPersonas } from '../datos.js?v=9dd99fc';
+import { tiposRrhh } from './entregas.js?v=9dd99fc';
+import { seccionFirmasEntrega, verPdf } from '../../../core/firmas.js?v=9dd99fc';
+import { cargarDestinos, elegirAcreditacion, valorDestino } from '../acreditacion.js?v=9dd99fc';
 
 const ESCANEOS = ['application/pdf', 'image/jpeg', 'image/png'];
 
 export default async function vista(ctx) {
-  const [{ data: ent, error }, personas, tipos] = await Promise.all([
+  const [{ data: ent, error }, personas, tipos, dest] = await Promise.all([
     ctx.api.from('sst_entregas').select('*, sst_entrega_personas(persona_id, cargo)').eq('id', ctx.params.id).maybeSingle(),
     cargarPersonas(ctx, { todas: true }),
     tiposRrhh(ctx),
+    cargarDestinos(ctx).catch(() => null),
   ]);
   if (error) throw error;
   const volver = el('a', { class: 'volver', href: ctx.ruta('sst.entregas') }, icono('volver', { tam: 16 }), 'Registros de entrega');
+  if (ent?.lote_id) volver.href = ctx.ruta('sst.lote', { id: ent.lote_id });
   if (!ent || ent.deleted_at) return el('section', { class: 'listado' }, volver, el('h1', {}, 'Registro no encontrado'));
   const firmado = ent.estado === 'firmado';
   // Entrega individual (SST 005): un PDF por documento con la casilla de una sola persona; no se agregan participantes
@@ -51,7 +54,7 @@ export default async function vista(ctx) {
   // El PDF con las firmas que haya (las electrónicas se estampan en su casilla, aunque falte gente por firmar)
   if (docs) acciones.push(boton('Descargar ZIP', { icono: 'descargar', onclick: async (ev) => {
     const b = ev.currentTarget;
-    const { descargarEntregasZip } = await import('../zip.js?v=6df4ca6');
+    const { descargarEntregasZip } = await import('../zip.js?v=9dd99fc');
     await descargarEntregasZip(ctx, [ent.id], { nombre: `Entrega ${participantes[0]?.nombre ?? ''}`.trim(), boton: b });
   } }));
   if (ent.archivo && !docs) acciones.push(boton(firmado ? 'Ver firmado' : 'Ver PDF', { icono: 'ojo', onclick: () => verPdf(ctx, ent) }));
@@ -92,6 +95,13 @@ export default async function vista(ctx) {
     firmado ? el('p', { class: 'aviso-bandeja' }, icono('check', { tam: 16 }), docs ? 'Registro firmado: no se puede cambiar.' : 'Registro firmado: no se puede cambiar. Para corregirlo, vuélvelo a "por firmar".') : null,
     // La firma por WhatsApp va arriba: es lo primero que se mira
     bloqueFirmas,
+    // Para qué acreditación es (SST 006); en una entrega de varios trabajadores se cambia para todos desde la entrega
+    el('div', { class: 'ficha doc-grupo' }, el('div', { class: 'doc-fila' },
+      el('div', { class: 'doc-nombre' }, el('strong', {}, 'Para la acreditación de'),
+        el('span', { class: ent.acr_tercero_id ? '' : 'texto-suave' }, ent.acr_tercero_id ? dest?.texto(ent.acr_tercero_id, ent.acr_sitio_id) ?? '' : 'Sin asignar'),
+        ent.lote_id ? el('a', { class: 'texto-chico', href: ctx.ruta('sst.lote', { id: ent.lote_id }) }, 'Ver la entrega completa (todos los trabajadores)') : null),
+      ctx.puede('sst', 'editar') && !ent.lote_id ? el('div', { class: 'doc-acciones' },
+        boton(ent.acr_tercero_id ? 'Cambiar' : 'Asignar', { icono: 'editar', onclick: () => elegirAcreditacion(ctx, [ent.id], valorDestino(ent.acr_tercero_id, ent.acr_sitio_id)) })) : null)),
     el('div', { class: 'plan-editor' },
       el('div', { class: 'ficha doc-grupo' },
         el('h2', {}, `Participantes (${participantes.length})`),
@@ -115,7 +125,7 @@ export default async function vista(ctx) {
 async function imprimir(ctx, ent, participantes, b) {
   b.disabled = true;
   try {
-    const { pdfEntrega } = await import('../documentos.js?v=6df4ca6');
+    const { pdfEntrega } = await import('../documentos.js?v=9dd99fc');
     const doc = await pdfEntrega(ctx, ent, participantes);
     window.open(doc.output('bloburl'), '_blank', 'noopener');
   } catch (e) { avisar(`No se pudo generar: ${e.message}`, 'error'); } finally { b.disabled = false; }
@@ -126,7 +136,7 @@ async function prepararPdf(ctx, ent, participantes, b) {
   if (!participantes.length) { avisar('Agrega los participantes antes de enviar a firmar.', 'error'); return; }
   b.disabled = true;
   try {
-    const { pdfEntrega } = await import('../documentos.js?v=6df4ca6');
+    const { pdfEntrega } = await import('../documentos.js?v=9dd99fc');
     const doc = await pdfEntrega(ctx, ent, participantes);
     const archivo = new File([doc.output('blob')], `registro-${ent.id}.pdf`, { type: 'application/pdf' });
     const { ruta } = await subirArchivo(ctx.api, { empresaId: ctx.empresa.id, modulo: 'sst', archivo, tabla: 'sst_entregas', registroId: ent.id, tipos: ['application/pdf'] });

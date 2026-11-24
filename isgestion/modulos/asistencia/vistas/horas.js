@@ -6,14 +6,15 @@
 // Fijos con turno (2026-10-30): cada día hábil quedan presentes "según horario" solos (asis_generar_fijos); aquí solo se
 // corrigen las excepciones: retraso o salida temprana (cambiar la hora), horas extra (cambiar la salida o agregar otra
 // fila) y ausencias (botón Ausente: el día deja de contar y no se vuelve a crear).
-import { el } from '../../../core/ui/dom.js?v=6df4ca6';
-import { icono } from '../../../core/ui/iconos.js?v=6df4ca6';
-import { boton } from '../../../core/ui/tabla.js?v=6df4ca6';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=6df4ca6';
-import { arrastrarHorario } from './arrastre.js?v=6df4ca6';
-import { avisar } from '../../../core/ui/aviso.js?v=6df4ca6';
-import { esTelefono } from '../../../core/movil.js?v=6df4ca6';
-import { hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, horas, aMin, hhmm, diaLocal } from '../../../core/ui/formato.js?v=6df4ca6';
+import { el } from '../../../core/ui/dom.js?v=9dd99fc';
+import { navSemana } from '../../../core/ui/semana.js?v=9dd99fc';
+import { icono } from '../../../core/ui/iconos.js?v=9dd99fc';
+import { boton } from '../../../core/ui/tabla.js?v=9dd99fc';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=9dd99fc';
+import { arrastrarHorario } from './arrastre.js?v=9dd99fc';
+import { avisar } from '../../../core/ui/aviso.js?v=9dd99fc';
+import { esTelefono } from '../../../core/movil.js?v=9dd99fc';
+import { hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, horas, aMin, hhmm, diaLocal } from '../../../core/ui/formato.js?v=9dd99fc';
 
 const DIAS_LARGOS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 export const estado = { lunes: lunesDe(hoyISO()), dia: hoyISO(), nuevas: [], abiertas: new Set(), diasAbiertos: new Set(), filtro: '', borradorLeido: new Set() };   // abiertas: faenas desplegadas (día|faena)   // nuevas: filas en blanco aún sin guardar
@@ -33,7 +34,7 @@ export function minutosRegistro(h) {
 const clave = (s) => String(s ?? '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[·—-]+/g, ' ').replace(/\s+/g, ' ');
 
 export default async function vista(ctx) {
-  if (esTelefono()) return (await import('./horas-movil.js?v=6df4ca6')).default(ctx);   // en el teléfono, lista de personas en vez de planilla
+  if (esTelefono()) return (await import('./horas-movil.js?v=9dd99fc')).default(ctx);   // en el teléfono, lista de personas en vez de planilla
   const desde = estado.lunes;
   const hasta = sumarDias(desde, 6);
   const hoy = hoyISO();
@@ -115,11 +116,7 @@ export default async function vista(ctx) {
   const puedeEliminar = ctx.puede('asistencia', 'eliminar');
 
   const mover = (n) => { estado.lunes = sumarDias(estado.lunes, n * 7); estado.dia = estado.lunes; estado.diasAbiertos.clear(); ctx.refrescar(); };
-  const navegacion = el('div', { class: 'nav-periodo' },
-    el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Semana anterior', onclick: () => mover(-1) }, icono('volver')),
-    el('strong', {}, `Semana ${numSemana(desde)} · ${fechaCorta(desde)} – ${fechaCorta(hasta)}`),
-    el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Semana siguiente', onclick: () => mover(1) }, icono('derecha')),
-    boton('Hoy', { onclick: () => { estado.lunes = lunesDe(hoyISO()); estado.dia = hoyISO(); estado.diasAbiertos.clear(); ctx.refrescar(); } }));
+  const navegacion = navSemana({ lunes: desde, alMover: mover, alHoy: () => { estado.lunes = lunesDe(hoyISO()); estado.dia = hoyISO(); estado.diasAbiertos.clear(); ctx.refrescar(); } });
 
   // Faena: solo donde se usa Faenas y planificación (Innova); en las demás (Performance) no se muestra, salvo que la semana
   // ya tenga horas con faena escrita (2026-11-05)

@@ -1,10 +1,10 @@
 // Datos de la empresa para los documentos y firmas (representante, timbre y prevencionista). Las firmas son imágenes
 // privadas (PNG o JPG; mejor con fondo blanco o transparente). Si no hay firmas aquí, se usan las de Prevención SST.
-import { el } from '../../../core/ui/dom.js?v=6df4ca6';
-import { icono } from '../../../core/ui/iconos.js?v=6df4ca6';
-import { boton } from '../../../core/ui/tabla.js?v=6df4ca6';
-import { avisar } from '../../../core/ui/aviso.js?v=6df4ca6';
-import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=6df4ca6';
+import { el } from '../../../core/ui/dom.js?v=9dd99fc';
+import { icono } from '../../../core/ui/iconos.js?v=9dd99fc';
+import { boton } from '../../../core/ui/tabla.js?v=9dd99fc';
+import { avisar } from '../../../core/ui/aviso.js?v=9dd99fc';
+import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=9dd99fc';
 
 const CAMPOS = [
   ['Membrete', [['ciudad', 'Ciudad (donde se firman los contratos)'], ['direccion', 'Dirección (calle y número, sin la ciudad)'], ['region', 'Región'],
@@ -22,7 +22,9 @@ export default async function vista(ctx) {
   if (error) throw error;
   const c = data ?? {};
   const editable = ctx.puede('documentos', 'editar');
-  const volver = el('a', { class: 'volver', href: ctx.ruta('documentos.generar') }, icono('volver', { tam: 16 }), 'Generar documentos');
+  // También es la pantalla "Datos y firmas" de Prevención SST (sst.config): ahí no lleva "volver" al generador
+  const enSst = location.hash.startsWith('#/sst.');
+  const volver = enSst ? null : el('a', { class: 'volver', href: ctx.ruta('documentos.generar') }, icono('volver', { tam: 16 }), 'Generar documentos');
 
   const form = el('form', { class: 'ficha-datos' },
     CAMPOS.map(([titulo, campos]) => el('div', { class: 'ficha' }, el('h2', {}, titulo),
@@ -69,7 +71,7 @@ export default async function vista(ctx) {
 
   return el('section', { class: 'listado' }, volver,
     el('header', { class: 'listado-cabecera' }, el('div', {}, el('h1', {}, 'Datos para los documentos'),
-      el('p', { class: 'texto-suave' }, 'La razón social, el RUT y el logo salen de Administración → Empresa.'))),
+      el('p', { class: 'texto-suave' }, 'Representante legal, prevencionista y sus firmas para todos los documentos (Prevención, acreditación y plantillas). La razón social, el RUT y el logo salen de Administración → Empresa.'))),
     form,
     el('div', { class: 'ficha doc-grupo' }, el('h2', {}, 'Firmas y timbre'),
       el('p', { class: 'texto-suave texto-chico' }, 'Foto o escaneo en PNG o JPG, idealmente con fondo blanco o transparente (máx. 2 MB). Si no hay, se usan las de Prevención SST.'),

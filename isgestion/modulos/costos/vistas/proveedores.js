@@ -1,9 +1,11 @@
-// Proveedores: modalidad de pago (por compra o factura mensual) y plazo en días. El plazo da el vencimiento de las
-// facturas por pagar; los de factura mensual avisan "Falta factura" en Pagos.
-import { el } from '../../../core/ui/dom.js?v=6df4ca6';
-import { listado } from '../../../core/ui/tabla.js?v=6df4ca6';
-import { avisar } from '../../../core/ui/aviso.js?v=6df4ca6';
-import { nombreTercero } from '../datos.js?v=6df4ca6';
+// Todos los proveedores: modalidad de pago y plazo en días. El plazo da el vencimiento de las facturas por pagar.
+// "Factura una vez al mes" y "Lleva cuenta" los dejan con seguimiento en Proveedores y cuentas (2026-11-24).
+// Se abre desde Proveedores y cuentas (y desde Administración → Módulos).
+import { el } from '../../../core/ui/dom.js?v=9dd99fc';
+import { icono } from '../../../core/ui/iconos.js?v=9dd99fc';
+import { listado } from '../../../core/ui/tabla.js?v=9dd99fc';
+import { avisar } from '../../../core/ui/aviso.js?v=9dd99fc';
+import { nombreTercero } from '../datos.js?v=9dd99fc';
 
 export default async function vista(ctx) {
   const e = ctx.empresa.id;
@@ -28,8 +30,8 @@ export default async function vista(ctx) {
     cfgDe.set(t.id, res.data); avisar(`${nombreTercero(t)}: guardado.`);
   };
 
-  return listado({
-    titulo: 'Proveedores',
+  const lista = listado({
+    titulo: 'Todos los proveedores',
     filas,
     vacio: 'No hay proveedores. Se agregan en Clientes y proveedores o al leer una boleta o factura.',
     columnas: [
@@ -37,7 +39,7 @@ export default async function vista(ctx) {
       { titulo: 'Compras', valor: (t) => String(compras.get(t.id) ?? 0) },
       { titulo: 'Modalidad', valor: (t) => {
         const s = el('select', { class: 'campo', disabled: !puede, 'aria-label': 'Modalidad' },
-          [['por_compra', 'Paga cada compra'], ['mensual', 'Factura una vez al mes'], ['cuenta', 'Cuenta corriente (se paga antes o por partes y factura después; a un contratista se le descuentan compras)']].map(([k, n]) => el('option', { value: k, selected: (cfgDe.get(t.id)?.modalidad ?? 'por_compra') === k }, n)));
+          [['por_compra', 'Paga cada compra (sin seguimiento)'], ['mensual', 'Factura una vez al mes'], ['cuenta', 'Lleva cuenta (se le paga antes o por partes; a un contratista se le descuentan compras)']].map(([k, n]) => el('option', { value: k, selected: (cfgDe.get(t.id)?.modalidad ?? 'por_compra') === k }, n)));
         s.addEventListener('change', () => guardar(t, { modalidad: s.value }));
         return s;
       } },
@@ -48,4 +50,7 @@ export default async function vista(ctx) {
       } },
     ],
   });
+  lista.querySelector('.listado-cabecera').before(el('a', { class: 'volver', href: ctx.ruta('costos.pagos') }, icono('volver', { tam: 16 }), 'Proveedores y cuentas'));
+  lista.querySelector('.listado-cabecera').after(el('p', { class: 'texto-suave texto-chico' }, 'Los que "pagan cada compra" no necesitan seguimiento: su factura se paga y listo. Los que facturan a fin de mes o llevan cuenta aparecen en Proveedores y cuentas con su saldo.'));
+  return lista;
 }
