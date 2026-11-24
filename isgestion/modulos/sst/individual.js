@@ -4,15 +4,15 @@
 // por trabajador y se envía a firmar por WhatsApp: con una sola firma su sello queda bajo cada documento (función firmar).
 // Los documentos salen de Prevención SST → Documentos preventivos (última versión en PDF) o de un PDF que se sube aquí.
 // pdf-lib 1.17.1 fijo desde cdnjs, se carga solo al usarlo.
-import { el } from '../../core/ui/dom.js?v=4514958';
-import { icono } from '../../core/ui/iconos.js?v=4514958';
-import { boton } from '../../core/ui/tabla.js?v=4514958';
-import { avisar } from '../../core/ui/aviso.js?v=4514958';
-import { hoyISO, fechaLarga } from '../../core/ui/formato.js?v=4514958';
-import { urlFirmada, subirArchivo, eliminarArchivo } from '../../core/adjuntos.js?v=4514958';
-import { enviarVarios } from '../../core/firmas.js?v=4514958';
-import { cargarPlantillas, pdfDePlantilla } from '../documentos/editor.js?v=4514958';
-import { cargarDestinos, selectDestino, leerDestino } from './acreditacion.js?v=4514958';
+import { el } from '../../core/ui/dom.js?v=10113d4';
+import { icono } from '../../core/ui/iconos.js?v=10113d4';
+import { boton } from '../../core/ui/tabla.js?v=10113d4';
+import { avisar } from '../../core/ui/aviso.js?v=10113d4';
+import { hoyISO, fechaLarga } from '../../core/ui/formato.js?v=10113d4';
+import { urlFirmada, subirArchivo, eliminarArchivo } from '../../core/adjuntos.js?v=10113d4';
+import { enviarVarios } from '../../core/firmas.js?v=10113d4';
+import { cargarPlantillas, pdfDePlantilla } from '../documentos/editor.js?v=10113d4';
+import { cargarDestinos, selectDestino, leerDestino } from './acreditacion.js?v=10113d4';
 
 const PDFLIB = 'https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js';
 const MM = 72 / 25.4;
@@ -157,7 +157,7 @@ const bajar = async (ctx, ruta) => {
 
 // lote / destino: agregar trabajadores a una entrega que ya existe (mismo lote y acreditación); personas: preelegidas
 export async function abrirEntregaIndividual(ctx, { alGuardado = null, lote: loteFijo = null, destino: destinoFijo = null, personas: preelegidas = [] } = {}) {
-  if (!document.getElementById('sst-individual-css')) document.head.append(el('link', { id: 'sst-individual-css', rel: 'stylesheet', href: new URL('./individual.css?v=4514958', import.meta.url).href }));
+  if (!document.getElementById('sst-individual-css')) document.head.append(el('link', { id: 'sst-individual-css', rel: 'stylesheet', href: new URL('./individual.css?v=10113d4', import.meta.url).href }));
   const e = ctx.empresa.id;
   const [vinc, docsR, gen] = await Promise.all([
     ctx.api.from('persona_empresa').select('persona_id, cargo, estado, personas(nombres, apellido_paterno, apellido_materno, rut, telefono)').eq('empresa_id', e).is('deleted_at', null),
@@ -224,7 +224,7 @@ export async function abrirEntregaIndividual(ctx, { alGuardado = null, lote: lot
 
   // Documentos por cargo (SST 010): cada trabajador recibe los de su cargo (para la acreditación elegida, o los generales),
   // más los que se marquen abajo para todos. "IRL propia" pide subir la IRL de cada persona, en el formato que usan.
-  const { matrizCargos } = await import('./vistas/cargos.js?v=4514958');
+  const { matrizCargos } = await import('./vistas/cargos.js?v=10113d4');
   let matriz = { filas: [], docsDe: () => [] };
   const irlDe = new Map();   // persona → { titulo, bytes }
   const porCargo = el('input', { type: 'checkbox', checked: true });
@@ -237,17 +237,23 @@ export async function abrirEntregaIndividual(ctx, { alGuardado = null, lote: lot
   selDest?.addEventListener('change', cargarMatriz);
   porCargo.addEventListener('change', () => pintarResumen());
   const docPorId = (id) => [...docs, ...plantillas].find((d) => d.id === id);
+  // IRL propia ya cargada en Documentos preventivos (tipo IRL, con su nombre en el título): se usa sola
+  const normal = (x) => String(x ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  const irlCargada = (t) => {
+    const partes = normal(t.nombre).split(/\s+/).filter((x) => x.length > 2);
+    return docs.find((d) => d.tipo === 'irl' && partes.length >= 2 && normal(`${d.codigo} ${d.titulo}`).includes(partes[0]) && partes.slice(1).some((x) => normal(`${d.codigo} ${d.titulo}`).includes(x))) ?? null;
+  };
   const deCargo = (t) => (porCargo.checked ? matriz.docsDe(t.cargo) : []);
   function pintarResumen() {
     const ts = gente.filter((p) => elegidosT.has(p.id));
     if (!porCargo.checked || !ts.length) { resumen.replaceChildren(); return; }
     resumen.replaceChildren(el('p', { class: 'texto-suave texto-chico' }, matriz.filas.length ? 'Lo que recibe cada uno según su cargo (más lo que marques abajo para todos):' : 'No hay documentos por cargo para esta acreditación ni generales: elige abajo los documentos (se definen en Documentos preventivos → Documentos por cargo).'),
-      ts.map((t) => {
+      ...ts.map((t) => {
         const ids = deCargo(t);
         const nombres = ids.filter((i) => i !== 'irl_persona').map((i) => docPorId(i)).filter(Boolean).map((d) => (d.id === 'tpl:pts_funciones' ? d.codigoDe(t) : d.codigo || d.titulo));
         const faltan = ids.filter((i) => i !== 'irl_persona' && !docPorId(i)).length;
         const pideIrl = ids.includes('irl_persona');
-        const irl = irlDe.get(t.id);
+        const irl = irlDe.get(t.id) ?? (irlCargada(t) ? { titulo: [irlCargada(t).codigo, irlCargada(t).titulo].filter(Boolean).join(' · ') + ' (de Documentos preventivos)' } : null);
         const entrada = el('input', { type: 'file', accept: 'application/pdf,.pdf', hidden: true, onchange: async (ev) => {
           const f = ev.currentTarget.files?.[0]; if (!f) return;
           irlDe.set(t.id, { titulo: f.name.replace(/\.pdf$/i, '').replace(/[_-]+/g, ' '), bytes: new Uint8Array(await f.arrayBuffer()) });
@@ -265,7 +271,11 @@ export async function abrirEntregaIndividual(ctx, { alGuardado = null, lote: lot
     const ids = deCargo(t);
     const L = [...ids.filter((i) => i !== 'irl_persona').map(docPorId).filter(Boolean)];
     for (const d of elegidos()) if (!L.some((x) => x.id === d.id)) L.push(d);
-    if (ids.includes('irl_persona')) { const irl = irlDe.get(t.id); if (irl) L.push({ id: `irl-${t.id}`, codigo: '', titulo: irl.titulo, tipo: 'otro', version: '', bytes: irl.bytes }); }
+    if (ids.includes('irl_persona')) {
+      const irl = irlDe.get(t.id); const cargada = irlCargada(t);
+      if (irl) L.push({ id: `irl-${t.id}`, codigo: '', titulo: irl.titulo, tipo: 'otro', version: '', bytes: irl.bytes });
+      else if (cargada && !L.some((x) => x.id === cargada.id)) L.push(cargada);
+    }
     return L;
   };
 
@@ -297,7 +307,7 @@ export async function abrirEntregaIndividual(ctx, { alGuardado = null, lote: lot
   const validar = () => {
     if (!elegidosT.size) throw new Error('Elige al menos un trabajador.');
     for (const t of gente.filter((p) => elegidosT.has(p.id))) {
-      if (deCargo(t).includes('irl_persona') && !irlDe.has(t.id)) throw new Error(`Falta subir la IRL de ${t.nombre}.`);
+      if (deCargo(t).includes('irl_persona') && !irlDe.has(t.id) && !irlCargada(t)) throw new Error(`Falta subir la IRL de ${t.nombre}.`);
       if (!docsPara(t).length) throw new Error(`${t.nombre} no recibe ningún documento: elige al menos uno.`);
     }
   };

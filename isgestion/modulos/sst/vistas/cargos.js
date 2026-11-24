@@ -2,10 +2,10 @@
 // lugar (ej.: SAL LOBOS → Camanchaca, Ensenada). Un cuadro: documentos en filas, cargos en columnas; marcar o desmarcar
 // guarda al tiro. La entrega individual los propone solos según el cargo de cada trabajador.
 // Ruta: #/sst.cargos[?a=<tercero>|<sitio>]
-import { el } from '../../../core/ui/dom.js?v=4514958';
-import { icono } from '../../../core/ui/iconos.js?v=4514958';
-import { avisar } from '../../../core/ui/aviso.js?v=4514958';
-import { cargarDestinos, leerDestino } from '../acreditacion.js?v=4514958';
+import { el } from '../../../core/ui/dom.js?v=10113d4';
+import { icono } from '../../../core/ui/iconos.js?v=10113d4';
+import { avisar } from '../../../core/ui/aviso.js?v=10113d4';
+import { cargarDestinos, leerDestino } from '../acreditacion.js?v=10113d4';
 
 export const claveCargo = (t) => String(t ?? '').trim().normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ');
 const estado = { a: null };
@@ -16,7 +16,7 @@ export async function documentosAsignables(ctx) {
   const lista = (data ?? []).map((d) => ({ id: d.id, texto: [d.codigo, d.titulo].filter(Boolean).join(' · '), grupo: 'Documentos preventivos' }));
   if (ctx.puede('documentos', 'ver')) {
     try {
-      const { cargarPlantillas } = await import('../../documentos/editor.js?v=4514958');
+      const { cargarPlantillas } = await import('../../documentos/editor.js?v=10113d4');
       const { P } = await cargarPlantillas(ctx);
       if (P.EMP_GEN?.iper) lista.push({ id: 'tpl:iper', texto: 'Matriz IPER · plantilla general', grupo: 'Plantillas' });
       for (const slug of Object.keys(P.PTS_DOC ?? {})) {
@@ -47,7 +47,9 @@ export default async function vista(ctx) {
     ctx.api.from('persona_empresa').select('cargo').eq('empresa_id', ctx.empresa.id).eq('estado', 'activo').is('deleted_at', null),
   ]);
   if (todas.error) throw todas.error;
-  const a = estado.a ?? ctx.params.a ?? '';
+  // Se abre donde hay documentos definidos (si el general está vacío, el primer mandante y lugar con datos)
+  const conDatos = [...new Set(todas.data.map((r) => (r.tercero_id ? `${r.tercero_id}|${r.sitio_id ?? ''}` : '')))];
+  const a = estado.a ?? ctx.params.a ?? (conDatos.includes('') ? '' : conDatos[0] ?? '');
   const { acr_tercero_id: tercero, acr_sitio_id: sitio } = leerDestino(a);
   const filas = todas.data.filter((r) => (r.tercero_id ?? null) === (tercero ?? null) && (r.sitio_id ?? null) === (sitio ?? null));
   // Cargos: los de los trabajadores activos y los que ya tienen documentos (sin repetir por tildes o mayúsculas)
@@ -73,8 +75,8 @@ export default async function vista(ctx) {
   const contar = () => lista.forEach(([k], i) => { const n = filas.filter((r) => claveCargo(r.cargo) === k).length; totales[i].textContent = n ? `${n} doc.` : 'sin definir'; });
 
   const selector = el('select', { class: 'campo', 'aria-label': 'Para qué acreditación' },
-    el('option', { value: '' }, 'General (todos los mandantes)'),
-    (dest?.opciones ?? []).map(([v, t]) => el('option', { value: v, selected: v === a }, t)));
+    el('option', { value: '' }, `General (todos los mandantes)${conDatos.includes('') ? ' · con documentos' : ''}`),
+    (dest?.opciones ?? []).map(([v, t]) => el('option', { value: v, selected: v === a }, `${t}${conDatos.includes(v) ? ' · con documentos' : ''}`)));
   selector.addEventListener('change', () => { estado.a = selector.value; ctx.refrescar(); });
 
   const grupos = [...new Set(docs.map((d) => d.grupo))];
@@ -98,6 +100,7 @@ export default async function vista(ctx) {
       el('div', {}, el('h1', {}, 'Documentos por cargo'),
         el('p', { class: 'texto-suave' }, 'Qué documentos recibe cada cargo. La entrega individual los propone solos según el cargo de cada trabajador (el cargo sale de su ficha en RRHH).')),
       el('div', { class: 'listado-acciones' }, el('label', { class: 'texto-chico' }, 'Para '), selector)),
+    conDatos.length ? el('p', { class: 'texto-suave texto-chico' }, `Definidos para: ${conDatos.map((k) => (k ? dest?.texto(...k.split('|')) ?? 'un mandante' : 'General')).join(' · ')}.`) : null,
     usaGeneral ? el('p', { class: 'aviso-bandeja' }, icono('alerta', { tam: 16 }), 'Este mandante o lugar no tiene documentos por cargo propios: mientras tanto se usan los generales.') : null,
     lista.length ? tabla : el('p', { class: 'texto-suave' }, 'No hay cargos en las fichas de los trabajadores.'),
     el('p', { class: 'texto-suave texto-chico' }, 'Marcar o desmarcar guarda al tiro. Para una IRL o un PTS por cargo con el formato que usan, súbelo en Documentos preventivos (ej.: "IRL Supervisor") y márcalo aquí para ese cargo; "IRL propia de cada persona" pide subir la de cada uno al entregar.'));
