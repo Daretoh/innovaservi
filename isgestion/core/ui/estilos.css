@@ -1725,7 +1725,7 @@ html[data-modo="oscuro"] img { color-scheme: light; }
 .tcal-ev.tarea.hecha { opacity: .55; text-decoration: line-through; }
 .tcal-h { font-weight: 800; margin-right: 3px; }
 .tcal-pc { display: inline-block; font-size: 8px; font-weight: 800; letter-spacing: .02em; color: #fff; background: #8b3ff0; border-radius: 4px; padding: 2px 3px; margin-right: 4px; vertical-align: middle; }
-.tcal-pc.ec-cot { background: #2f63d6; } .tcal-pc.ec-pago { background: #1e9e6a; }
+.tcal-pc.ec-cot { background: #2f63d6; } .tcal-pc.ec-pago { background: #1e9e6a; } .tcal-pc.ec-abono { background: #c26a00; }
 .tcal-mas { border: none; background: none; text-align: left; font-size: 10px; font-weight: 700; color: var(--texto-suave); cursor: pointer; padding: 1px 4px; }
 .tcal-leyenda { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; align-items: center; }
 .tcal-leyenda .tcal-ev { width: auto; display: inline-block; cursor: default; }

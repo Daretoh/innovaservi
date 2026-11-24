@@ -4,11 +4,11 @@
 //   cronómetro desde la recepción y barra de avance, que se arrastra para priorizar (tal_ordenes.orden_manual)
 // - flujo de los "por cotizar": P.C → COTIZADO → PAGADO
 // - detalle a pantalla completa (tablet): cronómetro grande, avance, tareas para marcar, tiempos por etapa y avanzar/volver.
-import { el } from '../../core/ui/dom.js?v=3015db6';
-import { icono } from '../../core/ui/iconos.js?v=3015db6';
-import { avisar } from '../../core/ui/aviso.js?v=3015db6';
-import { ESTADOS, PRIORIDADES, nombreEstado, verPatente, nombreVehiculo, nombreTercero, textoMinutos } from './datos.js?v=3015db6';
-import { mover } from './acciones.js?v=3015db6';
+import { el } from '../../core/ui/dom.js?v=6df4ca6';
+import { icono } from '../../core/ui/iconos.js?v=6df4ca6';
+import { avisar } from '../../core/ui/aviso.js?v=6df4ca6';
+import { ESTADOS, PRIORIDADES, nombreEstado, verPatente, nombreVehiculo, nombreTercero, textoMinutos } from './datos.js?v=6df4ca6';
+import { mover } from './acciones.js?v=6df4ca6';
 
 const ORDEN_PRIO = { urgente: 0, prioridad: 1, normal: 2, programado: 3 };
 const hoyLocal = () => new Date().toLocaleDateString('sv');
@@ -47,6 +47,8 @@ export function marcaCotizar(o, cotizadas) {
   const porCotizar = o.tal_orden_servicios.some((s) => s.tal_servicios?.variable || /cotiz/i.test(s.nombre));
   const conCotizacion = porCotizar || cotizadas.has(o.id);
   if (o.cobrado) return el('span', { class: 'tcal-pc ec-pago', title: conCotizacion ? 'Cotizada y pagada' : 'Cobrada en el taller' }, conCotizacion ? 'PAGADO' : 'COBRADO');
+  // Con abono y aún sin cobrar: ABONADO (tal_ordenes.abono lo mantiene la base con la suma de tal_abonos)
+  if (Number(o.abono) > 0) return el('span', { class: 'tcal-pc ec-abono', title: 'Tiene abono, falta el resto' }, 'ABONADO');
   if (!conCotizacion) return null;
   if (cotizadas.has(o.id)) return el('span', { class: 'tcal-pc ec-cot', title: 'Tiene cotización' }, 'COTIZADO');
   return el('span', { class: 'tcal-pc', title: 'Por cotizar' }, 'P.C');

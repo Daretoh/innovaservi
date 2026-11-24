@@ -1,8 +1,8 @@
 // Tarjeta con la hora que juntó el bot (pedir_hora de la Edge Function mkt-bot): servicio, día y hora, cliente y
 // vehículo. En el simulador solo se muestra; en la bandeja de WhatsApp trae el botón para dejarla pedida en la agenda.
-import { el } from '../../core/ui/dom.js?v=3015db6';
-import { icono } from '../../core/ui/iconos.js?v=3015db6';
-import { nombreDia, fechaCorta } from '../../core/ui/formato.js?v=3015db6';
+import { el } from '../../core/ui/dom.js?v=6df4ca6';
+import { icono } from '../../core/ui/iconos.js?v=6df4ca6';
+import { nombreDia, fechaCorta } from '../../core/ui/formato.js?v=6df4ca6';
 
 export function tarjetaHora(h, texto, { textoBoton = null, alPedir = null } = {}) {
   const fila = (t, v) => (v ? el('div', {}, el('span', {}, t), el('strong', {}, v)) : null);
