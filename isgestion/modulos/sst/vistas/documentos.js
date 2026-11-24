@@ -1,13 +1,13 @@
 // Documentos preventivos con control de versiones: lista por tipo con la versión vigente y la próxima
 // revisión; detalle con el historial de versiones, subir nueva versión y ver cualquiera.
 // Rutas: #/sst.documentos · #/sst.documentos?id=<documento>
-import { el } from '../../../core/ui/dom.js?v=190b5a4';
-import { icono } from '../../../core/ui/iconos.js?v=190b5a4';
-import { boton } from '../../../core/ui/tabla.js?v=190b5a4';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=190b5a4';
-import { avisar } from '../../../core/ui/aviso.js?v=190b5a4';
-import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=190b5a4';
-import { fechaLarga, hoyISO } from '../../../core/ui/formato.js?v=190b5a4';
+import { el } from '../../../core/ui/dom.js?v=4514958';
+import { icono } from '../../../core/ui/iconos.js?v=4514958';
+import { boton } from '../../../core/ui/tabla.js?v=4514958';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=4514958';
+import { avisar } from '../../../core/ui/aviso.js?v=4514958';
+import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=4514958';
+import { fechaLarga, hoyISO } from '../../../core/ui/formato.js?v=4514958';
 
 export const TIPOS_DOC = [['pts', 'Procedimiento de trabajo seguro (PTS)'], ['iper', 'Matriz IPER y procedimiento'], ['programa', 'Programa preventivo'],
   ['ley_karin', 'Protocolo Ley Karin'], ['matriz_epp', 'Matriz de EPP'], ['capacitacion', 'Material de capacitación'], ['evaluacion', 'Evaluación de aprendizaje'],
@@ -137,6 +137,7 @@ async function lista(ctx) {
   return el('section', { class: 'listado' },
     el('header', { class: 'listado-cabecera' }, el('h1', {}, 'Documentos preventivos'),
       el('div', { class: 'listado-acciones' },
+        el('a', { class: 'boton', href: ctx.ruta('sst.cargos') }, icono('users', { tam: 16 }), 'Documentos por cargo'),
         puede.crear ? boton('Nueva categoría', { icono: 'carpeta', onclick: nuevaCategoria }) : null,
         puede.crear ? boton('Nuevo documento', { icono: 'mas', tipo: 'primario', onclick: () => formDocumento(ctx) }) : null)),
     data.length ? el('div', { class: 'fin-tarjetas' },

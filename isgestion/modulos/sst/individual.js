@@ -4,15 +4,15 @@
 // por trabajador y se envía a firmar por WhatsApp: con una sola firma su sello queda bajo cada documento (función firmar).
 // Los documentos salen de Prevención SST → Documentos preventivos (última versión en PDF) o de un PDF que se sube aquí.
 // pdf-lib 1.17.1 fijo desde cdnjs, se carga solo al usarlo.
-import { el } from '../../core/ui/dom.js?v=190b5a4';
-import { icono } from '../../core/ui/iconos.js?v=190b5a4';
-import { boton } from '../../core/ui/tabla.js?v=190b5a4';
-import { avisar } from '../../core/ui/aviso.js?v=190b5a4';
-import { hoyISO, fechaLarga } from '../../core/ui/formato.js?v=190b5a4';
-import { urlFirmada, subirArchivo, eliminarArchivo } from '../../core/adjuntos.js?v=190b5a4';
-import { enviarVarios } from '../../core/firmas.js?v=190b5a4';
-import { cargarPlantillas, pdfDePlantilla } from '../documentos/editor.js?v=190b5a4';
-import { cargarDestinos, selectDestino, leerDestino } from './acreditacion.js?v=190b5a4';
+import { el } from '../../core/ui/dom.js?v=4514958';
+import { icono } from '../../core/ui/iconos.js?v=4514958';
+import { boton } from '../../core/ui/tabla.js?v=4514958';
+import { avisar } from '../../core/ui/aviso.js?v=4514958';
+import { hoyISO, fechaLarga } from '../../core/ui/formato.js?v=4514958';
+import { urlFirmada, subirArchivo, eliminarArchivo } from '../../core/adjuntos.js?v=4514958';
+import { enviarVarios } from '../../core/firmas.js?v=4514958';
+import { cargarPlantillas, pdfDePlantilla } from '../documentos/editor.js?v=4514958';
+import { cargarDestinos, selectDestino, leerDestino } from './acreditacion.js?v=4514958';
 
 const PDFLIB = 'https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js';
 const MM = 72 / 25.4;
@@ -155,8 +155,9 @@ const bajar = async (ctx, ruta) => {
   return new Uint8Array(await r.arrayBuffer());
 };
 
-export async function abrirEntregaIndividual(ctx, { alGuardado = null } = {}) {
-  if (!document.getElementById('sst-individual-css')) document.head.append(el('link', { id: 'sst-individual-css', rel: 'stylesheet', href: new URL('./individual.css?v=190b5a4', import.meta.url).href }));
+// lote / destino: agregar trabajadores a una entrega que ya existe (mismo lote y acreditación); personas: preelegidas
+export async function abrirEntregaIndividual(ctx, { alGuardado = null, lote: loteFijo = null, destino: destinoFijo = null, personas: preelegidas = [] } = {}) {
+  if (!document.getElementById('sst-individual-css')) document.head.append(el('link', { id: 'sst-individual-css', rel: 'stylesheet', href: new URL('./individual.css?v=4514958', import.meta.url).href }));
   const e = ctx.empresa.id;
   const [vinc, docsR, gen] = await Promise.all([
     ctx.api.from('persona_empresa').select('persona_id, cargo, estado, personas(nombres, apellido_paterno, apellido_materno, rut, telefono)').eq('empresa_id', e).is('deleted_at', null),
@@ -195,8 +196,9 @@ export async function abrirEntregaIndividual(ctx, { alGuardado = null } = {}) {
   const prev = gente.find((p) => norm(p.nombre) === norm(cfg.prevencionista)) ?? null;
 
   const elegidosT = new Set(); const elegidosD = new Set(); const subidos = [];
+  for (const id of preelegidas) elegidosT.add(id);
   const marca = (set, id, texto, sub) => el('label', { class: 'casilla dg-lista-it' },
-    el('input', { type: 'checkbox', onchange: (ev) => { if (ev.currentTarget.checked) set.add(id); else set.delete(id); } }),
+    el('input', { type: 'checkbox', checked: set.has(id), onchange: (ev) => { if (ev.currentTarget.checked) set.add(id); else set.delete(id); pintarResumen(); } }),
     el('span', {}, texto, sub ? el('span', { class: 'texto-suave texto-chico' }, ` · ${sub}`) : null));
   const listaT = el('div', { class: 'ind-lista' }, gente.map((p) => marca(elegidosT, p.id, p.nombre, [p.cargo, p.rut].filter(Boolean).join(' · '))));
   const listaD = el('div', { class: 'ind-lista' }, docs.length ? docs.map((d) => marca(elegidosD, d.id, [d.codigo, d.titulo].filter(Boolean).join(' · '), `versión ${d.version}`))
@@ -217,7 +219,55 @@ export async function abrirEntregaIndividual(ctx, { alGuardado = null } = {}) {
   const fecha = el('input', { type: 'date', class: 'campo', id: 'ind-fecha', value: hoyISO() });
   // Para qué acreditación es (SST 006): la entrega queda en ese mandante en Acreditación
   const dest = await cargarDestinos(ctx).catch(() => null);
-  const selDest = dest ? selectDestino(dest, '', 'ind-acr') : null;
+  const selDest = dest ? selectDestino(dest, destinoFijo ?? '', 'ind-acr') : null;
+  if (selDest && destinoFijo != null) selDest.disabled = true;
+
+  // Documentos por cargo (SST 010): cada trabajador recibe los de su cargo (para la acreditación elegida, o los generales),
+  // más los que se marquen abajo para todos. "IRL propia" pide subir la IRL de cada persona, en el formato que usan.
+  const { matrizCargos } = await import('./vistas/cargos.js?v=4514958');
+  let matriz = { filas: [], docsDe: () => [] };
+  const irlDe = new Map();   // persona → { titulo, bytes }
+  const porCargo = el('input', { type: 'checkbox', checked: true });
+  const resumen = el('div', { class: 'ind-resumen' });
+  const cargarMatriz = async () => {
+    const x = leerDestino(selDest?.value);
+    matriz = await matrizCargos(ctx, { tercero: x.acr_tercero_id, sitio: x.acr_sitio_id }).catch(() => ({ filas: [], docsDe: () => [] }));
+    pintarResumen();
+  };
+  selDest?.addEventListener('change', cargarMatriz);
+  porCargo.addEventListener('change', () => pintarResumen());
+  const docPorId = (id) => [...docs, ...plantillas].find((d) => d.id === id);
+  const deCargo = (t) => (porCargo.checked ? matriz.docsDe(t.cargo) : []);
+  function pintarResumen() {
+    const ts = gente.filter((p) => elegidosT.has(p.id));
+    if (!porCargo.checked || !ts.length) { resumen.replaceChildren(); return; }
+    resumen.replaceChildren(el('p', { class: 'texto-suave texto-chico' }, matriz.filas.length ? 'Lo que recibe cada uno según su cargo (más lo que marques abajo para todos):' : 'No hay documentos por cargo para esta acreditación ni generales: elige abajo los documentos (se definen en Documentos preventivos → Documentos por cargo).'),
+      ts.map((t) => {
+        const ids = deCargo(t);
+        const nombres = ids.filter((i) => i !== 'irl_persona').map((i) => docPorId(i)).filter(Boolean).map((d) => (d.id === 'tpl:pts_funciones' ? d.codigoDe(t) : d.codigo || d.titulo));
+        const faltan = ids.filter((i) => i !== 'irl_persona' && !docPorId(i)).length;
+        const pideIrl = ids.includes('irl_persona');
+        const irl = irlDe.get(t.id);
+        const entrada = el('input', { type: 'file', accept: 'application/pdf,.pdf', hidden: true, onchange: async (ev) => {
+          const f = ev.currentTarget.files?.[0]; if (!f) return;
+          irlDe.set(t.id, { titulo: f.name.replace(/\.pdf$/i, '').replace(/[_-]+/g, ' '), bytes: new Uint8Array(await f.arrayBuffer()) });
+          pintarResumen();
+        } });
+        return el('div', { class: 'doc-fila' },
+          el('div', { class: 'doc-nombre' }, el('strong', {}, t.nombre), el('span', { class: 'texto-suave texto-chico' }, t.cargo || 'sin cargo'),
+            el('span', { class: 'texto-chico' }, ids.length ? [...nombres, pideIrl ? (irl ? `IRL: ${irl.titulo}` : 'IRL propia (falta subirla)') : null].filter(Boolean).join(' · ') : 'Su cargo no tiene documentos definidos: recibe solo lo que marques abajo.'),
+            faltan ? el('span', { class: 'texto-chico texto-suave' }, `${faltan} documento(s) del cargo sin versión en PDF: no se incluyen.`) : null),
+          pideIrl ? el('div', { class: 'doc-acciones' }, entrada, boton(irl ? 'Cambiar IRL' : 'Subir su IRL', { icono: 'carpeta', tipo: irl ? '' : 'primario', onclick: () => entrada.click() })) : null);
+      }));
+  }
+  // Lo que recibe un trabajador: lo de su cargo + lo marcado abajo (sin repetir) + su IRL propia si su cargo la pide
+  const docsPara = (t) => {
+    const ids = deCargo(t);
+    const L = [...ids.filter((i) => i !== 'irl_persona').map(docPorId).filter(Boolean)];
+    for (const d of elegidos()) if (!L.some((x) => x.id === d.id)) L.push(d);
+    if (ids.includes('irl_persona')) { const irl = irlDe.get(t.id); if (irl) L.push({ id: `irl-${t.id}`, codigo: '', titulo: irl.titulo, tipo: 'otro', version: '', bytes: irl.bytes }); }
+    return L;
+  };
 
   // Relator con su firma (si es la prevencionista con su firma guardada)
   let firmaPrev;
@@ -246,7 +296,10 @@ export async function abrirEntregaIndividual(ctx, { alGuardado = null } = {}) {
   };
   const validar = () => {
     if (!elegidosT.size) throw new Error('Elige al menos un trabajador.');
-    if (!elegidosD.size) throw new Error('Elige al menos un documento.');
+    for (const t of gente.filter((p) => elegidosT.has(p.id))) {
+      if (deCargo(t).includes('irl_persona') && !irlDe.has(t.id)) throw new Error(`Falta subir la IRL de ${t.nombre}.`);
+      if (!docsPara(t).length) throw new Error(`${t.nombre} no recibe ningún documento: elige al menos uno.`);
+    }
   };
 
   const verPrevia = async () => {
@@ -254,7 +307,7 @@ export async function abrirEntregaIndividual(ctx, { alGuardado = null } = {}) {
     try {
       validar();
       const t = gente.find((p) => elegidosT.has(p.id));
-      const { bytes } = await armarPdf(t, await conDatos(elegidos(), t), await relator(), fecha.value || hoyISO(), ctx.empresa.color);
+      const { bytes } = await armarPdf(t, await conDatos(docsPara(t), t), await relator(), fecha.value || hoyISO(), ctx.empresa.color);
       const u = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
       if (v) v.location = u; else window.open(u, '_blank');
     } catch (err) { v?.close(); avisar(err.message, 'error'); }
@@ -264,12 +317,14 @@ export async function abrirEntregaIndividual(ctx, { alGuardado = null } = {}) {
       validar();
       if (!ctx.puede('sst', 'crear')) throw new Error('No tienes permiso para crear registros de Prevención SST.');
       b.disabled = true;
-      const ds = elegidos(); const rel = await relator(); const f = fecha.value || hoyISO();
-      const nombres = ds.map((d) => d.codigo || d.titulo);
-      const tema = `Entrega individual: ${nombres.join(', ')}`.slice(0, 200);
-      const tipo = ds.every((d) => d.tipo === 'pts') ? 'pts' : 'otro';
-      const lotes = []; let primero = null; const lote = crypto.randomUUID(); const destino = leerDestino(selDest?.value);
+      const rel = await relator(); const f = fecha.value || hoyISO();
+      const lotes = []; let primero = null; const lote = loteFijo ?? crypto.randomUUID(); const destino = leerDestino(selDest?.value);
       for (const t of gente.filter((p) => elegidosT.has(p.id))) {
+        // Cada uno con lo de su cargo (Documentos por cargo) más lo marcado para todos
+        const ds = docsPara(t);
+        const conT = ds.map((d) => (d.id === 'tpl:pts_funciones' ? d.codigoDe(t) : d.codigo || d.titulo));
+        const tema = `Entrega individual: ${conT.join(', ')} ${t.nombre}`.slice(0, 200);
+        const tipo = ds.every((d) => d.tipo === 'pts') ? 'pts' : 'otro';
         avisar(`Armando el documento de ${t.nombre}…`);
         const id = await guardarEntrega(ctx, { id: crypto.randomUUID(), t, ds: await conDatos(ds, t), rel, fecha: f, tipo, tema, lote, destino,
           contenido: ds.map((d) => [d.codigo, d.titulo, d.version ? `versión ${d.version}` : ''].filter(Boolean).join(' · ')).join('\n') });
@@ -290,13 +345,16 @@ export async function abrirEntregaIndividual(ctx, { alGuardado = null } = {}) {
   const bGuardar = boton('Guardar y enviar a firmar', { tipo: 'primario', icono: 'chat' });
   bGuardar.addEventListener('click', () => guardar(bGuardar));
   const d = el('dialog', { class: 'modal ind-modal', 'aria-label': 'Entrega individual de documentos' },
-    el('header', { class: 'modal-cabecera' }, el('h2', {}, 'Entrega individual de documentos'),
+    el('header', { class: 'modal-cabecera' }, el('h2', {}, loteFijo ? 'Agregar trabajadores a la entrega' : 'Entrega individual de documentos'),
       el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Cerrar', onclick: cerrar }, icono('cerrar'))),
     el('div', { class: 'modal-cuerpo' },
       el('p', { class: 'texto-suave texto-chico' }, 'Cada trabajador recibe su propio PDF: cada documento completo y, al pie de su última hoja, su casilla de firma con nombre, RUT y cargo, y la firma del relator. Firma una vez por WhatsApp y su sello queda bajo cada documento.'),
+      selDest ? el('div', { class: 'form-fila' }, el('label', { for: 'ind-acr' }, 'Para la acreditación de (mandante y lugar)'), selDest) : null,
+      el('label', { class: 'casilla' }, porCargo, 'Documentos según el cargo de cada trabajador (Documentos por cargo)'),
       el('h3', { class: 'doc-sub' }, 'Trabajadores'), listaT,
-      el('h3', { class: 'doc-sub' }, 'Documentos'),
-      el('p', { class: 'texto-suave texto-chico' }, 'Guardados en Documentos preventivos (última versión en PDF). Para la IRL de cada persona, súbela abajo como PDF propio y elige solo a esa persona.'),
+      resumen,
+      el('h3', { class: 'doc-sub' }, 'Documentos para todos (además de los de su cargo)'),
+      el('p', { class: 'texto-suave texto-chico' }, 'Guardados en Documentos preventivos (última versión en PDF).'),
       listaD,
       el('h3', { class: 'doc-sub' }, 'Plantillas'),
       el('p', { class: 'texto-suave texto-chico' }, 'Se arman con los datos de la empresa. El PTS acorde al cargo sale según el cargo de cada trabajador.'),
@@ -306,8 +364,8 @@ export async function abrirEntregaIndividual(ctx, { alGuardado = null } = {}) {
       el('div', { class: 'ind-fila' },
         el('div', { class: 'form-fila' }, el('label', { for: 'ind-rel' }, 'Relator'), selRel),
         el('div', { class: 'form-fila' }, el('label', { for: 'ind-fecha' }, 'Fecha de entrega'), fecha)),
-      selDest ? el('div', { class: 'form-fila' }, el('label', { for: 'ind-acr' }, 'Para la acreditación de (mandante y lugar)'), selDest) : null,
       el('div', { class: 'modal-pie' }, boton('Vista previa', { icono: 'documento', onclick: verPrevia }), bGuardar)));
   document.body.append(d);
   d.showModal();
+  cargarMatriz();
 }

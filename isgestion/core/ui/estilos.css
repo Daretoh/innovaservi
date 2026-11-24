@@ -3671,3 +3671,17 @@ html[data-tema="vidrio"][data-modo="oscuro"] .menu a[aria-current="page"] { colo
 .doc-fila a.doc-nombre strong { color: var(--empresa); }
 .doc-fila a.doc-nombre:hover strong { text-decoration: underline; }
 .ter-formatos { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 4px 0 8px; }
+/* Dibujo del vehículo (modulos/taller/dibujo-auto.js) en las tarjetas del tablero, Agendar y la ficha */
+.dibujo-auto { display: block; flex: none; height: auto; }
+.tal-auto-fila { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.tal-auto-datos { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.agh-auto { align-items: center; }
+.agh-auto-vista { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 130px; padding: 6px 10px; border-radius: var(--radio-control); background: var(--fondo-sutil); }
+.agh-auto-vista small { font-size: .74rem; text-align: center; }
+.agh-vehiculo .dibujo-auto { margin-left: 4px; }
+.veh-cabecera { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+/* Documentos por cargo (SST 010) */
+.dc-tabla th.dc-cargo { text-align: center; min-width: 96px; vertical-align: bottom; white-space: normal; }
+.dc-tabla td.dc-celda { text-align: center; }
+.dc-tabla td.dc-doc { white-space: normal; min-width: 240px; }
+.dc-tabla tr.dc-grupo td { background: var(--fondo-hundido); font-weight: 700; font-size: .85rem; }

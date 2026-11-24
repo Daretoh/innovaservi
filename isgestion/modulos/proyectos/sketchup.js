@@ -1,10 +1,10 @@
 // Proyectos: conectar SketchUp a un proyecto. Crea el código de conexión (pro_sketchup_crear; se muestra una sola vez)
 // y ofrece descargar el script sketchup/enviar_a_isgestion.rb, que envía el modelo directo a ISgestión (Edge Function
 // proyectos-sketchup). Crear un código nuevo invalida el anterior.
-import { el } from '../../core/ui/dom.js?v=190b5a4';
-import { icono } from '../../core/ui/iconos.js?v=190b5a4';
-import { boton } from '../../core/ui/tabla.js?v=190b5a4';
-import { avisar } from '../../core/ui/aviso.js?v=190b5a4';
+import { el } from '../../core/ui/dom.js?v=4514958';
+import { icono } from '../../core/ui/iconos.js?v=4514958';
+import { boton } from '../../core/ui/tabla.js?v=4514958';
+import { avisar } from '../../core/ui/aviso.js?v=4514958';
 
 const SCRIPT = new URL('./sketchup/enviar_a_isgestion.rb', import.meta.url).href;
 

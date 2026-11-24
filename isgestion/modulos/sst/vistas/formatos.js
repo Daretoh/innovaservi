@@ -3,20 +3,20 @@
 // Rellenar: se escribe sobre el PDF del cliente (los campos detectados, o tocando cualquier parte de la hoja para un
 // texto suelto). Lo no rellenado queda en blanco para completarlo en terreno. "Imprimir PDF" escribe sobre el original:
 // queda el formato del cliente tal cual, sin nada de ISgestión.
-import { el } from '../../../core/ui/dom.js?v=190b5a4';
-import { icono } from '../../../core/ui/iconos.js?v=190b5a4';
-import { boton } from '../../../core/ui/tabla.js?v=190b5a4';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=190b5a4';
-import { avisar } from '../../../core/ui/aviso.js?v=190b5a4';
-import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=190b5a4';
-import { fechaLarga, hoyISO } from '../../../core/ui/formato.js?v=190b5a4';
-import { cargarPdfJs, detectarCampos, pdfRellenado, datosDeFaena, DATOS, MARCAS, SIGUIENTE_MARCA } from '../formatos.js?v=190b5a4';
+import { el } from '../../../core/ui/dom.js?v=4514958';
+import { icono } from '../../../core/ui/iconos.js?v=4514958';
+import { boton } from '../../../core/ui/tabla.js?v=4514958';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=4514958';
+import { avisar } from '../../../core/ui/aviso.js?v=4514958';
+import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=4514958';
+import { fechaLarga, hoyISO } from '../../../core/ui/formato.js?v=4514958';
+import { cargarPdfJs, detectarCampos, pdfRellenado, datosDeFaena, DATOS, MARCAS, SIGUIENTE_MARCA } from '../formatos.js?v=4514958';
 
 export const TIPOS_FORMATO = [['ast', 'AST (análisis seguro de trabajo)'], ['permiso', 'Permiso de trabajo'], ['otro', 'Otro formato']];
 const nombreTipo = { ast: 'AST', permiso: 'Permiso de trabajo', otro: 'Formato' };
 
 function css() {
-  if (!document.getElementById('sst-formatos-css')) document.head.append(el('link', { id: 'sst-formatos-css', rel: 'stylesheet', href: new URL('../formatos.css?v=190b5a4', import.meta.url).href }));
+  if (!document.getElementById('sst-formatos-css')) document.head.append(el('link', { id: 'sst-formatos-css', rel: 'stylesheet', href: new URL('../formatos.css?v=4514958', import.meta.url).href }));
 }
 
 export default async function vista(ctx) {
