@@ -2766,6 +2766,35 @@ html.cam-abierta, html.cam-abierta body { overflow: hidden; }
 .sii-mal { border-left-color: var(--venc); }
 .sii-mal strong { color: var(--venc); }
 .sii-detalle > summary { cursor: pointer; color: var(--texto-suave); }
+/* Costos → Gastos: posibles duplicados (2026-11-24) */
+.dup-caja { margin-bottom: 12px; border-left: 4px solid var(--prox); }
+.dup-caja > summary { cursor: pointer; display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.dup-par { display: grid; grid-template-columns: 1fr 1fr auto; gap: 12px; align-items: center; padding: 8px 0; border-top: 1px solid var(--borde); }
+.dup-lado { display: flex; flex-direction: column; gap: 2px; min-width: 0; overflow-wrap: anywhere; }
+.dup-acciones { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+@media (max-width: 700px) { .dup-par { grid-template-columns: 1fr; } .dup-acciones { align-items: flex-start; } }
+/* Bandeja: sueldos sin transferencia y Cierre: pagos del mes (Remuneraciones 012, 2026-11-24) */
+.ban-sueldos { margin-bottom: 12px; border-left: 4px solid var(--prox); }
+.ban-sueldos p { margin: 2px 0 6px; }
+.ban-sueldo { display: grid; grid-template-columns: 1fr auto auto; gap: 12px; align-items: center; padding: 6px 0; border-top: 1px solid var(--borde); }
+.cierre-pagos { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+.cierre-pago-emp { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+.cierre-pagos-lista { margin: 0; padding-left: 18px; }
+@media (max-width: 600px) { .ban-sueldo { grid-template-columns: 1fr auto; } }
+/* Finanzas → Estadísticas: barras por mes (2026-11-24) */
+.est-barras { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(28px, 1fr); gap: 6px; align-items: end; height: 180px; padding-top: 8px; overflow-x: auto; }
+.est-col { display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; }
+.est-pila { flex: 1; width: 100%; display: flex; align-items: flex-end; justify-content: center; gap: 2px; }
+.est-barra { display: inline-block; width: 100%; max-width: 22px; min-height: 2px; border-radius: 4px 4px 0 0; }
+.est-entra { background: var(--empresa); }
+.est-sale { background: var(--texto-suave); opacity: .55; }
+.est-leyenda { display: flex; gap: 14px; margin-bottom: 4px; }
+.est-leyenda span { display: inline-flex; align-items: center; gap: 6px; }
+.est-leyenda .est-barra { width: 12px; height: 12px; border-radius: 3px; }
+.est-fila { display: grid; grid-template-columns: minmax(120px, 1.2fr) 2fr auto 3.5rem; gap: 10px; align-items: center; padding: 6px 0; border-top: 1px solid var(--borde); }
+.est-medidor { height: 8px; border-radius: 4px; background: var(--fondo-hundido); overflow: hidden; }
+.est-medidor i { display: block; height: 100%; background: var(--empresa); }
+@media (max-width: 600px) { .est-fila { grid-template-columns: 1fr auto; } .est-medidor { grid-column: 1 / -1; } }
 /* Grupo → Caja del grupo (2026-11-24): tres respuestas con semáforo por empresa */
 .caja-bloque { margin-bottom: 14px; }
 .caja-titulo { display: flex; align-items: baseline; justify-content: space-between; gap: 8px 16px; flex-wrap: wrap; margin-bottom: 10px; }

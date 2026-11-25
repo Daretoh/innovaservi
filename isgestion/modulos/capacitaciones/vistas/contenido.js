@@ -2,15 +2,15 @@
 // la imagen o la guía paso a paso; "Marcar como visto" (cuenta propia o RUT en la tablet) y, para quien edita o evalúa,
 // quién lo vio, con aprobar / no aprobado.
 // Ruta: #/capacitaciones.contenido?id=<id>
-import { el } from '../../../core/ui/dom.js?v=10113d4';
-import { icono } from '../../../core/ui/iconos.js?v=10113d4';
-import { boton } from '../../../core/ui/tabla.js?v=10113d4';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=10113d4';
-import { avisar } from '../../../core/ui/aviso.js?v=10113d4';
-import { fechaLarga, diaLocal } from '../../../core/ui/formato.js?v=10113d4';
-import { megas } from '../../../core/adjuntos.js?v=10113d4';
-import { cargarBiblioteca, miPersona, miAvance, urlsDe, red, marcarVisto, cargarPersonas, cargarEstilos, conCarga, TIPO_CORTO, ICONO_TIPO, duracion } from '../datos.js?v=10113d4';
-import { editarContenido } from './biblioteca.js?v=10113d4';
+import { el } from '../../../core/ui/dom.js?v=bd56179';
+import { icono } from '../../../core/ui/iconos.js?v=bd56179';
+import { boton } from '../../../core/ui/tabla.js?v=bd56179';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=bd56179';
+import { avisar } from '../../../core/ui/aviso.js?v=bd56179';
+import { fechaLarga, diaLocal } from '../../../core/ui/formato.js?v=bd56179';
+import { megas } from '../../../core/adjuntos.js?v=bd56179';
+import { cargarBiblioteca, miPersona, miAvance, urlsDe, red, marcarVisto, cargarPersonas, cargarEstilos, conCarga, TIPO_CORTO, ICONO_TIPO, duracion } from '../datos.js?v=bd56179';
+import { editarContenido } from './biblioteca.js?v=bd56179';
 
 const ORIGEN = { propio: 'su cuenta', tablet: 'la tablet', encargado: 'el encargado', sesion: 'una sesión' };
 

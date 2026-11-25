@@ -2,16 +2,16 @@
 // cualquier mes), los del mes, pendientes de pago o cobro (de todos los meses), filtro por categoría y por declarado o no
 // declarado (2026-11-24), resumen y Excel. "Editar como planilla" cambia la tabla por la planilla del OS (planilla.js). En el teléfono
 // las filas se ven como tarjetas.
-import { el } from '../../../core/ui/dom.js?v=10113d4';
-import { icono } from '../../../core/ui/iconos.js?v=10113d4';
-import { listado, boton } from '../../../core/ui/tabla.js?v=10113d4';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=10113d4';
-import { avisar } from '../../../core/ui/aviso.js?v=10113d4';
-import { dinero, fechaLarga, hoyISO, nombreMes, moverMes, rangoMes, diaLocal } from '../../../core/ui/formato.js?v=10113d4';
-import { cargarBase, nombreTercero, nombreDoc, nombreMedio, MEDIOS, traerComprasInventario, estadosDe, nombreEstado, CHIP_ESTADO } from '../datos.js?v=10113d4';
-import { planilla } from '../planilla.js?v=10113d4';
-import { urlFirmada } from '../../../core/adjuntos.js?v=10113d4';
-import { pendientesBandeja } from './bandeja.js?v=10113d4';
+import { el } from '../../../core/ui/dom.js?v=bd56179';
+import { icono } from '../../../core/ui/iconos.js?v=bd56179';
+import { listado, boton } from '../../../core/ui/tabla.js?v=bd56179';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=bd56179';
+import { avisar } from '../../../core/ui/aviso.js?v=bd56179';
+import { dinero, fechaLarga, hoyISO, nombreMes, moverMes, rangoMes, diaLocal } from '../../../core/ui/formato.js?v=bd56179';
+import { cargarBase, nombreTercero, nombreDoc, nombreMedio, MEDIOS, traerComprasInventario, estadosDe, nombreEstado, CHIP_ESTADO } from '../datos.js?v=bd56179';
+import { planilla } from '../planilla.js?v=bd56179';
+import { urlFirmada } from '../../../core/adjuntos.js?v=bd56179';
+import { pendientesBandeja } from './bandeja.js?v=bd56179';
 
 // (2026-11-24, orden de Finanzas) Gastos y Otros ingresos son pantallas separadas: los gastos en Compras y gastos,
 // los otros ingresos en Ventas y cobros (vistas/ingresos.js). Cada una recuerda su propio filtro.
@@ -50,12 +50,18 @@ export async function vistaRegistros(ctx, solo) {
   q = q.eq('tipo', solo);
   if (estado.categoria) q = q.eq('categoria_id', estado.categoria);
   if (estado.declarado && esGasto) q = q.eq('declarable', estado.declarado === 'si');
-  const [{ data, error }, base, pend, nRevisar, nSinCentro, us] = await Promise.all([q, cargarBase(ctx),
-    ctx.api.from('fin_registros').select('tipo, total').eq('empresa_id', e).eq('tipo', solo).is('deleted_at', null).neq('estado_pago', 'pagado'),
+  const [{ data: datos, error }, base, pend, nRevisar, nSinCentro, us, ctas] = await Promise.all([q, cargarBase(ctx),
+    ctx.api.from('fin_registros').select('tipo, total, tercero_id').eq('empresa_id', e).eq('tipo', solo).is('deleted_at', null).neq('estado_pago', 'pagado'),
     ctx.api.from('fin_registros').select('id', { count: 'exact', head: true }).eq('empresa_id', e).eq('tipo', solo).is('deleted_at', null).eq('estado_pago', 'pendiente'),
     ctx.api.from('fin_registros').select('id', { count: 'exact', head: true }).eq('empresa_id', e).eq('tipo', solo).is('deleted_at', null).is('centro_id', null).is('a_cuenta_de', null),
-    ctx.api.rpc('nombres_usuarios', { p_empresa: e })]);
+    ctx.api.rpc('nombres_usuarios', { p_empresa: e }),
+    ctx.api.from('fin_proveedores').select('tercero_id').eq('empresa_id', e).eq('modalidad', 'cuenta')]);
   if (error) throw error;
+  // (2026-11-24, Enzo) Contratistas con cuenta corriente (ej.: D&P): sus trabajos no se pagan uno a uno, van al saldo de
+  // su cuenta (lo que nos cobra menos las compras a su cuenta y los abonos). No son "por pagar" en Gastos.
+  const conCuenta = new Set((ctas.data ?? []).map((c) => c.tercero_id));
+  const aSuCuenta = (r) => r.tipo === 'gasto' && r.estado_pago !== 'pagado' && conCuenta.has(r.tercero_id);
+  const data = pendientes ? datos.filter((r) => !aSuCuenta(r)) : datos;
   const quien = new Map((us.data ?? []).map((u) => [u.user_id, u.nombre]));
   // Faenas de los registros (para mostrar su nombre)
   const idsFaena = [...new Set(data.map((r) => r.faena_id).filter(Boolean))];
@@ -67,7 +73,8 @@ export async function vistaRegistros(ctx, solo) {
   const gastosNeto = suma(delMes.filter((r) => r.tipo === 'gasto' && base.categoriaDe.get(r.categoria_id)?.clase !== 'inventario'), (r) => r.neto);
   const comprasInv = suma(delMes.filter((r) => base.categoriaDe.get(r.categoria_id)?.clase === 'inventario'), (r) => r.neto);
   const ingresosNeto = suma(delMes.filter((r) => r.tipo === 'ingreso'), (r) => r.neto);
-  const porPagar = suma((pend.data ?? []).filter((r) => r.tipo === 'gasto'), (r) => r.total);
+  const porPagar = suma((pend.data ?? []).filter((r) => r.tipo === 'gasto' && !aSuCuenta(r)), (r) => r.total);
+  const enCuentas = suma((pend.data ?? []).filter(aSuCuenta), (r) => r.total);
   const porCobrar = suma((pend.data ?? []).filter((r) => r.tipo === 'ingreso'), (r) => r.total);
 
   const cambiarEstado = async (r, sel) => {
@@ -120,7 +127,7 @@ export async function vistaRegistros(ctx, solo) {
     el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Mes anterior', onclick: () => mover(-1) }, icono('volver')),
     el('strong', {}, nombreMes(estado.mes)),
     el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Mes siguiente', onclick: () => mover(1) }, icono('derecha'))));
-  if (ctx.puede('costos', 'exportar') && data.length) acciones.push(boton('Excel', { icono: 'descargar', onclick: () => import('../../../core/excel.js?v=10113d4').then(({ exportarExcel }) => exportarExcel(ctx, {
+  if (ctx.puede('costos', 'exportar') && data.length) acciones.push(boton('Excel', { icono: 'descargar', onclick: () => import('../../../core/excel.js?v=bd56179').then(({ exportarExcel }) => exportarExcel(ctx, {
     titulo: pendientes ? `${nombre} pendientes` : revisar ? `${nombre} por revisar` : sinCentro ? `${nombre} sin centro de costo` : recientes ? `${nombre} recientes` : `${nombre} · ${nombreMes(estado.mes)}`, nombre: `${esGasto ? 'gastos' : 'otros-ingresos'}-${pendientes ? 'pendientes' : recientes ? 'recientes' : estado.mes}`,
     columnas: [{ t: 'Fecha', tipo: 'fecha' }, 'Tipo', 'Concepto', 'Categoría', ...(ctx.config?.centros ? ['Centro'] : []), 'Proveedor o cliente', 'Documento', 'N°', { t: 'Neto', tipo: 'dinero' }, { t: 'IVA', tipo: 'dinero' }, { t: 'Total', tipo: 'dinero' }, 'Estado', { t: 'Fecha de pago', tipo: 'fecha' }, 'Medio', 'Patente'],
     filas: data.map((r) => [r.fecha, r.tipo === 'gasto' ? 'Gasto' : 'Ingreso', r.concepto, base.categoriaDe.get(r.categoria_id)?.nombre ?? '', ...(ctx.config?.centros ? [base.centroDe.get(r.centro_id)?.nombre ?? ''] : []), nombreTercero(r.terceros),
@@ -153,11 +160,11 @@ export async function vistaRegistros(ctx, solo) {
     filas: data,
     claseFila: (r) => (r.tipo === 'ingreso' ? 'fila-suma' : 'fila-resta'),   // franja: verde suma, roja resta
     acciones,
-    vacio: pendientes ? (esGasto ? 'No hay nada por pagar.' : 'No hay nada por cobrar.') : revisar ? 'No hay nada por revisar.' : sinCentro ? 'Todo tiene centro de costo.' : recientes ? 'Aún no hay registros.' : 'Sin registros en el mes.',
+    vacio: pendientes ? (esGasto ? 'No hay nada por pagar (los trabajos de contratistas con cuenta corriente van a su saldo, en Proveedores y cuentas).' : 'No hay nada por cobrar.') : revisar ? 'No hay nada por revisar.' : sinCentro ? 'Todo tiene centro de costo.' : recientes ? 'Aún no hay registros.' : 'Sin registros en el mes.',
     columnas: [
       { titulo: 'Fecha', valor: (r) => fechaLarga(r.fecha) },
       { titulo: 'Concepto', valor: (r) => el('div', {}, el('a', { href: ctx.ruta('costos.registro', { id: r.id }) }, el('strong', {}, r.concepto)),
-        el('div', { class: 'texto-suave texto-chico' }, [nombreTercero(r.terceros), r.faena_id ? faenaDe.get(r.faena_id) ?? 'faena' : null, r.patente ? patenteNodo(r.patente) : null, r.recurrente_id ? 'recurrente' : null, r.documento_id ? 'de Inventario' : null, r.declarable === false ? 'no declarado' : null].filter(Boolean).flatMap((x, i) => (i ? [' · ', x] : [x])))) },
+        el('div', { class: 'texto-suave texto-chico' }, [nombreTercero(r.terceros), r.faena_id ? faenaDe.get(r.faena_id) ?? 'faena' : null, r.patente ? patenteNodo(r.patente) : null, r.recurrente_id ? 'recurrente' : null, r.documento_id ? 'de Inventario' : null, r.declarable === false ? 'no declarado' : null, r.espera_factura ? el('span', { class: 'texto-error' }, 'falta la factura') : null].filter(Boolean).flatMap((x, i) => (i ? [' · ', x] : [x])))) },
       { titulo: 'Categoría', valor: (r) => {
         const c = base.categoriaDe.get(r.categoria_id);
         return el('div', {}, el('span', { class: `chip ${r.tipo === 'ingreso' ? 'chip-ok' : c?.clase === 'inventario' ? 'chip-pend' : 'chip-prox'}` }, c?.nombre ?? ''),
@@ -171,6 +178,8 @@ export async function vistaRegistros(ctx, solo) {
       { titulo: 'Neto', valor: (r) => dinero(r.neto) },
       { titulo: 'Total', valor: (r) => el('strong', {}, `${r.tipo === 'ingreso' ? '+' : ''}${dinero(r.total)}`) },
       { titulo: 'Estado', valor: (r) => {
+        if (aSuCuenta(r)) return el('div', {}, el('a', { class: 'chip chip-prox', href: ctx.ruta('costos.cuenta', { t: r.tercero_id }), title: 'Contratista con cuenta corriente: este trabajo suma a su saldo y se paga con abonos' }, 'A su cuenta'),
+          el('div', { class: 'texto-chico texto-suave' }, 'va a su saldo'));
         if (!ctx.puede('costos', 'editar')) return el('span', { class: `chip ${CHIP_ESTADO[r.estado_pago]}` }, nombreEstado(r));
         const sel = el('select', { class: `campo campo-estado estado-${r.estado_pago}`, 'aria-label': 'Estado', title: r.estado_pago === 'pagado' && r.medio_pago ? nombreMedio[r.medio_pago] : '' },
           estadosDe(r.tipo).map(([k, n]) => el('option', { value: k, selected: k === r.estado_pago }, k === 'pagado' && r.estado_pago === 'pagado' ? `${n} ${fechaLarga(r.fecha_pago)}` : n)));
@@ -178,7 +187,7 @@ export async function vistaRegistros(ctx, solo) {
         return el('div', {}, sel, r.estado_pago !== 'pagado' && r.vence ? el('div', { class: `texto-chico ${r.vence < hoyISO() ? 'texto-error' : 'texto-suave'}` }, `Vence ${fechaLarga(r.vence)}`) : null);
       } },
       { titulo: 'Cargó', valor: (r) => el('span', { class: 'texto-chico texto-suave' },
-        r.recurrente_id ? 'Sistema (gasto fijo)' : r.documento_id ? 'Inventario' : quien.get(r.created_by) ?? '—', el('br'), fechaLarga(diaLocal(r.created_at)),
+        r.remu_ref ? 'Remuneraciones' : r.recurrente_id ? 'Sistema (gasto fijo)' : r.documento_id ? 'Inventario' : quien.get(r.created_by) ?? '—', el('br'), fechaLarga(diaLocal(r.created_at)),
         r.updated_by && r.updated_by !== r.created_by ? el('span', {}, el('br'), `Editó ${quien.get(r.updated_by) ?? '—'}`) : null) },
     ],
   });
@@ -188,12 +197,13 @@ export async function vistaRegistros(ctx, solo) {
     sinMes || !esGasto ? null : tarjeta(`Gastos de ${nombreMes(estado.mes)}`, gastosNeto, 'neto, sin compras de inventario'),
     sinMes || !comprasInv || !esGasto ? null : tarjeta('Compras de inventario', comprasInv, 'neto, es stock: no va al resultado'),
     sinMes || esGasto ? null : tarjeta(`Otros ingresos de ${nombreMes(estado.mes)}`, ingresosNeto, 'neto'),
-    esGasto ? tarjeta('Por pagar', porPagar, 'total, todos los meses', porPagar ? 'fin-alerta' : '') : tarjeta('Por cobrar', porCobrar, 'total, todos los meses'));
+    esGasto ? tarjeta('Por pagar', porPagar, enCuentas ? `total, todos los meses · sin ${dinero(enCuentas)} de cuentas corrientes (van a su saldo)` : 'total, todos los meses', porPagar ? 'fin-alerta' : '') : tarjeta('Por cobrar', porCobrar, 'total, todos los meses'));
   // Quien solo carga (sin "aprobar") ve cantidades, no los montos totales
   tabla.querySelector('.listado-cabecera').after(contadores, ...(ctx.puede('costos', 'aprobar') ? [resumen] : []));
   tabla.classList.add('fin-lista');
   if (recientes) resumen.after(el('p', { class: 'texto-suave texto-chico' }, `Los ${RECIENTES} últimos cargados, de cualquier mes. Para ver un mes completo usa "Del mes".`));
   if (esGasto && ctx.puede('costos', 'crear')) tabla.querySelector('.listado-cabecera').after(avisoBandeja(ctx));
+  if (esGasto) tabla.querySelector('.listado-cabecera').after(avisoDuplicados(ctx, quien));
   if (estado.editar && data.length) {
     hoja = planilla(ctx, data, base);
     tabla.querySelector('.tabla-contenedor').replaceWith(hoja.nodo);
@@ -201,6 +211,37 @@ export async function vistaRegistros(ctx, solo) {
     setTimeout(() => hoja.enfocar(0, 1));
   }
   return tabla;
+}
+
+// Posibles duplicados (Costos 014, 2026-11-24, pedido de Enzo): dos gastos con el mismo total, fechas a 3 días o menos y
+// el mismo proveedor (o alguno sin proveedor). Plegado; cada par se abre, se elimina el repetido desde su registro o se
+// marca "No es duplicado" (quien edita Costos) y no vuelve a salir.
+function avisoDuplicados(ctx, quien) {
+  const caja = el('div', {});
+  ctx.api.rpc('fin_gastos_duplicados', { p_empresa: ctx.empresa.id }).then(({ data }) => {
+    const pares = data ?? [];
+    if (!pares.length) return;
+    const lado = (id, fecha, concepto, doc, cargo) => el('div', { class: 'dup-lado' },
+      el('a', { href: ctx.ruta('costos.registro', { id }) }, el('strong', {}, concepto)),
+      el('span', { class: 'texto-suave texto-chico' }, [fechaLarga(fecha), doc, quien.get(cargo) ? `cargó ${quien.get(cargo)}` : null].filter(Boolean).join(' · ')));
+    const noEs = async (ev, x) => {
+      const b = ev.currentTarget; b.disabled = true;
+      const { error } = await ctx.api.rpc('fin_no_es_duplicado', { p_a: x.a_id, p_b: x.b_id });
+      if (error) { avisar(error.message, 'error'); b.disabled = false; return; }
+      b.closest('.dup-par').remove(); avisar('Anotado: no vuelve a salir.');
+    };
+    caja.replaceChildren(el('details', { class: 'ficha doc-grupo dup-caja' },
+      el('summary', {}, icono('alerta', { tam: 15 }), el('strong', {}, ` ${pares.length} ${pares.length === 1 ? 'posible gasto repetido' : 'posibles gastos repetidos'}`),
+        el('span', { class: 'texto-suave texto-chico' }, ' · mismo monto, fechas cercanas y mismo proveedor (o sin proveedor)')),
+      el('p', { class: 'texto-suave texto-chico' }, 'Abre los dos. Si es el mismo gasto, elimina el que sobra desde su registro (deja el que tiene factura o foto). Si son distintos, marca "No es duplicado".'),
+      pares.map((x) => el('div', { class: 'dup-par' },
+        lado(x.a_id, x.a_fecha, x.a_concepto, x.a_doc, x.a_cargo),
+        lado(x.b_id, x.b_fecha, x.b_concepto, x.b_doc, x.b_cargo),
+        el('div', { class: 'dup-acciones' }, el('strong', {}, dinero(x.total)),
+          x.a_cuenta ? el('span', { class: 'chip chip-prox' }, 'a cuenta de un tercero') : null,
+          ctx.puede('costos', 'editar') ? el('button', { type: 'button', class: 'boton boton-secundario boton-chico', onclick: (ev) => noEs(ev, x) }, 'No es duplicado') : null)))));
+  });
+  return caja;
 }
 
 // Lo que falta cargar está en la Bandeja (2026-11-24: antes aquí se repetían las facturas del SII por cargar)

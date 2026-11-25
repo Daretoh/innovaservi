@@ -13,15 +13,15 @@
 //   semanales (tratos, vueltas, extras) se resta de A pagar ("Pagado semanal"); sigue en el total (costo del mes).
 // - Personas ocultas del cierre (remu_cierres.ocultos) y mes enviado (remu_cierres.cerrado_at): no cambian pagos.
 // Columnas, su orden y las secciones que van se recuerdan en este navegador (isg.remu.cierre).
-import { el } from '../../core/ui/dom.js?v=10113d4';
-import { icono } from '../../core/ui/iconos.js?v=10113d4';
-import { boton } from '../../core/ui/tabla.js?v=10113d4';
-import { avisar } from '../../core/ui/aviso.js?v=10113d4';
-import { dinero, horas, hoyISO, moverMes, nombreMes } from '../../core/ui/formato.js?v=10113d4';
-import { abrirFormulario } from '../../core/ui/modal.js?v=10113d4';
-import { nombreEmpresa } from '../../core/empresas.js?v=10113d4';
-import { cargarBase, resumenMes, externosMes, nombreCompleto, MOVIMIENTOS } from './datos.js?v=10113d4';
-import { diasDelMes } from './calculo.js?v=10113d4';
+import { el } from '../../core/ui/dom.js?v=bd56179';
+import { icono } from '../../core/ui/iconos.js?v=bd56179';
+import { boton } from '../../core/ui/tabla.js?v=bd56179';
+import { avisar } from '../../core/ui/aviso.js?v=bd56179';
+import { dinero, horas, hoyISO, moverMes, nombreMes } from '../../core/ui/formato.js?v=bd56179';
+import { abrirFormulario } from '../../core/ui/modal.js?v=bd56179';
+import { nombreEmpresa } from '../../core/empresas.js?v=bd56179';
+import { cargarBase, resumenMes, externosMes, nombreCompleto, MOVIMIENTOS } from './datos.js?v=bd56179';
+import { diasDelMes } from './calculo.js?v=bd56179';
 
 const estado = { mes: hoyISO().slice(0, 7) };
 const CLAVE = 'isg.remu.cierre';
@@ -150,7 +150,8 @@ export async function vistaCierre(ctx, { empresas, titulo = 'Cierre de remunerac
             boton('Vista previa', { icono: 'ojo', onclick: (ev) => exportar(ctx, { secs, cols, mes, titulo, grupo: varias }, 'previa', ev.currentTarget) }),
             boton('PDF', { icono: 'descargar', tipo: 'primario', onclick: (ev) => exportar(ctx, { secs, cols, mes, titulo, grupo: varias }, 'pdf', ev.currentTarget) }),
             boton('Excel', { icono: 'descargar', onclick: (ev) => exportar(ctx, { secs, cols, mes, titulo, grupo: varias }, 'excel', ev.currentTarget) })] : null,
-          marcarEnviado(ctx, datos, mes)))),
+          marcarEnviado(ctx, datos, mes)),
+        pagosDelMes(ctx, datos, mes, secs))),
       ...(secs.length ? secs.map((s) => tablaSeccion(ctx, s, cols, { mes, grupo, repintar: pintar })) : [el('p', { class: 'tabla-vacia' }, 'Nada que mostrar con lo elegido en Ajustar.')]),
       tablaExternos(datos, varias),
       el('p', { class: 'texto-suave texto-chico' }, cols.filter((c) => c.nota).map((c) => c.nota).join(' ')));
@@ -228,6 +229,62 @@ function pasoRevisar(ctx, datos, mes) {
     mes > hoy ? el('p', { class: 'texto-suave' }, 'Mes que aún no empieza.') : null,
     avisos.length ? el('ul', { class: 'cierre-avisos' }, avisos.map((a) => el('li', {}, icono('alerta', { tam: 14 }), ' ', a)))
       : el('p', { class: 'texto-suave' }, icono('check', { tam: 14 }), ' Sin avisos: horas, jornadas y sueldos en orden.')));
+}
+
+// Pago del mes (Remuneraciones 012, 2026-11-24, pedido de Enzo): por empresa, el total pagado con su transferencia. Queda
+// como gasto pagado en Compras y gastos (categoría Mano de obra; Administrativa ve el total, no el detalle) y no se
+// suma dos veces en el Estado de resultados. Los pagos semanales y las quincenas confirmadas pasan solos.
+function pagosDelMes(ctx, datos, mes, secs) {
+  const ok = datos.filter((d) => !d.error && !d.sinCierres && d.puede('remu', 'ver'));
+  if (!ok.length) return null;
+  const caja = el('div', { class: 'cierre-pagos' });
+  const pintar = async () => {
+    const filas = await Promise.all(ok.map(async (d) => {
+      const { data } = await ctx.api.rpc('remu_pagos_mes', { p_empresa: d.empresa.id, p_mes: mes });
+      // A pagar de la empresa con lo que va en el cierre (mismas filas que la tabla)
+      const aPagarEmp = secs.filter((s) => s.d === d).flatMap((s) => s.filas).reduce((x, r) => x + aPagar(r), 0);
+      return { d, pagos: data ?? [], aPagarEmp };
+    }));
+    caja.replaceChildren(...filas.map(({ d, pagos, aPagarEmp }) => {
+      const pagado = pagos.reduce((x, p) => x + Number(p.total), 0);
+      const editar = d.puede('remu', 'editar');
+      return el('div', { class: 'cierre-pago-emp' },
+        el('div', {}, el('strong', {}, `${ok.length > 1 ? `${nombreEmpresa(d.empresa)} · ` : ''}Pagado del mes: ${dinero(pagado)}`),
+          el('span', { class: 'texto-suave texto-chico' }, pagado ? ` de ${dinero(aPagarEmp)} a pagar` : ' · aún no se registra el pago')),
+        pagos.length ? el('ul', { class: 'cierre-pagos-lista texto-chico' }, pagos.map((p) => el('li', {},
+          `${new Date(`${p.fecha}T12:00`).toLocaleDateString('es-CL')} · ${dinero(p.total)}${p.archivo ? '' : ' · falta la transferencia'}${p.notas ? ` · ${p.notas}` : ''} `,
+          editar ? el('button', { type: 'button', class: 'boton-enlace texto-chico', onclick: async () => {
+            const { error } = await ctx.api.rpc('remu_pago_mes_quitar', { p_registro: p.id });
+            if (error) avisar(error.message, 'error'); else { avisar('Pago quitado.'); pintar(); }
+          } }, 'Quitar') : null))) : null,
+        editar ? boton('Registrar pago del mes', { icono: 'dinero', onclick: () => abrirFormulario({
+          titulo: `Pago de sueldos · ${nombreEmpresa(d.empresa)} · ${nombreMes(mes)}`,
+          mensaje: 'Queda como gasto pagado en Compras y gastos (categoría Mano de obra), con el total y la transferencia. Quien lleva Costos ve solo el total.',
+          campos: [
+            { id: 'monto', etiqueta: 'Total pagado', tipo: 'number', requerido: true, valor: String(Math.max(0, aPagarEmp - pagado) || '') },
+            { id: 'fecha', etiqueta: 'Fecha del pago', tipo: 'date', requerido: true, valor: hoyISO() },
+            { id: 'medio', etiqueta: 'Medio', opciones: [['transferencia', 'Transferencia'], ['efectivo', 'Efectivo'], ['cheque', 'Cheque'], ['otro', 'Otro']], valor: 'transferencia' },
+            { id: 'archivo', etiqueta: 'Transferencia o comprobante (foto o PDF)', tipo: 'file', accept: 'image/*,application/pdf' },
+            { id: 'nota', etiqueta: 'Nota (opcional)' },
+          ],
+          textoGuardar: 'Registrar pago',
+          alGuardar: async (x) => {
+            const monto = Math.round(Number(x.monto));
+            if (!(monto > 0)) throw new Error('El total debe ser mayor a cero.');
+            let ruta = null;
+            if (x.archivo?.size) {
+              const { subirArchivo } = await import('../../core/adjuntos.js?v=bd56179');
+              ruta = (await subirArchivo(ctx.api, { empresaId: d.empresa.id, modulo: 'costos', archivo: x.archivo, tabla: 'fin_registros' })).ruta;
+            }
+            const { error } = await ctx.api.rpc('remu_pago_mes', { p_empresa: d.empresa.id, p_mes: mes, p_monto: monto, p_fecha: x.fecha, p_medio: x.medio, p_archivo: ruta, p_nota: x.nota?.trim() || null });
+            if (error) throw new Error(error.message);
+            avisar('Pago registrado: ya está en Compras y gastos.'); pintar();
+          },
+        }) }) : null);
+    }));
+  };
+  pintar();
+  return caja;
 }
 
 // Marcar el mes como enviado (por empresa); se puede deshacer
@@ -383,7 +440,7 @@ async function exportar(ctx, { secs, cols, mes, titulo, grupo }, formato, b) {
     const cab = ['Trabajador', ...cols.map((c) => c.t)];
     const sumar = (filas) => cols.map((c) => (c.suma ? filas.reduce((x, r) => x + (Number(c.v(r)) || 0), 0) : null));
     if (formato === 'excel') {
-      const { nuevoExcel } = await import('../../core/excel.js?v=10113d4');
+      const { nuevoExcel } = await import('../../core/excel.js?v=bd56179');
       const x = await nuevoExcel(ctx, { titulo: tituloDoc, subtitulo });
       const valor = (c, v) => (c.tipo === 'horas' ? (v == null ? null : Math.round(v / 6) / 10) : c.neg && v ? -v : v);
       const tipo = (c) => (c.tipo === 'horas' ? 'numero' : c.tipo);
@@ -397,7 +454,7 @@ async function exportar(ctx, { secs, cols, mes, titulo, grupo }, formato, b) {
       await x.guardar(nombreArchivo);
       return;
     }
-    const { nuevoPdf } = await import('../../core/pdf.js?v=10113d4');
+    const { nuevoPdf } = await import('../../core/pdf.js?v=bd56179');
     const pdf = await nuevoPdf(ctx, { titulo: tituloDoc, subtitulo, horizontal: true });
     const doc = pdf.doc;
     const tam = cols.length > 16 ? 6.3 : cols.length > 12 ? 7 : 8;

@@ -1,15 +1,15 @@
 // Gasto u otro ingreso.
 // - Nuevo:  #/costos.registro?tipo=gasto|ingreso
 // - Ver y editar: #/costos.registro?id=<id>
-import { el } from '../../../core/ui/dom.js?v=10113d4';
-import { icono } from '../../../core/ui/iconos.js?v=10113d4';
-import { boton } from '../../../core/ui/tabla.js?v=10113d4';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=10113d4';
-import { avisar } from '../../../core/ui/aviso.js?v=10113d4';
-import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=10113d4';
-import { dinero, hoyISO, fechaLarga, sumarDias } from '../../../core/ui/formato.js?v=10113d4';
-import { leerConIA, iaDisponible, numIA, fechaIA, pagadoAlComprar, textoModelo } from '../../../core/lector-ia.js?v=10113d4';
-import { cargarBase, nombreTercero, DOCS, MEDIOS, netoDe, estadosDe, estadoInicial, nombreEstado, opcionesACuenta } from '../datos.js?v=10113d4';
+import { el } from '../../../core/ui/dom.js?v=bd56179';
+import { icono } from '../../../core/ui/iconos.js?v=bd56179';
+import { boton } from '../../../core/ui/tabla.js?v=bd56179';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=bd56179';
+import { avisar } from '../../../core/ui/aviso.js?v=bd56179';
+import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=bd56179';
+import { dinero, hoyISO, fechaLarga, sumarDias } from '../../../core/ui/formato.js?v=bd56179';
+import { leerConIA, iaDisponible, numIA, fechaIA, pagadoAlComprar, textoModelo } from '../../../core/lector-ia.js?v=bd56179';
+import { cargarBase, nombreTercero, DOCS, MEDIOS, netoDe, estadosDe, estadoInicial, nombreEstado, opcionesACuenta } from '../datos.js?v=bd56179';
 
 
 const ARCHIVOS = ['application/pdf', 'image/jpeg', 'image/png'];
@@ -50,6 +50,11 @@ export default async function vista(ctx) {
     ...base.terceros.filter((t) => t.tipo?.includes(esIngreso ? 'cliente' : 'proveedor') || t.id === r?.tercero_id).map((t) => [t.id, nombreTercero(t)])], r?.tercero_id);
   const doc = select('doc', DOCS, r?.doc_tipo ?? (esIngreso ? 'factura' : 'factura'));
   // Tributario (Costos 011 y 012): declarado = factura a nuestro RUT; boleta, ticket, guía u otro y sin documento no
+  // (Costos 015) Pago con comprobante que espera la factura del proveedor: se sigue en la Bandeja → Esperando factura
+  const esperaFactura = el('input', { type: 'checkbox', id: 'r-espera', checked: !!r?.espera_factura });
+  const filaEspera = el('label', { class: 'casilla', for: 'r-espera' }, esperaFactura, ' Falta la factura (se pagó con comprobante y el proveedor debe enviarla)');
+  const pintarEspera = () => { filaEspera.hidden = esIngreso || doc.value === 'factura'; };
+  doc.addEventListener('change', pintarEspera); pintarEspera();
   const tributario = select('tributario', [['si', 'Declarado (factura a nuestro RUT)'], ['no', 'No declarado']], r ? (r.declarable ? 'si' : 'no') : 'si');
   const pintarTributario = () => { const noFactura = doc.value !== 'factura'; if (noFactura) tributario.value = 'no'; else if (tributario.disabled) tributario.value = 'si'; tributario.disabled = noFactura; };
   doc.addEventListener('change', pintarTributario); pintarTributario();
@@ -127,6 +132,7 @@ export default async function vista(ctx) {
         estado_pago: estado.value, fecha_pago: estado.value === 'pagado' ? fechaPago.value || fecha.value || hoyISO() : null, medio_pago: estado.value === 'pagado' ? medio.value : null,
         vence: estado.value === 'pagado' ? r?.vence ?? null : vence.value || null, ...(faena ? { faena_id: faena.value || null } : {}),
         notas: notas.value.trim() || null, ...(ruta ? { archivo: ruta } : {}),
+        ...(esIngreso ? {} : { espera_factura: doc.value !== 'factura' && esperaFactura.checked }),
       };
       const res = r ? await ctx.api.from('fin_registros').update(datos).eq('id', r.id).select('id').single()
         : await ctx.api.from('fin_registros').insert({ ...datos, empresa_id: ctx.empresa.id, tipo }).select('id').single();
@@ -196,6 +202,7 @@ export default async function vista(ctx) {
       el('div', { class: 'rejilla-campos' }, fila('Categoría', categoria), ctx.config?.centros ? fila('Centro de costo', centro) : null, fila(esIngreso ? 'Cliente' : 'Proveedor', tercero)),
       el('div', { class: 'rejilla-campos' }, fila('Documento', doc), fila('N° de documento', docNum), fila('Total (con IVA si lo tiene)', total, desglose),
         fila('Tributario', tributario, el('span', { class: 'texto-suave texto-chico' }, 'Solo la factura a nuestro RUT es declarada. Marca No declarado si la factura salió a otro RUT.'))),
+      filaEspera,
       esIngreso ? (faena ? el('div', { class: 'rejilla-campos' }, fila('Faena', faena)) : null) : el('div', { class: 'rejilla-campos' }, faena ? fila('Faena', faena) : null, fila('Patente', patente), orden ? fila('Orden de trabajo', orden) : null),
       aCuenta ? el('div', { class: 'rejilla-campos' }, fila('¿Compra por cuenta de un tercero?', aCuenta, el('span', { class: 'texto-suave texto-chico' }, 'Ej.: materiales del pintor: se paga al local, no es gasto de la empresa y se descuenta de lo que se le paga.'))) : null,
       el('div', { class: 'rejilla-campos' }, fila('Estado', estado, el('span', { class: 'texto-suave texto-chico' }, 'Boleta o ticket: pagado al comprar. Factura: por pagar.'))),

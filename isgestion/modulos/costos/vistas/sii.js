@@ -3,14 +3,14 @@
 // - Documento a documento: facturas en el SII que no están en ISgestión, al revés y con montos distintos.
 // "Sincronizar con el SII" pide a OpenFactura actualizar el RCV desde el SII (tarda unos minutos; el SII limita
 // cuántas veces). Las boletas (de la TUU) se comparan solo por totales. Solo con costos.aprobar.
-import { el } from '../../../core/ui/dom.js?v=10113d4';
-import { icono } from '../../../core/ui/iconos.js?v=10113d4';
-import { boton } from '../../../core/ui/tabla.js?v=10113d4';
-import { avisar } from '../../../core/ui/aviso.js?v=10113d4';
-import { dinero, fechaLarga, hoyISO } from '../../../core/ui/formato.js?v=10113d4';
-import { llamarDte, estadoDte, avisoPrueba, NOMBRE_DTE } from '../../../core/dte.js?v=10113d4';
-import { sinPermiso } from './flujo.js?v=10113d4';
-import { formRegistrar } from '../../cotizaciones/emitidas.js?v=10113d4';
+import { el } from '../../../core/ui/dom.js?v=bd56179';
+import { icono } from '../../../core/ui/iconos.js?v=bd56179';
+import { boton } from '../../../core/ui/tabla.js?v=bd56179';
+import { avisar } from '../../../core/ui/aviso.js?v=bd56179';
+import { dinero, fechaLarga, hoyISO } from '../../../core/ui/formato.js?v=bd56179';
+import { llamarDte, estadoDte, avisoPrueba, NOMBRE_DTE } from '../../../core/dte.js?v=bd56179';
+import { sinPermiso } from './flujo.js?v=bd56179';
+import { formRegistrar } from '../../cotizaciones/emitidas.js?v=bd56179';
 
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
 const nombreMes = (p) => `${MESES[(p % 100) - 1]} ${Math.floor(p / 100)}`;
@@ -45,7 +45,8 @@ export default async function vista(ctx) {
   estado.replaceChildren(...[est.conectado
     ? el('p', { class: 'texto-suave' }, icono('check', { tam: 16 }), ` Conectado a OpenFactura como ${est.emisor?.razon ?? ''} (${est.emisor?.rut ?? ''}).`)
     : el('p', { class: 'aviso-bandeja lec-mal' }, icono('alerta', { tam: 16 }), ` OpenFactura no está conectado: ${est.error ?? `falta la clave (${est.falta_clave})`}.`),
-  est.prueba ? avisoPrueba('Ambiente de pruebas de OpenFactura: los datos del SII son de la empresa de pruebas de Haulmer, así que no van a cuadrar con ISgestión. Sirve para probar la pantalla.')
+  // (2026-11-24) Sin la clave de producción, OpenFactura responde con su empresa de pruebas (HOSTY SPA): se explica en palabras
+  est.prueba ? avisoPrueba(`${ctx.empresa.nombre_fantasia || ctx.empresa.razon_social} todavía no está conectada al SII real: falta cargar su clave de producción de OpenFactura (Haulmer). Mientras tanto se ven los datos de la empresa de pruebas de Haulmer (${est.emisor?.razon ?? 'HOSTY SPA'}), que no tienen nada que ver con los nuestros. Toca "Revisar con los datos de prueba" solo para probar la pantalla.`)
     : est.ambiente === 'lectura' ? avisoPrueba('Modo lectura: datos reales del SII; registrar y enlazar sí guarda en ISgestión, pero emitir es de prueba.') : null].filter(Boolean));
 
   const sincronizar = async (ev) => {
@@ -163,13 +164,22 @@ export default async function vista(ctx) {
     const b = ev?.currentTarget; if (b) { b.disabled = true; b.classList.add('cargando'); }
     zona.replaceChildren(el('p', { class: 'texto-suave' }, `Consultando el SII (${nombreMes(periodo())})… puede tardar un minuto.`));
     try { pintar(await llamarDte(ctx, 'cuadre', { periodo: periodo() })); }
-    catch (err) { zona.replaceChildren(el('p', { class: 'aviso-bandeja lec-mal' }, err.message)); }
+    catch (err) {
+      // OpenFactura limita las consultas por minuto: se reintenta solo una vez pasado el minuto
+      if (/límite|esperar|429/i.test(err.message) && !reintento) {
+        reintento = setTimeout(() => { reintento = null; if (zona.isConnected) cuadrar(); }, 60e3);
+        zona.replaceChildren(el('p', { class: 'aviso-bandeja' }, icono('reloj', { tam: 16 }), ' OpenFactura pide esperar un minuto entre consultas. Se vuelve a revisar solo en un minuto; no hace falta tocar nada.'));
+      } else zona.replaceChildren(el('p', { class: 'aviso-bandeja lec-mal' }, err.message));
+    }
     finally { if (b) { b.disabled = false; b.classList.remove('cargando'); } }
   };
 
   // Se cuadra solo al abrir y al cambiar el mes
+  let reintento = null;
   mes.addEventListener('change', () => cuadrar());
-  if (est.conectado) cuadrar();
+  // En pruebas no se consulta solo (son datos de Haulmer y gastan el límite de consultas)
+  if (est.conectado && !est.prueba) cuadrar();
+  else if (est.prueba) zona.replaceChildren(boton('Revisar con los datos de prueba', { icono: 'check', onclick: cuadrar }));
   return el('section', { class: 'listado' },
     el('header', { class: 'listado-cabecera' },
       el('div', {}, el('h1', {}, 'Cuadre con el SII'),

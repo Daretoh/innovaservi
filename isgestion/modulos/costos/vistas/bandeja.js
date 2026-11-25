@@ -3,15 +3,15 @@
 // (Costos 008) con su archivo en R2 (<empresa>/costos/…). "Cargar" abre el lector con la foto ya puesta; al registrar
 // el gasto la foto pasa a ser su archivo y el lector sigue con la siguiente de la bandeja.
 // Ruta: #/costos.bandeja
-import { el } from '../../../core/ui/dom.js?v=10113d4';
-import { icono } from '../../../core/ui/iconos.js?v=10113d4';
-import { boton } from '../../../core/ui/tabla.js?v=10113d4';
-import { avisar } from '../../../core/ui/aviso.js?v=10113d4';
-import { subirArchivo, urlsFirmadas, eliminarArchivo } from '../../../core/adjuntos.js?v=10113d4';
-import { botonesFotos, tomarFotos } from '../../../core/ui/camara.js?v=10113d4';
-import { comprimirFoto, esImagen, esPdf } from '../../../core/imagenes.js?v=10113d4';
-import { fechaLarga, diaLocal, dinero } from '../../../core/ui/formato.js?v=10113d4';
-import { llamarDte, estadoDte, NOMBRE_DTE } from '../../../core/dte.js?v=10113d4';
+import { el } from '../../../core/ui/dom.js?v=bd56179';
+import { icono } from '../../../core/ui/iconos.js?v=bd56179';
+import { boton } from '../../../core/ui/tabla.js?v=bd56179';
+import { avisar } from '../../../core/ui/aviso.js?v=bd56179';
+import { subirArchivo, urlsFirmadas, eliminarArchivo } from '../../../core/adjuntos.js?v=bd56179';
+import { botonesFotos, tomarFotos } from '../../../core/ui/camara.js?v=bd56179';
+import { comprimirFoto, esImagen, esPdf } from '../../../core/imagenes.js?v=bd56179';
+import { fechaLarga, diaLocal, dinero, hoyISO } from '../../../core/ui/formato.js?v=bd56179';
+import { llamarDte, estadoDte, NOMBRE_DTE } from '../../../core/dte.js?v=bd56179';
 
 // Pendientes de la empresa en orden de llegada (RLS: quien solo carga ve las suyas)
 // Las compras del SII (origen 'sii', Núcleo 021) traen además su XML y sus datos (dte)
@@ -92,12 +92,16 @@ export default async function vista(ctx) {
   if (['entradas', 'ventas'].includes(ctx.params.pestana)) { location.replace(ctx.ruta('costos.ventas')); return el('p', {}, ''); }
   const puedeCrear = ctx.puede('costos', 'crear');
   const puedeSii = ctx.puede('costos', 'editar');
-  const [{ data, error }, us, hechos, par] = await Promise.all([
+  const [{ data, error }, us, hechos, par, sueldos, esperan] = await Promise.all([
     pendientesBandeja(ctx),
     ctx.api.rpc('nombres_usuarios', { p_empresa: e }),
     ctx.api.from('fin_bandeja').select('id', { count: 'exact', head: true }).eq('empresa_id', e).eq('estado', 'registrado')
       .gte('updated_at', new Date(Date.now() - 7 * 864e5).toISOString()),
     puedeSii ? ctx.api.rpc('fin_bandeja_parecido', { p_empresa: e }) : Promise.resolve({ data: [] }),
+    // Pagos de sueldos que llegaron de Remuneraciones (Remuneraciones 012) y todavía no tienen la transferencia
+    puedeSii ? ctx.api.from('fin_registros').select('id, fecha, concepto, total, notas').eq('empresa_id', e).not('remu_ref', 'is', null).is('archivo', null).is('deleted_at', null).order('fecha') : Promise.resolve({ data: [] }),
+    // Pagos con comprobante que esperan la factura del proveedor (Costos 015)
+    ctx.api.from('fin_registros').select('id, fecha, concepto, total, tercero_id, terceros!fin_registros_tercero_id_fkey(razon_social, nombre_fantasia)').eq('empresa_id', e).eq('espera_factura', true).is('deleted_at', null).order('fecha'),
   ]);
   if (error) throw error;
   const filas = data ?? [];
@@ -138,8 +142,16 @@ export default async function vista(ctx) {
       el('td', {}, d ? el('span', { class: 'chip chip-ok' }, 'SII') : el('span', { class: 'chip' }, 'Foto')),
       el('td', {}, d ? el('strong', {}, d.razon ?? '') : el('span', { class: 'texto-suave' }, 'Por leer'),
         d?.rut ? el('span', { class: 'texto-suave texto-chico ban-linea' }, d.rut) : null,
-        p ? el('span', { class: 'texto-chico ban-aviso' }, icono('alerta', { tam: 13 }), ' ¿Ya está en Costos? ',
-          el('a', { href: ctx.ruta('costos.registro', { id: p.registro_id }) }, `${p.concepto ?? 'Ver gasto'}${p.folio ? ` (N° ${p.folio})` : ''}`)) : null),
+        // (Costos 014) También gastos antiguos sin RUT con el mismo monto y fecha: "Es el mismo" le pasa los datos del SII
+        p ? el('span', { class: 'texto-chico ban-aviso' }, icono('alerta', { tam: 13 }), p.certeza === 'factura' ? ' Es la factura de un pago que la esperaba: ' : p.certeza === 'monto' ? ' ¿Ya está en Gastos? Mismo monto y fecha: ' : ' ¿Ya está en Gastos? ',
+          el('a', { href: ctx.ruta('costos.registro', { id: p.registro_id }) }, `${p.concepto ?? 'Ver gasto'}${p.folio ? ` (N° ${p.folio})` : ''} · ${fechaLarga(p.fecha)}`), ' ',
+          puedeSii ? el('button', { type: 'button', class: 'boton boton-secundario boton-chico', title: 'El gasto ya cargado toma el N°, el RUT y el PDF del SII y el documento sale de la Bandeja',
+            onclick: async (ev) => {
+              const b = ev.currentTarget; b.disabled = true;
+              const { error: er } = await ctx.api.rpc('fin_bandeja_es_el_mismo', { p_bandeja: f.id, p_registro: p.registro_id });
+              if (er) { avisar(er.message, 'error'); b.disabled = false; return; }
+              avisar('Listo: el gasto quedó con los datos del SII.'); ctx.refrescar();
+            } }, 'Es el mismo') : null) : null),
       el('td', {}, d ? `${NOMBRE_DTE[d.td] ?? 'Documento'} N° ${d.folio}` : '—'),
       el('td', { class: 'fac-fecha' }, d?.fecha ? fechaLarga(d.fecha) : ''),
       el('td', { class: 'num' }, d?.total != null ? dinero(d.total) : ''),
@@ -148,6 +160,23 @@ export default async function vista(ctx) {
         url ? el('a', { class: 'boton boton-secundario boton-chico', href: url, target: '_blank', rel: 'noopener', title: 'Ver el documento', 'aria-label': 'Ver el documento' }, icono('ojo', { tam: 14 })) : null,
         boton('Cargar', { icono: 'editar', tipo: 'primario', class: 'boton boton-primario boton-chico', onclick: () => cargar(f) }),
         el('button', { type: 'button', class: 'boton-icono', title: 'Descartar', 'aria-label': 'Descartar', onclick: descartar }, icono('basura', { tam: 15 })))));
+  };
+  const juntarTodos = async (ev) => {
+    const b = ev.currentTarget;
+    if (b.dataset.seguro !== '1') {
+      b.dataset.seguro = '1'; b.textContent = `Toca de nuevo: juntar ${parecido.size} con su gasto`;
+      setTimeout(() => { if (b.isConnected) { b.dataset.seguro = ''; b.textContent = `Juntar los que ya están en Gastos (${parecido.size})`; } }, 4000);
+      return;
+    }
+    b.disabled = true;
+    let ok = 0; const usados = new Set();
+    for (const p of parecido.values()) {
+      if (usados.has(p.registro_id)) continue;   // un gasto se junta con un solo documento
+      const { error: er } = await ctx.api.rpc('fin_bandeja_es_el_mismo', { p_bandeja: p.bandeja_id, p_registro: p.registro_id });
+      if (!er) { ok += 1; usados.add(p.registro_id); }
+    }
+    avisar(ok === 1 ? '1 documento se juntó con su gasto.' : `${ok} documentos se juntaron con su gasto.`);
+    ctx.refrescar();
   };
   const delSii = filas.filter((f) => f.origen === 'sii');
   const subidas = filas.filter((f) => f.origen !== 'sii');
@@ -190,17 +219,62 @@ export default async function vista(ctx) {
     sii: 'Facturas que otros emitieron a nuestro RUT: son declaradas (sirven para el IVA) y llegan solas, no hace falta subirlas.',
     fotos: 'Boletas, tickets y papeles subidos. La boleta no es declarable; si una foto es una factura, revisa que no esté también en "Del SII".',
   };
+  // Sueldos pagados sin la transferencia: se sube aquí y queda como respaldo del gasto
+  const subirTransferencia = (g) => {
+    const entrada = el('input', { type: 'file', accept: 'image/*,application/pdf', hidden: true, onchange: async () => {
+      const a = entrada.files?.[0]; if (!a) return;
+      try {
+        const archivo = esPdf(a) ? a : await comprimirFoto(a, 2000);
+        const { ruta } = await subirArchivo(ctx.api, { empresaId: e, modulo: 'costos', archivo, tabla: 'fin_registros' });
+        const { error: er } = await ctx.api.from('fin_registros').update({ archivo: ruta }).eq('id', g.id);
+        if (er) { await eliminarArchivo(ctx.api, ruta).catch(() => {}); throw new Error(er.message); }
+        avisar('Transferencia guardada.'); ctx.refrescar();
+      } catch (err) { avisar(err.message, 'error'); }
+    } });
+    entrada.click();
+  };
+  const sueldosSinRespaldo = () => ((sueldos.data ?? []).length ? el('div', { class: 'ficha doc-grupo ban-sueldos' },
+    el('strong', {}, `Sueldos pagados sin la transferencia (${sueldos.data.length})`),
+    el('p', { class: 'texto-suave texto-chico' }, 'Llegan solos de Remuneraciones al confirmar un pago (ya están en Gastos, categoría Mano de obra). Sube la transferencia del banco para respaldarlos.'),
+    sueldos.data.map((g) => el('div', { class: 'ban-sueldo' },
+      el('span', {}, el('a', { href: ctx.ruta('costos.registro', { id: g.id }) }, g.concepto), el('span', { class: 'texto-suave texto-chico' }, ` · ${fechaLarga(g.fecha)}${g.notas ? ` · ${g.notas}` : ''}`)),
+      el('strong', {}, dinero(g.total)),
+      boton('Subir transferencia', { icono: 'mas', class: 'boton boton-secundario boton-chico', onclick: () => subirTransferencia(g) })))) : null);
+  // Pagos que esperan su factura: cuántos días llevan; al llegar del SII aparece arriba "Es la factura de un pago"
+  const quitarEspera = async (ev, g) => {
+    const b = ev.currentTarget; b.disabled = true;
+    const { error: er } = await ctx.api.from('fin_registros').update({ espera_factura: false }).eq('id', g.id);
+    if (er) { avisar(er.message, 'error'); b.disabled = false; return; }
+    avisar('Ya no espera factura.'); ctx.refrescar();
+  };
+  const esperandoFactura = () => ((esperan.data ?? []).length ? el('details', { class: 'ficha doc-grupo ban-sueldos', open: true },
+    el('summary', {}, el('strong', {}, `Esperando factura (${esperan.data.length})`),
+      el('span', { class: 'texto-suave texto-chico' }, ' · pagos con comprobante; la factura del proveedor aún no llega')),
+    el('p', { class: 'texto-suave texto-chico' }, 'Cuando la factura llegue del SII aparece en la lista con "Es la factura de un pago" y se junta con un toque. Si llegó por otro lado o no llegará, quita la marca.'),
+    esperan.data.map((g) => {
+      const dias = Math.round((Date.parse(hoyISO()) - Date.parse(g.fecha)) / 864e5);
+      return el('div', { class: 'ban-sueldo' },
+        el('span', {}, el('a', { href: ctx.ruta('costos.registro', { id: g.id }) }, g.concepto),
+          el('span', { class: 'texto-suave texto-chico' }, ` · ${[g.terceros?.nombre_fantasia || g.terceros?.razon_social || 'sin proveedor', fechaLarga(g.fecha)].join(' · ')}`),
+          el('span', { class: `texto-chico ${dias > 30 ? 'texto-error' : 'texto-suave'}` }, ` · hace ${dias} ${dias === 1 ? 'día' : 'días'}`)),
+        el('strong', {}, dinero(g.total)),
+        ctx.puede('costos', 'editar') ? el('button', { type: 'button', class: 'boton boton-secundario boton-chico', onclick: (ev) => quitarEspera(ev, g) }, 'Ya no espera') : null);
+    })) : null);
   const compras = () => [
+    esperandoFactura(),
+    sueldosSinRespaldo(),
     puedeCrear ? el('div', { class: 'ficha doc-grupo ban-subir' },
       el('div', {}, el('strong', {}, 'Subir'),
         el('p', { class: 'texto-suave texto-chico' }, 'Saca o elige todas las fotos o PDF de una vez (ej.: las boletas al volver de terreno); quedan aquí y después se cargan una por una.')),
       el('div', { class: 'listado-acciones' }, fotos.camara, fotos.galeria,
-        boton('Gasto sin papel', { icono: 'dinero', title: 'Solo si no hay boleta, factura ni ticket (ej.: propina, feria). No es declarable.', onclick: () => import('./subir.js?v=10113d4').then((m) => m.sinDocumento(ctx)) }),
+        boton('Gasto sin papel', { icono: 'dinero', title: 'Solo si no hay boleta, factura ni ticket (ej.: propina, feria). No es declarable.', onclick: () => import('./subir.js?v=bd56179').then((m) => m.sinDocumento(ctx)) }),
         el('a', { class: 'boton boton-secundario', href: ctx.ruta('costos.registro', { tipo: 'gasto' }), title: 'Escribir todos los datos, sin foto' }, icono('editar', { tam: 16 }), 'A mano'),
         progreso)) : null,
     el('div', { class: 'listado-acciones ban-barra' },
       filtro(),
       puedeSii ? boton('Traer del SII', { icono: 'descargar', onclick: traer }) : null,
+      // (2026-11-24, pedido de Enzo: que salgan de la Bandeja los que ya están subidos) Junta todos los avisos de una vez
+      puedeSii && parecido.size ? boton(`Juntar los que ya están en Gastos (${parecido.size})`, { icono: 'check', title: 'Cada gasto ya cargado toma el N°, el RUT y el PDF del SII y el documento sale de la Bandeja', onclick: juntarTodos }) : null,
       deOrigen().length ? boton(`Cargar el primero (${deOrigen().length})`, { icono: 'derecha', tipo: 'primario', onclick: () => cargar(deOrigen()[0]) }) : null),
     puedeSii ? estadoSii : null,
     el('p', { class: 'texto-suave texto-chico' }, AYUDA[origen]),

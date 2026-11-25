@@ -1,12 +1,12 @@
 // Detalle de un día (como en InnovaGestión al tocar un día de la semana): faenas planificadas, trabajadores
 // agrupados por faena con sus horarios, horas y monto (real y contable editable si la empresa usa ajuste contable),
 // y totales del día. Ruta: #/remu.dia?f=<aaaa-mm-dd>
-import { coloresFaenas } from '../../../core/ui/faena-color.js?v=10113d4';
-import { el } from '../../../core/ui/dom.js?v=10113d4';
-import { icono } from '../../../core/ui/iconos.js?v=10113d4';
-import { dinero, horas, lunesDe, sumarDias, nombreDia, fechaCorta, fechaLarga, numSemana, hhmm, hoyISO } from '../../../core/ui/formato.js?v=10113d4';
-import { cargarBase, calcularRango, nombreCompleto } from '../datos.js?v=10113d4';
-import { campoContable } from './detalle.js?v=10113d4';
+import { coloresFaenas } from '../../../core/ui/faena-color.js?v=bd56179';
+import { el } from '../../../core/ui/dom.js?v=bd56179';
+import { icono } from '../../../core/ui/iconos.js?v=bd56179';
+import { dinero, horas, lunesDe, sumarDias, nombreDia, fechaCorta, fechaLarga, numSemana, hhmm, hoyISO } from '../../../core/ui/formato.js?v=bd56179';
+import { cargarBase, calcularRango, nombreCompleto } from '../datos.js?v=bd56179';
+import { campoContable } from './detalle.js?v=bd56179';
 
 export default async function vista(ctx) {
   const fecha = /^\d{4}-\d{2}-\d{2}$/.test(ctx.params.f ?? '') ? ctx.params.f : hoyISO();

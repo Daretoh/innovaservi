@@ -9,18 +9,18 @@
 // Bandeja "Por cargar" (Costos 008, 2026-11-10): con ?bandeja=<id> abre un documento ya subido a la bandeja, lo lee
 // igual y al registrar lo marca registrado y sigue con el siguiente pendiente (Saltar / Descartar de la bandeja).
 // Ruta: #/costos.lector · #/costos.lector?bandeja=<id>
-import { el } from '../../../core/ui/dom.js?v=10113d4';
-import { icono } from '../../../core/ui/iconos.js?v=10113d4';
-import { boton } from '../../../core/ui/tabla.js?v=10113d4';
-import { avisar } from '../../../core/ui/aviso.js?v=10113d4';
-import { subirArchivo, almacen, urlFirmada } from '../../../core/adjuntos.js?v=10113d4';
-import { pendientesBandeja, descartarDeBandeja } from './bandeja.js?v=10113d4';
-import { dinero, hoyISO, sumarDias, fechaLarga, lunesDe } from '../../../core/ui/formato.js?v=10113d4';
-import { TIPOS_DTE, docTipoDe, CAMPOS_DTE, leerParte, combinar, validar, escanearCamara, aJPEG, fmtRut, limpioRut, rutValido, num } from '../../../core/lector-dte.js?v=10113d4';
-import { cargarBase, nombreTercero, opcionesACuenta } from '../datos.js?v=10113d4';
-import { leerConIA, iaDisponible, numIA, fechaIA, pagadoAlComprar, textoModelo } from '../../../core/lector-ia.js?v=10113d4';
-import { esImagen } from '../../../core/imagenes.js?v=10113d4';
-import { tomarFotos } from '../../../core/ui/camara.js?v=10113d4';
+import { el } from '../../../core/ui/dom.js?v=bd56179';
+import { icono } from '../../../core/ui/iconos.js?v=bd56179';
+import { boton } from '../../../core/ui/tabla.js?v=bd56179';
+import { avisar } from '../../../core/ui/aviso.js?v=bd56179';
+import { subirArchivo, almacen, urlFirmada } from '../../../core/adjuntos.js?v=bd56179';
+import { pendientesBandeja, descartarDeBandeja } from './bandeja.js?v=bd56179';
+import { dinero, hoyISO, sumarDias, fechaLarga, lunesDe } from '../../../core/ui/formato.js?v=bd56179';
+import { TIPOS_DTE, docTipoDe, CAMPOS_DTE, leerParte, combinar, validar, escanearCamara, aJPEG, fmtRut, limpioRut, rutValido, num } from '../../../core/lector-dte.js?v=bd56179';
+import { cargarBase, nombreTercero, opcionesACuenta } from '../datos.js?v=bd56179';
+import { leerConIA, iaDisponible, numIA, fechaIA, pagadoAlComprar, textoModelo } from '../../../core/lector-ia.js?v=bd56179';
+import { esImagen } from '../../../core/imagenes.js?v=bd56179';
+import { tomarFotos } from '../../../core/ui/camara.js?v=bd56179';
 
 const ETIQUETA = { timbre: ['Timbre SII', 'chip-ok'], xml: ['XML', 'chip-ok'], ia: ['IA', 'chip-ok'], ocr: ['Revisar', 'chip-prox'], calc: ['Calculado', 'chip-pend'] };
 
@@ -163,6 +163,8 @@ export default async function vista(ctx) {
   const pagado = el('input', { type: 'checkbox', id: 'lec-pag' });
   let pagadoTocado = false;
   pagado.addEventListener('change', () => { pagadoTocado = true; });
+  // (Costos 015) Comprobante de pago que espera la factura del proveedor
+  const esperaFactura = el('input', { type: 'checkbox', id: 'lec-espera' });
   // Descuento a un trabajador (compra a su cuenta)
   const descontar = el('input', { type: 'checkbox', class: 'interruptor', id: 'lec-desc' });
   const trabajador = el('select', { class: 'campo', id: 'lec-trab', disabled: true }, el('option', { value: '' }, 'Elige el trabajador…'),
@@ -300,6 +302,7 @@ export default async function vista(ctx) {
         ...(!ctx.puede('costos', 'editar') ? { estado_pago: 'pendiente' } : (pagadoTocado ? pagado.checked : pagado.checked || doc !== 'factura') ? { estado_pago: 'pagado', fecha_pago: v.fecha || hoyISO() } : { estado_pago: 'listo' }), archivo: rutas[0] ?? null, adjuntos: rutas.slice(1), faena_id: faena.value || null, a_cuenta_de: aCuenta.value || null,
         patente: veh?.patente ?? null, orden_id: deOrden && veh?.id === deOrden.vehiculo_id ? deOrden.id : abiertas.length === 1 ? abiertas[0].id : null,
         dte: { ...v, rut: v.rut ? fmtRut(v.rut) : null, td: v.td == null ? null : String(v.td), items: datos.items ?? [], origen },
+        espera_factura: doc !== 'factura' && esperaFactura.checked,
       }).select('id').single();
       if (error) throw new Error(error.code === '23505' ? 'Este documento ya estaba registrado (mismo emisor, tipo y folio).' : error.message);
       // Bandeja: el documento queda registrado y se sigue con el siguiente
@@ -363,6 +366,7 @@ export default async function vista(ctx) {
     el('div', { class: 'rejilla-campos' }, conTaller ? filaVehiculo : null, filaACuenta),
     fila('Concepto', concepto),
     el('label', { class: 'casilla' }, pagado, 'Ya está pagado (boletas y tickets quedan pagados solos; la factura queda por pagar)'),
+    el('label', { class: 'casilla' }, esperaFactura, 'Es un comprobante de pago y falta la factura (queda en la Bandeja → Esperando factura)'),
     conDescuento ? el('div', { class: 'lec-descuento' },
       el('label', { class: 'casilla' }, descontar, 'Descontar a un trabajador (compra a su cuenta)'),
       el('div', { class: 'form-fila' }, trabajador),

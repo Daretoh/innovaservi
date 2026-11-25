@@ -1,6 +1,6 @@
 // Datos comunes del flujo de caja y el balance: saldos de las cuentas, por cobrar y por pagar, deudas y ajustes.
-import { hoyISO, sumarDias, moverMes } from '../../core/ui/formato.js?v=10113d4';
-import { tocaEnMes, fechaEnMes } from './datos.js?v=10113d4';
+import { hoyISO, sumarDias, moverMes } from '../../core/ui/formato.js?v=bd56179';
+import { tocaEnMes, fechaEnMes } from './datos.js?v=bd56179';
 
 // Último saldo de cada cuenta activa
 export async function cargarCuentas(ctx) {
@@ -20,15 +20,24 @@ export async function cargarPendientes(ctx) {
   const e = ctx.empresa.id;
   const [regs, prov, res] = await Promise.all([
     ctx.api.from('fin_registros').select('id, tipo, fecha, vence, concepto, total, tercero_id, terceros!fin_registros_tercero_id_fkey(razon_social, nombre_fantasia)').eq('empresa_id', e).is('deleted_at', null).neq('estado_pago', 'pagado'),
-    ctx.api.from('fin_proveedores').select('tercero_id, plazo_dias').eq('empresa_id', e),
+    ctx.api.from('fin_proveedores').select('tercero_id, plazo_dias, modalidad, terceros(razon_social, nombre_fantasia)').eq('empresa_id', e),
     ctx.puede('resultados', 'ver') ? ctx.api.rpc('res_pendientes', { p_empresa: e }) : Promise.resolve({ data: [] }),
   ]);
   if (regs.error) throw regs.error;
   const plazo = new Map((prov.data ?? []).map((p) => [p.tercero_id, p.plazo_dias]));
-  const items = (regs.data ?? []).map((r) => ({
+  // (2026-11-24) Contratistas con cuenta corriente: sus trabajos no se pagan uno a uno; cuenta el saldo de su cuenta, hoy
+  const cuentas = (prov.data ?? []).filter((p) => p.modalidad === 'cuenta');
+  const conCuenta = new Set(cuentas.map((p) => p.tercero_id));
+  const items = (regs.data ?? []).filter((r) => !(r.tipo === 'gasto' && conCuenta.has(r.tercero_id))).map((r) => ({
     lado: r.tipo === 'ingreso' ? 'cobrar' : 'pagar', fecha: r.vence ?? sumarDias(r.fecha, r.tipo === 'ingreso' ? 30 : plazo.get(r.tercero_id) ?? 0),
     descripcion: [r.concepto, r.terceros?.nombre_fantasia || r.terceros?.razon_social].filter(Boolean).join(' · '), monto: Number(r.total), origen: 'costos',
   }));
+  const saldos = await Promise.all(cuentas.map(async (p) => {
+    const { data: m } = await ctx.api.rpc('fin_cuenta_tercero', { p_empresa: e, p_tercero: p.tercero_id });
+    const s = (k) => (m ?? []).filter((y) => y.tipo === k).reduce((a, y) => a + Number(y.monto), 0);
+    return { p, saldo: s('trabajo') - s('compra') - s('abono') };
+  }));
+  for (const { p, saldo } of saldos) if (saldo > 0) items.push({ lado: 'pagar', fecha: hoyISO(), descripcion: `Saldo de la cuenta de ${p.terceros?.nombre_fantasia || p.terceros?.razon_social || 'contratista'}`, monto: saldo, origen: 'costos' });
   // Cobros de otros módulos (taller, cierres, cuentas): 30 días desde su fecha
   for (const p of res.data ?? []) if (p.origen !== 'costos' && p.lado === 'cobrar') items.push({ lado: 'cobrar', fecha: sumarDias(p.fecha, 30), descripcion: p.descripcion, monto: Number(p.monto), origen: p.origen });
   return items;
@@ -79,7 +88,7 @@ export async function calcularFlujo(ctx, n = 8) {
   for (const d of deudas.filter((x) => x.activo && x.cuota > 0 && x.dia)) {
     for (const m of meses) { const f = diaDelMes(`${m}-01`, d.dia); if (f >= h && (!d.hasta || f <= d.hasta)) agregar(f, 'sale', `Cuota ${d.acreedor}`, Number(d.cuota), 'Deuda'); }
   }
-  const tc = (rec.data ?? []).some((r) => r.moneda === 'USD') ? await import('../../core/economia.js?v=10113d4').then((m) => m.dolarDelDia()).catch(() => null) : null;
+  const tc = (rec.data ?? []).some((r) => r.moneda === 'USD') ? await import('../../core/economia.js?v=bd56179').then((m) => m.dolarDelDia()).catch(() => null) : null;
   const ya = new Set((hechos.data ?? []).map((x) => `${x.recurrente_id}|${x.periodo}`));
   for (const r of rec.data ?? []) {
     for (const m of meses) if (tocaEnMes(r, m) && !ya.has(`${r.id}|${m}`)) agregar(fechaEnMes(m, r.dia), 'sale', r.moneda === 'USD' ? `${r.concepto} (US$ ${r.monto})` : r.concepto, Math.round(r.moneda === 'USD' ? Number(r.monto) * (tc ?? 0) : Number(r.monto)), 'Pago de cada mes');
