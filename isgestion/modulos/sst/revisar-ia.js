@@ -1,9 +1,9 @@
 // Revisión de documentos preventivos con IA (SST 004): leer el Word o PDF, pedir la revisión y la versión corregida a
 // la Edge Function revisar-documento (Claude) y exportar el documento corregido a Word y PDF con el logo y el color de
 // la empresa. Librerías con versión fija desde CDN (08 Seguridad §5), solo al usarlas.
-import { textoDocx } from './texto-docx.js?v=bd56179';
-import { cargarJsPdf, cargarLogo, rgb, sellar } from '../../core/pdf.js?v=bd56179';
-import { nombreEmpresa } from '../../core/empresas.js?v=bd56179';
+import { textoDocx } from './texto-docx.js?v=5f7c89a';
+import { cargarJsPdf, cargarLogo, rgb, sellar } from '../../core/pdf.js?v=5f7c89a';
+import { nombreEmpresa } from '../../core/empresas.js?v=5f7c89a';
 
 const DOCX_LIB = 'https://cdn.jsdelivr.net/npm/docx@9.0.2/+esm';
 const JSZIP = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
@@ -192,12 +192,15 @@ export async function exportarPdf(ctx, doc) {
       else if (b.tipo === 'numerada') (b.items || []).forEach((t, i) => texto(t, { sangria: 6, prefijo: `${i + 1}.` }));
       else if (b.tipo === 'tabla' && (b.columnas || []).length) {
         const n = b.columnas.length;
+        // Para llenar a mano en terreno: con columna de firma o filas en blanco, filas de 9 mm
+        const aMano = b.columnas.some((c) => /firma/i.test(c)) || (b.filas || []).some((f) => f.filter((x) => String(x ?? '').trim()).length <= 1);
         pdf.autoTable({
           startY: y, head: [b.columnas.map(pdfTexto)], body: (b.filas || []).map((f) => Array.from({ length: n }, (_, i) => pdfTexto(f[i] ?? ''))),
           margin: { left: M, right: M, top: ARRIBA, bottom: H - ABAJO }, rowPageBreak: 'avoid',
           columnStyles: Object.fromEntries(anchosTabla(b).map((x, i) => [i, { cellWidth: x * ancho }])),
-          styles: { font: 'helvetica', fontSize: 8, cellPadding: 1.6, textColor: OSC, lineColor: [209, 213, 219], lineWidth: 0.1, valign: 'top' },
-          headStyles: { fillColor: OSC, textColor: 255, fontStyle: 'bold' },
+          styles: { font: 'helvetica', fontSize: 8, cellPadding: 1.6, textColor: OSC, lineColor: [209, 213, 219], lineWidth: 0.1, valign: aMano ? 'middle' : 'top' },
+          headStyles: { fillColor: OSC, textColor: 255, fontStyle: 'bold', minCellHeight: 0 },
+          bodyStyles: aMano ? { minCellHeight: 9 } : {},
         });
         y = pdf.lastAutoTable.finalY + 4;
       }

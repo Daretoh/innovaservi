@@ -1,10 +1,10 @@
 // Datos compartidos de Remates: listas de valores, carga de oportunidades, costo total, descuento y puntaje,
 // casillas de revisión por tipo y enlaces útiles (SII, Poder Judicial, CBR, mapa, portales).
-import { el } from '../../core/ui/dom.js?v=bd56179';
-import { icono } from '../../core/ui/iconos.js?v=bd56179';
-import { configModulo } from '../../core/modulos.js?v=bd56179';
-import { empresasCon, ctxDe } from '../grupo/empresas.js?v=bd56179';
-import manifiesto from './manifest.js?v=bd56179';
+import { el } from '../../core/ui/dom.js?v=5f7c89a';
+import { icono } from '../../core/ui/iconos.js?v=5f7c89a';
+import { configModulo } from '../../core/modulos.js?v=5f7c89a';
+import { empresasCon, ctxDe } from '../grupo/empresas.js?v=5f7c89a';
+import manifiesto from './manifest.js?v=5f7c89a';
 
 export const TIPOS = [['inmueble', 'Inmueble'], ['vehiculo', 'Vehículo'], ['maquinaria', 'Maquinaria y activos'], ['otro', 'Otro']];
 export const ORIGENES = [
@@ -283,5 +283,5 @@ export async function geocodificar(texto) {
 
 export function cargarEstilos() {
   if (document.getElementById('remates-css')) return;
-  document.head.append(el('link', { id: 'remates-css', rel: 'stylesheet', href: new URL('./remates.css?v=bd56179', import.meta.url).href }));
+  document.head.append(el('link', { id: 'remates-css', rel: 'stylesheet', href: new URL('./remates.css?v=5f7c89a', import.meta.url).href }));
 }

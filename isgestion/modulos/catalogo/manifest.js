@@ -9,9 +9,9 @@ export default {
   rubros: ['automotriz'],
   acciones: ['ver', 'crear', 'editar', 'eliminar', 'aprobar', 'exportar'],   // aprobar: ver y cambiar costos y márgenes
   menu: [
-    { id: 'catalogo.productos', label: 'Catálogo de equipamiento', pestana: 'Productos', icono: 'etiqueta', vista: () => import('./vistas/productos.js?v=bd56179') },
-    { id: 'catalogo.producto', label: 'Producto', oculto: true, padre: 'catalogo.productos', vista: () => import('./vistas/producto.js?v=bd56179') },
-    { id: 'catalogo.ajustes', label: 'Categorías y marcas', pestana: 'Categorías y marcas', icono: 'ajustes', ajustes: true, vista: () => import('./vistas/ajustes.js?v=bd56179') },
+    { id: 'catalogo.productos', label: 'Catálogo de equipamiento', pestana: 'Productos', icono: 'etiqueta', vista: () => import('./vistas/productos.js?v=5f7c89a') },
+    { id: 'catalogo.producto', label: 'Producto', oculto: true, padre: 'catalogo.productos', vista: () => import('./vistas/producto.js?v=5f7c89a') },
+    { id: 'catalogo.ajustes', label: 'Categorías y marcas', pestana: 'Categorías y marcas', icono: 'ajustes', ajustes: true, vista: () => import('./vistas/ajustes.js?v=5f7c89a') },
   ],
   config: {
     frase: { tipo: 'text', etiqueta: 'Frase bajo el título del PDF', default: 'Protección, diseño y funcionalidad para tu camioneta' },

@@ -1,11 +1,11 @@
 // Inicio: saludo con la fecha, lo que requiere atención (alertas de los módulos que el usuario puede ver)
 // indicadores de los módulos (core/vistas/indicadores.js) y accesos a los módulos agrupados por área. Las alertas llegan después, sin bloquear la pantalla.
-import { tarjetaInicio } from '../novedades.js?v=bd56179';
-import { el } from '../ui/dom.js?v=bd56179';
-import { icono } from '../ui/iconos.js?v=bd56179';
-import { nombreEmpresa } from '../empresas.js?v=bd56179';
-import { esTelefono, marcaGuardada, recordarMarca } from '../movil.js?v=bd56179';
-import { diaLocal } from '../ui/formato.js?v=bd56179';
+import { tarjetaInicio } from '../novedades.js?v=5f7c89a';
+import { el } from '../ui/dom.js?v=5f7c89a';
+import { icono } from '../ui/iconos.js?v=5f7c89a';
+import { nombreEmpresa } from '../empresas.js?v=5f7c89a';
+import { esTelefono, marcaGuardada, recordarMarca } from '../movil.js?v=5f7c89a';
+import { diaLocal } from '../ui/formato.js?v=5f7c89a';
 
 const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
@@ -79,7 +79,7 @@ function cabeceraMovil(ctx, { fecha, titulo, abrirNotificaciones, elegirEmpresa,
 function atencionTaller(ctx) {
   const nodo = el('section', { class: 'im-atencion', hidden: true });
   (async () => {
-    const [{ SELECT_ORDEN, minutosTrabajo }, m] = await Promise.all([import('../../modulos/taller/datos.js?v=bd56179'), import('../../modulos/taller/movil.js?v=bd56179')]);
+    const [{ SELECT_ORDEN, minutosTrabajo }, m] = await Promise.all([import('../../modulos/taller/datos.js?v=5f7c89a'), import('../../modulos/taller/movil.js?v=5f7c89a')]);
     const { data, error } = await ctx.api.from('tal_ordenes').select(SELECT_ORDEN).eq('empresa_id', ctx.empresa.id).in('estado', ['agendado', 'espera', 'proceso', 'terminado']);
     if (error) throw error;
     // Primero por tipo de motivo; dentro de cada uno, el que lleva más tiempo
@@ -170,12 +170,12 @@ export default function inicio(ctx, visibles, { abrirNotificaciones, elegirEmpre
   // Indicadores (tarjetas y paneles): llegan después, sin bloquear la pantalla
   const indicadores = el('div', { class: 'cargando-bloque', 'aria-busy': 'true', 'aria-label': 'Cargando indicadores' }, el('span', { class: 'cargador', 'aria-hidden': 'true' }));
   if (visibles.length && !tablet) {
-    import('./indicadores.js?v=bd56179')
+    import('./indicadores.js?v=5f7c89a')
       .then(async ({ cargarIndicadores, panelIndicadores }) => { const p = panelIndicadores(ctx, await cargarIndicadores(ctx)); if (p) indicadores.replaceWith(p); else indicadores.remove(); })
       .catch(() => indicadores.remove());
   } else indicadores.remove();
   if (visibles.length && !tablet) {
-    import('../../modulos/gerencia/alertas.js?v=bd56179')
+    import('../../modulos/gerencia/alertas.js?v=5f7c89a')
       .then(({ cargarAlertas }) => cargarAlertas(ctx))
       .then((alertas) => {
         atencion.replaceChildren(el('h2', {}, alertas.length ? `Requiere atención (${alertas.length})` : 'Requiere atención'),
