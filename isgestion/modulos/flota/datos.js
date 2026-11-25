@@ -1,5 +1,5 @@
 // Datos y reglas compartidas de Flota.
-import { hoyISO } from '../../core/ui/formato.js?v=5f7c89a';
+import { hoyISO } from '../../core/ui/formato.js?v=1d279d8';
 
 // [clave, nombre, ¿tiene vencimiento?]
 export const CATEGORIAS = [

@@ -1,9 +1,9 @@
 // Revisión de documentos preventivos con IA (SST 004): leer el Word o PDF, pedir la revisión y la versión corregida a
 // la Edge Function revisar-documento (Claude) y exportar el documento corregido a Word y PDF con el logo y el color de
 // la empresa. Librerías con versión fija desde CDN (08 Seguridad §5), solo al usarlas.
-import { textoDocx } from './texto-docx.js?v=5f7c89a';
-import { cargarJsPdf, cargarLogo, rgb, sellar } from '../../core/pdf.js?v=5f7c89a';
-import { nombreEmpresa } from '../../core/empresas.js?v=5f7c89a';
+import { textoDocx } from './texto-docx.js?v=1d279d8';
+import { cargarJsPdf, cargarLogo, rgb, sellar } from '../../core/pdf.js?v=1d279d8';
+import { nombreEmpresa } from '../../core/empresas.js?v=1d279d8';
 
 const DOCX_LIB = 'https://cdn.jsdelivr.net/npm/docx@9.0.2/+esm';
 const JSZIP = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
@@ -66,7 +66,9 @@ async function logoChico(l) {
 const hoyTexto = () => new Date().toLocaleDateString('es-CL');
 // Helvetica de jsPDF solo trae WinAnsi: lo demás se traduce o se descompone (si no, descuadra la línea entera)
 const WINANSI = new Set([...'€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•–—˜™š›œžŸ']);
-const EQUIV = { '→': '->', '⇒': '=>', '←': '<-', '↔': '<->', '≥': '>=', '≤': '<=', '≠': '!=', '≈': '~', '−': '-', '‐': '-', '‑': '-', '‒': '-', '―': '-', '✓': 'Sí', '✔': 'Sí', '✗': 'No', '✘': 'No', '▪': '•', '●': '•', '◦': '-', '·': '·' };
+// ☐ / ☑ / ☒ (casillas para marcar a mano): la fuente no las tiene; se dejan como ¤ y se dibuja un cuadrito en su lugar
+const CASILLA = '¤';
+const EQUIV = { '☐': CASILLA, '□': CASILLA, '☑': CASILLA, '☒': CASILLA, '→': '->', '⇒': '=>', '←': '<-', '↔': '<->', '≥': '>=', '≤': '<=', '≠': '!=', '≈': '~', '−': '-', '‐': '-', '‑': '-', '‒': '-', '―': '-', '✓': 'Sí', '✔': 'Sí', '✗': 'No', '✘': 'No', '▪': '•', '●': '•', '◦': '-', '·': '·' };
 const pdfTexto = (t) => [...String(t ?? '').replace(/ /g, ' ')].map((c) => {
   const n = c.codePointAt(0);
   if ((n >= 0x20 && n <= 0x7e) || (n >= 0xa0 && n <= 0xff) || c === '\n' || WINANSI.has(c)) return c;
@@ -167,6 +169,19 @@ export async function exportarPdf(ctx, doc) {
   const M = 15, ARRIBA = 38, ABAJO = H - 16, ancho = W - 2 * M;
   let y = ARRIBA;
   const espacio = (mm) => { if (y + mm > ABAJO) { pdf.addPage(); y = ARRIBA; } };
+  // Escribe una línea; cada ¤ se dibuja como una casilla vacía para marcar a mano
+  const linea = (l, x, yb, tam) => {
+    if (!l.includes(CASILLA)) { pdf.text(l, x, yb); return; }
+    let cx = x;
+    const lado = Math.max(2.4, tam * 0.3);
+    for (const [i, seg] of l.split(CASILLA).entries()) {
+      if (i > 0) {
+        pdf.setDrawColor(...OSC).setLineWidth(0.25).rect(cx + 0.2, yb - lado * 0.92, lado, lado);
+        cx += lado + 0.9;
+      }
+      if (seg) { pdf.text(seg, cx, yb); cx += pdf.getTextWidth(seg); }
+    }
+  };
   const texto = (t, { tam = 9.5, negrita = false, sangria = 0, prefijo = '', col = OSC } = {}) => {
     pdf.setFont('helvetica', negrita ? 'bold' : 'normal').setFontSize(tam).setTextColor(...col);
     const lineas = pdf.splitTextToSize(pdfTexto(t), ancho - sangria);
@@ -174,7 +189,7 @@ export async function exportarPdf(ctx, doc) {
     lineas.forEach((l, i) => {
       espacio(alto);
       if (i === 0 && prefijo) { pdf.setFont('helvetica', 'bold').setTextColor(...color); pdf.text(prefijo, M + sangria - 5, y + alto * 0.75); pdf.setFont('helvetica', negrita ? 'bold' : 'normal').setTextColor(...col); }
-      pdf.text(l, M + sangria, y + alto * 0.75); y += alto;
+      linea(l, M + sangria, y + alto * 0.75, tam); y += alto;
     });
     y += 1.4;
   };
@@ -201,6 +216,15 @@ export async function exportarPdf(ctx, doc) {
           styles: { font: 'helvetica', fontSize: 8, cellPadding: 1.6, textColor: OSC, lineColor: [209, 213, 219], lineWidth: 0.1, valign: aMano ? 'middle' : 'top' },
           headStyles: { fillColor: OSC, textColor: 255, fontStyle: 'bold', minCellHeight: 0 },
           bodyStyles: aMano ? { minCellHeight: 9 } : {},
+          willDrawCell: (d) => { if (d.cell.text.some((x) => x.includes(CASILLA))) { d.cell.__lineas = d.cell.text; d.cell.text = []; } },
+          didDrawCell: (d) => {
+            const ls = d.cell.__lineas; if (!ls) return;
+            const fs = d.cell.styles.fontSize; const alto = (fs * 1.15 * 25.4) / 72; const pad = d.cell.padding('top');
+            const total = ls.length * alto;
+            const y0 = d.cell.styles.valign === 'middle' ? d.cell.y + (d.cell.height - total) / 2 : d.cell.y + pad;
+            pdf.setFont('helvetica', d.cell.styles.fontStyle === 'bold' ? 'bold' : 'normal').setFontSize(fs).setTextColor(...OSC);
+            ls.forEach((l, i) => linea(l, d.cell.x + d.cell.padding('left'), y0 + alto * (i + 0.78), fs));
+          },
         });
         y = pdf.lastAutoTable.finalY + 4;
       }

@@ -2,16 +2,16 @@
 // cualquier mes), los del mes, pendientes de pago o cobro (de todos los meses), filtro por categoría y por declarado o no
 // declarado (2026-11-24), resumen y Excel. "Editar como planilla" cambia la tabla por la planilla del OS (planilla.js). En el teléfono
 // las filas se ven como tarjetas.
-import { el } from '../../../core/ui/dom.js?v=5f7c89a';
-import { icono } from '../../../core/ui/iconos.js?v=5f7c89a';
-import { listado, boton } from '../../../core/ui/tabla.js?v=5f7c89a';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=5f7c89a';
-import { avisar } from '../../../core/ui/aviso.js?v=5f7c89a';
-import { dinero, fechaLarga, hoyISO, nombreMes, moverMes, rangoMes, diaLocal } from '../../../core/ui/formato.js?v=5f7c89a';
-import { cargarBase, nombreTercero, nombreDoc, nombreMedio, MEDIOS, traerComprasInventario, estadosDe, nombreEstado, CHIP_ESTADO } from '../datos.js?v=5f7c89a';
-import { planilla } from '../planilla.js?v=5f7c89a';
-import { urlFirmada } from '../../../core/adjuntos.js?v=5f7c89a';
-import { pendientesBandeja } from './bandeja.js?v=5f7c89a';
+import { el } from '../../../core/ui/dom.js?v=1d279d8';
+import { icono } from '../../../core/ui/iconos.js?v=1d279d8';
+import { listado, boton } from '../../../core/ui/tabla.js?v=1d279d8';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=1d279d8';
+import { avisar } from '../../../core/ui/aviso.js?v=1d279d8';
+import { dinero, fechaLarga, hoyISO, nombreMes, moverMes, rangoMes, diaLocal } from '../../../core/ui/formato.js?v=1d279d8';
+import { cargarBase, nombreTercero, nombreDoc, nombreMedio, MEDIOS, traerComprasInventario, estadosDe, nombreEstado, CHIP_ESTADO } from '../datos.js?v=1d279d8';
+import { planilla } from '../planilla.js?v=1d279d8';
+import { urlFirmada } from '../../../core/adjuntos.js?v=1d279d8';
+import { pendientesBandeja } from './bandeja.js?v=1d279d8';
 
 // (2026-11-24, orden de Finanzas) Gastos y Otros ingresos son pantallas separadas: los gastos en Compras y gastos,
 // los otros ingresos en Ventas y cobros (vistas/ingresos.js). Cada una recuerda su propio filtro.
@@ -127,7 +127,7 @@ export async function vistaRegistros(ctx, solo) {
     el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Mes anterior', onclick: () => mover(-1) }, icono('volver')),
     el('strong', {}, nombreMes(estado.mes)),
     el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Mes siguiente', onclick: () => mover(1) }, icono('derecha'))));
-  if (ctx.puede('costos', 'exportar') && data.length) acciones.push(boton('Excel', { icono: 'descargar', onclick: () => import('../../../core/excel.js?v=5f7c89a').then(({ exportarExcel }) => exportarExcel(ctx, {
+  if (ctx.puede('costos', 'exportar') && data.length) acciones.push(boton('Excel', { icono: 'descargar', onclick: () => import('../../../core/excel.js?v=1d279d8').then(({ exportarExcel }) => exportarExcel(ctx, {
     titulo: pendientes ? `${nombre} pendientes` : revisar ? `${nombre} por revisar` : sinCentro ? `${nombre} sin centro de costo` : recientes ? `${nombre} recientes` : `${nombre} · ${nombreMes(estado.mes)}`, nombre: `${esGasto ? 'gastos' : 'otros-ingresos'}-${pendientes ? 'pendientes' : recientes ? 'recientes' : estado.mes}`,
     columnas: [{ t: 'Fecha', tipo: 'fecha' }, 'Tipo', 'Concepto', 'Categoría', ...(ctx.config?.centros ? ['Centro'] : []), 'Proveedor o cliente', 'Documento', 'N°', { t: 'Neto', tipo: 'dinero' }, { t: 'IVA', tipo: 'dinero' }, { t: 'Total', tipo: 'dinero' }, 'Estado', { t: 'Fecha de pago', tipo: 'fecha' }, 'Medio', 'Patente'],
     filas: data.map((r) => [r.fecha, r.tipo === 'gasto' ? 'Gasto' : 'Ingreso', r.concepto, base.categoriaDe.get(r.categoria_id)?.nombre ?? '', ...(ctx.config?.centros ? [base.centroDe.get(r.centro_id)?.nombre ?? ''] : []), nombreTercero(r.terceros),

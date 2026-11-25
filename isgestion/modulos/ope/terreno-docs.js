@@ -1,12 +1,12 @@
 // Documentos de terreno de una faena-día (Faenas 007): la AST y el permiso de trabajo firmados en terreno (foto o PDF;
 // varias fotos se juntan en un PDF), adjuntados desde Prevención SST → En terreno o desde la faena. También muestra las
 // fotos que la cuadrilla subió al parte con la etapa "AST y permiso de trabajo" (Reportes 011).
-import { el } from '../../core/ui/dom.js?v=5f7c89a';
-import { icono } from '../../core/ui/iconos.js?v=5f7c89a';
-import { boton } from '../../core/ui/tabla.js?v=5f7c89a';
-import { avisar } from '../../core/ui/aviso.js?v=5f7c89a';
-import { subirArchivo, urlFirmada } from '../../core/adjuntos.js?v=5f7c89a';
-import { prepararArchivos } from '../../core/imagenes.js?v=5f7c89a';
+import { el } from '../../core/ui/dom.js?v=1d279d8';
+import { icono } from '../../core/ui/iconos.js?v=1d279d8';
+import { boton } from '../../core/ui/tabla.js?v=1d279d8';
+import { avisar } from '../../core/ui/aviso.js?v=1d279d8';
+import { subirArchivo, urlFirmada } from '../../core/adjuntos.js?v=1d279d8';
+import { prepararArchivos } from '../../core/imagenes.js?v=1d279d8';
 
 export const TIPOS_DOC = [['ast', 'AST'], ['permiso', 'Permiso de trabajo'], ['otro', 'Otro documento']];
 const nombreTipo = Object.fromEntries(TIPOS_DOC);
