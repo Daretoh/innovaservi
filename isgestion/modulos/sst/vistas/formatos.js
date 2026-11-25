@@ -3,20 +3,20 @@
 // Rellenar: se escribe sobre el PDF del cliente (los campos detectados, o tocando cualquier parte de la hoja para un
 // texto suelto). Lo no rellenado queda en blanco para completarlo en terreno. "Imprimir PDF" escribe sobre el original:
 // queda el formato del cliente tal cual, sin nada de ISgestión.
-import { el } from '../../../core/ui/dom.js?v=1d279d8';
-import { icono } from '../../../core/ui/iconos.js?v=1d279d8';
-import { boton } from '../../../core/ui/tabla.js?v=1d279d8';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=1d279d8';
-import { avisar } from '../../../core/ui/aviso.js?v=1d279d8';
-import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=1d279d8';
-import { fechaLarga, hoyISO } from '../../../core/ui/formato.js?v=1d279d8';
-import { cargarPdfJs, detectarCampos, pdfRellenado, datosDeFaena, DATOS, MARCAS, SIGUIENTE_MARCA } from '../formatos.js?v=1d279d8';
+import { el } from '../../../core/ui/dom.js?v=db2b2b7';
+import { icono } from '../../../core/ui/iconos.js?v=db2b2b7';
+import { boton } from '../../../core/ui/tabla.js?v=db2b2b7';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=db2b2b7';
+import { avisar } from '../../../core/ui/aviso.js?v=db2b2b7';
+import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=db2b2b7';
+import { fechaLarga, hoyISO, sumarDias, nombreDia } from '../../../core/ui/formato.js?v=db2b2b7';
+import { cargarPdfJs, detectarCampos, pdfRellenado, datosDeFaena, faenasCercanas, DATOS, MARCAS, SIGUIENTE_MARCA } from '../formatos.js?v=db2b2b7';
 
 export const TIPOS_FORMATO = [['ast', 'AST (análisis seguro de trabajo)'], ['permiso', 'Permiso de trabajo'], ['otro', 'Otro formato']];
 const nombreTipo = { ast: 'AST', permiso: 'Permiso de trabajo', otro: 'Formato' };
 
 function css() {
-  if (!document.getElementById('sst-formatos-css')) document.head.append(el('link', { id: 'sst-formatos-css', rel: 'stylesheet', href: new URL('../formatos.css?v=1d279d8', import.meta.url).href }));
+  if (!document.getElementById('sst-formatos-css')) document.head.append(el('link', { id: 'sst-formatos-css', rel: 'stylesheet', href: new URL('../formatos.css?v=db2b2b7', import.meta.url).href }));
 }
 
 export default async function vista(ctx) {
@@ -35,7 +35,34 @@ export async function abrirLlenado(ctx, formato, { faenaId = null, fecha = hoyIS
   for (const c of formato.campos ?? []) if (c.dato && d[c.dato]) valores[c.id] = d[c.dato];
   const { data, error } = await ctx.api.from('sst_formato_llenados').insert({ empresa_id: ctx.empresa.id, formato_id: formato.id, faena_id: faenaId, fecha, titulo, valores }).select('id').single();
   if (error) throw new Error(error.message);
+  if (d.gente_de) avisar(`Ese día aún no tiene gente planificada: se pusieron los trabajadores del ${fechaLarga(d.gente_de)}. Revísalos.`);
   location.hash = ctx.ruta('sst.formatos', { id: formato.id, l: data.id });
+}
+
+// Rellenar desde la lista: a qué faena-día va (así se completan solos los trabajadores, el supervisor y los horarios)
+async function elegirFaena(ctx, formato) {
+  const hoy = hoyISO();
+  const [delCliente, todas] = await Promise.all([
+    formato.tercero_id ? faenasCercanas(ctx, { desde: sumarDias(hoy, -7), hasta: sumarDias(hoy, 21), terceroId: formato.tercero_id }) : [],
+    faenasCercanas(ctx, { desde: sumarDias(hoy, -7), hasta: sumarDias(hoy, 21) }),
+  ]);
+  const lista = delCliente.length ? delCliente : todas;
+  const proxima = lista.find((x) => x.fecha >= hoy);
+  const etiqueta = (x) => `${nombreDia(x.fecha)} ${fechaLarga(x.fecha)} · ${x.titulo}`;
+  return abrirFormulario({
+    titulo: `Rellenar ${formato.nombre}`,
+    mensaje: 'Elige la faena y el día: se completan solos los trabajadores (nombre y RUT), el supervisor, la fecha y la hora. Las firmas quedan en blanco.',
+    campos: [
+      { id: 'faena', etiqueta: 'Faena', valor: proxima ? `${proxima.faenaId}|${proxima.fecha}` : '',
+        opciones: [['', 'Sin faena (se escribe todo a mano)'], ...lista.map((x) => [`${x.faenaId}|${x.fecha}`, etiqueta(x)])],
+        ayuda: delCliente.length ? 'Faenas de este cliente, de la semana pasada a tres semanas más.' : 'Faenas de la semana pasada a tres semanas más.' },
+    ],
+    textoGuardar: 'Rellenar',
+    alGuardar: async (v) => {
+      const [faenaId, fecha] = v.faena ? v.faena.split('|') : [null, hoy];
+      await abrirLlenado(ctx, formato, { faenaId, fecha });
+    },
+  });
 }
 
 async function lista(ctx) {
@@ -80,7 +107,7 @@ async function lista(ctx) {
       lista.map((f) => el('div', { class: 'doc-fila' },
         el('div', { class: 'doc-nombre' }, el('strong', {}, f.nombre), el('span', { class: 'texto-suave texto-chico' }, `${nombreTipo[f.tipo]} · ${(f.campos ?? []).length} campos`)),
         el('div', { class: 'doc-acciones' },
-          ctx.puede('sst', 'crear') || ctx.puede('ope', 'crear') ? boton('Rellenar', { icono: 'editar', tipo: 'primario', onclick: async () => { try { await abrirLlenado(ctx, f); } catch (e) { avisar(e.message, 'error'); } } }) : null,
+          ctx.puede('sst', 'crear') || ctx.puede('ope', 'crear') ? boton('Rellenar', { icono: 'editar', tipo: 'primario', onclick: () => elegirFaena(ctx, f).catch((e) => avisar(e.message, 'error')) }) : null,
           ctx.puede('sst', 'editar') ? boton('Ajustar campos', { icono: 'ajustes', onclick: () => { location.hash = ctx.ruta('sst.formatos', { id: f.id, modo: 'ajustar' }); } }) : null)))))
       : el('p', { class: 'texto-suave' }, 'Aún no hay formatos. Sube la AST o el permiso de trabajo del cliente en PDF.'),
     ls.data?.length ? el('div', { class: 'ficha doc-grupo' }, el('h2', {}, 'Rellenados recientes'),
@@ -259,7 +286,8 @@ async function hoja(ctx) {
     const d = await datosDeFaena(ctx, ll.faena_id, ll.fecha);
     let n = 0;
     for (const c of campos) if (c.dato && d[c.dato] && !valores[c.id]) { valores[c.id] = d[c.dato]; n++; }
-    pintarCampos(); guardar(); avisar(n ? `${n} campos completados con los datos de la faena.` : 'No había campos vacíos con datos de la faena.');
+    pintarCampos(); guardar();
+    avisar(n ? `${n} campos completados con los datos de la faena${d.gente_de ? ` (trabajadores del ${fechaLarga(d.gente_de)}, porque ese día aún no tiene gente planificada)` : ''}.` : 'No había campos vacíos con datos de la faena.');
   };
   const redetectar = () => abrirFormulario({
     titulo: 'Buscar los campos de nuevo', mensaje: 'Se reemplazan los campos de este formato por los que se encuentren ahora (se pierden los ajustes hechos a mano).', campos: [], textoGuardar: 'Buscar',

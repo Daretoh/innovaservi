@@ -22,6 +22,7 @@ export const DATOS = [
   ['', 'Ninguno (se escribe a mano)'], ['fecha', 'Fecha'], ['hora_inicio', 'Hora de inicio'], ['hora_termino', 'Hora de término'],
   ['empresa', 'Empresa contratista (nombre)'], ['empresa_rut', 'Empresa contratista (nombre y RUT)'], ['descripcion', 'Descripción del trabajo (faena y tareas)'],
   ['lugar', 'Lugar o instalación'], ['supervisor', 'Supervisor de la faena'], ['prevencionista', 'Prevencionista'],
+  ['marca_si', 'Casilla marcada siempre (✓), ej.: Personal contratista'],
   ...Array.from({ length: 12 }, (_, i) => [`trab_nombre_${i + 1}`, `Trabajador ${i + 1}: nombre`]),
   ...Array.from({ length: 12 }, (_, i) => [`trab_rut_${i + 1}`, `Trabajador ${i + 1}: RUT`]),
 ];
@@ -165,29 +166,60 @@ export async function pdfRellenado(bytes, formato, llenado) {
 
 // ---------- Datos propuestos desde una faena-día ----------
 export async function datosDeFaena(ctx, faenaId, fecha) {
-  const d = { fecha: fecha ? fecha.split('-').reverse().join('-') : '' };
+  const d = { fecha: fecha ? fecha.split('-').reverse().join('-') : '', marca_si: 'si' };
   d.empresa = ctx.empresa.razon_social ?? '';
   d.empresa_rut = [ctx.empresa.razon_social, ctx.empresa.rut ? `RUT ${ctx.empresa.rut}` : null].filter(Boolean).join(' · ');
   const gen = await ctx.api.from('gen_config').select('prevencionista').eq('empresa_id', ctx.empresa.id).maybeSingle().then((r) => r, () => ({ data: null }));
   d.prevencionista = gen.data?.prevencionista ?? '';
   if (!faenaId) return d;
-  const [{ data: f }, { data: p }] = await Promise.all([
+  const [{ data: f }, { data: planes }] = await Promise.all([
     ctx.api.from('ope_faenas').select('titulo, tareas, hora_inicio, hora_fin, tercero_id, sitio_id, ope_sitios(nombre)').eq('id', faenaId).maybeSingle(),
-    ctx.api.from('ope_plan').select('hora_inicio, hora_fin, ope_plan_personas(persona_id, rol)').eq('faena_id', faenaId).eq('fecha', fecha).maybeSingle(),
+    ctx.api.from('ope_plan').select('fecha, hora_inicio, hora_fin, ope_plan_personas(persona_id, rol)').eq('faena_id', faenaId),
   ]);
   if (!f) return d;
+  // La gente del día; si ese día aún no se planifica, la del día planificado más cercano de la misma faena
+  const p = (planes ?? []).find((x) => x.fecha === fecha) ?? null;
+  const conGente = (planes ?? []).filter((x) => x.ope_plan_personas?.length);
+  const dist = (x) => Math.abs(new Date(x.fecha) - new Date(fecha || x.fecha));
+  const pg = p?.ope_plan_personas?.length ? p : [...conGente].sort((a, b) => dist(a) - dist(b))[0] ?? null;
+  if (pg && pg !== p) d.gente_de = pg.fecha;
   const hh = (t) => String(t ?? '').slice(0, 5);
   d.hora_inicio = hh(p?.hora_inicio ?? f.hora_inicio); d.hora_termino = hh(p?.hora_fin ?? f.hora_fin);
   d.lugar = f.ope_sitios?.nombre ?? '';
   d.descripcion = [f.titulo, ...(f.tareas ?? [])].filter(Boolean).join('. ');
-  const ids = (p?.ope_plan_personas ?? []).map((x) => x.persona_id);
+  d.personas = [];
+  const ids = (pg?.ope_plan_personas ?? []).map((x) => x.persona_id);
   if (ids.length) {
-    const { data: ps } = await ctx.api.from('personas').select('id, nombres, apellido_paterno, apellido_materno, rut').in('id', ids);
+    const [{ data: ps }, { data: vs }] = await Promise.all([
+      ctx.api.from('personas').select('id, nombres, apellido_paterno, apellido_materno, rut').in('id', ids),
+      ctx.api.from('persona_empresa').select('persona_id, cargo').eq('empresa_id', ctx.empresa.id).in('persona_id', ids).is('deleted_at', null),
+    ]);
     const nombre = (x) => [x.nombres, x.apellido_paterno, x.apellido_materno].filter(Boolean).join(' ');
-    const orden = [...(p.ope_plan_personas ?? [])].sort((a, b) => (a.rol === 'sup' ? -1 : 0) - (b.rol === 'sup' ? -1 : 0));
+    const orden = [...(pg.ope_plan_personas ?? [])].sort((a, b) => (a.rol === 'sup' ? -1 : 0) - (b.rol === 'sup' ? -1 : 0));
     const sup = orden.find((x) => x.rol === 'sup');
     if (sup) d.supervisor = nombre(ps.find((x) => x.id === sup.persona_id) ?? {});
-    orden.forEach((x, i) => { const q = ps.find((y) => y.id === x.persona_id); if (q) { d[`trab_nombre_${i + 1}`] = nombre(q); d[`trab_rut_${i + 1}`] = q.rut ?? ''; } });
+    orden.forEach((x) => {
+      const q = (ps ?? []).find((y) => y.id === x.persona_id); if (!q) return;
+      d.personas.push({ id: q.id, nombre: nombre(q), rut: q.rut ?? '', cargo: (vs ?? []).find((v) => v.persona_id === q.id)?.cargo ?? '', rol: x.rol });
+    });
+    d.personas.forEach((q, i) => { d[`trab_nombre_${i + 1}`] = q.nombre; d[`trab_rut_${i + 1}`] = q.rut; });
   }
   return d;
+}
+
+// Faenas de unos días (para elegir a cuál va un formato): [{ faenaId, fecha, titulo, tercero_id }]
+export async function faenasCercanas(ctx, { desde, hasta, terceroId = null } = {}) {
+  let q = ctx.api.from('ope_faenas').select('id, titulo, fecha_inicio, fecha_fin, dias, tercero_id').eq('empresa_id', ctx.empresa.id).is('deleted_at', null)
+    .lte('fecha_inicio', hasta).gte('fecha_fin', desde).order('fecha_inicio');
+  if (terceroId) q = q.eq('tercero_id', terceroId);
+  const { data } = await q;
+  const out = [];
+  for (const f of data ?? []) {
+    for (let t = new Date(`${f.fecha_inicio < desde ? desde : f.fecha_inicio}T12:00`); ; t.setDate(t.getDate() + 1)) {
+      const iso = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
+      if (iso > hasta || iso > f.fecha_fin) break;
+      if (!f.dias?.length || f.dias.includes(iso)) out.push({ faenaId: f.id, fecha: iso, titulo: f.titulo, tercero_id: f.tercero_id });
+    }
+  }
+  return out.sort((a, b) => a.fecha.localeCompare(b.fecha) || String(a.titulo).localeCompare(String(b.titulo)));
 }

@@ -2,13 +2,13 @@
 // con el margen y el precio de venta que sale de ellos. Es solo interno: nunca sale en el PDF ni lo ve el cliente.
 // Cada costo se guarda en cot_lineas.costos (jsonb): { tipo, desc, proveedor, monto, archivo_ruta?, archivo_nombre?, registro_id? }.
 // Los antiguos ({ desc, monto }) se leen igual y reciben un tipo al guardarlos.
-import { el } from '../../core/ui/dom.js?v=1d279d8';
-import { icono } from '../../core/ui/iconos.js?v=1d279d8';
-import { boton } from '../../core/ui/tabla.js?v=1d279d8';
-import { avisar } from '../../core/ui/aviso.js?v=1d279d8';
-import { dinero } from '../../core/ui/formato.js?v=1d279d8';
-import { subirArchivo, urlFirmada } from '../../core/adjuntos.js?v=1d279d8';
-import { totalLinea } from './datos.js?v=1d279d8';
+import { el } from '../../core/ui/dom.js?v=db2b2b7';
+import { icono } from '../../core/ui/iconos.js?v=db2b2b7';
+import { boton } from '../../core/ui/tabla.js?v=db2b2b7';
+import { avisar } from '../../core/ui/aviso.js?v=db2b2b7';
+import { dinero } from '../../core/ui/formato.js?v=db2b2b7';
+import { subirArchivo, urlFirmada } from '../../core/adjuntos.js?v=db2b2b7';
+import { totalLinea } from './datos.js?v=db2b2b7';
 
 export const TIPOS_COSTO = [
   ['producto', 'Producto'],
@@ -39,7 +39,7 @@ const redondear = (n, paso) => (paso > 1 ? Math.ceil(n / paso) * paso : Math.rou
 // Carga la hoja de estilos del módulo una vez
 function estilos() {
   if (document.getElementById('cot-costos-css')) return;
-  document.head.append(el('link', { id: 'cot-costos-css', rel: 'stylesheet', href: new URL('./costos.css?v=1d279d8', import.meta.url).href }));
+  document.head.append(el('link', { id: 'cot-costos-css', rel: 'stylesheet', href: new URL('./costos.css?v=db2b2b7', import.meta.url).href }));
 }
 
 const claveMargen = (ctx) => `isg.cot.margen.${ctx.empresa.id}`;

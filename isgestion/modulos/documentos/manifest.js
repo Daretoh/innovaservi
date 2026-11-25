@@ -8,9 +8,9 @@ export default {
   rubros: ['todos'],
   acciones: ['ver', 'crear', 'editar', 'eliminar'],
   menu: [
-    { id: 'documentos.generar', label: 'Generar documentos', pestana: 'Generar', icono: 'documento', vista: () => import('./vistas/generar.js?v=1d279d8') },
-    { id: 'documentos.pts', label: 'Editar PTS', oculto: true, padre: 'documentos.generar', vista: () => import('./vistas/pts.js?v=1d279d8') },
-    { id: 'documentos.config', ajustes: true, label: 'Datos y firmas', pestana: 'Datos y firmas', icono: 'ajustes', vista: () => import('./vistas/config.js?v=1d279d8') },
+    { id: 'documentos.generar', label: 'Generar documentos', pestana: 'Generar', icono: 'documento', vista: () => import('./vistas/generar.js?v=db2b2b7') },
+    { id: 'documentos.pts', label: 'Editar PTS', oculto: true, padre: 'documentos.generar', vista: () => import('./vistas/pts.js?v=db2b2b7') },
+    { id: 'documentos.config', ajustes: true, label: 'Datos y firmas', pestana: 'Datos y firmas', icono: 'ajustes', vista: () => import('./vistas/config.js?v=db2b2b7') },
   ],
   config: {},
   migraciones: ['db/001_documentos.sql'],

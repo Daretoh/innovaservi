@@ -1,6 +1,6 @@
 // Datos y reglas comunes de Tareas (v2, como InnovaGestión).
-import { hoyISO, diaLocal } from '../../core/ui/formato.js?v=1d279d8';
-import { el } from '../../core/ui/dom.js?v=1d279d8';
+import { hoyISO, diaLocal } from '../../core/ui/formato.js?v=db2b2b7';
+import { el } from '../../core/ui/dom.js?v=db2b2b7';
 
 export const PRIORIDADES = [['baja', 'Baja'], ['media', 'Media'], ['alta', 'Alta']];
 export const NIVELES = PRIORIDADES.map(([k]) => k);

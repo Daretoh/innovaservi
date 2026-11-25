@@ -1,12 +1,12 @@
 // Documentos de terreno de una faena-día (Faenas 007): la AST y el permiso de trabajo firmados en terreno (foto o PDF;
 // varias fotos se juntan en un PDF), adjuntados desde Prevención SST → En terreno o desde la faena. También muestra las
 // fotos que la cuadrilla subió al parte con la etapa "AST y permiso de trabajo" (Reportes 011).
-import { el } from '../../core/ui/dom.js?v=1d279d8';
-import { icono } from '../../core/ui/iconos.js?v=1d279d8';
-import { boton } from '../../core/ui/tabla.js?v=1d279d8';
-import { avisar } from '../../core/ui/aviso.js?v=1d279d8';
-import { subirArchivo, urlFirmada } from '../../core/adjuntos.js?v=1d279d8';
-import { prepararArchivos } from '../../core/imagenes.js?v=1d279d8';
+import { el } from '../../core/ui/dom.js?v=db2b2b7';
+import { icono } from '../../core/ui/iconos.js?v=db2b2b7';
+import { boton } from '../../core/ui/tabla.js?v=db2b2b7';
+import { avisar } from '../../core/ui/aviso.js?v=db2b2b7';
+import { subirArchivo, urlFirmada } from '../../core/adjuntos.js?v=db2b2b7';
+import { prepararArchivos } from '../../core/imagenes.js?v=db2b2b7';
 
 export const TIPOS_DOC = [['ast', 'AST'], ['permiso', 'Permiso de trabajo'], ['otro', 'Otro documento']];
 const nombreTipo = Object.fromEntries(TIPOS_DOC);
@@ -90,7 +90,7 @@ let formatosCache = null;
 export async function formatosParaImprimir(ctx) {
   if (!ctx.puede('sst', 'ver')) return [];
   if (formatosCache?.empresa === ctx.empresa.id && Date.now() - formatosCache.t < 60000) return formatosCache.lista;
-  const { data } = await ctx.api.from('sst_documentos').select('id, codigo, titulo, area, sst_doc_categorias!inner(nombre), sst_documento_versiones(version, archivo, fecha, created_at)')
+  const { data } = await ctx.api.from('sst_documentos').select('id, codigo, titulo, area, sst_doc_categorias!inner(nombre), sst_documento_versiones(version, archivo, fecha, created_at, contenido)')
     .eq('empresa_id', ctx.empresa.id).is('deleted_at', null).eq('activo', true).ilike('sst_doc_categorias.nombre', 'Formatos de terreno%').order('codigo');
   const lista = (data ?? []).map((d) => ({ ...d, vigente: [...(d.sst_documento_versiones ?? [])].sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)) || String(b.created_at).localeCompare(String(a.created_at)))[0] ?? null }));
   formatosCache = { empresa: ctx.empresa.id, t: Date.now(), lista };
@@ -98,7 +98,7 @@ export async function formatosParaImprimir(ctx) {
 }
 // texto: cliente y lugar de la faena; se muestran los formatos cuyo nombre de categoría o área los menciona
 const normal = (x) => String(x ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
-export function bloqueFormatosImprimir(ctx, todos, texto = '') {
+export function bloqueFormatosImprimir(ctx, todos, texto = '', { faenaId = null, fecha = null } = {}) {
   const palabras = normal(texto).split(/[^a-z0-9]+/).filter((x) => x.length > 3);
   const lista = palabras.length ? todos.filter((d) => palabras.some((w) => normal(`${d.sst_doc_categorias?.nombre} ${d.area}`).includes(w))) : [];
   if (!lista.length) return null;
@@ -108,10 +108,13 @@ export function bloqueFormatosImprimir(ctx, todos, texto = '') {
     catch (e) { v?.close(); avisar(e.message, 'error'); }
   };
   return el('div', { class: 'ter-docs' },
-    el('span', { class: 'texto-chico texto-suave' }, 'Formatos para imprimir y llevar (se firman en terreno):'),
+    el('span', { class: 'texto-chico texto-suave' }, faenaId ? 'Formatos para imprimir y llevar: "Imprimir con la faena" pone la fecha, el supervisor, los trabajadores y quién ingresa; se firman en terreno.' : 'Formatos para imprimir y llevar (se firman en terreno):'),
     lista.map((d) => el('div', { class: 'doc-fila' },
       el('div', { class: 'doc-nombre' }, el('strong', {}, [d.codigo, d.titulo].filter(Boolean).join(' · ')), el('span', { class: 'texto-suave texto-chico' }, d.area ?? '')),
       el('div', { class: 'doc-acciones' },
-        d.vigente ? boton('Imprimir', { icono: 'descargar', onclick: () => ver(d.vigente.archivo) }) : null,
+        d.vigente?.contenido?.secciones?.length && faenaId && fecha ? boton('Imprimir con la faena', { icono: 'descargar', tipo: 'primario', onclick: async () => {
+          try { const { imprimirConFaena } = await import('../sst/formatos-propios.js?v=db2b2b7'); await imprimirConFaena(ctx, d, { faenaId, fecha }); } catch (e) { avisar(e.message, 'error'); }
+        } }) : null,
+        d.vigente ? boton(faenaId ? 'En blanco' : 'Imprimir', { icono: 'descargar', onclick: () => ver(d.vigente.archivo) }) : null,
         el('a', { class: 'boton boton-chico', href: ctx.ruta('sst.editar', { id: d.id }) }, icono('editar', { tam: 14 }), 'Editar')))));
 }

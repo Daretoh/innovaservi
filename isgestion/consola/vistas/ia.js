@@ -3,13 +3,13 @@
 // base calcula su costo con los precios de con_ia_precios (editables abajo). El crédito y el saldo del mes se anotan a
 // mano (con_ia_saldos) con lo que muestra la Consola de Anthropic (organización IS Performance → Billing).
 // Ruta: #/ia (?mes=AAAA-MM). Solo el equipo (es_equipo()).
-import { el } from '../../core/ui/dom.js?v=1d279d8';
-import { icono } from '../../core/ui/iconos.js?v=1d279d8';
-import { boton } from '../../core/ui/tabla.js?v=1d279d8';
-import { avisar } from '../../core/ui/aviso.js?v=1d279d8';
-import { abrirFormulario } from '../../core/ui/modal.js?v=1d279d8';
-import { nombreMes, rangoMes, moverMes } from '../../core/ui/formato.js?v=1d279d8';
-import { nuevoExcel } from '../../core/excel.js?v=1d279d8';
+import { el } from '../../core/ui/dom.js?v=db2b2b7';
+import { icono } from '../../core/ui/iconos.js?v=db2b2b7';
+import { boton } from '../../core/ui/tabla.js?v=db2b2b7';
+import { avisar } from '../../core/ui/aviso.js?v=db2b2b7';
+import { abrirFormulario } from '../../core/ui/modal.js?v=db2b2b7';
+import { nombreMes, rangoMes, moverMes } from '../../core/ui/formato.js?v=db2b2b7';
+import { nuevoExcel } from '../../core/excel.js?v=db2b2b7';
 
 const PERFORMANCE = '78270149-1000-4000-8000-000000000001';   // la organización de Anthropic que paga es IS Performance
 const MESES_ATRAS = 5;

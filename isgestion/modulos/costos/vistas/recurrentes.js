@@ -2,12 +2,12 @@
 // meses (arriendo, servicios básicos, asesorías, suscripciones, colaciones) con un monto aproximado, porque cambia mes a
 // mes. Ya no se generan gastos con un botón: cada mes se carga el documento real en la Bandeja y aquí se ve si ya está
 // (un gasto del mes ligado al recordatorio o del mismo proveedor). Equivalente mensual y costo por persona.
-import { el } from '../../../core/ui/dom.js?v=1d279d8';
-import { boton } from '../../../core/ui/tabla.js?v=1d279d8';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=1d279d8';
-import { avisar } from '../../../core/ui/aviso.js?v=1d279d8';
-import { dinero, fechaLarga, hoyISO, nombreMes, sumarDias, rangoMes } from '../../../core/ui/formato.js?v=1d279d8';
-import { cargarBase, nombreTercero, DOCS, proximoCobro, mensualCLP, tocaEnMes, fechaEnMes } from '../datos.js?v=1d279d8';
+import { el } from '../../../core/ui/dom.js?v=db2b2b7';
+import { boton } from '../../../core/ui/tabla.js?v=db2b2b7';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=db2b2b7';
+import { avisar } from '../../../core/ui/aviso.js?v=db2b2b7';
+import { dinero, fechaLarga, hoyISO, nombreMes, sumarDias, rangoMes } from '../../../core/ui/formato.js?v=db2b2b7';
+import { cargarBase, nombreTercero, DOCS, proximoCobro, mensualCLP, tocaEnMes, fechaEnMes } from '../datos.js?v=db2b2b7';
 
 const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 const TC_KEY = 'isg.costos.dolar';
@@ -32,7 +32,7 @@ export default async function vista(ctx) {
   const conTer = new Set((hechos.data ?? []).map((h) => h.tercero_id).filter(Boolean));
   const ya = { has: (id) => { const r = lista.find((x) => x.id === id); return conRec.has(id) || (!!r?.tercero_id && conTer.has(r.tercero_id)); } };
   const faltan = lista.filter((r) => r.activo && tocaEnMes(r, mes) && !ya.has(r.id) && fechaEnMes(mes, r.dia) <= hoyISO());
-  const tc = leerTc() || Math.round((await import('../../../core/economia.js?v=1d279d8').then((m) => m.dolarDelDia()).catch(() => 0)) ?? 0);
+  const tc = leerTc() || Math.round((await import('../../../core/economia.js?v=db2b2b7').then((m) => m.dolarDelDia()).catch(() => 0)) ?? 0);
 
   const hoy = hoyISO();
   const semaforo = (r) => {

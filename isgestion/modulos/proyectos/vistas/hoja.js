@@ -2,20 +2,20 @@
 // totales) y se edita como planilla: se escribe en las celdas, Enter baja, Esc deshace, se pega desde Excel en Ítem
 // y se arrastra una fila por sus puntos a otra área. En pantallas anchas, panel lateral con el 3D del mueble.
 // Ruta: #/proyectos.hoja?p=<proyecto>
-import { el } from '../../../core/ui/dom.js?v=1d279d8';
-import { icono } from '../../../core/ui/iconos.js?v=1d279d8';
-import { boton } from '../../../core/ui/tabla.js?v=1d279d8';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=1d279d8';
-import { avisar } from '../../../core/ui/aviso.js?v=1d279d8';
+import { el } from '../../../core/ui/dom.js?v=db2b2b7';
+import { icono } from '../../../core/ui/iconos.js?v=db2b2b7';
+import { boton } from '../../../core/ui/tabla.js?v=db2b2b7';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=db2b2b7';
+import { avisar } from '../../../core/ui/aviso.js?v=db2b2b7';
 import {
   ESTADOS, NOMBRE_ESTADO, NO_SUMA, UNIDADES, clp, subtotal, suma, sinPrecioN, vigentes, tienePrecio, gDe, alerta, esArchivo, neto,
   ordenGrupos, zonasDe, leerNum, fmtNum, hoyISO, fechaCL, hoyLargo, plegado, cargarTodo, cargarEstilos, selectorProyecto, sinProyectos,
   guardarPartida, guardarProyecto, insertarPartidas, ordenEntre, renumerar, mapasInv, estadoModelo, m3dDe, chipModelo, modeloDe,
   cargarInventario, abrirLink, urlsImagenes, fichaPartida, guardarActual, instanciasDe, queEsDe,
   insertarReferencia, guardarReferencia, usarReferencia,
-} from '../datos.js?v=1d279d8';
-import { ventana3d, asegurarThree, cargarMallas, crearVisor, ponerMueble, camara, texturasPara, vistaModelo } from '../visor3d.js?v=1d279d8';
-import { excelProyecto } from '../exportar.js?v=1d279d8';
+} from '../datos.js?v=db2b2b7';
+import { ventana3d, asegurarThree, cargarMallas, crearVisor, ponerMueble, camara, texturasPara, vistaModelo } from '../visor3d.js?v=db2b2b7';
+import { excelProyecto } from '../exportar.js?v=db2b2b7';
 
 const filtro = { texto: '', zona: '', pend: false };   // se mantiene al refrescar
 
