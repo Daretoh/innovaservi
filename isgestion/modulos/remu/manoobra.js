@@ -8,8 +8,8 @@
 // Mes en curso: el sueldo base se cuenta devengado a hoy (días transcurridos del mes). Sin leyes sociales.
 // Externos que facturan (Remuneraciones 010): sus horas × valor hora van en "Horas trabajadas" de cada faena (lo
 // esperado, no su factura); no están en el total de Remuneraciones porque su costo entra por Costos.
-import { hoyISO, rangoMes, moverMes, sumarDias, lunesDe } from '../../core/ui/formato.js?v=35a39c1';
-import { resumenMes, calcularRango } from './datos.js?v=35a39c1';
+import { hoyISO, rangoMes, moverMes, sumarDias, lunesDe } from '../../core/ui/formato.js?v=d971811';
+import { resumenMes, calcularRango } from './datos.js?v=d971811';
 
 export const COMPONENTES = [
   ['tr', 'Horas trabajadas', 'tratos y valor hora'],

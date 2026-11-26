@@ -1,12 +1,12 @@
 // Postulantes: tablero por etapa (arrastrar entre columnas o mover con los botones), filtro por proceso, búsqueda,
 // contratados y descartados en lista, y traer fichas de ingreso pendientes de RRHH.
-import { el } from '../../../core/ui/dom.js?v=35a39c1';
-import { icono } from '../../../core/ui/iconos.js?v=35a39c1';
-import { listado, boton } from '../../../core/ui/tabla.js?v=35a39c1';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=35a39c1';
-import { avisar } from '../../../core/ui/aviso.js?v=35a39c1';
-import { hoyISO, fechaLarga, diaLocal } from '../../../core/ui/formato.js?v=35a39c1';
-import { cargarBase, formularioPostulante, nombreCompleto, iniciales, requisitosDe, nombreFuente } from '../datos.js?v=35a39c1';
+import { el } from '../../../core/ui/dom.js?v=d971811';
+import { icono } from '../../../core/ui/iconos.js?v=d971811';
+import { listado, boton } from '../../../core/ui/tabla.js?v=d971811';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=d971811';
+import { avisar } from '../../../core/ui/aviso.js?v=d971811';
+import { hoyISO, fechaLarga, diaLocal } from '../../../core/ui/formato.js?v=d971811';
+import { cargarBase, formularioPostulante, nombreCompleto, iniciales, requisitosDe, nombreFuente } from '../datos.js?v=d971811';
 
 const estado = { ver: 'activo', proceso: '', buscar: '', movido: null };
 

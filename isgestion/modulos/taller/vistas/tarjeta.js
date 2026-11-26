@@ -2,12 +2,12 @@
 // Wallet) cuando quien escanea tiene sesión en ISgestión. Ruta: #/taller.tarjeta?t=<token de la tarjeta>.
 // Muestra sellos, premio y movimientos, vehículos y órdenes abiertas del cliente; Canjear premio (taller o Marketing
 // editar) y Poner sello a mano (Marketing aprobar), con las mismas funciones de la base que la orden y Marketing.
-import { el } from '../../../core/ui/dom.js?v=35a39c1';
-import { icono } from '../../../core/ui/iconos.js?v=35a39c1';
-import { boton } from '../../../core/ui/tabla.js?v=35a39c1';
-import { avisar } from '../../../core/ui/aviso.js?v=35a39c1';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=35a39c1';
-import { fechaLarga, diaLocal } from '../../../core/ui/formato.js?v=35a39c1';
+import { el } from '../../../core/ui/dom.js?v=d971811';
+import { icono } from '../../../core/ui/iconos.js?v=d971811';
+import { boton } from '../../../core/ui/tabla.js?v=d971811';
+import { avisar } from '../../../core/ui/aviso.js?v=d971811';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=d971811';
+import { fechaLarga, diaLocal } from '../../../core/ui/formato.js?v=d971811';
 
 const ESTADO = { agendado: 'Agendado', espera: 'En espera', proceso: 'En proceso', terminado: 'Terminado' };
 const MOTIVO = { orden: 'Visita', manual: 'A mano', canje: 'Premio canjeado' };

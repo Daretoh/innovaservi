@@ -1,11 +1,11 @@
 // Sugerencias de todas las empresas (Núcleo 024): solo el equipo (es_equipo(), hoy Enzo). Filtros por estado, empresa,
 // tipo y urgentes; cada sugerencia con sus puntos (área y pestaña, texto, pantallazos) y, por punto, el estado y la
 // respuesta que ve quien la envió (le llega un aviso al guardar).
-import { el } from '../../core/ui/dom.js?v=35a39c1';
-import { icono } from '../../core/ui/iconos.js?v=35a39c1';
-import { avisar } from '../../core/ui/aviso.js?v=35a39c1';
-import { urlsFirmadas } from '../../core/adjuntos.js?v=35a39c1';
-import { TIPOS, ESTADOS } from '../../core/sugerencias.js?v=35a39c1';
+import { el } from '../../core/ui/dom.js?v=d971811';
+import { icono } from '../../core/ui/iconos.js?v=d971811';
+import { avisar } from '../../core/ui/aviso.js?v=d971811';
+import { urlsFirmadas } from '../../core/adjuntos.js?v=d971811';
+import { TIPOS, ESTADOS } from '../../core/sugerencias.js?v=d971811';
 
 const ABIERTOS = ['recibida', 'revision', 'planificada'];
 

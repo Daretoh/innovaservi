@@ -1,8 +1,8 @@
 // Datos compartidos de Cierres y cuentas.
-import { el } from '../../core/ui/dom.js?v=35a39c1';
-import { abrirFormulario } from '../../core/ui/modal.js?v=35a39c1';
-import { avisar } from '../../core/ui/aviso.js?v=35a39c1';
-import { dinero, fechaLarga, diaLocal } from '../../core/ui/formato.js?v=35a39c1';
+import { el } from '../../core/ui/dom.js?v=d971811';
+import { abrirFormulario } from '../../core/ui/modal.js?v=d971811';
+import { avisar } from '../../core/ui/aviso.js?v=d971811';
+import { dinero, fechaLarga, diaLocal } from '../../core/ui/formato.js?v=d971811';
 
 export const ESTADOS = [['borrador', 'Borrador'], ['emitido', 'Emitido'], ['oc', 'OC recibida'], ['facturado', 'Facturado'], ['cobrado', 'Cobrado']];
 export const nombreEstado = { ...Object.fromEntries(ESTADOS), anulado: 'Anulado' };

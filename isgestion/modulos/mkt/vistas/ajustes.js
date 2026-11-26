@@ -1,13 +1,13 @@
 // Ajustes de Marketing: etapas del embudo (nombre, tipo y orden) y respuestas guardadas para WhatsApp e Instagram.
 // En las respuestas, {nombre} se cambia por el nombre del contacto y {empresa} por el de la empresa.
-import { el } from '../../../core/ui/dom.js?v=35a39c1';
-import { icono } from '../../../core/ui/iconos.js?v=35a39c1';
-import { boton } from '../../../core/ui/tabla.js?v=35a39c1';
-import { avisar } from '../../../core/ui/aviso.js?v=35a39c1';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=35a39c1';
-import { cargarBase, cargarCss, TIPOS_ETAPA } from '../datos.js?v=35a39c1';
-import { cargarFormulario, tarjetaFormulario } from '../formulario-web.js?v=35a39c1';
-import { cargarAgenda, tarjetaAgenda } from '../agenda-web.js?v=35a39c1';
+import { el } from '../../../core/ui/dom.js?v=d971811';
+import { icono } from '../../../core/ui/iconos.js?v=d971811';
+import { boton } from '../../../core/ui/tabla.js?v=d971811';
+import { avisar } from '../../../core/ui/aviso.js?v=d971811';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=d971811';
+import { cargarBase, cargarCss, TIPOS_ETAPA } from '../datos.js?v=d971811';
+import { cargarFormulario, tarjetaFormulario } from '../formulario-web.js?v=d971811';
+import { cargarAgenda, tarjetaAgenda } from '../agenda-web.js?v=d971811';
 
 const EJEMPLOS = [
   ['Saludo', 'Hola {nombre}, gracias por escribir a {empresa}. ¿En qué te podemos ayudar?'],
