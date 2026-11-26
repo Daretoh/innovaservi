@@ -3,13 +3,13 @@
 // y se envían a firmar por WhatsApp, y documentos de la empresa (PTS, IPER, programa…) que se guardan como versión.
 // generador(ctx) → { P, faltan, config, todos, elegibles, guardadaDe, formato, evaluaciones, abrirCharla, abrirChecklist, abrirCapacitacion,
 //   abrirEPP, abrirIRL, abrirEvaluacion, hayEvaluaciones, abrirCarta, firmarPdf, docEmpresa, lineaVersion, carpetasEmpresa }
-import { el } from '../../core/ui/dom.js?v=6f116b3';
-import { avisar } from '../../core/ui/aviso.js?v=6f116b3';
-import { hoyISO } from '../../core/ui/formato.js?v=6f116b3';
-import { cargarPlantillas, trabajador, abrirDocumento, sueldosBase } from './editor.js?v=6f116b3';
-import { leerPaginas, paginaFirmas, htmlFirmado } from './firmarpdf.js?v=6f116b3';
-import { enviarAFirmar } from '../../core/firmas.js?v=6f116b3';
-import { guardarEnSst, guardarRegistro, puedeGuardarSst } from './acciones.js?v=6f116b3';
+import { el } from '../../core/ui/dom.js?v=419b261';
+import { avisar } from '../../core/ui/aviso.js?v=419b261';
+import { hoyISO } from '../../core/ui/formato.js?v=419b261';
+import { cargarPlantillas, trabajador, abrirDocumento, sueldosBase } from './editor.js?v=419b261';
+import { leerPaginas, paginaFirmas, htmlFirmado } from './firmarpdf.js?v=419b261';
+import { enviarAFirmar } from '../../core/firmas.js?v=419b261';
+import { guardarEnSst, guardarRegistro, puedeGuardarSst } from './acciones.js?v=419b261';
 
 // alGuardado(id): al guardar un registro en terreno (p. ej. para abrirlo después)
 export async function generador(ctx, { alGuardado = null } = {}) {

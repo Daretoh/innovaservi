@@ -1,9 +1,9 @@
 // Descargar registros de entrega en ZIP (pedido de Enzo, 2026-11-23): una carpeta por trabajador con cada documento
 // (firmado si ya se firmó), en partes de hasta 19 MB para adjuntarlas en Outlook (límite de 20 MB por correo).
 // JSZip 3.10.1 fijo desde cdnjs, se carga solo al usarlo.
-import { avisar } from '../../core/ui/aviso.js?v=6f116b3';
-import { hoyISO, fechaLarga } from '../../core/ui/formato.js?v=6f116b3';
-import { urlsFirmadas } from '../../core/adjuntos.js?v=6f116b3';
+import { avisar } from '../../core/ui/aviso.js?v=419b261';
+import { hoyISO, fechaLarga } from '../../core/ui/formato.js?v=419b261';
+import { urlsFirmadas } from '../../core/adjuntos.js?v=419b261';
 
 const MAX_PARTE = 19 * 1024 * 1024;
 let jszip = null;

@@ -2,13 +2,13 @@
 // después de 24 horas (hora confirmada, recordatorio, premio de la tarjeta, promociones). Se escriben con datos con
 // nombre ({nombre}, {fecha}…), se ven como quedarán y se mandan a aprobación de Meta (permiso aprobar). "Actualizar
 // estados" trae de Meta si quedaron aprobadas o rechazadas (con el motivo). Las aprobadas se usan desde la bandeja.
-import { el } from '../../../core/ui/dom.js?v=6f116b3';
-import { icono } from '../../../core/ui/iconos.js?v=6f116b3';
-import { boton } from '../../../core/ui/tabla.js?v=6f116b3';
-import { avisar } from '../../../core/ui/aviso.js?v=6f116b3';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=6f116b3';
-import { cargarCss } from '../datos.js?v=6f116b3';
-import { DATOS, USOS, nombreUso, CATEGORIAS, ESTADOS, SUGERIDAS, aMeta, deMeta, armar, nombreMeta } from '../plantillas-wa.js?v=6f116b3';
+import { el } from '../../../core/ui/dom.js?v=419b261';
+import { icono } from '../../../core/ui/iconos.js?v=419b261';
+import { boton } from '../../../core/ui/tabla.js?v=419b261';
+import { avisar } from '../../../core/ui/aviso.js?v=419b261';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=419b261';
+import { cargarCss } from '../datos.js?v=419b261';
+import { DATOS, USOS, nombreUso, CATEGORIAS, ESTADOS, SUGERIDAS, aMeta, deMeta, armar, nombreMeta } from '../plantillas-wa.js?v=419b261';
 
 export default async function vista(ctx) {
   cargarCss();
