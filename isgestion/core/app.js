@@ -1,21 +1,21 @@
 // Arranque de ISgestión: sesión → empresas y permisos → barra con selector → menú → vista.
-import { iniciarApi, db, urlApp } from './api.js?v=76c5d2a';
-import { sesionActual, iniciarSesion, cerrarSesion, alCambiarSesion, recuperarClave, errorAuth } from './auth.js?v=76c5d2a';
-import { cargarPermisos, crearPuede } from './permisos.js?v=76c5d2a';
-import { cargarEmpresas, cargarModulosEmpresa, elegirEmpresa, recordarEmpresa, nombreEmpresa } from './empresas.js?v=76c5d2a';
-import { cargarManifiestos, modulosVisibles, apartadosPorCategoria, configModulo } from './modulos.js?v=76c5d2a';
-import { el } from './ui/dom.js?v=76c5d2a';
-import { activarCombos } from './ui/combo.js?v=76c5d2a';
-import { icono } from './ui/iconos.js?v=76c5d2a';
-import { boton } from './ui/tabla.js?v=76c5d2a';
-import inicio from './vistas/inicio.js?v=76c5d2a';
-import mas from './vistas/mas.js?v=76c5d2a';
-import { franja, botonNotificaciones, desactivar } from './push.js?v=76c5d2a';
-import { barraMovil, marcarBarraMovil, bienvenidaInicial, recordarMarca, marcaGuardada, CORTE_TELEFONO } from './movil.js?v=76c5d2a';
-import { botonSoporte } from './soporte.js?v=76c5d2a';
-import { contarNoLeidas, alCambiarContador } from './novedades.js?v=76c5d2a';
-import { vigilarVersion } from './version.js?v=76c5d2a';
-import { iniciarNavidad } from './navidad.js?v=76c5d2a';
+import { iniciarApi, db, urlApp } from './api.js?v=0f5585f';
+import { sesionActual, iniciarSesion, cerrarSesion, alCambiarSesion, recuperarClave, errorAuth } from './auth.js?v=0f5585f';
+import { cargarPermisos, crearPuede } from './permisos.js?v=0f5585f';
+import { cargarEmpresas, cargarModulosEmpresa, elegirEmpresa, recordarEmpresa, nombreEmpresa } from './empresas.js?v=0f5585f';
+import { cargarManifiestos, modulosVisibles, apartadosPorCategoria, configModulo } from './modulos.js?v=0f5585f';
+import { el } from './ui/dom.js?v=0f5585f';
+import { activarCombos } from './ui/combo.js?v=0f5585f';
+import { icono } from './ui/iconos.js?v=0f5585f';
+import { boton } from './ui/tabla.js?v=0f5585f';
+import inicio from './vistas/inicio.js?v=0f5585f';
+import mas from './vistas/mas.js?v=0f5585f';
+import { franja, botonNotificaciones, desactivar } from './push.js?v=0f5585f';
+import { barraMovil, marcarBarraMovil, bienvenidaInicial, recordarMarca, marcaGuardada, CORTE_TELEFONO } from './movil.js?v=0f5585f';
+import { botonSoporte } from './soporte.js?v=0f5585f';
+import { contarNoLeidas, alCambiarContador } from './novedades.js?v=0f5585f';
+import { vigilarVersion } from './version.js?v=0f5585f';
+import { iniciarNavidad } from './navidad.js?v=0f5585f';
 
 const COLOR_BASE = '#1f4e8c';
 const CLAVE_MINIMA = 10;   // 08 Seguridad §4
@@ -305,7 +305,7 @@ function pintarApp() {
         el('div', { class: 'barra-espacio' }),
         el('div', { class: 'usuario' },
           (estado.consola = el('a', { class: 'boton boton-secundario boton-chico solo-escritorio', href: 'consola/', hidden: true, title: 'Consola de la plataforma (equipo ISgestión)' }, icono('ajustes', { tam: 14 }), 'Consola')),
-          el('button', { type: 'button', class: 'correo solo-escritorio', title: 'Mi PIN personal (crear o cambiar)', onclick: () => import('./pin.js?v=76c5d2a').then((m) => m.miPin(db())) }, estado.usuario.email),
+          el('button', { type: 'button', class: 'correo solo-escritorio', title: 'Mi PIN personal (crear o cambiar)', onclick: () => import('./pin.js?v=0f5585f').then((m) => m.miPin(db())) }, estado.usuario.email),
           (estado.botonNotif = botonNotificaciones(estado.usuario.id, () => (estado.empresa?.grupo ? estado.empresas[0]?.id : estado.empresa?.id))),
           botonModo(),
           el('button', { type: 'button', class: 'boton-icono solo-escritorio', title: 'Cerrar sesión', 'aria-label': 'Cerrar sesión', onclick: () => salir() }, icono('salir')))),
@@ -523,7 +523,7 @@ async function navegar() {
   const ctx = contexto(query);
 
   if (id === 'novedades') {
-    const nodo = await import('./novedades.js?v=76c5d2a').then((m) => m.default(ctx)).catch((e) => estadoVacio('alerta', 'No se pudieron cargar las novedades', e.message));
+    const nodo = await import('./novedades.js?v=0f5585f').then((m) => m.default(ctx)).catch((e) => estadoVacio('alerta', 'No se pudieron cargar las novedades', e.message));
     if (turno !== estado.render) return;
     if (estado.vistaActual !== location.hash) nodo.classList.add('vista-entra');
     estado.contenido.replaceChildren(nodo); estado.vistaActual = location.hash; return;

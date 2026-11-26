@@ -3778,3 +3778,12 @@ html[data-tema="vidrio"][data-modo="oscuro"] .menu a[aria-current="page"] { colo
 .dc-tabla td.dc-celda { text-align: center; }
 .dc-tabla td.dc-doc { white-space: normal; min-width: 240px; }
 .dc-tabla tr.dc-grupo td { background: var(--fondo-hundido); font-weight: 700; font-size: .85rem; }
+
+
+/* Documentos preventivos: versiones anteriores plegadas (sugerencia #65) */
+.doc-anteriores { margin-top: 10px; border-top: 1px solid var(--borde); padding-top: 8px; }
+.doc-anteriores > summary { display: flex; align-items: center; gap: 6px; cursor: pointer; list-style: none; font-weight: 600; padding: 6px 0; color: var(--texto-suave); }
+.doc-anteriores > summary::-webkit-details-marker { display: none; }
+.doc-anteriores > summary svg { transition: transform .15s; transform: rotate(-90deg); }
+.doc-anteriores[open] > summary svg { transform: none; }
+.doc-anteriores > summary:hover { color: var(--texto); }

@@ -1,13 +1,13 @@
 // Documentos preventivos con control de versiones: lista por tipo con la versión vigente y la próxima
 // revisión; detalle con el historial de versiones, subir nueva versión y ver cualquiera.
 // Rutas: #/sst.documentos · #/sst.documentos?id=<documento>
-import { el } from '../../../core/ui/dom.js?v=76c5d2a';
-import { icono } from '../../../core/ui/iconos.js?v=76c5d2a';
-import { boton } from '../../../core/ui/tabla.js?v=76c5d2a';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=76c5d2a';
-import { avisar } from '../../../core/ui/aviso.js?v=76c5d2a';
-import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=76c5d2a';
-import { fechaLarga, hoyISO } from '../../../core/ui/formato.js?v=76c5d2a';
+import { el } from '../../../core/ui/dom.js?v=0f5585f';
+import { icono } from '../../../core/ui/iconos.js?v=0f5585f';
+import { boton } from '../../../core/ui/tabla.js?v=0f5585f';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=0f5585f';
+import { avisar } from '../../../core/ui/aviso.js?v=0f5585f';
+import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=0f5585f';
+import { fechaLarga, hoyISO } from '../../../core/ui/formato.js?v=0f5585f';
 
 export const TIPOS_DOC = [['pts', 'Procedimiento de trabajo seguro (PTS)'], ['iper', 'Matriz IPER y procedimiento'], ['programa', 'Programa preventivo'],
   ['ley_karin', 'Protocolo Ley Karin'], ['matriz_epp', 'Matriz de EPP'], ['capacitacion', 'Material de capacitación'], ['evaluacion', 'Evaluación de aprendizaje'],
@@ -162,6 +162,13 @@ function eliminar(ctx, d) {
   });
 }
 
+const filaVersion = (ctx, x, vigente) => el('div', { class: 'doc-fila' },
+  el('div', { class: 'doc-nombre' },
+    el('strong', {}, `Versión ${x.version}`), vigente ? el('span', { class: 'chip chip-ok' }, 'Vigente') : el('span', { class: 'chip chip-na' }, 'Reemplazada'),
+    el('span', { class: 'texto-suave texto-chico' }, [`aprobada ${fechaLarga(x.fecha)}`, x.aprobado_por ? `por ${x.aprobado_por}` : null].filter(Boolean).join(' ')),
+    x.cambios ? el('span', { class: 'texto-chico' }, x.cambios) : null),
+  el('button', { type: 'button', class: 'boton-icono', title: 'Ver', 'aria-label': `Ver versión ${x.version}`, onclick: () => abrir(ctx, x.archivo) }, icono('ojo', { tam: 16 })));
+
 async function detalle(ctx) {
   const volver = el('a', { class: 'volver', href: ctx.ruta('sst.documentos') }, icono('volver', { tam: 16 }), 'Documentos preventivos');
   const { data: d, error } = await ctx.api.from('sst_documentos').select('*, sst_documento_versiones(*)').eq('id', ctx.params.id).maybeSingle();
@@ -198,13 +205,14 @@ async function detalle(ctx) {
         ctx.puede('sst', 'editar') ? boton('Nombre y datos', { icono: 'ajustes', onclick: () => formDocumento(ctx, d) }) : null,
         ctx.puede('sst', 'eliminar') ? boton('Eliminar', { icono: 'basura', onclick: () => eliminar(ctx, d) }) : null)),
     d.borrador ? el('p', { class: 'aviso-bandeja' }, icono('editar', { tam: 16 }), `Hay un borrador sin guardar como versión (${new Date(d.borrador_at).toLocaleString('es-CL')}).`) : null,
+    // Versiones (sugerencia #65): la vigente a la vista y las anteriores plegadas en "Versiones anteriores" (se guardan
+    // todas; solo no saturan la ficha)
     el('div', { class: 'ficha doc-grupo' },
-      el('h2', {}, `Versiones (${versiones.length})`),
-      versiones.map((x, i) => el('div', { class: 'doc-fila' },
-        el('div', { class: 'doc-nombre' },
-          el('strong', {}, `Versión ${x.version}`), i === 0 ? el('span', { class: 'chip chip-ok' }, 'Vigente') : el('span', { class: 'chip chip-na' }, 'Reemplazada'),
-          el('span', { class: 'texto-suave texto-chico' }, [`aprobada ${fechaLarga(x.fecha)}`, x.aprobado_por ? `por ${x.aprobado_por}` : null].filter(Boolean).join(' ')),
-          x.cambios ? el('span', { class: 'texto-chico' }, x.cambios) : null),
-        el('button', { type: 'button', class: 'boton-icono', title: 'Ver', 'aria-label': `Ver versión ${x.version}`, onclick: () => abrir(ctx, x.archivo) }, icono('ojo', { tam: 16 }))))),
+      el('h2', {}, 'Versión vigente'),
+      versiones.length ? filaVersion(ctx, versiones[0], true) : el('p', { class: 'texto-suave' }, 'Aún no hay versiones guardadas.'),
+      versiones.length > 1 ? el('details', { class: 'doc-anteriores' },
+        el('summary', {}, icono('abajo', { tam: 14 }), `Versiones anteriores (${versiones.length - 1})`,
+          el('span', { class: 'texto-suave texto-chico' }, ` · la última del ${fechaLarga(versiones[1].fecha)}`)),
+        versiones.slice(1).map((x) => filaVersion(ctx, x, false))) : null),
     d.notas ? el('p', { class: 'texto-suave' }, d.notas) : null);
 }

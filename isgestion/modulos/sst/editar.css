@@ -29,3 +29,15 @@
   .ed-chat { position: static; max-height: none; }
   .ed-mensajes { max-height: 50vh; }
 }
+
+/* Espacios por rellenar (sugerencia #64): el bloque queda marcado hasta completarlo */
+.ed-falta { box-shadow: inset 3px 0 0 var(--prox); background: var(--prox-fondo); }
+.ed-falta::after { content: 'Falta rellenar'; display: block; font-size: 11px; font-weight: 600; color: var(--prox); margin-top: 2px; }
+.ed-falta-ir { outline: 2px solid var(--prox); outline-offset: 2px; }
+.boton.ed-faltan { color: var(--prox); border-color: color-mix(in srgb, var(--prox) 50%, transparent); }
+
+/* Lista numerada con el número de la sección (7.1, 7.2…), igual que en el PDF y el Word */
+.ed-numerada { list-style: none; padding-left: 0; }
+.ed-numerada > li { position: relative; padding-left: 34px; }
+.ed-numerada > li::before { content: attr(data-n); position: absolute; left: 0; font-weight: 700; color: var(--empresa); }
+::highlight(isg-falta) { background-color: color-mix(in srgb, var(--prox) 30%, transparent); text-decoration: underline wavy var(--prox); }

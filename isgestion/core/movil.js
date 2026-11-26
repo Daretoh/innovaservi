@@ -10,12 +10,12 @@
 //   abre en abanico las opciones que el usuario puede usar (mantener y arrastrar hacia una la elige; un toque abre y otro
 //   elige); si queda una sola, la abre directo. Con 3 son tres direcciones; con más, el arco se abre y luego suma otra vuelta.
 // Sin accesos declarados, la barra usa los primeros apartados del menú. Siempre: Inicio al principio y Más al final.
-import { el } from './ui/dom.js?v=76c5d2a';
-import { icono } from './ui/iconos.js?v=76c5d2a';
-import { urlFirmada } from './adjuntos.js?v=76c5d2a';
-import { nombreEmpresa } from './empresas.js?v=76c5d2a';
-import { avisar } from './ui/aviso.js?v=76c5d2a';
-import { guardarLogoAviso } from './push.js?v=76c5d2a';
+import { el } from './ui/dom.js?v=0f5585f';
+import { icono } from './ui/iconos.js?v=0f5585f';
+import { urlFirmada } from './adjuntos.js?v=0f5585f';
+import { nombreEmpresa } from './empresas.js?v=0f5585f';
+import { avisar } from './ui/aviso.js?v=0f5585f';
+import { guardarLogoAviso } from './push.js?v=0f5585f';
 
 const MAX_ACCESOS = 2;
 

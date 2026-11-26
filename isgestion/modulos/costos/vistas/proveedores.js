@@ -1,11 +1,11 @@
 // Todos los proveedores: modalidad de pago y plazo en días. El plazo da el vencimiento de las facturas por pagar.
 // "Factura una vez al mes" y "Lleva cuenta" los dejan con seguimiento en Proveedores y cuentas (2026-11-24).
 // Se abre desde Proveedores y cuentas (y desde Administración → Módulos).
-import { el } from '../../../core/ui/dom.js?v=76c5d2a';
-import { icono } from '../../../core/ui/iconos.js?v=76c5d2a';
-import { listado } from '../../../core/ui/tabla.js?v=76c5d2a';
-import { avisar } from '../../../core/ui/aviso.js?v=76c5d2a';
-import { nombreTercero } from '../datos.js?v=76c5d2a';
+import { el } from '../../../core/ui/dom.js?v=0f5585f';
+import { icono } from '../../../core/ui/iconos.js?v=0f5585f';
+import { listado } from '../../../core/ui/tabla.js?v=0f5585f';
+import { avisar } from '../../../core/ui/aviso.js?v=0f5585f';
+import { nombreTercero } from '../datos.js?v=0f5585f';
 
 export default async function vista(ctx) {
   const e = ctx.empresa.id;

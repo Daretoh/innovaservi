@@ -1,6 +1,6 @@
 // Datos comunes del flujo de caja y el balance: saldos de las cuentas, por cobrar y por pagar, deudas y ajustes.
-import { hoyISO, sumarDias, moverMes } from '../../core/ui/formato.js?v=76c5d2a';
-import { tocaEnMes, fechaEnMes } from './datos.js?v=76c5d2a';
+import { hoyISO, sumarDias, moverMes } from '../../core/ui/formato.js?v=0f5585f';
+import { tocaEnMes, fechaEnMes } from './datos.js?v=0f5585f';
 
 // Último saldo de cada cuenta activa
 export async function cargarCuentas(ctx) {
@@ -88,7 +88,7 @@ export async function calcularFlujo(ctx, n = 8) {
   for (const d of deudas.filter((x) => x.activo && x.cuota > 0 && x.dia)) {
     for (const m of meses) { const f = diaDelMes(`${m}-01`, d.dia); if (f >= h && (!d.hasta || f <= d.hasta)) agregar(f, 'sale', `Cuota ${d.acreedor}`, Number(d.cuota), 'Deuda'); }
   }
-  const tc = (rec.data ?? []).some((r) => r.moneda === 'USD') ? await import('../../core/economia.js?v=76c5d2a').then((m) => m.dolarDelDia()).catch(() => null) : null;
+  const tc = (rec.data ?? []).some((r) => r.moneda === 'USD') ? await import('../../core/economia.js?v=0f5585f').then((m) => m.dolarDelDia()).catch(() => null) : null;
   const ya = new Set((hechos.data ?? []).map((x) => `${x.recurrente_id}|${x.periodo}`));
   for (const r of rec.data ?? []) {
     for (const m of meses) if (tocaEnMes(r, m) && !ya.has(`${r.id}|${m}`)) agregar(fechaEnMes(m, r.dia), 'sale', r.moneda === 'USD' ? `${r.concepto} (US$ ${r.monto})` : r.concepto, Math.round(r.moneda === 'USD' ? Number(r.monto) * (tc ?? 0) : Number(r.monto)), 'Pago de cada mes');

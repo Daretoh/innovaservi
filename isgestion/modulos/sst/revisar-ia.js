@@ -1,9 +1,9 @@
 // Revisión de documentos preventivos con IA (SST 004): leer el Word o PDF, pedir la revisión y la versión corregida a
 // la Edge Function revisar-documento (Claude) y exportar el documento corregido a Word y PDF con el logo y el color de
 // la empresa. Librerías con versión fija desde CDN (08 Seguridad §5), solo al usarlas.
-import { textoDocx } from './texto-docx.js?v=76c5d2a';
-import { cargarJsPdf, cargarLogo, rgb, sellar } from '../../core/pdf.js?v=76c5d2a';
-import { nombreEmpresa } from '../../core/empresas.js?v=76c5d2a';
+import { textoDocx } from './texto-docx.js?v=0f5585f';
+import { cargarJsPdf, cargarLogo, rgb, sellar } from '../../core/pdf.js?v=0f5585f';
+import { nombreEmpresa } from '../../core/empresas.js?v=0f5585f';
 
 const DOCX_LIB = 'https://cdn.jsdelivr.net/npm/docx@9.0.2/+esm';
 const JSZIP = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
@@ -140,7 +140,7 @@ export async function exportarWord(ctx, doc) {
     for (const b of s.bloques || []) {
       if (b.tipo === 'parrafo' && b.texto) b.texto.split(/\n+/).forEach((t) => hijos.push(p(t)));
       else if (b.tipo === 'lista') (b.items || []).forEach((t) => hijos.push(new Paragraph({ children: [r(t)], bullet: { level: 0 }, spacing: { after: 40 } })));
-      else if (b.tipo === 'numerada') (b.items || []).forEach((t, i) => hijos.push(new Paragraph({ children: [r(`${i + 1}. `, { bold: true, color: COLOR }), r(t)], spacing: { after: 50 }, indent: { left: 280, hanging: 280 } })));
+      else if (b.tipo === 'numerada') (b.items || []).forEach((t, i) => hijos.push(new Paragraph({ children: [r(`${numeroItem(s, i)} `, { bold: true, color: COLOR }), r(t)], spacing: { after: 50 }, indent: { left: 420, hanging: 420 } })));
       else if (b.tipo === 'tabla' && (b.columnas || []).length) {
         const n = b.columnas.length;
         const w = anchosTabla(b);
@@ -157,6 +157,13 @@ export async function exportarWord(ctx, doc) {
     sections: [{ properties: { page: { margin: { top: 1900, bottom: 900, left: 900, right: 900, header: 400, footer: 400 } } }, headers: { default: encabezado }, footers: { default: pie }, children: hijos }],
   });
   return new Blob([await Packer.toBlob(word)], { type: MIME_DOCX });
+}
+
+// Listas numeradas dentro de una sección numerada: 7.1, 7.2… (sugerencia #64: un "1." y "2." en medio del documento se
+// confundía con las secciones 1 y 2)
+export function numeroItem(seccion, i) {
+  const m = /^\s*(\d+(?:\.\d+)*)[.)-]?\s/.exec(String(seccion?.titulo ?? ''));
+  return m ? `${m[1]}.${i + 1}` : `${i + 1}.`;
 }
 
 export async function exportarPdf(ctx, doc) {
@@ -204,7 +211,7 @@ export async function exportarPdf(ctx, doc) {
     for (const b of s.bloques || []) {
       if (b.tipo === 'parrafo' && b.texto) b.texto.split(/\n+/).forEach((t) => texto(t));
       else if (b.tipo === 'lista') (b.items || []).forEach((t) => texto(t, { sangria: 5, prefijo: '•' }));
-      else if (b.tipo === 'numerada') (b.items || []).forEach((t, i) => texto(t, { sangria: 6, prefijo: `${i + 1}.` }));
+      else if (b.tipo === 'numerada') (b.items || []).forEach((t, i) => { const n = numeroItem(s, i); texto(t, { sangria: n.length > 3 ? 9 : 6, prefijo: n }); });
       else if (b.tipo === 'tabla' && (b.columnas || []).length) {
         const n = b.columnas.length;
         // Para llenar a mano en terreno: con columna de firma o filas en blanco, filas de 9 mm

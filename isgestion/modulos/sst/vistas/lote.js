@@ -1,14 +1,14 @@
 // Una entrega (lote, SST 006). Con ?doc=<clave>: un documento de la entrega (ej.: INV-PREV-08) con cada trabajador que lo
 // recibió, si lo firmó, su PDF y el ZIP de ese documento. Sin doc: la entrega completa, con una fila por documento.
 // Ruta: #/sst.lote?id=<lote_id>[&doc=<clave>]
-import { el } from '../../../core/ui/dom.js?v=76c5d2a';
-import { icono } from '../../../core/ui/iconos.js?v=76c5d2a';
-import { boton } from '../../../core/ui/tabla.js?v=76c5d2a';
-import { avisar } from '../../../core/ui/aviso.js?v=76c5d2a';
-import { urlFirmada } from '../../../core/adjuntos.js?v=76c5d2a';
-import { fechaLarga } from '../../../core/ui/formato.js?v=76c5d2a';
-import { cargarPersonas } from '../datos.js?v=76c5d2a';
-import { cargarDestinos, agrupar, barraAvance, elegirAcreditacion, claveDoc } from '../acreditacion.js?v=76c5d2a';
+import { el } from '../../../core/ui/dom.js?v=0f5585f';
+import { icono } from '../../../core/ui/iconos.js?v=0f5585f';
+import { boton } from '../../../core/ui/tabla.js?v=0f5585f';
+import { avisar } from '../../../core/ui/aviso.js?v=0f5585f';
+import { urlFirmada } from '../../../core/adjuntos.js?v=0f5585f';
+import { fechaLarga } from '../../../core/ui/formato.js?v=0f5585f';
+import { cargarPersonas } from '../datos.js?v=0f5585f';
+import { cargarDestinos, agrupar, barraAvance, elegirAcreditacion, claveDoc } from '../acreditacion.js?v=0f5585f';
 
 const chip = (ok, faltan = 0) => el('span', { class: `chip ${ok ? 'chip-ok' : 'chip-prox'}` }, ok ? 'Firmado' : faltan ? `Faltan ${faltan}` : 'Por firmar');
 
@@ -34,13 +34,13 @@ export default async function vista(ctx) {
 
   const zip = (nombre, soloDoc = null, regs = ids) => boton('Descargar ZIP', { icono: 'descargar', title: 'Una carpeta por trabajador (firmado si ya firmó), en partes de hasta 19 MB', onclick: async (ev) => {
     const b = ev.currentTarget;
-    const { descargarEntregasZip } = await import('../zip.js?v=76c5d2a');
+    const { descargarEntregasZip } = await import('../zip.js?v=0f5585f');
     await descargarEntregasZip(ctx, regs, { nombre, soloDoc, boton: b });
   } });
   const enviar = (regs) => regs.length && ctx.puede('sst', 'editar') ? boton(`Enviar a firmar (${regs.length})`, { icono: 'chat', tipo: 'primario', title: 'Cada uno firma una vez y su sello queda en todos sus documentos de esta entrega', onclick: async (ev) => {
     const b = ev.currentTarget; b.disabled = true;
     try {
-      const { enviarVarios } = await import('../../../core/firmas.js?v=76c5d2a');
+      const { enviarVarios } = await import('../../../core/firmas.js?v=0f5585f');
       await enviarVarios(ctx, regs.map((r) => ({ origen: 'sst_entrega', id: r.id, personas: [persona(r)], titulo: r.tema })), () => ctx.refrescar());
     } catch (e) { avisar(e.message, 'error'); } finally { b.disabled = false; }
   } }) : null;
@@ -95,7 +95,7 @@ export default async function vista(ctx) {
       el('div', { class: 'listado-acciones' }, zip(`Entrega ${fechaLarga(g.fecha)}${para ? ` ${para}` : ''}`), enviar(pendientes),
         // Alguien que faltó (ej.: el supervisor): se agrega a esta misma entrega, con los documentos de su cargo
         ctx.puede('sst', 'crear') && g.documentos.length ? boton('Agregar trabajadores', { icono: 'mas', onclick: async () => {
-          try { const { abrirEntregaIndividual } = await import('../individual.js?v=76c5d2a'); await abrirEntregaIndividual(ctx, { lote: ctx.params.id, destino: g.acr === 'varias' ? '' : g.acr || '', alGuardado: () => ctx.refrescar() }); }
+          try { const { abrirEntregaIndividual } = await import('../individual.js?v=0f5585f'); await abrirEntregaIndividual(ctx, { lote: ctx.params.id, destino: g.acr === 'varias' ? '' : g.acr || '', alGuardado: () => ctx.refrescar() }); }
           catch (e) { avisar(e.message, 'error'); }
         } }) : null)),
     el('div', { class: 'ficha doc-grupo' },

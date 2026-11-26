@@ -3,18 +3,32 @@
 // o seguir pidiendo). Tocar un bloque lo marca para el chat. Lo que se edita queda como borrador (se guarda solo) hasta
 // "Guardar versión", que arma el PDF o Word con el logo y el color de la empresa y lo deja como versión nueva.
 // Ruta: #/sst.editar?id=<documento>
-import { el } from '../../../core/ui/dom.js?v=76c5d2a';
-import { icono } from '../../../core/ui/iconos.js?v=76c5d2a';
-import { boton } from '../../../core/ui/tabla.js?v=76c5d2a';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=76c5d2a';
-import { avisar } from '../../../core/ui/aviso.js?v=76c5d2a';
-import { urlFirmada } from '../../../core/adjuntos.js?v=76c5d2a';
-import { fechaLarga, hoyISO } from '../../../core/ui/formato.js?v=76c5d2a';
-import { guardarVersion, estadoDocumento } from './documentos.js?v=76c5d2a';
-import { leerContenido, pedirIA, exportarWord, exportarPdf, descargar, nombreArchivo, esDocx, esPdf, MIME_DOCX } from '../revisar-ia.js?v=76c5d2a';
+import { el } from '../../../core/ui/dom.js?v=0f5585f';
+import { icono } from '../../../core/ui/iconos.js?v=0f5585f';
+import { boton } from '../../../core/ui/tabla.js?v=0f5585f';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=0f5585f';
+import { avisar } from '../../../core/ui/aviso.js?v=0f5585f';
+import { urlFirmada } from '../../../core/adjuntos.js?v=0f5585f';
+import { fechaLarga, hoyISO } from '../../../core/ui/formato.js?v=0f5585f';
+import { guardarVersion, estadoDocumento } from './documentos.js?v=0f5585f';
+import { numeroItem, leerContenido, pedirIA, exportarWord, exportarPdf, descargar, nombreArchivo, esDocx, esPdf, MIME_DOCX } from '../revisar-ia.js?v=0f5585f';
 
 const ACCION = { reemplazar: 'Cambiar', insertar_despues: 'Agregar', eliminar: 'Quitar', titulo_seccion: 'Cambiar título', nueva_seccion: 'Nueva sección' };
 const vacioBloque = () => ({ tipo: 'parrafo', texto: '', items: [], columnas: [], filas: [] });
+// Espacios por rellenar (sugerencia #64, Yocelyn): lo que va entre corchetes, ej. [nombre del supervisor] o [ ], y los
+// párrafos o puntos vacíos. Se marcan en la hoja y se avisa antes de guardar la versión. Las líneas ____ no cuentan: son
+// para llenar a mano en terreno.
+const CORCHETES = /\[[^[\]\n]{0,80}\]/g;
+export function espaciosPorRellenar(doc) {
+  const out = [];
+  (doc?.secciones || []).forEach((sec, si) => (sec.bloques || []).forEach((b, bi) => {
+    const textos = b.tipo === 'parrafo' ? [b.texto] : b.tipo === 'tabla' ? [...(b.columnas || []), ...(b.filas || []).flat()] : (b.items || []);
+    const marcas = textos.flatMap((t) => String(t ?? '').match(CORCHETES) ?? []);
+    const vacio = b.tipo === 'parrafo' ? !String(b.texto ?? '').trim() : b.tipo !== 'tabla' && (!(b.items || []).length || (b.items || []).some((t) => !String(t ?? '').trim()));
+    if (marcas.length || vacio) out.push({ si, bi, seccion: sec.titulo || `Sección ${si + 1}`, que: marcas.length ? marcas.join(' ') : 'texto vacío' });
+  }));
+  return out;
+}
 
 function css() {
   for (const [id, f] of [['sst-revisar-css', '../revisar.css'], ['sst-editar-css', '../editar.css']]) {
@@ -107,9 +121,37 @@ export default async function vista(ctx) {
     const bDeshacer = boton('Deshacer', { icono: 'deshacer', onclick: () => { if (!deshacer.length) return; doc = deshacer.pop(); bDeshacer.disabled = !deshacer.length; pintar(); guardarBorrador(); } });
     bDeshacer.disabled = true;
 
+    // Espacios por rellenar: marcados en la hoja, con un botón que lleva al siguiente
+    let relojFaltas = null; let faltas = []; let iFalta = 0;
+    const txtFaltas = el('span', {}, '');
+    const bFaltas = boton(txtFaltas, { icono: 'alerta', onclick: () => {
+      if (!faltas.length) return;
+      const f = faltas[iFalta++ % faltas.length];
+      const caja = papel.querySelector(`.ed-bloque[data-si="${f.si}"][data-bi="${f.bi}"]`);
+      caja?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      caja?.classList.add('ed-falta-ir'); setTimeout(() => caja?.classList.remove('ed-falta-ir'), 1200);
+    } });
+    bFaltas.classList.add('ed-faltan');
+    function revisarFaltas() {
+      faltas = espaciosPorRellenar(doc);
+      papel.querySelectorAll('.ed-bloque').forEach((c) => c.classList.toggle('ed-falta', faltas.some((f) => String(f.si) === c.dataset.si && String(f.bi) === c.dataset.bi)));
+      bFaltas.hidden = !faltas.length;
+      txtFaltas.textContent = `${faltas.length} por rellenar`;
+      // El texto entre corchetes resaltado en la hoja (Highlight API: no toca el texto que se edita)
+      if (globalThis.CSS?.highlights && globalThis.Highlight) {
+        const rangos = [];
+        const recorrer = document.createTreeWalker(papel, NodeFilter.SHOW_TEXT);
+        for (let n = recorrer.nextNode(); n; n = recorrer.nextNode()) {
+          for (const m of n.data.matchAll(CORCHETES)) { const r = new Range(); r.setStart(n, m.index); r.setEnd(n, m.index + m[0].length); rangos.push(r); }
+        }
+        CSS.highlights.set('isg-falta', new Highlight(...rangos));
+      }
+      bFaltas.title = 'Ir al siguiente espacio por rellenar';
+    }
+
     const editableEl = (obj, clave, etiqueta = 'span', clase = '') => el(etiqueta, {
       class: clase, contenteditable: editable ? 'true' : 'false', spellcheck: 'true',
-      oninput: (ev) => { obj[clave] = ev.currentTarget.innerText.trim(); guardarBorrador(); },
+      oninput: (ev) => { obj[clave] = ev.currentTarget.innerText.trim(); guardarBorrador(); clearTimeout(relojFaltas); relojFaltas = setTimeout(revisarFaltas, 400); },
     }, obj[clave] ?? '');
     const marcar = (si, bi, nodo) => {
       papel.querySelectorAll('.ed-marcado').forEach((x) => x.classList.remove('ed-marcado'));
@@ -122,10 +164,11 @@ export default async function vista(ctx) {
         el('span', {}, `${sec?.titulo || `Sección ${si + 1}`}${bi == null ? ' (título)' : ` · ${{ parrafo: 'párrafo', lista: 'lista', numerada: 'lista numerada', tabla: 'tabla' }[blo?.tipo] ?? 'bloque'} ${bi + 1}`}${texto ? `: «${texto.slice(0, 60)}${texto.length > 60 ? '…' : ''}»` : ''}`),
         el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Quitar selección', onclick: () => { seleccion = null; chipSel.hidden = true; papel.querySelectorAll('.ed-marcado').forEach((x) => x.classList.remove('ed-marcado')); } }, icono('cerrar', { tam: 14 })));
     };
-    const vistaBloque = (b, editar) => {
+    const vistaBloque = (b, editar, sec = null) => {
       const ed = (obj, k, tag) => (editar ? editableEl(obj, k, tag) : el(tag, {}, obj[k] ?? ''));
       if (b.tipo === 'parrafo') return ed(b, 'texto', 'p');
-      if (b.tipo === 'lista' || b.tipo === 'numerada') return el(b.tipo === 'lista' ? 'ul' : 'ol', {}, (b.items || []).map((_, i) => ed(b.items, i, 'li')));
+      if (b.tipo === 'lista') return el('ul', {}, (b.items || []).map((_, i) => ed(b.items, i, 'li')));
+      if (b.tipo === 'numerada') return el('ol', { class: 'ed-numerada' }, (b.items || []).map((_, i) => { const li = ed(b.items, i, 'li'); li.dataset.n = numeroItem(sec, i); return li; }));
       if (b.tipo === 'tabla') {
         const n = (b.columnas || []).length;
         return el('div', { class: 'rv-tabla' }, el('table', {},
@@ -143,10 +186,11 @@ export default async function vista(ctx) {
         ...(doc.secciones || []).map((sec, si) => el('section', {},
           (() => { const h = editableEl(sec, 'titulo', 'h2'); h.addEventListener('click', () => marcar(si, null, h)); return h; })(),
           (sec.bloques || []).map((b, bi) => {
-            const caja = el('div', { class: 'ed-bloque' }, vistaBloque(b, true));
+            const caja = el('div', { class: 'ed-bloque', 'data-si': si, 'data-bi': bi }, vistaBloque(b, true, sec));
             caja.addEventListener('mouseup', () => marcar(si, bi, caja));
             return caja;
           }))));
+      revisarFaltas();
       const img = papel.querySelector('.rv-logo');
       if (img) urlFirmada(ctx.api, ctx.empresa.logo_url, 300).then((u) => { img.src = u; }).catch(() => img.remove());
       // Mantener la marca después de volver a pintar (si el bloque sigue)
@@ -222,7 +266,21 @@ export default async function vista(ctx) {
     }
 
     // Guardar como versión nueva: PDF (o Word) con el logo y el color de la empresa
-    const guardar = () => abrirFormulario({
+    const guardar = () => {
+      revisarFaltas();
+      if (!faltas.length) return guardarVersionNueva();
+      const lista = faltas.slice(0, 8).map((f) => `${f.seccion}: ${f.que}`).join('; ') + (faltas.length > 8 ? `; y ${faltas.length - 8} más` : '');
+      abrirFormulario({
+        titulo: 'Falta rellenar',
+        mensaje: `Hay ${faltas.length} espacio${faltas.length === 1 ? '' : 's'} sin rellenar (${lista}). Si se guarda así, el documento sale con esos espacios sin completar.`,
+        campos: [], textoGuardar: 'Guardar igual',
+        alGuardar: () => { setTimeout(guardarVersionNueva, 50); },
+      });
+      setTimeout(() => {   // además del aviso, la hoja salta al primero
+        const f = faltas[0]; papel.querySelector(`.ed-bloque[data-si="${f.si}"][data-bi="${f.bi}"]`)?.scrollIntoView({ block: 'center' });
+      }, 0);
+    };
+    const guardarVersionNueva = () => abrirFormulario({
       titulo: 'Guardar como versión nueva',
       mensaje: vig ? `Vigente: versión ${vig.version} del ${fechaLarga(vig.fecha)}. Queda en el historial.` : null,
       campos: [
@@ -256,7 +314,7 @@ export default async function vista(ctx) {
 
     pintar();
     cuerpo.replaceChildren(
-      el('div', { class: 'rv-barra-acciones' }, estadoGuardado, el('span', { class: 'rv-espaciador' }), bDeshacer,
+      el('div', { class: 'rv-barra-acciones' }, estadoGuardado, el('span', { class: 'rv-espaciador' }), bFaltas, bDeshacer,
         boton('Vista previa PDF', { icono: 'ojo', onclick: (ev) => vistaPrevia(ev.currentTarget) }),
         boton('Descargar Word', { icono: 'descargar', onclick: async () => { try { descargar(await exportarWord(ctx, doc), nombreArchivo(doc, 'docx')); } catch (err) { avisar(err.message, 'error'); } } }),
         editable && d.borrador !== undefined ? boton('Descartar borrador', { icono: 'basura', onclick: descartarBorrador }) : null,
