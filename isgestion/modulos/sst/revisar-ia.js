@@ -1,9 +1,10 @@
 // Revisión de documentos preventivos con IA (SST 004): leer el Word o PDF, pedir la revisión y la versión corregida a
 // la Edge Function revisar-documento (Claude) y exportar el documento corregido a Word y PDF con el logo y el color de
 // la empresa. Librerías con versión fija desde CDN (08 Seguridad §5), solo al usarlas.
-import { textoDocx } from './texto-docx.js?v=0f5585f';
-import { cargarJsPdf, cargarLogo, rgb, sellar } from '../../core/pdf.js?v=0f5585f';
-import { nombreEmpresa } from '../../core/empresas.js?v=0f5585f';
+import { textoDocx } from './texto-docx.js?v=4fd87dc';
+import { cargarJsPdf, cargarLogo, rgb, sellar } from '../../core/pdf.js?v=4fd87dc';
+import { nombreEmpresa } from '../../core/empresas.js?v=4fd87dc';
+import { tieneFirmas } from './firmas-doc-base.js?v=4fd87dc';
 
 const DOCX_LIB = 'https://cdn.jsdelivr.net/npm/docx@9.0.2/+esm';
 const JSZIP = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
@@ -134,6 +135,9 @@ export async function exportarWord(ctx, doc) {
   ] });
   const pie = new Footer({ children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [r(`${[doc.codigo, doc.version && `v${doc.version}`].filter(Boolean).join(' ')} · ${nombreEmpresa(e)} · Generado con ISgestión`, { size: 14, color: GRIS })] })] });
 
+  const FW = tieneFirmas(doc) ? await import('./firmas-doc.js?v=4fd87dc') : null;
+  const firmasW = FW ? await FW.cargarFirmasDoc(ctx) : null;
+  const bytesDe = (img) => Uint8Array.from(atob(img.dataUrl.split(',')[1]), (c) => c.charCodeAt(0));
   const hijos = [];
   (doc.secciones || []).forEach((s) => {
     if (s.titulo) hijos.push(new Paragraph({ children: [r(s.titulo.toUpperCase(), { bold: true, color: 'FFFFFF', size: 20 })], shading: { type: ShadingType.CLEAR, color: 'auto', fill: COLOR }, spacing: { before: 200, after: 100 }, keepNext: true, indent: { left: 60 } }));
@@ -148,7 +152,7 @@ export async function exportarWord(ctx, doc) {
           new TableRow({ tableHeader: true, cantSplit: true, children: b.columnas.map((c, i) => celda(c, { fondo: OSC, color: 'FFFFFF', bold: true, w: w[i] * 100 })) }),
           ...(b.filas || []).map((f) => new TableRow({ cantSplit: true, children: Array.from({ length: n }, (_, i) => celda(String(f[i] ?? ''), { w: w[i] * 100 })) })),
         ], n, w), new Paragraph({ children: [], spacing: { after: 80 } }));
-      }
+      } else if (b.tipo === 'firmas' && FW) hijos.push(...FW.wordFirmas(D, b, firmasW, { r, COLOR, GRIS, bytesDe }));
     }
   });
   const word = new Document({
@@ -175,7 +179,9 @@ export async function exportarPdf(ctx, doc) {
   const W = pdf.internal.pageSize.getWidth(), H = pdf.internal.pageSize.getHeight();
   const M = 15, ARRIBA = 38, ABAJO = H - 16, ancho = W - 2 * M;
   let y = ARRIBA;
-  const espacio = (mm) => { if (y + mm > ABAJO) { pdf.addPage(); y = ARRIBA; } };
+  const espacio = (mm) => { if (y + mm > ABAJO) { pdf.addPage(); y = ARRIBA; } return y; };
+  const FP = tieneFirmas(doc) ? await import('./firmas-doc.js?v=4fd87dc') : null;
+  const firmasP = FP ? await FP.cargarFirmasDoc(ctx) : null;
   // Escribe una línea; cada ¤ se dibuja como una casilla vacía para marcar a mano
   const linea = (l, x, yb, tam) => {
     if (!l.includes(CASILLA)) { pdf.text(l, x, yb); return; }
@@ -234,7 +240,7 @@ export async function exportarPdf(ctx, doc) {
           },
         });
         y = pdf.lastAutoTable.finalY + 4;
-      }
+      } else if (b.tipo === 'firmas' && FP) y = FP.pdfFirmas(pdf, b, firmasP, { M, ancho, y: y + 2, espacio: (mm, yy) => { y = yy; return espacio(mm); }, color, texto: pdfTexto });
     }
   }
   // Encabezado y pie en cada página

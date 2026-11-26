@@ -1,13 +1,13 @@
 // Formularios para cargar en Costos (antes la pantalla "Subir documentos"; ahora todo entra por la Bandeja):
 // - Gasto sin ningún papel → registro sin documento, no declarable, pagado.
 // - Comprobante de pago (transferencia, depósito…) → fin_pagos "por validar"; se abre desde la ficha del proveedor.
-import { el } from '../../../core/ui/dom.js?v=0f5585f';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=0f5585f';
-import { avisar } from '../../../core/ui/aviso.js?v=0f5585f';
-import { subirArchivo, eliminarArchivo } from '../../../core/adjuntos.js?v=0f5585f';
-import { dinero, hoyISO, fechaLarga, sumarDias } from '../../../core/ui/formato.js?v=0f5585f';
-import { cargarBase, nombreTercero, MEDIOS } from '../datos.js?v=0f5585f';
-import { leerConIA, iaDisponible, numIA, fechaIA, medioIA, textoModelo } from '../../../core/lector-ia.js?v=0f5585f';
+import { el } from '../../../core/ui/dom.js?v=4fd87dc';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=4fd87dc';
+import { avisar } from '../../../core/ui/aviso.js?v=4fd87dc';
+import { subirArchivo, eliminarArchivo } from '../../../core/adjuntos.js?v=4fd87dc';
+import { dinero, hoyISO, fechaLarga, sumarDias } from '../../../core/ui/formato.js?v=4fd87dc';
+import { cargarBase, nombreTercero, MEDIOS } from '../datos.js?v=4fd87dc';
+import { leerConIA, iaDisponible, numIA, fechaIA, medioIA, textoModelo } from '../../../core/lector-ia.js?v=4fd87dc';
 
 // Lee con IA al elegir la foto (como InnovaGestión) y llena el formulario con aplicar(datos, poner)
 export const leerAlElegir = (ctx, modo, aplicar) => async ({ archivos, estado, poner, opciones }) => {

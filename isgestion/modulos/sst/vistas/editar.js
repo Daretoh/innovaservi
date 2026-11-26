@@ -3,15 +3,16 @@
 // o seguir pidiendo). Tocar un bloque lo marca para el chat. Lo que se edita queda como borrador (se guarda solo) hasta
 // "Guardar versión", que arma el PDF o Word con el logo y el color de la empresa y lo deja como versión nueva.
 // Ruta: #/sst.editar?id=<documento>
-import { el } from '../../../core/ui/dom.js?v=0f5585f';
-import { icono } from '../../../core/ui/iconos.js?v=0f5585f';
-import { boton } from '../../../core/ui/tabla.js?v=0f5585f';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=0f5585f';
-import { avisar } from '../../../core/ui/aviso.js?v=0f5585f';
-import { urlFirmada } from '../../../core/adjuntos.js?v=0f5585f';
-import { fechaLarga, hoyISO } from '../../../core/ui/formato.js?v=0f5585f';
-import { guardarVersion, estadoDocumento } from './documentos.js?v=0f5585f';
-import { numeroItem, leerContenido, pedirIA, exportarWord, exportarPdf, descargar, nombreArchivo, esDocx, esPdf, MIME_DOCX } from '../revisar-ia.js?v=0f5585f';
+import { el } from '../../../core/ui/dom.js?v=4fd87dc';
+import { icono } from '../../../core/ui/iconos.js?v=4fd87dc';
+import { boton } from '../../../core/ui/tabla.js?v=4fd87dc';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=4fd87dc';
+import { avisar } from '../../../core/ui/aviso.js?v=4fd87dc';
+import { urlFirmada } from '../../../core/adjuntos.js?v=4fd87dc';
+import { fechaLarga, hoyISO } from '../../../core/ui/formato.js?v=4fd87dc';
+import { guardarVersion, estadoDocumento } from './documentos.js?v=4fd87dc';
+import { cargarFirmasDoc, vistaFirmas, nuevaFirma } from '../firmas-doc.js?v=4fd87dc';
+import { numeroItem, leerContenido, pedirIA, exportarWord, exportarPdf, descargar, nombreArchivo, esDocx, esPdf, MIME_DOCX } from '../revisar-ia.js?v=4fd87dc';
 
 const ACCION = { reemplazar: 'Cambiar', insertar_despues: 'Agregar', eliminar: 'Quitar', titulo_seccion: 'Cambiar título', nueva_seccion: 'Nueva sección' };
 const vacioBloque = () => ({ tipo: 'parrafo', texto: '', items: [], columnas: [], filas: [] });
@@ -22,6 +23,7 @@ const CORCHETES = /\[[^[\]\n]{0,80}\]/g;
 export function espaciosPorRellenar(doc) {
   const out = [];
   (doc?.secciones || []).forEach((sec, si) => (sec.bloques || []).forEach((b, bi) => {
+    if (b.tipo === 'firmas') return;
     const textos = b.tipo === 'parrafo' ? [b.texto] : b.tipo === 'tabla' ? [...(b.columnas || []), ...(b.filas || []).flat()] : (b.items || []);
     const marcas = textos.flatMap((t) => String(t ?? '').match(CORCHETES) ?? []);
     const vacio = b.tipo === 'parrafo' ? !String(b.texto ?? '').trim() : b.tipo !== 'tabla' && (!(b.items || []).length || (b.items || []).some((t) => !String(t ?? '').trim()));
@@ -110,6 +112,42 @@ export default async function vista(ctx) {
   function editor() {
     let seleccion = null;            // { s, b, sec, blo, texto }
     const deshacer = [];             // copias del documento antes de aplicar cambios de la IA
+    // Firmas guardadas (Prevención SST → Datos y firmas): se cargan aparte y la hoja se vuelve a pintar al tenerlas
+    let firmasCargadas = null;
+    cargarFirmasDoc(ctx).then((x) => { firmasCargadas = x; if (tieneBloqueFirmas()) pintar(); }).catch(() => {});
+    const tieneBloqueFirmas = () => (doc.secciones || []).some((x) => (x.bloques || []).some((b) => b.tipo === 'firmas'));
+    // Agregar firmas: las que se marquen, en un bloque después de lo marcado (o al final); si lo marcado ya es un bloque
+    // de firmas, se suman ahí. Se pueden agregar varias y volver a agregar más.
+    const agregarFirmas = async () => {
+      const F = firmasCargadas ?? await cargarFirmasDoc(ctx).catch(() => null);
+      firmasCargadas = F;
+      const ops = [['prev', `Prevencionista${F?.prev?.nombre ? ` · ${F.prev.nombre}` : ''}${F?.prev?.img ? '' : ' (sin imagen de firma)'}`],
+        ['rep', `Representante legal${F?.rep?.nombre ? ` · ${F.rep.nombre}` : ''}${F?.rep?.img ? '' : ' (sin imagen de firma)'}`],
+        ['', 'Firma en blanco (para firmar a mano)']];
+      abrirFormulario({
+        titulo: 'Agregar firmas',
+        mensaje: 'Las firmas y el timbre son los de Prevención SST → Datos y firmas. Después puedes cambiar en cada casilla quién firma, el rol (Elaborado, Revisado, Aprobado por), el nombre y el cargo, o agregar más.',
+        campos: [
+          { id: 'quienes', etiqueta: 'Firmas', tipo: 'checks', opciones: ops, valor: ['prev', 'rep'] },
+          F?.timbre ? { id: 'timbre', etiqueta: 'Timbre de la empresa', opciones: [['rep', 'Junto a la firma del representante'], ['', 'Sin timbre']], valor: 'rep' } : null,
+        ].filter(Boolean),
+        textoGuardar: 'Agregar',
+        alGuardar: (v) => {
+          const qs = v.quienes ?? [];
+          if (!qs.length) throw new Error('Marca al menos una firma.');
+          const nuevas = qs.map((q) => ({ ...nuevaFirma(F, q), timbre: !!F?.timbre && v.timbre === 'rep' && q === 'rep' }));
+          deshacer.push(structuredClone(doc)); bDeshacer.disabled = false;
+          if (seleccion?.blo?.tipo === 'firmas') seleccion.blo.firmas.push(...nuevas);
+          else {
+            const bloque = { tipo: 'firmas', firmas: nuevas };
+            if (seleccion?.sec) { const bs = seleccion.sec.bloques; bs.splice(seleccion.blo ? bs.indexOf(seleccion.blo) + 1 : 0, 0, bloque); }
+            else { if (!doc.secciones.length) doc.secciones.push({ titulo: '', bloques: [] }); doc.secciones.at(-1).bloques.push(bloque); }
+          }
+          pintar(); guardarBorrador();
+          avisar(`${nuevas.length === 1 ? 'Firma agregada' : `${nuevas.length} firmas agregadas`}.`);
+        },
+      });
+    };
     const papel = el('article', { class: 'rv-papel ed-papel' });
     const chipSel = el('div', { class: 'ed-sel', hidden: true });
     const historial = [];
@@ -166,6 +204,10 @@ export default async function vista(ctx) {
     };
     const vistaBloque = (b, editar, sec = null) => {
       const ed = (obj, k, tag) => (editar ? editableEl(obj, k, tag) : el(tag, {}, obj[k] ?? ''));
+      if (b.tipo === 'firmas') return vistaFirmas(b, firmasCargadas, { editar: editar && editable, editableEl, alGuardar: () => guardarBorrador(), alCambiarTodo: () => {
+        if (!(b.firmas || []).length) for (const x of doc.secciones) { const i = (x.bloques || []).indexOf(b); if (i >= 0) x.bloques.splice(i, 1); }
+        pintar(); guardarBorrador();
+      } });
       if (b.tipo === 'parrafo') return ed(b, 'texto', 'p');
       if (b.tipo === 'lista') return el('ul', {}, (b.items || []).map((_, i) => ed(b.items, i, 'li')));
       if (b.tipo === 'numerada') return el('ol', { class: 'ed-numerada' }, (b.items || []).map((_, i) => { const li = ed(b.items, i, 'li'); li.dataset.n = numeroItem(sec, i); return li; }));
@@ -315,6 +357,7 @@ export default async function vista(ctx) {
     pintar();
     cuerpo.replaceChildren(
       el('div', { class: 'rv-barra-acciones' }, estadoGuardado, el('span', { class: 'rv-espaciador' }), bFaltas, bDeshacer,
+        editable ? boton('Firmas', { icono: 'lapiz', onclick: agregarFirmas, title: 'Agregar firmas guardadas (o en blanco) donde marcaste, o al final' }) : null,
         boton('Vista previa PDF', { icono: 'ojo', onclick: (ev) => vistaPrevia(ev.currentTarget) }),
         boton('Descargar Word', { icono: 'descargar', onclick: async () => { try { descargar(await exportarWord(ctx, doc), nombreArchivo(doc, 'docx')); } catch (err) { avisar(err.message, 'error'); } } }),
         editable && d.borrador !== undefined ? boton('Descartar borrador', { icono: 'basura', onclick: descartarBorrador }) : null,

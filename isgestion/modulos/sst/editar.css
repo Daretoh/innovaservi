@@ -41,3 +41,26 @@
 .ed-numerada > li { position: relative; padding-left: 34px; }
 .ed-numerada > li::before { content: attr(data-n); position: absolute; left: 0; font-weight: 700; color: var(--empresa); }
 ::highlight(isg-falta) { background-color: color-mix(in srgb, var(--prox) 30%, transparent); text-decoration: underline wavy var(--prox); }
+
+/* Bloque de firmas (firmas-doc.js): casillas en fila con la firma guardada, línea, nombre y cargo */
+.edf { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; padding: 10px 0 4px; }
+.edf-caja { flex: 1 1 180px; max-width: 240px; display: flex; flex-direction: column; align-items: center; text-align: center; position: relative; padding: 6px 6px 8px; border: 1px dashed transparent; border-radius: 8px; }
+.ed-papel .edf-caja:hover, .ed-papel .edf-caja:focus-within { border-color: var(--borde); }
+.edf-rol { font-size: 11px; font-weight: 700; color: var(--empresa); text-transform: none; min-width: 60px; }
+.edf-zona { position: relative; height: 70px; width: 100%; display: flex; align-items: flex-end; justify-content: center; }
+.edf-firma { max-height: 66px; max-width: 80%; object-fit: contain; position: relative; z-index: 1; }
+.edf-timbre { position: absolute; right: 4%; top: 2px; max-height: 66px; max-width: 46%; object-fit: contain; opacity: .9; }
+.edf-linea { width: 80%; border-top: 1px solid var(--texto-suave); margin: 2px 0 3px; }
+.edf-nombre { font-weight: 700; font-size: 12.5px; min-width: 80px; }
+.edf-cargo { font-size: 11px; color: var(--texto-suave); min-width: 80px; }
+.edf-ctrl { display: none; gap: 4px; align-items: center; justify-content: center; flex-wrap: wrap; margin-bottom: 4px; }
+.ed-papel .edf-caja:hover .edf-ctrl, .ed-papel .edf-caja:focus-within .edf-ctrl { display: flex; }
+.edf-ctrl .campo { padding: 2px 6px; font-size: 12px; height: auto; width: auto; }
+.edf-chk { display: inline-flex; gap: 3px; align-items: center; font-size: 12px; }
+.edf-mas { align-self: center; display: inline-flex; gap: 6px; align-items: center; padding: 8px 12px; border: 1px dashed var(--borde); border-radius: 8px; background: transparent; color: var(--texto-suave); cursor: pointer; font: inherit; font-size: 12.5px; }
+.edf-mas:hover { color: var(--empresa); border-color: var(--empresa); background: var(--hover); }
+@media (hover: none) { .ed-papel .edf-ctrl { display: flex; } }
+.edf-zona { overflow: visible; }
+.edf-mov { cursor: move; touch-action: none; user-select: none; -webkit-user-drag: none; z-index: 2; }
+.edf-mov:hover { outline: 1px dashed var(--empresa); outline-offset: 2px; }
+.edf-timbre.edf-mov { z-index: 1; }

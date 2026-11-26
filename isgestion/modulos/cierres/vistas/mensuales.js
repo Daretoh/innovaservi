@@ -1,11 +1,11 @@
 // Cierres: lista general de todos los meses y clientes, con filtros (2026-11-09, antes era una pantalla por mes).
 // Si el cierre generó una cotización, sus montos y estado son los de la cotización.
-import { el } from '../../../core/ui/dom.js?v=0f5585f';
-import { listado, boton } from '../../../core/ui/tabla.js?v=0f5585f';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=0f5585f';
-import { dinero, hoyISO } from '../../../core/ui/formato.js?v=0f5585f';
-import { nombreTercero, nombreEstado, CHIP_ESTADO, numeroTexto, nombreMesLargo, IVA } from '../datos.js?v=0f5585f';
-import { totales, nombreEstado as estadoCot, CHIP_ESTADO as CHIP_COT } from '../../cotizaciones/datos.js?v=0f5585f';
+import { el } from '../../../core/ui/dom.js?v=4fd87dc';
+import { listado, boton } from '../../../core/ui/tabla.js?v=4fd87dc';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=4fd87dc';
+import { dinero, hoyISO } from '../../../core/ui/formato.js?v=4fd87dc';
+import { nombreTercero, nombreEstado, CHIP_ESTADO, numeroTexto, nombreMesLargo, IVA } from '../datos.js?v=4fd87dc';
+import { totales, nombreEstado as estadoCot, CHIP_ESTADO as CHIP_COT } from '../../cotizaciones/datos.js?v=4fd87dc';
 
 const filtro = { grupo: 'todos', cliente: '', anio: '' };
 const GRUPOS = [['todos', 'Todos'], ['borrador', 'Borrador'], ['proceso', 'Por cobrar'], ['cobrado', 'Cobrados'], ['anulado', 'Anulados']];

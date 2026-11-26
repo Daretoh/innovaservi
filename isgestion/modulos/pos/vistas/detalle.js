@@ -1,12 +1,12 @@
 // Detalle de una venta: líneas, pago, voucher, salida de stock y anular (repone el stock).
-import { el } from '../../../core/ui/dom.js?v=0f5585f';
-import { icono } from '../../../core/ui/iconos.js?v=0f5585f';
-import { boton } from '../../../core/ui/tabla.js?v=0f5585f';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=0f5585f';
-import { avisar } from '../../../core/ui/aviso.js?v=0f5585f';
-import { urlFirmada } from '../../../core/adjuntos.js?v=0f5585f';
-import { dinero, fechaLarga, diaLocal } from '../../../core/ui/formato.js?v=0f5585f';
-import { nombreMedio, nombreDocVenta } from '../datos.js?v=0f5585f';
+import { el } from '../../../core/ui/dom.js?v=4fd87dc';
+import { icono } from '../../../core/ui/iconos.js?v=4fd87dc';
+import { boton } from '../../../core/ui/tabla.js?v=4fd87dc';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=4fd87dc';
+import { avisar } from '../../../core/ui/aviso.js?v=4fd87dc';
+import { urlFirmada } from '../../../core/adjuntos.js?v=4fd87dc';
+import { dinero, fechaLarga, diaLocal } from '../../../core/ui/formato.js?v=4fd87dc';
+import { nombreMedio, nombreDocVenta } from '../datos.js?v=4fd87dc';
 
 const cant = (n) => String(Number(n));
 
