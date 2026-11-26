@@ -2,16 +2,16 @@
 // resultado (se guardan al cambiar), registro para firmar en Prevención SST (si la empresa lo tiene) o respaldo subido,
 // acta en PDF y cerrar (los asistentes quedan con "visto" y su resultado en los contenidos) o reabrir.
 // Ruta: #/capacitaciones.sesion?id=<id>
-import { el } from '../../../core/ui/dom.js?v=d971811';
-import { icono } from '../../../core/ui/iconos.js?v=d971811';
-import { boton } from '../../../core/ui/tabla.js?v=d971811';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=d971811';
-import { avisar } from '../../../core/ui/aviso.js?v=d971811';
-import { fechaLarga } from '../../../core/ui/formato.js?v=d971811';
-import { nuevoPdf } from '../../../core/pdf.js?v=d971811';
-import { subirArchivo, urlFirmada } from '../../../core/adjuntos.js?v=d971811';
-import { cargarBiblioteca, cargarPersonas, cargarEstilos, conCarga, duracion, ICONO_TIPO } from '../datos.js?v=d971811';
-import { formularioSesion } from './sesiones.js?v=d971811';
+import { el } from '../../../core/ui/dom.js?v=9540066';
+import { icono } from '../../../core/ui/iconos.js?v=9540066';
+import { boton } from '../../../core/ui/tabla.js?v=9540066';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=9540066';
+import { avisar } from '../../../core/ui/aviso.js?v=9540066';
+import { fechaLarga } from '../../../core/ui/formato.js?v=9540066';
+import { nuevoPdf } from '../../../core/pdf.js?v=9540066';
+import { subirArchivo, urlFirmada } from '../../../core/adjuntos.js?v=9540066';
+import { cargarBiblioteca, cargarPersonas, cargarEstilos, conCarga, duracion, ICONO_TIPO } from '../datos.js?v=9540066';
+import { formularioSesion } from './sesiones.js?v=9540066';
 
 export default async function vista(ctx) {
   cargarEstilos();

@@ -1,12 +1,13 @@
 // Decoración de Navidad: nieve que cae sobre las pantallas y una guirnalda de luces bajo la barra superior.
-// 2026-11-26, pedido de Enzo: se ve sola en todo ISgestión durante diciembre; cada persona la apaga o enciende con el
+// 2026-11-26, pedido de Enzo: se ve sola en todo ISgestión del 26 de noviembre al 31 de diciembre; cada persona la apaga o enciende con el
 // copo de la barra (botonNavidad, queda en este navegador: isg.navidad = '0' apagada, '1' encendida).
 // Fuera de diciembre, ?navidad=1 en la dirección la enciende igual (videos de marketing) y ?navidad=0 la apaga.
 // No toca datos ni estilos de la app: todo va en una capa encima que no recibe clics (pointer-events: none).
-import { icono } from './ui/iconos.js?v=d971811';
+import { icono } from './ui/iconos.js?v=9540066';
 
 const CLAVE = 'isg.navidad';
-const esDiciembre = () => new Date().getMonth() === 11;
+// Temporada: desde el 26 de noviembre (pedido de Enzo, 2026-11-26) hasta el 31 de diciembre
+const esDiciembre = () => { const d = new Date(); return d.getMonth() === 11 || (d.getMonth() === 10 && d.getDate() >= 26); };
 const preferencia = () => { try { return localStorage.getItem(CLAVE); } catch { return null; } };
 
 export function navidadActiva() {

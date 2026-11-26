@@ -2,16 +2,16 @@
 // Toda la tarjeta abre la orden; buscador por patente, vehículo o cliente; la tarjeta recién movida queda
 // resaltada; se actualiza solo cada 2 minutos (pensado para la tablet del taller). Arriba, el resumen del Seguimiento
 // del OS (avance y arrastrar para priorizar); el botón de pantalla completa abre el detalle para la tablet.
-import { el } from '../../../core/ui/dom.js?v=d971811';
-import { icono } from '../../../core/ui/iconos.js?v=d971811';
-import { boton } from '../../../core/ui/tabla.js?v=d971811';
-import { fechaCorta, hhmm, hoyISO } from '../../../core/ui/formato.js?v=d971811';
-import { ESTADOS, PRIORIDADES, CHIP_PRIORIDAD, SELECT_ORDEN, verPatente, nombreVehiculo, nombreTercero, minutosTrabajo, textoMinutos, hora, cargarTrabajadores } from '../datos.js?v=d971811';
-import { mover, textoAvance, puedeVolver, esperaPagoFactura } from '../acciones.js?v=d971811';
-import { recepcion } from '../recepcion.js?v=d971811';
-import { avance, ordenarActivos, marcaCotizar, resumenTaller, detalleVehiculo } from '../seguimiento.js?v=d971811';
-import { ETAPAS, tarjetaAuto } from '../movil.js?v=d971811';
-import { esTelefono } from '../../../core/movil.js?v=d971811';
+import { el } from '../../../core/ui/dom.js?v=9540066';
+import { icono } from '../../../core/ui/iconos.js?v=9540066';
+import { boton } from '../../../core/ui/tabla.js?v=9540066';
+import { fechaCorta, hhmm, hoyISO } from '../../../core/ui/formato.js?v=9540066';
+import { ESTADOS, PRIORIDADES, CHIP_PRIORIDAD, SELECT_ORDEN, verPatente, nombreVehiculo, nombreTercero, minutosTrabajo, textoMinutos, hora, cargarTrabajadores } from '../datos.js?v=9540066';
+import { mover, textoAvance, puedeVolver, esperaPagoFactura } from '../acciones.js?v=9540066';
+import { recepcion } from '../recepcion.js?v=9540066';
+import { avance, ordenarActivos, marcaCotizar, resumenTaller, detalleVehiculo } from '../seguimiento.js?v=9540066';
+import { ETAPAS, tarjetaAuto } from '../movil.js?v=9540066';
+import { esTelefono } from '../../../core/movil.js?v=9540066';
 
 const MAX_ENTREGADOS = 6;
 const ESPERA_LARGA = 60;   // minutos en espera para avisar

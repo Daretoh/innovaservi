@@ -1,14 +1,14 @@
 // Planificar una faena en un día: horario, dotación del día, cuadrilla, vehículos, notas,
 // enviar / reabrir y generar las horas en Asistencia.
 // Ruta: #/ope.plan?f=<faena_id>&d=<fecha>
-import { el } from '../../../core/ui/dom.js?v=d971811';
-import { icono } from '../../../core/ui/iconos.js?v=d971811';
-import { boton } from '../../../core/ui/tabla.js?v=d971811';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=d971811';
-import { avisar } from '../../../core/ui/aviso.js?v=d971811';
-import { hhmm, nombreDia, fechaLarga, hoyISO, sumarDias } from '../../../core/ui/formato.js?v=d971811';
-import { seccionPreparacion } from './preparacion.js?v=d971811';
-import { cargarBase, cargarSemana, etiquetaFaena, horarioDe, dotacionDe, dotTotal, dotTexto, ocupacion, ROLES, nombreRol, nombreCompleto, partesDeRango, estadoParte, pideInformeFaena, carpetaTerreno } from '../datos.js?v=d971811';
+import { el } from '../../../core/ui/dom.js?v=9540066';
+import { icono } from '../../../core/ui/iconos.js?v=9540066';
+import { boton } from '../../../core/ui/tabla.js?v=9540066';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=9540066';
+import { avisar } from '../../../core/ui/aviso.js?v=9540066';
+import { hhmm, nombreDia, fechaLarga, hoyISO, sumarDias } from '../../../core/ui/formato.js?v=9540066';
+import { seccionPreparacion } from './preparacion.js?v=9540066';
+import { cargarBase, cargarSemana, etiquetaFaena, horarioDe, dotacionDe, dotTotal, dotTexto, ocupacion, ROLES, nombreRol, nombreCompleto, partesDeRango, estadoParte, pideInformeFaena, carpetaTerreno } from '../datos.js?v=9540066';
 
 export default async function vista(ctx) {
   const { f: faenaId, d: fecha } = ctx.params;
@@ -200,7 +200,7 @@ export default async function vista(ctx) {
 
 // Carpeta a terreno (Faenas 006): AST y permiso de trabajo que hay que imprimir y llevar. Por omisión, lo del cliente.
 async function seccionCarpeta(ctx, f, base, fecha) {
-  const { cargarDocsTerreno, bloqueDocsTerreno, formatosParaImprimir, bloqueFormatosImprimir } = await import('../terreno-docs.js?v=d971811');
+  const { cargarDocsTerreno, bloqueDocsTerreno, formatosParaImprimir, bloqueFormatosImprimir } = await import('../terreno-docs.js?v=9540066');
   const nuestros = await formatosParaImprimir(ctx).catch(() => []);
   const docs = (await cargarDocsTerreno(ctx, fecha, fecha).catch(() => new Map())).get(`${f.id}|${fecha}`) ?? [];
   const cli = base.clientes.find((c) => c.id === f.tercero_id) ?? {};
@@ -325,7 +325,7 @@ function ajustarDotacion(ctx, f, p, asegurarPlan) {
 // Vehículos de la flota (si la empresa tiene el módulo Flota) con sus avisos: en taller o documentos vencidos
 async function cargarFlotaOpe(ctx) {
   if (!ctx.puede('flota', 'ver')) return null;
-  const { cargarFlota, alertas, textoVence, etiquetaVehiculo } = await import('../../flota/datos.js?v=d971811');
+  const { cargarFlota, alertas, textoVence, etiquetaVehiculo } = await import('../../flota/datos.js?v=9540066');
   const lista = await cargarFlota(ctx);
   const avisos = (v) => [...(v.estado === 'taller' ? ['En taller'] : []), ...alertas(v.registros).filter((a) => a.k === 'venc').map(textoVence)];
   return { lista, de: new Map(lista.map((v) => [v.id, v])), avisos, etiqueta: etiquetaVehiculo };
