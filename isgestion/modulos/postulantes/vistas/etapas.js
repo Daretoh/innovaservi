@@ -1,10 +1,10 @@
 // Etapas del tablero de postulantes (por empresa): agregar, renombrar, ordenar y desactivar.
-import { el } from '../../../core/ui/dom.js?v=db2b2b7';
-import { icono } from '../../../core/ui/iconos.js?v=db2b2b7';
-import { listado, boton } from '../../../core/ui/tabla.js?v=db2b2b7';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=db2b2b7';
-import { avisar } from '../../../core/ui/aviso.js?v=db2b2b7';
-import { cargarBase } from '../datos.js?v=db2b2b7';
+import { el } from '../../../core/ui/dom.js?v=6f116b3';
+import { icono } from '../../../core/ui/iconos.js?v=6f116b3';
+import { listado, boton } from '../../../core/ui/tabla.js?v=6f116b3';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=6f116b3';
+import { avisar } from '../../../core/ui/aviso.js?v=6f116b3';
+import { cargarBase } from '../datos.js?v=6f116b3';
 
 export default async function vista(ctx) {
   const { etapas } = await cargarBase(ctx);

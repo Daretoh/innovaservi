@@ -2,13 +2,13 @@
 // ver quién firmó. La persona firma en /firmar/?t=… (Edge Function pública `firmar`).
 //   enviarAFirmar(ctx, { origen, id, personas: [{ id, nombre, telefono }], titulo, alTerminar })
 //   seccionFirmasEntrega(ctx, ent, participantes) → bloque para Prevención SST → registro de entrega
-import { el } from './ui/dom.js?v=db2b2b7';
-import { icono } from './ui/iconos.js?v=db2b2b7';
-import { boton } from './ui/tabla.js?v=db2b2b7';
-import { avisar } from './ui/aviso.js?v=db2b2b7';
-import { telefono } from './ui/formato.js?v=db2b2b7';
-import { urlApp } from './api.js?v=db2b2b7';
-import { urlFirmada } from './adjuntos.js?v=db2b2b7';
+import { el } from './ui/dom.js?v=6f116b3';
+import { icono } from './ui/iconos.js?v=6f116b3';
+import { boton } from './ui/tabla.js?v=6f116b3';
+import { avisar } from './ui/aviso.js?v=6f116b3';
+import { telefono } from './ui/formato.js?v=6f116b3';
+import { urlApp } from './api.js?v=6f116b3';
+import { urlFirmada } from './adjuntos.js?v=6f116b3';
 
 const hora = (t) => new Date(t).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' });
 export function enlaceWhatsapp(tel, texto) {

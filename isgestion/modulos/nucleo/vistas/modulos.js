@@ -1,11 +1,11 @@
 // Módulos de la empresa (Administración): qué módulos tiene contratados, sus opciones (las del manifiesto, guardadas
 // en empresa_modulos.config) y acceso directo a las pantallas de ajustes de cada uno (ítems con `ajustes: true`).
 // Activar o quitar módulos y ocultar pantallas lo hace el equipo ISgestión desde la Consola.
-import { el } from '../../../core/ui/dom.js?v=db2b2b7';
-import { icono } from '../../../core/ui/iconos.js?v=db2b2b7';
-import { boton } from '../../../core/ui/tabla.js?v=db2b2b7';
-import { avisar } from '../../../core/ui/aviso.js?v=db2b2b7';
-import { cargarManifiestos, configModulo } from '../../../core/modulos.js?v=db2b2b7';
+import { el } from '../../../core/ui/dom.js?v=6f116b3';
+import { icono } from '../../../core/ui/iconos.js?v=6f116b3';
+import { boton } from '../../../core/ui/tabla.js?v=6f116b3';
+import { avisar } from '../../../core/ui/aviso.js?v=6f116b3';
+import { cargarManifiestos, configModulo } from '../../../core/modulos.js?v=6f116b3';
 
 export default async function vista(ctx) {
   const [manifiestos, { data, error }] = await Promise.all([
@@ -18,6 +18,11 @@ export default async function vista(ctx) {
   const activos = manifiestos.filter((m) => porId.get(m.id)?.activo && m.id !== 'nucleo');
   const fecha = (d) => (d ? new Date(`${d}T12:00`).toLocaleDateString('es-CL') : '');
 
+  // Opciones tipo 'lista' (casillas, valor = arreglo): sus opciones salen de op.cargar(ctx) (ej.: cargos de la empresa)
+  const listas = new Map();
+  await Promise.all(activos.flatMap((m) => Object.entries(m.config ?? {}).filter(([, op]) => op.tipo === 'lista' && op.cargar)
+    .map(async ([k, op]) => { listas.set(`${m.id}.${k}`, await op.cargar(ctx).catch(() => [])); })));
+
   const tarjeta = (m) => {
     const fila = porId.get(m.id);
     const ocultas = new Set(fila.pantallas_ocultas ?? []);
@@ -26,6 +31,16 @@ export default async function vista(ctx) {
     const ajustes = m.menu.filter((it) => it.ajustes && !ocultas.has(it.id) && ctx.puede(m.id, 'ver'));
     const campos = opciones.map(([k, op]) => {
       const id = `mc-${m.id}-${k}`;
+      if (op.tipo === 'lista') {
+        const marcados = new Set(Array.isArray(valores[k]) ? valores[k] : []);
+        const items = [...(listas.get(`${m.id}.${k}`) ?? [])];
+        for (const v of marcados) if (!items.some(([x]) => x === v)) items.push([v, 'Marcado antes (ya no está activo)']);
+        const grupo = el('div', { class: 'mod-lista', 'data-clave': k, 'data-tipo': 'lista' },
+          items.length ? items.map(([v, t], i) => el('label', { class: 'casilla', for: `${id}-${i}` },
+            el('input', { type: 'checkbox', id: `${id}-${i}`, value: v, checked: marcados.has(v), disabled: !editable }), t))
+            : el('span', { class: 'texto-suave texto-chico' }, 'No hay opciones para elegir.'));
+        return el('fieldset', { class: 'form-fila mod-lista-campo' }, el('legend', {}, op.etiqueta), grupo);
+      }
       const control = op.tipo === 'bool'
         ? el('input', { type: 'checkbox', class: 'interruptor', id, checked: !!valores[k], disabled: !editable })
         : op.opciones
@@ -38,7 +53,8 @@ export default async function vista(ctx) {
       const tarjetaNodo = ev.currentTarget.closest('.ficha');
       const nuevo = { ...(fila.config ?? {}) };
       for (const c of tarjetaNodo.querySelectorAll('[data-clave]')) {
-        nuevo[c.dataset.clave] = c.dataset.tipo === 'bool' ? c.checked : c.dataset.tipo === 'number' ? (c.value === '' ? null : Number(c.value)) : c.value.trim();
+        nuevo[c.dataset.clave] = c.dataset.tipo === 'lista' ? [...c.querySelectorAll('input:checked')].map((x) => x.value)
+          : c.dataset.tipo === 'bool' ? c.checked : c.dataset.tipo === 'number' ? (c.value === '' ? null : Number(c.value)) : c.value.trim();
       }
       const r = await ctx.api.from('empresa_modulos').update({ config: nuevo }).eq('empresa_id', ctx.empresa.id).eq('modulo_id', m.id).select('modulo_id');
       if (r.error || !r.data?.length) { avisar(r.error?.message ?? 'No tienes permiso para cambiar esto.', 'error'); return; }

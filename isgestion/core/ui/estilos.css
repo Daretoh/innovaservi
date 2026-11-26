@@ -1069,6 +1069,38 @@ button.dia-tarjeta:hover { border-color: color-mix(in srgb, var(--empresa) 50%, 
 .ind-mal .ind-kpi-icono { color: var(--venc); background: var(--venc-fondo); }
 .ind-mal strong { color: var(--venc); }
 .ind-medio .ind-kpi-icono { color: var(--prox); background: var(--prox-fondo); }
+/* Tareas pendientes y Próximas actividades lado a lado, compactas (sugerencia #193, 2026-11-25) */
+.inicio > [hidden] { display: none !important; }
+.ind-dos { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); gap: 16px; align-items: start; }
+.ind-dos.uno { grid-template-columns: minmax(0, 1fr); }
+.ind-compacto { max-width: none; min-width: 0; gap: 6px; padding: 16px 18px; grid-template-columns: minmax(0, 1fr); }
+.ind-compacto .ind-cab { align-items: center; margin-bottom: 4px; }
+.ind-compacto .ind-cab h2 { display: flex; align-items: center; gap: 8px; font-size: 1.05rem; }
+.ind-compacto .ind-cab h2 > svg { color: var(--empresa); flex: none; }
+.ind-cab-acciones { display: flex; align-items: center; gap: 10px; }
+.ind-contador { display: inline-grid; place-items: center; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 11px; background: var(--venc); color: #fff; font-size: 12px; font-weight: 800; }
+.ind-tarea-fila { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: 10px; padding: 7px 4px; border-radius: 8px; color: var(--texto) !important; text-decoration: none; }
+.ind-tarea-fila:hover { background: var(--hover); }
+.ind-tarea-fila > svg { color: var(--texto-suave); }
+.ind-tarea-titulo { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .92rem; font-weight: 600; }
+.ind-circulo { width: 18px; height: 18px; border-radius: 50%; border: 2px solid color-mix(in srgb, var(--texto-suave) 55%, transparent); }
+.ind-circulo.alta { border-color: var(--venc); }
+.ind-mas { justify-self: start; color: var(--texto-suave); }
+@media (max-width: 600px) {
+  .ind-tarea-titulo { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.25; }
+  .ind-tarea-fila .chip { font-size: 11px; padding: 1px 6px; }
+  .ind-tarea-fila > svg { display: none; }
+}
+.ind-actividad { --ind-color: var(--empresa); display: grid; grid-template-columns: 52px minmax(0, 1fr); align-items: stretch; gap: 10px; padding: 6px; border-radius: 10px;
+  background: color-mix(in srgb, var(--ind-color) 8%, var(--superficie)); color: var(--texto) !important; text-decoration: none; }
+.ind-actividad:hover { background: color-mix(in srgb, var(--ind-color) 15%, var(--superficie)); }
+.ind-actividad .ind-nombre { justify-content: center; gap: 2px; }
+.ind-actividad .ind-nombre strong { overflow: hidden; text-overflow: ellipsis; font-size: .92rem; }
+.ind-fecha { display: grid; place-content: center; justify-items: center; padding: 4px 0; border-radius: 8px; background: color-mix(in srgb, var(--ind-color) 18%, var(--superficie)); line-height: 1.05; }
+.ind-fecha strong { font-size: 1.25rem; font-weight: 800; color: color-mix(in srgb, var(--ind-color) 70%, var(--texto)); }
+.ind-fecha span { font-size: .66rem; font-weight: 800; letter-spacing: .06em; color: var(--texto-suave); }
+.ind-actividad.hoy .ind-fecha { background: var(--empresa); }
+.ind-actividad.hoy .ind-fecha strong, .ind-actividad.hoy .ind-fecha span { color: var(--sobre-empresa); }
 .ind-paneles { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: 16px; align-items: start; }
 .ind-paneles .ficha { max-width: none; min-width: 0; grid-template-columns: minmax(0, 1fr); }   /* el contenido no ensancha la tarjeta */
 .ind-sub { font-size: .66rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--texto-suave); margin: 14px 0 6px; }
@@ -2928,6 +2960,38 @@ html[data-modo="oscuro"] { --turno-dia-fondo: #4a3a12; --turno-dia-texto: #fde68
 /* Franja de la faena: mayúsculas con el color del cliente */
 .hz-grupo { border-left-width: 5px; }
 .hz-grupo-cabeza strong { text-transform: uppercase; letter-spacing: .03em; font-size: 12px; color: color-mix(in srgb, var(--hz-color) 70%, var(--texto)); }
+/* Sugerencia #142 (2026-11-25): filas sombreadas con el color de su faena (como InnovaGestión), más contraste,
+   faena angosta (el nombre completo está en la franja y al pasar el mouse) */
+.hz-grupo .hz-tabla tbody tr { background: color-mix(in srgb, var(--hz-color) 9%, var(--superficie)); border-color: color-mix(in srgb, var(--hz-color) 35%, var(--borde)); }
+.hz-grupo .hz-tabla tbody tr:hover { background: color-mix(in srgb, var(--hz-color) 16%, var(--superficie)); }
+.hz-tabla .hz-nombre, .hz-tabla .hz-persona { color: var(--texto); border-color: color-mix(in srgb, var(--texto) 22%, var(--borde)); }
+.hz-tabla tbody td:first-child { flex: 0 1 300px; }
+.hz-tabla .hz-faena { min-width: 0; width: 170px; font-size: 12px; text-overflow: ellipsis; color: var(--texto); }
+.hz-tabla .hz-hora { width: 76px; text-align: center; font-variant-numeric: tabular-nums; color: var(--texto); border-color: color-mix(in srgb, var(--texto) 22%, var(--borde)); }
+.hz-tabla .hz-horario > span { color: var(--texto); font-weight: 700; }
+.hz-tabla .hz-celda-vueltas { min-width: 64px; }
+.hz-tabla .hz-total { min-width: 136px; }
+/* En PC cada fila en una sola línea (el basurero no baja a otra línea) */
+@media (min-width: 1000px) {
+  .hz-tabla tbody tr { flex-wrap: nowrap; }
+  .hz-tabla tbody td:first-child { flex: 1 1 200px; min-width: 150px; }
+  .hz-tabla .hz-total { min-width: 120px; }
+}
+/* Semana centrada, resumen junto al día, bordes de los días más gruesos (Enzo, 2026-11-25) */
+.hz-nav { display: flex; justify-content: center; }
+.hz-nav .nav-semana { margin: 4px auto 10px; width: 100%; }
+.sem-dias .sem-dia { border-width: 2px; }
+.sem-dias .sem-dia-resumen { margin-left: 6px; padding-left: 10px; border-left: 2px solid var(--borde); color: var(--texto); opacity: .8; }
+.hz-vacias { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.hz-vacia { --hz-color: var(--borde); display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border: 1px dashed color-mix(in srgb, var(--hz-color) 70%, var(--borde)); border-radius: 20px;
+  background: color-mix(in srgb, var(--hz-color) 8%, var(--superficie)); color: var(--texto); font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
+.hz-vacia:hover { background: color-mix(in srgb, var(--hz-color) 18%, var(--superficie)); }
+.hz-ver-sinfaena { justify-self: start; align-self: flex-start; font-size: 13px; }
+.hz-grupo-cabeza strong { color: color-mix(in srgb, var(--hz-color) 55%, var(--texto)); }
+.hz-grupo-cabeza .texto-suave { color: var(--texto); opacity: .75; }
+.mod-lista-campo { border: 0; padding: 0; margin: 0; }
+.mod-lista-campo legend { padding: 0; margin-bottom: 6px; font-size: 13px; }
+.mod-lista { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px 12px; }
 /* Día abierto: línea de la empresa bajo la cabecera, como InnovaGestión */
 .sem-dia-cabeza[aria-expanded="true"] { border-bottom: 2px solid var(--empresa); border-radius: 14px 14px 0 0; }
 .sem-dia-cabeza strong { font-size: 15px; }

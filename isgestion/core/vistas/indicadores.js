@@ -1,11 +1,11 @@
-// Indicadores del Inicio (como el Inicio de InnovaGestión, 2026-10-26): Mis tareas (con "Nueva tarea"), Indicadores del
-// día (UF, UTM y dólar), cifras, Faenas de hoy, Alertas como tablero (vencidos / esta semana / este mes, con tarjetas
+// Indicadores del Inicio (como el Inicio de InnovaGestión, 2026-10-26): Tareas pendientes y Próximas actividades lado a
+// lado (compactas, sugerencia #193, 2026-11-25), Indicadores del día (UF, UTM y dólar), cifras, Alertas como tablero (vencidos / esta semana / este mes, con tarjetas
 // Personas, Vehículos, Empresa y Operación) y la lista de próximos vencimientos.
 // Cada bloque aparece solo si la empresa tiene el módulo y el rol lo puede ver; si una consulta falla, se omite.
-import { el } from '../ui/dom.js?v=db2b2b7';
-import { icono } from '../ui/iconos.js?v=db2b2b7';
-import { hoyISO, fechaCorta, fechaLarga } from '../ui/formato.js?v=db2b2b7';
-import { ctxTareas } from '../tareas-unidas.js?v=db2b2b7';
+import { el } from '../ui/dom.js?v=6f116b3';
+import { icono } from '../ui/iconos.js?v=6f116b3';
+import { hoyISO, fechaCorta, fechaLarga, sumarDias } from '../ui/formato.js?v=6f116b3';
+import { ctxTareas } from '../tareas-unidas.js?v=6f116b3';
 
 const dias = (iso) => Math.round((new Date(`${iso}T12:00`) - new Date(`${hoyISO()}T12:00`)) / 864e5);
 const textoDias = (n) => (n < 0 ? `Venció hace ${-n}d` : n === 0 ? 'Vence hoy' : `En ${n}d`);
@@ -29,13 +29,13 @@ async function cargarPesado(ctx, hoy) {
   const puede = (m) => ctx.puede(m, 'ver');
   const mes = hoy.slice(0, 7);
   const [rrhh, ope, flota, acr, salidas] = await Promise.all([
-    puede('rrhh') ? intentar(import('../../modulos/rrhh/datos.js?v=db2b2b7').then(async (m) => ({ m, d: await m.cargarRrhh(ctx) }))) : null,
-    puede('ope') ? intentar(import('../../modulos/ope/datos.js?v=db2b2b7').then(async (m) => {
-      const [base, semana] = await Promise.all([m.cargarBase(ctx), m.cargarSemana(ctx, hoy, hoy)]);
+    puede('rrhh') ? intentar(import('../../modulos/rrhh/datos.js?v=6f116b3').then(async (m) => ({ m, d: await m.cargarRrhh(ctx) }))) : null,
+    puede('ope') ? intentar(import('../../modulos/ope/datos.js?v=6f116b3').then(async (m) => {
+      const [base, semana] = await Promise.all([m.cargarBase(ctx), m.cargarSemana(ctx, hoy, sumarDias(hoy, 13))]);   // hoy y las 2 semanas siguientes (Próximas actividades)
       return { m, base, semana };
     })) : null,
-    puede('flota') ? intentar(import('../../modulos/flota/datos.js?v=db2b2b7').then(async (m) => ({ m, vehiculos: await m.cargarFlota(ctx) }))) : null,
-    puede('acreditacion') ? intentar(import('../../modulos/acreditacion/datos.js?v=db2b2b7').then(async (m) => ({ m, d: await m.cargarDocumentos(ctx) }))) : null,
+    puede('flota') ? intentar(import('../../modulos/flota/datos.js?v=6f116b3').then(async (m) => ({ m, vehiculos: await m.cargarFlota(ctx) }))) : null,
+    puede('acreditacion') ? intentar(import('../../modulos/acreditacion/datos.js?v=6f116b3').then(async (m) => ({ m, d: await m.cargarDocumentos(ctx) }))) : null,
     puede('sst') ? intentar(ctx.api.from('sst_salidas').select('id', { count: 'exact', head: true }).eq('empresa_id', ctx.empresa.id).is('deleted_at', null).gte('fecha', `${mes}-01`)) : null,
   ]);
   return { rrhh, ope, flota, acr, salidas };
@@ -50,18 +50,25 @@ export function panelIndicadores(ctx, x) {
   const pend = x.tareas?.data ?? [];
   const mias = pend.filter((t) => t.responsable_id === ctx.usuario?.id || t.responsable2_id === ctx.usuario?.id);   // como "Mis tareas" en Tareas
   const PRIO = { alta: 0, media: 1, baja: 2 };
+  let panelTareas = null;
+  let panelProximas = null;
   if (x.tareas && (mias.length || ctx.puede('tareas', 'crear'))) {
+    // Compacta (sugerencia #193 de Yocelyn, 2026-11-25): un círculo, el título y cuándo vence, sin más
     const orden = [...mias].sort((a, b) => (a.fecha ?? '9999').localeCompare(b.fecha ?? '9999') || PRIO[a.prioridad] - PRIO[b.prioridad]);
-    bloques.push(el('div', { class: 'ficha doc-grupo ind-ancho' },
-      el('div', { class: 'ind-cab' }, el('h2', {}, mias.length ? `Mis tareas (${mias.length})` : 'Mis tareas'),
+    const vence = (n, fecha) => (n == null ? ['chip-na', 'Sin fecha'] : n < 0 ? ['chip-venc', `Venció hace ${-n} ${-n === 1 ? 'día' : 'días'}`]
+      : n === 0 ? ['chip-venc', 'Vence hoy'] : n === 1 ? ['chip-prox', 'Vence mañana'] : n <= 14 ? ['chip-prox', `Vence en ${n} días`] : ['chip-ok', fechaCorta(fecha)]);
+    panelTareas = el('div', { class: 'ficha doc-grupo ind-compacto' },
+      el('div', { class: 'ind-cab' }, el('h2', {}, icono('check', { tam: 18 }), 'Tareas pendientes', mias.length ? el('span', { class: 'ind-contador' }, String(mias.length)) : null),
         el('div', { class: 'ind-cab-acciones' }, el('a', { href: '#/tareas.lista' }, 'Ver todas'),
-          ctx.puede('tareas', 'crear') ? el('a', { class: 'boton boton-primario boton-chico', href: '#/tareas.lista?nueva=1' }, icono('mas', { tam: 14 }), 'Nueva tarea') : null)),
+          ctx.puede('tareas', 'crear') ? el('a', { class: 'boton boton-primario boton-chico', href: '#/tareas.lista?nueva=1' }, icono('mas', { tam: 14 }), 'Nueva') : null)),
       orden.length ? orden.slice(0, 5).map((t) => {
-        const n = t.fecha ? dias(t.fecha) : null;
-        return el('a', { class: 'ind-venc', href: `#/tareas.lista?id=${t.id}` },
-          el('span', { class: 'ind-nombre' }, el('strong', {}, t.titulo), t.prioridad === 'alta' ? el('span', { class: 'texto-chico texto-error' }, 'Prioridad alta') : null),
-          n == null ? el('span', { class: 'chip chip-na' }, 'Sin fecha') : el('span', { class: `chip ${n < 0 ? 'chip-venc' : n <= 1 ? 'chip-prox' : 'chip-ok'}` }, n < 0 ? `Venció hace ${-n}d` : n === 0 ? 'Hoy' : n === 1 ? 'Mañana' : fechaCorta(t.fecha)));
-      }) : el('p', { class: 'texto-suave texto-chico' }, 'No tienes tareas pendientes.')));
+        const [clase, texto] = vence(t.fecha ? dias(t.fecha) : null, t.fecha);
+        return el('a', { class: 'ind-tarea-fila', href: `#/tareas.lista?id=${t.id}` },
+          el('span', { class: `ind-circulo${t.prioridad === 'alta' ? ' alta' : ''}`, title: t.prioridad === 'alta' ? 'Prioridad alta' : null, 'aria-hidden': 'true' }),
+          el('strong', { class: 'ind-tarea-titulo' }, t.titulo),
+          el('span', { class: `chip ${clase}` }, texto), icono('derecha', { tam: 16 }));
+      }) : el('div', { class: 'inicio-al-dia' }, icono('check', { tam: 20 }), el('span', {}, 'No tienes tareas pendientes.')),
+      orden.length > 5 ? el('a', { class: 'texto-chico ind-mas', href: '#/tareas.lista' }, `y ${orden.length - 5} más`) : null);
   }
   // Tareas del equipo con fecha → Operación en el tablero de alertas
   for (const t of pend) if (t.fecha && dias(t.fecha) <= 30) vencimientos.push({ area: 'Operación', titulo: t.titulo, sub: `Tarea · ${fechaLarga(t.fecha)}`, n: dias(t.fecha), ruta: `#/tareas.lista?id=${t.id}` });
@@ -90,22 +97,29 @@ export function panelIndicadores(ctx, x) {
   }
 
   // ---- Faenas de hoy
-  let panelFaenas = null;
   if (x.ope) {
     const { m, base, semana } = x.ope;
     const hoyF = m.faenasDelDia(semana.faenas, x.hoy);
     const personasHoy = hoyF.reduce((s, f) => s + (semana.planDe(f, x.hoy)?.ope_plan_personas?.length ?? 0), 0);
     kpis.push(['calendario', 'Faenas hoy', String(hoyF.length), `${personasHoy} ${personasHoy === 1 ? 'persona asignada' : 'personas asignadas'}`, '#/ope.planificacion']);
-    panelFaenas = el('div', { class: 'ficha doc-grupo' },
-      el('div', { class: 'ind-cab' }, el('h2', {}, `Faenas de hoy (${hoyF.length})`), el('a', { href: '#/ope.planificacion' }, 'Planificación')),
-      hoyF.length ? hoyF.slice(0, 6).map((f) => {
+    // Próximas actividades (sugerencia #193 de Yocelyn, 2026-11-25): las faenas de hoy y de las 2 semanas siguientes,
+    // con su fecha en un bloque, el cliente y el lugar
+    const MESES = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'];
+    const proximas = [];
+    for (let i = 0; i < 14 && proximas.length < 6; i++) {
+      const d = sumarDias(x.hoy, i);
+      for (const f of m.faenasDelDia(semana.faenas, d)) if (proximas.length < 6) proximas.push({ f, d });
+    }
+    panelProximas = el('div', { class: 'ficha doc-grupo ind-compacto' },
+      el('div', { class: 'ind-cab' }, el('h2', {}, icono('calendario', { tam: 18 }), 'Próximas actividades'), el('a', { href: '#/ope.calendario' }, 'Calendario')),
+      proximas.length ? proximas.map(({ f, d }) => {
         const et = m.etiquetaFaena(f, base);
-        const n = semana.planDe(f, x.hoy)?.ope_plan_personas?.length ?? 0;
-        return el('a', { class: 'ind-faena', href: '#/ope.planificacion' },
-          el('i', { style: `background:${et.color}` }),
-          el('span', { class: 'ind-nombre' }, el('strong', {}, f.titulo), el('span', { class: 'texto-suave texto-chico' }, et.texto)),
-          el('span', { class: 'chip chip-pend' }, `${n} ${n === 1 ? 'persona' : 'personas'}`));
-      }) : el('p', { class: 'texto-suave texto-chico' }, 'Sin faenas hoy.'));
+        const n = semana.planDe(f, d)?.ope_plan_personas?.length ?? 0;
+        return el('a', { class: `ind-actividad${d === x.hoy ? ' hoy' : ''}`, href: '#/ope.calendario', style: `--ind-color:${et.color}` },
+          el('span', { class: 'ind-fecha' }, el('strong', {}, String(Number(d.slice(8)))), el('span', {}, d === x.hoy ? 'HOY' : MESES[Number(d.slice(5, 7)) - 1])),
+          el('span', { class: 'ind-nombre' }, el('strong', {}, f.titulo),
+            el('span', { class: 'texto-suave texto-chico' }, [et.texto, n ? `${n} ${n === 1 ? 'persona' : 'personas'}` : null].filter(Boolean).join(' · '))));
+      }) : el('div', { class: 'inicio-al-dia' }, icono('check', { tam: 20 }), el('span', {}, 'Sin faenas en las próximas 2 semanas.')));
   }
 
   // ---- Vencimientos de flota y documentos de empresa
@@ -153,13 +167,14 @@ export function panelIndicadores(ctx, x) {
 
   // ---- Indicadores del día (UF, UTM, dólar)
   const valor = el('div', { class: 'eco-valores' }, el('span', { class: 'texto-suave texto-chico' }, 'Cargando…'));
-  import('../economia.js?v=db2b2b7').then(({ indicadoresDelDia }) => indicadoresDelDia()).then((v) => {
+  import('../economia.js?v=6f116b3').then(({ indicadoresDelDia }) => indicadoresDelDia()).then((v) => {
     if (!v) { valor.replaceChildren(el('span', { class: 'texto-suave texto-chico' }, 'No se pudieron obtener los indicadores')); return; }
     const pesos = (n, dec = 0) => (n == null ? '—' : `$${Number(n).toLocaleString('es-CL', { minimumFractionDigits: dec, maximumFractionDigits: dec })}`);
     valor.replaceChildren(...[['UF', pesos(v.uf, 2)], ['UTM', pesos(v.utm)], ['Dólar', pesos(v.dolar, 2)]].map(([t, n]) => el('div', {}, el('span', { class: 'texto-suave texto-chico' }, t), el('strong', {}, n))));
   }).catch(() => valor.replaceChildren(el('span', { class: 'texto-suave texto-chico' }, 'Sin datos')));
   // Franja compacta (2026-10-31, Enzo: la tarjeta ocupaba demasiado), igual en todas las empresas
   const eco = el('div', { class: 'eco-franja', title: 'Indicadores del día · mindicador.cl, respaldo findic.cl' }, valor);
+  if (panelTareas || panelProximas) bloques.unshift(el('div', { class: `ind-dos${panelTareas && panelProximas ? '' : ' uno'}` }, panelTareas, panelProximas));
   bloques.push(eco);
   if (tablero) bloques.push(tablero);
 
@@ -169,7 +184,7 @@ export function panelIndicadores(ctx, x) {
     kpis.length ? el('div', { class: 'ind-kpis' }, kpis.map(([ic, t, v, sub, ruta, nivel]) => el('a', { class: `ind-kpi ${nivel ? `ind-${nivel}` : ''}`, href: ruta },
       el('span', { class: 'ind-kpi-icono' }, icono(ic, { tam: 20 })),
       el('span', {}, el('span', { class: 'ind-kpi-titulo' }, t), el('strong', {}, v), el('span', { class: 'texto-suave texto-chico' }, sub))))) : null,
-    [panelFaenas, panelVenc].some(Boolean) ? el('div', { class: 'ind-paneles' }, panelFaenas, panelVenc) : null);
+    panelVenc ? el('div', { class: 'ind-paneles' }, panelVenc) : null);
 }
 
 export { fechaCorta };
