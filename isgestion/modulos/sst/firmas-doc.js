@@ -4,10 +4,10 @@
 // Contenido: { tipo: 'firmas', firmas: [{ rol, nombre, cargo, firma: 'rep' | 'prev' | '', timbre: boolean, fx, fy, fs, tx, ty, ts }] }
 // La firma y el timbre se arrastran para moverlos y se agrandan con la rueda del mouse (como en el generador): fx/fy (tx/ty)
 // es el corrimiento como fracción del ancho de la casilla y fs (ts) la escala; no ocupan espacio, así nada se corre.
-import { el } from '../../core/ui/dom.js?v=4fd87dc';
-import { icono } from '../../core/ui/iconos.js?v=4fd87dc';
-import { cargarLogo } from '../../core/pdf.js?v=4fd87dc';
-import { cargarConfig } from './datos.js?v=4fd87dc';
+import { el } from '../../core/ui/dom.js?v=cd68dd0';
+import { icono } from '../../core/ui/iconos.js?v=cd68dd0';
+import { cargarLogo } from '../../core/pdf.js?v=cd68dd0';
+import { cargarConfig } from './datos.js?v=cd68dd0';
 
 const cache = new Map();
 // Firmas guardadas de la empresa: { rep: { nombre, cargo, img }, prev: { … }, timbre: img } (img = { dataUrl, formato, ancho, alto })
@@ -26,7 +26,7 @@ export function cargarFirmasDoc(ctx) {
   }
   return cache.get(k);
 }
-export { tieneFirmas } from './firmas-doc-base.js?v=4fd87dc';
+export { tieneFirmas } from './firmas-doc-base.js?v=cd68dd0';
 
 const ROL = { prev: 'Elaborado por', rep: 'Aprobado por', '': 'Revisado por' };
 export function nuevaFirma(F, quien) {

@@ -3,7 +3,7 @@
 // "8" → 08:00, "830" → 08:30, "1830" → 18:30, "18.30" o "18h30" → 18:30. Al salir del campo queda como HH:MM; si lo
 // escrito no es una hora válida vuelve al valor anterior y se marca en rojo un momento.
 // Su valor es "" o "HH:MM", igual que el de type="time", así que el resto del código no cambia.
-import { el } from './dom.js?v=4fd87dc';
+import { el } from './dom.js?v=cd68dd0';
 
 export function normalizarHora(texto) {
   const t = String(texto ?? '').trim().toLowerCase();

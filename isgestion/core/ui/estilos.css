@@ -2890,7 +2890,8 @@ html.cam-abierta, html.cam-abierta body { overflow: hidden; }
   box-shadow: var(--sombra);
 }
 .aviso-version .icono { color: var(--empresa); flex: none; }
-.aviso-version .boton { margin-left: auto; }
+.aviso-version > span { flex: 1 1 220px; }
+.aviso-version-botones { display: flex; gap: 8px; margin-left: auto; }
 
 /* Orden de trabajo (2026-11-13, pedido de Enzo): datos del cliente arriba y un color por sección */
 :root { --sec-costos: #c2410c; --sec-servicios: #1d6fd1; --sec-tiempos: #6d5bd0; --sec-insumos: #a16207; --sec-fotos: #0f8a6a; --sec-cobro: #2f8a3a; }

@@ -1,12 +1,12 @@
 // Cliente Supabase de la organización activa. Versión fija desde CDN (08 Seguridad §5).
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/+esm';
-import { configurarArchivos } from './adjuntos.js?v=4fd87dc';
+import { configurarArchivos } from './adjuntos.js?v=cd68dd0';
 
 let cliente = null;
 let organizacion = null;
 
 export async function iniciarApi() {
-  const resp = await fetch(new URL('./config/tenants.json?v=4fd87dc', import.meta.url));
+  const resp = await fetch(new URL('./config/tenants.json?v=cd68dd0', import.meta.url));
   const { organizaciones } = await resp.json();
   const host = location.hostname;
   const entrada = Object.entries(organizaciones).find(([, o]) => o.dominios.includes(host));
@@ -17,21 +17,17 @@ export async function iniciarApi() {
   }
   organizacion = { id, nombre: conf.nombre, appUrl: conf.appUrl ?? null };
   cliente = createClient(conf.supabaseUrl, conf.supabaseAnonKey);
-  globalThis.__isgApiIniciada = true;
-  // Si arrancó bien, una próxima versión publicada puede volver a recargar la página (ver db())
-  setTimeout(() => { try { sessionStorage.removeItem('isg.recargada'); } catch { /* */ } }, 15000);
+  globalThis.__isgCliente = cliente;
+  globalThis.__isgOrganizacion = organizacion;
   configurarArchivos(conf.archivosUrl);   // Worker de R2 (si no hay, Supabase Storage)
   return { cliente, organizacion };
 }
 
 export function db() {
-  // Si se publicó una versión nueva con la app abierta, las pantallas que se abren después cargan los módulos de esa
-  // versión (otra URL, ?v=…): esta copia de api.js no está iniciada. Se recarga la página una vez para quedar parejo.
-  let recargada = true; try { recargada = !!sessionStorage.getItem('isg.recargada'); } catch { /* */ }
-  if (!cliente && globalThis.__isgApiIniciada && !recargada) {
-    try { sessionStorage.setItem('isg.recargada', '1'); } catch { /* */ }
-    location.reload();
-  }
+  // Ya no se recarga la página sola (2026-11-26, reclamos: sacaba a la gente de lo que hacía). Cada versión publicada
+  // queda en v/<commit>/ y no se mezclan; si igual se cargara otra copia de este archivo, usa el cliente ya iniciado.
+  cliente ??= globalThis.__isgCliente ?? null;
+  if (!cliente && globalThis.__isgApiIniciada) throw new Error('Hay una versión nueva de ISgestión: toca Actualizar.');   // app abierta antes del cambio
   if (!cliente) throw new Error('La API no está iniciada');
   return cliente;
 }
@@ -45,5 +41,5 @@ export const urlApp = (ruta = '') => new URL(ruta, esLocal() && organizacion?.ap
   : `${location.origin}${location.pathname.replace(/[^/]*$/, '')}`).href;
 
 export function organizacionActiva() {
-  return organizacion;
+  return organizacion ?? globalThis.__isgOrganizacion ?? null;
 }

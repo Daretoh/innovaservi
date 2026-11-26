@@ -1,23 +1,23 @@
 // Consola de la plataforma (solo el equipo ISgestión, es_equipo()): clientes, empresas y módulos, uso y cobro.
 // Usa la misma sesión que la app (mismo dominio); si no hay sesión, se ingresa primero en ISgestión.
 // Rutas: #/clientes · #/cliente?id= · #/empresas · #/cobro · #/salud (?e= una revisión, ?ver=problemas) · #/ia (?mes=AAAA-MM) · #/almacenamiento · #/sugerencias (?estado=) · #/novedades (?nueva=1, ?id=, ?punto=)
-import { iniciarApi, db } from '../core/api.js?v=4fd87dc';
-import { sesionActual, cerrarSesion } from '../core/auth.js?v=4fd87dc';
-import { el } from '../core/ui/dom.js?v=4fd87dc';
-import { icono } from '../core/ui/iconos.js?v=4fd87dc';
+import { iniciarApi, db } from '../core/api.js?v=cd68dd0';
+import { sesionActual, cerrarSesion } from '../core/auth.js?v=cd68dd0';
+import { el } from '../core/ui/dom.js?v=cd68dd0';
+import { icono } from '../core/ui/iconos.js?v=cd68dd0';
 
 const raiz = document.getElementById('app');
 const MENU = [
-  ['clientes', 'Clientes', 'building', () => import('./vistas/clientes.js?v=4fd87dc')],
-  ['empresas', 'Empresas y módulos', 'ajustes', () => import('./vistas/empresas.js?v=4fd87dc')],
-  ['cobro', 'Uso y cobro', 'dinero', () => import('./vistas/cobro.js?v=4fd87dc')],
-  ['salud', 'Salud', 'escudo', () => import('./vistas/salud.js?v=4fd87dc')],
-  ['ia', 'Consumo de IA', 'grafico', () => import('./vistas/ia.js?v=4fd87dc')],
-  ['almacenamiento', 'Almacenamiento', 'carpeta', () => import('./vistas/almacenamiento.js?v=4fd87dc')],
-  ['sugerencias', 'Sugerencias', 'chat', () => import('./vistas/sugerencias.js?v=4fd87dc')],
-  ['novedades', 'Novedades', 'brillo', () => import('./vistas/novedades.js?v=4fd87dc')],
+  ['clientes', 'Clientes', 'building', () => import('./vistas/clientes.js?v=cd68dd0')],
+  ['empresas', 'Empresas y módulos', 'ajustes', () => import('./vistas/empresas.js?v=cd68dd0')],
+  ['cobro', 'Uso y cobro', 'dinero', () => import('./vistas/cobro.js?v=cd68dd0')],
+  ['salud', 'Salud', 'escudo', () => import('./vistas/salud.js?v=cd68dd0')],
+  ['ia', 'Consumo de IA', 'grafico', () => import('./vistas/ia.js?v=cd68dd0')],
+  ['almacenamiento', 'Almacenamiento', 'carpeta', () => import('./vistas/almacenamiento.js?v=cd68dd0')],
+  ['sugerencias', 'Sugerencias', 'chat', () => import('./vistas/sugerencias.js?v=cd68dd0')],
+  ['novedades', 'Novedades', 'brillo', () => import('./vistas/novedades.js?v=cd68dd0')],
 ];
-const OCULTAS = { cliente: ['clientes', () => import('./vistas/cliente.js?v=4fd87dc')] };
+const OCULTAS = { cliente: ['clientes', () => import('./vistas/cliente.js?v=cd68dd0')] };
 const estado = { contenido: null, menu: null, usuario: null, vista: null };
 
 const ruta = (id, params = {}) => { const q = new URLSearchParams(params).toString(); return `#/${id}${q ? `?${q}` : ''}`; };
