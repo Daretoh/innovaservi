@@ -3,15 +3,15 @@
 // o seguir pidiendo). Tocar un bloque lo marca para el chat. Lo que se edita queda como borrador (se guarda solo) hasta
 // "Guardar versión", que arma el PDF o Word con el logo y el color de la empresa y lo deja como versión nueva.
 // Ruta: #/sst.editar?id=<documento>
-import { el } from '../../../core/ui/dom.js?v=9540066';
-import { icono } from '../../../core/ui/iconos.js?v=9540066';
-import { boton } from '../../../core/ui/tabla.js?v=9540066';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=9540066';
-import { avisar } from '../../../core/ui/aviso.js?v=9540066';
-import { urlFirmada } from '../../../core/adjuntos.js?v=9540066';
-import { fechaLarga, hoyISO } from '../../../core/ui/formato.js?v=9540066';
-import { guardarVersion, estadoDocumento } from './documentos.js?v=9540066';
-import { leerContenido, pedirIA, exportarWord, exportarPdf, descargar, nombreArchivo, esDocx, esPdf, MIME_DOCX } from '../revisar-ia.js?v=9540066';
+import { el } from '../../../core/ui/dom.js?v=76c5d2a';
+import { icono } from '../../../core/ui/iconos.js?v=76c5d2a';
+import { boton } from '../../../core/ui/tabla.js?v=76c5d2a';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=76c5d2a';
+import { avisar } from '../../../core/ui/aviso.js?v=76c5d2a';
+import { urlFirmada } from '../../../core/adjuntos.js?v=76c5d2a';
+import { fechaLarga, hoyISO } from '../../../core/ui/formato.js?v=76c5d2a';
+import { guardarVersion, estadoDocumento } from './documentos.js?v=76c5d2a';
+import { leerContenido, pedirIA, exportarWord, exportarPdf, descargar, nombreArchivo, esDocx, esPdf, MIME_DOCX } from '../revisar-ia.js?v=76c5d2a';
 
 const ACCION = { reemplazar: 'Cambiar', insertar_despues: 'Agregar', eliminar: 'Quitar', titulo_seccion: 'Cambiar título', nueva_seccion: 'Nueva sección' };
 const vacioBloque = () => ({ tipo: 'parrafo', texto: '', items: [], columnas: [], filas: [] });

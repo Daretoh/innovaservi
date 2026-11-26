@@ -1,12 +1,12 @@
 // Requisitos por mandante: resumen de cumplimiento de cada cliente que acredita a la empresa.
-import { el } from '../../../core/ui/dom.js?v=9540066';
-import { icono } from '../../../core/ui/iconos.js?v=9540066';
-import { nombreMes, moverMes } from '../../../core/ui/formato.js?v=9540066';
-import { cargarDocumentos, cumplimientoMandante, nombreTercero, mesActual } from '../datos.js?v=9540066';
-import { aQuienValidar } from '../trabajadores.js?v=9540066';
-import { avancePorMandante } from '../entregas.js?v=9540066';
-import { barraAvance, cargarDestinos } from '../../sst/acreditacion.js?v=9540066';
-import { fechaLarga } from '../../../core/ui/formato.js?v=9540066';
+import { el } from '../../../core/ui/dom.js?v=76c5d2a';
+import { icono } from '../../../core/ui/iconos.js?v=76c5d2a';
+import { nombreMes, moverMes } from '../../../core/ui/formato.js?v=76c5d2a';
+import { cargarDocumentos, cumplimientoMandante, nombreTercero, mesActual } from '../datos.js?v=76c5d2a';
+import { aQuienValidar } from '../trabajadores.js?v=76c5d2a';
+import { avancePorMandante } from '../entregas.js?v=76c5d2a';
+import { barraAvance, cargarDestinos } from '../../sst/acreditacion.js?v=76c5d2a';
+import { fechaLarga } from '../../../core/ui/formato.js?v=76c5d2a';
 
 export default async function vista(ctx) {
   const e = ctx.empresa.id;

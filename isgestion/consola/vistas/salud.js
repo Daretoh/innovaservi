@@ -2,10 +2,10 @@
 // Cloudflare, OpenFactura, Meta, Anthropic) las hace el guion local supervisor/revisar.mjs, que tiene los tokens; las
 // internas de la base (pg_cron, push, tamaño, RLS, consultas lentas) corren cada día con pg_cron o con el botón.
 // Esta pantalla solo lee con_salud_* (es_equipo()); no llama a ningún servicio externo.
-import { el } from '../../core/ui/dom.js?v=9540066';
-import { icono } from '../../core/ui/iconos.js?v=9540066';
-import { boton } from '../../core/ui/tabla.js?v=9540066';
-import { avisar } from '../../core/ui/aviso.js?v=9540066';
+import { el } from '../../core/ui/dom.js?v=76c5d2a';
+import { icono } from '../../core/ui/iconos.js?v=76c5d2a';
+import { boton } from '../../core/ui/tabla.js?v=76c5d2a';
+import { avisar } from '../../core/ui/aviso.js?v=76c5d2a';
 
 const ORDEN = ['Sitio', 'GitHub', 'Supabase', 'Seguridad', 'Pruebas', 'Migraciones', 'Edge Functions', 'Calidad', 'Rendimiento',
   'pg_cron', 'Push', 'Cloudflare', 'OpenFactura', 'WhatsApp', 'Anthropic', 'Correo', 'Respaldos'];

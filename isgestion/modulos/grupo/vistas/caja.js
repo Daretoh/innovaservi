@@ -5,11 +5,11 @@
 // 3. ¿Nos alcanza las próximas 8 semanas? (la semana más justa)
 // El detalle va plegado y cada empresa abre su Flujo de caja y su Balance (donde se anotan saldos y deudas).
 // Cada empresa se calcula con sus permisos (costos.aprobar); los números salen de modulos/costos/tesoreria.js.
-import { el } from '../../../core/ui/dom.js?v=9540066';
-import { icono } from '../../../core/ui/iconos.js?v=9540066';
-import { dinero, fechaCorta } from '../../../core/ui/formato.js?v=9540066';
-import { empresasCon, ctxDe, marcaEmpresa, enlaceEmpresa } from '../empresas.js?v=9540066';
-import { calcularFlujo, calcularBalance } from '../../costos/tesoreria.js?v=9540066';
+import { el } from '../../../core/ui/dom.js?v=76c5d2a';
+import { icono } from '../../../core/ui/iconos.js?v=76c5d2a';
+import { dinero, fechaCorta } from '../../../core/ui/formato.js?v=76c5d2a';
+import { empresasCon, ctxDe, marcaEmpresa, enlaceEmpresa } from '../empresas.js?v=76c5d2a';
+import { calcularFlujo, calcularBalance } from '../../costos/tesoreria.js?v=76c5d2a';
 
 const SEMANAS = 8;
 

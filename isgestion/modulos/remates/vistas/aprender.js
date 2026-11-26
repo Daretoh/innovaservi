@@ -4,13 +4,13 @@
 // enlaces a cada pantalla, 5) prueba corta con respuestas explicadas. Todo se calcula con las mismas funciones de la
 // página (datos.js), así lo que se aprende es exactamente lo que hace la lista.
 // Ruta: #/remates.aprender
-import { el } from '../../../core/ui/dom.js?v=9540066';
-import { icono } from '../../../core/ui/iconos.js?v=9540066';
-import { dinero } from '../../../core/ui/formato.js?v=9540066';
+import { el } from '../../../core/ui/dom.js?v=76c5d2a';
+import { icono } from '../../../core/ui/iconos.js?v=76c5d2a';
+import { dinero } from '../../../core/ui/formato.js?v=76c5d2a';
 import {
   cargarEstilos, contexto, cargarOportunidades, calcular, puntaje, pct, chipPuntaje, minimoSobreAvaluo, REVISION, RIESGOS,
   fechaRemate, distanciaKm, km, nombreDe, ESTUDIO_ESTADOS,
-} from '../datos.js?v=9540066';
+} from '../datos.js?v=76c5d2a';
 
 // ---- 1. Las palabras: qué es, de dónde sale y dónde se ve
 const PALABRAS = [

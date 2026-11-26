@@ -1,11 +1,11 @@
 // Resultado por cliente (como Finanzas de InnovaGestión): ventas netas, costos directos de sus faenas, margen y
 // participación en las ventas, por mes o por año. Montos netos, sin IVA.
-import { el } from '../../../core/ui/dom.js?v=9540066';
-import { icono } from '../../../core/ui/iconos.js?v=9540066';
-import { listado, boton } from '../../../core/ui/tabla.js?v=9540066';
-import { avisar } from '../../../core/ui/aviso.js?v=9540066';
-import { dinero, hoyISO, nombreMes, moverMes, rangoMes } from '../../../core/ui/formato.js?v=9540066';
-import { pct } from '../datos.js?v=9540066';
+import { el } from '../../../core/ui/dom.js?v=76c5d2a';
+import { icono } from '../../../core/ui/iconos.js?v=76c5d2a';
+import { listado, boton } from '../../../core/ui/tabla.js?v=76c5d2a';
+import { avisar } from '../../../core/ui/aviso.js?v=76c5d2a';
+import { dinero, hoyISO, nombreMes, moverMes, rangoMes } from '../../../core/ui/formato.js?v=76c5d2a';
+import { pct } from '../datos.js?v=76c5d2a';
 
 const estado = { modo: 'mes', mes: hoyISO().slice(0, 7), anio: Number(hoyISO().slice(0, 4)) };
 
@@ -30,7 +30,7 @@ export default async function vista(ctx) {
     el('strong', {}, anual ? String(estado.anio) : nombreMes(estado.mes)),
     el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Siguiente', onclick: () => mover(1) }, icono('derecha')));
   const acciones = [segmento, nav];
-  if (ctx.puede('resultados', 'exportar') && filas.length) acciones.push(boton('Excel', { icono: 'descargar', onclick: () => import('../../../core/excel.js?v=9540066').then(({ exportarExcel }) => exportarExcel(ctx, {
+  if (ctx.puede('resultados', 'exportar') && filas.length) acciones.push(boton('Excel', { icono: 'descargar', onclick: () => import('../../../core/excel.js?v=76c5d2a').then(({ exportarExcel }) => exportarExcel(ctx, {
     titulo: 'Resultado por cliente', subtitulo: `${anual ? estado.anio : nombreMes(estado.mes)} · montos netos, sin IVA`, nombre: `resultado-por-cliente-${anual ? estado.anio : estado.mes}`,
     columnas: ['Cliente', { t: 'Ventas', tipo: 'dinero' }, { t: 'Costos directos', tipo: 'dinero' }, { t: 'Margen', tipo: 'dinero' }, '% de las ventas'],
     filas: filas.map((r) => [r.nombre, r.ventas, r.costos, r.margen, pct(r.ventas, total)]),

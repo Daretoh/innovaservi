@@ -1,7 +1,7 @@
 // Datos comunes de Postulantes: etapas y procesos de la empresa, nombres y el formulario del postulante.
-import { abrirFormulario } from '../../core/ui/modal.js?v=9540066';
-import { avisar } from '../../core/ui/aviso.js?v=9540066';
-import { telefono, campoTelefono } from '../../core/ui/formato.js?v=9540066';
+import { abrirFormulario } from '../../core/ui/modal.js?v=76c5d2a';
+import { avisar } from '../../core/ui/aviso.js?v=76c5d2a';
+import { telefono, campoTelefono } from '../../core/ui/formato.js?v=76c5d2a';
 
 export const FUENTES = [['directo', 'Contacto directo'], ['referido', 'Referido'], ['portal', 'Portal de empleo'], ['ficha', 'Ficha de ingreso'], ['otro', 'Otro']];
 export const nombreFuente = Object.fromEntries(FUENTES);

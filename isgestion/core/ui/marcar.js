@@ -3,8 +3,8 @@
 //   const archivo = await marcarFoto(url, { titulo: 'Marcar foto', colorEmpresa: ctx.empresa.color });
 // Cada trazo se guarda como figura y se vuelve a pintar entero (Deshacer y Borrar todo no pierden calidad). La capa usa
 // los estilos oscuros de la cámara (.cam-capa) más .mar-*.
-import { el } from './dom.js?v=9540066';
-import { icono } from './iconos.js?v=9540066';
+import { el } from './dom.js?v=76c5d2a';
+import { icono } from './iconos.js?v=76c5d2a';
 
 const LADO = 2000;   // lado mayor del lienzo
 const HERRAMIENTAS = [['lapiz', 'Lápiz', 'lapiz'], ['flecha', 'Flecha', 'flecha'], ['circulo', 'Círculo', 'circulo'], ['rect', 'Rectángulo', 'rectangulo'], ['texto', 'Texto', 'texto']];
