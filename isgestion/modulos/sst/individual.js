@@ -4,15 +4,15 @@
 // por trabajador y se envía a firmar por WhatsApp: con una sola firma su sello queda bajo cada documento (función firmar).
 // Los documentos salen de Prevención SST → Documentos preventivos (última versión en PDF) o de un PDF que se sube aquí.
 // pdf-lib 1.17.1 fijo desde cdnjs, se carga solo al usarlo.
-import { el } from '../../core/ui/dom.js?v=419b261';
-import { icono } from '../../core/ui/iconos.js?v=419b261';
-import { boton } from '../../core/ui/tabla.js?v=419b261';
-import { avisar } from '../../core/ui/aviso.js?v=419b261';
-import { hoyISO, fechaLarga } from '../../core/ui/formato.js?v=419b261';
-import { urlFirmada, subirArchivo, eliminarArchivo } from '../../core/adjuntos.js?v=419b261';
-import { enviarVarios } from '../../core/firmas.js?v=419b261';
-import { cargarPlantillas, pdfDePlantilla } from '../documentos/editor.js?v=419b261';
-import { cargarDestinos, selectDestino, leerDestino } from './acreditacion.js?v=419b261';
+import { el } from '../../core/ui/dom.js?v=35a39c1';
+import { icono } from '../../core/ui/iconos.js?v=35a39c1';
+import { boton } from '../../core/ui/tabla.js?v=35a39c1';
+import { avisar } from '../../core/ui/aviso.js?v=35a39c1';
+import { hoyISO, fechaLarga } from '../../core/ui/formato.js?v=35a39c1';
+import { urlFirmada, subirArchivo, eliminarArchivo } from '../../core/adjuntos.js?v=35a39c1';
+import { enviarVarios } from '../../core/firmas.js?v=35a39c1';
+import { cargarPlantillas, pdfDePlantilla } from '../documentos/editor.js?v=35a39c1';
+import { cargarDestinos, selectDestino, leerDestino } from './acreditacion.js?v=35a39c1';
 
 const PDFLIB = 'https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js';
 const MM = 72 / 25.4;
@@ -157,7 +157,7 @@ const bajar = async (ctx, ruta) => {
 
 // lote / destino: agregar trabajadores a una entrega que ya existe (mismo lote y acreditación); personas: preelegidas
 export async function abrirEntregaIndividual(ctx, { alGuardado = null, lote: loteFijo = null, destino: destinoFijo = null, personas: preelegidas = [] } = {}) {
-  if (!document.getElementById('sst-individual-css')) document.head.append(el('link', { id: 'sst-individual-css', rel: 'stylesheet', href: new URL('./individual.css?v=419b261', import.meta.url).href }));
+  if (!document.getElementById('sst-individual-css')) document.head.append(el('link', { id: 'sst-individual-css', rel: 'stylesheet', href: new URL('./individual.css?v=35a39c1', import.meta.url).href }));
   const e = ctx.empresa.id;
   const [vinc, docsR, gen] = await Promise.all([
     ctx.api.from('persona_empresa').select('persona_id, cargo, estado, personas(nombres, apellido_paterno, apellido_materno, rut, telefono)').eq('empresa_id', e).is('deleted_at', null),
@@ -224,7 +224,7 @@ export async function abrirEntregaIndividual(ctx, { alGuardado = null, lote: lot
 
   // Documentos por cargo (SST 010): cada trabajador recibe los de su cargo (para la acreditación elegida, o los generales),
   // más los que se marquen abajo para todos. "IRL propia" pide subir la IRL de cada persona, en el formato que usan.
-  const { matrizCargos } = await import('./vistas/cargos.js?v=419b261');
+  const { matrizCargos } = await import('./vistas/cargos.js?v=35a39c1');
   let matriz = { filas: [], docsDe: () => [] };
   const irlDe = new Map();   // persona → { titulo, bytes }
   const porCargo = el('input', { type: 'checkbox', checked: true });

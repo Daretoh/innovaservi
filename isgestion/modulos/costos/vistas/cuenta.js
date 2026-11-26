@@ -4,14 +4,15 @@
 // Pestañas: Resumen mensual (solo lectura, como la planilla "Resumen D&P": por mes sus trabajos, compras y pagos con
 // saldo acumulado) y Movimientos (registrar pago, dejar al día). Se abre desde Pagos (sin opción nueva en el menú).
 // Ruta: #/costos.cuenta?t=<tercero>
-import { el } from '../../../core/ui/dom.js?v=419b261';
-import { icono } from '../../../core/ui/iconos.js?v=419b261';
-import { boton } from '../../../core/ui/tabla.js?v=419b261';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=419b261';
-import { avisar } from '../../../core/ui/aviso.js?v=419b261';
-import { subirArchivo } from '../../../core/adjuntos.js?v=419b261';
-import { dinero, fechaLarga, hoyISO, nombreMes } from '../../../core/ui/formato.js?v=419b261';
-import { nombreTercero, nombreMedio, MEDIOS } from '../datos.js?v=419b261';
+import { el } from '../../../core/ui/dom.js?v=35a39c1';
+import { icono } from '../../../core/ui/iconos.js?v=35a39c1';
+import { boton } from '../../../core/ui/tabla.js?v=35a39c1';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=35a39c1';
+import { avisar } from '../../../core/ui/aviso.js?v=35a39c1';
+import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=35a39c1';
+import { comprimirFoto, esPdf } from '../../../core/imagenes.js?v=35a39c1';
+import { dinero, fechaLarga, hoyISO, nombreMes } from '../../../core/ui/formato.js?v=35a39c1';
+import { nombreTercero, nombreMedio, MEDIOS } from '../datos.js?v=35a39c1';
 
 let pestana = 'resumen', tercero = null, mesFiltro = '', buscar = '';   // vuelve al resumen (todos los meses) al abrir otra cuenta
 const TIPO = { trabajo: ['Factura o trabajo', 'chip-ok'], compra: ['Compra a su cuenta', 'chip-prox'], abono: ['Pago', 'chip-pend'] };
@@ -35,7 +36,7 @@ export default async function vista(ctx) {
   const ordenes = [...new Set(movs.map((m) => m.orden_id).filter(Boolean))];
   const [regs, pags, ords] = await Promise.all([
     ids('trabajo').length + ids('compra').length ? ctx.api.from('fin_registros').select('id, notas, terceros:tercero_id(razon_social, nombre_fantasia), fin_categorias(nombre)').in('id', [...ids('trabajo'), ...ids('compra')]) : { data: [] },
-    ids('abono').length ? ctx.api.from('fin_pagos').select('id, medio').in('id', ids('abono')) : { data: [] },
+    ids('abono').length ? ctx.api.from('fin_pagos').select('id, medio, archivo, adjuntos').in('id', ids('abono')) : { data: [] },
     ordenes.length ? ctx.api.from('tal_ordenes').select('id, estado, terceros:tercero_id(razon_social, nombre_fantasia), tal_vehiculos:vehiculo_id(marca, modelo, patente)').in('id', ordenes) : { data: [] },
   ]);
   const porId = (r) => new Map((r.error ? [] : r.data ?? []).map((x) => [x.id, x]));   // sin Taller instalado, la orden no viene
@@ -109,7 +110,7 @@ export default async function vista(ctx) {
       avisar('Cuenta al día.'); ctx.refrescar();
     },
   });
-  const excel = () => import('../../../core/excel.js?v=419b261').then(({ nuevoExcel }) => nuevoExcel(ctx, { titulo: `Cuenta de ${nombreTercero(ter)}`, subtitulo: `Saldo ${saldo >= 0 ? 'a pagarle' : 'a favor de la empresa'}: ${dinero(Math.abs(saldo))}` }))
+  const excel = () => import('../../../core/excel.js?v=35a39c1').then(({ nuevoExcel }) => nuevoExcel(ctx, { titulo: `Cuenta de ${nombreTercero(ter)}`, subtitulo: `Saldo ${saldo >= 0 ? 'a pagarle' : 'a favor de la empresa'}: ${dinero(Math.abs(saldo))}` }))
     .then(async (x) => {
       x.tabla({ titulo: 'Resumen mensual (saldo)', columnas: ['Mes', { t: 'Saldo inicial', tipo: 'dinero' }, { t: 'Trabajos', tipo: 'dinero' }, { t: 'Compras a su cuenta', tipo: 'dinero' }, { t: 'Pagos', tipo: 'dinero' }, { t: 'Saldo final', tipo: 'dinero' }],
         filas: resumen.map((r) => [nombreMes(r.m), r.saldo - r.neto, r.trabajos, -r.compras, -r.abonos, r.saldo]) });
@@ -169,8 +170,31 @@ export default async function vista(ctx) {
     ['Monto cobrado', (m) => dinero(m.monto), true]];
   const COL_COMPRAS = [['Fecha', (m) => fechaLarga(m.fecha)], ['Producto / ítem', (m) => info(m).producto], ['Ubicación compra', (m) => info(m).ubicacion],
     ['Destino', (m) => info(m).destino], ['Categoría', (m) => info(m).categoria], ['Monto', (m) => dinero(m.monto), true]];
+  // (2026-11-26, Enzo) El comprobante de cada pago va en el pago: se ve o se sube aquí mismo
+  const verArchivo = async (ruta) => { try { window.open(await urlFirmada(ctx.api, ruta, 300), '_blank', 'noopener'); } catch (err) { avisar(err.message, 'error'); } };
+  const subirComprobante = (m) => {
+    const entrada = el('input', { type: 'file', accept: 'image/*,application/pdf', hidden: true, onchange: async () => {
+      const a = entrada.files?.[0]; if (!a) return;
+      let ruta = null;
+      try {
+        const archivo = esPdf(a) ? a : await comprimirFoto(a, 2000);
+        ({ ruta } = await subirArchivo(ctx.api, { empresaId: e, modulo: 'costos', archivo, tabla: 'fin_pagos', registroId: m.id }));
+        const { error } = await ctx.api.from('fin_pagos').update({ archivo: ruta }).eq('id', m.id);
+        if (error) throw new Error(error.message);
+        avisar('Comprobante guardado.'); ctx.refrescar();
+      } catch (err) { if (ruta) eliminarArchivo(ctx.api, ruta).catch(() => {}); avisar(err.message, 'error'); }
+    } });
+    entrada.click();
+  };
+  const comprobante = (m) => {
+    const p = pag.get(m.id) ?? {};
+    const rutas = [p.archivo, ...(p.adjuntos ?? [])].filter(Boolean);
+    if (rutas.length) return el('span', {}, rutas.map((ruta, i) => el('button', { type: 'button', class: 'boton-icono', title: i ? 'Ver otro respaldo' : 'Ver comprobante', 'aria-label': 'Ver comprobante', onclick: () => verArchivo(ruta) }, icono('ojo', { tam: 16 }))));
+    return ctx.puede('costos', 'editar') ? el('button', { type: 'button', class: 'boton boton-secundario boton-chico', onclick: () => subirComprobante(m) }, icono('mas', { tam: 14 }), 'Subir')
+      : el('span', { class: 'texto-error texto-chico' }, 'Falta');
+  };
   const COL_PAGOS = [['Fecha', (m) => fechaLarga(m.fecha)], ['Detalle', (m) => m.concepto], ['Medio', (m) => info(m).medio],
-    ['Estado', (m) => (m.estado === 'por_validar' ? 'Por validar' : 'Validado')], ['Monto', (m) => dinero(m.monto), true]];
+    ['Estado', (m) => (m.estado === 'por_validar' ? 'Por validar' : 'Validado')], ['Comprobante', comprobante], ['Monto', (m) => dinero(m.monto), true]];
   // Tabla de saldo (como una amortización): saldo inicial + trabajos − compras − pagos = saldo final de cada mes
   const cuantos = (m, k, s, p) => { const n = movs.filter((x) => x.tipo === k && x.fecha.startsWith(m)).length; return n ? `${n} ${n === 1 ? s : p}` : null; };
   const vistaResumen = () => el('div', { class: 'ficha doc-grupo' },

@@ -2,9 +2,9 @@
 // costos) y de dónde salen las oportunidades, con lo que se puede automatizar, lo pagado y lo que se revisa a mano.
 // Información general (no es asesoría legal ni financiera); revisada el 2026-11-23.
 // Ruta: #/remates.guia
-import { el } from '../../../core/ui/dom.js?v=419b261';
-import { icono } from '../../../core/ui/iconos.js?v=419b261';
-import { cargarEstilos } from '../datos.js?v=419b261';
+import { el } from '../../../core/ui/dom.js?v=35a39c1';
+import { icono } from '../../../core/ui/iconos.js?v=35a39c1';
+import { cargarEstilos } from '../datos.js?v=35a39c1';
 
 const a = (href, t) => el('a', { href, target: '_blank', rel: 'noopener' }, t);
 

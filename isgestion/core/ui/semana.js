@@ -1,10 +1,10 @@
 // Navegador de semana común (2026-11-24, pedido de Enzo: "Semana 48 · 23-11-2026 al 29-11-2026" en una sola línea se
 // leía saturado). Una tarjeta con la flecha a cada lado, arriba "Semana 48" chico y abajo el rango "23 – 29 nov 2026";
 // "Hoy" solo si no es la semana actual. Y la cabecera de cada día como "Martes 24 nov" (con "Hoy" si corresponde).
-import { el } from './dom.js?v=419b261';
-import { icono } from './iconos.js?v=419b261';
-import { boton } from './tabla.js?v=419b261';
-import { numSemana, sumarDias, lunesDe, hoyISO, diaSemana, fechaCorta } from './formato.js?v=419b261';
+import { el } from './dom.js?v=35a39c1';
+import { icono } from './iconos.js?v=35a39c1';
+import { boton } from './tabla.js?v=35a39c1';
+import { numSemana, sumarDias, lunesDe, hoyISO, diaSemana, fechaCorta } from './formato.js?v=35a39c1';
 
 const DIAS_LARGOS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 export const nombreDiaLargo = (iso) => DIAS_LARGOS[diaSemana(iso)];
