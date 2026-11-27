@@ -2,15 +2,15 @@
 // marca con los 4 últimos dígitos del RUT. La primera marca del día es la entrada y la siguiente la salida (la hora
 // la pone el servidor); la pareja genera la hora en Registro de horas con esa faena. Cuadrilla planificada con su
 // estado, quitar una marca propia de hoy y bitácora de la faena.
-import { el } from '../../../core/ui/dom.js?v=2d079ab';
-import { icono } from '../../../core/ui/iconos.js?v=2d079ab';
-import { boton } from '../../../core/ui/tabla.js?v=2d079ab';
-import { avisar } from '../../../core/ui/aviso.js?v=2d079ab';
-import { hoyISO, fechaLarga, nombreDia, hhmm } from '../../../core/ui/formato.js?v=2d079ab';
+import { el } from '../../../core/ui/dom.js?v=5ec3c84';
+import { icono } from '../../../core/ui/iconos.js?v=5ec3c84';
+import { boton } from '../../../core/ui/tabla.js?v=5ec3c84';
+import { avisar } from '../../../core/ui/aviso.js?v=5ec3c84';
+import { hoyISO, fechaLarga, nombreDia, hhmm } from '../../../core/ui/formato.js?v=5ec3c84';
 
 const CLAVE = 'isg.terreno.faena';
 const hora = (ts) => new Date(ts).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
-const ROL = { op: 'Operario', sup: 'Supervisor', prev: 'Prevención' };
+const ROL = { op: 'Operario', cap: 'Capataz', sup: 'Supervisor', prev: 'Prevención' };
 
 export default async function vista(ctx) {
   const e = ctx.empresa.id;

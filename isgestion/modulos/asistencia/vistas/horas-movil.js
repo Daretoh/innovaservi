@@ -6,12 +6,12 @@
 // las horas se ponen después. "Agregar persona en esta faena" hace lo mismo con esa faena.
 // Mismos datos y reglas que la planilla de escritorio (horas.js): las del marcaje se corrigen en Marcajes y los fijos con
 // turno quedan presentes "según horario".
-import { el } from '../../../core/ui/dom.js?v=2d079ab';
-import { icono } from '../../../core/ui/iconos.js?v=2d079ab';
-import { boton } from '../../../core/ui/tabla.js?v=2d079ab';
-import { avisar } from '../../../core/ui/aviso.js?v=2d079ab';
-import { hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, horas, aMin, hhmm, diaLocal } from '../../../core/ui/formato.js?v=2d079ab';
-import { estado, minutosRegistro, ausente, eliminar, campoFiltroFaena, pasaFiltroFaena, resumenDia, vinculosAsistencia, horaTs, registrarSalida, anularEntrada } from './horas.js?v=2d079ab';
+import { el } from '../../../core/ui/dom.js?v=5ec3c84';
+import { icono } from '../../../core/ui/iconos.js?v=5ec3c84';
+import { boton } from '../../../core/ui/tabla.js?v=5ec3c84';
+import { avisar } from '../../../core/ui/aviso.js?v=5ec3c84';
+import { hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, horas, aMin, hhmm, diaLocal } from '../../../core/ui/formato.js?v=5ec3c84';
+import { estado, minutosRegistro, ausente, eliminar, campoFiltroFaena, pasaFiltroFaena, resumenDia, vinculosAsistencia, horaTs, registrarSalida, anularEntrada } from './horas.js?v=5ec3c84';
 
 const pantalla = { pestana: null, buscar: '', marcados: new Set(), cerradas: new Set(), diaAbierto: null, faenaDestino: null, nuevas: [], enfocar: null };   // faenaDestino: faena a la que se agrega desde Sin horas; nuevas: filas vacías por llenar   // cerradas: faenas plegadas a mano (día|faena)
 const DIAS_LARGOS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];

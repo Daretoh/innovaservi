@@ -4,14 +4,14 @@
 // con su saldo en palabras: le debemos, pagado de más (falta su factura) o al día. Su tarjeta abre la cuenta del
 // proveedor (costos.cuenta), donde se registra el pago con su comprobante. Al final, los demás proveedores con algo
 // por pagar. El listado de todos los pagos registrados queda plegado.
-import { el } from '../../../core/ui/dom.js?v=2d079ab';
-import { icono } from '../../../core/ui/iconos.js?v=2d079ab';
-import { listado, boton } from '../../../core/ui/tabla.js?v=2d079ab';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=2d079ab';
-import { avisar } from '../../../core/ui/aviso.js?v=2d079ab';
-import { urlFirmada } from '../../../core/adjuntos.js?v=2d079ab';
-import { dinero, fechaLarga, hoyISO, rangoMes, moverMes, nombreMes, diaLocal } from '../../../core/ui/formato.js?v=2d079ab';
-import { nombreTercero, nombreMedio } from '../datos.js?v=2d079ab';
+import { el } from '../../../core/ui/dom.js?v=5ec3c84';
+import { icono } from '../../../core/ui/iconos.js?v=5ec3c84';
+import { listado, boton } from '../../../core/ui/tabla.js?v=5ec3c84';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=5ec3c84';
+import { avisar } from '../../../core/ui/aviso.js?v=5ec3c84';
+import { urlFirmada } from '../../../core/adjuntos.js?v=5ec3c84';
+import { dinero, fechaLarga, hoyISO, rangoMes, moverMes, nombreMes, diaLocal } from '../../../core/ui/formato.js?v=5ec3c84';
+import { nombreTercero, nombreMedio } from '../datos.js?v=5ec3c84';
 
 const filtro = { estado: 'por_validar' };
 const ESTADOS = [['por_validar', 'Por validar'], ['validado', 'Validados'], ['rechazado', 'Rechazados']];

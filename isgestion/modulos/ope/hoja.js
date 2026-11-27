@@ -6,25 +6,26 @@
 // - Celda: buscador con los trabajadores activos de la empresa (core/ui/combo.js; libres del día primero). Nunca se
 //   guarda un nombre que no sea de un trabajador: si no calza, queda escrito en rojo, sin guardar. Se muestra el
 //   nombre y apellido (con la inicial del segundo apellido si se repite); el texto entre paréntesis de Excel, ej. "Melvin (Maquinas)", no cuenta.
-// - Cargo: cada persona lleva uno de los roles operativos (Op, Sup, Prev) en su celda; parte con su rol de Roles
-//   operativos y se cambia a mano en esa misma celda. Supervisores en rojo y prevencionistas en azul, como en Excel.
+// - Cargo: cada persona lleva uno de los roles operativos (Op, Cap, Sup, Prev) en su celda. Se elige a mano por
+//   faena-día, sin importar el cargo de su ficha (cualquiera puede ir de capataz ese día); parte con el sugerido, que es
+//   el de Roles operativos o, si no se eligió, el que se deduce del cargo de RRHH, y el menú lo marca como "sugerido". Supervisores en rojo y prevencionistas en azul, como en Excel.
 // - Teclado y mouse de planilla: flechas, Enter (elige y baja) y Tab (elige y pasa a la columna siguiente), Shift +
 //   flechas o arrastrar para marcar, Ctrl + C / V (un bloque pegado desde Excel cae columna por columna en las faenas
 //   y fila por fila hacia abajo), Supr quita a las marcadas y el cuadrito de la celda activa copia a la persona hacia
 //   el lado (otros días) o hacia abajo. Quien ya está en una faena no se repite (se salta).
 // - Se guarda solo al elegir o salir de la celda (la faena-día se crea una sola vez); las enviadas quedan de solo lectura.
-import { el } from '../../core/ui/dom.js?v=2d079ab';
-import { icono } from '../../core/ui/iconos.js?v=2d079ab';
-import { avisar } from '../../core/ui/aviso.js?v=2d079ab';
-import { normalizar } from '../../core/ui/combo.js?v=2d079ab';
-import { nombreDia, hhmm, sumarDias, hoyISO, esFinde } from '../../core/ui/formato.js?v=2d079ab';
-import { ROLES, nombreRol, nombreCompleto, faenasDelDia, etiquetaFaena, horarioDe, dotacionDe, dotTotal, turno } from './datos.js?v=2d079ab';
+import { el } from '../../core/ui/dom.js?v=5ec3c84';
+import { icono } from '../../core/ui/iconos.js?v=5ec3c84';
+import { avisar } from '../../core/ui/aviso.js?v=5ec3c84';
+import { normalizar } from '../../core/ui/combo.js?v=5ec3c84';
+import { nombreDia, hhmm, sumarDias, hoyISO, esFinde } from '../../core/ui/formato.js?v=5ec3c84';
+import { ROLES, nombreRol, nombreCompleto, faenasDelDia, etiquetaFaena, horarioDe, dotacionDe, dotTotal, turno } from './datos.js?v=5ec3c84';
 
 if (!document.getElementById('ope-hoja-css')) {
-  document.head.append(el('link', { id: 'ope-hoja-css', rel: 'stylesheet', href: new URL('./hoja.css?v=2d079ab', import.meta.url).href }));
+  document.head.append(el('link', { id: 'ope-hoja-css', rel: 'stylesheet', href: new URL('./hoja.css?v=5ec3c84', import.meta.url).href }));
 }
 
-const CORTO = { op: 'Op', sup: 'Sup', prev: 'Prev' };
+const CORTO = { op: 'Op', cap: 'Cap', sup: 'Sup', prev: 'Prev' };
 const PLEGADOS = 'isg.plan.hoja.plegados';   // { fecha: true/false } elegido a mano; sin elegir, los días pasados van plegados
 const leerPlegados = () => { try { return JSON.parse(localStorage.getItem(PLEGADOS) ?? '{}') ?? {}; } catch { return {}; } };
 const guardarPlegados = (m) => { try { const k = Object.keys(m).sort().slice(-60); localStorage.setItem(PLEGADOS, JSON.stringify(Object.fromEntries(k.map((x) => [x, m[x]])))); } catch { /* sin almacenamiento */ } };
@@ -303,7 +304,8 @@ export function hojaSemana(ctx, { lunes, base, semana, editable }) {
     const r = x.td.getBoundingClientRect();
     menuRol = el('div', { class: 'hs-menu-rol', role: 'menu', style: `top:${Math.round(r.bottom + 2)}px;left:${Math.round(Math.max(8, Math.min(r.right - 170, innerWidth - 178)))}px` },
       ROLES.map(([k, nombre]) => el('button', { type: 'button', role: 'menuitemradio', 'aria-checked': String(x.rol === k), class: `rol-${k}`,
-        onclick: () => { cerrarMenuRol(); confirmarRol(x, k); x.inPer.focus(); } }, el('span', { class: 'hs-menu-marca' }, x.rol === k ? icono('check', { tam: 14 }) : null), nombre)));
+        onclick: () => { cerrarMenuRol(); confirmarRol(x, k); x.inPer.focus(); } }, el('span', { class: 'hs-menu-marca' }, x.rol === k ? icono('check', { tam: 14 }) : null), nombre,
+          activoDe.get(x.persona_id)?.rol === k ? el('span', { class: 'hs-menu-sug' }, 'sugerido') : null)));
     menuRol.hsCelda = x;
     document.body.append(menuRol);
     menuRol.querySelector('[aria-checked="true"]')?.focus();
@@ -503,7 +505,7 @@ export function hojaSemana(ctx, { lunes, base, semana, editable }) {
         todo,
         el('details', { class: 'hs-atajos' }, el('summary', {}, 'Atajos'), el('p', { class: 'pl-ayuda' },
         el('kbd', {}, '↑↓←→'), ' moverse · ', el('kbd', {}, 'Enter'), ' elige y baja · ', el('kbd', {}, 'Tab'), ' elige y pasa a la faena siguiente · ', el('kbd', {}, 'Shift'), ' + flechas o arrastrar: marcar · ',
-        el('kbd', {}, 'Ctrl'), ' + ', el('kbd', {}, 'C'), ' / ', el('kbd', {}, 'V'), ' copiar y pegar (también un bloque desde Excel) · ', el('kbd', {}, 'Supr'), ' quita a las marcadas · el cuadrito copia a la persona hacia el lado o hacia abajo · el cargo (Op, Sup, Prev) se cambia con un clic en él · clic en el día lo pliega · se guarda solo')))),
+        el('kbd', {}, 'Ctrl'), ' + ', el('kbd', {}, 'C'), ' / ', el('kbd', {}, 'V'), ' copiar y pegar (también un bloque desde Excel) · ', el('kbd', {}, 'Supr'), ' quita a las marcadas · el cuadrito copia a la persona hacia el lado o hacia abajo · el cargo (Op, Cap, Sup, Prev) se cambia con un clic en él · clic en el día lo pliega · se guarda solo')))),
     huboCambios: () => cambios > 0,
     terminar: async () => { cerrarMenuRol(); document.activeElement?.blur?.(); document.removeEventListener('mouseup', soltar); await new Promise((r) => setTimeout(r, 200)); await Promise.all(cols.flatMap((b) => b.filas.map((x) => x.cola))); },
   };

@@ -1,13 +1,13 @@
 // Flujo de caja de 8 semanas (como Finanzas de InnovaGestión): saldo de hoy en bancos y caja + cobros esperados −
 // pagos comprometidos (facturas por pagar, cuotas de deudas, gastos fijos aún no generados y sueldos estimados).
 // Lo atrasado (vencido) cae en la primera semana. Solo con costos.aprobar.
-import { el } from '../../../core/ui/dom.js?v=2d079ab';
-import { icono } from '../../../core/ui/iconos.js?v=2d079ab';
-import { boton } from '../../../core/ui/tabla.js?v=2d079ab';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=2d079ab';
-import { avisar } from '../../../core/ui/aviso.js?v=2d079ab';
-import { dinero, fechaCorta, fechaLarga } from '../../../core/ui/formato.js?v=2d079ab';
-import { calcularFlujo } from '../tesoreria.js?v=2d079ab';
+import { el } from '../../../core/ui/dom.js?v=5ec3c84';
+import { icono } from '../../../core/ui/iconos.js?v=5ec3c84';
+import { boton } from '../../../core/ui/tabla.js?v=5ec3c84';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=5ec3c84';
+import { avisar } from '../../../core/ui/aviso.js?v=5ec3c84';
+import { dinero, fechaCorta, fechaLarga } from '../../../core/ui/formato.js?v=5ec3c84';
+import { calcularFlujo } from '../tesoreria.js?v=5ec3c84';
 
 const SEMANAS = 8;
 

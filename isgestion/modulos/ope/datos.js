@@ -1,7 +1,8 @@
 // Datos y reglas compartidas de Faenas y planificación.
-import { aMin, hhmm, sumarDias, numSemana, fechaCorta } from '../../core/ui/formato.js?v=2d079ab';
+import { aMin, hhmm, sumarDias, numSemana, fechaCorta } from '../../core/ui/formato.js?v=5ec3c84';
 
-export const ROLES = [['op', 'Operario', 'Operarios'], ['sup', 'Supervisor', 'Supervisores'], ['prev', 'Prevencionista', 'Prevencionistas']];
+// Roles operativos (Faenas 008, 2026-11-27: Capataz es rol propio; antes contaba como supervisor)
+export const ROLES = [['op', 'Operario', 'Operarios'], ['cap', 'Capataz', 'Capataces'], ['sup', 'Supervisor', 'Supervisores'], ['prev', 'Prevencionista', 'Prevencionistas']];
 export const nombreRol = Object.fromEntries(ROLES.map(([k, s]) => [k, s]));
 export const nombreCompleto = (p) => [p.nombres, p.apellido_paterno, p.apellido_materno].filter(Boolean).join(' ');
 export const nombreCorto = (p) => `${p.nombres.split(' ')[0]} ${p.apellido_paterno}`;
@@ -10,7 +11,8 @@ export const nombreCorto = (p) => `${p.nombres.split(' ')[0]} ${p.apellido_pater
 export function rolPorCargo(cargo) {
   const n = String(cargo ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
   if (/prevenc/.test(n)) return 'prev';
-  if (/capataz|encargad|supervis|gerent|jefe/.test(n)) return 'sup';
+  if (/capataz/.test(n)) return 'cap';
+  if (/encargad|supervis|gerent|jefe/.test(n)) return 'sup';
   return 'op';
 }
 
@@ -21,7 +23,7 @@ export function turno(ini, fin) {
   return a >= 1080 || a < 360 || (fin && aMin(fin) < a) ? 'noche' : 'dia';
 }
 
-export const dotTotal = (d) => (Number(d?.op) || 0) + (Number(d?.sup) || 0) + (Number(d?.prev) || 0);
+export const dotTotal = (d) => ROLES.reduce((n, [k]) => n + (Number(d?.[k]) || 0), 0);
 export const dotTexto = (d) => ROLES.filter(([k]) => Number(d?.[k])).map(([k, s, pl]) => `${d[k]} ${(Number(d[k]) === 1 ? s : pl).toLowerCase()}`).join(' · ') || 'Sin dotación';
 
 // Trabajadores, clientes, sitios y roles casi no cambian: se guardan un minuto por empresa (planificación, editor de

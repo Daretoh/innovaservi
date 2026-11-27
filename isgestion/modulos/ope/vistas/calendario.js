@@ -3,15 +3,15 @@
 // varios días (⟶), ventana del día, detalle, formulario de trabajo (cliente, sitio sugerido, descripción, tareas,
 // fechas, horario con atajos, personas necesarias por rol, repetir) y borrar uno o toda la serie.
 // Los datos son las faenas (ope_faenas): lo que se pone aquí aparece en Planificación al armar la faena.
-import { el } from '../../../core/ui/dom.js?v=2d079ab';
-import { avisar } from '../../../core/ui/aviso.js?v=2d079ab';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=2d079ab';
-import { hhmm } from '../../../core/ui/formato.js?v=2d079ab';
-import { cargarBase } from '../datos.js?v=2d079ab';
+import { el } from '../../../core/ui/dom.js?v=5ec3c84';
+import { avisar } from '../../../core/ui/aviso.js?v=5ec3c84';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=5ec3c84';
+import { hhmm } from '../../../core/ui/formato.js?v=5ec3c84';
+import { cargarBase } from '../datos.js?v=5ec3c84';
 
 const MES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
 const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
-const ROLES = [['op', 'Operarios', '#7cb342'], ['sup', 'Supervisor', '#2563eb'], ['prev', 'Prevencionista', '#f59e0b']];
+const ROLES = [['op', 'Operarios', '#7cb342'], ['cap', 'Capataz', '#0d9488'], ['sup', 'Supervisor', '#2563eb'], ['prev', 'Prevencionista', '#f59e0b']];
 const estado = { ref: new Date(), vista: 'mes', buscar: '', anio: '' };   // se conserva al volver a la pantalla
 
 const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -27,10 +27,11 @@ function numSemanaISO(dt) {
   if (d.getUTCDay() !== 4) d.setUTCMonth(0, 1 + ((4 - d.getUTCDay()) + 7) % 7);
   return 1 + Math.round((jueves - d.getTime()) / 604800000);
 }
-const dotTotal = (d) => (d ? (+d.op || 0) + (+d.sup || 0) + (+d.prev || 0) : 0);
+const dotTotal = (d) => (d ? (+d.op || 0) + (+d.cap || 0) + (+d.sup || 0) + (+d.prev || 0) : 0);
 function dotTexto(d) {
   const p = [];
   if (d.op) p.push(`${d.op} operario${d.op === 1 ? '' : 's'}`);
+  if (d.cap) p.push(`${d.cap} capata${d.cap === 1 ? 'z' : 'ces'}`);
   if (d.sup) p.push(`${d.sup} supervisor${d.sup === 1 ? '' : 'es'}`);
   if (d.prev) p.push(`${d.prev} prevencionista${d.prev === 1 ? '' : 's'}`);
   return p.join(' · ');
@@ -51,7 +52,7 @@ const SVG = {
 function cargarEstilos() {
   if (document.getElementById('igcal-css')) return;
   const l = document.createElement('link');
-  l.id = 'igcal-css'; l.rel = 'stylesheet'; l.href = new URL('../calendario.css?v=2d079ab', import.meta.url).href;
+  l.id = 'igcal-css'; l.rel = 'stylesheet'; l.href = new URL('../calendario.css?v=5ec3c84', import.meta.url).href;
   document.head.append(l);
 }
 
@@ -85,7 +86,7 @@ export default async function vista(ctx) {
       return {
         id: f.id, fecha: f.fecha_inicio, fin: f.fecha_fin > f.fecha_inicio ? f.fecha_fin : '', serie: f.serie_id, hora: textoHora(f),
         titulo: f.titulo, ubic: c?.nombre ?? '', terceroId: f.tercero_id, sitio: sitio.get(f.sitio_id)?.nombre ?? '', sitioId: f.sitio_id,
-        color: c?.color ?? '#8b93a7', desc: f.descripcion ?? '', dot: { op: +f.dotacion?.op || 0, sup: +f.dotacion?.sup || 0, prev: +f.dotacion?.prev || 0 },
+        color: c?.color ?? '#8b93a7', desc: f.descripcion ?? '', dot: { op: +f.dotacion?.op || 0, cap: +f.dotacion?.cap || 0, sup: +f.dotacion?.sup || 0, prev: +f.dotacion?.prev || 0 },
         tareas: f.tareas ?? [], tchk: f.tareas_check ?? [], dias: f.dias?.length ? f.dias : null, raw: f,
       };
     });
@@ -273,7 +274,7 @@ export default async function vista(ctx) {
     grid.querySelectorAll('[data-anio]').forEach((b) => b.addEventListener('click', () => { estado.anio = b.dataset.anio; render(); }));
     grid.querySelector('.igcal-bexcel').addEventListener('click', async () => {
       try {
-        const { nuevoExcel } = await import('../../../core/excel.js?v=2d079ab');
+        const { nuevoExcel } = await import('../../../core/excel.js?v=5ec3c84');
         const x = await nuevoExcel(ctx, { titulo: 'Trabajos', subtitulo: `Búsqueda: "${buscador.value.trim()}"${estado.anio ? ` · ${estado.anio}` : ''} · ${res.length} trabajos` });
         x.tabla({ columnas: [{ t: 'Fecha', tipo: 'fecha' }, { t: 'Hasta', tipo: 'fecha' }, { t: 'Días', tipo: 'numero' }, 'Cliente', 'Sitio', 'Trabajo', 'Descripción'],
           filas: [...res].reverse().map((e) => [e.fecha, evFin(e), dias(e), e.ubic, e.sitio, e.titulo, e.desc]) });

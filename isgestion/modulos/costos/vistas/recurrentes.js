@@ -4,13 +4,13 @@
 // gasto queda ligado solo al recurrente si es de su proveedor (Costos 017, `recurrente_id` + `periodo`), o se elige a mano
 // en el gasto. Aquí se ve el estado del mes: falta cargar, cargado por pagar o pagado. Los avisos por push los manda la
 // base (`fin_rec_avisar`) a quien edita Costos.
-import { el } from '../../../core/ui/dom.js?v=2d079ab';
-import { icono } from '../../../core/ui/iconos.js?v=2d079ab';
-import { boton } from '../../../core/ui/tabla.js?v=2d079ab';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=2d079ab';
-import { avisar } from '../../../core/ui/aviso.js?v=2d079ab';
-import { dinero, fechaLarga, hoyISO, nombreMes, sumarDias } from '../../../core/ui/formato.js?v=2d079ab';
-import { cargarBase, nombreTercero, DOCS, proximoCobro, mensualCLP, tocaEnMes, fechaEnMes, CICLOS } from '../datos.js?v=2d079ab';
+import { el } from '../../../core/ui/dom.js?v=5ec3c84';
+import { icono } from '../../../core/ui/iconos.js?v=5ec3c84';
+import { boton } from '../../../core/ui/tabla.js?v=5ec3c84';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=5ec3c84';
+import { avisar } from '../../../core/ui/aviso.js?v=5ec3c84';
+import { dinero, fechaLarga, hoyISO, nombreMes, sumarDias } from '../../../core/ui/formato.js?v=5ec3c84';
+import { cargarBase, nombreTercero, DOCS, proximoCobro, mensualCLP, tocaEnMes, fechaEnMes, CICLOS } from '../datos.js?v=5ec3c84';
 
 const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 const TC_KEY = 'isg.costos.dolar';
@@ -45,7 +45,7 @@ export default async function vista(ctx) {
   // Pagos del mes por recurrente (Costos 019: puede haber varios, ej.: la contadora en dos transferencias)
   const delMes = new Map();
   for (const g of hechos.data ?? []) delMes.set(g.recurrente_id, [...(delMes.get(g.recurrente_id) ?? []), g]);
-  const tc = leerTc() || Math.round((await import('../../../core/economia.js?v=2d079ab').then((m) => m.dolarDelDia()).catch(() => 0)) ?? 0);
+  const tc = leerTc() || Math.round((await import('../../../core/economia.js?v=5ec3c84').then((m) => m.dolarDelDia()).catch(() => 0)) ?? 0);
 
   // Estado de este mes: no toca · falta cargar · cargado por pagar · pagado
   const estadoMes = (r) => {

@@ -1159,6 +1159,7 @@ a.ind-barra-fila:hover .ind-nombre { color: var(--empresa); }
 .faena-dotacion i.completa { background: var(--ok); }
 .mini-avatar { display: inline-grid; place-items: center; flex: none; width: 34px; height: 34px; border-radius: 50%; font-size: .78rem; font-weight: 800;
   color: #fff; background: var(--menu-fondo, #1c2b5a); }
+.mini-avatar.rol-cap { background: var(--prox); }
 .mini-avatar.rol-sup { background: var(--empresa); }
 .mini-avatar.rol-prev { background: var(--ok); }
 
@@ -1510,6 +1511,7 @@ body.hz-arrastrando, body.hz-arrastrando * { cursor: ns-resize !important; user-
 .plan-asignados { display: flex; flex-wrap: wrap; gap: 4px; }
 .plan-persona { display: inline-flex; align-items: center; font: inherit; font-size: .74rem; line-height: 1.2; padding: 2px 7px; border-radius: 999px;
   border: 1px solid var(--borde); background: var(--superficie); color: var(--texto); cursor: grab; user-select: none; }
+.plan-persona.rol-cap { border-color: var(--prox); }
 .plan-persona.rol-sup { border-color: var(--empresa); }
 .plan-persona.rol-prev { border-color: var(--ok); }
 .plan-persona.libre { background: var(--fondo-sutil); }

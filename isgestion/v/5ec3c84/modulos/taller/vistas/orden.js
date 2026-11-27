@@ -1,0 +1,587 @@
+// Orden de trabajo: datos, servicios con precio, tareas, tiempos, fotos y cobro.
+// Cabecera con placa y línea de avance por estado (con la hora de cada paso); checklist táctil con avance;
+// fotos con zona para arrastrar y soltar.
+// Ruta: #/taller.orden?id=<id>
+import { el } from '../../../core/ui/dom.js';
+import { icono } from '../../../core/ui/iconos.js';
+import { boton } from '../../../core/ui/tabla.js';
+import { abrirFormulario } from '../../../core/ui/modal.js';
+import { avisar } from '../../../core/ui/aviso.js';
+import { subirArchivo, eliminarArchivo, urlsFirmadas, urlFirmada, limiteVideo, megas } from '../../../core/adjuntos.js';
+import { prepararVideo } from '../../../core/video.js';
+import { panelSubida } from '../../../core/ui/subida.js';
+import { comprimirFoto } from '../../../core/imagenes.js';
+import { dinero, fechaLarga, fechaCorta, hhmm, diaLocal } from '../../../core/ui/formato.js';
+import {
+  ESTADOS, nombreEstado, PRIORIDADES, TIPOS_VENTA, MODOS_PAGO, CATEGORIAS_MEDIA, SELECT_ORDEN,
+  verPatente, nombreVehiculo, nombreTercero, precioTalla, totales, minutosTrabajo, textoMinutos, cargarServicios, cargarTrabajadores, hora,
+} from '../datos.js';
+import { mover, textoAvance, puedeVolver, esperaPagoFactura } from '../acciones.js';
+import { formPedirFactura, quitarPedido } from '../factura.js';
+import { tarjetaTuu, traerDeTuu } from '../boleta-tuu.js';
+import { cargarAbonos, seccionAbonos } from '../abonos.js';
+import { seccionInsumos } from '../insumos.js';
+import { seccionCostosPatente } from '../costos.js';
+import { pasosEtapa, tiempoOrden } from '../movil.js';
+import { avisoTarjeta } from '../pedidas.js';
+import { avance as avanceOrden, detalleVehiculo } from '../seguimiento.js';
+import { placa } from '../../../core/ui/placa.js';
+import { esTelefono } from '../../../core/movil.js';
+
+let categoriaSubida = 'exterior';
+
+// timestamptz ↔ input datetime-local (hora local)
+const aLocal = (ts) => { if (!ts) return ''; const d = new Date(ts); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 16); };
+const deLocal = (v) => (v ? new Date(v).toISOString() : null);
+
+export default async function vista(ctx) {
+  const [{ data: o, error }, servicios, trabajadores, clientes, media, cotizaciones] = await Promise.all([
+    ctx.api.from('tal_ordenes').select(SELECT_ORDEN).eq('id', ctx.params.id).maybeSingle(),
+    cargarServicios(ctx),
+    cargarTrabajadores(ctx),
+    ctx.api.from('terceros').select('id, razon_social, nombre_fantasia').eq('empresa_id', ctx.empresa.id).is('deleted_at', null).contains('tipo', ['cliente']).order('razon_social'),
+    ctx.api.from('tal_media').select('*').eq('orden_id', ctx.params.id).order('created_at'),
+    // Cotizaciones ligadas a esta orden (si la empresa usa Cotizaciones)
+    ctx.puede('cotizaciones', 'ver')
+      ? ctx.api.from('cot_grupos').select('cotizacion_id, cot_cotizaciones(id, numero, estado, deleted_at)').eq('orden_id', ctx.params.id)
+      : Promise.resolve({ data: [] }),
+  ]);
+  if (error) throw error;
+  const volver = el('a', { class: 'volver', href: ctx.ruta('taller.tablero') }, icono('volver', { tam: 16 }), 'Tablero del taller');
+  if (!o) return el('section', { class: 'listado' }, volver, el('h1', {}, 'Orden no encontrada'));
+  const v = o.tal_vehiculos;
+  const [lista, externo] = await Promise.all([
+    // Lista de precios del cliente (Cotizaciones): manda sobre el precio del catálogo
+    o.tercero_id && ctx.puede('cotizaciones', 'ver') ? ctx.api.from('cot_precios').select('*').eq('tercero_id', o.tercero_id) : Promise.resolve({ data: [] }),
+    // ¿Se cobra en un cierre mensual o una cuenta corriente?
+    ctx.puede('cierres', 'ver') ? import('../../cierres/taller.js').then((m) => m.cobroExterno(ctx, o)) : Promise.resolve(null),
+  ]);
+  // Factura ligada a la orden, cliente y a quién se factura (Cotizaciones 008)
+  const [{ data: factura }, { data: datosCliente }] = await Promise.all([
+    ctx.puede('cotizaciones', 'ver') ? ctx.api.from('cot_facturas').select('id, numero, fecha_pago').eq('orden_id', o.id).is('deleted_at', null).maybeSingle() : Promise.resolve({ data: null }),
+    [o.tercero_id, o.factura_tercero_id].some(Boolean) ? ctx.api.from('terceros').select('id, rut, razon_social, nombre_fantasia, giro, direccion, email').in('id', [o.tercero_id, o.factura_tercero_id].filter(Boolean)) : Promise.resolve({ data: [] }),
+  ]);
+  const tarjetaCliente = await avisoTarjeta(ctx, o).catch(() => null);
+  // Abonos con su boleta (Taller 012)
+  const abonos = await cargarAbonos(ctx, o.id).catch(() => []);
+  const clienteOrden = (datosCliente ?? []).find((x) => x.id === o.tercero_id) ?? null;
+  const facturarA = (datosCliente ?? []).find((x) => x.id === o.factura_tercero_id) ?? null;
+  const precioLista = new Map((lista.data ?? []).map((p) => [p.descripcion.trim().toLowerCase(), p]));
+  const precioDe = (s) => {
+    const p = precioLista.get(s.nombre.trim().toLowerCase());
+    const t = (v?.talla || 'M').toLowerCase();
+    return p ? p[`precio_${t}`] ?? p.precio ?? precioTalla(s, v?.talla) : precioTalla(s, v?.talla);
+  };
+  const lineas = [...o.tal_orden_servicios].sort((a, b) => a.orden - b.orden);
+  const t = totales(o, lineas);
+  const anulada = o.estado === 'anulada';
+  const editable = ctx.puede('taller', 'editar') && !o.cobrado && !anulada;
+  const editableTrabajo = ctx.puede('taller', 'editar') && !anulada;   // tareas, tiempos y fotos (también cobrada)
+
+  const guardar = async (cambios, aviso = 'Guardado.') => {
+    const { error: e } = await ctx.api.from('tal_ordenes').update(cambios).eq('id', o.id);
+    if (e) { avisar(e.message, 'error'); return false; }
+    Object.assign(o, cambios); if (aviso) avisar(aviso); return true;
+  };
+  const campo = (id, etiqueta, { tipo = 'text', opciones, puede = editable, refrescar = false, conv } = {}) => {
+    const valor = conv?.a ? conv.a(o[id]) : o[id] ?? '';
+    const c = opciones
+      ? el('select', { class: 'campo', id: `o-${id}`, disabled: !puede }, opciones.map(([k, txt]) => el('option', { value: k, selected: String(valor) === k }, txt)))
+      : tipo === 'textarea'
+        ? Object.assign(el('textarea', { class: 'campo', id: `o-${id}`, rows: 2, disabled: !puede }), { value: valor })
+        : el('input', { class: 'campo', id: `o-${id}`, type: tipo, value: valor, disabled: !puede, min: tipo === 'number' ? 0 : null });
+    c.addEventListener('change', async () => {
+      let val = conv?.de ? conv.de(c.value) : c.value.trim();
+      if (tipo === 'number') val = Math.max(0, Math.round(Number(val) || 0));
+      else if (val === '') val = null;
+      if (await guardar({ [id]: val }) && refrescar) ctx.refrescar();
+    });
+    return el('div', { class: 'form-fila' }, el('label', { for: `o-${id}` }, etiqueta), c);
+  };
+
+  // ---- Servicios
+  // Servicios propios de la lista del cliente que no están en el catálogo (ej. Guillermo Morales: Interior, Exterior,
+  // Motor… con precio de flota por talla): van primero, en su propio grupo
+  const enCatalogo = new Set(servicios.map((s) => s.nombre.trim().toLowerCase()));
+  const soloLista = (lista.data ?? []).filter((p) => !enCatalogo.has(p.descripcion.trim().toLowerCase())).sort((a, b) => a.descripcion.localeCompare(b.descripcion));
+  const precioListaDe = (p) => p[`precio_${(v?.talla || 'M').toLowerCase()}`] ?? p.precio ?? null;
+  const opcionServicio = (s) => el('option', { value: s.id }, `${s.nombre}${s.variable && !precioLista.has(s.nombre.trim().toLowerCase()) ? ' (a convenir)' : precioDe(s) != null ? ` · ${dinero(precioDe(s))}${precioLista.has(s.nombre.trim().toLowerCase()) ? ' (lista del cliente)' : ''}` : ''}`);
+  const agregarServicio = el('select', { class: 'campo', 'aria-label': 'Agregar servicio', disabled: !editable },
+    el('option', { value: '' }, 'Agregar servicio…'),
+    soloLista.length ? [
+      el('optgroup', { label: `Lista de ${nombreTercero(o.terceros) || 'el cliente'}${v?.talla ? ` (talla ${v.talla})` : ''}` },
+        soloLista.map((p) => el('option', { value: `lista:${p.id}` }, `${p.descripcion}${precioListaDe(p) != null ? ` · ${dinero(precioListaDe(p))}` : ''}`))),
+      el('optgroup', { label: 'Catálogo del taller' }, servicios.map(opcionServicio)),
+    ] : servicios.map(opcionServicio),
+    el('option', { value: 'otro' }, 'Otro trabajo (fuera de la lista)…'));
+  agregarServicio.addEventListener('change', async () => {
+    const id = agregarServicio.value;
+    agregarServicio.value = '';
+    if (id === 'otro') {
+      abrirFormulario({
+        titulo: 'Otro trabajo', campos: [{ id: 'nombre', etiqueta: 'Trabajo', requerido: true }, { id: 'precio', etiqueta: 'Precio neto ($)', tipo: 'number', valor: '0' }], textoGuardar: 'Agregar',
+        alGuardar: async (x) => {
+          const { error: e } = await ctx.api.from('tal_orden_servicios').insert({ orden_id: o.id, empresa_id: ctx.empresa.id, nombre: x.nombre.trim(), precio: Math.max(0, Math.round(Number(x.precio) || 0)), orden: lineas.length + 1 });
+          if (e) throw new Error(e.message);
+          ctx.refrescar();
+        },
+      });
+      return;
+    }
+    if (id.startsWith('lista:')) {
+      const p = soloLista.find((x) => `lista:${x.id}` === id);
+      if (!p) return;
+      const { error: e } = await ctx.api.from('tal_orden_servicios').insert({ orden_id: o.id, empresa_id: ctx.empresa.id, nombre: p.descripcion.trim(), precio: precioListaDe(p) ?? 0, orden: lineas.length + 1 });
+      if (e) { avisar(e.message, 'error'); return; }
+      ctx.refrescar();
+      return;
+    }
+    const s = servicios.find((x) => x.id === id);
+    if (!s) return;
+    const { error: e } = await ctx.api.from('tal_orden_servicios').insert({ orden_id: o.id, empresa_id: ctx.empresa.id, servicio_id: s.id, nombre: s.nombre, precio: precioDe(s) ?? 0, orden: lineas.length + 1 });
+    if (e) { avisar(e.message, 'error'); return; }
+    // Las tareas del servicio se suman al checklist
+    const nuevas = s.tareas.filter((x) => !o.tareas.some((y) => y.t === x)).map((x) => ({ t: x, ok: false }));
+    if (nuevas.length) await guardar({ tareas: [...o.tareas, ...nuevas] }, null);
+    avisar(`${s.nombre} agregado.`); ctx.refrescar();
+  });
+  const filaServicio = (s) => {
+    const precio = el('input', { class: 'campo campo-num', type: 'number', min: 0, value: s.precio, disabled: !editable, 'aria-label': `Precio de ${s.nombre}` });
+    precio.addEventListener('change', async () => {
+      const { error: e } = await ctx.api.from('tal_orden_servicios').update({ precio: Math.max(0, Math.round(Number(precio.value) || 0)) }).eq('id', s.id);
+      if (e) avisar(e.message, 'error'); else ctx.refrescar();
+    });
+    return el('div', { class: 'doc-fila' },
+      el('div', { class: 'doc-nombre' }, el('strong', {}, s.nombre)),
+      precio,
+      editable ? el('button', { type: 'button', class: 'boton-icono', title: 'Quitar', 'aria-label': `Quitar ${s.nombre}`, onclick: async () => {
+        const { error: e } = await ctx.api.from('tal_orden_servicios').delete().eq('id', s.id);
+        if (e) avisar(e.message, 'error'); else ctx.refrescar();
+      } }, icono('basura', { tam: 16 })) : null);
+  };
+
+  // ---- Tareas (checklist)
+  const filaTarea = (x, i) => {
+    const caja = el('input', { type: 'checkbox', checked: x.ok, disabled: !editableTrabajo || o.cobrado });
+    caja.addEventListener('change', () => guardar({ tareas: o.tareas.map((y, j) => (j === i ? { ...y, ok: caja.checked } : y)) }, null).then((ok) => ok && ctx.refrescar()));
+    return el('div', { class: `doc-fila orden-tarea${x.ok ? ' hecha' : ''}` },
+      el('label', { class: `casilla ${x.ok ? 'tarea-lista' : ''}` }, caja, el('span', {}, x.t)),
+      editableTrabajo && !o.cobrado ? el('button', { type: 'button', class: 'boton-icono', title: 'Quitar', 'aria-label': `Quitar ${x.t}`, onclick: () => guardar({ tareas: o.tareas.filter((_, j) => j !== i) }, null).then((ok) => ok && ctx.refrescar()) }, icono('menos', { tam: 16 })) : null);
+  };
+  const nuevaTarea = el('input', { class: 'campo', placeholder: 'Otra tarea y Enter', 'aria-label': 'Nueva tarea', disabled: !editableTrabajo || o.cobrado });
+  nuevaTarea.addEventListener('keydown', async (ev) => {
+    if (ev.key !== 'Enter' || !nuevaTarea.value.trim()) return;
+    ev.preventDefault();
+    if (await guardar({ tareas: [...o.tareas, { t: nuevaTarea.value.trim(), ok: false }] }, null)) ctx.refrescar();
+  });
+
+  // ---- Fotos y documentos
+  const entrada = el('input', { type: 'file', accept: 'image/*,video/*,application/pdf', multiple: true, hidden: true });
+  const selCat = el('select', { class: 'campo campo-filtro', 'aria-label': 'Categoría de lo que vas a subir' }, CATEGORIAS_MEDIA.map(([k, n]) => el('option', { value: k, selected: k === categoriaSubida }, `Subir como: ${n}`)));
+  selCat.addEventListener('change', () => { categoriaSubida = selCat.value; });
+  // Videos: hasta 200 MB tal cual (por partes, con avance); más grandes se achican en el navegador (core/video.js)
+  let subiendo = false;
+  const subir = async (archivos) => {
+    if (subiendo || !archivos.length) return;
+    subiendo = true;
+    const panel = panelSubida();
+    let ok = 0;
+    for (const [i, a] of archivos.entries()) {
+      const cuenta = archivos.length > 1 ? ` · ${i + 1} de ${archivos.length}` : '';
+      try {
+        const tipo = a.type.startsWith('video/') ? 'video' : a.type === 'application/pdf' ? 'documento' : 'foto';
+        panel.estado(`Preparando ${a.name}${cuenta}`, null);
+        const archivo = tipo === 'foto' ? await comprimirFoto(a)
+          : tipo === 'video' ? await prepararVideo(a, { maximo: limiteVideo(), alProgreso: (f, t) => panel.estado(`${t}${cuenta}`, f) }) : a;
+        panel.estado(`Subiendo ${archivo.name} (${megas(archivo.size)})${cuenta}`, 0);
+        const { ruta } = await subirArchivo(ctx.api, { empresaId: ctx.empresa.id, modulo: 'taller', archivo, tabla: 'tal_ordenes', registroId: o.id, maxBytes: limiteVideo(),
+          alProgreso: (n, total) => panel.estado(`Subiendo ${archivo.name} · ${megas(n)} de ${megas(total)}${cuenta}`, n / total) });
+        const { error: e } = await ctx.api.from('tal_media').insert({ orden_id: o.id, empresa_id: ctx.empresa.id, ruta, categoria: categoriaSubida, tipo, nombre: a.name });
+        if (e) { await eliminarArchivo(ctx.api, ruta).catch(() => {}); throw new Error(e.message); }
+        ok += 1;
+      } catch (e) { avisar(e.message, 'error'); }
+    }
+    panel.cerrar(); subiendo = false;
+    if (ok) { avisar(ok === 1 ? 'Se subió 1 archivo.' : `Se subieron ${ok}.`); ctx.refrescar(); }
+  };
+  entrada.addEventListener('change', () => subir([...entrada.files]));
+  const rutas = (media.data ?? []).map((m) => m.ruta);
+  const urls = await urlsFirmadas(ctx.api, rutas).catch(() => new Map());
+  const tarjetaMedia = (m) => el('div', { class: 'media-tarjeta' },
+    m.tipo === 'foto'
+      ? el('a', { href: urls.get(m.ruta), target: '_blank', rel: 'noopener' }, el('img', { src: urls.get(m.ruta), alt: m.nombre ?? 'Foto', loading: 'lazy' }))
+      : m.tipo === 'video'
+        ? el('video', { class: 'media-previa', src: urls.get(m.ruta), controls: true, preload: 'metadata', playsinline: true })
+        : el('a', { class: 'media-video', href: urls.get(m.ruta), target: '_blank', rel: 'noopener' }, icono('carpeta', { tam: 30 }), el('span', { class: 'texto-chico' }, m.nombre ?? m.tipo)),
+    el('span', { class: 'texto-chico media-nombre', title: m.nombre ?? '' }, m.nombre ?? ''),
+    el('span', { class: 'texto-chico texto-suave' }, CATEGORIAS_MEDIA.find((c) => c[0] === m.categoria)?.[1]),
+    editableTrabajo ? el('div', { class: 'media-acciones' }, el('button', { type: 'button', class: 'boton-icono', title: 'Renombrar o cambiar la categoría', 'aria-label': 'Renombrar archivo', onclick: () => abrirFormulario({
+      titulo: 'Renombrar archivo',
+      campos: [{ id: 'nombre', etiqueta: 'Nombre', valor: m.nombre ?? '', requerido: true }, { id: 'categoria', etiqueta: 'Categoría', opciones: CATEGORIAS_MEDIA, valor: m.categoria }],
+      alGuardar: async (x) => {
+        const { error: e } = await ctx.api.from('tal_media').update({ nombre: x.nombre.trim().slice(0, 120), categoria: x.categoria }).eq('id', m.id);
+        if (e) throw new Error(e.message);
+        avisar('Archivo actualizado.'); ctx.refrescar();
+      },
+    }) }, icono('editar', { tam: 15 })), el('button', { type: 'button', class: 'boton-icono', title: 'Eliminar', 'aria-label': 'Eliminar archivo', onclick: async () => {
+      const { error: e } = await ctx.api.from('tal_media').delete().eq('id', m.id);
+      if (e) { avisar(e.message, 'error'); return; }
+      await eliminarArchivo(ctx.api, m.ruta).catch(() => {});
+      ctx.refrescar();
+    } }, icono('basura', { tam: 15 }))) : null);
+
+  // Filtro de la galería por categoría (solo las que tienen archivos)
+  const galeria = el('div', { class: 'galeria' }, (media.data ?? []).map((m) => { const n = tarjetaMedia(m); n.dataset.cat = m.categoria; return n; }));
+  const conArchivos = CATEGORIAS_MEDIA.filter(([k]) => (media.data ?? []).some((m) => m.categoria === k));
+  let filtroCat = '';
+  const filtroMedia = el('div', { class: 'segmento', role: 'group', 'aria-label': 'Filtrar por categoría' },
+    [['', 'Todas'], ...conArchivos].map(([k, n]) => el('button', { type: 'button', 'aria-pressed': String(k === filtroCat), onclick: (ev) => {
+      filtroCat = k;
+      ev.currentTarget.parentElement.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b === ev.currentTarget)));
+      galeria.querySelectorAll('.media-tarjeta').forEach((t) => { t.hidden = !!k && t.dataset.cat !== k; });
+    } }, `${n} (${k ? (media.data ?? []).filter((m) => m.categoria === k).length : media.data?.length ?? 0})`)));
+
+  // ---- Cobro
+  // Boleta o comprobante del cobro (Taller 011): queda en la orden (boleta_ruta), aparte de Fotos y videos.
+  // Subir pide taller.crear (archivo privado) y guardarla taller.editar; con la orden cobrada se puede igual.
+  const puedeBoleta = ctx.puede('taller', 'crear') && ctx.puede('taller', 'editar') && !anulada;
+  const campoBoleta = { id: 'boleta', etiqueta: 'Boleta o comprobante (foto o PDF)', tipo: 'file', accept: 'image/*,application/pdf',
+    ayuda: 'Comprobante TUU, boleta o factura. Queda guardada en el cobro de esta orden.' };
+  const subirBoleta = async (archivo) => {
+    const a = archivo.type.startsWith('image/') ? await comprimirFoto(archivo) : archivo;
+    const { ruta } = await subirArchivo(ctx.api, { empresaId: ctx.empresa.id, modulo: 'taller', archivo: a, tabla: 'tal_ordenes', registroId: o.id, tipos: ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'] });
+    return { boleta_ruta: ruta, boleta_nombre: archivo.name.slice(0, 200) };
+  };
+  // Quita el archivo anterior al cambiarla o quitarla (si no hay permiso para eliminar, queda en adjuntos)
+  const borrarBoletaAnterior = async (ruta) => { if (ruta && ctx.puede('taller', 'eliminar')) await eliminarArchivo(ctx.api, ruta).catch(() => {}); };
+  const cobrar = () => abrirFormulario({
+    titulo: `Registrar cobro · N° ${o.numero}`,
+    mensaje: `${o.tipo_venta === 'normal' ? `Total ${dinero(t.total)}${t.abono ? `, abono ${dinero(t.abono)}, saldo ${dinero(t.saldo)}` : ''}` : `Venta tipo ${TIPOS_VENTA.find((x) => x[0] === o.tipo_venta)[1].toLowerCase()}: no se cobra; ingreso ${dinero(t.ingreso)}`}. La orden queda bloqueada hasta reabrir el cobro.`,
+    campos: puedeBoleta ? [{ ...campoBoleta, etiqueta: o.boleta_ruta ? `Cambiar boleta (hay una: ${o.boleta_nombre ?? 'archivo'})` : `${campoBoleta.etiqueta}, opcional` }] : [],
+    textoGuardar: 'Registrar cobro',
+    alGuardar: async (x) => {
+      if (o.tipo_venta === 'normal' && !lineas.length) throw new Error('La orden no tiene servicios.');
+      const anterior = o.boleta_ruta;
+      const boleta = x.boleta ? await subirBoleta(x.boleta) : {};
+      if (!(await guardar({ cobrado: true, cobrado_at: new Date().toISOString(), cobrado_por: ctx.usuario.id, ...boleta }, 'Cobro registrado.'))) {
+        if (boleta.boleta_ruta) await eliminarArchivo(ctx.api, boleta.boleta_ruta).catch(() => {});
+        throw new Error('No se pudo registrar.');
+      }
+      if (boleta.boleta_ruta) await borrarBoletaAnterior(anterior);
+      ctx.refrescar();
+    },
+  });
+  const adjuntarBoleta = () => abrirFormulario({
+    titulo: `${o.boleta_ruta ? 'Cambiar' : 'Adjuntar'} boleta · N° ${o.numero}`,
+    campos: [{ ...campoBoleta, requerido: true }], textoGuardar: 'Guardar boleta',
+    alGuardar: async (x) => {
+      if (!x.boleta) throw new Error('Elige la foto o el PDF de la boleta.');
+      const anterior = o.boleta_ruta;
+      const boleta = await subirBoleta(x.boleta);
+      if (!(await guardar(boleta, 'Boleta guardada.'))) { await eliminarArchivo(ctx.api, boleta.boleta_ruta).catch(() => {}); throw new Error('No se pudo guardar la boleta.'); }
+      await borrarBoletaAnterior(anterior);
+      ctx.refrescar();
+    },
+  });
+  const verBoleta = async () => { try { window.open(await urlFirmada(ctx.api, o.boleta_ruta, 300), '_blank', 'noopener'); } catch (e) { avisar(e.message, 'error'); } };
+  const quitarBoleta = async () => {
+    if (!confirm(`¿Quitar la boleta «${o.boleta_nombre ?? 'archivo'}» de esta orden?`)) return;
+    const anterior = o.boleta_ruta;
+    if (await guardar({ boleta_ruta: null, boleta_nombre: null }, 'Boleta quitada.')) { await borrarBoletaAnterior(anterior); ctx.refrescar(); }
+  };
+  // Boleta de la TUU desde el SII (OpenFactura): solo cobros con boleta
+  // Documento de la TUU (boleta o factura) traído del SII; si faltaba, el cobro queda registrado (con factura, lo hace la base)
+  const traerTuu = () => traerDeTuu(ctx, o, { tipo: o.doc_tipo === 'factura' ? 33 : 39, total: o.cobrado ? t.total : t.saldo, rut: (facturarA ?? clienteOrden)?.rut,
+    terceroId: o.factura_tercero_id ?? o.tercero_id, medio: o.modo_pago,
+    alCobrar: async () => { await guardar({ cobrado: true, cobrado_at: new Date().toISOString(), cobrado_por: ctx.usuario.id }, null); },
+    alGuardar: () => ctx.refrescar() });
+  const botonTuu = puedeBoleta && o.doc_tipo !== 'factura' && t.total > 0
+    ? boton('Boleta de la TUU', { icono: 'buscar', class: 'boton boton-secundario boton-chico', title: 'Traer la boleta emitida por la TUU desde el SII', onclick: traerTuu })
+    : null;
+  const bloqueBoleta = o.boleta_ruta
+    ? el('div', { class: 'cobro-boleta' },
+        icono('documento', { tam: 18 }),
+        el('div', { class: 'cobro-boleta-texto' }, el('span', { class: 'texto-chico texto-suave' }, 'Boleta del cobro'),
+          el('button', { type: 'button', class: 'enlace', title: 'Ver la boleta', onclick: verBoleta }, o.boleta_nombre ?? 'Ver archivo')),
+        el('div', { class: 'cobro-boleta-acciones' },
+          boton('Ver', { icono: 'ojo', class: 'boton boton-secundario boton-chico', onclick: verBoleta }),
+          puedeBoleta ? boton('Cambiar', { icono: 'editar', class: 'boton boton-secundario boton-chico', onclick: adjuntarBoleta }) : null,
+          /^Boleta N° \d+$/.test(o.boleta_nombre ?? '') ? null : botonTuu,
+          puedeBoleta ? el('button', { type: 'button', class: 'boton-icono', title: 'Quitar la boleta', 'aria-label': 'Quitar la boleta', onclick: quitarBoleta }, icono('basura', { tam: 15 })) : null))
+    // Cobrada sin boleta: se puede adjuntar después
+    // Sin boleta: traerla de la TUU (antes o después del cobro) o, ya cobrada, adjuntar una foto
+    // (antes del cobro lo trae la tarjeta "Cobrar en la TUU")
+    : puedeBoleta && o.cobrado ? el('div', { class: 'listado-acciones' }, botonTuu,
+      boton('Adjuntar boleta', { icono: 'documento', class: 'boton boton-secundario boton-chico', onclick: adjuntarBoleta })) : null;
+
+  // ---- Factura: pedida por el cliente, registrada o pagada (se cobra en Cotizaciones → Facturas)
+  const verFacturas = ctx.puede('cotizaciones', 'ver') ? el('a', { href: ctx.ruta('cotizaciones.oc') }, 'Ir a Facturas') : null;
+  // Cotizaciones de la orden, sin repetir (una cotización puede traer varios vehículos ligados a la misma orden)
+  const cotsOrden = [...new Map((cotizaciones.data ?? []).map((x) => x.cot_cotizaciones).filter((c) => c && !c.deleted_at).map((c) => [c.id, c])).values()].sort((a, b) => a.numero - b.numero);
+  const conCotizacion = cotsOrden.length > 0;
+  const pedirFactura = (datos = {}) => formPedirFactura(ctx, o, { cliente: clienteOrden, alGuardar: () => ctx.refrescar(), ...datos });
+  const avisoFactura = factura
+    ? el('p', { class: 'aviso-bandeja' }, icono('documento', { tam: 16 }), `Factura N° ${factura.numero}${factura.fecha_pago ? `, pagada el ${fechaLarga(factura.fecha_pago)}.` : ': falta registrar el pago.'} `, verFacturas)
+    : o.factura_tercero_id && !o.cobrado
+      ? el('p', { class: 'aviso-bandeja' }, icono('documento', { tam: 16 }), `Pide factura a ${facturarA?.razon_social ?? 'otro cliente'}${facturarA?.rut ? ` (${facturarA.rut})` : ''}. Falta registrarla y su pago; hasta entonces no se entrega. `, verFacturas)
+      : null;
+  const accionesFactura = editable && !externo && !conCotizacion
+    ? (o.factura_tercero_id && !factura
+      ? [boton('Cambiar datos', { icono: 'editar', onclick: () => pedirFactura({ facturarA }) }),
+        boton('Ya no pide factura', { onclick: () => quitarPedido(ctx, o, () => ctx.refrescar()) })]
+      : !o.factura_tercero_id && !factura ? [boton('Pide factura', { icono: 'documento', onclick: () => pedirFactura() })] : [])
+    : [];
+  const cobraConFactura = !o.cobrado && (o.factura_tercero_id || factura);
+
+  // ---- Estado
+  const i = ESTADOS.findIndex(([k]) => k === o.estado);
+  const telefono = esTelefono();
+  const acciones = [];
+  let siguiente = null;   // en el teléfono, el paso siguiente va en el pie fijo
+  if (!anulada && ctx.puede('taller', 'editar')) {
+    if (i > 0 && puedeVolver(ctx, o)) acciones.push(boton('Volver', { icono: 'volver', onclick: async () => { if (await mover(ctx, o, -1)) ctx.refrescar(); } }));
+    const textoSig = textoAvance(ctx, o);
+    if (textoSig) {
+      const avanzar = async () => { if (await mover(ctx, o, 1)) ctx.refrescar(); };
+      if (telefono) siguiente = el('button', { type: 'button', class: 'om-siguiente', onclick: avanzar }, textoSig, icono('derecha', { tam: 20 }));
+      else acciones.push(boton(textoSig, { icono: 'derecha', tipo: 'primario', onclick: avanzar }));
+    } else if (o.estado === 'terminado') acciones.push(el('span', { class: 'chip chip-prox' }, esperaPagoFactura(o) ? 'Espera pago de factura' : 'Espera el VB de entrega'));
+    if (!o.cobrado && o.estado !== 'entregado') acciones.push(boton('Anular', { icono: 'cerrar', onclick: () => abrirFormulario({
+      titulo: `Anular orden N° ${o.numero}`, mensaje: 'La orden queda anulada (no se borra). Se puede reactivar después.', campos: [{ id: 'motivo', etiqueta: 'Motivo', requerido: true }], textoGuardar: 'Anular',
+      alGuardar: async (x) => { if (!(await guardar({ estado: 'anulada', notas: [o.notas, `Anulada: ${x.motivo.trim()}`].filter(Boolean).join('\n') }, 'Orden anulada.'))) throw new Error('No se pudo anular.'); ctx.refrescar(); },
+    }) }));
+  }
+  // Con cotización: su número abre la cotización. "Cotizar" solo si falta (o si todas las que tiene fueron rechazadas).
+  for (const c of cotsOrden) acciones.push(el('a', { class: 'boton boton-secundario', href: ctx.ruta('cotizaciones.editor', { id: c.id }), title: 'Abrir la cotización' }, icono('documento', { tam: 16 }), `Cotización N° ${String(c.numero).padStart(6, '0')} (${c.estado})`));
+  if (!anulada && ctx.puede('cotizaciones', 'crear') && cotsOrden.every((c) => c.estado === 'rechazada')) acciones.push(boton('Cotizar', { icono: 'documento', onclick: (ev) => cotizar(ctx, o, lineas, ev.currentTarget) }));
+  if (anulada && ctx.puede('taller', 'editar')) acciones.push(boton('Reactivar', { icono: 'editar', onclick: async () => { if (await guardar({ estado: 'agendado' }, 'Orden reactivada.')) ctx.refrescar(); } }));
+
+  const dur = minutosTrabajo(o);
+  const MARCAS = { agendado: o.fecha_cita ? `${fechaCorta(o.fecha_cita)}${o.hora_cita ? ` ${hhmm(o.hora_cita)}` : ''}` : '', espera: hora(o.ingreso_at), proceso: hora(o.inicio_at), terminado: hora(o.termino_at), entregado: hora(o.entregado_at) };
+  // Los tiempos van en la misma línea de avance (pedido de Enzo, 2026-11-13): la hora de cada etapa se toca para cambiarla
+  const HORA_DE = { espera: ['ingreso_at', !o.cobrado], proceso: ['inicio_at', !o.cobrado], terminado: ['termino_at', true], entregado: ['entregado_at', true] };
+  const marca = (k, j) => {
+    const texto = MARCAS[k] || (j === i ? 'ahora' : '');
+    const [id, libre] = HORA_DE[k] ?? [];
+    if (!id || !editableTrabajo || !libre) return el('span', { class: 'texto-chico texto-suave' }, texto);
+    const b = el('button', { type: 'button', class: 'orden-hora', title: 'Tocar para cambiar la hora' }, texto || 'Poner hora', icono('editar', { tam: 12 }));
+    b.addEventListener('click', () => {
+      const entrada = campo(id, '', { tipo: 'datetime-local', conv: { a: aLocal, de: deLocal }, refrescar: true }).querySelector('.campo');
+      entrada.classList.add('orden-hora-campo');
+      entrada.addEventListener('blur', () => setTimeout(() => entrada.isConnected && entrada.replaceWith(b), 200));
+      b.replaceWith(entrada); entrada.focus();
+    });
+    return b;
+  };
+  const avance = anulada ? null : el('div', { class: 'orden-tiempos' },
+    el('ol', { class: 'orden-avance', 'aria-label': 'Avance de la orden' },
+      ESTADOS.map(([k, n], j) => el('li', { class: j < i ? 'hecho' : j === i ? 'actual' : '' },
+        el('span', { class: 'orden-paso' }, j < i ? icono('check', { tam: 14 }) : String(j + 1)),
+        el('span', { class: 'orden-paso-texto' }, el('strong', {}, n), marca(k, j))))),
+    el('div', { class: 'orden-tiempos-pie' },
+      dur != null ? el('span', {}, icono('reloj', { tam: 14 }), ` ${o.termino_at ? 'Demoró' : 'Lleva'} ${textoMinutos(dur)} de trabajo`) : null,
+      el('label', { class: 'orden-muerto' }, 'Tiempo muerto',
+        campo('t_muerto_min', '', { tipo: 'number', puede: editableTrabajo && !o.cobrado, refrescar: true }).querySelector('.campo'), 'min')));
+  // Zona para soltar fotos y documentos
+  const zona = el('div', { class: 'orden-zona', hidden: !editableTrabajo }, icono('camara', { tam: 22 }), el('span', {}, 'Suelta aquí fotos, videos o PDF, o usa "Subir"'));
+  if (editableTrabajo) {
+    zona.addEventListener('dragover', (ev) => { ev.preventDefault(); zona.classList.add('activa'); });
+    zona.addEventListener('dragleave', () => zona.classList.remove('activa'));
+    zona.addEventListener('drop', (ev) => { ev.preventDefault(); zona.classList.remove('activa'); if (ev.dataTransfer.files.length) subir([...ev.dataTransfer.files]); });
+  }
+  // Tareas plegables: la cabecera (Tareas X/Y, barra y flecha) abre o cierra la lista; cerrada se sigue viendo el
+  // avance. Con más de 6 tareas parte cerrada; si la persona la abre o la cierra se recuerda en el navegador.
+  const hechas = o.tareas.filter((x) => x.ok).length;
+  const tareasAbiertas = (() => {
+    try { const g = localStorage.getItem('isg.orden.tareas'); if (g === 'abierta' || g === 'cerrada') return g === 'abierta'; } catch { /* sin almacenamiento */ }
+    return o.tareas.length <= 6;
+  })();
+  const bloqueTareas = el('div', { class: `orden-tareas${tareasAbiertas ? ' abierta' : ''}` });
+  const cabTareas = el('button', { type: 'button', class: 'orden-tareas-cab', 'aria-expanded': String(tareasAbiertas) },
+    el('h2', {}, `Tareas${o.tareas.length ? ` (${hechas}/${o.tareas.length})` : ''}`),
+    el('span', { class: 'orden-tareas-flecha' }, icono('abajo', { tam: 20 })),
+    o.tareas.length ? el('span', { class: 'tal-progreso-barra orden-barra' }, el('i', { style: `width:${Math.round((hechas / o.tareas.length) * 100)}%` })) : null);
+  cabTareas.addEventListener('click', () => {
+    const a = !bloqueTareas.classList.contains('abierta');
+    bloqueTareas.classList.toggle('abierta', a); cabTareas.setAttribute('aria-expanded', String(a));
+    try { localStorage.setItem('isg.orden.tareas', a ? 'abierta' : 'cerrada'); } catch { /* sin almacenamiento */ }
+  });
+  bloqueTareas.append(cabTareas, el('div', { class: 'orden-tareas-cuerpo' },
+    o.tareas.length ? o.tareas.map(filaTarea) : el('p', { class: 'texto-suave' }, 'Sin tareas. Se agregan con los servicios o a mano.'),
+    editableTrabajo && !o.cobrado ? nuevaTarea : null));
+  const fotos = el('div', { class: 'ficha doc-grupo', id: 'orden-fotos' },
+    el('div', { class: 'listado-cabecera' },
+      el('h2', {}, `Fotos y documentos (${media.data?.length ?? 0})`),
+      editableTrabajo ? el('div', { class: 'listado-acciones' }, selCat, boton('Subir', { icono: 'camara', tipo: 'primario', onclick: () => entrada.click() }), entrada) : null),
+    media.data?.length ? filtroMedia : null,
+    media.data?.length ? galeria : el('p', { class: 'texto-suave' }, 'Fotos del vehículo al ingresar y al entregar. La boleta del cobro se adjunta en Cobro.'),
+    zona);
+  // Teléfono (dirección B): barra con volver y N°, la placa grande, la línea de etapas con horas y avance, las tareas
+  // primero y un pie fijo con Fotos y el paso siguiente. Debajo, los datos, servicios, tiempos y cobro de siempre.
+  const cabMovil = telefono ? [
+    el('header', { class: 'om-barra' },
+      el('a', { class: 'boton-icono om-volver', href: ctx.ruta('taller.tablero'), 'aria-label': 'Volver al taller' }, icono('volver', { tam: 22 })),
+      el('span', {}, `Orden N° ${o.numero}`),
+      el('span', { class: `chip ${anulada ? 'chip-na' : o.estado === 'entregado' ? 'chip-ok' : 'chip-prox'}` }, nombreEstado[o.estado]),
+      o.cobrado ? el('span', { class: 'chip chip-ok' }, 'Cobrado') : null),
+    el('section', { class: 'om-heroe' },
+      placa(v.patente, { tam: 'grande', href: ctx.ruta('taller.vehiculo', { id: v.id }), titulo: 'Ver el vehículo' }),
+      el('div', { class: 'om-heroe-texto' },
+        el('h1', {}, nombreVehiculo(v)),
+        el('span', {}, [`Talla ${v.talla}`, o.terceros ? nombreTercero(o.terceros) : ''].filter(Boolean).join(' · ')))),
+    anulada ? null : el('section', { class: 'om-etapa' },
+      pasosEtapa(o, { horas: true }),
+      el('div', { class: 'om-etapa-pie' }, el('span', {}, tiempoOrden(o)), el('strong', {}, `${avanceOrden(o)}%`))),
+    acciones.length ? el('div', { class: 'om-acciones' }, acciones) : null,
+    el('section', { class: 'ficha doc-grupo om-tareas' }, bloqueTareas),
+  ] : null;
+  const pieMovil = telefono && (editableTrabajo || siguiente) ? el('footer', { class: 'om-pie' },
+    el('button', { type: 'button', class: 'om-fotos', onclick: () => (editableTrabajo ? entrada.click() : fotos.scrollIntoView({ behavior: 'smooth' })) }, icono('camara', { tam: 20 }), `Fotos${media.data?.length ? ` (${media.data.length})` : ''}`),
+    siguiente) : null;
+  // Desde Cobros: ir directo a la sección de cobro
+  if (ctx.params.ir === 'cobro') setTimeout(() => document.getElementById('orden-cobro')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
+  const seccionCostos = await seccionCostosPatente(ctx, o, v);
+  const seccionIns = await seccionInsumos(ctx, o, anulada);
+  // Un color por sección (pedido de Enzo, 2026-11-13); las tareas van en la tarjeta ampliada, no en Servicios
+  for (const [s, tipo] of [[seccionCostos, 'costos'], [seccionIns, 'insumos']]) s?.classList.add('orden-sec', `sec-${tipo}`);
+  fotos.classList.add('orden-sec', 'sec-fotos');
+  const verTareas = !telefono && o.tareas.length
+    ? boton(`Tareas ${hechas}/${o.tareas.length}`, { icono: 'expandir', onclick: () => detalleVehiculo(ctx, o, { alCambiar: () => ctx.refrescar() }) })
+    : null;
+  const bloqueServicios = el('div', { class: 'ficha doc-grupo orden-sec sec-servicios' },
+        el('div', { class: 'listado-cabecera' }, el('h2', {}, `Servicios · ${dinero(t.bruto)}`), verTareas),
+        lineas.length ? lineas.map(filaServicio) : el('p', { class: 'texto-suave' }, 'Sin servicios.'),
+        editable ? agregarServicio : null);
+  // Cliente, teléfono, trabajador, prioridad, cita y notas: arriba, junto a la patente
+  // Se ven como información en la cabecera (chips); al tocar uno se abre este apartado en ese campo (Enzo, 2026-11-13)
+  const fichaDatos = el('div', { class: 'ficha orden-ficha-datos', hidden: true },
+    el('div', { class: 'orden-ficha-cab' }, el('h2', {}, 'Datos de la orden'),
+      boton('Listo', { icono: 'check', onclick: () => { fichaDatos.hidden = true; } })),
+    campo('tercero_id', 'Cliente', { opciones: [['', 'Sin cliente'], ...(clientes.data ?? []).map((c) => [c.id, nombreTercero(c)])], refrescar: true }),
+    campo('contacto', 'Teléfono de contacto'),
+    campo('trabajador_id', 'Trabajador', { opciones: [['', 'Sin asignar'], ...trabajadores.lista.filter((x) => x.estado === 'activo' || x.id === o.trabajador_id).map((x) => [x.id, x.nombre])], puede: editableTrabajo }),
+    campo('prioridad', 'Prioridad', { opciones: PRIORIDADES, puede: !anulada && ctx.puede('taller', 'editar') }),
+    campo('fecha_cita', 'Fecha de la cita', { tipo: 'date' }),
+    campo('hora_cita', 'Hora', { tipo: 'time', conv: { a: hhmm, de: (x) => x || null } }),
+    el('div', { class: 'orden-notas' }, campo('notas', 'Notas', { tipo: 'textarea' })));
+  const editarDato = (id) => {
+    fichaDatos.hidden = false;
+    fichaDatos.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    setTimeout(() => { const c = document.getElementById(`o-${id}`); (c?.parentElement?.querySelector('input:not([type=hidden])') ?? c)?.focus(); }, 150);
+  };
+  const nombreTrab = trabajadores.lista.find((x) => x.id === o.trabajador_id)?.nombre;
+  const nombrePrio = PRIORIDADES.find(([k]) => k === o.prioridad)?.[1];
+  const chipDato = (id, ic, texto, vacio, clase = '') => el('button', { type: 'button', class: `orden-info${texto ? '' : ' vacio'}${clase ? ` ${clase}` : ''}`, title: 'Tocar para cambiar', onclick: () => editarDato(id) },
+    icono(ic, { tam: 14 }), texto || vacio);
+  const infoDatos = el('div', { class: 'orden-infos' },
+    chipDato('tercero_id', 'users', o.terceros ? nombreTercero(o.terceros) : '', 'Sin cliente'),
+    chipDato('contacto', 'chat', o.contacto, 'Sin teléfono'),
+    chipDato('trabajador_id', 'llave', nombreTrab, 'Sin trabajador'),
+    chipDato('prioridad', 'alerta', nombrePrio, 'Prioridad', `prio-${o.prioridad}`),
+    o.fecha_cita ? chipDato('fecha_cita', 'calendario', `Cita ${fechaCorta(o.fecha_cita)}${o.hora_cita ? ` ${hhmm(o.hora_cita)}` : ''}`, '') : null,
+    o.notas ? chipDato('notas', 'documento', o.notas.length > 40 ? `${o.notas.slice(0, 40)}…` : o.notas, '') : chipDato('notas', 'documento', '', 'Agregar nota'));
+  cabMovil?.splice(2, 0, infoDatos);   // en el teléfono, a lo ancho bajo la placa
+  return el('section', { class: `listado${telefono ? ' orden-movil' : ''}` },
+    telefono ? cabMovil : [volver,
+    el('header', { class: 'listado-cabecera orden-cabecera' },
+      el('div', { class: 'orden-titulo' },
+        el('span', { class: 'texto-suave texto-chico' }, `Orden de trabajo N° ${o.numero}`),
+        el('h1', {}, nombreVehiculo(v)),
+        el('div', { class: 'orden-datos' },
+          el('a', { class: 'tal-placa', href: ctx.ruta('taller.vehiculo', { id: v.id }), title: 'Ver el vehículo' }, verPatente(v.patente) || 'Sin patente'),
+          el('span', { class: 'chip chip-pend' }, `Talla ${v.talla}`)),
+        infoDatos),
+      el('div', { class: 'listado-acciones' },
+        el('span', { class: `chip ${anulada ? 'chip-na' : o.estado === 'entregado' ? 'chip-ok' : 'chip-prox'}` }, nombreEstado[o.estado]),
+        o.cobrado ? el('span', { class: 'chip chip-ok' }, 'Cobrado') : null, acciones)),
+    avance],
+    fichaDatos,
+    o.cobrado ? el('p', { class: 'aviso-bandeja' }, icono('check', { tam: 16 }), `Cobrada el ${fechaLarga(diaLocal(o.cobrado_at))}: servicios y cobro bloqueados. Para corregir, reabre el cobro.`) : null,
+    o.vb_at ? avisoVb(ctx, o) : null,
+    avisoFactura,
+    tarjetaCliente,
+    // Arriba, lo del día a día: costos a la izquierda (con Trabajo de un tercero), servicios y tareas a la derecha
+    el('div', { class: 'plan-editor' }, telefono ? [bloqueServicios, seccionCostos] : [seccionCostos, bloqueServicios]),
+    el('div', { class: 'plan-editor' },
+      !telefono ? null : el('div', { class: 'ficha doc-grupo orden-sec sec-tiempos' },
+        el('h2', {}, 'Tiempos'),
+        el('div', { class: 'rejilla-campos' },
+          campo('ingreso_at', 'Ingreso', { tipo: 'datetime-local', conv: { a: aLocal, de: deLocal }, puede: editableTrabajo && !o.cobrado }),
+          campo('inicio_at', 'Inicio del trabajo', { tipo: 'datetime-local', conv: { a: aLocal, de: deLocal }, puede: editableTrabajo && !o.cobrado })),
+        el('div', { class: 'rejilla-campos' },
+          campo('termino_at', 'Término', { tipo: 'datetime-local', conv: { a: aLocal, de: deLocal }, puede: editableTrabajo }),
+          campo('entregado_at', 'Entrega', { tipo: 'datetime-local', conv: { a: aLocal, de: deLocal }, puede: editableTrabajo })),
+        campo('t_muerto_min', 'Tiempo muerto (minutos)', { tipo: 'number', puede: editableTrabajo && !o.cobrado, refrescar: true }),
+        dur != null ? el('p', {}, icono('reloj', { tam: 14 }), ` ${o.termino_at ? 'Demoró' : 'Lleva'} ${textoMinutos(dur)} de trabajo`) : null),
+      seccionIns,
+      telefono ? null : fotos),
+    telefono ? fotos : null,
+    // El cobro al final y a lo ancho: es lo último que se hace
+    el('div', { class: 'plan-editor orden-fila-cobro' },
+      el('div', { class: 'ficha doc-grupo orden-sec sec-cobro', id: 'orden-cobro' },
+        el('h2', {}, 'Cobro'),
+        el('div', { class: 'rejilla-campos' },
+          campo('doc_tipo', 'Documento', { opciones: [['boleta', 'Boleta'], ['factura', 'Factura (+ IVA)']], refrescar: true }),
+          campo('modo_pago', 'Modo de pago', { opciones: MODOS_PAGO })),
+        el('div', { class: 'rejilla-campos' },
+          campo('tipo_venta', 'Tipo de venta', { opciones: TIPOS_VENTA, refrescar: true }),
+          campo('descuento', 'Descuento ($)', { tipo: 'number', refrescar: true })),
+        el('div', { class: 'cobro-resumen' },
+          el('div', {}, el('span', {}, 'Servicios'), el('span', {}, dinero(t.bruto))),
+          t.bruto !== t.neto ? el('div', {}, el('span', {}, 'Descuento'), el('span', {}, `− ${dinero(t.bruto - t.neto)}`)) : null,
+          el('div', {}, el('span', {}, 'Precio neto'), el('span', {}, dinero(t.neto))),
+          t.iva ? el('div', {}, el('span', {}, 'IVA 19 % (factura)'), el('span', {}, dinero(t.iva))) : null,
+          el('div', {}, el('strong', {}, t.iva ? 'Total c/IVA' : 'Total'), el('strong', {}, dinero(t.total))),
+          t.abono ? el('div', {}, el('span', {}, `Abonado${abonos.length > 1 ? ` (${abonos.length} abonos)` : ''}`), el('span', {}, `− ${dinero(t.abono)}`)) : null,
+          el('div', { class: 'cobro-saldo' }, el('strong', {}, t.abono ? 'Falta por pagar' : 'Saldo'), el('strong', {}, dinero(t.saldo))),
+          o.tipo_venta !== 'normal' ? el('p', { class: 'texto-suave texto-chico' }, 'Venta sin cobro: el ingreso es solo el abono.') : null),
+        seccionAbonos(ctx, { o, t, abonos, alCambiar: () => ctx.refrescar() }),
+        // Antes de cobrar: qué marcar en la TUU (documento, datos y monto con IVA) y traer después lo que emitió
+        !o.cobrado && !anulada && !externo && !factura && o.tipo_venta === 'normal' && t.saldo > 0 && ctx.puede('taller', 'editar')
+          ? tarjetaTuu({ o, t, facturarA: facturarA ?? clienteOrden, alTraer: o.doc_tipo === 'factura' ? (ctx.puede('cotizaciones', 'crear') ? traerTuu : null) : (puedeBoleta ? traerTuu : null) })
+          : null,
+        bloqueBoleta,
+        // Se cobra en un cierre mensual o una cuenta corriente: no se cobra sola
+        !o.cobrado && externo
+          ? el('p', { class: 'aviso-bandeja' }, icono('documento', { tam: 16 }), `${externo.texto} `, el('a', { href: externo.ruta }, externo.enlace))
+          : !anulada && ctx.puede('taller', 'editar')
+          ? (o.cobrado
+            ? (factura ? null : boton('Reabrir cobro', { icono: 'editar', onclick: async () => { if (await guardar({ cobrado: false, cobrado_at: null, cobrado_por: null }, 'Cobro reabierto.')) ctx.refrescar(); } }))
+            : cobraConFactura ? null : boton('Registrar cobro', { icono: 'check', tipo: 'primario', onclick: cobrar }))
+          : null,
+        accionesFactura.length ? el('div', { class: 'listado-acciones' }, accionesFactura) : null)),
+    pieMovil,
+  );
+}
+
+// Crea una cotización con este vehículo y los servicios de la orden (queda ligada a la orden)
+async function cotizar(ctx, o, lineas, b) {
+  b.disabled = true;
+  try {
+    const { nueva } = await import('../../cotizaciones/vistas/lista.js');
+    const { data: t } = o.tercero_id ? await ctx.api.from('terceros').select('*').eq('id', o.tercero_id).maybeSingle() : { data: null };
+    const v = o.tal_vehiculos;
+    // Sin servicios con precio ("Pendiente de cotización"): las tareas, con la lista de precios del cliente y la talla
+    const { trabajosOrden, listaCliente } = await import('../../cotizaciones/trabajos-orden.js');
+    const trabajos = trabajosOrden(o, lineas, await listaCliente(ctx, o.tercero_id), v.talla);
+    await nueva(ctx, {
+      tercero: t ?? null,
+      grupo: { titulo: [v.marca, v.modelo].filter(Boolean).join(' ') || null, patente: v.patente, anio: v.anio, talla: v.talla, vehiculo_id: v.id },
+      // Más los costos de la orden (trabajo de terceros, compras con la patente, insumos) como ítems con costo y precio 0
+      lineas: [...trabajos.map((x) => ({ tipo: 'item', descripcion: x.descripcion, cantidad: 1, precio: x.precio })),
+        ...await import('../../cotizaciones/costos-orden.js').then(async (m) => m.lineasCosto((await m.costosDeOrdenes(ctx, [{ ...o, patente: v.patente }])).get(o.id) ?? []))],
+      ordenId: o.id,
+    });
+  } catch (e) { avisar(e.message, 'error'); b.disabled = false; }
+}
+
+// Quién dio el VB de entrega y cuándo (Taller 016: sin PIN, queda anotada la cuenta)
+function avisoVb(ctx, o) {
+  const cuando = `el ${fechaLarga(diaLocal(o.vb_at))} a las ${hora(o.vb_at)}`;
+  const texto = el('span', {}, `VB de entrega ${cuando}${o.vb_nota ? ` · ${o.vb_nota}` : ''}`);
+  if (o.vb_por) ctx.api.rpc('nombres_usuarios', { p_empresa: ctx.empresa.id }).then(({ data }) => {
+    const n = (data ?? []).find((u) => u.user_id === o.vb_por)?.nombre;
+    if (n) texto.textContent = `VB de entrega de ${n} ${cuando}${o.vb_nota ? ` · ${o.vb_nota}` : ''}`;
+  }).catch(() => {});
+  return el('p', { class: 'aviso-bandeja' }, icono('check', { tam: 16 }), texto);
+}

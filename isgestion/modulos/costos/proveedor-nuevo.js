@@ -1,10 +1,10 @@
 // Crear un proveedor desde un gasto o el lector (2026-11-27, pedido de Enzo: la luz de Saesa se paga en Servipag y se
 // sube el comprobante de Servipag, que no trae a Saesa). Razón social y RUT opcional; si ya existe uno con ese RUT o ese
 // nombre, se usa ese. Pide terceros.crear (el enlace no se muestra a quien no puede).
-import { el } from '../../core/ui/dom.js?v=2d079ab';
-import { abrirFormulario } from '../../core/ui/modal.js?v=2d079ab';
-import { avisar } from '../../core/ui/aviso.js?v=2d079ab';
-import { limpioRut, rutValido } from '../../core/lector-dte.js?v=2d079ab';
+import { el } from '../../core/ui/dom.js?v=5ec3c84';
+import { abrirFormulario } from '../../core/ui/modal.js?v=5ec3c84';
+import { avisar } from '../../core/ui/aviso.js?v=5ec3c84';
+import { limpioRut, rutValido } from '../../core/lector-dte.js?v=5ec3c84';
 
 export const puedeCrearProveedor = (ctx) => ctx.puede('terceros', 'crear');
 

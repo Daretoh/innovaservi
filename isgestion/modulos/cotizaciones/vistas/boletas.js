@@ -3,15 +3,15 @@
 // orden, ni en un abono o cobro de una cotización) se ligan aquí: Luisa las registra y, si al subirlas no quedaron
 // ligadas, las pone donde van. Un abono no reemplaza a otro: cada boleta queda en su propio abono.
 // Las facturas de la TUU por registrar están en Facturas (arriba, "Traer del SII").
-import { el } from '../../../core/ui/dom.js?v=2d079ab';
-import { icono } from '../../../core/ui/iconos.js?v=2d079ab';
-import { boton } from '../../../core/ui/tabla.js?v=2d079ab';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=2d079ab';
-import { avisar } from '../../../core/ui/aviso.js?v=2d079ab';
-import { dinero, fechaLarga, fechaCorta, hoyISO, sumarDias, diaLocal } from '../../../core/ui/formato.js?v=2d079ab';
-import { llamarDte, estadoDte, ofrecerPdf } from '../../../core/dte.js?v=2d079ab';
-import { numeroTexto, verPatente, totales } from '../datos.js?v=2d079ab';
-import { totales as totalesOrden } from '../../taller/datos.js?v=2d079ab';
+import { el } from '../../../core/ui/dom.js?v=5ec3c84';
+import { icono } from '../../../core/ui/iconos.js?v=5ec3c84';
+import { boton } from '../../../core/ui/tabla.js?v=5ec3c84';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=5ec3c84';
+import { avisar } from '../../../core/ui/aviso.js?v=5ec3c84';
+import { dinero, fechaLarga, fechaCorta, hoyISO, sumarDias, diaLocal } from '../../../core/ui/formato.js?v=5ec3c84';
+import { llamarDte, estadoDte, ofrecerPdf } from '../../../core/dte.js?v=5ec3c84';
+import { numeroTexto, verPatente, totales } from '../datos.js?v=5ec3c84';
+import { totales as totalesOrden } from '../../taller/datos.js?v=5ec3c84';
 
 const rango = { desde: null, hasta: null, solo: 'libres' };
 const estadoVacio = ({ icono: ic, titulo, texto }) => el('div', { class: 'estado-vacio' }, el('span', { class: 'estado-vacio-icono' }, icono(ic, { tam: 28 })), el('h2', {}, titulo), texto ? el('p', { class: 'texto-suave' }, texto) : null);

@@ -195,8 +195,10 @@ export async function datosDeFaena(ctx, faenaId, fecha) {
       ctx.api.from('persona_empresa').select('persona_id, cargo').eq('empresa_id', ctx.empresa.id).in('persona_id', ids).is('deleted_at', null),
     ]);
     const nombre = (x) => [x.nombres, x.apellido_paterno, x.apellido_materno].filter(Boolean).join(' ');
-    const orden = [...(pg.ope_plan_personas ?? [])].sort((a, b) => (a.rol === 'sup' ? -1 : 0) - (b.rol === 'sup' ? -1 : 0));
-    const sup = orden.find((x) => x.rol === 'sup');
+    // Supervisor del formato: el supervisor de la faena o, si no hay, el capataz (Faenas 008)
+    const peso = (x) => ({ sup: 0, cap: 1 })[x.rol] ?? 2;
+    const orden = [...(pg.ope_plan_personas ?? [])].sort((a, b) => peso(a) - peso(b));
+    const sup = orden.find((x) => x.rol === 'sup') ?? orden.find((x) => x.rol === 'cap');
     if (sup) d.supervisor = nombre(ps.find((x) => x.id === sup.persona_id) ?? {});
     orden.forEach((x) => {
       const q = (ps ?? []).find((y) => y.id === x.persona_id); if (!q) return;

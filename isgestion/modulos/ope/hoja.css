@@ -45,12 +45,15 @@
 .hs-menu-rol button { display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 10px; border: 0; border-radius: var(--radio-control); background: transparent; color: var(--texto); font: inherit; font-size: 15px; text-align: left; cursor: pointer; }
 .hs-menu-rol button:hover, .hs-menu-rol button:focus-visible { background: var(--hover); outline: none; }
 .hs-menu-rol button[aria-checked="true"] { font-weight: 700; }
+.hs-menu-rol button.rol-cap { color: var(--prox); }
 .hs-menu-rol button.rol-sup { color: var(--venc); }
 .hs-menu-rol button.rol-prev { color: var(--primario); }
+.hs-menu-sug { margin-left: auto; padding-left: 10px; font-size: 11px; font-weight: 400; color: var(--texto-suave); }
 .hs-menu-marca { display: inline-flex; width: 14px; }
 .hs-c.hs-solo .hs-rol { cursor: default; }
 /* Con persona: fondo verde claro como en Excel; supervisores en rojo, prevencionistas en azul */
 .hs-tabla td.hs-c[class*="rol-"] { background: var(--ok-fondo, color-mix(in srgb, var(--ok) 10%, var(--superficie))); }
+.hs-c.rol-cap .hs-persona { color: var(--prox); font-weight: 600; }
 .hs-c.rol-sup .hs-persona { color: var(--venc); font-weight: 600; }
 .hs-c.rol-prev .hs-persona { color: var(--primario); font-weight: 600; }
 .hs-c.hs-doble { box-shadow: inset 0 0 0 2px var(--prox); }

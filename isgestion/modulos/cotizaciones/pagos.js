@@ -3,14 +3,14 @@
 // del SII), factura de la TUU (queda en Facturas como factura del abono) o una foto o PDF. Un abono no reemplaza al
 // anterior. Si la venta tiene factura, el cobro final es el pago de esa factura (Facturas); los abonos se suman.
 // Con orden de trabajo se cobra en la orden (y si la cotización pasa a orden, la base lleva sus abonos allá).
-import { el } from '../../core/ui/dom.js?v=2d079ab';
-import { icono } from '../../core/ui/iconos.js?v=2d079ab';
-import { boton } from '../../core/ui/tabla.js?v=2d079ab';
-import { abrirFormulario } from '../../core/ui/modal.js?v=2d079ab';
-import { avisar } from '../../core/ui/aviso.js?v=2d079ab';
-import { dinero, fechaLarga, hoyISO, sumarDias } from '../../core/ui/formato.js?v=2d079ab';
-import { subirArchivo, urlFirmada } from '../../core/adjuntos.js?v=2d079ab';
-import { llamarDte, estadoDte, ofrecerPdf } from '../../core/dte.js?v=2d079ab';
+import { el } from '../../core/ui/dom.js?v=5ec3c84';
+import { icono } from '../../core/ui/iconos.js?v=5ec3c84';
+import { boton } from '../../core/ui/tabla.js?v=5ec3c84';
+import { abrirFormulario } from '../../core/ui/modal.js?v=5ec3c84';
+import { avisar } from '../../core/ui/aviso.js?v=5ec3c84';
+import { dinero, fechaLarga, hoyISO, sumarDias } from '../../core/ui/formato.js?v=5ec3c84';
+import { subirArchivo, urlFirmada } from '../../core/adjuntos.js?v=5ec3c84';
+import { llamarDte, estadoDte, ofrecerPdf } from '../../core/dte.js?v=5ec3c84';
 
 export const MEDIOS_PAGO = [['debito', 'Débito'], ['credito', 'Crédito'], ['efectivo', 'Efectivo'], ['transferencia', 'Transferencia'], ['cheque', 'Cheque'], ['otro', 'Otro']];
 const nombreMedio = Object.fromEntries(MEDIOS_PAGO);

@@ -1,0 +1,70 @@
+/* Documento preventivo editable con chat de IA (SST 007) */
+.ed-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(300px, 380px); gap: 16px; align-items: start; }
+.ed-papel { max-width: none; }
+.ed-bloque { border-radius: 4px; padding: 1px 4px; margin: 0 -4px; cursor: text; }
+.ed-bloque:hover { box-shadow: inset 3px 0 0 color-mix(in srgb, var(--empresa) 35%, transparent); }
+.ed-marcado { box-shadow: inset 3px 0 0 var(--empresa); background: color-mix(in srgb, var(--empresa) 8%, transparent); }
+.rv-papel h2.ed-marcado { outline: 2px solid var(--empresa); outline-offset: 2px; }
+.ed-chat { position: sticky; top: 72px; display: flex; flex-direction: column; gap: 8px; max-height: calc(100dvh - 96px); padding: 12px; }
+.ed-chat-cab { display: flex; align-items: center; gap: 8px; color: var(--empresa); }
+.ed-mensajes { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; min-height: 160px; }
+.ed-msg { padding: 8px 10px; border-radius: 10px; font-size: .9rem; line-height: 1.4; }
+.ed-ia { background: var(--fondo-sutil); border: 1px solid var(--borde); }
+.ed-yo { background: color-mix(in srgb, var(--empresa) 12%, var(--superficie)); align-self: flex-end; max-width: 90%; }
+.ed-espera { color: var(--texto-suave); font-style: italic; }
+.ed-error { color: var(--peligro, #b42318); }
+.ed-cambio { margin-top: 8px; padding: 8px; border: 1px solid var(--borde); border-radius: 8px; background: var(--superficie); }
+.ed-cambio-cab { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.ed-cambio-acc { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+.ed-previa { padding: 8px !important; margin-top: 6px; box-shadow: none !important; font-size: .85rem; }
+.ed-previa h2 { margin-top: 0; }
+.ed-quitar { opacity: .7; text-decoration: line-through; }
+.ed-sel { display: flex; align-items: center; gap: 6px; font-size: .82rem; padding: 6px 8px; border-radius: 8px; background: color-mix(in srgb, var(--empresa) 10%, var(--superficie)); }
+.ed-sel[hidden] { display: none; }
+.ed-sel span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.ed-escribir { display: flex; gap: 6px; align-items: flex-end; }
+.ed-entrada { flex: 1; resize: vertical; }
+@media (max-width: 1000px) {
+  .ed-grid { grid-template-columns: 1fr; }
+  .ed-chat { position: static; max-height: none; }
+  .ed-mensajes { max-height: 50vh; }
+}
+
+/* Espacios por rellenar (sugerencia #64): el bloque queda marcado hasta completarlo */
+.ed-falta { box-shadow: inset 3px 0 0 var(--prox); background: var(--prox-fondo); }
+.ed-falta::after { content: 'Falta rellenar'; display: block; font-size: 11px; font-weight: 600; color: var(--prox); margin-top: 2px; }
+.ed-falta-ir { outline: 2px solid var(--prox); outline-offset: 2px; }
+.boton.ed-faltan { color: var(--prox); border-color: color-mix(in srgb, var(--prox) 50%, transparent); }
+
+/* Lista numerada con el número de la sección (7.1, 7.2…), igual que en el PDF y el Word */
+.ed-numerada { list-style: none; padding-left: 0; }
+.ed-numerada > li { position: relative; padding-left: 34px; }
+.ed-numerada > li::before { content: attr(data-n); position: absolute; left: 0; font-weight: 700; color: var(--empresa); }
+::highlight(isg-falta) { background-color: color-mix(in srgb, var(--prox) 30%, transparent); text-decoration: underline wavy var(--prox); }
+
+/* Bloque de firmas (firmas-doc.js): casillas en fila con la firma guardada, línea, nombre y cargo */
+.edf { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; padding: 10px 0 4px; }
+.edf-caja { flex: 1 1 180px; max-width: 240px; display: flex; flex-direction: column; align-items: center; text-align: center; position: relative; padding: 6px 6px 8px; border: 1px dashed transparent; border-radius: 8px; }
+.ed-papel .edf-caja:hover, .ed-papel .edf-caja:focus-within { border-color: var(--borde); }
+.edf-rol { font-size: 11px; font-weight: 700; color: var(--empresa); text-transform: none; min-width: 60px; }
+.edf-zona { position: relative; height: 70px; width: 100%; display: flex; align-items: flex-end; justify-content: center; }
+.edf-firma { max-height: 66px; max-width: 80%; object-fit: contain; position: relative; z-index: 1; }
+.edf-timbre { position: absolute; right: 4%; top: 2px; max-height: 66px; max-width: 46%; object-fit: contain; opacity: .9; }
+.edf-linea { width: 80%; border-top: 1px solid var(--texto-suave); margin: 2px 0 3px; }
+.edf-nombre { font-weight: 700; font-size: 12.5px; min-width: 80px; }
+.edf-cargo { font-size: 11px; color: var(--texto-suave); min-width: 80px; }
+.edf-ctrl .campo { padding: 2px 6px; font-size: 12px; height: auto; width: auto; }
+.edf-chk { display: inline-flex; gap: 3px; align-items: center; font-size: 12px; }
+.edf-mas { align-self: center; display: inline-flex; gap: 6px; align-items: center; padding: 8px 12px; border: 1px dashed var(--borde); border-radius: 8px; background: transparent; color: var(--texto-suave); cursor: pointer; font: inherit; font-size: 12.5px; }
+.edf-mas:hover { color: var(--empresa); border-color: var(--empresa); background: var(--hover); }
+.edf-zona { overflow: visible; }
+.edf-mov { cursor: move; touch-action: none; user-select: none; -webkit-user-drag: none; z-index: 2; }
+.edf-mov:hover { outline: 1px dashed var(--empresa); outline-offset: 2px; }
+.edf-timbre.edf-mov { z-index: 1; }
+/* Controles de la casilla: flotan sobre ella (no ocupan espacio, así la firma no se corre al pasar el mouse) */
+.edf-caja { position: relative; }
+.edf-ctrl { position: absolute; left: 50%; bottom: calc(100% - 2px); transform: translateX(-50%); z-index: 5; display: flex; gap: 4px; align-items: center; white-space: nowrap; width: max-content;
+  padding: 4px 6px; border-radius: 8px; background: var(--superficie); border: 1px solid var(--borde); box-shadow: var(--sombra-suave); visibility: hidden; opacity: 0; transition: opacity .12s; }
+.ed-papel .edf-caja:hover .edf-ctrl, .ed-papel .edf-caja:focus-within .edf-ctrl { visibility: visible; opacity: 1; }
+.edf-caja.edf-moviendo .edf-ctrl { visibility: hidden; opacity: 0; }
+@media (hover: none) { .ed-papel .edf-ctrl { visibility: visible; opacity: 1; } }

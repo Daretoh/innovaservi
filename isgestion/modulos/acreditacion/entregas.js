@@ -1,11 +1,11 @@
 // Entregas de Prevención SST para la acreditación de un mandante (SST 006: sst_entregas.acr_tercero_id / acr_sitio_id).
 // Trazabilidad: qué se entregó, a quién, para qué lugar, quién firmó; avance por entrega y ZIP por entrega o por lugar.
 // Se ve con permiso de Prevención SST (ver); sin él la sección no aparece.
-import { el } from '../../core/ui/dom.js?v=2d079ab';
-import { icono } from '../../core/ui/iconos.js?v=2d079ab';
-import { boton } from '../../core/ui/tabla.js?v=2d079ab';
-import { fechaLarga } from '../../core/ui/formato.js?v=2d079ab';
-import { cargarDestinos, agrupar, barraAvance, claveDoc } from '../sst/acreditacion.js?v=2d079ab';
+import { el } from '../../core/ui/dom.js?v=5ec3c84';
+import { icono } from '../../core/ui/iconos.js?v=5ec3c84';
+import { boton } from '../../core/ui/tabla.js?v=5ec3c84';
+import { fechaLarga } from '../../core/ui/formato.js?v=5ec3c84';
+import { cargarDestinos, agrupar, barraAvance, claveDoc } from '../sst/acreditacion.js?v=5ec3c84';
 
 const SEL = 'id, tipo, tema, fecha, relator, estado, lote_id, acr_tercero_id, acr_sitio_id, documentos, created_at, sst_entrega_personas(persona_id)';
 
@@ -30,13 +30,13 @@ export async function avancePorMandante(ctx) {
 const zipDoc = (ctx, ids, nombre, soloDoc) => boton('ZIP', { icono: 'descargar', title: 'Carpeta por trabajador (firmado si ya firmó), en partes de hasta 19 MB', onclick: async (ev) => {
   ev.preventDefault(); ev.stopPropagation();
   const b = ev.currentTarget;
-  const { descargarEntregasZip } = await import('../sst/zip.js?v=2d079ab');
+  const { descargarEntregasZip } = await import('../sst/zip.js?v=5ec3c84');
   await descargarEntregasZip(ctx, ids, { nombre, soloDoc, boton: b });
 } });
 const zip = (ctx, ids, nombre) => boton('ZIP', { icono: 'descargar', title: 'Carpeta por trabajador con cada documento (firmado si ya firmó), en partes de hasta 19 MB', onclick: async (ev) => {
   ev.preventDefault(); ev.stopPropagation();
   const b = ev.currentTarget;
-  const { descargarEntregasZip } = await import('../sst/zip.js?v=2d079ab');
+  const { descargarEntregasZip } = await import('../sst/zip.js?v=5ec3c84');
   await descargarEntregasZip(ctx, ids, { nombre, boton: b });
 } });
 
