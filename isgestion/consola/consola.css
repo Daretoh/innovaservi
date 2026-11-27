@@ -156,3 +156,9 @@
 .fin-tarjeta.ia-mal strong { color: var(--venc); }
 .ia-precios td code { font-size: .8rem; }
 .ia-precios-acciones { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0 4px; }
+.ia-proteccion { margin-bottom: 12px; }
+.ia-proteccion-cabecera { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.ia-proteccion-cabecera h2 { margin: 0; }
+.ia-barra.ia-barra-llena { background: var(--venc); }
+.ia-avisos { margin-top: 10px; }
+.ia-avisos ul { margin: 4px 0 0; padding-left: 18px; }

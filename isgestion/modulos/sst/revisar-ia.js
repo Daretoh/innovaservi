@@ -1,10 +1,10 @@
 // Revisión de documentos preventivos con IA (SST 004): leer el Word o PDF, pedir la revisión y la versión corregida a
 // la Edge Function revisar-documento (Claude) y exportar el documento corregido a Word y PDF con el logo y el color de
 // la empresa. Librerías con versión fija desde CDN (08 Seguridad §5), solo al usarlas.
-import { textoDocx } from './texto-docx.js?v=cd68dd0';
-import { cargarJsPdf, cargarLogo, rgb, sellar } from '../../core/pdf.js?v=cd68dd0';
-import { nombreEmpresa } from '../../core/empresas.js?v=cd68dd0';
-import { tieneFirmas } from './firmas-doc-base.js?v=cd68dd0';
+import { textoDocx } from './texto-docx.js?v=625a797';
+import { cargarJsPdf, cargarLogo, rgb, sellar } from '../../core/pdf.js?v=625a797';
+import { nombreEmpresa } from '../../core/empresas.js?v=625a797';
+import { tieneFirmas } from './firmas-doc-base.js?v=625a797';
 
 const DOCX_LIB = 'https://cdn.jsdelivr.net/npm/docx@9.0.2/+esm';
 const JSZIP = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
@@ -135,7 +135,7 @@ export async function exportarWord(ctx, doc) {
   ] });
   const pie = new Footer({ children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [r(`${[doc.codigo, doc.version && `v${doc.version}`].filter(Boolean).join(' ')} · ${nombreEmpresa(e)} · Generado con ISgestión`, { size: 14, color: GRIS })] })] });
 
-  const FW = tieneFirmas(doc) ? await import('./firmas-doc.js?v=cd68dd0') : null;
+  const FW = tieneFirmas(doc) ? await import('./firmas-doc.js?v=625a797') : null;
   const firmasW = FW ? await FW.cargarFirmasDoc(ctx) : null;
   const bytesDe = (img) => Uint8Array.from(atob(img.dataUrl.split(',')[1]), (c) => c.charCodeAt(0));
   const hijos = [];
@@ -180,7 +180,7 @@ export async function exportarPdf(ctx, doc) {
   const M = 15, ARRIBA = 38, ABAJO = H - 16, ancho = W - 2 * M;
   let y = ARRIBA;
   const espacio = (mm) => { if (y + mm > ABAJO) { pdf.addPage(); y = ARRIBA; } return y; };
-  const FP = tieneFirmas(doc) ? await import('./firmas-doc.js?v=cd68dd0') : null;
+  const FP = tieneFirmas(doc) ? await import('./firmas-doc.js?v=625a797') : null;
   const firmasP = FP ? await FP.cargarFirmasDoc(ctx) : null;
   // Escribe una línea; cada ¤ se dibuja como una casilla vacía para marcar a mano
   const linea = (l, x, yb, tam) => {

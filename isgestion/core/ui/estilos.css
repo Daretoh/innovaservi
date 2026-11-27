@@ -3788,3 +3788,48 @@ html[data-tema="vidrio"][data-modo="oscuro"] .menu a[aria-current="page"] { colo
 .doc-anteriores > summary svg { transition: transform .15s; transform: rotate(-90deg); }
 .doc-anteriores[open] > summary svg { transform: none; }
 .doc-anteriores > summary:hover { color: var(--texto); }
+
+/* ---------- Consola de la plataforma (2026-11-27, pedido de Enzo: que no se confunda con ISgestión) ----------
+   Barra y menú en grafito con acento violeta (ninguna empresa usa ese color), franja violeta bajo la barra y fondo con
+   puntos. Va sobre el tema "moderno"; lo activa consola/consola.js con <html data-espacio="consola">. */
+[data-espacio="consola"] {
+  --consola-grafito: #141622; --consola-grafito-2: #1d2030; --consola-violeta: #6d4aff; --consola-cian: #22c3e6;
+  --consola-puntos: rgba(20, 22, 34, .07);
+  --fondo: #f3f2f9; --fondo-sutil: #f8f7fc; --fondo-hundido: #ebe9f5;
+  --menu-fondo: var(--consola-grafito); --menu-texto: rgba(255, 255, 255, .82); --menu-titulo: rgba(255, 255, 255, .42);
+  --menu-hover: rgba(255, 255, 255, .07); --menu-activo-fondo: var(--consola-violeta); --menu-activo-texto: #fff;
+  --barra-fondo: var(--consola-grafito); --barra-texto: #fff;
+}
+html[data-espacio="consola"][data-modo="oscuro"] { --consola-puntos: rgba(255, 255, 255, .05); --empresa: #9b85ff; }
+[data-espacio="consola"] body {
+  background-color: var(--fondo);
+  background-image: radial-gradient(var(--consola-puntos) 1px, transparent 1px);
+  background-size: 18px 18px;
+}
+[data-espacio="consola"] .barra {
+  background: var(--consola-grafito); color: #fff; border-bottom: 0; box-shadow: none; position: relative;
+}
+[data-espacio="consola"] .barra::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 3px;
+  background: linear-gradient(90deg, var(--consola-violeta), var(--consola-cian));
+}
+[data-espacio="consola"] .barra .marca, [data-espacio="consola"] .barra .correo,
+[data-espacio="consola"] .barra .boton-icono { color: #fff; }
+[data-espacio="consola"] .barra .correo { opacity: .75; }
+[data-espacio="consola"] .barra .boton-icono:hover { background: rgba(255, 255, 255, .1); }
+[data-espacio="consola"] .consola-etiqueta {
+  color: #fff; background: linear-gradient(90deg, var(--consola-violeta), #8b5cf6); letter-spacing: .14em;
+}
+[data-espacio="consola"] .menu { background: var(--menu-fondo); border-right: 0; padding: 14px 10px; }
+[data-espacio="consola"] .menu-grupo h3 { font-size: .64rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+[data-espacio="consola"] .menu a { color: var(--menu-texto); border-radius: 9px; font-weight: 500; }
+[data-espacio="consola"] .menu a:hover { background: var(--menu-hover); color: #fff; }
+[data-espacio="consola"] .menu a[aria-current="page"] {
+  background: var(--menu-activo-fondo); color: var(--menu-activo-texto); font-weight: 600;
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--consola-violeta) 35%, transparent);
+}
+[data-espacio="consola"] .menu a .icono { opacity: .9; }
+[data-espacio="consola"] .contenido h1 { font-weight: 800; letter-spacing: -.01em; }
+[data-espacio="consola"] .ficha, [data-espacio="consola"] .tabla-contenedor, [data-espacio="consola"] .fin-tarjeta {
+  border-color: color-mix(in srgb, var(--consola-violeta) 12%, var(--borde));
+}

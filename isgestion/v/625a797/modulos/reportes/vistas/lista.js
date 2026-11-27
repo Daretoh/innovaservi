@@ -1,0 +1,150 @@
+// Partes de trabajo: listado, pendientes de clientes que piden informe y creación desde las faenas.
+import { el } from '../../../core/ui/dom.js';
+import { icono } from '../../../core/ui/iconos.js';
+import { listado, boton } from '../../../core/ui/tabla.js';
+import { abrirFormulario } from '../../../core/ui/modal.js';
+import { avisar } from '../../../core/ui/aviso.js';
+import { hoyISO, sumarDias, fechaLarga } from '../../../core/ui/formato.js';
+import { faenasSinParte, nombreTercero, cargarClientes, cargarFaenas } from '../datos.js';
+import { esTelefono } from '../../../core/movil.js';
+import { calendario } from './calendario.js';
+
+let estado = 'todos';
+// El filtro Todos / Borradores / Confirmados repinta con lo ya cargado (antes volvía a pedir todo y tardaba 2–3 s sin
+// cambiar la pantalla: parecía que no funcionaba; Enzo, 2026-11-02)
+let cache = null;
+let soloPintar = false;
+
+async function cargar(ctx) {
+  const reusar = soloPintar && cache?.empresa === ctx.empresa.id;
+  soloPintar = false;
+  if (reusar) return cache;
+  // Cliente y faenas con las funciones de Reportes (Reportes 010): con solo el permiso de Reportes (Capataz) los
+  // embebidos terceros(...) y ope_faenas(...) llegaban vacíos y todos los partes salían como "Interno"
+  const [partes, clientes, sinParte] = await Promise.all([
+    ctx.api.from('rep_partes')
+      .select('id, fecha, estado, lugar, tercero_id, rep_parte_faenas(fecha, faena_id), rep_media(id)')
+      .eq('empresa_id', ctx.empresa.id).is('deleted_at', null).order('fecha', { ascending: false }).limit(500),
+    cargarClientes(ctx),
+    faenasSinParte(ctx, sumarDias(hoyISO(), -30), hoyISO()),
+  ]);
+  if (partes.error) throw partes.error;
+  const ids = [...new Set(partes.data.flatMap((p) => p.rep_parte_faenas.map((x) => x.faena_id)))];
+  const faenas = new Map((ids.length ? await cargarFaenas(ctx, '2000-01-01', '2000-01-01', ids) : []).map((f) => [f.id, f]));
+  const cli = new Map(clientes.map((c) => [c.id, c]));
+  for (const p of partes.data) {
+    p.terceros = cli.get(p.tercero_id) ?? null;
+    for (const x of p.rep_parte_faenas) x.ope_faenas = faenas.get(x.faena_id) ?? null;
+  }
+  // Faenas ya hechas (últimos 30 días) que llevan informe (marcado en la faena o, si no, por su cliente) y aún no tienen parte
+  cache = { empresa: ctx.empresa.id, partes: partes.data, pendientes: sinParte.filter((f) => f.pide_informe) };
+  return cache;
+}
+
+// Arriba el calendario del mes (solo lo que lleva informe, por estado) y abajo el listado de partes (Enzo, 2026-11-22)
+export default async function vista(ctx) {
+  const [cal, lista] = await Promise.all([
+    calendario(ctx, { refrescar: () => { soloPintar = true; ctx.refrescar(); } }),
+    listadoPartes(ctx),
+  ]);
+  lista.classList.add('rep-bajo-calendario');
+  const h1 = lista.querySelector('h1'); if (h1) h1.replaceWith(el('h2', {}, h1.textContent));
+  return el('div', { class: 'rep-con-calendario' }, cal, lista);
+}
+
+async function listadoPartes(ctx) {
+  const { partes: todas, pendientes } = await cargar(ctx);
+  const partes = { data: estado === 'todos' ? todas : todas.filter((p) => p.estado === estado) };
+
+  const segmento = el('div', { class: 'segmento', role: 'group', 'aria-label': 'Estado' },
+    [['todos', `Todos (${todas.length})`], ['borrador', `Borradores (${todas.filter((p) => p.estado === 'borrador').length})`], ['confirmado', `Confirmados (${todas.filter((p) => p.estado === 'confirmado').length})`]].map(([v, t]) =>
+      el('button', { type: 'button', 'aria-pressed': String(estado === v), onclick: () => { estado = v; soloPintar = true; ctx.refrescar(); } }, t)));
+
+  const acciones = [segmento];   // "Nuevo parte" va arriba, en el calendario
+
+  // Teléfono (para subir las fotos en terreno): tarjetas en vez de la tabla; las faenas sin parte, plegadas
+  if (esTelefono()) {
+    const puedeCrear = ctx.puede('reportes', 'crear');
+    return el('section', { class: 'listado rep-movil' },
+      el('h1', {}, 'Partes de trabajo'),
+      segmento,
+      pendientes.length ? el('details', { class: 'ficha rep-pendientes' },
+        el('summary', {}, icono('alerta', { tam: 16 }), ` Faenas sin parte (${pendientes.length})`),
+        pendientes.map((f) => el('div', { class: 'doc-fila' }, el('span', { class: 'doc-nombre' }, f.etiqueta),
+          puedeCrear ? boton('Crear parte', { onclick: () => nuevo(ctx, f) }) : null))) : null,
+      partes.data.length ? el('div', { class: 'rep-lista' }, partes.data.map((p) => el('a', { class: 'rep-fila', href: ctx.ruta('reportes.parte', { id: p.id }) },
+        el('span', { class: 'rep-fotos-n' }, icono('camara', { tam: 18 }), String(p.rep_media.length)),
+        el('span', { class: 'rep-fila-texto' }, el('strong', {}, nombreTercero(p.terceros)),
+          el('span', { class: 'texto-suave texto-chico' }, p.rep_parte_faenas.map((x) => x.ope_faenas?.titulo).filter(Boolean).join(' · ') || p.lugar || ''),
+          el('span', { class: 'rep-fila-pie' }, el('span', { class: 'texto-chico' }, fechaLarga(p.fecha)),
+            el('span', { class: `chip ${p.estado === 'confirmado' ? 'chip-ok' : 'chip-prox'}` }, p.estado === 'confirmado' ? 'Confirmado' : 'Borrador'))),
+        icono('derecha', { tam: 18 })))) : el('div', { class: 'tm-vacio' }, el('span', {}, 'No hay partes.')));
+  }
+
+  const lista = listado({
+    titulo: 'Partes de trabajo',
+    filas: partes.data,
+    acciones,
+    vacio: 'No hay partes.',
+    columnas: [
+      { titulo: 'Fecha', valor: (p) => fechaLarga(p.fecha) },
+      { titulo: 'Cliente', valor: (p) => el('a', { href: ctx.ruta('reportes.parte', { id: p.id }) }, nombreTercero(p.terceros)) },
+      { titulo: 'Faenas', valor: (p) => p.rep_parte_faenas.map((x) => x.ope_faenas?.titulo).filter(Boolean).join(' · ') || p.lugar || '' },
+      { titulo: 'Fotos', valor: (p) => p.rep_media.length },
+      { titulo: 'Estado', valor: (p) => el('span', { class: `chip ${p.estado === 'confirmado' ? 'chip-ok' : 'chip-prox'}` }, p.estado === 'confirmado' ? 'Confirmado' : 'Borrador') },
+    ],
+  });
+  if (pendientes.length) {
+    lista.insertBefore(el('div', { class: 'ficha doc-grupo' },
+      el('h2', {}, icono('alerta', { tam: 16 }), ` Faenas que llevan informe y no tienen parte (${pendientes.length})`),
+      pendientes.map((f) => el('div', { class: 'doc-fila' },
+        el('span', { class: 'doc-nombre' }, f.etiqueta),
+        ctx.puede('reportes', 'crear') ? boton('Crear parte', { onclick: () => nuevo(ctx, f) }) : null))), lista.children[1]);
+  }
+  return lista;
+}
+
+export async function nuevo(ctx, preseleccion) {
+  const disponibles = await faenasSinParte(ctx, sumarDias(hoyISO(), -45), sumarDias(hoyISO(), 14));
+  const clientes = (await cargarClientes(ctx)).filter((c) => c.es_cliente).sort((a, b) => (a.razon_social ?? '').localeCompare(b.razon_social ?? ''));
+  // La faena desde la que se creó va primera (marcada) y luego las del mismo cliente: antes quedaba marcada al fondo
+  // de la lista, detrás de las futuras, y parecía que no se había elegido (Enzo, 2026-11-02)
+  if (preseleccion) {
+    const k = (f) => (f.id === preseleccion.id && f.fecha === preseleccion.fecha ? 0 : f.tercero_id === preseleccion.tercero_id ? 1 : 2);
+    disponibles.sort((a, b) => k(a) - k(b));
+  }
+  abrirFormulario({
+    titulo: 'Nuevo parte de trabajo',
+    mensaje: 'Elige una o varias faenas-día del mismo cliente (un parte consolidado), o deja sin faenas y elige el cliente.',
+    campos: [
+      { id: 'faenas', etiqueta: 'Faenas (últimas 6 semanas y próximas 2)', tipo: 'checks', opciones: disponibles.map((f) => [`${f.id}|${f.fecha}`, f.etiqueta]), valor: preseleccion ? [`${preseleccion.id}|${preseleccion.fecha}`] : [] },
+      { id: 'tercero_id', etiqueta: 'Cliente (solo si no eliges faenas)', opciones: [['', '—'], ...(clientes ?? []).map((c) => [c.id, nombreTercero(c)])] },
+      { id: 'fecha', etiqueta: 'Fecha (solo si no eliges faenas)', tipo: 'date', valor: hoyISO() },
+    ],
+    textoGuardar: 'Crear',
+    alGuardar: async (v) => {
+      const elegidas = disponibles.filter((f) => v.faenas.includes(`${f.id}|${f.fecha}`));
+      const clientesElegidos = new Set(elegidas.map((f) => f.tercero_id ?? ''));
+      if (clientesElegidos.size > 1) throw new Error('Las faenas de un parte deben ser del mismo cliente.');
+      if (!elegidas.length && !v.tercero_id) throw new Error('Elige faenas o un cliente.');
+      const { data: cfg } = await ctx.api.from('rep_config').select('responsable').eq('empresa_id', ctx.empresa.id).maybeSingle();
+      const base = elegidas[0];
+      const sitios = new Set(elegidas.map((f) => f.sitio_id).filter(Boolean));
+      const { data: parte, error } = await ctx.api.from('rep_partes').insert({
+        empresa_id: ctx.empresa.id,
+        tercero_id: base ? base.tercero_id : v.tercero_id,
+        sitio_id: sitios.size === 1 ? [...sitios][0] : null,
+        lugar: sitios.size === 1 ? base.sitio : null,
+        fecha: elegidas.length ? elegidas.map((f) => f.fecha).sort()[0] : v.fecha,
+        responsable: cfg?.responsable ?? null,
+      }).select('id').single();
+      if (error) throw new Error(error.message);
+      if (elegidas.length) {
+        const { error: e2 } = await ctx.api.from('rep_parte_faenas').insert(elegidas.map((f) => ({ parte_id: parte.id, empresa_id: ctx.empresa.id, faena_id: f.id, fecha: f.fecha })));
+        if (e2) throw new Error(e2.code === '23505' ? 'Alguna de esas faenas ya está en otro parte.' : e2.message);
+      }
+      avisar('Parte creado. Agrega las fotos.');
+      location.hash = ctx.ruta('reportes.parte', { id: parte.id });
+    },
+  });
+}

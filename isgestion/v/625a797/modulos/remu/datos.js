@@ -1,0 +1,185 @@
+// Carga lo necesario para calcular pagos de la empresa activa en un rango.
+import { calcular, sueldoDelMes, semanaEnMes } from './calculo.js';
+import { sumarDias, rangoMes, lunesDe } from '../../core/ui/formato.js';
+
+// Externo: trabaja como cualquiera (horas, faenas) pero cobra con factura, no por planilla (Remuneraciones 010)
+export const esExterno = (v) => v.condicion?.modo === 'externo';
+
+export const nombreCompleto = (p) => [p.nombres, p.apellido_paterno, p.apellido_materno].filter(Boolean).join(' ');
+
+export async function cargarBase(ctx) {
+  const e = ctx.empresa.id;
+  const [vinculos, condiciones, cargos, config, licencias] = await Promise.all([
+    ctx.api.from('persona_empresa').select('id, persona_id, estado, tipo_vinculo, cargo, personas(id, rut, nombres, apellido_paterno, apellido_materno)')
+      .eq('empresa_id', e).is('deleted_at', null),
+    ctx.api.from('remu_condiciones').select('*').eq('empresa_id', e),
+    ctx.api.from('remu_cargos').select('*').eq('empresa_id', e).order('orden').order('nombre'),
+    ctx.api.from('remu_config').select('*').eq('empresa_id', e).maybeSingle(),
+    // Licencias médicas (núcleo 017): días que no se pagan a los fijos
+    ctx.api.from('licencias').select('persona_id, tipo, desde, hasta').eq('empresa_id', e).is('deleted_at', null),
+  ]);
+  for (const r of [vinculos, condiciones, cargos, config]) if (r.error) throw r.error;
+  const porVinculo = new Map(condiciones.data.map((c) => [c.vinculo_id, c]));
+  const licDe = (pid) => (licencias.data ?? []).filter((l) => l.persona_id === pid);
+  // Un vínculo por persona (el activo primero)
+  const vistos = new Map();
+  for (const v of [...vinculos.data].sort((a, b) => (a.estado === 'activo' ? -1 : 1) - (b.estado === 'activo' ? -1 : 1))) {
+    if (!vistos.has(v.persona_id)) vistos.set(v.persona_id, { ...v, condicion: porVinculo.get(v.id) ?? null, licencias: licDe(v.persona_id) });
+  }
+  // Socios de la empresa (remu_condiciones.socio) y externos que facturan (modo 'externo', Remuneraciones 010):
+  // fuera de los pagos; Condiciones los muestra en `todos` y los externos van aparte en `externos`
+  const todos = [...vistos.values()];
+  return {
+    vinculos: todos.filter((v) => !v.condicion?.socio && !esExterno(v)),
+    externos: todos.filter((v) => !v.condicion?.socio && esExterno(v)),
+    todos,
+    cargos: new Map(cargos.data.map((c) => [c.id, c])),
+    listaCargos: cargos.data,
+    config: config.data ?? { valor_vuelta: 0, valor_hora: 0, horas_trato: 8 },
+  };
+}
+
+// Calcula el rango [desde, hasta]. itemsDesde/itemsHasta: rango de lunes de los extras que cuentan.
+// itemsMes ('aaaa-mm'): pago mensual, los extras y descuentos son del mes.
+export async function calcularRango(ctx, base, { desde, hasta, itemsDesde = desde, itemsHasta = desde, incluirFijosSinActividad = false, filtroItems = null, itemsMes = null }) {
+  const e = ctx.empresa.id;
+  const [horas, items, ajustes, feriados, flota] = await Promise.all([
+    ctx.api.from('asis_horas').select('persona_id, fecha, entrada, salida, faena, vueltas').eq('empresa_id', e)
+      .is('deleted_at', null).gte('fecha', desde).lte('fecha', hasta).limit(10000),
+    // Aguinaldo y anticipo (clase) van aparte: los suma resumenMes
+    itemsMes ? ctx.api.from('remu_items').select('*').eq('empresa_id', e).eq('mes', itemsMes).is('clase', null)
+      : ctx.api.from('remu_items').select('*').eq('empresa_id', e).gte('semana', itemsDesde).lte('semana', itemsHasta).is('clase', null),
+    ctx.api.from('remu_ajustes').select('*').eq('empresa_id', e).gte('fecha', desde).lte('fecha', hasta),
+    ctx.api.from('remu_feriados').select('fecha, nombre').eq('empresa_id', e).gte('fecha', desde).lte('fecha', hasta),
+    ctx.api.rpc('remu_vueltas_flota', { p_empresa: e, p_desde: desde, p_hasta: hasta }),
+  ]);
+  for (const r of [horas, items, ajustes, feriados, flota]) if (r.error) throw r.error;
+  const R = calcular({
+    desde, hasta, vinculos: base.vinculos, cargos: base.cargos, config: base.config,
+    horas: horas.data, items: filtroItems ? items.data.filter(filtroItems) : items.data, ajustes: ajustes.data, vueltasFlota: flota.data,
+    feriados: new Set(feriados.data.map((f) => f.fecha)), incluirFijosSinActividad,
+  });
+  R.feriados = new Map(feriados.data.map((f) => [f.fecha, f.nombre]));
+  return R;
+}
+
+export const semanaDe = (lunes) => ({ desde: lunes, hasta: sumarDias(lunes, 6) });
+
+// Pago mensual (IS Performance): cálculo del mes con extras y descuentos del mes, sueldo base de los fijos
+// y bono por autos (valor × autos trabajados en el mes, con tope por persona si hay, a cada persona que trabajó al
+// menos un día y no está excluida). Devuelve { R, filas (con sueldo, bonoAutos, sinBono, totalMes), autos, valorAuto, total }.
+export async function pagoMensual(ctx, base, mes) {
+  const { desde, hasta } = rangoMes(mes);
+  const valorAuto = Number(base.config.bono_auto || 0);
+  const tope = Number(base.config.bono_auto_tope || 0);   // 0 = sin tope (Performance: $50.000)
+  const [R, autos, sinBono] = await Promise.all([
+    calcularRango(ctx, base, { desde, hasta, incluirFijosSinActividad: true, itemsMes: mes }),
+    valorAuto ? ctx.api.rpc('remu_autos_mes', { p_empresa: ctx.empresa.id, p_mes: mes }) : Promise.resolve({ data: [] }),
+    ctx.api.from('remu_sin_bono').select('persona_id').eq('empresa_id', ctx.empresa.id).eq('mes', mes),
+  ]);
+  if (autos.error) throw new Error(autos.error.message);
+  const excluidos = new Set((sinBono.data ?? []).map((x) => x.persona_id));
+  const nAutos = (autos.data ?? []).length;
+  const filas = R.filas.map((f) => {
+    const sueldo = sueldoDelMes(f, mes);
+    const sin = excluidos.has(f.vinculo.persona_id);
+    // Art. 22 (sin control de jornada) no registra horas: cuenta como que trabajó el mes.
+    const trabajo = f.dias > 0 || !!f.condicion?.art22;
+    const bonoAutos = valorAuto && trabajo && !sin ? (tope ? Math.min(nAutos * valorAuto, tope) : nAutos * valorAuto) : 0;
+    return { ...f, sueldo, sinBono: sin, bonoAutos, totalMes: f.total + sueldo + bonoAutos, realMes: f.real + sueldo + bonoAutos };
+  });
+  return { R, filas, autos: autos.data ?? [], valorAuto, tope, total: filas.reduce((s, f) => s + f.totalMes, 0) };
+}
+
+// Movimientos del mes (remu_items.clase, migración 007), para cualquier trabajador: g = 'hab' se suma al total (costo),
+// 'des' se descuenta del total, 'pag' ya se pagó (se resta de "A pagar", no del costo).
+export const MOVIMIENTOS = {
+  anticipo: { t: 'Anticipo', g: 'pag', tipo: 'descuento' },
+  quincena: { t: 'Quincena', g: 'pag', tipo: 'descuento' }, bono: { t: 'Bono', g: 'hab', tipo: 'extra' },
+  aguinaldo: { t: 'Aguinaldo', g: 'hab', tipo: 'extra' }, descuento: { t: 'Descuento', g: 'des', tipo: 'descuento' },
+};
+
+// Movimientos del mes: persona → { hab, des, pag, aguinaldo, anticipo, items }
+export async function fijosDelMes(ctx, mes) {
+  const { data, error } = await ctx.api.from('remu_items').select('*').eq('empresa_id', ctx.empresa.id).eq('mes', mes).not('clase', 'is', null).order('created_at');
+  if (error) throw error;
+  const m = new Map();
+  for (const it of data) {
+    const o = m.get(it.persona_id) ?? { hab: 0, des: 0, pag: 0, aguinaldo: 0, anticipo: 0, items: [] };
+    const g = MOVIMIENTOS[it.clase]?.g;
+    if (g) o[g] += it.monto;
+    if (it.clase === 'aguinaldo' || it.clase === 'anticipo') o[it.clase] += it.monto;
+    o.items.push(it); m.set(it.persona_id, o);
+  }
+  return m;
+}
+
+// Fila en cero para quien solo tiene movimientos en el mes (sin horas ni sueldo)
+function filaVacia(v, base) {
+  const c = v.condicion ?? {};
+  return { vinculo: v, persona: v.personas, modo: c.modo ?? (v.tipo_vinculo === 'contrato' ? 'fijo' : 'hora'), cargo: c.cargo_id ? base.cargos.get(c.cargo_id) ?? null : null,
+    trato: 0, vh: 0, vv: 0, ventana: null, jornadaHoras: null, condicion: v.condicion ?? null, dias: 0, totMin: 0, pagoMin: 0, base: 0, baseContable: 0,
+    vueltas: 0, montoVueltas: 0, extra: 0, descuento: 0, items: [], real: 0, total: 0, hayAjuste: false, detalle: [], sueldo: 0, bonoAutos: 0, totalMes: 0, realMes: 0 };
+}
+
+// Resumen del mes con el mismo cálculo para empresas de pago semanal o mensual: filas con sueldo base, bono por
+// autos (mensual) y movimientos; totalMes = costo del mes (pagos + sueldo + bono + bonos y aguinaldos − descuentos) y
+// aPagar = totalMes − anticipos y quincenas (ya pagados: no cambian el costo). Lo usan el Cierre, el Estado
+// de resultados (totalMes) y Costos de mano de obra.
+export async function resumenMes(ctx, base, mes) {
+  const [P, fijos] = await Promise.all([
+    base.config.periodo === 'mensual' ? pagoMensual(ctx, base, mes) : (async () => {
+      const { desde, hasta } = rangoMes(mes);
+      const R = await calcularRango(ctx, base, {
+        desde, hasta, incluirFijosSinActividad: true,
+        itemsDesde: lunesDe(sumarDias(desde, -6)), itemsHasta: hasta,
+        filtroItems: (it) => semanaEnMes(it.semana, mes),
+      });
+      return { R, autos: [], valorAuto: 0, tope: 0, filas: R.filas.map((f) => { const sueldo = sueldoDelMes(f, mes); return { ...f, sueldo, bonoAutos: 0, totalMes: f.total + sueldo, realMes: f.real + sueldo }; }) };
+    })(),
+    fijosDelMes(ctx, mes),
+  ]);
+  // Quien solo tiene movimientos en el mes también va (con lo demás en cero)
+  const conFila = new Set(P.filas.map((f) => f.vinculo.persona_id));
+  const soloMov = base.vinculos.filter((v) => fijos.has(v.persona_id) && !conFila.has(v.persona_id)).map((v) => filaVacia(v, base));
+  const filas = [...P.filas, ...soloMov].map((f) => {
+    const x = fijos.get(f.vinculo.persona_id) ?? { hab: 0, des: 0, pag: 0, aguinaldo: 0, anticipo: 0, items: [] };
+    const total = f.totalMes + x.hab - x.des;
+    return { ...f, aguinaldo: x.aguinaldo, anticipo: x.pag, movHab: x.hab, movDes: x.des, movPag: x.pag, itemsFijos: x.items,
+      totalMes: total, realMes: f.realMes + x.hab - x.des, aPagar: total - x.pag };
+  });
+  return { ...P, filas, total: filas.reduce((s, f) => s + f.totalMes, 0) };
+}
+
+// Externos del mes: lo esperado (horas reales × valor hora, como un spot, más vueltas) y lo que facturó su proveedor en
+// Costos (neto de sus facturas del mes; null si no hay permiso para ver Costos). Devuelve { R, filas: [{ f, terceroId,
+// esperado, facturado, docs }] }. No es parte del costo de Remuneraciones: su costo entra por Costos.
+export async function externosMes(ctx, base, mes) {
+  if (!base.externos?.length) return { R: null, filas: [] };
+  const { desde, hasta } = rangoMes(mes);
+  const R = await calcularRango(ctx, { ...base, vinculos: base.externos }, { desde, hasta, itemsMes: mes });
+  const terceros = [...new Set(base.externos.map((v) => v.condicion?.tercero_id).filter(Boolean))];
+  let docs = null;
+  if (ctx.puede('costos', 'ver')) {
+    docs = [];
+    if (terceros.length) {
+      const r = await ctx.api.from('fin_registros').select('id, fecha, tercero_id, doc_tipo, doc_numero, neto, total, concepto')
+        .eq('empresa_id', ctx.empresa.id).eq('tipo', 'gasto').in('tercero_id', terceros).is('deleted_at', null).gte('fecha', desde).lte('fecha', hasta).order('fecha');
+      docs = r.error ? null : r.data;
+    }
+  }
+  const porPersona = new Map(R.filas.map((f) => [f.vinculo.persona_id, f]));
+  const filas = base.externos.map((v) => {
+    const f = porPersona.get(v.persona_id) ?? filaVacia(v, base);
+    const tid = v.condicion?.tercero_id ?? null;
+    const suyos = docs && tid ? docs.filter((d) => d.tercero_id === tid) : [];
+    // Lo esperado sale de sus horas reales (no de ajustes de pago, que son de la planilla)
+    return { f, terceroId: tid, esperado: f.real || 0, facturado: docs ? suyos.reduce((s, d) => s + (d.neto || 0), 0) : null, docs: suyos };
+  });
+  return { R, filas };
+}
+
+// Total (costo) del mes: lo usa el Estado de resultados.
+export async function totalMes(ctx, base, mes) {
+  return (await resumenMes(ctx, base, mes)).total;
+}

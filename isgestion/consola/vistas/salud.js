@@ -2,10 +2,10 @@
 // Cloudflare, OpenFactura, Meta, Anthropic) las hace el guion local supervisor/revisar.mjs, que tiene los tokens; las
 // internas de la base (pg_cron, push, tamaño, RLS, consultas lentas) corren cada día con pg_cron o con el botón.
 // Esta pantalla solo lee con_salud_* (es_equipo()); no llama a ningún servicio externo.
-import { el } from '../../core/ui/dom.js?v=cd68dd0';
-import { icono } from '../../core/ui/iconos.js?v=cd68dd0';
-import { boton } from '../../core/ui/tabla.js?v=cd68dd0';
-import { avisar } from '../../core/ui/aviso.js?v=cd68dd0';
+import { el } from '../../core/ui/dom.js?v=625a797';
+import { icono } from '../../core/ui/iconos.js?v=625a797';
+import { boton } from '../../core/ui/tabla.js?v=625a797';
+import { avisar } from '../../core/ui/aviso.js?v=625a797';
 
 const ORDEN = ['Sitio', 'GitHub', 'Supabase', 'Seguridad', 'Pruebas', 'Migraciones', 'Edge Functions', 'Calidad', 'Rendimiento',
   'pg_cron', 'Push', 'Cloudflare', 'OpenFactura', 'WhatsApp', 'Anthropic', 'Correo', 'Respaldos'];
@@ -162,7 +162,7 @@ export default async function vista(ctx) {
 }
 
 // Cada revisión dicha en simple: nombre, qué significa lo que encontró y qué hacer. Lo no listado usa un texto general.
-const PIDE = 'Copia el resumen (botón de arriba) y pégaselo a Claude para que lo revise.';
+const PIDE = 'Copia el resumen (botón de arriba) y pégalo en el chat AGENTES de Claude (Centro de agentes programados) para que lo revise.';
 const SIMPLE = {
   'innovaservi.cl/isgestion responde': ['La página abre', 'La página de ISgestión no abrió o tardó mucho.', 'Ábrela tú en el navegador. Si no abre, avísale a Claude.'],
   'Versión publicada = main': ['La página tiene lo último', 'Hay cambios hechos que todavía no están publicados en la página.', 'Nada urgente: se publican cuando pidas "publicar".'],
