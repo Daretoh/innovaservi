@@ -3,14 +3,14 @@
 // - Documento a documento: facturas en el SII que no están en ISgestión, al revés y con montos distintos.
 // "Sincronizar con el SII" pide a OpenFactura actualizar el RCV desde el SII (tarda unos minutos; el SII limita
 // cuántas veces). Las boletas (de la TUU) se comparan solo por totales. Solo con costos.aprobar.
-import { el } from '../../../core/ui/dom.js?v=96471b3';
-import { icono } from '../../../core/ui/iconos.js?v=96471b3';
-import { boton } from '../../../core/ui/tabla.js?v=96471b3';
-import { avisar } from '../../../core/ui/aviso.js?v=96471b3';
-import { dinero, fechaLarga, hoyISO } from '../../../core/ui/formato.js?v=96471b3';
-import { llamarDte, estadoDte, avisoPrueba, NOMBRE_DTE } from '../../../core/dte.js?v=96471b3';
-import { sinPermiso } from './flujo.js?v=96471b3';
-import { formRegistrar } from '../../cotizaciones/emitidas.js?v=96471b3';
+import { el } from '../../../core/ui/dom.js?v=2d079ab';
+import { icono } from '../../../core/ui/iconos.js?v=2d079ab';
+import { boton } from '../../../core/ui/tabla.js?v=2d079ab';
+import { avisar } from '../../../core/ui/aviso.js?v=2d079ab';
+import { dinero, fechaLarga, hoyISO } from '../../../core/ui/formato.js?v=2d079ab';
+import { llamarDte, estadoDte, avisoPrueba, NOMBRE_DTE } from '../../../core/dte.js?v=2d079ab';
+import { sinPermiso } from './flujo.js?v=2d079ab';
+import { formRegistrar } from '../../cotizaciones/emitidas.js?v=2d079ab';
 
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
 const nombreMes = (p) => `${MESES[(p % 100) - 1]} ${Math.floor(p / 100)}`;

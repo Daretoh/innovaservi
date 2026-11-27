@@ -1,12 +1,12 @@
 // Indicadores del mes: contactos nuevos, clientes ganados, conversión, sin atender, por origen, por campaña y resultados
 // de las publicaciones; abajo WhatsApp, bot, agenda en línea, tarjeta y avisos (canales-ind.js). Excel con el membrete de la empresa.
-import { el } from '../../../core/ui/dom.js?v=96471b3';
-import { icono } from '../../../core/ui/iconos.js?v=96471b3';
-import { boton } from '../../../core/ui/tabla.js?v=96471b3';
-import { dinero, hoyISO, rangoMes, moverMes, nombreMes } from '../../../core/ui/formato.js?v=96471b3';
-import { nuevoExcel } from '../../../core/excel.js?v=96471b3';
-import { cargarCanales, panelesCanales, filasCanales } from '../canales-ind.js?v=96471b3';
-import { cargarBase, cargarCss, nombreOrigen, diasDesde, DIAS_SIN_ATENDER } from '../datos.js?v=96471b3';
+import { el } from '../../../core/ui/dom.js?v=2d079ab';
+import { icono } from '../../../core/ui/iconos.js?v=2d079ab';
+import { boton } from '../../../core/ui/tabla.js?v=2d079ab';
+import { dinero, hoyISO, rangoMes, moverMes, nombreMes } from '../../../core/ui/formato.js?v=2d079ab';
+import { nuevoExcel } from '../../../core/excel.js?v=2d079ab';
+import { cargarCanales, panelesCanales, filasCanales } from '../canales-ind.js?v=2d079ab';
+import { cargarBase, cargarCss, nombreOrigen, diasDesde, DIAS_SIN_ATENDER } from '../datos.js?v=2d079ab';
 
 const estado = { mes: hoyISO().slice(0, 7) };
 

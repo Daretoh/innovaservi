@@ -4,12 +4,12 @@
 // faenas y patentes; tocar una barra filtra todo y lleva al Detalle, que siempre está visible con cada registro (buscar,
 // "mostrar más", enlace al registro). Excel con resumen y registros. Las compras por cuenta de un tercero (a_cuenta_de)
 // no son gasto de la empresa: se excluyen salvo que se pidan en Filtros.
-import { el } from '../../../core/ui/dom.js?v=96471b3';
-import { icono } from '../../../core/ui/iconos.js?v=96471b3';
-import { boton } from '../../../core/ui/tabla.js?v=96471b3';
-import { avisar } from '../../../core/ui/aviso.js?v=96471b3';
-import { dinero, fechaLarga, hoyISO, nombreMes, moverMes, rangoMes } from '../../../core/ui/formato.js?v=96471b3';
-import { cargarBase, nombreTercero, DOCS, nombreDoc, nombreClase, estadosDe } from '../datos.js?v=96471b3';
+import { el } from '../../../core/ui/dom.js?v=2d079ab';
+import { icono } from '../../../core/ui/iconos.js?v=2d079ab';
+import { boton } from '../../../core/ui/tabla.js?v=2d079ab';
+import { avisar } from '../../../core/ui/aviso.js?v=2d079ab';
+import { dinero, fechaLarga, hoyISO, nombreMes, moverMes, rangoMes } from '../../../core/ui/formato.js?v=2d079ab';
+import { cargarBase, nombreTercero, DOCS, nombreDoc, nombreClase, estadosDe } from '../datos.js?v=2d079ab';
 
 const hoy = hoyISO();
 const SIN = '(sin)';   // clave de "sin proveedor", "sin faena"…: distinta de '' (= todos)
@@ -195,7 +195,7 @@ export default async function vista(ctx) {
     b.disabled = true;
     try {
       const { lista, total } = pintar();
-      const { nuevoExcel } = await import('../../../core/excel.js?v=96471b3');
+      const { nuevoExcel } = await import('../../../core/excel.js?v=2d079ab');
       const x = await nuevoExcel(ctx, { titulo: 'Estadísticas de costos', subtitulo: `${fechaLarga(estado.desde)} al ${fechaLarga(estado.hasta)} · ${lista.length} registros · ${dinero(total)}` });
       const resumen = (dk, titulo) => {
         const g = agrupar(lista, dk).sort((a, c) => (dk === 'mes' ? a.k.localeCompare(c.k) : c.total - a.total));

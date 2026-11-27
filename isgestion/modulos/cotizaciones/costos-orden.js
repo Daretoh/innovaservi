@@ -5,21 +5,21 @@
 // el PDF. Cada costo guarda `registro_id` (o `insumos:<orden>`) para no traerlo dos veces.
 // No entran las compras hechas por cuenta de un tercero (a_cuenta_de): se le descuentan a él, no son costo de la empresa.
 // La lista y el editor de cotizaciones muestran estos mismos costos aunque nadie los haya traído (costosDeGrupos).
-import { diaLocal, hoyISO } from '../../core/ui/formato.js?v=96471b3';
+import { diaLocal, hoyISO } from '../../core/ui/formato.js?v=2d079ab';
 
 const nombreT = (t) => t?.nombre_fantasia || t?.razon_social || '';
 
 const trozos = (l, n = 80) => Array.from({ length: Math.ceil(l.length / n) }, (_, i) => l.slice(i * n, (i + 1) * n));
 
 // Gastos e insumos de esas órdenes y patentes, por partes (la lista de cotizaciones no cabe en una sola dirección)
-async function fuentes(ctx, idsOrden, patentes) {
+async function fuentes(ctx, idsOrden, patentes, idsGrupo = []) {
   const regs = new Map(); const ins = [];
   const leer = (res) => res.flatMap((r) => { if (r.error) throw new Error(r.error.message); return r.data ?? []; });
   if (ctx.puede('costos', 'ver')) {
     const base = () => ctx.api.from('fin_registros')
-      .select('id, fecha, concepto, total, neto, doc_tipo, orden_id, patente, tercero_id, a_cuenta_de, terceros!fin_registros_tercero_id_fkey(razon_social, nombre_fantasia)')
+      .select('id, fecha, concepto, total, neto, doc_tipo, orden_id, patente, cot_grupo_id, tercero_id, a_cuenta_de, terceros!fin_registros_tercero_id_fkey(razon_social, nombre_fantasia)')
       .eq('empresa_id', ctx.empresa.id).eq('tipo', 'gasto').is('deleted_at', null).is('a_cuenta_de', null);
-    const res = await Promise.all([...trozos(idsOrden).map((t) => base().in('orden_id', t)), ...trozos(patentes).map((t) => base().in('patente', t))]);
+    const res = await Promise.all([...trozos(idsOrden).map((t) => base().in('orden_id', t)), ...trozos(patentes).map((t) => base().in('patente', t)), ...trozos(idsGrupo).map((t) => base().in('cot_grupo_id', t))]);
     for (const r of leer(res)) regs.set(r.id, r);
   }
   if (ctx.puede('inventario', 'ver')) {
@@ -60,11 +60,16 @@ export async function costosDeOrdenes(ctx, ordenes) {
 export async function costosDeGrupos(ctx, grupos, ordenDe) {
   if (!grupos.length) return new Map();
   const idsOrden = [...new Set(grupos.map((g) => g.orden_id).filter((id) => ordenDe.has(id)))];
-  const { regs, ins } = await fuentes(ctx, idsOrden, [...new Set(grupos.map((g) => g.patente).filter(Boolean))]);
+  const { regs, ins } = await fuentes(ctx, idsOrden, [...new Set(grupos.map((g) => g.patente).filter(Boolean))], grupos.map((g) => g.id));
+  // (Costos 016) Las compras ligadas a este vehículo de la cotización (cot_grupo_id) entran siempre; las ligadas a otro, nunca
   return new Map(grupos.map((g) => {
     const o = ordenDe.get(g.orden_id);
-    return [g.id, o ? costosDeUnaOrden({ ...o, patente: g.patente }, regs, ins)
-      : regs.filter((r) => !r.orden_id && g.patente && r.patente === g.patente).map(costoDeRegistro)];
+    const propias = regs.filter((r) => r.cot_grupo_id === g.id && !(o && r.orden_id === o.id)).map(costoDeRegistro);
+    const otras = regs.filter((r) => !r.cot_grupo_id || r.cot_grupo_id === g.id);
+    const base = o ? costosDeUnaOrden({ ...o, patente: g.patente }, otras, ins)
+      : otras.filter((r) => !r.cot_grupo_id && !r.orden_id && g.patente && r.patente === g.patente).map(costoDeRegistro);
+    const ya = new Set(base.map((x) => x.costos[0]?.registro_id));
+    return [g.id, [...base, ...propias.filter((x) => !ya.has(x.costos[0]?.registro_id))]];
   }));
 }
 

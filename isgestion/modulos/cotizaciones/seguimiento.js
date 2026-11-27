@@ -2,15 +2,16 @@
 // archivo. Pensado para Guillermo Morales (una cotización por vehículo, una OC por cotización), sirve para cualquiera.
 // Al registrar la OC la cotización queda aceptada. La factura y el cobro van en el registro de facturas (007, facturas.js),
 // que los copia en la cotización; al cobrar, las órdenes del taller ligadas quedan cobradas.
-import { el } from '../../core/ui/dom.js?v=96471b3';
-import { icono } from '../../core/ui/iconos.js?v=96471b3';
-import { boton } from '../../core/ui/tabla.js?v=96471b3';
-import { abrirFormulario } from '../../core/ui/modal.js?v=96471b3';
-import { avisar } from '../../core/ui/aviso.js?v=96471b3';
-import { dinero, fechaLarga, hoyISO } from '../../core/ui/formato.js?v=96471b3';
-import { subirArchivo, urlFirmada } from '../../core/adjuntos.js?v=96471b3';
-import { formFactura, formPago, anularPago, eliminarFactura } from './facturas.js?v=96471b3';
-import { formEmitir } from './emitir.js?v=96471b3';
+import { el } from '../../core/ui/dom.js?v=2d079ab';
+import { icono } from '../../core/ui/iconos.js?v=2d079ab';
+import { boton } from '../../core/ui/tabla.js?v=2d079ab';
+import { abrirFormulario } from '../../core/ui/modal.js?v=2d079ab';
+import { avisar } from '../../core/ui/aviso.js?v=2d079ab';
+import { dinero, fechaLarga, hoyISO } from '../../core/ui/formato.js?v=2d079ab';
+import { subirArchivo, urlFirmada } from '../../core/adjuntos.js?v=2d079ab';
+import { formFactura, formPago, anularPago, eliminarFactura } from './facturas.js?v=2d079ab';
+import { formEmitir } from './emitir.js?v=2d079ab';
+import { bloquePagos } from './pagos.js?v=2d079ab';
 
 export const MEDIOS = [['transferencia', 'Transferencia'], ['efectivo', 'Efectivo'], ['cheque', 'Cheque'], ['debito', 'Débito'], ['credito', 'Crédito'], ['otro', 'Otro']];
 const nombreMedio = Object.fromEntries(MEDIOS);
@@ -31,7 +32,8 @@ export const verArchivo = (ctx, ruta, texto) => (ruta ? boton(texto, { icono: 'o
 } }) : null);
 
 // Pasos con botones para el editor (cotización enviada o aceptada). total = total con IVA de la cotización.
-export function pasosSeguimiento(ctx, c, total) {
+// pagos = abonos y cobro de la cotización (Cotizaciones 013) si no tiene orden de trabajo; null si se cobra en la orden.
+export function pasosSeguimiento(ctx, c, total, { pagos = null } = {}) {
   const editar = ctx.puede('cotizaciones', 'editar') && ['enviada', 'aceptada'].includes(c.estado);
   const guardar = async (cambios, aviso) => {
     const { error } = await ctx.api.from('cot_cotizaciones').update(cambios).eq('id', c.id);
@@ -83,6 +85,8 @@ export function pasosSeguimiento(ctx, c, total) {
   });
 
   const e = etapa(c);
+  const abonado = (pagos ?? []).filter((p) => p.tipo === 'abono').reduce((s, p) => s + Number(p.monto), 0);
+  const conSaldo = (pagos ?? []).some((p) => p.tipo === 'saldo');
   const paso = (n, hecho, activo, titulo, cuerpo, botones) => el('div', { class: `cie-paso${hecho ? ' cie-hecho' : activo ? ' cie-activo' : ''}` },
     el('div', { class: 'cie-paso-cab' }, el('span', { class: 'cie-paso-n' }, hecho ? icono('check', { tam: 14 }) : String(n)), el('strong', {}, titulo)),
     el('div', { class: 'texto-chico' }, cuerpo), el('div', { class: 'cie-paso-acc' }, botones.filter(Boolean)));
@@ -99,7 +103,10 @@ export function pasosSeguimiento(ctx, c, total) {
           editar && !c.cobro_fecha ? boton(c.factura_numero ? 'Cambiar' : 'Registrar a mano', { tipo: 'secundario', onclick: facturar }) : null,
           verArchivo(ctx, c.factura_archivo, 'Ver factura'), editar && ctx.puede('cotizaciones', 'eliminar') && c.factura_numero && !c.cobro_fecha ? boton('Quitar', { onclick: conFactura(eliminarFactura) }) : null]),
       paso(3, !!c.cobro_fecha, e === 'facturada', 'Cobro',
-        c.cobro_fecha ? `${dinero(c.cobro_monto)} · ${fechaLarga(c.cobro_fecha)} · ${nombreMedio[c.cobro_medio] ?? ''}` : c.factura_numero ? `Por cobrar: ${dinero(total)}` : 'Se cobra después de facturar.',
+        [c.cobro_fecha ? `${dinero(c.cobro_monto)} · ${fechaLarga(c.cobro_fecha)} · ${nombreMedio[c.cobro_medio] ?? ''}`
+          : c.factura_numero ? `Por cobrar: ${dinero(Math.max(0, total - abonado))}${abonado ? ` (abonado ${dinero(abonado)})` : ''}`
+          : pagos ? 'Con factura, el cobro final es su pago. Sin factura: abonos y cobro con la boleta de la TUU.' : 'Se cobra después de facturar.',
+          pagos ? bloquePagos(ctx, c, { total, pagos, conFactura: !!c.factura_numero, alCambiar: () => ctx.refrescar() }) : null],
         [editar && !c.cobro_fecha ? (c.factura_numero ? boton('Registrar cobro', { icono: 'dinero', tipo: e === 'facturada' ? 'primario' : 'secundario', onclick: conFactura(formPago) }) : null) : null,
-          editar && c.cobro_fecha ? boton('Anular cobro', { onclick: conFactura(anularPago) }) : null])));
+          editar && c.cobro_fecha && c.factura_numero && !conSaldo ? boton('Anular cobro', { onclick: conFactura(anularPago) }) : null])));
 }

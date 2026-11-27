@@ -1,7 +1,7 @@
 // Lectura de documentos con IA (Gemini en la Edge Function leer-documento), igual al lector de Finanzas de
 // InnovaGestión: lee al agregar la foto, sin botón. La clave está solo en el servidor.
 // modo: compra (boleta o factura de un proveedor) · venta (factura emitida) · pago (comprobante) · sindoc (sin documento).
-import { comprimirFoto, esImagen } from './imagenes.js?v=96471b3';
+import { comprimirFoto, esImagen } from './imagenes.js?v=2d079ab';
 
 let sinClave = false;   // si el servidor no tiene la clave, no se vuelve a intentar en esta sesión
 export const iaDisponible = () => !sinClave;
@@ -34,7 +34,11 @@ export const textoModelo = (r) => `Leído por ${/gemini/i.test(r?.modelo ?? '') 
 // Vencimientos con IA (modo vence): fotos o PDF (archivo elegido o URL firmada del ya guardado). modulo: rrhh, flota o
 // acreditacion (el servidor revisa que el usuario pueda crear o editar ahí). Devuelve { datos, modelo, ms } o lanza.
 const MAX_PDF = 8 * 1024 * 1024;
-export async function leerVencConIA(api, { empresaId, modulo, fuentes }) {
+export const leerVencConIA = (api, { empresaId, modulo, fuentes }) => leerArchivosConIA(api, { empresaId, modulo, modo: 'vence', fuentes });
+
+// Fotos o PDF (archivos o URL firmadas) con cualquier modo de leer-documento. modulo: el que pide la lectura (el
+// servidor revisa que el usuario pueda crear o editar ahí). Devuelve { datos, modelo, ms } o lanza.
+export async function leerArchivosConIA(api, { empresaId, modulo, modo, fuentes }) {
   if (sinClave) throw new Error('La lectura con IA no está configurada');
   const partes = [];
   for (const f of fuentes) {
@@ -50,7 +54,7 @@ export async function leerVencConIA(api, { empresaId, modulo, fuentes }) {
     }
   }
   if (!partes.length) throw new Error('La IA lee fotos o PDF');
-  const { data, error } = await api.functions.invoke('leer-documento', { body: { empresa_id: empresaId, modo: 'vence', modulo, images: partes.slice(0, 4) } });
+  const { data, error } = await api.functions.invoke('leer-documento', { body: { empresa_id: empresaId, modo, modulo, images: partes.slice(0, 4) } });
   if (error) {
     let j = null; try { j = await error.context?.json?.(); } catch { /* sin cuerpo */ }
     if (j?.sinClave) sinClave = true;

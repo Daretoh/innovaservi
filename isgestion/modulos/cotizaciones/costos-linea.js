@@ -2,13 +2,14 @@
 // con el margen y el precio de venta que sale de ellos. Es solo interno: nunca sale en el PDF ni lo ve el cliente.
 // Cada costo se guarda en cot_lineas.costos (jsonb): { tipo, desc, proveedor, monto, archivo_ruta?, archivo_nombre?, registro_id? }.
 // Los antiguos ({ desc, monto }) se leen igual y reciben un tipo al guardarlos.
-import { el } from '../../core/ui/dom.js?v=96471b3';
-import { icono } from '../../core/ui/iconos.js?v=96471b3';
-import { boton } from '../../core/ui/tabla.js?v=96471b3';
-import { avisar } from '../../core/ui/aviso.js?v=96471b3';
-import { dinero } from '../../core/ui/formato.js?v=96471b3';
-import { subirArchivo, urlFirmada } from '../../core/adjuntos.js?v=96471b3';
-import { totalLinea } from './datos.js?v=96471b3';
+import { el } from '../../core/ui/dom.js?v=2d079ab';
+import { icono } from '../../core/ui/iconos.js?v=2d079ab';
+import { boton } from '../../core/ui/tabla.js?v=2d079ab';
+import { avisar } from '../../core/ui/aviso.js?v=2d079ab';
+import { dinero } from '../../core/ui/formato.js?v=2d079ab';
+import { subirArchivo, urlFirmada } from '../../core/adjuntos.js?v=2d079ab';
+import { totalLinea } from './datos.js?v=2d079ab';
+import { leerArchivosConIA, numIA } from '../../core/lector-ia.js?v=2d079ab';
 
 export const TIPOS_COSTO = [
   ['producto', 'Producto'],
@@ -39,7 +40,7 @@ const redondear = (n, paso) => (paso > 1 ? Math.ceil(n / paso) * paso : Math.rou
 // Carga la hoja de estilos del módulo una vez
 function estilos() {
   if (document.getElementById('cot-costos-css')) return;
-  document.head.append(el('link', { id: 'cot-costos-css', rel: 'stylesheet', href: new URL('./costos.css?v=96471b3', import.meta.url).href }));
+  document.head.append(el('link', { id: 'cot-costos-css', rel: 'stylesheet', href: new URL('./costos.css?v=2d079ab', import.meta.url).href }));
 }
 
 const claveMargen = (ctx) => `isg.cot.margen.${ctx.empresa.id}`;
@@ -48,7 +49,8 @@ const claveRedondeo = (ctx) => `isg.cot.redondeo.${ctx.empresa.id}`;
 // linea: la línea o la sección. items: las líneas que cobran (la misma línea, o las de la sección).
 // costoItems: costos que ya tienen esas líneas (solo en una sección: se suman al margen).
 // guardar(costos) guarda los costos; aplicarPrecios([[linea, precio]]) pone los precios nuevos.
-export function abrirCostos({ ctx, linea, items, costoItems = 0, proveedores = [], editable, guardar, aplicarPrecios, alCerrar = null }) {
+// grupoId: el vehículo de la cotización (para cargar la compra real en Costos ligada a él).
+export function abrirCostos({ ctx, linea, items, costoItems = 0, proveedores = [], editable, guardar, aplicarPrecios, alCerrar = null, grupoId = null }) {
   estilos();
   const esSeccion = linea.tipo === 'seccion';
   let cambio = false;
@@ -98,13 +100,75 @@ export function abrirCostos({ ctx, linea, items, costoItems = 0, proveedores = [
       tipo, desc, prov, monto, el('span', { class: 'cc-fila-acc' }, btnArchivo, cambiarArchivo, entradaArchivo, quitar));
     return fila;
   };
-  const agregar = (tipo = 'producto') => {
-    const k = { tipo, desc: '', proveedor: '', monto: 0, archivo: null };
+  const agregar = (tipo = 'producto', datos = {}, foco = true) => {
+    const k = { tipo, desc: '', proveedor: '', monto: 0, archivo: null, ...datos };
     filas.push(k);
     const f = filaCosto(k);
     lista.append(f);
-    f.querySelector('input')?.focus();
+    if (foco) f.querySelector('input')?.focus();
   };
+  const vacia = (k) => !k.desc?.trim() && !Number(k.monto) && !k.archivo && !k.archivo_ruta && !k.registro_id;
+
+  // Leer la cotización del proveedor con IA (Claude): llena las filas con sus ítems y deja el archivo adjunto
+  const entradaLeer = el('input', { type: 'file', accept: TIPOS_ARCHIVO.join(','), multiple: true, hidden: true });
+  const estadoLeer = el('p', { class: 'texto-chico texto-suave', role: 'status' });
+  const btnLeer = boton('Leer cotización del proveedor', { icono: 'documento', title: 'PDF o fotos (hasta 4) de la cotización o factura del proveedor: la IA llena los costos', onclick: () => entradaLeer.click() });
+  entradaLeer.addEventListener('change', async () => {
+    const archivos = [...entradaLeer.files].slice(0, 4); entradaLeer.value = '';
+    if (!archivos.length) return;
+    btnLeer.disabled = true; btnLeer.classList.add('cargando'); error.textContent = ''; estadoLeer.textContent = 'Leyendo con IA…';
+    try {
+      const r = await leerArchivosConIA(ctx.api, { empresaId: ctx.empresa.id, modulo: 'cotizaciones', modo: 'cotizacion_proveedor', fuentes: archivos });
+      const d = r?.datos ?? {};
+      const its = (Array.isArray(d.items) ? d.items : []).map((x) => ({
+        tipo: NOMBRE_TIPO.has(x.tipo) ? x.tipo : 'producto',
+        desc: [Number(x.cantidad) > 1 ? `${x.cantidad} ×` : null, String(x.descripcion ?? '').trim()].filter(Boolean).join(' ').slice(0, 200),
+        monto: Math.max(0, numIA(x.neto) ?? 0),
+      })).filter((x) => x.desc || x.monto);
+      if (!its.length && numIA(d.neto)) its.push({ tipo: 'producto', desc: 'Según cotización del proveedor', monto: numIA(d.neto) });
+      if (!its.length) throw new Error('No se encontraron ítems con monto en el documento.');
+      // Las filas vacías se reemplazan por lo leído
+      for (const k of filas.filter(vacia)) filas.splice(filas.indexOf(k), 1);
+      lista.replaceChildren(...filas.map(filaCosto));
+      const proveedor = String(d.proveedor ?? '').trim();
+      its.forEach((x, i) => agregar(x.tipo, { ...x, proveedor, archivo: i === 0 ? archivos[0] : null }, false));
+      pintar();
+      const sumaNeto = its.reduce((s, x) => s + x.monto, 0);
+      const netoDoc = numIA(d.neto);
+      estadoLeer.textContent = [`${its.length} ítem${its.length === 1 ? '' : 's'} leído${its.length === 1 ? '' : 's'}${proveedor ? ` de ${proveedor}` : ''}`,
+        d.numero ? `cotización N° ${d.numero}` : null,
+        netoDoc != null && Math.abs(netoDoc - sumaNeto) > its.length ? `ojo: el neto del documento es ${dinero(netoDoc)} y los ítems suman ${dinero(sumaNeto)}` : null,
+        d.con_iva_incluido ? 'los precios venían con IVA y se pasaron a neto' : null,
+        archivos.length > 1 ? 'se adjunta el primer archivo' : null].filter(Boolean).join(' · ') + '. Revisa los montos antes de guardar.';
+    } catch (e) {
+      estadoLeer.textContent = ''; error.textContent = `No se pudo leer: ${e.message}`;
+    } finally { btnLeer.disabled = false; btnLeer.classList.remove('cargando'); }
+  });
+
+  // Compra real (Costos 016): la boleta o factura del proveedor se carga en Costos ligada a este vehículo; su costo
+  // aparece en "Costos de este vehículo" y en el margen real de la cotización
+  const sinArchivo = (k) => { const { archivo, ...r } = k; return r; };
+  const inicial = JSON.stringify(filas.map(sinArchivo));
+  const salir = (extra = {}) => {
+    const sucio = filas.some((k) => k.archivo) || JSON.stringify(filas.filter((k) => !vacia(k)).map(sinArchivo)) !== inicial;
+    if (sucio && !confirm('Los cambios de esta ventana no se han guardado. ¿Ir a cargar la compra igual?')) return;
+    cerrar();
+    location.hash = ctx.ruta('costos.lector', { grupo: grupoId, ...extra });
+  };
+  const zonaSii = el('div', {});
+  const compraSii = async (ev) => {
+    const b = ev.currentTarget; b.disabled = true;
+    const { data, error: er } = await ctx.api.from('fin_bandeja').select('id, nombre, dte, created_at')
+      .eq('empresa_id', ctx.empresa.id).eq('estado', 'pendiente').eq('origen', 'sii').order('created_at', { ascending: false }).limit(300);
+    b.disabled = false;
+    if (er) { error.textContent = er.message; return; }
+    if (!data.length) { error.textContent = 'No hay compras del SII esperando en la Bandeja de Costos. Tráelas desde Costos → Bandeja.'; return; }
+    const texto = (x) => { const d = x.dte ?? {}; return [d.razon ?? d.rut ?? x.nombre, d.folio ? `N° ${d.folio}` : null, d.fecha ?? null, d.total != null ? dinero(Number(d.total)) : null].filter(Boolean).join(' · '); };
+    const sel = el('select', { class: 'campo', 'aria-label': 'Compra del SII' }, el('option', { value: '' }, 'Elige la compra del SII…'), data.map((x) => el('option', { value: x.id }, texto(x))));
+    sel.addEventListener('change', () => { if (sel.value) salir({ bandeja: sel.value }); });
+    zonaSii.replaceChildren(sel); sel.focus();
+  };
+  const conCompra = !!grupoId && ctx.puede('costos', 'crear');
 
   // Precio con margen
   const margen = el('input', { class: 'campo campo-num', type: 'number', min: 0, max: 95, step: 'any', value: localStorage.getItem(claveMargen(ctx)) ?? 30, disabled: !editable, 'aria-label': 'Margen deseado %' });
@@ -193,16 +257,24 @@ export function abrirCostos({ ctx, linea, items, costoItems = 0, proveedores = [
     el('div', { class: 'cc-fila cc-cab' }, el('span', {}, 'Tipo'), el('span', {}, 'Detalle'), el('span', {}, 'Proveedor'), el('span', {}, 'Monto neto'), el('span')),
     lista, datalist,
     editable ? el('div', { class: 'cc-agregar' },
+      btnLeer, entradaLeer,
       boton('+ Producto', { onclick: () => agregar('producto') }),
       boton('+ Flete', { onclick: () => agregar('flete') }),
       boton('+ Instalación', { onclick: () => agregar('instalacion') }),
       boton('+ Otro', { onclick: () => agregar('otro') })) : null,
+    estadoLeer,
     resumen,
     !editable ? null : el('div', { class: 'cc-precio' },
       el('label', {}, 'Margen deseado sobre la venta (%)', margen),
       el('label', {}, 'Redondear hacia arriba', paso),
       el('div', { class: 'cc-precio-res' }, el('span', { class: 'texto-chico texto-suave' }, esSeccion ? 'Total de la sección con ese margen' : 'Total de la línea con ese margen'), sugerido),
       btnUsar),
+    conCompra ? el('div', { class: 'cc-compra' },
+      el('span', { class: 'texto-chico texto-suave' }, 'Cuando llegue la boleta o factura del proveedor, cárgala en Costos ligada a este vehículo: queda como costo real y se compara con lo cotizado.'),
+      el('div', { class: 'cc-agregar' },
+        boton('Subir compra', { icono: 'documento', onclick: () => salir() }),
+        boton('Compra del SII', { icono: 'buscar', onclick: compraSii })),
+      zonaSii) : null,
     error,
     el('div', { class: 'modal-pie' }, boton(editable ? 'Cancelar' : 'Cerrar', { onclick: () => cerrar() }), editable ? btnGuardar : null));
 

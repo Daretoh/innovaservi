@@ -8,7 +8,7 @@
 //   Con data-planilla (Registro de horas): Enter elige la primera sugerencia y Tab la elige y pasa a la columna siguiente.
 //   data-flechas: con la lista cerrada, ↑↓ no la abren (la planilla mueve de celda) y el clic tampoco (se abre al escribir o con Alt + ↓); data-sin-sugerencias="…": texto sin coincidencias.
 // Se aplica solo (activarCombos observa la página). Para dejar un campo como el del navegador: atributo data-nativo.
-import { el } from './dom.js?v=96471b3';
+import { el } from './dom.js?v=2d079ab';
 
 const UMBRAL = 6;          // opciones desde las que un <select> pasa a buscador
 const MAX_VISIBLES = 150;  // sugerencias que se dibujan a la vez

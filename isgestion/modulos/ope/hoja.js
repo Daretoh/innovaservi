@@ -13,15 +13,15 @@
 //   y fila por fila hacia abajo), Supr quita a las marcadas y el cuadrito de la celda activa copia a la persona hacia
 //   el lado (otros días) o hacia abajo. Quien ya está en una faena no se repite (se salta).
 // - Se guarda solo al elegir o salir de la celda (la faena-día se crea una sola vez); las enviadas quedan de solo lectura.
-import { el } from '../../core/ui/dom.js?v=96471b3';
-import { icono } from '../../core/ui/iconos.js?v=96471b3';
-import { avisar } from '../../core/ui/aviso.js?v=96471b3';
-import { normalizar } from '../../core/ui/combo.js?v=96471b3';
-import { nombreDia, hhmm, sumarDias, hoyISO, esFinde } from '../../core/ui/formato.js?v=96471b3';
-import { ROLES, nombreRol, nombreCompleto, faenasDelDia, etiquetaFaena, horarioDe, dotacionDe, dotTotal, turno } from './datos.js?v=96471b3';
+import { el } from '../../core/ui/dom.js?v=2d079ab';
+import { icono } from '../../core/ui/iconos.js?v=2d079ab';
+import { avisar } from '../../core/ui/aviso.js?v=2d079ab';
+import { normalizar } from '../../core/ui/combo.js?v=2d079ab';
+import { nombreDia, hhmm, sumarDias, hoyISO, esFinde } from '../../core/ui/formato.js?v=2d079ab';
+import { ROLES, nombreRol, nombreCompleto, faenasDelDia, etiquetaFaena, horarioDe, dotacionDe, dotTotal, turno } from './datos.js?v=2d079ab';
 
 if (!document.getElementById('ope-hoja-css')) {
-  document.head.append(el('link', { id: 'ope-hoja-css', rel: 'stylesheet', href: new URL('./hoja.css?v=96471b3', import.meta.url).href }));
+  document.head.append(el('link', { id: 'ope-hoja-css', rel: 'stylesheet', href: new URL('./hoja.css?v=2d079ab', import.meta.url).href }));
 }
 
 const CORTO = { op: 'Op', sup: 'Sup', prev: 'Prev' };

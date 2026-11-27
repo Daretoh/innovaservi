@@ -2,15 +2,15 @@
 // Como Administración: se elige la empresa y la pantalla (Por orden, Por cliente, Por cobrar y pagar); cada pantalla es
 // la de modulos/resultados con el contexto y los permisos del usuario en esa empresa. Los enlaces a pantallas de la
 // empresa (una orden, una cotización) se abren en ella. El Estado de resultados consolidado está en Resultados del grupo.
-import { el } from '../../../core/ui/dom.js?v=96471b3';
-import { nombreEmpresa } from '../../../core/empresas.js?v=96471b3';
-import { empresasCon, ctxDe, marcaEmpresa } from '../empresas.js?v=96471b3';
+import { el } from '../../../core/ui/dom.js?v=2d079ab';
+import { nombreEmpresa } from '../../../core/empresas.js?v=2d079ab';
+import { empresasCon, ctxDe, marcaEmpresa } from '../empresas.js?v=2d079ab';
 
 const PANTALLAS = [
-  ['resultados.ordenes', 'Por orden', () => import('../../resultados/vistas/ordenes.js?v=96471b3')],
-  ['resultados.clientes', 'Por cliente', () => import('../../resultados/vistas/clientes.js?v=96471b3')],
-  ['resultados.pendientes', 'Por cobrar y pagar', () => import('../../resultados/vistas/pendientes.js?v=96471b3')],
-  ['resultados.estado', 'Estado de resultados', () => import('../../resultados/vistas/estado.js?v=96471b3')],
+  ['resultados.ordenes', 'Por orden', () => import('../../resultados/vistas/ordenes.js?v=2d079ab')],
+  ['resultados.clientes', 'Por cliente', () => import('../../resultados/vistas/clientes.js?v=2d079ab')],
+  ['resultados.pendientes', 'Por cobrar y pagar', () => import('../../resultados/vistas/pendientes.js?v=2d079ab')],
+  ['resultados.estado', 'Estado de resultados', () => import('../../resultados/vistas/estado.js?v=2d079ab')],
 ];
 const estado = { empresa: '', pantalla: 'resultados.ordenes' };
 

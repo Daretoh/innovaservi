@@ -1,0 +1,22 @@
+/* Firma electrónica simple desde el teléfono (usa las clases fp-* de ficha.css) */
+.fi-pasos { display: flex; gap: 6px; margin: 0 0 14px; }
+.fi-pasos span { flex: 1; height: 4px; border-radius: 4px; background: var(--fp-borde); }
+.fi-pasos span.on { background: var(--empresa); }
+.fi-doc { display: flex; align-items: center; gap: 12px; padding: 14px; border: 1px solid var(--fp-borde); border-radius: 12px; background: var(--fondo-sutil); text-decoration: none; color: inherit; font-weight: 600; }
+.fi-doc .icono { color: var(--empresa); flex: none; }
+.fi-legal { font-size: .8rem; color: var(--texto-suave); line-height: 1.45; }
+.fi-error { color: var(--error); font-weight: 600; }
+.fp-cabecera h1 { color: #fff; }   /* sobre la cabecera oscura, como el resto del texto de ficha.css */
+/* Vista previa del sello (Núcleo 028): así queda la firma en la casilla del documento */
+.fi-sello { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid var(--fp-borde); border-radius: 12px; background: var(--superficie); }
+.fi-sello-qr { flex: none; display: grid; place-items: center; width: 56px; height: 56px; border-radius: 8px; background: var(--fondo-sutil); color: var(--texto); }
+.fi-sello > div:last-child { display: flex; flex-direction: column; gap: 1px; font-size: .85rem; line-height: 1.3; color: var(--texto-suave); min-width: 0; }
+.fi-sello strong { color: var(--texto); overflow-wrap: anywhere; }
+.fi-sello .fi-sello-tit { color: var(--empresa); font-size: .8rem; }
+/* Varios documentos (entrega individual): cada uno se abre y queda marcado como leído */
+.fi-docs { display: grid; gap: 8px; }
+.fi-docs .fi-doc { padding: 11px 12px; font-weight: 600; }
+.fi-doc-t { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.fi-estado { flex: none; font-size: .78rem; font-weight: 700; color: var(--empresa); }
+.fi-doc.fi-leido { border-color: var(--exito, #16a34a); }
+.fi-doc.fi-leido .fi-estado { color: var(--exito, #16a34a); }

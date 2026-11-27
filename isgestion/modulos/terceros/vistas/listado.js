@@ -1,7 +1,7 @@
 // Clientes y proveedores de la empresa activa. Tocar una fila abre su ficha (editar).
-import { el } from '../../../core/ui/dom.js?v=96471b3';
-import { listado, boton } from '../../../core/ui/tabla.js?v=96471b3';
-import { fichaTercero } from '../formulario.js?v=96471b3';
+import { el } from '../../../core/ui/dom.js?v=2d079ab';
+import { listado, boton } from '../../../core/ui/tabla.js?v=2d079ab';
+import { fichaTercero } from '../formulario.js?v=2d079ab';
 
 export default async function vista(ctx) {
   const { data, error } = await ctx.api

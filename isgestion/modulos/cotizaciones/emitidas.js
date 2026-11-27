@@ -5,15 +5,15 @@
 // una se puede ver (PDF y detalle) antes de registrarla, y al registrarla se sugiere la cotización que calza
 // (mismo cliente y monto, con sus patentes) para que quede tan completa como las ya registradas.
 // En el ambiente de pruebas se ven las de la empresa de pruebas de Haulmer y "Registrar" solo muestra el PDF.
-import { el } from '../../core/ui/dom.js?v=96471b3';
-import { icono } from '../../core/ui/iconos.js?v=96471b3';
-import { boton } from '../../core/ui/tabla.js?v=96471b3';
-import { abrirFormulario } from '../../core/ui/modal.js?v=96471b3';
-import { avisar } from '../../core/ui/aviso.js?v=96471b3';
-import { dinero, fechaLarga, fechaCorta, sumarDias } from '../../core/ui/formato.js?v=96471b3';
-import { llamarDte, estadoDte, NOMBRE_DTE, ofrecerPdf } from '../../core/dte.js?v=96471b3';
-import { numeroTexto, nombreTercero, totales, verPatente } from './datos.js?v=96471b3';
-import { PLAZO_PAGO } from './facturas.js?v=96471b3';
+import { el } from '../../core/ui/dom.js?v=2d079ab';
+import { icono } from '../../core/ui/iconos.js?v=2d079ab';
+import { boton } from '../../core/ui/tabla.js?v=2d079ab';
+import { abrirFormulario } from '../../core/ui/modal.js?v=2d079ab';
+import { avisar } from '../../core/ui/aviso.js?v=2d079ab';
+import { dinero, fechaLarga, fechaCorta, sumarDias } from '../../core/ui/formato.js?v=2d079ab';
+import { llamarDte, estadoDte, NOMBRE_DTE, ofrecerPdf } from '../../core/dte.js?v=2d079ab';
+import { numeroTexto, nombreTercero, totales, verPatente } from './datos.js?v=2d079ab';
+import { PLAZO_PAGO } from './facturas.js?v=2d079ab';
 
 const limpio = (r) => String(r ?? '').replace(/[^0-9kK]/g, '').toUpperCase();
 const REF = { 801: 'OC', 802: 'Nota de pedido', 803: 'Contrato', HES: 'HES', 33: 'Factura', 52: 'Guía' };
@@ -58,6 +58,28 @@ export async function formRegistrar(ctx, d, { cotizaciones, clientes, ordenes, p
   const sugerida = cots.find((c) => puntaje(c) >= 5) ?? null;
   const oc = det?.referencias?.find((r) => r.tipo === '801')?.folio ?? '';
   const items = det?.items ?? [];
+  // Dónde puede ir como abono: cotizaciones sin orden ni cobro, y órdenes por cobrar
+  const abonables = [
+    ...(ctx.puede('cotizaciones', 'editar') ? cots.filter((c) => !c.cobro_fecha && !(c.cot_grupos ?? []).some((g) => g.orden_id)).slice(0, 40).map((c) => ({ v: `c:${c.id}`, t: `Abono de la cotización ${textoCot(c)}` })) : []),
+    ...(ctx.puede('taller', 'crear') && ctx.puede('taller', 'editar') ? ords.filter((o) => !o.cobrado).slice(0, 40).map((o) => ({ v: `o:${o.id}`, t: `Abono de la orden ${o.texto}` })) : []),
+  ];
+  const registrarAbono = async (v) => {
+    if (prueba) throw new Error('Ambiente de pruebas: no se registran abonos.');
+    const [tipo, id] = v.abono.split(':');
+    const abonoId = crypto.randomUUID();
+    const fila = { id: abonoId, empresa_id: ctx.empresa.id, fecha: d.fecha, monto: d.total, medio: 'transferencia', nota: `Factura N° ${d.folio}` };
+    const { error } = tipo === 'c' ? await ctx.api.from('cot_pagos').insert({ ...fila, cotizacion_id: id, tipo: 'abono' }) : await ctx.api.from('tal_abonos').insert({ ...fila, orden_id: id });
+    if (error) throw new Error(error.message);
+    try {
+      const r = await llamarDte(ctx, 'registrar_emitida', { token: d.token, abono: tipo === 'c' ? { cot_pago_id: abonoId } : { abono_id: abonoId }, tercero_id: v.cliente || null,
+        detalle: v.detalle?.trim() || null, oc_numero: v.oc?.trim() || null, fecha_ejecucion: v.ejecucion || null });
+      avisar(r.aviso ?? `Factura N° ${r.folio} registrada como abono.`, r.aviso ? 'error' : 'ok');
+    } catch (err) {
+      await ctx.api.from(tipo === 'c' ? 'cot_pagos' : 'tal_abonos').update({ deleted_at: new Date().toISOString() }).eq('id', abonoId);
+      throw err;
+    }
+    alGuardar?.();
+  };
   const resumen = el('div', { class: 'emi-detalle' },
     el('p', {}, el('strong', {}, d.razon ?? 'Sin nombre'), ` · ${d.rut ?? ''} · ${fechaLarga(d.fecha)}`),
     items.length ? el('ul', { class: 'emi-items' }, items.slice(0, 12).map((l) => el('li', {}, el('span', {}, `${l.cant && l.cant !== 1 ? `${l.cant} × ` : ''}${l.nombre}`), el('span', {}, dinero(l.monto))))) : null,
@@ -75,6 +97,10 @@ export async function formRegistrar(ctx, d, { cotizaciones, clientes, ordenes, p
         ayuda: sugerida ? 'Sugerida por cliente, monto u OC. Revísala.' : 'Arriba, las del mismo cliente y monto.' },
       ...(ords.length ? [{ id: 'orden', etiqueta: 'Vehículo del taller', opciones: [['', 'Sin vehículo'], ...ords.map((o) => [o.id, `${o.texto}${o.cobrado ? ' · cobrada' : ''}${o.neto === netoFac ? ' · mismo monto' : ''}`])],
         ayuda: 'Si la orden ya está cobrada, la factura queda pagada con esa fecha; si no, al pagar la factura la orden queda cobrada.' }] : []),
+      // Factura de un abono (Cotizaciones 013): queda como abono de una cotización sin orden o de una orden por cobrar,
+      // sin ser la factura de la venta (la venta puede tener después su propia factura por el saldo)
+      ...(abonables.length ? [{ id: 'abono', etiqueta: '¿Es un abono (anticipo)?', opciones: [['', 'No: es la factura de la venta'], ...abonables.map((a) => [a.v, a.t])],
+        ayuda: 'Si es un abono, queda en Facturas como factura del abono y en los abonos de esa venta; no reemplaza a otro abono ni a la factura de la venta. Deja vacío Cotización y Vehículo.' }] : []),
       { id: 'otra', etiqueta: 'Si no es de una cotización ni de un vehículo', opciones: [['', 'Es de una cotización o un vehículo'], ['si', 'Otra venta (escribe qué se vendió abajo)']] },
       { id: 'cliente', etiqueta: 'Cliente', opciones: [['', cliente ? 'Elegir…' : `Sin ficha (${d.razon ?? 'sin nombre'})`], ...clientes.map((t) => [t.id, nombreTercero(t)])], valor: cliente?.id ?? '' },
       { id: 'oc', etiqueta: 'OC u orden de servicio', valor: oc },
@@ -84,6 +110,7 @@ export async function formRegistrar(ctx, d, { cotizaciones, clientes, ordenes, p
     ],
     textoGuardar: prueba ? 'Ver el PDF' : 'Registrar en Facturas',
     alGuardar: async (v) => {
+      if (v.abono) { await registrarAbono(v); return; }
       if (!prueba && !v.cotizacion && !v.orden && !(v.otra === 'si' && v.detalle?.trim().length >= 4)) {
         throw new Error('Liga la factura a una cotización o a un vehículo, o elige "Otra venta" y escribe qué se vendió.');
       }

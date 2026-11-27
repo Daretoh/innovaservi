@@ -9,19 +9,19 @@
 // Bandeja "Por cargar" (Costos 008, 2026-11-10): con ?bandeja=<id> abre un documento ya subido a la bandeja, lo lee
 // igual y al registrar lo marca registrado y sigue con el siguiente pendiente (Saltar / Descartar de la bandeja).
 // Ruta: #/costos.lector · #/costos.lector?bandeja=<id>
-import { el } from '../../../core/ui/dom.js?v=96471b3';
-import { icono } from '../../../core/ui/iconos.js?v=96471b3';
-import { boton } from '../../../core/ui/tabla.js?v=96471b3';
-import { avisar } from '../../../core/ui/aviso.js?v=96471b3';
-import { subirArchivo, almacen, urlFirmada } from '../../../core/adjuntos.js?v=96471b3';
-import { pendientesBandeja, descartarDeBandeja } from './bandeja.js?v=96471b3';
-import { dinero, hoyISO, sumarDias, fechaLarga, lunesDe } from '../../../core/ui/formato.js?v=96471b3';
-import { TIPOS_DTE, docTipoDe, CAMPOS_DTE, leerParte, combinar, validar, escanearCamara, aJPEG, fmtRut, limpioRut, rutValido, num } from '../../../core/lector-dte.js?v=96471b3';
-import { cargarBase, nombreTercero, opcionesACuenta } from '../datos.js?v=96471b3';
-import { enlaceNuevoProveedor } from '../proveedor-nuevo.js?v=96471b3';
-import { leerConIA, iaDisponible, numIA, fechaIA, pagadoAlComprar, textoModelo } from '../../../core/lector-ia.js?v=96471b3';
-import { esImagen } from '../../../core/imagenes.js?v=96471b3';
-import { tomarFotos } from '../../../core/ui/camara.js?v=96471b3';
+import { el } from '../../../core/ui/dom.js?v=2d079ab';
+import { icono } from '../../../core/ui/iconos.js?v=2d079ab';
+import { boton } from '../../../core/ui/tabla.js?v=2d079ab';
+import { avisar } from '../../../core/ui/aviso.js?v=2d079ab';
+import { subirArchivo, almacen, urlFirmada } from '../../../core/adjuntos.js?v=2d079ab';
+import { pendientesBandeja, descartarDeBandeja } from './bandeja.js?v=2d079ab';
+import { dinero, hoyISO, sumarDias, fechaLarga, lunesDe } from '../../../core/ui/formato.js?v=2d079ab';
+import { TIPOS_DTE, docTipoDe, CAMPOS_DTE, leerParte, combinar, validar, escanearCamara, aJPEG, fmtRut, limpioRut, rutValido, num } from '../../../core/lector-dte.js?v=2d079ab';
+import { cargarBase, nombreTercero, opcionesACuenta } from '../datos.js?v=2d079ab';
+import { enlaceNuevoProveedor } from '../proveedor-nuevo.js?v=2d079ab';
+import { leerConIA, iaDisponible, numIA, fechaIA, pagadoAlComprar, textoModelo } from '../../../core/lector-ia.js?v=2d079ab';
+import { esImagen } from '../../../core/imagenes.js?v=2d079ab';
+import { tomarFotos } from '../../../core/ui/camara.js?v=2d079ab';
 
 const ETIQUETA = { timbre: ['Timbre SII', 'chip-ok'], xml: ['XML', 'chip-ok'], ia: ['IA', 'chip-ok'], ocr: ['Revisar', 'chip-prox'], calc: ['Calculado', 'chip-pend'] };
 
@@ -30,7 +30,9 @@ export default async function vista(ctx) {
   const conFaenas = ctx.puede('ope', 'ver');
   const conDescuento = ctx.puede('remu', 'crear');
   const conTaller = ctx.puede('taller', 'ver');
-  const [base, ruts, faenas, personas, remuCfg, vehiculos, ordenes, recs] = await Promise.all([
+  // (Costos 016) Compra para una venta cotizada (equipamiento): el gasto queda ligado al vehículo de la cotización
+  const conCot = ctx.puede('cotizaciones', 'ver');
+  const [base, ruts, faenas, personas, remuCfg, vehiculos, ordenes, recs, cotGrupos] = await Promise.all([
     cargarBase(ctx),
     ctx.api.from('terceros').select('id, rut, razon_social, nombre_fantasia, tipo').eq('empresa_id', e).is('deleted_at', null).not('rut', 'is', null),
     conFaenas ? ctx.api.from('ope_faenas').select('id, titulo, fecha_inicio, fecha_fin').eq('empresa_id', e).is('deleted_at', null).neq('estado', 'cancelada')
@@ -40,7 +42,11 @@ export default async function vista(ctx) {
     conTaller ? ctx.api.from('tal_vehiculos').select('id, patente, marca, modelo, terceros(razon_social, nombre_fantasia)').eq('empresa_id', e).is('deleted_at', null).order('patente') : Promise.resolve({ data: [] }),
     conTaller ? ctx.api.from('tal_ordenes').select('id, vehiculo_id').eq('empresa_id', e).not('estado', 'in', '(entregado,anulada)') : Promise.resolve({ data: [] }),
     ctx.api.from('fin_recurrentes').select('id, concepto, tercero_id').eq('empresa_id', e).eq('activo', true).order('concepto'),
+    conCot ? ctx.api.from('cot_grupos').select('id, titulo, patente, orden_id, cot_cotizaciones!inner(id, numero, cliente_nombre, estado, fecha, madre_id, deleted_at)')
+      .eq('empresa_id', e).in('cot_cotizaciones.estado', ['borrador', 'enviada', 'aceptada']).is('cot_cotizaciones.deleted_at', null)
+      .is('cot_cotizaciones.madre_id', null).gte('cot_cotizaciones.fecha', sumarDias(hoyISO(), -180)) : Promise.resolve({ data: [] }),
   ]);
+  const gruposCot = (cotGrupos.data ?? []).sort((a, b) => b.cot_cotizaciones.numero - a.cot_cotizaciones.numero);
   const mensual = remuCfg.data?.periodo === 'mensual';
   const volver = el('a', { class: 'volver', href: ctx.ruta('costos.registros') }, icono('volver', { tam: 16 }), 'Gastos');
   const categorias = base.categorias.filter((c) => c.activo && c.clase !== 'ingreso');
@@ -56,16 +62,20 @@ export default async function vista(ctx) {
   const { data: deOrden } = conTaller && ctx.params.orden
     ? await ctx.api.from('tal_ordenes').select('id, numero, vehiculo_id, tal_vehiculos(patente)').eq('id', ctx.params.orden).eq('empresa_id', e).maybeSingle()
     : { data: null };
+  // Desde la ventana de costos de una cotización: ?grupo=<id> deja la compra ligada a ese vehículo y vuelve a la cotización
+  const deGrupo = ctx.params.grupo ? gruposCot.find((g) => g.id === ctx.params.grupo) ?? null : null;
   const pendientes = idBandeja ? (await pendientesBandeja(ctx)).data ?? [] : [];
   const deBandeja = pendientes.find((x) => x.id === idBandeja) ?? null;
   const otroPendiente = () => { const i = pendientes.indexOf(deBandeja); return pendientes[i + 1] ?? pendientes.find((x) => x !== deBandeja) ?? null; };
   const irA = (registroId, siguiente) => {
-    location.hash = deOrden ? `${ctx.ruta('taller.orden', { id: deOrden.id })}`
+    location.hash = deGrupo ? ctx.ruta('cotizaciones.editor', { id: deGrupo.cot_cotizaciones.id })
+      : deOrden ? `${ctx.ruta('taller.orden', { id: deOrden.id })}`
       : !idBandeja ? ctx.ruta('costos.registro', { id: registroId })
       : siguiente ? ctx.ruta('costos.lector', { bandeja: siguiente.id }) : ctx.ruta('costos.bandeja');
   };
   if (idBandeja) { volver.replaceChildren(icono('volver', { tam: 16 }), 'Bandeja'); volver.setAttribute('href', ctx.ruta('costos.bandeja')); }
   if (deOrden) { volver.replaceChildren(icono('volver', { tam: 16 }), `Orden N° ${deOrden.numero}`); volver.setAttribute('href', ctx.ruta('taller.orden', { id: deOrden.id })); }
+  if (deGrupo) { volver.replaceChildren(icono('volver', { tam: 16 }), `Cotización N° ${String(deGrupo.cot_cotizaciones.numero).padStart(6, '0')}`); volver.setAttribute('href', ctx.ruta('cotizaciones.editor', { id: deGrupo.cot_cotizaciones.id })); }
 
   const partes = [];     // { id, archivo, nombre, thumb, estado, ted, xml, texto, foto }
   let datos = { origen: {}, items: [] };
@@ -177,6 +187,7 @@ export default async function vista(ctx) {
   const exigirDestino = !!ctx.config?.exigir_destino;
   const destino = el('select', { class: 'campo', id: 'lec-dest' }, [['', 'Elige…'],
     ...(conTaller ? [['vehiculo', 'Un vehículo del taller (patente)']] : []),
+    ...(conCot ? [['cotizacion', 'Una venta cotizada (equipamiento)']] : []),
     ['tercero', 'Un tercero, a su cuenta (ej.: D&P)'],
     ...(conFaenas ? [['faena', 'Una faena']] : []),
     ['general', 'Gasto general de la empresa']].map(([v, t]) => el('option', { value: v }, t)));
@@ -185,6 +196,9 @@ export default async function vista(ctx) {
   // Vehículo del taller: el gasto queda con su patente y, si tiene una sola orden abierta, ligado a esa orden
   const vehiculo = el('select', { class: 'campo', id: 'lec-veh' }, el('option', { value: '' }, 'Sin vehículo'),
     (vehiculos.data ?? []).map((x) => el('option', { value: x.id }, [x.patente, [x.marca, x.modelo].filter(Boolean).join(' '), x.terceros?.nombre_fantasia || x.terceros?.razon_social].filter(Boolean).join(' · '))));
+  const nCot = (n) => String(n).padStart(6, '0');
+  const cotizacion = el('select', { class: 'campo', id: 'lec-cot' }, el('option', { value: '' }, 'Sin cotización'),
+    gruposCot.map((g) => el('option', { value: g.id }, [`N° ${nCot(g.cot_cotizaciones.numero)}`, g.titulo, g.patente, g.cot_cotizaciones.cliente_nombre].filter(Boolean).join(' · '))));
   const concepto = el('input', { class: 'campo', id: 'lec-con', placeholder: 'Se completa con el proveedor y el documento' });
   const pagado = el('input', { type: 'checkbox', id: 'lec-pag' });
   let pagadoTocado = false;
@@ -291,7 +305,8 @@ export default async function vista(ctx) {
     if (exigirDestino) {
       const d = destino.value;
       const falta = !d ? 'Elige a qué va este gasto.' : d === 'vehiculo' && !vehiculo.value ? 'Elige el vehículo (patente).'
-        : d === 'tercero' && !aCuenta.value ? 'Elige el tercero.' : d === 'faena' && !faena.value ? 'Elige la faena.' : null;
+        : d === 'tercero' && !aCuenta.value ? 'Elige el tercero.' : d === 'faena' && !faena.value ? 'Elige la faena.'
+        : d === 'cotizacion' && !cotizacion.value ? 'Elige la cotización.' : null;
       if (falta) { avisar(falta, 'error'); destino.focus(); return; }
     }
     if (!concepto.value.trim()) { avisar('Escribe el concepto.', 'error'); return; }
@@ -320,6 +335,7 @@ export default async function vista(ctx) {
       const o = datos.origen.total;
       const origen = editados.has('total') ? 'manual' : o === 'timbre' ? 'timbre' : o === 'xml' ? 'xml' : o === 'ocr' ? 'ocr' : o === 'ia' ? 'ia' : 'manual';
       const doc = docTipoDe(v.td);
+      const grp = gruposCot.find((g) => g.id === cotizacion.value) ?? null;
       const veh = (vehiculos.data ?? []).find((x) => x.id === vehiculo.value);
       const abiertas = veh ? (ordenes.data ?? []).filter((x) => x.vehiculo_id === veh.id) : [];
       const iva = doc === 'factura' ? v.iva ?? 0 : 0;
@@ -328,7 +344,8 @@ export default async function vista(ctx) {
         tercero_id: tercero?.id ?? null, doc_tipo: doc, doc_numero: v.folio, total: v.total, neto: v.total - iva, iva,
         // Boleta o ticket: pagado al comprar (salvo que se desmarque a mano); factura: por pagar
         ...(!ctx.puede('costos', 'editar') ? { estado_pago: 'pendiente' } : (pagadoTocado ? pagado.checked : pagado.checked || doc !== 'factura') ? { estado_pago: 'pagado', fecha_pago: v.fecha || hoyISO() } : { estado_pago: 'listo' }), archivo: rutas[0] ?? null, adjuntos: rutas.slice(1), faena_id: faena.value || null, a_cuenta_de: aCuenta.value || null,
-        patente: veh?.patente ?? null, orden_id: deOrden && veh?.id === deOrden.vehiculo_id ? deOrden.id : abiertas.length === 1 ? abiertas[0].id : null,
+        patente: veh?.patente ?? grp?.patente ?? null, orden_id: deOrden && veh?.id === deOrden.vehiculo_id ? deOrden.id : abiertas.length === 1 ? abiertas[0].id : grp?.orden_id ?? null,
+        cot_grupo_id: grp?.id ?? null,
         dte: { ...v, rut: v.rut ? fmtRut(v.rut) : null, td: v.td == null ? null : String(v.td), items: datos.items ?? [], origen },
         espera_factura: doc !== 'factura' && esperaFactura.checked,
         ...(recTocado && recurrente.value ? { recurrente_id: recurrente.value } : {}),   // sin tocar: la base lo liga sola (y no choca si el mes ya tiene uno)
@@ -367,20 +384,28 @@ export default async function vista(ctx) {
   const filaVehiculo = fila(exigirDestino ? 'Vehículo (patente · cliente)' : 'Vehículo (opcional)', vehiculo);
   const filaACuenta = fila(exigirDestino ? 'Tercero (a su cuenta)' : '¿Por cuenta de un tercero?', aCuenta);
   const filaFaena = fila('Faena', faena);
+  const filaCot = fila(exigirDestino ? 'Cotización (N° · vehículo · cliente)' : '¿Es para una venta cotizada?', cotizacion);
   const mostrarDestino = () => {
     if (!exigirDestino) return;
     const d = destino.value;
-    filaVehiculo.hidden = d !== 'vehiculo'; filaACuenta.hidden = d !== 'tercero'; filaFaena.hidden = d !== 'faena';
+    filaVehiculo.hidden = d !== 'vehiculo'; filaACuenta.hidden = d !== 'tercero'; filaFaena.hidden = d !== 'faena'; filaCot.hidden = d !== 'cotizacion';
   };
   destino.addEventListener('change', () => {
     // Solo queda el dato del destino elegido
     if (destino.value !== 'vehiculo') vehiculo.value = '';
     if (destino.value !== 'tercero') aCuenta.value = '';
     if (destino.value !== 'faena') faena.value = '';
+    if (destino.value !== 'cotizacion') cotizacion.value = '';
     mostrarDestino();
   });
   // Desde una orden: va a su vehículo (se puede cambiar)
   if (deOrden) { if (exigirDestino) destino.value = 'vehiculo'; vehiculo.value = deOrden.vehiculo_id; }
+  if (deGrupo) {
+    if (exigirDestino) destino.value = 'cotizacion';
+    cotizacion.value = deGrupo.id;
+    const eq = categorias.find((c) => c.nombre === 'Equipamiento para venta');
+    if (eq) categoria.value = eq.id;
+  }
   mostrarDestino();
   const formulario = el('div', { class: 'ficha doc-grupo lec-form', hidden: true },
     el('h2', {}, '2. Revisar y guardar'),
@@ -392,7 +417,7 @@ export default async function vista(ctx) {
     cuadre,
     exigirDestino ? fila('¿A qué va este gasto?', destino) : null,
     el('div', { class: 'rejilla-campos' }, fila('Categoría', categoria), ctx.config?.centros ? fila('Centro de costo', centro) : null, conFaenas ? filaFaena : null),
-    el('div', { class: 'rejilla-campos' }, conTaller ? filaVehiculo : null, filaACuenta),
+    el('div', { class: 'rejilla-campos' }, conTaller ? filaVehiculo : null, conCot ? filaCot : null, filaACuenta),
     fila('Concepto', concepto),
     listaRec.length ? fila('Pago recurrente', recurrente, el('span', { class: 'texto-suave texto-chico' }, 'Arriendo, internet, luz, asesorías…: queda marcado en Recurrentes. Si es del proveedor del recurrente se elige solo.')) : null,
     el('label', { class: 'casilla' }, pagado, 'Ya está pagado (boletas y tickets quedan pagados solos; la factura queda por pagar)'),
@@ -452,6 +477,7 @@ export default async function vista(ctx) {
     el('header', { class: 'listado-cabecera' }, el('div', {}, el('h1', {}, 'Leer boleta o factura'),
       el('p', { class: 'texto-suave' }, deOrden
         ? `Compra para la orden N° ${deOrden.numero}${deOrden.tal_vehiculos?.patente ? ` (${deOrden.tal_vehiculos.patente})` : ''}: queda como costo de ese vehículo.`
+        : deGrupo ? `Compra para la cotización N° ${nCot(deGrupo.cot_cotizaciones.numero)} (${[deGrupo.titulo, deGrupo.patente].filter(Boolean).join(' · ')}): queda como costo real de esa venta.`
         : 'Lee el timbre electrónico, el XML o el texto de la foto y registra el gasto. Todo se procesa en este equipo.'))),
     el('div', { class: 'ficha doc-grupo' },
       el('h2', {}, '1. Documento'),

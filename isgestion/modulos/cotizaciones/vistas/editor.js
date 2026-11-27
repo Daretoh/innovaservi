@@ -2,24 +2,25 @@
 // totales y acciones (PDF, enviar, aceptar, rechazar, reabrir, duplicar, dividir, pasar a orden de trabajo).
 // Las líneas se editan como planilla: Enter y flechas, pegar desde Excel y arrastrar filas o secciones.
 // Ruta: #/cotizaciones.editor?id=<id>
-import { el } from '../../../core/ui/dom.js?v=96471b3';
-import { icono } from '../../../core/ui/iconos.js?v=96471b3';
-import { boton } from '../../../core/ui/tabla.js?v=96471b3';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=96471b3';
-import { avisar } from '../../../core/ui/aviso.js?v=96471b3';
-import { dinero, fechaLarga } from '../../../core/ui/formato.js?v=96471b3';
+import { el } from '../../../core/ui/dom.js?v=2d079ab';
+import { icono } from '../../../core/ui/iconos.js?v=2d079ab';
+import { boton } from '../../../core/ui/tabla.js?v=2d079ab';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=2d079ab';
+import { avisar } from '../../../core/ui/aviso.js?v=2d079ab';
+import { dinero, fechaLarga } from '../../../core/ui/formato.js?v=2d079ab';
 import {
   nombreEstado, CHIP_ESTADO, TALLAS, totales, totalLinea, costoLinea, numeroTexto, nombreTercero, verPatente, normalizarPatente,
   cargarCotizacion, cargarCatalogo, cargarConfig, datosCliente,
-} from '../datos.js?v=96471b3';
-import { duplicar, dividir, pasarAOrden } from '../acciones.js?v=96471b3';
+} from '../datos.js?v=2d079ab';
+import { duplicar, dividir, pasarAOrden } from '../acciones.js?v=2d079ab';
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
 const mesTexto = (mes) => `${MESES[Number(mes.slice(5, 7)) - 1]} ${mes.slice(0, 4)}`;
-import { pasosSeguimiento, chipEtapa, etapa } from '../seguimiento.js?v=96471b3';
-import { avance } from '../../taller/seguimiento.js?v=96471b3';
-import { soloCosto, costosDeGrupos, costoFuera, sinRepetir, sumaCostos, yaTraidos } from '../costos-orden.js?v=96471b3';
-import { nombreEstado as estadoOrden } from '../../taller/datos.js?v=96471b3';
-import { margenPct } from '../costos-linea.js?v=96471b3';
+import { pasosSeguimiento, chipEtapa, etapa } from '../seguimiento.js?v=2d079ab';
+import { cargarPagos, seccionCobro } from '../pagos.js?v=2d079ab';
+import { avance } from '../../taller/seguimiento.js?v=2d079ab';
+import { soloCosto, costosDeGrupos, costoFuera, sinRepetir, sumaCostos, yaTraidos } from '../costos-orden.js?v=2d079ab';
+import { nombreEstado as estadoOrden } from '../../taller/datos.js?v=2d079ab';
+import { margenPct } from '../costos-linea.js?v=2d079ab';
 const margenTexto = (venta, costo) => { const m = margenPct(venta, costo); return `${dinero(venta - costo)}${m == null ? '' : ` (${m.toLocaleString('es-CL', { maximumFractionDigits: 1 })} %)`}`; };
 
 // Celda a enfocar después de recargar (ej.: la línea recién creada)
@@ -248,7 +249,7 @@ export default async function vista(ctx) {
   // Los costos traídos de la orden conservan su registro_id (para no volver a traerlos).
   let proveedores = null;
   const costos = async (g, l) => {
-    const { abrirCostos } = await import('../costos-linea.js?v=96471b3');
+    const { abrirCostos } = await import('../costos-linea.js?v=2d079ab');
     if (!proveedores) {
       const { data } = await ctx.api.from('terceros').select('*').eq('empresa_id', ctx.empresa.id).is('deleted_at', null).contains('tipo', ['proveedor']).order('razon_social');
       const usados = lineas.flatMap((x) => (x.costos ?? []).map((k) => k.proveedor)).filter(Boolean);
@@ -256,7 +257,7 @@ export default async function vista(ctx) {
     }
     const items = l.tipo === 'seccion' ? bloque(g, l).filter((x) => x.tipo === 'item') : [l];
     abrirCostos({
-      ctx, linea: l, items, proveedores, editable,
+      ctx, linea: l, items, proveedores, editable, grupoId: g.id,
       costoItems: l.tipo === 'seccion' ? items.reduce((s, x) => s + costoLinea(x), 0) : 0,
       guardar: async (lista) => {
         await Promise.all(pendientes);
@@ -274,7 +275,7 @@ export default async function vista(ctx) {
     btn.disabled = true;
     try {
       await Promise.all(pendientes);
-      const { costosDeOrdenes, lineasCosto, yaTraidos } = await import('../costos-orden.js?v=96471b3');
+      const { costosDeOrdenes, lineasCosto, yaTraidos } = await import('../costos-orden.js?v=2d079ab');
       const o = ordenDe.get(g.orden_id);
       const nuevas = lineasCosto((await costosDeOrdenes(ctx, [{ ...o, patente: g.patente }])).get(o.id) ?? [], yaTraidos(delGrupo(g)));
       if (!nuevas.length) { avisar('No hay costos nuevos en la orden.'); return; }
@@ -526,7 +527,7 @@ export default async function vista(ctx) {
   // ---- Acciones según estado
   const acciones = [boton('Ver PDF', { icono: 'ojo', onclick: (ev) => pdf(ctx, c, ev.currentTarget) })];
   // Como el OS (2026-10-22): siempre queda claro que se está editando esta cotización, y se puede empezar una nueva
-  if (ctx.puede('cotizaciones', 'crear')) acciones.push(boton('Nueva cotización', { icono: 'mas', onclick: async () => { const { nueva } = await import('./lista.js?v=96471b3'); nueva(ctx); } }));
+  if (ctx.puede('cotizaciones', 'crear')) acciones.push(boton('Nueva cotización', { icono: 'mas', onclick: async () => { const { nueva } = await import('./lista.js?v=2d079ab'); nueva(ctx); } }));
   const puedeEditar = ctx.puede('cotizaciones', 'editar') && !c.madre_id;
   if (puedeEditar && c.estado === 'borrador') acciones.push(boton('Marcar enviada', { icono: 'check', tipo: 'primario', onclick: () => abrirFormulario({
     titulo: `Enviar cotización N° ${numeroTexto(c.numero)}`, mensaje: 'Queda bloqueada para cambios. Si hay que corregirla, se reabre.', campos: [], textoGuardar: 'Marcar enviada',
@@ -561,6 +562,9 @@ export default async function vista(ctx) {
     c.madre_id ? ctx.api.from('cot_cotizaciones').select('id, numero, notas').eq('id', c.madre_id).maybeSingle().then((r) => r.data) : null,
     ctx.api.from('cot_cotizaciones').select('id, numero, estado, cot_grupos(patente, titulo)').eq('madre_id', c.id).is('deleted_at', null).order('numero').then((r) => r.data ?? []),
   ]);
+  // Abonos y cobro de la venta sin orden de trabajo (Cotizaciones 013): con orden, se cobra en la orden
+  const sinOrden = !grupos.some((g) => g.orden_id);
+  const pagos = ['enviada', 'aceptada'].includes(c.estado) && sinOrden && !c.madre_id && !hijasMes.length ? await cargarPagos(ctx, c.id).catch(() => null) : null;
   const enlaceCot = (q, texto) => el('a', { href: ctx.ruta('cotizaciones.editor', { id: q.id }) }, texto ?? `N° ${numeroTexto(q.numero)}`);
   const vista = el('section', { class: 'listado' },
     volver, datalist,
@@ -580,8 +584,9 @@ export default async function vista(ctx) {
       el('div', { class: 'resumen-chips' }, hijasMes.map((h) => el('span', { class: 'chip chip-na' }, enlaceCot(h),
         ` · ${h.cot_grupos.map((g) => verPatente(g.patente) || g.titulo).filter(Boolean).join(', ') || 'sin vehículo'}`)))) : null,
     // La cotización del mes (con hijas) siempre lleva su seguimiento: ahí se emite la factura del cierre
-    (!conOC && !hijasMes.length) || madre ? null : hijaDe.size ? resumenHijas(grupos, hijaDe)
-      : ['enviada', 'aceptada'].includes(c.estado) ? pasosSeguimiento(ctx, c, totales(c, grupos, lineas).total)
+    (!conOC && !hijasMes.length) || madre ? (pagos && !madre ? seccionCobro(ctx, c, { total: totales(c, grupos, lineas).total, pagos, conFactura: !!c.factura_numero, alCambiar: () => ctx.refrescar() }) : null)
+      : hijaDe.size ? resumenHijas(grupos, hijaDe)
+      : ['enviada', 'aceptada'].includes(c.estado) ? pasosSeguimiento(ctx, c, totales(c, grupos, lineas).total, { pagos })
       : c.estado === 'borrador' ? el('p', { class: 'aviso-bandeja' }, icono('documento', { tam: 16 }),
         ' Factura: cuando la envíes al cliente (botón Enviar), aquí aparecen la OC, "Emitir factura" y el cobro.') : null,
     el('div', { class: 'plan-editor' },
@@ -608,8 +613,8 @@ export default async function vista(ctx) {
       if (error) avisar(error.message, 'error'); else ctx.refrescar();
     } }) : null,
     // Traer los autos que el cliente tuvo en el taller en un mes (como "Traer de Cierre GM" del OS)
-    editable && conTaller && c.tercero_id ? boton('Autos por cotizar', { icono: 'llave', title: 'Autos del cliente con servicio "Pendiente de cotización" que aún no están en una cotización', onclick: async () => { const { traerPorCotizar } = await import('../traer-mes.js?v=96471b3'); traerPorCotizar(ctx, c, grupos); } }) : null,
-    editable && conTaller && c.tercero_id ? boton('Traer autos del mes', { icono: 'llave', onclick: async () => { const { traerMes } = await import('../traer-mes.js?v=96471b3'); traerMes(ctx, c, grupos); } }) : null,
+    editable && conTaller && c.tercero_id ? boton('Autos por cotizar', { icono: 'llave', title: 'Autos del cliente con servicio "Pendiente de cotización" que aún no están en una cotización', onclick: async () => { const { traerPorCotizar } = await import('../traer-mes.js?v=2d079ab'); traerPorCotizar(ctx, c, grupos); } }) : null,
+    editable && conTaller && c.tercero_id ? boton('Traer autos del mes', { icono: 'llave', onclick: async () => { const { traerMes } = await import('../traer-mes.js?v=2d079ab'); traerMes(ctx, c, grupos); } }) : null,
     catalogo.tieneLista ? el('p', { class: 'texto-suave texto-chico' }, 'Este cliente tiene lista de precios: al escribir un servicio se usa su precio especial.') : null,
     editable ? el('p', { class: 'texto-suave texto-chico' }, 'Planilla: Enter baja de fila (en la última crea una línea), Mayús+Enter sube, flechas para moverse; se puede pegar un rango copiado de Excel (Descripción, Cant., Precio, Desc. %) y arrastrar filas o secciones desde el asa (también a otro vehículo).') : null,
   );
@@ -643,7 +648,7 @@ function resumenHijas(grupos, hijaDe) {
 async function pdf(ctx, c, b) {
   b.disabled = true;
   try {
-    const { pdfCotizacion } = await import('../documento.js?v=96471b3');
+    const { pdfCotizacion } = await import('../documento.js?v=2d079ab');
     const doc = await pdfCotizacion(ctx, c);
     window.open(doc.output('bloburl'), '_blank', 'noopener');
   } catch (e) { avisar(`No se pudo generar: ${e.message}`, 'error'); } finally { b.disabled = false; }

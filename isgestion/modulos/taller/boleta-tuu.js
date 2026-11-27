@@ -6,13 +6,13 @@
 //   boleta → su PDF queda como boleta de la orden (y el cobro se registra si faltaba);
 //   factura → queda en Cotizaciones → Facturas, ligada a la orden y pagada (la base deja la orden cobrada).
 // En el ambiente de pruebas solo se muestra el PDF (documentos de la empresa de pruebas de Haulmer).
-import { el } from '../../core/ui/dom.js?v=96471b3';
-import { icono } from '../../core/ui/iconos.js?v=96471b3';
-import { boton } from '../../core/ui/tabla.js?v=96471b3';
-import { abrirFormulario } from '../../core/ui/modal.js?v=96471b3';
-import { avisar } from '../../core/ui/aviso.js?v=96471b3';
-import { dinero, diaLocal, hoyISO, fechaLarga, sumarDias } from '../../core/ui/formato.js?v=96471b3';
-import { llamarDte, estadoDte, ofrecerPdf } from '../../core/dte.js?v=96471b3';
+import { el } from '../../core/ui/dom.js?v=2d079ab';
+import { icono } from '../../core/ui/iconos.js?v=2d079ab';
+import { boton } from '../../core/ui/tabla.js?v=2d079ab';
+import { abrirFormulario } from '../../core/ui/modal.js?v=2d079ab';
+import { avisar } from '../../core/ui/aviso.js?v=2d079ab';
+import { dinero, diaLocal, hoyISO, fechaLarga, sumarDias } from '../../core/ui/formato.js?v=2d079ab';
+import { llamarDte, estadoDte, ofrecerPdf } from '../../core/dte.js?v=2d079ab';
 
 const limpio = (r) => String(r ?? '').replace(/[^0-9kK]/g, '').toUpperCase();
 
@@ -91,6 +91,8 @@ export async function traerDeTuu(ctx, o, { tipo = 39, total = null, rut = null, 
     titulo: `${factura ? 'Factura' : 'Boleta'} de la TUU · ${abono ? 'abono · ' : ''}N° ${o.numero}`,
     mensaje: est.prueba
       ? 'Ambiente de pruebas de OpenFactura: se ven documentos de la empresa de pruebas de Haulmer y la orden no cambia.'
+      : abono && factura
+        ? `Elige la factura que emitió la TUU por el abono (${dinero(abono.monto)}). Queda en Facturas como factura del abono (no de la venta) y su PDF en el abono.`
       : abono
         ? `Elige la boleta que emitió la TUU por el abono (${dinero(abono.monto)}). Su PDF queda en ese abono.`
       : factura
@@ -107,13 +109,16 @@ export async function traerDeTuu(ctx, o, { tipo = 39, total = null, rut = null, 
       if (!v.doc) throw new Error(`Elige la ${nombre}.`);
       if (v.doc.startsWith('usada:')) throw new Error(`Esa ${nombre} ya está usada: elige otra.`);
       const d = lista.find((b) => b.token === v.doc);
-      const r = factura
+      // Factura de un abono (Cotizaciones 013): queda en Facturas como factura del abono, no como la de la venta
+      const r = factura && abono
+        ? await llamarDte(ctx, 'registrar_emitida', { token: v.doc, abono: { abono_id: abono.id }, tercero_id: terceroId ?? o.tercero_id ?? null })
+        : factura
         ? await llamarDte(ctx, 'registrar_emitida', { token: v.doc, orden_id: o.id, tercero_id: terceroId, pago: { fecha: d?.fecha ?? v.hasta, medio: medio ?? 'debito' } })
         : await llamarDte(ctx, 'ligar_boleta', { orden_id: o.id, token: v.doc, ...(abono ? { abono_id: abono.id } : {}) });
       ofrecerPdf(r.pdf, { titulo: `${factura ? 'Factura' : 'Boleta'} N° ${r.folio}`, texto: r.prueba ? 'Ambiente de pruebas: la orden no cambia.' : 'Quedó guardada en la orden.' });
       if (r.aviso) { avisar(r.aviso, 'error'); alGuardar?.(r); return; }
       if (r.prueba) { avisar(`${factura ? 'Factura' : 'Boleta'} de prueba N° ${r.folio}: la orden no cambia.`); alGuardar?.(r); return; }
-      if (abono) { avisar(`Boleta N° ${r.folio} guardada en el abono.`); alGuardar?.(r); return; }
+      if (abono) { avisar(`${factura ? 'Factura' : 'Boleta'} N° ${r.folio} guardada en el abono.`); alGuardar?.(r); return; }
       if (!factura && !o.cobrado && alCobrar) await alCobrar(d?.fecha ?? v.hasta);
       avisar(factura ? `Factura N° ${r.folio} registrada y pagada: la orden quedó cobrada.` : `Boleta N° ${r.folio} guardada${o.cobrado ? '' : ' y cobro registrado'}.`);
       alGuardar?.(r);

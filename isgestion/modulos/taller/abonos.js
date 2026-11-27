@@ -2,16 +2,16 @@
 // cada abono (anticipo cobrado en la TUU) con fecha, medio, monto, nota y su boleta (foto o PDF subido, o traída del
 // SII con "Boleta de la TUU"). La base suma los abonos vigentes en tal_ordenes.abono (saldo, caja y resultados igual).
 // Con la orden cobrada o anulada no se agregan ni quitan abonos; la boleta de un abono sí se adjunta o cambia.
-import { el } from '../../core/ui/dom.js?v=96471b3';
-import { icono } from '../../core/ui/iconos.js?v=96471b3';
-import { boton } from '../../core/ui/tabla.js?v=96471b3';
-import { abrirFormulario } from '../../core/ui/modal.js?v=96471b3';
-import { avisar } from '../../core/ui/aviso.js?v=96471b3';
-import { subirArchivo, eliminarArchivo, urlFirmada } from '../../core/adjuntos.js?v=96471b3';
-import { comprimirFoto } from '../../core/imagenes.js?v=96471b3';
-import { dinero, fechaLarga, hoyISO } from '../../core/ui/formato.js?v=96471b3';
-import { MODOS_PAGO } from './datos.js?v=96471b3';
-import { traerDeTuu } from './boleta-tuu.js?v=96471b3';
+import { el } from '../../core/ui/dom.js?v=2d079ab';
+import { icono } from '../../core/ui/iconos.js?v=2d079ab';
+import { boton } from '../../core/ui/tabla.js?v=2d079ab';
+import { abrirFormulario } from '../../core/ui/modal.js?v=2d079ab';
+import { avisar } from '../../core/ui/aviso.js?v=2d079ab';
+import { subirArchivo, eliminarArchivo, urlFirmada } from '../../core/adjuntos.js?v=2d079ab';
+import { comprimirFoto } from '../../core/imagenes.js?v=2d079ab';
+import { dinero, fechaLarga, hoyISO } from '../../core/ui/formato.js?v=2d079ab';
+import { MODOS_PAGO } from './datos.js?v=2d079ab';
+import { traerDeTuu } from './boleta-tuu.js?v=2d079ab';
 
 const MEDIOS = MODOS_PAGO.filter(([k]) => k);
 const nombreMedio = (k) => MEDIOS.find(([m]) => m === k)?.[1] ?? '';
@@ -82,6 +82,8 @@ export function seccionAbonos(ctx, { o, t, abonos, alCambiar }) {
 
   const ver = async (a) => { try { window.open(await urlFirmada(ctx.api, a.boleta_ruta, 300), '_blank', 'noopener'); } catch (e) { avisar(e.message, 'error'); } };
   const tuu = (a) => traerDeTuu(ctx, o, { tipo: 39, total: a.monto, abono: a, alGuardar: () => alCambiar?.() });
+  // Factura de la TUU del abono (Cotizaciones 013): queda en Facturas como factura del abono, sin tomar el lugar de la de la venta
+  const tuuFactura = (a) => traerDeTuu(ctx, o, { tipo: 33, total: a.monto, abono: a, terceroId: o.factura_tercero_id ?? o.tercero_id ?? null, alGuardar: () => alCambiar?.() });
   const quitar = async (a) => {
     if (!confirm(`¿Quitar el abono de ${dinero(a.monto)} del ${fechaLarga(a.fecha)}? El saldo de la orden vuelve a subir.`)) return;
     const { error } = await ctx.api.from('tal_abonos').update({ deleted_at: new Date().toISOString() }).eq('id', a.id);
@@ -101,6 +103,7 @@ export function seccionAbonos(ctx, { o, t, abonos, alCambiar }) {
     el('div', { class: 'cobro-boleta-acciones' },
       a.boleta_ruta ? boton('Ver', { icono: 'ojo', class: 'boton boton-secundario boton-chico', onclick: () => ver(a) }) : null,
       conArchivo && !a.boleta_ruta ? boton('Boleta de la TUU', { icono: 'buscar', class: 'boton boton-secundario boton-chico', title: 'Traer del SII la boleta que emitió la TUU', onclick: () => tuu(a) }) : null,
+      conArchivo && !a.boleta_ruta && ctx.puede('cotizaciones', 'crear') ? boton('Factura de la TUU', { icono: 'buscar', class: 'boton boton-secundario boton-chico', title: 'Traer del SII la factura que emitió la TUU por este abono', onclick: () => tuuFactura(a) }) : null,
       conArchivo ? boton(a.boleta_ruta ? 'Cambiar' : 'Adjuntar', { icono: a.boleta_ruta ? 'editar' : 'documento', class: 'boton boton-secundario boton-chico', onclick: () => adjuntar(a) }) : null,
       puedeAbonar ? el('button', { type: 'button', class: 'boton-icono', title: 'Quitar el abono', 'aria-label': 'Quitar el abono', onclick: () => quitar(a) }, icono('basura', { tam: 15 })) : null));
 

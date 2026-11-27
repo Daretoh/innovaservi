@@ -8,13 +8,15 @@ export default {
   rubros: ['todos'],
   acciones: ['ver', 'crear', 'editar', 'eliminar', 'exportar'],
   menu: [
-    { id: 'cotizaciones.lista', label: 'Cotizaciones', vista: () => import('./vistas/lista.js?v=96471b3') },
-    { id: 'cotizaciones.editor', label: 'Cotización', oculto: true, padre: 'cotizaciones.lista', vista: () => import('./vistas/editor.js?v=96471b3') },
+    { id: 'cotizaciones.lista', label: 'Cotizaciones', vista: () => import('./vistas/lista.js?v=2d079ab') },
+    { id: 'cotizaciones.editor', label: 'Cotización', oculto: true, padre: 'cotizaciones.lista', vista: () => import('./vistas/editor.js?v=2d079ab') },
     // Facturas va en Finanzas → Ventas y cobros (apartado finventas de Costos, 2026-11-24); sin Costos queda sola en Comercial
-    { id: 'cotizaciones.oc', apartado: 'finventas', orden: 1, label: 'Facturas', icono: 'dinero', vista: () => import('./vistas/facturas.js?v=96471b3') },
-    { id: 'cotizaciones.precios', label: 'Listas de precios', vista: () => import('./vistas/precios.js?v=96471b3') },
-    { id: 'cotizaciones.config', ajustes: true, label: 'Diseño de la cotización', pestana: 'Diseño', vista: () => import('./vistas/config.js?v=96471b3') },
+    { id: 'cotizaciones.oc', apartado: 'finventas', orden: 1, label: 'Facturas', icono: 'dinero', vista: () => import('./vistas/facturas.js?v=2d079ab') },
+    // Bandeja (primera pestaña de Ventas y cobros): boletas de la TUU sin ligar a nada (Cotizaciones 013): se ligan a un abono o al cobro de una orden o de una cotización
+    { id: 'cotizaciones.boletas', apartado: 'finventas', orden: 0, label: 'Bandeja', icono: 'documento', vista: () => import('./vistas/boletas.js?v=2d079ab') },
+    { id: 'cotizaciones.precios', label: 'Listas de precios', vista: () => import('./vistas/precios.js?v=2d079ab') },
+    { id: 'cotizaciones.config', ajustes: true, label: 'Diseño de la cotización', pestana: 'Diseño', vista: () => import('./vistas/config.js?v=2d079ab') },
   ],
   config: {},
-  migraciones: ['db/001_cotizaciones.sql', 'db/002_mover_lineas.sql', 'db/003_editado.sql', 'db/004_agrupar.sql', 'db/005_seguimiento.sql', 'db/006_agrupar_cotizacion.sql', 'db/007_facturas.sql', 'db/008_factura_orden.sql', 'db/009_madre.sql', 'db/010_dte.sql', 'db/011_orden_al_dia.sql', 'db/012_factura_orden_cobrada.sql'],
+  migraciones: ['db/001_cotizaciones.sql', 'db/002_mover_lineas.sql', 'db/003_editado.sql', 'db/004_agrupar.sql', 'db/005_seguimiento.sql', 'db/006_agrupar_cotizacion.sql', 'db/007_facturas.sql', 'db/008_factura_orden.sql', 'db/009_madre.sql', 'db/010_dte.sql', 'db/011_orden_al_dia.sql', 'db/012_factura_orden_cobrada.sql', 'db/013_abonos.sql'],
 };

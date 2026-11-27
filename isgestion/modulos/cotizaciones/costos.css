@@ -21,3 +21,4 @@
   .cc-fila { grid-template-columns: 1fr 1fr; padding: 8px; border: 1px solid var(--borde); border-radius: 8px; }
   .cc-precio { grid-template-columns: 1fr; }
 }
+.cc-compra { display: grid; gap: 6px; padding: 10px 12px; border: 1px dashed var(--borde); border-radius: 8px; }

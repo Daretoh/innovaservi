@@ -1,13 +1,13 @@
 // Cotizaciones: listado con filtro por estado y búsqueda; nueva cotización. Cada fila dice quién la creó y quién la
 // editó por última vez (como el OS; updated_by lo pone la base).
-import { el } from '../../../core/ui/dom.js?v=96471b3';
-import { listado, boton } from '../../../core/ui/tabla.js?v=96471b3';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=96471b3';
-import { dinero, fechaLarga, fechaCorta, hoyISO, diaLocal, nombrePropio } from '../../../core/ui/formato.js?v=96471b3';
-import { avance, colorAvance } from '../../taller/seguimiento.js?v=96471b3';
-import { nombreEstado as estadoOrden } from '../../taller/datos.js?v=96471b3';
-import { costosDeGrupos, costoFuera, sinRepetir, yaTraidos } from '../costos-orden.js?v=96471b3';
-import { ESTADOS, nombreEstado, CHIP_ESTADO, SELECT_COT, totales, costoLinea, numeroTexto, nombreTercero, verPatente, siguienteNumero, cargarConfig, datosCliente } from '../datos.js?v=96471b3';
+import { el } from '../../../core/ui/dom.js?v=2d079ab';
+import { listado, boton } from '../../../core/ui/tabla.js?v=2d079ab';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=2d079ab';
+import { dinero, fechaLarga, fechaCorta, hoyISO, diaLocal, nombrePropio } from '../../../core/ui/formato.js?v=2d079ab';
+import { avance, colorAvance } from '../../taller/seguimiento.js?v=2d079ab';
+import { nombreEstado as estadoOrden } from '../../taller/datos.js?v=2d079ab';
+import { costosDeGrupos, costoFuera, sinRepetir, yaTraidos } from '../costos-orden.js?v=2d079ab';
+import { ESTADOS, nombreEstado, CHIP_ESTADO, SELECT_COT, totales, costoLinea, numeroTexto, nombreTercero, verPatente, siguienteNumero, cargarConfig, datosCliente } from '../datos.js?v=2d079ab';
 
 const filtro = { estado: 'todas', buscar: '' };
 
@@ -44,8 +44,8 @@ export default async function vista(ctx) {
     columnas: [
       { titulo: 'N°', valor: (c) => el('a', { href: ctx.ruta('cotizaciones.editor', { id: c.id }) }, el('strong', {}, numeroTexto(c.numero))) },
       { titulo: 'Fecha', valor: (c) => fechaLarga(c.fecha) },
-      { titulo: 'Cliente', valor: (c) => c.cliente_nombre ?? '' },
-      { titulo: 'Detalle', valor: (c) => el('span', {}, c.cot_grupos.map((g) => [g.titulo, verPatente(g.patente)].filter(Boolean).join(' · ')).join(', '),
+      { titulo: 'Cliente', valor: (c) => el('span', { class: 'cot-lista-cliente' }, c.cliente_nombre ?? '') },
+      { titulo: 'Detalle', valor: (c) => el('span', { class: 'cot-lista-detalle' }, c.cot_grupos.map((g) => [g.titulo, verPatente(g.patente)].filter(Boolean).join(' · ')).join(', '),
         c.origen_id ? el('span', { class: 'texto-chico texto-suave' }, el('br'), `Nace de la N° ${numeroDe.get(c.origen_id) ?? '…'}`) : null,
         c.madre_id ? el('span', { class: 'texto-chico texto-suave' }, el('br'), `Dentro de la N° ${numeroDe.get(c.madre_id) ?? '…'}: se cobra allá`) : null,
         nHijas.get(c.id) ? el('span', { class: 'texto-chico texto-suave' }, el('br'), `${c.notas?.startsWith('Cierre ') ? `${c.notas} · ` : ''}junta ${nHijas.get(c.id)} cotizaciones`) : null,

@@ -2,10 +2,10 @@
 // lado (compactas, sugerencia #193, 2026-11-25), Indicadores del día (UF, UTM y dólar), cifras, Alertas como tablero (vencidos / esta semana / este mes, con tarjetas
 // Personas, Vehículos, Empresa y Operación) y la lista de próximos vencimientos.
 // Cada bloque aparece solo si la empresa tiene el módulo y el rol lo puede ver; si una consulta falla, se omite.
-import { el } from '../ui/dom.js?v=96471b3';
-import { icono } from '../ui/iconos.js?v=96471b3';
-import { hoyISO, fechaCorta, fechaLarga, sumarDias } from '../ui/formato.js?v=96471b3';
-import { ctxTareas } from '../tareas-unidas.js?v=96471b3';
+import { el } from '../ui/dom.js?v=2d079ab';
+import { icono } from '../ui/iconos.js?v=2d079ab';
+import { hoyISO, fechaCorta, fechaLarga, sumarDias } from '../ui/formato.js?v=2d079ab';
+import { ctxTareas } from '../tareas-unidas.js?v=2d079ab';
 
 const dias = (iso) => Math.round((new Date(`${iso}T12:00`) - new Date(`${hoyISO()}T12:00`)) / 864e5);
 const textoDias = (n) => (n < 0 ? `Venció hace ${-n}d` : n === 0 ? 'Vence hoy' : `En ${n}d`);
@@ -29,13 +29,13 @@ async function cargarPesado(ctx, hoy) {
   const puede = (m) => ctx.puede(m, 'ver');
   const mes = hoy.slice(0, 7);
   const [rrhh, ope, flota, acr, salidas] = await Promise.all([
-    puede('rrhh') ? intentar(import('../../modulos/rrhh/datos.js?v=96471b3').then(async (m) => ({ m, d: await m.cargarRrhh(ctx) }))) : null,
-    puede('ope') ? intentar(import('../../modulos/ope/datos.js?v=96471b3').then(async (m) => {
+    puede('rrhh') ? intentar(import('../../modulos/rrhh/datos.js?v=2d079ab').then(async (m) => ({ m, d: await m.cargarRrhh(ctx) }))) : null,
+    puede('ope') ? intentar(import('../../modulos/ope/datos.js?v=2d079ab').then(async (m) => {
       const [base, semana] = await Promise.all([m.cargarBase(ctx), m.cargarSemana(ctx, hoy, sumarDias(hoy, 13))]);   // hoy y las 2 semanas siguientes (Próximas actividades)
       return { m, base, semana };
     })) : null,
-    puede('flota') ? intentar(import('../../modulos/flota/datos.js?v=96471b3').then(async (m) => ({ m, vehiculos: await m.cargarFlota(ctx) }))) : null,
-    puede('acreditacion') ? intentar(import('../../modulos/acreditacion/datos.js?v=96471b3').then(async (m) => ({ m, d: await m.cargarDocumentos(ctx) }))) : null,
+    puede('flota') ? intentar(import('../../modulos/flota/datos.js?v=2d079ab').then(async (m) => ({ m, vehiculos: await m.cargarFlota(ctx) }))) : null,
+    puede('acreditacion') ? intentar(import('../../modulos/acreditacion/datos.js?v=2d079ab').then(async (m) => ({ m, d: await m.cargarDocumentos(ctx) }))) : null,
     puede('sst') ? intentar(ctx.api.from('sst_salidas').select('id', { count: 'exact', head: true }).eq('empresa_id', ctx.empresa.id).is('deleted_at', null).gte('fecha', `${mes}-01`)) : null,
   ]);
   return { rrhh, ope, flota, acr, salidas };
@@ -167,7 +167,7 @@ export function panelIndicadores(ctx, x) {
 
   // ---- Indicadores del día (UF, UTM, dólar)
   const valor = el('div', { class: 'eco-valores' }, el('span', { class: 'texto-suave texto-chico' }, 'Cargando…'));
-  import('../economia.js?v=96471b3').then(({ indicadoresDelDia }) => indicadoresDelDia()).then((v) => {
+  import('../economia.js?v=2d079ab').then(({ indicadoresDelDia }) => indicadoresDelDia()).then((v) => {
     if (!v) { valor.replaceChildren(el('span', { class: 'texto-suave texto-chico' }, 'No se pudieron obtener los indicadores')); return; }
     const pesos = (n, dec = 0) => (n == null ? '—' : `$${Number(n).toLocaleString('es-CL', { minimumFractionDigits: dec, maximumFractionDigits: dec })}`);
     valor.replaceChildren(...[['UF', pesos(v.uf, 2)], ['UTM', pesos(v.utm)], ['Dólar', pesos(v.dolar, 2)]].map(([t, n]) => el('div', {}, el('span', { class: 'texto-suave texto-chico' }, t), el('strong', {}, n))));
