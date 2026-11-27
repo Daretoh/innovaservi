@@ -1,0 +1,8 @@
+/* Entrega individual de documentos (Prevención SST) */
+.ind-modal { width: min(760px, calc(100vw - 32px)); }
+.ind-lista { display: grid; gap: 4px; max-height: 240px; overflow: auto; padding: 8px 10px; margin-bottom: 8px;
+  border: 1px solid var(--borde); border-radius: 8px; background: var(--fondo-sutil); }
+.ind-lista:empty { display: none; }
+.ind-lista .casilla { align-items: flex-start; }
+.ind-fila { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+@media (max-width: 560px) { .ind-fila { grid-template-columns: 1fr; } }

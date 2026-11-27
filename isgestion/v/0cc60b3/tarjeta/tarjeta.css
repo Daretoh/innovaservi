@@ -1,0 +1,229 @@
+/* Tarjeta de cliente: usa los estilos de la ficha de ingreso (../ficha/ficha.css) y sus colores por tema
+   (--fp-cab, --fp-cab-2, --fp-borde, --fp-sombra): Innova en azul marino, Performance en grafito con naranja. */
+.tj { max-width: 520px; padding-top: 16px; display: grid; gap: 14px; }
+.tj > .fp-seccion { margin: 0; }
+
+.tj-tarjeta { position: relative; overflow: hidden; display: grid; gap: 18px; padding: 22px 20px 20px; border-radius: 18px; color: #fff;
+  background:
+    radial-gradient(120% 90% at 110% -10%, color-mix(in srgb, var(--empresa) 45%, transparent) 0%, transparent 55%),
+    linear-gradient(160deg, var(--fp-cab-2) 0%, var(--fp-cab) 70%);
+  box-shadow: 0 12px 32px rgba(var(--fp-sombra), .28); }
+.tj-tarjeta::before { content: ''; position: absolute; inset: 0 0 auto 0; height: 4px; background: var(--empresa); }
+.tj-tarjeta::after { content: ''; position: absolute; inset: 0; pointer-events: none; opacity: .06;
+  background: repeating-linear-gradient(135deg, #fff 0 2px, transparent 2px 14px); }
+.tj-cab { position: relative; z-index: 1; display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.tj-cab h1 { font-size: 1.3rem; font-weight: 800; letter-spacing: -.01em; margin: 0; }
+.tj-quien { display: grid; justify-items: end; text-align: right; }
+.tj-quien strong { font-size: 1rem; }
+.tj-quien small { opacity: .7; font-size: .72rem; }
+
+.tj-sellos { position: relative; z-index: 1; display: grid; gap: 10px; justify-items: center; }
+.tj-sello { width: 100%; max-width: 54px; aspect-ratio: 1; display: grid; place-items: center; border-radius: 50%;
+  border: 2px dashed rgba(255, 255, 255, .35); color: rgba(255, 255, 255, .55); }
+.tj-sello small { font-size: .7rem; font-weight: 700; }
+.tj-sello.premio { border: 2px solid var(--empresa); color: #fff; }
+.tj-sello.premio small { font-size: .55rem; letter-spacing: 0; text-transform: uppercase; }
+.tj-sello.puesto { border: 0; background: var(--empresa); color: #fff; box-shadow: 0 3px 10px color-mix(in srgb, var(--empresa) 45%, transparent); }
+.tj-sello.siguiente { border-style: solid; border-color: rgba(255, 255, 255, .8); animation: tj-latido 1.6s ease-in-out infinite; }
+@keyframes tj-latido { 50% { box-shadow: 0 0 0 6px rgba(255, 255, 255, .12); } }
+
+.tj-barra { position: relative; z-index: 1; height: 6px; border-radius: 3px; background: rgba(255, 255, 255, .15); overflow: hidden; }
+.tj-barra > span { display: block; height: 100%; border-radius: 3px; background: var(--empresa); }
+.tj-estado { position: relative; z-index: 1; margin: 0; line-height: 1.45; font-size: .98rem; }
+.tj-regla { position: relative; z-index: 1; margin: 0; font-size: .75rem; opacity: .7; }
+.tj-tarjeta.completa .tj-estado strong { color: var(--empresa); }
+
+.tj-visitas { list-style: none; margin: 0; padding: 0; display: grid; }
+.tj-visitas li { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-top: 1px solid var(--fp-borde); }
+.tj-visitas li:first-child { border-top: 0; padding-top: 2px; }
+.tj-visitas li > div { display: grid; gap: 2px; }
+.tj-visita-der { justify-items: end; text-align: right; }
+.tj-mas { font-size: .75rem; font-weight: 700; color: var(--empresa); }
+.tj details summary { cursor: pointer; font-weight: 700; display: flex; align-items: center; gap: 6px; list-style: none; }
+.tj details summary::-webkit-details-marker { display: none; }
+.tj-pie { text-align: center; }
+.tj .fp-enviar { display: inline-flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; }
+
+/* Logo en la cabecera de la tarjeta */
+.tj-marca { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.tj-logo { width: 48px; height: 48px; object-fit: contain; border-radius: 10px; background: #fff; padding: 4px; flex: none; }
+
+/* Performance (taller): más negro que naranja, más recto, como la app (pedido de Enzo 2026-11-20) */
+:root[data-tema="taller"] .tj-tarjeta { border-radius: 14px;
+  background:
+    radial-gradient(90% 70% at 100% 0%, color-mix(in srgb, var(--empresa) 18%, transparent) 0%, transparent 60%),
+    linear-gradient(165deg, #1d1e21 0%, #0c0c0d 60%, #050505 100%);
+  border: 1px solid rgba(255, 255, 255, .07); box-shadow: 0 14px 34px rgba(0, 0, 0, .35); }
+:root[data-tema="taller"] .tj-tarjeta::before { height: 3px; background: linear-gradient(90deg, var(--empresa), transparent 70%); }
+:root[data-tema="taller"] .tj-tarjeta::after { opacity: .035; }
+:root[data-tema="taller"] .tj-sello { border-color: rgba(255, 255, 255, .22); background: rgba(255, 255, 255, .03); }
+:root[data-tema="taller"] .tj-sello.puesto { background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--empresa) 80%, #fff) 0%, var(--empresa) 55%, color-mix(in srgb, var(--empresa) 70%, #000) 100%); }
+:root[data-tema="taller"] .tj-barra { background: rgba(255, 255, 255, .1); height: 5px; }
+:root[data-tema="taller"] .fp-seccion { border-radius: 10px; }
+:root[data-tema="taller"] .fp-enviar { border-radius: 8px; }
+:root[data-tema="taller"] .fp-cabecera { border-radius: 0 0 10px 10px; }
+@media (prefers-reduced-motion: reduce) { .tj-sello.siguiente { animation: none; } }
+
+/* Tutorial para guardar la tarjeta (guardar.js): dibujos SVG propios por paso */
+.tj-guardar { --tj-marco: #1b1b1d; --tj-pantalla: #fff; --tj-barra: #f2f2f4; --tj-gris: #8a8a90; --tj-texto: #1d1d1f; --tj-cab: var(--fp-cab); }
+.tj-guardar { gap: 10px; }
+.tj-guardar[open] summary { margin-bottom: 2px; }
+.tj-pestanas { display: inline-flex; gap: 4px; padding: 4px; border-radius: 10px; background: var(--fp-fondo); justify-self: start; }
+.tj-pestana { border: 0; background: transparent; padding: 7px 16px; border-radius: 7px; font: inherit; font-weight: 600; color: var(--texto-suave); cursor: pointer; }
+.tj-pestana[aria-selected="true"] { background: var(--superficie, #fff); color: var(--fp-texto); box-shadow: 0 1px 3px rgba(var(--fp-sombra), .15); }
+.tj-pasos { list-style: none; margin: 4px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 210px), 1fr)); gap: 14px; }
+.tj-pasos li { display: grid; gap: 8px; align-content: start; }
+.tj-dibujo { display: grid; place-items: center; padding: 12px 0; border-radius: 10px; background: var(--fp-fondo); }
+.tj-dibujo svg { width: 118px; height: auto; display: block; filter: drop-shadow(0 4px 10px rgba(0, 0, 0, .15)); }
+.tj-paso-texto { display: flex; gap: 8px; align-items: flex-start; }
+.tj-paso-texto p { margin: 0; font-size: .9rem; line-height: 1.4; }
+.tj-num { flex: none; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--empresa); color: #fff; font-size: .75rem; font-weight: 800; }
+.tj-nota { margin: 2px 0 0; padding: 8px 10px; border-radius: 8px; background: var(--fp-fondo); }
+.tj-qr-caja { display: flex; gap: 14px; align-items: center; padding: 10px; border-radius: 10px; background: var(--fp-fondo); }
+.tj-qr { flex: none; padding: 6px; background: #fff; border-radius: 6px; line-height: 0; }
+.tj-qr img, .tj-qr canvas { width: 132px; height: 132px; }
+/* En el teléfono los pasos se deslizan de lado (uno y un poco del siguiente) */
+@media (max-width: 600px) {
+  .tj-pasos { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 12px; padding-bottom: 6px; margin-right: -18px; padding-right: 18px; }
+  .tj-pasos li { flex: 0 0 78%; scroll-snap-align: start; }
+  .tj-dibujo svg { width: 104px; }
+}
+.tj { grid-template-columns: minmax(0, 1fr); }
+.tj-guardar { grid-template-columns: minmax(0, 1fr); }
+.tj-guardar > * { min-width: 0; }
+
+/* ---- Google Wallet (Marketing 015): botón negro como el de Google */
+.tj-wallet-caja { display: grid; justify-items: center; gap: 4px; margin: 4px 0 8px; }
+.tj-wallet { display: inline-flex; align-items: center; gap: 10px; background: #000; color: #fff; border: 1px solid #747775; border-radius: 999px; padding: 10px 22px; font-family: inherit; font-weight: 600; font-size: 1rem; line-height: 1.2; cursor: pointer; min-height: 48px; }
+.tj-wallet:hover { background: #1f1f1f; }
+.tj-wallet:disabled { opacity: .6; cursor: progress; }
+.tj-wallet-estado { margin: 0; color: var(--fp-texto, inherit); min-height: 1em; }
+
+/* =====================================================================
+   Diseño oscuro de la tarjeta (2026-11-20, pedido de Enzo: "más negro que naranja", más trabajado).
+   html.tj-oscuro lo pone tarjeta.js. Solo el acento usa --empresa; todo lo demás, negros y grises.
+   ===================================================================== */
+html.tj-oscuro {
+  --fp-fondo: #0a0a0b; --fp-texto: #ececee; --fp-borde: rgba(255, 255, 255, .08); --fp-sombra: 0, 0, 0;
+  --superficie: #131315; --texto: #ececee; --texto-suave: #9a9aa2; --borde: rgba(255, 255, 255, .08);
+  --tj-panel: #131315; --tj-panel-2: #18181b; --tj-linea: rgba(255, 255, 255, .07); --tj-suave: #9a9aa2;
+  color-scheme: dark;
+}
+html.tj-oscuro body { background: radial-gradient(120% 60% at 50% -10%, #1b1b1e 0%, #0a0a0b 55%) fixed, #0a0a0b; color: var(--fp-texto); }
+html.tj-oscuro .tj { max-width: 460px; gap: 14px; padding: 18px 16px 28px; }
+
+/* 1 · Tarjeta de socio: proporción de tarjeta física, negro con brillo y canto del color de la empresa */
+.tj-club { position: relative; overflow: hidden; aspect-ratio: 1.586; border-radius: 18px; padding: 20px 20px 18px; color: #fff;
+  display: grid; grid-template-rows: auto 1fr; isolation: isolate;
+  background:
+    radial-gradient(70% 90% at 105% -5%, color-mix(in srgb, var(--empresa) 34%, transparent) 0%, transparent 55%),
+    radial-gradient(60% 60% at -10% 110%, rgba(255, 255, 255, .06) 0%, transparent 60%),
+    linear-gradient(150deg, #222326 0%, #111113 45%, #050506 100%);
+  border: 1px solid rgba(255, 255, 255, .09);
+  box-shadow: 0 24px 48px -12px rgba(0, 0, 0, .7), 0 0 0 1px rgba(0, 0, 0, .6), inset 0 1px 0 rgba(255, 255, 255, .08);
+  animation: tj-aparecer 520ms cubic-bezier(.2, .8, .2, 1) both; }
+.tj-club::before { content: ""; position: absolute; inset: 0; z-index: -1; opacity: .5;
+  background: repeating-linear-gradient(115deg, rgba(255, 255, 255, .025) 0 1px, transparent 1px 7px); }
+.tj-club::after { content: ""; position: absolute; inset: -40% -60%; z-index: -1; pointer-events: none;
+  background: linear-gradient(105deg, transparent 42%, rgba(255, 255, 255, .09) 50%, transparent 58%);
+  transform: translateX(-60%); animation: tj-brillo 5s ease-in-out 900ms infinite; }
+.tj-club-cab { display: flex; align-items: center; gap: 12px; }
+.tj-logo { width: 46px; height: 46px; object-fit: contain; border-radius: 12px; background: #fff; padding: 5px; flex: none;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .45); }
+.tj-logo-letras { display: grid; place-items: center; background: var(--empresa); color: #fff; font-weight: 800; }
+.tj-club-marca { display: grid; gap: 1px; min-width: 0; flex: 1; }
+.tj-club-marca strong { font-size: 1.05rem; font-weight: 800; letter-spacing: -.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tj-club-marca span { font-size: .66rem; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: rgba(255, 255, 255, .55); }
+.tj-club-cuenta { display: flex; align-items: baseline; padding: 6px 11px; border-radius: 999px; background: rgba(255, 255, 255, .07);
+  border: 1px solid rgba(255, 255, 255, .1); }
+.tj-club-cuenta strong { font-size: 1.15rem; font-weight: 800; color: var(--empresa); }
+.tj-club-cuenta small { font-size: .78rem; color: rgba(255, 255, 255, .6); margin-left: 1px; }
+.tj-club-pie { align-self: end; display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; }
+.tj-club-pie > div { display: grid; gap: 2px; min-width: 0; }
+.tj-club-pie small { font-size: .62rem; letter-spacing: .14em; text-transform: uppercase; color: rgba(255, 255, 255, .5); }
+.tj-club-nombre { font-size: 1.55rem; font-weight: 800; letter-spacing: -.02em; line-height: 1.05; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tj-club-der { justify-items: end; text-align: right; }
+.tj-club-num { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: .86rem; letter-spacing: .12em; color: rgba(255, 255, 255, .8); }
+.tj-club.completa { border-color: color-mix(in srgb, var(--empresa) 55%, transparent);
+  box-shadow: 0 24px 48px -12px rgba(0, 0, 0, .7), 0 0 0 1px color-mix(in srgb, var(--empresa) 40%, transparent), 0 0 40px -6px color-mix(in srgb, var(--empresa) 45%, transparent); }
+
+/* Paneles */
+.tj-panel { background: linear-gradient(180deg, var(--tj-panel-2), var(--tj-panel)); border: 1px solid var(--tj-linea); border-radius: 16px; padding: 16px;
+  display: grid; gap: 12px; animation: tj-aparecer 520ms cubic-bezier(.2, .8, .2, 1) both; }
+.tj-panel:nth-child(2) { animation-delay: 80ms; }
+.tj-panel:nth-child(3) { animation-delay: 140ms; }
+.tj-panel h2 { margin: 0; font-size: .78rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--tj-suave); }
+.tj-panel-cab { display: flex; justify-content: space-between; align-items: baseline; }
+.tj-cifra { color: var(--tj-suave); font-size: .9rem; }
+.tj-cifra strong { font-size: 1.6rem; font-weight: 800; color: #fff; margin-right: 2px; }
+
+/* 2 · Sellos */
+html.tj-oscuro .tj-sellos { gap: 12px; justify-items: center; }
+html.tj-oscuro .tj-sello { width: 100%; max-width: 58px; aspect-ratio: 1; border-radius: 50%; display: grid; place-items: center;
+  border: 2px dashed rgba(255, 255, 255, .16); background: rgba(255, 255, 255, .02); color: rgba(255, 255, 255, .32); }
+html.tj-oscuro .tj-sello small { font-size: .78rem; font-weight: 700; }
+html.tj-oscuro .tj-sello.puesto { border: 0; color: #fff;
+  background: radial-gradient(circle at 32% 28%, color-mix(in srgb, var(--empresa) 70%, #fff) 0%, var(--empresa) 48%, color-mix(in srgb, var(--empresa) 72%, #000) 100%);
+  box-shadow: 0 6px 16px -4px color-mix(in srgb, var(--empresa) 60%, transparent), inset 0 -2px 0 rgba(0, 0, 0, .18);
+  animation: tj-sellar 420ms cubic-bezier(.3, 1.6, .5, 1) both; animation-delay: calc(250ms + var(--i) * 70ms); }
+html.tj-oscuro .tj-sello.premio:not(.puesto) { border: 2px solid color-mix(in srgb, var(--empresa) 70%, transparent); color: var(--empresa);
+  background: color-mix(in srgb, var(--empresa) 10%, transparent); }
+html.tj-oscuro .tj-sello.siguiente { border-style: solid; border-color: rgba(255, 255, 255, .55); color: rgba(255, 255, 255, .75); animation: tj-latido-o 1.8s ease-in-out infinite; }
+html.tj-oscuro .tj-barra { height: 4px; border-radius: 2px; background: rgba(255, 255, 255, .08); overflow: hidden; }
+html.tj-oscuro .tj-barra > span { display: block; height: 100%; background: linear-gradient(90deg, color-mix(in srgb, var(--empresa) 60%, #000), var(--empresa)); border-radius: 2px; }
+html.tj-oscuro .tj-estado { margin: 0; font-size: .95rem; color: var(--tj-suave); }
+html.tj-oscuro .tj-estado strong { color: #fff; }
+
+/* 3 · Premio */
+.tj-premio { grid-template-columns: auto 1fr; align-items: center; gap: 14px; }
+.tj-premio-icono { width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center; color: var(--empresa);
+  background: color-mix(in srgb, var(--empresa) 14%, transparent); border: 1px solid color-mix(in srgb, var(--empresa) 30%, transparent); }
+.tj-premio > div { display: grid; gap: 2px; min-width: 0; }
+.tj-premio small, .tj-hora small { font-size: .7rem; letter-spacing: .12em; text-transform: uppercase; color: var(--tj-suave); }
+.tj-premio strong { font-size: 1.15rem; font-weight: 800; color: #fff; }
+.tj-premio-regla { font-size: .78rem; color: var(--tj-suave); }
+.tj-premio.listo { border-color: color-mix(in srgb, var(--empresa) 50%, transparent);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--empresa) 22%, #131315), #131315 70%); }
+.tj-premio.listo .tj-premio-icono { background: var(--empresa); color: #fff; }
+
+/* 4 · Hora pedida y acciones */
+.tj-hora { grid-template-columns: auto 1fr; align-items: center; gap: 14px; }
+.tj-hora-icono { width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; background: rgba(255, 255, 255, .06); color: #fff; }
+.tj-hora > div { display: grid; gap: 2px; }
+.tj-hora strong { color: #fff; }
+.tj-acciones { display: grid; gap: 10px; }
+.tj-boton { display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 52px; border-radius: 14px; font-weight: 700; font-size: 1rem; text-decoration: none; }
+.tj-boton-principal { background: var(--empresa); color: #fff; box-shadow: 0 10px 24px -10px color-mix(in srgb, var(--empresa) 80%, transparent); }
+.tj-boton-principal:active { transform: translateY(1px); }
+html.tj-oscuro .tj-wallet-caja { margin: 0; }
+html.tj-oscuro .tj-wallet { width: 100%; justify-content: center; min-height: 52px; border-radius: 14px; background: #000; border-color: rgba(255, 255, 255, .22); }
+
+/* 5 · Visitas (línea de tiempo) */
+html.tj-oscuro .tj-visitas { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
+html.tj-oscuro .tj-visitas li { position: relative; display: grid; grid-template-columns: 14px 1fr auto; gap: 12px; align-items: start; padding: 10px 0; border: 0; }
+html.tj-oscuro .tj-visitas li:not(:last-child)::before { content: ""; position: absolute; left: 6px; top: 26px; bottom: -6px; width: 2px; background: var(--tj-linea); }
+.tj-visita-punto { width: 14px; height: 14px; border-radius: 50%; margin-top: 3px; background: var(--empresa); box-shadow: 0 0 0 4px color-mix(in srgb, var(--empresa) 18%, transparent); }
+.tj-visita-txt { display: grid; gap: 2px; min-width: 0; }
+.tj-visita-txt strong { color: #fff; font-size: .95rem; }
+.tj-visita-txt span { color: var(--tj-suave); font-size: .82rem; }
+html.tj-oscuro .tj-mas { font-size: .8rem; font-weight: 800; color: var(--empresa); padding: 2px 8px; border-radius: 999px; background: color-mix(in srgb, var(--empresa) 14%, transparent); }
+.tj-vacio { margin: 0; color: var(--tj-suave); font-size: .9rem; }
+
+/* Tutorial, condiciones y pie en oscuro */
+html.tj-oscuro .fp-seccion { background: linear-gradient(180deg, var(--tj-panel-2), var(--tj-panel)); border-color: var(--tj-linea); box-shadow: none; color: var(--fp-texto); border-radius: 16px; }
+html.tj-oscuro .tj-guardar { --tj-cab: #111113; }
+html.tj-oscuro .tj-dibujo, html.tj-oscuro .tj-nota, html.tj-oscuro .tj-qr-caja, html.tj-oscuro .tj-pestanas { background: rgba(255, 255, 255, .04); }
+html.tj-oscuro .tj-pestana[aria-selected="true"] { background: rgba(255, 255, 255, .1); color: #fff; box-shadow: none; }
+html.tj-oscuro details.tj-panel summary { cursor: pointer; font-weight: 700; color: #fff; list-style: none; }
+html.tj-oscuro details.tj-panel summary::-webkit-details-marker { display: none; }
+html.tj-oscuro .tj-pie { margin: 4px 0 0; text-align: center; font-size: .75rem; color: #6c6c73; }
+.tj-taller { justify-self: center; font-size: .8rem; color: var(--tj-suave); text-decoration: underline; text-underline-offset: 3px; }
+
+@keyframes tj-aparecer { from { opacity: 0; transform: translateY(10px) scale(.985); } to { opacity: 1; transform: none; } }
+@keyframes tj-brillo { 0%, 55% { transform: translateX(-60%); } 85%, 100% { transform: translateX(60%); } }
+@keyframes tj-sellar { from { opacity: 0; transform: scale(1.5) rotate(-12deg); } to { opacity: 1; transform: none; } }
+@keyframes tj-latido-o { 50% { box-shadow: 0 0 0 7px rgba(255, 255, 255, .07); } }
+@media (prefers-reduced-motion: reduce) {
+  .tj-club, .tj-panel, html.tj-oscuro .tj-sello.puesto, html.tj-oscuro .tj-sello.siguiente, .tj-club::after { animation: none; }
+}
+@media (max-width: 360px) { .tj-club-nombre { font-size: 1.3rem; } .tj-club { padding: 16px; } }

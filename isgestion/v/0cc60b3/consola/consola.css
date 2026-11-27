@@ -1,0 +1,164 @@
+/* Consola de la plataforma: tema Moderno con acento azul ISgestión */
+.consola-etiqueta {
+  padding: 2px 10px; border-radius: 999px; font-size: .72rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--empresa); background: color-mix(in srgb, var(--empresa) 12%, transparent);
+}
+.con-estado-piloto { color: var(--prox); background: var(--prox-fondo); }
+.con-estado-activo { color: var(--ok); background: var(--ok-fondo); }
+.con-estado-suspendido { color: var(--venc); background: var(--venc-fondo); }
+.con-estado-baja { color: var(--texto-suave); background: var(--pend-fondo); }
+.con-matriz th:first-child, .con-matriz td:first-child { position: sticky; left: 0; background: var(--superficie); z-index: 1; }
+.con-matriz td { text-align: center; }
+.con-matriz th.vertical { writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap; padding: 10px 6px; text-align: left; }
+.con-matriz input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
+.con-cifra { font-size: 1.4rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.con-col-empresa { display: flex; align-items: center; gap: 8px; text-transform: none; letter-spacing: 0; font-size: .85rem; color: var(--texto); }
+.con-col-empresa > span:nth-child(2) { display: grid; text-align: left; }
+.con-grupo td { background: var(--fondo-sutil); font-size: .7rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--texto-suave); text-align: left !important; }
+.con-matriz td:first-child { text-align: left; }
+.con-matriz .resaltada { background: color-mix(in srgb, var(--empresa) 7%, var(--superficie)); }
+.con-uf { display: flex; align-items: center; gap: 8px; }
+.con-uf .campo { width: 130px; }
+.fin-tarjeta .boton { align-self: flex-start; margin-top: 8px; }
+
+/* Pantallas por empresa (Empresas y módulos) */
+.con-celda { display: flex; align-items: center; gap: 6px; }
+.con-pantallas { font-size: .78rem; padding: 2px 6px; }
+.con-pantallas-parcial { background: color-mix(in srgb, var(--empresa) 12%, transparent); font-weight: 600; }
+
+/* Salud de la plataforma (Supervisor) */
+.sal .listado-cabecera h1 { display: flex; align-items: center; gap: 8px; }
+.sal-filtro { margin: 4px 0 14px; }
+.sal-areas { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 520px), 1fr)); align-items: start; }
+.sal-area { padding: 12px 16px; border-left: 4px solid var(--borde); max-width: none; }
+.sal-area.sal-error { border-left-color: var(--venc); }
+.sal-area.sal-aviso { border-left-color: var(--prox); }
+.sal-area.sal-ok { border-left-color: var(--ok); }
+.sal-area-cabecera { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+.sal-area-cabecera h2 { margin: 0; font-size: 1rem; }
+.sal-lista { list-style: none; margin: 0; padding: 0; display: grid; }
+.sal-lista > li { border-top: 1px solid var(--borde); }
+.sal-lista > li:first-child { border-top: 0; }
+.sal-fila { display: grid; grid-template-columns: 64px 1fr auto; gap: 10px; align-items: start; padding: 8px 0; }
+.sal-fila .chip { justify-self: start; }
+.sal-texto { display: grid; gap: 2px; min-width: 0; overflow-wrap: anywhere; }
+.sal-texto .texto-suave { font-size: .85rem; }
+.sal-cuando { white-space: nowrap; }
+.sal-lista details > summary { list-style: none; cursor: pointer; }
+.sal-lista details > summary::-webkit-details-marker { display: none; }
+.sal-lista details > summary:hover { background: var(--hover); }
+.sal-lista details[open] > summary .sal-texto strong::after { content: ' ▴'; color: var(--texto-suave); }
+.sal-lista details:not([open]) > summary .sal-texto strong::after { content: ' ▾'; color: var(--texto-suave); }
+.sal-detalle { padding: 0 0 10px 74px; }
+.sal-tabla { font-size: .8rem; }
+.sal-tabla td { overflow-wrap: anywhere; max-width: 360px; }
+.sal-pares { display: grid; grid-template-columns: max-content 1fr; gap: 4px 12px; margin: 0; font-size: .85rem; }
+.sal-pares dt { color: var(--texto-suave); }
+.sal-pares dd { margin: 0; overflow-wrap: anywhere; }
+.sal-aviso { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 8px 12px; border-radius: 8px; background: var(--fondo-sutil); margin: 0 0 12px; }
+.sal-aviso-fuerte { background: var(--venc-fondo); color: var(--venc); }
+.sal-historial { margin-top: 16px; padding: 8px 16px; max-width: none; }
+.sal-historial > summary { cursor: pointer; }
+.sal-historial > summary h2 { display: inline; font-size: 1rem; }
+.sal-historial .resaltada td { background: var(--fondo-sutil); }
+@media (max-width: 640px) {
+  .sal-fila { grid-template-columns: 1fr; gap: 4px; }
+  .sal-detalle { padding-left: 0; }
+}
+
+/* Salud: resumen en palabras simples */
+.sal-simple { display: grid; gap: 12px; margin-bottom: 20px; max-width: 900px; }
+.sal-titular { display: flex; align-items: center; gap: 14px; padding: 16px 20px; border-left: 6px solid var(--ok); max-width: none; }
+.sal-titular.sal-aviso { border-left-color: var(--prox); }
+.sal-titular.sal-error { border-left-color: var(--venc); }
+.sal-titular > svg { flex: none; color: var(--ok); }
+.sal-titular.sal-aviso > svg { color: var(--prox); }
+.sal-titular.sal-error > svg { color: var(--venc); }
+.sal-titular > div { display: grid; gap: 2px; }
+.sal-titular strong { font-size: 1.15rem; }
+.sal-simple-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.sal-simple-item { display: block; padding: 12px 16px; border-left: 4px solid var(--prox); max-width: none; }
+.sal-simple-item.sal-error { border-left-color: var(--venc); }
+.sal-simple-item p { margin: 4px 0 0; }
+.sal-simple-cabeza { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.sal-hacer { color: var(--texto-suave); }
+.sal-en-orden { display: flex; align-items: flex-start; gap: 6px; margin: 0; }
+.sal-en-orden > svg { flex: none; margin-top: 2px; color: var(--ok); }
+.sal-tecnico { margin-top: 8px; }
+.sal-tecnico > summary { cursor: pointer; padding: 8px 0; }
+.sal-tecnico > summary h2 { display: inline; font-size: 1rem; color: var(--texto-suave); }
+.sal-tecnico-acciones { display: flex; justify-content: flex-end; margin: 4px 0 12px; }
+.sal-despues > svg { color: var(--texto-suave); }
+
+/* Almacenamiento (Consola 004) */
+.alm .listado-cabecera h1 { display: flex; align-items: center; gap: 8px; }
+.alm-resumen { margin-bottom: 14px; padding: 10px 16px; }
+.alm-resumen summary h2 { display: inline; font-size: 1rem; }
+.alm-filtros { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; margin-bottom: 10px; }
+.alm-filtros .campo { width: auto; min-width: 150px; }
+.alm-antes { display: flex; flex-direction: column; gap: 2px; }
+.alm-barra { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 8px 0; position: sticky; top: 0; background: var(--fondo); z-index: 2; }
+.alm-nombre { display: flex; flex-direction: column; max-width: 340px; word-break: break-all; }
+.alm-num { text-align: right; white-space: nowrap; }
+.alm-tabla td { vertical-align: top; }
+.alm-mas { display: flex; justify-content: center; padding: 12px; }
+@media (max-width: 760px) { .alm-filtros .campo { min-width: 0; flex: 1 1 140px; } }
+/* Sugerencias (vistas/sugerencias.js); el resto de .sug-* viene de core/ui/estilos.css */
+.sug-filtros { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 12px 0; }
+.sug-filtros input[type="search"] { flex: 1; min-width: 200px; }
+.sug-bandeja { display: flex; flex-direction: column; gap: 12px; }
+.sug-b { display: flex; flex-direction: column; gap: 10px; }
+.sug-b-cabeza { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.sug-b-punto { border-top: 1px solid var(--borde); padding-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+.sug-b-punto.urgente { border-left: 3px solid var(--error); padding-left: 10px; }
+.sug-b-texto { margin: 0; white-space: pre-wrap; }
+.sug-foto-grande { width: 120px; height: 90px; }
+.sug-b-acciones { display: grid; grid-template-columns: 170px 1fr auto; gap: 8px; align-items: start; }
+.sug-b-acciones textarea { font: inherit; padding: 6px 8px; border: 1px solid var(--borde); border-radius: var(--radio-control); background: var(--superficie); color: var(--texto); resize: vertical; }
+@media (max-width: 760px) { .sug-b-acciones { grid-template-columns: 1fr; } }
+.sug-b { padding: 14px 16px; }
+.sug-b > header.sug-b-cabeza { margin: 0; padding: 0; justify-content: flex-start; }
+.sug-b-punto { margin: 0; }
+.sug-b { align-items: stretch; }
+.sug-b-botones { display: flex; flex-direction: column; gap: 6px; }
+/* Novedades (vistas/novedades.js) */
+.nov-c-barra { margin: 12px 0; }
+.nov-c-lista { display: flex; flex-direction: column; gap: 8px; }
+.nov-c-fila { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px 14px; text-decoration: none; color: inherit; }
+.nov-c-editor { display: flex; flex-direction: column; gap: 12px; padding: 16px 18px; max-width: 820px; }
+.nov-c-editor .campo { display: flex; flex-direction: column; gap: 6px; }
+.nov-c-editor .campo > span { font-weight: 600; font-size: .88rem; }
+.nov-c-editor input[type="text"], .nov-c-editor textarea, .nov-c-editor select, .nov-c-editor input[type="search"] { font: inherit; padding: 7px 10px; border: 1px solid var(--borde); border-radius: var(--radio-control); background: var(--superficie); color: var(--texto); }
+.nov-c-empresas { display: flex; flex-wrap: wrap; gap: 14px; }
+.nov-c-empresas label, .nov-c-punto { display: flex; gap: 8px; align-items: flex-start; cursor: pointer; }
+.nov-c-img { display: flex; align-items: center; gap: 10px; }
+.nov-c-img img { max-width: 240px; max-height: 140px; border-radius: var(--radio-control); border: 1px solid var(--borde); }
+.nov-c-puntos { display: flex; flex-direction: column; gap: 8px; max-height: 280px; overflow-y: auto; border: 1px solid var(--borde); border-radius: var(--radio-control); padding: 8px 10px; font-size: .88rem; }
+.nov-c-acciones { display: flex; justify-content: flex-end; gap: 8px; }
+
+/* Consumo de IA (Consola 005) */
+.ia .listado-cabecera h1 { display: flex; align-items: center; gap: 8px; }
+.ia-intro { margin: 0 0 12px; max-width: 900px; }
+.ia-meses { margin: 0 0 14px; flex-wrap: wrap; }
+.ia-tendencia { max-width: none; padding: 12px 16px; margin-bottom: 12px; }
+.ia-tendencia h2, .ia-reparto h2 { margin: 0 0 8px; font-size: 1rem; }
+.ia-grafico { width: 100%; height: auto; display: block; }
+.ia-grafico .ia-dia { fill: var(--empresa); }
+.ia-grafico .ia-dia:hover { fill: color-mix(in srgb, var(--empresa) 70%, var(--texto)); }
+.ia-grafico .ia-guia { stroke: var(--borde); stroke-width: 1; }
+.ia-grafico .ia-eje { fill: var(--texto-suave); font-size: 11px; font-variant-numeric: tabular-nums; }
+.ia-repartos { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 460px), 1fr)); align-items: start; margin-bottom: 12px; }
+.ia-reparto { max-width: none; padding: 12px 16px; }
+.ia-reparto td.num, .ia-reparto th.num { white-space: nowrap; }
+.ia-barra-celda { width: 22%; min-width: 60px; }
+.ia-barra { display: block; height: 8px; border-radius: 4px; background: var(--empresa); }
+.fin-tarjeta.ia-ok strong { color: var(--ok); }
+.fin-tarjeta.ia-mal strong { color: var(--venc); }
+.ia-precios td code { font-size: .8rem; }
+.ia-precios-acciones { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0 4px; }
+.ia-proteccion { margin-bottom: 12px; }
+.ia-proteccion-cabecera { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.ia-proteccion-cabecera h2 { margin: 0; }
+.ia-barra.ia-barra-llena { background: var(--venc); }
+.ia-avisos { margin-top: 10px; }
+.ia-avisos ul { margin: 4px 0 0; padding-left: 18px; }

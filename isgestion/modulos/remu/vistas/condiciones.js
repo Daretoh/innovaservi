@@ -1,11 +1,11 @@
 // Condiciones de pago de cada trabajador en la empresa: modo, cargo/trato, jornada o turno, sueldo y vuelta.
-import { el } from '../../../core/ui/dom.js?v=0b94763';
-import { icono } from '../../../core/ui/iconos.js?v=0b94763';
-import { listado } from '../../../core/ui/tabla.js?v=0b94763';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=0b94763';
-import { avisar } from '../../../core/ui/aviso.js?v=0b94763';
-import { dinero, hhmm, fechaLarga } from '../../../core/ui/formato.js?v=0b94763';
-import { cargarBase, nombreCompleto } from '../datos.js?v=0b94763';
+import { el } from '../../../core/ui/dom.js?v=0cc60b3';
+import { icono } from '../../../core/ui/iconos.js?v=0cc60b3';
+import { listado } from '../../../core/ui/tabla.js?v=0cc60b3';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=0cc60b3';
+import { avisar } from '../../../core/ui/aviso.js?v=0cc60b3';
+import { dinero, hhmm, fechaLarga } from '../../../core/ui/formato.js?v=0cc60b3';
+import { cargarBase, nombreCompleto } from '../datos.js?v=0cc60b3';
 
 const MODOS = [['hora', 'Por hora (spot): se pagan todas las horas'], ['fijo', 'Fijo: solo extras, findes y feriados'],
   ['externo', 'Factura sus servicios (externo): no se paga por planilla']];

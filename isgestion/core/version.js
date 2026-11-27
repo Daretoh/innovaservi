@@ -6,8 +6,8 @@
 // Nada se recarga solo: el aviso es la única forma, y se puede dejar para más tarde.
 // Sin aviso (2026-11-27, pedido de Enzo): se publica sin aviso salvo con --nota o --aviso; lo interno no interrumpe a nadie; se
 // toma al abrir la app de nuevo. Quien venía de una versión anterior a la última con aviso igual lo ve.
-import { el } from './ui/dom.js?v=0b94763';
-import { icono } from './ui/iconos.js?v=0b94763';
+import { el } from './ui/dom.js?v=0cc60b3';
+import { icono } from './ui/iconos.js?v=0cc60b3';
 
 // Publicada en v/<commit>/core/version.js (o, las anteriores, en core/version.js?v=<commit>)
 const enCarpeta = import.meta.url.match(/\/v\/([0-9a-f]{7,40})\/core\//);

@@ -3,16 +3,16 @@
 // o seguir pidiendo). Tocar un bloque lo marca para el chat. Lo que se edita queda como borrador (se guarda solo) hasta
 // "Guardar versión", que arma el PDF o Word con el logo y el color de la empresa y lo deja como versión nueva.
 // Ruta: #/sst.editar?id=<documento>
-import { el } from '../../../core/ui/dom.js?v=0b94763';
-import { icono } from '../../../core/ui/iconos.js?v=0b94763';
-import { boton } from '../../../core/ui/tabla.js?v=0b94763';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=0b94763';
-import { avisar } from '../../../core/ui/aviso.js?v=0b94763';
-import { urlFirmada } from '../../../core/adjuntos.js?v=0b94763';
-import { fechaLarga, hoyISO } from '../../../core/ui/formato.js?v=0b94763';
-import { guardarVersion, estadoDocumento } from './documentos.js?v=0b94763';
-import { cargarFirmasDoc, vistaFirmas, nuevaFirma } from '../firmas-doc.js?v=0b94763';
-import { numeroItem, leerContenido, pedirIA, exportarWord, exportarPdf, descargar, nombreArchivo, esDocx, esPdf, MIME_DOCX } from '../revisar-ia.js?v=0b94763';
+import { el } from '../../../core/ui/dom.js?v=0cc60b3';
+import { icono } from '../../../core/ui/iconos.js?v=0cc60b3';
+import { boton } from '../../../core/ui/tabla.js?v=0cc60b3';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=0cc60b3';
+import { avisar } from '../../../core/ui/aviso.js?v=0cc60b3';
+import { urlFirmada } from '../../../core/adjuntos.js?v=0cc60b3';
+import { fechaLarga, hoyISO } from '../../../core/ui/formato.js?v=0cc60b3';
+import { guardarVersion, estadoDocumento } from './documentos.js?v=0cc60b3';
+import { cargarFirmasDoc, vistaFirmas, nuevaFirma } from '../firmas-doc.js?v=0cc60b3';
+import { numeroItem, leerContenido, pedirIA, exportarWord, exportarPdf, descargar, nombreArchivo, esDocx, esPdf, MIME_DOCX } from '../revisar-ia.js?v=0cc60b3';
 
 const ACCION = { reemplazar: 'Cambiar', insertar_despues: 'Agregar', eliminar: 'Quitar', titulo_seccion: 'Cambiar título', nueva_seccion: 'Nueva sección' };
 const vacioBloque = () => ({ tipo: 'parrafo', texto: '', items: [], columnas: [], filas: [] });

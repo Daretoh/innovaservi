@@ -1,13 +1,13 @@
 // Documentos preventivos con control de versiones: lista por tipo con la versión vigente y la próxima
 // revisión; detalle con el historial de versiones, subir nueva versión y ver cualquiera.
 // Rutas: #/sst.documentos · #/sst.documentos?id=<documento>
-import { el } from '../../../core/ui/dom.js?v=0b94763';
-import { icono } from '../../../core/ui/iconos.js?v=0b94763';
-import { boton } from '../../../core/ui/tabla.js?v=0b94763';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=0b94763';
-import { avisar } from '../../../core/ui/aviso.js?v=0b94763';
-import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=0b94763';
-import { fechaLarga, hoyISO } from '../../../core/ui/formato.js?v=0b94763';
+import { el } from '../../../core/ui/dom.js?v=0cc60b3';
+import { icono } from '../../../core/ui/iconos.js?v=0cc60b3';
+import { boton } from '../../../core/ui/tabla.js?v=0cc60b3';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=0cc60b3';
+import { avisar } from '../../../core/ui/aviso.js?v=0cc60b3';
+import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=0cc60b3';
+import { fechaLarga, hoyISO } from '../../../core/ui/formato.js?v=0cc60b3';
 
 export const TIPOS_DOC = [['pts', 'Procedimiento de trabajo seguro (PTS)'], ['iper', 'Matriz IPER y procedimiento'], ['programa', 'Programa preventivo'],
   ['ley_karin', 'Protocolo Ley Karin'], ['matriz_epp', 'Matriz de EPP'], ['capacitacion', 'Material de capacitación'], ['evaluacion', 'Evaluación de aprendizaje'],
@@ -234,7 +234,7 @@ async function lista(ctx) {
 }
 
 function css() {
-  if (!document.getElementById('sst-documentos-css')) document.head.append(el('link', { id: 'sst-documentos-css', rel: 'stylesheet', href: new URL('../documentos.css?v=0b94763', import.meta.url).href }));
+  if (!document.getElementById('sst-documentos-css')) document.head.append(el('link', { id: 'sst-documentos-css', rel: 'stylesheet', href: new URL('../documentos.css?v=0cc60b3', import.meta.url).href }));
 }
 
 function eliminar(ctx, d) {

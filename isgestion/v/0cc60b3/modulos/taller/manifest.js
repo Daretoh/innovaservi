@@ -1,0 +1,34 @@
+export default {
+  id: 'taller',
+  nombre: 'Taller',
+  version: '1.0.0',
+  icono: 'auto',
+  categoria: 'Operaciones',
+  depende: ['nucleo', 'personas', 'terceros'],
+  rubros: ['automotriz'],
+  acciones: ['ver', 'crear', 'editar', 'eliminar', 'aprobar', 'exportar'],
+  // Teléfono (core/movil.js): Taller y Agenda en la barra de abajo; el "+" del centro agenda un vehículo (recepción)
+  movil: {
+    accesos: [{ id: 'taller.tablero', label: 'Taller', icono: 'auto' }, { id: 'taller.agenda', label: 'Agenda', icono: 'calendario' }],
+    accion: { label: 'Agendar vehículo', icono: 'mas', requiere: 'crear', abrir: (ctx) => import('./recepcion.js').then((m) => m.recepcion(ctx)) },
+  },
+  menu: [
+    { id: 'taller.tablero', label: 'Tablero del taller', pestana: 'Tablero', vista: () => import('./vistas/tablero.js') },
+    { id: 'taller.orden', label: 'Orden de trabajo', oculto: true, padre: 'taller.tablero', vista: () => import('./vistas/orden.js') },
+    { id: 'taller.calendario', label: 'Calendario', vista: () => import('./vistas/calendario.js') },
+    { id: 'taller.agenda', label: 'Agenda', vista: () => import('./vistas/agenda.js') },
+    { id: 'taller.cobros', label: 'Cobros', requiere: 'editar', vista: () => import('./vistas/cobros.js') },
+    { id: 'taller.clientes', label: 'Clientes', pestana: 'Clientes', vista: () => import('./vistas/clientes.js') },
+    { id: 'taller.vehiculos', label: 'Vehículos de clientes', pestana: 'Vehículos', vista: () => import('./vistas/vehiculos.js') },
+    { id: 'taller.vehiculo', label: 'Vehículo', oculto: true, padre: 'taller.vehiculos', vista: () => import('./vistas/vehiculo.js') },
+    // Tarjeta de cliente que abre el QR (Marketing 016; la base exige taller o Marketing ver)
+    { id: 'taller.tarjeta', label: 'Tarjeta de cliente', oculto: true, padre: 'taller.clientes', vista: () => import('./vistas/tarjeta.js') },
+    { id: 'taller.servicios', label: 'Servicios y precios', pestana: 'Servicios y precios', apartado: 'catalogo', icono: 'llave', vista: () => import('./vistas/servicios.js') },
+    { id: 'taller.servicio', label: 'Servicio', oculto: true, padre: 'taller.servicios', vista: () => import('./vistas/servicio.js') },
+  ],
+  config: {
+    // VB del jefe de taller (flujo comercial y taller): el operador llega hasta Terminado; Entregado solo con VB y PIN
+    vb_entrega: { tipo: 'bool', etiqueta: 'Entregar solo con VB del jefe de taller (permiso aprobar y PIN)', default: false },
+  },
+  migraciones: ['db/001_taller.sql', 'db/002_vb.sql', 'db/003_clientes.sql', 'db/004_prioridad_manual.sql', 'db/005_por_cotizar.sql', 'db/006_catalogo_aprobar.sql', 'db/007_roles_tablet.sql', 'db/008_operador_agenda.sql', 'db/009_unir_eliminar.sql', 'db/010_unir_vehiculos.sql', 'db/011_boleta_cobro.sql', 'db/012_abonos.sql', 'db/014_pasos_quimicos.sql'],
+};

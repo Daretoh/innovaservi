@@ -4,13 +4,13 @@
 // gasto queda ligado solo al recurrente si es de su proveedor (Costos 017, `recurrente_id` + `periodo`), o se elige a mano
 // en el gasto. Aquí se ve el estado del mes: falta cargar, cargado por pagar o pagado. Los avisos por push los manda la
 // base (`fin_rec_avisar`) a quien edita Costos.
-import { el } from '../../../core/ui/dom.js?v=0b94763';
-import { icono } from '../../../core/ui/iconos.js?v=0b94763';
-import { boton } from '../../../core/ui/tabla.js?v=0b94763';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=0b94763';
-import { avisar } from '../../../core/ui/aviso.js?v=0b94763';
-import { dinero, fechaLarga, hoyISO, nombreMes, sumarDias } from '../../../core/ui/formato.js?v=0b94763';
-import { cargarBase, nombreTercero, DOCS, proximoCobro, mensualCLP, tocaEnMes, fechaEnMes, CICLOS } from '../datos.js?v=0b94763';
+import { el } from '../../../core/ui/dom.js?v=0cc60b3';
+import { icono } from '../../../core/ui/iconos.js?v=0cc60b3';
+import { boton } from '../../../core/ui/tabla.js?v=0cc60b3';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=0cc60b3';
+import { avisar } from '../../../core/ui/aviso.js?v=0cc60b3';
+import { dinero, fechaLarga, hoyISO, nombreMes, sumarDias } from '../../../core/ui/formato.js?v=0cc60b3';
+import { cargarBase, nombreTercero, DOCS, proximoCobro, mensualCLP, tocaEnMes, fechaEnMes, CICLOS } from '../datos.js?v=0cc60b3';
 
 const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 const TC_KEY = 'isg.costos.dolar';
@@ -34,7 +34,7 @@ export default async function vista(ctx) {
     cargarBase(ctx),
     ctx.api.from('fin_recurrentes').select('*').eq('empresa_id', e).order('activo', { ascending: false }).order('orden').order('concepto'),
     ctx.api.from('persona_empresa').select('persona_id, personas(nombres, apellido_paterno)').eq('empresa_id', e).is('deleted_at', null).eq('estado', 'activo'),
-    ctx.api.from('fin_registros').select('id, recurrente_id, total, estado_pago, fecha_pago, fecha').eq('empresa_id', e).eq('tipo', 'gasto').eq('periodo', mes).not('recurrente_id', 'is', null).is('deleted_at', null),
+    ctx.api.from('fin_registros').select('id, recurrente_id, total, estado_pago, fecha_pago, fecha').order('fecha').eq('empresa_id', e).eq('tipo', 'gasto').eq('periodo', mes).not('recurrente_id', 'is', null).is('deleted_at', null),
   ]);
   if (rec.error) throw rec.error;
   if (hechos.error) throw hechos.error;
@@ -42,36 +42,41 @@ export default async function vista(ctx) {
   const personas = (per.data ?? []).map((p) => [p.persona_id, [p.personas?.nombres, p.personas?.apellido_paterno].filter(Boolean).join(' ')]);
   const nombrePersona = new Map(personas);
   const gastosCat = base.categorias.filter((c) => c.clase !== 'ingreso' && c.activo);
-  const delMes = new Map((hechos.data ?? []).map((g) => [g.recurrente_id, g]));
-  const tc = leerTc() || Math.round((await import('../../../core/economia.js?v=0b94763').then((m) => m.dolarDelDia()).catch(() => 0)) ?? 0);
+  // Pagos del mes por recurrente (Costos 019: puede haber varios, ej.: la contadora en dos transferencias)
+  const delMes = new Map();
+  for (const g of hechos.data ?? []) delMes.set(g.recurrente_id, [...(delMes.get(g.recurrente_id) ?? []), g]);
+  const tc = leerTc() || Math.round((await import('../../../core/economia.js?v=0cc60b3').then((m) => m.dolarDelDia()).catch(() => 0)) ?? 0);
 
   // Estado de este mes: no toca · falta cargar · cargado por pagar · pagado
   const estadoMes = (r) => {
     if (!r.activo || !tocaEnMes(r, mes)) return { clase: 'no' };
-    const g = delMes.get(r.id);
+    const pagos = delMes.get(r.id) ?? [];
     const vence = r.dia ? fechaEnMes(mes, r.dia) : null;
-    if (g?.estado_pago === 'pagado') return { clase: 'pagado', g, vence };
-    if (g) return { clase: 'cargado', g, vence };
-    return { clase: 'falta', vence };
+    const g = pagos.find((x) => x.estado_pago !== 'pagado') ?? pagos[pagos.length - 1];
+    const total = pagos.reduce((t, x) => t + Number(x.total), 0);
+    if (pagos.length && pagos.every((x) => x.estado_pago === 'pagado')) return { clase: 'pagado', g, pagos, total, vence };
+    if (pagos.length) return { clase: 'cargado', g, pagos, total, vence };
+    return { clase: 'falta', vence, pagos };
   };
   const pagado = (r) => estadoMes(r).clase === 'pagado';
 
   const chipEstado = (r) => {
     if (!r.activo) return el('span', { class: 'chip chip-na' }, 'Inactivo');
-    if (r.hasta && r.hasta < hoy && !delMes.get(r.id)) return el('span', { class: 'chip chip-na' }, `Terminó el ${fechaLarga(r.hasta)}`);
+    if (r.hasta && r.hasta < hoy && !delMes.has(r.id)) return el('span', { class: 'chip chip-na' }, `Terminó el ${fechaLarga(r.hasta)}`);
     const s = estadoMes(r);
     const enlace = (nodo) => (s.g ? el('a', { href: ctx.ruta('costos.registro', { id: s.g.id }), title: 'Abrir el gasto' }, nodo) : nodo);
     if (s.clase === 'no') {
       const f = proximoCobro(r);
       return el('span', { class: 'chip chip-na' }, f ? `Próximo: ${fechaLarga(f)}` : 'Sin próximo cobro');
     }
-    if (s.clase === 'pagado') return enlace(el('span', { class: 'chip chip-ok' }, `Pagado${s.g.fecha_pago ? ` el ${fechaLarga(s.g.fecha_pago)}` : ''}`));
+    const varios = s.pagos.length > 1 ? ` · ${s.pagos.length} pagos, ${dinero(s.total)}` : '';
+    if (s.clase === 'pagado') return enlace(el('span', { class: 'chip chip-ok' }, `Pagado${s.g.fecha_pago ? ` el ${fechaLarga(s.g.fecha_pago)}` : ''}${varios}`));
     if (r.autopago && s.clase === 'falta') return el('span', { class: 'chip chip-pend' }, s.vence && s.vence < hoy ? 'Pago automático · falta el documento' : 'Pago automático');
     const d = s.vence ? diasEntre(hoy, s.vence) : null;
     const cuando = d === null ? '' : d < 0 ? ` · venció hace ${-d} d` : d === 0 ? ' · vence hoy' : ` · vence en ${d} d`;
     const clase = d !== null && d <= 0 ? 'chip-venc' : d !== null && d <= (r.aviso_dias ?? 3) ? 'chip-prox' : 'chip-pend';
     return s.clase === 'cargado'
-      ? enlace(el('span', { class: `chip ${clase}` }, `Cargado, por pagar${cuando}`))
+      ? enlace(el('span', { class: `chip ${clase}` }, `${s.pagos.length > 1 ? `${s.pagos.length} pagos, falta pagar uno` : 'Cargado, por pagar'}${cuando}`))
       : el('span', { class: `chip ${clase}` }, `Falta cargar${cuando}`);
   };
 
