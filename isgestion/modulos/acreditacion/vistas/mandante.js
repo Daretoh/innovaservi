@@ -1,19 +1,19 @@
 // Requisitos de un mandante: tabla de requisitos mensuales por mes, requisitos únicos y su configuración.
 // Ruta: #/acreditacion.mandante?id=<tercero>
-import { el } from '../../../core/ui/dom.js?v=db6ddb1';
-import { icono } from '../../../core/ui/iconos.js?v=db6ddb1';
-import { boton } from '../../../core/ui/tabla.js?v=db6ddb1';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=db6ddb1';
-import { avisar } from '../../../core/ui/aviso.js?v=db6ddb1';
-import { subirArchivo, eliminarArchivo } from '../../../core/adjuntos.js?v=db6ddb1';
-import { fechaLarga, hoyISO, moverMes, nombreMes } from '../../../core/ui/formato.js?v=db6ddb1';
-import { cargarDocumentos, cumplimientoMandante, nombreTercero, mesActual, CHIP, textoEstado } from '../datos.js?v=db6ddb1';
-import { REQUISITOS } from '../sugeridos.js?v=db6ddb1';
-import { abrir } from './documentos.js?v=db6ddb1';
-import { esNomina, generarNomina } from '../nomina.js?v=db6ddb1';
-import { seccionTrabajadores } from '../trabajadores.js?v=db6ddb1';
-import { seccionEntregas } from '../entregas.js?v=db6ddb1';
-import { barraAvance } from '../../sst/acreditacion.js?v=db6ddb1';
+import { el } from '../../../core/ui/dom.js?v=0b94763';
+import { icono } from '../../../core/ui/iconos.js?v=0b94763';
+import { boton } from '../../../core/ui/tabla.js?v=0b94763';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=0b94763';
+import { avisar } from '../../../core/ui/aviso.js?v=0b94763';
+import { subirArchivo, eliminarArchivo } from '../../../core/adjuntos.js?v=0b94763';
+import { fechaLarga, hoyISO, moverMes, nombreMes } from '../../../core/ui/formato.js?v=0b94763';
+import { cargarDocumentos, cumplimientoMandante, nombreTercero, mesActual, CHIP, textoEstado } from '../datos.js?v=0b94763';
+import { REQUISITOS } from '../sugeridos.js?v=0b94763';
+import { abrir } from './documentos.js?v=0b94763';
+import { esNomina, generarNomina } from '../nomina.js?v=0b94763';
+import { seccionTrabajadores } from '../trabajadores.js?v=0b94763';
+import { seccionEntregas } from '../entregas.js?v=0b94763';
+import { barraAvance } from '../../sst/acreditacion.js?v=0b94763';
 
 const ARCHIVOS = ['application/pdf', 'image/jpeg', 'image/png',
   'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];

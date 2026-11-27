@@ -1,13 +1,13 @@
 // Capacitaciones → Biblioteca: contenidos en tarjetas por área (destacados arriba), con filtro por área y tipo y búsqueda.
 // Cada tarjeta abre su ficha (vistas/contenido.js). Quien tiene una ficha de trabajador ve qué ya vio o aprobó.
 // Ruta: #/capacitaciones.biblioteca
-import { el } from '../../../core/ui/dom.js?v=db6ddb1';
-import { icono } from '../../../core/ui/iconos.js?v=db6ddb1';
-import { boton } from '../../../core/ui/tabla.js?v=db6ddb1';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=db6ddb1';
-import { avisar } from '../../../core/ui/aviso.js?v=db6ddb1';
-import { normalizar } from '../../../core/ui/combo.js?v=db6ddb1';
-import { cargarBiblioteca, miPersona, miAvance, urlsDe, red, subirContenido, cargarEstilos, TIPOS, TIPO_CORTO, ICONO_TIPO, duracion } from '../datos.js?v=db6ddb1';
+import { el } from '../../../core/ui/dom.js?v=0b94763';
+import { icono } from '../../../core/ui/iconos.js?v=0b94763';
+import { boton } from '../../../core/ui/tabla.js?v=0b94763';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=0b94763';
+import { avisar } from '../../../core/ui/aviso.js?v=0b94763';
+import { normalizar } from '../../../core/ui/combo.js?v=0b94763';
+import { cargarBiblioteca, miPersona, miAvance, urlsDe, red, subirContenido, cargarEstilos, TIPOS, TIPO_CORTO, ICONO_TIPO, duracion } from '../datos.js?v=0b94763';
 
 const filtro = { area: '', tipo: '', texto: '' };   // se mantiene al refrescar
 

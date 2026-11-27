@@ -1,0 +1,30 @@
+// Espacio Grupo (02 Arquitectura §7): todas las empresas del usuario juntas. Se entra desde el selector de empresa
+// ("Grupo"); no se activa por empresa (espacio: 'grupo'). Cada pantalla calcula cada empresa con los permisos que el
+// usuario tiene en ella; `requiere` = permiso que debe tener en al menos una empresa. Reemplaza a Gerencia (Enzo, 2026-10-31).
+export default {
+  id: 'grupo',
+  nombre: 'Grupo',
+  version: '1.1.0',
+  icono: 'building',
+  espacio: 'grupo',
+  categoria: 'Grupo',
+  depende: ['nucleo'],
+  rubros: ['todos'],
+  acciones: [],
+  menu: [
+    { id: 'grupo.alertas', label: 'Alertas y pendientes', icono: 'campana', vista: () => import('./vistas/alertas.js') },
+    { id: 'grupo.tareas', label: 'Tareas del grupo', icono: 'check', requiere: ['tareas', 'ver'], vista: () => import('./vistas/tareas.js') },
+    { id: 'grupo.remu', label: 'Cierre de remuneraciones', icono: 'dinero', requiere: ['remu', 'ver'], vista: () => import('./vistas/remu.js') },
+    { id: 'grupo.quincenas', label: 'Quincenas', icono: 'dinero', requiere: ['remu', 'ver'], vista: () => import('./vistas/quincenas.js') },
+    { id: 'grupo.manoobra', label: 'Mano de obra del grupo', icono: 'grafico', requiere: ['remu', 'ver'], vista: () => import('./vistas/manoobra.js') },
+    { id: 'grupo.personal', label: 'Personal del grupo', icono: 'users', requiere: ['rrhh', 'ver'], vista: () => import('./vistas/personal.js') },
+    { id: 'grupo.resultados', label: 'Resultados del grupo', icono: 'grafico', requiere: ['resultados', 'ver'], vista: () => import('./vistas/resultados.js') },
+    // Resultados sale del menú de cada empresa (2026-11-24, pedido de Enzo): Por orden, Por cliente y Por cobrar y pagar por empresa
+    { id: 'grupo.utilidad', label: 'Utilidad por empresa', icono: 'grafico', requiere: ['resultados', 'ver'], vista: () => import('./vistas/utilidad.js') },
+    // Flujo de caja y Balance de Costos, juntos y en palabras simples (2026-11-24, pedido de Enzo); el menú, para quien ve Resultados
+    { id: 'grupo.caja', label: 'Caja del grupo', icono: 'dinero', requiere: ['resultados', 'ver'], vista: () => import('./vistas/caja.js') },
+    { id: 'grupo.admin', label: 'Administración', icono: 'ajustes', requiere: ['nucleo', 'ver'], vista: () => import('./vistas/admin.js') },
+  ],
+  config: {},
+  migraciones: [],
+};

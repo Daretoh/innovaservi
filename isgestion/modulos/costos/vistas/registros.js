@@ -2,16 +2,16 @@
 // cualquier mes), los del mes, pendientes de pago o cobro (de todos los meses), filtro por categoría y por declarado o no
 // declarado (2026-11-24), resumen y Excel. "Editar como planilla" cambia la tabla por la planilla del OS (planilla.js). En el teléfono
 // las filas se ven como tarjetas.
-import { el } from '../../../core/ui/dom.js?v=db6ddb1';
-import { icono } from '../../../core/ui/iconos.js?v=db6ddb1';
-import { listado, boton } from '../../../core/ui/tabla.js?v=db6ddb1';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=db6ddb1';
-import { avisar } from '../../../core/ui/aviso.js?v=db6ddb1';
-import { dinero, fechaLarga, hoyISO, nombreMes, moverMes, rangoMes, diaLocal } from '../../../core/ui/formato.js?v=db6ddb1';
-import { cargarBase, nombreTercero, nombreDoc, nombreMedio, MEDIOS, traerComprasInventario, estadosDe, nombreEstado, CHIP_ESTADO } from '../datos.js?v=db6ddb1';
-import { planilla } from '../planilla.js?v=db6ddb1';
-import { urlFirmada } from '../../../core/adjuntos.js?v=db6ddb1';
-import { pendientesBandeja } from './bandeja.js?v=db6ddb1';
+import { el } from '../../../core/ui/dom.js?v=0b94763';
+import { icono } from '../../../core/ui/iconos.js?v=0b94763';
+import { listado, boton } from '../../../core/ui/tabla.js?v=0b94763';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=0b94763';
+import { avisar } from '../../../core/ui/aviso.js?v=0b94763';
+import { dinero, fechaLarga, hoyISO, nombreMes, moverMes, rangoMes, diaLocal } from '../../../core/ui/formato.js?v=0b94763';
+import { cargarBase, nombreTercero, nombreDoc, nombreMedio, MEDIOS, traerComprasInventario, estadosDe, nombreEstado, CHIP_ESTADO } from '../datos.js?v=0b94763';
+import { planilla } from '../planilla.js?v=0b94763';
+import { urlFirmada } from '../../../core/adjuntos.js?v=0b94763';
+import { pendientesBandeja } from './bandeja.js?v=0b94763';
 
 // (2026-11-24, orden de Finanzas) Gastos y Otros ingresos son pantallas separadas: los gastos en Compras y gastos,
 // los otros ingresos en Ventas y cobros (vistas/ingresos.js). Cada una recuerda su propio filtro.
@@ -40,7 +40,7 @@ export async function vistaRegistros(ctx, solo) {
   if (estado.vista === 'sincentro' && !ctx.config?.centros) estado.vista = 'recientes';   // centros apagados (opción del módulo)
   const sinCentro = estado.vista === 'sincentro';
   const sinMes = pendientes || recientes || revisar || sinCentro;
-  let q = ctx.api.from('fin_registros').select('*, terceros!fin_registros_tercero_id_fkey(razon_social, nombre_fantasia)').eq('empresa_id', e).is('deleted_at', null);
+  let q = ctx.api.from('fin_registros').select('*, terceros!fin_registros_tercero_id_fkey(razon_social, nombre_fantasia), fin_recurrentes(concepto)').eq('empresa_id', e).is('deleted_at', null);
   if (recientes) q = q.order('created_at', { ascending: false }).limit(RECIENTES);
   else q = q.order('fecha', { ascending: pendientes }).order('created_at', { ascending: false });
   if (pendientes) q = q.neq('estado_pago', 'pagado');
@@ -127,7 +127,7 @@ export async function vistaRegistros(ctx, solo) {
     el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Mes anterior', onclick: () => mover(-1) }, icono('volver')),
     el('strong', {}, nombreMes(estado.mes)),
     el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Mes siguiente', onclick: () => mover(1) }, icono('derecha'))));
-  if (ctx.puede('costos', 'exportar') && data.length) acciones.push(boton('Excel', { icono: 'descargar', onclick: () => import('../../../core/excel.js?v=db6ddb1').then(({ exportarExcel }) => exportarExcel(ctx, {
+  if (ctx.puede('costos', 'exportar') && data.length) acciones.push(boton('Excel', { icono: 'descargar', onclick: () => import('../../../core/excel.js?v=0b94763').then(({ exportarExcel }) => exportarExcel(ctx, {
     titulo: pendientes ? `${nombre} pendientes` : revisar ? `${nombre} por revisar` : sinCentro ? `${nombre} sin centro de costo` : recientes ? `${nombre} recientes` : `${nombre} · ${nombreMes(estado.mes)}`, nombre: `${esGasto ? 'gastos' : 'otros-ingresos'}-${pendientes ? 'pendientes' : recientes ? 'recientes' : estado.mes}`,
     columnas: [{ t: 'Fecha', tipo: 'fecha' }, 'Tipo', 'Concepto', 'Categoría', ...(ctx.config?.centros ? ['Centro'] : []), 'Proveedor o cliente', 'Documento', 'N°', { t: 'Neto', tipo: 'dinero' }, { t: 'IVA', tipo: 'dinero' }, { t: 'Total', tipo: 'dinero' }, 'Estado', { t: 'Fecha de pago', tipo: 'fecha' }, 'Medio', 'Patente'],
     filas: data.map((r) => [r.fecha, r.tipo === 'gasto' ? 'Gasto' : 'Ingreso', r.concepto, base.categoriaDe.get(r.categoria_id)?.nombre ?? '', ...(ctx.config?.centros ? [base.centroDe.get(r.centro_id)?.nombre ?? ''] : []), nombreTercero(r.terceros),
@@ -164,7 +164,7 @@ export async function vistaRegistros(ctx, solo) {
     columnas: [
       { titulo: 'Fecha', valor: (r) => fechaLarga(r.fecha) },
       { titulo: 'Concepto', valor: (r) => el('div', {}, el('a', { href: ctx.ruta('costos.registro', { id: r.id }) }, el('strong', {}, r.concepto)),
-        el('div', { class: 'texto-suave texto-chico' }, [nombreTercero(r.terceros), r.faena_id ? faenaDe.get(r.faena_id) ?? 'faena' : null, r.patente ? patenteNodo(r.patente) : null, r.recurrente_id ? 'recurrente' : null, r.documento_id ? 'de Inventario' : null, r.declarable === false ? 'no declarado' : null, r.espera_factura ? el('span', { class: 'texto-error' }, 'falta la factura') : null].filter(Boolean).flatMap((x, i) => (i ? [' · ', x] : [x])))) },
+        el('div', { class: 'texto-suave texto-chico' }, [nombreTercero(r.terceros), r.faena_id ? faenaDe.get(r.faena_id) ?? 'faena' : null, r.patente ? patenteNodo(r.patente) : null, r.recurrente_id ? el('span', { class: 'chip chip-pend', title: 'Pago recurrente: queda marcado en Recurrentes' }, `Recurrente · ${r.fin_recurrentes?.concepto ?? ''}`) : null, r.documento_id ? 'de Inventario' : null, r.declarable === false ? 'no declarado' : null, r.espera_factura ? el('span', { class: 'texto-error' }, 'falta la factura') : null].filter(Boolean).flatMap((x, i) => (i ? [' · ', x] : [x])))) },
       { titulo: 'Categoría', valor: (r) => {
         const c = base.categoriaDe.get(r.categoria_id);
         return el('div', {}, el('span', { class: `chip ${r.tipo === 'ingreso' ? 'chip-ok' : c?.clase === 'inventario' ? 'chip-pend' : 'chip-prox'}` }, c?.nombre ?? ''),
@@ -187,7 +187,7 @@ export async function vistaRegistros(ctx, solo) {
         return el('div', {}, sel, r.estado_pago !== 'pagado' && r.vence ? el('div', { class: `texto-chico ${r.vence < hoyISO() ? 'texto-error' : 'texto-suave'}` }, `Vence ${fechaLarga(r.vence)}`) : null);
       } },
       { titulo: 'Cargó', valor: (r) => el('span', { class: 'texto-chico texto-suave' },
-        r.remu_ref ? 'Remuneraciones' : r.recurrente_id ? 'Sistema (gasto fijo)' : r.documento_id ? 'Inventario' : quien.get(r.created_by) ?? '—', el('br'), fechaLarga(diaLocal(r.created_at)),
+        r.remu_ref ? 'Remuneraciones' : r.recurrente_id && !r.created_by ? 'Sistema (gasto fijo)' : r.documento_id ? 'Inventario' : quien.get(r.created_by) ?? '—', el('br'), fechaLarga(diaLocal(r.created_at)),
         r.updated_by && r.updated_by !== r.created_by ? el('span', {}, el('br'), `Editó ${quien.get(r.updated_by) ?? '—'}`) : null) },
     ],
   });

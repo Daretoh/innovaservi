@@ -1,5 +1,5 @@
 // Datos compartidos de Costos y gastos.
-import { hoyISO, rangoMes } from '../../core/ui/formato.js?v=db6ddb1';
+import { hoyISO, rangoMes } from '../../core/ui/formato.js?v=0b94763';
 
 export const CLASES = [['gasto', 'Gasto (va al resultado)'], ['personal', 'Personal (va a la línea Personal)'], ['inventario', 'Compra de inventario (es stock: no va al resultado)'], ['ingreso', 'Otro ingreso']];
 export const nombreClase = { gasto: 'Gasto', personal: 'Personal', inventario: 'Compra de inventario', ingreso: 'Ingreso' };
@@ -50,12 +50,18 @@ export async function cargarBase(ctx) {
 const ultimoDia = (mes) => Number(rangoMes(mes).hasta.slice(8, 10));
 export const fechaEnMes = (mes, dia) => `${mes}-${String(Math.min(dia || 1, ultimoDia(mes))).padStart(2, '0')}`;
 
-// ¿Corresponde cobrar este recurrente en el mes? (vigencia, ciclo anual)
+// Ciclos de un recurrente (Costos 017): cada cuántos meses se paga. mes_anual = un mes en que toca (no mensual)
+export const CICLOS = [['mensual', 'Mensual', 1], ['bimestral', 'Bimestral (cada 2 meses)', 2], ['trimestral', 'Trimestral (cada 3 meses)', 3],
+  ['semestral', 'Semestral (cada 6 meses)', 6], ['anual', 'Anual', 12]];
+export const mesesCiclo = (ciclo) => CICLOS.find(([k]) => k === ciclo)?.[2] ?? 1;
+
+// ¿Corresponde cobrar este recurrente en el mes? (vigencia y ciclo; igual que fin_rec_toca de la base)
 export function tocaEnMes(r, mes) {
   if (!r.activo) return false;
   if (r.desde.slice(0, 7) > mes) return false;
   if (r.hasta && r.hasta.slice(0, 7) < mes) return false;
-  return r.ciclo === 'mensual' || Number(mes.slice(5, 7)) === r.mes_anual;
+  const n = mesesCiclo(r.ciclo);
+  return n === 1 || (!!r.mes_anual && (Number(mes.slice(5, 7)) - r.mes_anual + 12) % n === 0);
 }
 
 // Próximo cobro desde hoy (para el semáforo)
@@ -73,10 +79,10 @@ export function proximoCobro(r, hoy = hoyISO()) {
   return null;
 }
 
-// Monto mensual equivalente en CLP (USD con el tipo de cambio dado; anual / 12)
+// Monto mensual equivalente en CLP (USD con el tipo de cambio dado; dividido por los meses del ciclo)
 export function mensualCLP(r, tipoCambio) {
   const clp = r.moneda === 'USD' ? (tipoCambio ? r.monto * tipoCambio : 0) : Number(r.monto);
-  return Math.round(r.ciclo === 'anual' ? clp / 12 : clp);
+  return Math.round(clp / mesesCiclo(r.ciclo));
 }
 
 // Crea los registros del mes que falten (uno por recurrente y mes). Devuelve cuántos creó.
@@ -114,7 +120,7 @@ export async function generarAutomatico(ctx) {
   if (!ctx.puede('costos', 'crear')) return 0;
   const { data, error } = await ctx.api.from('fin_recurrentes').select('*').eq('empresa_id', ctx.empresa.id).eq('activo', true);
   if (error || !data.length) return 0;
-  const { dolarDelDia } = await import('../../core/economia.js?v=db6ddb1');
+  const { dolarDelDia } = await import('../../core/economia.js?v=0b94763');
   const tc = data.some((r) => r.moneda === 'USD') ? await dolarDelDia() : null;
   const usables = tc ? data : data.filter((r) => r.moneda !== 'USD');
   try { return await generarMes(ctx, usables, mes, tc); } catch { return 0; }

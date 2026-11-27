@@ -1,15 +1,15 @@
 // Gasto u otro ingreso.
 // - Nuevo:  #/costos.registro?tipo=gasto|ingreso
 // - Ver y editar: #/costos.registro?id=<id>
-import { el } from '../../../core/ui/dom.js?v=db6ddb1';
-import { icono } from '../../../core/ui/iconos.js?v=db6ddb1';
-import { boton } from '../../../core/ui/tabla.js?v=db6ddb1';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=db6ddb1';
-import { avisar } from '../../../core/ui/aviso.js?v=db6ddb1';
-import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=db6ddb1';
-import { dinero, hoyISO, fechaLarga, sumarDias } from '../../../core/ui/formato.js?v=db6ddb1';
-import { leerConIA, iaDisponible, numIA, fechaIA, pagadoAlComprar, textoModelo } from '../../../core/lector-ia.js?v=db6ddb1';
-import { cargarBase, nombreTercero, DOCS, MEDIOS, netoDe, estadosDe, estadoInicial, nombreEstado, opcionesACuenta } from '../datos.js?v=db6ddb1';
+import { el } from '../../../core/ui/dom.js?v=0b94763';
+import { icono } from '../../../core/ui/iconos.js?v=0b94763';
+import { boton } from '../../../core/ui/tabla.js?v=0b94763';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=0b94763';
+import { avisar } from '../../../core/ui/aviso.js?v=0b94763';
+import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=0b94763';
+import { dinero, hoyISO, fechaLarga, sumarDias } from '../../../core/ui/formato.js?v=0b94763';
+import { leerConIA, iaDisponible, numIA, fechaIA, pagadoAlComprar, textoModelo } from '../../../core/lector-ia.js?v=0b94763';
+import { cargarBase, nombreTercero, DOCS, MEDIOS, netoDe, estadosDe, estadoInicial, nombreEstado, opcionesACuenta } from '../datos.js?v=0b94763';
 
 
 const ARCHIVOS = ['application/pdf', 'image/jpeg', 'image/png'];
@@ -18,13 +18,14 @@ export default async function vista(ctx) {
   const volver = el('a', { class: 'volver', href: ctx.ruta('costos.registros') }, icono('volver', { tam: 16 }), 'Gastos');
   const conTaller = ctx.puede('taller', 'ver');
   const conFaenas = ctx.puede('ope', 'ver');
-  const [base, reg, ordenes, faenas] = await Promise.all([
+  const [base, reg, ordenes, faenas, recs] = await Promise.all([
     cargarBase(ctx),
     ctx.params.id ? ctx.api.from('fin_registros').select('*, fin_recurrentes(concepto)').eq('id', ctx.params.id).maybeSingle() : Promise.resolve({ data: null }),
     conTaller ? ctx.api.from('tal_ordenes').select('id, numero, fecha_cita, tal_vehiculos(patente, marca, modelo)').eq('empresa_id', ctx.empresa.id)
       .neq('estado', 'anulada').order('numero', { ascending: false }).limit(150) : Promise.resolve({ data: [] }),
     conFaenas ? ctx.api.from('ope_faenas').select('id, titulo, fecha_inicio, fecha_fin').eq('empresa_id', ctx.empresa.id).is('deleted_at', null).neq('estado', 'cancelada')
       .gte('fecha_fin', sumarDias(hoyISO(), -120)).lte('fecha_inicio', sumarDias(hoyISO(), 30)).order('fecha_inicio', { ascending: false }) : Promise.resolve({ data: [] }),
+    ctx.api.from('fin_recurrentes').select('id, concepto, tercero_id, activo').eq('empresa_id', ctx.empresa.id).order('concepto'),
   ]);
   if (reg.error) throw reg.error;
   const r = reg.data;
@@ -66,6 +67,18 @@ export default async function vista(ctx) {
     desglose.textContent = Number(total.value) > 0 ? (iva ? `Neto ${dinero(neto)} + IVA ${dinero(iva)}` : `Neto ${dinero(neto)} (sin IVA separado)`) : '';
   };
   total.addEventListener('input', pintarDesglose); doc.addEventListener('change', pintarDesglose); pintarDesglose();
+  // Pago recurrente (Costos 017): el gasto del proveedor de un recurrente se liga solo; aquí se ve, se elige o se quita
+  const listaRec = (recs.data ?? []).filter((x) => x.activo || x.id === r?.recurrente_id);
+  const recurrente = esIngreso ? null : select('recurrente', [['', 'No es un pago recurrente'], ...listaRec.map((x) => [x.id, x.concepto])], r?.recurrente_id);
+  let recTocado = !!r;
+  if (recurrente) {
+    recurrente.addEventListener('change', () => { recTocado = true; });
+    tercero.addEventListener('change', () => {
+      if (recTocado) return;
+      const delProv = listaRec.filter((x) => x.activo && x.tercero_id && x.tercero_id === tercero.value);
+      recurrente.value = delProv.length === 1 ? delProv[0].id : '';
+    });
+  }
   const patente = campo('patente', { placeholder: 'Opcional, para la utilidad por vehículo' }, r?.patente);
   // Compra por cuenta de un tercero (no es gasto de la empresa: se le descuenta de su pago)
   const aCuenta = esIngreso ? null : select('acuenta', opcionesACuenta(base, r?.a_cuenta_de), r?.a_cuenta_de);
@@ -133,6 +146,7 @@ export default async function vista(ctx) {
         vence: estado.value === 'pagado' ? r?.vence ?? null : vence.value || null, ...(faena ? { faena_id: faena.value || null } : {}),
         notas: notas.value.trim() || null, ...(ruta ? { archivo: ruta } : {}),
         ...(esIngreso ? {} : { espera_factura: doc.value !== 'factura' && esperaFactura.checked }),
+        ...(recurrente && recTocado ? { recurrente_id: recurrente.value || null } : {}),   // nuevo sin tocar: la base lo liga sola
       };
       const res = r ? await ctx.api.from('fin_registros').update(datos).eq('id', r.id).select('id').single()
         : await ctx.api.from('fin_registros').insert({ ...datos, empresa_id: ctx.empresa.id, tipo }).select('id').single();
@@ -203,6 +217,7 @@ export default async function vista(ctx) {
       el('div', { class: 'rejilla-campos' }, fila('Documento', doc), fila('N° de documento', docNum), fila('Total (con IVA si lo tiene)', total, desglose),
         fila('Tributario', tributario, el('span', { class: 'texto-suave texto-chico' }, 'Solo la factura a nuestro RUT es declarada. Marca No declarado si la factura salió a otro RUT.'))),
       filaEspera,
+      recurrente ? el('div', { class: 'rejilla-campos' }, fila('Pago recurrente', recurrente, el('span', { class: 'texto-suave texto-chico' }, 'Arriendo, internet, luz, asesorías…: queda marcado en Recurrentes para este mes. Si es del proveedor del recurrente se elige solo.'))) : null,
       esIngreso ? (faena ? el('div', { class: 'rejilla-campos' }, fila('Faena', faena)) : null) : el('div', { class: 'rejilla-campos' }, faena ? fila('Faena', faena) : null, fila('Patente', patente), orden ? fila('Orden de trabajo', orden) : null),
       aCuenta ? el('div', { class: 'rejilla-campos' }, fila('¿Compra por cuenta de un tercero?', aCuenta, el('span', { class: 'texto-suave texto-chico' }, 'Ej.: materiales del pintor: se paga al local, no es gasto de la empresa y se descuenta de lo que se le paga.'))) : null,
       el('div', { class: 'rejilla-campos' }, fila('Estado', estado, el('span', { class: 'texto-suave texto-chico' }, 'Boleta o ticket: pagado al comprar. Factura: por pagar.'))),
