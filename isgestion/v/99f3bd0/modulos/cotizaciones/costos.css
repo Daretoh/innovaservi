@@ -1,0 +1,23 @@
+/* Costos internos de una línea o sección (costos-linea.js). Solo variables de tema: sin colores fijos. */
+.modal.cc-modal { width: min(760px, calc(100vw - 32px)); }
+.cc-fila { display: grid; grid-template-columns: 150px minmax(120px, 1fr) 140px 110px 76px; gap: 6px; align-items: center; }
+.cc-fila .campo { width: 100%; min-width: 0; }
+.cc-cab { font-size: .78rem; font-weight: 600; color: var(--texto-suave); }
+.cc-lista { display: grid; gap: 6px; }
+.cc-fila-acc { display: flex; gap: 2px; justify-content: flex-end; }
+.cc-con-archivo { color: var(--empresa); }
+.cc-agregar { display: flex; flex-wrap: wrap; gap: 6px; }
+.cc-agregar .boton { padding: 4px 10px; font-size: .82rem; }
+.cc-resumen { display: grid; gap: 4px; padding: 10px 12px; border-radius: 8px; background: var(--fondo-sutil); }
+.cc-resumen > div { display: flex; justify-content: space-between; gap: 12px; }
+.cc-negativo strong { color: var(--error); }
+.cc-precio { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: end; padding: 10px 12px; border: 1px solid var(--borde); border-radius: 8px; }
+.cc-precio label { display: grid; gap: 4px; font-size: .82rem; color: var(--texto-suave); }
+.cc-precio-res { display: grid; gap: 2px; }
+.cc-sugerido { font-size: 1.05rem; }
+.cot-margen { font-size: .75rem; color: var(--texto-suave); margin-left: 4px; }
+@media (max-width: 700px) {
+  .cc-cab { display: none; }
+  .cc-fila { grid-template-columns: 1fr 1fr; padding: 8px; border: 1px solid var(--borde); border-radius: 8px; }
+  .cc-precio { grid-template-columns: 1fr; }
+}

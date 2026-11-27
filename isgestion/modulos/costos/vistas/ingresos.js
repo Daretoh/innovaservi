@@ -1,5 +1,5 @@
 // Ventas y cobros → Otros ingresos (2026-11-24): los ingresos de Costos (lo que no factura otro módulo: arriendos,
 // reembolsos, devoluciones), separados de los gastos. Misma pantalla que Gastos (vistaRegistros), solo con ingresos.
-import { vistaRegistros } from './registros.js?v=625a797';
+import { vistaRegistros } from './registros.js?v=99f3bd0';
 
 export default (ctx) => vistaRegistros(ctx, 'ingreso');

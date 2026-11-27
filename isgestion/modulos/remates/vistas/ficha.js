@@ -2,18 +2,18 @@
 // detalle), datos del bien y del remate, revisión de riesgos (casillas por tipo), enlaces útiles, documentos y notas.
 // Los datos se guardan al salir de cada campo.
 // Ruta: #/remates.ficha?id=<id>
-import { el } from '../../../core/ui/dom.js?v=625a797';
-import { icono } from '../../../core/ui/iconos.js?v=625a797';
-import { boton } from '../../../core/ui/tabla.js?v=625a797';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=625a797';
-import { avisar } from '../../../core/ui/aviso.js?v=625a797';
-import { dinero } from '../../../core/ui/formato.js?v=625a797';
-import { subirArchivo, urlFirmada } from '../../../core/adjuntos.js?v=625a797';
+import { el } from '../../../core/ui/dom.js?v=99f3bd0';
+import { icono } from '../../../core/ui/iconos.js?v=99f3bd0';
+import { boton } from '../../../core/ui/tabla.js?v=99f3bd0';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=99f3bd0';
+import { avisar } from '../../../core/ui/aviso.js?v=99f3bd0';
+import { dinero } from '../../../core/ui/formato.js?v=99f3bd0';
+import { subirArchivo, urlFirmada } from '../../../core/adjuntos.js?v=99f3bd0';
 import {
   TIPOS, ORIGENES, ESTADOS, OBJETIVOS, REGIONES, SUBTIPOS, REVISION, RIESGOS, nombreDe, calcular, puntaje, pct,
   chipPuntaje, chipEstado, diasHasta, fechaRemate, enlaces, cargarEstilos, contexto, distanciaKm, chipDistancia, km, mapa, geocodificar,
   TIPOS_JUICIO, OCUPACIONES, ESTUDIO_ESTADOS, ESTUDIO_CAMPOS, chipEstudio, minimoSobreAvaluo, botonEstrella,
-} from '../datos.js?v=625a797';
+} from '../datos.js?v=99f3bd0';
 
 export default async function vista(ctx) {
   cargarEstilos();

@@ -9,8 +9,8 @@
 // 'usd' (dólares con 2 decimales).
 // Varias tablas van una debajo de otra en la misma hoja; { hoja: 'Otra' } abre otra hoja con su membrete.
 // ExcelJS 4.4.0 (cdnjs, versión fija; 08 Seguridad §5) se carga solo al exportar.
-import { cargarLogo, contactoEmpresa } from './pdf.js?v=625a797';
-import { nombreEmpresa } from './empresas.js?v=625a797';
+import { cargarLogo, contactoEmpresa } from './pdf.js?v=99f3bd0';
+import { nombreEmpresa } from './empresas.js?v=99f3bd0';
 
 const EXCELJS = 'https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js';
 let carga = null;

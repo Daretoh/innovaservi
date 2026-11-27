@@ -7,7 +7,7 @@
 //   navegador; se puede escribir cualquier cosa y Enter solo elige si se marcó una sugerencia con flechas o Tab.
 //   Con data-planilla (Registro de horas): Enter elige la primera sugerencia y Tab la elige y pasa a la columna siguiente.
 // Se aplica solo (activarCombos observa la página). Para dejar un campo como el del navegador: atributo data-nativo.
-import { el } from './dom.js?v=625a797';
+import { el } from './dom.js?v=99f3bd0';
 
 const UMBRAL = 6;          // opciones desde las que un <select> pasa a buscador
 const MAX_VISIBLES = 150;  // sugerencias que se dibujan a la vez
@@ -169,13 +169,18 @@ function crearControl(entrada, { modo, items, elegir, actual, restaurar }) {
     if (n) { n.scrollIntoView({ block: 'nearest' }); entrada.setAttribute('aria-activedescendant', n.id); } else entrada.removeAttribute('aria-activedescendant');
   };
   const ubicar = () => {
+    // Espacio visible real (en el teléfono el teclado achica la vista: visualViewport). El alto se calcula con el
+    // lado elegido: antes usaba el mayor de los dos y la lista quedaba más larga que el espacio de abajo (2026-11-27).
     const r = entrada.getBoundingClientRect();
-    const abajo = innerHeight - r.bottom - 8; const arriba = r.top - 8;
-    const alto = Math.min(320, Math.max(abajo, arriba));
+    const vv = globalThis.visualViewport;
+    const inicio = vv?.offsetTop ?? 0; const fin = inicio + (vv?.height ?? innerHeight);
+    const abajo = fin - r.bottom - 8; const arriba = r.top - inicio - 8;
+    const haciaArriba = abajo < 200 && arriba > abajo;
+    const alto = Math.max(120, Math.min(320, haciaArriba ? arriba : abajo));
     Object.assign(lista.style, { left: `${Math.max(8, Math.min(r.left, innerWidth - Math.max(r.width, 240) - 8))}px`, width: `${Math.max(r.width, 240)}px`, maxHeight: `${alto}px` });
-    if (abajo < 160 && arriba > abajo) { lista.style.top = ''; lista.style.bottom = `${innerHeight - r.top + 4}px`; } else { lista.style.bottom = ''; lista.style.top = `${r.bottom + 4}px`; }
+    if (haciaArriba) { lista.style.top = ''; lista.style.bottom = `${innerHeight - r.top + 4}px`; } else { lista.style.bottom = ''; lista.style.top = `${r.bottom + 4}px`; }
   };
-  const alMover = (ev) => { if (abierta && !lista.contains(ev.target)) ubicar(); };
+  const alMover = (ev) => { if (abierta && !(ev.target instanceof Node && lista.contains(ev.target))) ubicar(); };
   const abrir = (texto) => {
     dibujar(texto);
     const k = texto ? (modo === 'select' ? 0 : -1) : visibles.findIndex((it) => it.i === actual());
@@ -184,6 +189,7 @@ function crearControl(entrada, { modo, items, elegir, actual, restaurar }) {
       if (conPopover) { try { lista.showPopover(); } catch { /* ya abierta */ } }
       entrada.setAttribute('aria-expanded', 'true');
       addEventListener('scroll', alMover, true); addEventListener('resize', alMover);
+      globalThis.visualViewport?.addEventListener('resize', alMover); globalThis.visualViewport?.addEventListener('scroll', alMover);
     }
     ubicar(); marcar(k);
   };
@@ -193,6 +199,7 @@ function crearControl(entrada, { modo, items, elegir, actual, restaurar }) {
     if (conPopover) { try { lista.hidePopover(); } catch { /* ya cerrada */ } }
     lista.hidden = true; entrada.setAttribute('aria-expanded', 'false'); entrada.removeAttribute('aria-activedescendant');
     removeEventListener('scroll', alMover, true); removeEventListener('resize', alMover);
+    globalThis.visualViewport?.removeEventListener('resize', alMover); globalThis.visualViewport?.removeEventListener('scroll', alMover);
   };
   // Al elegir, el 'input' que avisa el cambio no vuelve a abrir la lista
   let eligiendo = false;

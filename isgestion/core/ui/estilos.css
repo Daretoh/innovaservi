@@ -2646,7 +2646,7 @@ a.tar2-fila, a.tar2-fila:hover { text-decoration: none; color: var(--texto); }
 .combo-entrada:not(.campo) { font: inherit; padding: 6px 30px 6px 8px; border: 1px solid var(--borde); border-radius: var(--radio-control); background-color: var(--superficie); color: var(--texto); }
 .combo-entrada[aria-expanded="true"] { border-color: var(--empresa); }
 .combo-lista {
-  position: fixed; inset: auto; margin: 0; z-index: 60; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain;
+  position: fixed; inset: auto; margin: 0; z-index: 60; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; touch-action: pan-y; -webkit-overflow-scrolling: touch;
   padding: 4px; border: 1px solid var(--borde); border-radius: var(--radio); background: var(--superficie); color: var(--texto);
   box-shadow: var(--sombra); font-size: .92rem;
 }

@@ -4,8 +4,8 @@
 // Versiones guardadas aparte (2026-11-26, reclamos a Enzo: la app se recargaba sola y sacaba a la gente de lo que hacía):
 // cada publicación queda en v/<commit>/ y quien tiene la app abierta sigue con su versión completa hasta que actualiza.
 // Nada se recarga solo: el aviso es la única forma, y se puede dejar para más tarde.
-import { el } from './ui/dom.js?v=625a797';
-import { icono } from './ui/iconos.js?v=625a797';
+import { el } from './ui/dom.js?v=99f3bd0';
+import { icono } from './ui/iconos.js?v=99f3bd0';
 
 // Publicada en v/<commit>/core/version.js (o, las anteriores, en core/version.js?v=<commit>)
 const enCarpeta = import.meta.url.match(/\/v\/([0-9a-f]{7,40})\/core\//);

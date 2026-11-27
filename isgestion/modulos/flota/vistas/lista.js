@@ -1,9 +1,9 @@
 // Flota: vehículos, maquinaria y equipos con su estado, documentos por vencer y gasto del año.
-import { el } from '../../../core/ui/dom.js?v=625a797';
-import { listado, boton } from '../../../core/ui/tabla.js?v=625a797';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=625a797';
-import { dinero } from '../../../core/ui/formato.js?v=625a797';
-import { cargarFlota, alertas, textoVence, TIPOS, ESTADOS, normalizarPatente } from '../datos.js?v=625a797';
+import { el } from '../../../core/ui/dom.js?v=99f3bd0';
+import { listado, boton } from '../../../core/ui/tabla.js?v=99f3bd0';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=99f3bd0';
+import { dinero } from '../../../core/ui/formato.js?v=99f3bd0';
+import { cargarFlota, alertas, textoVence, TIPOS, ESTADOS, normalizarPatente } from '../datos.js?v=99f3bd0';
 
 let verInactivos = false;
 const nombreTipo = Object.fromEntries(TIPOS);

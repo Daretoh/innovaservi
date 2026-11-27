@@ -1,11 +1,11 @@
 // Registros de entrega (capacitación, charla, EPP, PTS): se arma la lista, se imprime para firmar y
 // se sube el escaneo; al subirlo, cada persona queda con el documento de RRHH entregado.
-import { el } from '../../../core/ui/dom.js?v=625a797';
-import { listado, boton } from '../../../core/ui/tabla.js?v=625a797';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=625a797';
-import { fechaLarga, hoyISO } from '../../../core/ui/formato.js?v=625a797';
-import { TIPOS_ENTREGA, nombreDe, cargarPersonas } from '../datos.js?v=625a797';
-import { cargarDestinos, agrupar, barraAvance } from '../acreditacion.js?v=625a797';
+import { el } from '../../../core/ui/dom.js?v=99f3bd0';
+import { listado, boton } from '../../../core/ui/tabla.js?v=99f3bd0';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=99f3bd0';
+import { fechaLarga, hoyISO } from '../../../core/ui/formato.js?v=99f3bd0';
+import { TIPOS_ENTREGA, nombreDe, cargarPersonas } from '../datos.js?v=99f3bd0';
+import { cargarDestinos, agrupar, barraAvance } from '../acreditacion.js?v=99f3bd0';
 
 let filtro = 'todos';
 const nombreTipo = nombreDe(TIPOS_ENTREGA);
@@ -46,13 +46,13 @@ export default async function vista(ctx) {
   // Con el generador de documentos: elegir plantilla (charla, checklist) o registro libre
   const nuevoRegistro = async () => {
     if (!ctx.puede('documentos', 'ver')) { nuevo(ctx); return; }
-    const { elegirRegistro } = await import('../../documentos/elegir.js?v=625a797');
+    const { elegirRegistro } = await import('../../documentos/elegir.js?v=99f3bd0');
     elegirRegistro(ctx, { libre: () => nuevo(ctx) });
   };
   // ZIP de las entregas que se ven (según Todos / Por firmar / Firmados): una carpeta por trabajador, partes de 19 MB
   if (data.length) acciones.push(boton('Descargar ZIP', { icono: 'descargar', title: 'Las entregas de esta lista, en partes de hasta 19 MB para adjuntar en Outlook', onclick: async (ev) => {
     const b = ev.currentTarget;
-    const { descargarEntregasZip } = await import('../zip.js?v=625a797');
+    const { descargarEntregasZip } = await import('../zip.js?v=99f3bd0');
     await descargarEntregasZip(ctx, [...new Set(data.flatMap((g) => g.registros.map((r) => r.id)))], { nombre: { todos: 'Registros de entrega', pendiente: 'Registros por firmar', firmado: 'Registros firmados' }[filtro], boton: b });
   } }));
   if (ctx.puede('sst', 'crear')) acciones.push(boton('Nuevo registro', { icono: 'mas', tipo: 'primario', onclick: nuevoRegistro }));
