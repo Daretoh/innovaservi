@@ -2,7 +2,7 @@
 // 2026-11-26: Enzo la descartó para todo ISgestión (no se enciende sola ni hay copo en la barra). Queda solo para grabar
 // videos de marketing: ?navidad=1 en la dirección la enciende en ese navegador (isg.navidad) y ?navidad=0 la apaga.
 // No toca datos ni estilos de la app: todo va en una capa encima que no recibe clics (pointer-events: none).
-import { icono } from './ui/iconos.js?v=0cc60b3';
+import { icono } from './ui/iconos.js?v=c3310e4';
 
 const CLAVE = 'isg.navidad';
 // Sin temporada automática (Enzo, 2026-11-26): si algún día se quiere en diciembre, devolver getMonth() === 11

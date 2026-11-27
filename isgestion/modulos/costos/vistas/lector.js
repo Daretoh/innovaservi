@@ -9,18 +9,19 @@
 // Bandeja "Por cargar" (Costos 008, 2026-11-10): con ?bandeja=<id> abre un documento ya subido a la bandeja, lo lee
 // igual y al registrar lo marca registrado y sigue con el siguiente pendiente (Saltar / Descartar de la bandeja).
 // Ruta: #/costos.lector · #/costos.lector?bandeja=<id>
-import { el } from '../../../core/ui/dom.js?v=0cc60b3';
-import { icono } from '../../../core/ui/iconos.js?v=0cc60b3';
-import { boton } from '../../../core/ui/tabla.js?v=0cc60b3';
-import { avisar } from '../../../core/ui/aviso.js?v=0cc60b3';
-import { subirArchivo, almacen, urlFirmada } from '../../../core/adjuntos.js?v=0cc60b3';
-import { pendientesBandeja, descartarDeBandeja } from './bandeja.js?v=0cc60b3';
-import { dinero, hoyISO, sumarDias, fechaLarga, lunesDe } from '../../../core/ui/formato.js?v=0cc60b3';
-import { TIPOS_DTE, docTipoDe, CAMPOS_DTE, leerParte, combinar, validar, escanearCamara, aJPEG, fmtRut, limpioRut, rutValido, num } from '../../../core/lector-dte.js?v=0cc60b3';
-import { cargarBase, nombreTercero, opcionesACuenta } from '../datos.js?v=0cc60b3';
-import { leerConIA, iaDisponible, numIA, fechaIA, pagadoAlComprar, textoModelo } from '../../../core/lector-ia.js?v=0cc60b3';
-import { esImagen } from '../../../core/imagenes.js?v=0cc60b3';
-import { tomarFotos } from '../../../core/ui/camara.js?v=0cc60b3';
+import { el } from '../../../core/ui/dom.js?v=c3310e4';
+import { icono } from '../../../core/ui/iconos.js?v=c3310e4';
+import { boton } from '../../../core/ui/tabla.js?v=c3310e4';
+import { avisar } from '../../../core/ui/aviso.js?v=c3310e4';
+import { subirArchivo, almacen, urlFirmada } from '../../../core/adjuntos.js?v=c3310e4';
+import { pendientesBandeja, descartarDeBandeja } from './bandeja.js?v=c3310e4';
+import { dinero, hoyISO, sumarDias, fechaLarga, lunesDe } from '../../../core/ui/formato.js?v=c3310e4';
+import { TIPOS_DTE, docTipoDe, CAMPOS_DTE, leerParte, combinar, validar, escanearCamara, aJPEG, fmtRut, limpioRut, rutValido, num } from '../../../core/lector-dte.js?v=c3310e4';
+import { cargarBase, nombreTercero, opcionesACuenta } from '../datos.js?v=c3310e4';
+import { enlaceNuevoProveedor } from '../proveedor-nuevo.js?v=c3310e4';
+import { leerConIA, iaDisponible, numIA, fechaIA, pagadoAlComprar, textoModelo } from '../../../core/lector-ia.js?v=c3310e4';
+import { esImagen } from '../../../core/imagenes.js?v=c3310e4';
+import { tomarFotos } from '../../../core/ui/camara.js?v=c3310e4';
 
 const ETIQUETA = { timbre: ['Timbre SII', 'chip-ok'], xml: ['XML', 'chip-ok'], ia: ['IA', 'chip-ok'], ocr: ['Revisar', 'chip-prox'], calc: ['Calculado', 'chip-pend'] };
 
@@ -145,6 +146,17 @@ export default async function vista(ctx) {
   };
   const filaTipos = ctl('td', 'Tipo de documento', { opciones: [['', 'Elige…'], ...Object.entries(TIPOS_DTE).map(([k, t]) => [k, `${k !== '0' ? `${k} · ` : ''}${t}`])] });
   const proveedor = el('p', { class: 'texto-chico' });
+  // Otro proveedor que el emisor (2026-11-27): ej.: la luz de Saesa pagada en Servipag se sube con el comprobante de Servipag
+  const otroProv = el('select', { class: 'campo', id: 'lec-otro' }, el('option', { value: '' }, 'El emisor del documento'),
+    base.terceros.filter((t) => t.tipo?.includes('proveedor')).map((t) => el('option', { value: t.id }, nombreTercero(t))));
+  const filaOtro = el('div', { class: 'form-fila', style: 'display:none' }, el('label', { for: 'lec-otro' }, 'Proveedor del gasto'), otroProv,
+    enlaceNuevoProveedor(ctx, (t) => {
+      if (![...otroProv.options].some((o) => o.value === t.id)) otroProv.append(el('option', { value: t.id }, nombreTercero(t)));
+      if (!base.terceros.some((x) => x.id === t.id)) base.terceros.push(t);
+      otroProv.value = t.id; otroProv.dispatchEvent(new Event('change'));
+    }));
+  const abrirOtro = el('a', { href: '#', class: 'texto-chico', onclick: (ev) => { ev.preventDefault(); filaOtro.style.display = ''; abrirOtro.style.display = 'none'; } },
+    '¿Es de otro proveedor? (ej.: la luz pagada en Servipag)');
   const categoria = el('select', { class: 'campo', id: 'lec-cat' }, categorias.map((c) => el('option', { value: c.id }, c.nombre)));
   const centro = el('select', { class: 'campo', id: 'lec-cen' }, el('option', { value: '' }, 'Sin centro de costo'), base.centros.filter((c) => c.activo).map((c) => el('option', { value: c.id }, c.nombre)));
   const hoy = hoyISO();
@@ -154,6 +166,14 @@ export default async function vista(ctx) {
   const recurrente = el('select', { class: 'campo', id: 'lec-rec' }, el('option', { value: '' }, 'No es un pago recurrente'), listaRec.map((x) => el('option', { value: x.id }, x.concepto)));
   let recTocado = false;
   recurrente.addEventListener('change', () => { recTocado = true; });
+  // Propone el recurrente del proveedor del gasto (el elegido en "Proveedor del gasto" o el emisor)
+  const elegirRecurrente = (emisor) => {
+    if (recTocado) return;
+    const id = otroProv.value || emisor?.id;
+    const delProv = id ? listaRec.filter((x) => x.tercero_id === id) : [];
+    recurrente.value = delProv.length === 1 ? delProv[0].id : '';
+  };
+  otroProv.addEventListener('change', () => { const v = valores(); elegirRecurrente(v.rut ? terceroPorRut.get(limpioRut(v.rut)) : null); });
   const exigirDestino = !!ctx.config?.exigir_destino;
   const destino = el('select', { class: 'campo', id: 'lec-dest' }, [['', 'Elige…'],
     ...(conTaller ? [['vehiculo', 'Un vehículo del taller (patente)']] : []),
@@ -231,7 +251,7 @@ export default async function vista(ctx) {
   const revisar = async () => {
     const v = valores();
     const t = v.rut ? terceroPorRut.get(limpioRut(v.rut)) : null;
-    if (!recTocado) { const delProv = t ? listaRec.filter((x) => x.tercero_id === t.id) : []; recurrente.value = delProv.length === 1 ? delProv[0].id : ''; }
+    elegirRecurrente(t);
     proveedor.replaceChildren(v.rut ? (t ? el('span', {}, icono('check', { tam: 14 }), ` Proveedor: ${nombreTercero(t)}`) : el('span', { class: 'texto-suave' }, ctx.puede('terceros', 'crear') ? 'Proveedor nuevo: se crea en Clientes y proveedores al guardar.' : 'Proveedor no registrado: se guarda sin proveedor.')) : '');
     if (!concepto.dataset.editado) concepto.value = [v.razon ?? (t ? nombreTercero(t) : null), v.td != null ? `${(TIPOS_DTE[v.td] ?? 'Documento').replace(' electrónica', '')}${v.folio ? ` N° ${v.folio}` : ''}` : null].filter(Boolean).join(' · ');
     const avisos = validar(v);
@@ -281,7 +301,8 @@ export default async function vista(ctx) {
     const rutas = [];     // todos los del gasto, en orden (incluye el de la bandeja, que ya estaba subido)
     try {
       // Proveedor por RUT (si no existe y se puede, se crea)
-      let tercero = v.rut ? terceroPorRut.get(limpioRut(v.rut)) ?? null : null;
+      let tercero = otroProv.value ? (base.terceros.find((x) => x.id === otroProv.value) ?? { id: otroProv.value })
+        : v.rut ? terceroPorRut.get(limpioRut(v.rut)) ?? null : null;
       if (!tercero && v.rut && rutValido(v.rut) && ctx.puede('terceros', 'crear')) {
         const { data, error } = await ctx.api.from('terceros').insert({ empresa_id: e, rut: `${limpioRut(v.rut).slice(0, -1)}-${limpioRut(v.rut).slice(-1)}`, razon_social: v.razon || fmtRut(v.rut), tipo: ['proveedor'] }).select('id, rut, razon_social, nombre_fantasia, tipo').single();
         if (error) throw new Error(`No se pudo crear el proveedor: ${error.message}`);
@@ -366,7 +387,7 @@ export default async function vista(ctx) {
     estado, iaEstado,
     el('div', { class: 'rejilla-campos' }, filaTipos, ctl('folio', 'Folio', { num: true }), ctl('fecha', 'Fecha', { tipo: 'date' })),
     el('div', { class: 'rejilla-campos' }, ctl('rut', 'RUT del emisor'), ctl('razon', 'Razón social')),
-    proveedor,
+    proveedor, abrirOtro, filaOtro,
     el('div', { class: 'rejilla-campos lec-montos' }, ctl('neto', 'Neto', { num: true }), ctl('iva', 'IVA', { num: true }), ctl('exento', 'Exento', { num: true }), ctl('otros', 'Otros impuestos', { num: true }), ctl('total', 'Total', { num: true })),
     cuadre,
     exigirDestino ? fila('¿A qué va este gasto?', destino) : null,

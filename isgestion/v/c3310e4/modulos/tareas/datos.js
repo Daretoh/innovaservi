@@ -1,0 +1,86 @@
+// Datos y reglas comunes de Tareas (v2, como InnovaGestión).
+import { hoyISO, diaLocal } from '../../core/ui/formato.js';
+import { el } from '../../core/ui/dom.js';
+
+export const PRIORIDADES = [['baja', 'Baja'], ['media', 'Media'], ['alta', 'Alta']];
+export const NIVELES = PRIORIDADES.map(([k]) => k);
+export const nombrePrioridad = Object.fromEntries(PRIORIDADES);
+export const ESTADOS = [['pendiente', 'Pendiente'], ['en_proceso', 'En proceso'], ['hecha', 'Terminada']];
+export const nombreEstado = Object.fromEntries(ESTADOS);
+export const CHIP_ESTADO = { pendiente: 'chip-pend', en_proceso: 'chip-prox', hecha: 'chip-ok' };
+export const REPETIR = [['no', 'No se repite'], ['semanal', 'Cada semana'], ['mensual', 'Cada mes']];
+
+const diasEntre = (a, b) => Math.round((new Date(`${b}T12:00`) - new Date(`${a}T12:00`)) / 864e5);
+export const diasHasta = (fecha) => diasEntre(hoyISO(), fecha);
+export const diasAbierta = (t) => diasEntre(diaLocal(t.created_at), hoyISO());
+// Días desde el último movimiento (cambio, prioridad o creación)
+export function diasQuieta(t) {
+  const mov = [t.updated_at, t.prio_desde, t.created_at].filter(Boolean).sort().pop();
+  return mov ? diasEntre(diaLocal(mov), hoyISO()) : 0;
+}
+export const CHIP_PRIO = { alta: 'chip-venc', media: 'chip-prox', baja: 'chip-pend' };
+
+// Prioridad "inteligente": sube sola si la tarea lleva días sin movimiento o está por vencer.
+//  - sin movimiento 7 días → un nivel; 14 días → dos niveles
+//  - vence en 7 días o menos → un nivel; en 2 días, hoy o vencida → Alta
+export function prioridad(t) {
+  const base = Math.max(0, NIVELES.indexOf(t.prioridad));
+  if (t.estado === 'hecha') return { p: t.prioridad, sube: false, por: '' };
+  let p = base; let por = '';
+  const quieta = diasQuieta(t);
+  const pasos = quieta >= 14 ? 2 : quieta >= 7 ? 1 : 0;
+  if (pasos && Math.min(2, base + pasos) > base) { p = Math.min(2, base + pasos); por = `Lleva ${quieta} días sin movimiento`; }
+  if (t.fecha) {
+    const dn = diasHasta(t.fecha);
+    const v = dn <= 2 ? 2 : dn <= 7 ? Math.min(2, base + 1) : -1;
+    if (v > p) { p = v; por = dn < 0 ? 'Vencida' : dn === 0 ? 'Vence hoy' : `Vence en ${dn} día${dn > 1 ? 's' : ''}`; }
+  }
+  return { p: NIVELES[p], sube: p > base, por };
+}
+
+// Orden: abiertas por prioridad efectiva, luego vencimiento
+export const ordenar = (lista) => [...lista].sort((a, b) =>
+  (a.estado === 'hecha') - (b.estado === 'hecha')
+  || NIVELES.indexOf(prioridad(b).p) - NIVELES.indexOf(prioridad(a).p)
+  || (a.fecha ?? '9999').localeCompare(b.fecha ?? '9999'));
+
+// Menciones: "@Nombre Apellido" de los usuarios que aparecen en el texto
+export function mencionados(texto, usuarios) {
+  const t = ` ${texto.toLowerCase()}`;
+  return usuarios.filter((u) => t.includes(`@${u.nombre.toLowerCase()}`));
+}
+
+// Sugerencias al escribir "@" en un campo de texto (observaciones, detalle de una tarea nueva): botones con los nombres
+// que calzan; al elegir uno queda "@Nombre Apellido " en el texto. Devuelve el bloque de sugerencias para ponerlo bajo el campo.
+export function sugerirMenciones(campo, usuarios) {
+  const sugerencias = el('div', { class: 'tar2-sug', hidden: true });
+  campo.addEventListener('input', () => {
+    const antes = campo.value.slice(0, campo.selectionStart);
+    const m = antes.match(/@([\p{L} ]{0,30})$/u);
+    const l = m ? usuarios.filter((u) => u.nombre.toLowerCase().startsWith(m[1].toLowerCase())).slice(0, 6) : [];
+    sugerencias.hidden = !l.length;
+    sugerencias.replaceChildren(...l.map((u) => el('button', { type: 'button', class: 'boton boton-secundario boton-chico', onclick: () => {
+      const ini = antes.length - m[0].length;
+      campo.value = `${campo.value.slice(0, ini)}@${u.nombre} ${campo.value.slice(campo.selectionStart)}`;
+      sugerencias.hidden = true; campo.focus();
+    } }, `@${u.nombre}`)));
+  });
+  return sugerencias;
+}
+
+// Categorías (como InnovaGestión): se sugiere por el título y se puede cambiar a mano
+export const CATEGORIAS = [['general', 'General'], ['cotizaciones', 'Cotizaciones'], ['facturas', 'Facturas'], ['operaciones', 'Operaciones'],
+  ['administracion', 'Administración'], ['pagos', 'Pagos'], ['reportes', 'Reportes']];
+export const nombreCategoria = Object.fromEntries(CATEGORIAS);
+export function categoriaAuto(titulo) {
+  const t = String(titulo ?? '').toLowerCase();
+  const h = (...p) => p.some((x) => t.includes(x));
+  if (h('cotiz', 'presupuesto')) return 'cotizaciones';
+  if (h('factura', 'boleta', ' dte', 'nota de cr', 'nota de d')) return 'facturas';
+  if (h('pago', 'pagar', 'transferenc', 'abono', 'deposito', 'depósito', 'sueldo', 'remuneraci', 'finiquito', 'anticipo', 'previred', 'dinero', 'cobr', 'deuda', 'gasto')) return 'pagos';
+  if (h('reporte', 'informe', 'acta', 'minuta', 'resumen')) return 'reportes';
+  if (h('faena', 'terreno', 'cuadrilla', 'epp', 'turno', 'operaci', 'planific', 'vehicul', 'vehícul', 'chofer', 'maquina', 'bodega', 'prevenci', 'mantenimiento', 'botiqu', 'hormig', 'moldaje', 'obra')) return 'operaciones';
+  if (h('contrato', 'firma', 'document', 'rrhh', 'tramite', 'trámite', 'certificad', 'certificaci', 'capacitaci', 'anexo', 'carpeta', 'permiso', 'acredita', 'administraci',
+    'procedimiento', 'proveedor', 'solicitud', 'resoluci', 'carta', 'declaraci', 'sanitaria', 'portuaria', 'sernapesca', 'armada')) return 'administracion';
+  return 'general';
+}

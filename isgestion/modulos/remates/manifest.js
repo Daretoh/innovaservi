@@ -13,10 +13,10 @@ export default {
   rubros: ['todos'],
   acciones: ['ver', 'crear', 'editar', 'eliminar', 'exportar'],
   menu: [
-    { id: 'remates.lista', label: 'Remates', pestana: 'Oportunidades', icono: 'martillo', requiere: ['remates', 'ver'], vista: () => import('./vistas/lista.js?v=0cc60b3') },
-    { id: 'remates.ficha', label: 'Oportunidad', oculto: true, padre: 'remates.lista', requiere: ['remates', 'ver'], vista: () => import('./vistas/ficha.js?v=0cc60b3') },
-    { id: 'remates.aprender', label: 'Aprender', pestana: 'Aprender', icono: 'birrete', requiere: ['remates', 'ver'], vista: () => import('./vistas/aprender.js?v=0cc60b3') },
-    { id: 'remates.guia', label: 'Cómo funciona', pestana: 'Cómo funciona y fuentes', icono: 'documento', requiere: ['remates', 'ver'], vista: () => import('./vistas/guia.js?v=0cc60b3') },
+    { id: 'remates.lista', label: 'Remates', pestana: 'Oportunidades', icono: 'martillo', requiere: ['remates', 'ver'], vista: () => import('./vistas/lista.js?v=c3310e4') },
+    { id: 'remates.ficha', label: 'Oportunidad', oculto: true, padre: 'remates.lista', requiere: ['remates', 'ver'], vista: () => import('./vistas/ficha.js?v=c3310e4') },
+    { id: 'remates.aprender', label: 'Aprender', pestana: 'Aprender', icono: 'birrete', requiere: ['remates', 'ver'], vista: () => import('./vistas/aprender.js?v=c3310e4') },
+    { id: 'remates.guia', label: 'Cómo funciona', pestana: 'Cómo funciona y fuentes', icono: 'documento', requiere: ['remates', 'ver'], vista: () => import('./vistas/guia.js?v=c3310e4') },
   ],
   config: {
     comunas: { tipo: 'text', etiqueta: 'Comunas de interés (separadas por coma; la primera es el filtro por defecto y suman puntaje)', default: 'Puerto Montt' },

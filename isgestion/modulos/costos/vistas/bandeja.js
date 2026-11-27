@@ -3,15 +3,15 @@
 // (Costos 008) con su archivo en R2 (<empresa>/costos/…). "Cargar" abre el lector con la foto ya puesta; al registrar
 // el gasto la foto pasa a ser su archivo y el lector sigue con la siguiente de la bandeja.
 // Ruta: #/costos.bandeja
-import { el } from '../../../core/ui/dom.js?v=0cc60b3';
-import { icono } from '../../../core/ui/iconos.js?v=0cc60b3';
-import { boton } from '../../../core/ui/tabla.js?v=0cc60b3';
-import { avisar } from '../../../core/ui/aviso.js?v=0cc60b3';
-import { subirArchivo, urlsFirmadas, eliminarArchivo } from '../../../core/adjuntos.js?v=0cc60b3';
-import { botonesFotos, tomarFotos } from '../../../core/ui/camara.js?v=0cc60b3';
-import { comprimirFoto, esImagen, esPdf } from '../../../core/imagenes.js?v=0cc60b3';
-import { fechaLarga, diaLocal, dinero, hoyISO } from '../../../core/ui/formato.js?v=0cc60b3';
-import { llamarDte, estadoDte, NOMBRE_DTE } from '../../../core/dte.js?v=0cc60b3';
+import { el } from '../../../core/ui/dom.js?v=c3310e4';
+import { icono } from '../../../core/ui/iconos.js?v=c3310e4';
+import { boton } from '../../../core/ui/tabla.js?v=c3310e4';
+import { avisar } from '../../../core/ui/aviso.js?v=c3310e4';
+import { subirArchivo, urlsFirmadas, eliminarArchivo } from '../../../core/adjuntos.js?v=c3310e4';
+import { botonesFotos, tomarFotos } from '../../../core/ui/camara.js?v=c3310e4';
+import { comprimirFoto, esImagen, esPdf } from '../../../core/imagenes.js?v=c3310e4';
+import { fechaLarga, diaLocal, dinero, hoyISO } from '../../../core/ui/formato.js?v=c3310e4';
+import { llamarDte, estadoDte, NOMBRE_DTE } from '../../../core/dte.js?v=c3310e4';
 
 // Pendientes de la empresa en orden de llegada (RLS: quien solo carga ve las suyas)
 // Las compras del SII (origen 'sii', Núcleo 021) traen además su XML y sus datos (dte)
@@ -267,7 +267,7 @@ export default async function vista(ctx) {
       el('div', {}, el('strong', {}, 'Subir'),
         el('p', { class: 'texto-suave texto-chico' }, 'Saca o elige todas las fotos o PDF de una vez (ej.: las boletas al volver de terreno); quedan aquí y después se cargan una por una.')),
       el('div', { class: 'listado-acciones' }, fotos.camara, fotos.galeria,
-        boton('Gasto sin papel', { icono: 'dinero', title: 'Solo si no hay boleta, factura ni ticket (ej.: propina, feria). No es declarable.', onclick: () => import('./subir.js?v=0cc60b3').then((m) => m.sinDocumento(ctx)) }),
+        boton('Gasto sin papel', { icono: 'dinero', title: 'Solo si no hay boleta, factura ni ticket (ej.: propina, feria). No es declarable.', onclick: () => import('./subir.js?v=c3310e4').then((m) => m.sinDocumento(ctx)) }),
         el('a', { class: 'boton boton-secundario', href: ctx.ruta('costos.registro', { tipo: 'gasto' }), title: 'Escribir todos los datos, sin foto' }, icono('editar', { tam: 16 }), 'A mano'),
         progreso)) : null,
     el('div', { class: 'listado-acciones ban-barra' },
