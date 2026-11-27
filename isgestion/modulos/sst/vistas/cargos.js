@@ -2,10 +2,10 @@
 // lugar (ej.: SAL LOBOS → Camanchaca, Ensenada). Un cuadro: documentos en filas, cargos en columnas; marcar o desmarcar
 // guarda al tiro. La entrega individual los propone solos según el cargo de cada trabajador.
 // Ruta: #/sst.cargos[?a=<tercero>|<sitio>]
-import { el } from '../../../core/ui/dom.js?v=99f3bd0';
-import { icono } from '../../../core/ui/iconos.js?v=99f3bd0';
-import { avisar } from '../../../core/ui/aviso.js?v=99f3bd0';
-import { cargarDestinos, leerDestino } from '../acreditacion.js?v=99f3bd0';
+import { el } from '../../../core/ui/dom.js?v=503c912';
+import { icono } from '../../../core/ui/iconos.js?v=503c912';
+import { avisar } from '../../../core/ui/aviso.js?v=503c912';
+import { cargarDestinos, leerDestino } from '../acreditacion.js?v=503c912';
 
 export const claveCargo = (t) => String(t ?? '').trim().normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ');
 const estado = { a: null };
@@ -16,7 +16,7 @@ export async function documentosAsignables(ctx) {
   const lista = (data ?? []).map((d) => ({ id: d.id, texto: [d.codigo, d.titulo].filter(Boolean).join(' · '), grupo: 'Documentos preventivos' }));
   if (ctx.puede('documentos', 'ver')) {
     try {
-      const { cargarPlantillas } = await import('../../documentos/editor.js?v=99f3bd0');
+      const { cargarPlantillas } = await import('../../documentos/editor.js?v=503c912');
       const { P } = await cargarPlantillas(ctx);
       if (P.EMP_GEN?.iper) lista.push({ id: 'tpl:iper', texto: 'Matriz IPER · plantilla general', grupo: 'Plantillas' });
       for (const slug of Object.keys(P.PTS_DOC ?? {})) {

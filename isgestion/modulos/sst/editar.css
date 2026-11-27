@@ -53,14 +53,18 @@
 .edf-linea { width: 80%; border-top: 1px solid var(--texto-suave); margin: 2px 0 3px; }
 .edf-nombre { font-weight: 700; font-size: 12.5px; min-width: 80px; }
 .edf-cargo { font-size: 11px; color: var(--texto-suave); min-width: 80px; }
-.edf-ctrl { display: none; gap: 4px; align-items: center; justify-content: center; flex-wrap: wrap; margin-bottom: 4px; }
-.ed-papel .edf-caja:hover .edf-ctrl, .ed-papel .edf-caja:focus-within .edf-ctrl { display: flex; }
 .edf-ctrl .campo { padding: 2px 6px; font-size: 12px; height: auto; width: auto; }
 .edf-chk { display: inline-flex; gap: 3px; align-items: center; font-size: 12px; }
 .edf-mas { align-self: center; display: inline-flex; gap: 6px; align-items: center; padding: 8px 12px; border: 1px dashed var(--borde); border-radius: 8px; background: transparent; color: var(--texto-suave); cursor: pointer; font: inherit; font-size: 12.5px; }
 .edf-mas:hover { color: var(--empresa); border-color: var(--empresa); background: var(--hover); }
-@media (hover: none) { .ed-papel .edf-ctrl { display: flex; } }
 .edf-zona { overflow: visible; }
 .edf-mov { cursor: move; touch-action: none; user-select: none; -webkit-user-drag: none; z-index: 2; }
 .edf-mov:hover { outline: 1px dashed var(--empresa); outline-offset: 2px; }
 .edf-timbre.edf-mov { z-index: 1; }
+/* Controles de la casilla: flotan sobre ella (no ocupan espacio, así la firma no se corre al pasar el mouse) */
+.edf-caja { position: relative; }
+.edf-ctrl { position: absolute; left: 50%; bottom: calc(100% - 2px); transform: translateX(-50%); z-index: 5; display: flex; gap: 4px; align-items: center; white-space: nowrap; width: max-content;
+  padding: 4px 6px; border-radius: 8px; background: var(--superficie); border: 1px solid var(--borde); box-shadow: var(--sombra-suave); visibility: hidden; opacity: 0; transition: opacity .12s; }
+.ed-papel .edf-caja:hover .edf-ctrl, .ed-papel .edf-caja:focus-within .edf-ctrl { visibility: visible; opacity: 1; }
+.edf-caja.edf-moviendo .edf-ctrl { visibility: hidden; opacity: 0; }
+@media (hover: none) { .ed-papel .edf-ctrl { visibility: visible; opacity: 1; } }

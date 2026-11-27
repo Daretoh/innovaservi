@@ -4,10 +4,10 @@
 // Contenido: { tipo: 'firmas', firmas: [{ rol, nombre, cargo, firma: 'rep' | 'prev' | '', timbre: boolean, fx, fy, fs, tx, ty, ts }] }
 // La firma y el timbre se arrastran para moverlos y se agrandan con la rueda del mouse (como en el generador): fx/fy (tx/ty)
 // es el corrimiento como fracción del ancho de la casilla y fs (ts) la escala; no ocupan espacio, así nada se corre.
-import { el } from '../../core/ui/dom.js?v=99f3bd0';
-import { icono } from '../../core/ui/iconos.js?v=99f3bd0';
-import { cargarLogo } from '../../core/pdf.js?v=99f3bd0';
-import { cargarConfig } from './datos.js?v=99f3bd0';
+import { el } from '../../core/ui/dom.js?v=503c912';
+import { icono } from '../../core/ui/iconos.js?v=503c912';
+import { cargarLogo } from '../../core/pdf.js?v=503c912';
+import { cargarConfig } from './datos.js?v=503c912';
 
 const cache = new Map();
 // Firmas guardadas de la empresa: { rep: { nombre, cargo, img }, prev: { … }, timbre: img } (img = { dataUrl, formato, ancho, alto })
@@ -26,7 +26,7 @@ export function cargarFirmasDoc(ctx) {
   }
   return cache.get(k);
 }
-export { tieneFirmas } from './firmas-doc-base.js?v=99f3bd0';
+export { tieneFirmas } from './firmas-doc-base.js?v=503c912';
 
 const ROL = { prev: 'Elaborado por', rep: 'Aprobado por', '': 'Revisado por' };
 export function nuevaFirma(F, quien) {
@@ -40,15 +40,15 @@ export const OPCIONES_FIRMA = [['prev', 'Prevencionista'], ['rep', 'Representant
 // Arrastrar (mover) y rueda (agrandar/achicar) sobre una imagen de la casilla; k = 'f' (firma) o 't' (timbre)
 function movible(img, f, k, caja, alGuardar) {
   img.classList.add('edf-mov'); img.title = 'Arrastra para mover · rueda del mouse para agrandar o achicar · doble clic para volver a su lugar';
-  img.draggable = false;
+  img.draggable = false; img.addEventListener('dragstart', (ev) => ev.preventDefault()); img.addEventListener('mousedown', (ev) => ev.preventDefault());
   const aplicar = () => {
     const w = caja.clientWidth || 1;
     img.style.transform = `translate(${(f[`${k}x`] ?? 0) * w}px, ${(f[`${k}y`] ?? 0) * w}px) scale(${f[`${k}s`] ?? 1})`;
   };
   let a = null;
-  img.addEventListener('pointerdown', (ev) => { ev.preventDefault(); ev.stopPropagation(); try { img.setPointerCapture(ev.pointerId); } catch { /* */ } a = { x: ev.clientX, y: ev.clientY, fx: f[`${k}x`] ?? 0, fy: f[`${k}y`] ?? 0, w: caja.clientWidth || 1 }; });
+  img.addEventListener('pointerdown', (ev) => { ev.preventDefault(); ev.stopPropagation(); try { img.setPointerCapture(ev.pointerId); } catch { /* */ } a = { x: ev.clientX, y: ev.clientY, fx: f[`${k}x`] ?? 0, fy: f[`${k}y`] ?? 0, w: caja.clientWidth || 1 }; caja.classList.add('edf-moviendo'); });
   img.addEventListener('pointermove', (ev) => { if (!a) return; f[`${k}x`] = +(a.fx + (ev.clientX - a.x) / a.w).toFixed(4); f[`${k}y`] = +(a.fy + (ev.clientY - a.y) / a.w).toFixed(4); aplicar(); });
-  const fin = (ev) => { if (!a) return; a = null; try { img.releasePointerCapture(ev.pointerId); } catch { /* */ } alGuardar(); };
+  const fin = (ev) => { if (!a) return; a = null; caja.classList.remove('edf-moviendo'); try { img.releasePointerCapture(ev.pointerId); } catch { /* */ } alGuardar(); };
   img.addEventListener('pointerup', fin); img.addEventListener('pointercancel', fin);
   img.addEventListener('wheel', (ev) => { ev.preventDefault(); f[`${k}s`] = +Math.max(0.3, Math.min(4, (f[`${k}s`] ?? 1) * (ev.deltaY < 0 ? 1.08 : 0.92))).toFixed(3); aplicar(); clearTimeout(img.__t); img.__t = setTimeout(alGuardar, 500); }, { passive: false });
   img.addEventListener('dblclick', () => { delete f[`${k}x`]; delete f[`${k}y`]; delete f[`${k}s`]; aplicar(); alGuardar(); });

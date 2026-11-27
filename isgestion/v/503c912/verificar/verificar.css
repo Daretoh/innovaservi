@@ -1,0 +1,10 @@
+/* Verificación pública de una firma electrónica (QR del sello, Núcleo 028) */
+.vf-estado { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 12px; font-weight: 700; background: var(--fondo-sutil); }
+.vf-estado.ok { color: var(--ok); }
+.vf-estado.mal { color: var(--error); }
+.vf-datos { display: grid; grid-template-columns: max-content 1fr; gap: 8px 14px; margin: 16px 0 0; }
+.vf-datos dt { color: var(--texto-suave); font-size: .85rem; }
+.vf-datos dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+.vf-huella { font-family: ui-monospace, Consolas, monospace; font-size: .75rem; font-weight: 500; }
+.vf-codigo { text-transform: uppercase; letter-spacing: .08em; }
+@media (max-width: 420px) { .vf-datos { grid-template-columns: 1fr; gap: 2px; } .vf-datos dd { margin-bottom: 8px; } }

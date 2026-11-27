@@ -1,0 +1,60 @@
+/* Documentos preventivos: carpetas desplegables con tabla (vistas/documentos.js, 2026-11-27) */
+.sd-barra { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 4px 0 14px; }
+.sd-buscar-caja { display: flex; align-items: center; gap: 6px; flex: 1 1 260px; max-width: 420px; padding: 0 10px; border: 1px solid var(--borde); border-radius: 10px; background: var(--superficie); color: var(--texto-suave); }
+.sd-buscar-caja:focus-within { border-color: var(--empresa); box-shadow: 0 0 0 3px color-mix(in srgb, var(--empresa) 18%, transparent); }
+.sd-buscar { border: 0 !important; box-shadow: none !important; background: transparent; padding: 8px 0; flex: 1; min-width: 0; }
+.sd-filtros { display: flex; flex-wrap: wrap; gap: 6px; }
+.sd-filtro { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 99px; border: 1px solid var(--borde); background: var(--superficie); color: var(--texto); font: inherit; font-size: .84rem; cursor: pointer; }
+.sd-filtro span { min-width: 1.5em; padding: 0 5px; border-radius: 99px; background: var(--fondo-hundido); font-size: .76rem; font-weight: 700; text-align: center; }
+.sd-filtro:hover { background: var(--hover); }
+.sd-filtro.activo { background: var(--empresa); border-color: var(--empresa); color: var(--sobre-empresa); }
+.sd-filtro.activo span { background: color-mix(in srgb, var(--sobre-empresa) 22%, transparent); }
+.sd-filtro.alerta:not(.activo) span { background: var(--venc-fondo); color: var(--venc); }
+.sd-abrir { display: inline-flex; gap: 2px; margin-left: auto; }
+
+.sd-carpetas { display: grid; gap: 10px; }
+.sd-carpeta { background: var(--superficie); border: var(--tarjeta-borde); border-radius: var(--radio); box-shadow: var(--sombra-suave); overflow: hidden; }
+.sd-carpeta > summary { list-style: none; display: flex; align-items: center; gap: 10px; padding: 12px 14px; cursor: pointer; user-select: none; }
+.sd-carpeta > summary::-webkit-details-marker { display: none; }
+.sd-carpeta > summary:hover { background: var(--hover); }
+.sd-carpeta > summary > svg { color: var(--empresa); flex: none; }
+.sd-flecha { display: inline-flex; color: var(--texto-suave); transition: transform .15s; }
+.sd-carpeta[open] > summary .sd-flecha { transform: rotate(90deg); }
+.sd-carpeta[open] > summary { border-bottom: 1px solid var(--borde); background: var(--fondo-sutil); }
+.sd-nombre { font-weight: 700; font-size: 1rem; }
+.sd-cuenta { font-size: .8rem; color: var(--texto-suave); padding: 1px 8px; border-radius: 99px; background: var(--fondo-hundido); white-space: nowrap; }
+.sd-acc-carpeta { display: inline-flex; gap: 2px; }
+.sd-obsoletos { opacity: .85; }
+.sd-obsoletos > summary > svg { color: var(--texto-suave); }
+.sd-vacia { padding: 12px 16px; margin: 0; }
+
+.sd-tabla-cont { overflow-x: auto; }
+.sd-tabla { width: 100%; border-collapse: collapse; font-size: .9rem; }
+.sd-tabla th { text-align: left; font-size: .74rem; text-transform: uppercase; letter-spacing: .04em; color: var(--texto-suave); font-weight: 600; padding: 8px 12px; border-bottom: 1px solid var(--borde); white-space: nowrap; }
+.sd-tabla td { padding: 9px 12px; border-bottom: 1px solid var(--borde); vertical-align: middle; }
+.sd-tabla tr:last-child td { border-bottom: 0; }
+.sd-fila { cursor: pointer; }
+.sd-fila:hover td { background: var(--hover); }
+.sd-cod { width: 1%; white-space: nowrap; }
+.sd-codigo { display: inline-block; font-family: ui-monospace, Consolas, monospace; font-size: .8rem; font-weight: 600; padding: 2px 7px; border-radius: 6px; background: color-mix(in srgb, var(--empresa) 10%, var(--superficie)); color: var(--empresa); }
+.sd-titulo { font-weight: 600; color: var(--texto); text-decoration: none; }
+.sd-titulo:hover { color: var(--empresa); text-decoration: underline; }
+.sd-chip { margin-left: 6px; vertical-align: middle; }
+.sd-ver { white-space: nowrap; width: 1%; }
+.sd-estado { white-space: nowrap; width: 1%; }
+.sd-acc { white-space: nowrap; width: 1%; text-align: right; }
+.sd-acc .boton-icono { display: inline-flex; }
+.sd-ruta { display: flex; align-items: center; gap: 4px; margin: 0 0 2px; }
+.sd-ruta svg { color: var(--empresa); }
+
+@media (max-width: 720px) {
+  .sd-tabla thead { display: none; }
+  .sd-tabla tr { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; padding: 10px 12px; border-bottom: 1px solid var(--borde); }
+  .sd-tabla td { padding: 0; border: 0; width: auto; }
+  .sd-cod { grid-column: 1; }
+  .sd-doc { grid-column: 1 / -1; }
+  .sd-ver { grid-column: 1; }
+  .sd-estado { grid-column: 2; grid-row: 1; text-align: right; }
+  .sd-acc { grid-column: 2; text-align: right; }
+  .sd-abrir { margin-left: 0; }
+}

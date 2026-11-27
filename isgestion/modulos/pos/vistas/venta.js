@@ -1,13 +1,13 @@
 // Venta en mesón: productos del almacén de venta (con su stock), ítems manuales, cliente, medio de pago
 // voucher y descuento. Al registrar, la base calcula el total y descuenta el stock. Avisa si la caja del día
 // no está abierta o ya se cerró (cerrada, la base no acepta ventas en efectivo de ese día).
-import { el } from '../../../core/ui/dom.js?v=99f3bd0';
-import { icono } from '../../../core/ui/iconos.js?v=99f3bd0';
-import { boton } from '../../../core/ui/tabla.js?v=99f3bd0';
-import { avisar } from '../../../core/ui/aviso.js?v=99f3bd0';
-import { subirArchivo, eliminarArchivo } from '../../../core/adjuntos.js?v=99f3bd0';
-import { dinero, hoyISO } from '../../../core/ui/formato.js?v=99f3bd0';
-import { MEDIOS, DOCS } from '../datos.js?v=99f3bd0';
+import { el } from '../../../core/ui/dom.js?v=503c912';
+import { icono } from '../../../core/ui/iconos.js?v=503c912';
+import { boton } from '../../../core/ui/tabla.js?v=503c912';
+import { avisar } from '../../../core/ui/aviso.js?v=503c912';
+import { subirArchivo, eliminarArchivo } from '../../../core/adjuntos.js?v=503c912';
+import { dinero, hoyISO } from '../../../core/ui/formato.js?v=503c912';
+import { MEDIOS, DOCS } from '../datos.js?v=503c912';
 
 const ARCHIVOS = ['application/pdf', 'image/jpeg', 'image/png'];
 // El carro se mantiene mientras se navega dentro de la sesión

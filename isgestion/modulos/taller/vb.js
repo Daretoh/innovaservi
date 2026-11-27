@@ -2,10 +2,10 @@
 // quien tiene taller.aprobar la pasa a Entregado después de revisar lo cargado. Sin PIN desde Taller 016 (decisión de
 // Enzo, 2026-11-24): basta la sesión y queda anotado quién lo dio. También devuelve a Terminado una entregada sin
 // cobrar, con motivo. La base lo exige (tal_vb); aquí está la ventana.
-import { abrirFormulario } from '../../core/ui/modal.js?v=99f3bd0';
-import { avisar } from '../../core/ui/aviso.js?v=99f3bd0';
-import { dinero } from '../../core/ui/formato.js?v=99f3bd0';
-import { SELECT_ORDEN, totales, verPatente, nombreVehiculo } from './datos.js?v=99f3bd0';
+import { abrirFormulario } from '../../core/ui/modal.js?v=503c912';
+import { avisar } from '../../core/ui/aviso.js?v=503c912';
+import { dinero } from '../../core/ui/formato.js?v=503c912';
+import { SELECT_ORDEN, totales, verPatente, nombreVehiculo } from './datos.js?v=503c912';
 
 export const pideVb = (ctx) => ctx.config?.vb_entrega === true;
 export const puedeVb = (ctx) => ctx.puede('taller', 'aprobar');

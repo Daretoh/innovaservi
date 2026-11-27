@@ -13,15 +13,15 @@
 //   semanales (tratos, vueltas, extras) se resta de A pagar ("Pagado semanal"); sigue en el total (costo del mes).
 // - Personas ocultas del cierre (remu_cierres.ocultos) y mes enviado (remu_cierres.cerrado_at): no cambian pagos.
 // Columnas, su orden y las secciones que van se recuerdan en este navegador (isg.remu.cierre).
-import { el } from '../../core/ui/dom.js?v=99f3bd0';
-import { icono } from '../../core/ui/iconos.js?v=99f3bd0';
-import { boton } from '../../core/ui/tabla.js?v=99f3bd0';
-import { avisar } from '../../core/ui/aviso.js?v=99f3bd0';
-import { dinero, horas, hoyISO, moverMes, nombreMes } from '../../core/ui/formato.js?v=99f3bd0';
-import { abrirFormulario } from '../../core/ui/modal.js?v=99f3bd0';
-import { nombreEmpresa } from '../../core/empresas.js?v=99f3bd0';
-import { cargarBase, resumenMes, externosMes, nombreCompleto, MOVIMIENTOS } from './datos.js?v=99f3bd0';
-import { diasDelMes } from './calculo.js?v=99f3bd0';
+import { el } from '../../core/ui/dom.js?v=503c912';
+import { icono } from '../../core/ui/iconos.js?v=503c912';
+import { boton } from '../../core/ui/tabla.js?v=503c912';
+import { avisar } from '../../core/ui/aviso.js?v=503c912';
+import { dinero, horas, hoyISO, moverMes, nombreMes } from '../../core/ui/formato.js?v=503c912';
+import { abrirFormulario } from '../../core/ui/modal.js?v=503c912';
+import { nombreEmpresa } from '../../core/empresas.js?v=503c912';
+import { cargarBase, resumenMes, externosMes, nombreCompleto, MOVIMIENTOS } from './datos.js?v=503c912';
+import { diasDelMes } from './calculo.js?v=503c912';
 
 const estado = { mes: hoyISO().slice(0, 7) };
 const CLAVE = 'isg.remu.cierre';
@@ -273,7 +273,7 @@ function pagosDelMes(ctx, datos, mes, secs) {
             if (!(monto > 0)) throw new Error('El total debe ser mayor a cero.');
             let ruta = null;
             if (x.archivo?.size) {
-              const { subirArchivo } = await import('../../core/adjuntos.js?v=99f3bd0');
+              const { subirArchivo } = await import('../../core/adjuntos.js?v=503c912');
               ruta = (await subirArchivo(ctx.api, { empresaId: d.empresa.id, modulo: 'costos', archivo: x.archivo, tabla: 'fin_registros' })).ruta;
             }
             const { error } = await ctx.api.rpc('remu_pago_mes', { p_empresa: d.empresa.id, p_mes: mes, p_monto: monto, p_fecha: x.fecha, p_medio: x.medio, p_archivo: ruta, p_nota: x.nota?.trim() || null });
@@ -440,7 +440,7 @@ async function exportar(ctx, { secs, cols, mes, titulo, grupo }, formato, b) {
     const cab = ['Trabajador', ...cols.map((c) => c.t)];
     const sumar = (filas) => cols.map((c) => (c.suma ? filas.reduce((x, r) => x + (Number(c.v(r)) || 0), 0) : null));
     if (formato === 'excel') {
-      const { nuevoExcel } = await import('../../core/excel.js?v=99f3bd0');
+      const { nuevoExcel } = await import('../../core/excel.js?v=503c912');
       const x = await nuevoExcel(ctx, { titulo: tituloDoc, subtitulo });
       const valor = (c, v) => (c.tipo === 'horas' ? (v == null ? null : Math.round(v / 6) / 10) : c.neg && v ? -v : v);
       const tipo = (c) => (c.tipo === 'horas' ? 'numero' : c.tipo);
@@ -454,7 +454,7 @@ async function exportar(ctx, { secs, cols, mes, titulo, grupo }, formato, b) {
       await x.guardar(nombreArchivo);
       return;
     }
-    const { nuevoPdf } = await import('../../core/pdf.js?v=99f3bd0');
+    const { nuevoPdf } = await import('../../core/pdf.js?v=503c912');
     const pdf = await nuevoPdf(ctx, { titulo: tituloDoc, subtitulo, horizontal: true });
     const doc = pdf.doc;
     const tam = cols.length > 16 ? 6.3 : cols.length > 12 ? 7 : 8;

@@ -1,13 +1,13 @@
 // Documentos preventivos con control de versiones: lista por tipo con la versión vigente y la próxima
 // revisión; detalle con el historial de versiones, subir nueva versión y ver cualquiera.
 // Rutas: #/sst.documentos · #/sst.documentos?id=<documento>
-import { el } from '../../../core/ui/dom.js?v=99f3bd0';
-import { icono } from '../../../core/ui/iconos.js?v=99f3bd0';
-import { boton } from '../../../core/ui/tabla.js?v=99f3bd0';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=99f3bd0';
-import { avisar } from '../../../core/ui/aviso.js?v=99f3bd0';
-import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=99f3bd0';
-import { fechaLarga, hoyISO } from '../../../core/ui/formato.js?v=99f3bd0';
+import { el } from '../../../core/ui/dom.js?v=503c912';
+import { icono } from '../../../core/ui/iconos.js?v=503c912';
+import { boton } from '../../../core/ui/tabla.js?v=503c912';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=503c912';
+import { avisar } from '../../../core/ui/aviso.js?v=503c912';
+import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=503c912';
+import { fechaLarga, hoyISO } from '../../../core/ui/formato.js?v=503c912';
 
 export const TIPOS_DOC = [['pts', 'Procedimiento de trabajo seguro (PTS)'], ['iper', 'Matriz IPER y procedimiento'], ['programa', 'Programa preventivo'],
   ['ley_karin', 'Protocolo Ley Karin'], ['matriz_epp', 'Matriz de EPP'], ['capacitacion', 'Material de capacitación'], ['evaluacion', 'Evaluación de aprendizaje'],
@@ -76,77 +76,165 @@ export async function guardarVersion(ctx, documentoId, v) {
   if (error) { await eliminarArchivo(ctx.api, ruta).catch(() => {}); throw new Error(error.code === '23505' ? 'Esa versión ya existe.' : error.message); }
 }
 
+// Lista por carpetas (2026-11-27, pedido de Enzo: "que sepamos qué estamos viendo"): buscador y filtros por estado
+// arriba; cada categoría es una carpeta desplegable (cerradas salvo las que se dejaron abiertas, recordado en el
+// navegador); dentro, una tabla con código, documento, versión vigente, estado y acciones. Los obsoletos van aparte.
 async function lista(ctx) {
+  css();
   const [res, cats] = await Promise.all([
     ctx.api.from('sst_documentos').select('*, sst_documento_versiones(id, version, fecha, archivo, created_at)').eq('empresa_id', ctx.empresa.id).is('deleted_at', null).order('codigo').order('titulo'),
     cargarCategorias(ctx),
   ]);
   if (res.error) throw res.error;
-  const data = res.data;
-  const est = data.filter((d) => d.activo).map(estadoDocumento);
+  const data = res.data.map((d) => ({ ...d, s: estadoDocumento(d) }));
+  const activos = data.filter((d) => d.activo);
   const puede = { crear: ctx.puede('sst', 'crear'), editar: ctx.puede('sst', 'editar'), eliminar: ctx.puede('sst', 'eliminar') };
+
+  // Carpetas abiertas (por empresa, en este navegador)
+  const clave = `isg.sst.carpetas.${ctx.empresa.id}`;
+  let abiertas = new Set();
+  try { abiertas = new Set(JSON.parse(localStorage.getItem(clave) || '[]')); } catch { /* sin almacenamiento */ }
+  const recordar = () => { try { localStorage.setItem(clave, JSON.stringify([...abiertas])); } catch { /* */ } };
+
   const mover = (d) => abrirFormulario({
     titulo: `Mover ${[d.codigo, d.titulo].filter(Boolean).join(' · ')}`,
-    campos: [{ id: 'categoria', etiqueta: 'A la categoría', opciones: [['', 'Sin categoría'], ...cats.map((c) => [c.id, c.nombre])], valor: d.categoria_id ?? '' }],
+    campos: [{ id: 'categoria', etiqueta: 'A la carpeta', opciones: [['', 'Sin carpeta'], ...cats.map((c) => [c.id, c.nombre])], valor: d.categoria_id ?? '' }],
     textoGuardar: 'Mover',
     alGuardar: async (v) => {
       const { error } = await ctx.api.from('sst_documentos').update({ categoria_id: v.categoria || null }).eq('id', d.id);
       if (error) throw new Error(error.message);
+      if (v.categoria) { abiertas.add(v.categoria); recordar(); }
       avisar('Documento movido.'); ctx.refrescar();
     },
   });
-  const fila = (d) => {
-    const s = estadoDocumento(d);
-    return el('div', { class: `doc-fila sst-doc${d.activo ? '' : ' fila-inactiva'}` },
-      el('a', { class: 'doc-nombre', href: ctx.ruta('sst.documentos', { id: d.id }) }, el('strong', {}, [d.codigo, d.titulo].filter(Boolean).join(' · '), d.borrador ? el('span', { class: 'chip chip-prox' }, 'Borrador') : null),
-        el('span', { class: 'texto-suave texto-chico' }, [d.area, s.vigente ? `versión ${s.vigente.version} del ${fechaLarga(s.vigente.fecha)}` : null, d.activo ? null : 'obsoleto'].filter(Boolean).join(' · '))),
-      el('div', { class: 'doc-acciones' },
-        d.activo ? el('span', { class: `chip ${CHIP[s.k]}` }, s.k === 'ok' ? 'Vigente' : s.texto) : el('span', { class: 'chip chip-na' }, 'Obsoleto'),
-        puede.editar ? el('button', { type: 'button', class: 'boton-icono', title: 'Mover a otra categoría', 'aria-label': `Mover ${d.titulo}`, onclick: () => mover(d) }, icono('carpeta', { tam: 16 })) : null));
-  };
-  const categoria = (c, ds) => {
-    const renombrar = () => abrirFormulario({
-      titulo: 'Renombrar categoría', campos: [{ id: 'nombre', etiqueta: 'Nombre', requerido: true, valor: c.nombre }, { id: 'orden', etiqueta: 'Orden (menor va primero)', tipo: 'number', valor: String(c.orden ?? 0) }],
-      alGuardar: async (v) => {
-        const { error } = await ctx.api.from('sst_doc_categorias').update({ nombre: v.nombre.trim(), orden: Number(v.orden) || 0 }).eq('id', c.id);
-        if (error) throw new Error(error.code === '23505' ? 'Ya hay una categoría con ese nombre.' : error.message);
-        avisar('Categoría guardada.'); ctx.refrescar();
-      },
-    });
-    const quitar = () => abrirFormulario({
-      titulo: `Eliminar la categoría ${c.nombre}`, mensaje: 'Está vacía: se elimina y no afecta a ningún documento.', campos: [], textoGuardar: 'Eliminar',
-      alGuardar: async () => { const { error } = await ctx.api.from('sst_doc_categorias').delete().eq('id', c.id); if (error) throw new Error(error.message); avisar('Categoría eliminada.'); ctx.refrescar(); },
-    });
-    return el('div', { class: 'ficha doc-grupo' },
-      el('div', { class: 'listado-cabecera' }, el('h2', {}, icono('carpeta', { tam: 18 }), ` ${c ? c.nombre : 'Sin categoría'} (${ds.length})`),
-        c ? el('div', { class: 'listado-acciones' },
-          puede.crear ? boton('Agregar aquí', { icono: 'mas', onclick: () => formDocumento(ctx, null, c.id) }) : null,
-          puede.editar ? el('button', { type: 'button', class: 'boton-icono', title: 'Renombrar u ordenar', 'aria-label': `Renombrar ${c.nombre}`, onclick: renombrar }, icono('editar', { tam: 16 })) : null,
-          puede.eliminar && !ds.length ? el('button', { type: 'button', class: 'boton-icono', title: 'Eliminar categoría (vacía)', 'aria-label': `Eliminar ${c.nombre}`, onclick: quitar }, icono('basura', { tam: 16 })) : null) : null),
-      ds.length ? ds.map(fila) : el('p', { class: 'texto-suave texto-chico' }, 'Vacía. Agrega un documento o mueve uno aquí.'));
-  };
-  const nuevaCategoria = () => abrirFormulario({
-    titulo: 'Nueva categoría', campos: [{ id: 'nombre', etiqueta: 'Nombre', requerido: true, ayuda: 'Ej.: Documentos generales, Cermaq Chinquihue, Planes de emergencia.' }],
+  const renombrar = (c) => abrirFormulario({
+    titulo: 'Renombrar carpeta', campos: [{ id: 'nombre', etiqueta: 'Nombre', requerido: true, valor: c.nombre }, { id: 'orden', etiqueta: 'Orden (menor va primero)', tipo: 'number', valor: String(c.orden ?? 0) }],
     alGuardar: async (v) => {
-      const { error } = await ctx.api.from('sst_doc_categorias').insert({ empresa_id: ctx.empresa.id, nombre: v.nombre.trim(), orden: (cats.at(-1)?.orden ?? 0) + 1 });
-      if (error) throw new Error(error.code === '23505' ? 'Ya hay una categoría con ese nombre.' : error.message);
-      avisar('Categoría creada.'); ctx.refrescar();
+      const { error } = await ctx.api.from('sst_doc_categorias').update({ nombre: v.nombre.trim(), orden: Number(v.orden) || 0 }).eq('id', c.id);
+      if (error) throw new Error(error.code === '23505' ? 'Ya hay una carpeta con ese nombre.' : error.message);
+      avisar('Carpeta guardada.'); ctx.refrescar();
     },
   });
-  const sinCat = data.filter((d) => !d.categoria_id || !cats.some((c) => c.id === d.categoria_id));
+  const quitar = (c) => abrirFormulario({
+    titulo: `Eliminar la carpeta ${c.nombre}`, mensaje: 'Está vacía: se elimina y no afecta a ningún documento.', campos: [], textoGuardar: 'Eliminar',
+    alGuardar: async () => { const { error } = await ctx.api.from('sst_doc_categorias').delete().eq('id', c.id); if (error) throw new Error(error.message); avisar('Carpeta eliminada.'); ctx.refrescar(); },
+  });
+  const nuevaCategoria = () => abrirFormulario({
+    titulo: 'Nueva carpeta', campos: [{ id: 'nombre', etiqueta: 'Nombre', requerido: true, ayuda: 'Ej.: Documentos generales, Cermaq Chinquihue, Planes de emergencia.' }],
+    alGuardar: async (v) => {
+      const { data: c, error } = await ctx.api.from('sst_doc_categorias').insert({ empresa_id: ctx.empresa.id, nombre: v.nombre.trim(), orden: (cats.at(-1)?.orden ?? 0) + 1 }).select('id').single();
+      if (error) throw new Error(error.code === '23505' ? 'Ya hay una carpeta con ese nombre.' : error.message);
+      abiertas.add(c.id); recordar();
+      avisar('Carpeta creada.'); ctx.refrescar();
+    },
+  });
+
+  // ---------- Filtros ----------
+  const ESTADOS = [['todos', 'Todos', (d) => d.activo], ['revisar', 'Por revisar', (d) => d.activo && d.s.k === 'prox'], ['venc', 'Revisión vencida', (d) => d.activo && d.s.k === 'venc'],
+    ['borrador', 'Con borrador', (d) => d.activo && !!d.borrador], ['sin', 'Sin versión', (d) => d.activo && d.s.k === 'sin'], ['obsoletos', 'Obsoletos', (d) => !d.activo]];
+  let estado = 'todos'; let texto = '';
+  const norm = (t) => String(t ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  const nombreCat = Object.fromEntries(cats.map((c) => [c.id, c.nombre]));
+  const regla = (k) => ESTADOS.find((e) => e[0] === k)[2];
+  const coincide = (d) => regla(estado)(d) && (!texto || norm([d.codigo, d.titulo, d.area, nombreTipo[d.tipo], nombreCat[d.categoria_id]].join(' ')).includes(texto));
+  const cuantos = (k) => data.filter(regla(k)).length;
+
+  // ---------- Una fila (documento) ----------
+  const fila = (d) => {
+    const s = d.s; const ir = ctx.ruta('sst.documentos', { id: d.id });
+    return el('tr', { class: `sd-fila${d.activo ? '' : ' fila-inactiva'}`, onclick: (ev) => { if (!ev.target.closest('a, button')) location.hash = ir; } },
+      el('td', { class: 'sd-cod' }, d.codigo ? el('span', { class: 'sd-codigo' }, d.codigo) : el('span', { class: 'texto-suave' }, '—')),
+      el('td', { class: 'sd-doc' }, el('a', { href: ir, class: 'sd-titulo' }, d.titulo),
+        d.borrador ? el('span', { class: 'chip chip-prox sd-chip' }, 'Borrador') : null,
+        el('div', { class: 'texto-suave texto-chico' }, [nombreTipo[d.tipo], d.area].filter(Boolean).join(' · '))),
+      el('td', { class: 'sd-ver texto-chico' }, s.vigente ? [el('strong', {}, `v${s.vigente.version}`), el('div', { class: 'texto-suave' }, fechaLarga(s.vigente.fecha))] : el('span', { class: 'texto-suave' }, 'Sin versión')),
+      el('td', { class: 'sd-estado' }, d.activo ? el('span', { class: `chip ${CHIP[s.k]}` }, s.k === 'ok' ? 'Vigente' : s.k === 'sin' ? 'Sin versión' : s.k === 'venc' ? 'Vencida' : 'Por revisar') : el('span', { class: 'chip chip-na' }, 'Obsoleto'),
+        s.revisar && d.activo ? el('div', { class: 'texto-suave texto-chico' }, `revisar ${fechaLarga(s.revisar)}`) : null),
+      el('td', { class: 'sd-acc' },
+        s.vigente ? el('button', { type: 'button', class: 'boton-icono', title: 'Ver la versión vigente', 'aria-label': `Ver ${d.titulo}`, onclick: () => abrir(ctx, s.vigente.archivo) }, icono('ojo', { tam: 16 })) : null,
+        el('a', { class: 'boton-icono', href: ctx.ruta('sst.editar', { id: d.id }), title: puedeIA(ctx) ? 'Abrir en el editor' : 'Ver documento', 'aria-label': `Editar ${d.titulo}` }, icono('editar', { tam: 16 })),
+        puede.editar ? el('button', { type: 'button', class: 'boton-icono', title: 'Mover a otra carpeta', 'aria-label': `Mover ${d.titulo}`, onclick: () => mover(d) }, icono('carpeta', { tam: 16 })) : null));
+  };
+  const tabla = (ds) => el('div', { class: 'sd-tabla-cont' }, el('table', { class: 'sd-tabla' },
+    el('thead', {}, el('tr', {}, el('th', {}, 'Código'), el('th', {}, 'Documento'), el('th', {}, 'Vigente'), el('th', {}, 'Estado'), el('th', { 'aria-label': 'Acciones' }))),
+    el('tbody', {}, ds.map(fila))));
+
+  // ---------- Una carpeta ----------
+  const carpeta = (id, nombre, ds, todos, c, filtrando) => {
+    const venc = todos.filter((d) => d.activo && d.s.k === 'venc').length; const prox = todos.filter((d) => d.activo && d.s.k === 'prox').length;
+    const bor = todos.filter((d) => d.activo && d.borrador).length;
+    const accion = (ic, titulo, fn) => el('button', { type: 'button', class: 'boton-icono', title: titulo, 'aria-label': `${titulo}: ${nombre}`, onclick: (ev) => { ev.preventDefault(); ev.stopPropagation(); fn(); } }, icono(ic, { tam: 16 }));
+    const det = el('details', { class: 'sd-carpeta', open: filtrando ? true : abiertas.has(id) },
+      el('summary', {},
+        el('span', { class: 'sd-flecha' }, icono('derecha', { tam: 16 })),
+        icono('carpeta', { tam: 18 }),
+        el('span', { class: 'sd-nombre' }, nombre),
+        el('span', { class: 'sd-cuenta' }, filtrando && ds.length !== todos.length ? `${ds.length} de ${todos.length}` : `${todos.length} doc.`),
+        venc ? el('span', { class: 'chip chip-venc' }, `${venc} vencida${venc === 1 ? '' : 's'}`) : null,
+        prox ? el('span', { class: 'chip chip-prox' }, `${prox} por revisar`) : null,
+        bor ? el('span', { class: 'chip chip-pend' }, `${bor} borrador${bor === 1 ? '' : 'es'}`) : null,
+        el('span', { class: 'rv-espaciador' }),
+        c ? el('span', { class: 'sd-acc-carpeta' },
+          puede.crear ? accion('mas', 'Nuevo documento en esta carpeta', () => formDocumento(ctx, null, c.id)) : null,
+          puede.editar ? accion('editar', 'Renombrar u ordenar', () => renombrar(c)) : null,
+          puede.eliminar && !todos.length ? accion('basura', 'Eliminar carpeta (vacía)', () => quitar(c)) : null) : null),
+      ds.length ? tabla(ds) : el('p', { class: 'texto-suave texto-chico sd-vacia' }, 'Carpeta vacía. Agrega un documento con el + o mueve uno aquí.'));
+    det.addEventListener('toggle', () => { if (filtrando) return; if (det.open) abiertas.add(id); else abiertas.delete(id); recordar(); });
+    return det;
+  };
+
+  // ---------- Pintar ----------
+  const cuerpo = el('div', { class: 'sd-carpetas' });
+  const resumen = el('p', { class: 'texto-suave texto-chico sd-resumen' });
+  const filtros = el('div', { class: 'sd-filtros' });
+  function pintar() {
+    filtros.replaceChildren(...ESTADOS.map(([k, t]) => {
+      const n = cuantos(k);
+      if (k !== 'todos' && k !== estado && !n) return null;
+      return el('button', { type: 'button', class: `sd-filtro${k === estado ? ' activo' : ''}${k === 'venc' ? ' alerta' : ''}`, 'aria-pressed': String(k === estado), onclick: () => { estado = k; pintar(); } }, t, el('span', {}, String(n)));
+    }).filter(Boolean));
+    const filtrando = !!texto || estado !== 'todos';
+    const vis = data.filter(coincide);
+    const enCarpeta = (id) => (d) => (id ? d.categoria_id === id : (!d.categoria_id || !nombreCat[d.categoria_id]));
+    const base = estado === 'obsoletos' ? data.filter((d) => !d.activo) : activos;
+    const bloques = [...cats.map((c) => [c.id, c.nombre, c]), [null, 'Sin carpeta', null]].map(([id, nombre, c]) => {
+      const todos = base.filter(enCarpeta(id)); const ds = vis.filter(enCarpeta(id));
+      if (filtrando && !ds.length) return null;
+      if (!id && !todos.length) return null;
+      return carpeta(id ?? 'sin', nombre, ds, todos, c, filtrando);
+    }).filter(Boolean);
+    const obsoletos = data.filter((d) => !d.activo);
+    if (!filtrando && obsoletos.length) {
+      const det = el('details', { class: 'sd-carpeta sd-obsoletos', open: abiertas.has('obsoletos') },
+        el('summary', {}, el('span', { class: 'sd-flecha' }, icono('derecha', { tam: 16 })), icono('basura', { tam: 18 }), el('span', { class: 'sd-nombre' }, 'Obsoletos (fuera de uso)'), el('span', { class: 'sd-cuenta' }, `${obsoletos.length} doc.`)),
+        tabla(obsoletos));
+      det.addEventListener('toggle', () => { if (det.open) abiertas.add('obsoletos'); else abiertas.delete('obsoletos'); recordar(); });
+      bloques.push(det);
+    }
+    resumen.textContent = filtrando ? `${vis.length} documento${vis.length === 1 ? '' : 's'} encontrado${vis.length === 1 ? '' : 's'}` : `${activos.length} documentos en uso en ${cats.length} carpeta${cats.length === 1 ? '' : 's'}`;
+    cuerpo.replaceChildren(...(bloques.length ? bloques : [el('p', { class: 'texto-suave sd-vacia' }, data.length ? 'Ningún documento coincide.' : 'Sin documentos. Crea las carpetas y sube los PTS, la matriz IPER, el programa preventivo, el protocolo Ley Karin, la matriz de EPP, el material de capacitación y la IRL.')]));
+  }
+  const buscador = el('input', { type: 'search', class: 'campo sd-buscar', placeholder: 'Buscar por código, nombre, área o carpeta…', 'aria-label': 'Buscar documentos',
+    oninput: (ev) => { texto = norm(ev.currentTarget.value.trim()); pintar(); } });
+  const todas = (abrir) => cuerpo.querySelectorAll('details.sd-carpeta').forEach((d) => { d.open = abrir; });
+  pintar();
   return el('section', { class: 'listado' },
-    el('header', { class: 'listado-cabecera' }, el('h1', {}, 'Documentos preventivos'),
+    el('header', { class: 'listado-cabecera' }, el('div', {}, el('h1', {}, 'Documentos preventivos'), resumen),
       el('div', { class: 'listado-acciones' },
         el('a', { class: 'boton', href: ctx.ruta('sst.cargos') }, icono('users', { tam: 16 }), 'Documentos por cargo'),
-        puede.crear ? boton('Nueva categoría', { icono: 'carpeta', onclick: nuevaCategoria }) : null,
+        puede.crear ? boton('Nueva carpeta', { icono: 'carpeta', onclick: nuevaCategoria }) : null,
         puede.crear ? boton('Nuevo documento', { icono: 'mas', tipo: 'primario', onclick: () => formDocumento(ctx) }) : null)),
-    data.length ? el('div', { class: 'fin-tarjetas' },
-      el('div', { class: 'ficha doc-grupo fin-tarjeta' }, el('span', { class: 'texto-suave texto-chico' }, 'Documentos en uso'), el('strong', {}, String(est.length))),
-      el('div', { class: `ficha doc-grupo fin-tarjeta ${est.some((s) => s.k === 'venc') ? 'fin-alerta' : ''}` }, el('span', { class: 'texto-suave texto-chico' }, 'Revisión vencida'), el('strong', {}, String(est.filter((s) => s.k === 'venc').length))),
-      el('div', { class: 'ficha doc-grupo fin-tarjeta' }, el('span', { class: 'texto-suave texto-chico' }, 'Por revisar en 30 días'), el('strong', {}, String(est.filter((s) => s.k === 'prox').length)))) : null,
-    cats.map((c) => categoria(c, data.filter((d) => d.categoria_id === c.id))),
-    sinCat.length ? categoria(null, sinCat) : null,
-    !data.length && !cats.length ? el('p', { class: 'texto-suave' }, 'Sin documentos. Crea las categorías (carpetas) y sube los PTS, la matriz IPER, el programa preventivo, el protocolo Ley Karin, la matriz de EPP, el material de capacitación y la IRL.') : null);
+    el('div', { class: 'sd-barra' },
+      el('label', { class: 'sd-buscar-caja' }, icono('buscar', { tam: 16 }), buscador),
+      filtros,
+      el('span', { class: 'sd-abrir' },
+        el('button', { type: 'button', class: 'boton-icono', title: 'Abrir todas las carpetas', 'aria-label': 'Abrir todas las carpetas', onclick: () => todas(true) }, icono('abajo', { tam: 16 })),
+        el('button', { type: 'button', class: 'boton-icono', title: 'Cerrar todas las carpetas', 'aria-label': 'Cerrar todas las carpetas', onclick: () => todas(false) }, icono('arriba', { tam: 16 })))),
+    cuerpo);
+}
+
+function css() {
+  if (!document.getElementById('sst-documentos-css')) document.head.append(el('link', { id: 'sst-documentos-css', rel: 'stylesheet', href: new URL('../documentos.css?v=503c912', import.meta.url).href }));
 }
 
 function eliminar(ctx, d) {
@@ -174,6 +262,9 @@ async function detalle(ctx) {
   const { data: d, error } = await ctx.api.from('sst_documentos').select('*, sst_documento_versiones(*)').eq('id', ctx.params.id).maybeSingle();
   if (error) throw error;
   if (!d || d.deleted_at) return el('section', { class: 'listado' }, volver, el('h1', {}, 'Documento no encontrado'));
+  // Al volver, la lista deja abierta la carpeta de este documento
+  if (d.categoria_id) { try { const k = `isg.sst.carpetas.${ctx.empresa.id}`; const a = new Set(JSON.parse(localStorage.getItem(k) || '[]')); a.add(d.categoria_id); localStorage.setItem(k, JSON.stringify([...a])); } catch { /* */ } }
+  const carpetaDe = d.categoria_id ? (await ctx.api.from('sst_doc_categorias').select('nombre').eq('id', d.categoria_id).maybeSingle()).data?.nombre : null;
   const s = estadoDocumento(d);
   const versiones = [...d.sst_documento_versiones].sort((a, b) => b.fecha.localeCompare(a.fecha) || b.created_at.localeCompare(a.created_at));
   const nueva = () => abrirFormulario({
@@ -196,7 +287,7 @@ async function detalle(ctx) {
   return el('section', { class: 'listado' },
     volver,
     el('header', { class: 'listado-cabecera' },
-      el('div', {}, el('h1', {}, [d.codigo, d.titulo].filter(Boolean).join(' · ')), el('p', { class: 'texto-suave' }, [nombreTipo[d.tipo], d.area, d.revisar_meses ? `revisión cada ${d.revisar_meses} meses` : null].filter(Boolean).join(' · '))),
+      el('div', {}, el('p', { class: 'texto-suave texto-chico sd-ruta' }, icono('carpeta', { tam: 14 }), carpetaDe ?? 'Sin carpeta'), el('h1', {}, [d.codigo, d.titulo].filter(Boolean).join(' · ')), el('p', { class: 'texto-suave' }, [nombreTipo[d.tipo], d.area, d.revisar_meses ? `revisión cada ${d.revisar_meses} meses` : null].filter(Boolean).join(' · '))),
       el('div', { class: 'listado-acciones' },
         el('span', { class: `chip ${d.activo ? CHIP[s.k] : 'chip-na'}` }, d.activo ? s.texto : 'Obsoleto'),
         s.vigente ? boton('Ver vigente', { icono: 'ojo', onclick: () => abrir(ctx, s.vigente.archivo) }) : null,

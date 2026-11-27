@@ -2,11 +2,11 @@
 // quienes tuvieron horas en ese cliente en el mes (acr_nomina_mes) y se pueden agregar o quitar. El PDF lleva el
 // membrete de la empresa, los datos de la nómina, la tabla (N°, nombre, RUT, cargo, ingreso) y la firma del
 // representante (si la empresa la tiene en Prevención SST). Se guarda como el archivo del mes del requisito.
-import { abrirFormulario } from '../../core/ui/modal.js?v=99f3bd0';
-import { avisar } from '../../core/ui/aviso.js?v=99f3bd0';
-import { fechaLarga, hoyISO, nombreMes } from '../../core/ui/formato.js?v=99f3bd0';
-import { subirArchivo, eliminarArchivo } from '../../core/adjuntos.js?v=99f3bd0';
-import { nombreTercero } from './datos.js?v=99f3bd0';
+import { abrirFormulario } from '../../core/ui/modal.js?v=503c912';
+import { avisar } from '../../core/ui/aviso.js?v=503c912';
+import { fechaLarga, hoyISO, nombreMes } from '../../core/ui/formato.js?v=503c912';
+import { subirArchivo, eliminarArchivo } from '../../core/adjuntos.js?v=503c912';
+import { nombreTercero } from './datos.js?v=503c912';
 
 export const esNomina = (r) => /n[oó]mina/i.test(r.nombre);
 
@@ -48,7 +48,7 @@ export async function generarNomina(ctx, c, r, periodo, x) {
 }
 
 async function pdfNomina(ctx, mandante, periodo, lista) {
-  const { nuevoPdf, cargarLogo } = await import('../../core/pdf.js?v=99f3bd0');
+  const { nuevoPdf, cargarLogo } = await import('../../core/pdf.js?v=503c912');
   const e = ctx.empresa;
   const pdf = await nuevoPdf(ctx, { titulo: 'Nómina de trabajadores', subtitulo: `${mandante} · ${nombreMes(periodo)}` });
   pdf.tabla({ columnas: ['Dato', 'Detalle'], filas: [
@@ -59,7 +59,7 @@ async function pdfNomina(ctx, mandante, periodo, lista) {
     filas: lista.map((p, i) => [i + 1, p.nombre, p.rut, p.cargo || '', p.fecha_ingreso ? fechaLarga(p.fecha_ingreso) : '']) });
 
   // Firma del representante legal (Datos y firmas de Prevención SST, si existe y se puede leer)
-  const cfg = await import('../sst/datos.js?v=99f3bd0').then((m) => m.cargarConfig(ctx, e.id)).catch(() => null);
+  const cfg = await import('../sst/datos.js?v=503c912').then((m) => m.cargarConfig(ctx, e.id)).catch(() => null);
   const [firma, timbre] = cfg ? await Promise.all([cargarLogo(ctx.api, cfg.firma_ruta), cargarLogo(ctx.api, cfg.timbre_ruta)]) : [null, null];
   const doc = pdf.doc;
   const ancho = doc.internal.pageSize.getWidth();

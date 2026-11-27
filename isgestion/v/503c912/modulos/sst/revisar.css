@@ -1,0 +1,57 @@
+/* Revisar con IA (SST 004). Solo variables de tema: funciona con todos los temas y el modo oscuro. */
+.rv { display: grid; gap: 14px; }
+.rv .oculto { display: none; }
+.rv-inicio p { margin: 0 0 10px; max-width: 75ch; }
+.rv-fuentes { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0 10px; }
+
+.rv-espera { display: grid; gap: 12px; justify-items: center; text-align: center; padding: 36px 16px; }
+.rv-espera p { margin: 0; max-width: 52ch; color: var(--texto-suave); }
+.rv-barra { width: min(320px, 80%); height: 6px; border-radius: 99px; background: var(--fondo-hundido); overflow: hidden; }
+.rv-barra span { display: block; width: 35%; height: 100%; border-radius: inherit; background: var(--empresa); animation: rv-avance 1.4s ease-in-out infinite; }
+@keyframes rv-avance { 0% { transform: translateX(-100%); } 100% { transform: translateX(300%); } }
+@media (prefers-reduced-motion: reduce) { .rv-barra span { animation: none; width: 100%; opacity: .5; } }
+
+.rv-resumen { display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; align-items: flex-start; }
+.rv-resumen > div:first-child { flex: 1 1 340px; min-width: 0; }
+.rv-resumen p { margin: 6px 0 0; }
+.rv-conteo { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.rv-barra-acciones { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; position: sticky; top: 0; z-index: 2; padding: 8px 0; background: var(--fondo); }
+.rv-barra-acciones > span:first-child { color: var(--texto-suave); font-size: .9em; margin-right: auto; }
+.rv-espaciador { flex: 1; }
+
+.rv-grupo { display: grid; gap: 10px; }
+.rv-grupo h2 { margin: 6px 0 0; font-size: 1rem; }
+.rv-obs { display: grid; gap: 6px; cursor: pointer; max-width: none; border-left: 3px solid var(--empresa); }
+.rv-obs p { margin: 0; overflow-wrap: anywhere; }
+.rv-obs-cab { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.rv-obs-cab input { width: 18px; height: 18px; accent-color: var(--empresa); }
+.rv-actual { color: var(--texto-suave); }
+.rv-rechazada { opacity: .55; border-left-color: var(--borde); }
+.rv-rechazada .rv-propuesta { text-decoration: line-through; text-decoration-color: var(--texto-suave); }
+.rv-generar { display: grid; gap: 6px; max-width: none; }
+
+/* Vista previa del documento corregido */
+.rv-papel { background: var(--superficie); color: var(--texto); border: var(--tarjeta-borde); border-radius: var(--radio); box-shadow: var(--sombra-suave); padding: 24px clamp(14px, 4vw, 40px); max-width: 900px; width: 100%; box-sizing: border-box; }
+.rv-papel-cab { display: grid; grid-template-columns: auto 1fr auto; gap: 14px; align-items: center; border: 1px solid var(--borde); border-radius: var(--radio-control); padding: 10px; margin-bottom: 14px; }
+.rv-logo { width: 56px; height: 56px; object-fit: contain; }
+.rv-papel-cab h1 { margin: 0; font-size: 1.15rem; color: var(--empresa); }
+.rv-papel-cab .rv-sub { margin: 2px 0; font-weight: 600; }
+.rv-papel-cab dl { display: grid; grid-template-columns: auto auto; gap: 2px 8px; margin: 0; font-size: .85em; }
+.rv-papel-cab dt { color: var(--texto-suave); }
+.rv-papel-cab dd { margin: 0; font-weight: 600; min-width: 6ch; max-width: 22ch; overflow-wrap: anywhere; }
+.rv-papel h2 { margin: 18px 0 8px; padding: 4px 8px; font-size: .92rem; text-transform: uppercase; background: var(--empresa); color: var(--sobre-empresa); border-radius: 3px; }
+.rv-papel p, .rv-papel li { margin: 0 0 6px; line-height: 1.45; }
+.rv-papel ol li::marker { color: var(--empresa); font-weight: 700; }
+.rv-tabla { overflow-x: auto; margin: 6px 0 10px; }
+.rv-tabla table { border-collapse: collapse; width: 100%; font-size: .85em; }
+.rv-tabla th, .rv-tabla td { border: 1px solid var(--borde); padding: 5px 7px; vertical-align: top; text-align: left; min-width: 70px; }
+.rv-tabla th { background: var(--fondo-hundido); }
+.rv-papel [contenteditable]:hover { background: var(--hover); }
+.rv-papel [contenteditable]:focus { outline: 2px solid color-mix(in srgb, var(--empresa) 55%, transparent); outline-offset: 1px; background: var(--fondo-sutil); }
+.rv-papel h2[contenteditable]:focus, .rv-papel h2[contenteditable]:hover { background: var(--empresa); }
+
+@media (max-width: 640px) {
+  .rv-papel-cab { grid-template-columns: 1fr; }
+  .rv-barra-acciones .boton { flex: 1 1 auto; }
+}
