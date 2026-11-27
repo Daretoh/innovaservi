@@ -4,10 +4,10 @@
 // calcen con Resultados. Las ve quien ve Resultados (las pestañas son de este módulo).
 // - Ventas: por mes y por origen (órdenes del taller, cierres, facturas, abonos, otros ingresos), del año.
 // - Comparación: por mes lo que entra (ventas) contra lo que sale (costo de lo vendido, gastos y personal) y lo que queda.
-import { el } from '../../../core/ui/dom.js?v=c3310e4';
-import { icono } from '../../../core/ui/iconos.js?v=c3310e4';
-import { dinero, hoyISO, nombreMes } from '../../../core/ui/formato.js?v=c3310e4';
-import { mesesEntre, cargarEstado, sumarTotales, pct } from '../datos.js?v=c3310e4';
+import { el } from '../../../core/ui/dom.js?v=96471b3';
+import { icono } from '../../../core/ui/iconos.js?v=96471b3';
+import { dinero, hoyISO, nombreMes } from '../../../core/ui/formato.js?v=96471b3';
+import { mesesEntre, cargarEstado, sumarTotales, pct } from '../datos.js?v=96471b3';
 
 const estado = { anio: Number(hoyISO().slice(0, 4)) };
 const MES_CORTO = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];

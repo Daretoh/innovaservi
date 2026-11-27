@@ -2,14 +2,15 @@
 // Como InnovaGestión: "Disponibles" de cada día se arrastran a una faena (o se toca la persona y luego la faena);
 // un asignado arrastrado a Disponibles se quita; "Copiar día" replica el personal, vehículos, horario y preparador
 // a otros días; los días se pueden plegar (se recuerda en este equipo).
-import { el } from '../../../core/ui/dom.js?v=c3310e4';
-import { icono } from '../../../core/ui/iconos.js?v=c3310e4';
-import { boton } from '../../../core/ui/tabla.js?v=c3310e4';
-import { abrirFormulario } from '../../../core/ui/modal.js?v=c3310e4';
-import { avisar } from '../../../core/ui/aviso.js?v=c3310e4';
-import { hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, hhmm, esFinde } from '../../../core/ui/formato.js?v=c3310e4';
-import { cargarBase, cargarSemana, faenasDelDia, etiquetaFaena, horarioDe, dotacionDe, dotTotal, turno, ocupacion, resumenWhatsApp, nombreCorto, partesDeRango, estadoParte } from '../datos.js?v=c3310e4';
-import { navSemana } from '../../../core/ui/semana.js?v=c3310e4';
+import { el } from '../../../core/ui/dom.js?v=96471b3';
+import { icono } from '../../../core/ui/iconos.js?v=96471b3';
+import { boton } from '../../../core/ui/tabla.js?v=96471b3';
+import { abrirFormulario } from '../../../core/ui/modal.js?v=96471b3';
+import { avisar } from '../../../core/ui/aviso.js?v=96471b3';
+import { hoyISO, lunesDe, sumarDias, nombreDia, fechaCorta, numSemana, hhmm, esFinde } from '../../../core/ui/formato.js?v=96471b3';
+import { cargarBase, cargarSemana, faenasDelDia, etiquetaFaena, horarioDe, dotacionDe, dotTotal, turno, ocupacion, resumenWhatsApp, nombreCorto, partesDeRango, estadoParte } from '../datos.js?v=96471b3';
+import { navSemana } from '../../../core/ui/semana.js?v=96471b3';
+import { hojaSemana } from '../hoja.js?v=96471b3';
 
 const estado = { lunes: lunesDe(hoyISO()), sel: null };   // sel: { persona_id, fecha } elegido para asignar tocando
 const PLEGADOS = 'isg.plan.plegados';
@@ -17,6 +18,13 @@ const PLEGADOS = 'isg.plan.plegados';
 const DIA = 'isg.plan.dia';
 const leerDia = () => { try { return localStorage.getItem(DIA); } catch { return null; } };
 const guardarDia = (v) => { try { localStorage.setItem(DIA, v); } catch { /* sin almacenamiento */ } };
+// Hoja (planilla de la semana, por defecto en PC) o Tablero (tarjetas por día, por defecto en el teléfono); se recuerda
+const MODO = 'isg.plan.modo';
+const leerModo = () => {
+  let m = null; try { m = localStorage.getItem(MODO); } catch { /* sin almacenamiento */ }
+  return m === 'hoja' || m === 'tablero' ? m : matchMedia('(max-width: 760px)').matches ? 'tablero' : 'hoja';
+};
+let hojaActual = null;
 const claveFaena = (f) => `${f.tercero_id ?? ''}|${f.sitio_id ?? ''}|${f.titulo.trim().toLowerCase()}`;
 const leerPlegados = () => { try { return new Set(JSON.parse(localStorage.getItem(PLEGADOS) ?? '[]')); } catch { return new Set(); } };
 
@@ -42,7 +50,7 @@ async function cargarDatos(ctx, lunes, domingo) {
     fresco && cache.obsAnt ? cache.obsAnt : ctx.api.from('ope_faena_obs').select('faena_id, ope_faenas(tercero_id, sitio_id, titulo, fecha_inicio)').eq('empresa_id', e).limit(3000),
     // Acreditación: asignados sin validar en el cliente de la faena (si el cliente pide documentos a los trabajadores)
     fresco && 'acr' in cache ? cache.acr : ctx.puede('acreditacion', 'ver') && ctx.puede('rrhh', 'ver')
-      ? import('../../acreditacion/trabajadores.js?v=c3310e4').then(async (m) => ({ m, d: await m.cargarAcreditacion(ctx) })).catch(() => null) : null,
+      ? import('../../acreditacion/trabajadores.js?v=96471b3').then(async (m) => ({ m, d: await m.cargarAcreditacion(ctx) })).catch(() => null) : null,
   ]);
   cache = { empresa: e, lunes, base, semana, partes, obsAnt, acr, hora: fresco ? cache.hora : Date.now() };
   return cache;
@@ -179,24 +187,41 @@ export default async function vista(ctx) {
     el('button', { type: 'button', 'aria-pressed': String(diaVer === 'todos'), onclick: () => { guardarDia('todos'); pintar(ctx); } }, 'Todos'));
   // En tablet o teléfono: mostrar el día de hoy al abrir
   setTimeout(() => { const d = tablero.querySelector('.hoy'); if (d && tablero.scrollWidth > tablero.clientWidth) tablero.scrollTo({ left: d.offsetLeft - tablero.offsetLeft - 4, behavior: 'smooth' }); }, 50);
+  const modo = leerModo();
+  const cambiarModo = async (m) => {
+    const sucia = hojaActual?.huboCambios();
+    await hojaActual?.terminar(); hojaActual = null;
+    try { localStorage.setItem(MODO, m); } catch { /* */ }
+    if (sucia) ctx.refrescar(); else pintar(ctx);
+  };
+  const selectorModo = el('div', { class: 'segmento plan-modo', role: 'group', 'aria-label': 'Vista' },
+    [['hoja', 'Hoja'], ['tablero', 'Tablero']].map(([m, t]) => el('button', { type: 'button', 'aria-pressed': String(modo === m), onclick: () => { if (m !== modo) cambiarModo(m); } }, t)));
+  if (hojaActual) { const h = hojaActual; hojaActual = null; h.terminar(); }
+  const hoja = modo === 'hoja' ? hojaSemana(ctx, { lunes, base, semana, editable }) : null;
+  hojaActual = hoja;
   const mover = (n) => { estado.lunes = sumarDias(estado.lunes, n * 7); if (leerDia() !== 'todos') guardarDia(''); ctx.refrescar(); };
   const acciones = [];
-  if (semana.faenas.length) acciones.push(boton('Resumen para WhatsApp', { icono: 'copiar', onclick: () => copiarResumen(resumenWhatsApp(lunes, semana, base)) }));
+  // La hoja guarda sola: el resumen vuelve a leer la semana para incluir lo recién asignado
+  if (semana.faenas.length) acciones.push(boton('Resumen para WhatsApp', { icono: 'copiar', onclick: async () => copiarResumen(resumenWhatsApp(lunes, hojaActual?.huboCambios() ? await cargarSemana(ctx, lunes, domingo) : semana, base)) }));
   if (ctx.puede('ope', 'crear')) acciones.push(el('a', { class: 'boton boton-secundario', href: ctx.ruta('ope.calendario') }, icono('mas', { tam: 16 }), 'Nueva faena'));
 
   return el('section', { class: 'listado' },
     el('header', { class: 'listado-cabecera' }, el('h1', {}, 'Planificación semanal'), el('div', { class: 'listado-acciones' }, acciones)),
-    navSemana({ lunes, alMover: mover, alHoy: () => { estado.lunes = lunesDe(hoyISO()); if (leerDia() !== 'todos') guardarDia(hoyISO()); ctx.refrescar(); } }),
-    tot.n ? el('div', { class: 'resumen-chips' },
+    // Semana y Hoja / Tablero en una sola línea (la hoja necesita la pantalla; sus totales van al pie de cada faena)
+    el('div', { class: 'plan-barra' },
+      navSemana({ lunes, alMover: mover, alHoy: () => { estado.lunes = lunesDe(hoyISO()); if (leerDia() !== 'todos') guardarDia(hoyISO()); ctx.refrescar(); } }),
+      selectorModo),
+    !hoja && tot.n ? el('div', { class: 'resumen-chips' },
       el('span', { class: 'chip chip-pend' }, `${tot.nec} necesarias`),
       el('span', { class: 'chip chip-ok' }, `${tot.asg} asignadas`),
       tot.falt ? el('span', { class: 'chip chip-venc' }, `${tot.falt} por asignar`) : null,
       el('span', { class: 'texto-suave' }, `${tot.env} de ${tot.n} faena-días enviadas`)) : null,
-    estado.sel ? el('p', { class: 'aviso-bandeja' }, icono('users', { tam: 16 }), ` ${nombreCorto(base.personas.get(estado.sel.persona_id)?.personas ?? {})}: toca la faena del ${nombreDia(estado.sel.fecha)} donde va. `,
+    hoja ? hoja.nodo : null,
+    hoja ? null : estado.sel ? el('p', { class: 'aviso-bandeja' }, icono('users', { tam: 16 }), ` ${nombreCorto(base.personas.get(estado.sel.persona_id)?.personas ?? {})}: toca la faena del ${nombreDia(estado.sel.fecha)} donde va. `,
       el('button', { type: 'button', class: 'boton-enlace', onclick: () => { estado.sel = null; pintar(ctx); } }, 'Cancelar')) : null,
-    selectorDia,
-    tablero,
-    editable ? el('p', { class: 'texto-suave texto-chico' }, 'Arrastra a una persona de Disponibles a una faena (o tócala y luego toca la faena); arrastra a un asignado de vuelta a Disponibles para quitarlo. El botón de copiar de cada día replica su planificación en otros días.') : null,
+    hoja ? null : selectorDia,
+    hoja ? null : tablero,
+    !hoja && editable ? el('p', { class: 'texto-suave texto-chico' }, 'Arrastra a una persona de Disponibles a una faena (o tócala y luego toca la faena); arrastra a un asignado de vuelta a Disponibles para quitarlo. El botón de copiar de cada día replica su planificación en otros días.') : null,
   );
 }
 

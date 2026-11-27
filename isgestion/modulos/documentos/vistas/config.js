@@ -1,10 +1,10 @@
 // Datos de la empresa para los documentos y firmas (representante, timbre y prevencionista). Las firmas son imágenes
 // privadas (PNG o JPG; mejor con fondo blanco o transparente). Si no hay firmas aquí, se usan las de Prevención SST.
-import { el } from '../../../core/ui/dom.js?v=c3310e4';
-import { icono } from '../../../core/ui/iconos.js?v=c3310e4';
-import { boton } from '../../../core/ui/tabla.js?v=c3310e4';
-import { avisar } from '../../../core/ui/aviso.js?v=c3310e4';
-import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=c3310e4';
+import { el } from '../../../core/ui/dom.js?v=96471b3';
+import { icono } from '../../../core/ui/iconos.js?v=96471b3';
+import { boton } from '../../../core/ui/tabla.js?v=96471b3';
+import { avisar } from '../../../core/ui/aviso.js?v=96471b3';
+import { subirArchivo, urlFirmada, eliminarArchivo } from '../../../core/adjuntos.js?v=96471b3';
 
 const CAMPOS = [
   ['Membrete', [['ciudad', 'Ciudad (donde se firman los contratos)'], ['direccion', 'Dirección (calle y número, sin la ciudad)'], ['region', 'Región'],

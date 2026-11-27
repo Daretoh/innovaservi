@@ -3,10 +3,10 @@
 // supervisor, trabajadores (nombre, RUT y cargo), quién ingresa al estanque, vigía, operador del medidor y rescate.
 // Las firmas y lo que se mide en terreno quedan en blanco. Se arma un PDF nuevo desde el contenido de la versión vigente;
 // la versión guardada no cambia.
-import { abrirFormulario } from '../../core/ui/modal.js?v=c3310e4';
-import { fechaLarga } from '../../core/ui/formato.js?v=c3310e4';
-import { datosDeFaena } from './formatos.js?v=c3310e4';
-import { exportarPdf } from './revisar-ia.js?v=c3310e4';
+import { abrirFormulario } from '../../core/ui/modal.js?v=96471b3';
+import { fechaLarga } from '../../core/ui/formato.js?v=96471b3';
+import { datosDeFaena } from './formatos.js?v=96471b3';
+import { exportarPdf } from './revisar-ia.js?v=96471b3';
 
 const vacia = (cols) => cols.map(() => '');
 const idx = (cols, re) => cols.findIndex((c) => re.test(String(c)));

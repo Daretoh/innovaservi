@@ -5,13 +5,13 @@
 // Desde Consola 006 (2026-11-27) se mide por ciclo del crédito (del día de renovación al día anterior del mes
 // siguiente; ?mes=AAAA-MM es el mes en que empieza el ciclo) y se ven los topes por función, los umbrales y los avisos.
 // Ruta: #/ia (?mes=AAAA-MM). Solo el equipo (es_equipo()).
-import { el } from '../../core/ui/dom.js?v=c3310e4';
-import { icono } from '../../core/ui/iconos.js?v=c3310e4';
-import { boton } from '../../core/ui/tabla.js?v=c3310e4';
-import { avisar } from '../../core/ui/aviso.js?v=c3310e4';
-import { abrirFormulario } from '../../core/ui/modal.js?v=c3310e4';
-import { moverMes } from '../../core/ui/formato.js?v=c3310e4';
-import { nuevoExcel } from '../../core/excel.js?v=c3310e4';
+import { el } from '../../core/ui/dom.js?v=96471b3';
+import { icono } from '../../core/ui/iconos.js?v=96471b3';
+import { boton } from '../../core/ui/tabla.js?v=96471b3';
+import { avisar } from '../../core/ui/aviso.js?v=96471b3';
+import { abrirFormulario } from '../../core/ui/modal.js?v=96471b3';
+import { moverMes } from '../../core/ui/formato.js?v=96471b3';
+import { nuevoExcel } from '../../core/excel.js?v=96471b3';
 
 const PERFORMANCE = '78270149-1000-4000-8000-000000000001';   // la organización de Anthropic que paga es IS Performance
 const MESES_ATRAS = 5;

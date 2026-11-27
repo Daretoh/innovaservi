@@ -6,8 +6,9 @@
 // - <input list="…"> (texto libre con sugerencias, ej.: faena en Registro de horas): la misma lista en lugar de la del
 //   navegador; se puede escribir cualquier cosa y Enter solo elige si se marcó una sugerencia con flechas o Tab.
 //   Con data-planilla (Registro de horas): Enter elige la primera sugerencia y Tab la elige y pasa a la columna siguiente.
+//   data-flechas: con la lista cerrada, ↑↓ no la abren (la planilla mueve de celda) y el clic tampoco (se abre al escribir o con Alt + ↓); data-sin-sugerencias="…": texto sin coincidencias.
 // Se aplica solo (activarCombos observa la página). Para dejar un campo como el del navegador: atributo data-nativo.
-import { el } from './dom.js?v=c3310e4';
+import { el } from './dom.js?v=96471b3';
 
 const UMBRAL = 6;          // opciones desde las que un <select> pasa a buscador
 const MAX_VISIBLES = 150;  // sugerencias que se dibujan a la vez
@@ -157,7 +158,7 @@ function crearControl(entrada, { modo, items, elegir, actual, restaurar }) {
       nodos.push(el('div', { class: 'combo-opcion', role: 'option', id: `${id}-${k}`, 'data-k': k, 'aria-selected': 'false', 'aria-current': String(it.i === actual()) },
         el('span', {}, resaltar(it.texto, texto)), it.ayuda ? el('span', { class: 'combo-ayuda' }, it.ayuda) : null));
     });
-    if (!mostrar.length) nodos.push(el('div', { class: 'combo-vacio' }, modo === 'lista' ? 'Sin sugerencias: se guarda lo escrito' : 'Sin resultados'));
+    if (!mostrar.length) nodos.push(el('div', { class: 'combo-vacio' }, entrada.dataset.sinSugerencias || (modo === 'lista' ? 'Sin sugerencias: se guarda lo escrito' : 'Sin resultados')));
     else if (visibles.length > mostrar.length) nodos.push(el('div', { class: 'combo-vacio' }, `Y ${visibles.length - mostrar.length} más: sigue escribiendo`));
     lista.replaceChildren(...nodos);
     visibles = mostrar;
@@ -208,14 +209,15 @@ function crearControl(entrada, { modo, items, elegir, actual, restaurar }) {
 
   entrada.addEventListener('input', () => { if (eligiendo) return; navego = false; escribio = true; abrir(entrada.value); });
   entrada.addEventListener('mousedown', () => {
-    if (entrada.disabled || entrada.readOnly) return;
+    if (entrada.disabled || entrada.readOnly || entrada.hasAttribute('data-flechas')) return;   // en la hoja se abre al escribir o con Alt + ↓
     if (abierta) { cerrar(); return; }
     setTimeout(() => { abrir(''); if (modo === 'select') entrada.select(); }, 0);
   });
   entrada.addEventListener('keydown', (ev) => {
     if (entrada.disabled || entrada.readOnly) return;
     const k = ev.key;
-    if ((k === 'ArrowDown' || k === 'ArrowUp') && !ev.altKey) {
+    // data-flechas (hoja de Planificación): con la lista cerrada, las flechas mueven entre celdas y no la abren
+    if ((k === 'ArrowDown' || k === 'ArrowUp') && !ev.altKey && !(entrada.hasAttribute('data-flechas') && !abierta)) {
       ev.preventDefault(); navego = true;
       if (!abierta) { abrir(modo === 'lista' ? entrada.value : ''); if (modo === 'select') entrada.select(); return; }
       marcar(marcada + (k === 'ArrowDown' ? 1 : -1)); return;

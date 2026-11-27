@@ -9,19 +9,19 @@
 // Bandeja "Por cargar" (Costos 008, 2026-11-10): con ?bandeja=<id> abre un documento ya subido a la bandeja, lo lee
 // igual y al registrar lo marca registrado y sigue con el siguiente pendiente (Saltar / Descartar de la bandeja).
 // Ruta: #/costos.lector · #/costos.lector?bandeja=<id>
-import { el } from '../../../core/ui/dom.js?v=c3310e4';
-import { icono } from '../../../core/ui/iconos.js?v=c3310e4';
-import { boton } from '../../../core/ui/tabla.js?v=c3310e4';
-import { avisar } from '../../../core/ui/aviso.js?v=c3310e4';
-import { subirArchivo, almacen, urlFirmada } from '../../../core/adjuntos.js?v=c3310e4';
-import { pendientesBandeja, descartarDeBandeja } from './bandeja.js?v=c3310e4';
-import { dinero, hoyISO, sumarDias, fechaLarga, lunesDe } from '../../../core/ui/formato.js?v=c3310e4';
-import { TIPOS_DTE, docTipoDe, CAMPOS_DTE, leerParte, combinar, validar, escanearCamara, aJPEG, fmtRut, limpioRut, rutValido, num } from '../../../core/lector-dte.js?v=c3310e4';
-import { cargarBase, nombreTercero, opcionesACuenta } from '../datos.js?v=c3310e4';
-import { enlaceNuevoProveedor } from '../proveedor-nuevo.js?v=c3310e4';
-import { leerConIA, iaDisponible, numIA, fechaIA, pagadoAlComprar, textoModelo } from '../../../core/lector-ia.js?v=c3310e4';
-import { esImagen } from '../../../core/imagenes.js?v=c3310e4';
-import { tomarFotos } from '../../../core/ui/camara.js?v=c3310e4';
+import { el } from '../../../core/ui/dom.js?v=96471b3';
+import { icono } from '../../../core/ui/iconos.js?v=96471b3';
+import { boton } from '../../../core/ui/tabla.js?v=96471b3';
+import { avisar } from '../../../core/ui/aviso.js?v=96471b3';
+import { subirArchivo, almacen, urlFirmada } from '../../../core/adjuntos.js?v=96471b3';
+import { pendientesBandeja, descartarDeBandeja } from './bandeja.js?v=96471b3';
+import { dinero, hoyISO, sumarDias, fechaLarga, lunesDe } from '../../../core/ui/formato.js?v=96471b3';
+import { TIPOS_DTE, docTipoDe, CAMPOS_DTE, leerParte, combinar, validar, escanearCamara, aJPEG, fmtRut, limpioRut, rutValido, num } from '../../../core/lector-dte.js?v=96471b3';
+import { cargarBase, nombreTercero, opcionesACuenta } from '../datos.js?v=96471b3';
+import { enlaceNuevoProveedor } from '../proveedor-nuevo.js?v=96471b3';
+import { leerConIA, iaDisponible, numIA, fechaIA, pagadoAlComprar, textoModelo } from '../../../core/lector-ia.js?v=96471b3';
+import { esImagen } from '../../../core/imagenes.js?v=96471b3';
+import { tomarFotos } from '../../../core/ui/camara.js?v=96471b3';
 
 const ETIQUETA = { timbre: ['Timbre SII', 'chip-ok'], xml: ['XML', 'chip-ok'], ia: ['IA', 'chip-ok'], ocr: ['Revisar', 'chip-prox'], calc: ['Calculado', 'chip-pend'] };
 
