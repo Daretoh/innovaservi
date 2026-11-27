@@ -2,13 +2,13 @@
 // ver quién firmó. La persona firma en /firmar/?t=… (Edge Function pública `firmar`).
 //   enviarAFirmar(ctx, { origen, id, personas: [{ id, nombre, telefono }], titulo, alTerminar })
 //   seccionFirmasEntrega(ctx, ent, participantes) → bloque para Prevención SST → registro de entrega
-import { el } from './ui/dom.js?v=503c912';
-import { icono } from './ui/iconos.js?v=503c912';
-import { boton } from './ui/tabla.js?v=503c912';
-import { avisar } from './ui/aviso.js?v=503c912';
-import { telefono } from './ui/formato.js?v=503c912';
-import { urlApp } from './api.js?v=503c912';
-import { urlFirmada } from './adjuntos.js?v=503c912';
+import { el } from './ui/dom.js?v=db6ddb1';
+import { icono } from './ui/iconos.js?v=db6ddb1';
+import { boton } from './ui/tabla.js?v=db6ddb1';
+import { avisar } from './ui/aviso.js?v=db6ddb1';
+import { telefono } from './ui/formato.js?v=db6ddb1';
+import { urlApp } from './api.js?v=db6ddb1';
+import { urlFirmada } from './adjuntos.js?v=db6ddb1';
 
 const hora = (t) => new Date(t).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' });
 export function enlaceWhatsapp(tel, texto) {
@@ -72,7 +72,7 @@ export async function verPdf(ctx, ent) {
   try {
     let ruta = ent.archivo;
     if (ent.estado !== 'firmado') {
-      const { count } = await ctx.api.from('firma_solicitudes').select('id', { count: 'exact', head: true }).eq('entrega_id', ent.id).eq('estado', 'firmada');
+      const { count } = await ctx.api.from('firma_solicitudes').select('id', { count: 'exact', head: true }).eq('entrega_id', ent.id).eq('estado', 'firmada').eq('archivo', ent.archivo ?? '');
       if (count) {
         const { data: r, error: e } = await ctx.api.functions.invoke('firmar', { body: { accion: 'armar', entrega_id: ent.id, solo_ver: true } });
         if (!e && !r?.error && r?.archivo) ruta = r.archivo;   // si no se pudo armar, se ve el original
@@ -85,8 +85,9 @@ export async function verPdf(ctx, ent) {
 
 // Estado de firma de cada participante de un registro de entrega, con enviar, reenviar y terminar
 export async function seccionFirmasEntrega(ctx, ent, participantes) {
-  const { data, error } = await ctx.api.from('firma_solicitudes').select('id, persona_id, estado, firmado_at, created_at, intentos, vence, archivo_firmado')
-    .eq('entrega_id', ent.id).neq('estado', 'anulada').order('created_at', { ascending: false });
+  // Solo las solicitudes del PDF vigente: al reabrir o cambiar el PDF, las firmas anteriores no cuentan
+  const { data, error } = ent.archivo ? await ctx.api.from('firma_solicitudes').select('id, persona_id, estado, firmado_at, created_at, intentos, vence, archivo_firmado')
+    .eq('entrega_id', ent.id).eq('archivo', ent.archivo).neq('estado', 'anulada').order('created_at', { ascending: false }) : { data: [], error: null };
   if (error) return el('p', { class: 'texto-suave' }, 'No se pudo leer el estado de las firmas.');
   const ultima = new Map();
   for (const s of data ?? []) if (!ultima.has(s.persona_id)) ultima.set(s.persona_id, s);
@@ -147,7 +148,7 @@ export async function seccionFirmasEntrega(ctx, ent, participantes) {
       if (!bloque.isConnected) { clearInterval(t); document.removeEventListener('visibilitychange', alVolver); return; }
       if (document.hidden) return;
       const { count } = await ctx.api.from('firma_solicitudes').select('id', { count: 'exact', head: true }).eq('entrega_id', ent.id).eq('estado', 'firmada')
-        .in('persona_id', participantes.map((p) => p.id));
+        .eq('archivo', ent.archivo ?? '').in('persona_id', participantes.map((p) => p.id));   // igual que firmaron: solo el PDF vigente
       const { data: e2 } = await ctx.api.from('sst_entregas').select('estado').eq('id', ent.id).maybeSingle();
       if ((count ?? antes) !== antes || e2?.estado === 'firmado') { clearInterval(t); document.removeEventListener('visibilitychange', alVolver); ctx.refrescar(); }
     };

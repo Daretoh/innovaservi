@@ -2,8 +2,8 @@
 // 1. Confirmar identidad (RUT y fecha de nacimiento de la ficha) · 2. Leer el documento · 3. Firmar (sin dibujar: en el
 // PDF queda un sello con nombre, RUT, fecha y hora y un QR para verificarla, Núcleo 028).
 // Todo pasa por la Edge Function pública `firmar`; la página no toca la base.
-import { el } from '../core/ui/dom.js?v=503c912';
-import { icono } from '../core/ui/iconos.js?v=503c912';
+import { el } from '../core/ui/dom.js?v=db6ddb1';
+import { icono } from '../core/ui/iconos.js?v=db6ddb1';
 
 const raiz = document.getElementById('app');
 const token = new URLSearchParams(location.search).get('t') ?? '';

@@ -1,0 +1,436 @@
+// Leer boleta o factura (migrado del lector beta de InnovaGestión): el timbre electrónico con la cámara o
+// desde fotos, PDF o XML; se revisan los datos y se registra el gasto (proveedor por RUT, documento, neto e IVA,
+// faena, fotos). Cada dato muestra de dónde salió: Timbre SII, XML, IA, Revisar (texto de la foto) o Calculado.
+// IA (como InnovaGestión, 2026-10-29): al agregar fotos, Gemini las lee en el servidor (core/lector-ia.js) y sus datos
+// mandan sobre el texto de la foto; el timbre y el XML siguen mandando. Si la IA no está o falla, queda el lector local.
+// Si el documento es un gasto a cuenta de un trabajador (compra que se le descuenta), se marca "Descontar a un
+// trabajador": además del gasto queda un descuento en Remuneraciones (semana o mes según la empresa), ligado al
+// documento (remu_items.origen_id). Requiere poder crear en Remuneraciones.
+// Bandeja "Por cargar" (Costos 008, 2026-11-10): con ?bandeja=<id> abre un documento ya subido a la bandeja, lo lee
+// igual y al registrar lo marca registrado y sigue con el siguiente pendiente (Saltar / Descartar de la bandeja).
+// Ruta: #/costos.lector · #/costos.lector?bandeja=<id>
+import { el } from '../../../core/ui/dom.js';
+import { icono } from '../../../core/ui/iconos.js';
+import { boton } from '../../../core/ui/tabla.js';
+import { avisar } from '../../../core/ui/aviso.js';
+import { subirArchivo, almacen, urlFirmada } from '../../../core/adjuntos.js';
+import { pendientesBandeja, descartarDeBandeja } from './bandeja.js';
+import { dinero, hoyISO, sumarDias, fechaLarga, lunesDe } from '../../../core/ui/formato.js';
+import { TIPOS_DTE, docTipoDe, CAMPOS_DTE, leerParte, combinar, validar, escanearCamara, aJPEG, fmtRut, limpioRut, rutValido, num } from '../../../core/lector-dte.js';
+import { cargarBase, nombreTercero, opcionesACuenta } from '../datos.js';
+import { leerConIA, iaDisponible, numIA, fechaIA, pagadoAlComprar, textoModelo } from '../../../core/lector-ia.js';
+import { esImagen } from '../../../core/imagenes.js';
+import { tomarFotos } from '../../../core/ui/camara.js';
+
+const ETIQUETA = { timbre: ['Timbre SII', 'chip-ok'], xml: ['XML', 'chip-ok'], ia: ['IA', 'chip-ok'], ocr: ['Revisar', 'chip-prox'], calc: ['Calculado', 'chip-pend'] };
+
+export default async function vista(ctx) {
+  const e = ctx.empresa.id;
+  const conFaenas = ctx.puede('ope', 'ver');
+  const conDescuento = ctx.puede('remu', 'crear');
+  const conTaller = ctx.puede('taller', 'ver');
+  const [base, ruts, faenas, personas, remuCfg, vehiculos, ordenes] = await Promise.all([
+    cargarBase(ctx),
+    ctx.api.from('terceros').select('id, rut, razon_social, nombre_fantasia, tipo').eq('empresa_id', e).is('deleted_at', null).not('rut', 'is', null),
+    conFaenas ? ctx.api.from('ope_faenas').select('id, titulo, fecha_inicio, fecha_fin').eq('empresa_id', e).is('deleted_at', null).neq('estado', 'cancelada')
+      .gte('fecha_fin', sumarDias(hoyISO(), -60)).lte('fecha_inicio', sumarDias(hoyISO(), 14)).order('fecha_inicio', { ascending: false }) : Promise.resolve({ data: [] }),
+    conDescuento ? ctx.api.from('persona_empresa').select('persona_id, personas(nombres, apellido_paterno, apellido_materno, rut)').eq('empresa_id', e).eq('estado', 'activo').is('deleted_at', null) : Promise.resolve({ data: [] }),
+    conDescuento ? ctx.api.from('remu_config').select('periodo').eq('empresa_id', e).maybeSingle() : Promise.resolve({ data: null }),
+    conTaller ? ctx.api.from('tal_vehiculos').select('id, patente, marca, modelo, terceros(razon_social, nombre_fantasia)').eq('empresa_id', e).is('deleted_at', null).order('patente') : Promise.resolve({ data: [] }),
+    conTaller ? ctx.api.from('tal_ordenes').select('id, vehiculo_id').eq('empresa_id', e).not('estado', 'in', '(entregado,anulada)') : Promise.resolve({ data: [] }),
+  ]);
+  const mensual = remuCfg.data?.periodo === 'mensual';
+  const volver = el('a', { class: 'volver', href: ctx.ruta('costos.registros') }, icono('volver', { tam: 16 }), 'Gastos');
+  const categorias = base.categorias.filter((c) => c.activo && c.clase !== 'ingreso');
+  if (!categorias.length) return el('section', { class: 'listado' }, volver, el('h1', {}, 'Primero crea una categoría de gasto en Categorías y centros'));
+  const terceroPorRut = new Map((ruts.data ?? []).map((t) => [limpioRut(t.rut), t]));
+  const propios = [ctx.empresa.rut];
+
+  // Bandeja "Por cargar" (Costos 008): ?bandeja=<id> abre el documento ya subido; su archivo pasa a ser el del gasto
+  // (no se sube de nuevo) y al registrar sigue con el siguiente pendiente.
+  const idBandeja = ctx.params.bandeja ?? null;
+  // Compra de una orden del taller (2026-11-12, desde Cobro de la orden): ?orden=<id> deja el gasto con la patente y
+  // ligado a esa orden (Costos de este vehículo y margen) y al guardar vuelve a la orden
+  const { data: deOrden } = conTaller && ctx.params.orden
+    ? await ctx.api.from('tal_ordenes').select('id, numero, vehiculo_id, tal_vehiculos(patente)').eq('id', ctx.params.orden).eq('empresa_id', e).maybeSingle()
+    : { data: null };
+  const pendientes = idBandeja ? (await pendientesBandeja(ctx)).data ?? [] : [];
+  const deBandeja = pendientes.find((x) => x.id === idBandeja) ?? null;
+  const otroPendiente = () => { const i = pendientes.indexOf(deBandeja); return pendientes[i + 1] ?? pendientes.find((x) => x !== deBandeja) ?? null; };
+  const irA = (registroId, siguiente) => {
+    location.hash = deOrden ? `${ctx.ruta('taller.orden', { id: deOrden.id })}`
+      : !idBandeja ? ctx.ruta('costos.registro', { id: registroId })
+      : siguiente ? ctx.ruta('costos.lector', { bandeja: siguiente.id }) : ctx.ruta('costos.bandeja');
+  };
+  if (idBandeja) { volver.replaceChildren(icono('volver', { tam: 16 }), 'Bandeja'); volver.setAttribute('href', ctx.ruta('costos.bandeja')); }
+  if (deOrden) { volver.replaceChildren(icono('volver', { tam: 16 }), `Orden N° ${deOrden.numero}`); volver.setAttribute('href', ctx.ruta('taller.orden', { id: deOrden.id })); }
+
+  const partes = [];     // { id, archivo, nombre, thumb, estado, ted, xml, texto, foto }
+  let datos = { origen: {}, items: [] };
+  const editados = new Set();
+  let camara = null;
+
+  // ---- 1. Documento: cámara, fotos o archivos
+  const fotos = el('div', { class: 'lec-fotos' });
+  const estado = el('div', {});
+  const iaEstado = el('p', { class: 'texto-chico lec-ia', hidden: true });
+  let ia = null; let tokIA = 0;
+  const leerIA = async () => {
+    const imgs = partes.filter((p) => p.archivo && esImagen(p.archivo)).map((p) => p.archivo);
+    ia = null;
+    if (!imgs.length || !iaDisponible()) { iaEstado.hidden = true; return; }
+    const t = ++tokIA; iaEstado.hidden = false; iaEstado.textContent = 'Leyendo el documento con IA…';
+    try {
+      const r = await leerConIA(ctx.api, { empresaId: e, modo: 'compra', archivos: imgs });
+      if (t !== tokIA) return;
+      ia = r; iaEstado.textContent = `${textoModelo(r)}. Revisa y corrige antes de guardar.${r.datos?.observaciones ? ` ${r.datos.observaciones}` : ''}`;
+      recombinar();
+    } catch (err) { if (t === tokIA) iaEstado.textContent = `${err.message}. Se usan los datos del timbre o del texto de la foto.`; }
+  };
+  const aviso = (txt, tipo = 'pend') => estado.replaceChildren(txt ? el('p', { class: `aviso-bandeja lec-${tipo}` }, txt) : '');
+  const pintarFotos = () => fotos.replaceChildren(...partes.map((p) => el('div', { class: 'lec-foto' },
+    p.thumb ? el('img', { src: p.thumb, alt: p.nombre }) : el('span', { class: 'lec-doc' }, p.xml || /xml/i.test(p.nombre) ? 'XML' : 'PDF'),
+    el('span', { class: 'lec-estado' }, p.estado),
+    el('button', { type: 'button', class: 'boton-icono', 'aria-label': 'Quitar', onclick: () => { partes.splice(partes.indexOf(p), 1); pintarFotos(); recombinar(); leerIA(); } }, icono('cerrar', { tam: 14 })))));
+  let cola = Promise.resolve();
+  const agregar = (archivos, extra = {}) => {
+    for (const a of archivos) {
+      const p = { id: crypto.randomUUID(), archivo: a, nombre: a.name, estado: 'En cola', thumb: a.type.startsWith('image/') ? URL.createObjectURL(a) : null, ...extra };
+      partes.push(p);
+      if (extra.sinLeer) { p.estado = 'PDF del SII'; continue; }   // los datos salen de su XML
+      cola = cola.then(async () => {
+        if (!partes.includes(p)) return;
+        try {
+          const r = await leerParte(a, { propios, avance: (t) => { p.estado = t; pintarFotos(); } });
+          Object.assign(p, r);
+          if (r.foto && !p.thumb) p.thumb = URL.createObjectURL(r.foto);
+          p.estado = r.xml ? 'XML leído' : r.ted ? 'Timbre y texto' : 'Texto leído';
+        } catch (err) { p.estado = 'No se pudo leer'; p.error = err.message; }
+        pintarFotos(); recombinar();
+      });
+    }
+    pintarFotos(); formulario.hidden = false;
+    aviso('Leyendo… la primera vez tarda un poco más (se descargan los lectores).');
+    leerIA();
+  };
+  const inFoto = el('input', { type: 'file', accept: 'image/*', capture: 'environment', multiple: true, hidden: true });
+  const inArch = el('input', { type: 'file', accept: 'image/*,application/pdf,.xml,text/xml,application/xml', multiple: true, hidden: true });
+  inFoto.addEventListener('change', () => { agregar([...inFoto.files]); inFoto.value = ''; });
+  inArch.addEventListener('change', () => { agregar([...inArch.files]); inArch.value = ''; });
+  const video = el('video', { class: 'lec-video', playsinline: true, muted: true });
+  const cajaCam = el('div', { class: 'lec-camara', hidden: true }, video,
+    el('div', { class: 'lec-marco' }),
+    el('div', { class: 'listado-acciones' }, boton('Cerrar cámara', { icono: 'cerrar', onclick: () => { camara?.detener(); cajaCam.hidden = true; aviso(''); } })));
+  const escanear = async () => {
+    cajaCam.hidden = false; aviso('Apunta al timbre (el código de barras grande) y mantén el teléfono quieto.');
+    camara = await escanearCamara(video, (ted, blob) => {
+      cajaCam.hidden = true;
+      partes.push({ id: crypto.randomUUID(), archivo: new File([blob], 'timbre.jpg', { type: 'image/jpeg' }), nombre: 'timbre.jpg', thumb: URL.createObjectURL(blob), foto: blob, estado: 'Timbre leído', ted, texto: '' });
+      pintarFotos(); formulario.hidden = false; recombinar();
+      aviso('Timbre leído. Para completar neto e IVA, agrega una foto del documento completo.', 'ok');
+    }, (msg) => { cajaCam.hidden = true; aviso(msg, 'mal'); });
+  };
+
+  // ---- 2. Revisar
+  const campos = {};
+  const tags = {};
+  const ctl = (k, etiqueta, attrs = {}) => {
+    const c = attrs.opciones
+      ? el('select', { class: 'campo', id: `lec-${k}` }, attrs.opciones.map(([v, t]) => el('option', { value: v }, t)))
+      : el('input', { class: `campo ${attrs.num ? 'campo-num' : ''}`, id: `lec-${k}`, type: attrs.tipo ?? 'text', inputmode: attrs.num ? 'numeric' : null });
+    c.addEventListener('input', () => { editados.add(k); tags[k].hidden = true; revisar(); });
+    campos[k] = c; tags[k] = el('span', { class: 'chip', hidden: true });
+    return el('div', { class: 'form-fila' }, el('label', { for: `lec-${k}` }, etiqueta, ' ', tags[k]), c);
+  };
+  const filaTipos = ctl('td', 'Tipo de documento', { opciones: [['', 'Elige…'], ...Object.entries(TIPOS_DTE).map(([k, t]) => [k, `${k !== '0' ? `${k} · ` : ''}${t}`])] });
+  const proveedor = el('p', { class: 'texto-chico' });
+  const categoria = el('select', { class: 'campo', id: 'lec-cat' }, categorias.map((c) => el('option', { value: c.id }, c.nombre)));
+  const centro = el('select', { class: 'campo', id: 'lec-cen' }, el('option', { value: '' }, 'Sin centro de costo'), base.centros.filter((c) => c.activo).map((c) => el('option', { value: c.id }, c.nombre)));
+  const hoy = hoyISO();
+  const aCuenta = el('select', { class: 'campo', id: 'lec-acu' }, opcionesACuenta(base).map(([v, t]) => el('option', { value: v }, t)));
+  const exigirDestino = !!ctx.config?.exigir_destino;
+  const destino = el('select', { class: 'campo', id: 'lec-dest' }, [['', 'Elige…'],
+    ...(conTaller ? [['vehiculo', 'Un vehículo del taller (patente)']] : []),
+    ['tercero', 'Un tercero, a su cuenta (ej.: D&P)'],
+    ...(conFaenas ? [['faena', 'Una faena']] : []),
+    ['general', 'Gasto general de la empresa']].map(([v, t]) => el('option', { value: v }, t)));
+  const faena = el('select', { class: 'campo', id: 'lec-fae' }, el('option', { value: '' }, 'Sin faena (gasto general)'),
+    (faenas.data ?? []).map((f) => el('option', { value: f.id, selected: f.fecha_inicio <= hoy && f.fecha_fin >= hoy && (faenas.data ?? []).filter((x) => x.fecha_inicio <= hoy && x.fecha_fin >= hoy).length === 1 }, `${fechaLarga(f.fecha_inicio)} · ${f.titulo}`)));
+  // Vehículo del taller: el gasto queda con su patente y, si tiene una sola orden abierta, ligado a esa orden
+  const vehiculo = el('select', { class: 'campo', id: 'lec-veh' }, el('option', { value: '' }, 'Sin vehículo'),
+    (vehiculos.data ?? []).map((x) => el('option', { value: x.id }, [x.patente, [x.marca, x.modelo].filter(Boolean).join(' '), x.terceros?.nombre_fantasia || x.terceros?.razon_social].filter(Boolean).join(' · '))));
+  const concepto = el('input', { class: 'campo', id: 'lec-con', placeholder: 'Se completa con el proveedor y el documento' });
+  const pagado = el('input', { type: 'checkbox', id: 'lec-pag' });
+  let pagadoTocado = false;
+  pagado.addEventListener('change', () => { pagadoTocado = true; });
+  // (Costos 015) Comprobante de pago que espera la factura del proveedor
+  const esperaFactura = el('input', { type: 'checkbox', id: 'lec-espera' });
+  // Descuento a un trabajador (compra a su cuenta)
+  const descontar = el('input', { type: 'checkbox', class: 'interruptor', id: 'lec-desc' });
+  const trabajador = el('select', { class: 'campo', id: 'lec-trab', disabled: true }, el('option', { value: '' }, 'Elige el trabajador…'),
+    (personas.data ?? []).map((p) => [p.persona_id, [p.personas?.nombres, p.personas?.apellido_paterno, p.personas?.apellido_materno].filter(Boolean).join(' ')])
+      .sort((a, b) => a[1].localeCompare(b[1])).map(([id, n]) => el('option', { value: id }, n)));
+  descontar.addEventListener('change', () => { trabajador.disabled = !descontar.checked; if (descontar.checked) trabajador.focus(); });
+  const cuadre = el('div', {});
+  const detalle = el('tbody');
+  const textoLeido = el('pre', { class: 'lec-texto' });
+
+  const recombinar = () => {
+    datos = combinar(partes, propios);
+    // IA: manda sobre el texto de la foto (no sobre el timbre ni el XML)
+    if (ia?.datos) {
+      const d = ia.datos;
+      const m = { td: d.tipo == null ? null : Number(d.tipo), folio: d.folio ? String(d.folio) : null, fecha: fechaIA(d.fecha), rut: d.rut ? limpioRut(d.rut) : null, razon: d.razon || null,
+        neto: numIA(d.neto), iva: numIA(d.iva), otros: numIA(d.otros), total: numIA(d.total) };
+      for (const [k, v] of Object.entries(m)) if (v != null && v !== '' && !['timbre', 'xml'].includes(datos.origen[k])) { datos[k] = v; datos.origen[k] = 'ia'; }
+      if (!datos.items?.length && Array.isArray(d.items)) datos.items = d.items.map((i) => ({ nombre: i.descripcion, cant: i.cantidad, monto: numIA(i.total) }));
+      if (!pagadoTocado && pagadoAlComprar(d)) pagado.checked = true;
+    }
+    for (const k of CAMPOS_DTE) {
+      if (!editados.has(k)) { const v = datos[k]; campos[k].value = v == null ? '' : k === 'rut' ? fmtRut(v) : String(v); }
+      const o = editados.has(k) ? null : datos.origen[k];
+      tags[k].hidden = !o; if (o) { tags[k].textContent = ETIQUETA[o][0]; tags[k].className = `chip ${ETIQUETA[o][1]}`; }
+    }
+    detalle.replaceChildren(...(datos.items?.length ? datos.items.map((l) => el('tr', {}, el('td', {}, l.nombre ?? ''), el('td', { class: 'num' }, l.cant ?? ''), el('td', { class: 'num' }, l.precio != null ? dinero(l.precio) : ''), el('td', { class: 'num' }, l.monto != null ? dinero(l.monto) : '')))
+      : [el('tr', {}, el('td', { colspan: 4, class: 'tabla-vacia' }, 'El detalle de ítems solo viene en el XML.'))]));
+    textoLeido.textContent = datos.texto || '';
+    const leyendo = partes.some((p) => /Buscando|Leyendo|cola/.test(p.estado));
+    if (leyendo) aviso('Leyendo… la primera vez tarda un poco más (se descargan los lectores).');
+    else if (partes.length && Object.values(datos.origen).includes('ocr')) aviso('Listo. Revisa los datos marcados con "Revisar": salen del texto de la foto y pueden tener errores. Si el documento es largo, agrega otra foto.');
+    else if (partes.length) aviso(`Listo: datos leídos ${datos.origen.total === 'xml' ? 'del XML' : 'del timbre electrónico'}.`, 'ok');
+    revisar();
+  };
+  const valores = () => ({
+    td: campos.td.value === '' ? null : Number(campos.td.value), folio: campos.folio.value.trim() || null, fecha: campos.fecha.value || null,
+    rut: campos.rut.value.trim() || null, razon: campos.razon.value.trim() || null,
+    neto: num(campos.neto.value), iva: num(campos.iva.value), exento: num(campos.exento.value), otros: num(campos.otros.value), total: num(campos.total.value),
+  });
+  let duplicado = null;
+  // Posibles duplicados (2026-11-18, pedido de Enzo): del mismo proveedor (RUT del documento o ficha) con el mismo
+  // total cerca de la fecha, o el mismo N° aunque esté anotado con otro tipo de documento. No impide guardar: avisa y
+  // pide tocar Guardar otra vez.
+  let parecidos = [];
+  let confirmado = '';
+  const buscarParecidos = async (v) => {
+    if (!v.rut || (!v.total && !v.folio)) return [];
+    const t = terceroPorRut.get(limpioRut(v.rut));
+    const quien = [`dte->>rut.eq.${fmtRut(v.rut)}`, t ? `tercero_id.eq.${t.id}` : null].filter(Boolean).join(',');
+    let q = ctx.api.from('fin_registros').select('id, concepto, fecha, total, doc_tipo, doc_numero, dte').eq('empresa_id', e).is('deleted_at', null).eq('tipo', 'gasto').or(quien).limit(50);
+    if (v.fecha) q = q.gte('fecha', sumarDias(v.fecha, -60)).lte('fecha', sumarDias(v.fecha, 60));
+    const { data } = await q;
+    const sinCeros = (x) => String(x ?? '').replace(/\D/g, '').replace(/^0+/, '');
+    return (data ?? []).filter((r) => (v.folio && [r.doc_numero, r.dte?.folio].some((n) => n && sinCeros(n) === sinCeros(v.folio)))
+      || (v.total && Number(r.total) === v.total && (!v.fecha || Math.abs(new Date(r.fecha) - new Date(v.fecha)) <= 45 * 864e5)));
+  };
+  const revisar = async () => {
+    const v = valores();
+    const t = v.rut ? terceroPorRut.get(limpioRut(v.rut)) : null;
+    proveedor.replaceChildren(v.rut ? (t ? el('span', {}, icono('check', { tam: 14 }), ` Proveedor: ${nombreTercero(t)}`) : el('span', { class: 'texto-suave' }, ctx.puede('terceros', 'crear') ? 'Proveedor nuevo: se crea en Clientes y proveedores al guardar.' : 'Proveedor no registrado: se guarda sin proveedor.')) : '');
+    if (!concepto.dataset.editado) concepto.value = [v.razon ?? (t ? nombreTercero(t) : null), v.td != null ? `${(TIPOS_DTE[v.td] ?? 'Documento').replace(' electrónica', '')}${v.folio ? ` N° ${v.folio}` : ''}` : null].filter(Boolean).join(' · ');
+    const avisos = validar(v);
+    campos.rut.classList.toggle('campo-error', !!v.rut && !rutValido(v.rut));
+    duplicado = null;
+    if (v.rut && v.folio && v.td != null) {
+      const { data } = await ctx.api.from('fin_registros').select('id, concepto').eq('empresa_id', e).is('deleted_at', null)
+        .eq('dte->>rut', fmtRut(v.rut)).eq('dte->>folio', v.folio).eq('dte->>td', String(v.td)).limit(1);
+      duplicado = data?.[0] ?? null;
+      if (duplicado) avisos.push('Este documento ya está registrado (mismo emisor, tipo y folio).');
+    }
+    parecidos = duplicado ? [] : await buscarParecidos(v);
+    if (parecidos.length) avisos.push(`Posible duplicado: ya hay ${parecidos.length === 1 ? 'un gasto' : `${parecidos.length} gastos`} de este proveedor con el mismo total o el mismo N°.`);
+    if (v.total == null && partes.length && !partes.some((p) => /Buscando|Leyendo|cola/.test(p.estado))) avisos.push('No se encontró el total: escríbelo a mano.');
+    cuadre.replaceChildren(avisos.length ? el('p', { class: 'aviso-bandeja lec-mal' }, avisos.join(' ')) : v.total != null ? el('p', { class: 'aviso-bandeja lec-ok' }, icono('check', { tam: 16 }), 'Montos y RUT cuadran.') : '');
+    if (duplicado) cuadre.append(el('a', { href: ctx.ruta('costos.registro', { id: duplicado.id }) }, `Ver el registro: ${duplicado.concepto}`));
+    if (parecidos.length) cuadre.append(el('ul', { class: 'lec-parecidos' }, parecidos.map((r) => el('li', {},
+      el('a', { href: ctx.ruta('costos.registro', { id: r.id }), target: '_blank', rel: 'noopener' }, r.concepto),
+      ` · ${fechaLarga(r.fecha)} · ${dinero(r.total)} · ${r.doc_numero ? `N° ${r.doc_numero}` : 'sin N°'}`))));
+  };
+  concepto.addEventListener('input', () => { concepto.dataset.editado = '1'; });
+
+  // ---- Guardar
+  const guardar = async (ev) => {
+    const b = ev.currentTarget;
+    if (partes.some((p) => /Buscando|Leyendo|cola/.test(p.estado))) { avisar('Espera a que terminen de leerse los archivos.', 'error'); return; }
+    const v = valores();
+    if (!v.total || v.total <= 0) { avisar('Falta el total.', 'error'); return; }
+    if (duplicado) { avisar('Este documento ya está registrado.', 'error'); return; }
+    const clave = parecidos.map((r) => r.id).join();
+    if (parecidos.length && confirmado !== clave) {
+      confirmado = clave;
+      avisar('Posible duplicado: revisa la lista bajo los montos. Si es otro documento, toca Guardar otra vez.', 'error');
+      cuadre.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+    if (exigirDestino) {
+      const d = destino.value;
+      const falta = !d ? 'Elige a qué va este gasto.' : d === 'vehiculo' && !vehiculo.value ? 'Elige el vehículo (patente).'
+        : d === 'tercero' && !aCuenta.value ? 'Elige el tercero.' : d === 'faena' && !faena.value ? 'Elige la faena.' : null;
+      if (falta) { avisar(falta, 'error'); destino.focus(); return; }
+    }
+    if (!concepto.value.trim()) { avisar('Escribe el concepto.', 'error'); return; }
+    if (descontar.checked && !trabajador.value) { avisar('Elige a qué trabajador se le descuenta.', 'error'); return; }
+    b.disabled = true; b.classList.add('cargando');
+    const subidas = [];   // archivos subidos ahora (se borran si falla)
+    const rutas = [];     // todos los del gasto, en orden (incluye el de la bandeja, que ya estaba subido)
+    try {
+      // Proveedor por RUT (si no existe y se puede, se crea)
+      let tercero = v.rut ? terceroPorRut.get(limpioRut(v.rut)) ?? null : null;
+      if (!tercero && v.rut && rutValido(v.rut) && ctx.puede('terceros', 'crear')) {
+        const { data, error } = await ctx.api.from('terceros').insert({ empresa_id: e, rut: `${limpioRut(v.rut).slice(0, -1)}-${limpioRut(v.rut).slice(-1)}`, razon_social: v.razon || fmtRut(v.rut), tipo: ['proveedor'] }).select('id, rut, razon_social, nombre_fantasia, tipo').single();
+        if (error) throw new Error(`No se pudo crear el proveedor: ${error.message}`);
+        tercero = data; terceroPorRut.set(limpioRut(v.rut), data);
+      }
+      // Fotos y XML: el primero es el archivo principal, el resto va a adjuntos
+      for (const p of partes) {
+        if (p.ruta) { rutas.push(p.ruta); continue; }
+        const esXml = /\.xml$/i.test(p.nombre);
+        const blob = esXml ? p.archivo : await aJPEG(p.foto ?? p.archivo, 1800);
+        const archivo = new File([blob], esXml ? p.nombre : `${p.nombre.replace(/\.\w+$/, '')}.jpg`, { type: esXml ? 'text/xml' : 'image/jpeg' });
+        const r = (await subirArchivo(ctx.api, { empresaId: e, modulo: 'costos', archivo, tabla: 'fin_registros' })).ruta;
+        subidas.push(r); rutas.push(r);
+      }
+      const o = datos.origen.total;
+      const origen = editados.has('total') ? 'manual' : o === 'timbre' ? 'timbre' : o === 'xml' ? 'xml' : o === 'ocr' ? 'ocr' : o === 'ia' ? 'ia' : 'manual';
+      const doc = docTipoDe(v.td);
+      const veh = (vehiculos.data ?? []).find((x) => x.id === vehiculo.value);
+      const abiertas = veh ? (ordenes.data ?? []).filter((x) => x.vehiculo_id === veh.id) : [];
+      const iva = doc === 'factura' ? v.iva ?? 0 : 0;
+      const { data, error } = await ctx.api.from('fin_registros').insert({
+        empresa_id: e, tipo: 'gasto', fecha: v.fecha || hoyISO(), concepto: concepto.value.trim(), categoria_id: categoria.value, centro_id: centro.value || null,
+        tercero_id: tercero?.id ?? null, doc_tipo: doc, doc_numero: v.folio, total: v.total, neto: v.total - iva, iva,
+        // Boleta o ticket: pagado al comprar (salvo que se desmarque a mano); factura: por pagar
+        ...(!ctx.puede('costos', 'editar') ? { estado_pago: 'pendiente' } : (pagadoTocado ? pagado.checked : pagado.checked || doc !== 'factura') ? { estado_pago: 'pagado', fecha_pago: v.fecha || hoyISO() } : { estado_pago: 'listo' }), archivo: rutas[0] ?? null, adjuntos: rutas.slice(1), faena_id: faena.value || null, a_cuenta_de: aCuenta.value || null,
+        patente: veh?.patente ?? null, orden_id: deOrden && veh?.id === deOrden.vehiculo_id ? deOrden.id : abiertas.length === 1 ? abiertas[0].id : null,
+        dte: { ...v, rut: v.rut ? fmtRut(v.rut) : null, td: v.td == null ? null : String(v.td), items: datos.items ?? [], origen },
+        espera_factura: doc !== 'factura' && esperaFactura.checked,
+      }).select('id').single();
+      if (error) throw new Error(error.code === '23505' ? 'Este documento ya estaba registrado (mismo emisor, tipo y folio).' : error.message);
+      // Bandeja: el documento queda registrado y se sigue con el siguiente
+      let siguiente = null; let nota = '';
+      if (deBandeja) {
+        const { error: eb } = await ctx.api.from('fin_bandeja').update({ estado: 'registrado', registro_id: data.id }).eq('id', deBandeja.id);
+        if (eb) avisar(`Gasto registrado, pero no se pudo sacar de la bandeja: ${eb.message}`, 'error');
+        siguiente = otroPendiente();
+        const quedan = pendientes.length - 1;
+        nota = quedan ? ` Quedan ${quedan} por cargar.` : ' La bandeja quedó vacía.';
+      }
+      if (descontar.checked) {
+        const fecha = v.fecha || hoyISO();
+        const { error: e2 } = await ctx.api.from('remu_items').insert({
+          empresa_id: e, persona_id: trabajador.value, tipo: 'descuento', concepto: `Descuento: ${concepto.value.trim()}`.slice(0, 200), monto: v.total,
+          origen_id: data.id, ...(mensual ? { mes: fecha.slice(0, 7) } : { semana: lunesDe(fecha) }),
+        });
+        if (e2) { avisar(`Gasto registrado, pero no se pudo cargar el descuento: ${e2.message}`, 'error'); location.hash = ctx.ruta('costos.registro', { id: data.id }); return; }
+        avisar(`Gasto registrado y descuento de ${dinero(v.total)} cargado en Remuneraciones (${mensual ? 'mes' : 'semana'} del documento).${nota}`);
+        irA(data.id, siguiente);
+        return;
+      }
+      avisar(`Gasto registrado desde el documento.${nota}`);
+      irA(data.id, siguiente);
+    } catch (err) {
+      for (const r of subidas) await almacen(ctx.api).remove([r]).catch(() => {});
+      avisar(err.message, 'error'); b.disabled = false; b.classList.remove('cargando');
+    }
+  };
+
+  const fila = (etq, c) => el('div', { class: 'form-fila' }, el('label', { for: c.id }, etq), c);
+  // ¿A qué va? (opción del módulo exigir_destino): muestra solo el campo que corresponde y lo pide al guardar
+  const filaVehiculo = fila(exigirDestino ? 'Vehículo (patente · cliente)' : 'Vehículo (opcional)', vehiculo);
+  const filaACuenta = fila(exigirDestino ? 'Tercero (a su cuenta)' : '¿Por cuenta de un tercero?', aCuenta);
+  const filaFaena = fila('Faena', faena);
+  const mostrarDestino = () => {
+    if (!exigirDestino) return;
+    const d = destino.value;
+    filaVehiculo.hidden = d !== 'vehiculo'; filaACuenta.hidden = d !== 'tercero'; filaFaena.hidden = d !== 'faena';
+  };
+  destino.addEventListener('change', () => {
+    // Solo queda el dato del destino elegido
+    if (destino.value !== 'vehiculo') vehiculo.value = '';
+    if (destino.value !== 'tercero') aCuenta.value = '';
+    if (destino.value !== 'faena') faena.value = '';
+    mostrarDestino();
+  });
+  // Desde una orden: va a su vehículo (se puede cambiar)
+  if (deOrden) { if (exigirDestino) destino.value = 'vehiculo'; vehiculo.value = deOrden.vehiculo_id; }
+  mostrarDestino();
+  const formulario = el('div', { class: 'ficha doc-grupo lec-form', hidden: true },
+    el('h2', {}, '2. Revisar y guardar'),
+    estado, iaEstado,
+    el('div', { class: 'rejilla-campos' }, filaTipos, ctl('folio', 'Folio', { num: true }), ctl('fecha', 'Fecha', { tipo: 'date' })),
+    el('div', { class: 'rejilla-campos' }, ctl('rut', 'RUT del emisor'), ctl('razon', 'Razón social')),
+    proveedor,
+    el('div', { class: 'rejilla-campos lec-montos' }, ctl('neto', 'Neto', { num: true }), ctl('iva', 'IVA', { num: true }), ctl('exento', 'Exento', { num: true }), ctl('otros', 'Otros impuestos', { num: true }), ctl('total', 'Total', { num: true })),
+    cuadre,
+    exigirDestino ? fila('¿A qué va este gasto?', destino) : null,
+    el('div', { class: 'rejilla-campos' }, fila('Categoría', categoria), ctx.config?.centros ? fila('Centro de costo', centro) : null, conFaenas ? filaFaena : null),
+    el('div', { class: 'rejilla-campos' }, conTaller ? filaVehiculo : null, filaACuenta),
+    fila('Concepto', concepto),
+    el('label', { class: 'casilla' }, pagado, 'Ya está pagado (boletas y tickets quedan pagados solos; la factura queda por pagar)'),
+    el('label', { class: 'casilla' }, esperaFactura, 'Es un comprobante de pago y falta la factura (queda en la Bandeja → Esperando factura)'),
+    conDescuento ? el('div', { class: 'lec-descuento' },
+      el('label', { class: 'casilla' }, descontar, 'Descontar a un trabajador (compra a su cuenta)'),
+      el('div', { class: 'form-fila' }, trabajador),
+      el('p', { class: 'texto-suave texto-chico' }, `Se carga como descuento en Remuneraciones, en ${mensual ? 'el mes' : 'la semana'} de la fecha del documento, por el total.`)) : null,
+    el('details', { class: 'lec-mas' }, el('summary', {}, 'Detalle y texto leído'),
+      el('div', { class: 'tabla-contenedor' }, el('table', { class: 'tabla' }, el('thead', {}, el('tr', {}, el('th', {}, 'Ítem'), el('th', { class: 'num' }, 'Cant.'), el('th', { class: 'num' }, 'Precio'), el('th', { class: 'num' }, 'Monto'))), detalle)),
+      textoLeido),
+    el('div', { class: 'listado-acciones' },
+      ctx.puede('costos', 'crear') ? boton('Registrar gasto', { icono: 'check', tipo: 'primario', onclick: guardar }) : null,
+      idBandeja ? null : boton('Descartar', { onclick: () => ctx.refrescar() })));
+
+  // ---- Documento de la bandeja: se baja la foto ya subida y se lee como si se acabara de sacar
+  let cabezaBandeja = null;
+  if (idBandeja) {
+    const i = pendientes.indexOf(deBandeja);
+    const saltar = () => irA(null, otroPendiente());
+    const quitar = async (ev) => {
+      const b = ev.currentTarget;
+      if (b.dataset.seguro !== '1') { b.dataset.seguro = '1'; b.lastChild.textContent = '¿Seguro? Toca de nuevo'; setTimeout(() => { b.dataset.seguro = ''; b.lastChild.textContent = 'Descartar de la bandeja'; }, 3000); return; }
+      b.disabled = true;
+      try { await descartarDeBandeja(ctx, deBandeja); avisar('Documento descartado.'); irA(null, otroPendiente()); } catch (err) { avisar(err.message, 'error'); b.disabled = false; }
+    };
+    cabezaBandeja = deBandeja
+      ? el('div', { class: 'aviso-bandeja ban-cabeza' },
+        el('span', {}, icono('lista', { tam: 16 }), ` Por cargar: documento ${i + 1} de ${pendientes.length}`),
+        el('div', { class: 'listado-acciones' },
+          pendientes.length > 1 && !deOrden ? boton('Saltar', { icono: 'derecha', onclick: saltar }) : null,
+          boton('Descartar de la bandeja', { icono: 'basura', onclick: quitar })))
+      : el('p', { class: 'aviso-bandeja' }, icono('alerta', { tam: 16 }), 'Ese documento ya no está en la bandeja (ya se cargó o se descartó). ',
+        el('a', { href: ctx.ruta('costos.bandeja') }, 'Volver a Por cargar'));
+    if (deBandeja) {
+      (async () => {
+        try {
+          const bajar = async (ruta) => { const r = await fetch(await urlFirmada(ctx.api, ruta, 300)); if (!r.ok) throw new Error(`Error ${r.status}`); return r.blob(); };
+          // Factura del SII (OpenFactura): el PDF queda como archivo del gasto sin leerlo y los datos salen del XML
+          if (deBandeja.origen === 'sii' && deBandeja.xml_ruta) {
+            const [pdf, xml] = await Promise.all([bajar(deBandeja.ruta), bajar(deBandeja.xml_ruta)]);
+            agregar([new File([pdf], deBandeja.nombre || 'factura.pdf', { type: 'application/pdf' })], { ruta: deBandeja.ruta, sinLeer: true });
+            agregar([new File([xml], (deBandeja.nombre || 'factura.pdf').replace(/\.pdf$/i, '.xml'), { type: 'text/xml' })], { ruta: deBandeja.xml_ruta });
+            return;
+          }
+          const blob = await bajar(deBandeja.ruta);
+          const tipo = deBandeja.tipo_mime || blob.type || 'image/jpeg';
+          agregar([new File([blob], deBandeja.nombre || 'documento.jpg', { type: tipo })], { ruta: deBandeja.ruta });
+        } catch (err) { formulario.hidden = false; aviso(`No se pudo abrir el documento de la bandeja (${err.message}). Revisa la conexión y vuelve a abrirlo.`, 'mal'); }
+      })();
+    }
+  }
+
+  return el('section', { class: 'listado' },
+    volver,
+    cabezaBandeja,
+    el('header', { class: 'listado-cabecera' }, el('div', {}, el('h1', {}, 'Leer boleta o factura'),
+      el('p', { class: 'texto-suave' }, deOrden
+        ? `Compra para la orden N° ${deOrden.numero}${deOrden.tal_vehiculos?.patente ? ` (${deOrden.tal_vehiculos.patente})` : ''}: queda como costo de ese vehículo.`
+        : 'Lee el timbre electrónico, el XML o el texto de la foto y registra el gasto. Todo se procesa en este equipo.'))),
+    el('div', { class: 'ficha doc-grupo' },
+      el('h2', {}, '1. Documento'),
+      el('div', { class: 'listado-acciones lec-botones' },
+        boton('Escanear timbre', { icono: 'camara', tipo: 'primario', onclick: escanear }),
+        // Cámara en la página: varias fotos del mismo documento sin salir (boleta larga); si no hay, la del teléfono
+        boton('Tomar foto', { icono: 'camara', onclick: async () => { const l = await tomarFotos({ titulo: 'Fotos del documento', textoListo: 'Usar' }); if (l.length) agregar(l); } }),
+        boton('Subir PDF, XML o imagen', { icono: 'descargar', onclick: () => inArch.click() }), inFoto, inArch),
+      cajaCam, fotos,
+      el('p', { class: 'texto-suave texto-chico' }, 'Puedes agregar varias fotos del mismo documento (por ejemplo, una boleta larga). El XML trae todos los datos y el detalle.')),
+    formulario);
+}

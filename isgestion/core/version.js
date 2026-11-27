@@ -4,8 +4,10 @@
 // Versiones guardadas aparte (2026-11-26, reclamos a Enzo: la app se recargaba sola y sacaba a la gente de lo que hacía):
 // cada publicación queda en v/<commit>/ y quien tiene la app abierta sigue con su versión completa hasta que actualiza.
 // Nada se recarga solo: el aviso es la única forma, y se puede dejar para más tarde.
-import { el } from './ui/dom.js?v=503c912';
-import { icono } from './ui/iconos.js?v=503c912';
+// Sin aviso (2026-11-27, pedido de Enzo): se publica sin aviso salvo con --nota o --aviso; lo interno no interrumpe a nadie; se
+// toma al abrir la app de nuevo. Quien venía de una versión anterior a la última con aviso igual lo ve.
+import { el } from './ui/dom.js?v=db6ddb1';
+import { icono } from './ui/iconos.js?v=db6ddb1';
 
 // Publicada en v/<commit>/core/version.js (o, las anteriores, en core/version.js?v=<commit>)
 const enCarpeta = import.meta.url.match(/\/v\/([0-9a-f]{7,40})\/core\//);
@@ -23,8 +25,9 @@ async function revisar() {
     url.search = `?t=${Date.now()}`;
     const r = await fetch(url, { cache: 'no-store' });
     if (!r.ok) return;
-    const { v, nota } = await r.json();
-    if (v && v !== actual) mostrar(nota);
+    const { v, nota, sin_aviso } = await r.json();
+    // Publicada con --sin-aviso: si ya estoy en una versión que no necesita el aviso, no se muestra nada
+    if (v && v !== actual && !(Array.isArray(sin_aviso) && sin_aviso.includes(actual))) mostrar(nota);
   } catch { /* sin red: se revisa la próxima vez */ }
 }
 

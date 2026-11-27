@@ -1,8 +1,8 @@
 // Para qué acreditación es una entrega (SST 006): mandante (cliente) y, si aplica, su lugar (ej.: SAL LOBOS → Camanchaca,
 // Ensenada). Se elige al crear la entrega individual o después en la entrega; Acreditación las muestra en el mandante.
-import { el } from '../../core/ui/dom.js?v=503c912';
-import { abrirFormulario } from '../../core/ui/modal.js?v=503c912';
-import { avisar } from '../../core/ui/aviso.js?v=503c912';
+import { el } from '../../core/ui/dom.js?v=db6ddb1';
+import { abrirFormulario } from '../../core/ui/modal.js?v=db6ddb1';
+import { avisar } from '../../core/ui/aviso.js?v=db6ddb1';
 
 const nombreT = (t) => t?.nombre_fantasia || t?.razon_social || 'Cliente';
 
